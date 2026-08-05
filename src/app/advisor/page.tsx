@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { Camera, ChevronRight, Sparkles } from "lucide-react";
 import AdvisorQuiz from "@/components/AdvisorQuiz";
+import { notFound } from "next/navigation";
+import { LOCAL_AI_ENABLED } from "@/lib/local-ai";
 
 export const metadata = { title: "AI Beauty Advisor | Smoothlife.com" };
 
 export default function AdvisorPage() {
+  if (!LOCAL_AI_ENABLED) notFound();
   return (
     <div className="container-page py-8 md:py-10">
       <div className="flex items-center gap-2 text-brand-emerald font-semibold text-sm mb-2">

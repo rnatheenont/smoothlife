@@ -7,6 +7,7 @@ import { brands } from "@/data/brands";
 import { promotions } from "@/data/promotions";
 import ProductCard from "@/components/ProductCard";
 import SectionHeading from "@/components/SectionHeading";
+import { LOCAL_AI_ENABLED } from "@/lib/local-ai";
 
 export default function HomePage() {
   const bestSellers = products.filter((p) => p.badges?.includes("Bestseller")).slice(0, 8);
@@ -18,9 +19,7 @@ export default function HomePage() {
       <section className="bg-brand-radial">
         <div className="container-page py-10 md:py-16 grid md:grid-cols-2 gap-8 items-center">
           <div className="animate-fadeUp">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-emerald shadow-card mb-4">
-              <Sparkles size={13} /> AI Beauty Advisor ใหม่ล่าสุด
-            </span>
+            {LOCAL_AI_ENABLED && <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-emerald shadow-card mb-4"><Sparkles size={13} /> AI Beauty Advisor · Local only</span>}
             <h1 className="text-3xl md:text-5xl font-extrabold leading-tight text-brand-ink">
               สุขภาพดี ผิวสวย <br />
               <span className="brand-text-gradient">ครบทุก Lifestyle</span> ที่เดียว
@@ -33,9 +32,7 @@ export default function HomePage() {
               <Link href="/shop" className="rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm hover:opacity-90 transition-opacity">
                 เริ่มช้อปเลย
               </Link>
-              <Link href="/advisor" className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-6 py-3 text-sm hover:border-brand-teal transition-colors">
-                ให้ AI แนะนำสกินแคร์
-              </Link>
+              {LOCAL_AI_ENABLED && <Link href="/advisor" className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-6 py-3 text-sm hover:border-brand-teal transition-colors">ให้ AI แนะนำสกินแคร์</Link>}
             </div>
           </div>
           <div className="relative aspect-[4/3] rounded-xl2 overflow-hidden shadow-cardHover">
@@ -139,8 +136,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* AI Advisor CTA */}
-      <section className="container-page py-10 md:py-14">
+      {/* AI Advisor CTA — local development only */}
+      {LOCAL_AI_ENABLED && <section className="container-page py-10 md:py-14">
         <div className="rounded-xl2 bg-brand-ink text-white p-8 md:p-12 grid md:grid-cols-2 gap-8 items-center overflow-hidden relative">
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold mb-4">
@@ -155,7 +152,7 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* Brands strip */}
       <section className="container-page py-10 md:py-14">

@@ -7,6 +7,7 @@ import { LangProvider } from "@/lib/lang-context";
 import { QuickChatProvider } from "@/lib/quickchat-context";
 import QuickChat from "@/components/QuickChat";
 import MobileTabBar from "@/components/MobileTabBar";
+import { LOCAL_AI_ENABLED } from "@/lib/local-ai";
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
@@ -16,7 +17,7 @@ export default function Providers({ children }: { children: ReactNode }) {
           <WishlistProvider>
             <QuickChatProvider>
               {children}
-              <QuickChat />
+              {LOCAL_AI_ENABLED && <QuickChat />}
               <MobileTabBar />
             </QuickChatProvider>
           </WishlistProvider>

@@ -7,7 +7,15 @@ import { ShopSearchParams } from "@/lib/filter-products";
 import { SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 
-export default function ShopFilters({ current }: { current: ShopSearchParams }) {
+export default function ShopFilters({
+  current,
+  showMobile = true,
+  showDesktop = true,
+}: {
+  current: ShopSearchParams;
+  showMobile?: boolean;
+  showDesktop?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -82,14 +90,14 @@ export default function ShopFilters({ current }: { current: ShopSearchParams }) 
 
   return (
     <>
-      <button
+      {showMobile && <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium mb-4"
+        className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium"
       >
         <SlidersHorizontal size={15} /> ตัวกรอง
-      </button>
-      <aside className="hidden lg:block w-56 shrink-0">{content}</aside>
-      {mobileOpen && (
+      </button>}
+      {showDesktop && <aside className="hidden lg:block w-56 shrink-0 self-start sticky top-36 max-h-[calc(100vh-10rem)] overflow-y-auto pr-3 scrollbar-none">{content}</aside>}
+      {showMobile && mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
           <div className="absolute right-0 top-0 h-full w-72 bg-white p-5 overflow-y-auto">

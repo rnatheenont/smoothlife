@@ -17,6 +17,7 @@ import { useWishlist } from "@/lib/cart-context";
 import { formatTHB } from "@/lib/format";
 import AccountGate from "@/components/AccountGate";
 import { useRouter } from "next/navigation";
+import { LOCAL_AI_ENABLED } from "@/lib/local-ai";
 
 const tierThreshold: Record<string, number> = { Bronze: 1000, Silver: 3000, Gold: 3000 };
 
@@ -123,7 +124,7 @@ function AccountDashboard() {
             <ActionTile href="/account/orders" icon={Package} label="คำสั่งซื้อและติดตามพัสดุ" />
             <ActionTile href="/account/wishlist" icon={Heart} label="รายการโปรดและรูทีนที่บันทึกไว้" />
             <ActionTile href="/account/points" icon={Award} label="คะแนนสะสมและระดับสมาชิก" />
-            <ActionTile href="/skin-coach" icon={Camera} label="วิเคราะห์ผิวหน้าด้วย AI" badge="ใหม่" />
+            {LOCAL_AI_ENABLED && <ActionTile href="/skin-coach" icon={Camera} label="วิเคราะห์ผิวหน้าด้วย AI" badge="เฉพาะ Local" />}
             <ActionTile href="/checkout" icon={MapPin} label="ที่อยู่จัดส่ง" badge="จัดการตอนชำระเงิน" />
             <ActionTile href="/account" icon={Bell} label="การแจ้งเตือนโปรโมชั่น" badge="เปิดใช้งาน" />
           </div>

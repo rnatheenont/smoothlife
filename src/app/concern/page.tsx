@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { concerns } from "@/data/categories";
+import { LOCAL_AI_ENABLED } from "@/lib/local-ai";
 
 export const metadata = { title: "Shop by Concern | Smoothlife.com" };
 
@@ -22,10 +23,10 @@ export default function ConcernHubPage() {
             </div>
           </Link>
         ))}
-        <Link href="/advisor" className="rounded-xl2 border-2 border-dashed border-brand-teal flex flex-col items-center justify-center text-center p-6 aspect-[4/3]">
+        {LOCAL_AI_ENABLED && <Link href="/advisor" className="rounded-xl2 border-2 border-dashed border-brand-teal flex flex-col items-center justify-center text-center p-6 aspect-[4/3]">
           <p className="font-bold text-brand-ink">ไม่แน่ใจว่าผิวคุณกังวลเรื่องอะไร?</p>
           <span className="text-sm text-brand-emerald font-semibold mt-2">ให้ AI Beauty Advisor ช่วยประเมิน →</span>
-        </Link>
+        </Link>}
       </div>
     </div>
   );

@@ -42,6 +42,7 @@ export type Brand = {
   name: string;
   tagline: string;
   productCount: number;
+  logo: string;
 };
 
 export type CategoryInfo = {
@@ -66,8 +67,9 @@ export type Article = {
   excerpt: string;
   body: string[];
   image: string;
-  sources: string[];
+  sources: { name: string; url: string }[];
   readMins: number;
+  productSlug?: string;
 };
 
 export type Review = {

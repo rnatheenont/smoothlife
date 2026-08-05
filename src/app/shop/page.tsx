@@ -14,10 +14,16 @@ export default function ShopPage({ searchParams }: { searchParams: ShopSearchPar
         <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">สินค้าทั้งหมด</h1>
         <p className="text-sm text-slate-500 mt-1">พบ {items.length} รายการ</p>
       </div>
+      <div className="lg:hidden sticky top-[84px] z-30 -mx-4 mb-5 flex items-center justify-between gap-3 border-y border-slate-100 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-md">
+        <ShopFilters current={searchParams} showDesktop={false} />
+        <div className="min-w-0">
+          <SortSelect current={searchParams} />
+        </div>
+      </div>
       <div className="flex flex-col lg:flex-row gap-8">
-        <ShopFilters current={searchParams} />
+        <ShopFilters current={searchParams} showMobile={false} />
         <div className="flex-1">
-          <div className="flex items-center justify-end mb-4">
+          <div className="hidden lg:flex sticky top-32 z-20 items-center justify-end mb-4 bg-white/95 py-2 backdrop-blur-md">
             <SortSelect current={searchParams} />
           </div>
           {items.length === 0 ? (
