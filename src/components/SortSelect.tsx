@@ -20,7 +20,7 @@ export default function SortSelect({ current }: { current: ShopSearchParams }) {
     <select
       defaultValue={current.sort || ""}
       onChange={onChange}
-      className="rounded-full border border-slate-200 text-sm py-2 px-3 outline-none bg-white"
+      className="max-w-full rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs outline-none"
     >
       <option value="">แนะนำ</option>
       <option value="bestseller">ขายดีที่สุด</option>

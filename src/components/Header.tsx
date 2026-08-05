@@ -8,11 +8,12 @@ import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
 import LanguageSwitch from "@/components/LanguageSwitch";
+import { LOCAL_AI_ENABLED } from "@/lib/local-ai";
 
 const navLinks = [
   { href: "/shop", th: "ช้อปสินค้า", en: "Shop" },
   { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern" },
-  { href: "/advisor", th: "AI ที่ปรึกษาความงาม", en: "AI Beauty Advisor" },
+  ...(LOCAL_AI_ENABLED ? [{ href: "/advisor", th: "AI ที่ปรึกษาความงาม", en: "AI Beauty Advisor" }] : []),
   { href: "/knowledge", th: "ความรู้ความงาม", en: "Beauty Knowledge" },
   { href: "/about", th: "ทำไมต้อง Smooth Life", en: "Why Smooth Life" },
   { href: "/help", th: "ช่วยเหลือ", en: "Help" },
@@ -87,11 +88,11 @@ export default function Header() {
             <Link href="/account" className="hidden sm:flex items-center gap-1.5 rounded-full bg-surface-muted px-3 py-1.5 text-xs font-semibold text-brand-dark">
               <Award size={14} className="text-amber-500" /> {user.points} pts · {user.tier}
             </Link>
-          ) : (
+          ) : LOCAL_AI_ENABLED ? (
             <Link href="/advisor" className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-brand-emerald">
               <Sparkles size={14} /> AI Advisor
             </Link>
-          )}
+          ) : null}
           <Link href={user ? "/account" : "/account/login"} className="flex items-center gap-1.5" aria-label="Account">
             <User size={22} />
             <span className="hidden lg:inline text-sm font-medium">{user ? user.name.split(" ")[0] : "เข้าสู่ระบบ"}</span>

@@ -5,11 +5,12 @@ import { usePathname } from "next/navigation";
 import { Home, LayoutGrid, Sparkles, ShoppingBag, User } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
+import { LOCAL_AI_ENABLED } from "@/lib/local-ai";
 
 const tabs = [
   { href: "/", icon: Home, th: "หน้าแรก", en: "Home" },
   { href: "/shop", icon: LayoutGrid, th: "ช้อป", en: "Shop" },
-  { href: "/advisor", icon: Sparkles, th: "AI", en: "AI" },
+  ...(LOCAL_AI_ENABLED ? [{ href: "/advisor", icon: Sparkles, th: "AI", en: "AI" }] : []),
   { href: "/cart", icon: ShoppingBag, th: "ตะกร้า", en: "Cart" },
   { href: "/account", icon: User, th: "บัญชี", en: "Account" },
 ];
@@ -26,7 +27,7 @@ export default function MobileTabBar() {
 
   return (
     <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[90] border-t border-slate-200 bg-white/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
-      <ul className="grid grid-cols-5">
+      <ul className={`grid ${LOCAL_AI_ENABLED ? "grid-cols-5" : "grid-cols-4"}`}>
         {tabs.map((tab) => {
           const on = active(tab.href);
           const Icon = tab.icon;
