@@ -4,6 +4,7 @@ import { concerns as concernInfo } from "@/data/categories";
 
 export type SkinCoachMetrics = {
   faceDetected: boolean;
+  skinAge: { years: number; note: string };
   acne: { score: number; note: string };
   pores: { score: number; note: string };
   darkSpots: { score: number; note: string };
@@ -13,6 +14,24 @@ export type SkinCoachMetrics = {
 };
 
 export type ConcernSlug = "acne" | "dark-spots" | "aging";
+
+// Combined headline score = average clarity across the four scanned areas.
+// Kept as a simple, explainable mean (not a hidden model output) so the
+// number on screen always matches the bars underneath it. Shared by the
+// results view and the share-card canvas so they never drift apart.
+export function overallScore(metrics: SkinCoachMetrics) {
+  const clarities = [metrics.acne.score, metrics.pores.score, metrics.darkSpots.score, metrics.wrinkles.score].map(
+    (s) => Math.max(0, Math.min(100, 100 - s))
+  );
+  return Math.round(clarities.reduce((a, b) => a + b, 0) / clarities.length);
+}
+
+export function scoreBand(score: number) {
+  if (score >= 85) return { label: "ผิวสุขภาพดีมาก", hex: "#00A87B" };
+  if (score >= 70) return { label: "ผิวสุขภาพดี", hex: "#00B39B" };
+  if (score >= 50) return { label: "ผิวปานกลาง ดูแลเพิ่มได้", hex: "#F59E0B" };
+  return { label: "ควรดูแลผิวเพิ่มเติม", hex: "#F43F5E" };
+}
 
 // Deterministic, code-side mapping from photo metrics -> our own catalogue's
 // concern tags. The model never names a product or a concern slug itself —

@@ -11,6 +11,8 @@ export default function SkinCoachPage() {
   const [consented, setConsented] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [metrics, setMetrics] = useState<SkinCoachMetrics | null>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [zones, setZones] = useState<string[]>([]);
 
   useEffect(() => {
     setConsented(hasStoredConsent());
@@ -27,11 +29,30 @@ export default function SkinCoachPage() {
         <span className="text-xs font-semibold uppercase tracking-wide">Skin Coach</span>
       </div>
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-6">
-        เพียงเซลฟีเดียว รู้ผิวคุณ พร้อมสินค้าที่ใช่
+        เลือกมุมที่อยากให้ AI ดู รู้ผิวคุณ พร้อมสินค้าที่ใช่
       </h1>
 
-      {!metrics && <CaptureCard onResult={setMetrics} />}
-      {metrics && <ResultsView metrics={metrics} onRestart={() => setMetrics(null)} />}
+      {!metrics && (
+        <CaptureCard
+          onResult={(m, heroPhoto, zoneLabels) => {
+            setMetrics(m);
+            setPhoto(heroPhoto);
+            setZones(zoneLabels);
+          }}
+        />
+      )}
+      {metrics && (
+        <ResultsView
+          metrics={metrics}
+          photo={photo}
+          zones={zones}
+          onRestart={() => {
+            setMetrics(null);
+            setPhoto(null);
+            setZones([]);
+          }}
+        />
+      )}
     </div>
   );
 }

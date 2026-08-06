@@ -1,0 +1,84 @@
+// Server-only Shopify Admin API access via the client credentials grant.
+// Needs a *separate* custom-app credential pair with Admin scopes (unlike
+// the Storefront token, which is public-safe) — see SHOPIFY_ADMIN_CLIENT_ID
+// / SHOPIFY_ADMIN_CLIENT_SECRET in .env.example. Never import from a "use
+// client" component.
+const SHOP = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
+const CLIENT_ID = process.env.SHOPIFY_ADMIN_CLIENT_ID;
+const CLIENT_SECRET = process.env.SHOPIFY_ADMIN_CLIENT_SECRET;
+const API_VERSION = process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-10";
+
+export function shopifyAdminConfigured() {
+  return Boolean(SHOP && CLIENT_ID && CLIENT_SECRET);
+}
+
+let cachedToken: { token: string; expiresAt: number } | null = null;
+
+async function getAdminAccessToken(): Promise<string> {
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
+    return cachedToken.token;
+  }
+  const res = await fetch(`https://${SHOP}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: CLIENT_ID!,
+      client_secret: CLIENT_SECRET!,
+    }),
+  });
+  if (!res.ok) throw new Error(`Shopify OAuth token exchange failed: ${res.status}`);
+  const data = await res.json();
+  cachedToken = { token: data.access_token, expiresAt: Date.now() + (data.expires_in || 3600) * 1000 };
+  return cachedToken.token;
+}
+
+async function adminGraphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
+  const token = await getAdminAccessToken();
+  const res = await fetch(`https://${SHOP}/admin/api/${API_VERSION}/graphql.json`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": token },
+    body: JSON.stringify({ query, variables }),
+  });
+  const json = await res.json();
+  if (json.errors) throw new Error(`Shopify Admin GraphQL error: ${JSON.stringify(json.errors)}`);
+  return json.data as T;
+}
+
+// Creates a real, single-use percentage discount code redeemable once per
+// customer. Returns the code string.
+export async function createPercentDiscountCode(opts: {
+  title: string;
+  code: string;
+  percentage: number; // 0-1
+  usageLimit?: number;
+}): Promise<string> {
+  const data = await adminGraphql<{
+    discountCodeBasicCreate: { codeDiscountNode: { id: string } | null; userErrors: { field: string[]; message: string }[] };
+  }>(
+    `mutation CreateDiscount($basicCodeDiscount: DiscountCodeBasicInput!) {
+      discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
+        codeDiscountNode { id }
+        userErrors { field message }
+      }
+    }`,
+    {
+      basicCodeDiscount: {
+        title: opts.title,
+        code: opts.code,
+        startsAt: new Date().toISOString(),
+        usageLimit: opts.usageLimit ?? 1,
+        appliesOncePerCustomer: true,
+        customerSelection: { all: true },
+        customerGets: {
+          value: { percentage: opts.percentage },
+          items: { all: true },
+        },
+      },
+    }
+  );
+  if (data.discountCodeBasicCreate.userErrors.length) {
+    throw new Error(data.discountCodeBasicCreate.userErrors.map((e) => e.message).join(", "));
+  }
+  return opts.code;
+}

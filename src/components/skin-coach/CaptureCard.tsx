@@ -1,49 +1,86 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, Loader2, AlertTriangle } from "lucide-react";
-import { resizeForUpload } from "@/lib/image-utils";
+import { Camera, Loader2, AlertTriangle, Check, Sparkles } from "lucide-react";
+import { resizeForUpload, ResizedImage } from "@/lib/image-utils";
 import { SkinCoachMetrics } from "@/lib/skin-coach";
 
-export default function CaptureCard({ onResult }: { onResult: (metrics: SkinCoachMetrics) => void }) {
+export const ZONES = [
+  { key: "front", label: "หน้าตรง" },
+  { key: "forehead", label: "หน้าผาก" },
+  { key: "cheek", label: "แก้ม" },
+  { key: "eye", label: "ขอบตา" },
+  { key: "chin", label: "คาง" },
+  { key: "problem", label: "จุดที่มีปัญหา" },
+] as const;
+
+type ZoneKey = (typeof ZONES)[number]["key"];
+
+export default function CaptureCard({
+  onResult,
+}: {
+  onResult: (metrics: SkinCoachMetrics, heroPhotoDataUrl: string, zoneLabels: string[]) => void;
+}) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [shots, setShots] = useState<Partial<Record<ZoneKey, ResizedImage>>>({});
+  const [order, setOrder] = useState<ZoneKey[]>([]);
+  const [activeZone, setActiveZone] = useState<ZoneKey | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const capturedCount = order.length;
+
+  function openCamera(zone: ZoneKey) {
+    setActiveZone(zone);
+    inputRef.current?.click();
+  }
+
   async function handleFile(file: File) {
+    if (!activeZone) return;
     setError(null);
-    setBusy(true);
     try {
       const upload = await resizeForUpload(file);
-      setPreview(upload.dataUrl);
+      setShots((prev) => ({ ...prev, [activeZone]: upload }));
+      setOrder((prev) => (prev.includes(activeZone) ? prev : [...prev, activeZone]));
+    } catch {
+      setError("ไม่สามารถอ่านรูปนี้ได้ กรุณาลองใหม่อีกครั้ง");
+    }
+  }
 
+  async function submit() {
+    if (capturedCount === 0) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const images = order.map((zone) => {
+        const s = shots[zone]!;
+        return { base64: s.base64, mediaType: s.mediaType, zone: ZONES.find((z) => z.key === zone)!.label };
+      });
       const res = await fetch("/api/skin-coach", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ base64: upload.base64, mediaType: upload.mediaType }),
+        body: JSON.stringify({ images }),
       });
       const data = await res.json();
 
       if (data?.error) {
         setError(data.message || "ขออภัยครับ วิเคราะห์รูปไม่สำเร็จ กรุณาลองใหม่");
-        setBusy(false);
         return;
       }
 
       const result = data?.result as SkinCoachMetrics;
-      if (!result || !result.acne || !result.pores || !result.darkSpots || !result.wrinkles) {
+      if (!result || !result.acne || !result.pores || !result.darkSpots || !result.wrinkles || !result.skinAge) {
         setError("ขออภัยครับ ผลวิเคราะห์ไม่สมบูรณ์ กรุณาลองใหม่อีกครั้ง");
-        setBusy(false);
         return;
       }
       if (!result.faceDetected) {
         setError("ไม่พบใบหน้าในภาพชัดเจน กรุณาถ่ายใหม่ในที่ที่แสงสว่างเพียงพอ");
-        setBusy(false);
         return;
       }
 
-      onResult(result);
+      const hero = shots.front?.dataUrl || shots[order[0]]!.dataUrl;
+      const zoneLabels = order.map((zone) => ZONES.find((z) => z.key === zone)!.label);
+      onResult(result, hero, zoneLabels);
     } catch {
       setError("เกิดข้อผิดพลาดระหว่างประมวลผลภาพ กรุณาลองใหม่อีกครั้ง");
     } finally {
@@ -53,23 +90,37 @@ export default function CaptureCard({ onResult }: { onResult: (metrics: SkinCoac
 
   return (
     <div className="rounded-xl2 border border-slate-100 shadow-card p-6 md:p-8 text-center">
-      <h2 className="text-lg font-bold text-brand-ink mb-1">ถ่ายเซลฟีเพื่อสแกนผิว</h2>
+      <h2 className="text-lg font-bold text-brand-ink mb-1">เลือกมุมที่จะถ่าย</h2>
       <p className="text-sm text-slate-500 mb-6">
-        หันหน้าตรงกล้อง อยู่ในที่แสงสว่างสม่ำเสมอ ไม่สวมแว่นหรือหน้ากาก
+        ถ่ายได้ตั้งแต่ 1 มุมขึ้นไป ยิ่งถ่ายหลายมุม AI ยิ่งวิเคราะห์ผิวคุณได้แม่นยำขึ้น
       </p>
 
-      <div className="relative mx-auto mb-6 h-56 w-56 rounded-full border-2 border-dashed border-slate-200 grid place-items-center overflow-hidden bg-surface-soft">
-        {preview ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="ตัวอย่างรูปที่ถ่าย" className="h-full w-full object-cover" />
-        ) : (
-          <Camera size={40} className="text-slate-300" />
-        )}
-        {busy && (
-          <div className="absolute inset-0 bg-white/70 grid place-items-center">
-            <Loader2 size={28} className="animate-spin text-brand-emerald" />
-          </div>
-        )}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        {ZONES.map((z) => {
+          const shot = shots[z.key];
+          return (
+            <button key={z.key} onClick={() => openCamera(z.key)} className="flex flex-col items-center gap-2">
+              <div
+                className={`relative h-20 w-20 rounded-full border-2 grid place-items-center overflow-hidden bg-surface-soft ${
+                  shot ? "border-brand-emerald" : "border-dashed border-slate-200"
+                }`}
+              >
+                {shot ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={shot.dataUrl} alt={z.label} className="h-full w-full object-cover" />
+                ) : (
+                  <Camera size={20} className="text-slate-300" />
+                )}
+                {shot && (
+                  <div className="absolute bottom-0 right-0 h-5 w-5 rounded-full bg-brand-emerald text-white grid place-items-center">
+                    <Check size={12} />
+                  </div>
+                )}
+              </div>
+              <span className={`text-[11px] font-medium ${shot ? "text-brand-emerald" : "text-slate-500"}`}>{z.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {error && (
@@ -93,11 +144,12 @@ export default function CaptureCard({ onResult }: { onResult: (metrics: SkinCoac
       />
 
       <button
-        disabled={busy}
-        onClick={() => inputRef.current?.click()}
-        className="rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm disabled:opacity-50"
+        disabled={busy || capturedCount === 0}
+        onClick={submit}
+        className="flex items-center gap-2 mx-auto rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm disabled:opacity-40"
       >
-        {busy ? "กำลังวิเคราะห์..." : "ถ่ายรูปเพื่อสแกนผิว"}
+        {busy ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+        {busy ? "กำลังวิเคราะห์..." : capturedCount === 0 ? "เลือกถ่ายรูปอย่างน้อย 1 มุม" : `วิเคราะห์ผิวเลย (${capturedCount} มุม)`}
       </button>
     </div>
   );

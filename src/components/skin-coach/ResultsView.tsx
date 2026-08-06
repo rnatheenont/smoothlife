@@ -1,13 +1,17 @@
 "use client";
 
-import { RotateCcw, Sparkles } from "lucide-react";
+import { RotateCcw, Sparkles, CalendarClock } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import { useQuickChat } from "@/lib/quickchat-context";
+import ShareCard from "@/components/skin-coach/ShareCard";
+import RewardClaim from "@/components/skin-coach/RewardClaim";
 import {
   SkinCoachMetrics,
   topConcerns,
   concernLabel,
   productsForConcern,
+  overallScore,
+  scoreBand as sharedScoreBand,
 } from "@/lib/skin-coach";
 
 function MetricRow({ label, score }: { label: string; score: number }) {
@@ -25,28 +29,21 @@ function MetricRow({ label, score }: { label: string; score: number }) {
   );
 }
 
-// Combined headline score = average clarity across the four scanned areas.
-// Kept as a simple, explainable mean (not a hidden model output) so the
-// number on screen always matches the bars underneath it.
-function overallScore(metrics: SkinCoachMetrics) {
-  const clarities = [metrics.acne.score, metrics.pores.score, metrics.darkSpots.score, metrics.wrinkles.score].map(
-    (s) => Math.max(0, Math.min(100, 100 - s))
-  );
-  return Math.round(clarities.reduce((a, b) => a + b, 0) / clarities.length);
-}
-
-function scoreBand(score: number) {
-  if (score >= 85) return { label: "ผิวสุขภาพดีมาก", ring: "text-brand-emerald", chip: "bg-brand-gradient-soft text-brand-emerald" };
-  if (score >= 70) return { label: "ผิวสุขภาพดี", ring: "text-brand-teal", chip: "bg-brand-gradient-soft text-brand-emerald" };
-  if (score >= 50) return { label: "ผิวปานกลาง ดูแลเพิ่มได้", ring: "text-amber-500", chip: "bg-amber-50 text-amber-600" };
-  return { label: "ควรดูแลผิวเพิ่มเติม", ring: "text-rose-500", chip: "bg-rose-50 text-rose-600" };
-}
-
-export default function ResultsView({ metrics, onRestart }: { metrics: SkinCoachMetrics; onRestart: () => void }) {
+export default function ResultsView({
+  metrics,
+  photo,
+  zones,
+  onRestart,
+}: {
+  metrics: SkinCoachMetrics;
+  photo: string | null;
+  zones: string[];
+  onRestart: () => void;
+}) {
   const concerns = topConcerns(metrics, 2);
   const { openWithProfile } = useQuickChat();
   const total = overallScore(metrics);
-  const band = scoreBand(total);
+  const band = sharedScoreBand(total);
   const circumference = 2 * Math.PI * 42;
   const dash = (total / 100) * circumference;
 
@@ -72,11 +69,10 @@ export default function ResultsView({ metrics, onRestart }: { metrics: SkinCoach
                 cy="50"
                 r="42"
                 fill="none"
-                stroke="currentColor"
+                stroke={band.hex}
                 strokeWidth="10"
                 strokeLinecap="round"
                 strokeDasharray={`${dash} ${circumference}`}
-                className={band.ring}
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -85,10 +81,24 @@ export default function ResultsView({ metrics, onRestart }: { metrics: SkinCoach
             </div>
           </div>
           <div className="text-center sm:text-left">
-            <span className={`inline-block text-xs font-semibold rounded-full px-3 py-1 mb-2 ${band.chip}`}>
+            <span
+              className="inline-block text-xs font-semibold rounded-full px-3 py-1 mb-2"
+              style={{ color: band.hex, backgroundColor: `${band.hex}1a` }}
+            >
               {band.label}
             </span>
             <p className="text-sm text-slate-600">{metrics.overallNote}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 rounded-xl2 bg-brand-gradient-soft p-5 mb-6">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white text-brand-emerald">
+            <CalendarClock size={22} />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">อายุผิวโดยประมาณ</p>
+            <p className="text-3xl font-extrabold text-brand-ink leading-tight">{metrics.skinAge.years} ปี</p>
+            <p className="text-xs text-brand-emerald mt-0.5">{metrics.skinAge.note}</p>
           </div>
         </div>
 
@@ -97,14 +107,21 @@ export default function ResultsView({ metrics, onRestart }: { metrics: SkinCoach
         <MetricRow label="ความสม่ำเสมอของสีผิว (จุดด่างดำ)" score={metrics.darkSpots.score} />
         <MetricRow label="ความเรียบเนียน (ริ้วรอย)" score={metrics.wrinkles.score} />
 
-        <button
-          onClick={askAdvisor}
-          className="mt-4 flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-2.5 shadow-cardHover"
-        >
-          <Sparkles size={13} /> คุยกับ AI Advisor เรื่องผลสแกนนี้
-        </button>
+        <div className="flex flex-wrap gap-3 mt-4">
+          <button
+            onClick={askAdvisor}
+            className="flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-2.5 shadow-cardHover"
+          >
+            <Sparkles size={13} /> คุยกับ AI Advisor เรื่องผลสแกนนี้
+          </button>
+          {photo && <ShareCard metrics={metrics} photoDataUrl={photo} zones={zones} />}
+        </div>
 
         <p className="text-[11px] text-slate-400 mt-4 border-t border-slate-100 pt-3">{metrics.disclaimer}</p>
+      </div>
+
+      <div className="mb-8">
+        <RewardClaim />
       </div>
 
       {concerns.map((slug) => {

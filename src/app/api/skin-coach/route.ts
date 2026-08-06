@@ -6,17 +6,19 @@ export const dynamic = "force-dynamic";
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 const API_URL = "https://api.anthropic.com/v1/messages";
 
-const SYSTEM_PROMPT = `You are a cosmetic skin-appearance scanner for a Thai beauty retailer's website, similar in spirit to a "skin coach" selfie tool. You look at a single selfie-style face photo and score four visible surface traits only.
+const SYSTEM_PROMPT = `You are a cosmetic skin-appearance scanner for a Thai beauty retailer's website, similar in spirit to a "skin coach" selfie tool. You are given 1-6 close-up selfie photos of the same person's face/skin, each labeled with which area it shows (e.g. front, forehead, cheek, under-eye, chin, or a specific problem spot). Look across all provided photos together, weighting each toward the traits it's best suited to show, and score four visible surface traits, plus an estimated visible "skin age".
 
 STRICT RULES:
 - This is entertainment/reference only, NOT a medical or dermatological diagnosis. Never use clinical or diagnostic language (no disease names, no "condition", no treatment claims).
-- Only comment on what is visibly in the photo. Do not guess at causes.
-- If the photo does not clearly show a face, or lighting/angle makes it impossible to assess, say so honestly instead of guessing.
-- Never mention or infer race, ethnicity, exact age, gender, health conditions, or anything unrelated to visible surface skin texture.
+- "Skin age" is a lighthearted cosmetic estimate of how the SKIN SURFACE looks (texture, tone evenness, visible fine lines) — not a claim about the person's real age, health, or ethnicity. Keep it a plausible number reasonably close to typical adult skin (roughly 16-70), phrased playfully, never as a definitive judgment.
+- Only comment on what is visibly in the photo(s). Do not guess at causes.
+- If no photo clearly shows a face, or lighting/angle makes it impossible to assess, say so honestly instead of guessing.
+- Never mention or infer race, ethnicity, exact real age, gender, health conditions, or anything unrelated to visible surface skin texture.
 - Do NOT name, suggest, or hint at any product, brand, or ingredient — that is handled elsewhere by our own catalogue, never by you.
 - Output ONLY valid JSON, no markdown fences, no commentary outside the JSON, matching exactly this shape:
 {
   "faceDetected": boolean,
+  "skinAge": { "years": number (a single plausible estimate), "note": string (<=15 words, Thai, warm/playful tone) },
   "acne": { "score": number (0-100, higher = more visible blemishes/breakouts), "note": string (<=15 words, Thai) },
   "pores": { "score": number (0-100, higher = more visible enlarged pores), "note": string (<=15 words, Thai) },
   "darkSpots": { "score": number (0-100, higher = more visible dark spots/uneven tone), "note": string (<=15 words, Thai) },
@@ -24,7 +26,7 @@ STRICT RULES:
   "overallNote": string (<=25 words, Thai, warm and encouraging, never alarming, no product mentions),
   "disclaimer": "ผลนี้เป็นการประเมินเบื้องต้นเพื่อความสวยงามจากภาพถ่ายเท่านั้น ไม่ใช่การวินิจฉัยทางการแพทย์ หากมีความกังวลด้านผิวหนัง ควรปรึกษาแพทย์ผิวหนัง"
 }
-If faceDetected is false, still return the shape with all scores set to 0 and notes explaining the photo could not be assessed.`;
+If faceDetected is false, still return the shape with all scores and skinAge.years set to 0 and notes explaining the photo(s) could not be assessed.`;
 
 function extractJson(text: string): any | null {
   const cleaned = text.trim().replace(/^```(json)?/i, "").replace(/```$/, "").trim();
@@ -43,6 +45,8 @@ function extractJson(text: string): any | null {
   }
 }
 
+type ImageInput = { base64: string; mediaType: "image/jpeg" | "image/png"; zone?: string };
+
 export async function POST(req: NextRequest) {
   let body: any;
   try {
@@ -51,13 +55,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
-  const base64 = typeof body?.base64 === "string" ? body.base64 : "";
-  const mediaType = body?.mediaType === "image/png" ? "image/png" : "image/jpeg";
+  // Accept either the new multi-angle "images" array or the legacy single
+  // "base64"/"mediaType" pair, so nothing else calling this route breaks.
+  const rawImages: any[] = Array.isArray(body?.images)
+    ? body.images
+    : body?.base64
+    ? [{ base64: body.base64, mediaType: body.mediaType }]
+    : [];
 
-  if (!base64 || base64.length < 100) {
+  const images: ImageInput[] = rawImages
+    .slice(0, 6)
+    .map((i) => ({
+      base64: typeof i?.base64 === "string" ? i.base64 : "",
+      mediaType: (i?.mediaType === "image/png" ? "image/png" : "image/jpeg") as ImageInput["mediaType"],
+      zone: typeof i?.zone === "string" ? i.zone.slice(0, 30) : undefined,
+    }))
+    .filter((i) => i.base64.length > 100);
+
+  if (images.length === 0) {
     return NextResponse.json({ error: "missing image" }, { status: 400 });
   }
-  if (base64.length > 6_000_000) {
+  const totalSize = images.reduce((sum, i) => sum + i.base64.length, 0);
+  if (totalSize > 14_000_000) {
     return NextResponse.json({ error: "image too large" }, { status: 413 });
   }
 
@@ -83,14 +102,29 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 500,
+        max_tokens: 600,
         system: SYSTEM_PROMPT,
         messages: [
           {
             role: "user",
             content: [
-              { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-              { type: "text", text: "ประเมินภาพนี้ตามรูปแบบ JSON ที่กำหนด" },
+              ...images.flatMap((img, i) => [
+                {
+                  type: "text",
+                  text: img.zone ? `ภาพที่ ${i + 1}: มุม "${img.zone}"` : `ภาพที่ ${i + 1}`,
+                },
+                {
+                  type: "image",
+                  source: { type: "base64", media_type: img.mediaType, data: img.base64 },
+                },
+              ]),
+              {
+                type: "text",
+                text:
+                  images.length > 1
+                    ? `นี่คือภาพถ่ายใบหน้า/ผิวคนเดียวกัน ${images.length} ภาพจากมุมต่างๆ ตามที่ระบุไว้ก่อนแต่ละภาพ ให้ประเมินภาพรวมโดยให้น้ำหนักกับมุมที่เกี่ยวข้องกับแต่ละด้าน (เช่น ภาพขอบตาเน้นดูริ้วรอย, ภาพแก้มเน้นดูสิว/รูขุมขน) แล้วตอบตามรูปแบบ JSON ที่กำหนด`
+                    : "ประเมินภาพนี้ตามรูปแบบ JSON ที่กำหนด",
+              },
             ],
           },
         ],
