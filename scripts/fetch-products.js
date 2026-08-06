@@ -20,9 +20,21 @@ const PAGE_SIZE = 100;
 
 /* ---------- text helpers ---------- */
 
+function decodeEntities(s) {
+  return s
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&rsquo;/g, "'");
+}
+
 function blocks(html) {
   if (!html) return [];
-  return String(html)
+  // Some source content is double-encoded (e.g. "&amp;amp;") — decode twice.
+  return decodeEntities(decodeEntities(String(html)))
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
     .replace(/<li[^>]*>/gi, "• ")
