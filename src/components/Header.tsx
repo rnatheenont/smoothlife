@@ -49,9 +49,9 @@ export default function Header() {
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100">
       <div className="bg-brand-gradient text-white text-center text-[11px] md:text-xs py-1.5 px-3">
         <span className="hidden sm:inline">
-          ส่งฟรีทั่วไทยเมื่อซื้อครบ 990 บาท • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี
+          ส่งฟรีทั่วไทย • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี
         </span>
-        <span className="sm:hidden">ส่งฟรีเมื่อครบ 990.- • ของแท้ 100% • สมัครรับ 100 คะแนน</span>
+        <span className="sm:hidden">ส่งฟรีทั่วไทย • ของแท้ 100% • สมัครรับ 100 คะแนน</span>
       </div>
       <div className="container-page flex items-center gap-3 md:gap-6 py-3">
         <button className="lg:hidden shrink-0" onClick={() => setOpen(true)} aria-label="Open menu">

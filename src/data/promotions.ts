@@ -1,3 +1,5 @@
+import { Product } from "./types";
+
 export type Promotion = {
   slug: string;
   title: string;
@@ -5,6 +7,14 @@ export type Promotion = {
   image: string;
   badge: string;
 };
+
+// Banner images used to be hand-picked marketing photos (some featured
+// people/illustrated characters). Use a real product shot from the live
+// catalogue instead — always product-only, and stays current automatically.
+export function promotionImage(promo: Promotion, products: Product[]): string {
+  const match = products.find((p) => p.badges?.some((b) => b === promo.badge) && p.image);
+  return match?.image || products[0]?.image || promo.image;
+}
 
 export const promotions: Promotion[] = [
   {

@@ -4,7 +4,7 @@ import { Sparkles, ShieldCheck, Truck, Award, MessageCircle } from "lucide-react
 import { products } from "@/data/products";
 import { categories, concerns } from "@/data/categories";
 import { brands } from "@/data/brands";
-import { promotions } from "@/data/promotions";
+import { promotions, promotionImage } from "@/data/promotions";
 import ProductCard from "@/components/ProductCard";
 import SectionHeading from "@/components/SectionHeading";
 
@@ -95,7 +95,12 @@ export default function HomePage() {
                 href={`/promotions#${promo.slug}`}
                 className="relative rounded-xl2 overflow-hidden aspect-[4/3] group shadow-card"
               >
-                <Image src={promo.image} alt={promo.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                <Image
+                  src={promotionImage(promo, products)}
+                  alt={promo.title}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                 <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
                   <span className="text-[10px] font-bold uppercase bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">
