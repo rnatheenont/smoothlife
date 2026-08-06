@@ -34,10 +34,15 @@ export default function LoginContent() {
 
   const [lineOpen, setLineOpen] = useState(false);
 
-  function handleEmailSubmit(e: React.FormEvent) {
+  const [emailSubmitting, setEmailSubmitting] = useState(false);
+
+  async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     setEmailError("");
-    const result = mode === "register" ? registerWithEmail(name, email, password) : loginWithEmail(email, password);
+    setEmailSubmitting(true);
+    const result =
+      mode === "register" ? await registerWithEmail(name, email, password) : await loginWithEmail(email, password);
+    setEmailSubmitting(false);
     if (!result.ok) setEmailError(result.error || "เกิดข้อผิดพลาด");
     else router.push(returnTo);
   }
@@ -181,14 +186,17 @@ export default function LoginContent() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="รหัสผ่าน"
-                minLength={4}
+                placeholder="รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)"
+                minLength={6}
                 className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
               />
             </div>
             {emailError && <p className="text-xs text-rose-500">{emailError}</p>}
-            <button className="rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity">
-              {mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
+            <button
+              disabled={emailSubmitting}
+              className="rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+            >
+              {emailSubmitting ? "กำลังดำเนินการ..." : mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
             </button>
           </form>
           <button

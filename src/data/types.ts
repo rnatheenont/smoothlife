@@ -16,6 +16,8 @@ export type Concern =
 
 export type Product = {
   slug: string;
+  /** Shopify ProductVariant GID (gid://shopify/ProductVariant/...) — required to add this product to a real Shopify cart. */
+  variantId: string;
   name: string;
   brand: string;
   category: Category;

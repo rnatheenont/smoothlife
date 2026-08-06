@@ -35,8 +35,8 @@ export type SLOrder = {
 type AuthContextValue = {
   user: SLUser | null;
   loading: boolean;
-  registerWithEmail: (name: string, email: string, password: string) => { ok: boolean; error?: string };
-  loginWithEmail: (email: string, password: string) => { ok: boolean; error?: string };
+  registerWithEmail: (name: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  loginWithEmail: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   requestOtp: (phone: string) => string;
   verifyOtp: (phone: string, code: string, expected: string, name?: string) => { ok: boolean; error?: string };
   loginWithLine: (displayName: string) => void;
@@ -77,13 +77,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const sessionId = localStorage.getItem(SESSION_KEY);
-    if (sessionId) {
-      const users = readUsers();
-      const found = users.find((u) => u.id === sessionId);
-      if (found) setUser(found);
-    }
-    setLoading(false);
+    (async () => {
+      // Real accounts (email) are backed by Supabase and identified by an
+      // httpOnly session cookie — check that first.
+      try {
+        const res = await fetch("/api/auth/session");
+        const data = await res.json();
+        if (data.user) {
+          setUser(data.user);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // server session check failed (offline, not configured yet) — fall
+        // through to the local demo session below.
+      }
+      const sessionId = localStorage.getItem(SESSION_KEY);
+      if (sessionId) {
+        const users = readUsers();
+        const found = users.find((u) => u.id === sessionId);
+        if (found) setUser(found);
+      }
+      setLoading(false);
+    })();
   }, []);
 
   function persistSession(u: SLUser) {
@@ -91,35 +107,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(SESSION_KEY, u.id);
   }
 
-  function registerWithEmail(name: string, email: string, password: string) {
-    const users = readUsers();
-    if (users.some((u) => u.email === email)) {
-      return { ok: false, error: "อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบ" };
-    }
-    const newUser: SLUser = {
-      id: crypto.randomUUID(),
-      name,
-      email,
-      passwordHash: simpleHash(password),
-      provider: "email",
-      points: 100,
-      tier: "Bronze",
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [...users, newUser];
-    writeUsers(updated);
-    persistSession(newUser);
+  async function registerWithEmail(name: string, email: string, password: string) {
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
+    const data = await res.json();
+    if (!data.ok) return { ok: false, error: data.error || "สมัครสมาชิกไม่สำเร็จ" };
+    setUser(data.user);
     return { ok: true };
   }
 
-  function loginWithEmail(email: string, password: string) {
-    const users = readUsers();
-    const found = users.find((u) => u.email === email);
-    if (!found) return { ok: false, error: "ไม่พบบัญชีนี้ กรุณาสมัครสมาชิกก่อน" };
-    if (found.passwordHash !== simpleHash(password)) {
-      return { ok: false, error: "รหัสผ่านไม่ถูกต้อง" };
-    }
-    persistSession(found);
+  async function loginWithEmail(email: string, password: string) {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!data.ok) return { ok: false, error: data.error || "เข้าสู่ระบบไม่สำเร็จ" };
+    setUser(data.user);
     return { ok: true };
   }
 
@@ -171,6 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function logout() {
     setUser(null);
     localStorage.removeItem(SESSION_KEY);
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
   }
 
   function addOrder(order: Omit<SLOrder, "id" | "userId" | "createdAt" | "status">) {

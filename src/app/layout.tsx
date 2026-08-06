@@ -13,6 +13,7 @@ const plexSansThai = IBM_Plex_Sans_Thai({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.smoothlife.com"),
   title: "Smoothlife.com — สุขภาพและความงามครบวงจร",
   description:
     "Smoothlife.com ศูนย์รวมสินค้าและบริการเพื่อสุขภาพและความงาม ช้อปง่าย ครบจบทุก lifestyle ที่เดียว",

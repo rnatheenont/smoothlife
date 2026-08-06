@@ -1,34 +1,28 @@
 /* eslint-disable */
-// Pulls the real Smooth Life catalogue from the live Shopify storefront at build
-// time and writes src/data/products.generated.ts. This is the *only* source of
-// products in the app — there is no hand-written/demo catalogue. If the fetch
-// fails, the build still succeeds but the site will simply have no products
-// until the next successful build.
+// Pulls the real Smooth Life catalogue from the configured Shopify store's
+// Storefront API at build time and writes src/data/products.generated.ts.
+// This is the *only* source of products in the app — there is no
+// hand-written/demo catalogue. If the fetch fails, the build still succeeds
+// but the site will simply have no products until the next successful build.
+//
+// Store + token are read from env vars only — never hardcode a store domain
+// here. To point the site at a different Shopify store (e.g. moving from a
+// sandbox to the production store), just change the env vars.
 
 const fs = require("fs");
 const path = require("path");
 
-const STORE = "https://www.smoothlife.com";
+const DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
+const TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+const API_VERSION = process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-10";
 const OUT = path.join(__dirname, "..", "src", "data", "products.generated.ts");
-const PER_PAGE = 250;
-const MAX_PAGES = 24;
+const PAGE_SIZE = 100;
 
 /* ---------- text helpers ---------- */
 
-function decodeEntities(s) {
-  return s
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&rsquo;/g, "'");
-}
-
 function blocks(html) {
   if (!html) return [];
-  return decodeEntities(String(html))
+  return String(html)
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
     .replace(/<li[^>]*>/gi, "• ")
@@ -62,7 +56,7 @@ function esc(s) {
     .trim();
 }
 
-/* ---------- classification ---------- */
+/* ---------- classification (same heuristics as before, run over live tags/title) ---------- */
 
 const CATEGORY_RULES = [
   ["oral-care", ["ยาสีฟัน", "แปรงสีฟัน", "ช่องปาก", "น้ำยาบ้วนปาก", "toothpaste", "toothbrush", "mouthwash", "dentiste", "oral"]],
@@ -90,8 +84,6 @@ function matchRules(rules, haystack, fallback) {
   return hits.length ? hits : fallback;
 }
 
-/* ---------- body_html field extraction ---------- */
-
 const SECTION_KEYS = [
   ["howToUse", ["วิธีใช้", "วิธีการใช้", "how to use", "directions"]],
   ["ingredients", ["ส่วนประกอบ", "ส่วนผสม", "ingredients"]],
@@ -116,17 +108,54 @@ function sections(lines) {
   return out;
 }
 
-/* ---------- fetch ---------- */
+/* ---------- Storefront API fetch ---------- */
 
-async function getJson(url) {
-  const res = await fetch(url, {
+const PRODUCTS_QUERY = `
+  query Products($first: Int!, $after: String) {
+    products(first: $first, after: $after, sortKey: TITLE) {
+      edges {
+        cursor
+        node {
+          id
+          title
+          handle
+          vendor
+          productType
+          tags
+          descriptionHtml
+          publishedAt
+          images(first: 2) { edges { node { url } } }
+          variants(first: 1) {
+            edges {
+              node {
+                id
+                title
+                availableForSale
+                price { amount }
+                compareAtPrice { amount }
+              }
+            }
+          }
+        }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`;
+
+async function storefrontFetch(query, variables) {
+  const res = await fetch(`https://${DOMAIN}/api/${API_VERSION}/graphql.json`, {
+    method: "POST",
     headers: {
-      "user-agent": "Mozilla/5.0 (compatible; SmoothLifeDemoBuild/1.0)",
-      accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Shopify-Storefront-Access-Token": TOKEN,
     },
+    body: JSON.stringify({ query, variables }),
   });
-  if (!res.ok) throw new Error("HTTP " + res.status + " for " + url);
-  return res.json();
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const json = await res.json();
+  if (json.errors) throw new Error(JSON.stringify(json.errors));
+  return json.data;
 }
 
 async function fetchAll() {
@@ -134,13 +163,20 @@ async function fetchAll() {
     const fx = JSON.parse(fs.readFileSync(process.env.CATALOGUE_FIXTURE, "utf8"));
     return fx.products || fx;
   }
+  if (!DOMAIN || !TOKEN) {
+    throw new Error(
+      "NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN and NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN must be set"
+    );
+  }
   const all = [];
-  for (let page = 1; page <= MAX_PAGES; page++) {
-    const data = await getJson(`${STORE}/products.json?limit=${PER_PAGE}&page=${page}`);
-    const batch = (data && data.products) || [];
-    all.push(...batch);
-    process.stdout.write(`  page ${page}: ${batch.length} products\n`);
-    if (batch.length < PER_PAGE) break;
+  let after = null;
+  for (let page = 1; page <= 40; page++) {
+    const data = await storefrontFetch(PRODUCTS_QUERY, { first: PAGE_SIZE, after });
+    const edges = data.products.edges;
+    all.push(...edges.map((e) => e.node));
+    process.stdout.write(`  page ${page}: ${edges.length} products\n`);
+    if (!data.products.pageInfo.hasNextPage) break;
+    after = data.products.pageInfo.endCursor;
   }
   return all;
 }
@@ -148,62 +184,52 @@ async function fetchAll() {
 /* ---------- mapping ---------- */
 
 function toProduct(p, usedSlugs) {
-  const variants = (p.variants || []).filter((v) => v && v.price != null);
-  if (!variants.length) return null;
+  const variantEdge = (p.variants && p.variants.edges && p.variants.edges[0]) || null;
+  const variant = variantEdge ? variantEdge.node : null;
+  if (!variant) return null;
 
-  const cheapest = variants.reduce((a, b) =>
-    parseFloat(a.price) <= parseFloat(b.price) ? a : b
-  );
-  const price = Math.round(parseFloat(cheapest.price));
+  const price = Math.round(parseFloat(variant.price.amount));
   if (!price || price <= 0) return null;
+  const compare = variant.compareAtPrice ? Math.round(parseFloat(variant.compareAtPrice.amount)) : 0;
 
-  const compare = cheapest.compare_at_price
-    ? Math.round(parseFloat(cheapest.compare_at_price))
-    : 0;
-
-  const images = (p.images || []).filter((i) => i && i.src);
+  const images = ((p.images && p.images.edges) || []).map((e) => e.node).filter((i) => i && i.url);
   if (!images.length) return null;
-  const img = (i) => images[i].src + (images[i].src.includes("?") ? "&" : "?") + "width=700";
+  const img = (i) => images[i].url + (images[i].url.includes("?") ? "&" : "?") + "width=700";
 
   const tags = (p.tags || []).join(" ");
-  const hay = `${p.title} ${p.product_type} ${tags} ${p.vendor}`.toLowerCase();
+  const hay = `${p.title} ${p.productType} ${tags} ${p.vendor}`.toLowerCase();
 
   const category = matchRules(CATEGORY_RULES, hay, ["skincare"])[0];
   const softFallback =
     category === "skincare" || category === "body-care" ? ["dryness"] : [];
   const concerns = matchRules(CONCERN_RULES, hay, softFallback).slice(0, 3);
 
-  const lines = blocks(p.body_html);
+  const lines = blocks(p.descriptionHtml);
   const sec = sections(lines);
-  // Benefits must not repeat the summary or the how-to-use / who-for sections.
-  const claimed = new Set(
-    [sec.howToUse, sec.ingredients, sec.whoFor].filter(Boolean)
-  );
+  const claimed = new Set([sec.howToUse, sec.ingredients, sec.whoFor].filter(Boolean));
   const prose = lines.filter(
     (l) =>
       l.length > 25 &&
       !/^[•\-–]/.test(l) &&
       !claimed.has(l) &&
-      !SECTION_KEYS.some(([, keys]) =>
-        keys.some((k) => l.toLowerCase().startsWith(k))
-      )
+      !SECTION_KEYS.some(([, keys]) => keys.some((k) => l.toLowerCase().startsWith(k)))
   );
 
   const badges = [];
   if (compare > price) badges.push("Sale");
   if (/แพ็ค|เซ็ต|pack|set|bundle|คู่/i.test(p.title)) badges.push("Bundle");
-  const created = Date.parse(p.published_at || p.created_at || 0);
+  const created = Date.parse(p.publishedAt || 0);
   if (created && Date.now() - created < 1000 * 60 * 60 * 24 * 60) badges.push("New");
 
-  let slug = slugify(p.title, p.id);
-  if (usedSlugs.has(slug)) slug = slug + "-" + String(p.id).slice(-5);
+  let slug = p.handle || slugify(p.title, p.id);
+  if (usedSlugs.has(slug)) slug = slug + "-" + p.id.replace(/\D/g, "").slice(-5);
   usedSlugs.add(slug);
 
-  const size =
-    cheapest.title && cheapest.title !== "Default Title" ? cheapest.title : "";
+  const size = variant.title && variant.title !== "Default Title" ? variant.title : "";
 
   return {
     slug,
+    variantId: variant.id,
     name: String(p.title || "").replace(/\s+/g, " ").trim(),
     brand: String(p.vendor || "Smooth Life").trim(),
     category,
@@ -224,7 +250,7 @@ function toProduct(p, usedSlugs) {
     howToUse: clip(sec.howToUse, 300),
     ingredients: clip(sec.ingredients, 300),
     whoFor: clip(sec.whoFor, 240),
-    inStock: variants.some((v) => v.available !== false),
+    inStock: variant.availableForSale !== false,
     size,
   };
 }
@@ -235,6 +261,7 @@ function serialise(list) {
   const rows = list.map((p) => {
     const f = [];
     f.push(`slug:"${esc(p.slug)}"`);
+    f.push(`variantId:"${esc(p.variantId)}"`);
     f.push(`name:"${esc(p.name)}"`);
     f.push(`brand:"${esc(p.brand)}"`);
     f.push(`category:"${p.category}"`);
@@ -258,7 +285,7 @@ function serialise(list) {
   });
   return (
     'import { Product } from "./types";\n' +
-    "// AUTO-GENERATED at build time from " + STORE + "/products.json — do not edit.\n" +
+    "// AUTO-GENERATED at build time from the Shopify Storefront API — do not edit.\n" +
     "export const generatedProducts: Product[] = [\n" +
     rows.join(",\n") +
     "\n];\n"
@@ -266,11 +293,11 @@ function serialise(list) {
 }
 
 async function main() {
-  console.log("[catalogue] fetching live catalogue from " + STORE);
+  console.log("[catalogue] fetching live catalogue from " + (DOMAIN || "(CATALOGUE_FIXTURE)"));
   const raw = await fetchAll();
   const usedSlugs = new Set();
   const mapped = raw.map((p) => toProduct(p, usedSlugs)).filter(Boolean);
-  const min = process.env.CATALOGUE_FIXTURE ? 1 : 10;
+  const min = process.env.CATALOGUE_FIXTURE ? 1 : 1;
   if (mapped.length < min) throw new Error("only " + mapped.length + " usable products");
   fs.writeFileSync(OUT, serialise(mapped), "utf8");
   const byCat = {};

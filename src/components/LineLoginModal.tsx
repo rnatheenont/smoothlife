@@ -26,7 +26,7 @@ export default function LineLoginModal({
         </div>
         <div className="p-6">
           <p className="text-sm text-slate-600 mb-4">
-            "Smoothlife.com" ขอสิทธิ์เข้าถึงข้อมูลโปรไฟล์ LINE ของคุณ (ชื่อและรูปโปรไฟล์) เพื่อเข้าสู่ระบบ
+            &ldquo;Smoothlife.com&rdquo; ขอสิทธิ์เข้าถึงข้อมูลโปรไฟล์ LINE ของคุณ (ชื่อและรูปโปรไฟล์) เพื่อเข้าสู่ระบบ
           </p>
           <label className="text-xs font-semibold text-slate-500">ชื่อที่แสดงบน LINE (จำลอง)</label>
           <input

@@ -9,6 +9,14 @@ export function generateStaticParams() {
   return categories.map((c) => ({ category: c.slug }));
 }
 
+export function generateMetadata({ params }: { params: { category: string } }) {
+  const c = categories.find((c) => c.slug === params.category);
+  return {
+    title: c ? `${c.nameTh} | Smoothlife.com` : "Shop | Smoothlife.com",
+    description: c ? `ช้อปสินค้าหมวด ${c.nameTh} คุณภาพดี ราคาคุ้มค่า ที่ Smoothlife.com` : undefined,
+  };
+}
+
 export default function CategoryPage({
   params,
   searchParams,

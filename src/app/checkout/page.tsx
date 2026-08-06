@@ -1,42 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
-import { CreditCard, Banknote, QrCode, Truck, Ticket, Award } from "lucide-react";
+import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useOrderTotals } from "@/lib/use-order-totals";
 import { formatTHB } from "@/lib/format";
-import AddressForm, {
-  ShippingAddress,
-  emptyAddress,
-  validate,
-  formatAddress,
-} from "@/components/AddressForm";
-
-const paymentMethods = [
-  { id: "promptpay", label: "PromptPay QR", icon: QrCode },
-  { id: "card", label: "บัตรเครดิต/เดบิต", icon: CreditCard },
-  { id: "transfer", label: "โอนเงินผ่านธนาคาร", icon: Banknote },
-  { id: "cod", label: "เก็บเงินปลายทาง (COD)", icon: Truck },
-];
+import { cartCreate, shopifyConfigured } from "@/lib/shopify";
 
 export default function CheckoutPage() {
-  const { lines, subtotal, clear } = useCart();
-  const { user, addOrder } = useAuth();
-  const { lang, t } = useLang();
+  const { lines, subtotal, couponCode } = useCart();
+  const { user } = useAuth();
+  const { lang } = useLang();
   const totals = useOrderTotals();
-  const router = useRouter();
-  const [addr, setAddr] = useState<ShippingAddress>(emptyAddress);
-  useEffect(() => {
-    if (user?.name) setAddr((a) => (a.name ? a : { ...a, name: user.name }));
-  }, [user]);
-  const [touched, setTouched] = useState<Partial<Record<keyof ShippingAddress, boolean>>>({});
-  const errors = validate(addr);
-  const [payment, setPayment] = useState("promptpay");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const shippingFree = totals.freeShipping;
   const shipping = totals.shipping;
   const total = totals.total;
@@ -62,35 +42,27 @@ export default function CheckoutPage() {
     );
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (Object.keys(errors).length > 0) {
-      setTouched({
-        name: true,
-        phone: true,
-        line1: true,
-        subdistrict: true,
-        district: true,
-        province: true,
-        postcode: true,
-      });
-      document.querySelector("[data-address-card]")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setError(null);
+    if (!shopifyConfigured) {
+      setError(
+        "ยังไม่ได้ตั้งค่าการเชื่อมต่อ Shopify (NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN / NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN) กรุณาติดต่อผู้ดูแลระบบ"
+      );
       return;
     }
     setSubmitting(true);
-    const order = addOrder({
-      items: lines.map((l) => ({ slug: l.slug, name: l.name, qty: l.qty, price: l.price, image: l.image })),
-      total,
-      address: formatAddress(addr) + " โทร. " + addr.phone,
-      paymentMethod: paymentMethods.find((p) => p.id === payment)?.label || payment,
-      coupon: totals.coupon?.code,
-      discount: totals.discount,
-      pointsEarned: totals.points,
-    });
-    clear();
-    setTimeout(() => {
-      router.push(`/checkout/success?order=${order.id}`);
-    }, 600);
+    try {
+      const cart = await cartCreate(
+        lines.map((l) => ({ merchandiseId: l.variantId, quantity: l.qty })),
+        couponCode,
+        user.provider === "email" ? user.email : null
+      );
+      window.location.href = cart.checkoutUrl;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ไม่สามารถสร้างคำสั่งซื้อได้ กรุณาลองใหม่อีกครั้ง");
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -98,34 +70,21 @@ export default function CheckoutPage() {
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-6">ดำเนินการชำระเงิน</h1>
       <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 flex flex-col gap-6">
-          <div data-address-card className="rounded-xl2 border border-slate-100 p-5 shadow-card">
-            <h2 className="font-bold text-brand-ink mb-4">ที่อยู่จัดส่ง</h2>
-            <AddressForm
-              value={addr}
-              onChange={setAddr}
-              errors={errors}
-              touched={touched}
-              onBlurField={(f) => setTouched((prev) => ({ ...prev, [f]: true }))}
-            />
-          </div>
-
           <div className="rounded-xl2 border border-slate-100 p-5 shadow-card">
-            <h2 className="font-bold text-brand-ink mb-4">วิธีการชำระเงิน</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {paymentMethods.map((m) => (
-                <button
-                  type="button"
-                  key={m.id}
-                  onClick={() => setPayment(m.id)}
-                  className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
-                    payment === m.id ? "border-brand-teal bg-brand-gradient-soft text-brand-ink" : "border-slate-200 text-slate-600"
-                  }`}
-                >
-                  <m.icon size={16} /> {m.label}
-                </button>
-              ))}
-            </div>
+            <h2 className="font-bold text-brand-ink mb-4 flex items-center gap-2">
+              <ShieldCheck size={18} className="text-brand-emerald" /> ที่อยู่จัดส่งและการชำระเงิน
+            </h2>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              คุณจะถูกนำไปยังหน้าชำระเงินที่ปลอดภัยของ Shopify เพื่อกรอกที่อยู่จัดส่งและเลือกวิธีชำระเงิน
+              (PromptPay, บัตรเครดิต/เดบิต, โอนเงิน หรือเก็บเงินปลายทางตามที่ร้านเปิดใช้งาน)
+            </p>
           </div>
+          {error && (
+            <div className="rounded-xl2 border border-rose-200 bg-rose-50 text-rose-700 text-sm p-4 flex items-start gap-2">
+              <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
         </div>
 
         <div className="rounded-xl2 border border-slate-100 p-5 h-fit shadow-card sticky top-24">
@@ -155,21 +114,22 @@ export default function CheckoutPage() {
             <span>{shippingFree ? "ฟรี" : formatTHB(shipping)}</span>
           </div>
           <div className="flex justify-between font-bold text-brand-ink border-t border-slate-100 pt-4 mb-5">
-            <span>ยอดรวมทั้งหมด</span>
+            <span>ยอดรวมโดยประมาณ</span>
             <span>{formatTHB(total)}</span>
           </div>
           <button
             type="submit"
-            disabled={submitting}
-            className="w-full rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+            disabled={submitting || lines.length === 0}
+            className="w-full flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
           >
-            {submitting ? "กำลังดำเนินการ..." : `ยืนยันคำสั่งซื้อ ${formatTHB(total)}`}
+            {submitting && <Loader2 size={16} className="animate-spin" />}
+            {submitting ? "กำลังไปหน้าชำระเงิน..." : "ไปหน้าชำระเงินของ Shopify"}
           </button>
           <p className="text-[11px] text-slate-500 mt-3 text-center flex items-center justify-center gap-1.5">
             <Award size={12} className="text-amber-500" />
             {lang === "en"
-              ? `You'll earn ${totals.points.toLocaleString()} points from this order`
-              : `คุณจะได้รับ ${totals.points.toLocaleString()} คะแนนจากคำสั่งซื้อนี้`}
+              ? `Estimated ${totals.points.toLocaleString()} points once payment is confirmed`
+              : `คาดว่าจะได้รับ ${totals.points.toLocaleString()} คะแนน เมื่อชำระเงินสำเร็จ`}
           </p>
         </div>
       </form>

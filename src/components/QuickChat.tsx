@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Sparkles, Send, Loader2, RotateCcw, Bot, User as UserIcon, X, Plus, Check, Camera } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
@@ -46,12 +47,12 @@ function ProductChip({ slug }: { slug: string }) {
 
   return (
     <div className="my-2 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-      <Link href={`/product/${product.slug}`} className="shrink-0">
-        <img
+      <Link href={`/product/${product.slug}`} className="shrink-0 relative h-14 w-14 block">
+        <Image
           src={product.image}
           alt={product.name}
-          loading="lazy"
-          className="h-14 w-14 rounded-lg object-cover bg-surface-soft"
+          fill
+          className="rounded-lg object-cover bg-surface-soft"
         />
       </Link>
       <div className="min-w-0 flex-1">

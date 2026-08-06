@@ -6,6 +6,7 @@ import { Package } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import AccountGate from "@/components/AccountGate";
+import DemoBadge from "@/components/DemoBadge";
 import { formatTHB } from "@/lib/format";
 
 const statusColor: Record<string, string> = {
@@ -36,7 +37,10 @@ function OrdersContent() {
 
   return (
     <div className="container-page py-8 md:py-10 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-brand-ink mb-6">คำสั่งซื้อและติดตามพัสดุ</h1>
+      <h1 className="text-2xl font-bold text-brand-ink mb-2">คำสั่งซื้อและติดตามพัสดุ</h1>
+      <div className="mb-6">
+        <DemoBadge text="คำสั่งซื้อที่ทำผ่านหน้าชำระเงินของ Shopify จะยังไม่แสดงที่นี่ — หน้านี้กำลังจะเชื่อมกับ Shopify Order/Customer API จริงในเฟสถัดไป ตอนนี้ตรวจสอบสถานะคำสั่งซื้อได้จากอีเมลยืนยันของ Shopify" />
+      </div>
       <div className="flex flex-col gap-4">
         {orders.map((o) => (
           <div key={o.id} className="rounded-xl2 border border-slate-100 p-5 shadow-card">

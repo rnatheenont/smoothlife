@@ -15,6 +15,7 @@ type CartContextValue = {
   subtotal: number;
   lines: {
     slug: string;
+    variantId: string;
     qty: number;
     name: string;
     price: number;
@@ -86,6 +87,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (!p) return null;
       return {
         slug: i.slug,
+        variantId: p.variantId,
         qty: i.qty,
         name: p.name,
         price: p.price,
