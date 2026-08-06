@@ -1,5 +1,6 @@
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
+import { brands, brandSlugAliases, slugifyVendor } from "@/data/brands";
 
 export type ShopSearchParams = {
   category?: string;
@@ -18,7 +19,9 @@ export function filterProducts(params: ShopSearchParams): Product[] {
     result = result.filter((p) => p.category === params.category);
   }
   if (params.brand) {
-    result = result.filter((p) => p.brand.toLowerCase().replace(/[^a-z0-9]/g, "-") === params.brand);
+    const brand = brands.find((b) => b.slug === params.brand);
+    const matchSlugs = brand ? brandSlugAliases(brand) : [params.brand];
+    result = result.filter((p) => matchSlugs.includes(slugifyVendor(p.brand)));
   }
   if (params.concern) {
     result = result.filter((p) => p.concerns.includes(params.concern as Product["concerns"][number]));

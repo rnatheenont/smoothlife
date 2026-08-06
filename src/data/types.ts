@@ -44,6 +44,10 @@ export type Brand = {
   name: string;
   tagline: string;
   productCount: number;
+  image?: string;
+  // Other exact Shopify vendor strings that should count as this brand (e.g.
+  // "Palmers" vs "Palmer's", "Dentiste thailand" vs "Dentiste").
+  vendorAliases?: string[];
 };
 
 export type CategoryInfo = {

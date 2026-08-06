@@ -160,14 +160,20 @@ export default function HomePage() {
       {/* Brands strip */}
       <section className="container-page py-10 md:py-14">
         <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
           {brands.slice(0, 10).map((b) => (
             <Link
               key={b.slug}
               href={`/shop?brand=${b.slug}`}
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:border-brand-teal hover:text-brand-emerald transition-colors"
+              className="rounded-xl2 border border-slate-100 shadow-card p-3 flex items-center justify-center h-32 hover:border-brand-teal transition-colors"
             >
-              {b.name}
+              {b.image ? (
+                <div className="relative h-full w-full">
+                  <Image src={b.image} alt={b.name} fill className="object-contain" sizes="220px" />
+                </div>
+              ) : (
+                <span className="text-sm font-medium text-slate-600">{b.name}</span>
+              )}
             </Link>
           ))}
         </div>

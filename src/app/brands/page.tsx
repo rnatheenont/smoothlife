@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { brands } from "@/data/brands";
 
 export const metadata = { title: "แบรนด์ทั้งหมด | Smoothlife.com" };
@@ -15,6 +16,11 @@ export default function BrandsPage() {
             href={`/shop?brand=${b.slug}`}
             className="rounded-xl2 border border-slate-100 p-5 shadow-card hover:border-brand-teal transition-colors"
           >
+            {b.image && (
+              <div className="relative h-28 w-full mb-4">
+                <Image src={b.image} alt={b.name} fill className="object-contain object-left" sizes="240px" />
+              </div>
+            )}
             <h3 className="font-bold text-brand-ink">{b.name}</h3>
             <p className="text-xs text-slate-500 mt-1">{b.tagline}</p>
             <p className="text-xs text-brand-emerald font-semibold mt-3">{b.productCount}+ สินค้า</p>
