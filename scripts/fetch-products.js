@@ -233,7 +233,15 @@ function toProduct(p, usedSlugs) {
   const created = Date.parse(p.publishedAt || 0);
   if (created && Date.now() - created < 1000 * 60 * 60 * 24 * 60) badges.push("New");
 
-  let slug = p.handle || slugify(p.title, p.id);
+  // Shopify handles are usually clean ASCII, but merchants can set a custom
+  // handle containing any script (e.g. Thai). An unsanitized handle becomes
+  // a URL segment and, during static export, a filesystem path — long
+  // non-ASCII text there blows past filename length limits (ENAMETOOLONG).
+  // Only trust the handle if it's already a plain ascii slug; otherwise
+  // derive one from the title like we do when there's no handle at all.
+  const isAsciiSlug = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(p.handle || "");
+  let slug = isAsciiSlug ? p.handle : slugify(p.title, p.id);
+  slug = slug.slice(0, 80).replace(/-+$/, "");
   if (usedSlugs.has(slug)) slug = slug + "-" + p.id.replace(/\D/g, "").slice(-5);
   usedSlugs.add(slug);
 
