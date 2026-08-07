@@ -29,7 +29,7 @@ export default function SkinCoachPage() {
         <span className="text-xs font-semibold uppercase tracking-wide">Skin Coach</span>
       </div>
       <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-brand-ink mb-2 leading-tight">
-        สแกนตรวจสุขภาพผิวและอายุเซลล์ผิวด้วย AI
+        สแกนตรวจสุขภาพผิวและอายุผิวด้วย AI
       </h1>
       <p className="text-sm text-slate-500 mb-6 max-w-xl">
         วิเคราะห์ผิวเบื้องต้นด้วย AI จากภาพถ่ายของคุณ เพื่อความสวยงามเท่านั้น
