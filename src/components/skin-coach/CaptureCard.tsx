@@ -89,20 +89,20 @@ export default function CaptureCard({
   }
 
   return (
-    <div className="rounded-xl2 border border-slate-100 shadow-card p-6 md:p-8 text-center">
-      <h2 className="text-lg font-bold text-brand-ink mb-1">เลือกมุมที่จะถ่าย</h2>
+    <div className="max-w-xl mx-auto rounded-xl2 border border-slate-100 shadow-card p-6 sm:p-8 lg:p-10 text-center">
+      <h2 className="text-lg sm:text-xl font-bold text-brand-ink mb-1">เลือกมุมที่จะถ่าย</h2>
       <p className="text-sm text-slate-500 mb-6">
         ถ่ายได้ตั้งแต่ 1 มุมขึ้นไป ยิ่งถ่ายหลายมุม AI ยิ่งวิเคราะห์ผิวคุณได้แม่นยำขึ้น
       </p>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-4 sm:gap-6 mb-6">
         {ZONES.map((z) => {
           const shot = shots[z.key];
           return (
             <button key={z.key} onClick={() => openCamera(z.key)} className="flex flex-col items-center gap-2">
               <div
-                className={`relative h-20 w-20 rounded-full border-2 grid place-items-center overflow-hidden bg-surface-soft ${
-                  shot ? "border-brand-emerald" : "border-dashed border-slate-200"
+                className={`relative h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 grid place-items-center overflow-hidden bg-surface-soft transition-colors ${
+                  shot ? "border-brand-emerald" : "border-dashed border-slate-200 hover:border-brand-teal"
                 }`}
               >
                 {shot ? (
@@ -117,7 +117,7 @@ export default function CaptureCard({
                   </div>
                 )}
               </div>
-              <span className={`text-[11px] font-medium ${shot ? "text-brand-emerald" : "text-slate-500"}`}>{z.label}</span>
+              <span className={`text-[11px] sm:text-xs font-medium ${shot ? "text-brand-emerald" : "text-slate-500"}`}>{z.label}</span>
             </button>
           );
         })}

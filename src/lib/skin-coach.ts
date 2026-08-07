@@ -51,6 +51,19 @@ export function concernLabel(slug: ConcernSlug) {
   return concernInfo.find((c) => c.slug === slug);
 }
 
+// Reward tier is inverse to the score: skin that could use more care gets a
+// bigger nudge to shop, healthy scores still get a smaller thank-you for
+// completing the scan. Kept in a narrow 5-15% band so it stays a reasonable
+// marketing perk rather than an exploitable giveaway. Shared by the results
+// view (to preview the tier) and the claim-reward API (source of truth).
+export function discountForScore(score: number): { percentage: number; label: string } {
+  const clamped = Math.max(0, Math.min(100, score));
+  if (clamped >= 85) return { percentage: 0.05, label: "5%" };
+  if (clamped >= 70) return { percentage: 0.08, label: "8%" };
+  if (clamped >= 50) return { percentage: 0.12, label: "12%" };
+  return { percentage: 0.15, label: "15%" };
+}
+
 export function productsForConcern(slug: ConcernSlug, max = 3): Product[] {
   const rank = (p: Product) =>
     (p.badges?.includes("Bestseller") ? 2 : 0) + (p.inStock ? 1 : 0) + p.rating / 5;
