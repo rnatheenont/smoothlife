@@ -10,6 +10,7 @@ import { useCart } from "@/lib/cart-context";
 import { getProductBySlug } from "@/data/products";
 import { formatTHB } from "@/lib/format";
 import { resizeForUpload, ResizedImage } from "@/lib/image-utils";
+import { hasStoredConsent, grantConsent } from "@/components/skin-coach/ConsentGate";
 
 type Msg = { role: "user" | "assistant"; content: string; image?: string };
 
@@ -110,9 +111,15 @@ export default function QuickChat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [pendingImage, setPendingImage] = useState<ResizedImage | null>(null);
+  const [awaitingConsentImage, setAwaitingConsentImage] = useState<ResizedImage | null>(null);
+  const [imageConsent, setImageConsent] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setImageConsent(hasStoredConsent());
+  }, []);
 
   const hasProfile = Object.keys(profile || {}).length > 0;
 
@@ -139,10 +146,21 @@ export default function QuickChat() {
     setImageError(null);
     try {
       const resized = await resizeForUpload(file);
-      setPendingImage(resized);
+      if (imageConsent) {
+        setPendingImage(resized);
+      } else {
+        setAwaitingConsentImage(resized);
+      }
     } catch {
       setImageError(t("ไม่สามารถอ่านรูปนี้ได้ กรุณาลองใหม่อีกครั้ง", "Couldn't read that photo, please try again."));
     }
+  }
+
+  function confirmImageConsent() {
+    grantConsent();
+    setImageConsent(true);
+    if (awaitingConsentImage) setPendingImage(awaitingConsentImage);
+    setAwaitingConsentImage(null);
   }
 
   useEffect(() => {
@@ -220,7 +238,7 @@ export default function QuickChat() {
       </button>
 
       {open && (
-        <div className="fixed bottom-[136px] lg:bottom-24 right-4 sm:right-5 z-[80] w-[calc(100vw-2rem)] sm:w-[390px] max-h-[min(600px,64vh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp">
+        <div className="fixed bottom-[136px] lg:bottom-24 right-4 sm:right-5 z-[80] w-[calc(100vw-2rem)] sm:w-[390px] h-[min(760px,82vh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp">
           <div className="flex items-center justify-between gap-3 bg-brand-ink px-4 py-3">
             <div className="flex items-center gap-2.5 text-white min-w-0">
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient">
@@ -330,6 +348,32 @@ export default function QuickChat() {
 
           {imageError && (
             <p className="bg-white px-4 pt-2 text-[11px] text-red-500 text-center">{imageError}</p>
+          )}
+          {awaitingConsentImage && (
+            <div className="border-t border-slate-100 bg-amber-50 px-3.5 py-3">
+              <p className="mb-2 text-[12px] leading-relaxed text-slate-700">
+                {t(
+                  "รูปที่แนบอาจมีข้อมูลอ่อนไหว (เช่น ผิวหรือปัญหาสุขภาพ) เราจะส่งไปให้ AI วิเคราะห์ชั่วคราวเท่านั้น ไม่เก็บรูปไว้บนเซิร์ฟเวอร์ ยินยอมให้ดำเนินการต่อไหมคะ",
+                  "The photo may contain sensitive info (e.g. skin/health). We only send it to the AI temporarily and don't store it on our server. Consent to continue?"
+                )}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={confirmImageConsent}
+                  className="rounded-full bg-brand-gradient px-3.5 py-1.5 text-[12px] font-semibold text-white"
+                >
+                  {t("ยินยอม ดำเนินการต่อ", "Consent & continue")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAwaitingConsentImage(null)}
+                  className="rounded-full border border-slate-200 px-3.5 py-1.5 text-[12px] text-slate-500"
+                >
+                  {t("ยกเลิก", "Cancel")}
+                </button>
+              </div>
+            </div>
           )}
           {pendingImage && (
             <div className="flex items-center gap-2 border-t border-slate-100 bg-white px-3 pt-2.5">

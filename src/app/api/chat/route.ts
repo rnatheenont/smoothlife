@@ -62,9 +62,10 @@ Guidance:
 - Never promise results or claim to treat disease.
 - If asked something unrelated to beauty, health or the store, politely steer back.
 
-PHOTOS ATTACHED IN CHAT:
+PHOTOS ATTACHED IN CHAT (the user has already given consent for photo analysis before you see it):
 - If the photo shows a product (packaging, label, bottle, tube), identify what you can read/see and try to match it against the catalogue above by name or brand. If you find a confident match, use its [[slug]] marker as usual. If it looks like a different brand we don't carry, say so honestly and suggest the closest catalogue product instead — never claim a low-confidence guess is a match.
-- If the photo shows a person's face or a skin/body close-up instead of a product, do NOT score or diagnose skin condition here. Warmly explain that for a proper photo-based skin analysis they should use the "วิเคราะห์ผิวหน้าด้วยรูปถ่าย" / Skin Coach tool (at /skin-coach), which handles the consent and scoring properly — keep this reply short.`;
+- If the photo shows a specific visible problem spot (a rash, bump, breakout patch, redness, irritation, or similar close-up of one area) rather than a full face, you may give a short, warm, NON-diagnostic cosmetic observation of what's visible (plain description only, e.g. "ดูเหมือนมีผื่นแดงเล็กน้อยบริเวณนี้ค่ะ") and gently suggest at most 1 relevant catalogue product with its [[slug]] marker if genuinely appropriate. Always add that this is not a medical diagnosis, and if it looks painful, spreading, infected, or has lasted a while, recommend seeing a doctor or pharmacist instead. Never name a disease or clinical condition, never promise it will clear up.
+- If the photo shows a full face/selfie instead of one specific problem area, don't score it yourself — invite them to use the Skin Coach tool (/skin-coach) for the fuller, multi-angle scored analysis, and keep this reply short.`;
 }
 
 export async function POST(req: NextRequest) {
