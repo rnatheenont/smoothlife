@@ -89,3 +89,11 @@ export function hasStoredConsent() {
     return false;
   }
 }
+
+// Shared with QuickChat's inline photo-consent prompt so both surfaces
+// read/write the same consent flag instead of tracking it separately.
+export function grantConsent() {
+  try {
+    localStorage.setItem(KEY, "1");
+  } catch {}
+}

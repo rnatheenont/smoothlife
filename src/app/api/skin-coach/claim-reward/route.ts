@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { createPercentDiscountCode, shopifyAdminConfigured } from "@/lib/shopify-admin";
+import { discountForScore } from "@/lib/skin-coach";
 
 function currentPeriod() {
   const now = new Date();
@@ -18,13 +19,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบก่อนรับคูปองครับ" }, { status: 401 });
   }
 
+  let body: any = {};
+  try {
+    body = await req.json();
+  } catch {}
+  // Client-reported scan score, used only to pick a reward tier (5-15%) —
+  // not a security boundary, same trust level as the rest of this perk.
+  const score = typeof body?.score === "number" ? body.score : 0;
+  const { percentage, label } = discountForScore(score);
+
   const period = currentPeriod();
 
   const existing = await supabaseRest<{ shopify_discount_code: string | null }[]>(
     `skin_coach_rewards?user_id=eq.${uid}&period=eq.${period}&select=shopify_discount_code`
   );
   if (existing.length > 0) {
-    return NextResponse.json({ ok: true, code: existing[0].shopify_discount_code, alreadyClaimed: true });
+    return NextResponse.json({ ok: true, code: existing[0].shopify_discount_code, alreadyClaimed: true, label });
   }
 
   if (!shopifyAdminConfigured()) {
@@ -41,9 +51,9 @@ export async function POST(req: NextRequest) {
   try {
     const code = `SKINCOACH-${randomSuffix()}`;
     await createPercentDiscountCode({
-      title: `Skin Coach reward ${period} (${uid.slice(0, 8)})`,
+      title: `Skin Coach reward ${period} (${uid.slice(0, 8)}, ${label})`,
       code,
-      percentage: 0.1,
+      percentage,
       usageLimit: 1,
     });
 
@@ -62,10 +72,10 @@ export async function POST(req: NextRequest) {
       const row = await supabaseRest<{ shopify_discount_code: string }[]>(
         `skin_coach_rewards?user_id=eq.${uid}&period=eq.${period}&select=shopify_discount_code`
       );
-      return NextResponse.json({ ok: true, code: row[0]?.shopify_discount_code ?? code, alreadyClaimed: true });
+      return NextResponse.json({ ok: true, code: row[0]?.shopify_discount_code ?? code, alreadyClaimed: true, label });
     }
 
-    return NextResponse.json({ ok: true, code });
+    return NextResponse.json({ ok: true, code, label });
   } catch (err) {
     console.error("[skin-coach claim-reward]", err);
     return NextResponse.json(

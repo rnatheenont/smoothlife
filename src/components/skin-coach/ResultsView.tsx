@@ -1,6 +1,6 @@
 "use client";
 
-import { RotateCcw, Sparkles, CalendarClock } from "lucide-react";
+import { RotateCcw, Sparkles, CalendarClock, Info } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import { useQuickChat } from "@/lib/quickchat-context";
 import ShareCard from "@/components/skin-coach/ShareCard";
@@ -56,13 +56,13 @@ export default function ResultsView({
   }
 
   return (
-    <div>
-      <div className="rounded-xl2 border border-slate-100 shadow-card p-6 mb-6">
-        <h2 className="font-bold text-brand-ink mb-5">ผลสแกนผิวของคุณ</h2>
+    <div className="max-w-3xl mx-auto lg:max-w-none">
+      <div className="rounded-xl2 border border-slate-100 shadow-card p-5 sm:p-7 lg:p-8 mb-6">
+        <h2 className="font-bold text-brand-ink mb-5 text-lg sm:text-xl">ผลสแกนผิวของคุณ</h2>
 
         <div className="flex flex-col sm:flex-row items-center gap-6 mb-6 pb-6 border-b border-slate-100">
-          <div className="relative h-28 w-28 shrink-0">
-            <svg viewBox="0 0 100 100" className="h-28 w-28 -rotate-90">
+          <div className="relative h-28 w-28 sm:h-32 sm:w-32 shrink-0">
+            <svg viewBox="0 0 100 100" className="h-28 w-28 sm:h-32 sm:w-32 -rotate-90">
               <circle cx="50" cy="50" r="42" fill="none" stroke="#F1F5F9" strokeWidth="10" />
               <circle
                 cx="50"
@@ -76,7 +76,7 @@ export default function ResultsView({
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold text-brand-ink leading-none">{total}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-brand-ink leading-none">{total}</span>
               <span className="text-[10px] text-slate-400">/100</span>
             </div>
           </div>
@@ -102,10 +102,12 @@ export default function ResultsView({
           </div>
         </div>
 
-        <MetricRow label="ความเรียบเนียน (สิว)" score={metrics.acne.score} />
-        <MetricRow label="ความละเอียดของรูขุมขน" score={metrics.pores.score} />
-        <MetricRow label="ความสม่ำเสมอของสีผิว (จุดด่างดำ)" score={metrics.darkSpots.score} />
-        <MetricRow label="ความเรียบเนียน (ริ้วรอย)" score={metrics.wrinkles.score} />
+        <div className="sm:grid sm:grid-cols-2 sm:gap-x-8">
+          <MetricRow label="ความเรียบเนียน (สิว)" score={metrics.acne.score} />
+          <MetricRow label="ความละเอียดของรูขุมขน" score={metrics.pores.score} />
+          <MetricRow label="ความสม่ำเสมอของสีผิว (จุดด่างดำ)" score={metrics.darkSpots.score} />
+          <MetricRow label="ความเรียบเนียน (ริ้วรอย)" score={metrics.wrinkles.score} />
+        </div>
 
         <div className="flex flex-wrap gap-3 mt-4">
           <button
@@ -117,29 +119,34 @@ export default function ResultsView({
           {photo && <ShareCard metrics={metrics} photoDataUrl={photo} zones={zones} />}
         </div>
 
-        <p className="text-[11px] text-slate-400 mt-4 border-t border-slate-100 pt-3">{metrics.disclaimer}</p>
+        <div className="flex items-start gap-2 rounded-xl bg-surface-soft mt-5 p-3.5 text-xs text-slate-500">
+          <Info size={15} className="shrink-0 mt-0.5 text-slate-400" />
+          <p>{metrics.disclaimer}</p>
+        </div>
       </div>
 
       <div className="mb-8">
-        <RewardClaim />
+        <RewardClaim score={total} />
       </div>
 
-      {concerns.map((slug) => {
-        const info = concernLabel(slug);
-        const items = productsForConcern(slug, 3);
-        if (!info || items.length === 0) return null;
-        return (
-          <div key={slug} className="mb-8">
-            <h3 className="text-lg font-bold text-brand-ink mb-1">แนะนำสำหรับ {info.nameTh}</h3>
-            <p className="text-xs text-slate-500 mb-4">{info.description}</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {items.map((p) => (
-                <ProductCard key={p.slug} product={p} />
-              ))}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-8">
+        {concerns.map((slug) => {
+          const info = concernLabel(slug);
+          const items = productsForConcern(slug, 3);
+          if (!info || items.length === 0) return null;
+          return (
+            <div key={slug} className="mb-8">
+              <h3 className="text-lg font-bold text-brand-ink mb-1">แนะนำสำหรับ {info.nameTh}</h3>
+              <p className="text-xs text-slate-500 mb-4">{info.description}</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-4">
+                {items.map((p) => (
+                  <ProductCard key={p.slug} product={p} />
+                ))}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
 
       <button
         onClick={onRestart}

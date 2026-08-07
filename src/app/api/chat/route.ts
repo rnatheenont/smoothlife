@@ -60,7 +60,11 @@ Guidance:
 - Ground advice in ingredients and routine order (cleanse, treat, moisturise, SPF).
 - If a question suggests a medical condition (severe acne, infection, allergic reaction, pregnancy), recommend seeing a dermatologist or pharmacist and keep product advice gentle and general.
 - Never promise results or claim to treat disease.
-- If asked something unrelated to beauty, health or the store, politely steer back.`;
+- If asked something unrelated to beauty, health or the store, politely steer back.
+
+PHOTOS ATTACHED IN CHAT (the user has already given consent for photo analysis before you see it) — exactly two kinds, handle whichever it is:
+1. PRODUCT photo (packaging, label, bottle, tube): identify what you can read/see and try to match it against the catalogue above by name or brand. If you find a confident match, use its [[slug]] marker as usual. If it looks like a different brand we don't carry, say so honestly and suggest the closest catalogue product instead — never claim a low-confidence guess is a match.
+2. SKIN/FACE photo — either a specific problem spot (rash, bump, breakout patch, redness, irritation) or a fuller face/selfie: give a short, warm, NON-diagnostic cosmetic observation of what's visible (plain description only, e.g. "ดูเหมือนมีผื่นแดงเล็กน้อยบริเวณนี้ค่ะ" or "โดยรวมผิวดูสดใสดีค่ะ มีจุดด่างดำเล็กน้อยแถวโหนกแก้ม") and suggest 1-2 relevant catalogue products with their [[slug]] markers so they get an actual recommendation, not just a comment. Always add that this is not a medical diagnosis, and if it looks painful, spreading, infected, or has lasted a while, recommend seeing a doctor or pharmacist instead. Never name a disease or clinical condition, never promise it will clear up. You may also mention that the Skin Coach tool (/skin-coach) can give a fuller multi-angle scored breakdown if they want to go deeper — but always give your own take here first, don't just redirect.`;
 }
 
 export async function POST(req: NextRequest) {
@@ -76,6 +80,14 @@ export async function POST(req: NextRequest) {
   const lang = body?.lang === "en" ? "en" : "th";
   const key = process.env.ANTHROPIC_API_KEY;
 
+  const image = body?.image;
+  const imageBase64 = typeof image?.base64 === "string" ? image.base64 : "";
+  const imageMediaType = image?.mediaType === "image/png" ? "image/png" : "image/jpeg";
+  // Rough cap so someone can't post an enormous payload to this route.
+  if (imageBase64 && imageBase64.length > 6_000_000) {
+    return NextResponse.json({ error: "image too large" }, { status: 413 });
+  }
+
   if (!key) {
     return NextResponse.json({
       reply:
@@ -87,6 +99,34 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const trimmed = messages
+      .filter((m: any) => m && typeof m.content === "string" && m.content.trim())
+      .slice(-12)
+      .map((m: any) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: m.content as string,
+      }));
+
+    // Attach the photo (if any) to the most recent user turn only — earlier
+    // turns never carry an image, so the payload doesn't balloon on longer chats.
+    let anthropicMessages: any[] = trimmed;
+    if (imageBase64) {
+      const lastIdx = [...trimmed].map((m) => m.role).lastIndexOf("user");
+      if (lastIdx !== -1) {
+        anthropicMessages = trimmed.map((m, i) =>
+          i === lastIdx
+            ? {
+                role: "user",
+                content: [
+                  { type: "image", source: { type: "base64", media_type: imageMediaType, data: imageBase64 } },
+                  { type: "text", text: m.content },
+                ],
+              }
+            : m
+        );
+      }
+    }
+
     const res = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -98,13 +138,7 @@ export async function POST(req: NextRequest) {
         model: MODEL,
         max_tokens: 800,
         system: systemPrompt(profile, lang),
-        messages: messages
-          .filter((m: any) => m && typeof m.content === "string" && m.content.trim())
-          .slice(-12)
-          .map((m: any) => ({
-            role: m.role === "assistant" ? "assistant" : "user",
-            content: m.content,
-          })),
+        messages: anthropicMessages,
       }),
     });
 
