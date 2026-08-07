@@ -3,14 +3,15 @@
 import { useEffect, useRef, useState, ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, Send, Loader2, RotateCcw, Bot, User as UserIcon, X, Plus, Check, Camera } from "lucide-react";
+import { Sparkles, Send, Loader2, RotateCcw, Bot, User as UserIcon, X, Plus, Check, Camera, ImagePlus } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
 import { useCart } from "@/lib/cart-context";
 import { getProductBySlug } from "@/data/products";
 import { formatTHB } from "@/lib/format";
+import { resizeForUpload, ResizedImage } from "@/lib/image-utils";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = { role: "user" | "assistant"; content: string; image?: string };
 
 // Matches the [[slug]] markers the model is told to use, but also tolerates
 // a stray single-bracket [slug] (models occasionally drop a bracket) and
@@ -108,7 +109,10 @@ export default function QuickChat() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingImage, setPendingImage] = useState<ResizedImage | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasProfile = Object.keys(profile || {}).length > 0;
 
@@ -131,6 +135,16 @@ export default function QuickChat() {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading, open]);
 
+  async function handleImagePick(file: File) {
+    setImageError(null);
+    try {
+      const resized = await resizeForUpload(file);
+      setPendingImage(resized);
+    } catch {
+      setImageError(t("ไม่สามารถอ่านรูปนี้ได้ กรุณาลองใหม่อีกครั้ง", "Couldn't read that photo, please try again."));
+    }
+  }
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -140,18 +154,26 @@ export default function QuickChat() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, setOpen]);
 
-  async function send(text: string) {
+  async function send(text: string, image?: ResizedImage | null) {
     const clean = text.trim();
-    if (!clean || loading) return;
-    const next: Msg[] = [...messages, { role: "user", content: clean }];
+    if ((!clean && !image) || loading) return;
+    const fallbackText = lang === "en" ? "What product is this? Do you carry it?" : "รูปนี้คือสินค้าอะไรครับ มีขายไหม";
+    const userMsg: Msg = { role: "user", content: clean || fallbackText, image: image?.dataUrl };
+    const next: Msg[] = [...messages, userMsg];
     setMessages(next);
     setInput("");
+    setPendingImage(null);
     setLoading(true);
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next, profile, lang }),
+        body: JSON.stringify({
+          messages: next.map(({ role, content }) => ({ role, content })),
+          profile,
+          lang,
+          image: image ? { base64: image.base64, mediaType: image.mediaType } : undefined,
+        }),
       });
       const data = await res.json();
       const dbg = data.error ? "\n\n[debug] " + data.error : "";
@@ -285,6 +307,10 @@ export default function QuickChat() {
                       : "max-w-[90%] bg-white text-slate-700 border border-slate-100 rounded-tl-sm"
                   }`}
                 >
+                  {m.image && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={m.image} alt="" className="mb-2 max-h-40 rounded-lg object-cover" />
+                  )}
                   {m.role === "assistant" ? renderContent(m.content) : m.content}
                 </div>
               </div>
@@ -302,22 +328,67 @@ export default function QuickChat() {
             )}
           </div>
 
+          {imageError && (
+            <p className="bg-white px-4 pt-2 text-[11px] text-red-500 text-center">{imageError}</p>
+          )}
+          {pendingImage && (
+            <div className="flex items-center gap-2 border-t border-slate-100 bg-white px-3 pt-2.5">
+              <div className="relative h-12 w-12 shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={pendingImage.dataUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setPendingImage(null)}
+                  aria-label={t("ลบรูป", "Remove photo")}
+                  className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-slate-700 text-white"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                {t("แนบรูปสินค้าไว้แล้ว พิมพ์คำถามเพิ่มเติมได้ (ไม่บังคับ)", "Photo attached — add a question if you like (optional)")}
+              </p>
+            </div>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              send(input);
+              send(input, pendingImage);
             }}
             className="flex items-center gap-2 border-t border-slate-100 bg-white p-2.5"
           >
             <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImagePick(file);
+                e.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              aria-label={t("แนบรูปสินค้าเพื่อถาม", "Attach a product photo")}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-surface-soft hover:text-brand-emerald"
+            >
+              <ImagePlus size={17} />
+            </button>
+            <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={t("พิมพ์คำถามของคุณ...", "Type your question...")}
+              placeholder={
+                pendingImage
+                  ? t("ถามเกี่ยวกับรูปนี้... (ไม่พิมพ์ก็ได้)", "Ask about this photo... (optional)")
+                  : t("พิมพ์คำถามของคุณ...", "Type your question...")
+              }
               className="flex-1 rounded-full border border-slate-200 bg-surface-soft px-4 py-2.5 text-[13px] outline-none focus:border-brand-teal"
             />
             <button
               type="submit"
-              disabled={loading || !input.trim()}
+              disabled={loading || (!input.trim() && !pendingImage)}
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white disabled:opacity-40"
               aria-label="Send"
             >

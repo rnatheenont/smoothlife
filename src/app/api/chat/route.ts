@@ -60,7 +60,11 @@ Guidance:
 - Ground advice in ingredients and routine order (cleanse, treat, moisturise, SPF).
 - If a question suggests a medical condition (severe acne, infection, allergic reaction, pregnancy), recommend seeing a dermatologist or pharmacist and keep product advice gentle and general.
 - Never promise results or claim to treat disease.
-- If asked something unrelated to beauty, health or the store, politely steer back.`;
+- If asked something unrelated to beauty, health or the store, politely steer back.
+
+PHOTOS ATTACHED IN CHAT:
+- If the photo shows a product (packaging, label, bottle, tube), identify what you can read/see and try to match it against the catalogue above by name or brand. If you find a confident match, use its [[slug]] marker as usual. If it looks like a different brand we don't carry, say so honestly and suggest the closest catalogue product instead — never claim a low-confidence guess is a match.
+- If the photo shows a person's face or a skin/body close-up instead of a product, do NOT score or diagnose skin condition here. Warmly explain that for a proper photo-based skin analysis they should use the "วิเคราะห์ผิวหน้าด้วยรูปถ่าย" / Skin Coach tool (at /skin-coach), which handles the consent and scoring properly — keep this reply short.`;
 }
 
 export async function POST(req: NextRequest) {
@@ -76,6 +80,14 @@ export async function POST(req: NextRequest) {
   const lang = body?.lang === "en" ? "en" : "th";
   const key = process.env.ANTHROPIC_API_KEY;
 
+  const image = body?.image;
+  const imageBase64 = typeof image?.base64 === "string" ? image.base64 : "";
+  const imageMediaType = image?.mediaType === "image/png" ? "image/png" : "image/jpeg";
+  // Rough cap so someone can't post an enormous payload to this route.
+  if (imageBase64 && imageBase64.length > 6_000_000) {
+    return NextResponse.json({ error: "image too large" }, { status: 413 });
+  }
+
   if (!key) {
     return NextResponse.json({
       reply:
@@ -87,6 +99,34 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const trimmed = messages
+      .filter((m: any) => m && typeof m.content === "string" && m.content.trim())
+      .slice(-12)
+      .map((m: any) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: m.content as string,
+      }));
+
+    // Attach the photo (if any) to the most recent user turn only — earlier
+    // turns never carry an image, so the payload doesn't balloon on longer chats.
+    let anthropicMessages: any[] = trimmed;
+    if (imageBase64) {
+      const lastIdx = [...trimmed].map((m) => m.role).lastIndexOf("user");
+      if (lastIdx !== -1) {
+        anthropicMessages = trimmed.map((m, i) =>
+          i === lastIdx
+            ? {
+                role: "user",
+                content: [
+                  { type: "image", source: { type: "base64", media_type: imageMediaType, data: imageBase64 } },
+                  { type: "text", text: m.content },
+                ],
+              }
+            : m
+        );
+      }
+    }
+
     const res = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -98,13 +138,7 @@ export async function POST(req: NextRequest) {
         model: MODEL,
         max_tokens: 800,
         system: systemPrompt(profile, lang),
-        messages: messages
-          .filter((m: any) => m && typeof m.content === "string" && m.content.trim())
-          .slice(-12)
-          .map((m: any) => ({
-            role: m.role === "assistant" ? "assistant" : "user",
-            content: m.content,
-          })),
+        messages: anthropicMessages,
       }),
     });
 
