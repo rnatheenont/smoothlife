@@ -3,20 +3,27 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, Phone, MessageCircle, Lock, User as UserIcon } from "lucide-react";
+import { Mail, Phone, MessageCircle, Lock, User as UserIcon, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import DemoBadge from "./DemoBadge";
-import LineLoginModal from "./LineLoginModal";
 
 type Tab = "otp" | "email" | "line";
+
+const LINE_ERRORS: Record<string, string> = {
+  line_not_configured: "ระบบ LINE Login ยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ",
+  line_denied: "คุณยกเลิกการเข้าสู่ระบบด้วย LINE",
+  line_state_mismatch: "เซสชันหมดอายุ กรุณาลองเข้าสู่ระบบด้วย LINE อีกครั้ง",
+  line_error: "เข้าสู่ระบบด้วย LINE ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+};
 
 export default function LoginContent() {
   const [tab, setTab] = useState<Tab>("otp");
   const [mode, setMode] = useState<"login" | "register">("login");
-  const { registerWithEmail, loginWithEmail, requestOtp, verifyOtp, loginWithLine } = useAuth();
+  const { registerWithEmail, loginWithEmail, requestOtp, verifyOtp } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo") || "/account";
+  const lineError = searchParams.get("error");
 
   // Email state
   const [name, setName] = useState("");
@@ -31,8 +38,6 @@ export default function LoginContent() {
   const [otpInput, setOtpInput] = useState("");
   const [otpError, setOtpError] = useState("");
   const [otpName, setOtpName] = useState("");
-
-  const [lineOpen, setLineOpen] = useState(false);
 
   const [emailSubmitting, setEmailSubmitting] = useState(false);
 
@@ -63,18 +68,19 @@ export default function LoginContent() {
     else router.push(returnTo);
   }
 
-  function handleLineConfirm(displayName: string) {
-    loginWithLine(displayName);
-    setLineOpen(false);
-    router.push(returnTo);
-  }
-
   return (
     <div className="container-page py-10 md:py-16 max-w-md mx-auto">
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold text-brand-ink">เข้าสู่ระบบ Smoothlife.com</h1>
         <p className="text-sm text-slate-500 mt-1">เข้าสู่ระบบเพื่อสะสมคะแนนและติดตามคำสั่งซื้อ</p>
       </div>
+
+      {lineError && (
+        <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 mb-5 text-sm text-amber-700">
+          <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+          <span>{LINE_ERRORS[lineError] || LINE_ERRORS.line_error}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-1.5 rounded-full bg-surface-soft p-1.5 mb-6">
         {[
@@ -143,13 +149,12 @@ export default function LoginContent() {
 
       {tab === "line" && (
         <div className="flex flex-col gap-4">
-          <DemoBadge text="Demo Mode: จำลองหน้าจอ LINE Login สำหรับต้นแบบ ระบบจริงต้องเชื่อมต่อ LINE Login Channel (LIFF)" />
-          <button
-            onClick={() => setLineOpen(true)}
-            className="flex items-center justify-center gap-2 rounded-full bg-[#06C755] text-white font-semibold py-3 text-sm"
+          <a
+            href={`/api/auth/line/start?returnTo=${encodeURIComponent(returnTo)}`}
+            className="flex items-center justify-center gap-2 rounded-full bg-[#06C755] text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity"
           >
             <MessageCircle size={18} /> เข้าสู่ระบบด้วย LINE
-          </button>
+          </a>
         </div>
       )}
 
@@ -215,8 +220,6 @@ export default function LoginContent() {
         </Link>{" "}
         ของ Smoothlife.com
       </p>
-
-      <LineLoginModal open={lineOpen} onClose={() => setLineOpen(false)} onConfirm={handleLineConfirm} />
     </div>
   );
 }

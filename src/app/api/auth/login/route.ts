@@ -3,6 +3,7 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifyPassword } from "@/lib/password";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { tierProgress } from "@/data/coupons";
+import { findShopifyCustomerByEmail } from "@/lib/shopify-admin";
 
 export async function POST(req: NextRequest) {
   if (!supabaseConfigured()) {
@@ -23,12 +24,34 @@ export async function POST(req: NextRequest) {
   }
 
   const [user] = await supabaseRest<
-    { id: string; display_name: string; created_at: string; phone: string | null; gender: string | null; birthdate: string | null; avatar_url: string | null }[]
-  >(`users?id=eq.${identity.user_id}&select=id,display_name,created_at,phone,gender,birthdate,avatar_url`);
+    { id: string; display_name: string; created_at: string; phone: string | null; gender: string | null; birthdate: string | null; avatar_url: string | null; shopify_customer_id: string | null }[]
+  >(`users?id=eq.${identity.user_id}&select=id,display_name,created_at,phone,gender,birthdate,avatar_url,shopify_customer_id`);
   const [balanceRow] = await supabaseRest<{ balance: number }[]>(
     `points_balance?user_id=eq.${identity.user_id}&select=balance`
   );
   const points = balanceRow?.balance ?? 0;
+
+  // Backfill the Shopify link on login too, for accounts created before
+  // this existed — only bother looking it up once (skip if already linked).
+  let phone = user.phone;
+  if (!user.shopify_customer_id) {
+    const shopifyMatch = await findShopifyCustomerByEmail(normalizedEmail);
+    if (shopifyMatch) {
+      phone = phone || shopifyMatch.phone;
+      try {
+        await supabaseRest(`users?id=eq.${user.id}`, {
+          method: "PATCH",
+          returning: false,
+          body: JSON.stringify({
+            shopify_customer_id: shopifyMatch.id,
+            ...(phone ? { phone } : {}),
+          }),
+        });
+      } catch (err) {
+        console.error("[login] failed to link shopify customer", err);
+      }
+    }
+  }
 
   const res = NextResponse.json({
     ok: true,
@@ -36,11 +59,12 @@ export async function POST(req: NextRequest) {
       id: user.id,
       name: user.display_name,
       email: normalizedEmail,
-      phone: user.phone,
+      phone,
       gender: user.gender,
       birthdate: user.birthdate,
       avatar: user.avatar_url,
       provider: "email",
+      real: true,
       points,
       tier: tierProgress(points).current,
       createdAt: user.created_at,

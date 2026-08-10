@@ -11,7 +11,7 @@ import { countryName } from "@/components/AddressForm";
 
 function TaxAddressesContent() {
   const { user } = useAuth();
-  const isReal = user?.provider === "email";
+  const isReal = user?.real;
   const [addresses, setAddresses] = useState<TaxAddressRow[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 

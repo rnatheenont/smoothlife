@@ -61,7 +61,7 @@ function ProfileCard() {
 
 function AddressSummaryCard() {
   const { user } = useAuth();
-  const isReal = user?.provider === "email";
+  const isReal = user?.real;
   const [addr, setAddr] = useState<AddressRow | null | undefined>(undefined);
 
   useEffect(() => {
@@ -102,7 +102,7 @@ function AddressSummaryCard() {
 
 function TaxAddressSummaryCard() {
   const { user } = useAuth();
-  const isReal = user?.provider === "email";
+  const isReal = user?.real;
   const [addr, setAddr] = useState<TaxAddressRow | null | undefined>(undefined);
 
   useEffect(() => {

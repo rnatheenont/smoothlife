@@ -3,6 +3,7 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { hashPassword } from "@/lib/password";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { tierProgress } from "@/data/coupons";
+import { findShopifyCustomerByEmail } from "@/lib/shopify-admin";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -42,17 +43,40 @@ export async function POST(req: NextRequest) {
   }
   const user = result[0];
 
+  // Best-effort: if this email already exists as a Shopify customer, link
+  // it immediately instead of waiting for their first orders/paid webhook,
+  // and adopt their phone number if we don't have one yet. Never blocks
+  // registration on failure (network hiccup, missing Admin scope, etc).
+  let linkedPhone: string | null = null;
+  const shopifyMatch = await findShopifyCustomerByEmail(normalizedEmail);
+  if (shopifyMatch) {
+    linkedPhone = shopifyMatch.phone;
+    try {
+      await supabaseRest(`users?id=eq.${user.user_id}`, {
+        method: "PATCH",
+        returning: false,
+        body: JSON.stringify({
+          shopify_customer_id: shopifyMatch.id,
+          ...(shopifyMatch.phone ? { phone: shopifyMatch.phone } : {}),
+        }),
+      });
+    } catch (err) {
+      console.error("[register] failed to link shopify customer", err);
+    }
+  }
+
   const res = NextResponse.json({
     ok: true,
     user: {
       id: user.user_id,
       name: name.trim(),
       email: normalizedEmail,
-      phone: null,
+      phone: linkedPhone,
       gender: null,
       birthdate: null,
       avatar: null,
       provider: "email",
+      real: true,
       points: 100,
       tier: tierProgress(100).current,
       createdAt: user.created_at,

@@ -24,7 +24,7 @@ type LedgerEntry = { id: string; delta: number; reason: string; created_at: stri
 
 function PointsContent() {
   const { user } = useAuth();
-  const isReal = user?.provider === "email";
+  const isReal = user?.real;
   const [entries, setEntries] = useState<LedgerEntry[] | null>(null);
 
   useEffect(() => {

@@ -45,6 +45,40 @@ async function adminGraphql<T>(query: string, variables?: Record<string, unknown
   return json.data as T;
 }
 
+export type ShopifyCustomerMatch = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+};
+
+// Looks up an existing Shopify customer by email so a new local signup can
+// link to their real purchase history immediately instead of waiting for
+// the first orders/paid webhook to backfill shopify_customer_id. Returns
+// null on no match OR on any API error (e.g. the custom app's token doesn't
+// have the read_customers scope) — this is a best-effort enhancement, never
+// something that should block registration/login.
+export async function findShopifyCustomerByEmail(email: string): Promise<ShopifyCustomerMatch | null> {
+  if (!shopifyAdminConfigured()) return null;
+  try {
+    const data = await adminGraphql<{
+      customers: { edges: { node: { id: string; firstName: string | null; lastName: string | null; phone: string | null } }[] };
+    }>(
+      `query FindCustomerByEmail($query: String!) {
+        customers(first: 1, query: $query) {
+          edges { node { id firstName lastName phone } }
+        }
+      }`,
+      { query: `email:${JSON.stringify(email)}` }
+    );
+    const node = data.customers.edges[0]?.node;
+    return node || null;
+  } catch (err) {
+    console.error("[shopify-admin] findShopifyCustomerByEmail failed", err);
+    return null;
+  }
+}
+
 // Creates a real, single-use percentage discount code redeemable once per
 // customer. Returns the code string.
 export async function createPercentDiscountCode(opts: {

@@ -14,6 +14,12 @@ export type SLUser = {
   birthdate?: string | null;
   passwordHash?: string;
   provider: "email" | "phone" | "line";
+  // True when this session came from the real, Supabase-backed httpOnly
+  // cookie (/api/auth/session) — false for the localStorage-only demo
+  // session still used by phone OTP until Firebase Phone Auth is wired up.
+  // Gate any "real backend" feature (address book, points ledger, etc.) on
+  // this instead of checking `provider`, since email AND line are both real.
+  real: boolean;
   avatar?: string | null;
   points: number;
   tier: Tier;
@@ -41,7 +47,6 @@ type AuthContextValue = {
   loginWithEmail: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   requestOtp: (phone: string) => string;
   verifyOtp: (phone: string, code: string, expected: string, name?: string) => { ok: boolean; error?: string };
-  loginWithLine: (displayName: string) => void;
   logout: () => void;
   addOrder: (order: Omit<SLOrder, "id" | "userId" | "createdAt" | "status">) => SLOrder;
   getOrders: () => SLOrder[];
@@ -66,15 +71,6 @@ function readUsers(): SLUser[] {
 function writeUsers(users: SLUser[]) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
-function simpleHash(str: string) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return hash.toString(36);
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SLUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const users = readUsers();
       const found = users.find((u) => u.id === sessionId);
       if (found) {
-        setUser(found);
+        setUser({ ...found, real: false });
         return true;
       }
     }
@@ -158,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: name || `คุณ ${phone.slice(-4)}`,
         phone,
         provider: "phone",
+        real: false,
         points: 100,
         tier: "Bronze",
         createdAt: new Date().toISOString(),
@@ -166,25 +163,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     persistSession(found);
     return { ok: true };
-  }
-
-  function loginWithLine(displayName: string) {
-    const users = readUsers();
-    const lineId = `line_${simpleHash(displayName)}`;
-    let found = users.find((u) => u.id === lineId);
-    if (!found) {
-      found = {
-        id: lineId,
-        name: displayName,
-        provider: "line",
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + encodeURIComponent(displayName),
-        points: 150,
-        tier: "Bronze",
-        createdAt: new Date().toISOString(),
-      };
-      writeUsers([...users, found]);
-    }
-    persistSession(found);
   }
 
   function logout() {
@@ -234,7 +212,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginWithEmail,
         requestOtp,
         verifyOtp,
-        loginWithLine,
         logout,
         addOrder,
         getOrders,

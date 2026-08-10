@@ -45,7 +45,7 @@ export default function RewardClaim({ score }: { score: number }) {
     });
   }
 
-  if (!user || user.provider !== "email") {
+  if (!user || !user.real) {
     return (
       <div className="rounded-xl2 border border-amber-200 bg-amber-50/60 p-5 text-center">
         <Gift size={20} className="mx-auto text-amber-500 mb-2" />

@@ -8,7 +8,7 @@ import DemoBadge from "@/components/DemoBadge";
 
 function ChangePasswordContent() {
   const { user } = useAuth();
-  const isReal = user?.provider === "email";
+  const isReal = user?.real;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devLink, setDevLink] = useState<string | null>(null);
