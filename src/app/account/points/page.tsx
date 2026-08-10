@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Award, Gift, Star, Crown, History } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import AccountGate from "@/components/AccountGate";
+import AccountLayout from "@/components/account/AccountLayout";
 import DemoBadge from "@/components/DemoBadge";
 
 const tiers = [
@@ -24,7 +24,7 @@ type LedgerEntry = { id: string; delta: number; reason: string; created_at: stri
 
 function PointsContent() {
   const { user } = useAuth();
-  const isReal = user?.provider === "email";
+  const isReal = user?.real;
   const [entries, setEntries] = useState<LedgerEntry[] | null>(null);
 
   useEffect(() => {
@@ -38,7 +38,7 @@ function PointsContent() {
   if (!user) return null;
 
   return (
-    <div className="container-page py-8 md:py-10 max-w-2xl mx-auto">
+    <div className="max-w-2xl">
       <h1 className="text-2xl font-bold text-brand-ink mb-2">คะแนนสะสมและระดับสมาชิก</h1>
       <p className="text-sm text-slate-500 mb-4">Smooth Life Rewards — ยิ่งช้อป ยิ่งได้สิทธิพิเศษมากขึ้น</p>
       {!isReal && (
@@ -121,8 +121,8 @@ function PointsContent() {
 
 export default function PointsPage() {
   return (
-    <AccountGate>
+    <AccountLayout>
       <PointsContent />
-    </AccountGate>
+    </AccountLayout>
   );
 }

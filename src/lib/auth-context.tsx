@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { genOtp, genOrderId } from "./format";
+import { genOrderId } from "./format";
 
 export type Tier = "Bronze" | "Silver" | "Gold";
 
@@ -10,9 +10,16 @@ export type SLUser = {
   name: string;
   email?: string;
   phone?: string;
+  gender?: "male" | "female" | "other" | null;
+  birthdate?: string | null;
   passwordHash?: string;
   provider: "email" | "phone" | "line";
-  avatar?: string;
+  // True when this session came from the real, Supabase-backed httpOnly
+  // cookie (/api/auth/session) — email, phone, and line are all real now.
+  // Gate any "real backend" feature (address book, points ledger, etc.) on
+  // this rather than checking `provider`.
+  real: boolean;
+  avatar?: string | null;
   points: number;
   tier: Tier;
   createdAt: string;
@@ -37,13 +44,12 @@ type AuthContextValue = {
   loading: boolean;
   registerWithEmail: (name: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   loginWithEmail: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  requestOtp: (phone: string) => string;
-  verifyOtp: (phone: string, code: string, expected: string, name?: string) => { ok: boolean; error?: string };
-  loginWithLine: (displayName: string) => void;
+  completePhoneLogin: (user: SLUser) => void;
   logout: () => void;
   addOrder: (order: Omit<SLOrder, "id" | "userId" | "createdAt" | "status">) => SLOrder;
   getOrders: () => SLOrder[];
   addPoints: (amount: number) => void;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -63,48 +69,42 @@ function readUsers(): SLUser[] {
 function writeUsers(users: SLUser[]) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
-function simpleHash(str: string) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return hash.toString(36);
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SLUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  async function loadSession() {
+    // Real accounts (email) are backed by Supabase and identified by an
+    // httpOnly session cookie — check that first.
+    try {
+      const res = await fetch("/api/auth/session");
+      const data = await res.json();
+      if (data.user) {
+        setUser(data.user);
+        return true;
+      }
+    } catch {
+      // server session check failed (offline, not configured yet) — fall
+      // through to the local demo session below.
+    }
+    const sessionId = localStorage.getItem(SESSION_KEY);
+    if (sessionId) {
+      const users = readUsers();
+      const found = users.find((u) => u.id === sessionId);
+      if (found) {
+        setUser({ ...found, real: false });
+        return true;
+      }
+    }
+    return false;
+  }
+
   useEffect(() => {
-    (async () => {
-      // Real accounts (email) are backed by Supabase and identified by an
-      // httpOnly session cookie — check that first.
-      try {
-        const res = await fetch("/api/auth/session");
-        const data = await res.json();
-        if (data.user) {
-          setUser(data.user);
-          setLoading(false);
-          return;
-        }
-      } catch {
-        // server session check failed (offline, not configured yet) — fall
-        // through to the local demo session below.
-      }
-      const sessionId = localStorage.getItem(SESSION_KEY);
-      if (sessionId) {
-        const users = readUsers();
-        const found = users.find((u) => u.id === sessionId);
-        if (found) setUser(found);
-      }
-      setLoading(false);
-    })();
+    loadSession().finally(() => setLoading(false));
   }, []);
 
-  function persistSession(u: SLUser) {
-    setUser(u);
-    localStorage.setItem(SESSION_KEY, u.id);
+  async function refreshUser() {
+    await loadSession();
   }
 
   async function registerWithEmail(name: string, email: string, password: string) {
@@ -131,49 +131,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
-  function requestOtp(_phone: string) {
-    return genOtp();
-  }
-
-  function verifyOtp(phone: string, code: string, expected: string, name?: string) {
-    if (code !== expected) {
-      return { ok: false, error: "รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่" };
-    }
-    const users = readUsers();
-    let found = users.find((u) => u.phone === phone);
-    if (!found) {
-      found = {
-        id: crypto.randomUUID(),
-        name: name || `คุณ ${phone.slice(-4)}`,
-        phone,
-        provider: "phone",
-        points: 100,
-        tier: "Bronze",
-        createdAt: new Date().toISOString(),
-      };
-      writeUsers([...users, found]);
-    }
-    persistSession(found);
-    return { ok: true };
-  }
-
-  function loginWithLine(displayName: string) {
-    const users = readUsers();
-    const lineId = `line_${simpleHash(displayName)}`;
-    let found = users.find((u) => u.id === lineId);
-    if (!found) {
-      found = {
-        id: lineId,
-        name: displayName,
-        provider: "line",
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + encodeURIComponent(displayName),
-        points: 150,
-        tier: "Bronze",
-        createdAt: new Date().toISOString(),
-      };
-      writeUsers([...users, found]);
-    }
-    persistSession(found);
+  // Phone sign-in is real now (Firebase Phone Auth + /api/auth/otp/verify
+  // already set the httpOnly session cookie) — this just mirrors that
+  // server-confirmed user into local state, same as register/loginWithEmail.
+  function completePhoneLogin(u: SLUser) {
+    setUser(u);
   }
 
   function logout() {
@@ -221,13 +183,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         registerWithEmail,
         loginWithEmail,
-        requestOtp,
-        verifyOtp,
-        loginWithLine,
+        completePhoneLogin,
         logout,
         addOrder,
         getOrders,
         addPoints,
+        refreshUser,
       }}
     >
       {children}

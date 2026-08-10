@@ -10,10 +10,6 @@ export function slugify(text: string) {
     .replace(/\s+/g, "-");
 }
 
-export function genOtp() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
 export function genOrderId() {
   const d = new Date();
   const rand = Math.floor(1000 + Math.random() * 9000);

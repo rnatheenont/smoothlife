@@ -33,5 +33,10 @@ export async function supabaseRest<T>(
     throw new Error(`Supabase REST ${res.status}: ${text}`);
   }
   if (res.status === 204) return null as T;
-  return res.json() as Promise<T>;
+  // PostgREST also sends an empty body on 201 when no `return=representation`
+  // Prefer header is set (i.e. whenever callers pass `returning: false`) —
+  // res.json() throws on that empty string, so parse manually and treat
+  // empty as null instead of assuming only 204 responses are bodyless.
+  const text = await res.text();
+  return (text ? JSON.parse(text) : null) as T;
 }

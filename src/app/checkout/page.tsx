@@ -56,7 +56,7 @@ export default function CheckoutPage() {
       const cart = await cartCreate(
         lines.map((l) => ({ merchandiseId: l.variantId, quantity: l.qty })),
         couponCode,
-        user.provider === "email" ? user.email : null
+        user.email || null
       );
       window.location.href = cart.checkoutUrl;
     } catch (err) {

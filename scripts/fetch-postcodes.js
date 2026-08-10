@@ -11,16 +11,16 @@ const path = require("path");
 const OUT = path.join(__dirname, "..", "src", "data", "postcodes.generated.ts");
 
 const SOURCES = [
-  "https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_tambon.json",
+  "https://raw.githubusercontent.com/kongvut/thai-province-data/master/data/raw/sub_districts.json",
   "https://raw.githubusercontent.com/parsilver/thailand-address/main/database/tambons.json",
   "https://raw.githubusercontent.com/Sitthiphong/thailand-address/master/thailand-address.json",
 ];
 
 const PROVINCE_SRC = [
-  "https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province.json",
+  "https://raw.githubusercontent.com/kongvut/thai-province-data/master/data/raw/provinces.json",
 ];
 const AMPHURE_SRC = [
-  "https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_amphure.json",
+  "https://raw.githubusercontent.com/kongvut/thai-province-data/master/data/raw/districts.json",
 ];
 
 async function getJson(url) {
@@ -67,7 +67,7 @@ async function buildFromKongvut() {
   for (const t of tambons) {
     const zip = String(t.zip_code || t.zipcode || "").padStart(5, "0");
     if (!/^\d{5}$/.test(zip)) continue;
-    const amp = ampById.get(t.amphure_id);
+    const amp = ampById.get(t.district_id || t.amphure_id);
     if (!amp) continue;
     const province = provById.get(amp.province) || "";
     const sub = nameTh(t, ["name_th", "name"]);
