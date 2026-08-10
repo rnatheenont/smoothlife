@@ -53,8 +53,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, emailSent: true });
   }
 
-  // No email provider configured yet — same graceful-degrade pattern as
-  // change-password/request: surface the code directly so the flow is fully
-  // testable end-to-end and just needs Resend plugged in later.
-  return NextResponse.json({ ok: true, emailSent: false, devCode: code });
+  // No email provider configured yet. NEVER leak the code in a real
+  // production response — anyone could request an OTP for someone else's
+  // email and read the code straight off their own screen, without ever
+  // touching that inbox. Only surface it on preview/local (VERCEL_ENV is
+  // unset outside Vercel, so this still works with plain `npm run dev`).
+  if (process.env.VERCEL_ENV !== "production") {
+    return NextResponse.json({ ok: true, emailSent: false, devCode: code });
+  }
+  return NextResponse.json(
+    { ok: false, error: "ระบบส่งอีเมลยังไม่พร้อมใช้งาน กรุณาเข้าสู่ระบบด้วย OTP เบอร์โทร หรือ Email รหัสผ่านแทน" },
+    { status: 503 }
+  );
 }

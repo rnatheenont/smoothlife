@@ -41,9 +41,16 @@ export async function POST(req: NextRequest) {
   const resetLink = `/account/change-password/reset?token=${token}`;
 
   // No email provider is wired up in this project yet (see .env.example —
-  // there's no RESEND_API_KEY / SMTP_* etc). Same graceful-degrade pattern
-  // as the other optional integrations: surface the link directly instead
-  // of silently failing, so the flow is fully testable end-to-end and just
-  // needs real email delivery plugged in later.
-  return NextResponse.json({ ok: true, email, emailSent: false, devResetLink: resetLink });
+  // there's no RESEND_API_KEY / SMTP_* etc). NEVER leak the reset link in a
+  // real production response — that link resets a password with no further
+  // verification, so leaking it is a full account takeover, not just an
+  // inconvenience. Only surface it on preview/local (VERCEL_ENV is unset
+  // outside Vercel, so this still works with plain `npm run dev`).
+  if (process.env.VERCEL_ENV !== "production") {
+    return NextResponse.json({ ok: true, email, emailSent: false, devResetLink: resetLink });
+  }
+  return NextResponse.json(
+    { ok: false, error: "ระบบส่งอีเมลยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบเพื่อเปลี่ยนรหัสผ่าน" },
+    { status: 503 }
+  );
 }
