@@ -32,6 +32,17 @@ export default function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [emailMethod, setEmailMethod] = useState<"otp" | "password">("otp");
+
+  // Email OTP state
+  const [emailOtpAddress, setEmailOtpAddress] = useState("");
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailOtpCode, setEmailOtpCode] = useState("");
+  const [emailOtpName, setEmailOtpName] = useState("");
+  const [emailOtpError, setEmailOtpError] = useState("");
+  const [emailOtpSending, setEmailOtpSending] = useState(false);
+  const [emailOtpVerifying, setEmailOtpVerifying] = useState(false);
+  const [emailOtpDevCode, setEmailOtpDevCode] = useState("");
 
   // OTP state
   const [phone, setPhone] = useState("");
@@ -60,6 +71,58 @@ export default function LoginContent() {
     setEmailSubmitting(false);
     if (!result.ok) setEmailError(result.error || "เกิดข้อผิดพลาด");
     else router.push(returnTo);
+  }
+
+  async function handleSendEmailOtp(e: React.FormEvent) {
+    e.preventDefault();
+    if (!emailOtpAddress.trim()) return;
+    setEmailOtpError("");
+    setEmailOtpDevCode("");
+    setEmailOtpSending(true);
+    try {
+      const res = await fetch("/api/auth/email-otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailOtpAddress.trim() }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setEmailOtpError(data.error || "ส่งรหัสไม่สำเร็จ");
+        return;
+      }
+      if (!data.emailSent && data.devCode) setEmailOtpDevCode(data.devCode);
+      setEmailOtpSent(true);
+    } catch (err) {
+      console.error("[email-otp] send failed", err);
+      setEmailOtpError("ส่งรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setEmailOtpSending(false);
+    }
+  }
+
+  async function handleVerifyEmailOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setEmailOtpError("");
+    setEmailOtpVerifying(true);
+    try {
+      const res = await fetch("/api/auth/email-otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailOtpAddress.trim(), code: emailOtpCode.trim(), name: emailOtpName || undefined }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setEmailOtpError(data.error || "ยืนยันไม่สำเร็จ");
+        return;
+      }
+      completePhoneLogin(data.user);
+      router.push(returnTo);
+    } catch (err) {
+      console.error("[email-otp] verify failed", err);
+      setEmailOtpError("รหัสไม่ถูกต้อง กรุณาลองใหม่");
+    } finally {
+      setEmailOtpVerifying(false);
+    }
   }
 
   async function handleSendOtp(e: React.FormEvent) {
@@ -231,56 +294,152 @@ export default function LoginContent() {
 
       {tab === "email" && (
         <div className="flex flex-col gap-4">
-          <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
-            {mode === "register" && (
-              <div className="relative">
-                <UserIcon size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="ชื่อ-นามสกุล"
-                  className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
-                />
-              </div>
-            )}
-            <div className="relative">
-              <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                required
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="อีเมล"
-                className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
-              />
+          <div className="flex gap-1 rounded-full bg-surface-soft p-1 text-xs">
+            {[
+              { id: "otp" as const, label: "เข้าด้วยรหัส OTP" },
+              { id: "password" as const, label: "เข้าด้วยรหัสผ่าน" },
+            ].map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setEmailMethod(m.id)}
+                className={`flex-1 rounded-full py-2 font-semibold transition-colors ${
+                  emailMethod === m.id ? "bg-white shadow-card text-brand-ink" : "text-slate-500"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          {emailMethod === "otp" && (
+            <div className="flex flex-col gap-3">
+              {!emailOtpSent ? (
+                <form onSubmit={handleSendEmailOtp} className="flex flex-col gap-3">
+                  <div className="relative">
+                    <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      required
+                      type="email"
+                      value={emailOtpAddress}
+                      onChange={(e) => setEmailOtpAddress(e.target.value)}
+                      placeholder="อีเมล"
+                      className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
+                    />
+                  </div>
+                  {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
+                  <button
+                    disabled={emailOtpSending}
+                    className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+                  >
+                    {emailOtpSending && <Loader2 size={15} className="animate-spin" />}
+                    {emailOtpSending ? "กำลังส่งรหัส..." : "ส่งรหัสยืนยัน"}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyEmailOtp} className="flex flex-col gap-3">
+                  <p className="text-xs text-slate-500 text-center">
+                    ส่งรหัสยืนยันไปที่ {emailOtpAddress} แล้ว กรุณากรอกรหัสที่ได้รับทางอีเมล
+                  </p>
+                  {emailOtpDevCode && (
+                    <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
+                      <p className="text-xs font-semibold text-amber-800 mb-1">
+                        ยังไม่ได้ตั้งค่าระบบส่งอีเมลจริงในโปรเจกต์นี้ — ใช้รหัสนี้แทนได้เลย (dev mode)
+                      </p>
+                      <p className="text-lg font-bold tracking-widest text-center text-amber-900">{emailOtpDevCode}</p>
+                    </div>
+                  )}
+                  <input
+                    value={emailOtpName}
+                    onChange={(e) => setEmailOtpName(e.target.value)}
+                    placeholder="ชื่อของคุณ (สำหรับสมาชิกใหม่)"
+                    className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal"
+                  />
+                  <input
+                    value={emailOtpCode}
+                    onChange={(e) => setEmailOtpCode(e.target.value)}
+                    placeholder="กรอกรหัสยืนยัน 6 หลัก"
+                    maxLength={6}
+                    className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal tracking-widest text-center"
+                  />
+                  {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
+                  <button
+                    disabled={emailOtpVerifying || emailOtpCode.length < 6}
+                    className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+                  >
+                    {emailOtpVerifying && <Loader2 size={15} className="animate-spin" />}
+                    {emailOtpVerifying ? "กำลังยืนยัน..." : "ยืนยันรหัส"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmailOtpSent(false);
+                      setEmailOtpCode("");
+                      setEmailOtpError("");
+                      setEmailOtpDevCode("");
+                    }}
+                    className="text-xs text-slate-400"
+                  >
+                    เปลี่ยนอีเมล
+                  </button>
+                </form>
+              )}
             </div>
-            <div className="relative">
-              <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                required
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)"
-                minLength={6}
-                className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
-              />
+          )}
+
+          {emailMethod === "password" && (
+            <div className="flex flex-col gap-4">
+              <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
+                {mode === "register" && (
+                  <div className="relative">
+                    <UserIcon size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="ชื่อ-นามสกุล"
+                      className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
+                    />
+                  </div>
+                )}
+                <div className="relative">
+                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="อีเมล"
+                    className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
+                  />
+                </div>
+                <div className="relative">
+                  <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    required
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)"
+                    minLength={6}
+                    className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
+                  />
+                </div>
+                {emailError && <p className="text-xs text-rose-500">{emailError}</p>}
+                <button
+                  disabled={emailSubmitting}
+                  className="rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+                >
+                  {emailSubmitting ? "กำลังดำเนินการ..." : mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
+                </button>
+              </form>
+              <button
+                onClick={() => setMode(mode === "register" ? "login" : "register")}
+                className="text-xs text-center text-slate-500"
+              >
+                {mode === "register" ? "มีบัญชีอยู่แล้ว? เข้าสู่ระบบ" : "ยังไม่มีบัญชี? สมัครสมาชิก"}
+              </button>
             </div>
-            {emailError && <p className="text-xs text-rose-500">{emailError}</p>}
-            <button
-              disabled={emailSubmitting}
-              className="rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
-            >
-              {emailSubmitting ? "กำลังดำเนินการ..." : mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
-            </button>
-          </form>
-          <button
-            onClick={() => setMode(mode === "register" ? "login" : "register")}
-            className="text-xs text-center text-slate-500"
-          >
-            {mode === "register" ? "มีบัญชีอยู่แล้ว? เข้าสู่ระบบ" : "ยังไม่มีบัญชี? สมัครสมาชิก"}
-          </button>
+          )}
         </div>
       )}
 
