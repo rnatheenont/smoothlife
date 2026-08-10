@@ -9,13 +9,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ user: null });
   }
   const [user] = await supabaseRest<
-    { id: string; display_name: string; created_at: string }[]
-  >(`users?id=eq.${uid}&select=id,display_name,created_at`);
+    { id: string; display_name: string; created_at: string; phone: string | null; gender: string | null; birthdate: string | null; avatar_url: string | null }[]
+  >(`users?id=eq.${uid}&select=id,display_name,created_at,phone,gender,birthdate,avatar_url`);
   if (!user) return NextResponse.json({ user: null });
 
+  // A user may have both an email and a phone_otp identity (linked via the
+  // unified signup flow) — report whichever exists, preferring email as the
+  // "provider" label since that's the one with a password fallback.
   const identities = await supabaseRest<{ provider: string; provider_uid: string }[]>(
-    `auth_identities?user_id=eq.${uid}&provider=eq.email&select=provider,provider_uid`
+    `auth_identities?user_id=eq.${uid}&provider=in.(email,phone_otp)&select=provider,provider_uid`
   );
+  const emailIdentity = identities.find((i) => i.provider === "email");
+  const phoneIdentity = identities.find((i) => i.provider === "phone_otp");
   const [balanceRow] = await supabaseRest<{ balance: number }[]>(
     `points_balance?user_id=eq.${uid}&select=balance`
   );
@@ -25,8 +30,12 @@ export async function GET(req: NextRequest) {
     user: {
       id: user.id,
       name: user.display_name,
-      email: identities[0]?.provider_uid,
-      provider: "email",
+      email: emailIdentity?.provider_uid,
+      phone: user.phone || phoneIdentity?.provider_uid,
+      gender: user.gender,
+      birthdate: user.birthdate,
+      avatar: user.avatar_url,
+      provider: emailIdentity ? "email" : phoneIdentity ? "phone" : "email",
       points,
       tier: tierProgress(points).current,
       createdAt: user.created_at,

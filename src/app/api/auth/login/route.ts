@@ -22,9 +22,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" }, { status: 401 });
   }
 
-  const [user] = await supabaseRest<{ id: string; display_name: string; created_at: string }[]>(
-    `users?id=eq.${identity.user_id}&select=id,display_name,created_at`
-  );
+  const [user] = await supabaseRest<
+    { id: string; display_name: string; created_at: string; phone: string | null; gender: string | null; birthdate: string | null; avatar_url: string | null }[]
+  >(`users?id=eq.${identity.user_id}&select=id,display_name,created_at,phone,gender,birthdate,avatar_url`);
   const [balanceRow] = await supabaseRest<{ balance: number }[]>(
     `points_balance?user_id=eq.${identity.user_id}&select=balance`
   );
@@ -36,6 +36,10 @@ export async function POST(req: NextRequest) {
       id: user.id,
       name: user.display_name,
       email: normalizedEmail,
+      phone: user.phone,
+      gender: user.gender,
+      birthdate: user.birthdate,
+      avatar: user.avatar_url,
       provider: "email",
       points,
       tier: tierProgress(points).current,

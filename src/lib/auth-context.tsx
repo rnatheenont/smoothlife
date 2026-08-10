@@ -10,9 +10,11 @@ export type SLUser = {
   name: string;
   email?: string;
   phone?: string;
+  gender?: "male" | "female" | "other" | null;
+  birthdate?: string | null;
   passwordHash?: string;
   provider: "email" | "phone" | "line";
-  avatar?: string;
+  avatar?: string | null;
   points: number;
   tier: Tier;
   createdAt: string;
@@ -44,6 +46,7 @@ type AuthContextValue = {
   addOrder: (order: Omit<SLOrder, "id" | "userId" | "createdAt" | "status">) => SLOrder;
   getOrders: () => SLOrder[];
   addPoints: (amount: number) => void;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -76,31 +79,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SLUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  async function loadSession() {
+    // Real accounts (email) are backed by Supabase and identified by an
+    // httpOnly session cookie — check that first.
+    try {
+      const res = await fetch("/api/auth/session");
+      const data = await res.json();
+      if (data.user) {
+        setUser(data.user);
+        return true;
+      }
+    } catch {
+      // server session check failed (offline, not configured yet) — fall
+      // through to the local demo session below.
+    }
+    const sessionId = localStorage.getItem(SESSION_KEY);
+    if (sessionId) {
+      const users = readUsers();
+      const found = users.find((u) => u.id === sessionId);
+      if (found) {
+        setUser(found);
+        return true;
+      }
+    }
+    return false;
+  }
+
   useEffect(() => {
-    (async () => {
-      // Real accounts (email) are backed by Supabase and identified by an
-      // httpOnly session cookie — check that first.
-      try {
-        const res = await fetch("/api/auth/session");
-        const data = await res.json();
-        if (data.user) {
-          setUser(data.user);
-          setLoading(false);
-          return;
-        }
-      } catch {
-        // server session check failed (offline, not configured yet) — fall
-        // through to the local demo session below.
-      }
-      const sessionId = localStorage.getItem(SESSION_KEY);
-      if (sessionId) {
-        const users = readUsers();
-        const found = users.find((u) => u.id === sessionId);
-        if (found) setUser(found);
-      }
-      setLoading(false);
-    })();
+    loadSession().finally(() => setLoading(false));
   }, []);
+
+  async function refreshUser() {
+    await loadSession();
+  }
 
   function persistSession(u: SLUser) {
     setUser(u);
@@ -228,6 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         addOrder,
         getOrders,
         addPoints,
+        refreshUser,
       }}
     >
       {children}

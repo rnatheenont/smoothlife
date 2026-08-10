@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Package } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
-import AccountGate from "@/components/AccountGate";
+import AccountLayout from "@/components/account/AccountLayout";
 import DemoBadge from "@/components/DemoBadge";
 import { formatTHB } from "@/lib/format";
 
@@ -27,7 +27,7 @@ function OrdersContent() {
 
   if (orders.length === 0) {
     return (
-      <div className="container-page py-16 text-center">
+      <div className="text-center py-10">
         <Package size={40} className="mx-auto text-slate-300" />
         <p className="text-slate-500 mt-4">คุณยังไม่มีคำสั่งซื้อ</p>
         <Link href="/shop" className="inline-block mt-4 text-brand-emerald font-semibold text-sm">เริ่มช้อปเลย</Link>
@@ -36,7 +36,7 @@ function OrdersContent() {
   }
 
   return (
-    <div className="container-page py-8 md:py-10 max-w-3xl mx-auto">
+    <div className="max-w-3xl">
       <h1 className="text-2xl font-bold text-brand-ink mb-2">คำสั่งซื้อและติดตามพัสดุ</h1>
       <div className="mb-6">
         <DemoBadge text="คำสั่งซื้อที่ทำผ่านหน้าชำระเงินของ Shopify จะยังไม่แสดงที่นี่ — หน้านี้กำลังจะเชื่อมกับ Shopify Order/Customer API จริงในเฟสถัดไป ตอนนี้ตรวจสอบสถานะคำสั่งซื้อได้จากอีเมลยืนยันของ Shopify" />
@@ -78,8 +78,8 @@ function OrdersContent() {
 
 export default function OrdersPage() {
   return (
-    <AccountGate>
+    <AccountLayout>
       <OrdersContent />
-    </AccountGate>
+    </AccountLayout>
   );
 }
