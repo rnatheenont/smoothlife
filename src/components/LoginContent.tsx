@@ -43,6 +43,11 @@ export default function LoginContent() {
   const [otpName, setOtpName] = useState("");
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
+  // grecaptcha remembers it already rendered a widget on a given DOM node
+  // even after verifier.clear() — bumping this key forces React to mount a
+  // brand-new #recaptcha-container element on retry instead of reusing one
+  // grecaptcha considers "already rendered".
+  const [recaptchaKey, setRecaptchaKey] = useState(0);
 
   const [emailSubmitting, setEmailSubmitting] = useState(false);
 
@@ -74,9 +79,12 @@ export default function LoginContent() {
       console.error("[otp] send failed", err);
       setOtpError("ส่งรหัส OTP ไม่สำเร็จ กรุณาตรวจสอบเบอร์โทรศัพท์แล้วลองใหม่อีกครั้ง");
       // A failed attempt can leave the reCAPTCHA widget in a used state —
-      // drop it so the next try creates a fresh one instead of erroring.
+      // drop it AND mount a fresh container node (see recaptchaKey comment)
+      // so the next try renders cleanly instead of hitting
+      // "reCAPTCHA has already been rendered in this element".
       recaptchaVerifierRef.current?.clear();
       recaptchaVerifierRef.current = null;
+      setRecaptchaKey((k) => k + 1);
     } finally {
       setOtpSending(false);
     }
@@ -147,7 +155,7 @@ export default function LoginContent() {
           {!firebaseConfigured() && (
             <DemoBadge text="ระบบ OTP ยังไม่ได้ตั้งค่า Firebase กรุณาติดต่อผู้ดูแลระบบ หรือเข้าสู่ระบบด้วย Email/LINE แทน" />
           )}
-          <div id="recaptcha-container" />
+          <div id="recaptcha-container" key={recaptchaKey} />
           {!otpSent ? (
             <form onSubmit={handleSendOtp} className="flex flex-col gap-3">
               <label className="text-xs font-semibold text-slate-500">เบอร์โทรศัพท์</label>
