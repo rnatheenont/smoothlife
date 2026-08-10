@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, Phone, MessageCircle, Lock, User as UserIcon, AlertTriangle } from "lucide-react";
+import { Mail, Phone, MessageCircle, Lock, User as UserIcon, AlertTriangle, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
 import DemoBadge from "./DemoBadge";
 
 type Tab = "otp" | "email" | "line";
@@ -19,7 +21,7 @@ const LINE_ERRORS: Record<string, string> = {
 export default function LoginContent() {
   const [tab, setTab] = useState<Tab>("otp");
   const [mode, setMode] = useState<"login" | "register">("login");
-  const { registerWithEmail, loginWithEmail, requestOtp, verifyOtp } = useAuth();
+  const { registerWithEmail, loginWithEmail, completePhoneLogin } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo") || "/account";
@@ -34,10 +36,13 @@ export default function LoginContent() {
   // OTP state
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  const [expectedOtp, setExpectedOtp] = useState("");
+  const confirmationResultRef = useRef<ConfirmationResult | null>(null);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
   const [otpInput, setOtpInput] = useState("");
   const [otpError, setOtpError] = useState("");
   const [otpName, setOtpName] = useState("");
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
 
   const [emailSubmitting, setEmailSubmitting] = useState(false);
 
@@ -52,20 +57,57 @@ export default function LoginContent() {
     else router.push(returnTo);
   }
 
-  function handleSendOtp(e: React.FormEvent) {
+  async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
     if (phone.trim().length < 9) return;
-    const code = requestOtp(phone);
-    setExpectedOtp(code);
-    setOtpSent(true);
     setOtpError("");
+    setOtpSending(true);
+    try {
+      const auth = getFirebaseAuth();
+      if (!recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
+      }
+      const confirmation = await signInWithPhoneNumber(auth, toE164Thai(phone), recaptchaVerifierRef.current);
+      confirmationResultRef.current = confirmation;
+      setOtpSent(true);
+    } catch (err) {
+      console.error("[otp] send failed", err);
+      setOtpError("ส่งรหัส OTP ไม่สำเร็จ กรุณาตรวจสอบเบอร์โทรศัพท์แล้วลองใหม่อีกครั้ง");
+      // A failed attempt can leave the reCAPTCHA widget in a used state —
+      // drop it so the next try creates a fresh one instead of erroring.
+      recaptchaVerifierRef.current?.clear();
+      recaptchaVerifierRef.current = null;
+    } finally {
+      setOtpSending(false);
+    }
   }
 
-  function handleVerifyOtp(e: React.FormEvent) {
+  async function handleVerifyOtp(e: React.FormEvent) {
     e.preventDefault();
-    const result = verifyOtp(phone, otpInput, expectedOtp, otpName || undefined);
-    if (!result.ok) setOtpError(result.error || "เกิดข้อผิดพลาด");
-    else router.push(returnTo);
+    if (!confirmationResultRef.current) return;
+    setOtpError("");
+    setOtpVerifying(true);
+    try {
+      const credential = await confirmationResultRef.current.confirm(otpInput);
+      const idToken = await credential.user.getIdToken();
+      const res = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, name: otpName || undefined }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setOtpError(data.error || "ยืนยันไม่สำเร็จ");
+        return;
+      }
+      completePhoneLogin(data.user);
+      router.push(returnTo);
+    } catch (err) {
+      console.error("[otp] verify failed", err);
+      setOtpError("รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่");
+    } finally {
+      setOtpVerifying(false);
+    }
   }
 
   return (
@@ -102,26 +144,34 @@ export default function LoginContent() {
 
       {tab === "otp" && (
         <div className="flex flex-col gap-4">
-          <DemoBadge text="Demo Mode: ระบบยังไม่เชื่อมต่อผู้ให้บริการ SMS จริง รหัส OTP จะแสดงบนหน้าจอเพื่อการทดสอบ" />
+          {!firebaseConfigured() && (
+            <DemoBadge text="ระบบ OTP ยังไม่ได้ตั้งค่า Firebase กรุณาติดต่อผู้ดูแลระบบ หรือเข้าสู่ระบบด้วย Email/LINE แทน" />
+          )}
+          <div id="recaptcha-container" />
           {!otpSent ? (
             <form onSubmit={handleSendOtp} className="flex flex-col gap-3">
               <label className="text-xs font-semibold text-slate-500">เบอร์โทรศัพท์</label>
               <input
+                disabled={!firebaseConfigured()}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="08X-XXX-XXXX"
-                className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal"
+                className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal disabled:opacity-50"
               />
-              <button className="rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity">
-                ส่งรหัส OTP
+              {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
+              <button
+                disabled={!firebaseConfigured() || otpSending}
+                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {otpSending && <Loader2 size={15} className="animate-spin" />}
+                {otpSending ? "กำลังส่งรหัส..." : "ส่งรหัส OTP"}
               </button>
             </form>
           ) : (
             <form onSubmit={handleVerifyOtp} className="flex flex-col gap-3">
-              <div className="rounded-lg bg-brand-gradient-soft p-3 text-center">
-                <p className="text-xs text-slate-500">รหัส OTP ของคุณ (จำลองการส่ง SMS)</p>
-                <p className="text-2xl font-bold tracking-widest text-brand-emerald">{expectedOtp}</p>
-              </div>
+              <p className="text-xs text-slate-500 text-center">
+                ส่งรหัส OTP ไปที่ {toE164Thai(phone)} แล้ว กรุณากรอกรหัสที่ได้รับทาง SMS
+              </p>
               <input
                 value={otpName}
                 onChange={(e) => setOtpName(e.target.value)}
@@ -136,10 +186,23 @@ export default function LoginContent() {
                 className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal tracking-widest text-center"
               />
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
-              <button className="rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity">
-                ยืนยันรหัส OTP
+              <button
+                disabled={otpVerifying || otpInput.length < 6}
+                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {otpVerifying && <Loader2 size={15} className="animate-spin" />}
+                {otpVerifying ? "กำลังยืนยัน..." : "ยืนยันรหัส OTP"}
               </button>
-              <button type="button" onClick={() => setOtpSent(false)} className="text-xs text-slate-400">
+              <button
+                type="button"
+                onClick={() => {
+                  setOtpSent(false);
+                  setOtpInput("");
+                  setOtpError("");
+                  confirmationResultRef.current = null;
+                }}
+                className="text-xs text-slate-400"
+              >
                 เปลี่ยนเบอร์โทรศัพท์
               </button>
             </form>

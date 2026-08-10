@@ -79,6 +79,29 @@ export async function findShopifyCustomerByEmail(email: string): Promise<Shopify
   }
 }
 
+// Same idea as findShopifyCustomerByEmail but keyed on phone — used by the
+// phone-OTP signup path, which has no email to match on.
+export async function findShopifyCustomerByPhone(phone: string): Promise<ShopifyCustomerMatch | null> {
+  if (!shopifyAdminConfigured()) return null;
+  try {
+    const data = await adminGraphql<{
+      customers: { edges: { node: { id: string; firstName: string | null; lastName: string | null; phone: string | null } }[] };
+    }>(
+      `query FindCustomerByPhone($query: String!) {
+        customers(first: 1, query: $query) {
+          edges { node { id firstName lastName phone } }
+        }
+      }`,
+      { query: `phone:${JSON.stringify(phone)}` }
+    );
+    const node = data.customers.edges[0]?.node;
+    return node || null;
+  } catch (err) {
+    console.error("[shopify-admin] findShopifyCustomerByPhone failed", err);
+    return null;
+  }
+}
+
 // Creates a real, single-use percentage discount code redeemable once per
 // customer. Returns the code string.
 export async function createPercentDiscountCode(opts: {

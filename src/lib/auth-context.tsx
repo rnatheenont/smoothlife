@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { genOtp, genOrderId } from "./format";
+import { genOrderId } from "./format";
 
 export type Tier = "Bronze" | "Silver" | "Gold";
 
@@ -15,10 +15,9 @@ export type SLUser = {
   passwordHash?: string;
   provider: "email" | "phone" | "line";
   // True when this session came from the real, Supabase-backed httpOnly
-  // cookie (/api/auth/session) — false for the localStorage-only demo
-  // session still used by phone OTP until Firebase Phone Auth is wired up.
+  // cookie (/api/auth/session) — email, phone, and line are all real now.
   // Gate any "real backend" feature (address book, points ledger, etc.) on
-  // this instead of checking `provider`, since email AND line are both real.
+  // this rather than checking `provider`.
   real: boolean;
   avatar?: string | null;
   points: number;
@@ -45,8 +44,7 @@ type AuthContextValue = {
   loading: boolean;
   registerWithEmail: (name: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   loginWithEmail: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  requestOtp: (phone: string) => string;
-  verifyOtp: (phone: string, code: string, expected: string, name?: string) => { ok: boolean; error?: string };
+  completePhoneLogin: (user: SLUser) => void;
   logout: () => void;
   addOrder: (order: Omit<SLOrder, "id" | "userId" | "createdAt" | "status">) => SLOrder;
   getOrders: () => SLOrder[];
@@ -109,11 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadSession();
   }
 
-  function persistSession(u: SLUser) {
-    setUser(u);
-    localStorage.setItem(SESSION_KEY, u.id);
-  }
-
   async function registerWithEmail(name: string, email: string, password: string) {
     const res = await fetch("/api/auth/register", {
       method: "POST",
@@ -138,31 +131,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
-  function requestOtp(_phone: string) {
-    return genOtp();
-  }
-
-  function verifyOtp(phone: string, code: string, expected: string, name?: string) {
-    if (code !== expected) {
-      return { ok: false, error: "รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่" };
-    }
-    const users = readUsers();
-    let found = users.find((u) => u.phone === phone);
-    if (!found) {
-      found = {
-        id: crypto.randomUUID(),
-        name: name || `คุณ ${phone.slice(-4)}`,
-        phone,
-        provider: "phone",
-        real: false,
-        points: 100,
-        tier: "Bronze",
-        createdAt: new Date().toISOString(),
-      };
-      writeUsers([...users, found]);
-    }
-    persistSession(found);
-    return { ok: true };
+  // Phone sign-in is real now (Firebase Phone Auth + /api/auth/otp/verify
+  // already set the httpOnly session cookie) — this just mirrors that
+  // server-confirmed user into local state, same as register/loginWithEmail.
+  function completePhoneLogin(u: SLUser) {
+    setUser(u);
   }
 
   function logout() {
@@ -210,8 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         registerWithEmail,
         loginWithEmail,
-        requestOtp,
-        verifyOtp,
+        completePhoneLogin,
         logout,
         addOrder,
         getOrders,
