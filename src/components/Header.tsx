@@ -80,9 +80,6 @@ export default function Header() {
           <div className="hidden sm:block">
             <LanguageSwitch />
           </div>
-          <Link href="/search" className="md:hidden" aria-label="Search">
-            <Search size={22} />
-          </Link>
           {user ? (
             <Link href="/account" className="hidden sm:flex items-center gap-1.5 rounded-full bg-surface-muted px-3 py-1.5 text-xs font-semibold text-brand-dark">
               <Award size={14} className="text-amber-500" /> {user.points} pts · {user.tier}
