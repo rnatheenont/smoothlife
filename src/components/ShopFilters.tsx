@@ -95,7 +95,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-72 bg-white p-5 overflow-y-auto">
+          <div className="absolute right-0 top-0 h-full w-72 bg-white p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold">ตัวกรองสินค้า</h3>
               <button onClick={() => setMobileOpen(false)} className="text-sm text-slate-500">ปิด</button>

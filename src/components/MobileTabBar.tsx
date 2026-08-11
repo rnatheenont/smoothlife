@@ -35,7 +35,7 @@ export default function MobileTabBar() {
               <Link
                 href={tab.href}
                 aria-current={on ? "page" : undefined}
-                className={`relative flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
+                className={`relative flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition active:scale-90 active:opacity-60 ${
                   on ? "text-brand-emerald" : "text-slate-400"
                 }`}
               >

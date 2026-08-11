@@ -46,7 +46,7 @@ export default function Header() {
 
   return (
     <>
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 pt-[env(safe-area-inset-top)]">
       <div className="bg-brand-gradient text-white text-center text-[11px] md:text-xs py-1.5 px-3">
         <span className="hidden sm:inline">
           ส่งฟรีทั่วไทย • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี
@@ -121,7 +121,7 @@ export default function Header() {
       {open && (
         <div className="fixed inset-0 z-[100] lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-0 h-full max-h-[100dvh] w-80 max-w-[85vw] bg-white p-5 shadow-xl overflow-y-auto overscroll-contain">
+          <div className="absolute left-0 top-0 h-full max-h-[100dvh] w-80 max-w-[85vw] bg-white p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-xl overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between mb-6">
               <span className="font-extrabold text-lg">
                 <span className="brand-text-gradient">Smoothlife</span>
