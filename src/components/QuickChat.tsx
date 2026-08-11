@@ -193,9 +193,20 @@ export default function QuickChat() {
           image: image ? { base64: image.base64, mediaType: image.mediaType } : undefined,
         }),
       });
-      const data = await res.json();
-      const dbg = data.error ? "\n\n[debug] " + data.error : "";
-      setMessages([...next, { role: "assistant", content: (data.reply || "…") + dbg }]);
+      if (!res.body) throw new Error("no response body");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let acc = "";
+      // Keep showing the "Thinking..." indicator (below) until the first
+      // chunk arrives, then grow the bubble as more text streams in — no
+      // more waiting for the full reply before showing anything.
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        acc += decoder.decode(value, { stream: true });
+        setMessages([...next, { role: "assistant", content: acc }]);
+      }
+      if (!acc) setMessages([...next, { role: "assistant", content: "…" }]);
     } catch {
       setMessages([
         ...next,
@@ -334,7 +345,7 @@ export default function QuickChat() {
               </div>
             ))}
 
-            {loading && (
+            {loading && messages[messages.length - 1]?.role !== "assistant" && (
               <div className="flex gap-2">
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-gradient text-white">
                   <Bot size={13} />

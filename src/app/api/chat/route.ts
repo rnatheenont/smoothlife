@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
 import { products } from "@/data/products";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
-const API_URL = "https://api.anthropic.com/v1/messages";
 
 const MAX_CATALOGUE = 180;
 
@@ -62,9 +62,28 @@ Guidance:
 - Never promise results or claim to treat disease.
 - If asked something unrelated to beauty, health or the store, politely steer back.
 
+Customer profile so far: ${profileText}
+
 PHOTOS ATTACHED IN CHAT (the user has already given consent for photo analysis before you see it) — exactly two kinds, handle whichever it is:
 1. PRODUCT photo (packaging, label, bottle, tube): identify what you can read/see and try to match it against the catalogue above by name or brand. If you find a confident match, use its [[slug]] marker as usual. If it looks like a different brand we don't carry, say so honestly and suggest the closest catalogue product instead — never claim a low-confidence guess is a match.
 2. SKIN/FACE photo — either a specific problem spot (rash, bump, breakout patch, redness, irritation) or a fuller face/selfie: give a short, warm, NON-diagnostic cosmetic observation of what's visible (plain description only, e.g. "ดูเหมือนมีผื่นแดงเล็กน้อยบริเวณนี้ค่ะ" or "โดยรวมผิวดูสดใสดีค่ะ มีจุดด่างดำเล็กน้อยแถวโหนกแก้ม") and suggest 1-2 relevant catalogue products with their [[slug]] markers so they get an actual recommendation, not just a comment. Always add that this is not a medical diagnosis, and if it looks painful, spreading, infected, or has lasted a while, recommend seeing a doctor or pharmacist instead. Never name a disease or clinical condition, never promise it will clear up. You may also mention that the Skin Coach tool (/skin-coach) can give a fuller multi-angle scored breakdown if they want to go deeper — but always give your own take here first, don't just redirect.`;
+}
+
+function textStream(text: string) {
+  const encoder = new TextEncoder();
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(text));
+      controller.close();
+    },
+  });
+}
+
+function textResponse(text: string, status = 200) {
+  return new Response(textStream(text), {
+    status,
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -72,7 +91,7 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "invalid body" }, { status: 400 });
+    return textResponse("invalid body", 400);
   }
 
   const messages = Array.isArray(body?.messages) ? body.messages : [];
@@ -85,96 +104,78 @@ export async function POST(req: NextRequest) {
   const imageMediaType = image?.mediaType === "image/png" ? "image/png" : "image/jpeg";
   // Rough cap so someone can't post an enormous payload to this route.
   if (imageBase64 && imageBase64.length > 6_000_000) {
-    return NextResponse.json({ error: "image too large" }, { status: 413 });
+    return textResponse(lang === "en" ? "That photo is too large. Please try a smaller one." : "รูปนี้ใหญ่เกินไปครับ กรุณาลองรูปที่เล็กลง", 413);
   }
 
   if (!key) {
-    return NextResponse.json({
-      reply:
-        lang === "en"
-          ? "The AI Advisor isn't connected yet. Add an ANTHROPIC_API_KEY environment variable in your Vercel project settings and redeploy to enable live chat. In the meantime, the personalised product picks above are based on your quiz answers."
-          : "ยังไม่ได้เชื่อมต่อ AI Advisor ครับ — กรุณาเพิ่มค่า ANTHROPIC_API_KEY ใน Environment Variables ของโปรเจกต์บน Vercel แล้ว deploy ใหม่ เพื่อเปิดใช้งานแชทสด ระหว่างนี้สินค้าที่แนะนำด้านบนคัดมาจากคำตอบในแบบประเมินของคุณแล้วครับ",
-      configured: false,
-    });
+    return textResponse(
+      lang === "en"
+        ? "The AI Advisor isn't connected yet. Add an ANTHROPIC_API_KEY environment variable in your Vercel project settings and redeploy to enable live chat. In the meantime, the personalised product picks above are based on your quiz answers."
+        : "ยังไม่ได้เชื่อมต่อ AI Advisor ครับ — กรุณาเพิ่มค่า ANTHROPIC_API_KEY ใน Environment Variables ของโปรเจกต์บน Vercel แล้ว deploy ใหม่ เพื่อเปิดใช้งานแชทสด ระหว่างนี้สินค้าที่แนะนำด้านบนคัดมาจากคำตอบในแบบประเมินของคุณแล้วครับ"
+    );
   }
 
-  try {
-    const trimmed = messages
-      .filter((m: any) => m && typeof m.content === "string" && m.content.trim())
-      .slice(-12)
-      .map((m: any) => ({
-        role: m.role === "assistant" ? "assistant" : "user",
-        content: m.content as string,
-      }));
+  const trimmed = messages
+    .filter((m: any) => m && typeof m.content === "string" && m.content.trim())
+    .slice(-12)
+    .map((m: any) => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: m.content as string,
+    }));
 
-    // Attach the photo (if any) to the most recent user turn only — earlier
-    // turns never carry an image, so the payload doesn't balloon on longer chats.
-    let anthropicMessages: any[] = trimmed;
-    if (imageBase64) {
-      const lastIdx = [...trimmed].map((m) => m.role).lastIndexOf("user");
-      if (lastIdx !== -1) {
-        anthropicMessages = trimmed.map((m, i) =>
-          i === lastIdx
-            ? {
-                role: "user",
-                content: [
-                  { type: "image", source: { type: "base64", media_type: imageMediaType, data: imageBase64 } },
-                  { type: "text", text: m.content },
-                ],
-              }
-            : m
-        );
-      }
-    }
-
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 800,
-        system: systemPrompt(profile, lang),
-        messages: anthropicMessages,
-      }),
-    });
-
-    if (!res.ok) {
-      const detail = await res.text();
-      console.error("[anthropic] status=" + res.status + " model=" + MODEL + " body=" + detail.slice(0, 500));
-      return NextResponse.json(
-        {
-          reply:
-            lang === "en"
-              ? "Sorry, I couldn't reach the AI service just now. Please try again."
-              : "ขออภัยครับ ตอนนี้เชื่อมต่อบริการ AI ไม่ได้ กรุณาลองใหม่อีกครั้ง",
-          configured: true,
-          error: detail.slice(0, 300),
-        },
-        { status: 200 }
+  // Attach the photo (if any) to the most recent user turn only — earlier
+  // turns never carry an image, so the payload doesn't balloon on longer chats.
+  let anthropicMessages: any[] = trimmed;
+  if (imageBase64) {
+    const lastIdx = [...trimmed].map((m) => m.role).lastIndexOf("user");
+    if (lastIdx !== -1) {
+      anthropicMessages = trimmed.map((m, i) =>
+        i === lastIdx
+          ? {
+              role: "user",
+              content: [
+                { type: "image", source: { type: "base64", media_type: imageMediaType, data: imageBase64 } },
+                { type: "text", text: m.content },
+              ],
+            }
+          : m
       );
     }
-
-    const data = await res.json();
-    const reply = (data?.content || [])
-      .filter((b: any) => b.type === "text")
-      .map((b: any) => b.text)
-      .join("\n")
-      .trim();
-
-    return NextResponse.json({ reply: reply || "…", configured: true });
-  } catch (e: any) {
-    console.error("[anthropic] threw " + String(e));
-    return NextResponse.json({
-      reply:
-        lang === "en"
-          ? "Sorry, something went wrong. Please try again."
-          : "ขออภัยครับ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
-      configured: true,
-      error: String(e).slice(0, 200),
-    });
   }
+
+  const client = new Anthropic({ apiKey: key });
+  const encoder = new TextEncoder();
+  const system = systemPrompt(profile, lang);
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        const anthropicStream = client.messages.stream({
+          model: MODEL,
+          max_tokens: 800,
+          // Short product-advice replies don't need deep reasoning — low
+          // effort is the documented setting for latency-sensitive chat,
+          // and cuts the adaptive-thinking time Sonnet 5 spends by default.
+          output_config: { effort: "low" },
+          system,
+          messages: anthropicMessages,
+        });
+        anthropicStream.on("text", (delta) => {
+          controller.enqueue(encoder.encode(delta));
+        });
+        await anthropicStream.finalMessage();
+        controller.close();
+      } catch (err) {
+        console.error("[anthropic] stream error model=" + MODEL, err);
+        const msg =
+          lang === "en"
+            ? "\n\nSorry, I couldn't reach the AI service just now. Please try again."
+            : "\n\nขออภัยครับ ตอนนี้เชื่อมต่อบริการ AI ไม่ได้ กรุณาลองใหม่อีกครั้ง";
+        controller.enqueue(encoder.encode(msg));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 }
