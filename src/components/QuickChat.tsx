@@ -196,17 +196,39 @@ export default function QuickChat() {
       if (!res.body) throw new Error("no response body");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let acc = "";
-      // Keep showing the "Thinking..." indicator (below) until the first
-      // chunk arrives, then grow the bubble as more text streams in — no
-      // more waiting for the full reply before showing anything.
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        acc += decoder.decode(value, { stream: true });
-        setMessages([...next, { role: "assistant", content: acc }]);
+
+      // Network chunks arrive in bursts (a handful of tokens at a time),
+      // which reads as jumpy if painted directly. Decouple painting from
+      // network timing: accumulate the full text as it arrives, and reveal
+      // it to the UI a few characters at a time on a steady clock instead —
+      // a smooth, constant-speed typewriter regardless of chunk burstiness.
+      let full = "";
+      let shown = 0;
+      let netDone = false;
+      const CHARS_PER_TICK = 3;
+      const TICK_MS = 16;
+
+      async function readNetwork() {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          full += decoder.decode(value, { stream: true });
+        }
+        netDone = true;
       }
-      if (!acc) setMessages([...next, { role: "assistant", content: "…" }]);
+
+      async function revealLoop() {
+        while (shown < full.length || !netDone) {
+          if (shown < full.length) {
+            shown = Math.min(full.length, shown + CHARS_PER_TICK);
+            setMessages([...next, { role: "assistant", content: full.slice(0, shown) }]);
+          }
+          await new Promise((r) => setTimeout(r, TICK_MS));
+        }
+      }
+
+      await Promise.all([readNetwork(), revealLoop()]);
+      if (!full) setMessages([...next, { role: "assistant", content: "…" }]);
     } catch {
       setMessages([
         ...next,
