@@ -344,12 +344,12 @@ export default function QuickChat() {
             {messages.map((m, i) => (
               <div key={i} className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
                 {m.role === "user" ? (
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-slate-200 text-slate-600">
-                    <UserIcon size={13} />
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-200 text-slate-600">
+                    <UserIcon size={15} />
                   </span>
                 ) : (
-                  <span className="relative h-7 w-7 shrink-0">
-                    <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="28px" className="object-contain" />
+                  <span className="relative h-10 w-10 shrink-0 -mt-0.5">
+                    <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="40px" className="object-contain" />
                   </span>
                 )}
                 <div
@@ -370,8 +370,8 @@ export default function QuickChat() {
 
             {loading && messages[messages.length - 1]?.role !== "assistant" && (
               <div className="flex gap-2">
-                <span className="relative h-7 w-7 shrink-0">
-                  <Image src="/mascot/smoothie-question.png" alt="" fill sizes="28px" className="object-contain" />
+                <span className="relative h-10 w-10 shrink-0 -mt-0.5">
+                  <Image src="/mascot/smoothie-question.png" alt="" fill sizes="40px" className="object-contain" />
                 </span>
                 <div className="rounded-2xl rounded-tl-sm bg-white border border-slate-100 px-3.5 py-2.5 text-[13px] text-slate-400 flex items-center gap-2">
                   <Loader2 size={13} className="animate-spin" /> {t("กำลังคิด...", "Thinking...")}
