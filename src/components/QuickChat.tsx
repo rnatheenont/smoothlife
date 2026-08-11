@@ -247,18 +247,10 @@ export default function QuickChat() {
 
   return (
     <>
-      {/*
-        Mobile already has an "AI" entry in the bottom tab bar (-> /advisor),
-        so a floating launcher here duplicates it. Desktop has no bottom tab
-        bar, so this stays as the only quick entry there. The chat panel
-        itself is unaffected — it can still be opened on mobile from other
-        triggers (e.g. Skin Coach's "คุยกับ AI Advisor" button) via setOpen/
-        openWithProfile, and has its own close button once open.
-      */}
       <button
         onClick={() => setOpen(!open)}
         aria-label={t("คุยกับ AI Advisor", "Chat with AI Advisor")}
-        className={`fixed bottom-5 right-4 lg:right-5 z-[80] hidden lg:flex items-center gap-2 rounded-full bg-brand-gradient text-white shadow-cardHover transition-transform hover:scale-105 active:scale-95 ${
+        className={`fixed bottom-[calc(72px+env(safe-area-inset-bottom))] lg:bottom-5 right-4 lg:right-5 z-[80] flex items-center gap-2 rounded-full bg-brand-gradient text-white shadow-cardHover transition-transform hover:scale-105 active:scale-95 ${
           open ? "h-12 w-12 justify-center" : "h-14 pl-4 pr-5 sm:pl-5 sm:pr-6"
         }`}
       >
