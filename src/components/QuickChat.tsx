@@ -119,8 +119,13 @@ export default function QuickChat() {
   const [awaitingConsentImage, setAwaitingConsentImage] = useState<ResizedImage | null>(null);
   const [imageConsent, setImageConsent] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [followups, setFollowups] = useState<string[]>([]);
   const scroller = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Only surface follow-up suggestion chips every other assistant reply so
+  // they help re-engage the chat without showing up after literally every
+  // message, which reads as spammy/annoying.
+  const assistantTurnCount = useRef(0);
 
   useEffect(() => {
     setImageConsent(hasStoredConsent());
@@ -186,6 +191,7 @@ export default function QuickChat() {
     setMessages(next);
     setInput("");
     setPendingImage(null);
+    setFollowups([]);
     setLoading(true);
     try {
       const res = await fetch("/api/chat", {
@@ -212,6 +218,26 @@ export default function QuickChat() {
       let netDone = false;
       const CHARS_PER_TICK = 3;
       const TICK_MS = 16;
+      // The model may tack on a trailing "[[SUGGEST: ...]]" marker (see
+      // route.ts) that must never flash on screen as raw bracket text. The
+      // instant the literal "[[SUGGEST:" substring shows up anywhere in the
+      // accumulated text, freeze the reveal boundary right before it and
+      // never advance past it — everything from there on is the marker
+      // (it's always last), regardless of how much more streams in after.
+      const SUGGEST_OPEN = "[[SUGGEST:";
+      function suggestOpenIndex() {
+        const idx = full.indexOf(SUGGEST_OPEN);
+        if (idx === -1) return -1;
+        return full[idx - 1] === "\n" ? idx - 1 : idx;
+      }
+      function visibleTarget() {
+        const idx = suggestOpenIndex();
+        if (idx !== -1) return idx;
+        if (netDone) return full.length;
+        // marker hasn't started (or hasn't fully arrived) yet — hold back a
+        // small safety margin in case "[[SUGGEST:" is split across chunks
+        return Math.max(0, full.length - SUGGEST_OPEN.length);
+      }
 
       async function readNetwork() {
         for (;;) {
@@ -223,9 +249,10 @@ export default function QuickChat() {
       }
 
       async function revealLoop() {
-        while (shown < full.length || !netDone) {
-          if (shown < full.length) {
-            shown = Math.min(full.length, shown + CHARS_PER_TICK);
+        while (shown < visibleTarget() || !netDone) {
+          const target = visibleTarget();
+          if (shown < target) {
+            shown = Math.min(target, shown + CHARS_PER_TICK);
             setMessages([...next, { role: "assistant", content: full.slice(0, shown) }]);
           }
           await new Promise((r) => setTimeout(r, TICK_MS));
@@ -233,7 +260,27 @@ export default function QuickChat() {
       }
 
       await Promise.all([readNetwork(), revealLoop()]);
-      if (!full) setMessages([...next, { role: "assistant", content: "…" }]);
+
+      const cutIdx = suggestOpenIndex();
+      const finalText = cutIdx !== -1 ? full.slice(0, cutIdx).trimEnd() : full;
+      setMessages([...next, { role: "assistant", content: finalText || "…" }]);
+
+      assistantTurnCount.current += 1;
+      let parsed: string[] = [];
+      if (cutIdx !== -1) {
+        const inner = full
+          .slice(cutIdx)
+          .replace(/^\n/, "")
+          .replace(/^\[\[SUGGEST:/i, "")
+          .replace(/\]\]\s*$/, "");
+        parsed = inner
+          .split("|")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .slice(0, 3);
+      }
+      // odd turns only (1st, 3rd, 5th assistant reply...) — every other one
+      setFollowups(parsed.length && assistantTurnCount.current % 2 === 1 ? parsed : []);
     } catch {
       setMessages([
         ...next,
@@ -295,7 +342,11 @@ export default function QuickChat() {
             <div className="flex items-center gap-1 shrink-0">
               {messages.length > 0 && (
                 <button
-                  onClick={() => setMessages([])}
+                  onClick={() => {
+                    setMessages([]);
+                    setFollowups([]);
+                    assistantTurnCount.current = 0;
+                  }}
                   aria-label={t("เริ่มใหม่", "Reset")}
                   className="grid h-7 w-7 place-items-center rounded-full text-white/60 hover:text-white hover:bg-white/10"
                 >
@@ -386,6 +437,27 @@ export default function QuickChat() {
                 <div className="rounded-2xl rounded-tl-sm bg-white border border-slate-100 px-3.5 py-2.5 text-[13px] text-slate-400 flex items-center gap-2">
                   <Loader2 size={13} className="animate-spin" /> {t("กำลังคิด...", "Thinking...")}
                 </div>
+              </div>
+            )}
+
+            {!loading && followups.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pl-11">
+                {followups.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => send(s)}
+                    className="rounded-full border border-brand-teal/40 bg-white px-3 py-1.5 text-[12px] text-brand-emerald hover:bg-brand-gradient-soft transition-colors"
+                  >
+                    {s}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setFollowups([])}
+                  aria-label={t("ซ่อนคำแนะนำ", "Hide suggestions")}
+                  className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-slate-300 hover:text-slate-500"
+                >
+                  <X size={12} />
+                </button>
               </div>
             )}
           </div>
