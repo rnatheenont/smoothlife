@@ -144,7 +144,7 @@ export default function Header() {
       {open && (
         <div className="fixed inset-0 z-[100] lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-0 h-full max-h-[100dvh] w-80 max-w-[85vw] bg-white p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-xl overflow-y-auto overscroll-contain">
+          <div className="absolute left-0 top-0 max-h-[100dvh] w-80 max-w-[85vw] bg-white p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-xl overflow-y-auto overscroll-contain rounded-br-2xl">
             <div className="flex items-center justify-between mb-6">
               <span className="font-extrabold text-lg">
                 <span className="brand-text-gradient">Smoothlife</span>
