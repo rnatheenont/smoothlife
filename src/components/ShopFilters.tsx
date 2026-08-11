@@ -5,9 +5,9 @@ import { categories, concerns } from "@/data/categories";
 import { brands } from "@/data/brands";
 import { ShopSearchParams } from "@/lib/filter-products";
 import { SlidersHorizontal } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
-export default function ShopFilters({ current }: { current: ShopSearchParams }) {
+export default function ShopFilters({ current, mobileExtra }: { current: ShopSearchParams; mobileExtra?: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -82,12 +82,15 @@ export default function ShopFilters({ current }: { current: ShopSearchParams }) 
 
   return (
     <>
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="lg:hidden flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium mb-4"
-      >
-        <SlidersHorizontal size={15} /> ตัวกรอง
-      </button>
+      <div className="lg:hidden flex items-center justify-between gap-3 mb-4">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium"
+        >
+          <SlidersHorizontal size={15} /> ตัวกรอง
+        </button>
+        {mobileExtra}
+      </div>
       <aside className="hidden lg:block w-56 shrink-0">{content}</aside>
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">

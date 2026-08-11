@@ -15,9 +15,9 @@ export default function ShopPage({ searchParams }: { searchParams: ShopSearchPar
         <p className="text-sm text-slate-500 mt-1">พบ {items.length} รายการ</p>
       </div>
       <div className="flex flex-col lg:flex-row gap-8">
-        <ShopFilters current={searchParams} />
+        <ShopFilters current={searchParams} mobileExtra={<SortSelect current={searchParams} />} />
         <div className="flex-1">
-          <div className="flex items-center justify-end mb-4">
+          <div className="hidden lg:flex items-center justify-end mb-4">
             <SortSelect current={searchParams} />
           </div>
           {items.length === 0 ? (

@@ -37,9 +37,9 @@ export default function CategoryPage({
         <p className="text-sm text-slate-500 mt-1">พบ {items.length} รายการ</p>
       </div>
       <div className="flex flex-col lg:flex-row gap-8">
-        <ShopFilters current={current} />
+        <ShopFilters current={current} mobileExtra={<SortSelect current={current} />} />
         <div className="flex-1">
-          <div className="flex items-center justify-end mb-4">
+          <div className="hidden lg:flex items-center justify-end mb-4">
             <SortSelect current={current} />
           </div>
           {items.length === 0 ? (
