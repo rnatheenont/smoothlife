@@ -43,9 +43,16 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateY(8px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        pop: {
+          "0%": { transform: "scale(1)" },
+          "35%": { transform: "scale(1.45)" },
+          "60%": { transform: "scale(0.9)" },
+          "100%": { transform: "scale(1)" },
+        },
       },
       animation: {
         fadeUp: "fadeUp 0.4s ease-out both",
+        pop: "pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both",
       },
     },
   },

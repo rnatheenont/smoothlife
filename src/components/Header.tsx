@@ -99,7 +99,10 @@ export default function Header() {
           <Link href="/cart" className="relative" aria-label="Cart">
             <ShoppingBag size={22} />
             {count > 0 && (
-              <span className="absolute -top-2 -right-2 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-sky px-1 text-[10px] font-bold text-white">
+              <span
+                key={count}
+                className="absolute -top-2 -right-2 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-sky px-1 text-[10px] font-bold text-white animate-pop"
+              >
                 {count}
               </span>
             )}

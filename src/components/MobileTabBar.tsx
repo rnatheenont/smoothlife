@@ -42,7 +42,10 @@ export default function MobileTabBar() {
                 <span className="relative">
                   <Icon size={21} strokeWidth={on ? 2.4 : 1.9} />
                   {tab.href === "/cart" && count > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 grid place-items-center rounded-full bg-brand-gradient text-white text-[9px] font-bold">
+                    <span
+                      key={count}
+                      className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 grid place-items-center rounded-full bg-brand-gradient text-white text-[9px] font-bold animate-pop"
+                    >
                       {count > 99 ? "99+" : count}
                     </span>
                   )}
