@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { Heart, ShoppingBag, Minus, Plus, Truck, ShieldCheck, RotateCcw, CheckCircle2 } from "lucide-react";
 import { Product, Review } from "@/data/types";
 import { formatTHB } from "@/lib/format";
 import StarRating from "./StarRating";
+import MobileStickyBar from "./MobileStickyBar";
 import { useCart, useWishlist } from "@/lib/cart-context";
 
 const tabs = [
@@ -39,20 +40,7 @@ export default function ProductDetailInteractive({
     setTimeout(() => setAdded(false), 1800);
   }
 
-  // Shows a sticky "add to cart" bar on mobile once the main buy button
-  // scrolls out of view, so buying never needs a scroll back up — the
-  // standard pattern in native shopping apps.
   const buyButtonRef = useRef<HTMLDivElement>(null);
-  const [showStickyBar, setShowStickyBar] = useState(false);
-  useEffect(() => {
-    const el = buyButtonRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => setShowStickyBar(!entry.isIntersecting), {
-      rootMargin: "0px 0px -10% 0px",
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <div>
@@ -260,24 +248,22 @@ export default function ProductDetailInteractive({
         </div>
       </div>
 
-      {showStickyBar && (
-        <div className="lg:hidden fixed bottom-[60px] inset-x-0 z-[85] flex items-center gap-3 border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] animate-fadeUp">
-          <div className="relative h-11 w-11 shrink-0 rounded-lg overflow-hidden bg-surface-soft">
-            <Image src={product.image} alt="" fill className="object-cover" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-slate-500 truncate">{product.name}</p>
-            <p className="text-sm font-bold text-brand-ink">{formatTHB(product.price)}</p>
-          </div>
-          <button
-            onClick={handleAdd}
-            className="flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white font-semibold px-5 py-2.5 text-xs shrink-0 active:scale-95 transition-transform"
-          >
-            {added ? <CheckCircle2 size={15} /> : <ShoppingBag size={15} />}
-            {added ? "เพิ่มแล้ว" : "เพิ่มลงตะกร้า"}
-          </button>
+      <MobileStickyBar hideWhenVisible={buyButtonRef}>
+        <div className="relative h-11 w-11 shrink-0 rounded-lg overflow-hidden bg-surface-soft">
+          <Image src={product.image} alt="" fill className="object-cover" />
         </div>
-      )}
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-slate-500 truncate">{product.name}</p>
+          <p className="text-sm font-bold text-brand-ink">{formatTHB(product.price)}</p>
+        </div>
+        <button
+          onClick={handleAdd}
+          className="flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white font-semibold px-5 py-2.5 text-xs shrink-0 active:scale-95 transition-transform"
+        >
+          {added ? <CheckCircle2 size={15} /> : <ShoppingBag size={15} />}
+          {added ? "เพิ่มแล้ว" : "เพิ่มลงตะกร้า"}
+        </button>
+      </MobileStickyBar>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Minus, Plus, Trash2, ShoppingBag, Award, Ticket } from "lucide-react";
@@ -9,12 +10,14 @@ import { useLang } from "@/lib/lang-context";
 import { useOrderTotals } from "@/lib/use-order-totals";
 import { formatTHB } from "@/lib/format";
 import CouponPicker from "@/components/CouponPicker";
+import MobileStickyBar from "@/components/MobileStickyBar";
 
 export default function CartPage() {
   const { lines, updateQty, removeItem } = useCart();
   const { user } = useAuth();
   const { lang, t } = useLang();
   const totals = useOrderTotals();
+  const checkoutButtonRef = useRef<HTMLAnchorElement>(null);
 
   if (lines.length === 0) {
     return (
@@ -109,6 +112,7 @@ export default function CartPage() {
               <span>{formatTHB(totals.total)}</span>
             </div>
             <Link
+              ref={checkoutButtonRef}
               href="/checkout"
               className="block text-center rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity"
             >
@@ -165,6 +169,19 @@ export default function CartPage() {
           </div>
         </div>
       </div>
+
+      <MobileStickyBar hideWhenVisible={checkoutButtonRef}>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-slate-500">{t("ยอดรวมทั้งหมด", "Total")}</p>
+          <p className="text-sm font-bold text-brand-ink">{formatTHB(totals.total)}</p>
+        </div>
+        <Link
+          href="/checkout"
+          className="flex items-center justify-center rounded-full bg-brand-gradient text-white font-semibold px-5 py-2.5 text-xs shrink-0 active:scale-95 transition-transform"
+        >
+          {t("ดำเนินการชำระเงิน", "Proceed to checkout")}
+        </Link>
+      </MobileStickyBar>
     </div>
   );
 }

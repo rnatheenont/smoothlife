@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
@@ -9,6 +9,7 @@ import { useLang } from "@/lib/lang-context";
 import { useOrderTotals } from "@/lib/use-order-totals";
 import { formatTHB } from "@/lib/format";
 import { cartCreate, shopifyConfigured } from "@/lib/shopify";
+import MobileStickyBar from "@/components/MobileStickyBar";
 
 export default function CheckoutPage() {
   const { lines, subtotal, couponCode } = useCart();
@@ -17,6 +18,7 @@ export default function CheckoutPage() {
   const totals = useOrderTotals();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
   const shippingFree = totals.freeShipping;
   const shipping = totals.shipping;
   const total = totals.total;
@@ -118,6 +120,7 @@ export default function CheckoutPage() {
             <span>{formatTHB(total)}</span>
           </div>
           <button
+            ref={submitButtonRef}
             type="submit"
             disabled={submitting || lines.length === 0}
             className="w-full flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
@@ -132,6 +135,21 @@ export default function CheckoutPage() {
               : `คาดว่าจะได้รับ ${totals.points.toLocaleString()} คะแนน เมื่อชำระเงินสำเร็จ`}
           </p>
         </div>
+
+        <MobileStickyBar hideWhenVisible={submitButtonRef}>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-slate-500">ยอดรวมโดยประมาณ</p>
+            <p className="text-sm font-bold text-brand-ink">{formatTHB(total)}</p>
+          </div>
+          <button
+            type="submit"
+            disabled={submitting || lines.length === 0}
+            className="flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white font-semibold px-5 py-2.5 text-xs shrink-0 active:scale-95 transition-transform disabled:opacity-60"
+          >
+            {submitting && <Loader2 size={14} className="animate-spin" />}
+            {submitting ? "กำลังไป..." : "ไปหน้าชำระเงิน"}
+          </button>
+        </MobileStickyBar>
       </form>
     </div>
   );
