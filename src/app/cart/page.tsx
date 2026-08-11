@@ -81,7 +81,7 @@ export default function CartPage() {
           <CouponPicker />
         </div>
 
-        <div className="flex flex-col gap-4 h-fit lg:sticky lg:top-24">
+        <div className="flex flex-col gap-4 h-fit lg:sticky lg:top-[152px]">
           <div className="rounded-xl2 border border-slate-100 p-5 shadow-card">
             <h2 className="font-bold text-brand-ink mb-4">{t("สรุปคำสั่งซื้อ", "Order summary")}</h2>
             <div className="flex justify-between text-sm text-slate-600 mb-2">

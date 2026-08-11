@@ -167,7 +167,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
         </button>
         {mobileExtra}
       </div>
-      <aside className="hidden lg:block w-56 shrink-0">{content}</aside>
+      <aside className="hidden lg:block lg:sticky lg:top-[152px] lg:self-start w-56 shrink-0">{content}</aside>
       {mobileOpen && (
         <div className="fixed inset-0 z-[100] lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />

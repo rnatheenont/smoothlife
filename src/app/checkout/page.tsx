@@ -89,7 +89,7 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        <div className="rounded-xl2 border border-slate-100 p-5 h-fit shadow-card sticky top-24">
+        <div className="rounded-xl2 border border-slate-100 p-5 h-fit shadow-card sticky top-[152px]">
           <h2 className="font-bold text-brand-ink mb-4">สรุปคำสั่งซื้อ</h2>
           <div className="flex flex-col gap-2 mb-4 max-h-56 overflow-y-auto">
             {lines.map((l) => (
