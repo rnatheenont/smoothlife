@@ -86,7 +86,7 @@ export default function AdvisorQuiz() {
               onClick={() => openWithProfile(answers)}
               className="flex items-center gap-1.5 rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-2.5 shadow-cardHover"
             >
-              <Sparkles size={13} /> คุยกับ AI Advisor
+              <Sparkles size={13} /> คุยกับน้อง Smoothie
             </button>
             <Link href="/advisor/routine-builder" className="rounded-full border border-slate-200 text-xs font-semibold px-4 py-2.5">
               สร้างรูทีนของคุณ

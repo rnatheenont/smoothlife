@@ -114,7 +114,7 @@ export default function ResultsView({
             onClick={askAdvisor}
             className="flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-2.5 shadow-cardHover"
           >
-            <Sparkles size={13} /> คุยกับ AI Advisor เรื่องผลสแกนนี้
+            <Sparkles size={13} /> คุยกับน้อง Smoothie เรื่องผลสแกนนี้
           </button>
           {photo && <ShareCard metrics={metrics} photoDataUrl={photo} zones={zones} />}
         </div>

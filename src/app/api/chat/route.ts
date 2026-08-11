@@ -38,7 +38,7 @@ function systemPrompt(profile: Record<string, string> | undefined, lang: string)
           .join(", ")
       : "not provided yet";
 
-  return `You are the Smoothlife.com AI Beauty Advisor — a warm, knowledgeable skincare and wellness consultant for a Thai health & beauty retailer.
+  return `You are Smoothie (น้อง Smoothie), Smoothlife.com's AI beauty advisor — a warm, knowledgeable skincare and wellness consultant for a Thai health & beauty retailer.
 
 Reply in ${lang === "en" ? "English" : "Thai"}. Keep answers short and practical: 2-4 short paragraphs or a tight bullet list.
 
@@ -110,8 +110,8 @@ export async function POST(req: NextRequest) {
   if (!key) {
     return textResponse(
       lang === "en"
-        ? "The AI Advisor isn't connected yet. Add an ANTHROPIC_API_KEY environment variable in your Vercel project settings and redeploy to enable live chat. In the meantime, the personalised product picks above are based on your quiz answers."
-        : "ยังไม่ได้เชื่อมต่อ AI Advisor ครับ — กรุณาเพิ่มค่า ANTHROPIC_API_KEY ใน Environment Variables ของโปรเจกต์บน Vercel แล้ว deploy ใหม่ เพื่อเปิดใช้งานแชทสด ระหว่างนี้สินค้าที่แนะนำด้านบนคัดมาจากคำตอบในแบบประเมินของคุณแล้วครับ"
+        ? "Smoothie isn't connected yet. Add an ANTHROPIC_API_KEY environment variable in your Vercel project settings and redeploy to enable live chat. In the meantime, the personalised product picks above are based on your quiz answers."
+        : "ยังไม่ได้เชื่อมต่อน้อง Smoothie ครับ — กรุณาเพิ่มค่า ANTHROPIC_API_KEY ใน Environment Variables ของโปรเจกต์บน Vercel แล้ว deploy ใหม่ เพื่อเปิดใช้งานแชทสด ระหว่างนี้สินค้าที่แนะนำด้านบนคัดมาจากคำตอบในแบบประเมินของคุณแล้วครับ"
     );
   }
 
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
       try {
         const anthropicStream = client.messages.stream({
           model: MODEL,
-          max_tokens: 800,
+          max_tokens: 1600,
           // Short product-advice replies don't need deep reasoning — low
           // effort is the documented setting for latency-sensitive chat,
           // and cuts the adaptive-thinking time Sonnet 5 spends by default.

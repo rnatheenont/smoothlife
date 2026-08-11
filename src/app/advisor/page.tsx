@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Camera, ChevronRight, Sparkles } from "lucide-react";
 import AdvisorQuiz from "@/components/AdvisorQuiz";
 
-export const metadata = { title: "AI Beauty Advisor | Smoothlife.com" };
+export const metadata = { title: "น้อง Smoothie | Smoothlife.com" };
 
 export default function AdvisorPage() {
   return (
@@ -16,7 +16,7 @@ export default function AdvisorPage() {
           <div className="flex items-center gap-2 text-brand-emerald font-semibold text-sm mb-1">
             <Sparkles size={16} /> Guided Assessment
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">AI Beauty Advisor</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">น้อง Smoothie</h1>
         </div>
       </div>
 

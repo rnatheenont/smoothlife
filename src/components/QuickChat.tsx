@@ -251,7 +251,7 @@ export default function QuickChat() {
     <>
       <button
         onClick={() => setOpen(!open)}
-        aria-label={t("คุยกับ AI Advisor", "Chat with AI Advisor")}
+        aria-label={t("คุยกับน้อง Smoothie", "Chat with Smoothie")}
         className={`fixed bottom-[calc(72px+env(safe-area-inset-bottom))] lg:bottom-5 right-4 lg:right-5 z-[80] flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white shadow-cardHover transition-transform hover:scale-105 active:scale-95 h-12 w-12 ${
           open ? "" : "lg:h-14 lg:w-auto lg:justify-start lg:pl-4 lg:pr-5"
         }`}
@@ -265,7 +265,7 @@ export default function QuickChat() {
               <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
             </span>
             <span className="hidden lg:inline text-sm font-semibold whitespace-nowrap">
-              {t("คุยกับ AI Advisor", "Ask AI Advisor")}
+              {t("คุยกับน้อง Smoothie", "Ask Smoothie")}
             </span>
           </>
         )}
@@ -280,7 +280,7 @@ export default function QuickChat() {
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-bold leading-tight truncate">
-                  {t("คุยกับ AI Advisor", "Chat with AI Advisor")}
+                  {t("คุยกับน้อง Smoothie", "Chat with Smoothie")}
                 </p>
                 <p className="text-[11px] text-white/60 leading-tight truncate">
                   {hasProfile

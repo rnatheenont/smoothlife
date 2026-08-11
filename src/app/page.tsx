@@ -19,7 +19,7 @@ export default function HomePage() {
         <div className="container-page py-10 md:py-16 grid md:grid-cols-2 gap-8 items-center">
           <div className="animate-fadeUp">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-emerald shadow-card mb-4">
-              <Sparkles size={13} /> AI Beauty Advisor ใหม่ล่าสุด
+              <Sparkles size={13} /> แนะนำน้อง Smoothie ผู้ช่วยคนใหม่
             </span>
             <h1 className="text-3xl md:text-5xl font-extrabold leading-tight text-brand-ink">
               สุขภาพดี ผิวสวย <br />
@@ -34,7 +34,7 @@ export default function HomePage() {
                 เริ่มช้อปเลย
               </Link>
               <Link href="/advisor" className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-6 py-3 text-sm hover:border-brand-teal transition-colors">
-                ให้ AI แนะนำสกินแคร์
+                ให้น้อง Smoothie แนะนำสกินแคร์
               </Link>
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function HomePage() {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold mb-4">
               <Sparkles size={13} /> Personalized Shopping
             </span>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">ให้ AI Beauty Advisor ช่วยเลือกสกินแคร์ที่ใช่สำหรับคุณ</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-3">ให้น้อง Smoothie ช่วยเลือกสกินแคร์ที่ใช่สำหรับคุณ</h2>
             <p className="text-white/70 mb-6 max-w-md">
               ตอบคำถามเกี่ยวกับผิวของคุณ 2 นาที รับคำแนะนำผลิตภัณฑ์และรูทีนที่ออกแบบมาเฉพาะคุณ
             </p>

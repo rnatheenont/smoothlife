@@ -24,7 +24,7 @@ export default function ConcernHubPage() {
         ))}
         <Link href="/advisor" className="rounded-xl2 border-2 border-dashed border-brand-teal flex flex-col items-center justify-center text-center p-6 aspect-[4/3]">
           <p className="font-bold text-brand-ink">ไม่แน่ใจว่าผิวคุณกังวลเรื่องอะไร?</p>
-          <span className="text-sm text-brand-emerald font-semibold mt-2">ให้ AI Beauty Advisor ช่วยประเมิน →</span>
+          <span className="text-sm text-brand-emerald font-semibold mt-2">ให้น้อง Smoothie ช่วยประเมิน →</span>
         </Link>
       </div>
     </div>
