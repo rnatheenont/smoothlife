@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, Sparkles, ShoppingBag, User } from "lucide-react";
+import { Home, LayoutGrid, ScanFace, ShoppingBag, User } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
 
 const tabs = [
   { href: "/", icon: Home, th: "หน้าแรก", en: "Home" },
   { href: "/shop", icon: LayoutGrid, th: "ช้อป", en: "Shop" },
-  { href: "/advisor", icon: Sparkles, th: "AI", en: "AI" },
+  { href: "/advisor", icon: ScanFace, th: "ประเมินผิว", en: "Skin Check" },
   { href: "/cart", icon: ShoppingBag, th: "ตะกร้า", en: "Cart" },
   { href: "/account", icon: User, th: "บัญชี", en: "Account" },
 ];
