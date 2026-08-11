@@ -39,6 +39,13 @@ export default function SearchContent() {
 
   const noResults = q && matchedProducts.length === 0 && matchedConcerns.length === 0 && matchedArticles.length === 0;
 
+  const recommendedProducts = products
+    .filter((p) => p.inStock && p.badges?.includes("Bestseller"))
+    .concat(products.filter((p) => p.inStock && p.badges?.includes("Sale")))
+    .concat(products.filter((p) => p.inStock))
+    .filter((p, i, arr) => arr.findIndex((x) => x.slug === p.slug) === i)
+    .slice(0, 8);
+
   return (
     <div className="container-page py-6 md:py-10">
       <div className="relative mb-6 md:max-w-xl">
@@ -81,6 +88,15 @@ export default function SearchContent() {
               </button>
             ))}
           </div>
+
+          <div className="mt-8">
+            <h2 className="font-bold text-brand-ink mb-3">สินค้าแนะนำ</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+              {recommendedProducts.map((p) => (
+                <ProductCard key={p.slug} product={p} />
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -89,10 +105,21 @@ export default function SearchContent() {
       )}
 
       {noResults && (
-        <div className="text-center py-16 text-slate-400">
-          <p>ไม่พบผลลัพธ์สำหรับ &quot;{input.trim()}&quot;</p>
-          <Link href="/shop" className="text-brand-emerald font-semibold text-sm mt-2 inline-block">ดูสินค้าทั้งหมด</Link>
-        </div>
+        <>
+          <div className="text-center py-10 text-slate-400">
+            <p>ไม่พบผลลัพธ์สำหรับ &quot;{input.trim()}&quot;</p>
+            <Link href="/shop" className="text-brand-emerald font-semibold text-sm mt-2 inline-block">ดูสินค้าทั้งหมด</Link>
+          </div>
+
+          <div>
+            <h2 className="font-bold text-brand-ink mb-3">สินค้าแนะนำ</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+              {recommendedProducts.map((p) => (
+                <ProductCard key={p.slug} product={p} />
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
       {matchedConcerns.length > 0 && (
