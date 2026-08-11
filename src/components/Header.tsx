@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search, ShoppingBag, User, Menu, X, Sparkles, Award } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
@@ -21,6 +21,9 @@ const navLinks = [
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [hideHeader, setHideHeader] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const lastScrollY = useRef(0);
   const { user } = useAuth();
   const { count } = useCart();
   const { t } = useLang();
@@ -36,6 +39,22 @@ export default function Header() {
     };
   }, [open]);
 
+  // app-style collapsing header on mobile: hide on scroll down, reveal on scroll up
+  useEffect(() => {
+    function onScroll() {
+      const y = window.scrollY;
+      setScrolled(y > 4);
+      if (window.innerWidth >= 1024) {
+        setHideHeader(false);
+      } else {
+        setHideHeader(y > lastScrollY.current && y > 80);
+      }
+      lastScrollY.current = y;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
     if (query.trim()) {
@@ -46,14 +65,18 @@ export default function Header() {
 
   return (
     <>
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 pt-[env(safe-area-inset-top)]">
+    <header
+      className={`sticky top-0 z-40 bg-white/95 backdrop-blur pt-[env(safe-area-inset-top)] transition-transform duration-300 lg:!translate-y-0 lg:border-b lg:border-slate-100 ${
+        hideHeader && !open ? "-translate-y-full" : "translate-y-0"
+      } ${scrolled ? "border-b border-slate-100" : "border-b border-transparent"}`}
+    >
       <div className="bg-brand-gradient text-white text-center text-[11px] md:text-xs py-1.5 px-3">
         <span className="hidden sm:inline">
           ส่งฟรีทั่วไทย • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี
         </span>
         <span className="sm:hidden">ส่งฟรีทั่วไทย • ของแท้ 100% • สมัครรับ 100 คะแนน</span>
       </div>
-      <div className="container-page flex items-center gap-3 md:gap-6 py-3">
+      <div className="container-page flex items-center gap-3 md:gap-6 py-2.5 lg:py-3">
         <button className="lg:hidden shrink-0" onClick={() => setOpen(true)} aria-label="Open menu">
           <Menu size={24} />
         </button>
@@ -89,7 +112,7 @@ export default function Header() {
               <Sparkles size={14} /> AI Advisor
             </Link>
           )}
-          <Link href={user ? "/account" : "/account/login"} className="flex items-center gap-1.5" aria-label="Account">
+          <Link href={user ? "/account" : "/account/login"} className="hidden lg:flex items-center gap-1.5" aria-label="Account">
             <User size={22} />
             <span className="hidden lg:inline text-sm font-medium">{user ? user.name.split(" ")[0] : "เข้าสู่ระบบ"}</span>
           </Link>
