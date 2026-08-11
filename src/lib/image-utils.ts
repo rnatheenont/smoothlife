@@ -53,3 +53,8 @@ export function resizeForUpload(file: Blob): Promise<ResizedImage> {
 export function resizeForThumbnail(file: Blob): Promise<ResizedImage> {
   return drawResized(file, 160, 0.7);
 }
+
+// ~320px, stored as the account avatar (a plain text column, so keep it small).
+export function resizeForAvatar(file: Blob): Promise<ResizedImage> {
+  return drawResized(file, 320, 0.82);
+}

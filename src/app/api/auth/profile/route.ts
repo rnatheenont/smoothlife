@@ -30,6 +30,12 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.birthdate === "string" || body.birthdate === null) {
     patch.birthdate = body.birthdate || null;
   }
+  if (typeof body.avatar === "string" || body.avatar === null) {
+    if (typeof body.avatar === "string" && body.avatar.length > 500_000) {
+      return NextResponse.json({ ok: false, error: "ไฟล์รูปใหญ่เกินไป" }, { status: 400 });
+    }
+    patch.avatar_url = body.avatar || null;
+  }
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ ok: false, error: "ไม่มีข้อมูลที่จะบันทึก" }, { status: 400 });

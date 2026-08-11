@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { User as UserIcon, Loader2 } from "lucide-react";
+import { User as UserIcon, Loader2, Camera } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import { useAuth } from "@/lib/auth-context";
+import { resizeForAvatar } from "@/lib/image-utils";
 
 const inputClass =
   "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal";
@@ -20,8 +21,34 @@ function ProfileContent() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
+
+  async function handleAvatarPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setAvatarError(null);
+    setAvatarBusy(true);
+    try {
+      const resized = await resizeForAvatar(file);
+      const res = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ avatar: resized.dataUrl }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "อัพโหลดไม่สำเร็จ");
+      await refreshUser();
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : "อัพโหลดไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,17 +81,41 @@ function ProfileContent() {
 
       <form onSubmit={submit} className="flex flex-col gap-4">
         <div className="flex items-center gap-4 mb-2">
-          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-brand-gradient text-white text-xl font-bold overflow-hidden">
-            {user.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.avatar} alt={user.name} className="h-16 w-16 rounded-full object-cover" />
-            ) : (
-              name.charAt(0).toUpperCase() || "?"
-            )}
+          <div className="relative shrink-0">
+            <div className="grid h-16 w-16 place-items-center rounded-full bg-brand-gradient text-white text-xl font-bold overflow-hidden">
+              {user.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.avatar} alt={user.name} className="h-16 w-16 rounded-full object-cover" />
+              ) : (
+                name.charAt(0).toUpperCase() || "?"
+              )}
+              {avatarBusy && (
+                <div className="absolute inset-0 grid place-items-center rounded-full bg-black/40">
+                  <Loader2 size={18} className="animate-spin text-white" />
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarBusy}
+              aria-label="เปลี่ยนรูปโปรไฟล์"
+              className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-white text-brand-emerald border border-slate-200 shadow-sm disabled:opacity-60"
+            >
+              <Camera size={12} />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarPick}
+            />
           </div>
           <div>
             <p className="text-sm font-bold text-brand-ink">{user.name}</p>
             <p className="text-xs text-slate-400">{user.email || user.phone}</p>
+            {avatarError && <p className="text-xs text-rose-500 mt-1">{avatarError}</p>}
           </div>
         </div>
 

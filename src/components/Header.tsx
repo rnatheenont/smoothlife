@@ -104,18 +104,35 @@ export default function Header() {
             <LanguageSwitch />
           </div>
           {user ? (
-            <Link href="/account" className="hidden sm:flex items-center gap-1.5 rounded-full bg-surface-muted px-3 py-1.5 text-xs font-semibold text-brand-dark">
-              <Award size={14} className="text-amber-500" /> {user.points} pts · {user.tier}
+            <Link
+              href="/account"
+              className="hidden sm:flex items-center gap-2 rounded-full bg-surface-muted pl-1.5 pr-3 py-1.5 text-xs font-semibold text-brand-dark hover:bg-surface-soft transition-colors"
+            >
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-gradient text-white text-[11px] font-bold overflow-hidden">
+                {user.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.avatar} alt={user.name} className="h-7 w-7 rounded-full object-cover" />
+                ) : (
+                  user.name.charAt(0).toUpperCase()
+                )}
+              </span>
+              <span className="hidden lg:inline">{user.name.split(" ")[0]}</span>
+              <span className="hidden lg:inline h-3 w-px bg-slate-300" />
+              <span className="flex items-center gap-1 whitespace-nowrap">
+                <Award size={13} className="text-amber-500" /> {user.points} pts · Lv. {user.tier}
+              </span>
             </Link>
           ) : (
-            <Link href="/advisor" className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-brand-emerald">
-              <Sparkles size={14} /> AI Advisor
-            </Link>
+            <>
+              <Link href="/advisor" className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-brand-emerald">
+                <Sparkles size={14} /> AI Advisor
+              </Link>
+              <Link href="/account/login" className="hidden lg:flex items-center gap-1.5" aria-label="Account">
+                <User size={22} />
+                <span className="hidden lg:inline text-sm font-medium">เข้าสู่ระบบ</span>
+              </Link>
+            </>
           )}
-          <Link href={user ? "/account" : "/account/login"} className="hidden lg:flex items-center gap-1.5" aria-label="Account">
-            <User size={22} />
-            <span className="hidden lg:inline text-sm font-medium">{user ? user.name.split(" ")[0] : "เข้าสู่ระบบ"}</span>
-          </Link>
           <Link href="/cart" className="relative" aria-label="Cart">
             <ShoppingBag size={22} />
             {count > 0 && (
