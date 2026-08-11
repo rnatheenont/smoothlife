@@ -122,7 +122,7 @@ export default function CaptureCard({
     <div className="max-w-xl mx-auto rounded-xl2 border border-slate-100 shadow-card p-6 sm:p-8 lg:p-10 text-center">
       <h2 className="text-lg sm:text-xl font-bold text-brand-ink mb-1">เลือกมุมที่จะถ่าย</h2>
       <p className="text-sm text-slate-500 mb-6">
-        ถ่ายได้ตั้งแต่ 1 มุมขึ้นไป ยิ่งถ่ายหลายมุม AI ยิ่งวิเคราะห์ผิวคุณได้แม่นยำขึ้น
+        ถ่ายได้ตั้งแต่ 1 มุมขึ้นไป ยิ่งถ่ายหลายมุม น้อง Smoothie ยิ่งวิเคราะห์ผิวคุณได้แม่นยำขึ้น
       </p>
 
       <div className="flex flex-col sm:flex-row items-center gap-4 rounded-xl2 bg-surface-soft p-4 sm:p-5 mb-6 text-left">

@@ -12,7 +12,7 @@ import LanguageSwitch from "@/components/LanguageSwitch";
 const navLinks = [
   { href: "/shop", th: "ช้อปสินค้า", en: "Shop" },
   { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern" },
-  { href: "/advisor", th: "น้อง Smoothie", en: "Smoothie" },
+  { href: "/advisor", th: "ผู้ช่วย AI", en: "AI Assistant" },
   { href: "/knowledge", th: "ความรู้ความงาม", en: "Beauty Knowledge" },
   { href: "/about", th: "ทำไมต้อง Smooth Life", en: "Why Smooth Life" },
   { href: "/help", th: "ช่วยเหลือ", en: "Help" },

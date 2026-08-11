@@ -130,7 +130,7 @@ async function drawSkinCoachCard(canvas: HTMLCanvasElement, metrics: SkinCoachMe
 
   // Top badge pill.
   ctx.textAlign = "center";
-  const badgeText = "✨ AI SKIN REPORT";
+  const badgeText = "✨ SMOOTHIE SKIN REPORT";
   ctx.font = "700 22px sans-serif";
   const badgeW = ctx.measureText(badgeText).width + 56;
   ctx.save();
@@ -149,7 +149,7 @@ async function drawSkinCoachCard(canvas: HTMLCanvasElement, metrics: SkinCoachMe
   ctx.fillText("Smooth Life", W / 2, y);
   ctx.font = "600 18px sans-serif";
   ctx.fillStyle = BRAND.slate;
-  ctx.fillText("AI Skin Coach", W / 2, y + 26);
+  ctx.fillText("Skin Coach by Smoothie", W / 2, y + 26);
 
   // Hero photo with gradient ring + score badge.
   const cx = W / 2;
@@ -314,7 +314,7 @@ export default function ShareCard({
       if (typeof navigator !== "undefined" && (navigator as any).canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: "Smooth Life — AI Skin Coach",
+          title: "Smooth Life — Skin Coach by Smoothie",
           text: `อายุผิวของฉันประมาณ ${metrics.skinAge.years} ปี! สแกนผิวฟรีที่ Smoothlife.com`,
         });
         return;

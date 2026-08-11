@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Sparkles } from "lucide-react";
 import ConsentGate, { hasStoredConsent } from "@/components/skin-coach/ConsentGate";
 import CaptureCard from "@/components/skin-coach/CaptureCard";
@@ -24,16 +25,20 @@ export default function SkinCoachPage() {
 
   return (
     <div className="container-page py-8 md:py-10 max-w-2xl lg:max-w-4xl">
+      <div className="flex justify-center mb-2">
+        <div className="relative h-16 w-16 md:h-20 md:w-20">
+          <Image src="/mascot/smoothie-hi.png" alt="Smoothie" fill sizes="80px" className="object-contain" priority />
+        </div>
+      </div>
       <div className="flex items-center justify-center gap-2 text-brand-emerald mb-2">
         <Sparkles size={18} />
         <span className="text-xs font-semibold uppercase tracking-wide">Skin Coach</span>
       </div>
       <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-brand-ink mb-2 leading-tight text-center">
-        สแกนตรวจสุขภาพผิวและอายุผิวด้วย AI
+        สแกนผิวกับน้อง Smoothie
       </h1>
       <p className="text-sm text-slate-500 mb-6 max-w-xl mx-auto text-center">
-        วิเคราะห์ผิวเบื้องต้นด้วย AI จากภาพถ่ายของคุณ เพื่อความสวยงามเท่านั้น
-        ไม่ใช่การวินิจฉัยทางการแพทย์ หากมีความกังวลด้านผิวหนัง ควรปรึกษาแพทย์ผิวหนัง
+        วิเคราะห์ผิวจากภาพถ่าย เพื่อความสวยงามเท่านั้น ไม่ใช่การวินิจฉัยทางการแพทย์
       </p>
 
       {!metrics && (
