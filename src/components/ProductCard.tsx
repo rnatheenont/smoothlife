@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingBag } from "lucide-react";
+import { Heart, ShoppingBag, Check } from "lucide-react";
 import { Product } from "@/data/types";
 import { formatTHB } from "@/lib/format";
 import StarRating from "./StarRating";
@@ -21,9 +22,16 @@ export default function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
   const { toggle, has } = useWishlist();
   const isWished = has(product.slug);
+  const [added, setAdded] = useState(false);
   const discount = product.compareAtPrice
     ? Math.round(100 - (product.price / product.compareAtPrice) * 100)
     : 0;
+
+  function handleAdd() {
+    addItem(product.slug);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  }
 
   return (
     <div className="group relative flex flex-col rounded-xl2 bg-white shadow-card hover:shadow-cardHover transition-shadow duration-300 overflow-hidden border border-slate-100">
@@ -77,10 +85,14 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
         </div>
         <button
-          onClick={() => addItem(product.slug)}
-          className="mt-2 flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white text-xs font-semibold py-2 hover:opacity-90 transition-opacity"
+          onClick={handleAdd}
+          className={clsx(
+            "mt-2 flex items-center justify-center gap-1.5 rounded-full text-white text-xs font-semibold py-2 transition-all active:scale-95",
+            added ? "bg-brand-emerald" : "bg-brand-gradient hover:opacity-90"
+          )}
         >
-          <ShoppingBag size={14} /> เพิ่มลงตะกร้า
+          {added ? <Check size={14} /> : <ShoppingBag size={14} />}
+          {added ? "เพิ่มแล้ว" : "เพิ่มลงตะกร้า"}
         </button>
       </div>
     </div>
