@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Send, Loader2, RotateCcw, User as UserIcon, X, Plus, Check, Camera, ImagePlus } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
 import { useCart } from "@/lib/cart-context";
@@ -106,6 +107,7 @@ function renderContent(text: string) {
 
 export default function QuickChat() {
   const { lang, t } = useLang();
+  const { user } = useAuth();
   const { open, setOpen, profile } = useQuickChat();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -344,8 +346,13 @@ export default function QuickChat() {
             {messages.map((m, i) => (
               <div key={i} className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
                 {m.role === "user" ? (
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-200 text-slate-600">
-                    <UserIcon size={15} />
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-200 text-slate-600 overflow-hidden">
+                    {user?.avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={user.avatar} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
+                    ) : (
+                      <UserIcon size={15} />
+                    )}
                   </span>
                 ) : (
                   <span className="relative h-10 w-10 shrink-0 -mt-0.5">

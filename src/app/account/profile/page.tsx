@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { User as UserIcon, Loader2, Camera } from "lucide-react";
+import { User as UserIcon, Loader2, Camera, Mail, CheckCircle2 } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import { useAuth } from "@/lib/auth-context";
 import { resizeForAvatar } from "@/lib/image-utils";
@@ -166,10 +166,166 @@ function ProfileContent() {
   );
 }
 
+// Shown only for accounts that signed in via phone OTP or LINE and have no
+// verified email on file yet — lets them add one, verified with the same
+// emailed-OTP flow already used for email login (see LoginContent.tsx).
+function EmailLinkCard() {
+  const { user, refreshUser } = useAuth();
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState("");
+  const [devCode, setDevCode] = useState("");
+  const [justLinked, setJustLinked] = useState<string | null>(null);
+
+  if (!user || (user.email && !justLinked)) return null;
+
+  async function sendCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setError("");
+    setDevCode("");
+    setSending(true);
+    try {
+      const res = await fetch("/api/auth/email-otp/send", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error || "ส่งรหัสไม่สำเร็จ");
+        return;
+      }
+      if (!data.emailSent && data.devCode) setDevCode(data.devCode);
+      setSent(true);
+    } catch {
+      setError("ส่งรหัสไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function verifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/auth/email-otp/link", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error || "ยืนยันไม่สำเร็จ");
+        return;
+      }
+      await refreshUser();
+      setJustLinked(data.email || email.trim());
+    } catch {
+      setError("ยืนยันไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  if (justLinked) {
+    return (
+      <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
+        <div className="flex items-center gap-2 text-brand-emerald mb-1">
+          <Mail size={16} />
+          <span className="text-xs font-semibold uppercase tracking-wide">Email</span>
+        </div>
+        <h2 className="text-sm font-bold text-brand-ink mb-3">เพิ่มและยืนยันอีเมล</h2>
+        <p className="flex items-center gap-2 text-sm text-brand-emerald">
+          <CheckCircle2 size={16} /> ยืนยัน {justLinked} สำเร็จแล้ว
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
+      <div className="flex items-center gap-2 text-brand-emerald mb-1">
+        <Mail size={16} />
+        <span className="text-xs font-semibold uppercase tracking-wide">Email</span>
+      </div>
+      <h2 className="text-sm font-bold text-brand-ink mb-1">เพิ่มและยืนยันอีเมล</h2>
+      <p className="text-xs text-slate-400 mb-4">
+        บัญชีนี้ยังไม่มีอีเมล เพิ่มไว้เพื่อใช้เข้าสู่ระบบได้อีกทาง และรับการแจ้งเตือนคำสั่งซื้อ
+      </p>
+
+      {!sent ? (
+        <form onSubmit={sendCode} className="flex flex-col gap-3">
+          <input
+            required
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="อีเมล"
+            className={inputClass}
+          />
+          {error && <p className="text-xs text-rose-500">{error}</p>}
+          <button
+            disabled={sending}
+            className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm disabled:opacity-60"
+          >
+            {sending && <Loader2 size={14} className="animate-spin" />}
+            {sending ? "กำลังส่งรหัส..." : "ส่งรหัสยืนยัน"}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={verifyCode} className="flex flex-col gap-3">
+          <p className="text-xs text-slate-500">ส่งรหัสยืนยันไปที่ {email} แล้ว กรุณากรอกรหัสที่ได้รับทางอีเมล</p>
+          {devCode && (
+            <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
+              <p className="text-xs font-semibold text-amber-800 mb-1">
+                ยังไม่ได้ตั้งค่าระบบส่งอีเมลจริงในโปรเจกต์นี้ — ใช้รหัสนี้แทนได้เลย (dev mode)
+              </p>
+              <p className="text-lg font-bold tracking-widest text-center text-amber-900">{devCode}</p>
+            </div>
+          )}
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="กรอกรหัสยืนยัน 6 หลัก"
+            maxLength={6}
+            className={`${inputClass} tracking-widest text-center`}
+          />
+          {error && <p className="text-xs text-rose-500">{error}</p>}
+          <button
+            disabled={verifying || code.length < 6}
+            className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm disabled:opacity-60"
+          >
+            {verifying && <Loader2 size={14} className="animate-spin" />}
+            {verifying ? "กำลังยืนยัน..." : "ยืนยันอีเมล"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSent(false);
+              setCode("");
+              setError("");
+              setDevCode("");
+            }}
+            className="text-xs text-slate-400"
+          >
+            เปลี่ยนอีเมล
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   return (
     <AccountLayout>
       <ProfileContent />
+      <EmailLinkCard />
     </AccountLayout>
   );
 }
