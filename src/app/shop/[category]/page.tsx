@@ -3,6 +3,7 @@ import { categories } from "@/data/categories";
 import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
 import SortSelect from "@/components/SortSelect";
+import ShopPromoBanner from "@/components/ShopPromoBanner";
 import { notFound } from "next/navigation";
 
 export function generateStaticParams() {
@@ -32,10 +33,13 @@ export default function CategoryPage({
 
   return (
     <div className="container-page py-8 md:py-10">
-      <div className="mb-6">
+      <div className="mb-6 flex items-end justify-between gap-3">
         <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">{categoryInfo.nameTh}</h1>
-        <p className="text-sm text-slate-500 mt-1">พบ {items.length} รายการ</p>
+        <span className="text-xs md:text-sm font-medium text-brand-emerald bg-brand-gradient-soft rounded-full px-3 py-1 shrink-0">
+          {items.length} รายการ
+        </span>
       </div>
+      <ShopPromoBanner />
       <div className="flex flex-col lg:flex-row gap-8">
         <ShopFilters current={current} mobileExtra={<SortSelect current={current} />} />
         <div className="flex-1">
