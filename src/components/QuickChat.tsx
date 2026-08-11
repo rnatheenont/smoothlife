@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Send, Loader2, RotateCcw, User as UserIcon, X, Plus, Check, Camera, ImagePlus } from "lucide-react";
+import { Send, Loader2, RotateCcw, User as UserIcon, X, Plus, Check, Camera, ImagePlus, MessageCircleQuestion } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
@@ -388,8 +388,9 @@ export default function QuickChat() {
                     <button
                       key={s}
                       onClick={() => send(s)}
-                      className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left text-[13px] text-slate-600 hover:border-brand-teal hover:text-brand-emerald transition-colors"
+                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left text-[13px] text-slate-600 hover:border-brand-teal hover:text-brand-emerald transition-colors"
                     >
+                      <MessageCircleQuestion size={14} className="shrink-0 text-brand-emerald/70" />
                       {s}
                     </button>
                   ))}
@@ -446,8 +447,9 @@ export default function QuickChat() {
                   <button
                     key={s}
                     onClick={() => send(s)}
-                    className="rounded-full border border-brand-teal/40 bg-white px-3 py-1.5 text-[12px] text-brand-emerald hover:bg-brand-gradient-soft transition-colors"
+                    className="flex items-center gap-1.5 rounded-full border border-brand-teal/40 bg-white px-3 py-1.5 text-[12px] text-brand-emerald hover:bg-brand-gradient-soft transition-colors"
                   >
+                    <MessageCircleQuestion size={13} className="shrink-0" />
                     {s}
                   </button>
                 ))}
