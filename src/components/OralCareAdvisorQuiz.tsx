@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sparkles, ArrowRight, RotateCcw } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
+import { useQuickChat } from "@/lib/quickchat-context";
 import { recommendOralCareSet } from "@/lib/oral-care";
 import { formatTHB } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
@@ -17,6 +18,7 @@ export default function OralCareAdvisorQuiz() {
   const [using, setUsing] = useState<string | null>(null);
   const [setType, setSetType] = useState<string | null>(null);
   const { addItem } = useCart();
+  const { openWithProfile } = useQuickChat();
   const [added, setAdded] = useState(false);
 
   const done = setType !== null;
@@ -80,14 +82,28 @@ export default function OralCareAdvisorQuiz() {
               ))}
             </div>
 
-            <button
-              onClick={addAllToCart}
-              className={`w-full sm:w-auto rounded-full text-white font-semibold px-6 py-3.5 text-sm transition-colors ${
-                added ? "bg-brand-emerald" : "bg-brand-ink hover:opacity-90"
-              }`}
-            >
-              {added ? "เพิ่มลงตะกร้าแล้ว" : `ใส่ตะกร้าทั้งเซ็ต (${formatTHB(total)})`}
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={addAllToCart}
+                className={`rounded-full text-white font-semibold px-6 py-3.5 text-sm transition-colors ${
+                  added ? "bg-brand-emerald" : "bg-brand-ink hover:opacity-90"
+                }`}
+              >
+                {added ? "เพิ่มลงตะกร้าแล้ว" : `ใส่ตะกร้าทั้งเซ็ต (${formatTHB(total)})`}
+              </button>
+              <button
+                onClick={() =>
+                  openWithProfile({
+                    "ปัญหาช่องปาก": concern || "",
+                    "กำลังใช้อยู่": using || "",
+                    "ต้องการแบบ": setType || "",
+                  })
+                }
+                className="flex items-center gap-1.5 rounded-full border border-slate-200 text-sm font-semibold px-6 py-3.5 hover:border-brand-teal transition-colors"
+              >
+                <Sparkles size={15} className="text-brand-emerald" /> คุยกับน้อง Smoothie ต่อ
+              </button>
+            </div>
           </>
         )}
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Sparkles, ArrowRight, RotateCcw, AlertTriangle } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
+import { useQuickChat } from "@/lib/quickchat-context";
 import { recommendSupplementPlan, PREGNANT_OR_BREASTFEEDING } from "@/lib/supplement-advisor";
 import { formatTHB } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
@@ -30,6 +31,7 @@ export default function SupplementAdvisorQuiz() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [done, setDone] = useState(false);
   const { addItem } = useCart();
+  const { openWithProfile } = useQuickChat();
   const [added, setAdded] = useState(false);
 
   function choose(key: string, value: string) {
@@ -117,6 +119,12 @@ export default function SupplementAdvisorQuiz() {
                   <Link href="/help" className="rounded-full border border-slate-200 text-sm font-semibold px-6 py-3.5">
                     ปรึกษาเภสัชกร
                   </Link>
+                  <button
+                    onClick={() => openWithProfile(answers)}
+                    className="flex items-center gap-1.5 rounded-full border border-slate-200 text-sm font-semibold px-6 py-3.5 hover:border-brand-teal transition-colors"
+                  >
+                    <Sparkles size={15} className="text-brand-emerald" /> คุยกับน้อง Smoothie ต่อ
+                  </button>
                 </div>
               </>
             )}
