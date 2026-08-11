@@ -12,7 +12,7 @@ import LanguageSwitch from "@/components/LanguageSwitch";
 const navLinks = [
   { href: "/shop", th: "ช้อปสินค้า", en: "Shop" },
   { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern" },
-  { href: "/advisor", th: "ผู้ช่วย AI", en: "AI Assistant" },
+  { href: "/ai-assistant", th: "ผู้ช่วย AI", en: "AI Assistant" },
   { href: "/knowledge", th: "ความรู้ความงาม", en: "Beauty Knowledge" },
   { href: "/about", th: "ทำไมต้อง Smooth Life", en: "Why Smooth Life" },
   { href: "/help", th: "ช่วยเหลือ", en: "Help" },
@@ -124,7 +124,7 @@ export default function Header() {
             </Link>
           ) : (
             <>
-              <Link href="/advisor" className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-brand-emerald">
+              <Link href="/ai-assistant" className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-brand-emerald">
                 <Sparkles size={14} /> น้อง Smoothie
               </Link>
               <Link href="/account/login" className="hidden lg:flex items-center gap-1.5" aria-label="Account">
