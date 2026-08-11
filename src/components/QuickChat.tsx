@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, Send, Loader2, RotateCcw, Bot, User as UserIcon, X, Plus, Check, Camera, ImagePlus } from "lucide-react";
+import { Send, Loader2, RotateCcw, User as UserIcon, X, Plus, Check, Camera, ImagePlus } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
 import { useCart } from "@/lib/cart-context";
@@ -258,9 +258,9 @@ export default function QuickChat() {
           <X size={20} />
         ) : (
           <>
-            <span className="relative grid h-8 w-8 place-items-center rounded-full bg-white/20">
-              <Sparkles size={16} />
-              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
+            <span className="relative grid h-9 w-9 shrink-0 place-items-center">
+              <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="36px" className="object-contain" />
+              <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
             </span>
             <span className="hidden lg:inline text-sm font-semibold whitespace-nowrap">
               {t("คุยกับ AI Advisor", "Ask AI Advisor")}
@@ -273,8 +273,8 @@ export default function QuickChat() {
         <div className="fixed bottom-[calc(136px+env(safe-area-inset-bottom))] lg:bottom-24 right-4 sm:right-5 z-[80] w-[calc(100vw-2rem)] sm:w-[390px] h-[min(760px,82vh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp">
           <div className="flex items-center justify-between gap-3 bg-brand-ink px-4 py-3">
             <div className="flex items-center gap-2.5 text-white min-w-0">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient">
-                <Sparkles size={15} />
+              <span className="relative grid h-9 w-9 shrink-0 place-items-center">
+                <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="36px" className="object-contain" />
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-bold leading-tight truncate">
@@ -343,13 +343,15 @@ export default function QuickChat() {
 
             {messages.map((m, i) => (
               <div key={i} className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-                <span
-                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${
-                    m.role === "user" ? "bg-slate-200 text-slate-600" : "bg-brand-gradient text-white"
-                  }`}
-                >
-                  {m.role === "user" ? <UserIcon size={13} /> : <Bot size={13} />}
-                </span>
+                {m.role === "user" ? (
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-slate-200 text-slate-600">
+                    <UserIcon size={13} />
+                  </span>
+                ) : (
+                  <span className="relative h-7 w-7 shrink-0">
+                    <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="28px" className="object-contain" />
+                  </span>
+                )}
                 <div
                   className={`rounded-2xl px-3.5 py-2.5 text-[13px] whitespace-pre-wrap leading-relaxed ${
                     m.role === "user"
@@ -368,8 +370,8 @@ export default function QuickChat() {
 
             {loading && messages[messages.length - 1]?.role !== "assistant" && (
               <div className="flex gap-2">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-gradient text-white">
-                  <Bot size={13} />
+                <span className="relative h-7 w-7 shrink-0">
+                  <Image src="/mascot/smoothie-question.png" alt="" fill sizes="28px" className="object-contain" />
                 </span>
                 <div className="rounded-2xl rounded-tl-sm bg-white border border-slate-100 px-3.5 py-2.5 text-[13px] text-slate-400 flex items-center gap-2">
                   <Loader2 size={13} className="animate-spin" /> {t("กำลังคิด...", "Thinking...")}
