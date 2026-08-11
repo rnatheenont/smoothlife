@@ -17,6 +17,9 @@ export default function AdvisorPage() {
             <Sparkles size={16} /> Guided Assessment
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">น้อง Smoothie</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            น้อง Smoothie คือผู้ช่วย AI ประจำ Smoothlife.com คอยแนะนำสกินแคร์ วิเคราะห์ผิว และตอบคำถามเรื่องความงามให้แบบเป็นกันเอง
+          </p>
         </div>
       </div>
 
