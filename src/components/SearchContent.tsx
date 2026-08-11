@@ -79,13 +79,13 @@ export default function SearchContent() {
           <p className="text-sm text-slate-500 mb-3">ปัญหาผิวยอดฮิต</p>
           <div className="flex flex-wrap gap-2">
             {concerns.slice(0, 6).map((c) => (
-              <button
+              <Link
                 key={c.slug}
-                onClick={() => setInput(c.nameTh)}
+                href={`/concern/${c.slug}`}
                 className="rounded-full bg-surface-soft text-brand-ink text-sm font-medium px-4 py-2 hover:bg-surface-muted transition-colors"
               >
                 {c.nameTh}
-              </button>
+              </Link>
             ))}
           </div>
 
