@@ -11,38 +11,40 @@ const CONCERN_OPTIONS = ["กลิ่นปาก", "เสียวฟัน",
 const USING_OPTIONS = ["ยาสีฟัน", "น้ำยาบ้วนปาก", "ไหมขัดฟัน", "แปรงไฟฟ้า", "ไม่แน่ใจ"];
 const SET_TYPE_OPTIONS = ["ครบเซ็ต", "เฉพาะยาสีฟัน", "ประหยัดสุด"];
 
-const MAX_CONCERNS = 2;
-
 export default function OralCareAdvisorQuiz() {
   const [step, setStep] = useState(0);
-  const [concerns, setConcerns] = useState<string[]>([]);
-  const [using, setUsing] = useState<string[]>([]);
+  const [concern, setConcern] = useState<string | null>(null);
+  const [using, setUsing] = useState<string | null>(null);
   const [setType, setSetType] = useState<string | null>(null);
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
 
   const done = setType !== null;
 
-  function toggleConcern(opt: string) {
-    setConcerns((prev) =>
-      prev.includes(opt) ? prev.filter((c) => c !== opt) : prev.length < MAX_CONCERNS ? [...prev, opt] : prev
-    );
+  function chooseConcern(opt: string) {
+    setConcern(opt);
+    setStep(1);
   }
 
-  function toggleUsing(opt: string) {
-    setUsing((prev) => (prev.includes(opt) ? prev.filter((u) => u !== opt) : [...prev, opt]));
+  function chooseUsing(opt: string) {
+    setUsing(opt);
+    setStep(2);
   }
 
   function reset() {
     setStep(0);
-    setConcerns([]);
-    setUsing([]);
+    setConcern(null);
+    setUsing(null);
     setSetType(null);
     setAdded(false);
   }
 
   if (done) {
-    const recommended = recommendOralCareSet({ concerns, using, setType });
+    const recommended = recommendOralCareSet({
+      concerns: concern ? [concern] : [],
+      using: using ? [using] : [],
+      setType,
+    });
     const total = recommended.reduce((sum, p) => sum + p.price, 0);
 
     function addAllToCart() {
@@ -58,13 +60,9 @@ export default function OralCareAdvisorQuiz() {
             <Sparkles size={16} /> Oral Care Advisor
           </div>
           <h2 className="text-xl md:text-2xl font-bold text-brand-ink mb-3">เซ็ตดูแลช่องปากที่แนะนำสำหรับคุณ</h2>
-          {concerns.length > 0 && (
+          {concern && (
             <div className="flex flex-wrap gap-2 mb-4">
-              {concerns.map((c) => (
-                <span key={c} className="text-xs font-medium bg-white rounded-full px-3 py-1.5 text-brand-ink">
-                  {c}
-                </span>
-              ))}
+              <span className="text-xs font-medium bg-white rounded-full px-3 py-1.5 text-brand-ink">{concern}</span>
             </div>
           )}
           <p className="text-sm text-slate-600">
@@ -113,33 +111,18 @@ export default function OralCareAdvisorQuiz() {
 
       {step === 0 && (
         <>
-          <h2 className="text-xl md:text-2xl font-bold text-brand-ink mb-1">ปัญหาช่องปากที่กวนใจที่สุด?</h2>
-          <p className="text-xs text-slate-400 mb-6">เลือกได้สูงสุด {MAX_CONCERNS} ข้อ</p>
+          <h2 className="text-xl md:text-2xl font-bold text-brand-ink mb-6">ปัญหาช่องปากที่กวนใจที่สุด?</h2>
           <div className="grid sm:grid-cols-2 gap-3">
-            {CONCERN_OPTIONS.map((opt) => {
-              const active = concerns.includes(opt);
-              return (
-                <button
-                  key={opt}
-                  onClick={() => toggleConcern(opt)}
-                  className={`flex items-center justify-between rounded-xl border px-5 py-4 text-sm font-medium transition-colors ${
-                    active
-                      ? "border-brand-teal bg-brand-gradient-soft text-brand-ink"
-                      : "border-slate-200 text-slate-700 hover:border-brand-teal hover:bg-brand-gradient-soft"
-                  }`}
-                >
-                  {opt}
-                </button>
-              );
-            })}
+            {CONCERN_OPTIONS.map((opt) => (
+              <button
+                key={opt}
+                onClick={() => chooseConcern(opt)}
+                className="flex items-center justify-between rounded-xl border border-slate-200 px-5 py-4 text-sm font-medium text-slate-700 hover:border-brand-teal hover:bg-brand-gradient-soft transition-colors"
+              >
+                {opt} <ArrowRight size={15} className="text-slate-300" />
+              </button>
+            ))}
           </div>
-          <button
-            disabled={concerns.length === 0}
-            onClick={() => setStep(1)}
-            className="mt-6 flex items-center gap-1.5 rounded-full bg-brand-gradient text-white text-sm font-semibold px-6 py-3 disabled:opacity-40"
-          >
-            ถัดไป <ArrowRight size={15} />
-          </button>
         </>
       )}
 
@@ -147,34 +130,19 @@ export default function OralCareAdvisorQuiz() {
         <>
           <h2 className="text-xl md:text-2xl font-bold text-brand-ink mb-6">ตอนนี้ใช้อะไรอยู่บ้าง?</h2>
           <div className="grid sm:grid-cols-2 gap-3">
-            {USING_OPTIONS.map((opt) => {
-              const active = using.includes(opt);
-              return (
-                <button
-                  key={opt}
-                  onClick={() => toggleUsing(opt)}
-                  className={`flex items-center justify-between rounded-xl border px-5 py-4 text-sm font-medium transition-colors ${
-                    active
-                      ? "border-brand-teal bg-brand-gradient-soft text-brand-ink"
-                      : "border-slate-200 text-slate-700 hover:border-brand-teal hover:bg-brand-gradient-soft"
-                  }`}
-                >
-                  {opt}
-                </button>
-              );
-            })}
+            {USING_OPTIONS.map((opt) => (
+              <button
+                key={opt}
+                onClick={() => chooseUsing(opt)}
+                className="flex items-center justify-between rounded-xl border border-slate-200 px-5 py-4 text-sm font-medium text-slate-700 hover:border-brand-teal hover:bg-brand-gradient-soft transition-colors"
+              >
+                {opt} <ArrowRight size={15} className="text-slate-300" />
+              </button>
+            ))}
           </div>
-          <div className="flex items-center gap-4 mt-6">
-            <button onClick={() => setStep(0)} className="text-xs text-slate-400">
-              ← ย้อนกลับ
-            </button>
-            <button
-              onClick={() => setStep(2)}
-              className="flex items-center gap-1.5 rounded-full bg-brand-gradient text-white text-sm font-semibold px-6 py-3"
-            >
-              ถัดไป <ArrowRight size={15} />
-            </button>
-          </div>
+          <button onClick={() => setStep(0)} className="text-xs text-slate-400 mt-6">
+            ← ย้อนกลับ
+          </button>
         </>
       )}
 
