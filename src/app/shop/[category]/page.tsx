@@ -9,6 +9,19 @@ import SortSelect from "@/components/SortSelect";
 import ShopPromoBanner from "@/components/ShopPromoBanner";
 import { notFound } from "next/navigation";
 
+const ADVISOR_ENTRY: Record<string, { href: string; title: string; subtitle: string }> = {
+  "oral-care": {
+    href: "/oral-care-advisor",
+    title: "ไม่รู้จะเริ่มจากตัวไหนดี?",
+    subtitle: "ตอบ 3 คำถาม ให้น้อง Smoothie จัดเซ็ตดูแลช่องปากที่ใช่สำหรับคุณ",
+  },
+  wellness: {
+    href: "/supplement-advisor",
+    title: "อาหารเสริมเยอะจนเลือกไม่ถูก?",
+    subtitle: "ตอบ 5 คำถาม ให้น้อง Smoothie ช่วยหาแพลนที่ตรงเป้าหมายและงบของคุณ",
+  },
+};
+
 export function generateStaticParams() {
   return categories.map((c) => ({ category: c.slug }));
 }
@@ -44,17 +57,17 @@ export default function CategoryPage({
       </div>
       <ShopPromoBanner />
 
-      {params.category === "oral-care" && (
+      {ADVISOR_ENTRY[params.category] && (
         <Link
-          href="/oral-care-advisor"
+          href={ADVISOR_ENTRY[params.category].href}
           className="group mb-6 flex items-center gap-4 rounded-xl2 bg-brand-ink p-4 md:p-5 text-white shadow-cardHover transition-transform hover:scale-[1.01]"
         >
           <div className="relative h-12 w-12 shrink-0">
             <Image src="/mascot/smoothie-hi.png" alt="Smoothie" fill sizes="48px" className="object-contain" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold leading-tight">ไม่รู้จะเริ่มจากตัวไหนดี?</p>
-            <p className="text-xs text-white/60 mt-0.5">ตอบ 3 คำถาม ให้น้อง Smoothie จัดเซ็ตดูแลช่องปากที่ใช่สำหรับคุณ</p>
+            <p className="font-bold leading-tight">{ADVISOR_ENTRY[params.category].title}</p>
+            <p className="text-xs text-white/60 mt-0.5">{ADVISOR_ENTRY[params.category].subtitle}</p>
           </div>
           <ChevronRight size={20} className="text-white/50 shrink-0 group-hover:translate-x-0.5 transition-transform" />
         </Link>

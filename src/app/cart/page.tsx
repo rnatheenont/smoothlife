@@ -9,8 +9,10 @@ import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useOrderTotals } from "@/lib/use-order-totals";
 import { formatTHB } from "@/lib/format";
+import { suggestBundlesForCart } from "@/lib/bundle-suggest";
 import CouponPicker from "@/components/CouponPicker";
 import MobileStickyBar from "@/components/MobileStickyBar";
+import ProductCard from "@/components/ProductCard";
 
 export default function CartPage() {
   const { lines, updateQty, removeItem } = useCart();
@@ -18,6 +20,7 @@ export default function CartPage() {
   const { lang, t } = useLang();
   const totals = useOrderTotals();
   const checkoutButtonRef = useRef<HTMLAnchorElement>(null);
+  const bundleSuggestions = suggestBundlesForCart(lines.map((l) => l.slug));
 
   if (lines.length === 0) {
     return (
@@ -79,6 +82,19 @@ export default function CartPage() {
           ))}
 
           <CouponPicker />
+
+          {bundleSuggestions.length > 0 && (
+            <div className="mt-2">
+              <h2 className="font-bold text-brand-ink mb-3">
+                {t("อาจสนใจ: เซ็ต Bundle จากแบรนด์ที่คุณเลือก", "You might like: bundle deals from brands in your cart")}
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {bundleSuggestions.map((p) => (
+                  <ProductCard key={p.slug} product={p} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-4 h-fit lg:sticky lg:top-[152px]">
