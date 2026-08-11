@@ -95,12 +95,15 @@ function renderContent(text: string) {
   MARKER.lastIndex = 0;
   let key = 0;
   while ((m = MARKER.exec(text))) {
-    const before = text.slice(last, m.index).replace(/\n{2,}$/, "\n");
+    // ProductChip already carries its own top/bottom margin, so any blank
+    // lines the model left right next to a marker would double up the gap —
+    // trim newline runs at both ends of each text segment, not just one.
+    const before = text.slice(last, m.index).replace(/^\n+|\n+$/g, "");
     if (before) out.push(<span key={`t${key}`}>{renderInline(before, `t${key++}`)}</span>);
     out.push(<ProductChip key={`p${key++}`} slug={m[1] || m[2] || m[3]} />);
     last = m.index + m[0].length;
   }
-  const tail = text.slice(last);
+  const tail = text.slice(last).replace(/^\n+/, "");
   if (tail) out.push(<span key={`t${key}`}>{renderInline(tail, `t${key++}`)}</span>);
   return out;
 }
