@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
@@ -18,6 +18,16 @@ export const metadata: Metadata = {
   description:
     "Smoothlife.com ศูนย์รวมสินค้าและบริการเพื่อสุขภาพและความงาม ช้อปง่าย ครบจบทุก lifestyle ที่เดียว",
   icons: { icon: "/logo.svg" },
+};
+
+// viewport-fit=cover lets iOS report real env(safe-area-inset-*) values
+// (e.g. the bottom tab bar's padding) instead of always 0 — without it the
+// safe-area padding silently does nothing on notched/home-indicator devices.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#00a87b",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
