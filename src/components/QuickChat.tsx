@@ -275,7 +275,7 @@ export default function QuickChat() {
       </button>
 
       {open && (
-        <div className="fixed bottom-[calc(136px+env(safe-area-inset-bottom))] lg:bottom-24 right-4 sm:right-5 z-[80] w-[calc(100vw-2rem)] sm:w-[390px] h-[min(760px,82vh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp">
+        <div className="fixed bottom-[calc(136px+env(safe-area-inset-bottom))] lg:bottom-24 right-4 sm:right-5 z-[80] w-[calc(100vw-2rem)] sm:w-[390px] h-[min(760px,calc(100dvh-136px-env(safe-area-inset-bottom)-16px))] lg:h-[min(760px,82dvh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp">
           <div className="flex items-center justify-between gap-3 bg-brand-ink px-4 py-3">
             <div className="flex items-center gap-2.5 text-white min-w-0">
               <span className="relative grid h-9 w-9 shrink-0 place-items-center">
