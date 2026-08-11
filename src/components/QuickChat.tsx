@@ -250,8 +250,8 @@ export default function QuickChat() {
       <button
         onClick={() => setOpen(!open)}
         aria-label={t("คุยกับ AI Advisor", "Chat with AI Advisor")}
-        className={`fixed bottom-[calc(72px+env(safe-area-inset-bottom))] lg:bottom-5 right-4 lg:right-5 z-[80] flex items-center gap-2 rounded-full bg-brand-gradient text-white shadow-cardHover transition-transform hover:scale-105 active:scale-95 ${
-          open ? "h-12 w-12 justify-center" : "h-14 pl-4 pr-5 sm:pl-5 sm:pr-6"
+        className={`fixed bottom-[calc(72px+env(safe-area-inset-bottom))] lg:bottom-5 right-4 lg:right-5 z-[80] flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white shadow-cardHover transition-transform hover:scale-105 active:scale-95 h-12 w-12 ${
+          open ? "" : "lg:h-14 lg:w-auto lg:justify-start lg:pl-4 lg:pr-5"
         }`}
       >
         {open ? (
@@ -262,10 +262,9 @@ export default function QuickChat() {
               <Sparkles size={16} />
               <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
             </span>
-            <span className="text-sm font-semibold whitespace-nowrap hidden sm:inline">
+            <span className="hidden lg:inline text-sm font-semibold whitespace-nowrap">
               {t("คุยกับ AI Advisor", "Ask AI Advisor")}
             </span>
-            <span className="text-sm font-semibold sm:hidden">AI</span>
           </>
         )}
       </button>
