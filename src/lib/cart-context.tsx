@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { products } from "@/data/products";
 import { ProductVariant } from "@/data/types";
+import { useAuth } from "@/lib/auth-context";
 
 type CartItem = { slug: string; variantId: string; qty: number };
 
@@ -175,8 +176,12 @@ const WishlistContext = createContext<WishlistContextValue | null>(null);
 const WISHLIST_KEY = "sl_wishlist";
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [slugs, setSlugs] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  // Guards the one-time merge-with-server so it runs once per login, not on
+  // every render.
+  const syncedForUser = useRef<string | null>(null);
 
   useEffect(() => {
     try {
@@ -191,8 +196,46 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     if (hydrated) localStorage.setItem(WISHLIST_KEY, JSON.stringify(slugs));
   }, [slugs, hydrated]);
 
+  // Logged-in customers get a real, cross-device wishlist backed by
+  // Supabase — guests keep working from localStorage only. On login, merge
+  // whatever's already saved on this device with the server copy so
+  // nothing gets lost either direction.
+  useEffect(() => {
+    if (!user || !hydrated || syncedForUser.current === user.id) return;
+    syncedForUser.current = user.id;
+    fetch("/api/wishlist")
+      .then((r) => r.json())
+      .then((data) => {
+        const serverSlugs: string[] = Array.isArray(data?.slugs) ? data.slugs : [];
+        setSlugs((prev) => {
+          const merged = Array.from(new Set([...serverSlugs, ...prev]));
+          const toPush = merged.filter((s) => !serverSlugs.includes(s));
+          if (toPush.length) {
+            fetch("/api/wishlist", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ slugs: toPush }),
+            }).catch(() => {});
+          }
+          return merged;
+        });
+      })
+      .catch(() => {});
+  }, [user, hydrated]);
+
   function toggle(slug: string) {
-    setSlugs((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]));
+    const isRemoving = slugs.includes(slug);
+    setSlugs((prev) => (isRemoving ? prev.filter((s) => s !== slug) : [...prev, slug]));
+    if (!user) return;
+    if (isRemoving) {
+      fetch(`/api/wishlist?slug=${encodeURIComponent(slug)}`, { method: "DELETE" }).catch(() => {});
+    } else {
+      fetch("/api/wishlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slugs: [slug] }),
+      }).catch(() => {});
+    }
   }
   function has(slug: string) {
     return slugs.includes(slug);
