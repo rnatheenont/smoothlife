@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Pencil, MapPin, Receipt, Plus, ChevronRight, ShieldCheck, Package, Heart, Award, Camera } from "lucide-react";
+import { Pencil, MapPin, Receipt, Plus, ChevronRight, ShieldCheck, Package, Heart, Award, Camera, CalendarCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import AccountLayout from "@/components/account/AccountLayout";
 import type { AddressRow } from "@/app/api/account/addresses/route";
@@ -181,7 +181,11 @@ function AccountDashboard() {
       </div>
 
       <h2 className="text-sm font-bold text-brand-ink mb-3">เมนูลัด</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <Link href="/account/checkin" className="flex flex-col items-start gap-2.5 rounded-xl2 border border-slate-100 bg-white p-4 shadow-card hover:border-brand-teal transition-colors">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald"><CalendarCheck size={18} /></div>
+          <span className="text-sm font-semibold text-brand-ink">เช็กอินรายวัน</span>
+        </Link>
         <Link href="/account/orders" className="flex flex-col items-start gap-2.5 rounded-xl2 border border-slate-100 bg-white p-4 shadow-card hover:border-brand-teal transition-colors">
           <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald"><Package size={18} /></div>
           <span className="text-sm font-semibold text-brand-ink">คำสั่งซื้อ{orderCount !== null ? ` (${orderCount})` : ""}</span>

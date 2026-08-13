@@ -1,0 +1,349 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Loader2, Gift, Coins, CheckCircle2, X, Sparkles } from "lucide-react";
+import AccountLayout from "@/components/account/AccountLayout";
+import ProductCard from "@/components/ProductCard";
+import { useAuth } from "@/lib/auth-context";
+import { products } from "@/data/products";
+
+type DayInfo = {
+  date: string;
+  dayNumber: number;
+  status: "normal" | "recovery" | "recoverable" | "missed" | "today" | "upcoming";
+};
+
+type StatusResponse = {
+  loggedIn: boolean;
+  businessDate?: string;
+  checkedInToday?: boolean;
+  cycle: null | {
+    id: string;
+    status: string;
+    completedDays: number;
+    targetDays: number;
+    dates: DayInfo[];
+    day3RewardClaimed: boolean;
+    day7RewardClaimed: boolean;
+    day7CouponCode: string | null;
+  };
+  previousCycle?: { status: string; completedDays: number } | null;
+  recovery: { costPerDay: number; pointBalance: number; recoverableDates: string[] };
+  config: { cycleLength: number; day3Points: number; day7Points: number };
+};
+
+const dayCircleStyle: Record<DayInfo["status"], string> = {
+  normal: "bg-brand-gradient text-white",
+  recovery: "bg-brand-gradient text-white",
+  today: "border-2 border-brand-emerald text-brand-emerald bg-white",
+  recoverable: "bg-amber-100 text-amber-700 border-2 border-amber-300",
+  missed: "bg-slate-100 text-slate-400",
+  upcoming: "bg-slate-50 text-slate-300 border border-dashed border-slate-200",
+};
+
+function CheckinContent() {
+  const { user, refreshUser } = useAuth();
+  const [data, setData] = useState<StatusResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [confirmDate, setConfirmDate] = useState<string | null>(null);
+  const [celebration, setCelebration] = useState<{ title: string; body: string; coupon?: string | null } | null>(null);
+
+  async function load() {
+    try {
+      const res = await fetch("/api/checkin");
+      const json = await res.json();
+      setData(json);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleMilestones(json: { day3Awarded?: boolean; day7Awarded?: boolean; day7Coupon?: string | null }) {
+    if (json.day7Awarded) {
+      setCelebration({
+        title: "ครบ 7 วันแล้ว! 🎉",
+        body: `รับ ${data?.config.day7Points ?? 100} แต้ม${json.day7Coupon ? " และคูปองส่วนลดพิเศษ" : ""}`,
+        coupon: json.day7Coupon,
+      });
+    } else if (json.day3Awarded) {
+      setCelebration({ title: "ครบ 3 วันแล้ว! 🎉", body: `รับ ${data?.config.day3Points ?? 30} แต้ม` });
+    }
+  }
+
+  async function doCheckin() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/checkin", { method: "POST" });
+      const json = await res.json();
+      if (!json.ok) {
+        setMessage(json.error || "เช็กอินไม่สำเร็จค่ะ");
+      } else {
+        handleMilestones(json);
+        await load();
+        refreshUser();
+      }
+    } catch {
+      setMessage("เช็กอินไม่สำเร็จค่ะ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function doRecover(date: string) {
+    setBusy(true);
+    setMessage(null);
+    setConfirmDate(null);
+    try {
+      const res = await fetch("/api/checkin/recover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        setMessage(json.error || "กู้วันเช็กอินไม่สำเร็จค่ะ");
+      } else {
+        handleMilestones(json);
+        await load();
+        refreshUser();
+      }
+    } catch {
+      setMessage("กู้วันเช็กอินไม่สำเร็จค่ะ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!user) return null;
+
+  if (loading || !data) {
+    return (
+      <div className="flex items-center justify-center py-16 text-slate-400">
+        <Loader2 size={24} className="animate-spin" />
+      </div>
+    );
+  }
+
+  const cycle = data.cycle;
+  // Same cascading fallback as SearchContent's recommendedProducts — the
+  // catalogue doesn't always have "Bestseller"-badged items in stock, so
+  // fall through to Sale-badged, then any in-stock product, rather than
+  // silently rendering an empty cross-sell section.
+  const bestSellers = products
+    .filter((p) => p.inStock && p.badges?.includes("Bestseller"))
+    .concat(products.filter((p) => p.inStock && p.badges?.includes("Sale")))
+    .concat(products.filter((p) => p.inStock))
+    .filter((p, i, arr) => arr.findIndex((x) => x.slug === p.slug) === i)
+    .slice(0, 4);
+
+  return (
+    <div className="max-w-3xl">
+      <h1 className="text-2xl font-bold text-brand-ink mb-1">เช็กอินรายวัน</h1>
+      <p className="text-sm text-slate-500 mb-6">เช็กอินทุกวัน สะสมแต้ม ครบ 7 วันรับคูปองส่วนลดพิเศษ</p>
+
+      <div className="rounded-xl2 bg-brand-gradient text-white p-5 md:p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-xs text-white/80">แต้มสะสมของคุณ</p>
+            <p className="text-2xl font-bold">{data.recovery.pointBalance.toLocaleString()} แต้ม</p>
+          </div>
+          {!data.checkedInToday ? (
+            <button
+              onClick={doCheckin}
+              disabled={busy}
+              className="rounded-full bg-white text-brand-emerald font-bold px-5 py-2.5 text-sm shadow-card disabled:opacity-60"
+            >
+              {busy ? "กำลังเช็กอิน..." : "เช็กอินวันนี้"}
+            </button>
+          ) : (
+            <span className="flex items-center gap-1.5 rounded-full bg-white/20 px-4 py-2.5 text-sm font-semibold">
+              <CheckCircle2 size={16} /> เช็กอินแล้ววันนี้
+            </span>
+          )}
+        </div>
+
+        {cycle ? (
+          <>
+            <div className="flex items-center justify-between text-xs text-white/80 mb-2">
+              <span>
+                ความคืบหน้ารอบนี้ {cycle.completedDays}/{cycle.targetDays} วัน
+              </span>
+              {cycle.status === "recovery_available" && <span className="font-semibold">มีวันที่พลาด — กู้คืนได้</span>}
+            </div>
+            <div className="grid grid-cols-7 gap-1.5 md:gap-2">
+              {cycle.dates.map((d) => (
+                <div key={d.date} className="flex flex-col items-center gap-1">
+                  <button
+                    onClick={() => d.status === "recoverable" && setConfirmDate(d.date)}
+                    disabled={d.status !== "recoverable"}
+                    className={`relative grid h-9 w-9 md:h-11 md:w-11 place-items-center rounded-full text-xs font-bold transition-transform ${dayCircleStyle[d.status]} ${
+                      d.status === "recoverable" ? "active:scale-95 cursor-pointer" : ""
+                    }`}
+                  >
+                    {d.status === "normal" || d.status === "recovery" ? <CheckCircle2 size={16} /> : d.dayNumber}
+                    {(d.dayNumber === 3 || d.dayNumber === 7) && (
+                      <span className="absolute -top-1.5 -right-1.5 grid h-4 w-4 place-items-center rounded-full bg-amber-400 text-white">
+                        <Gift size={9} />
+                      </span>
+                    )}
+                  </button>
+                  <span className="text-[10px] text-white/70">วัน {d.dayNumber}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-white/90">เช็กอินวันนี้เพื่อเริ่มรอบใหม่ 7 วันค่ะ</p>
+        )}
+      </div>
+
+      {message && (
+        <div className="mb-6 rounded-xl2 bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-600">{message}</div>
+      )}
+
+      <div className="grid sm:grid-cols-2 gap-4 mb-8">
+        <div
+          className={`rounded-xl2 border p-5 ${
+            cycle?.day3RewardClaimed ? "border-brand-teal bg-brand-gradient-soft" : "border-slate-100"
+          }`}
+        >
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <span
+              className={`grid h-9 w-9 place-items-center rounded-full ${
+                cycle?.day3RewardClaimed ? "bg-brand-gradient text-white" : "bg-surface-muted text-slate-400"
+              }`}
+            >
+              <Gift size={16} />
+            </span>
+            <p className="font-bold text-brand-ink">รางวัลวันที่ 3</p>
+          </div>
+          <p className="text-sm text-slate-500">
+            {data.config.day3Points} แต้มโบนัส {cycle?.day3RewardClaimed && <span className="text-brand-emerald font-semibold">— รับแล้ว</span>}
+          </p>
+        </div>
+        <div
+          className={`rounded-xl2 border p-5 ${
+            cycle?.day7RewardClaimed ? "border-brand-teal bg-brand-gradient-soft" : "border-slate-100"
+          }`}
+        >
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <span
+              className={`grid h-9 w-9 place-items-center rounded-full ${
+                cycle?.day7RewardClaimed ? "bg-brand-gradient text-white" : "bg-surface-muted text-slate-400"
+              }`}
+            >
+              <Sparkles size={16} />
+            </span>
+            <p className="font-bold text-brand-ink">รางวัลวันที่ 7</p>
+          </div>
+          <p className="text-sm text-slate-500">
+            {data.config.day7Points} แต้ม + คูปองส่วนลด 10%
+            {cycle?.day7RewardClaimed && cycle.day7CouponCode && (
+              <span className="block mt-1 font-mono text-brand-emerald font-bold">{cycle.day7CouponCode}</span>
+            )}
+          </p>
+        </div>
+      </div>
+
+      {bestSellers.length > 0 && (
+        <div>
+          <h2 className="font-bold text-brand-ink mb-3">สินค้าขายดี ระหว่างรอครบรอบ</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            {bestSellers.map((p) => (
+              <ProductCard key={p.slug} product={p} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {confirmDate && (
+        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/40 p-4">
+          <div className="w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl bg-white p-5 shadow-xl">
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-bold text-brand-ink">ยืนยันกู้วันเช็กอิน</p>
+              <button onClick={() => setConfirmDate(null)} aria-label="ปิด" className="text-slate-400 hover:text-slate-600">
+                <X size={18} />
+              </button>
+            </div>
+            <p className="text-sm text-slate-600 mb-1">
+              กู้วันที่ {new Date(confirmDate).toLocaleDateString("th-TH", { day: "numeric", month: "long" })}
+            </p>
+            <p className="flex items-center gap-1.5 text-sm text-amber-600 font-semibold mb-4">
+              <Coins size={14} /> ใช้ {data.recovery.costPerDay} แต้ม (คงเหลือ {data.recovery.pointBalance} แต้ม)
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDate(null)}
+                className="flex-1 rounded-full border border-slate-200 text-slate-600 font-semibold py-2.5 text-sm"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={() => doRecover(confirmDate)}
+                disabled={busy || data.recovery.pointBalance < data.recovery.costPerDay}
+                className="flex-1 rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm disabled:opacity-50"
+              >
+                ยืนยัน
+              </button>
+            </div>
+            {data.recovery.pointBalance < data.recovery.costPerDay && (
+              <p className="mt-2 text-xs text-rose-500">แต้มของคุณไม่พอสำหรับกู้วันนี้ค่ะ</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {celebration && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl animate-fadeUp">
+            <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full bg-brand-gradient-soft text-3xl">🎁</div>
+            <p className="text-lg font-bold text-brand-ink mb-1">{celebration.title}</p>
+            <p className="text-sm text-slate-600 mb-4">{celebration.body}</p>
+            {celebration.coupon && (
+              <div className="mb-4 rounded-xl border border-dashed border-brand-teal bg-brand-gradient-soft px-4 py-3">
+                <p className="text-xs text-slate-500 mb-1">โค้ดส่วนลดของคุณ</p>
+                <p className="font-mono text-lg font-bold text-brand-emerald">{celebration.coupon}</p>
+              </div>
+            )}
+            <div className="flex gap-2">
+              {celebration.coupon && (
+                <Link
+                  href="/cart"
+                  className="flex-1 rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm"
+                  onClick={() => setCelebration(null)}
+                >
+                  ไปใช้ในตะกร้า
+                </Link>
+              )}
+              <button
+                onClick={() => setCelebration(null)}
+                className={`rounded-full font-semibold py-2.5 text-sm ${
+                  celebration.coupon ? "flex-1 border border-slate-200 text-slate-600" : "w-full bg-brand-gradient text-white"
+                }`}
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function CheckinPage() {
+  return (
+    <AccountLayout>
+      <CheckinContent />
+    </AccountLayout>
+  );
+}
