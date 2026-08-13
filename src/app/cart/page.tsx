@@ -44,18 +44,28 @@ export default function CartPage() {
         <div className="lg:col-span-2 flex flex-col gap-4">
           {lines.map((line) => (
             <div key={line.variantId} className="flex gap-4 rounded-xl2 border border-slate-100 p-3 md:p-4 shadow-card">
-              <Link href={`/product/${line.slug}`} className="relative h-20 w-20 md:h-24 md:w-24 shrink-0 rounded-lg overflow-hidden bg-surface-soft">
+              <Link href={`/product/${line.slug}`} className="relative h-20 w-20 md:h-24 md:w-24 shrink-0 self-center rounded-lg overflow-hidden bg-surface-soft">
                 <Image src={line.image} alt={line.name} fill className="object-cover" />
               </Link>
-              <div className="flex-1 min-w-0">
-                <Link href={`/product/${line.slug}`} className="text-sm font-medium text-brand-ink line-clamp-2 hover:text-brand-emerald">
-                  {line.name}
-                </Link>
+              <div className="flex-1 min-w-0 flex flex-col">
+                <div className="flex items-start justify-between gap-2">
+                  <Link href={`/product/${line.slug}`} className="text-sm font-medium text-brand-ink line-clamp-2 hover:text-brand-emerald">
+                    {line.name}
+                  </Link>
+                  <button
+                    onClick={() => removeItem(line.variantId)}
+                    className="shrink-0 text-slate-400 hover:text-rose-500"
+                    aria-label="Remove"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+
                 {line.variants.length > 1 ? (
                   <select
                     value={line.variantId}
                     onChange={(e) => changeVariant(line.variantId, e.target.value)}
-                    className="mt-0.5 rounded-md border border-slate-200 bg-white text-xs text-slate-600 pl-1.5 pr-6 py-1"
+                    className="mt-1 self-start rounded-md border border-slate-200 bg-white text-xs text-slate-600 pl-1.5 pr-6 py-1"
                   >
                     {line.variants.map((v) => (
                       <option key={v.variantId} value={v.variantId} disabled={!v.inStock}>
@@ -66,18 +76,16 @@ export default function CartPage() {
                 ) : (
                   line.size && <p className="text-xs text-slate-400 mt-0.5">{line.size}</p>
                 )}
-                <div className="flex items-baseline gap-2 mt-1">
+
+                <div className="flex items-baseline gap-2 mt-1.5">
                   <span className="font-bold text-brand-ink">{formatTHB(line.price)}</span>
                   {line.compareAtPrice && (
                     <span className="text-xs text-slate-400 line-through">{formatTHB(line.compareAtPrice)}</span>
                   )}
                 </div>
-                <p className="text-[11px] text-brand-emerald mt-1 flex items-center gap-1">
-                  <Award size={11} />
-                  {lang === "en"
-                    ? `+${Math.floor((line.price * line.qty) / 100)} points`
-                    : `+${Math.floor((line.price * line.qty) / 100)} คะแนน`}
-                </p>
+
+                <div className="flex-1" />
+
                 <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center border border-slate-200 rounded-full">
                     <button onClick={() => updateQty(line.variantId, line.qty - 1)} className="p-2" aria-label="Decrease">
@@ -88,9 +96,12 @@ export default function CartPage() {
                       <Plus size={12} />
                     </button>
                   </div>
-                  <button onClick={() => removeItem(line.variantId)} className="text-slate-400 hover:text-rose-500" aria-label="Remove">
-                    <Trash2 size={16} />
-                  </button>
+                  <p className="text-[11px] text-brand-emerald flex items-center gap-1">
+                    <Award size={11} />
+                    {lang === "en"
+                      ? `+${Math.floor((line.price * line.qty) / 100)} points`
+                      : `+${Math.floor((line.price * line.qty) / 100)} คะแนน`}
+                  </p>
                 </div>
               </div>
             </div>

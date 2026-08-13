@@ -10,11 +10,11 @@ import MobileStickyBar from "./MobileStickyBar";
 import { useCart, useWishlist } from "@/lib/cart-context";
 
 const tabs = [
-  { id: "benefits", label: "Benefits & Ingredients" },
-  { id: "howto", label: "Who It's For & How to Use" },
-  { id: "compare", label: "Compare & Alternatives" },
-  { id: "reviews", label: "Verified Reviews & Q&A" },
-  { id: "delivery", label: "Stock, Delivery & Buy" },
+  { id: "benefits", label: "คุณประโยชน์และส่วนผสม" },
+  { id: "howto", label: "เหมาะกับใครและวิธีใช้" },
+  { id: "compare", label: "เปรียบเทียบและทางเลือกอื่น" },
+  { id: "reviews", label: "รีวิวจากลูกค้าจริง" },
+  { id: "delivery", label: "สต็อกและการจัดส่ง" },
 ];
 
 export default function ProductDetailInteractive({

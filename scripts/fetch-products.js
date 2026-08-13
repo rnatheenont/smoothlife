@@ -16,7 +16,53 @@ const DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
 const TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 const API_VERSION = process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-10";
 const OUT = path.join(__dirname, "..", "src", "data", "products.generated.ts");
+// Working snapshot consumed by scripts/fill-content-gaps.js — not checked
+// into git (see .gitignore), just a hand-off between the two scripts.
+const SNAPSHOT = path.join(__dirname, "..", "src", "data", "products.snapshot.json");
+// AI-written benefits/howToUse/whoFor for products whose Shopify description
+// doesn't have a clean version of that field — filled in once by
+// fill-content-gaps.js and committed to git so normal builds never call the
+// API; only re-runs if a product's own source text actually changes.
+const CONTENT_CACHE = path.join(__dirname, "ai-content-cache.json");
 const PAGE_SIZE = 100;
+
+// Cheap content fingerprint so the cache self-invalidates if a product's
+// underlying Shopify text changes, without needing any extra bookkeeping.
+function sourceHash(p) {
+  const s = `${p.name}|${p.shortDesc}|${p.description}`;
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return h.toString(36);
+}
+
+function applyContentCache(products) {
+  let cache = {};
+  try {
+    cache = JSON.parse(fs.readFileSync(CONTENT_CACHE, "utf8"));
+  } catch {
+    return; // no cache yet — fine, fields just stay as scraped (possibly empty)
+  }
+  let applied = 0;
+  for (const p of products) {
+    const entry = cache[p.slug];
+    if (!entry || entry.sourceHash !== sourceHash(p)) continue;
+    let changed = false;
+    if (!p.benefits.length && entry.benefits && entry.benefits.length) {
+      p.benefits = entry.benefits;
+      changed = true;
+    }
+    if (!p.howToUse && entry.howToUse) {
+      p.howToUse = entry.howToUse;
+      changed = true;
+    }
+    if (!p.whoFor && entry.whoFor) {
+      p.whoFor = entry.whoFor;
+      changed = true;
+    }
+    if (changed) applied++;
+  }
+  if (applied) console.log(`[catalogue] applied AI content cache to ${applied} products`);
+}
 
 /* ---------- text helpers ---------- */
 
@@ -380,7 +426,9 @@ async function main() {
   const mapped = raw.map((p) => toProduct(p, usedSlugs)).filter(Boolean);
   const min = process.env.CATALOGUE_FIXTURE ? 1 : 1;
   if (mapped.length < min) throw new Error("only " + mapped.length + " usable products");
+  applyContentCache(mapped);
   fs.writeFileSync(OUT, serialise(mapped), "utf8");
+  fs.writeFileSync(SNAPSHOT, JSON.stringify(mapped), "utf8");
   const byCat = {};
   for (const p of mapped) byCat[p.category] = (byCat[p.category] || 0) + 1;
   console.log(
@@ -388,6 +436,9 @@ async function main() {
   );
 }
 
+module.exports = { sourceHash, CONTENT_CACHE, SNAPSHOT };
+
+if (require.main === module) {
 main().catch((e) => {
   console.warn("[catalogue] live fetch failed, site will have no products until next build:", e.message);
   if (!fs.existsSync(OUT)) {
@@ -399,3 +450,4 @@ main().catch((e) => {
   }
   process.exit(0);
 });
+}

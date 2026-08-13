@@ -7,4 +7,5 @@ out
 tsconfig.tsbuildinfo
 # Regenerated at build time from the live Shopify catalogue (see scripts/fetch-products.js)
 src/data/products.generated.ts
+src/data/products.snapshot.json
 .env*
