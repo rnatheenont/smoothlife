@@ -1,5 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { Facebook, Instagram, MessageCircle } from "lucide-react";
+import { Facebook, Instagram, MessageCircle, Send, CheckCircle2 } from "lucide-react";
 
 const columns = [
   {
@@ -31,6 +34,68 @@ const columns = [
   },
 ];
 
+function NewsletterForm() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("loading");
+    setError(null);
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error || "สมัครไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+        setStatus("idle");
+        return;
+      }
+      setStatus("done");
+    } catch {
+      setError("สมัครไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+      setStatus("idle");
+    }
+  }
+
+  if (status === "done") {
+    return (
+      <p className="flex items-center gap-1.5 text-sm text-brand-emerald font-medium mt-4">
+        <CheckCircle2 size={16} /> สมัครรับข่าวสารสำเร็จแล้วค่ะ
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-4">
+      <p className="text-xs font-semibold text-brand-ink mb-2">รับโปรโมชั่นและข่าวสารทางอีเมล</p>
+      <div className="flex items-center gap-2">
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="อีเมลของคุณ"
+          className="flex-1 min-w-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-brand-teal"
+        />
+        <button
+          type="submit"
+          disabled={status === "loading"}
+          aria-label="สมัครรับข่าวสาร"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white disabled:opacity-60"
+        >
+          <Send size={14} />
+        </button>
+      </div>
+      {error && <p className="text-xs text-rose-500 mt-1.5">{error}</p>}
+    </form>
+  );
+}
+
 export default function Footer() {
   return (
     <footer className="mt-16 border-t border-slate-100 bg-surface-soft">
@@ -54,6 +119,7 @@ export default function Footer() {
               <MessageCircle size={16} />
             </a>
           </div>
+          <NewsletterForm />
         </div>
         {columns.map((col) => (
           <div key={col.title}>
@@ -74,8 +140,8 @@ export default function Footer() {
         <div className="container-page py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
           <span>© 2026 Smoothlife.com — เว็บไซต์เดโมสำหรับการนำเสนอ (Prototype)</span>
           <div className="flex items-center gap-4">
-            <Link href="/help/payment" className="hover:text-brand-emerald">นโยบายความเป็นส่วนตัว</Link>
-            <Link href="/help/delivery" className="hover:text-brand-emerald">เงื่อนไขการใช้บริการ</Link>
+            <Link href="/privacy" className="hover:text-brand-emerald">นโยบายความเป็นส่วนตัว</Link>
+            <Link href="/terms" className="hover:text-brand-emerald">เงื่อนไขการใช้บริการ</Link>
           </div>
         </div>
       </div>
