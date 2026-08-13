@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { concerns } from "@/data/categories";
 import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
+import { sortSoldOutLast } from "@/lib/filter-products";
 
 export function generateStaticParams() {
   return concerns.map((c) => ({ slug: c.slug }));
@@ -17,7 +18,7 @@ export default function ConcernDetailPage({ params }: { params: { slug: string }
   const concern = concerns.find((c) => c.slug === params.slug);
   if (!concern) notFound();
 
-  const items = products.filter((p) => p.concerns.includes(concern.slug));
+  const items = sortSoldOutLast(products.filter((p) => p.concerns.includes(concern.slug)));
 
   return (
     <div className="container-page py-8 md:py-10">

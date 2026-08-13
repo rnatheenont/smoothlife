@@ -8,6 +8,7 @@ import { products } from "@/data/products";
 import { concerns } from "@/data/categories";
 import { articles } from "@/data/articles";
 import ProductCard from "@/components/ProductCard";
+import { sortSoldOutLast } from "@/lib/filter-products";
 
 export default function SearchContent() {
   const searchParams = useSearchParams();
@@ -32,7 +33,7 @@ export default function SearchContent() {
   const q = input.toLowerCase().trim();
 
   const matchedProducts = q
-    ? products.filter((p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q))
+    ? sortSoldOutLast(products.filter((p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q)))
     : [];
   const matchedConcerns = q ? concerns.filter((c) => c.nameTh.includes(q) || c.name.toLowerCase().includes(q)) : [];
   const matchedArticles = q ? articles.filter((a) => a.title.toLowerCase().includes(q) || a.excerpt.toLowerCase().includes(q)) : [];

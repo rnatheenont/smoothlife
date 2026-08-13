@@ -30,8 +30,10 @@ export default function ProductCard({ product }: { product: Product }) {
   const defaultVariant = product.variants.find((v) => v.variantId === product.variantId);
   const lowStock =
     typeof defaultVariant?.quantity === "number" && defaultVariant.quantity > 0 && defaultVariant.quantity <= 10;
+  const soldOut = !product.inStock;
 
   function handleAdd() {
+    if (soldOut) return;
     addItem(product.slug);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
@@ -52,20 +54,29 @@ export default function ProductCard({ product }: { product: Product }) {
           alt={product.name}
           fill
           sizes="(max-width: 768px) 50vw, 25vw"
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        <div className="absolute left-2 top-2 flex flex-col gap-1">
-          {product.badges?.slice(0, 2).map((b) => (
-            <span key={b} className={clsx("text-[10px] font-bold px-2 py-0.5 rounded-full", badgeStyles[b])}>
-              {b}
-            </span>
-          ))}
-          {discount > 0 && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white">
-              -{discount}%
-            </span>
+          className={clsx(
+            "object-cover transition-transform duration-500",
+            soldOut ? "grayscale opacity-60" : "group-hover:scale-105"
           )}
-        </div>
+        />
+        {soldOut ? (
+          <div className="absolute inset-0 grid place-items-center bg-black/10">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-900/80 text-white">สินค้าหมด</span>
+          </div>
+        ) : (
+          <div className="absolute left-2 top-2 flex flex-col gap-1">
+            {product.badges?.slice(0, 2).map((b) => (
+              <span key={b} className={clsx("text-[10px] font-bold px-2 py-0.5 rounded-full", badgeStyles[b])}>
+                {b}
+              </span>
+            ))}
+            {discount > 0 && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white">
+                -{discount}%
+              </span>
+            )}
+          </div>
+        )}
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-3 md:p-4">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-teal">{product.brand}</span>
@@ -92,13 +103,16 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
         <button
           onClick={handleAdd}
+          disabled={soldOut}
           className={clsx(
-            "mt-2 flex items-center justify-center gap-1.5 rounded-full text-white text-xs font-semibold py-2 transition-all active:scale-95",
-            added ? "bg-brand-emerald" : "bg-brand-gradient hover:opacity-90"
+            "mt-2 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold py-2 transition-all active:scale-95",
+            soldOut
+              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+              : clsx("text-white", added ? "bg-brand-emerald" : "bg-brand-gradient hover:opacity-90")
           )}
         >
-          {added ? <Check size={14} /> : <ShoppingBag size={14} />}
-          {added ? "เพิ่มแล้ว" : "เพิ่มลงตะกร้า"}
+          {soldOut ? null : added ? <Check size={14} /> : <ShoppingBag size={14} />}
+          {soldOut ? "สินค้าหมด" : added ? "เพิ่มแล้ว" : "เพิ่มลงตะกร้า"}
         </button>
       </div>
     </div>

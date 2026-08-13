@@ -12,6 +12,14 @@ export type ShopSearchParams = {
   maxPrice?: string;
 };
 
+// Sold-out products sink to the end of any listing, but keep whatever
+// relative order they already had among themselves and among in-stock items
+// (Array.sort is stable) — so this only reorders across the in-stock /
+// sold-out boundary, never within a group.
+export function sortSoldOutLast(items: Product[]): Product[] {
+  return [...items].sort((a, b) => Number(!a.inStock) - Number(!b.inStock));
+}
+
 export function filterProducts(params: ShopSearchParams): Product[] {
   let result = [...products];
 
@@ -59,5 +67,5 @@ export function filterProducts(params: ShopSearchParams): Product[] {
       break;
   }
 
-  return result;
+  return sortSoldOutLast(result);
 }
