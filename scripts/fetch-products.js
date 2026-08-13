@@ -34,10 +34,22 @@ function decodeEntities(s) {
 function blocks(html) {
   if (!html) return [];
   // Some source content is double-encoded (e.g. "&amp;amp;") — decode twice.
-  return decodeEntities(decodeEntities(String(html)))
+  let s = decodeEntities(decodeEntities(String(html)));
+  // Word-exported product descriptions routinely put a literal newline right
+  // after "<li>", before the item's own text/spans. If we let the generic
+  // "<li>" -> "• " + block-split pipeline run over that as-is, the "• " ends
+  // up alone on its own line (which then gets filtered out for being too
+  // short) while the bullet's actual text survives on the *next* line with
+  // no marker at all — indistinguishable from prose, so it leaks into
+  // benefits/description. Coalesce each <li>...</li> into one marked line
+  // first, collapsing any internal newlines, so the marker always stays
+  // attached to its text.
+  s = s
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_, inner) => "\n• " + inner.replace(/[\r\n]+/g, " ") + "\n");
+  return s
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
-    .replace(/<li[^>]*>/gi, "• ")
+    .replace(/<\/(p|div|h[1-6])>/gi, "\n")
     .replace(/<[^>]+>/g, "")
     .split("\n")
     .map((l) => l.replace(/\s+/g, " ").trim())
@@ -111,10 +123,28 @@ function sections(lines) {
       const hit = keys.find((k) => low.includes(k));
       if (!hit) continue;
       const after = lines[i].replace(/^[^:：]*[:：]\s*/, "");
-      out[field] =
-        after && after.length > 8 && after !== lines[i]
-          ? after
-          : (lines[i + 1] || "");
+      if (after && after.length > 8 && after !== lines[i]) {
+        out[field] = after;
+        continue;
+      }
+      // No usable inline content after a colon. Only treat this as a real
+      // section heading — and go looking at the following lines — if the
+      // keyword basically *is* the line (a short standalone label like
+      // "จุดเด่น" or "Ingredients & Benefits", keyword near the start).
+      // Otherwise it's just an incidental mention buried inside an
+      // unrelated marketing sentence (e.g. "...ด้วยส่วนผสมจากธรรมชาติ...")
+      // and grabbing "the next line" would attach a random, unrelated
+      // fragment (often another section's heading) to this field.
+      const idx = low.indexOf(hit);
+      if (lines[i].length > 40 || idx > 6) continue;
+      const collected = [];
+      let j = i + 1;
+      while (j < lines.length && lines[j].startsWith("• ")) {
+        collected.push(lines[j].slice(2).trim());
+        j++;
+      }
+      const next = lines[i + 1] || "";
+      out[field] = collected.length ? collected.join(" ") : next.length > 15 ? next : "";
     }
   }
   return out;
@@ -268,7 +298,7 @@ function toProduct(p, usedSlugs) {
       : lines.filter((l) => /^•/.test(l)).slice(0, 3).map((l) => l.replace(/^•\s*/, ""))
     ).map((b) => clip(b, 120)),
     howToUse: clip(sec.howToUse, 300),
-    ingredients: clip(sec.ingredients, 300),
+    ingredients: clip(sec.ingredients, 600),
     whoFor: clip(sec.whoFor, 240),
     inStock: variant.availableForSale !== false,
     size,

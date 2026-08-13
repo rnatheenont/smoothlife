@@ -156,7 +156,9 @@ export default function ProductDetailInteractive({
               </div>
               <div>
                 <h3 className="font-bold text-brand-ink mb-3">ส่วนผสมสำคัญ</h3>
-                <p className="text-sm text-slate-600">{product.ingredients}</p>
+                <p className="text-sm text-slate-600">
+                  {product.ingredients || "ยังไม่มีข้อมูลส่วนผสมสำหรับสินค้านี้ค่ะ กรุณาติดต่อสอบถามเพิ่มเติมได้ที่ทีมงาน"}
+                </p>
               </div>
             </div>
           )}
