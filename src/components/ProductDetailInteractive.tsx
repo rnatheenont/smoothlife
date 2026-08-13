@@ -14,6 +14,8 @@ import {
   CheckCircle2,
   Star,
   MessageCircleQuestion,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Product } from "@/data/types";
 import type { ReviewRow } from "@/app/api/reviews/route";
@@ -43,7 +45,8 @@ export default function ProductDetailInteractive({
   reviews: ReviewRow[];
   questions: QuestionRow[];
 }) {
-  const [activeImage, setActiveImage] = useState(product.image);
+  const images = [product.image, product.image2].filter(Boolean) as string[];
+  const [activeIndex, setActiveIndex] = useState(0);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState("benefits");
   const [added, setAdded] = useState(false);
@@ -52,7 +55,26 @@ export default function ProductDetailInteractive({
   const { toggle, has } = useWishlist();
   const { user } = useAuth();
   const router = useRouter();
-  const images = [product.image, product.image2].filter(Boolean) as string[];
+  const activeImage = images[activeIndex] || images[0];
+  const touchStartX = useRef<number | null>(null);
+
+  function showPrev() {
+    setActiveIndex((i) => (i - 1 + images.length) % images.length);
+  }
+  function showNext() {
+    setActiveIndex((i) => (i + 1) % images.length);
+  }
+  function onImageTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+  function onImageTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    const SWIPE_THRESHOLD = 40;
+    if (delta > SWIPE_THRESHOLD) showPrev();
+    else if (delta < -SWIPE_THRESHOLD) showNext();
+  }
   const selectedVariant =
     product.variants.find((v) => v.variantId === selectedVariantId) || product.variants[0];
   const hasSizeChoice = product.variants.length > 1;
@@ -146,17 +168,49 @@ export default function ProductDetailInteractive({
     <div>
       <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
         <div>
-          <div className="relative aspect-square rounded-xl2 overflow-hidden bg-surface-soft">
+          <div
+            className="relative aspect-square rounded-xl2 overflow-hidden bg-surface-soft select-none touch-pan-y"
+            onTouchStart={onImageTouchStart}
+            onTouchEnd={onImageTouchEnd}
+          >
             <Image src={activeImage} alt={product.name} fill className="object-cover" priority />
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={showPrev}
+                  aria-label="รูปก่อนหน้า"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-white/80 backdrop-blur shadow-sm text-brand-ink hover:bg-white transition-colors"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  onClick={showNext}
+                  aria-label="รูปถัดไป"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-white/80 backdrop-blur shadow-sm text-brand-ink hover:bg-white transition-colors"
+                >
+                  <ChevronRight size={18} />
+                </button>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+                  {images.map((img, i) => (
+                    <span
+                      key={img}
+                      className={`h-1.5 rounded-full transition-all shadow-[0_0_0_1px_rgba(0,0,0,0.15)] ${
+                        i === activeIndex ? "w-4 bg-white" : "w-1.5 bg-white/70"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
           {images.length > 1 && (
             <div className="flex gap-2 mt-3">
-              {images.map((img) => (
+              {images.map((img, i) => (
                 <button
                   key={img}
-                  onClick={() => setActiveImage(img)}
+                  onClick={() => setActiveIndex(i)}
                   className={`relative h-16 w-16 rounded-lg overflow-hidden border-2 ${
-                    activeImage === img ? "border-brand-teal" : "border-transparent"
+                    i === activeIndex ? "border-brand-teal" : "border-transparent"
                   }`}
                 >
                   <Image src={img} alt="" fill className="object-cover" />
