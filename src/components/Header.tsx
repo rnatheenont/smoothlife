@@ -133,7 +133,10 @@ export default function Header() {
               </Link>
             </>
           )}
-          <Link href="/cart" className="relative" aria-label="Cart">
+          <Link href="/search" className="lg:hidden" aria-label="Search">
+            <Search size={22} />
+          </Link>
+          <Link href="/cart" className="relative hidden lg:block" aria-label="Cart">
             <ShoppingBag size={22} />
             {count > 0 && (
               <span

@@ -2,20 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, ScanFace, Search, User } from "lucide-react";
+import { Home, LayoutGrid, ScanFace, ShoppingBag, User } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
+import { useCart } from "@/lib/cart-context";
 
 const tabs = [
   { href: "/", icon: Home, th: "หน้าแรก", en: "Home" },
   { href: "/shop", icon: LayoutGrid, th: "ช้อป", en: "Shop" },
   { href: "/advisor", icon: ScanFace, th: "ประเมินผิว", en: "Skin Check" },
-  { href: "/search", icon: Search, th: "ค้นหา", en: "Search" },
+  { href: "/cart", icon: ShoppingBag, th: "ตะกร้า", en: "Cart" },
   { href: "/account", icon: User, th: "บัญชี", en: "Account" },
 ];
 
 export default function MobileTabBar() {
   const pathname = usePathname() || "/";
   const { t } = useLang();
+  const { count } = useCart();
 
   function active(href: string) {
     if (href === "/") return pathname === "/";
@@ -39,6 +41,14 @@ export default function MobileTabBar() {
               >
                 <span className="relative">
                   <Icon size={21} strokeWidth={on ? 2.4 : 1.9} />
+                  {tab.href === "/cart" && count > 0 && (
+                    <span
+                      key={count}
+                      className="absolute -top-1.5 -right-2 grid h-[15px] min-w-[15px] place-items-center rounded-full bg-brand-sky px-1 text-[9px] font-bold text-white animate-pop"
+                    >
+                      {count}
+                    </span>
+                  )}
                 </span>
                 {t(tab.th, tab.en)}
                 {on && (
