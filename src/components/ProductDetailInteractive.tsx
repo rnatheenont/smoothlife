@@ -14,8 +14,6 @@ import {
   CheckCircle2,
   Star,
   MessageCircleQuestion,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { Product } from "@/data/types";
 import type { ReviewRow } from "@/app/api/reviews/route";
@@ -175,32 +173,16 @@ export default function ProductDetailInteractive({
           >
             <Image src={activeImage} alt={product.name} fill className="object-cover" priority />
             {images.length > 1 && (
-              <>
-                <button
-                  onClick={showPrev}
-                  aria-label="รูปก่อนหน้า"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-white/80 backdrop-blur shadow-sm text-brand-ink hover:bg-white transition-colors"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <button
-                  onClick={showNext}
-                  aria-label="รูปถัดไป"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-white/80 backdrop-blur shadow-sm text-brand-ink hover:bg-white transition-colors"
-                >
-                  <ChevronRight size={18} />
-                </button>
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
-                  {images.map((img, i) => (
-                    <span
-                      key={img}
-                      className={`h-1.5 rounded-full transition-all shadow-[0_0_0_1px_rgba(0,0,0,0.15)] ${
-                        i === activeIndex ? "w-4 bg-white" : "w-1.5 bg-white/70"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </>
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+                {images.map((img, i) => (
+                  <span
+                    key={img}
+                    className={`h-1.5 rounded-full transition-all shadow-[0_0_0_1px_rgba(0,0,0,0.15)] ${
+                      i === activeIndex ? "w-4 bg-white" : "w-1.5 bg-white/70"
+                    }`}
+                  />
+                ))}
+              </div>
             )}
           </div>
           {images.length > 1 && (
