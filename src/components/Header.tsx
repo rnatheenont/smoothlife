@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Search, ShoppingBag, User, Menu, X, Sparkles, Award } from "lucide-react";
+import { Search, ShoppingBag, User, Menu, X, Sparkles, Award, Star, Crown } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import type { Tier } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
 import LanguageSwitch from "@/components/LanguageSwitch";
@@ -17,6 +18,15 @@ const navLinks = [
   { href: "/about", th: "ทำไมต้อง Smooth Life", en: "Why Smooth Life" },
   { href: "/help", th: "ช่วยเหลือ", en: "Help" },
 ];
+
+// Shown to customers as "Lv.1/2/3" instead of the internal Bronze/Silver/Gold
+// tier name — simpler at a glance, and the internal names still drive the
+// actual perks/multiplier logic elsewhere (account/points, lib/points.ts).
+const tierBadge: Record<Tier, { level: number; icon: typeof Award; className: string }> = {
+  Bronze: { level: 1, icon: Star, className: "bg-amber-50 text-amber-700" },
+  Silver: { level: 2, icon: Award, className: "bg-slate-100 text-slate-600" },
+  Gold: { level: 3, icon: Crown, className: "bg-yellow-50 text-yellow-700" },
+};
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -66,9 +76,9 @@ export default function Header() {
   return (
     <>
     <header
-      className={`sticky top-0 z-40 bg-white/95 backdrop-blur pt-[env(safe-area-inset-top)] transition-transform duration-300 lg:!translate-y-0 lg:border-b lg:border-slate-100 ${
+      className={`sticky top-0 z-40 glass-bar pt-[env(safe-area-inset-top)] transition-transform duration-300 lg:!translate-y-0 lg:border-b lg:border-white/40 ${
         hideHeader && !open ? "-translate-y-full" : "translate-y-0"
-      } ${scrolled ? "border-b border-slate-100" : "border-b border-transparent"}`}
+      } ${scrolled ? "border-b border-white/50 shadow-[0_1px_0_rgba(255,255,255,0.6)]" : "border-b border-transparent"}`}
     >
       <div className="bg-brand-gradient text-white text-center text-[11px] md:text-xs py-1.5 px-3">
         <span className="hidden sm:inline">
@@ -106,20 +116,28 @@ export default function Header() {
           {user ? (
             <Link
               href="/account"
-              className="hidden sm:flex items-center gap-2 rounded-full bg-surface-muted pl-1.5 pr-3 py-1.5 text-xs font-semibold text-brand-dark hover:bg-surface-soft transition-colors"
+              className="hidden sm:flex items-center gap-2.5 rounded-full glass pl-1.5 pr-2 py-1.5 hover:brightness-105 transition-[filter]"
             >
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-gradient text-white text-[11px] font-bold overflow-hidden">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient text-white text-xs font-bold overflow-hidden ring-2 ring-white">
                 {user.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.avatar} alt={user.name} className="h-7 w-7 rounded-full object-cover" />
+                  <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
                 ) : (
                   user.name.charAt(0).toUpperCase()
                 )}
               </span>
-              <span className="hidden lg:inline">{user.name.split(" ")[0]}</span>
-              <span className="hidden lg:inline h-3 w-px bg-slate-300" />
-              <span className="flex items-center gap-1 whitespace-nowrap">
-                <Award size={13} className="text-amber-500" /> {user.points} pts · Lv. {user.tier}
+              <span className="hidden lg:flex flex-col leading-tight">
+                <span className="text-xs font-semibold text-brand-ink">{user.name.split(" ")[0]}</span>
+                <span className="text-[11px] text-slate-400">{user.points} pts</span>
+              </span>
+              <span
+                className={`flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold whitespace-nowrap ${tierBadge[user.tier].className}`}
+              >
+                {(() => {
+                  const TierIcon = tierBadge[user.tier].icon;
+                  return <TierIcon size={11} />;
+                })()}
+                Lv.{tierBadge[user.tier].level}
               </span>
             </Link>
           ) : (
