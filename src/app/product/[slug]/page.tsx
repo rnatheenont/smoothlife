@@ -11,6 +11,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";
 import TrackRecentlyViewed from "@/components/TrackRecentlyViewed";
 import RecentlyViewedSection from "@/components/RecentlyViewedSection";
+import { productJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 
 export function generateStaticParams() {
   return products.map((p) => ({ slug: p.slug }));
@@ -53,20 +54,27 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const related = getRelatedProducts(product, 4);
   const [reviews, questions] = await Promise.all([getReviews(product.slug), getQuestions(product.slug)]);
   const categoryInfo = categories.find((c) => c.slug === product.category);
+  const breadcrumbItems = [
+    { label: "หน้าแรก", href: "/" },
+    { label: "ช้อป", href: "/shop" },
+    ...(categoryInfo ? [{ label: categoryInfo.nameTh, href: `/shop/${categoryInfo.slug}` }] : []),
+    { label: product.name },
+  ];
 
   return (
     <div className="container-page pt-3 pb-8 md:py-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(productJsonLd(product, reviews)) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd(breadcrumbItems)) }}
+      />
       <TrackRecentlyViewed slug={product.slug} />
       <div className="flex items-center gap-3 mb-4">
         <BackButton fallbackHref={`/shop/${product.category}`} />
-        <Breadcrumb
-          items={[
-            { label: "หน้าแรก", href: "/" },
-            { label: "ช้อป", href: "/shop" },
-            ...(categoryInfo ? [{ label: categoryInfo.nameTh, href: `/shop/${categoryInfo.slug}` }] : []),
-            { label: product.name },
-          ]}
-        />
+        <Breadcrumb items={breadcrumbItems} />
       </div>
       <ProductDetailInteractive product={product} related={related} reviews={reviews} questions={questions} />
 
