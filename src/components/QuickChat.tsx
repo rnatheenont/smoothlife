@@ -111,7 +111,7 @@ function renderContent(text: string) {
 export default function QuickChat() {
   const { lang, t } = useLang();
   const { user } = useAuth();
-  const { open, setOpen, profile } = useQuickChat();
+  const { open, setOpen, profile, stickyBarVisible } = useQuickChat();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -299,30 +299,49 @@ export default function QuickChat() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(!open)}
-        aria-label={t("คุยกับน้อง Smoothie", "Chat with Smoothie")}
-        className={`fixed bottom-[calc(72px+env(safe-area-inset-bottom))] lg:bottom-5 right-4 lg:right-5 z-[80] flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white shadow-cardHover transition-transform hover:scale-105 active:scale-95 h-12 w-12 ${
-          open ? "" : "lg:h-14 lg:w-auto lg:justify-start lg:pl-4 lg:pr-5"
-        }`}
+      <div
+        className={`fixed ${
+          stickyBarVisible
+            ? "bottom-[calc(132px+env(safe-area-inset-bottom))]"
+            : "bottom-[calc(72px+env(safe-area-inset-bottom))]"
+        } lg:bottom-5 right-4 lg:right-5 z-[80] inline-flex transition-[bottom]`}
       >
-        {open ? (
-          <X size={20} />
-        ) : (
-          <>
-            <span className="relative grid h-9 w-9 shrink-0 place-items-center">
-              <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="36px" className="object-contain" />
-              <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
-            </span>
-            <span className="hidden lg:inline text-sm font-semibold whitespace-nowrap">
-              {t("คุยกับน้อง Smoothie", "Ask Smoothie")}
-            </span>
-          </>
+        {!open && (
+          <span className="lg:hidden absolute inset-0 rounded-full bg-brand-emerald opacity-40 animate-ping pointer-events-none" />
         )}
-      </button>
+        <button
+          onClick={() => setOpen(!open)}
+          aria-label={t("คุยกับน้อง Smoothie", "Chat with Smoothie")}
+          className={`relative flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white shadow-cardHover ring-2 ring-white transition-all hover:scale-105 active:scale-95 h-12 w-12 ${
+            open ? "" : "lg:h-14 lg:w-auto lg:justify-start lg:pl-4 lg:pr-5"
+          }`}
+        >
+          {open ? (
+            <X size={20} />
+          ) : (
+            <>
+              <span className="relative grid h-9 w-9 shrink-0 place-items-center">
+                <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="36px" className="object-contain" />
+                <span className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-white text-brand-emerald shadow-sm">
+                  <MessageCircleQuestion size={10} strokeWidth={2.5} />
+                </span>
+              </span>
+              <span className="hidden lg:inline text-sm font-semibold whitespace-nowrap">
+                {t("คุยกับน้อง Smoothie", "Ask Smoothie")}
+              </span>
+            </>
+          )}
+        </button>
+      </div>
 
       {open && (
-        <div className="fixed bottom-[calc(136px+env(safe-area-inset-bottom))] lg:bottom-24 right-4 sm:right-5 z-[80] w-[calc(100vw-2rem)] sm:w-[390px] h-[min(760px,calc(100dvh-136px-env(safe-area-inset-bottom)-16px))] lg:h-[min(760px,82dvh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp">
+        <div
+          className={`fixed ${
+            stickyBarVisible
+              ? "bottom-[calc(196px+env(safe-area-inset-bottom))] h-[min(760px,calc(100dvh-196px-env(safe-area-inset-bottom)-16px))]"
+              : "bottom-[calc(136px+env(safe-area-inset-bottom))] h-[min(760px,calc(100dvh-136px-env(safe-area-inset-bottom)-16px))]"
+          } lg:bottom-24 right-4 sm:right-5 z-[80] w-[calc(100vw-2rem)] sm:w-[390px] lg:h-[min(760px,82dvh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp transition-[bottom,height]`}
+        >
           <div className="flex items-center justify-between gap-3 bg-brand-ink px-4 py-3">
             <div className="flex items-center gap-2.5 text-white min-w-0">
               <span className="relative grid h-9 w-9 shrink-0 place-items-center">

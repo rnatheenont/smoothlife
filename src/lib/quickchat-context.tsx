@@ -10,6 +10,12 @@ type QuickChatValue = {
   profile: Profile;
   setProfile: (p: Profile) => void;
   openWithProfile: (p: Profile) => void;
+  // Pages like cart/checkout/product show a fixed MobileStickyBar above the
+  // tab bar that would otherwise sit directly on top of (and hide) the chat
+  // launcher — they report their visibility here so QuickChat can lift
+  // itself clear of it instead of being covered.
+  stickyBarVisible: boolean;
+  setStickyBarVisible: (v: boolean) => void;
 };
 
 const Ctx = createContext<QuickChatValue | null>(null);
@@ -18,6 +24,7 @@ const KEY = "sl_advisor_profile";
 export function QuickChatProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [profile, setProfileState] = useState<Profile>({});
+  const [stickyBarVisible, setStickyBarVisible] = useState(false);
 
   useEffect(() => {
     try {
@@ -39,7 +46,11 @@ export function QuickChatProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <Ctx.Provider value={{ open, setOpen, profile, setProfile, openWithProfile }}>{children}</Ctx.Provider>
+    <Ctx.Provider
+      value={{ open, setOpen, profile, setProfile, openWithProfile, stickyBarVisible, setStickyBarVisible }}
+    >
+      {children}
+    </Ctx.Provider>
   );
 }
 
@@ -52,6 +63,8 @@ export function useQuickChat() {
       profile: {},
       setProfile: () => {},
       openWithProfile: () => {},
+      stickyBarVisible: false,
+      setStickyBarVisible: () => {},
     } as QuickChatValue;
   }
   return ctx;
