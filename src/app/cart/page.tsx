@@ -61,32 +61,26 @@ export default function CartPage() {
                   </button>
                 </div>
 
-                <div className="flex items-start justify-between gap-2 mt-1.5">
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="font-bold text-brand-ink">{formatTHB(line.price)}</span>
-                    {line.compareAtPrice && (
-                      <span className="text-xs text-slate-400 line-through">{formatTHB(line.compareAtPrice)}</span>
-                    )}
-                    {line.qty > 1 && (
-                      <span className="text-xs text-slate-400">
-                        × {line.qty} = {t("รวม", "total")} {formatTHB(line.price * line.qty)}
-                      </span>
-                    )}
-                  </div>
-                  {line.variants.length > 1 ? (
-                    <select
-                      value={line.variantId}
-                      onChange={(e) => changeVariant(line.variantId, e.target.value)}
-                      className="shrink-0 rounded-md border border-slate-200 bg-white text-xs text-slate-600 pl-1.5 pr-5 py-1"
-                    >
-                      {line.variants.map((v) => (
-                        <option key={v.variantId} value={v.variantId} disabled={!v.inStock}>
-                          {(v.size || t("ค่าเริ่มต้น", "Default")) + (v.inStock ? "" : ` (${t("สินค้าหมด", "Out of stock")})`)}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    line.size && <span className="shrink-0 text-xs text-slate-400">{line.size}</span>
+                {line.variants.length > 1 ? (
+                  <select
+                    value={line.variantId}
+                    onChange={(e) => changeVariant(line.variantId, e.target.value)}
+                    className="mt-1 self-start rounded-md border border-slate-200 bg-white text-xs text-slate-600 pl-1.5 pr-5 py-1"
+                  >
+                    {line.variants.map((v) => (
+                      <option key={v.variantId} value={v.variantId} disabled={!v.inStock}>
+                        {(v.size || t("ค่าเริ่มต้น", "Default")) + (v.inStock ? "" : ` (${t("สินค้าหมด", "Out of stock")})`)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  line.size && <p className="text-xs text-slate-400 mt-0.5">{line.size}</p>
+                )}
+
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <span className="font-bold text-brand-ink">{formatTHB(line.price)}</span>
+                  {line.compareAtPrice && (
+                    <span className="text-xs text-slate-400 line-through">{formatTHB(line.compareAtPrice)}</span>
                   )}
                 </div>
 
@@ -100,12 +94,19 @@ export default function CartPage() {
                       <Plus size={12} />
                     </button>
                   </div>
-                  <p className="text-[11px] text-brand-emerald flex items-center gap-1">
-                    <Award size={11} />
-                    {lang === "en"
-                      ? `+${Math.floor((line.price * line.qty) / 100)} points`
-                      : `+${Math.floor((line.price * line.qty) / 100)} คะแนน`}
-                  </p>
+                  <div className="text-right">
+                    {line.qty > 1 && (
+                      <p className="text-[11px] text-slate-400">
+                        {t("รวม", "Total")} {formatTHB(line.price * line.qty)}
+                      </p>
+                    )}
+                    <p className="text-[11px] text-brand-emerald flex items-center gap-1 justify-end">
+                      <Award size={11} />
+                      {lang === "en"
+                        ? `+${Math.floor((line.price * line.qty) / 100)} points`
+                        : `+${Math.floor((line.price * line.qty) / 100)} คะแนน`}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
