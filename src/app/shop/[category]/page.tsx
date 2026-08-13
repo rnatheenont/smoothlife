@@ -50,9 +50,11 @@ export default function CategoryPage({
   const items = filterProducts(current);
 
   return (
-    <div className="container-page py-8 md:py-10">
-      <BackButton fallbackHref="/shop" />
-      <Breadcrumb items={[{ label: "หน้าแรก", href: "/" }, { label: "ช้อป", href: "/shop" }, { label: categoryInfo.nameTh }]} />
+    <div className="container-page pt-3 pb-8 md:py-10">
+      <div className="flex items-center gap-3 mb-4">
+        <BackButton fallbackHref="/shop" />
+        <Breadcrumb items={[{ label: "หน้าแรก", href: "/" }, { label: "ช้อป", href: "/shop" }, { label: categoryInfo.nameTh }]} />
+      </div>
       <div className="mb-6 flex items-end justify-between gap-3">
         <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">{categoryInfo.nameTh}</h1>
         <span className="text-xs md:text-sm font-medium text-brand-emerald bg-brand-gradient-soft rounded-full px-3 py-1 shrink-0">

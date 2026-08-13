@@ -17,7 +17,7 @@ export default function BackButton({ fallbackHref, label = "กลับ" }: { f
   return (
     <button
       onClick={handleBack}
-      className="lg:hidden flex items-center gap-0.5 text-sm font-medium text-slate-600 -ml-1.5 mb-3 active:scale-95 transition-transform"
+      className="lg:hidden flex items-center gap-0.5 text-sm font-medium text-slate-600 -ml-1.5 shrink-0 active:scale-95 transition-transform"
       aria-label={label}
     >
       <ChevronLeft size={18} /> {label}

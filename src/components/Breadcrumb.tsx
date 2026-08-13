@@ -5,7 +5,7 @@ export type BreadcrumbItem = { label: string; href?: string };
 
 export default function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="mb-4 overflow-x-auto scrollbar-none">
+    <nav aria-label="Breadcrumb" className="min-w-0 flex-1 overflow-x-auto scrollbar-none">
       <ol className="flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap">
         {items.map((item, i) => {
           const isLast = i === items.length - 1;

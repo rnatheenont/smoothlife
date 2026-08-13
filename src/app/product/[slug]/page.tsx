@@ -55,17 +55,19 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const categoryInfo = categories.find((c) => c.slug === product.category);
 
   return (
-    <div className="container-page py-8 md:py-10">
+    <div className="container-page pt-3 pb-8 md:py-10">
       <TrackRecentlyViewed slug={product.slug} />
-      <BackButton fallbackHref={`/shop/${product.category}`} />
-      <Breadcrumb
-        items={[
-          { label: "หน้าแรก", href: "/" },
-          { label: "ช้อป", href: "/shop" },
-          ...(categoryInfo ? [{ label: categoryInfo.nameTh, href: `/shop/${categoryInfo.slug}` }] : []),
-          { label: product.name },
-        ]}
-      />
+      <div className="flex items-center gap-3 mb-4">
+        <BackButton fallbackHref={`/shop/${product.category}`} />
+        <Breadcrumb
+          items={[
+            { label: "หน้าแรก", href: "/" },
+            { label: "ช้อป", href: "/shop" },
+            ...(categoryInfo ? [{ label: categoryInfo.nameTh, href: `/shop/${categoryInfo.slug}` }] : []),
+            { label: product.name },
+          ]}
+        />
+      </div>
       <ProductDetailInteractive product={product} related={related} reviews={reviews} questions={questions} />
 
       {related.length > 0 && (
