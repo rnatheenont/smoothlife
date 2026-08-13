@@ -92,9 +92,9 @@ export default function Header() {
   return (
     <>
     <header
-      className={`sticky top-0 z-40 glass-bar pt-[env(safe-area-inset-top)] transition-transform duration-300 lg:!translate-y-0 lg:border-b lg:border-white/40 ${
+      className={`sticky top-0 z-40 bg-white/95 backdrop-blur pt-[env(safe-area-inset-top)] transition-transform duration-300 lg:!translate-y-0 lg:border-b lg:border-slate-100 ${
         hideHeader && !open ? "-translate-y-full" : "translate-y-0"
-      } ${scrolled ? "border-b border-white/50 shadow-[0_1px_0_rgba(255,255,255,0.6)]" : "border-b border-transparent"}`}
+      } ${scrolled ? "border-b border-slate-100" : "border-b border-transparent"}`}
     >
       <div className="bg-brand-gradient text-white text-center text-[11px] md:text-xs py-1.5 px-3">
         <span className="hidden sm:inline">
@@ -132,7 +132,7 @@ export default function Header() {
           {user ? (
             <Link
               href="/account"
-              className="hidden sm:flex items-center gap-2.5 rounded-full glass pl-1.5 pr-2 py-1.5 hover:brightness-105 transition-[filter]"
+              className="hidden sm:flex items-center gap-2.5 rounded-full bg-white pl-1.5 pr-2 py-1.5 shadow-card hover:shadow-cardHover transition-shadow"
             >
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient text-white text-xs font-bold overflow-hidden ring-2 ring-white">
                 {user.avatar ? (

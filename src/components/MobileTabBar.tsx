@@ -25,7 +25,7 @@ export default function MobileTabBar() {
   }
 
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[90] glass-bar border-t border-white/50 shadow-[0_-1px_0_rgba(255,255,255,0.6)] pb-[env(safe-area-inset-bottom)]">
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[90] border-t border-slate-200 bg-white/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
       <ul className="grid grid-cols-5">
         {tabs.map((tab) => {
           const on = active(tab.href);

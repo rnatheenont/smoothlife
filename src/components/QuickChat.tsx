@@ -451,7 +451,7 @@ export default function QuickChat() {
         <button
           onClick={() => setOpen(!open)}
           aria-label={t("คุยกับน้อง Smoothie", "Chat with Smoothie")}
-          className={`relative flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white ring-2 ring-white/80 transition-all hover:scale-105 active:scale-95 h-12 w-12 shadow-[inset_0_1px_1px_rgba(255,255,255,0.55),0_10px_28px_rgba(0,0,0,0.2)] ${
+          className={`relative flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white shadow-cardHover ring-2 ring-white transition-all hover:scale-105 active:scale-95 h-12 w-12 ${
             open ? "" : "lg:h-14 lg:w-auto lg:justify-start lg:pl-4 lg:pr-5"
           }`}
         >
@@ -479,9 +479,9 @@ export default function QuickChat() {
             stickyBarVisible
               ? "bottom-[calc(196px+env(safe-area-inset-bottom))] h-[min(760px,calc(100dvh-196px-env(safe-area-inset-bottom)-16px))]"
               : "bottom-[calc(136px+env(safe-area-inset-bottom))] h-[min(760px,calc(100dvh-136px-env(safe-area-inset-bottom)-16px))]"
-          } lg:bottom-24 right-4 sm:right-5 z-[80] w-[calc(100vw-2rem)] sm:w-[390px] lg:h-[min(760px,82dvh)] flex flex-col rounded-2xl glass-strong shadow-2xl overflow-hidden animate-fadeUp transition-[bottom,height]`}
+          } lg:bottom-24 right-4 sm:right-5 z-[80] w-[calc(100vw-2rem)] sm:w-[390px] lg:h-[min(760px,82dvh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp transition-[bottom,height]`}
         >
-          <div className="flex items-center justify-between gap-3 glass-dark px-4 py-3">
+          <div className="flex items-center justify-between gap-3 bg-brand-ink px-4 py-3">
             <div className="flex items-center gap-2.5 text-white min-w-0">
               <span className="relative grid h-9 w-9 shrink-0 place-items-center">
                 <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="36px" className="object-contain" />
