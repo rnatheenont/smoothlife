@@ -89,6 +89,54 @@ function ProductChip({ slug }: { slug: string }) {
   );
 }
 
+// Breaks a plain-text segment into paragraph/list blocks so a long reply
+// reads as scannable chunks instead of one dense wall of text — consecutive
+// "- " lines become a real bulleted list (dot marker, own line), everything
+// else stays grouped into paragraphs separated by blank lines.
+function renderTextBlock(text: string, keyPrefix: string): ReactNode[] {
+  const lines = text.split("\n");
+  const blocks: ReactNode[] = [];
+  let i = 0;
+  let blockKey = 0;
+  while (i < lines.length) {
+    if (lines[i].trim() === "") {
+      i++;
+      continue;
+    }
+    if (lines[i].trimStart().startsWith("- ")) {
+      const items: string[] = [];
+      while (i < lines.length && lines[i].trimStart().startsWith("- ")) {
+        items.push(lines[i].trimStart().slice(2));
+        i++;
+      }
+      blocks.push(
+        <ul key={`${keyPrefix}ul${blockKey}`} className="my-1.5 flex flex-col gap-1.5">
+          {items.map((it, idx) => (
+            <li key={idx} className="flex gap-2">
+              <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-brand-emerald" />
+              <span>{renderInline(it, `${keyPrefix}uli${blockKey}-${idx}`)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      blockKey++;
+    } else {
+      const paraLines: string[] = [];
+      while (i < lines.length && lines[i].trim() !== "" && !lines[i].trimStart().startsWith("- ")) {
+        paraLines.push(lines[i]);
+        i++;
+      }
+      blocks.push(
+        <p key={`${keyPrefix}p${blockKey}`} className="my-1.5 first:mt-0 last:mb-0">
+          {renderInline(paraLines.join("\n"), `${keyPrefix}p${blockKey}`)}
+        </p>
+      );
+      blockKey++;
+    }
+  }
+  return blocks;
+}
+
 function renderContent(text: string) {
   const out: ReactNode[] = [];
   let last = 0;
@@ -100,12 +148,12 @@ function renderContent(text: string) {
     // lines the model left right next to a marker would double up the gap —
     // trim newline runs at both ends of each text segment, not just one.
     const before = text.slice(last, m.index).replace(/^\n+|\n+$/g, "");
-    if (before) out.push(<span key={`t${key}`}>{renderInline(before, `t${key++}`)}</span>);
+    if (before) out.push(...renderTextBlock(before, `t${key++}-`));
     out.push(<ProductChip key={`p${key++}`} slug={m[1] || m[2] || m[3]} />);
     last = m.index + m[0].length;
   }
   const tail = text.slice(last).replace(/^\n+/, "");
-  if (tail) out.push(<span key={`t${key}`}>{renderInline(tail, `t${key++}`)}</span>);
+  if (tail) out.push(...renderTextBlock(tail, `t${key++}-`));
   return out;
 }
 
