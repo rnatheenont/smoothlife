@@ -40,6 +40,21 @@ function catalogue(profile: Record<string, string> | undefined) {
 
 type CartLine = { name: string; size?: string; qty: number; price: number };
 
+type ViewingProduct = {
+  slug: string;
+  name: string;
+  brand: string;
+  price: number;
+  compareAtPrice?: number;
+  category: string;
+  concerns: string[];
+  benefits: string[];
+  howToUse: string;
+  ingredients: string;
+  whoFor: string;
+  sizes: { size: string; price: number }[];
+};
+
 function cartSummary(cart: CartLine[]) {
   if (!cart.length) return "empty — the customer hasn't added anything yet";
   const total = cart.reduce((sum, l) => sum + l.price * l.qty, 0);
@@ -47,7 +62,27 @@ function cartSummary(cart: CartLine[]) {
   return `${lines.join("\n")}\nCart subtotal: ฿${total}`;
 }
 
-function systemPrompt(profile: Record<string, string> | undefined, lang: string, cart: CartLine[]) {
+function viewingProductSummary(vp: ViewingProduct | undefined) {
+  if (!vp) return null;
+  const sizeLines = vp.sizes.length > 1 ? vp.sizes.map((s) => `  - ${s.size || "Default"}: ฿${s.price}`).join("\n") : "";
+  return `slug: ${vp.slug}
+name: ${vp.name}
+brand: ${vp.brand}
+price: ฿${vp.price}${vp.compareAtPrice ? ` (was ฿${vp.compareAtPrice})` : ""}
+category: ${vp.category}
+concerns: ${vp.concerns.join(", ") || "-"}
+benefits: ${vp.benefits.join("; ") || "-"}
+how to use: ${vp.howToUse || "-"}
+ingredients: ${vp.ingredients || "-"}
+who it's for: ${vp.whoFor || "-"}${sizeLines ? `\nsizes available:\n${sizeLines}` : ""}`;
+}
+
+function systemPrompt(
+  profile: Record<string, string> | undefined,
+  lang: string,
+  cart: CartLine[],
+  viewingProduct: ViewingProduct | undefined
+) {
   const profileText =
     profile && Object.keys(profile).length
       ? Object.entries(profile)
@@ -92,7 +127,18 @@ KEEP THE CONVERSATION GOING — after every reply (skip this only for a hard saf
 - This exact line is parsed by the app into tappable suggestion chips and is never shown to the customer as raw text — always include it in this format, never describe it in prose, never omit the double brackets.
 
 Customer profile so far: ${profileText}
-
+${
+  viewingProduct
+    ? `
+THE CUSTOMER IS CURRENTLY LOOKING AT THIS PRODUCT PAGE:
+${viewingProductSummary(viewingProduct)}
+- Treat this as the default subject if their question is vague or a follow-up ("this", "it", "ตัวนี้", "อันนี้", "used how", "ingredients?") — assume they mean this product unless they clearly ask about something else.
+- You can explain, justify or critique it using the real data above (benefits, ingredients, how to use, who it's for, sizes/prices) — never invent details not listed here.
+- If they ask to compare it against something else (another catalogue product, or a general product type), give a genuine side-by-side comparison — price, ingredients/benefits, who each suits better — using this product's real data plus the catalogue below. Don't just say the other one is better to force a sale; be honest if this one is the better fit.
+- Reference it with its [[${viewingProduct.slug}]] marker when useful, same as any other product recommendation.
+`
+    : ""
+}
 CUSTOMER'S CURRENT CART:
 ${cartSummary(cart)}
 - You can see what's already in their cart — use it naturally: answer questions about it (e.g. "ในตะกร้ามีอะไรบ้าง", "ยอดรวมเท่าไหร่"), avoid re-suggesting something they've already added, and suggest genuinely complementary products (e.g. they have a cleanser, suggest a moisturiser) when it fits the conversation.
@@ -132,6 +178,24 @@ export async function POST(req: NextRequest) {
   const profile = body?.profile;
   const lang = body?.lang === "en" ? "en" : "th";
   const cart = Array.isArray(body?.cart) ? body.cart : [];
+  const rawViewing = body?.viewingProduct;
+  const viewingProduct: ViewingProduct | undefined =
+    rawViewing && typeof rawViewing.slug === "string" && typeof rawViewing.name === "string"
+      ? {
+          slug: rawViewing.slug,
+          name: rawViewing.name,
+          brand: typeof rawViewing.brand === "string" ? rawViewing.brand : "",
+          price: typeof rawViewing.price === "number" ? rawViewing.price : 0,
+          compareAtPrice: typeof rawViewing.compareAtPrice === "number" ? rawViewing.compareAtPrice : undefined,
+          category: typeof rawViewing.category === "string" ? rawViewing.category : "",
+          concerns: Array.isArray(rawViewing.concerns) ? rawViewing.concerns : [],
+          benefits: Array.isArray(rawViewing.benefits) ? rawViewing.benefits : [],
+          howToUse: typeof rawViewing.howToUse === "string" ? rawViewing.howToUse : "",
+          ingredients: typeof rawViewing.ingredients === "string" ? rawViewing.ingredients : "",
+          whoFor: typeof rawViewing.whoFor === "string" ? rawViewing.whoFor : "",
+          sizes: Array.isArray(rawViewing.sizes) ? rawViewing.sizes : [],
+        }
+      : undefined;
   const key = process.env.ANTHROPIC_API_KEY;
 
   const image = body?.image;
@@ -180,7 +244,7 @@ export async function POST(req: NextRequest) {
 
   const client = new Anthropic({ apiKey: key });
   const encoder = new TextEncoder();
-  const system = systemPrompt(profile, lang, cart);
+  const system = systemPrompt(profile, lang, cart, viewingProduct);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {

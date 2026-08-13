@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { Send, Loader2, RotateCcw, User as UserIcon, X, Plus, Check, Camera, ImagePlus, MessageCircleQuestion } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
@@ -113,6 +114,9 @@ export default function QuickChat() {
   const { user } = useAuth();
   const { open, setOpen, profile, stickyBarVisible } = useQuickChat();
   const { lines: cartLines } = useCart();
+  const pathname = usePathname();
+  const viewingSlug = pathname?.match(/^\/product\/([a-z0-9-]+)/i)?.[1];
+  const viewingProduct = viewingSlug ? getProductBySlug(viewingSlug) : undefined;
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -203,6 +207,22 @@ export default function QuickChat() {
           profile,
           lang,
           cart: cartLines.map((l) => ({ name: l.name, size: l.size, qty: l.qty, price: l.price })),
+          viewingProduct: viewingProduct
+            ? {
+                slug: viewingProduct.slug,
+                name: viewingProduct.name,
+                brand: viewingProduct.brand,
+                price: viewingProduct.price,
+                compareAtPrice: viewingProduct.compareAtPrice,
+                category: viewingProduct.category,
+                concerns: viewingProduct.concerns,
+                benefits: viewingProduct.benefits,
+                howToUse: viewingProduct.howToUse,
+                ingredients: viewingProduct.ingredients,
+                whoFor: viewingProduct.whoFor,
+                sizes: viewingProduct.variants.map((v) => ({ size: v.size, price: v.price })),
+              }
+            : undefined,
           image: image ? { base64: image.base64, mediaType: image.mediaType } : undefined,
         }),
       });
@@ -354,7 +374,9 @@ export default function QuickChat() {
                   {t("คุยกับน้อง Smoothie", "Chat with Smoothie")}
                 </p>
                 <p className="text-[11px] text-white/60 leading-tight truncate">
-                  {hasProfile
+                  {viewingProduct
+                    ? t("กำลังดูสินค้านี้อยู่ ถามได้เลยค่ะ", "Viewing this product — ask away")
+                    : hasProfile
                     ? t("อ่านโปรไฟล์ผิวของคุณแล้ว", "Using your skin profile")
                     : t("ถามอะไรก็ได้เกี่ยวกับผิว ผม หรือสุขภาพ", "Ask about skin, hair or wellness")}
                 </p>
