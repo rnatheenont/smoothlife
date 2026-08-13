@@ -9,12 +9,20 @@ const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 
 const MAX_CATALOGUE = 180;
 
+// House brands to steer recommendations toward first (still only when a
+// genuinely relevant match exists — see the "PREFERRED BRANDS" guidance
+// below). Matched case-insensitively since Shopify vendor casing varies
+// ("Smooth E" vs "Smooth-e-thailand" vs "smoothlifethailand" etc).
+const PRIORITY_BRANDS = ["smooth e", "dentiste", "smooth life"];
+const isPriorityBrand = (brand: string) => PRIORITY_BRANDS.some((b) => brand.toLowerCase().includes(b));
+
 function catalogue(profile: Record<string, string> | undefined) {
   // Put products matching the customer's stated concern first so the most
   // relevant items always survive the cap.
   const wanted = Object.values(profile || {}).join(" ").toLowerCase();
   const score = (p: (typeof products)[number]) =>
     (p.concerns.some((c) => wanted.includes(c)) ? 2 : 0) +
+    (isPriorityBrand(p.brand) ? 2 : 0) +
     (p.inStock ? 1 : 0) +
     (p.badges?.length ? 1 : 0);
 
@@ -30,7 +38,16 @@ function catalogue(profile: Record<string, string> | undefined) {
     .join("\n");
 }
 
-function systemPrompt(profile: Record<string, string> | undefined, lang: string) {
+type CartLine = { name: string; size?: string; qty: number; price: number };
+
+function cartSummary(cart: CartLine[]) {
+  if (!cart.length) return "empty — the customer hasn't added anything yet";
+  const total = cart.reduce((sum, l) => sum + l.price * l.qty, 0);
+  const lines = cart.map((l) => `- ${l.name}${l.size ? ` (${l.size})` : ""} x${l.qty} — ฿${l.price} each`);
+  return `${lines.join("\n")}\nCart subtotal: ฿${total}`;
+}
+
+function systemPrompt(profile: Record<string, string> | undefined, lang: string, cart: CartLine[]) {
   const profileText =
     profile && Object.keys(profile).length
       ? Object.entries(profile)
@@ -55,6 +72,8 @@ When you name a product, put its slug on its own line right after the sentence, 
 [[smooth-e-cream-40g]]
 Never use a single bracket like [smooth-e-cream-40g] — it must be [[double-bracketed]] or the app cannot turn it into a product card. The app renders each correctly-formatted marker as a tappable card with photo, price and an add-to-cart button, so never write out the URL or the price yourself — just the marker, using the slug exactly as it appears in the first column below.
 
+PREFERRED BRANDS — Smooth E, Dentiste, and Smooth Life are the store's own brands. When more than one product would genuinely suit the customer's need, prefer one of these brands over a third-party brand. Never force-fit one of these brands when it's a poor match, and never claim a third-party brand is unavailable or worse just to steer the sale — if nothing from these brands fits, recommend the product that actually fits.
+
 CATALOGUE (slug | name | brand | price | category | concerns):
 ${catalogue(profile)}
 
@@ -73,6 +92,11 @@ KEEP THE CONVERSATION GOING — after every reply (skip this only for a hard saf
 - This exact line is parsed by the app into tappable suggestion chips and is never shown to the customer as raw text — always include it in this format, never describe it in prose, never omit the double brackets.
 
 Customer profile so far: ${profileText}
+
+CUSTOMER'S CURRENT CART:
+${cartSummary(cart)}
+- You can see what's already in their cart — use it naturally: answer questions about it (e.g. "ในตะกร้ามีอะไรบ้าง", "ยอดรวมเท่าไหร่"), avoid re-suggesting something they've already added, and suggest genuinely complementary products (e.g. they have a cleanser, suggest a moisturiser) when it fits the conversation.
+- Never invent items that aren't listed above, and never state a total that doesn't match the subtotal given.
 
 PHOTOS ATTACHED IN CHAT (the user has already given consent for photo analysis before you see it) — exactly two kinds, handle whichever it is:
 1. PRODUCT photo (packaging, label, bottle, tube): identify what you can read/see and try to match it against the catalogue above by name or brand. If you find a confident match, use its [[slug]] marker as usual. If it looks like a different brand we don't carry, say so honestly and suggest the closest catalogue product instead — never claim a low-confidence guess is a match.
@@ -107,6 +131,7 @@ export async function POST(req: NextRequest) {
   const messages = Array.isArray(body?.messages) ? body.messages : [];
   const profile = body?.profile;
   const lang = body?.lang === "en" ? "en" : "th";
+  const cart = Array.isArray(body?.cart) ? body.cart : [];
   const key = process.env.ANTHROPIC_API_KEY;
 
   const image = body?.image;
@@ -155,7 +180,7 @@ export async function POST(req: NextRequest) {
 
   const client = new Anthropic({ apiKey: key });
   const encoder = new TextEncoder();
-  const system = systemPrompt(profile, lang);
+  const system = systemPrompt(profile, lang, cart);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {

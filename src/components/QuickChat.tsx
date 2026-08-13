@@ -112,6 +112,7 @@ export default function QuickChat() {
   const { lang, t } = useLang();
   const { user } = useAuth();
   const { open, setOpen, profile, stickyBarVisible } = useQuickChat();
+  const { lines: cartLines } = useCart();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -201,6 +202,7 @@ export default function QuickChat() {
           messages: next.map(({ role, content }) => ({ role, content })),
           profile,
           lang,
+          cart: cartLines.map((l) => ({ name: l.name, size: l.size, qty: l.qty, price: l.price })),
           image: image ? { base64: image.base64, mediaType: image.mediaType } : undefined,
         }),
       });
