@@ -88,7 +88,7 @@ export default function CategoryPage({
           {items.length === 0 ? (
             <div className="text-center py-20 text-slate-400">ไม่พบสินค้าในหมวดนี้</div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
               {items.map((p) => (
                 <ProductCard key={p.slug} product={p} />
               ))}

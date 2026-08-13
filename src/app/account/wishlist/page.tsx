@@ -24,7 +24,7 @@ function WishlistContent() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-brand-ink mb-6">รายการโปรดและรูทีนที่บันทึกไว้</h1>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
         {items.map((p) => (
           <ProductCard key={p.slug} product={p} />
         ))}

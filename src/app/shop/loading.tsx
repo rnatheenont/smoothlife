@@ -5,8 +5,8 @@ export default function ShopLoading() {
         <div className="h-8 w-40 rounded-lg bg-surface-soft animate-pulse" />
         <div className="h-4 w-24 rounded bg-surface-soft animate-pulse mt-2" />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
-        {Array.from({ length: 9 }).map((_, i) => (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+        {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="rounded-xl2 border border-slate-100 overflow-hidden">
             <div className="aspect-square bg-surface-soft animate-pulse" />
             <div className="p-3 flex flex-col gap-2">
