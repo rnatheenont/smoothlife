@@ -102,6 +102,80 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
   }
 }
 
+export type ShopifyOrderSummary = {
+  name: string;
+  createdAt: string;
+  financialStatus: string | null;
+  fulfillmentStatus: string | null;
+  total: string;
+  currency: string;
+  items: { title: string; quantity: number }[];
+  trackingNumbers: string[];
+};
+
+// Real recent order history + fulfillment status for a linked Shopify
+// customer, used by the chat assistant to answer "where's my order"-style
+// questions honestly instead of guessing. Returns null on no match, missing
+// scope, or any API error — best-effort, never blocks the chat response.
+export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): Promise<ShopifyOrderSummary[] | null> {
+  if (!shopifyAdminConfigured()) return null;
+  const gid = shopifyCustomerId.startsWith("gid://")
+    ? shopifyCustomerId
+    : `gid://shopify/Customer/${shopifyCustomerId}`;
+  try {
+    const data = await adminGraphql<{
+      customer: {
+        orders: {
+          edges: {
+            node: {
+              name: string;
+              createdAt: string;
+              displayFinancialStatus: string | null;
+              displayFulfillmentStatus: string | null;
+              currentTotalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
+              lineItems: { edges: { node: { title: string; quantity: number } }[] };
+              fulfillments: { trackingInfo: { number: string | null }[] }[];
+            };
+          }[];
+        };
+      } | null;
+    }>(
+      `query CustomerOrders($id: ID!, $limit: Int!) {
+        customer(id: $id) {
+          orders(first: $limit, sortKey: CREATED_AT, reverse: true) {
+            edges {
+              node {
+                name
+                createdAt
+                displayFinancialStatus
+                displayFulfillmentStatus
+                currentTotalPriceSet { shopMoney { amount currencyCode } }
+                lineItems(first: 5) { edges { node { title quantity } } }
+                fulfillments(first: 3) { trackingInfo { number } }
+              }
+            }
+          }
+        }
+      }`,
+      { id: gid, limit }
+    );
+    const edges = data.customer?.orders.edges || [];
+    return edges.map(({ node }) => ({
+      name: node.name,
+      createdAt: node.createdAt,
+      financialStatus: node.displayFinancialStatus,
+      fulfillmentStatus: node.displayFulfillmentStatus,
+      total: node.currentTotalPriceSet.shopMoney.amount,
+      currency: node.currentTotalPriceSet.shopMoney.currencyCode,
+      items: node.lineItems.edges.map((e) => ({ title: e.node.title, quantity: e.node.quantity })),
+      trackingNumbers: node.fulfillments.flatMap((f) => f.trackingInfo.map((t) => t.number).filter(Boolean) as string[]),
+    }));
+  } catch (err) {
+    console.error("[shopify-admin] getCustomerOrders failed", err);
+    return null;
+  }
+}
+
 // Creates a real, single-use percentage discount code redeemable once per
 // customer. Returns the code string.
 export async function createPercentDiscountCode(opts: {

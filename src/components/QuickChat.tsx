@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Send, Loader2, RotateCcw, User as UserIcon, X, Plus, Check, Camera, ImagePlus, MessageCircleQuestion } from "lucide-react";
+import { Send, Loader2, RotateCcw, User as UserIcon, X, Plus, Check, Camera, ImagePlus, MessageCircleQuestion, Headset } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
@@ -125,6 +125,9 @@ export default function QuickChat() {
   const [imageConsent, setImageConsent] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [followups, setFollowups] = useState<string[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [escalating, setEscalating] = useState(false);
+  const [escalateMsg, setEscalateMsg] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Only surface follow-up suggestion chips every other assistant reply so
@@ -135,6 +138,71 @@ export default function QuickChat() {
   useEffect(() => {
     setImageConsent(hasStoredConsent());
   }, []);
+
+  // A stable per-device id for guests so their chat history/rate-limit
+  // tracking can be restored without requiring login — never sent for
+  // logged-in users, who are identified by their real session instead.
+  function getAnonId() {
+    try {
+      let id = localStorage.getItem("sl_chat_anon_id");
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem("sl_chat_anon_id", id);
+      }
+      return id;
+    } catch {
+      return undefined;
+    }
+  }
+
+  // Restore recent conversation once, the first time the panel is opened —
+  // lets the customer pick up where they left off after closing the tab.
+  useEffect(() => {
+    if (!open || historyLoaded) return;
+    setHistoryLoaded(true);
+    const anonId = user ? undefined : getAnonId();
+    const qs = anonId ? `?anonId=${encodeURIComponent(anonId)}` : "";
+    fetch(`/api/chat${qs}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data?.messages) && data.messages.length) {
+          setMessages(data.messages);
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  async function escalate() {
+    if (!user) {
+      setEscalateMsg(t("กรุณาเข้าสู่ระบบก่อน เพื่อให้ทีมงานติดต่อกลับได้ค่ะ", "Please sign in first so our team can contact you back."));
+      return;
+    }
+    setEscalating(true);
+    setEscalateMsg(null);
+    try {
+      const transcript = messages.map((m) => `${m.role === "user" ? "ลูกค้า" : "Smoothie"}: ${m.content}`).join("\n");
+      const res = await fetch("/api/chat/escalate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setEscalateMsg(data.error || t("ส่งไม่สำเร็จ กรุณาลองใหม่ค่ะ", "Couldn't send — please try again."));
+      } else {
+        setEscalateMsg(
+          data.contactValue
+            ? t(`ส่งถึงทีมงานแล้วค่ะ ทีมงานจะติดต่อกลับที่ ${data.contactValue} ภายใน 1 วันทำการค่ะ`, `Sent to our team — they'll reach you at ${data.contactValue} within 1 business day.`)
+            : t("ส่งถึงทีมงานแล้วค่ะ แต่ยังไม่มีช่องทางติดต่อกลับในโปรไฟล์ — กรุณาเพิ่มเบอร์โทรหรืออีเมลในบัญชีค่ะ", "Sent to our team, but no contact method is on file — please add a phone or email to your account.")
+        );
+      }
+    } catch {
+      setEscalateMsg(t("ส่งไม่สำเร็จ กรุณาลองใหม่ค่ะ", "Couldn't send — please try again."));
+    } finally {
+      setEscalating(false);
+    }
+  }
 
   const hasProfile = Object.keys(profile || {}).length > 0;
 
@@ -206,6 +274,7 @@ export default function QuickChat() {
           messages: next.map(({ role, content }) => ({ role, content })),
           profile,
           lang,
+          anonId: user ? undefined : getAnonId(),
           cart: cartLines.map((l) => ({ name: l.name, size: l.size, qty: l.qty, price: l.price })),
           viewingProduct: viewingProduct
             ? {
@@ -385,9 +454,20 @@ export default function QuickChat() {
             <div className="flex items-center gap-1 shrink-0">
               {messages.length > 0 && (
                 <button
+                  onClick={escalate}
+                  disabled={escalating}
+                  aria-label={t("คุยกับทีมงาน", "Talk to our team")}
+                  className="grid h-7 w-7 place-items-center rounded-full text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-50"
+                >
+                  <Headset size={14} />
+                </button>
+              )}
+              {messages.length > 0 && (
+                <button
                   onClick={() => {
                     setMessages([]);
                     setFollowups([]);
+                    setEscalateMsg(null);
                     assistantTurnCount.current = 0;
                   }}
                   aria-label={t("เริ่มใหม่", "Reset")}
@@ -405,6 +485,19 @@ export default function QuickChat() {
               </button>
             </div>
           </div>
+
+          {escalateMsg && (
+            <div className="flex items-start justify-between gap-2 border-b border-slate-100 bg-amber-50 px-3.5 py-2.5">
+              <p className="text-[12px] leading-relaxed text-slate-700">{escalateMsg}</p>
+              <button
+                onClick={() => setEscalateMsg(null)}
+                aria-label={t("ปิด", "Close")}
+                className="shrink-0 text-slate-400 hover:text-slate-600"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
 
           <div ref={scroller} className="flex-1 min-h-[200px] overflow-y-auto overscroll-contain bg-surface-soft px-3.5 py-3.5 flex flex-col gap-3">
             {messages.length === 0 && (
