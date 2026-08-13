@@ -82,9 +82,12 @@ export default function CartPage() {
                   {line.compareAtPrice && (
                     <span className="text-xs text-slate-400 line-through">{formatTHB(line.compareAtPrice)}</span>
                   )}
+                  {line.qty > 1 && (
+                    <span className="text-xs text-slate-400">
+                      × {line.qty} = {t("รวม", "total")} {formatTHB(line.price * line.qty)}
+                    </span>
+                  )}
                 </div>
-
-                <div className="flex-1" />
 
                 <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center border border-slate-200 rounded-full">
