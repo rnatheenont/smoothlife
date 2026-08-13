@@ -289,7 +289,7 @@ export default function QuickChat() {
           content:
             lang === "en"
               ? "Sorry, I couldn't connect. Please try again."
-              : "ขออภัยครับ เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+              : "ขออภัยค่ะ เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
         },
       ]);
     } finally {
@@ -387,14 +387,14 @@ export default function QuickChat() {
               <div className="py-2">
                 <p className="text-[13px] font-semibold text-brand-ink mb-1 text-center">
                   {t(
-                    "สวัสดีครับ ผมน้อง Smoothie ผู้ช่วย AI ของ Smoothlife.com",
+                    "สวัสดีค่ะ ฉันน้อง Smoothie ผู้ช่วย AI ของ Smoothlife.com",
                     "Hi, I'm Smoothie — Smoothlife.com's AI assistant"
                   )}
                 </p>
                 <p className="text-[13px] text-slate-500 mb-3 text-center">
                   {hasProfile
                     ? t(
-                        "ผมอ่านคำตอบจากแบบประเมินของคุณแล้ว ถามอะไรก็ได้ครับ",
+                        "ฉันอ่านคำตอบจากแบบประเมินของคุณแล้ว ถามอะไรก็ได้ค่ะ",
                         "I've read your quiz answers — ask me anything."
                       )
                     : t("ถามอะไรก็ได้ หรือเริ่มจากคำถามเหล่านี้", "Ask anything, or start with one of these")}

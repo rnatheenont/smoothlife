@@ -94,13 +94,13 @@ export default function CaptureCard({
       const data = await res.json();
 
       if (data?.error) {
-        setError(data.message || "ขออภัยครับ วิเคราะห์รูปไม่สำเร็จ กรุณาลองใหม่");
+        setError(data.message || "ขออภัยค่ะ วิเคราะห์รูปไม่สำเร็จ กรุณาลองใหม่");
         return;
       }
 
       const result = data?.result as SkinCoachMetrics;
       if (!result || !result.acne || !result.pores || !result.darkSpots || !result.wrinkles || !result.skinAge) {
-        setError("ขออภัยครับ ผลวิเคราะห์ไม่สมบูรณ์ กรุณาลองใหม่อีกครั้ง");
+        setError("ขออภัยค่ะ ผลวิเคราะห์ไม่สมบูรณ์ กรุณาลองใหม่อีกครั้ง");
         return;
       }
       if (!result.faceDetected) {

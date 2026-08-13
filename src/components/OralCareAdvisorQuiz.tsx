@@ -63,15 +63,11 @@ export default function OralCareAdvisorQuiz() {
           </div>
           <h2 className="text-xl md:text-2xl font-bold text-brand-ink mb-3">เซ็ตดูแลช่องปากที่แนะนำสำหรับคุณ</h2>
           {concern && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              <span className="text-xs font-medium bg-white rounded-full px-3 py-1.5 text-brand-ink">{concern}</span>
-            </div>
+            <span className="text-xs font-medium bg-white rounded-full px-3 py-1.5 text-brand-ink">{concern}</span>
           )}
-          <p className="text-sm text-slate-600">
-            {recommended.length > 0
-              ? `รวม ${recommended.length} ชิ้น ราคารวม ${formatTHB(total)}`
-              : "ยังไม่มีสินค้าในหมวดนี้พอดีกับตัวกรองที่เลือกไว้ครับ"}
-          </p>
+          {recommended.length === 0 && (
+            <p className="text-sm text-slate-600 mt-3">ยังไม่มีสินค้าในหมวดนี้พอดีกับตัวกรองที่เลือกไว้ค่ะ</p>
+          )}
         </div>
 
         {recommended.length > 0 && (
@@ -81,6 +77,10 @@ export default function OralCareAdvisorQuiz() {
                 <ProductCard key={p.slug} product={p} />
               ))}
             </div>
+
+            <p className="text-sm text-slate-600 mb-4">
+              รวม {recommended.length} ชิ้น ราคารวม {formatTHB(total)}
+            </p>
 
             <div className="flex flex-wrap gap-3">
               <button

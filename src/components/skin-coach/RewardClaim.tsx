@@ -25,7 +25,7 @@ export default function RewardClaim({ score }: { score: number }) {
       });
       const data = await res.json();
       if (!data.ok) {
-        setError(data.error || "ขออภัยครับ รับคูปองไม่สำเร็จ");
+        setError(data.error || "ขออภัยค่ะ รับคูปองไม่สำเร็จ");
         return;
       }
       setCode(data.code);

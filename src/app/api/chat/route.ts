@@ -38,9 +38,11 @@ function systemPrompt(profile: Record<string, string> | undefined, lang: string)
           .join(", ")
       : "not provided yet";
 
-  return `You are Smoothie (น้อง Smoothie), Smoothlife.com's AI beauty advisor — a warm, knowledgeable skincare and wellness consultant for a Thai health & beauty retailer.
+  return `You are Smoothie (น้อง Smoothie), Smoothlife.com's AI beauty advisor — a warm, knowledgeable skincare and wellness consultant for a Thai health & beauty retailer. Smoothie is female.
 
 Reply in ${lang === "en" ? "English" : "Thai"}. Keep answers short and practical: 2-4 short paragraphs or a tight bullet list.
+
+${lang === "en" ? "" : "Speak with a female voice: use ค่ะ/คะ and ฉัน, never ครับ or the male ผม.\n\n"}
 
 FORMATTING — this is a plain-text chat bubble, not a markdown renderer:
 - Do NOT use markdown at all: no **bold**, no _italic_, no # headings, no numbered/lettered lists. Plain sentences only (a simple "- " bullet per line is OK if you need a short list).
@@ -112,14 +114,14 @@ export async function POST(req: NextRequest) {
   const imageMediaType = image?.mediaType === "image/png" ? "image/png" : "image/jpeg";
   // Rough cap so someone can't post an enormous payload to this route.
   if (imageBase64 && imageBase64.length > 6_000_000) {
-    return textResponse(lang === "en" ? "That photo is too large. Please try a smaller one." : "รูปนี้ใหญ่เกินไปครับ กรุณาลองรูปที่เล็กลง", 413);
+    return textResponse(lang === "en" ? "That photo is too large. Please try a smaller one." : "รูปนี้ใหญ่เกินไปค่ะ กรุณาลองรูปที่เล็กลง", 413);
   }
 
   if (!key) {
     return textResponse(
       lang === "en"
         ? "Smoothie isn't connected yet. Add an ANTHROPIC_API_KEY environment variable in your Vercel project settings and redeploy to enable live chat. In the meantime, the personalised product picks above are based on your quiz answers."
-        : "ยังไม่ได้เชื่อมต่อน้อง Smoothie ครับ — กรุณาเพิ่มค่า ANTHROPIC_API_KEY ใน Environment Variables ของโปรเจกต์บน Vercel แล้ว deploy ใหม่ เพื่อเปิดใช้งานแชทสด ระหว่างนี้สินค้าที่แนะนำด้านบนคัดมาจากคำตอบในแบบประเมินของคุณแล้วครับ"
+        : "ยังไม่ได้เชื่อมต่อน้อง Smoothie ค่ะ — กรุณาเพิ่มค่า ANTHROPIC_API_KEY ใน Environment Variables ของโปรเจกต์บน Vercel แล้ว deploy ใหม่ เพื่อเปิดใช้งานแชทสด ระหว่างนี้สินค้าที่แนะนำด้านบนคัดมาจากคำตอบในแบบประเมินของคุณแล้วค่ะ"
     );
   }
 
@@ -178,7 +180,7 @@ export async function POST(req: NextRequest) {
         const msg =
           lang === "en"
             ? "\n\nSorry, I couldn't reach the AI service just now. Please try again."
-            : "\n\nขออภัยครับ ตอนนี้เชื่อมต่อบริการ AI ไม่ได้ กรุณาลองใหม่อีกครั้ง";
+            : "\n\nขออภัยค่ะ ตอนนี้เชื่อมต่อบริการ AI ไม่ได้ กรุณาลองใหม่อีกครั้ง";
         controller.enqueue(encoder.encode(msg));
         controller.close();
       }

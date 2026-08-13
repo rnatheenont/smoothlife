@@ -71,7 +71,7 @@ export default function SupplementAdvisorQuiz() {
 
         {blocked ? (
           <div className="rounded-xl2 bg-brand-gradient-soft p-6 md:p-8">
-            <h2 className="text-xl font-bold text-brand-ink mb-2">ขอแนะนำให้ปรึกษาเภสัชกรก่อนนะครับ</h2>
+            <h2 className="text-xl font-bold text-brand-ink mb-2">ขอแนะนำให้ปรึกษาเภสัชกรก่อนนะคะ</h2>
             <p className="text-sm text-slate-600 mb-5">
               เนื่องจากคุณอยู่ในช่วงตั้งครรภ์หรือให้นมบุตร ทางเราขอไม่แนะนำผลิตภัณฑ์เสริมอาหารแบบอัตโนมัติ
               เพื่อความปลอดภัยของคุณและลูกน้อย กรุณาปรึกษาแพทย์หรือเภสัชกรก่อนใช้ผลิตภัณฑ์ใดๆ
@@ -95,7 +95,7 @@ export default function SupplementAdvisorQuiz() {
               <p className="text-sm text-slate-600">
                 {items.length > 0
                   ? `รวม ${items.length} รายการ ราคารวมประมาณ ${formatTHB(total)}/เดือน`
-                  : "ยังไม่มีสินค้าที่ตรงกับตัวกรองที่เลือกไว้ครับ"}
+                  : "ยังไม่มีสินค้าที่ตรงกับตัวกรองที่เลือกไว้ค่ะ"}
               </p>
             </div>
 

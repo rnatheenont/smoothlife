@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       {
         error: "not_configured",
         message:
-          "ยังไม่ได้เชื่อมต่อระบบวิเคราะห์ผิวครับ กรุณาเพิ่มค่า ANTHROPIC_API_KEY ใน Environment Variables แล้ว deploy ใหม่",
+          "ยังไม่ได้เชื่อมต่อระบบวิเคราะห์ผิวค่ะ กรุณาเพิ่มค่า ANTHROPIC_API_KEY ใน Environment Variables แล้ว deploy ใหม่",
       },
       { status: 200 }
     );
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       const detail = await res.text();
       console.error("[skin-analysis] status=" + res.status + " body=" + detail.slice(0, 500));
       return NextResponse.json(
-        { error: "upstream_error", message: "ขออภัยครับ ตอนนี้วิเคราะห์รูปไม่ได้ กรุณาลองใหม่อีกครั้ง" },
+        { error: "upstream_error", message: "ขออภัยค่ะ ตอนนี้วิเคราะห์รูปไม่ได้ กรุณาลองใหม่อีกครั้ง" },
         { status: 200 }
       );
     }
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
     const parsed = extractJson(text);
     if (!parsed) {
       return NextResponse.json(
-        { error: "parse_error", message: "ขออภัยครับ ผลวิเคราะห์ไม่สมบูรณ์ กรุณาลองใหม่อีกครั้ง" },
+        { error: "parse_error", message: "ขออภัยค่ะ ผลวิเคราะห์ไม่สมบูรณ์ กรุณาลองใหม่อีกครั้ง" },
         { status: 200 }
       );
     }
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     console.error("[skin-analysis] threw " + String(e));
     return NextResponse.json(
-      { error: "server_error", message: "ขออภัยครับ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง" },
+      { error: "server_error", message: "ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง" },
       { status: 200 }
     );
   }
