@@ -219,6 +219,7 @@ const PRODUCTS_QUERY = `
                 id
                 title
                 availableForSale
+                quantityAvailable
                 price { amount }
                 compareAtPrice { amount }
               }
@@ -286,6 +287,9 @@ function toProduct(p, usedSlugs) {
         price: vPrice,
         compareAtPrice: vCompare > vPrice ? vCompare : 0,
         inStock: v.availableForSale !== false,
+        // Real Shopify inventory count, used only to show an honest "X left"
+        // badge when genuinely low — never a fabricated urgency number.
+        quantity: typeof v.quantityAvailable === "number" ? v.quantityAvailable : null,
       };
     })
     .filter(Boolean);
@@ -405,6 +409,7 @@ function serialise(list) {
       vf.push(`price:${v.price}`);
       if (v.compareAtPrice) vf.push(`compareAtPrice:${v.compareAtPrice}`);
       vf.push(`inStock:${v.inStock}`);
+      if (typeof v.quantity === "number") vf.push(`quantity:${v.quantity}`);
       return "{" + vf.join(",") + "}";
     });
     f.push(`variants:[${variantRows.join(",")}]`);
