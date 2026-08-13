@@ -109,7 +109,7 @@ export type ShopifyOrderSummary = {
   fulfillmentStatus: string | null;
   total: string;
   currency: string;
-  items: { title: string; quantity: number }[];
+  items: { title: string; quantity: number; slug: string | null }[];
   trackingNumbers: string[];
 };
 
@@ -133,7 +133,9 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
               displayFinancialStatus: string | null;
               displayFulfillmentStatus: string | null;
               currentTotalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
-              lineItems: { edges: { node: { title: string; quantity: number } }[] };
+              lineItems: {
+                edges: { node: { title: string; quantity: number; product: { handle: string } | null } }[];
+              };
               fulfillments: { trackingInfo: { number: string | null }[] }[];
             };
           }[];
@@ -150,7 +152,7 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
                 displayFinancialStatus
                 displayFulfillmentStatus
                 currentTotalPriceSet { shopMoney { amount currencyCode } }
-                lineItems(first: 5) { edges { node { title quantity } } }
+                lineItems(first: 5) { edges { node { title quantity product { handle } } } }
                 fulfillments(first: 3) { trackingInfo { number } }
               }
             }
@@ -167,7 +169,11 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
       fulfillmentStatus: node.displayFulfillmentStatus,
       total: node.currentTotalPriceSet.shopMoney.amount,
       currency: node.currentTotalPriceSet.shopMoney.currencyCode,
-      items: node.lineItems.edges.map((e) => ({ title: e.node.title, quantity: e.node.quantity })),
+      items: node.lineItems.edges.map((e) => ({
+        title: e.node.title,
+        quantity: e.node.quantity,
+        slug: e.node.product?.handle || null,
+      })),
       trackingNumbers: node.fulfillments.flatMap((f) => f.trackingInfo.map((t) => t.number).filter(Boolean) as string[]),
     }));
   } catch (err) {

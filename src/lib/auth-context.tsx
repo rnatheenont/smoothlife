@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { genOrderId } from "./format";
 
 export type Tier = "Bronze" | "Silver" | "Gold";
 
@@ -25,20 +24,6 @@ export type SLUser = {
   createdAt: string;
 };
 
-export type SLOrder = {
-  id: string;
-  userId: string;
-  items: { slug: string; name: string; qty: number; price: number; image: string }[];
-  total: number;
-  status: "Processing" | "Shipped" | "Delivered";
-  createdAt: string;
-  address: string;
-  paymentMethod: string;
-  coupon?: string;
-  discount?: number;
-  pointsEarned?: number;
-};
-
 type AuthContextValue = {
   user: SLUser | null;
   loading: boolean;
@@ -46,8 +31,6 @@ type AuthContextValue = {
   loginWithEmail: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   completePhoneLogin: (user: SLUser) => void;
   logout: () => void;
-  addOrder: (order: Omit<SLOrder, "id" | "userId" | "createdAt" | "status">) => SLOrder;
-  getOrders: () => SLOrder[];
   addPoints: (amount: number) => void;
   refreshUser: () => Promise<void>;
 };
@@ -56,7 +39,6 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const USERS_KEY = "sl_users";
 const SESSION_KEY = "sl_session";
-const ORDERS_KEY = "sl_orders";
 
 function readUsers(): SLUser[] {
   if (typeof window === "undefined") return [];
@@ -144,26 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
   }
 
-  function addOrder(order: Omit<SLOrder, "id" | "userId" | "createdAt" | "status">) {
-    const all: SLOrder[] = JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]");
-    const newOrder: SLOrder = {
-      ...order,
-      id: genOrderId(),
-      userId: user?.id || "guest",
-      createdAt: new Date().toISOString(),
-      status: "Processing",
-    };
-    localStorage.setItem(ORDERS_KEY, JSON.stringify([newOrder, ...all]));
-    addPoints(order.pointsEarned !== undefined ? order.pointsEarned : Math.floor(order.total / 100));
-    return newOrder;
-  }
-
-  function getOrders() {
-    if (!user) return [];
-    const all: SLOrder[] = JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]");
-    return all.filter((o) => o.userId === user.id);
-  }
-
   function addPoints(amount: number) {
     if (!user) return;
     const users = readUsers();
@@ -185,8 +147,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginWithEmail,
         completePhoneLogin,
         logout,
-        addOrder,
-        getOrders,
         addPoints,
         refreshUser,
       }}

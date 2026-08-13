@@ -152,9 +152,17 @@ function ChangePasswordCard() {
 }
 
 function AccountDashboard() {
-  const { user, getOrders } = useAuth();
+  const { user } = useAuth();
+  const [orderCount, setOrderCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/account/orders")
+      .then((r) => r.json())
+      .then((data) => setOrderCount(Array.isArray(data.orders) ? data.orders.length : 0))
+      .catch(() => setOrderCount(0));
+  }, []);
+
   if (!user) return null;
-  const orders = getOrders();
 
   return (
     <div>
@@ -176,7 +184,7 @@ function AccountDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Link href="/account/orders" className="flex flex-col items-start gap-2.5 rounded-xl2 border border-slate-100 bg-white p-4 shadow-card hover:border-brand-teal transition-colors">
           <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald"><Package size={18} /></div>
-          <span className="text-sm font-semibold text-brand-ink">คำสั่งซื้อ ({orders.length})</span>
+          <span className="text-sm font-semibold text-brand-ink">คำสั่งซื้อ{orderCount !== null ? ` (${orderCount})` : ""}</span>
         </Link>
         <Link href="/account/points" className="flex flex-col items-start gap-2.5 rounded-xl2 border border-slate-100 bg-white p-4 shadow-card hover:border-brand-teal transition-colors">
           <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald"><Award size={18} /></div>
