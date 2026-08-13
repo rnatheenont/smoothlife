@@ -10,9 +10,6 @@ import {
   Menu,
   X,
   Sparkles,
-  Award,
-  Star,
-  Crown,
   LayoutGrid,
   Heart,
   BookOpen,
@@ -21,9 +18,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import type { Tier } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
+import { tierBadge } from "@/lib/tier";
 import LanguageSwitch from "@/components/LanguageSwitch";
 
 const navLinks = [
@@ -34,15 +31,6 @@ const navLinks = [
   { href: "/about", th: "ทำไมต้อง Smooth Life", en: "Why Smooth Life", icon: ShieldCheck },
   { href: "/help", th: "ช่วยเหลือ", en: "Help", icon: HelpCircle },
 ];
-
-// Shown to customers as "Lv.1/2/3" instead of the internal Bronze/Silver/Gold
-// tier name — simpler at a glance, and the internal names still drive the
-// actual perks/multiplier logic elsewhere (account/points, lib/points.ts).
-const tierBadge: Record<Tier, { level: number; icon: typeof Award; className: string }> = {
-  Bronze: { level: 1, icon: Star, className: "bg-amber-50 text-amber-700" },
-  Silver: { level: 2, icon: Award, className: "bg-slate-100 text-slate-600" },
-  Gold: { level: 3, icon: Crown, className: "bg-yellow-50 text-yellow-700" },
-};
 
 export default function Header() {
   const [open, setOpen] = useState(false);

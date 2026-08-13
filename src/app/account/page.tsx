@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Pencil, MapPin, Receipt, Plus, ChevronRight, ShieldCheck, Package, Heart, Award, Camera, CalendarCheck } from "lucide-react";
+import { Pencil, MapPin, Receipt, Plus, ChevronRight, ShieldCheck, Package, Heart, Camera } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import AccountLayout from "@/components/account/AccountLayout";
+import RewardsOverviewCard from "@/components/account/RewardsOverviewCard";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 import type { TaxAddressRow } from "@/app/api/account/tax-addresses/route";
 
@@ -168,6 +169,10 @@ function AccountDashboard() {
     <div>
       <h1 className="text-2xl font-bold text-brand-ink mb-6">บัญชีของฉัน</h1>
 
+      <div className="mb-8">
+        <RewardsOverviewCard />
+      </div>
+
       <div className="grid md:grid-cols-2 gap-5 mb-8">
         <ProfileCard />
         <div className="flex flex-col gap-5">
@@ -181,18 +186,10 @@ function AccountDashboard() {
       </div>
 
       <h2 className="text-sm font-bold text-brand-ink mb-3">เมนูลัด</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <Link href="/account/checkin" className="flex flex-col items-start gap-2.5 rounded-xl2 border border-slate-100 bg-white p-4 shadow-card hover:border-brand-teal transition-colors">
-          <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald"><CalendarCheck size={18} /></div>
-          <span className="text-sm font-semibold text-brand-ink">เช็กอินรายวัน</span>
-        </Link>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Link href="/account/orders" className="flex flex-col items-start gap-2.5 rounded-xl2 border border-slate-100 bg-white p-4 shadow-card hover:border-brand-teal transition-colors">
           <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald"><Package size={18} /></div>
           <span className="text-sm font-semibold text-brand-ink">คำสั่งซื้อ{orderCount !== null ? ` (${orderCount})` : ""}</span>
-        </Link>
-        <Link href="/account/points" className="flex flex-col items-start gap-2.5 rounded-xl2 border border-slate-100 bg-white p-4 shadow-card hover:border-brand-teal transition-colors">
-          <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald"><Award size={18} /></div>
-          <span className="text-sm font-semibold text-brand-ink">{user.points} คะแนน</span>
         </Link>
         <Link href="/account/wishlist" className="flex flex-col items-start gap-2.5 rounded-xl2 border border-slate-100 bg-white p-4 shadow-card hover:border-brand-teal transition-colors">
           <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald"><Heart size={18} /></div>
