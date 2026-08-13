@@ -30,12 +30,16 @@ export default function ProductDetailInteractive({
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState("benefits");
   const [added, setAdded] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState(product.variantId);
   const { addItem } = useCart();
   const { toggle, has } = useWishlist();
   const images = [product.image, product.image2].filter(Boolean) as string[];
+  const selectedVariant =
+    product.variants.find((v) => v.variantId === selectedVariantId) || product.variants[0];
+  const hasSizeChoice = product.variants.length > 1;
 
   function handleAdd() {
-    addItem(product.slug, qty);
+    addItem(product.slug, qty, selectedVariant.variantId);
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
   }
@@ -76,13 +80,38 @@ export default function ProductDetailInteractive({
             </div>
           )}
           <div className="flex items-baseline gap-3 mt-4">
-            <span className="text-3xl font-bold text-brand-ink">{formatTHB(product.price)}</span>
-            {product.compareAtPrice && (
-              <span className="text-lg text-slate-400 line-through">{formatTHB(product.compareAtPrice)}</span>
-            )}
+            <span className="text-3xl font-bold text-brand-ink">{formatTHB(selectedVariant.price)}</span>
+            {selectedVariant.compareAtPrice ? (
+              <span className="text-lg text-slate-400 line-through">{formatTHB(selectedVariant.compareAtPrice)}</span>
+            ) : null}
           </div>
           <p className="text-sm text-slate-600 mt-4">{product.shortDesc}</p>
-          {product.size && <p className="text-xs text-slate-400 mt-1">ขนาด: {product.size}</p>}
+
+          {hasSizeChoice ? (
+            <div className="mt-4">
+              <p className="text-xs font-medium text-slate-500 mb-2">เลือกขนาด</p>
+              <div className="flex flex-wrap gap-2">
+                {product.variants.map((v) => (
+                  <button
+                    key={v.variantId}
+                    onClick={() => setSelectedVariantId(v.variantId)}
+                    disabled={!v.inStock}
+                    className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                      selectedVariant.variantId === v.variantId
+                        ? "border-brand-emerald bg-brand-gradient-soft text-brand-ink"
+                        : v.inStock
+                        ? "border-slate-200 text-slate-600 hover:border-brand-teal"
+                        : "border-slate-100 text-slate-300 line-through cursor-not-allowed"
+                    }`}
+                  >
+                    {v.size || v.variantId}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            product.size && <p className="text-xs text-slate-400 mt-1">ขนาด: {product.size}</p>
+          )}
 
           <div ref={buyButtonRef} className="flex items-center gap-3 mt-6">
             <div className="flex items-center border border-slate-200 rounded-full">
@@ -96,10 +125,11 @@ export default function ProductDetailInteractive({
             </div>
             <button
               onClick={handleAdd}
-              className="flex-1 flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity"
+              disabled={!selectedVariant.inStock}
+              className="flex-1 flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
             >
               {added ? <CheckCircle2 size={16} /> : <ShoppingBag size={16} />}
-              {added ? "เพิ่มลงตะกร้าแล้ว" : "เพิ่มลงตะกร้า"}
+              {added ? "เพิ่มลงตะกร้าแล้ว" : selectedVariant.inStock ? "เพิ่มลงตะกร้า" : "สินค้าหมด"}
             </button>
             <button
               onClick={() => toggle(product.slug)}
@@ -233,8 +263,8 @@ export default function ProductDetailInteractive({
             <div className="grid md:grid-cols-3 gap-6 text-sm text-slate-600">
               <div>
                 <h4 className="font-bold text-brand-ink mb-2">สถานะสินค้า</h4>
-                <p className={product.inStock ? "text-brand-emerald font-medium" : "text-rose-500 font-medium"}>
-                  {product.inStock ? "มีสินค้าพร้อมส่ง" : "สินค้าหมดชั่วคราว"}
+                <p className={selectedVariant.inStock ? "text-brand-emerald font-medium" : "text-rose-500 font-medium"}>
+                  {selectedVariant.inStock ? "มีสินค้าพร้อมส่ง" : "สินค้าหมดชั่วคราว"}
                 </p>
               </div>
               <div>
@@ -255,15 +285,19 @@ export default function ProductDetailInteractive({
           <Image src={product.image} alt="" fill className="object-cover" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs text-slate-500 truncate">{product.name}</p>
-          <p className="text-sm font-bold text-brand-ink">{formatTHB(product.price)}</p>
+          <p className="text-xs text-slate-500 truncate">
+            {product.name}
+            {selectedVariant.size ? ` · ${selectedVariant.size}` : ""}
+          </p>
+          <p className="text-sm font-bold text-brand-ink">{formatTHB(selectedVariant.price)}</p>
         </div>
         <button
           onClick={handleAdd}
-          className="flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white font-semibold px-5 py-2.5 text-xs shrink-0 active:scale-95 transition-transform"
+          disabled={!selectedVariant.inStock}
+          className="flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white font-semibold px-5 py-2.5 text-xs shrink-0 active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
         >
           {added ? <CheckCircle2 size={15} /> : <ShoppingBag size={15} />}
-          {added ? "เพิ่มแล้ว" : "เพิ่มลงตะกร้า"}
+          {added ? "เพิ่มแล้ว" : selectedVariant.inStock ? "เพิ่มลงตะกร้า" : "สินค้าหมด"}
         </button>
       </MobileStickyBar>
     </div>

@@ -93,7 +93,7 @@ export default function CheckoutPage() {
           <h2 className="font-bold text-brand-ink mb-4">สรุปคำสั่งซื้อ</h2>
           <div className="flex flex-col gap-2 mb-4 max-h-56 overflow-y-auto">
             {lines.map((l) => (
-              <div key={l.slug} className="flex justify-between text-xs text-slate-600">
+              <div key={l.variantId} className="flex justify-between text-xs text-slate-600">
                 <span className="line-clamp-1 pr-2">{l.name} x{l.qty}</span>
                 <span className="shrink-0">{formatTHB(l.price * l.qty)}</span>
               </div>

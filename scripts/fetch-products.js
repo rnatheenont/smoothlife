@@ -167,7 +167,7 @@ const PRODUCTS_QUERY = `
           descriptionHtml
           publishedAt
           images(first: 2) { edges { node { url } } }
-          variants(first: 1) {
+          variants(first: 25) {
             edges {
               node {
                 id
@@ -226,13 +226,35 @@ async function fetchAll() {
 /* ---------- mapping ---------- */
 
 function toProduct(p, usedSlugs) {
-  const variantEdge = (p.variants && p.variants.edges && p.variants.edges[0]) || null;
-  const variant = variantEdge ? variantEdge.node : null;
-  if (!variant) return null;
+  const variantNodes = ((p.variants && p.variants.edges) || []).map((e) => e.node).filter(Boolean);
+  if (!variantNodes.length) return null;
 
-  const price = Math.round(parseFloat(variant.price.amount));
-  if (!price || price <= 0) return null;
-  const compare = variant.compareAtPrice ? Math.round(parseFloat(variant.compareAtPrice.amount)) : 0;
+  const allVariants = variantNodes
+    .map((v) => {
+      const vPrice = Math.round(parseFloat(v.price.amount));
+      if (!vPrice || vPrice <= 0) return null;
+      const vCompare = v.compareAtPrice ? Math.round(parseFloat(v.compareAtPrice.amount)) : 0;
+      return {
+        variantId: v.id,
+        size: v.title && v.title !== "Default Title" ? v.title : "",
+        price: vPrice,
+        compareAtPrice: vCompare > vPrice ? vCompare : 0,
+        inStock: v.availableForSale !== false,
+      };
+    })
+    .filter(Boolean);
+  if (!allVariants.length) return null;
+
+  // Default variant shown on cards / used by quick-add / chat & quiz
+  // recommendations: the cheapest in-stock one, so "starting from" pricing
+  // on a listing card always matches what quick-add would actually charge.
+  // Falls back to the cheapest overall if every variant is out of stock.
+  const inStockVariants = allVariants.filter((v) => v.inStock);
+  const pool = inStockVariants.length ? inStockVariants : allVariants;
+  const variant = pool.reduce((min, v) => (v.price < min.price ? v : min), pool[0]);
+
+  const price = variant.price;
+  const compare = variant.compareAtPrice || 0;
 
   const images = ((p.images && p.images.edges) || []).map((e) => e.node).filter((i) => i && i.url);
   if (!images.length) return null;
@@ -275,11 +297,9 @@ function toProduct(p, usedSlugs) {
   if (usedSlugs.has(slug)) slug = slug + "-" + p.id.replace(/\D/g, "").slice(-5);
   usedSlugs.add(slug);
 
-  const size = variant.title && variant.title !== "Default Title" ? variant.title : "";
-
   return {
     slug,
-    variantId: variant.id,
+    variantId: variant.variantId,
     name: String(p.title || "").replace(/\s+/g, " ").trim(),
     brand: String(p.vendor || "Smooth Life").trim(),
     category,
@@ -300,8 +320,9 @@ function toProduct(p, usedSlugs) {
     howToUse: clip(sec.howToUse, 300),
     ingredients: clip(sec.ingredients, 600),
     whoFor: clip(sec.whoFor, 240),
-    inStock: variant.availableForSale !== false,
-    size,
+    inStock: variant.inStock,
+    size: variant.size,
+    variants: allVariants,
   };
 }
 
@@ -331,6 +352,16 @@ function serialise(list) {
     f.push(`whoFor:"${esc(p.whoFor)}"`);
     f.push(`inStock:${p.inStock}`);
     if (p.size) f.push(`size:"${esc(p.size)}"`);
+    const variantRows = p.variants.map((v) => {
+      const vf = [];
+      vf.push(`variantId:"${esc(v.variantId)}"`);
+      vf.push(`size:"${esc(v.size)}"`);
+      vf.push(`price:${v.price}`);
+      if (v.compareAtPrice) vf.push(`compareAtPrice:${v.compareAtPrice}`);
+      vf.push(`inStock:${v.inStock}`);
+      return "{" + vf.join(",") + "}";
+    });
+    f.push(`variants:[${variantRows.join(",")}]`);
     return "{" + f.join(",") + "}";
   });
   return (

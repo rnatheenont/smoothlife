@@ -3,13 +3,14 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { products } from "@/data/products";
 
-type CartItem = { slug: string; qty: number };
+type CartItem = { slug: string; variantId: string; qty: number };
 
 type CartContextValue = {
   items: CartItem[];
-  addItem: (slug: string, qty?: number) => void;
-  removeItem: (slug: string) => void;
-  updateQty: (slug: string, qty: number) => void;
+  /** variantId defaults to the product's own default (cheapest in-stock) variant when omitted. */
+  addItem: (slug: string, qty?: number, variantId?: string) => void;
+  removeItem: (variantId: string) => void;
+  updateQty: (variantId: string, qty: number) => void;
   clear: () => void;
   count: number;
   subtotal: number;
@@ -23,6 +24,7 @@ type CartContextValue = {
     compareAtPrice?: number;
     brand: string;
     category: string;
+    size: string;
   }[];
   couponCode: string | null;
   setCouponCode: (code: string | null) => void;
@@ -39,8 +41,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
-      setItems(saved);
+      const saved = JSON.parse(localStorage.getItem(CART_KEY) || "[]") as (CartItem & { variantId?: string })[];
+      // Carts saved before per-variant support only stored {slug, qty} — fill
+      // in each product's default variant so old carts keep working instead
+      // of silently losing their variantId (and thus their price/checkout line).
+      const migrated = saved
+        .map((i) => {
+          if (i.variantId) return i as CartItem;
+          const p = products.find((pr) => pr.slug === i.slug);
+          return p ? { slug: i.slug, variantId: p.variantId, qty: i.qty } : null;
+        })
+        .filter(Boolean) as CartItem[];
+      setItems(migrated);
       setCouponCodeState(localStorage.getItem(COUPON_KEY));
     } catch {
       setItems([]);
@@ -60,21 +72,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }
 
-  function addItem(slug: string, qty = 1) {
+  function addItem(slug: string, qty = 1, variantId?: string) {
+    const p = products.find((pr) => pr.slug === slug);
+    const resolvedVariantId = variantId || p?.variantId;
+    if (!resolvedVariantId) return;
     setItems((prev) => {
-      const existing = prev.find((i) => i.slug === slug);
+      const existing = prev.find((i) => i.variantId === resolvedVariantId);
       if (existing) {
-        return prev.map((i) => (i.slug === slug ? { ...i, qty: i.qty + qty } : i));
+        return prev.map((i) => (i.variantId === resolvedVariantId ? { ...i, qty: i.qty + qty } : i));
       }
-      return [...prev, { slug, qty }];
+      return [...prev, { slug, variantId: resolvedVariantId, qty }];
     });
   }
-  function removeItem(slug: string) {
-    setItems((prev) => prev.filter((i) => i.slug !== slug));
+  function removeItem(variantId: string) {
+    setItems((prev) => prev.filter((i) => i.variantId !== variantId));
   }
-  function updateQty(slug: string, qty: number) {
-    if (qty <= 0) return removeItem(slug);
-    setItems((prev) => prev.map((i) => (i.slug === slug ? { ...i, qty } : i)));
+  function updateQty(variantId: string, qty: number) {
+    if (qty <= 0) return removeItem(variantId);
+    setItems((prev) => prev.map((i) => (i.variantId === variantId ? { ...i, qty } : i)));
   }
   function clear() {
     setItems([]);
@@ -85,16 +100,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     .map((i) => {
       const p = products.find((pr) => pr.slug === i.slug);
       if (!p) return null;
+      const v = p.variants.find((variant) => variant.variantId === i.variantId);
       return {
         slug: i.slug,
-        variantId: p.variantId,
+        variantId: i.variantId,
         qty: i.qty,
         name: p.name,
-        price: p.price,
+        price: v ? v.price : p.price,
         image: p.image,
-        compareAtPrice: p.compareAtPrice,
+        compareAtPrice: v ? v.compareAtPrice : p.compareAtPrice,
         brand: p.brand,
         category: p.category,
+        size: v ? v.size : p.size || "",
       };
     })
     .filter(Boolean) as CartContextValue["lines"];

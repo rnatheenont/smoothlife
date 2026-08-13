@@ -26,6 +26,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const discount = product.compareAtPrice
     ? Math.round(100 - (product.price / product.compareAtPrice) * 100)
     : 0;
+  const hasMultiplePrices = product.variants.length > 1 && product.variants.some((v) => v.price !== product.price);
 
   function handleAdd() {
     addItem(product.slug);
@@ -79,6 +80,7 @@ export default function ProductCard({ product }: { product: Product }) {
           <p className="text-[11px] text-slate-400 line-clamp-1">{product.shortDesc}</p>
         )}
         <div className="mt-1 flex items-baseline gap-2">
+          {hasMultiplePrices && <span className="text-xs text-slate-400">เริ่มต้น</span>}
           <span className="text-base font-bold text-brand-ink">{formatTHB(product.price)}</span>
           {product.compareAtPrice && (
             <span className="text-xs text-slate-400 line-through">{formatTHB(product.compareAtPrice)}</span>

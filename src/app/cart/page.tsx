@@ -43,7 +43,7 @@ export default function CartPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 flex flex-col gap-4">
           {lines.map((line) => (
-            <div key={line.slug} className="flex gap-4 rounded-xl2 border border-slate-100 p-3 md:p-4 shadow-card">
+            <div key={line.variantId} className="flex gap-4 rounded-xl2 border border-slate-100 p-3 md:p-4 shadow-card">
               <Link href={`/product/${line.slug}`} className="relative h-20 w-20 md:h-24 md:w-24 shrink-0 rounded-lg overflow-hidden bg-surface-soft">
                 <Image src={line.image} alt={line.name} fill className="object-cover" />
               </Link>
@@ -51,6 +51,7 @@ export default function CartPage() {
                 <Link href={`/product/${line.slug}`} className="text-sm font-medium text-brand-ink line-clamp-2 hover:text-brand-emerald">
                   {line.name}
                 </Link>
+                {line.size && <p className="text-xs text-slate-400 mt-0.5">{line.size}</p>}
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="font-bold text-brand-ink">{formatTHB(line.price)}</span>
                   {line.compareAtPrice && (
@@ -65,15 +66,15 @@ export default function CartPage() {
                 </p>
                 <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center border border-slate-200 rounded-full">
-                    <button onClick={() => updateQty(line.slug, line.qty - 1)} className="p-2" aria-label="Decrease">
+                    <button onClick={() => updateQty(line.variantId, line.qty - 1)} className="p-2" aria-label="Decrease">
                       <Minus size={12} />
                     </button>
                     <span className="w-6 text-center text-xs font-semibold">{line.qty}</span>
-                    <button onClick={() => updateQty(line.slug, line.qty + 1)} className="p-2" aria-label="Increase">
+                    <button onClick={() => updateQty(line.variantId, line.qty + 1)} className="p-2" aria-label="Increase">
                       <Plus size={12} />
                     </button>
                   </div>
-                  <button onClick={() => removeItem(line.slug)} className="text-slate-400 hover:text-rose-500" aria-label="Remove">
+                  <button onClick={() => removeItem(line.variantId)} className="text-slate-400 hover:text-rose-500" aria-label="Remove">
                     <Trash2 size={16} />
                   </button>
                 </div>
