@@ -385,6 +385,12 @@ export default function QuickChat() {
           <div ref={scroller} className="flex-1 min-h-[200px] overflow-y-auto overscroll-contain bg-surface-soft px-3.5 py-3.5 flex flex-col gap-3">
             {messages.length === 0 && (
               <div className="py-2">
+                <p className="text-[13px] font-semibold text-brand-ink mb-1 text-center">
+                  {t(
+                    "สวัสดีครับ ผมน้อง Smoothie ผู้ช่วย AI ของ Smoothlife.com",
+                    "Hi, I'm Smoothie — Smoothlife.com's AI assistant"
+                  )}
+                </p>
                 <p className="text-[13px] text-slate-500 mb-3 text-center">
                   {hasProfile
                     ? t(
