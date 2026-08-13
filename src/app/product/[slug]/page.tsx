@@ -1,12 +1,16 @@
 import { notFound } from "next/navigation";
 import { getProductBySlug, getRelatedProducts, products } from "@/data/products";
 import { categories } from "@/data/categories";
-import { generateReviews } from "@/data/reviews";
+import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
+import type { ReviewRow } from "@/app/api/reviews/route";
+import type { QuestionRow } from "@/app/api/product-questions/route";
 import ProductDetailInteractive from "@/components/ProductDetailInteractive";
 import ProductCard from "@/components/ProductCard";
 import SectionHeading from "@/components/SectionHeading";
 import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";
+import TrackRecentlyViewed from "@/components/TrackRecentlyViewed";
+import RecentlyViewedSection from "@/components/RecentlyViewedSection";
 
 export function generateStaticParams() {
   return products.map((p) => ({ slug: p.slug }));
@@ -17,16 +21,42 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
   return { title: product ? `${product.name} | Smoothlife.com` : "Product | Smoothlife.com" };
 }
 
-export default function ProductPage({ params }: { params: { slug: string } }) {
+// Real, user-submitted reviews/questions only — see product_reviews /
+// product_questions migrations. A product with none yet gets an honest
+// empty state in the UI rather than any fabricated content.
+async function getReviews(slug: string): Promise<ReviewRow[]> {
+  if (!supabaseConfigured()) return [];
+  try {
+    return await supabaseRest<ReviewRow[]>(
+      `product_reviews?product_slug=eq.${encodeURIComponent(slug)}&select=id,product_slug,author_name,rating,title,body,created_at&order=created_at.desc`
+    );
+  } catch {
+    return [];
+  }
+}
+
+async function getQuestions(slug: string): Promise<QuestionRow[]> {
+  if (!supabaseConfigured()) return [];
+  try {
+    return await supabaseRest<QuestionRow[]>(
+      `product_questions?product_slug=eq.${encodeURIComponent(slug)}&select=id,product_slug,author_name,question,answer,answered_at,created_at&order=created_at.desc`
+    );
+  } catch {
+    return [];
+  }
+}
+
+export default async function ProductPage({ params }: { params: { slug: string } }) {
   const product = getProductBySlug(params.slug);
   if (!product) notFound();
 
   const related = getRelatedProducts(product, 4);
-  const reviews = generateReviews(product.name.length, 4);
+  const [reviews, questions] = await Promise.all([getReviews(product.slug), getQuestions(product.slug)]);
   const categoryInfo = categories.find((c) => c.slug === product.category);
 
   return (
     <div className="container-page py-8 md:py-10">
+      <TrackRecentlyViewed slug={product.slug} />
       <BackButton fallbackHref={`/shop/${product.category}`} />
       <Breadcrumb
         items={[
@@ -36,7 +66,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
           { label: product.name },
         ]}
       />
-      <ProductDetailInteractive product={product} related={related} reviews={reviews} />
+      <ProductDetailInteractive product={product} related={related} reviews={reviews} questions={questions} />
 
       {related.length > 0 && (
         <div className="mt-16">
@@ -48,6 +78,8 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
           </div>
         </div>
       )}
+
+      <RecentlyViewedSection excludeSlug={product.slug} />
     </div>
   );
 }

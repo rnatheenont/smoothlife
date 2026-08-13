@@ -22,6 +22,8 @@ export type ProductVariant = {
   price: number;
   compareAtPrice?: number;
   inStock: boolean;
+  /** Real Shopify inventory count when the store exposes it — undefined if not available. Only ever real data, never a fabricated "X left" number. */
+  quantity?: number;
 };
 
 export type Product = {
@@ -87,13 +89,4 @@ export type Article = {
   image: string;
   sources: string[];
   readMins: number;
-};
-
-export type Review = {
-  author: string;
-  rating: number;
-  date: string;
-  title: string;
-  body: string;
-  verified: boolean;
 };
