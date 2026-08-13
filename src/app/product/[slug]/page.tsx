@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
 import { getProductBySlug, getRelatedProducts, products } from "@/data/products";
+import { categories } from "@/data/categories";
 import { generateReviews } from "@/data/reviews";
 import ProductDetailInteractive from "@/components/ProductDetailInteractive";
 import ProductCard from "@/components/ProductCard";
 import SectionHeading from "@/components/SectionHeading";
+import Breadcrumb from "@/components/Breadcrumb";
+import BackButton from "@/components/BackButton";
 
 export function generateStaticParams() {
   return products.map((p) => ({ slug: p.slug }));
@@ -20,9 +23,19 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
 
   const related = getRelatedProducts(product, 4);
   const reviews = generateReviews(product.name.length, 4);
+  const categoryInfo = categories.find((c) => c.slug === product.category);
 
   return (
     <div className="container-page py-8 md:py-10">
+      <BackButton fallbackHref={`/shop/${product.category}`} />
+      <Breadcrumb
+        items={[
+          { label: "หน้าแรก", href: "/" },
+          { label: "ช้อป", href: "/shop" },
+          ...(categoryInfo ? [{ label: categoryInfo.nameTh, href: `/shop/${categoryInfo.slug}` }] : []),
+          { label: product.name },
+        ]}
+      />
       <ProductDetailInteractive product={product} related={related} reviews={reviews} />
 
       {related.length > 0 && (

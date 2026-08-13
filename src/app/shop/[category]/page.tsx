@@ -7,6 +7,8 @@ import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
 import SortSelect from "@/components/SortSelect";
 import ShopPromoBanner from "@/components/ShopPromoBanner";
+import Breadcrumb from "@/components/Breadcrumb";
+import BackButton from "@/components/BackButton";
 import { notFound } from "next/navigation";
 
 const ADVISOR_ENTRY: Record<string, { href: string; title: string; subtitle: string }> = {
@@ -49,6 +51,8 @@ export default function CategoryPage({
 
   return (
     <div className="container-page py-8 md:py-10">
+      <BackButton fallbackHref="/shop" />
+      <Breadcrumb items={[{ label: "หน้าแรก", href: "/" }, { label: "ช้อป", href: "/shop" }, { label: categoryInfo.nameTh }]} />
       <div className="mb-6 flex items-end justify-between gap-3">
         <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">{categoryInfo.nameTh}</h1>
         <span className="text-xs md:text-sm font-medium text-brand-emerald bg-brand-gradient-soft rounded-full px-3 py-1 shrink-0">
