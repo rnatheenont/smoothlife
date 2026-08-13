@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { products } from "@/data/products";
+import { ProductVariant } from "@/data/types";
 
 type CartItem = { slug: string; variantId: string; qty: number };
 
@@ -11,6 +12,8 @@ type CartContextValue = {
   addItem: (slug: string, qty?: number, variantId?: string) => void;
   removeItem: (variantId: string) => void;
   updateQty: (variantId: string, qty: number) => void;
+  /** Switch a cart line to a different size of the same product. If that size is already a separate line, the two lines are merged instead of creating a duplicate. */
+  changeVariant: (variantId: string, newVariantId: string) => void;
   clear: () => void;
   count: number;
   subtotal: number;
@@ -25,6 +28,7 @@ type CartContextValue = {
     brand: string;
     category: string;
     size: string;
+    variants: ProductVariant[];
   }[];
   couponCode: string | null;
   setCouponCode: (code: string | null) => void;
@@ -91,6 +95,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (qty <= 0) return removeItem(variantId);
     setItems((prev) => prev.map((i) => (i.variantId === variantId ? { ...i, qty } : i)));
   }
+  function changeVariant(variantId: string, newVariantId: string) {
+    if (variantId === newVariantId) return;
+    setItems((prev) => {
+      const item = prev.find((i) => i.variantId === variantId);
+      if (!item) return prev;
+      const target = prev.find((i) => i.variantId === newVariantId);
+      if (target) {
+        return prev
+          .map((i) => (i.variantId === newVariantId ? { ...i, qty: i.qty + item.qty } : i))
+          .filter((i) => i.variantId !== variantId);
+      }
+      return prev.map((i) => (i.variantId === variantId ? { ...i, variantId: newVariantId } : i));
+    });
+  }
   function clear() {
     setItems([]);
     setCouponCode(null);
@@ -112,6 +130,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         brand: p.brand,
         category: p.category,
         size: v ? v.size : p.size || "",
+        variants: p.variants,
       };
     })
     .filter(Boolean) as CartContextValue["lines"];
@@ -121,7 +140,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, removeItem, updateQty, clear, count, subtotal, lines, couponCode, setCouponCode }}
+      value={{
+        items,
+        addItem,
+        removeItem,
+        updateQty,
+        changeVariant,
+        clear,
+        count,
+        subtotal,
+        lines,
+        couponCode,
+        setCouponCode,
+      }}
     >
       {children}
     </CartContext.Provider>

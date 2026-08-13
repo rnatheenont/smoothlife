@@ -15,7 +15,7 @@ import MobileStickyBar from "@/components/MobileStickyBar";
 import ProductCard from "@/components/ProductCard";
 
 export default function CartPage() {
-  const { lines, updateQty, removeItem } = useCart();
+  const { lines, updateQty, removeItem, changeVariant } = useCart();
   const { user } = useAuth();
   const { lang, t } = useLang();
   const totals = useOrderTotals();
@@ -51,7 +51,21 @@ export default function CartPage() {
                 <Link href={`/product/${line.slug}`} className="text-sm font-medium text-brand-ink line-clamp-2 hover:text-brand-emerald">
                   {line.name}
                 </Link>
-                {line.size && <p className="text-xs text-slate-400 mt-0.5">{line.size}</p>}
+                {line.variants.length > 1 ? (
+                  <select
+                    value={line.variantId}
+                    onChange={(e) => changeVariant(line.variantId, e.target.value)}
+                    className="mt-0.5 rounded-md border border-slate-200 bg-white text-xs text-slate-600 pl-1.5 pr-6 py-1"
+                  >
+                    {line.variants.map((v) => (
+                      <option key={v.variantId} value={v.variantId} disabled={!v.inStock}>
+                        {(v.size || t("ค่าเริ่มต้น", "Default")) + (v.inStock ? "" : ` (${t("สินค้าหมด", "Out of stock")})`)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  line.size && <p className="text-xs text-slate-400 mt-0.5">{line.size}</p>
+                )}
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="font-bold text-brand-ink">{formatTHB(line.price)}</span>
                   {line.compareAtPrice && (
