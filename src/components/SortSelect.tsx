@@ -9,7 +9,7 @@ export default function SortSelect({ current }: { current: ShopSearchParams }) {
   function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const params = new URLSearchParams();
     Object.entries(current).forEach(([k, v]) => {
-      if (v) params.set(k, v);
+      if (v && k !== "page") params.set(k, v);
     });
     if (e.target.value) params.set("sort", e.target.value);
     else params.delete("sort");

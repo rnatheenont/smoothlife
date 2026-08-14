@@ -10,7 +10,10 @@ export type ShopSearchParams = {
   q?: string;
   minPrice?: string;
   maxPrice?: string;
+  page?: string;
 };
+
+export const PAGE_SIZE = 24;
 
 // Sold-out products sink to the end of any listing, but keep whatever
 // relative order they already had among themselves and among in-stock items
