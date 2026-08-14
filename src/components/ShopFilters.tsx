@@ -165,10 +165,10 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
           </button>
         ))}
       </div>
-      <div className="lg:hidden flex items-center justify-between gap-3 mb-4">
+      <div className="lg:hidden flex items-center gap-3 mb-4">
         <button
           onClick={() => setMobileOpen(true)}
-          className="relative flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium active:scale-95 transition-transform"
+          className="relative flex-1 flex items-center justify-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium active:scale-95 transition-transform"
         >
           <SlidersHorizontal size={15} /> ตัวกรอง
           {activeSecondaryCount > 0 && (
@@ -177,7 +177,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
             </span>
           )}
         </button>
-        {mobileExtra}
+        <div className="flex-1">{mobileExtra}</div>
       </div>
       <aside className="hidden lg:block lg:sticky lg:top-[152px] lg:self-start w-56 shrink-0">{content}</aside>
       {mobileOpen && (
