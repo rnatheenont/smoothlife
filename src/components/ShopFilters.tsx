@@ -166,18 +166,20 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
         ))}
       </div>
       <div className="lg:hidden flex items-center gap-3 mb-4">
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="relative flex-1 flex items-center justify-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium active:scale-95 transition-transform"
-        >
-          <SlidersHorizontal size={15} /> ตัวกรอง
-          {activeSecondaryCount > 0 && (
-            <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-brand-gradient text-[10px] font-bold text-white">
-              {activeSecondaryCount}
-            </span>
-          )}
-        </button>
-        <div className="flex-1">{mobileExtra}</div>
+        <div className="min-w-0 flex-1">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="relative h-10 w-full flex items-center justify-center gap-2 rounded-full border border-slate-200 px-4 text-sm font-medium active:scale-95 transition-transform"
+          >
+            <SlidersHorizontal size={15} /> ตัวกรอง
+            {activeSecondaryCount > 0 && (
+              <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-brand-gradient text-[10px] font-bold text-white">
+                {activeSecondaryCount}
+              </span>
+            )}
+          </button>
+        </div>
+        <div className="min-w-0 flex-1">{mobileExtra}</div>
       </div>
       <aside className="hidden lg:block lg:sticky lg:top-[152px] lg:self-start w-56 shrink-0">{content}</aside>
       {mobileOpen && (
