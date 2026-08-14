@@ -1,8 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
-import { addDays, businessDateNow, CYCLE_LENGTH_DAYS, DAY3_REWARD_POINTS, DAY7_REWARD_POINTS, daysBetween, RECOVERY_COST_PER_DAY, CycleRow } from "@/lib/checkin";
-import { getLatestCycle, getPointBalance, syncCycleStatus, awardMilestones } from "@/lib/checkin-server";
+import {
+  ACTIVE_CHALLENGE,
+  addDays,
+  businessDateNow,
+  CYCLE_LENGTH_DAYS,
+  CycleRow,
+  DAY3_REWARD_POINTS,
+  DAY7_REWARD_POINTS,
+  daysBetween,
+  isChallengeActive,
+  RECOVERY_COST_PER_DAY,
+  yearMonthOf,
+} from "@/lib/checkin";
+import {
+  awardMilestones,
+  awardMonthlyAttendanceIfEligible,
+  getLatestCycle,
+  getMonthlyAttendance,
+  getPointBalance,
+  syncCycleStatus,
+} from "@/lib/checkin-server";
+
+function challengeInfo(today: string) {
+  return isChallengeActive(today)
+    ? { active: true, title: ACTIVE_CHALLENGE.title, endDate: ACTIVE_CHALLENGE.endDate, multiplier: ACTIVE_CHALLENGE.multiplier }
+    : null;
+}
+
+async function getUserCreatedAt(uid: string): Promise<string> {
+  const [row] = await supabaseRest<{ created_at: string }[]>(`users?id=eq.${uid}&select=created_at`);
+  return row?.created_at ?? new Date().toISOString();
+}
 
 export async function GET(req: NextRequest) {
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
@@ -11,8 +41,10 @@ export async function GET(req: NextRequest) {
   }
 
   const today = businessDateNow();
-  const [cycle, pointBalance] = await Promise.all([getLatestCycle(uid), getPointBalance(uid)]);
+  const [cycle, pointBalance, userCreatedAt] = await Promise.all([getLatestCycle(uid), getPointBalance(uid), getUserCreatedAt(uid)]);
   const config = { cycleLength: CYCLE_LENGTH_DAYS, day3Points: DAY3_REWARD_POINTS, day7Points: DAY7_REWARD_POINTS };
+  const monthlyAttendance = await getMonthlyAttendance(uid, yearMonthOf(today), userCreatedAt);
+  const challenge = challengeInfo(today);
 
   if (!cycle) {
     return NextResponse.json({
@@ -23,6 +55,8 @@ export async function GET(req: NextRequest) {
       previousCycle: null,
       recovery: { costPerDay: RECOVERY_COST_PER_DAY, pointBalance, recoverableDates: [] },
       config,
+      monthlyAttendance,
+      challenge,
     });
   }
 
@@ -41,6 +75,8 @@ export async function GET(req: NextRequest) {
       previousCycle: { status: synced.status, completedDays: synced.completed_days },
       recovery: { costPerDay: RECOVERY_COST_PER_DAY, pointBalance, recoverableDates: [] },
       config,
+      monthlyAttendance,
+      challenge,
     });
   }
   const dates = Array.from({ length: CYCLE_LENGTH_DAYS }).map((_, i) => {
@@ -74,6 +110,8 @@ export async function GET(req: NextRequest) {
     },
     recovery: { costPerDay: RECOVERY_COST_PER_DAY, pointBalance, recoverableDates },
     config,
+    monthlyAttendance,
+    challenge,
   });
 }
 
@@ -136,7 +174,11 @@ export async function POST(req: NextRequest) {
   }
 
   const synced = await syncCycleStatus(cycle, today);
-  const { cycle: finalCycle, result } = await awardMilestones(synced.cycle);
+  const { cycle: finalCycle, result } = await awardMilestones(synced.cycle, today);
+
+  const userCreatedAt = await getUserCreatedAt(uid);
+  const monthlyAttendance = await getMonthlyAttendance(uid, yearMonthOf(today), userCreatedAt);
+  const monthlyAttendanceAwarded = await awardMonthlyAttendanceIfEligible(uid, monthlyAttendance);
 
   return NextResponse.json({
     ok: true,
@@ -145,5 +187,7 @@ export async function POST(req: NextRequest) {
     day3Awarded: result.day3Awarded,
     day7Awarded: result.day7Awarded,
     day7Coupon: result.day7Coupon,
+    challengeBonus: result.challengeBonus,
+    monthlyAttendanceAwarded,
   });
 }

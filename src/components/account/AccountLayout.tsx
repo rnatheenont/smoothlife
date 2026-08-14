@@ -3,7 +3,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, User, MapPin, Receipt, Package, Award, Heart, KeyRound, LogOut, CalendarCheck } from "lucide-react";
+import { LayoutGrid, User, MapPin, Receipt, Package, Award, Heart, KeyRound, LogOut, CalendarCheck, Trophy } from "lucide-react";
 import AccountGate from "@/components/AccountGate";
 import { useAuth } from "@/lib/auth-context";
 
@@ -15,6 +15,7 @@ const NAV = [
   { href: "/account/orders", label: "คำสั่งซื้อ", icon: Package },
   { href: "/account/checkin", label: "เช็กอินรายวัน", icon: CalendarCheck },
   { href: "/account/points", label: "คะแนนสะสม", icon: Award },
+  { href: "/account/leaderboard", label: "อันดับ", icon: Trophy },
   { href: "/account/wishlist", label: "รายการโปรด", icon: Heart },
   { href: "/account/change-password", label: "เปลี่ยนรหัสผ่าน", icon: KeyRound },
 ] as const;

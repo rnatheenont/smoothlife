@@ -10,6 +10,23 @@ export const RECOVERY_COST_PER_DAY = 50;
 export const DAY3_REWARD_POINTS = 30;
 export const DAY7_REWARD_POINTS = 100;
 export const DAY7_COUPON_PERCENTAGE = 0.1; // 10% off, single-use
+export const MONTHLY_ATTENDANCE_REWARD_POINTS = 200;
+
+// Hardcoded campaign config — no admin UI for this (same convention as the
+// tier thresholds in data/coupons.ts). Doubles the day-3/day-7 check-in
+// rewards for anyone who crosses that milestone while the campaign is live.
+// Adjust these dates directly in code to run a different window.
+export const ACTIVE_CHALLENGE = {
+  id: "launch-week-2026-08",
+  title: "7-Day Challenge: Double Points Week",
+  startDate: "2026-08-14",
+  endDate: "2026-08-27",
+  multiplier: 2,
+};
+
+export function isChallengeActive(date: CheckinDate): boolean {
+  return date >= ACTIVE_CHALLENGE.startDate && date <= ACTIVE_CHALLENGE.endDate;
+}
 
 export type CheckinDate = string; // "YYYY-MM-DD" in CHECKIN_TIMEZONE
 
@@ -31,6 +48,15 @@ export function daysBetween(a: CheckinDate, b: CheckinDate): number {
   const [by, bm, bd] = b.split("-").map(Number);
   const msPerDay = 86_400_000;
   return Math.round((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / msPerDay);
+}
+
+export function yearMonthOf(date: CheckinDate): string {
+  return date.slice(0, 7); // "YYYY-MM"
+}
+
+export function daysInMonth(yearMonth: string): number {
+  const [y, m] = yearMonth.split("-").map(Number);
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
 }
 
 export type CycleRow = {

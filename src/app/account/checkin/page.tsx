@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Gift, Coins, CheckCircle2, X, Sparkles } from "lucide-react";
+import { Loader2, Gift, Coins, CheckCircle2, X, Sparkles, Flame, CalendarCheck } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import ProductCard from "@/components/ProductCard";
 import { useAuth } from "@/lib/auth-context";
@@ -31,6 +31,8 @@ type StatusResponse = {
   previousCycle?: { status: string; completedDays: number } | null;
   recovery: { costPerDay: number; pointBalance: number; recoverableDates: string[] };
   config: { cycleLength: number; day3Points: number; day7Points: number };
+  monthlyAttendance?: { yearMonth: string; completedDays: number; requiredDays: number; rewarded: boolean };
+  challenge?: { active: boolean; title: string; endDate: string; multiplier: number } | null;
 };
 
 const dayCircleStyle: Record<DayInfo["status"], string> = {
@@ -66,15 +68,24 @@ function CheckinContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function handleMilestones(json: { day3Awarded?: boolean; day7Awarded?: boolean; day7Coupon?: string | null }) {
+  function handleMilestones(json: {
+    day3Awarded?: boolean;
+    day7Awarded?: boolean;
+    day7Coupon?: string | null;
+    challengeBonus?: number;
+    monthlyAttendanceAwarded?: boolean;
+  }) {
+    const bonusText = json.challengeBonus ? ` (+${json.challengeBonus} แต้มโบนัส Challenge)` : "";
     if (json.day7Awarded) {
       setCelebration({
         title: "ครบ 7 วันแล้ว! 🎉",
-        body: `รับ ${data?.config.day7Points ?? 100} แต้ม${json.day7Coupon ? " และคูปองส่วนลดพิเศษ" : ""}`,
+        body: `รับ ${data?.config.day7Points ?? 100} แต้ม${bonusText}${json.day7Coupon ? " และคูปองส่วนลดพิเศษ" : ""}`,
         coupon: json.day7Coupon,
       });
     } else if (json.day3Awarded) {
-      setCelebration({ title: "ครบ 3 วันแล้ว! 🎉", body: `รับ ${data?.config.day3Points ?? 30} แต้ม` });
+      setCelebration({ title: "ครบ 3 วันแล้ว! 🎉", body: `รับ ${data?.config.day3Points ?? 30} แต้ม${bonusText}` });
+    } else if (json.monthlyAttendanceAwarded) {
+      setCelebration({ title: "เช็กอินครบทุกวันของเดือนแล้ว! 🎉", body: "รับ 200 แต้มพิเศษประจำเดือนค่ะ" });
     }
   }
 
@@ -149,6 +160,16 @@ function CheckinContent() {
     <div className="max-w-3xl">
       <h1 className="text-2xl font-bold text-brand-ink mb-1">เช็กอินรายวัน</h1>
       <p className="text-sm text-slate-500 mb-6">เช็กอินทุกวัน สะสมแต้ม ครบ 7 วันรับคูปองส่วนลดพิเศษ</p>
+
+      {data.challenge?.active && (
+        <div className="mb-6 rounded-xl2 bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2.5">
+          <Flame size={18} className="text-amber-500 shrink-0" />
+          <p className="text-sm text-amber-700">
+            <span className="font-bold">{data.challenge.title}</span> — รับแต้มวันที่ 3 และ 7 x{data.challenge.multiplier} ถึงวันที่{" "}
+            {new Date(data.challenge.endDate).toLocaleDateString("th-TH", { day: "numeric", month: "long" })}
+          </p>
+        </div>
+      )}
 
       <div className="rounded-xl2 bg-brand-gradient text-white p-5 md:p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -227,7 +248,9 @@ function CheckinContent() {
             <p className="font-bold text-brand-ink">รางวัลวันที่ 3</p>
           </div>
           <p className="text-sm text-slate-500">
-            {data.config.day3Points} แต้มโบนัส {cycle?.day3RewardClaimed && <span className="text-brand-emerald font-semibold">— รับแล้ว</span>}
+            {data.config.day3Points} แต้มโบนัส
+            {data.challenge?.active && <span className="text-amber-600 font-semibold"> x{data.challenge.multiplier}</span>}{" "}
+            {cycle?.day3RewardClaimed && <span className="text-brand-emerald font-semibold">— รับแล้ว</span>}
           </p>
         </div>
         <div
@@ -246,13 +269,52 @@ function CheckinContent() {
             <p className="font-bold text-brand-ink">รางวัลวันที่ 7</p>
           </div>
           <p className="text-sm text-slate-500">
-            {data.config.day7Points} แต้ม + คูปองส่วนลด 10%
+            {data.config.day7Points} แต้ม
+            {data.challenge?.active && <span className="text-amber-600 font-semibold"> x{data.challenge.multiplier}</span>}
+            {" "}+ คูปองส่วนลด 10%
             {cycle?.day7RewardClaimed && cycle.day7CouponCode && (
               <span className="block mt-1 font-mono text-brand-emerald font-bold">{cycle.day7CouponCode}</span>
             )}
           </p>
         </div>
       </div>
+
+      {data.monthlyAttendance && (
+        <div className="rounded-xl2 border border-slate-100 p-5 mb-8">
+          <div className="flex items-center gap-2.5 mb-2">
+            <span
+              className={`grid h-9 w-9 place-items-center rounded-full ${
+                data.monthlyAttendance.rewarded ? "bg-brand-gradient text-white" : "bg-surface-muted text-slate-400"
+              }`}
+            >
+              <CalendarCheck size={16} />
+            </span>
+            <div>
+              <p className="font-bold text-brand-ink">เช็กอินครบทุกวันของเดือน</p>
+              <p className="text-xs text-slate-400">รับ 200 แต้มพิเศษ เมื่อเช็กอินครบทุกวันที่มีสิทธิ์ในเดือนนี้</p>
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+              <span>
+                {data.monthlyAttendance.completedDays}/{data.monthlyAttendance.requiredDays} วัน
+              </span>
+              {data.monthlyAttendance.rewarded && <span className="text-brand-emerald font-semibold">รับรางวัลแล้ว</span>}
+            </div>
+            <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
+              <div
+                className="h-full bg-brand-gradient rounded-full transition-all"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    (data.monthlyAttendance.completedDays / Math.max(1, data.monthlyAttendance.requiredDays)) * 100
+                  )}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {bestSellers.length > 0 && (
         <div>
