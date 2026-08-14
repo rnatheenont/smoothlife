@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { heroBanners } from "@/data/heroBanners";
 
-const AUTO_ROTATE_MS = 5000;
+const AUTO_ROTATE_MS = 8000;
 
 export default function HeroCarousel() {
   const [index, setIndex] = useState(0);
@@ -56,13 +56,25 @@ export default function HeroCarousel() {
           className="absolute inset-0 transition-opacity duration-700 ease-out"
           style={{ opacity: i === index ? 1 : 0, pointerEvents: i === index ? "auto" : "none" }}
         >
+          {/* Blurred, scaled-up copy of the same slide fills the letterbox
+              behind it — switches with the slide since it's the same image,
+              instead of leaving flat empty bars around images that don't
+              match the banner's aspect ratio. */}
+          <Image
+            src={banner.image}
+            alt=""
+            aria-hidden
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover scale-125 blur-2xl brightness-75"
+          />
           <Image
             src={banner.image}
             alt={banner.title}
             fill
             priority={i === 0}
             sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover"
+            className="object-contain"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white">
