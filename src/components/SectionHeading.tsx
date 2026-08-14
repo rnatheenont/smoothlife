@@ -15,8 +15,10 @@ export default function SectionHeading({
   return (
     <div className="flex items-end justify-between mb-5 md:mb-6">
       <div>
-        <h2 className="text-xl md:text-2xl font-bold text-brand-ink">{title}</h2>
-        {subtitle && <p className="text-sm text-slate-500 mt-1">{subtitle}</p>}
+        {subtitle && (
+          <p className="text-xs font-bold uppercase tracking-wider text-brand-emerald mb-1.5">{subtitle}</p>
+        )}
+        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-brand-ink">{title}</h2>
       </div>
       {href && (
         <Link

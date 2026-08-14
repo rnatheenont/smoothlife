@@ -41,7 +41,7 @@ export default function HomePage() {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-emerald shadow-card mb-4">
               <Sparkles size={13} /> แนะนำน้อง Smoothie ผู้ช่วยคนใหม่
             </span>
-            <h1 className="text-3xl md:text-5xl font-extrabold leading-tight text-brand-ink">
+            <h1 className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight text-brand-ink">
               สุขภาพดี ผิวสวย <br />
               <span className="brand-text-gradient">ครบทุก Lifestyle</span> ที่เดียว
             </h1>
@@ -200,12 +200,12 @@ export default function HomePage() {
       {/* Brands strip */}
       <section className="container-page py-10 md:py-14">
         <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 rounded-xl2 border-t border-l border-slate-100 overflow-hidden">
           {brands.slice(0, 10).map((b) => (
             <Link
               key={b.slug}
               href={`/shop?brand=${b.slug}`}
-              className="rounded-xl2 border border-slate-100 shadow-card p-3 flex items-center justify-center h-32 hover:border-brand-teal transition-colors"
+              className="border-r border-b border-slate-100 p-4 flex items-center justify-center h-28 md:h-32 hover:bg-surface-soft transition-colors"
             >
               {b.image ? (
                 <div className="relative h-full w-full">
