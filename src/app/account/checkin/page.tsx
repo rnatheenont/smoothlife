@@ -162,12 +162,19 @@ function CheckinContent() {
       <p className="text-sm text-slate-500 mb-6">เช็กอินทุกวัน สะสมแต้ม ครบ 7 วันรับคูปองส่วนลดพิเศษ</p>
 
       {data.challenge?.active && (
-        <div className="mb-6 rounded-xl2 bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2.5">
-          <Flame size={18} className="text-amber-500 shrink-0" />
-          <p className="text-sm text-amber-700">
-            <span className="font-bold">{data.challenge.title}</span> — รับแต้มวันที่ 3 และ 7 x{data.challenge.multiplier} ถึงวันที่{" "}
-            {new Date(data.challenge.endDate).toLocaleDateString("th-TH", { day: "numeric", month: "long" })}
-          </p>
+        <div className="mb-6 rounded-xl2 bg-gradient-to-r from-amber-400 to-orange-400 p-[1px] shadow-card">
+          <div className="rounded-[calc(theme(borderRadius.xl2)-1px)] bg-white flex items-center gap-3 px-4 py-3.5">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm">
+              <Flame size={18} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-brand-ink truncate">{data.challenge.title}</p>
+              <p className="text-xs text-amber-700">
+                รับแต้มวันที่ 3 และ 7 <span className="font-bold">x{data.challenge.multiplier}</span> ถึงวันที่{" "}
+                {new Date(data.challenge.endDate).toLocaleDateString("th-TH", { day: "numeric", month: "long" })}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -231,86 +238,129 @@ function CheckinContent() {
         <div className="mb-6 rounded-xl2 bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-600">{message}</div>
       )}
 
+      <p className="text-xs font-bold uppercase text-brand-emerald tracking-wide mb-2.5">รางวัลตามเป้าหมาย</p>
       <div className="grid sm:grid-cols-2 gap-4 mb-8">
         <div
-          className={`rounded-xl2 border p-5 ${
-            cycle?.day3RewardClaimed ? "border-brand-teal bg-brand-gradient-soft" : "border-slate-100"
+          className={`rounded-xl2 border p-5 shadow-card transition-colors ${
+            cycle?.day3RewardClaimed ? "border-brand-teal/40 bg-brand-gradient-soft" : "border-slate-100 bg-white"
           }`}
         >
-          <div className="flex items-center gap-2.5 mb-1.5">
+          <div className="flex items-center gap-3 mb-2">
             <span
-              className={`grid h-9 w-9 place-items-center rounded-full ${
-                cycle?.day3RewardClaimed ? "bg-brand-gradient text-white" : "bg-surface-muted text-slate-400"
+              className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${
+                cycle?.day3RewardClaimed ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-emerald"
               }`}
             >
-              <Gift size={16} />
+              <Gift size={18} />
             </span>
-            <p className="font-bold text-brand-ink">รางวัลวันที่ 3</p>
+            <div>
+              <p className="font-bold text-brand-ink leading-tight">รางวัลวันที่ 3</p>
+              <p className="text-lg font-bold text-brand-emerald leading-tight">
+                +{data.config.day3Points} แต้ม
+                {data.challenge?.active && (
+                  <span className="ml-1 text-xs font-bold text-amber-600 align-middle">x{data.challenge.multiplier}</span>
+                )}
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-slate-500">
-            {data.config.day3Points} แต้มโบนัส
-            {data.challenge?.active && <span className="text-amber-600 font-semibold"> x{data.challenge.multiplier}</span>}{" "}
-            {cycle?.day3RewardClaimed && <span className="text-brand-emerald font-semibold">— รับแล้ว</span>}
-          </p>
+          {cycle?.day3RewardClaimed ? (
+            <p className="flex items-center gap-1 text-xs font-semibold text-brand-emerald">
+              <CheckCircle2 size={13} /> รับแล้ว
+            </p>
+          ) : (
+            <p className="text-xs text-slate-400">เช็กอินครบ 3 วันติดต่อกันเพื่อรับรางวัล</p>
+          )}
         </div>
         <div
-          className={`rounded-xl2 border p-5 ${
-            cycle?.day7RewardClaimed ? "border-brand-teal bg-brand-gradient-soft" : "border-slate-100"
+          className={`rounded-xl2 border p-5 shadow-card transition-colors ${
+            cycle?.day7RewardClaimed ? "border-brand-teal/40 bg-brand-gradient-soft" : "border-slate-100 bg-white"
           }`}
         >
-          <div className="flex items-center gap-2.5 mb-1.5">
+          <div className="flex items-center gap-3 mb-2">
             <span
-              className={`grid h-9 w-9 place-items-center rounded-full ${
-                cycle?.day7RewardClaimed ? "bg-brand-gradient text-white" : "bg-surface-muted text-slate-400"
+              className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${
+                cycle?.day7RewardClaimed ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-emerald"
               }`}
             >
-              <Sparkles size={16} />
+              <Sparkles size={18} />
             </span>
-            <p className="font-bold text-brand-ink">รางวัลวันที่ 7</p>
+            <div>
+              <p className="font-bold text-brand-ink leading-tight">รางวัลวันที่ 7</p>
+              <p className="text-lg font-bold text-brand-emerald leading-tight">
+                +{data.config.day7Points} แต้ม
+                {data.challenge?.active && (
+                  <span className="ml-1 text-xs font-bold text-amber-600 align-middle">x{data.challenge.multiplier}</span>
+                )}
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-slate-500">
-            {data.config.day7Points} แต้ม
-            {data.challenge?.active && <span className="text-amber-600 font-semibold"> x{data.challenge.multiplier}</span>}
-            {" "}+ คูปองส่วนลด 10%
-            {cycle?.day7RewardClaimed && cycle.day7CouponCode && (
-              <span className="block mt-1 font-mono text-brand-emerald font-bold">{cycle.day7CouponCode}</span>
-            )}
-          </p>
+          <p className="text-xs text-slate-400 mb-1">+ คูปองส่วนลด 10%</p>
+          {cycle?.day7RewardClaimed ? (
+            cycle.day7CouponCode ? (
+              <p className="inline-block rounded-lg bg-white/70 px-2.5 py-1 font-mono text-xs font-bold text-brand-emerald border border-brand-teal/30">
+                {cycle.day7CouponCode}
+              </p>
+            ) : (
+              <p className="flex items-center gap-1 text-xs font-semibold text-brand-emerald">
+                <CheckCircle2 size={13} /> รับแล้ว
+              </p>
+            )
+          ) : (
+            <p className="text-xs text-slate-400">เช็กอินครบ 7 วันเพื่อรับรางวัล</p>
+          )}
         </div>
       </div>
 
       {data.monthlyAttendance && (
-        <div className="rounded-xl2 border border-slate-100 p-5 mb-8">
-          <div className="flex items-center gap-2.5 mb-2">
-            <span
-              className={`grid h-9 w-9 place-items-center rounded-full ${
-                data.monthlyAttendance.rewarded ? "bg-brand-gradient text-white" : "bg-surface-muted text-slate-400"
-              }`}
-            >
-              <CalendarCheck size={16} />
-            </span>
-            <div>
-              <p className="font-bold text-brand-ink">เช็กอินครบทุกวันของเดือน</p>
-              <p className="text-xs text-slate-400">รับ 200 แต้มพิเศษ เมื่อเช็กอินครบทุกวันที่มีสิทธิ์ในเดือนนี้</p>
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
-              <span>
-                {data.monthlyAttendance.completedDays}/{data.monthlyAttendance.requiredDays} วัน
+        <div>
+          <p className="text-xs font-bold uppercase text-brand-emerald tracking-wide mb-2.5">เป้าหมายประจำเดือน</p>
+          <div
+            className={`rounded-xl2 border p-5 mb-8 shadow-card ${
+              data.monthlyAttendance.rewarded ? "border-brand-teal/40 bg-brand-gradient-soft" : "border-slate-100 bg-white"
+            }`}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <span
+                className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${
+                  data.monthlyAttendance.rewarded ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-emerald"
+                }`}
+              >
+                <CalendarCheck size={18} />
               </span>
-              {data.monthlyAttendance.rewarded && <span className="text-brand-emerald font-semibold">รับรางวัลแล้ว</span>}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-bold text-brand-ink">เช็กอินครบทุกวันของเดือน</p>
+                  <span className="shrink-0 text-lg font-bold text-brand-emerald">+200 แต้ม</span>
+                </div>
+                <p className="text-xs text-slate-400">รับ 200 แต้มพิเศษ เมื่อเช็กอินครบทุกวันที่มีสิทธิ์ในเดือนนี้</p>
+              </div>
             </div>
-            <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
-              <div
-                className="h-full bg-brand-gradient rounded-full transition-all"
-                style={{
-                  width: `${Math.min(
-                    100,
-                    (data.monthlyAttendance.completedDays / Math.max(1, data.monthlyAttendance.requiredDays)) * 100
-                  )}%`,
-                }}
-              />
+            <div>
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+                <span className="font-semibold text-brand-ink">
+                  {data.monthlyAttendance.completedDays}/{data.monthlyAttendance.requiredDays} วัน
+                </span>
+                {data.monthlyAttendance.rewarded ? (
+                  <span className="flex items-center gap-1 font-semibold text-brand-emerald">
+                    <CheckCircle2 size={13} /> รับรางวัลแล้ว
+                  </span>
+                ) : (
+                  <span className="text-slate-400">
+                    เหลืออีก {Math.max(0, data.monthlyAttendance.requiredDays - data.monthlyAttendance.completedDays)} วัน
+                  </span>
+                )}
+              </div>
+              <div className="h-2.5 rounded-full bg-surface-muted overflow-hidden">
+                <div
+                  className="h-full bg-brand-gradient rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      (data.monthlyAttendance.completedDays / Math.max(1, data.monthlyAttendance.requiredDays)) * 100
+                    )}%`,
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
