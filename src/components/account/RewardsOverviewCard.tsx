@@ -125,8 +125,20 @@ export default function RewardsOverviewCard() {
           </div>
         </div>
 
-        <p className="relative text-xl md:text-2xl font-bold truncate mb-0.5">{user.name}</p>
-        <p className="relative text-[11px] text-white/70 mb-5">สมาชิกตั้งแต่ {formatThaiDate(user.createdAt)}</p>
+        <div className="relative flex items-center gap-3 mb-5">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur text-lg font-bold overflow-hidden ring-2 ring-white/70">
+            {user.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.avatar} alt={user.name} className="h-12 w-12 rounded-full object-cover" />
+            ) : (
+              user.name.charAt(0).toUpperCase()
+            )}
+          </span>
+          <div className="min-w-0">
+            <p className="text-xl md:text-2xl font-bold truncate">{user.name}</p>
+            <p className="text-[11px] text-white/70">สมาชิกตั้งแต่ {formatThaiDate(user.createdAt)}</p>
+          </div>
+        </div>
 
         <div className="relative flex items-end justify-between gap-3">
           <div>

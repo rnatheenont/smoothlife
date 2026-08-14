@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
-import { addDays, businessDateNow, CYCLE_LENGTH_DAYS, daysBetween, RECOVERY_COST_PER_DAY, RECOVERY_MAX_DAYS_BACK } from "@/lib/checkin";
-import { getLatestCycle, getPointBalance, syncCycleStatus, awardMilestones } from "@/lib/checkin-server";
+import { addDays, businessDateNow, CYCLE_LENGTH_DAYS, daysBetween, RECOVERY_COST_PER_DAY, RECOVERY_MAX_DAYS_BACK, yearMonthOf } from "@/lib/checkin";
+import {
+  awardMilestones,
+  awardMonthlyAttendanceIfEligible,
+  getLatestCycle,
+  getMonthlyAttendance,
+  getPointBalance,
+  syncCycleStatus,
+} from "@/lib/checkin-server";
+
+async function getUserCreatedAt(uid: string): Promise<string> {
+  const [row] = await supabaseRest<{ created_at: string }[]>(`users?id=eq.${uid}&select=created_at`);
+  return row?.created_at ?? new Date().toISOString();
+}
 
 // Spends points to fill a missed check-in day. Client sends the date it
 // wants recovered, but every rule (window, cycle bounds, already-checked,
@@ -96,7 +108,12 @@ export async function POST(req: NextRequest) {
   }
 
   const synced = await syncCycleStatus(cycle, today);
-  const { cycle: finalCycle, result } = await awardMilestones(synced.cycle);
+  const { cycle: finalCycle, result } = await awardMilestones(synced.cycle, today);
+
+  const userCreatedAt = await getUserCreatedAt(uid);
+  const monthlyAttendance = await getMonthlyAttendance(uid, yearMonthOf(today), userCreatedAt);
+  const monthlyAttendanceAwarded = await awardMonthlyAttendanceIfEligible(uid, monthlyAttendance);
+
   const newBalance = await getPointBalance(uid);
 
   return NextResponse.json({
@@ -109,5 +126,7 @@ export async function POST(req: NextRequest) {
     day3Awarded: result.day3Awarded,
     day7Awarded: result.day7Awarded,
     day7Coupon: result.day7Coupon,
+    challengeBonus: result.challengeBonus,
+    monthlyAttendanceAwarded,
   });
 }

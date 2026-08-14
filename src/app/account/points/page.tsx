@@ -23,6 +23,8 @@ const reasonLabel: Record<string, string> = {
   legacy_verify_bonus: "โบนัสสมาชิกเดิม",
   review_reward: "รีวิวสินค้า",
   skin_coach_points: "รางวัล Skin Coach",
+  monthly_attendance_reward: "เช็กอินครบทุกวันของเดือน",
+  challenge_bonus: "โบนัส 7-Day Challenge",
 };
 
 type LedgerEntry = { id: string; delta: number; reason: string; created_at: string };
