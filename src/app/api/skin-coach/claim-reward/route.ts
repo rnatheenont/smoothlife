@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { createPercentDiscountCode, shopifyAdminConfigured } from "@/lib/shopify-admin";
-import { discountForScore } from "@/lib/skin-coach";
+import { discountForScore, SKIN_COACH_POINTS_REWARD } from "@/lib/skin-coach";
 
 function currentPeriod() {
   const now = new Date();
@@ -27,14 +27,49 @@ export async function POST(req: NextRequest) {
   // not a security boundary, same trust level as the rest of this perk.
   const score = typeof body?.score === "number" ? body.score : 0;
   const { percentage, label } = discountForScore(score);
+  const method: "coupon" | "points" = body?.method === "points" ? "points" : "coupon";
 
   const period = currentPeriod();
 
-  const existing = await supabaseRest<{ shopify_discount_code: string | null }[]>(
-    `skin_coach_rewards?user_id=eq.${uid}&period=eq.${period}&select=shopify_discount_code`
+  const existing = await supabaseRest<{ shopify_discount_code: string | null; reward_type: string }[]>(
+    `skin_coach_rewards?user_id=eq.${uid}&period=eq.${period}&select=shopify_discount_code,reward_type`
   );
   if (existing.length > 0) {
-    return NextResponse.json({ ok: true, code: existing[0].shopify_discount_code, alreadyClaimed: true, label });
+    return NextResponse.json({
+      ok: true,
+      code: existing[0].shopify_discount_code,
+      rewardType: existing[0].reward_type,
+      points: SKIN_COACH_POINTS_REWARD,
+      alreadyClaimed: true,
+      label,
+    });
+  }
+
+  if (method === "points") {
+    const inserted = await supabaseRest<{ id: string }[]>("skin_coach_rewards?on_conflict=user_id,period", {
+      method: "POST",
+      headers: { Prefer: "resolution=ignore-duplicates,return=representation" },
+      body: JSON.stringify({ user_id: uid, period, reward_type: "points" }),
+    });
+
+    // Same rare-race handling as the coupon path below: another request won
+    // the insert first, so don't double-credit points.
+    if (inserted.length === 0) {
+      return NextResponse.json({ ok: true, points: SKIN_COACH_POINTS_REWARD, rewardType: "points", alreadyClaimed: true, label });
+    }
+
+    await supabaseRest("points_ledger", {
+      method: "POST",
+      returning: false,
+      body: JSON.stringify({
+        user_id: uid,
+        delta: SKIN_COACH_POINTS_REWARD,
+        reason: "skin_coach_points",
+        metadata: { period },
+      }),
+    });
+
+    return NextResponse.json({ ok: true, points: SKIN_COACH_POINTS_REWARD, rewardType: "points", label });
   }
 
   if (!shopifyAdminConfigured()) {
@@ -62,7 +97,7 @@ export async function POST(req: NextRequest) {
       {
         method: "POST",
         headers: { Prefer: "resolution=ignore-duplicates,return=representation" },
-        body: JSON.stringify({ user_id: uid, period, shopify_discount_code: code }),
+        body: JSON.stringify({ user_id: uid, period, shopify_discount_code: code, reward_type: "coupon" }),
       }
     );
 
@@ -72,10 +107,10 @@ export async function POST(req: NextRequest) {
       const row = await supabaseRest<{ shopify_discount_code: string }[]>(
         `skin_coach_rewards?user_id=eq.${uid}&period=eq.${period}&select=shopify_discount_code`
       );
-      return NextResponse.json({ ok: true, code: row[0]?.shopify_discount_code ?? code, alreadyClaimed: true, label });
+      return NextResponse.json({ ok: true, code: row[0]?.shopify_discount_code ?? code, rewardType: "coupon", alreadyClaimed: true, label });
     }
 
-    return NextResponse.json({ ok: true, code, label });
+    return NextResponse.json({ ok: true, code, rewardType: "coupon", label });
   } catch (err) {
     console.error("[skin-coach claim-reward]", err);
     return NextResponse.json(

@@ -84,6 +84,7 @@ export default function ProductDetailInteractive({
   const [reviewBody, setReviewBody] = useState("");
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewSuccessPoints, setReviewSuccessPoints] = useState<number | null>(null);
   const avgRating = reviewsList.length
     ? reviewsList.reduce((sum, r) => sum + r.rating, 0) / reviewsList.length
     : 0;
@@ -122,6 +123,10 @@ export default function ProductDetailInteractive({
       setReviewBody("");
       setReviewRating(5);
       setShowReviewForm(false);
+      if (data.pointsAwarded) {
+        setReviewSuccessPoints(data.pointsAwarded);
+        setTimeout(() => setReviewSuccessPoints(null), 5000);
+      }
     } catch {
       setReviewError("ส่งรีวิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     } finally {
@@ -233,7 +238,10 @@ export default function ProductDetailInteractive({
                 {product.variants.map((v) => (
                   <button
                     key={v.variantId}
-                    onClick={() => setSelectedVariantId(v.variantId)}
+                    onClick={() => {
+                      setSelectedVariantId(v.variantId);
+                      if (typeof v.quantity === "number") setQty((q) => Math.min(q, Math.max(1, v.quantity!)));
+                    }}
                     disabled={!v.inStock}
                     className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                       selectedVariant.variantId === v.variantId
@@ -258,7 +266,14 @@ export default function ProductDetailInteractive({
                 <Minus size={14} />
               </button>
               <span className="w-8 text-center text-sm font-semibold">{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} className="p-2.5" aria-label="เพิ่มจำนวน">
+              <button
+                onClick={() =>
+                  setQty((q) => (typeof selectedVariant.quantity === "number" ? Math.min(q + 1, selectedVariant.quantity) : q + 1))
+                }
+                disabled={typeof selectedVariant.quantity === "number" && qty >= selectedVariant.quantity}
+                className="p-2.5 disabled:opacity-30 disabled:pointer-events-none"
+                aria-label="เพิ่มจำนวน"
+              >
                 <Plus size={14} />
               </button>
             </div>
@@ -386,8 +401,17 @@ export default function ProductDetailInteractive({
                   </button>
                 </div>
 
+                {reviewSuccessPoints !== null && (
+                  <p className="mb-4 text-xs font-semibold text-brand-emerald">
+                    ส่งรีวิวสำเร็จ ได้รับ {reviewSuccessPoints} คะแนน ขอบคุณค่ะ!
+                  </p>
+                )}
+
                 {showReviewForm && (
                   <form onSubmit={submitReview} className="mb-5 rounded-xl border border-slate-100 p-4 space-y-3">
+                    <p className="text-xs text-slate-400">
+                      ต้องซื้อสินค้านี้และชำระเงินสำเร็จก่อนจึงจะรีวิวได้ครับ รับ 20 คะแนนเมื่อรีวิวสำเร็จ
+                    </p>
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <button type="button" key={n} onClick={() => setReviewRating(n)} aria-label={`${n} ดาว`}>
