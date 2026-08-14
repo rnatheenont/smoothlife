@@ -21,7 +21,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
-import { tierBadge } from "@/lib/tier";
+import { tierBadge, tierCard } from "@/lib/tier";
 import LanguageSwitch from "@/components/LanguageSwitch";
 
 const navLinks = [
@@ -121,10 +121,11 @@ export default function Header() {
           {user ? (
             <Link
               href="/account"
-              className="hidden sm:flex items-center gap-2.5 rounded-full bg-white pl-1.5 pr-3 py-1.5 border border-slate-100 shadow-card hover:shadow-cardHover hover:border-brand-teal/40 transition-all"
+              className="hidden sm:flex items-center gap-2.5 rounded-full bg-gradient-to-b from-white to-slate-50 pl-1.5 pr-1.5 py-1.5 border border-slate-100 shadow-md hover:shadow-lg hover:-translate-y-px transition-all"
             >
               <span
-                className={`grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white text-xs font-bold overflow-hidden ring-2 ring-offset-1 ${tierBadge[user.tier].ring}`}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white text-xs font-bold overflow-hidden ring-2 ring-offset-2"
+                style={{ ["--tw-ring-color" as string]: tierCard[user.tier].accent }}
               >
                 {user.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -134,14 +135,14 @@ export default function Header() {
                 )}
               </span>
               <span className="hidden lg:flex flex-col leading-tight">
-                <span className="text-xs font-semibold text-brand-ink max-w-[92px] truncate">{user.name.split(" ")[0]}</span>
-                <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                <span className="text-xs font-bold text-brand-ink max-w-[92px] truncate">{user.name.split(" ")[0]}</span>
+                <span className="flex items-center gap-1 text-[11px] text-slate-500">
                   <Coins size={10} className="text-amber-500" /> {user.points} pts
                 </span>
               </span>
-              <span className="hidden lg:block h-6 w-px bg-slate-100" />
               <span
-                className={`flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold whitespace-nowrap ${tierBadge[user.tier].className}`}
+                className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold text-white whitespace-nowrap shadow-sm"
+                style={{ background: tierCard[user.tier].gradient }}
               >
                 {(() => {
                   const TierIcon = tierBadge[user.tier].icon;
