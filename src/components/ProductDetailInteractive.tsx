@@ -26,9 +26,9 @@ import { useAuth } from "@/lib/auth-context";
 
 const tabs = [
   { id: "benefits", label: "คุณประโยชน์และส่วนผสม" },
+  { id: "reviews", label: "รีวิวและคำถาม" },
   { id: "howto", label: "เหมาะกับใครและวิธีใช้" },
   { id: "compare", label: "เปรียบเทียบและทางเลือกอื่น" },
-  { id: "reviews", label: "รีวิวและคำถาม" },
   { id: "delivery", label: "สต็อกและการจัดส่ง" },
 ];
 
