@@ -14,6 +14,10 @@ import {
   CheckCircle2,
   Star,
   MessageCircleQuestion,
+  Expand,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Product } from "@/data/types";
 import type { ReviewRow } from "@/app/api/reviews/route";
@@ -23,6 +27,7 @@ import StarRating from "./StarRating";
 import MobileStickyBar from "./MobileStickyBar";
 import { useCart, useWishlist } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
+import { useQuickChat } from "@/lib/quickchat-context";
 
 const tabs = [
   { id: "benefits", label: "คุณประโยชน์และส่วนผสม" },
@@ -52,9 +57,11 @@ export default function ProductDetailInteractive({
   const { addItem } = useCart();
   const { toggle, has } = useWishlist();
   const { user } = useAuth();
+  const { setOpen: setChatOpen } = useQuickChat();
   const router = useRouter();
   const activeImage = images[activeIndex] || images[0];
   const touchStartX = useRef<number | null>(null);
+  const [zoomOpen, setZoomOpen] = useState(false);
 
   function showPrev() {
     setActiveIndex((i) => (i - 1 + images.length) % images.length);
@@ -172,11 +179,15 @@ export default function ProductDetailInteractive({
       <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
         <div>
           <div
-            className="relative aspect-square rounded-xl2 overflow-hidden bg-surface-soft select-none touch-pan-y"
+            className="relative aspect-square rounded-xl2 overflow-hidden bg-surface-soft select-none touch-pan-y cursor-zoom-in"
             onTouchStart={onImageTouchStart}
             onTouchEnd={onImageTouchEnd}
+            onClick={() => setZoomOpen(true)}
           >
             <Image src={activeImage} alt={product.name} fill className="object-cover" priority />
+            <span className="absolute top-3 right-3 grid h-9 w-9 place-items-center rounded-full bg-white/80 backdrop-blur text-brand-ink shadow-sm">
+              <Expand size={16} />
+            </span>
             {images.length > 1 && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
                 {images.map((img, i) => (
@@ -305,6 +316,16 @@ export default function ProductDetailInteractive({
               <RotateCcw size={16} className="text-brand-emerald" /> คืนสินค้าได้ใน 14 วัน
             </div>
           </div>
+
+          <button
+            onClick={() => setChatOpen(true)}
+            className="flex items-center justify-center gap-2 w-full mt-3 rounded-full border border-brand-teal/30 bg-brand-gradient-soft text-brand-ink font-semibold py-3 text-sm hover:border-brand-teal transition-colors"
+          >
+            <span className="relative h-5 w-5 shrink-0">
+              <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="20px" className="object-contain" />
+            </span>
+            ถามน้อง Smoothie เกี่ยวกับสินค้านี้
+          </button>
         </div>
       </div>
 
@@ -563,6 +584,64 @@ export default function ProductDetailInteractive({
           {added ? "เพิ่มแล้ว" : selectedVariant.inStock ? "เพิ่มลงตะกร้า" : "สินค้าหมด"}
         </button>
       </MobileStickyBar>
+
+      {zoomOpen && (
+        <div className="fixed inset-0 z-[110] bg-black/95 flex flex-col">
+          <div className="flex items-center justify-between p-4 pt-[calc(1rem+env(safe-area-inset-top))] shrink-0">
+            {images.length > 1 ? (
+              <span className="text-sm text-white/70">
+                {activeIndex + 1} / {images.length}
+              </span>
+            ) : (
+              <span />
+            )}
+            <button
+              onClick={() => setZoomOpen(false)}
+              aria-label="ปิด"
+              className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <div
+            className="relative flex-1 touch-pan-y"
+            onTouchStart={onImageTouchStart}
+            onTouchEnd={onImageTouchEnd}
+          >
+            <Image src={activeImage} alt={product.name} fill className="object-contain" />
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={showPrev}
+                  aria-label="ก่อนหน้า"
+                  className="hidden md:grid absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 place-items-center rounded-full bg-white/10 text-white"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  onClick={showNext}
+                  aria-label="ถัดไป"
+                  className="hidden md:grid absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 place-items-center rounded-full bg-white/10 text-white"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </>
+            )}
+          </div>
+          {images.length > 1 && (
+            <div className="flex items-center justify-center gap-2 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shrink-0">
+              {images.map((img, i) => (
+                <button
+                  key={img}
+                  onClick={() => setActiveIndex(i)}
+                  aria-label={`ไปที่รูปที่ ${i + 1}`}
+                  className={`h-1.5 rounded-full transition-all ${i === activeIndex ? "w-5 bg-white" : "w-1.5 bg-white/40"}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
