@@ -15,12 +15,11 @@ export type ShopSearchParams = {
 
 export const PAGE_SIZE = 24;
 
-// Sold-out products sink to the end of any listing, but keep whatever
-// relative order they already had among themselves and among in-stock items
-// (Array.sort is stable) — so this only reorders across the in-stock /
-// sold-out boundary, never within a group.
+// Sold-out products are hidden from listings entirely rather than shown
+// disabled — a customer browsing /shop, a category, a concern, or search
+// results only wants things they can actually buy right now.
 export function sortSoldOutLast(items: Product[]): Product[] {
-  return [...items].sort((a, b) => Number(!a.inStock) - Number(!b.inStock));
+  return items.filter((p) => p.inStock);
 }
 
 export function filterProducts(params: ShopSearchParams): Product[] {
