@@ -102,9 +102,15 @@ function blocks(html) {
     .filter((l) => l.length > 1);
 }
 
+// Only used for shortDesc now (shown in product-grid cards, CSS line-clamp
+// handles the visual cutoff there) — cuts at the last whitespace before the
+// limit instead of mid-word, so it never reads as a broken/garbled sentence.
 function clip(s, n) {
   if (!s) return "";
-  return s.length <= n ? s : s.slice(0, n - 1).trimEnd() + "…";
+  if (s.length <= n) return s;
+  const cut = s.slice(0, n - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > n * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
 }
 
 function slugify(title, id) {
@@ -361,15 +367,20 @@ function toProduct(p, usedSlugs) {
     rating: 0,
     reviewCount: 0,
     badges: badges.slice(0, 3),
+    // Full sentences from Shopify's own description — none of these fields
+    // get line-clamped in the UI (they render in full on the product detail
+    // page), so clipping them here only produced broken, mid-word "…" cutoffs.
+    // shortDesc is the one exception: it's used in product-grid cards with a
+    // CSS line-clamp, so it keeps a (word-boundary-safe) length cap.
     shortDesc: clip(prose[0] || lines[0] || "", 130),
-    description: clip(prose.slice(0, 4).join(" "), 900),
-    benefits: (prose.length > 2
-      ? prose.slice(1, 4)
-      : lines.filter((l) => /^•/.test(l)).slice(0, 3).map((l) => l.replace(/^•\s*/, ""))
-    ).map((b) => clip(b, 120)),
-    howToUse: clip(sec.howToUse, 300),
-    ingredients: clip(sec.ingredients, 600),
-    whoFor: clip(sec.whoFor, 240),
+    description: prose.slice(0, 4).join(" "),
+    benefits:
+      prose.length > 2
+        ? prose.slice(1, 4)
+        : lines.filter((l) => /^•/.test(l)).slice(0, 3).map((l) => l.replace(/^•\s*/, "")),
+    howToUse: sec.howToUse,
+    ingredients: sec.ingredients,
+    whoFor: sec.whoFor,
     inStock: variant.inStock,
     size: variant.size,
     variants: allVariants,
