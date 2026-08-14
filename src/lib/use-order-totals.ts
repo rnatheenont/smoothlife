@@ -4,7 +4,11 @@ import { useCart } from "./cart-context";
 import { useAuth } from "./auth-context";
 import { coupons, evaluateCoupon, CartLine, pointsForAmount, tierProgress } from "@/data/coupons";
 
-export const FREE_SHIPPING_THRESHOLD = 990;
+// Free shipping on every order, no minimum — real policy decision, not a
+// promo threshold. Kept as a named constant (0) rather than deleting the
+// mechanism so amountToFreeShipping/freeShipping below still resolve
+// correctly for any code that reads them.
+export const FREE_SHIPPING_THRESHOLD = 0;
 export const SHIPPING_FEE = 50;
 
 export function useOrderTotals() {

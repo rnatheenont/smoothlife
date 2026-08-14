@@ -67,16 +67,6 @@ export const coupons: Coupon[] = [
     expires: "31 ต.ค. 2026",
   },
   {
-    code: "FREESHIP",
-    titleTh: "ส่งฟรีไม่มีขั้นต่ำ",
-    titleEn: "Free shipping, no minimum",
-    descTh: "ใช้ได้กับทุกคำสั่งซื้อ",
-    descEn: "Valid on any order",
-    type: "freeship",
-    value: 0,
-    expires: "31 ธ.ค. 2026",
-  },
-  {
     code: "GOLD10",
     titleTh: "ลด 10% สมาชิกระดับ Gold",
     titleEn: "10% off for Gold members",
@@ -108,7 +98,10 @@ export type CouponEval = {
 };
 
 const SHIPPING_FEE = 50;
-const FREE_SHIPPING_THRESHOLD = 990;
+// Real policy is free shipping on every order now (see FREE_SHIPPING_THRESHOLD
+// in lib/use-order-totals.ts) — kept in sync here so a "freeship"-type coupon,
+// if one's ever added back, reports "already ships free" correctly.
+const FREE_SHIPPING_THRESHOLD = 0;
 
 export function evaluateCoupon(
   coupon: Coupon,

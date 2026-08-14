@@ -70,7 +70,7 @@ export default function HomePage() {
           <div className="flex md:grid md:grid-cols-4 gap-5 md:gap-4 overflow-x-auto scrollbar-none text-xs md:text-sm">
             {[
               { icon: ShieldCheck, label: "ของแท้ 100% มีอย." },
-              { icon: Truck, label: "ส่งฟรีเมื่อครบ 990 บาท" },
+              { icon: Truck, label: "ส่งฟรีทั่วไทย ทุกออเดอร์" },
               { icon: Award, label: "สะสมคะแนนทุกออเดอร์" },
               { icon: MessageCircle, label: "ปรึกษาผู้เชี่ยวชาญฟรี" },
             ].map((f) => (

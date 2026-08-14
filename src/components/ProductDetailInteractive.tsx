@@ -296,7 +296,7 @@ export default function ProductDetailInteractive({
 
           <div className="grid grid-cols-3 gap-2 mt-6 text-xs text-slate-500">
             <div className="flex flex-col items-center gap-1 rounded-lg bg-surface-soft p-3 text-center">
-              <Truck size={16} className="text-brand-emerald" /> ส่งฟรีเมื่อครบ 990.-
+              <Truck size={16} className="text-brand-emerald" /> ส่งฟรีทั่วไทย ทุกออเดอร์
             </div>
             <div className="flex flex-col items-center gap-1 rounded-lg bg-surface-soft p-3 text-center">
               <ShieldCheck size={16} className="text-brand-emerald" /> ของแท้ 100% มีอย.
@@ -532,7 +532,7 @@ export default function ProductDetailInteractive({
               </div>
               <div>
                 <h4 className="font-bold text-brand-ink mb-2">การจัดส่ง</h4>
-                <p>จัดส่งภายใน 1-3 วันทำการ ส่งฟรีเมื่อซื้อครบ 990 บาทขึ้นไป</p>
+                <p>จัดส่งภายใน 1-3 วันทำการ ส่งฟรีทุกออเดอร์ ไม่มีขั้นต่ำ</p>
               </div>
               <div>
                 <h4 className="font-bold text-brand-ink mb-2">การชำระเงิน</h4>
