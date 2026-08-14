@@ -4,7 +4,6 @@ import { filterProducts, PAGE_SIZE, ShopSearchParams } from "@/lib/filter-produc
 import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
 import SortSelect from "@/components/SortSelect";
-import ShopPromoBanner from "@/components/ShopPromoBanner";
 import Pagination from "@/components/Pagination";
 
 export const metadata = { title: "Shop ทั้งหมด | Smoothlife.com" };
@@ -30,7 +29,6 @@ export default function ShopPage({ searchParams }: { searchParams: ShopSearchPar
           {allItems.length} รายการ
         </span>
       </div>
-      <ShopPromoBanner />
       <div className="flex flex-col lg:flex-row gap-8">
         <ShopFilters current={searchParams} mobileExtra={<SortSelect current={searchParams} />} />
         <div className="flex-1">

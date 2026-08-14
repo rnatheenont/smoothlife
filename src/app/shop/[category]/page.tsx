@@ -6,7 +6,6 @@ import { categories } from "@/data/categories";
 import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
 import SortSelect from "@/components/SortSelect";
-import ShopPromoBanner from "@/components/ShopPromoBanner";
 import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";
 import { notFound } from "next/navigation";
@@ -61,8 +60,6 @@ export default function CategoryPage({
           {items.length} รายการ
         </span>
       </div>
-      <ShopPromoBanner />
-
       {ADVISOR_ENTRY[params.category] && (
         <Link
           href={ADVISOR_ENTRY[params.category].href}
