@@ -734,7 +734,7 @@ export default function QuickChat() {
               placeholder={
                 pendingImage
                   ? t("ถามเกี่ยวกับรูปนี้... (ไม่พิมพ์ก็ได้)", "Ask about this photo... (optional)")
-                  : t("พิมพ์คำถามของคุณ...", "Type your question...")
+                  : t("วันนี้คุณรู้สึกยังไง...", "How are you feeling today?")
               }
               className="flex-1 rounded-full border border-slate-200 bg-surface-soft px-4 py-2.5 text-[13px] outline-none focus:border-brand-teal"
             />

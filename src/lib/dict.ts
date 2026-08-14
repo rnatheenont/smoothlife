@@ -35,6 +35,6 @@ export const DICT: Record<string, string> = {
   "ยกเลิก": "Cancel",
   "ย้อนกลับ": "Back",
   "กำลังคิด...": "Thinking...",
-  "พิมพ์คำถามของคุณ...": "Type your question...",
+  "วันนี้คุณรู้สึกยังไง...": "How are you feeling today?",
   "คุยกับน้อง Smoothie": "Chat with Smoothie",
 };
