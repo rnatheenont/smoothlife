@@ -19,16 +19,19 @@ const articleCategoryLabel: Record<string, string> = {
 };
 
 export default function HomePage() {
-  const bestSellers = products.filter((p) => p.badges?.includes("Bestseller")).slice(0, 8);
-  const newArrivals = products.filter((p) => p.badges?.includes("New")).concat(products.slice(0, 4)).slice(0, 8);
-  const onSale = products.filter((p) => p.badges?.includes("Sale")).slice(0, 8);
-  const bundles = products.filter((p) => p.badges?.includes("Bundle")).slice(0, 8);
+  const bestSellers = products.filter((p) => p.inStock && p.badges?.includes("Bestseller")).slice(0, 8);
+  const newArrivals = products
+    .filter((p) => p.inStock && p.badges?.includes("New"))
+    .concat(products.filter((p) => p.inStock).slice(0, 4))
+    .slice(0, 8);
+  const onSale = products.filter((p) => p.inStock && p.badges?.includes("Sale")).slice(0, 8);
+  const bundles = products.filter((p) => p.inStock && p.badges?.includes("Bundle")).slice(0, 8);
   const topBrands = [...brands].sort((a, b) => b.productCount - a.productCount).slice(0, 2);
   const brandProducts = (brandSlug: string) => {
     const brand = brands.find((b) => b.slug === brandSlug);
     if (!brand) return [];
     const aliases = [brand.name, ...(brand.vendorAliases || [])].map(slugifyVendor);
-    return products.filter((p) => aliases.includes(slugifyVendor(p.brand))).slice(0, 8);
+    return products.filter((p) => p.inStock && aliases.includes(slugifyVendor(p.brand))).slice(0, 8);
   };
   const featuredArticles = articles.slice(0, 3);
 
