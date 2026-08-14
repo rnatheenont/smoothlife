@@ -17,6 +17,18 @@ export type HeroBanner = {
 
 export const heroBanners: HeroBanner[] = [
   {
+    // Real "Keng Namping" campaign banner (Dentiste' brand ambassadors,
+    // event at Siam Paragon 07.09.2026) — tied to a specific event date like
+    // the excluded "1st Anniversary" slide, so it'll read as stale once that
+    // date passes. Kept in because it was explicitly requested; swap/remove
+    // when the event is over.
+    slug: "keng-namping",
+    title: "Keng Namping x Dentiste'",
+    subtitle: "#KengNampingToneUpIconicSmile — พบกันที่สยามพารากอน 07.09.2026",
+    image: "https://www.smoothlife.com/cdn/shop/files/RESIZE-KNP-2_1.png?v=1786631497&width=2000",
+    href: "/shop?brand=dentiste",
+  },
+  {
     slug: "janeke",
     title: "Janeke 1830",
     subtitle: "แปรงผมพรีเมียมจากอิตาลี ตั้งแต่ปี 1830",

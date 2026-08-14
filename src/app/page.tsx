@@ -131,34 +131,41 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Best sellers */}
-      <section className="container-page py-10 md:py-14">
-        <ProductCarousel title="สินค้าขายดี" subtitle="Best Sellers" href="/shop?sort=bestseller" products={bestSellers} />
-      </section>
+      {/* Best sellers — section itself (not just the carousel) only renders
+          when there's real data, otherwise an empty wrapper still keeps its
+          py-10/py-14 padding and leaves a blank gap in the page. */}
+      {bestSellers.length > 0 && (
+        <section className="container-page py-10 md:py-14">
+          <ProductCarousel title="สินค้าขายดี" subtitle="Best Sellers" href="/shop?sort=bestseller" products={bestSellers} />
+        </section>
+      )}
 
       {/* On sale */}
-      <section className="bg-surface-soft py-10 md:py-14">
-        <div className="container-page">
-          <ProductCarousel title="ลดราคาพิเศษ" subtitle="On Sale" href="/shop" products={onSale} />
-        </div>
-      </section>
+      {onSale.length > 0 && (
+        <section className="bg-surface-soft py-10 md:py-14">
+          <div className="container-page">
+            <ProductCarousel title="ลดราคาพิเศษ" subtitle="On Sale" href="/shop" products={onSale} />
+          </div>
+        </section>
+      )}
 
       {/* Bundle deals */}
-      <section className="container-page py-10 md:py-14">
-        <ProductCarousel title="ซื้อเป็นเซ็ตคุ้มกว่า" subtitle="Bundle Deals" href="/shop" products={bundles} />
-      </section>
+      {bundles.length > 0 && (
+        <section className="container-page py-10 md:py-14">
+          <ProductCarousel title="ซื้อเป็นเซ็ตคุ้มกว่า" subtitle="Bundle Deals" href="/shop" products={bundles} />
+        </section>
+      )}
 
       {/* Per-brand carousels */}
-      {topBrands.map((b) => (
-        <section key={b.slug} className="container-page py-10 md:py-14">
-          <ProductCarousel
-            title={b.name}
-            subtitle={b.tagline}
-            href={`/shop?brand=${b.slug}`}
-            products={brandProducts(b.slug)}
-          />
-        </section>
-      ))}
+      {topBrands.map((b) => {
+        const products = brandProducts(b.slug);
+        if (products.length === 0) return null;
+        return (
+          <section key={b.slug} className="container-page py-10 md:py-14">
+            <ProductCarousel title={b.name} subtitle={b.tagline} href={`/shop?brand=${b.slug}`} products={products} />
+          </section>
+        );
+      })}
 
       {/* Concern hub teaser */}
       <section className="bg-brand-gradient-soft py-10 md:py-14">
