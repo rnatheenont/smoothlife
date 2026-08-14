@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { promotions, promotionImage, Promotion } from "@/data/promotions";
-import { products } from "@/data/products";
+import { heroBanners } from "@/data/heroBanners";
 
 const AUTO_ROTATE_MS = 5000;
 
@@ -15,13 +14,13 @@ export default function HeroCarousel() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setIndex((i) => (i + 1) % promotions.length);
+      setIndex((i) => (i + 1) % heroBanners.length);
     }, AUTO_ROTATE_MS);
     return () => clearInterval(timer);
   }, []);
 
   function showAt(i: number) {
-    setIndex((i + promotions.length) % promotions.length);
+    setIndex((i + heroBanners.length) % heroBanners.length);
   }
 
   function onTouchStart(e: React.TouchEvent) {
@@ -36,7 +35,7 @@ export default function HeroCarousel() {
     else if (delta < -SWIPE_THRESHOLD) showAt(index + 1);
   }
 
-  const promo: Promotion = promotions[index];
+  const banner = heroBanners[index];
 
   return (
     <div
@@ -44,10 +43,10 @@ export default function HeroCarousel() {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <Link href={`/promotions#${promo.slug}`} className="block absolute inset-0">
+      <Link href={banner.href} className="block absolute inset-0">
         <Image
-          src={promotionImage(promo, products)}
-          alt={promo.title}
+          src={banner.image}
+          alt={banner.title}
           fill
           priority
           sizes="(max-width: 768px) 100vw, 50vw"
@@ -56,14 +55,13 @@ export default function HeroCarousel() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
         <div className="absolute bottom-0 left-0 p-4 md:p-6 text-white">
           <span className="text-[10px] font-bold uppercase bg-white/20 backdrop-blur px-2.5 py-1 rounded-full">
-            {promo.badge}
+            {banner.title}
           </span>
-          <h2 className="font-bold text-lg md:text-2xl mt-2">{promo.title}</h2>
-          <p className="text-xs md:text-sm text-white/80 mt-0.5">{promo.subtitle}</p>
+          <p className="text-xs md:text-sm text-white/80 mt-2">{banner.subtitle}</p>
         </div>
       </Link>
 
-      {promotions.length > 1 && (
+      {heroBanners.length > 1 && (
         <>
           <button
             onClick={() => showAt(index - 1)}
@@ -80,11 +78,11 @@ export default function HeroCarousel() {
             <ChevronRight size={18} />
           </button>
           <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
-            {promotions.map((p, i) => (
+            {heroBanners.map((b, i) => (
               <button
-                key={p.slug}
+                key={b.slug}
                 onClick={() => showAt(i)}
-                aria-label={`ไปที่โปรโมชั่น ${i + 1}`}
+                aria-label={`ไปที่แบนเนอร์ ${i + 1}`}
                 className={`h-1.5 rounded-full transition-all shadow-[0_0_0_1px_rgba(0,0,0,0.15)] ${
                   i === index ? "w-5 bg-white" : "w-1.5 bg-white/70"
                 }`}
