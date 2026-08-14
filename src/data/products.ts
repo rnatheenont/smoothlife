@@ -17,6 +17,7 @@ export function getRelatedProducts(product: Product, limit = 4) {
   return products
     .filter(
       (p) =>
+        p.inStock &&
         p.slug !== product.slug &&
         (p.category === product.category ||
           p.brand === product.brand ||
