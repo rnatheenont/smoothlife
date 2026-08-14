@@ -4,7 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { categories, concerns } from "@/data/categories";
 import { brands } from "@/data/brands";
 import { ShopSearchParams } from "@/lib/filter-products";
-import { SlidersHorizontal, Check } from "lucide-react";
+import { SlidersHorizontal, Check, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 export default function ShopFilters({ current, mobileExtra }: { current: ShopSearchParams; mobileExtra?: ReactNode }) {
@@ -19,6 +19,14 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
     });
     if (value) params.set(key, value);
     else params.delete(key);
+    router.push(`/shop?${params.toString()}`);
+  }
+
+  function clearSecondaryFilters() {
+    const params = new URLSearchParams();
+    Object.entries(current).forEach(([k, v]) => {
+      if (v && k !== "page" && k !== "brand" && k !== "concern") params.set(k, v);
+    });
     router.push(`/shop?${params.toString()}`);
   }
 
@@ -80,35 +88,13 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
     </div>
   );
 
-  // Mobile drawer uses chips/rows instead of the desktop sidebar's plain
-  // text list — easier to scan and bigger tap targets on a touch screen.
-  // Kept separate from `content` above so the desktop sidebar is untouched.
+  // Mobile filter sheet: category now lives in its own always-visible chip
+  // row on the page (rendered directly below, before the sheet trigger), so
+  // this sheet only holds the secondary filters — brand and concern.
+  const activeSecondaryCount = Number(Boolean(current.brand)) + Number(Boolean(current.concern));
+
   const mobileContent = (
     <div className="flex flex-col gap-7">
-      <div>
-        <h4 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">หมวดหมู่</h4>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => updateParam("category", null)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-              !current.category ? "bg-brand-gradient text-white" : "bg-surface-soft text-slate-600"
-            }`}
-          >
-            ทั้งหมด
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c.slug}
-              onClick={() => updateParam("category", c.slug)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                current.category === c.slug ? "bg-brand-gradient text-white" : "bg-surface-soft text-slate-600"
-              }`}
-            >
-              {c.nameTh}
-            </button>
-          ))}
-        </div>
-      </div>
       <div>
         <h4 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">แบรนด์</h4>
         <div className="flex flex-col rounded-xl border border-slate-100">
@@ -145,12 +131,12 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
           ))}
         </div>
       </div>
-      {(current.category || current.brand || current.concern) && (
+      {activeSecondaryCount > 0 && (
         <button
-          onClick={() => router.push(pathname)}
+          onClick={clearSecondaryFilters}
           className="rounded-full border border-rose-200 text-rose-500 font-semibold text-sm py-2.5"
         >
-          ล้างตัวกรองทั้งหมด
+          ล้างตัวกรองแบรนด์และปัญหาผิว
         </button>
       )}
     </div>
@@ -158,12 +144,38 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
 
   return (
     <>
+      <div className="lg:hidden -mx-4 px-4 mb-3 flex gap-2 overflow-x-auto scrollbar-none">
+        <button
+          onClick={() => updateParam("category", null)}
+          className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            !current.category ? "bg-brand-gradient text-white shadow-sm" : "bg-surface-soft text-slate-600"
+          }`}
+        >
+          ทั้งหมด
+        </button>
+        {categories.map((c) => (
+          <button
+            key={c.slug}
+            onClick={() => updateParam("category", c.slug)}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              current.category === c.slug ? "bg-brand-gradient text-white shadow-sm" : "bg-surface-soft text-slate-600"
+            }`}
+          >
+            {c.nameTh}
+          </button>
+        ))}
+      </div>
       <div className="lg:hidden flex items-center justify-between gap-3 mb-4">
         <button
           onClick={() => setMobileOpen(true)}
-          className="flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium"
+          className="relative flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium active:scale-95 transition-transform"
         >
           <SlidersHorizontal size={15} /> ตัวกรอง
+          {activeSecondaryCount > 0 && (
+            <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-brand-gradient text-[10px] font-bold text-white">
+              {activeSecondaryCount}
+            </span>
+          )}
         </button>
         {mobileExtra}
       </div>
@@ -171,12 +183,29 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
       {mobileOpen && (
         <div className="fixed inset-0 z-[100] lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-white p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] overflow-y-auto shadow-xl">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold">ตัวกรองสินค้า</h3>
-              <button onClick={() => setMobileOpen(false)} className="text-sm text-slate-500 px-2 py-1">ปิด</button>
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] flex flex-col rounded-t-2xl bg-white shadow-xl animate-slideUp">
+            <div className="flex items-center justify-center pt-2.5 pb-1 shrink-0">
+              <span className="h-1.5 w-10 rounded-full bg-slate-200" />
             </div>
-            {mobileContent}
+            <div className="flex items-center justify-between px-5 pb-3 shrink-0">
+              <h3 className="font-bold">ตัวกรองสินค้า</h3>
+              <button
+                onClick={() => setMobileOpen(false)}
+                aria-label="ปิด"
+                className="grid h-8 w-8 place-items-center rounded-full bg-surface-soft text-slate-500"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5">{mobileContent}</div>
+            <div className="p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shrink-0">
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="w-full rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm shadow-card"
+              >
+                ดูสินค้า
+              </button>
+            </div>
           </div>
         </div>
       )}
