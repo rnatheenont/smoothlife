@@ -85,14 +85,24 @@ export default function CartPage() {
                 </div>
 
                 <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center border border-slate-200 rounded-full">
-                    <button onClick={() => updateQty(line.variantId, line.qty - 1)} className="p-2" aria-label="Decrease">
-                      <Minus size={12} />
-                    </button>
-                    <span className="w-6 text-center text-xs font-semibold">{line.qty}</span>
-                    <button onClick={() => updateQty(line.variantId, line.qty + 1)} className="p-2" aria-label="Increase">
-                      <Plus size={12} />
-                    </button>
+                  <div>
+                    <div className="flex items-center border border-slate-200 rounded-full">
+                      <button onClick={() => updateQty(line.variantId, line.qty - 1)} className="p-2" aria-label="Decrease">
+                        <Minus size={12} />
+                      </button>
+                      <span className="w-6 text-center text-xs font-semibold">{line.qty}</span>
+                      <button
+                        onClick={() => updateQty(line.variantId, line.qty + 1)}
+                        disabled={typeof line.stock === "number" && line.qty >= line.stock}
+                        className="p-2 disabled:opacity-30 disabled:pointer-events-none"
+                        aria-label="Increase"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                    {typeof line.stock === "number" && line.qty >= line.stock && (
+                      <p className="text-[11px] text-amber-600 mt-1">มีสินค้าเหลือ {line.stock} ชิ้น</p>
+                    )}
                   </div>
                   <div className="text-right">
                     {line.qty > 1 && (

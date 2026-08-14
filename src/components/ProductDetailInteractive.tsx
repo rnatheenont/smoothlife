@@ -238,7 +238,10 @@ export default function ProductDetailInteractive({
                 {product.variants.map((v) => (
                   <button
                     key={v.variantId}
-                    onClick={() => setSelectedVariantId(v.variantId)}
+                    onClick={() => {
+                      setSelectedVariantId(v.variantId);
+                      if (typeof v.quantity === "number") setQty((q) => Math.min(q, Math.max(1, v.quantity!)));
+                    }}
                     disabled={!v.inStock}
                     className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                       selectedVariant.variantId === v.variantId
@@ -263,7 +266,14 @@ export default function ProductDetailInteractive({
                 <Minus size={14} />
               </button>
               <span className="w-8 text-center text-sm font-semibold">{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} className="p-2.5" aria-label="เพิ่มจำนวน">
+              <button
+                onClick={() =>
+                  setQty((q) => (typeof selectedVariant.quantity === "number" ? Math.min(q + 1, selectedVariant.quantity) : q + 1))
+                }
+                disabled={typeof selectedVariant.quantity === "number" && qty >= selectedVariant.quantity}
+                className="p-2.5 disabled:opacity-30 disabled:pointer-events-none"
+                aria-label="เพิ่มจำนวน"
+              >
                 <Plus size={14} />
               </button>
             </div>

@@ -30,6 +30,8 @@ type CartContextValue = {
     category: string;
     size: string;
     variants: ProductVariant[];
+    /** Real Shopify stock count for this line's variant, when the store exposes it — undefined means unlimited/unknown, never a fabricated cap. */
+    stock?: number;
   }[];
   couponCode: string | null;
   setCouponCode: (code: string | null) => void;
@@ -81,12 +83,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const p = products.find((pr) => pr.slug === slug);
     const resolvedVariantId = variantId || p?.variantId;
     if (!resolvedVariantId) return;
+    const stock = p?.variants.find((v) => v.variantId === resolvedVariantId)?.quantity;
     setItems((prev) => {
       const existing = prev.find((i) => i.variantId === resolvedVariantId);
+      const currentQty = existing?.qty ?? 0;
+      const nextQty = typeof stock === "number" ? Math.min(currentQty + qty, stock) : currentQty + qty;
+      if (nextQty <= 0) return prev;
       if (existing) {
-        return prev.map((i) => (i.variantId === resolvedVariantId ? { ...i, qty: i.qty + qty } : i));
+        return prev.map((i) => (i.variantId === resolvedVariantId ? { ...i, qty: nextQty } : i));
       }
-      return [...prev, { slug, variantId: resolvedVariantId, qty }];
+      return [...prev, { slug, variantId: resolvedVariantId, qty: nextQty }];
     });
   }
   function removeItem(variantId: string) {
@@ -94,7 +100,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }
   function updateQty(variantId: string, qty: number) {
     if (qty <= 0) return removeItem(variantId);
-    setItems((prev) => prev.map((i) => (i.variantId === variantId ? { ...i, qty } : i)));
+    setItems((prev) =>
+      prev.map((i) => {
+        if (i.variantId !== variantId) return i;
+        const p = products.find((pr) => pr.slug === i.slug);
+        const stock = p?.variants.find((v) => v.variantId === variantId)?.quantity;
+        return { ...i, qty: typeof stock === "number" ? Math.min(qty, stock) : qty };
+      })
+    );
   }
   function changeVariant(variantId: string, newVariantId: string) {
     if (variantId === newVariantId) return;
@@ -132,6 +145,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         category: p.category,
         size: v ? v.size : p.size || "",
         variants: p.variants,
+        stock: v?.quantity,
       };
     })
     .filter(Boolean) as CartContextValue["lines"];
