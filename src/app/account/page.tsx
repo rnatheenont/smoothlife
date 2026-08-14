@@ -15,27 +15,18 @@ function formatThaiDate(iso: string) {
   return new Date(iso).toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" });
 }
 
+// Name/avatar/email already appear big on the membership card above this —
+// repeating them here in an identical header just duplicates the same
+// identity block twice on one screen, so this stays to the fields that
+// aren't shown anywhere else yet.
 function ProfileCard() {
   const { user } = useAuth();
   if (!user) return null;
   return (
     <div className="rounded-xl2 border border-slate-100 shadow-card p-5">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-brand-gradient text-white text-lg font-bold overflow-hidden">
-          {user.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.avatar} alt={user.name} className="h-14 w-14 rounded-full object-cover" />
-          ) : (
-            user.name.charAt(0).toUpperCase()
-          )}
-        </div>
-        <div className="min-w-0">
-          <p className="font-bold text-brand-ink truncate">{user.name}</p>
-          <p className="text-xs text-slate-400 truncate">{user.email || "ยังไม่ได้ผูกอีเมล"}</p>
-        </div>
-      </div>
+      <h2 className="text-sm font-bold text-brand-ink mb-3">ข้อมูลส่วนตัว</h2>
 
-      <div className="flex flex-col gap-2.5 text-sm border-t border-slate-100 pt-3.5">
+      <div className="flex flex-col gap-2.5 text-sm">
         <div className="flex items-center justify-between">
           <span className="text-slate-400">เบอร์โทรศัพท์</span>
           <span className="text-brand-ink font-medium">{user.phone || "-"}</span>
@@ -52,7 +43,7 @@ function ProfileCard() {
 
       <Link
         href="/account/profile"
-        className="flex items-center justify-center gap-1.5 mt-4 text-sm font-semibold text-brand-emerald"
+        className="flex items-center gap-1.5 text-sm font-semibold text-brand-emerald mt-3.5 border-t border-slate-100 pt-3.5"
       >
         <Pencil size={13} /> แก้ไขโปรไฟล์
       </Link>
@@ -173,6 +164,7 @@ function AccountDashboard() {
         <RewardsOverviewCard />
       </div>
 
+      <h2 className="text-sm font-bold text-brand-ink mb-3">ข้อมูลส่วนตัวและที่อยู่</h2>
       <div className="grid md:grid-cols-2 gap-5 mb-8">
         <ProfileCard />
         <div className="flex flex-col gap-5">
@@ -181,6 +173,7 @@ function AccountDashboard() {
         </div>
       </div>
 
+      <h2 className="text-sm font-bold text-brand-ink mb-3">ความปลอดภัย</h2>
       <div className="mb-8">
         <ChangePasswordCard />
       </div>

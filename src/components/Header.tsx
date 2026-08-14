@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   HelpCircle,
   ChevronRight,
+  Coins,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
@@ -120,20 +121,25 @@ export default function Header() {
           {user ? (
             <Link
               href="/account"
-              className="hidden sm:flex items-center gap-2.5 rounded-full bg-white pl-1.5 pr-2 py-1.5 shadow-card hover:shadow-cardHover transition-shadow"
+              className="hidden sm:flex items-center gap-2.5 rounded-full bg-white pl-1.5 pr-3 py-1.5 border border-slate-100 shadow-card hover:shadow-cardHover hover:border-brand-teal/40 transition-all"
             >
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient text-white text-xs font-bold overflow-hidden ring-2 ring-white">
+              <span
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white text-xs font-bold overflow-hidden ring-2 ring-offset-1 ${tierBadge[user.tier].ring}`}
+              >
                 {user.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
+                  <img src={user.avatar} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
                 ) : (
                   user.name.charAt(0).toUpperCase()
                 )}
               </span>
               <span className="hidden lg:flex flex-col leading-tight">
-                <span className="text-xs font-semibold text-brand-ink">{user.name.split(" ")[0]}</span>
-                <span className="text-[11px] text-slate-400">{user.points} pts</span>
+                <span className="text-xs font-semibold text-brand-ink max-w-[92px] truncate">{user.name.split(" ")[0]}</span>
+                <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                  <Coins size={10} className="text-amber-500" /> {user.points} pts
+                </span>
               </span>
+              <span className="hidden lg:block h-6 w-px bg-slate-100" />
               <span
                 className={`flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold whitespace-nowrap ${tierBadge[user.tier].className}`}
               >

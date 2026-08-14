@@ -4,10 +4,10 @@ import type { Tier } from "./auth-context";
 // Shown to customers as "Lv.1/2/3" instead of the internal Bronze/Silver/Gold
 // tier name — simpler at a glance, and the internal names still drive the
 // actual perks/multiplier logic elsewhere (account/points, lib/points.ts).
-export const tierBadge: Record<Tier, { level: number; icon: LucideIcon; className: string }> = {
-  Bronze: { level: 1, icon: Star, className: "bg-amber-50 text-amber-700" },
-  Silver: { level: 2, icon: Award, className: "bg-slate-100 text-slate-600" },
-  Gold: { level: 3, icon: Crown, className: "bg-yellow-50 text-yellow-700" },
+export const tierBadge: Record<Tier, { level: number; icon: LucideIcon; className: string; ring: string }> = {
+  Bronze: { level: 1, icon: Star, className: "bg-amber-50 text-amber-700", ring: "ring-amber-300" },
+  Silver: { level: 2, icon: Award, className: "bg-slate-100 text-slate-600", ring: "ring-slate-300" },
+  Gold: { level: 3, icon: Crown, className: "bg-yellow-50 text-yellow-700", ring: "ring-yellow-300" },
 };
 
 // Real membership-card look per tier — a distinct metal tone per level, like
