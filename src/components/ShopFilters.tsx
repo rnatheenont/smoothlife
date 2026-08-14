@@ -15,7 +15,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
   function updateParam(key: string, value: string | null) {
     const params = new URLSearchParams();
     Object.entries(current).forEach(([k, v]) => {
-      if (v) params.set(k, v);
+      if (v && k !== "page") params.set(k, v);
     });
     if (value) params.set(key, value);
     else params.delete(key);
