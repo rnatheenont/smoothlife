@@ -18,6 +18,11 @@ const reasonLabel: Record<string, string> = {
   manual_adjust: "ปรับคะแนนโดยระบบ",
   expire: "คะแนนหมดอายุ",
   demo_seed: "ข้อมูลทดสอบ",
+  checkin_reward: "รางวัลเช็กอินรายวัน",
+  checkin_recovery: "กู้คืนวันที่พลาด",
+  legacy_verify_bonus: "โบนัสสมาชิกเดิม",
+  review_reward: "รีวิวสินค้า",
+  skin_coach_points: "รางวัล Skin Coach",
 };
 
 type LedgerEntry = { id: string; delta: number; reason: string; created_at: string };

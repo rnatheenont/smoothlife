@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ChevronRight } from "lucide-react";
+import { CheckCircle2, ChevronRight, Gift } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { tierBadge, tierCard } from "@/lib/tier";
 
@@ -42,6 +42,8 @@ export default function RewardsOverviewCard() {
   const [data, setData] = useState<StatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [legacyBonusClaimable, setLegacyBonusClaimable] = useState(false);
+  const [legacyBonusBusy, setLegacyBonusBusy] = useState(false);
 
   async function load() {
     try {
@@ -55,8 +57,28 @@ export default function RewardsOverviewCard() {
 
   useEffect(() => {
     load();
+    if (user?.real) {
+      fetch("/api/account/legacy-bonus")
+        .then((r) => r.json())
+        .then((json) => setLegacyBonusClaimable(!json.claimed))
+        .catch(() => setLegacyBonusClaimable(false));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function claimLegacyBonus() {
+    setLegacyBonusBusy(true);
+    try {
+      const res = await fetch("/api/account/legacy-bonus", { method: "POST" });
+      const json = await res.json();
+      if (json.ok) {
+        setLegacyBonusClaimable(false);
+        refreshUser();
+      }
+    } finally {
+      setLegacyBonusBusy(false);
+    }
+  }
 
   async function doCheckin() {
     setBusy(true);
@@ -120,6 +142,22 @@ export default function RewardsOverviewCard() {
 
       {/* Points + check-in panel */}
       <div className="bg-white p-5 md:p-6">
+        {legacyBonusClaimable && (
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-2.5 mb-4">
+            <div className="flex items-center gap-2">
+              <Gift size={16} className="text-amber-500 shrink-0" />
+              <p className="text-xs font-semibold text-brand-ink">รับคะแนนพิเศษสำหรับสมาชิกเดิม +100 คะแนน</p>
+            </div>
+            <button
+              onClick={claimLegacyBonus}
+              disabled={legacyBonusBusy}
+              className="shrink-0 rounded-full bg-brand-gradient text-white font-bold px-3.5 py-1.5 text-xs disabled:opacity-60"
+            >
+              {legacyBonusBusy ? "..." : "รับเลย"}
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-xs text-slate-400 mb-0.5">แต้มสะสมของคุณ</p>

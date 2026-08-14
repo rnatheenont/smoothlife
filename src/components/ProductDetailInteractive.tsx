@@ -84,6 +84,7 @@ export default function ProductDetailInteractive({
   const [reviewBody, setReviewBody] = useState("");
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewSuccessPoints, setReviewSuccessPoints] = useState<number | null>(null);
   const avgRating = reviewsList.length
     ? reviewsList.reduce((sum, r) => sum + r.rating, 0) / reviewsList.length
     : 0;
@@ -122,6 +123,10 @@ export default function ProductDetailInteractive({
       setReviewBody("");
       setReviewRating(5);
       setShowReviewForm(false);
+      if (data.pointsAwarded) {
+        setReviewSuccessPoints(data.pointsAwarded);
+        setTimeout(() => setReviewSuccessPoints(null), 5000);
+      }
     } catch {
       setReviewError("ส่งรีวิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     } finally {
@@ -386,8 +391,17 @@ export default function ProductDetailInteractive({
                   </button>
                 </div>
 
+                {reviewSuccessPoints !== null && (
+                  <p className="mb-4 text-xs font-semibold text-brand-emerald">
+                    ส่งรีวิวสำเร็จ ได้รับ {reviewSuccessPoints} คะแนน ขอบคุณค่ะ!
+                  </p>
+                )}
+
                 {showReviewForm && (
                   <form onSubmit={submitReview} className="mb-5 rounded-xl border border-slate-100 p-4 space-y-3">
+                    <p className="text-xs text-slate-400">
+                      ต้องซื้อสินค้านี้และชำระเงินสำเร็จก่อนจึงจะรีวิวได้ครับ รับ 20 คะแนนเมื่อรีวิวสำเร็จ
+                    </p>
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <button type="button" key={n} onClick={() => setReviewRating(n)} aria-label={`${n} ดาว`}>

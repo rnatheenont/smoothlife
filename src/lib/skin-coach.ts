@@ -56,6 +56,8 @@ export function concernLabel(slug: ConcernSlug) {
 // completing the scan. Kept in a narrow 5-15% band so it stays a reasonable
 // marketing perk rather than an exploitable giveaway. Shared by the results
 // view (to preview the tier) and the claim-reward API (source of truth).
+export const SKIN_COACH_POINTS_REWARD = 50;
+
 export function discountForScore(score: number): { percentage: number; label: string } {
   const clamped = Math.max(0, Math.min(100, score));
   if (clamped >= 85) return { percentage: 0.05, label: "5%" };

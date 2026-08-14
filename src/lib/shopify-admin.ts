@@ -182,6 +182,19 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
   }
 }
 
+// Verified-purchase check for the review-points feature: did this customer
+// actually pay for this product? Reuses getCustomerOrders with a larger
+// limit than the chat assistant needs, since here we're scanning full order
+// history rather than just the most recent few. Best-effort like the rest
+// of this file — any lookup failure just means "can't verify," not a crash.
+export async function hasPaidOrderForProduct(shopifyCustomerId: string, productSlug: string): Promise<boolean> {
+  const orders = await getCustomerOrders(shopifyCustomerId, 100);
+  if (!orders) return false;
+  return orders.some(
+    (order) => order.financialStatus === "PAID" && order.items.some((item) => item.slug === productSlug)
+  );
+}
+
 // Creates a real, single-use percentage discount code redeemable once per
 // customer. Returns the code string.
 export async function createPercentDiscountCode(opts: {
