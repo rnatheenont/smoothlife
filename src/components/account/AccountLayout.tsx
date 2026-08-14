@@ -82,13 +82,6 @@ function AccountShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
-          <button
-            onClick={handleLogout}
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-rose-200 px-3.5 py-2 text-xs font-semibold text-rose-500 whitespace-nowrap"
-          >
-            <LogOut size={13} />
-            ออกจากระบบ
-          </button>
         </nav>
 
         <div className="min-w-0">{children}</div>

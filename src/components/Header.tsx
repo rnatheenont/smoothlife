@@ -138,13 +138,9 @@ export default function Header() {
                 <span className="text-[11px] text-slate-500">{user.points} pts</span>
               </span>
               <span
-                className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold text-white whitespace-nowrap shadow-sm"
+                className="rounded-full px-2.5 py-1.5 text-[11px] font-bold text-white whitespace-nowrap shadow-sm"
                 style={{ background: tierCard[user.tier].gradient }}
               >
-                {(() => {
-                  const TierIcon = tierBadge[user.tier].icon;
-                  return <TierIcon size={11} />;
-                })()}
                 Lv.{tierBadge[user.tier].level}
               </span>
             </Link>

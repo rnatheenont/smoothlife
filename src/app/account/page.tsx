@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Pencil, MapPin, Receipt, Plus, ChevronRight, ShieldCheck, Package, Heart, Camera } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Pencil, MapPin, Receipt, Plus, ChevronRight, ShieldCheck, Package, Heart, Camera, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import AccountLayout from "@/components/account/AccountLayout";
 import RewardsOverviewCard from "@/components/account/RewardsOverviewCard";
@@ -144,8 +145,14 @@ function ChangePasswordCard() {
 }
 
 function AccountDashboard() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const router = useRouter();
   const [orderCount, setOrderCount] = useState<number | null>(null);
+
+  function handleLogout() {
+    logout();
+    router.push("/");
+  }
 
   useEffect(() => {
     fetch("/api/account/orders")
@@ -193,6 +200,14 @@ function AccountDashboard() {
           <span className="text-sm font-semibold text-brand-ink">Skin Coach</span>
         </Link>
       </div>
+
+      <button
+        onClick={handleLogout}
+        className="lg:hidden flex w-full items-center justify-center gap-2 rounded-xl2 border border-rose-200 py-3 text-sm font-semibold text-rose-500 mt-8"
+      >
+        <LogOut size={16} />
+        ออกจากระบบ
+      </button>
     </div>
   );
 }
