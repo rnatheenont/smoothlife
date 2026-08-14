@@ -13,6 +13,26 @@ export function supabaseConfigured() {
   return Boolean(SUPABASE_URL && SERVICE_ROLE_KEY);
 }
 
+// Serverless functions reuse fetch's keep-alive connection pool across
+// invocations; Supabase (or an intermediate proxy) periodically closes idle
+// pooled connections from its side, so the *next* request to grab that
+// connection fails at the socket layer before any bytes come back — real
+// production evidence: "fetch failed" / "other side closed" / "socket
+// disconnected before secure TLS connection was established", never an
+// actual HTTP error response. This silently dropped chat replies, points
+// credits, etc. with no trace beyond a server-side console.error. A single
+// immediate retry gets a fresh connection and reliably succeeds — safe here
+// because these are connection-level failures (zero response bytes read),
+// meaning the request never actually reached Supabase the first time.
+async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (err) {
+    console.error("[supabase] fetch failed, retrying once", err);
+    return fetch(url, init);
+  }
+}
+
 export async function supabaseRest<T>(
   path: string,
   init: RequestInit & { returning?: boolean } = {}
@@ -27,7 +47,7 @@ export async function supabaseRest<T>(
     ...(init.returning !== false ? { Prefer: "return=representation" } : {}),
     ...(init.headers as Record<string, string> | undefined),
   };
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...init, headers });
+  const res = await fetchWithRetry(`${SUPABASE_URL}/rest/v1/${path}`, { ...init, headers });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Supabase REST ${res.status}: ${text}`);
