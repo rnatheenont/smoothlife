@@ -16,7 +16,6 @@ import {
   ShieldCheck,
   HelpCircle,
   ChevronRight,
-  Coins,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
@@ -136,9 +135,7 @@ export default function Header() {
               </span>
               <span className="hidden lg:flex flex-col leading-tight">
                 <span className="text-xs font-bold text-brand-ink max-w-[92px] truncate">{user.name.split(" ")[0]}</span>
-                <span className="flex items-center gap-1 text-[11px] text-slate-500">
-                  <Coins size={10} className="text-amber-500" /> {user.points} pts
-                </span>
+                <span className="text-[11px] text-slate-500">{user.points} pts</span>
               </span>
               <span
                 className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold text-white whitespace-nowrap shadow-sm"
