@@ -1,25 +1,23 @@
 "use client";
 
-import { ReactNode } from "react";
-import Link from "next/link";
+import { ReactNode, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
+// Goes straight to the login page instead of showing an interstitial
+// "please login" screen the customer has to tap through first.
 export default function AccountGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  if (loading) return <div className="container-page py-20 text-center text-slate-400">กำลังโหลด...</div>;
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace(`/account/login?returnTo=${encodeURIComponent(pathname || "/account")}`);
+    }
+  }, [loading, user, pathname, router]);
 
-  if (!user) {
-    return (
-      <div className="container-page py-20 text-center max-w-md mx-auto">
-        <h1 className="text-xl font-bold text-brand-ink">กรุณาเข้าสู่ระบบ</h1>
-        <p className="text-sm text-slate-500 mt-2">เข้าสู่ระบบเพื่อดูข้อมูลบัญชีของคุณ</p>
-        <Link href="/account/login" className="inline-block mt-6 rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm">
-          เข้าสู่ระบบ
-        </Link>
-      </div>
-    );
-  }
+  if (loading || !user) return <div className="container-page py-20 text-center text-slate-400">กำลังโหลด...</div>;
 
   return <>{children}</>;
 }
