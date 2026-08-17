@@ -42,6 +42,33 @@ function GoogleIcon({ size = 22 }: { size?: number }) {
     </svg>
   );
 }
+// Required before any flow that can create a new account — register,
+// phone OTP, and email OTP (the latter two double as signup on first use).
+function TermsCheckbox({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-start gap-2.5 text-xs text-slate-500">
+      <input
+        type="checkbox"
+        required
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 h-4 w-4 shrink-0 accent-brand-emerald"
+      />
+      <span>
+        ฉันได้อ่านและยอมรับ{" "}
+        <Link href="/terms" target="_blank" className="font-semibold text-brand-ink underline">
+          ข้อกำหนดการใช้บริการ
+        </Link>{" "}
+        และ{" "}
+        <Link href="/privacy" target="_blank" className="font-semibold text-brand-ink underline">
+          นโยบายความเป็นส่วนตัว
+        </Link>{" "}
+        ของ Smoothlife.com
+      </span>
+    </label>
+  );
+}
+
 import { useAuth } from "@/lib/auth-context";
 import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
@@ -117,6 +144,11 @@ export default function LoginContent() {
 
   const [emailSubmitting, setEmailSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Only gates the flows that can create a brand-new account (register,
+  // and phone/email OTP — which silently double as signup on first use).
+  // Existing-user password login never re-asks for this.
+  const [agreedTerms, setAgreedTerms] = useState(false);
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -354,9 +386,10 @@ export default function LoginContent() {
               </div>
               {mode === "register" && <PasswordChecklist password={password} />}
             </div>
+            {mode === "register" && <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />}
             {emailError && <p className="text-xs text-rose-500">{emailError}</p>}
             <button
-              disabled={emailSubmitting}
+              disabled={emailSubmitting || (mode === "register" && !agreedTerms)}
               className="rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60 mt-1"
             >
               {emailSubmitting ? "กำลังดำเนินการ..." : mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
@@ -427,9 +460,10 @@ export default function LoginContent() {
                 placeholder="08X-XXX-XXXX"
                 className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 disabled:opacity-50"
               />
+              <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
               <button
-                disabled={!firebaseConfigured() || otpSending}
+                disabled={!firebaseConfigured() || otpSending || !agreedTerms}
                 className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
               >
                 {otpSending && <Loader2 size={15} className="animate-spin" />}
@@ -505,9 +539,10 @@ export default function LoginContent() {
                   className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                 />
               </div>
+              <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
               {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
               <button
-                disabled={emailOtpSending}
+                disabled={emailOtpSending || !agreedTerms}
                 className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
               >
                 {emailOtpSending && <Loader2 size={15} className="animate-spin" />}
@@ -576,8 +611,12 @@ export default function LoginContent() {
 
       <p className="text-xs text-slate-400 text-center mt-8">
         การเข้าสู่ระบบถือว่าคุณยอมรับ{" "}
-        <Link href="/help" className="underline">
+        <Link href="/terms" target="_blank" className="underline">
           ข้อกำหนดการใช้บริการ
+        </Link>{" "}
+        และ{" "}
+        <Link href="/privacy" target="_blank" className="underline">
+          นโยบายความเป็นส่วนตัว
         </Link>{" "}
         ของ Smoothlife.com
       </p>
