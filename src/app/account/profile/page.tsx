@@ -143,11 +143,15 @@ function ProfileContent() {
         </div>
         <div>
           <label className={labelClass}>วันเกิด</label>
+          {/* iOS renders the native date value in the device's locale
+              format (e.g. Thai Buddhist-era "22 Jan BE 2537"), which can be
+              wider than the box and overflow — appearance-none + max-w-full
+              stops WebKit's native control from ignoring the width. */}
           <input
             type="date"
             value={birthdate || ""}
             onChange={(e) => setBirthdate(e.target.value)}
-            className={inputClass}
+            className={`${inputClass} appearance-none max-w-full`}
           />
         </div>
 
