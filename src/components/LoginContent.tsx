@@ -22,6 +22,7 @@ import { useAuth } from "@/lib/auth-context";
 import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
 import DemoBadge from "./DemoBadge";
+import PasswordChecklist from "./PasswordChecklist";
 
 type View = "password" | "phone-otp" | "email-otp" | "line";
 
@@ -322,7 +323,7 @@ export default function LoginContent() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              {mode === "register" && <p className="text-xs text-slate-400 mt-1.5 ml-1">อย่างน้อย 8 ตัวอักษร มีทั้งตัวอักษรและตัวเลข</p>}
+              {mode === "register" && <PasswordChecklist password={password} />}
             </div>
             {emailError && <p className="text-xs text-rose-500">{emailError}</p>}
             <button

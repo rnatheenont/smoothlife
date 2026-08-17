@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ShieldCheck, Loader2, Eye, EyeOff } from "lucide-react";
 import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
+import PasswordChecklist from "@/components/PasswordChecklist";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -76,6 +77,7 @@ function ResetPasswordContent() {
                 {show ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
+            <PasswordChecklist password={password} />
             <input
               required
               type={show ? "text" : "password"}
