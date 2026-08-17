@@ -207,7 +207,8 @@ export default function LoginContent() {
   ];
 
   return (
-    <div className="container-page py-10 md:py-16 max-w-md mx-auto">
+    <div className="container-page min-h-[80vh] flex items-center justify-center py-10 md:py-16">
+    <div className="w-full max-w-md rounded-2xl border border-slate-100 bg-white shadow-card p-6 md:p-8">
       <div className="mb-7">
         <h1 className="text-3xl font-extrabold text-brand-ink">
           {view === "password" && mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
@@ -518,6 +519,7 @@ export default function LoginContent() {
         </Link>{" "}
         ของ Smoothlife.com
       </p>
+    </div>
     </div>
   );
 }
