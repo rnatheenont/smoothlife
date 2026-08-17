@@ -5,6 +5,19 @@ import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } fro
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Phone, MessageCircle, Lock, User as UserIcon, AlertTriangle, Loader2, ArrowLeft, Apple, Eye, EyeOff } from "lucide-react";
+
+// LINE's real wordmark badge (green circle, bold white "LINE"), not a
+// generic chat bubble icon.
+function LineIcon({ size = 40 }: { size?: number }) {
+  return (
+    <span
+      style={{ width: size, height: size }}
+      className="grid shrink-0 place-items-center rounded-full bg-[#06C755] text-white font-extrabold tracking-tight"
+    >
+      <span style={{ fontSize: size * 0.32 }}>LINE</span>
+    </span>
+  );
+}
 import { useAuth } from "@/lib/auth-context";
 import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
 import DemoBadge from "./DemoBadge";
@@ -203,7 +216,6 @@ export default function LoginContent() {
   const altMethods = [
     { id: "phone-otp" as View, label: "เบอร์โทร", icon: Phone },
     { id: "email-otp" as View, label: "อีเมล OTP", icon: Mail },
-    { id: "line" as View, label: "LINE", icon: MessageCircle },
   ];
 
   return (
@@ -334,15 +346,18 @@ export default function LoginContent() {
                   <m.icon size={22} />
                 </button>
               ))}
+              <button onClick={() => setView("line")} aria-label="LINE" title="LINE" className="rounded-full hover:opacity-85 transition-opacity">
+                <LineIcon size={56} />
+              </button>
               <button
                 onClick={() => APPLE_CONFIGURED && (window.location.href = `/api/auth/apple/start?returnTo=${encodeURIComponent(returnTo)}`)}
                 aria-label="Apple"
                 title={APPLE_CONFIGURED ? "Apple" : "ยังไม่ได้ตั้งค่า Sign in with Apple"}
-                className={`grid h-14 w-14 place-items-center rounded-full bg-surface-soft transition-colors ${
-                  APPLE_CONFIGURED ? "text-slate-600 hover:bg-brand-gradient-soft hover:text-brand-emerald" : "text-slate-300 cursor-not-allowed"
+                className={`grid h-14 w-14 place-items-center rounded-full text-white transition-opacity ${
+                  APPLE_CONFIGURED ? "bg-black hover:opacity-85" : "bg-slate-300 cursor-not-allowed"
                 }`}
               >
-                <Apple size={22} />
+                <Apple size={26} fill="currentColor" />
               </button>
             </div>
           </div>
@@ -423,7 +438,7 @@ export default function LoginContent() {
             href={`/api/auth/line/start?returnTo=${encodeURIComponent(returnTo)}`}
             className="flex items-center justify-center gap-2 rounded-full bg-[#06C755] text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity"
           >
-            <MessageCircle size={18} /> เข้าสู่ระบบด้วย LINE
+            <MessageCircle size={18} className="text-white" /> เข้าสู่ระบบด้วย LINE
           </a>
         </div>
       )}
