@@ -148,13 +148,14 @@ async function handleRefundsCreate(refund: any) {
   return { reversed: pointsToReverse };
 }
 
-// If a Shopify customer is deleted, our users.shopify_customer_id would
-// otherwise point at nothing forever — linkOrCreateShopifyCustomer only
-// re-links when that column is null, so it never self-heals on its own.
-// Clearing it here means the next login re-links (or recreates) the
-// Shopify customer automatically. shopify_customer_id can be stored either
-// as a bare numeric id (from the orders/paid webhook) or a full GID (from
-// the GraphQL Admin API paths), so match both forms.
+// If a Shopify customer is deleted, we release that email/phone so the same
+// person can register fresh with it again — but we deliberately don't touch
+// anything else. The old account, its points, and its order-history link
+// stay exactly as they are; it just becomes unreachable by that email/phone
+// (still reachable via any other linked identity, e.g. LINE/Google/Apple).
+// shopify_customer_id can be stored either as a bare numeric id (from the
+// orders/paid webhook) or a full GID (from the GraphQL Admin API paths), so
+// match both forms.
 async function handleCustomersDelete(customer: any) {
   const numericId = String(customer.id);
   const gid = `gid://shopify/Customer/${numericId}`;
@@ -168,7 +169,19 @@ async function handleCustomersDelete(customer: any) {
     returning: false,
     body: JSON.stringify({ shopify_customer_id: null }),
   });
-  return { cleared: matches.map((m) => m.id) };
+
+  const userIds = matches.map((m) => m.id);
+  const releasedIdentities = await supabaseRest<{ user_id: string; provider: string; provider_uid: string }[]>(
+    `auth_identities?user_id=in.(${userIds.join(",")})&provider=in.(email,phone_otp)&select=user_id,provider,provider_uid`
+  );
+  if (releasedIdentities.length) {
+    await supabaseRest(`auth_identities?user_id=in.(${userIds.join(",")})&provider=in.(email,phone_otp)`, {
+      method: "DELETE",
+      returning: false,
+    });
+  }
+
+  return { clearedShopifyLink: userIds, releasedIdentities };
 }
 
 export async function POST(req: NextRequest) {
