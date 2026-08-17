@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Award, Gift, Star, Crown, History } from "lucide-react";
+import { Award, Gift, Star, Crown, History, Ticket, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import AccountLayout from "@/components/account/AccountLayout";
 import DemoBadge from "@/components/DemoBadge";
+import type { RedemptionTier } from "@/app/api/account/redeem/route";
 
 const tiers = [
   { name: "Bronze", min: 0, icon: Star, perks: ["สะสมคะแนน 1 บาท = 1 คะแนน", "ส่วนลดวันเกิด 10%"] },
@@ -30,17 +31,54 @@ const reasonLabel: Record<string, string> = {
 type LedgerEntry = { id: string; delta: number; reason: string; created_at: string };
 
 function PointsContent() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const isReal = user?.real;
   const [entries, setEntries] = useState<LedgerEntry[] | null>(null);
+  const [tiersList, setTiersList] = useState<RedemptionTier[] | null>(null);
+  const [redeemingId, setRedeemingId] = useState<string | null>(null);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
+  const [redeemed, setRedeemed] = useState<{ code: string; tier: RedemptionTier } | null>(null);
 
-  useEffect(() => {
-    if (!isReal) return;
+  function loadEntries() {
     fetch("/api/auth/points")
       .then((r) => r.json())
       .then((data) => setEntries(data.entries || []))
       .catch(() => setEntries([]));
+  }
+
+  useEffect(() => {
+    if (!isReal) return;
+    loadEntries();
+    fetch("/api/account/redeem")
+      .then((r) => r.json())
+      .then((data) => setTiersList(data.tiers || []))
+      .catch(() => setTiersList([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReal]);
+
+  async function redeem(tier: RedemptionTier) {
+    setRedeemingId(tier.id);
+    setRedeemError(null);
+    try {
+      const res = await fetch("/api/account/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tierId: tier.id }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setRedeemError(data.error || "แลกแต้มไม่สำเร็จค่ะ");
+        return;
+      }
+      setRedeemed({ code: data.code, tier });
+      loadEntries();
+      await refreshUser();
+    } catch {
+      setRedeemError("แลกแต้มไม่สำเร็จ กรุณาลองใหม่อีกครั้งค่ะ");
+    } finally {
+      setRedeemingId(null);
+    }
+  }
 
   if (!user) return null;
 
@@ -64,6 +102,35 @@ function PointsContent() {
           <p className="text-xl font-bold">{user.tier}</p>
         </div>
       </div>
+
+      {isReal && tiersList && tiersList.length > 0 && (
+        <div className="mb-8">
+          <h2 className="font-bold text-brand-ink flex items-center gap-2 mb-3">
+            <Ticket size={16} className="text-brand-emerald" /> แลกแต้มเป็นส่วนลด
+          </h2>
+          {redeemError && <p className="text-sm text-rose-500 mb-3">{redeemError}</p>}
+          <div className="grid sm:grid-cols-2 gap-3">
+            {tiersList.map((t) => {
+              const canAfford = user.points >= t.points_cost;
+              return (
+                <div key={t.id} className="rounded-xl2 border border-slate-100 p-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-brand-ink text-sm">{t.label_th}</p>
+                    <p className="text-xs text-slate-400">{t.points_cost.toLocaleString()} แต้ม</p>
+                  </div>
+                  <button
+                    onClick={() => redeem(t)}
+                    disabled={!canAfford || redeemingId === t.id}
+                    className="shrink-0 rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-2 disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    {redeemingId === t.id ? <Loader2 size={13} className="animate-spin" /> : canAfford ? "แลกเลย" : "แต้มไม่พอ"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4">
         {tiers.map((t) => {
@@ -120,6 +187,28 @@ function PointsContent() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {redeemed && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
+            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald">
+              <CheckCircle2 size={28} />
+            </div>
+            <p className="text-lg font-bold text-brand-ink mb-1">แลกแต้มสำเร็จ!</p>
+            <p className="text-sm text-slate-600 mb-4">{redeemed.tier.label_th}</p>
+            <div className="mb-4 rounded-xl border border-dashed border-brand-teal bg-brand-gradient-soft px-4 py-3">
+              <p className="text-xs text-slate-500 mb-1">โค้ดส่วนลดของคุณ</p>
+              <p className="font-mono text-lg font-bold text-brand-emerald">{redeemed.code}</p>
+            </div>
+            <button
+              onClick={() => setRedeemed(null)}
+              className="w-full rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm"
+            >
+              ปิด
+            </button>
+          </div>
         </div>
       )}
     </div>
