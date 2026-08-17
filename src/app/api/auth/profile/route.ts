@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
+import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
 
 const GENDERS = new Set(["male", "female", "other"]);
 
@@ -78,5 +79,24 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (emailError) return NextResponse.json({ ok: false, error: emailError }, { status: 409 });
+
+  // Backfill the Shopify link here too — this is where a LINE signup (whose
+  // login scope never hands over an email/phone) actually gets one, via the
+  // complete-profile step. Only bother if it isn't already linked.
+  const [current] = await supabaseRest<
+    { display_name: string | null; phone: string | null; shopify_customer_id: string | null }[]
+  >(`users?id=eq.${uid}&select=display_name,phone,shopify_customer_id`);
+  if (current && !current.shopify_customer_id) {
+    const [emailIdentity] = await supabaseRest<{ provider_uid: string }[]>(
+      `auth_identities?user_id=eq.${uid}&provider=eq.email&select=provider_uid`
+    );
+    await linkOrCreateShopifyCustomer(uid, {
+      email: emailIdentity?.provider_uid || null,
+      phone: current.phone,
+      currentDisplayName: current.display_name,
+      currentPhone: current.phone,
+    });
+  }
+
   return NextResponse.json({ ok: true });
 }
