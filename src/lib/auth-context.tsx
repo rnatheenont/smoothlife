@@ -39,6 +39,17 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const USERS_KEY = "sl_users";
 const SESSION_KEY = "sl_session";
+export const SHOPIFY_ADDRESS_SUGGESTION_KEY = "sl_shopify_address_suggestion";
+
+// Auth responses can carry a one-time Shopify default-address suggestion
+// (see linkOrCreateShopifyCustomer) — stash it so /account/addresses can
+// offer it even if the customer doesn't act on it the moment they log in.
+function stashAddressSuggestion(data: { user?: { shopifyAddressSuggestion?: unknown } }) {
+  if (typeof window === "undefined") return;
+  if (data.user?.shopifyAddressSuggestion) {
+    localStorage.setItem(SHOPIFY_ADDRESS_SUGGESTION_KEY, JSON.stringify(data.user.shopifyAddressSuggestion));
+  }
+}
 
 function readUsers(): SLUser[] {
   if (typeof window === "undefined") return [];
@@ -97,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const data = await res.json();
     if (!data.ok) return { ok: false, error: data.error || "สมัครสมาชิกไม่สำเร็จ" };
+    stashAddressSuggestion(data);
     setUser(data.user);
     return { ok: true };
   }
@@ -109,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const data = await res.json();
     if (!data.ok) return { ok: false, error: data.error || "เข้าสู่ระบบไม่สำเร็จ" };
+    stashAddressSuggestion(data);
     setUser(data.user);
     return { ok: true };
   }
@@ -116,7 +129,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Phone sign-in is real now (Firebase Phone Auth + /api/auth/otp/verify
   // already set the httpOnly session cookie) — this just mirrors that
   // server-confirmed user into local state, same as register/loginWithEmail.
-  function completePhoneLogin(u: SLUser) {
+  function completePhoneLogin(u: SLUser & { shopifyAddressSuggestion?: unknown }) {
+    stashAddressSuggestion({ user: u });
     setUser(u);
   }
 

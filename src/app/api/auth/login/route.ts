@@ -3,7 +3,7 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifyPassword } from "@/lib/password";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { tierProgress } from "@/data/coupons";
-import { findShopifyCustomerByEmail } from "@/lib/shopify-admin";
+import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
 
 export async function POST(req: NextRequest) {
   if (!supabaseConfigured()) {
@@ -34,30 +34,24 @@ export async function POST(req: NextRequest) {
   // Backfill the Shopify link on login too, for accounts created before
   // this existed — only bother looking it up once (skip if already linked).
   let phone = user.phone;
+  let displayName = user.display_name;
+  let addressSuggestion = null;
   if (!user.shopify_customer_id) {
-    const shopifyMatch = await findShopifyCustomerByEmail(normalizedEmail);
-    if (shopifyMatch) {
-      phone = phone || shopifyMatch.phone;
-      try {
-        await supabaseRest(`users?id=eq.${user.id}`, {
-          method: "PATCH",
-          returning: false,
-          body: JSON.stringify({
-            shopify_customer_id: shopifyMatch.id,
-            ...(phone ? { phone } : {}),
-          }),
-        });
-      } catch (err) {
-        console.error("[login] failed to link shopify customer", err);
-      }
-    }
+    const shopifyLink = await linkOrCreateShopifyCustomer(user.id, {
+      email: normalizedEmail,
+      currentDisplayName: user.display_name,
+      currentPhone: user.phone,
+    });
+    if (shopifyLink.phone) phone = shopifyLink.phone;
+    if (shopifyLink.displayName) displayName = shopifyLink.displayName;
+    addressSuggestion = shopifyLink.addressSuggestion;
   }
 
   const res = NextResponse.json({
     ok: true,
     user: {
       id: user.id,
-      name: user.display_name,
+      name: displayName,
       email: normalizedEmail,
       phone,
       gender: user.gender,
@@ -68,6 +62,7 @@ export async function POST(req: NextRequest) {
       points,
       tier: tierProgress(points).current,
       createdAt: user.created_at,
+      shopifyAddressSuggestion: addressSuggestion,
     },
   });
   res.cookies.set(SESSION_COOKIE, createSessionToken(user.id), sessionCookieOptions);

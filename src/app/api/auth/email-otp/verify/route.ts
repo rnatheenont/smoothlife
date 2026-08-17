@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
-import { findShopifyCustomerByEmail } from "@/lib/shopify-admin";
+import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
 import { tierProgress } from "@/data/coupons";
 
 const MAX_ATTEMPTS = 5;
@@ -61,24 +61,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง" }, { status: 500 });
   }
 
-  if (row.is_new) {
-    const shopifyMatch = await findShopifyCustomerByEmail(normalizedEmail);
-    if (shopifyMatch) {
-      try {
-        await supabaseRest(`users?id=eq.${row.user_id}`, {
-          method: "PATCH",
-          returning: false,
-          body: JSON.stringify({ shopify_customer_id: shopifyMatch.id, phone: shopifyMatch.phone || undefined }),
-        });
-      } catch (err) {
-        console.error("[email-otp verify] failed to link shopify customer", err);
-      }
-    }
+  const [user] = await supabaseRest<
+    {
+      id: string;
+      display_name: string;
+      created_at: string;
+      phone: string | null;
+      gender: string | null;
+      birthdate: string | null;
+      avatar_url: string | null;
+      shopify_customer_id: string | null;
+    }[]
+  >(`users?id=eq.${row.user_id}&select=id,display_name,created_at,phone,gender,birthdate,avatar_url,shopify_customer_id`);
+
+  let displayName = user.display_name;
+  let phone = user.phone;
+  let addressSuggestion = null;
+  if (!user.shopify_customer_id) {
+    const shopifyLink = await linkOrCreateShopifyCustomer(row.user_id, {
+      email: normalizedEmail,
+      currentDisplayName: user.display_name,
+      currentPhone: user.phone,
+    });
+    if (shopifyLink.displayName) displayName = shopifyLink.displayName;
+    if (shopifyLink.phone) phone = shopifyLink.phone;
+    addressSuggestion = shopifyLink.addressSuggestion;
   }
 
-  const [user] = await supabaseRest<
-    { id: string; display_name: string; created_at: string; phone: string | null; gender: string | null; birthdate: string | null; avatar_url: string | null }[]
-  >(`users?id=eq.${row.user_id}&select=id,display_name,created_at,phone,gender,birthdate,avatar_url`);
   const [balanceRow] = await supabaseRest<{ balance: number }[]>(
     `points_balance?user_id=eq.${row.user_id}&select=balance`
   );
@@ -88,9 +97,9 @@ export async function POST(req: NextRequest) {
     ok: true,
     user: {
       id: user.id,
-      name: user.display_name,
+      name: displayName,
       email: normalizedEmail,
-      phone: user.phone,
+      phone,
       gender: user.gender,
       birthdate: user.birthdate,
       avatar: user.avatar_url,
@@ -99,6 +108,7 @@ export async function POST(req: NextRequest) {
       points,
       tier: tierProgress(points).current,
       createdAt: user.created_at,
+      shopifyAddressSuggestion: addressSuggestion,
     },
   });
   res.cookies.set(SESSION_COOKIE, createSessionToken(row.user_id), sessionCookieOptions);

@@ -45,12 +45,24 @@ async function adminGraphql<T>(query: string, variables?: Record<string, unknown
   return json.data as T;
 }
 
+export type ShopifyCustomerAddress = {
+  address1: string | null;
+  address2: string | null;
+  city: string | null;
+  province: string | null;
+  zip: string | null;
+  country: string | null;
+};
+
 export type ShopifyCustomerMatch = {
   id: string;
   firstName: string | null;
   lastName: string | null;
   phone: string | null;
+  defaultAddress: ShopifyCustomerAddress | null;
 };
+
+const CUSTOMER_FIELDS = `id firstName lastName phone defaultAddress { address1 address2 city province zip country }`;
 
 // Looks up an existing Shopify customer by email so a new local signup can
 // link to their real purchase history immediately instead of waiting for
@@ -62,11 +74,11 @@ export async function findShopifyCustomerByEmail(email: string): Promise<Shopify
   if (!shopifyAdminConfigured()) return null;
   try {
     const data = await adminGraphql<{
-      customers: { edges: { node: { id: string; firstName: string | null; lastName: string | null; phone: string | null } }[] };
+      customers: { edges: { node: ShopifyCustomerMatch }[] };
     }>(
       `query FindCustomerByEmail($query: String!) {
         customers(first: 1, query: $query) {
-          edges { node { id firstName lastName phone } }
+          edges { node { ${CUSTOMER_FIELDS} } }
         }
       }`,
       { query: `email:${JSON.stringify(email)}` }
@@ -85,11 +97,11 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
   if (!shopifyAdminConfigured()) return null;
   try {
     const data = await adminGraphql<{
-      customers: { edges: { node: { id: string; firstName: string | null; lastName: string | null; phone: string | null } }[] };
+      customers: { edges: { node: ShopifyCustomerMatch }[] };
     }>(
       `query FindCustomerByPhone($query: String!) {
         customers(first: 1, query: $query) {
-          edges { node { id firstName lastName phone } }
+          edges { node { ${CUSTOMER_FIELDS} } }
         }
       }`,
       { query: `phone:${JSON.stringify(phone)}` }
@@ -98,6 +110,51 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
     return node || null;
   } catch (err) {
     console.error("[shopify-admin] findShopifyCustomerByPhone failed", err);
+    return null;
+  }
+}
+
+// Creates a brand-new Shopify customer for someone who registered on our
+// site but has no existing purchase history there, so Shopify stays the
+// complete customer list regardless of where an account originated. Needs
+// at least one of email/phone (Shopify requires a way to contact the
+// customer). Best-effort like the lookups above: logs and returns null on
+// any error (duplicate email/phone, missing scope, etc) rather than
+// blocking registration.
+export async function createShopifyCustomer(opts: {
+  email?: string | null;
+  phone?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+}): Promise<{ id: string } | null> {
+  if (!shopifyAdminConfigured()) return null;
+  if (!opts.email && !opts.phone) return null;
+  try {
+    const data = await adminGraphql<{
+      customerCreate: { customer: { id: string } | null; userErrors: { field: string[]; message: string }[] };
+    }>(
+      `mutation CreateCustomer($input: CustomerInput!) {
+        customerCreate(input: $input) {
+          customer { id }
+          userErrors { field message }
+        }
+      }`,
+      {
+        input: {
+          ...(opts.email ? { email: opts.email } : {}),
+          ...(opts.phone ? { phone: opts.phone } : {}),
+          ...(opts.firstName ? { firstName: opts.firstName } : {}),
+          ...(opts.lastName ? { lastName: opts.lastName } : {}),
+        },
+      }
+    );
+    if (data.customerCreate.userErrors.length) {
+      console.error("[shopify-admin] createShopifyCustomer userErrors", data.customerCreate.userErrors);
+      return null;
+    }
+    return data.customerCreate.customer;
+  } catch (err) {
+    console.error("[shopify-admin] createShopifyCustomer failed", err);
     return null;
   }
 }
@@ -222,6 +279,45 @@ export async function createPercentDiscountCode(opts: {
         customerSelection: { all: true },
         customerGets: {
           value: { percentage: opts.percentage },
+          items: { all: true },
+        },
+      },
+    }
+  );
+  if (data.discountCodeBasicCreate.userErrors.length) {
+    throw new Error(data.discountCodeBasicCreate.userErrors.map((e) => e.message).join(", "));
+  }
+  return opts.code;
+}
+
+// Same as createPercentDiscountCode but a fixed baht amount off the order
+// total instead of a percentage — used for point-redemption tiers like
+// "1000 points = ฿100 off".
+export async function createAmountDiscountCode(opts: {
+  title: string;
+  code: string;
+  amount: number; // THB, applied once to the whole order
+  usageLimit?: number;
+}): Promise<string> {
+  const data = await adminGraphql<{
+    discountCodeBasicCreate: { codeDiscountNode: { id: string } | null; userErrors: { field: string[]; message: string }[] };
+  }>(
+    `mutation CreateDiscount($basicCodeDiscount: DiscountCodeBasicInput!) {
+      discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
+        codeDiscountNode { id }
+        userErrors { field message }
+      }
+    }`,
+    {
+      basicCodeDiscount: {
+        title: opts.title,
+        code: opts.code,
+        startsAt: new Date().toISOString(),
+        usageLimit: opts.usageLimit ?? 1,
+        appliesOncePerCustomer: true,
+        customerSelection: { all: true },
+        customerGets: {
+          value: { discountAmount: { amount: opts.amount, appliesOnEachItem: false } },
           items: { all: true },
         },
       },

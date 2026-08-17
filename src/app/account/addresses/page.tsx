@@ -2,18 +2,34 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { MapPin, Plus, Pencil, Trash2, Check, Loader2 } from "lucide-react";
+import { MapPin, Plus, Pencil, Trash2, Check, Loader2, Sparkles, X } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import { useAuth } from "@/lib/auth-context";
+import { SHOPIFY_ADDRESS_SUGGESTION_KEY } from "@/lib/auth-context";
 import DemoBadge from "@/components/DemoBadge";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 import { countryName } from "@/components/AddressForm";
+
+type AddressSuggestion = { address_line: string; province: string; postal_code: string; country: string };
 
 function AddressesContent() {
   const { user } = useAuth();
   const isReal = user?.real;
   const [addresses, setAddresses] = useState<AddressRow[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<AddressSuggestion | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SHOPIFY_ADDRESS_SUGGESTION_KEY);
+      if (raw) setSuggestion(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  function dismissSuggestion() {
+    localStorage.removeItem(SHOPIFY_ADDRESS_SUGGESTION_KEY);
+    setSuggestion(null);
+  }
 
   function load() {
     fetch("/api/account/addresses")
@@ -54,6 +70,37 @@ function AddressesContent() {
       {!isReal && (
         <div className="mb-6">
           <DemoBadge text="สมุดที่อยู่ผูกกับบัญชีจริง (Email) เท่านั้นตอนนี้ — เข้าสู่ระบบด้วยอีเมลเพื่อบันทึกที่อยู่จริงลงฐานข้อมูล" />
+        </div>
+      )}
+
+      {isReal && addresses?.length === 0 && suggestion && (
+        <div className="mb-6 rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-4">
+          <div className="flex items-start gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white">
+              <Sparkles size={16} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-brand-ink">เราเจอที่อยู่จากบัญชีลูกค้าเดิมของคุณ</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {suggestion.address_line}
+                {suggestion.province ? ` ${suggestion.province}` : ""} {suggestion.postal_code}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1">
+                กรุณาตรวจสอบและเติมข้อมูลให้ครบก่อนบันทึก (ระบบไม่ได้กรอกตำบล/อำเภอให้อัตโนมัติ)
+              </p>
+              <div className="flex items-center gap-3 mt-2.5">
+                <Link href="/account/addresses/new" className="text-xs font-semibold text-brand-emerald">
+                  ใช้ที่อยู่นี้
+                </Link>
+                <button onClick={dismissSuggestion} className="text-xs text-slate-400">
+                  ไม่ใช้ตอนนี้
+                </button>
+              </div>
+            </div>
+            <button onClick={dismissSuggestion} aria-label="ปิด" className="text-slate-300 hover:text-slate-500 shrink-0">
+              <X size={14} />
+            </button>
+          </div>
         </div>
       )}
 

@@ -3,7 +3,7 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { hashPassword } from "@/lib/password";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { tierProgress } from "@/data/coupons";
-import { findShopifyCustomerByEmail } from "@/lib/shopify-admin";
+import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -43,27 +43,14 @@ export async function POST(req: NextRequest) {
   }
   const user = result[0];
 
-  // Best-effort: if this email already exists as a Shopify customer, link
-  // it immediately instead of waiting for their first orders/paid webhook,
-  // and adopt their phone number if we don't have one yet. Never blocks
-  // registration on failure (network hiccup, missing Admin scope, etc).
-  let linkedPhone: string | null = null;
-  const shopifyMatch = await findShopifyCustomerByEmail(normalizedEmail);
-  if (shopifyMatch) {
-    linkedPhone = shopifyMatch.phone;
-    try {
-      await supabaseRest(`users?id=eq.${user.user_id}`, {
-        method: "PATCH",
-        returning: false,
-        body: JSON.stringify({
-          shopify_customer_id: shopifyMatch.id,
-          ...(shopifyMatch.phone ? { phone: shopifyMatch.phone } : {}),
-        }),
-      });
-    } catch (err) {
-      console.error("[register] failed to link shopify customer", err);
-    }
-  }
+  // Best-effort: link to an existing Shopify customer if this email already
+  // has purchase history, or create one on Shopify if not, so Shopify stays
+  // the complete customer list either way. Never blocks registration on
+  // failure (network hiccup, missing Admin scope, etc).
+  const shopifyLink = await linkOrCreateShopifyCustomer(user.user_id, {
+    email: normalizedEmail,
+    currentDisplayName: name.trim(),
+  });
 
   const res = NextResponse.json({
     ok: true,
@@ -71,7 +58,7 @@ export async function POST(req: NextRequest) {
       id: user.user_id,
       name: name.trim(),
       email: normalizedEmail,
-      phone: linkedPhone,
+      phone: shopifyLink.phone,
       gender: null,
       birthdate: null,
       avatar: null,
@@ -80,6 +67,7 @@ export async function POST(req: NextRequest) {
       points: 100,
       tier: tierProgress(100).current,
       createdAt: user.created_at,
+      shopifyAddressSuggestion: shopifyLink.addressSuggestion,
     },
   });
   res.cookies.set(SESSION_COOKIE, createSessionToken(user.user_id), sessionCookieOptions);
