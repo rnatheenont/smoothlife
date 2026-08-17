@@ -320,7 +320,7 @@ export default function LoginContent() {
             {emailError && <p className="text-xs text-rose-500">{emailError}</p>}
             <button
               disabled={emailSubmitting}
-              className="rounded-full bg-brand-ink text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60 mt-1"
+              className="rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60 mt-1"
             >
               {emailSubmitting ? "กำลังดำเนินการ..." : mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
             </button>
@@ -383,7 +383,7 @@ export default function LoginContent() {
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
               <button
                 disabled={!firebaseConfigured() || otpSending}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-ink text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
               >
                 {otpSending && <Loader2 size={15} className="animate-spin" />}
                 {otpSending ? "กำลังส่งรหัส..." : "ส่งรหัส OTP"}
@@ -410,7 +410,7 @@ export default function LoginContent() {
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
               <button
                 disabled={otpVerifying || otpInput.length < 6}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-ink text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
               >
                 {otpVerifying && <Loader2 size={15} className="animate-spin" />}
                 {otpVerifying ? "กำลังยืนยัน..." : "ยืนยันรหัส OTP"}
@@ -461,7 +461,7 @@ export default function LoginContent() {
               {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
               <button
                 disabled={emailOtpSending}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-ink text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
               >
                 {emailOtpSending && <Loader2 size={15} className="animate-spin" />}
                 {emailOtpSending ? "กำลังส่งรหัส..." : "ส่งรหัสยืนยัน"}
@@ -505,7 +505,7 @@ export default function LoginContent() {
               {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
               <button
                 disabled={emailOtpVerifying || emailOtpCode.length < 6}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-ink text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
               >
                 {emailOtpVerifying && <Loader2 size={15} className="animate-spin" />}
                 {emailOtpVerifying ? "กำลังยืนยัน..." : "ยืนยันรหัส"}
