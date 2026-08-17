@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     if (!profileRes.ok) throw new Error(`profile fetch ${profileRes.status}`);
     const profile: { userId: string; displayName: string; pictureUrl?: string } = await profileRes.json();
 
-    const result = await supabaseRest<{ user_id: string }[]>("rpc/find_or_create_line_member", {
+    const result = await supabaseRest<{ user_id: string; is_new: boolean }[]>("rpc/find_or_create_line_member", {
       method: "POST",
       body: JSON.stringify({
         p_line_user_id: profile.userId,
@@ -65,6 +65,7 @@ export async function GET(req: NextRequest) {
       }),
     });
     const userId = result[0]?.user_id;
+    const isNew = result[0]?.is_new ?? false;
     if (!userId) throw new Error("no user_id returned from find_or_create_line_member");
 
     // Backfill the Shopify link, same as every other login path — only
@@ -81,7 +82,14 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const res = NextResponse.redirect(new URL(returnTo, req.url));
+    // First-time signups land on a short profile-completion step (name,
+    // phone, email if missing, address) before the app itself — returning
+    // members skip straight to returnTo like every other login path.
+    const destination = isNew
+      ? new URL(`/account/complete-profile?returnTo=${encodeURIComponent(returnTo)}`, req.url)
+      : new URL(returnTo, req.url);
+
+    const res = NextResponse.redirect(destination);
     res.cookies.set(SESSION_COOKIE, createSessionToken(userId), sessionCookieOptions);
     res.cookies.delete(LINE_STATE_COOKIE);
     res.cookies.delete(LINE_RETURN_COOKIE);

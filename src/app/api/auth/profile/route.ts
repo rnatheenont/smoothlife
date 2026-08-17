@@ -37,14 +37,46 @@ export async function PATCH(req: NextRequest) {
     patch.avatar_url = body.avatar || null;
   }
 
-  if (Object.keys(patch).length === 0) {
+  // Only for accounts that don't have an email identity yet (e.g. LINE,
+  // whose "profile" scope never hands one over) — never lets someone
+  // change an existing email through this route.
+  let emailError: string | null = null;
+  if (typeof body.email === "string" && body.email.trim()) {
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const normalizedEmail = body.email.trim().toLowerCase();
+    if (!EMAIL_RE.test(normalizedEmail)) {
+      return NextResponse.json({ ok: false, error: "อีเมลไม่ถูกต้อง" }, { status: 400 });
+    }
+    const existing = await supabaseRest<{ user_id: string }[]>(
+      `auth_identities?user_id=eq.${uid}&provider=eq.email&select=user_id`
+    );
+    if (!existing.length) {
+      try {
+        await supabaseRest("auth_identities", {
+          method: "POST",
+          returning: false,
+          body: JSON.stringify({ user_id: uid, provider: "email", provider_uid: normalizedEmail }),
+        });
+      } catch (err) {
+        emailError = String(err).includes("duplicate")
+          ? "อีเมลนี้ถูกใช้งานแล้ว"
+          : "บันทึกอีเมลไม่สำเร็จ กรุณาลองใหม่";
+      }
+    }
+  }
+
+  if (Object.keys(patch).length === 0 && !emailError && typeof body.email !== "string") {
     return NextResponse.json({ ok: false, error: "ไม่มีข้อมูลที่จะบันทึก" }, { status: 400 });
   }
 
-  const [updated] = await supabaseRest<{ id: string }[]>(`users?id=eq.${uid}`, {
-    method: "PATCH",
-    body: JSON.stringify(patch),
-  });
-  if (!updated) return NextResponse.json({ ok: false, error: "ไม่พบบัญชีผู้ใช้" }, { status: 404 });
+  if (Object.keys(patch).length > 0) {
+    const [updated] = await supabaseRest<{ id: string }[]>(`users?id=eq.${uid}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    if (!updated) return NextResponse.json({ ok: false, error: "ไม่พบบัญชีผู้ใช้" }, { status: 404 });
+  }
+
+  if (emailError) return NextResponse.json({ ok: false, error: emailError }, { status: 409 });
   return NextResponse.json({ ok: true });
 }
