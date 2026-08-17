@@ -31,3 +31,16 @@ export function otpEmailHtml(code: string) {
     </div>
   `;
 }
+
+export function resetLinkEmailHtml(resetUrl: string) {
+  return `
+    <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:24px">
+      <h2 style="color:#0f766e">Smoothlife.com</h2>
+      <p>คุณได้ขอตั้งรหัสผ่านใหม่ กดปุ่มด้านล่างเพื่อตั้งรหัสผ่านใหม่</p>
+      <p style="margin:24px 0">
+        <a href="${resetUrl}" style="background:#0f766e;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:bold">ตั้งรหัสผ่านใหม่</a>
+      </p>
+      <p style="color:#64748b;font-size:14px">ลิงก์นี้หมดอายุใน 30 นาที หากคุณไม่ได้เป็นผู้ขอ สามารถละเว้นอีเมลฉบับนี้ได้</p>
+    </div>
+  `;
+}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomBytes } from "crypto";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
+import { emailConfigured, sendEmail, resetLinkEmailHtml } from "@/lib/email";
 
 const TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -38,16 +39,26 @@ export async function POST(req: NextRequest) {
     }),
   });
 
-  const resetLink = `/account/change-password/reset?token=${token}`;
+  const resetPath = `/account/change-password/reset?token=${token}`;
 
-  // No email provider is wired up in this project yet (see .env.example —
-  // there's no RESEND_API_KEY / SMTP_* etc). NEVER leak the reset link in a
-  // real production response — that link resets a password with no further
+  if (emailConfigured()) {
+    try {
+      const resetUrl = new URL(resetPath, req.url).toString();
+      await sendEmail(email, "ตั้งรหัสผ่านใหม่ - Smoothlife.com", resetLinkEmailHtml(resetUrl));
+    } catch (err) {
+      console.error("[change-password request] failed to send via Resend", err);
+      return NextResponse.json({ ok: false, error: "ส่งอีเมลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" }, { status: 502 });
+    }
+    return NextResponse.json({ ok: true, email, emailSent: true });
+  }
+
+  // No email provider configured — NEVER leak the reset link in a real
+  // production response — that link resets a password with no further
   // verification, so leaking it is a full account takeover, not just an
   // inconvenience. Only surface it on preview/local (VERCEL_ENV is unset
   // outside Vercel, so this still works with plain `npm run dev`).
   if (process.env.VERCEL_ENV !== "production") {
-    return NextResponse.json({ ok: true, email, emailSent: false, devResetLink: resetLink });
+    return NextResponse.json({ ok: true, email, emailSent: false, devResetLink: resetPath });
   }
   return NextResponse.json(
     { ok: false, error: "ระบบส่งอีเมลยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบเพื่อเปลี่ยนรหัสผ่าน" },

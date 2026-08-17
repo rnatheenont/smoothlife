@@ -12,12 +12,14 @@ function ChangePasswordContent() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devLink, setDevLink] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
   const [copied, setCopied] = useState(false);
 
   async function requestReset() {
     setBusy(true);
     setError(null);
     setDevLink(null);
+    setEmailSent(false);
     const res = await fetch("/api/auth/change-password/request", { method: "POST" });
     const data = await res.json();
     setBusy(false);
@@ -25,7 +27,8 @@ function ChangePasswordContent() {
       setError(data.error || "ส่งคำขอไม่สำเร็จ");
       return;
     }
-    setDevLink(data.devResetLink);
+    if (data.devResetLink) setDevLink(data.devResetLink);
+    else setEmailSent(true);
   }
 
   function copyLink() {
@@ -56,7 +59,7 @@ function ChangePasswordContent() {
           </div>
         )}
 
-        {isReal && !devLink && (
+        {isReal && !devLink && !emailSent && (
           <>
             {error && <p className="text-sm text-rose-500 mb-3">{error}</p>}
             <button
@@ -68,6 +71,12 @@ function ChangePasswordContent() {
               ส่งรหัสยืนยัน
             </button>
           </>
+        )}
+
+        {emailSent && (
+          <p className="text-sm text-brand-emerald bg-brand-gradient-soft rounded-lg px-3.5 py-3">
+            ส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปที่อีเมลของคุณแล้ว กรุณาตรวจสอบกล่องอีเมล (รวมถึงโฟลเดอร์สแปม)
+          </p>
         )}
 
         {devLink && (

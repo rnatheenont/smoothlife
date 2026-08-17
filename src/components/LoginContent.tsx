@@ -385,6 +385,11 @@ export default function LoginContent() {
                 </button>
               </div>
               {mode === "register" && <PasswordChecklist password={password} />}
+              {mode === "login" && (
+                <Link href="/account/forgot-password" className="block text-right text-xs text-slate-400 mt-1.5 hover:text-brand-ink">
+                  ลืมรหัสผ่าน?
+                </Link>
+              )}
             </div>
             {mode === "register" && <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />}
             {emailError && <p className="text-xs text-rose-500">{emailError}</p>}
@@ -562,16 +567,14 @@ export default function LoginContent() {
                   <p className="text-lg font-bold tracking-widest text-center text-amber-900">{emailOtpDevCode}</p>
                 </div>
               )}
-              <p className="text-xs text-slate-400">ข้อมูลด้านล่างสำหรับสมาชิกใหม่เท่านั้น</p>
+              <p className="text-xs text-slate-400">ข้อมูลด้านล่างสำหรับสมาชิกใหม่เท่านั้น — สมาชิกเดิมข้ามได้เลย</p>
               <input
-                required
                 value={emailOtpName}
                 onChange={(e) => setEmailOtpName(e.target.value)}
                 placeholder="ชื่อของคุณ"
                 className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
               />
               <input
-                required
                 value={emailOtpPhone}
                 onChange={(e) => setEmailOtpPhone(e.target.value)}
                 placeholder="เบอร์โทรศัพท์ (08X-XXX-XXXX)"
