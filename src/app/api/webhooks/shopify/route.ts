@@ -6,8 +6,9 @@ import { pointsForOrder } from "@/lib/points";
 // Shopify webhook endpoint — configure in Shopify Admin (or via
 // webhookSubscriptionCreate) to POST here for topics: orders/paid,
 // orders/cancelled, refunds/create, products/create, products/update,
-// products/delete. Verifies the HMAC signature so only Shopify (holding
-// SHOPIFY_WEBHOOK_SECRET) can trigger point changes or rebuilds.
+// products/delete, customers/delete. Verifies the HMAC signature so only
+// Shopify (holding SHOPIFY_WEBHOOK_SECRET) can trigger point changes,
+// rebuilds, or account updates.
 
 // The product catalogue (src/data/products.generated.ts) is only ever
 // written by scripts/fetch-products.js during `next build` — see
@@ -147,6 +148,29 @@ async function handleRefundsCreate(refund: any) {
   return { reversed: pointsToReverse };
 }
 
+// If a Shopify customer is deleted, our users.shopify_customer_id would
+// otherwise point at nothing forever — linkOrCreateShopifyCustomer only
+// re-links when that column is null, so it never self-heals on its own.
+// Clearing it here means the next login re-links (or recreates) the
+// Shopify customer automatically. shopify_customer_id can be stored either
+// as a bare numeric id (from the orders/paid webhook) or a full GID (from
+// the GraphQL Admin API paths), so match both forms.
+async function handleCustomersDelete(customer: any) {
+  const numericId = String(customer.id);
+  const gid = `gid://shopify/Customer/${numericId}`;
+  const matches = await supabaseRest<{ id: string }[]>(
+    `users?shopify_customer_id=in.(${numericId},${encodeURIComponent(gid)})&select=id`
+  );
+  if (!matches.length) return { skipped: "no member linked to this Shopify customer" };
+
+  await supabaseRest(`users?shopify_customer_id=in.(${numericId},${encodeURIComponent(gid)})`, {
+    method: "PATCH",
+    returning: false,
+    body: JSON.stringify({ shopify_customer_id: null }),
+  });
+  return { cleared: matches.map((m) => m.id) };
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const hmacHeader = req.headers.get("x-shopify-hmac-sha256");
@@ -177,6 +201,9 @@ export async function POST(req: NextRequest) {
       case "products/update":
       case "products/delete":
         result = await triggerCatalogueRebuildIfDue();
+        break;
+      case "customers/delete":
+        result = await handleCustomersDelete(payload);
         break;
       default:
         result = { skipped: `unhandled topic: ${topic}` };
