@@ -9,6 +9,7 @@ import {
 } from "@/lib/apple-auth";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
+import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
 
 function safeEqual(a: string, b: string) {
   const bufA = Buffer.from(a);
@@ -86,6 +87,21 @@ export async function POST(req: NextRequest) {
     });
     const userId = result[0]?.user_id;
     if (!userId) throw new Error("no user_id returned from find_or_create_apple_member");
+
+    // Backfill the Shopify link, same as every other login path — only
+    // bother if it isn't already linked. Apple only hands over the email
+    // on the very first authorization, so later logins skip this safely
+    // once shopify_customer_id is already set.
+    const [user] = await supabaseRest<
+      { display_name: string | null; phone: string | null; shopify_customer_id: string | null }[]
+    >(`users?id=eq.${userId}&select=display_name,phone,shopify_customer_id`);
+    if (user && !user.shopify_customer_id) {
+      await linkOrCreateShopifyCustomer(userId, {
+        email: claims.email || null,
+        currentDisplayName: user.display_name,
+        currentPhone: user.phone,
+      });
+    }
 
     const res = NextResponse.redirect(new URL(returnTo, req.url));
     res.cookies.set(SESSION_COOKIE, createSessionToken(userId), sessionCookieOptions);
