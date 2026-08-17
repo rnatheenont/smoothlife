@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ShieldCheck, Loader2, Eye, EyeOff } from "lucide-react";
+import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -19,8 +20,8 @@ function ResetPasswordContent() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (password.length < 6) {
-      setError("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+    if (!isPasswordStrongEnough(password)) {
+      setError(PASSWORD_REQUIREMENT_TH);
       return;
     }
     if (password !== confirm) {
@@ -63,8 +64,8 @@ function ResetPasswordContent() {
                 type={show ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)"
-                minLength={6}
+                placeholder="รหัสผ่านใหม่ (8+ ตัว มีตัวอักษรและตัวเลข)"
+                minLength={8}
                 className="w-full rounded-lg border border-slate-200 px-4 py-3 pr-10 text-sm outline-none focus:border-brand-teal"
               />
               <button
@@ -81,7 +82,7 @@ function ResetPasswordContent() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="ยืนยันรหัสผ่านใหม่"
-              minLength={6}
+              minLength={8}
               className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal"
             />
             {error && <p className="text-xs text-rose-500">{error}</p>}

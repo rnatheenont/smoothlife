@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { hashPassword } from "@/lib/password";
+import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { tierProgress } from "@/data/coupons";
 import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
@@ -21,8 +22,8 @@ export async function POST(req: NextRequest) {
   if (!email || typeof email !== "string" || !EMAIL_RE.test(email)) {
     return NextResponse.json({ ok: false, error: "อีเมลไม่ถูกต้อง" }, { status: 400 });
   }
-  if (!password || typeof password !== "string" || password.length < 6) {
-    return NextResponse.json({ ok: false, error: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร" }, { status: 400 });
+  if (!password || typeof password !== "string" || !isPasswordStrongEnough(password)) {
+    return NextResponse.json({ ok: false, error: PASSWORD_REQUIREMENT_TH }, { status: 400 });
   }
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedPhone = phone.trim();

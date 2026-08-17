@@ -19,6 +19,7 @@ function LineIcon({ size = 40 }: { size?: number }) {
   );
 }
 import { useAuth } from "@/lib/auth-context";
+import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
 import DemoBadge from "./DemoBadge";
 
@@ -90,6 +91,10 @@ export default function LoginContent() {
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     setEmailError("");
+    if (mode === "register" && !isPasswordStrongEnough(password)) {
+      setEmailError(PASSWORD_REQUIREMENT_TH);
+      return;
+    }
     setEmailSubmitting(true);
     const result =
       mode === "register"
@@ -303,7 +308,9 @@ export default function LoginContent() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="รหัสผ่าน"
-                  minLength={6}
+                  // Only enforced at register time — an existing user's older,
+                  // shorter password must still be able to log in with it.
+                  minLength={mode === "register" ? 8 : undefined}
                   className="w-full rounded-full bg-surface-soft pl-11 pr-11 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                 />
                 <button
@@ -315,7 +322,7 @@ export default function LoginContent() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              {mode === "register" && <p className="text-xs text-slate-400 mt-1.5 ml-1">อย่างน้อย 6 ตัวอักษร</p>}
+              {mode === "register" && <p className="text-xs text-slate-400 mt-1.5 ml-1">อย่างน้อย 8 ตัวอักษร มีทั้งตัวอักษรและตัวเลข</p>}
             </div>
             {emailError && <p className="text-xs text-rose-500">{emailError}</p>}
             <button

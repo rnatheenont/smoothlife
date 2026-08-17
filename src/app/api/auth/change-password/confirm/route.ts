@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash, timingSafeEqual } from "crypto";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { hashPassword } from "@/lib/password";
+import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -15,8 +16,8 @@ export async function POST(req: NextRequest) {
   if (!token || typeof token !== "string") {
     return NextResponse.json({ ok: false, error: "ลิงก์ไม่ถูกต้อง" }, { status: 400 });
   }
-  if (!password || typeof password !== "string" || password.length < 6) {
-    return NextResponse.json({ ok: false, error: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร" }, { status: 400 });
+  if (!password || typeof password !== "string" || !isPasswordStrongEnough(password)) {
+    return NextResponse.json({ ok: false, error: PASSWORD_REQUIREMENT_TH }, { status: 400 });
   }
 
   const tokenHash = hashToken(token);
