@@ -14,8 +14,32 @@ function LineIcon({ size = 40 }: { size?: number }) {
       style={{ width: size, height: size }}
       className="grid shrink-0 place-items-center rounded-full bg-[#06C755] text-white font-extrabold tracking-tight"
     >
-      <span style={{ fontSize: size * 0.32 }}>LINE</span>
+      <span style={{ fontSize: size * 0.22 }}>LINE</span>
     </span>
+  );
+}
+
+// Google's real 4-color "G" mark, not a generic glyph.
+function GoogleIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48">
+      <path
+        fill="#FFC107"
+        d="M43.6 20.5H42V20.4H24v7.2h11.3c-1.6 4.7-6.1 8.1-11.3 8.1-6.7 0-12.1-5.4-12.1-12.1s5.4-12.1 12.1-12.1c3.1 0 5.9 1.2 8 3.1l5.1-5.1C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.4-.4-3.5z"
+      />
+      <path
+        fill="#FF3D00"
+        d="M6.3 14.7l5.9 4.3C13.9 15.3 18.6 12.4 24 12.4c3.1 0 5.9 1.2 8 3.1l5.1-5.1C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.3 35.6 26.8 36.5 24 36.5c-5.2 0-9.6-3.3-11.3-8l-6.1 4.7C9.6 39.6 16.3 44 24 44z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.6 20.5H42V20.4H24v7.2h11.3c-.8 2.2-2.2 4.1-4.1 5.4l6.2 5.2C40.9 35.7 44 30.4 44 24c0-1.2-.1-2.4-.4-3.5z"
+      />
+    </svg>
   );
 }
 import { useAuth } from "@/lib/auth-context";
@@ -35,13 +59,18 @@ const OAUTH_ERRORS: Record<string, string> = {
   apple_denied: "คุณยกเลิกการเข้าสู่ระบบด้วย Apple",
   apple_state_mismatch: "เซสชันหมดอายุ กรุณาลองเข้าสู่ระบบด้วย Apple อีกครั้ง",
   apple_error: "เข้าสู่ระบบด้วย Apple ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+  google_not_configured: "ระบบ Google Sign-In ยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ",
+  google_denied: "คุณยกเลิกการเข้าสู่ระบบด้วย Google",
+  google_state_mismatch: "เซสชันหมดอายุ กรุณาลองเข้าสู่ระบบด้วย Google อีกครั้ง",
+  google_error: "เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
 };
 
 // Sign in with Apple needs a real Apple Developer account (Services ID +
-// private key) — until APPLE_CLIENT_ID is configured server-side, the
-// button stays visible but explains why it's disabled instead of routing
-// into a flow that can only fail.
+// private key) — until APPLE_CLIENT_ID is configured server-side, hide the
+// button entirely instead of showing a dead/disabled one.
 const APPLE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_APPLE_SIGNIN_ENABLED);
+// Same pattern for Google Sign-In (Google Cloud OAuth client).
+const GOOGLE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_GOOGLE_SIGNIN_ENABLED);
 
 export default function LoginContent() {
   const [view, setView] = useState<View>("password");
@@ -357,16 +386,26 @@ export default function LoginContent() {
               <button onClick={() => setView("line")} aria-label="LINE" title="LINE" className="rounded-full hover:opacity-85 transition-opacity">
                 <LineIcon size={56} />
               </button>
-              <button
-                onClick={() => APPLE_CONFIGURED && (window.location.href = `/api/auth/apple/start?returnTo=${encodeURIComponent(returnTo)}`)}
-                aria-label="Apple"
-                title={APPLE_CONFIGURED ? "Apple" : "ยังไม่ได้ตั้งค่า Sign in with Apple"}
-                className={`grid h-14 w-14 place-items-center rounded-full text-white transition-opacity ${
-                  APPLE_CONFIGURED ? "bg-black hover:opacity-85" : "bg-slate-300 cursor-not-allowed"
-                }`}
-              >
-                <Apple size={26} fill="currentColor" />
-              </button>
+              {GOOGLE_CONFIGURED && (
+                <button
+                  onClick={() => (window.location.href = `/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`)}
+                  aria-label="Google"
+                  title="Google"
+                  className="grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 hover:bg-surface-soft transition-colors"
+                >
+                  <GoogleIcon size={24} />
+                </button>
+              )}
+              {APPLE_CONFIGURED && (
+                <button
+                  onClick={() => (window.location.href = `/api/auth/apple/start?returnTo=${encodeURIComponent(returnTo)}`)}
+                  aria-label="Apple"
+                  title="Apple"
+                  className="grid h-14 w-14 place-items-center rounded-full bg-black text-white hover:opacity-85 transition-opacity"
+                >
+                  <Apple size={26} fill="currentColor" />
+                </button>
+              )}
             </div>
           </div>
         </div>
