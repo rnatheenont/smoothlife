@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, Phone, MessageCircle, Lock, User as UserIcon, AlertTriangle, Loader2, ArrowLeft, Apple } from "lucide-react";
+import { Mail, Phone, MessageCircle, Lock, User as UserIcon, AlertTriangle, Loader2, ArrowLeft, Apple, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
 import DemoBadge from "./DemoBadge";
@@ -72,6 +72,7 @@ export default function LoginContent() {
   const [recaptchaKey, setRecaptchaKey] = useState(0);
 
   const [emailSubmitting, setEmailSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -207,9 +208,23 @@ export default function LoginContent() {
 
   return (
     <div className="container-page py-10 md:py-16 max-w-md mx-auto">
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-brand-ink">เข้าสู่ระบบ Smoothlife.com</h1>
-        <p className="text-sm text-slate-500 mt-1">เข้าสู่ระบบเพื่อสะสมคะแนนและติดตามคำสั่งซื้อ</p>
+      <div className="mb-7">
+        <h1 className="text-3xl font-extrabold text-brand-ink">
+          {view === "password" && mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
+        </h1>
+        {view === "password" && (
+          <button onClick={() => setMode(mode === "register" ? "login" : "register")} className="text-sm text-slate-500 mt-1.5">
+            {mode === "register" ? (
+              <>
+                มีบัญชีอยู่แล้ว? <span className="font-bold text-brand-ink">เข้าสู่ระบบ</span>
+              </>
+            ) : (
+              <>
+                ยังไม่มีบัญชี? <span className="font-bold text-brand-ink">สมัครสมาชิก</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {lineError && (
@@ -229,97 +244,106 @@ export default function LoginContent() {
       )}
 
       {view === "password" && (
-        <div className="flex flex-col gap-4">
-          <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
+        <div className="flex flex-col gap-5">
+          <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3.5">
             {mode === "register" && (
               <>
                 <div className="relative">
-                  <UserIcon size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <UserIcon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="ชื่อ-นามสกุล"
-                    className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
+                    className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                   />
                 </div>
                 <div className="relative">
-                  <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     required
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
                     placeholder="เบอร์โทรศัพท์ (08X-XXX-XXXX)"
-                    className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
+                    className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                   />
                 </div>
               </>
             )}
             <div className="relative">
-              <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 required
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="อีเมล"
-                className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
+                className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
               />
             </div>
-            <div className="relative">
-              <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                required
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)"
-                minLength={6}
-                className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
-              />
+            <div>
+              <div className="relative">
+                <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  required
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="รหัสผ่าน"
+                  minLength={6}
+                  className="w-full rounded-full bg-surface-soft pl-11 pr-11 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {mode === "register" && <p className="text-xs text-slate-400 mt-1.5 ml-1">อย่างน้อย 6 ตัวอักษร</p>}
             </div>
             {emailError && <p className="text-xs text-rose-500">{emailError}</p>}
             <button
               disabled={emailSubmitting}
-              className="rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+              className="rounded-full bg-brand-ink text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60 mt-1"
             >
               {emailSubmitting ? "กำลังดำเนินการ..." : mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
             </button>
           </form>
-          <button
-            onClick={() => setMode(mode === "register" ? "login" : "register")}
-            className="text-xs text-center text-slate-500"
-          >
-            {mode === "register" ? "มีบัญชีอยู่แล้ว? เข้าสู่ระบบ" : "ยังไม่มีบัญชี? สมัครสมาชิก"}
-          </button>
 
-          <div className="flex items-center gap-3 my-1">
+          <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-slate-200" />
             <span className="text-xs text-slate-400">หรือ</span>
             <div className="h-px flex-1 bg-slate-200" />
           </div>
 
-          <div className="grid grid-cols-4 gap-2.5">
-            {altMethods.map((m) => (
+          <div>
+            <p className="text-xs font-semibold text-slate-500 text-center mb-3">เข้าสู่ระบบด้วยช่องทางอื่น</p>
+            <div className="flex items-center justify-center gap-3.5">
+              {altMethods.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setView(m.id)}
+                  aria-label={m.label}
+                  title={m.label}
+                  className="grid h-14 w-14 place-items-center rounded-full bg-surface-soft text-slate-600 hover:bg-brand-gradient-soft hover:text-brand-emerald transition-colors"
+                >
+                  <m.icon size={22} />
+                </button>
+              ))}
               <button
-                key={m.id}
-                onClick={() => setView(m.id)}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-200 py-3 text-slate-600 hover:border-brand-teal hover:text-brand-emerald transition-colors"
+                onClick={() => APPLE_CONFIGURED && (window.location.href = `/api/auth/apple/start?returnTo=${encodeURIComponent(returnTo)}`)}
+                aria-label="Apple"
+                title={APPLE_CONFIGURED ? "Apple" : "ยังไม่ได้ตั้งค่า Sign in with Apple"}
+                className={`grid h-14 w-14 place-items-center rounded-full bg-surface-soft transition-colors ${
+                  APPLE_CONFIGURED ? "text-slate-600 hover:bg-brand-gradient-soft hover:text-brand-emerald" : "text-slate-300 cursor-not-allowed"
+                }`}
               >
-                <m.icon size={18} />
-                <span className="text-[10px] font-medium leading-tight text-center">{m.label}</span>
+                <Apple size={22} />
               </button>
-            ))}
-            <button
-              onClick={() => APPLE_CONFIGURED && (window.location.href = `/api/auth/apple/start?returnTo=${encodeURIComponent(returnTo)}`)}
-              title={APPLE_CONFIGURED ? undefined : "ยังไม่ได้ตั้งค่า Sign in with Apple"}
-              className={`flex flex-col items-center gap-1.5 rounded-xl border border-slate-200 py-3 transition-colors ${
-                APPLE_CONFIGURED ? "text-slate-600 hover:border-brand-teal hover:text-brand-emerald" : "text-slate-300 cursor-not-allowed"
-              }`}
-            >
-              <Apple size={18} />
-              <span className="text-[10px] font-medium leading-tight text-center">Apple</span>
-            </button>
+            </div>
           </div>
         </div>
       )}
@@ -338,12 +362,12 @@ export default function LoginContent() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="08X-XXX-XXXX"
-                className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal disabled:opacity-50"
+                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 disabled:opacity-50"
               />
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
               <button
                 disabled={!firebaseConfigured() || otpSending}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+                className="flex items-center justify-center gap-2 rounded-full bg-brand-ink text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
               >
                 {otpSending && <Loader2 size={15} className="animate-spin" />}
                 {otpSending ? "กำลังส่งรหัส..." : "ส่งรหัส OTP"}
@@ -358,19 +382,19 @@ export default function LoginContent() {
                 value={otpName}
                 onChange={(e) => setOtpName(e.target.value)}
                 placeholder="ชื่อของคุณ (สำหรับสมาชิกใหม่)"
-                className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal"
+                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
               />
               <input
                 value={otpInput}
                 onChange={(e) => setOtpInput(e.target.value)}
                 placeholder="กรอกรหัส OTP 6 หลัก"
                 maxLength={6}
-                className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal tracking-widest text-center"
+                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
               <button
                 disabled={otpVerifying || otpInput.length < 6}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+                className="flex items-center justify-center gap-2 rounded-full bg-brand-ink text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
               >
                 {otpVerifying && <Loader2 size={15} className="animate-spin" />}
                 {otpVerifying ? "กำลังยืนยัน..." : "ยืนยันรหัส OTP"}
@@ -396,7 +420,7 @@ export default function LoginContent() {
         <div className="flex flex-col gap-4">
           <a
             href={`/api/auth/line/start?returnTo=${encodeURIComponent(returnTo)}`}
-            className="flex items-center justify-center gap-2 rounded-full bg-[#06C755] text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity"
+            className="flex items-center justify-center gap-2 rounded-full bg-[#06C755] text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity"
           >
             <MessageCircle size={18} /> เข้าสู่ระบบด้วย LINE
           </a>
@@ -408,20 +432,20 @@ export default function LoginContent() {
           {!emailOtpSent ? (
             <form onSubmit={handleSendEmailOtp} className="flex flex-col gap-3">
               <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   required
                   type="email"
                   value={emailOtpAddress}
                   onChange={(e) => setEmailOtpAddress(e.target.value)}
                   placeholder="อีเมล"
-                  className="w-full rounded-lg border border-slate-200 pl-10 pr-4 py-3 text-sm outline-none focus:border-brand-teal"
+                  className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                 />
               </div>
               {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
               <button
                 disabled={emailOtpSending}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+                className="flex items-center justify-center gap-2 rounded-full bg-brand-ink text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
               >
                 {emailOtpSending && <Loader2 size={15} className="animate-spin" />}
                 {emailOtpSending ? "กำลังส่งรหัส..." : "ส่งรหัสยืนยัน"}
@@ -446,26 +470,26 @@ export default function LoginContent() {
                 value={emailOtpName}
                 onChange={(e) => setEmailOtpName(e.target.value)}
                 placeholder="ชื่อของคุณ"
-                className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal"
+                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
               />
               <input
                 required
                 value={emailOtpPhone}
                 onChange={(e) => setEmailOtpPhone(e.target.value)}
                 placeholder="เบอร์โทรศัพท์ (08X-XXX-XXXX)"
-                className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal"
+                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
               />
               <input
                 value={emailOtpCode}
                 onChange={(e) => setEmailOtpCode(e.target.value)}
                 placeholder="กรอกรหัสยืนยัน 6 หลัก"
                 maxLength={6}
-                className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal tracking-widest text-center"
+                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
               {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
               <button
                 disabled={emailOtpVerifying || emailOtpCode.length < 6}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+                className="flex items-center justify-center gap-2 rounded-full bg-brand-ink text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
               >
                 {emailOtpVerifying && <Loader2 size={15} className="animate-spin" />}
                 {emailOtpVerifying ? "กำลังยืนยัน..." : "ยืนยันรหัส"}
