@@ -5,8 +5,40 @@ import { pointsForOrder } from "@/lib/points";
 
 // Shopify webhook endpoint — configure in Shopify Admin (or via
 // webhookSubscriptionCreate) to POST here for topics: orders/paid,
-// orders/cancelled, refunds/create. Verifies the HMAC signature so only
-// Shopify (holding SHOPIFY_WEBHOOK_SECRET) can trigger point changes.
+// orders/cancelled, refunds/create, products/create, products/update,
+// products/delete. Verifies the HMAC signature so only Shopify (holding
+// SHOPIFY_WEBHOOK_SECRET) can trigger point changes or rebuilds.
+
+// The product catalogue (src/data/products.generated.ts) is only ever
+// written by scripts/fetch-products.js during `next build` — see
+// src/app/api/cron/refresh-catalogue/route.ts for why a fresh build is the
+// only way to refresh it. That route already covers a once-a-day refresh;
+// this triggers the same Deploy Hook immediately when a product actually
+// changes on Shopify, so edits show up in minutes instead of up to 24h.
+const REBUILD_DEBOUNCE_MS = 10 * 60 * 1000; // coalesce bursts of product edits into one rebuild
+
+async function triggerCatalogueRebuildIfDue(): Promise<{ triggered: boolean; reason?: string }> {
+  const hookUrl = process.env.VERCEL_DEPLOY_HOOK_URL;
+  if (!hookUrl) return { triggered: false, reason: "VERCEL_DEPLOY_HOOK_URL not configured" };
+
+  const [state] = await supabaseRest<{ last_triggered_at: string | null }[]>(
+    "catalogue_refresh_state?select=last_triggered_at&limit=1"
+  );
+  const lastTriggeredAt = state?.last_triggered_at ? new Date(state.last_triggered_at).getTime() : 0;
+  if (Date.now() - lastTriggeredAt < REBUILD_DEBOUNCE_MS) {
+    return { triggered: false, reason: "debounced — a rebuild already ran recently" };
+  }
+
+  const res = await fetch(hookUrl, { method: "POST" });
+  if (!res.ok) return { triggered: false, reason: `deploy hook returned ${res.status}` };
+
+  await supabaseRest("catalogue_refresh_state?id=eq.true", {
+    method: "PATCH",
+    returning: false,
+    body: JSON.stringify({ last_triggered_at: new Date().toISOString() }),
+  });
+  return { triggered: true };
+}
 
 function verifyHmac(rawBody: string, header: string | null): boolean {
   const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
@@ -140,6 +172,11 @@ export async function POST(req: NextRequest) {
         break;
       case "refunds/create":
         result = await handleRefundsCreate(payload);
+        break;
+      case "products/create":
+      case "products/update":
+      case "products/delete":
+        result = await triggerCatalogueRebuildIfDue();
         break;
       default:
         result = { skipped: `unhandled topic: ${topic}` };
