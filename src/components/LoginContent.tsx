@@ -102,7 +102,7 @@ const GOOGLE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_GOOGLE_SIGNIN_ENABLED)
 export default function LoginContent() {
   const [view, setView] = useState<View>("password");
   const [mode, setMode] = useState<"login" | "register">("login");
-  const { registerWithEmail, loginWithEmail, completePhoneLogin } = useAuth();
+  const { registerWithEmail, confirmRegisterUpdate, loginWithEmail, completePhoneLogin } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo") || "/account";
@@ -114,6 +114,12 @@ export default function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
+  // Set when register hits an email that's already registered — the form
+  // then asks for the code just emailed to that address to prove ownership
+  // before applying name/phone/password as an update to the existing account.
+  const [reclaimNeeded, setReclaimNeeded] = useState(false);
+  const [reclaimCode, setReclaimCode] = useState("");
+  const [reclaimSubmitting, setReclaimSubmitting] = useState(false);
 
   // Email OTP state
   const [emailOtpAddress, setEmailOtpAddress] = useState("");
@@ -153,6 +159,7 @@ export default function LoginContent() {
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     setEmailError("");
+    setReclaimNeeded(false);
     if (mode === "register" && !isPasswordStrongEnough(password)) {
       setEmailError(PASSWORD_REQUIREMENT_TH);
       return;
@@ -163,8 +170,25 @@ export default function LoginContent() {
         ? await registerWithEmail(name, toE164Thai(regPhone), email, password)
         : await loginWithEmail(email, password);
     setEmailSubmitting(false);
-    if (!result.ok) setEmailError(result.error || "เกิดข้อผิดพลาด");
-    else router.push(returnTo);
+    if (!result.ok) {
+      setEmailError(result.error || "เกิดข้อผิดพลาด");
+      if (result.needsVerification) setReclaimNeeded(true);
+      return;
+    }
+    router.push(returnTo);
+  }
+
+  async function handleConfirmReclaim(e: React.FormEvent) {
+    e.preventDefault();
+    setEmailError("");
+    setReclaimSubmitting(true);
+    const result = await confirmRegisterUpdate(name, toE164Thai(regPhone), email, password, reclaimCode);
+    setReclaimSubmitting(false);
+    if (!result.ok) {
+      setEmailError(result.error || "ยืนยันไม่สำเร็จ");
+      return;
+    }
+    router.push(returnTo);
   }
 
   async function handleSendEmailOtp(e: React.FormEvent) {
@@ -400,6 +424,29 @@ export default function LoginContent() {
               {emailSubmitting ? "กำลังดำเนินการ..." : mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
             </button>
           </form>
+
+          {mode === "register" && reclaimNeeded && (
+            <form onSubmit={handleConfirmReclaim} className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-xs text-amber-800">
+                อีเมลนี้มีบัญชีอยู่แล้ว กรอกรหัสยืนยันที่ส่งไปในอีเมลเพื่ออัปเดตชื่อ/เบอร์/รหัสผ่านของบัญชีเดิมด้วยข้อมูลด้านบน
+              </p>
+              <input
+                required
+                value={reclaimCode}
+                onChange={(e) => setReclaimCode(e.target.value)}
+                placeholder="กรอกรหัสยืนยัน 6 หลัก"
+                maxLength={6}
+                className="rounded-full bg-white border border-amber-200 px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
+              />
+              <button
+                disabled={reclaimSubmitting || reclaimCode.length < 6}
+                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {reclaimSubmitting && <Loader2 size={15} className="animate-spin" />}
+                {reclaimSubmitting ? "กำลังยืนยัน..." : "ยืนยันและอัปเดตข้อมูล"}
+              </button>
+            </form>
+          )}
 
           <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-slate-200" />

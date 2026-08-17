@@ -27,8 +27,20 @@ export type SLUser = {
 type AuthContextValue = {
   user: SLUser | null;
   loading: boolean;
-  registerWithEmail: (name: string, phone: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  loginWithEmail: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  registerWithEmail: (
+    name: string,
+    phone: string,
+    email: string,
+    password: string
+  ) => Promise<{ ok: boolean; error?: string; needsVerification?: boolean }>;
+  confirmRegisterUpdate: (
+    name: string,
+    phone: string,
+    email: string,
+    password: string,
+    code: string
+  ) => Promise<{ ok: boolean; error?: string }>;
+  loginWithEmail: (email: string, password: string) => Promise<{ ok: boolean; error?: string; needsVerification?: boolean }>;
   completePhoneLogin: (user: SLUser) => void;
   logout: () => void;
   addPoints: (amount: number) => void;
@@ -107,7 +119,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ name, phone, email, password }),
     });
     const data = await res.json();
-    if (!data.ok) return { ok: false, error: data.error || "สมัครสมาชิกไม่สำเร็จ" };
+    if (!data.ok) return { ok: false, error: data.error || "สมัครสมาชิกไม่สำเร็จ", needsVerification: data.needsVerification };
+    stashAddressSuggestion(data);
+    setUser(data.user);
+    return { ok: true };
+  }
+
+  // Completes the "this email is already registered" reclaim flow — only
+  // reachable after registerWithEmail returns needsVerification, once the
+  // code sent to that email has been entered.
+  async function confirmRegisterUpdate(name: string, phone: string, email: string, password: string, code: string) {
+    const res = await fetch("/api/auth/register/confirm-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone, email, password, code }),
+    });
+    const data = await res.json();
+    if (!data.ok) return { ok: false, error: data.error || "ยืนยันไม่สำเร็จ" };
     stashAddressSuggestion(data);
     setUser(data.user);
     return { ok: true };
@@ -158,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         registerWithEmail,
+        confirmRegisterUpdate,
         loginWithEmail,
         completePhoneLogin,
         logout,
