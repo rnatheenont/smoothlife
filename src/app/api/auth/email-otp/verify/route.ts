@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   if (!supabaseConfigured()) {
     return NextResponse.json({ ok: false, error: "ระบบบัญชีผู้ใช้ยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ" }, { status: 503 });
   }
-  const { email, code, name } = await req.json().catch(() => ({}));
+  const { email, code, name, phone: submittedPhone } = await req.json().catch(() => ({}));
   if (typeof email !== "string" || typeof code !== "string") {
     return NextResponse.json({ ok: false, error: "คำขอไม่ถูกต้อง" }, { status: 400 });
   }
@@ -76,12 +76,26 @@ export async function POST(req: NextRequest) {
 
   let displayName = user.display_name;
   let phone = user.phone;
+
+  // Fill in the phone number the customer just gave us if we don't already
+  // have one (new signup, or an old account that predates this requirement)
+  // — never overwrite a real phone already on file.
+  if (!phone && typeof submittedPhone === "string" && submittedPhone.trim()) {
+    phone = submittedPhone.trim();
+    await supabaseRest(`users?id=eq.${row.user_id}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({ phone }),
+    });
+  }
+
   let addressSuggestion = null;
   if (!user.shopify_customer_id) {
     const shopifyLink = await linkOrCreateShopifyCustomer(row.user_id, {
       email: normalizedEmail,
+      phone: phone || undefined,
       currentDisplayName: user.display_name,
-      currentPhone: user.phone,
+      currentPhone: phone,
     });
     if (shopifyLink.displayName) displayName = shopifyLink.displayName;
     if (shopifyLink.phone) phone = shopifyLink.phone;

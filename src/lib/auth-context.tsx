@@ -27,7 +27,7 @@ export type SLUser = {
 type AuthContextValue = {
   user: SLUser | null;
   loading: boolean;
-  registerWithEmail: (name: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  registerWithEmail: (name: string, phone: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   loginWithEmail: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   completePhoneLogin: (user: SLUser) => void;
   logout: () => void;
@@ -100,11 +100,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadSession();
   }
 
-  async function registerWithEmail(name: string, email: string, password: string) {
+  async function registerWithEmail(name: string, phone: string, email: string, password: string) {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, phone, email, password }),
     });
     const data = await res.json();
     if (!data.ok) return { ok: false, error: data.error || "สมัครสมาชิกไม่สำเร็จ" };

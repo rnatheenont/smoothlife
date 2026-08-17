@@ -11,9 +11,12 @@ export async function POST(req: NextRequest) {
   if (!supabaseConfigured()) {
     return NextResponse.json({ ok: false, error: "ระบบบัญชีผู้ใช้ยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ" }, { status: 503 });
   }
-  const { name, email, password } = await req.json().catch(() => ({}));
+  const { name, phone, email, password } = await req.json().catch(() => ({}));
   if (!name || typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ ok: false, error: "กรุณากรอกชื่อ" }, { status: 400 });
+  }
+  if (!phone || typeof phone !== "string" || phone.trim().length < 9) {
+    return NextResponse.json({ ok: false, error: "กรุณากรอกเบอร์โทรศัพท์" }, { status: 400 });
   }
   if (!email || typeof email !== "string" || !EMAIL_RE.test(email)) {
     return NextResponse.json({ ok: false, error: "อีเมลไม่ถูกต้อง" }, { status: 400 });
@@ -22,6 +25,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร" }, { status: 400 });
   }
   const normalizedEmail = email.trim().toLowerCase();
+  const normalizedPhone = phone.trim();
 
   // One transaction (users + auth_identities + points_ledger inserts) so a
   // failure partway through never leaves a half-created account.
@@ -43,13 +47,21 @@ export async function POST(req: NextRequest) {
   }
   const user = result[0];
 
+  await supabaseRest(`users?id=eq.${user.user_id}`, {
+    method: "PATCH",
+    returning: false,
+    body: JSON.stringify({ phone: normalizedPhone }),
+  });
+
   // Best-effort: link to an existing Shopify customer if this email already
   // has purchase history, or create one on Shopify if not, so Shopify stays
   // the complete customer list either way. Never blocks registration on
   // failure (network hiccup, missing Admin scope, etc).
   const shopifyLink = await linkOrCreateShopifyCustomer(user.user_id, {
     email: normalizedEmail,
+    phone: normalizedPhone,
     currentDisplayName: name.trim(),
+    currentPhone: normalizedPhone,
   });
 
   const res = NextResponse.json({
@@ -58,7 +70,7 @@ export async function POST(req: NextRequest) {
       id: user.user_id,
       name: name.trim(),
       email: normalizedEmail,
-      phone: shopifyLink.phone,
+      phone: normalizedPhone,
       gender: null,
       birthdate: null,
       avatar: null,
