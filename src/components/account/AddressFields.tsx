@@ -1,7 +1,7 @@
 "use client";
 
 import { COUNTRIES } from "@/components/AddressForm";
-import { usePostcodeMatches } from "@/lib/postcode-lookup";
+import ThaiAddressCascade from "@/components/account/ThaiAddressCascade";
 
 export type AddressFormValue = {
   label: string;
@@ -42,17 +42,8 @@ export default function AddressFields({
   onChange: (v: AddressFormValue) => void;
   showDefaultToggle?: boolean;
 }) {
-  const options = usePostcodeMatches(value.postal_code, value.country);
-  const isTH = value.country === "TH";
-
   function set<K extends keyof AddressFormValue>(key: K, v: AddressFormValue[K]) {
     onChange({ ...value, [key]: v });
-  }
-
-  function pickSubdistrict(key: string) {
-    const opt = options.find((o) => `${o.subdistrict}|${o.district}|${o.province}` === key);
-    if (!opt) return;
-    onChange({ ...value, subdistrict: opt.subdistrict, district: opt.district, province: opt.province });
   }
 
   return (
@@ -99,58 +90,7 @@ export default function AddressFields({
           className={inputClass}
         />
       </div>
-      <div>
-        <label className={labelClass}>รหัสไปรษณีย์</label>
-        <input
-          required
-          value={value.postal_code}
-          onChange={(e) => set("postal_code", isTH ? e.target.value.replace(/\D/g, "").slice(0, 5) : e.target.value)}
-          placeholder="10110"
-          className={inputClass}
-        />
-      </div>
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className={labelClass}>แขวง/ตำบล</label>
-          {isTH && options.length > 0 ? (
-            <select
-              required
-              value={`${value.subdistrict}|${value.district}|${value.province}`}
-              onChange={(e) => pickSubdistrict(e.target.value)}
-              className={inputClass}
-            >
-              <option value="||" disabled>
-                เลือกแขวง/ตำบล
-              </option>
-              {options.map((o) => {
-                const key = `${o.subdistrict}|${o.district}|${o.province}`;
-                const needsContext = options.some((x) => x.subdistrict === o.subdistrict && x !== o);
-                return (
-                  <option key={key} value={key}>
-                    {o.subdistrict}
-                    {needsContext ? ` (${o.district}, ${o.province})` : ""}
-                  </option>
-                );
-              })}
-            </select>
-          ) : (
-            <input
-              required
-              value={value.subdistrict}
-              onChange={(e) => set("subdistrict", e.target.value)}
-              className={inputClass}
-            />
-          )}
-        </div>
-        <div>
-          <label className={labelClass}>เขต/อำเภอ</label>
-          <input required value={value.district} onChange={(e) => set("district", e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>จังหวัด</label>
-          <input required value={value.province} onChange={(e) => set("province", e.target.value)} className={inputClass} />
-        </div>
-      </div>
+      <ThaiAddressCascade value={value} onChange={(patch) => onChange({ ...value, ...patch })} />
       {showDefaultToggle && (
         <label className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
           <span className="text-sm text-slate-600">ตั้งเป็นค่าเริ่มต้น จัดส่ง ที่อยู่</span>

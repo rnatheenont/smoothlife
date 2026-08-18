@@ -42,3 +42,82 @@ export function usePostcodeMatches(postalCode: string, country: string) {
 
   return options;
 }
+
+// The reverse direction — pick province, then district, then subdistrict —
+// for anyone who knows where they live but not their own postcode.
+export function useThaiProvinces(country: string) {
+  const [provinces, setProvinces] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (country !== "TH") {
+      setProvinces([]);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/postcode?mode=provinces")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setProvinces(data?.provinces || []);
+      })
+      .catch(() => {
+        if (!cancelled) setProvinces([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [country]);
+
+  return provinces;
+}
+
+export function useThaiDistricts(country: string, province: string) {
+  const [districts, setDistricts] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (country !== "TH" || !province) {
+      setDistricts([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/postcode?mode=districts&province=${encodeURIComponent(province)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setDistricts(data?.districts || []);
+      })
+      .catch(() => {
+        if (!cancelled) setDistricts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [country, province]);
+
+  return districts;
+}
+
+export type ThaiSubdistrict = { name: string; postal_code: string };
+
+export function useThaiSubdistricts(country: string, province: string, district: string) {
+  const [subdistricts, setSubdistricts] = useState<ThaiSubdistrict[]>([]);
+
+  useEffect(() => {
+    if (country !== "TH" || !province || !district) {
+      setSubdistricts([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/postcode?mode=subdistricts&province=${encodeURIComponent(province)}&district=${encodeURIComponent(district)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setSubdistricts(data?.subdistricts || []);
+      })
+      .catch(() => {
+        if (!cancelled) setSubdistricts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [country, province, district]);
+
+  return subdistricts;
+}
