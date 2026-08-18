@@ -95,7 +95,8 @@ export async function cartCreate(
   lines: { merchandiseId: string; quantity: number }[],
   discountCode?: string | null,
   buyerEmail?: string | null,
-  deliveryAddress?: CartDeliveryAddressInput | null
+  deliveryAddress?: CartDeliveryAddressInput | null,
+  buyerPhone?: string | null
 ): Promise<ShopifyCart> {
   const data = await storefrontFetch<{
     cartCreate: { cart: ShopifyCart; userErrors: { field: string[]; message: string }[] };
@@ -111,9 +112,13 @@ export async function cartCreate(
         lines,
         discountCodes: discountCode ? [discountCode] : undefined,
         // Pre-fills + tags the Shopify checkout with the signed-in member's
-        // email so the orders/paid webhook can attribute points back to
-        // this account (matched by email in auth_identities).
-        buyerIdentity: buyerEmail ? { email: buyerEmail } : undefined,
+        // email/phone so the orders/paid webhook can attribute points back
+        // to this account, and so the Contact field at checkout isn't left
+        // blank for phone-only accounts (no email on file).
+        buyerIdentity:
+          buyerEmail || buyerPhone
+            ? { email: buyerEmail || undefined, phone: buyerPhone || undefined }
+            : undefined,
         // Pre-fills (but doesn't force) the delivery address at Shopify's
         // hosted checkout with the member's saved shipping address, so they
         // don't have to retype it there. `selected: true` makes it the

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle, MapPin, CreditCard, QrCode, Landmark, Wallet, Banknote } from "lucide-react";
+import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle, MapPin, CreditCard, QrCode, Landmark, Wallet } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
@@ -90,7 +90,8 @@ export default function CheckoutPage() {
         lines.map((l) => ({ merchandiseId: l.variantId, quantity: l.qty })),
         couponCode,
         user.email || null,
-        defaultAddress ? toShopifyDeliveryAddress(defaultAddress) : null
+        defaultAddress ? toShopifyDeliveryAddress(defaultAddress) : null,
+        user.phone ? toE164Thai(user.phone) : null
       );
       window.location.href = cart.checkoutUrl;
     } catch (err) {
@@ -110,7 +111,7 @@ export default function CheckoutPage() {
             </h2>
             <p className="text-sm text-slate-600 leading-relaxed">
               คุณจะถูกนำไปยังหน้าชำระเงินที่ปลอดภัยของ Shopify เพื่อเลือกวิธีชำระเงิน
-              (PromptPay, บัตรเครดิต/เดบิต, โอนเงิน หรือเก็บเงินปลายทางตามที่ร้านเปิดใช้งาน)
+              (PromptPay, บัตรเครดิต/เดบิต หรือโอนเงินตามที่ร้านเปิดใช้งาน)
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {[
@@ -118,7 +119,6 @@ export default function CheckoutPage() {
                 { icon: CreditCard, label: "บัตรเครดิต/เดบิต" },
                 { icon: Wallet, label: "LINE Pay / TrueMoney" },
                 { icon: Landmark, label: "โอนผ่านแอปธนาคาร" },
-                { icon: Banknote, label: "เก็บเงินปลายทาง" },
               ].map(({ icon: Icon, label }) => {
                 const active = selectedPayment === label;
                 return (
