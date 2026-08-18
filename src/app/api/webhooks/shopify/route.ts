@@ -114,6 +114,23 @@ async function handleOrdersCancelled(order: any) {
       metadata: { reversed_delta: row.delta },
     }),
   });
+
+  // The points_ledger insert above has a negative delta, so it doesn't hit
+  // notify_on_points_earned's `delta > 0` trigger — the cancellation itself
+  // is still worth telling the customer about, so notify directly here.
+  await supabaseRest("notifications", {
+    method: "POST",
+    returning: false,
+    body: JSON.stringify({
+      user_id: row.user_id,
+      type: "order_cancelled",
+      title: "คำสั่งซื้อของคุณถูกยกเลิก",
+      body: order.name ? `ออเดอร์ ${order.name}` : undefined,
+      link: "/account/orders",
+      metadata: { shopify_order_id: String(order.id) },
+    }),
+  });
+
   return { reversed: row.delta };
 }
 

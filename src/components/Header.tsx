@@ -22,6 +22,7 @@ import { useCart } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
 import { tierBadge, tierCard } from "@/lib/tier";
 import LanguageSwitch from "@/components/LanguageSwitch";
+import NotificationBell from "@/components/NotificationBell";
 
 const navLinks = [
   { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: LayoutGrid },
@@ -84,11 +85,19 @@ export default function Header() {
         hideHeader && !open ? "-translate-y-full" : "translate-y-0"
       } ${scrolled ? "border-b border-slate-100" : "border-b border-transparent"}`}
     >
-      <div className="bg-brand-gradient text-white text-center text-[11px] md:text-xs py-1.5 px-3">
-        <span className="hidden sm:inline">
-          ส่งฟรีทั่วไทย • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี
-        </span>
-        <span className="sm:hidden">ส่งฟรีทั่วไทย • ของแท้ 100% • สมัครรับ 100 คะแนน</span>
+      <div className="bg-brand-gradient text-white text-[11px] md:text-xs py-1.5 overflow-hidden whitespace-nowrap">
+        <div className="hidden sm:flex w-max animate-marquee gap-16">
+          <span className="shrink-0">ส่งฟรีทั่วไทย • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี</span>
+          <span className="shrink-0" aria-hidden="true">
+            ส่งฟรีทั่วไทย • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี
+          </span>
+        </div>
+        <div className="flex sm:hidden w-max animate-marquee gap-16">
+          <span className="shrink-0">ส่งฟรีทั่วไทย • ของแท้ 100% • สมัครรับ 100 คะแนน</span>
+          <span className="shrink-0" aria-hidden="true">
+            ส่งฟรีทั่วไทย • ของแท้ 100% • สมัครรับ 100 คะแนน
+          </span>
+        </div>
       </div>
       <div className="container-page flex items-center gap-3 md:gap-6 py-2.5 lg:py-3">
         <button className="lg:hidden shrink-0" onClick={() => setOpen(true)} aria-label="Open menu">
@@ -158,6 +167,12 @@ export default function Header() {
           <Link href="/search" className="lg:hidden" aria-label="Search">
             <Search size={22} />
           </Link>
+          <div className="lg:hidden">
+            <NotificationBell />
+          </div>
+          <div className="hidden lg:block">
+            <NotificationBell />
+          </div>
           <Link href="/cart" className="relative hidden lg:block" aria-label="Cart">
             <ShoppingBag size={22} />
             {count > 0 && (
