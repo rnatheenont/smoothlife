@@ -79,10 +79,23 @@ const CART_FIELDS = `
   }
 `;
 
+export type CartDeliveryAddressInput = {
+  address1: string;
+  address2?: string;
+  city?: string;
+  provinceCode?: string;
+  zip: string;
+  countryCode: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+};
+
 export async function cartCreate(
   lines: { merchandiseId: string; quantity: number }[],
   discountCode?: string | null,
-  buyerEmail?: string | null
+  buyerEmail?: string | null,
+  deliveryAddress?: CartDeliveryAddressInput | null
 ): Promise<ShopifyCart> {
   const data = await storefrontFetch<{
     cartCreate: { cart: ShopifyCart; userErrors: { field: string[]; message: string }[] };
@@ -101,6 +114,15 @@ export async function cartCreate(
         // email so the orders/paid webhook can attribute points back to
         // this account (matched by email in auth_identities).
         buyerIdentity: buyerEmail ? { email: buyerEmail } : undefined,
+        // Pre-fills (but doesn't force) the delivery address at Shopify's
+        // hosted checkout with the member's saved shipping address, so they
+        // don't have to retype it there. `selected: true` makes it the
+        // default rather than just an option; `oneTimeUse` keeps it from
+        // being saved to the buyer's Shopify-side address book, since it's
+        // already saved in our own address book.
+        delivery: deliveryAddress
+          ? { addresses: [{ address: { deliveryAddress }, selected: true, oneTimeUse: true }] }
+          : undefined,
       },
     }
   );

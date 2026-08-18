@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Award, Gift, Star, Crown, History, Ticket, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useCart } from "@/lib/cart-context";
 import AccountLayout from "@/components/account/AccountLayout";
 import DemoBadge from "@/components/DemoBadge";
 import type { RedemptionTier } from "@/app/api/account/redeem/route";
@@ -32,6 +33,7 @@ type LedgerEntry = { id: string; delta: number; reason: string; created_at: stri
 
 function PointsContent() {
   const { user, refreshUser } = useAuth();
+  const { setCouponCode } = useCart();
   const isReal = user?.real;
   const [entries, setEntries] = useState<LedgerEntry[] | null>(null);
   const [tiersList, setTiersList] = useState<RedemptionTier[] | null>(null);
@@ -71,6 +73,10 @@ function PointsContent() {
         return;
       }
       setRedeemed({ code: data.code, tier });
+      // Applied straight to the cart too, not just shown here — otherwise
+      // the customer has to notice, remember, and manually retype this
+      // exact code once they reach Shopify's checkout.
+      setCouponCode(data.code);
       loadEntries();
       await refreshUser();
     } catch {
@@ -199,7 +205,7 @@ function PointsContent() {
             <p className="text-lg font-bold text-brand-ink mb-1">แลกแต้มสำเร็จ!</p>
             <p className="text-sm text-slate-600 mb-4">{redeemed.tier.label_th}</p>
             <div className="mb-4 rounded-xl border border-dashed border-brand-teal bg-brand-gradient-soft px-4 py-3">
-              <p className="text-xs text-slate-500 mb-1">โค้ดส่วนลดของคุณ</p>
+              <p className="text-xs text-slate-500 mb-1">โค้ดส่วนลดของคุณ (ใส่ในตะกร้าให้แล้ว)</p>
               <p className="font-mono text-lg font-bold text-brand-emerald">{redeemed.code}</p>
             </div>
             <button

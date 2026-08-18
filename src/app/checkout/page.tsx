@@ -1,15 +1,36 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle } from "lucide-react";
+import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle, MapPin } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useOrderTotals } from "@/lib/use-order-totals";
 import { formatTHB } from "@/lib/format";
-import { cartCreate, shopifyConfigured } from "@/lib/shopify";
+import { cartCreate, shopifyConfigured, type CartDeliveryAddressInput } from "@/lib/shopify";
+import { toE164Thai } from "@/lib/firebase-client";
+import type { AddressRow } from "@/app/api/account/addresses/route";
 import MobileStickyBar from "@/components/MobileStickyBar";
+
+// Our address book is Thai-specific (แขวง/ตำบล, เขต/อำเภอ, จังหวัด); Shopify's
+// delivery address only has address1/address2/city/province/zip, so the
+// subdistrict + district both fold into address2/city rather than being lost.
+function toShopifyDeliveryAddress(addr: AddressRow): CartDeliveryAddressInput | null {
+  if (addr.country !== "TH") return null;
+  const [firstName, ...rest] = addr.recipient_name.trim().split(/\s+/);
+  return {
+    address1: addr.address_line,
+    address2: addr.subdistrict ? `ตำบล/แขวง${addr.subdistrict}` : undefined,
+    city: addr.district,
+    provinceCode: addr.province,
+    zip: addr.postal_code,
+    countryCode: addr.country,
+    firstName: firstName || undefined,
+    lastName: rest.length ? rest.join(" ") : undefined,
+    phone: addr.phone ? toE164Thai(addr.phone) : undefined,
+  };
+}
 
 export default function CheckoutPage() {
   const { lines, subtotal, couponCode } = useCart();
@@ -18,10 +39,19 @@ export default function CheckoutPage() {
   const totals = useOrderTotals();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [defaultAddress, setDefaultAddress] = useState<AddressRow | null | undefined>(undefined);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
   const shippingFree = totals.freeShipping;
   const shipping = totals.shipping;
   const total = totals.total;
+
+  useEffect(() => {
+    if (!user?.real) return;
+    fetch("/api/account/addresses")
+      .then((r) => r.json())
+      .then((data) => setDefaultAddress(data.addresses?.[0] || null))
+      .catch(() => setDefaultAddress(null));
+  }, [user?.real]);
 
   if (!user) {
     return (
@@ -58,7 +88,8 @@ export default function CheckoutPage() {
       const cart = await cartCreate(
         lines.map((l) => ({ merchandiseId: l.variantId, quantity: l.qty })),
         couponCode,
-        user.email || null
+        user.email || null,
+        defaultAddress ? toShopifyDeliveryAddress(defaultAddress) : null
       );
       window.location.href = cart.checkoutUrl;
     } catch (err) {
@@ -77,9 +108,31 @@ export default function CheckoutPage() {
               <ShieldCheck size={18} className="text-brand-emerald" /> ที่อยู่จัดส่งและการชำระเงิน
             </h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              คุณจะถูกนำไปยังหน้าชำระเงินที่ปลอดภัยของ Shopify เพื่อกรอกที่อยู่จัดส่งและเลือกวิธีชำระเงิน
+              คุณจะถูกนำไปยังหน้าชำระเงินที่ปลอดภัยของ Shopify เพื่อเลือกวิธีชำระเงิน
               (PromptPay, บัตรเครดิต/เดบิต, โอนเงิน หรือเก็บเงินปลายทางตามที่ร้านเปิดใช้งาน)
             </p>
+            {defaultAddress && (
+              <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-surface-soft p-3.5">
+                <MapPin size={16} className="shrink-0 mt-0.5 text-brand-emerald" />
+                <div className="text-xs text-slate-600 leading-relaxed">
+                  <p className="font-semibold text-brand-ink mb-0.5">เติมที่อยู่จัดส่งให้อัตโนมัติ</p>
+                  <p>
+                    {defaultAddress.recipient_name} · {defaultAddress.phone}
+                    <br />
+                    {defaultAddress.address_line} ตำบล/แขวง{defaultAddress.subdistrict} เขต/อำเภอ
+                    {defaultAddress.district} จ.{defaultAddress.province} {defaultAddress.postal_code}
+                  </p>
+                  <Link href="/account/addresses" target="_blank" className="text-brand-emerald font-semibold">
+                    เปลี่ยนที่อยู่
+                  </Link>
+                </div>
+              </div>
+            )}
+            {defaultAddress === null && (
+              <p className="mt-4 text-xs text-slate-400">
+                ยังไม่มีที่อยู่จัดส่งในระบบ — กรอกได้ที่หน้าชำระเงินของ Shopify โดยตรง
+              </p>
+            )}
           </div>
           {error && (
             <div className="rounded-xl2 border border-rose-200 bg-rose-50 text-rose-700 text-sm p-4 flex items-start gap-2">
