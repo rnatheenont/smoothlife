@@ -346,81 +346,87 @@ export default function LoginContent() {
 
       {view === "password" && (
         <div className="flex flex-col gap-5">
-          <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3.5">
-            {mode === "register" && (
-              <>
-                <div className="relative">
-                  <UserIcon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="ชื่อ-นามสกุล"
-                    className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
-                  />
-                </div>
-                <div className="relative">
-                  <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    required
-                    value={regPhone}
-                    onChange={(e) => setRegPhone(e.target.value)}
-                    placeholder="เบอร์โทรศัพท์ (08X-XXX-XXXX)"
-                    className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
-                  />
-                </div>
-              </>
-            )}
-            <div className="relative">
-              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                required
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="อีเมล"
-                className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
-              />
-            </div>
-            <div>
+          {/* Once we've detected this email already has an account, the
+              new-registrant fields (name/phone/email/password) have already
+              been captured in state — showing them again alongside the code
+              form is redundant, so only the reclaim form below renders. */}
+          {!(mode === "register" && reclaimNeeded) && (
+            <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3.5">
+              {mode === "register" && (
+                <>
+                  <div className="relative">
+                    <UserIcon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="ชื่อ-นามสกุล"
+                      className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                    />
+                  </div>
+                  <div className="relative">
+                    <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      required
+                      value={regPhone}
+                      onChange={(e) => setRegPhone(e.target.value)}
+                      placeholder="เบอร์โทรศัพท์ (08X-XXX-XXXX)"
+                      className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                    />
+                  </div>
+                </>
+              )}
               <div className="relative">
-                <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   required
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="รหัสผ่าน"
-                  // Only enforced at register time — an existing user's older,
-                  // shorter password must still be able to log in with it.
-                  minLength={mode === "register" ? 8 : undefined}
-                  className="w-full rounded-full bg-surface-soft pl-11 pr-11 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="อีเมล"
+                  className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
               </div>
-              {mode === "register" && <PasswordChecklist password={password} />}
-              {mode === "login" && (
-                <Link href="/account/forgot-password" className="block text-right text-xs text-slate-400 mt-1.5 hover:text-brand-ink">
-                  ลืมรหัสผ่าน?
-                </Link>
-              )}
-            </div>
-            {mode === "register" && <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />}
-            {emailError && <p className="text-xs text-rose-500">{emailError}</p>}
-            <button
-              disabled={emailSubmitting || (mode === "register" && !agreedTerms)}
-              className="rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60 mt-1"
-            >
-              {emailSubmitting ? "กำลังดำเนินการ..." : mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
-            </button>
-          </form>
+              <div>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    required
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="รหัสผ่าน"
+                    // Only enforced at register time — an existing user's older,
+                    // shorter password must still be able to log in with it.
+                    minLength={mode === "register" ? 8 : undefined}
+                    className="w-full rounded-full bg-surface-soft pl-11 pr-11 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {mode === "register" && <PasswordChecklist password={password} />}
+                {mode === "login" && (
+                  <Link href="/account/forgot-password" className="block text-right text-xs text-slate-400 mt-1.5 hover:text-brand-ink">
+                    ลืมรหัสผ่าน?
+                  </Link>
+                )}
+              </div>
+              {mode === "register" && <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />}
+              {emailError && <p className="text-xs text-rose-500">{emailError}</p>}
+              <button
+                disabled={emailSubmitting || (mode === "register" && !agreedTerms)}
+                className="rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60 mt-1"
+              >
+                {emailSubmitting ? "กำลังดำเนินการ..." : mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
+              </button>
+            </form>
+          )}
 
           {mode === "register" && reclaimNeeded && (
             <form onSubmit={handleConfirmReclaim} className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
@@ -663,18 +669,6 @@ export default function LoginContent() {
           )}
         </div>
       )}
-
-      <p className="text-xs text-slate-400 text-center mt-8">
-        การเข้าสู่ระบบถือว่าคุณยอมรับ{" "}
-        <Link href="/terms" target="_blank" className="underline">
-          ข้อกำหนดการใช้บริการ
-        </Link>{" "}
-        และ{" "}
-        <Link href="/privacy" target="_blank" className="underline">
-          นโยบายความเป็นส่วนตัว
-        </Link>{" "}
-        ของ Smoothlife.com
-      </p>
     </div>
     </div>
   );
