@@ -13,7 +13,13 @@ export function googleConfigured() {
 export const googleOauthCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  // Safari has a long-standing bug (bugs.webkit.org #219650) where a
+  // SameSite=Lax cookie set on a redirect response — exactly what /start
+  // does right before sending the browser to Google — isn't reliably sent
+  // back on the callback redirect, surfacing as "session expired"/state
+  // mismatch. `none` sidesteps it; this is a short-lived CSRF-style
+  // transaction cookie, not a tracking one, so the relaxed policy is safe.
+  sameSite: "none" as const,
   path: "/",
   maxAge: 300, // 5 minutes — just long enough to complete the Google redirect round trip
 };
