@@ -2,10 +2,12 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { User as UserIcon, Loader2, Camera, Mail, CheckCircle2 } from "lucide-react";
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
+import { User as UserIcon, Loader2, Camera, Mail, Phone, CheckCircle2 } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import { useAuth } from "@/lib/auth-context";
 import { resizeForAvatar } from "@/lib/image-utils";
+import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
 
 const inputClass =
   "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal";
@@ -15,7 +17,6 @@ function ProfileContent() {
   const { user, refreshUser } = useAuth();
   const router = useRouter();
   const [name, setName] = useState(user?.name || "");
-  const [phone, setPhone] = useState(user?.phone || "");
   const [gender, setGender] = useState(user?.gender || "");
   const [birthdate, setBirthdate] = useState(user?.birthdate || "");
   const [busy, setBusy] = useState(false);
@@ -58,7 +59,7 @@ function ProfileContent() {
     const res = await fetch("/api/auth/profile", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name, phone, gender: gender || null, birthdate: birthdate || null }),
+      body: JSON.stringify({ name, gender: gender || null, birthdate: birthdate || null }),
     });
     const data = await res.json();
     setBusy(false);
@@ -124,15 +125,6 @@ function ProfileContent() {
           <input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>เบอร์โทรศัพท์</label>
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-            placeholder="0891234567"
-            className={inputClass}
-          />
-        </div>
-        <div>
           <label className={labelClass}>เพศ</label>
           <select value={gender || ""} onChange={(e) => setGender(e.target.value)} className={inputClass}>
             <option value="">ไม่ระบุ</option>
@@ -170,11 +162,14 @@ function ProfileContent() {
   );
 }
 
-// Shown only for accounts that signed in via phone OTP or LINE and have no
-// verified email on file yet — lets them add one, verified with the same
-// emailed-OTP flow already used for email login (see LoginContent.tsx).
+// Adding an email (accounts that signed in via phone OTP or LINE, which
+// never had one) and changing an existing one both go through the same
+// emailed-OTP flow already used for email login (see LoginContent.tsx) —
+// never let either happen on just the strength of typing an address, since
+// that's exactly how someone could hijack an account that isn't theirs.
 function EmailLinkCard() {
   const { user, refreshUser } = useAuth();
+  const [editing, setEditing] = useState(false);
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [code, setCode] = useState("");
@@ -184,7 +179,30 @@ function EmailLinkCard() {
   const [devCode, setDevCode] = useState("");
   const [justLinked, setJustLinked] = useState<string | null>(null);
 
-  if (!user || (user.email && !justLinked)) return null;
+  if (!user) return null;
+  const hasEmail = Boolean(user.email) && !justLinked;
+
+  if (hasEmail && !editing) {
+    return (
+      <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
+        <div className="flex items-center gap-2 text-brand-emerald mb-1">
+          <Mail size={16} />
+          <span className="text-xs font-semibold uppercase tracking-wide">Email</span>
+        </div>
+        <h2 className="text-sm font-bold text-brand-ink mb-3">อีเมล</h2>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-slate-600">{user.email}</p>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-xs font-semibold text-brand-emerald shrink-0"
+          >
+            เปลี่ยนอีเมล
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
@@ -236,6 +254,8 @@ function EmailLinkCard() {
     }
   }
 
+  const isChanging = Boolean(user.email);
+
   if (justLinked) {
     return (
       <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
@@ -243,7 +263,7 @@ function EmailLinkCard() {
           <Mail size={16} />
           <span className="text-xs font-semibold uppercase tracking-wide">Email</span>
         </div>
-        <h2 className="text-sm font-bold text-brand-ink mb-3">เพิ่มและยืนยันอีเมล</h2>
+        <h2 className="text-sm font-bold text-brand-ink mb-3">อีเมล</h2>
         <p className="flex items-center gap-2 text-sm text-brand-emerald">
           <CheckCircle2 size={16} /> ยืนยัน {justLinked} สำเร็จแล้ว
         </p>
@@ -257,9 +277,11 @@ function EmailLinkCard() {
         <Mail size={16} />
         <span className="text-xs font-semibold uppercase tracking-wide">Email</span>
       </div>
-      <h2 className="text-sm font-bold text-brand-ink mb-1">เพิ่มและยืนยันอีเมล</h2>
+      <h2 className="text-sm font-bold text-brand-ink mb-1">{isChanging ? "เปลี่ยนอีเมล" : "เพิ่มและยืนยันอีเมล"}</h2>
       <p className="text-xs text-slate-400 mb-4">
-        บัญชีนี้ยังไม่มีอีเมล เพิ่มไว้เพื่อใช้เข้าสู่ระบบได้อีกทาง และรับการแจ้งเตือนคำสั่งซื้อ
+        {isChanging
+          ? `อีเมลปัจจุบัน: ${user.email} — กรอกอีเมลใหม่แล้วยืนยันด้วยรหัสที่ส่งไปที่อีเมลนั้น`
+          : "บัญชีนี้ยังไม่มีอีเมล เพิ่มไว้เพื่อใช้เข้าสู่ระบบได้อีกทาง และรับการแจ้งเตือนคำสั่งซื้อ"}
       </p>
 
       {!sent ? (
@@ -269,7 +291,7 @@ function EmailLinkCard() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="อีเมล"
+            placeholder="อีเมลใหม่"
             className={inputClass}
           />
           {error && <p className="text-xs text-rose-500">{error}</p>}
@@ -280,6 +302,11 @@ function EmailLinkCard() {
             {sending && <Loader2 size={14} className="animate-spin" />}
             {sending ? "กำลังส่งรหัส..." : "ส่งรหัสยืนยัน"}
           </button>
+          {isChanging && (
+            <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-400">
+              ยกเลิก
+            </button>
+          )}
         </form>
       ) : (
         <form onSubmit={verifyCode} className="flex flex-col gap-3">
@@ -325,11 +352,198 @@ function EmailLinkCard() {
   );
 }
 
+// Changing (or, for accounts that somehow never set one, adding) a phone
+// number always goes through real Firebase SMS verification on the *new*
+// number — mirrors EmailLinkCard's role for email, and the same login-time
+// phone-OTP flow in LoginContent.tsx.
+function PhoneChangeCard() {
+  const { user, refreshUser } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState("");
+  const [justLinked, setJustLinked] = useState<string | null>(null);
+  const confirmationResultRef = useRef<ConfirmationResult | null>(null);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const [recaptchaKey, setRecaptchaKey] = useState(0);
+
+  if (!user) return null;
+  const hasPhone = Boolean(user.phone) && !justLinked;
+  const isChanging = Boolean(user.phone);
+
+  if (hasPhone && !editing) {
+    return (
+      <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
+        <div className="flex items-center gap-2 text-brand-emerald mb-1">
+          <Phone size={16} />
+          <span className="text-xs font-semibold uppercase tracking-wide">Phone</span>
+        </div>
+        <h2 className="text-sm font-bold text-brand-ink mb-3">เบอร์โทรศัพท์</h2>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-slate-600">{user.phone}</p>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-xs font-semibold text-brand-emerald shrink-0"
+          >
+            เปลี่ยนเบอร์โทร
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  async function sendCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (phone.trim().length < 9) return;
+    setError("");
+    setSending(true);
+    try {
+      const auth = getFirebaseAuth();
+      if (!recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current = new RecaptchaVerifier(auth, "profile-recaptcha-container", { size: "invisible" });
+      }
+      const confirmation = await signInWithPhoneNumber(auth, toE164Thai(phone), recaptchaVerifierRef.current);
+      confirmationResultRef.current = confirmation;
+      setSent(true);
+    } catch (err) {
+      console.error("[profile phone] send failed", err);
+      setError("ส่งรหัส OTP ไม่สำเร็จ กรุณาตรวจสอบเบอร์โทรศัพท์แล้วลองใหม่อีกครั้ง");
+      recaptchaVerifierRef.current?.clear();
+      recaptchaVerifierRef.current = null;
+      setRecaptchaKey((k) => k + 1);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function verifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!confirmationResultRef.current) return;
+    setError("");
+    setVerifying(true);
+    try {
+      const credential = await confirmationResultRef.current.confirm(code);
+      const idToken = await credential.user.getIdToken();
+      const res = await fetch("/api/auth/profile/phone", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error || "ยืนยันไม่สำเร็จ");
+        return;
+      }
+      await refreshUser();
+      setJustLinked(data.phone || phone.trim());
+    } catch (err) {
+      console.error("[profile phone] verify failed", err);
+      setError("รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่");
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  if (justLinked) {
+    return (
+      <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
+        <div className="flex items-center gap-2 text-brand-emerald mb-1">
+          <Phone size={16} />
+          <span className="text-xs font-semibold uppercase tracking-wide">Phone</span>
+        </div>
+        <h2 className="text-sm font-bold text-brand-ink mb-3">เบอร์โทรศัพท์</h2>
+        <p className="flex items-center gap-2 text-sm text-brand-emerald">
+          <CheckCircle2 size={16} /> ยืนยัน {justLinked} สำเร็จแล้ว
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
+      <div className="flex items-center gap-2 text-brand-emerald mb-1">
+        <Phone size={16} />
+        <span className="text-xs font-semibold uppercase tracking-wide">Phone</span>
+      </div>
+      <h2 className="text-sm font-bold text-brand-ink mb-1">{isChanging ? "เปลี่ยนเบอร์โทร" : "เพิ่มและยืนยันเบอร์โทร"}</h2>
+      <p className="text-xs text-slate-400 mb-4">
+        {isChanging
+          ? `เบอร์ปัจจุบัน: ${user.phone} — กรอกเบอร์ใหม่แล้วยืนยันด้วยรหัสที่ส่ง SMS ไปที่เบอร์นั้น`
+          : "ยังไม่มีเบอร์โทรในระบบ เพิ่มไว้เพื่อใช้เข้าสู่ระบบได้อีกทาง"}
+      </p>
+      {!firebaseConfigured() && (
+        <p className="text-xs text-rose-500 mb-3">ระบบยืนยันเบอร์โทรยังไม่ได้ตั้งค่า</p>
+      )}
+
+      {!sent ? (
+        <form onSubmit={sendCode} className="flex flex-col gap-3">
+          <input
+            required
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            placeholder="เบอร์โทรใหม่ (08X-XXX-XXXX)"
+            className={inputClass}
+          />
+          {error && <p className="text-xs text-rose-500">{error}</p>}
+          <button
+            disabled={sending || !firebaseConfigured() || phone.trim().length < 9}
+            className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm disabled:opacity-60"
+          >
+            {sending && <Loader2 size={14} className="animate-spin" />}
+            {sending ? "กำลังส่งรหัส..." : "ส่งรหัส OTP"}
+          </button>
+          {isChanging && (
+            <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-400">
+              ยกเลิก
+            </button>
+          )}
+          <div id="profile-recaptcha-container" key={recaptchaKey} />
+        </form>
+      ) : (
+        <form onSubmit={verifyCode} className="flex flex-col gap-3">
+          <p className="text-xs text-slate-500">ส่งรหัสยืนยันไปที่ {phone} แล้ว กรุณากรอกรหัสที่ได้รับทาง SMS</p>
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="กรอกรหัสยืนยัน 6 หลัก"
+            maxLength={6}
+            className={`${inputClass} tracking-widest text-center`}
+          />
+          {error && <p className="text-xs text-rose-500">{error}</p>}
+          <button
+            disabled={verifying || code.length < 6}
+            className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm disabled:opacity-60"
+          >
+            {verifying && <Loader2 size={14} className="animate-spin" />}
+            {verifying ? "กำลังยืนยัน..." : "ยืนยันเบอร์โทร"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSent(false);
+              setCode("");
+              setError("");
+            }}
+            className="text-xs text-slate-400"
+          >
+            เปลี่ยนเบอร์โทร
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   return (
     <AccountLayout>
       <ProfileContent />
       <EmailLinkCard />
+      <PhoneChangeCard />
     </AccountLayout>
   );
 }

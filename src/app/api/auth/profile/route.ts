@@ -18,12 +18,21 @@ export async function PATCH(req: NextRequest) {
     if (!body.name.trim()) return NextResponse.json({ ok: false, error: "กรุณากรอกชื่อ" }, { status: 400 });
     patch.display_name = body.name.trim();
   }
+  // Only for accounts with no phone on file yet (e.g. LINE/email-first
+  // signups completing their profile for the first time) — changing an
+  // already-set phone must go through /api/auth/profile/phone (real SMS
+  // verification), the same rule already applied to email just below.
   if (typeof body.phone === "string") {
     const digits = body.phone.replace(/\D/g, "");
     if (digits && digits.length !== 10) {
       return NextResponse.json({ ok: false, error: "เบอร์มือถือต้องมี 10 หลัก" }, { status: 400 });
     }
-    patch.phone = digits || null;
+    const [existingPhone] = await supabaseRest<{ phone: string | null }[]>(
+      `users?id=eq.${uid}&select=phone`
+    );
+    if (!existingPhone?.phone) {
+      patch.phone = digits || null;
+    }
   }
   if (body.gender === null || (typeof body.gender === "string" && GENDERS.has(body.gender))) {
     patch.gender = body.gender;

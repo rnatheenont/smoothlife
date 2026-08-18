@@ -29,6 +29,10 @@ function ProfileCard() {
 
       <div className="flex flex-col gap-2.5 text-sm">
         <div className="flex items-center justify-between">
+          <span className="text-slate-400">อีเมล</span>
+          <span className="text-brand-ink font-medium">{user.email || "-"}</span>
+        </div>
+        <div className="flex items-center justify-between">
           <span className="text-slate-400">เบอร์โทรศัพท์</span>
           <span className="text-brand-ink font-medium">{user.phone || "-"}</span>
         </div>
