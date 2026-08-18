@@ -11,6 +11,7 @@ import HeroCarousel from "@/components/HeroCarousel";
 import SectionHeading from "@/components/SectionHeading";
 import ScrollReveal from "@/components/ScrollReveal";
 import StaggerReveal from "@/components/StaggerReveal";
+import BrandMarquee from "@/components/BrandMarquee";
 
 const articleCategoryLabel: Record<string, string> = {
   guide: "คู่มือ",
@@ -218,26 +219,12 @@ export default function HomePage() {
       </section>
 
       {/* Brands strip */}
-      <section className="container-page py-10 md:py-14">
-        <ScrollReveal>
+      <section className="py-10 md:py-14 overflow-hidden">
+        <ScrollReveal className="container-page">
           <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
-          <div className="grid grid-cols-3 sm:grid-cols-5 rounded-xl2 border-t border-l border-slate-100 overflow-hidden">
-            {brands.slice(0, 10).map((b) => (
-              <Link
-                key={b.slug}
-                href={`/shop?brand=${b.slug}`}
-                className="border-r border-b border-slate-100 p-4 flex items-center justify-center h-28 md:h-32 hover:bg-surface-soft transition-colors"
-              >
-                {b.image ? (
-                  <div className="relative h-full w-full">
-                    <Image src={b.image} alt={b.name} fill className="object-contain" sizes="220px" />
-                  </div>
-                ) : (
-                  <span className="text-sm font-medium text-slate-600">{b.name}</span>
-                )}
-              </Link>
-            ))}
-          </div>
+        </ScrollReveal>
+        <ScrollReveal>
+          <BrandMarquee brands={brands} />
         </ScrollReveal>
       </section>
 
