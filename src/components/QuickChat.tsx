@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, ReactNode } from "react";
+import { useEffect, useRef, useState, ReactNode, PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -178,6 +178,54 @@ export default function QuickChat() {
   const [escalateMsg, setEscalateMsg] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Lets the launcher bubble be dragged to wherever's convenient (it can sit
+  // over content on some pages). Offset is relative to its default
+  // bottom-right anchor; a drag that moves less than DRAG_THRESHOLD is
+  // still treated as a tap that opens/closes the chat.
+  const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+  const dragState = useRef({ dragging: false, moved: false, startX: 0, startY: 0, baseX: 0, baseY: 0 });
+  const DRAG_THRESHOLD = 6;
+  const LAUNCHER_SIZE = 64;
+
+  function clampDragPos(x: number, y: number) {
+    if (typeof window === "undefined") return { x, y };
+    const margin = 8;
+    const minX = -(window.innerWidth - LAUNCHER_SIZE - margin);
+    const minY = -(window.innerHeight - LAUNCHER_SIZE - margin);
+    return { x: Math.min(0, Math.max(minX, x)), y: Math.min(0, Math.max(minY, y)) };
+  }
+
+  function handleLauncherPointerDown(e: ReactPointerEvent<HTMLButtonElement>) {
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Some input sources (or synthetic events) can't be captured — the
+      // drag/move handlers below still work fine without it.
+    }
+    dragState.current = { dragging: true, moved: false, startX: e.clientX, startY: e.clientY, baseX: dragPos.x, baseY: dragPos.y };
+  }
+  function handleLauncherPointerMove(e: ReactPointerEvent<HTMLButtonElement>) {
+    if (!dragState.current.dragging) return;
+    const dx = e.clientX - dragState.current.startX;
+    const dy = e.clientY - dragState.current.startY;
+    if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) dragState.current.moved = true;
+    setDragPos(clampDragPos(dragState.current.baseX + dx, dragState.current.baseY + dy));
+  }
+  function handleLauncherPointerUp() {
+    dragState.current.dragging = false;
+  }
+  // A tap needs to still open/close the chat — pointerup alone isn't a
+  // reliable "was this a tap" signal across every input source, so the
+  // actual toggle happens on the click that the browser synthesizes right
+  // after pointerup, gated on whether that same gesture crossed the drag
+  // threshold above.
+  function handleLauncherClick() {
+    if (dragState.current.moved) {
+      dragState.current.moved = false;
+      return;
+    }
+    setOpen(!open);
+  }
   // Only surface follow-up suggestion chips every other assistant reply so
   // they help re-engage the chat without showing up after literally every
   // message, which reads as spammy/annoying.
@@ -444,24 +492,28 @@ export default function QuickChat() {
             ? "bottom-[calc(132px+env(safe-area-inset-bottom))]"
             : "bottom-[calc(72px+env(safe-area-inset-bottom))]"
         } lg:bottom-5 right-4 lg:right-5 z-[80] inline-flex transition-[bottom]`}
+        style={{ transform: `translate(${dragPos.x}px, ${dragPos.y}px)` }}
       >
-        {!open && (
-          <span className="lg:hidden absolute inset-0 rounded-full bg-brand-emerald opacity-40 animate-ping pointer-events-none" />
-        )}
         <button
-          onClick={() => setOpen(!open)}
+          onPointerDown={handleLauncherPointerDown}
+          onPointerMove={handleLauncherPointerMove}
+          onPointerUp={handleLauncherPointerUp}
+          onPointerCancel={handleLauncherPointerUp}
+          onClick={handleLauncherClick}
           aria-label={t("คุยกับน้อง Smoothie", "Chat with Smoothie")}
-          className={`relative flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white shadow-cardHover ring-2 ring-white transition-all hover:scale-105 active:scale-95 h-12 w-12 ${
-            open ? "" : "lg:h-14 lg:w-auto lg:justify-start lg:pl-4 lg:pr-5"
+          className={`relative flex items-center justify-center gap-2 rounded-full text-white transition-[transform,background-color,box-shadow] hover:scale-105 active:scale-95 touch-none select-none cursor-grab active:cursor-grabbing ${
+            open
+              ? "bg-brand-gradient shadow-cardHover ring-2 ring-white h-12 w-12"
+              : "h-16 w-16 lg:h-14 lg:w-auto lg:justify-start lg:pl-4 lg:pr-5 lg:bg-brand-gradient lg:shadow-cardHover lg:ring-2 lg:ring-white"
           }`}
         >
           {open ? (
             <X size={20} />
           ) : (
             <>
-              <span className="relative grid h-9 w-9 shrink-0 place-items-center">
-                <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="36px" className="object-contain" />
-                <span className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-white text-brand-emerald shadow-sm">
+              <span className="relative grid h-16 w-16 lg:h-9 lg:w-9 shrink-0 place-items-center">
+                <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="64px" className="object-contain drop-shadow-md" />
+                <span className="absolute top-0.5 right-0.5 grid h-4 w-4 place-items-center rounded-full bg-white text-brand-emerald shadow-sm">
                   <MessageCircleQuestion size={10} strokeWidth={2.5} />
                 </span>
               </span>
