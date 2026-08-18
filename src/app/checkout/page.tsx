@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle, MapPin, CreditCard, QrCode, Landmark, Wallet } from "lucide-react";
+import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle, MapPin, Receipt } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
@@ -11,7 +11,21 @@ import { formatTHB } from "@/lib/format";
 import { cartCreate, shopifyConfigured, type CartDeliveryAddressInput } from "@/lib/shopify";
 import { toE164Thai } from "@/lib/firebase-client";
 import type { AddressRow } from "@/app/api/account/addresses/route";
+import type { TaxAddressRow } from "@/app/api/account/tax-addresses/route";
 import MobileStickyBar from "@/components/MobileStickyBar";
+
+function toTaxInvoiceAttributes(addr: TaxAddressRow): { key: string; value: string }[] {
+  return [
+    { key: "ต้องการใบกำกับภาษี", value: "ต้องการ" },
+    { key: "ชื่อ/บริษัท (ใบกำกับภาษี)", value: addr.recipient_name },
+    { key: "เลขประจำตัวผู้เสียภาษี", value: addr.tax_id },
+    {
+      key: "ที่อยู่ใบกำกับภาษี",
+      value: `${addr.address_line} ตำบล/แขวง${addr.subdistrict} เขต/อำเภอ${addr.district} จ.${addr.province} ${addr.postal_code}`,
+    },
+    { key: "โทรศัพท์ (ใบกำกับภาษี)", value: addr.phone },
+  ];
+}
 
 // Our address book is Thai-specific (แขวง/ตำบล, เขต/อำเภอ, จังหวัด); Shopify's
 // delivery address only has address1/address2/city/province/zip, so the
@@ -40,7 +54,9 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [defaultAddress, setDefaultAddress] = useState<AddressRow | null | undefined>(undefined);
-  const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
+  const [taxAddresses, setTaxAddresses] = useState<TaxAddressRow[]>([]);
+  const [wantsTaxInvoice, setWantsTaxInvoice] = useState(false);
+  const [selectedTaxAddressId, setSelectedTaxAddressId] = useState<string | null>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
   const shippingFree = totals.freeShipping;
   const shipping = totals.shipping;
@@ -52,7 +68,17 @@ export default function CheckoutPage() {
       .then((r) => r.json())
       .then((data) => setDefaultAddress(data.addresses?.[0] || null))
       .catch(() => setDefaultAddress(null));
+    fetch("/api/account/tax-addresses")
+      .then((r) => r.json())
+      .then((data) => {
+        const list: TaxAddressRow[] = data.addresses || [];
+        setTaxAddresses(list);
+        if (list[0]) setSelectedTaxAddressId(list[0].id);
+      })
+      .catch(() => setTaxAddresses([]));
   }, [user?.real]);
+
+  const selectedTaxAddress = taxAddresses.find((a) => a.id === selectedTaxAddressId) || null;
 
   if (!user) {
     return (
@@ -91,7 +117,8 @@ export default function CheckoutPage() {
         couponCode,
         user.email || null,
         defaultAddress ? toShopifyDeliveryAddress(defaultAddress) : null,
-        user.phone ? toE164Thai(user.phone) : null
+        user.phone ? toE164Thai(user.phone) : null,
+        wantsTaxInvoice && selectedTaxAddress ? toTaxInvoiceAttributes(selectedTaxAddress) : undefined
       );
       window.location.href = cart.checkoutUrl;
     } catch (err) {
@@ -113,35 +140,6 @@ export default function CheckoutPage() {
               คุณจะถูกนำไปยังหน้าชำระเงินที่ปลอดภัยของ Shopify เพื่อเลือกวิธีชำระเงิน
               (PromptPay, บัตรเครดิต/เดบิต หรือโอนเงินตามที่ร้านเปิดใช้งาน)
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {[
-                { icon: QrCode, label: "PromptPay" },
-                { icon: CreditCard, label: "บัตรเครดิต/เดบิต" },
-                { icon: Wallet, label: "LINE Pay / TrueMoney" },
-                { icon: Landmark, label: "โอนผ่านแอปธนาคาร" },
-              ].map(({ icon: Icon, label }) => {
-                const active = selectedPayment === label;
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => setSelectedPayment(active ? null : label)}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${
-                      active
-                        ? "border-brand-teal bg-brand-gradient-soft text-brand-ink"
-                        : "border-slate-200 bg-surface-soft text-slate-600 hover:border-brand-teal/60"
-                    }`}
-                  >
-                    <Icon size={13} className="text-brand-emerald" /> {label}
-                  </button>
-                );
-              })}
-            </div>
-            {selectedPayment && (
-              <p className="mt-2 text-[11px] text-slate-400">
-                เลือกไว้: {selectedPayment} — ยืนยันวิธีชำระเงินอีกครั้งที่หน้าชำระเงินของ Shopify
-              </p>
-            )}
             {defaultAddress && (
               <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-surface-soft p-3.5">
                 <MapPin size={16} className="shrink-0 mt-0.5 text-brand-emerald" />
@@ -165,6 +163,68 @@ export default function CheckoutPage() {
               </p>
             )}
           </div>
+
+          {user.real && (
+            <div className="rounded-xl2 border border-slate-100 p-5 shadow-card">
+              <h2 className="font-bold text-brand-ink mb-3 flex items-center gap-2">
+                <Receipt size={18} className="text-brand-emerald" /> ใบกำกับภาษี
+              </h2>
+              <label className="flex items-start gap-2.5 text-sm text-slate-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={wantsTaxInvoice}
+                  onChange={(e) => setWantsTaxInvoice(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-emerald focus:ring-brand-emerald"
+                />
+                <span>ต้องการใบกำกับภาษีเต็มรูปสำหรับคำสั่งซื้อนี้</span>
+              </label>
+
+              {wantsTaxInvoice && taxAddresses.length === 0 && (
+                <p className="mt-3 text-xs text-slate-400">
+                  ยังไม่มีข้อมูลใบกำกับภาษีในระบบ —{" "}
+                  <Link href="/account/tax-addresses/new" target="_blank" className="text-brand-emerald font-semibold">
+                    เพิ่มข้อมูลใบกำกับภาษี
+                  </Link>{" "}
+                  ก่อนแล้วกลับมากดเลือกอีกครั้ง
+                </p>
+              )}
+
+              {wantsTaxInvoice && taxAddresses.length > 0 && (
+                <div className="mt-3 flex flex-col gap-2">
+                  {taxAddresses.map((addr) => (
+                    <label
+                      key={addr.id}
+                      className={`flex items-start gap-2.5 rounded-xl border p-3 text-xs cursor-pointer ${
+                        selectedTaxAddressId === addr.id ? "border-brand-teal bg-brand-gradient-soft" : "border-slate-200"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="taxAddress"
+                        checked={selectedTaxAddressId === addr.id}
+                        onChange={() => setSelectedTaxAddressId(addr.id)}
+                        className="mt-0.5 h-3.5 w-3.5 text-brand-emerald focus:ring-brand-emerald"
+                      />
+                      <span className="text-slate-600 leading-relaxed">
+                        <span className="font-semibold text-brand-ink">
+                          {addr.recipient_name} {addr.is_company && "(นิติบุคคล)"}
+                        </span>
+                        <br />
+                        เลขผู้เสียภาษี {addr.tax_id}
+                        <br />
+                        {addr.address_line} ตำบล/แขวง{addr.subdistrict} เขต/อำเภอ{addr.district} จ.{addr.province}{" "}
+                        {addr.postal_code}
+                      </span>
+                    </label>
+                  ))}
+                  <Link href="/account/tax-addresses/new" target="_blank" className="text-xs text-brand-emerald font-semibold">
+                    + เพิ่มที่อยู่ใบกำกับภาษีใหม่
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+
           {error && (
             <div className="rounded-xl2 border border-rose-200 bg-rose-50 text-rose-700 text-sm p-4 flex items-start gap-2">
               <AlertTriangle size={16} className="shrink-0 mt-0.5" />

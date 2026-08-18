@@ -96,7 +96,8 @@ export async function cartCreate(
   discountCode?: string | null,
   buyerEmail?: string | null,
   deliveryAddress?: CartDeliveryAddressInput | null,
-  buyerPhone?: string | null
+  buyerPhone?: string | null,
+  attributes?: { key: string; value: string }[]
 ): Promise<ShopifyCart> {
   const data = await storefrontFetch<{
     cartCreate: { cart: ShopifyCart; userErrors: { field: string[]; message: string }[] };
@@ -111,6 +112,11 @@ export async function cartCreate(
       input: {
         lines,
         discountCodes: discountCode ? [discountCode] : undefined,
+        // Shopify's checkout has no dedicated tax-invoice field, so a
+        // requested tax invoice rides along as cart attributes — they carry
+        // through to the order's note attributes in Shopify Admin for the
+        // accounting team to actually issue the invoice from.
+        attributes: attributes && attributes.length > 0 ? attributes : undefined,
         // Pre-fills + tags the Shopify checkout with the signed-in member's
         // email/phone so the orders/paid webhook can attribute points back
         // to this account, and so the Contact field at checkout isn't left
