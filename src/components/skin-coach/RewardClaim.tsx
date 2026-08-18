@@ -4,10 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { Gift, Copy, Check, Loader2, Award } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useCart } from "@/lib/cart-context";
 import { discountForScore, SKIN_COACH_POINTS_REWARD } from "@/lib/skin-coach";
 
 export default function RewardClaim({ score }: { score: number }) {
   const { user, refreshUser } = useAuth();
+  const { setCouponCode } = useCart();
   const [code, setCode] = useState<string | null>(null);
   const [pointsAwarded, setPointsAwarded] = useState<number | null>(null);
   const [label, setLabel] = useState(discountForScore(score).label);
@@ -34,6 +36,7 @@ export default function RewardClaim({ score }: { score: number }) {
         refreshUser();
       } else {
         setCode(data.code);
+        setCouponCode(data.code);
       }
       if (data.label) setLabel(data.label);
     } catch {
@@ -79,7 +82,7 @@ export default function RewardClaim({ score }: { score: number }) {
           {code}
           {copied ? <Check size={14} className="text-brand-emerald" /> : <Copy size={14} className="text-slate-400" />}
         </button>
-        <p className="text-[11px] text-slate-500 mt-3">ใช้ได้ 1 ครั้งตอนชำระเงิน • สิทธิ์ 1 คูปองต่อบัญชีต่อเดือน</p>
+        <p className="text-[11px] text-slate-500 mt-3">ใส่ในตะกร้าให้แล้ว • ใช้ได้ 1 ครั้งตอนชำระเงิน • สิทธิ์ 1 คูปองต่อบัญชีต่อเดือน</p>
       </div>
     );
   }
