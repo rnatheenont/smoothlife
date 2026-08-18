@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle, MapPin } from "lucide-react";
+import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle, MapPin, CreditCard, QrCode, Landmark, Wallet, Banknote } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
@@ -40,6 +40,7 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [defaultAddress, setDefaultAddress] = useState<AddressRow | null | undefined>(undefined);
+  const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
   const shippingFree = totals.freeShipping;
   const shipping = totals.shipping;
@@ -111,6 +112,36 @@ export default function CheckoutPage() {
               คุณจะถูกนำไปยังหน้าชำระเงินที่ปลอดภัยของ Shopify เพื่อเลือกวิธีชำระเงิน
               (PromptPay, บัตรเครดิต/เดบิต, โอนเงิน หรือเก็บเงินปลายทางตามที่ร้านเปิดใช้งาน)
             </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[
+                { icon: QrCode, label: "PromptPay" },
+                { icon: CreditCard, label: "บัตรเครดิต/เดบิต" },
+                { icon: Wallet, label: "LINE Pay / TrueMoney" },
+                { icon: Landmark, label: "โอนผ่านแอปธนาคาร" },
+                { icon: Banknote, label: "เก็บเงินปลายทาง" },
+              ].map(({ icon: Icon, label }) => {
+                const active = selectedPayment === label;
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setSelectedPayment(active ? null : label)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                      active
+                        ? "border-brand-teal bg-brand-gradient-soft text-brand-ink"
+                        : "border-slate-200 bg-surface-soft text-slate-600 hover:border-brand-teal/60"
+                    }`}
+                  >
+                    <Icon size={13} className="text-brand-emerald" /> {label}
+                  </button>
+                );
+              })}
+            </div>
+            {selectedPayment && (
+              <p className="mt-2 text-[11px] text-slate-400">
+                เลือกไว้: {selectedPayment} — ยืนยันวิธีชำระเงินอีกครั้งที่หน้าชำระเงินของ Shopify
+              </p>
+            )}
             {defaultAddress && (
               <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-surface-soft p-3.5">
                 <MapPin size={16} className="shrink-0 mt-0.5 text-brand-emerald" />
