@@ -53,9 +53,15 @@ export default function ThaiAddressCascade({
         <input
           required
           value={value.postal_code}
-          onChange={(e) =>
-            onChange({ postal_code: isTH ? e.target.value.replace(/\D/g, "").slice(0, 5) : e.target.value })
-          }
+          onChange={(e) => {
+            const next = isTH ? e.target.value.replace(/\D/g, "").slice(0, 5) : e.target.value;
+            // Clearing the postcode back to empty also clears whatever it
+            // had filled in below — otherwise deleting it to retype leaves
+            // a stale province/district/subdistrict that no longer matches.
+            onChange(
+              next === "" ? { postal_code: "", province: "", district: "", subdistrict: "" } : { postal_code: next }
+            );
+          }}
           placeholder="10110"
           className={inputClass}
         />
