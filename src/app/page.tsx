@@ -9,6 +9,8 @@ import { articles } from "@/data/articles";
 import ProductCarousel from "@/components/ProductCarousel";
 import HeroCarousel from "@/components/HeroCarousel";
 import SectionHeading from "@/components/SectionHeading";
+import ScrollReveal from "@/components/ScrollReveal";
+import StaggerReveal from "@/components/StaggerReveal";
 
 const articleCategoryLabel: Record<string, string> = {
   guide: "คู่มือ",
@@ -40,7 +42,7 @@ export default function HomePage() {
       {/* Hero */}
       <section className="bg-brand-radial">
         <div className="container-page py-6 md:py-16 grid md:grid-cols-2 gap-6 md:gap-8 items-center">
-          <div className="animate-fadeUp order-2 md:order-1">
+          <StaggerReveal className="order-2 md:order-1">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-emerald shadow-card mb-4">
               <Sparkles size={13} /> แนะนำน้อง Smoothie ผู้ช่วยคนใหม่
             </span>
@@ -60,7 +62,7 @@ export default function HomePage() {
                 ให้น้อง Smoothie แนะนำสกินแคร์
               </Link>
             </div>
-          </div>
+          </StaggerReveal>
           <div className="order-1 md:order-2">
             <HeroCarousel />
           </div>
@@ -88,24 +90,26 @@ export default function HomePage() {
 
       {/* Categories */}
       <section className="container-page py-10 md:py-14">
-        <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
-          {categories.map((c) => (
-            <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col items-center gap-2">
-              <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full overflow-hidden bg-surface-soft ring-1 ring-slate-100 group-hover:ring-brand-teal transition-all">
-                <Image src={c.image} alt={c.name} fill className="object-cover" />
-              </div>
-              <span className="text-xs md:text-sm text-center font-medium text-slate-600 group-hover:text-brand-emerald">
-                {c.nameTh}
-              </span>
-            </Link>
-          ))}
-        </div>
+        <ScrollReveal>
+          <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
+            {categories.map((c) => (
+              <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col items-center gap-2">
+                <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full overflow-hidden bg-surface-soft ring-1 ring-slate-100 group-hover:ring-brand-teal transition-all">
+                  <Image src={c.image} alt={c.name} fill className="object-cover" />
+                </div>
+                <span className="text-xs md:text-sm text-center font-medium text-slate-600 group-hover:text-brand-emerald">
+                  {c.nameTh}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </ScrollReveal>
       </section>
 
       {/* Promotions */}
       <section className="bg-surface-soft py-10 md:py-14">
-        <div className="container-page">
+        <ScrollReveal className="container-page">
           <SectionHeading title="โปรโมชั่นและดีลเด็ด" subtitle="New, Best Sellers and Promotions" href="/promotions" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {promotions.map((promo) => (
@@ -131,7 +135,7 @@ export default function HomePage() {
               </Link>
             ))}
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       {/* Best sellers — section itself (not just the carousel) only renders
@@ -139,23 +143,27 @@ export default function HomePage() {
           py-10/py-14 padding and leaves a blank gap in the page. */}
       {bestSellers.length > 0 && (
         <section className="container-page py-10 md:py-14">
-          <ProductCarousel title="สินค้าขายดี" subtitle="Best Sellers" href="/shop?sort=bestseller" products={bestSellers} />
+          <ScrollReveal>
+            <ProductCarousel title="สินค้าขายดี" subtitle="Best Sellers" href="/shop?sort=bestseller" products={bestSellers} />
+          </ScrollReveal>
         </section>
       )}
 
       {/* On sale */}
       {onSale.length > 0 && (
         <section className="bg-surface-soft py-10 md:py-14">
-          <div className="container-page">
+          <ScrollReveal className="container-page">
             <ProductCarousel title="ลดราคาพิเศษ" subtitle="On Sale" href="/shop" products={onSale} />
-          </div>
+          </ScrollReveal>
         </section>
       )}
 
       {/* Bundle deals */}
       {bundles.length > 0 && (
         <section className="container-page py-10 md:py-14">
-          <ProductCarousel title="ซื้อเป็นเซ็ตคุ้มกว่า" subtitle="Bundle Deals" href="/shop" products={bundles} />
+          <ScrollReveal>
+            <ProductCarousel title="ซื้อเป็นเซ็ตคุ้มกว่า" subtitle="Bundle Deals" href="/shop" products={bundles} />
+          </ScrollReveal>
         </section>
       )}
 
@@ -165,14 +173,16 @@ export default function HomePage() {
         if (products.length === 0) return null;
         return (
           <section key={b.slug} className="container-page py-10 md:py-14">
-            <ProductCarousel title={b.name} subtitle={b.tagline} href={`/shop?brand=${b.slug}`} products={products} />
+            <ScrollReveal>
+              <ProductCarousel title={b.name} subtitle={b.tagline} href={`/shop?brand=${b.slug}`} products={products} />
+            </ScrollReveal>
           </section>
         );
       })}
 
       {/* Concern hub teaser */}
       <section className="bg-brand-gradient-soft py-10 md:py-14">
-        <div className="container-page">
+        <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามปัญหาผิวที่กังวล" subtitle="Shop by Concern" href="/concern" />
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
             {concerns.map((c) => (
@@ -186,12 +196,12 @@ export default function HomePage() {
               </Link>
             ))}
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       {/* AI Advisor CTA */}
       <section className="container-page py-10 md:py-14">
-        <div className="rounded-xl2 bg-brand-ink text-white p-8 md:p-12 grid md:grid-cols-2 gap-8 items-center overflow-hidden relative">
+        <ScrollReveal className="rounded-xl2 bg-brand-ink text-white p-8 md:p-12 grid md:grid-cols-2 gap-8 items-center overflow-hidden relative">
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold mb-4">
               <Sparkles size={13} /> Personalized Shopping
@@ -204,39 +214,43 @@ export default function HomePage() {
               เริ่มทำแบบประเมิน
             </Link>
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       {/* Brands strip */}
       <section className="container-page py-10 md:py-14">
-        <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
-        <div className="grid grid-cols-3 sm:grid-cols-5 rounded-xl2 border-t border-l border-slate-100 overflow-hidden">
-          {brands.slice(0, 10).map((b) => (
-            <Link
-              key={b.slug}
-              href={`/shop?brand=${b.slug}`}
-              className="border-r border-b border-slate-100 p-4 flex items-center justify-center h-28 md:h-32 hover:bg-surface-soft transition-colors"
-            >
-              {b.image ? (
-                <div className="relative h-full w-full">
-                  <Image src={b.image} alt={b.name} fill className="object-contain" sizes="220px" />
-                </div>
-              ) : (
-                <span className="text-sm font-medium text-slate-600">{b.name}</span>
-              )}
-            </Link>
-          ))}
-        </div>
+        <ScrollReveal>
+          <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
+          <div className="grid grid-cols-3 sm:grid-cols-5 rounded-xl2 border-t border-l border-slate-100 overflow-hidden">
+            {brands.slice(0, 10).map((b) => (
+              <Link
+                key={b.slug}
+                href={`/shop?brand=${b.slug}`}
+                className="border-r border-b border-slate-100 p-4 flex items-center justify-center h-28 md:h-32 hover:bg-surface-soft transition-colors"
+              >
+                {b.image ? (
+                  <div className="relative h-full w-full">
+                    <Image src={b.image} alt={b.name} fill className="object-contain" sizes="220px" />
+                  </div>
+                ) : (
+                  <span className="text-sm font-medium text-slate-600">{b.name}</span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </ScrollReveal>
       </section>
 
       {/* New arrivals */}
       <section className="container-page py-10 md:py-14">
-        <ProductCarousel title="แนะนำสำหรับคุณ" subtitle="New & Trending" href="/shop" products={newArrivals} />
+        <ScrollReveal>
+          <ProductCarousel title="แนะนำสำหรับคุณ" subtitle="New & Trending" href="/shop" products={newArrivals} />
+        </ScrollReveal>
       </section>
 
       {/* Wellness / knowledge teaser */}
       <section className="bg-surface-soft py-10 md:py-14">
-        <div className="container-page">
+        <ScrollReveal className="container-page">
           <SectionHeading title="ความรู้เรื่องผิวและสุขภาพ" subtitle="Learn About Wellness" href="/knowledge" />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
             {featuredArticles.map((a) => (
@@ -272,7 +286,7 @@ export default function HomePage() {
               </Link>
             ))}
           </div>
-        </div>
+        </ScrollReveal>
       </section>
     </div>
   );

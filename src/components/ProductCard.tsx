@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingBag, Check } from "lucide-react";
+import gsap from "gsap";
 import { Product } from "@/data/types";
 import { formatTHB } from "@/lib/format";
 import StarRating from "./StarRating";
@@ -23,6 +24,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const { toggle, has } = useWishlist();
   const isWished = has(product.slug);
   const [added, setAdded] = useState(false);
+  const addBtnRef = useRef<HTMLButtonElement>(null);
   const discount = product.compareAtPrice
     ? Math.round(100 - (product.price / product.compareAtPrice) * 100)
     : 0;
@@ -37,6 +39,13 @@ export default function ProductCard({ product }: { product: Product }) {
     addItem(product.slug);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
+    if (addBtnRef.current) {
+      gsap.fromTo(
+        addBtnRef.current,
+        { scale: 1 },
+        { scale: 1.18, duration: 0.18, yoyo: true, repeat: 1, ease: "power1.inOut" }
+      );
+    }
   }
 
   return (
@@ -102,6 +111,7 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
         </div>
         <button
+          ref={addBtnRef}
           onClick={handleAdd}
           disabled={soldOut}
           className={clsx(
