@@ -6,15 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Phone, MessageCircle, Lock, User as UserIcon, AlertTriangle, Loader2, ArrowLeft, Apple, Eye, EyeOff } from "lucide-react";
 
-// LINE's real wordmark badge (green circle, bold white "LINE"), not a
-// generic chat bubble icon.
-function LineIcon({ size = 40 }: { size?: number }) {
+// LINE's wordmark in its brand green, sized to sit inside the same
+// bordered white circle as the other login-method buttons.
+function LineIcon({ size = 22 }: { size?: number }) {
   return (
-    <span
-      style={{ width: size, height: size }}
-      className="grid shrink-0 place-items-center rounded-full bg-[#06C755] text-white font-extrabold tracking-tight"
-    >
-      <span style={{ fontSize: size * 0.22 }}>LINE</span>
+    <span style={{ fontSize: size }} className="font-extrabold tracking-tight text-[#06C755]">
+      LINE
     </span>
   );
 }
@@ -463,22 +460,30 @@ export default function LoginContent() {
                   onClick={() => setView(m.id)}
                   aria-label={m.label}
                   title={m.label}
-                  className="grid h-14 w-14 place-items-center rounded-full bg-surface-soft text-slate-600 hover:bg-brand-gradient-soft hover:text-brand-emerald transition-colors"
+                  className="relative grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-surface-soft hover:border-brand-teal/30 hover:text-brand-emerald transition-colors"
                 >
                   <m.icon size={22} />
+                  <span className="absolute -bottom-1.5 rounded-full bg-brand-emerald px-1.5 py-[1px] text-[9px] font-bold leading-none text-white shadow-sm">
+                    OTP
+                  </span>
                 </button>
               ))}
-              <button onClick={() => setView("line")} aria-label="LINE" title="LINE" className="rounded-full hover:opacity-85 transition-opacity">
-                <LineIcon size={56} />
+              <button
+                onClick={() => setView("line")}
+                aria-label="LINE"
+                title="LINE"
+                className="grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 hover:bg-surface-soft hover:border-brand-teal/30 transition-colors"
+              >
+                <LineIcon size={15} />
               </button>
               {GOOGLE_CONFIGURED && (
                 <button
                   onClick={() => (window.location.href = `/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`)}
                   aria-label="Google"
                   title="Google"
-                  className="grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 hover:bg-surface-soft transition-colors"
+                  className="grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 hover:bg-surface-soft hover:border-brand-teal/30 transition-colors"
                 >
-                  <GoogleIcon size={24} />
+                  <GoogleIcon size={22} />
                 </button>
               )}
               {APPLE_CONFIGURED && (
@@ -486,9 +491,9 @@ export default function LoginContent() {
                   onClick={() => (window.location.href = `/api/auth/apple/start?returnTo=${encodeURIComponent(returnTo)}`)}
                   aria-label="Apple"
                   title="Apple"
-                  className="grid h-14 w-14 place-items-center rounded-full bg-black text-white hover:opacity-85 transition-opacity"
+                  className="grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-900 hover:bg-surface-soft hover:border-brand-teal/30 transition-colors"
                 >
-                  <Apple size={26} fill="currentColor" />
+                  <Apple size={22} fill="currentColor" />
                 </button>
               )}
             </div>
