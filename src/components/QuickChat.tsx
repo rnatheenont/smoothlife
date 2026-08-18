@@ -183,16 +183,27 @@ export default function QuickChat() {
   // bottom-right anchor; a drag that moves less than DRAG_THRESHOLD is
   // still treated as a tap that opens/closes the chat.
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+  // Only while actively dragging do we want the position to track the
+  // pointer with zero lag — the snap-to-edge and snap-home moves right
+  // below both want a smooth animated transition instead.
+  const [isDragging, setIsDragging] = useState(false);
   const dragState = useRef({ dragging: false, moved: false, startX: 0, startY: 0, baseX: 0, baseY: 0 });
   const DRAG_THRESHOLD = 6;
   const LAUNCHER_SIZE = 64;
+  const EDGE_MARGIN = 8;
 
+  function dragBounds() {
+    if (typeof window === "undefined") return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+    return {
+      minX: -(window.innerWidth - LAUNCHER_SIZE - EDGE_MARGIN),
+      maxX: 0,
+      minY: -(window.innerHeight - LAUNCHER_SIZE - EDGE_MARGIN),
+      maxY: 0,
+    };
+  }
   function clampDragPos(x: number, y: number) {
-    if (typeof window === "undefined") return { x, y };
-    const margin = 8;
-    const minX = -(window.innerWidth - LAUNCHER_SIZE - margin);
-    const minY = -(window.innerHeight - LAUNCHER_SIZE - margin);
-    return { x: Math.min(0, Math.max(minX, x)), y: Math.min(0, Math.max(minY, y)) };
+    const { minX, maxX, minY, maxY } = dragBounds();
+    return { x: Math.min(maxX, Math.max(minX, x)), y: Math.min(maxY, Math.max(minY, y)) };
   }
 
   function handleLauncherPointerDown(e: ReactPointerEvent<HTMLButtonElement>) {
@@ -202,6 +213,7 @@ export default function QuickChat() {
       // Some input sources (or synthetic events) can't be captured — the
       // drag/move handlers below still work fine without it.
     }
+    setIsDragging(true);
     dragState.current = { dragging: true, moved: false, startX: e.clientX, startY: e.clientY, baseX: dragPos.x, baseY: dragPos.y };
   }
   function handleLauncherPointerMove(e: ReactPointerEvent<HTMLButtonElement>) {
@@ -212,7 +224,20 @@ export default function QuickChat() {
     setDragPos(clampDragPos(dragState.current.baseX + dx, dragState.current.baseY + dy));
   }
   function handleLauncherPointerUp() {
+    const wasRealDrag = dragState.current.dragging && dragState.current.moved;
     dragState.current.dragging = false;
+    setIsDragging(false);
+    // A drag that actually moved the bubble (as opposed to a plain tap)
+    // settles against whichever side of the screen it's now closer to,
+    // like a normal floating chat bubble, instead of floating mid-screen.
+    if (wasRealDrag) {
+      setDragPos((pos) => {
+        const { minX, maxX } = dragBounds();
+        const centerX = window.innerWidth - 16 - LAUNCHER_SIZE / 2 + pos.x;
+        const snappedX = centerX < window.innerWidth / 2 ? minX : maxX;
+        return { x: snappedX, y: pos.y };
+      });
+    }
   }
   // A tap needs to still open/close the chat — pointerup alone isn't a
   // reliable "was this a tap" signal across every input source, so the
@@ -224,6 +249,10 @@ export default function QuickChat() {
       dragState.current.moved = false;
       return;
     }
+    // Opening the chat always returns the bubble home first — otherwise the
+    // close ("X") button could end up stranded wherever it was last dragged,
+    // far from the chat panel it's meant to sit next to.
+    if (!open) setDragPos({ x: 0, y: 0 });
     setOpen(!open);
   }
   // Only surface follow-up suggestion chips every other assistant reply so
@@ -492,7 +521,10 @@ export default function QuickChat() {
             ? "bottom-[calc(132px+env(safe-area-inset-bottom))]"
             : "bottom-[calc(72px+env(safe-area-inset-bottom))]"
         } lg:bottom-5 right-4 lg:right-5 z-[80] inline-flex transition-[bottom]`}
-        style={{ transform: `translate(${dragPos.x}px, ${dragPos.y}px)` }}
+        style={{
+          transform: `translate(${dragPos.x}px, ${dragPos.y}px)`,
+          transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        }}
       >
         <button
           onPointerDown={handleLauncherPointerDown}
@@ -513,8 +545,12 @@ export default function QuickChat() {
             <>
               <span className="relative grid h-16 w-16 lg:h-9 lg:w-9 shrink-0 place-items-center">
                 <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="64px" className="object-contain drop-shadow-md" />
-                <span className="absolute top-0.5 right-0.5 grid h-4 w-4 place-items-center rounded-full bg-white text-brand-emerald shadow-sm">
-                  <MessageCircleQuestion size={10} strokeWidth={2.5} />
+                {/* Mobile-only label — the mascot alone doesn't read as "tap to
+                    chat with AI"; desktop already spells that out via the
+                    text span below, so this is redundant there. */}
+                <span className="absolute -top-1 -right-1 flex items-center gap-0.5 rounded-full bg-brand-gradient px-1.5 py-0.5 text-[9px] font-bold leading-none text-white shadow-sm lg:hidden">
+                  <MessageCircleQuestion size={9} strokeWidth={3} />
+                  AI
                 </span>
               </span>
               <span className="hidden lg:inline text-sm font-semibold whitespace-nowrap">
