@@ -17,7 +17,7 @@ import StaggerGrid from "@/components/StaggerGrid";
 import ScaleReveal from "@/components/ScaleReveal";
 import BrandMarquee from "@/components/BrandMarquee";
 import TrendingSetCard from "@/components/TrendingSetCard";
-import FireworkVideoFeed from "@/components/FireworkVideoFeed";
+import ShoppableReels from "@/components/ShoppableReels";
 
 const articleCategoryLabel: Record<string, string> = {
   guide: "คู่มือ",
@@ -51,6 +51,21 @@ export default function HomePage() {
     return products.filter((p) => p.inStock && aliases.includes(slugifyVendor(p.brand))).slice(0, 8);
   };
   const featuredArticles = articles.slice(0, 3);
+  const reelsProducts = (() => {
+    const candidates = [...products]
+      .filter((p) => p.inStock && p.badges && p.badges.length > 0)
+      .sort((a, b) => discountPct(b) - discountPct(a));
+    const perBrand = new Map<string, number>();
+    const picked: Product[] = [];
+    for (const p of candidates) {
+      const used = perBrand.get(p.brand) ?? 0;
+      if (used >= 2) continue;
+      perBrand.set(p.brand, used + 1);
+      picked.push(p);
+      if (picked.length >= 10) break;
+    }
+    return picked;
+  })();
 
   return (
     <div>
@@ -157,14 +172,16 @@ export default function HomePage() {
       </section>
 
       {/* Shoppable video reels */}
-      <section className="py-10 md:py-14">
-        <ScrollReveal className="container-page">
-          <SectionHeading title="ยอดฮิตพร้อมรีวิว" subtitle="Shop by Video" href="/shop" />
-        </ScrollReveal>
-        <div className="container-page">
-          <FireworkVideoFeed />
-        </div>
-      </section>
+      {reelsProducts.length > 0 && (
+        <section className="py-10 md:py-14">
+          <ScrollReveal className="container-page">
+            <SectionHeading title="ยอดฮิตพร้อมรีวิว" subtitle="Shop by Video" href="/shop" />
+          </ScrollReveal>
+          <div className="container-page">
+            <ShoppableReels products={reelsProducts} />
+          </div>
+        </section>
+      )}
 
       {/* Best sellers — section itself (not just the carousel) only renders
           when there's real data, otherwise an empty wrapper still keeps its
