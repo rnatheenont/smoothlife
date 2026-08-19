@@ -88,17 +88,35 @@ export default function Header() {
       } ${scrolled ? "border-b border-slate-100" : "border-b border-transparent"}`}
     >
       <div className="bg-brand-gradient text-white text-[11px] md:text-xs py-1.5 overflow-hidden whitespace-nowrap">
-        <div className="hidden sm:flex w-max animate-marquee gap-16">
-          <span className="shrink-0">ส่งฟรีทั่วไทย • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี</span>
-          <span className="shrink-0" aria-hidden="true">
-            ส่งฟรีทั่วไทย • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี
-          </span>
+        {/* Repeated enough times that each half of the track comfortably
+            exceeds any realistic viewport width — with just one repeat the
+            track was narrower than the banner itself, so the loop showed a
+            blank gap (or the two copies butting together with no visible
+            breathing room) instead of a continuous ticker. Same fix as the
+            brand-logo marquee's desktop gap bug. */}
+        <div className="hidden sm:flex w-max animate-marquee gap-16" style={{ animationDuration: "40s" }}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <span key={`a-${i}`} className="shrink-0" aria-hidden={i > 0 || undefined}>
+              ส่งฟรีทั่วไทย • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี
+            </span>
+          ))}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <span key={`b-${i}`} className="shrink-0" aria-hidden="true">
+              ส่งฟรีทั่วไทย • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี
+            </span>
+          ))}
         </div>
-        <div className="flex sm:hidden w-max animate-marquee gap-16">
-          <span className="shrink-0">ส่งฟรีทั่วไทย • ของแท้ 100% • สมัครรับ 100 คะแนน</span>
-          <span className="shrink-0" aria-hidden="true">
-            ส่งฟรีทั่วไทย • ของแท้ 100% • สมัครรับ 100 คะแนน
-          </span>
+        <div className="flex sm:hidden w-max animate-marquee gap-16" style={{ animationDuration: "24s" }}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <span key={`a-${i}`} className="shrink-0" aria-hidden={i > 0 || undefined}>
+              ส่งฟรีทั่วไทย • ของแท้ 100% • สมัครรับ 100 คะแนน
+            </span>
+          ))}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <span key={`b-${i}`} className="shrink-0" aria-hidden="true">
+              ส่งฟรีทั่วไทย • ของแท้ 100% • สมัครรับ 100 คะแนน
+            </span>
+          ))}
         </div>
       </div>
       <div className="container-page flex items-center gap-3 md:gap-6 py-2.5 lg:py-3">
