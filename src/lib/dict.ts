@@ -37,4 +37,59 @@ export const DICT: Record<string, string> = {
   "กำลังคิด...": "Thinking...",
   "วันนี้คุณรู้สึกยังไง...": "How are you feeling today?",
   "คุยกับน้อง Smoothie": "Chat with Smoothie",
+
+  // Header nav — mirrors navLinks' own `en` values so the DOM-walk
+  // translator (which doesn't see that per-link fallback) is instant too.
+  "ช้อปสินค้า": "Shop",
+  "เลือกตามปัญหาผิว": "Shop by Concern",
+  "ผู้ช่วย AI": "AI Assistant",
+  "ความรู้ความงาม": "Beauty Knowledge",
+  "ทำไมต้อง Smooth Life": "Why Smooth Life",
+  "ช่วยเหลือ": "Help",
+
+  // Homepage section headings
+  "ช้อปตามหมวดหมู่": "Shop by Category",
+  "โปรโมชั่นและดีลเด็ด": "Promotions & Deals",
+  "ยอดฮิตพร้อมรีวิว": "Trending with Reviews",
+  "สินค้าแนะนำ": "Recommended for You",
+  "ช้อปตามปัญหาผิวที่กังวล": "Shop by Skin Concern",
+  "แบรนด์ที่คุณไว้วางใจ": "Brands You Trust",
+  "ความรู้เรื่องผิวและสุขภาพ": "Skin & Wellness Knowledge",
+  "3 แบรนด์ในเครือที่คัดสรรเพื่อไลฟ์สไตล์ที่สมูทขึ้นทุกวัน": "3 house brands curated for a smoother everyday lifestyle",
+  "แบรนด์ในเครือของเรา": "Our House Brands",
+  "แบรนด์อื่นๆ": "Other Brands",
+
+  // Product tabs
+  "ขายดี": "Best Sellers",
+  "ลดราคา": "On Sale",
+  "มาใหม่": "New",
+  "เซ็ตสุดคุ้ม": "Bundle Deals",
+  "เทรนด์": "Trending",
+
+  // Common product/shop micro-copy
+  "ดูสินค้า": "View product",
+  "เพิ่มแล้ว": "Added",
+  "สินค้าหมด": "Out of stock",
+  "เหลือเพียง": "Only",
+  "ชิ้น": "left",
+  "ค้นหา": "Search",
+  "ล้างตัวกรองทั้งหมด": "Clear all filters",
+  "ล้างตัวกรองแบรนด์และปัญหาผิว": "Clear brand & concern filters",
+  "ตัวกรองสินค้า": "Filters",
+  "ปัญหาผิวที่กังวล": "Skin concern",
+  "ปิด": "Close",
+  "การแจ้งเตือน": "Notifications",
+
+  // Footer
+  "เกี่ยวกับเรา": "About us",
+  "คุณภาพและมาตรฐาน": "Quality & standards",
+  "ผู้เชี่ยวชาญและพาร์ทเนอร์": "Experts & partners",
+  "ความรับผิดชอบต่อสังคม": "Social responsibility",
+  "ศูนย์ช่วยเหลือ": "Help center",
+  "การจัดส่งและคืนสินค้า": "Shipping & returns",
+  "การชำระเงิน": "Payment",
+  "สาขาและติดต่อเรา": "Branches & contact",
+  "สมัครรับข่าวสาร": "Subscribe for updates",
+  "อีเมลของคุณ": "Your email",
+  "สมัครไม่สำเร็จ กรุณาลองใหม่อีกครั้ง": "Couldn't subscribe — please try again",
 };

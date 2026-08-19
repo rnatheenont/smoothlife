@@ -265,14 +265,6 @@ export default function Header() {
             <div className="flex flex-1 flex-col gap-4 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
               <LanguageSwitch compact />
 
-              <HeaderSearch
-                placeholder="ค้นหาสินค้า..."
-                inputClassName="w-full rounded-full border border-slate-200 bg-surface-soft py-2.5 pl-4 pr-10 text-sm outline-none focus:border-brand-teal transition-colors"
-                buttonClassName="absolute right-1.5 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-full bg-brand-gradient text-white"
-                buttonSize={13}
-                onNavigate={() => setOpen(false)}
-              />
-
               <div className="flex flex-col gap-0.5">
                 {navLinks.map((l) => (
                   <Link
