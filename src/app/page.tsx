@@ -1,14 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Flame, Repeat, PercentCircle } from "lucide-react";
+import { Sparkles, ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Repeat, PercentCircle } from "lucide-react";
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
 import { categories, concerns, concernImage } from "@/data/categories";
-import { brands, slugifyVendor } from "@/data/brands";
+import { brands, houseBrands, slugifyVendor } from "@/data/brands";
 import { promotions, promotionImage } from "@/data/promotions";
 import { articles } from "@/data/articles";
 import { subscriptionPlans } from "@/data/subscriptions";
-import ProductCarousel from "@/components/ProductCarousel";
 import HeroCarousel from "@/components/HeroCarousel";
 import SectionHeading from "@/components/SectionHeading";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -16,8 +15,9 @@ import StaggerReveal from "@/components/StaggerReveal";
 import StaggerGrid from "@/components/StaggerGrid";
 import ScaleReveal from "@/components/ScaleReveal";
 import BrandMarquee from "@/components/BrandMarquee";
-import TrendingSetCard from "@/components/TrendingSetCard";
 import ShoppableReels from "@/components/ShoppableReels";
+import ProductTabs from "@/components/ProductTabs";
+import BrandShowcase from "@/components/BrandShowcase";
 
 const articleCategoryLabel: Record<string, string> = {
   guide: "คู่มือ",
@@ -43,14 +43,15 @@ export default function HomePage() {
     .filter((p) => p.inStock && p.badges?.includes("Bundle"))
     .sort((a, b) => discountPct(b) - discountPct(a))
     .slice(0, 8);
-  const topBrands = [...brands].sort((a, b) => b.productCount - a.productCount).slice(0, 2);
   const brandProducts = (brandSlug: string) => {
     const brand = brands.find((b) => b.slug === brandSlug);
     if (!brand) return [];
     const aliases = [brand.name, ...(brand.vendorAliases || [])].map(slugifyVendor);
     return products.filter((p) => p.inStock && aliases.includes(slugifyVendor(p.brand))).slice(0, 8);
   };
+  const houseBrandProducts = Object.fromEntries(houseBrands.map((b) => [b.slug, brandProducts(b.slug)]));
   const featuredArticles = articles.slice(0, 3);
+  const usedPromoSlugs = new Set<string>();
   const reelsProducts = (() => {
     const candidates = [...products]
       .filter((p) => p.inStock && p.badges && p.badges.length > 0)
@@ -153,12 +154,12 @@ export default function HomePage() {
               className="relative rounded-xl2 overflow-hidden aspect-[4/3] group shadow-card"
             >
               <Image
-                src={promotionImage(promo, products)}
+                src={promotionImage(promo, products, usedPromoSlugs)}
                 alt={promo.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
               <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
                 <span className="text-[10px] font-bold uppercase bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">
                   {promo.badge}
@@ -183,59 +184,17 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Best sellers — section itself (not just the carousel) only renders
-          when there's real data, otherwise an empty wrapper still keeps its
-          py-10/py-14 padding and leaves a blank gap in the page. */}
-      {bestSellers.length > 0 && (
-        <section className="container-page py-10 md:py-14">
-          <ProductCarousel title="สินค้าขายดี" subtitle="Best Sellers" href="/shop?sort=bestseller" products={bestSellers} />
-        </section>
-      )}
-
-      {/* On sale */}
-      {onSale.length > 0 && (
-        <section className="bg-surface-soft py-10 md:py-14">
-          <div className="container-page">
-            <ProductCarousel title="ลดราคาพิเศษ" subtitle="On Sale" href="/shop" products={onSale} />
-          </div>
-        </section>
-      )}
-
-      {/* Trending bundle sets — dark, high-contrast treatment so this reads
-          as a distinct "hot right now" merchandising moment rather than
-          another plain carousel; ranked by real rating × review count. */}
-      {bundles.length > 0 && (
-        <section className="relative overflow-hidden bg-brand-ink py-10 md:py-14">
-          <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-brand-teal/20 blur-3xl" />
-          <div className="pointer-events-none absolute -right-20 bottom-0 h-72 w-72 rounded-full bg-brand-sky/20 blur-3xl" />
-          <div className="container-page relative">
-            <ScrollReveal>
-              <div className="flex items-center gap-2 mb-1.5">
-                <Flame size={16} className="text-rose-400 fill-rose-400" />
-                <p className="text-xs font-bold uppercase tracking-wider text-rose-400">กำลังเป็นที่นิยม</p>
-              </div>
-              <div className="flex items-end justify-between mb-5 md:mb-6">
-                <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
-                  ซื้อเป็นเซ็ต คุ้มกว่าซื้อแยก
-                </h2>
-                <Link
-                  href="/shop"
-                  className="hidden sm:flex items-center gap-1 text-sm font-medium text-brand-sky hover:text-white transition-colors shrink-0"
-                >
-                  ดูทั้งหมด <ChevronRight size={16} />
-                </Link>
-              </div>
-            </ScrollReveal>
-            <StaggerGrid className="flex gap-3 md:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-1" stagger={0.06}>
-              {bundles.map((p, i) => (
-                <div key={p.slug} className="shrink-0 snap-start w-[45vw] sm:w-56 md:w-64">
-                  <TrendingSetCard product={p} rank={i + 1} />
-                </div>
-              ))}
-            </StaggerGrid>
-          </div>
-        </section>
-      )}
+      {/* Products — one tabbed section instead of four near-identical
+          stacked carousels (Best Sellers / On Sale / New / Bundles), so
+          browsing all of them costs one tap instead of a long scroll. */}
+      <ProductTabs
+        tabs={[
+          { label: "ขายดี", products: bestSellers, flame: false },
+          { label: "ลดราคา", products: onSale },
+          { label: "มาใหม่", products: newArrivals, flame: false },
+          { label: "เซ็ตสุดคุ้ม", products: bundles },
+        ]}
+      />
 
       {/* Subscription teaser */}
       <section className="container-page py-10 md:py-14">
@@ -291,16 +250,10 @@ export default function HomePage() {
         </ScaleReveal>
       </section>
 
-      {/* Per-brand carousels */}
-      {topBrands.map((b) => {
-        const products = brandProducts(b.slug);
-        if (products.length === 0) return null;
-        return (
-          <section key={b.slug} className="container-page py-10 md:py-14">
-            <ProductCarousel title={b.name} subtitle={b.tagline} href={`/shop?brand=${b.slug}`} products={products} />
-          </section>
-        );
-      })}
+      {/* Life So Smooth — house brands (Smooth E > Smooth Life > Dentiste,
+          always in that priority order) told as one story instead of a
+          stack of near-identical per-brand carousels. */}
+      <BrandShowcase brands={houseBrands} productsBySlug={houseBrandProducts} />
 
       {/* Concern hub teaser */}
       <section className="bg-brand-gradient-soft py-10 md:py-14">
@@ -321,23 +274,9 @@ export default function HomePage() {
         </StaggerGrid>
       </section>
 
-      {/* AI Advisor CTA */}
-      <section className="container-page py-10 md:py-14">
-        <ScaleReveal className="rounded-xl2 bg-brand-ink text-white p-8 md:p-12 grid md:grid-cols-2 gap-8 items-center overflow-hidden relative">
-          <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold mb-4">
-              <Sparkles size={13} /> Personalized Shopping
-            </span>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">ให้น้อง Smoothie ช่วยเลือกสกินแคร์ที่ใช่สำหรับคุณ</h2>
-            <p className="text-white/70 mb-6 max-w-md">
-              ตอบคำถามเกี่ยวกับผิวของคุณ 2 นาที รับคำแนะนำผลิตภัณฑ์และรูทีนที่ออกแบบมาเฉพาะคุณ
-            </p>
-            <Link href="/advisor" className="inline-block rounded-full bg-brand-gradient px-6 py-3 text-sm font-semibold hover:opacity-90 transition-opacity">
-              เริ่มทำแบบประเมิน
-            </Link>
-          </div>
-        </ScaleReveal>
-      </section>
+      {/* No separate AI-advisor CTA section — the hero already offers this
+          exact path ("ให้น้อง Smoothie แนะนำสกินแคร์"), so a second full
+          section repeating it further down was pure redundancy. */}
 
       {/* Brands strip — scrolling logo wall on mobile/tablet (more logos fit
           in less width that way), back to the original static grid on
@@ -368,11 +307,6 @@ export default function HomePage() {
             ))}
           </div>
         </ScrollReveal>
-      </section>
-
-      {/* New arrivals */}
-      <section className="container-page py-10 md:py-14">
-        <ProductCarousel title="แนะนำสำหรับคุณ" subtitle="New & Trending" href="/shop" products={newArrivals} />
       </section>
 
       {/* Wellness / knowledge teaser */}

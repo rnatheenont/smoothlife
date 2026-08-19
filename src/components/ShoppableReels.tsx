@@ -11,7 +11,7 @@ import clsx from "clsx";
 
 const DWELL_MS = 2800; // how long a card sits "playing" front-and-center before advancing
 const TRANSITION = 0.6;
-const SLOT_XPERCENT = 78; // how far apart (as % of one card's own width) each step sits
+const SLOT_XPERCENT = 108; // how far apart (as % of one card's own width) each step sits — wide enough that neighbors sit beside the center card rather than stacked under it
 const VISIBLE_RANGE = 3; // cards further than this from center fade out entirely
 const DRAG_THRESHOLD_PX = 50;
 

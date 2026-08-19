@@ -16,7 +16,15 @@ const rankStyles: Record<number, string> = {
   3: "bg-gradient-to-br from-orange-300 to-orange-500 text-white",
 };
 
-export default function TrendingSetCard({ product, rank }: { product: Product; rank: number }) {
+export default function TrendingSetCard({
+  product,
+  rank,
+  showFlame = true,
+}: {
+  product: Product;
+  rank: number;
+  showFlame?: boolean;
+}) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
   const discount = product.compareAtPrice
@@ -39,7 +47,7 @@ export default function TrendingSetCard({ product, rank }: { product: Product; r
       >
         {rank}
       </div>
-      {rank <= 3 && (
+      {showFlame && rank <= 3 && (
         <span className="absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-rose-500/90 px-2 py-0.5 text-[10px] font-bold text-white animate-glowPulse">
           <Flame size={11} className="fill-white" /> เทรนด์
         </span>

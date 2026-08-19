@@ -124,3 +124,19 @@ export const brands: Brand[] = brandDefs
     return { ...b, productCount };
   })
   .filter((b) => b.productCount > 0);
+
+// Smooth E / Smooth Life / Dentiste are the company's own house brands
+// (per the "Life So Smooth" brand concept) — always featured first, in
+// this fixed order, wherever brands are listed or browsed.
+export const HOUSE_BRAND_SLUGS = ["smooth-e", "smooth-life", "dentiste"] as const;
+
+export const houseBrands: Brand[] = HOUSE_BRAND_SLUGS.map((slug) => brands.find((b) => b.slug === slug)).filter(
+  (b): b is Brand => !!b
+);
+
+export function isHouseBrand(slug: string) {
+  return (HOUSE_BRAND_SLUGS as readonly string[]).includes(slug);
+}
+
+// Every other brand, in the same order they already appear in `brands`.
+export const otherBrands: Brand[] = brands.filter((b) => !isHouseBrand(b.slug));

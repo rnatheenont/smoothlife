@@ -24,6 +24,7 @@ import { useLang } from "@/lib/lang-context";
 import { tierBadge, tierCard } from "@/lib/tier";
 import LanguageSwitch from "@/components/LanguageSwitch";
 import NotificationBell from "@/components/NotificationBell";
+import HeaderSearch from "@/components/HeaderSearch";
 
 const navLinks = [
   { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: LayoutGrid },
@@ -37,14 +38,12 @@ const navLinks = [
 
 export default function Header() {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
   const [hideHeader, setHideHeader] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const lastScrollY = useRef(0);
   const { user } = useAuth();
   const { count } = useCart();
   const { t } = useLang();
-  const router = useRouter();
 
   // lock background scroll while the mobile drawer is open
   useEffect(() => {
@@ -71,14 +70,6 @@ export default function Header() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  function onSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (query.trim()) {
-      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
-      setOpen(false);
-    }
-  }
 
   return (
     <>
@@ -129,18 +120,13 @@ export default function Header() {
           <span className="text-brand-sky">.com</span>
         </Link>
 
-        <form onSubmit={onSearch} className="hidden md:flex flex-1 max-w-xl relative">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            type="text"
+        <div className="hidden md:flex flex-1 max-w-xl">
+          <HeaderSearch
             placeholder="ค้นหาสินค้า, ยี่ห้อ, หรือปัญหาผิวที่กังวล..."
-            className="w-full rounded-full border border-slate-200 bg-surface-soft py-2.5 pl-4 pr-11 text-sm outline-none focus:border-brand-teal transition-colors"
+            inputClassName="w-full rounded-full border border-slate-200 bg-surface-soft py-2.5 pl-4 pr-11 text-sm outline-none focus:border-brand-teal transition-colors"
+            buttonClassName="absolute right-1.5 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-brand-gradient text-white"
           />
-          <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-brand-gradient text-white">
-            <Search size={15} />
-          </button>
-        </form>
+        </div>
 
         <div className="ml-auto flex items-center gap-3 md:gap-5 shrink-0">
           <div className="hidden sm:block">
@@ -279,17 +265,13 @@ export default function Header() {
             <div className="flex flex-1 flex-col gap-4 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
               <LanguageSwitch compact />
 
-              <form onSubmit={onSearch} className="relative">
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="ค้นหาสินค้า..."
-                  className="w-full rounded-full border border-slate-200 bg-surface-soft py-2.5 pl-4 pr-10 text-sm outline-none focus:border-brand-teal transition-colors"
-                />
-                <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-full bg-brand-gradient text-white">
-                  <Search size={13} />
-                </button>
-              </form>
+              <HeaderSearch
+                placeholder="ค้นหาสินค้า..."
+                inputClassName="w-full rounded-full border border-slate-200 bg-surface-soft py-2.5 pl-4 pr-10 text-sm outline-none focus:border-brand-teal transition-colors"
+                buttonClassName="absolute right-1.5 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-full bg-brand-gradient text-white"
+                buttonSize={13}
+                onNavigate={() => setOpen(false)}
+              />
 
               <div className="flex flex-col gap-0.5">
                 {navLinks.map((l) => (

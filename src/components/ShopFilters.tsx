@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { categories, concerns } from "@/data/categories";
-import { brands } from "@/data/brands";
+import { houseBrands, otherBrands } from "@/data/brands";
 import { ShopSearchParams } from "@/lib/filter-products";
 import { SlidersHorizontal, Check, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -55,7 +55,17 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
       <div>
         <h4 className="text-sm font-bold text-brand-ink mb-3">แบรนด์</h4>
         <div className="flex flex-col gap-1.5">
-          {brands.map((b) => (
+          {houseBrands.map((b) => (
+            <button
+              key={b.slug}
+              onClick={() => updateParam("brand", current.brand === b.slug ? null : b.slug)}
+              className={`text-left text-sm py-1 font-bold ${current.brand === b.slug ? "text-brand-emerald" : "text-brand-ink"}`}
+            >
+              {b.name}
+            </button>
+          ))}
+          <div className="my-1 border-t border-slate-100" />
+          {otherBrands.map((b) => (
             <button
               key={b.slug}
               onClick={() => updateParam("brand", current.brand === b.slug ? null : b.slug)}
@@ -96,9 +106,27 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
   const mobileContent = (
     <div className="flex flex-col gap-7">
       <div>
-        <h4 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">แบรนด์</h4>
+        <h4 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">แบรนด์ในเครือ · Life So Smooth</h4>
+        <div className="flex flex-col rounded-xl border border-brand-emerald/30 mb-4">
+          {houseBrands.map((b) => {
+            const selected = current.brand === b.slug;
+            return (
+              <button
+                key={b.slug}
+                onClick={() => updateParam("brand", selected ? null : b.slug)}
+                className={`flex items-center justify-between px-3.5 py-3 text-sm text-left font-bold border-b border-slate-50 last:border-0 ${
+                  selected ? "text-brand-emerald bg-brand-gradient-soft" : "text-brand-ink"
+                }`}
+              >
+                {b.name}
+                {selected && <Check size={16} className="text-brand-emerald shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+        <h4 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">แบรนด์อื่นๆ</h4>
         <div className="flex flex-col rounded-xl border border-slate-100">
-          {brands.map((b) => {
+          {otherBrands.map((b) => {
             const selected = current.brand === b.slug;
             return (
               <button
