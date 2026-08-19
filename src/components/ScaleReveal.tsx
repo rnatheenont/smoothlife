@@ -7,17 +7,10 @@ import { scheduleScrollTriggerRefresh } from "@/lib/gsap-scroll-refresh";
 
 let pluginRegistered = false;
 
-// Fades + slides a section up into place the first time it scrolls into
-// view. Registering ScrollTrigger once per page load (not per instance)
-// since gsap.registerPlugin is idempotent-unsafe to call in a loop across
-// many mounted sections.
-export default function ScrollReveal({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+// Scale-up + fade instead of slide-up — for a single standout block (like a
+// CTA card) that should feel like it's "arriving toward you" rather than
+// just sliding into place with everything else on the page.
+export default function ScaleReveal({ children, className }: { children: React.ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,12 +24,12 @@ export default function ScrollReveal({
     const ctx = gsap.context(() => {
       gsap.fromTo(
         el,
-        { opacity: 0, y: 32 },
+        { opacity: 0, scale: 0.94 },
         {
           opacity: 1,
-          y: 0,
-          duration: 0.7,
-          ease: "power2.out",
+          scale: 1,
+          duration: 0.8,
+          ease: "power3.out",
           scrollTrigger: { trigger: el, start: "top 85%", once: true },
         }
       );

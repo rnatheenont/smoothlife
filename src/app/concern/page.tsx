@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { concerns } from "@/data/categories";
+import { concerns, concernImage } from "@/data/categories";
 
 export const metadata = { title: "Shop by Concern | Smoothlife.com" };
 
@@ -13,7 +13,7 @@ export default function ConcernHubPage() {
         {concerns.map((c) => (
           <Link key={c.slug} href={`/concern/${c.slug}`} className="group rounded-xl2 overflow-hidden shadow-card">
             <div className="relative aspect-[4/3]">
-              <Image src={c.image} alt={c.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+              <Image src={concernImage(c.slug)} alt={c.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               <div className="absolute bottom-0 p-4 text-white">
                 <h3 className="font-bold">{c.nameTh}</h3>

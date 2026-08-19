@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   HelpCircle,
   ChevronRight,
+  Repeat,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
@@ -27,6 +28,7 @@ import NotificationBell from "@/components/NotificationBell";
 const navLinks = [
   { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: LayoutGrid },
   { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern", icon: Heart },
+  { href: "/subscription", th: "สมัครสมาชิก", en: "Subscription", icon: Repeat },
   { href: "/ai-assistant", th: "ผู้ช่วย AI", en: "AI Assistant", icon: Sparkles },
   { href: "/knowledge", th: "ความรู้ความงาม", en: "Beauty Knowledge", icon: BookOpen },
   { href: "/about", th: "ทำไมต้อง Smooth Life", en: "Why Smooth Life", icon: ShieldCheck },

@@ -1,4 +1,5 @@
-import { CategoryInfo, ConcernInfo } from "./types";
+import { CategoryInfo, Concern, ConcernInfo } from "./types";
+import { products } from "./products";
 
 export const categories: CategoryInfo[] = [
   {
@@ -83,3 +84,19 @@ export const concerns: ConcernInfo[] = [
     image: "https://www.smoothlife.com/cdn/shop/files/sg-11134201-7rfi5-m9fjgzvwm8knb0.jpg?width=600",
   },
 ];
+
+// The static `image` above is a marketing banner (campaign creative, not
+// always tied to what's actually sold under that concern). Pages that show
+// a concern to shoppers should call this instead — it picks the real photo
+// of an in-stock product under that concern (preferring ones the store is
+// already merchandising with a badge), so the picture always matches real,
+// current catalogue data rather than a hand-picked graphic that can drift
+// out of sync. (This sync carries no review/rating data — every product
+// comes through as rating 0 / reviewCount 0 — so badge count is the real
+// signal available, not popularity.)
+export function concernImage(slug: Concern): string {
+  const best = [...products]
+    .filter((p) => p.inStock && p.concerns.includes(slug))
+    .sort((a, b) => (b.badges?.length ?? 0) - (a.badges?.length ?? 0))[0];
+  return best?.image || concerns.find((c) => c.slug === slug)?.image || "";
+}

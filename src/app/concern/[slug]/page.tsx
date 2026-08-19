@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { concerns } from "@/data/categories";
+import { concerns, concernImage } from "@/data/categories";
 import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { sortSoldOutLast } from "@/lib/filter-products";
@@ -23,7 +23,7 @@ export default function ConcernDetailPage({ params }: { params: { slug: string }
   return (
     <div className="container-page py-8 md:py-10">
       <div className="relative rounded-xl2 overflow-hidden h-48 md:h-64 mb-8">
-        <Image src={concern.image} alt={concern.name} fill className="object-cover" />
+        <Image src={concernImage(concern.slug)} alt={concern.name} fill className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
         <div className="absolute bottom-0 p-6 text-white max-w-xl">
           <h1 className="text-2xl md:text-3xl font-bold">{concern.nameTh}</h1>

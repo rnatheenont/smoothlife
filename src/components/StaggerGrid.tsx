@@ -7,16 +7,18 @@ import { scheduleScrollTriggerRefresh } from "@/lib/gsap-scroll-refresh";
 
 let pluginRegistered = false;
 
-// Fades + slides a section up into place the first time it scrolls into
-// view. Registering ScrollTrigger once per page load (not per instance)
-// since gsap.registerPlugin is idempotent-unsafe to call in a loop across
-// many mounted sections.
-export default function ScrollReveal({
+// Like ScrollReveal, but pops each direct child in individually (scale +
+// fade, staggered) instead of animating the whole block as one unit — for
+// grids/rows of tiles where each item should feel like its own little
+// arrival rather than the section just sliding up together.
+export default function StaggerGrid({
   children,
   className,
+  stagger = 0.08,
 }: {
   children: React.ReactNode;
   className?: string;
+  stagger?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -30,21 +32,23 @@ export default function ScrollReveal({
 
     const ctx = gsap.context(() => {
       gsap.fromTo(
-        el,
-        { opacity: 0, y: 32 },
+        el.children,
+        { opacity: 0, y: 20, scale: 0.85 },
         {
           opacity: 1,
           y: 0,
-          duration: 0.7,
-          ease: "power2.out",
-          scrollTrigger: { trigger: el, start: "top 85%", once: true },
+          scale: 1,
+          duration: 0.5,
+          stagger,
+          ease: "back.out(1.6)",
+          scrollTrigger: { trigger: el, start: "top 88%", once: true },
         }
       );
     }, ref);
     scheduleScrollTriggerRefresh();
 
     return () => ctx.revert();
-  }, []);
+  }, [stagger]);
 
   return (
     <div ref={ref} className={className}>
