@@ -217,7 +217,7 @@ export default function HomePage() {
                 ยิ่งนานยิ่งประหยัด
               </h2>
               <p className="mt-3 text-white/85 max-w-md">
-                สมัคร Subscription สินค้าสุขภาพและความงามที่คุณใช้ประจำ เลือกได้ 3 / 6 / 9 เดือน
+                สมัคร Subscription สินค้าสุขภาพและความงามที่คุณใช้ประจำ เลือกได้ 3 / 6 / 12 เดือน
                 ประหยัดสูงสุด {Math.max(...subscriptionPlans.map((p) => p.discountPct))}%
               </p>
               <Link

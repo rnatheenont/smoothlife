@@ -18,7 +18,7 @@ export const categories: CategoryInfo[] = [
     slug: "hair-care",
     name: "Hair Care",
     nameTh: "ดูแลเส้นผม",
-    image: "https://www.smoothlife.com/cdn/shop/files/SMEHAIRMEN-03.jpg?width=800",
+    image: "https://www.smoothlife.com/cdn/shop/files/SmoothE_15.png?v=1755249046&width=800",
   },
   {
     slug: "personal-care",

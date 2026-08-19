@@ -1,12 +1,15 @@
-import { Repeat, Truck, ShieldCheck, CalendarClock } from "lucide-react";
-import { subscriptionPlans, subscriptionProducts } from "@/data/subscriptions";
+import Image from "next/image";
+import Link from "next/link";
+import { Repeat, Truck, ShieldCheck, CalendarClock, ChevronRight } from "lucide-react";
+import { subscriptionPlans, subscriptionProducts, subscriptionSets, subscriptionSetProducts } from "@/data/subscriptions";
+import { formatTHB } from "@/lib/format";
 import SubscriptionPicker from "@/components/SubscriptionPicker";
 
 export const metadata = { title: "Subscription สมัครสมาชิกรายรอบ | Smoothlife.com" };
 
 const perks = [
   { icon: Truck, label: "ส่งฟรีทุกรอบ" },
-  { icon: CalendarClock, label: "เลือกรอบส่ง 3 / 6 / 9 เดือน" },
+  { icon: CalendarClock, label: "เลือกรอบส่ง 3 / 6 / 12 เดือน" },
   { icon: ShieldCheck, label: "ของแท้ 100% มีอย." },
 ];
 
@@ -27,7 +30,7 @@ export default function SubscriptionPage() {
             ไม่ต้องสั่งซ้ำ ประหยัดสูงสุด {maxDiscount}%
           </h1>
           <p className="mt-4 text-white/80 max-w-lg mx-auto">
-            เลือกสินค้าที่ใช้ประจำ กำหนดรอบส่งของคุณเอง 3 / 6 หรือ 9 เดือน ยิ่งเลือกรอบยาว ยิ่งได้ส่วนลดมากขึ้น
+            เลือกสินค้าที่ใช้ประจำ กำหนดรอบส่งของคุณเอง 3 / 6 หรือ 12 เดือน ยิ่งเลือกรอบยาว ยิ่งได้ส่วนลดมากขึ้น
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-4 md:gap-6 text-xs md:text-sm text-white/85">
             {perks.map((perk) => (
@@ -39,7 +42,54 @@ export default function SubscriptionPage() {
         </div>
       </section>
 
+      {/* Curated sets — a fixed real product group per set, priced off
+          today's real prices (not a separate SKU of its own). Cheapest way
+          to see "starting from" pricing without duplicating the per-plan
+          math that SubscriptionPicker/the detail page already do. */}
       <section className="container-page py-10 md:py-14">
+        <h2 className="text-xl md:text-2xl font-extrabold text-brand-ink mb-1">เลือกชุดสมัครสมาชิก</h2>
+        <p className="text-sm text-slate-500 mb-6">ชุดสินค้าที่ทีมคัดมาให้ครบ ไม่ต้องเลือกเอง ใช้ต่อเนื่องได้จริง</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
+          {subscriptionSets.map((set) => {
+            const items = subscriptionSetProducts(set);
+            const total = items.reduce((sum, p) => sum + p.price, 0);
+            const cheapestPlan = subscriptionPlans[0];
+            const perCyclePrice = Math.round(total * (1 - cheapestPlan.discountPct / 100));
+            return (
+              <Link
+                key={set.slug}
+                href={`/subscription/${set.slug}`}
+                className="group flex flex-col rounded-xl2 bg-white shadow-card hover:shadow-cardHover transition-shadow overflow-hidden border border-slate-100"
+              >
+                <div className="relative aspect-[4/3] bg-surface-soft grid grid-cols-3 gap-px p-px">
+                  {items.slice(0, 3).map((p) => (
+                    <div key={p.slug} className="relative bg-white">
+                      <Image src={p.image} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="200px" />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-1 flex-col gap-1.5 p-4">
+                  <h3 className="font-bold text-brand-ink">{set.name}</h3>
+                  <p className="text-xs text-slate-500 line-clamp-2 flex-1">{set.tagline}</p>
+                  <div className="mt-1 flex items-end justify-between">
+                    <div>
+                      <span className="text-[11px] text-slate-400">เริ่มต้น/รอบ</span>
+                      <p className="text-lg font-extrabold text-brand-emerald">{formatTHB(perCyclePrice)}</p>
+                    </div>
+                    <span className="flex items-center gap-0.5 text-xs font-semibold text-brand-emerald group-hover:text-brand-sky transition-colors">
+                      ดูรายละเอียด <ChevronRight size={13} />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="container-page py-10 md:py-14 border-t border-slate-100">
+        <h2 className="text-xl md:text-2xl font-extrabold text-brand-ink mb-1">หรือเลือกสินค้าเอง</h2>
+        <p className="text-sm text-slate-500 mb-6">อยากได้แค่สินค้าชิ้นเดียวแบบสมัครรายรอบ เลือกได้จากที่นี่</p>
         <SubscriptionPicker plans={subscriptionPlans} products={subscriptionProducts} />
       </section>
     </div>

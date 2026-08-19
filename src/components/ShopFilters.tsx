@@ -4,13 +4,26 @@ import { useRouter, usePathname } from "next/navigation";
 import { categories, concerns } from "@/data/categories";
 import { houseBrands, otherBrands } from "@/data/brands";
 import { ShopSearchParams } from "@/lib/filter-products";
-import { SlidersHorizontal, Check, X } from "lucide-react";
+import { SlidersHorizontal, Check, X, ChevronDown } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import clsx from "clsx";
+
+// Fewer than this and there's nothing to collapse — the toggle would just
+// be a "show more" button that reveals one extra row.
+const VISIBLE_BRANDS = 10;
 
 export default function ShopFilters({ current, mobileExtra }: { current: ShopSearchParams; mobileExtra?: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showAllBrands, setShowAllBrands] = useState(false);
+  // A brand filter reached directly by URL (not by clicking the toggle
+  // first) should never be hidden behind a collapsed "show more" — force
+  // the full list open whenever the active selection lives past the fold.
+  const selectedBrandIndex = current.brand ? otherBrands.findIndex((b) => b.slug === current.brand) : -1;
+  const brandsExpanded = showAllBrands || (selectedBrandIndex >= 0 && selectedBrandIndex >= VISIBLE_BRANDS);
+  const visibleOtherBrands =
+    brandsExpanded || otherBrands.length <= VISIBLE_BRANDS ? otherBrands : otherBrands.slice(0, VISIBLE_BRANDS);
 
   function updateParam(key: string, value: string | null) {
     const params = new URLSearchParams();
@@ -34,10 +47,13 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
     <div className="flex flex-col gap-6">
       <div>
         <h4 className="text-sm font-bold text-brand-ink mb-3">หมวดหมู่</h4>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-0.5">
           <button
             onClick={() => updateParam("category", null)}
-            className={`text-left text-sm py-1 ${!current.category ? "font-semibold text-brand-emerald" : "text-slate-600"}`}
+            className={clsx(
+              "rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
+              !current.category ? "bg-brand-gradient-soft font-semibold text-brand-emerald" : "text-slate-600 hover:bg-surface-soft"
+            )}
           >
             ทั้งหมด
           </button>
@@ -45,7 +61,12 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
             <button
               key={c.slug}
               onClick={() => updateParam("category", c.slug)}
-              className={`text-left text-sm py-1 ${current.category === c.slug ? "font-semibold text-brand-emerald" : "text-slate-600"}`}
+              className={clsx(
+                "rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
+                current.category === c.slug
+                  ? "bg-brand-gradient-soft font-semibold text-brand-emerald"
+                  : "text-slate-600 hover:bg-surface-soft"
+              )}
             >
               {c.nameTh}
             </button>
@@ -54,38 +75,80 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
       </div>
       <div>
         <h4 className="text-sm font-bold text-brand-ink mb-3">แบรนด์</h4>
-        <div className="flex flex-col gap-1.5">
-          {houseBrands.map((b) => (
-            <button
-              key={b.slug}
-              onClick={() => updateParam("brand", current.brand === b.slug ? null : b.slug)}
-              className={`text-left text-sm py-1 font-bold ${current.brand === b.slug ? "text-brand-emerald" : "text-brand-ink"}`}
-            >
-              {b.name}
-            </button>
-          ))}
-          <div className="my-1 border-t border-slate-100" />
-          <div className="flex flex-col gap-1.5 max-h-72 overflow-y-auto pr-1">
-            {otherBrands.map((b) => (
+        <div className="flex flex-col gap-0.5">
+          {houseBrands.map((b) => {
+            const selected = current.brand === b.slug;
+            return (
               <button
                 key={b.slug}
-                onClick={() => updateParam("brand", current.brand === b.slug ? null : b.slug)}
-                className={`text-left text-sm py-1 shrink-0 ${current.brand === b.slug ? "font-semibold text-brand-emerald" : "text-slate-600"}`}
+                onClick={() => updateParam("brand", selected ? null : b.slug)}
+                className={clsx(
+                  "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-bold transition-colors",
+                  selected ? "bg-brand-gradient-soft text-brand-emerald" : "text-brand-ink hover:bg-surface-soft"
+                )}
               >
+                <span
+                  className={clsx(
+                    "grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 transition-colors",
+                    selected ? "border-brand-emerald bg-brand-emerald" : "border-slate-300"
+                  )}
+                >
+                  {selected && <Check size={10} className="text-white" strokeWidth={3} />}
+                </span>
                 {b.name}
               </button>
-            ))}
+            );
+          })}
+          <div className="my-1.5 border-t border-slate-100" />
+          <div className="flex flex-col gap-0.5">
+            {visibleOtherBrands.map((b) => {
+              const selected = current.brand === b.slug;
+              return (
+                <button
+                  key={b.slug}
+                  onClick={() => updateParam("brand", selected ? null : b.slug)}
+                  className={clsx(
+                    "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm shrink-0 transition-colors",
+                    selected ? "bg-brand-gradient-soft font-semibold text-brand-emerald" : "text-slate-600 hover:bg-surface-soft"
+                  )}
+                >
+                  <span
+                    className={clsx(
+                      "grid h-4 w-4 shrink-0 place-items-center rounded border-2 transition-colors",
+                      selected ? "border-brand-emerald bg-brand-emerald" : "border-slate-300"
+                    )}
+                  >
+                    {selected && <Check size={10} className="text-white" strokeWidth={3} />}
+                  </span>
+                  {b.name}
+                </button>
+              );
+            })}
           </div>
+          {otherBrands.length > VISIBLE_BRANDS && (
+            <button
+              onClick={() => setShowAllBrands((v) => !v)}
+              className="mt-1 flex items-center gap-1 px-2 py-1.5 text-left text-xs font-semibold text-brand-emerald hover:text-brand-sky transition-colors"
+            >
+              <ChevronDown size={13} className={clsx("transition-transform", brandsExpanded && "rotate-180")} />
+              {brandsExpanded ? "แสดงน้อยลง" : `แสดงเพิ่มเติม (${otherBrands.length - VISIBLE_BRANDS})`}
+            </button>
+          )}
         </div>
       </div>
       <div>
         <h4 className="text-sm font-bold text-brand-ink mb-3">ปัญหาผิวที่กังวล</h4>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-0.5">
           {concerns.map((c) => (
             <button
               key={c.slug}
               onClick={() => updateParam("concern", current.concern === c.slug ? null : c.slug)}
-              className={`text-left text-sm py-1 ${current.concern === c.slug ? "font-semibold text-brand-emerald" : "text-slate-600"}`}
+              className={clsx(
+                "rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
+                current.concern === c.slug
+                  ? "bg-brand-gradient-soft font-semibold text-brand-emerald"
+                  : "text-slate-600 hover:bg-surface-soft"
+              )}
             >
               {c.nameTh}
             </button>
