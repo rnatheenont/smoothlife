@@ -111,7 +111,12 @@ const brandDefs: Omit<Brand, "productCount">[] = [
   // catalogue (see scripts/fetch-products.js), no hand-picked logo asset
   // sourced for these yet, so they render with the existing text-only
   // fallback until someone grabs a real logo file for each.
-  { slug: "abhaibhubejhr", name: "Abhaibhubejhr", tagline: "ผลิตภัณฑ์สมุนไพรไทยแผนโบราณ" },
+  {
+    slug: "abhaibhubejhr",
+    name: "Abhaibhubejhr",
+    tagline: "ผลิตภัณฑ์สมุนไพรไทยแผนโบราณ",
+    image: "https://www.smoothlife.com/cdn/shop/files/03010010.png?v=1759223397",
+  },
   {
     slug: "acne-aid",
     name: "Acne-Aid",
@@ -247,8 +252,18 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     image:
       "https://www.smoothlife.com/cdn/shop/collections/Untitled_design_1_70858ff4-ea3b-430f-8180-a78176c808b7.png?v=1762239694",
   },
-  { slug: "imumate", name: "Imumate", tagline: "ผลิตภัณฑ์เสริมภูมิคุ้มกัน" },
-  { slug: "interpharma", name: "Interpharma", tagline: "ผลิตภัณฑ์เภสัชภัณฑ์" },
+  {
+    slug: "imumate",
+    name: "Imumate",
+    tagline: "ผลิตภัณฑ์เสริมภูมิคุ้มกัน",
+    image: "https://www.smoothlife.com/cdn/shop/files/IMUMATEELDERBERRYPLUSLYSINE50ML_02030435_1.jpg?v=1755248877",
+  },
+  {
+    slug: "interpharma",
+    name: "Interpharma",
+    tagline: "ผลิตภัณฑ์เภสัชภัณฑ์",
+    image: "https://www.smoothlife.com/cdn/shop/files/1111.jpg?v=1775462636",
+  },
   {
     slug: "janeke",
     name: "Janeke",
@@ -278,7 +293,12 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     image:
       "https://www.smoothlife.com/cdn/shop/collections/32_d3ebc5fd-5181-4fb5-bdbf-8b8f1ddc214e.png?v=1756028833",
   },
-  { slug: "lactis", name: "Lactis", tagline: "โพรไบโอติกเพื่อสุขภาพลำไส้" },
+  {
+    slug: "lactis",
+    name: "Lactis",
+    tagline: "โพรไบโอติกเพื่อสุขภาพลำไส้",
+    image: "https://www.smoothlife.com/cdn/shop/files/sg-11134201-7rceu-lrqukfxwxfzyfd.jpg?v=1755249065",
+  },
   {
     slug: "lamoon",
     name: "Lamoon",
@@ -313,17 +333,37 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     image:
       "https://www.smoothlife.com/cdn/shop/collections/Untitled_design_10_95f58451-24f6-4939-ba13-6aaebcf90ee9.png?v=1758788236",
   },
-  { slug: "neotape", name: "Neotape", tagline: "เทปทางการแพทย์" },
+  {
+    slug: "neotape",
+    name: "Neotape",
+    tagline: "เทปทางการแพทย์",
+    image: "https://www.smoothlife.com/cdn/shop/files/NEOTAPE_2X6X10_04040222.jpg?v=1755249077",
+  },
   { slug: "nola", name: "Nola", tagline: "ผลิตภัณฑ์เพื่อสุขภาพ" },
-  { slug: "nutroplex", name: "Nutroplex", tagline: "วิตามินรวมชนิดน้ำสำหรับเด็ก" },
+  {
+    slug: "nutroplex",
+    name: "Nutroplex",
+    tagline: "วิตามินรวมชนิดน้ำสำหรับเด็ก",
+    image: "https://www.smoothlife.com/cdn/shop/files/iii.jpg?v=1755249114",
+  },
   {
     slug: "opti-free",
     name: "Opti-Free",
     tagline: "น้ำยาล้างและแช่คอนแทคเลนส์",
     image: "https://www.smoothlife.com/cdn/shop/collections/45.png?v=1756030598",
   },
-  { slug: "oso-cal", name: "Oso-Cal", tagline: "แคลเซียมเสริม" },
-  { slug: "phecare", name: "Phecare", tagline: "ผลิตภัณฑ์ดูแลสุขภาพ" },
+  {
+    slug: "oso-cal",
+    name: "Oso-Cal",
+    tagline: "แคลเซียมเสริม",
+    image: "https://www.smoothlife.com/cdn/shop/files/OSO-CAL_CALCIUM_L-THREONATE_750_30_S_NEW_02020277_1.jpg?v=1755248867",
+  },
+  {
+    slug: "phecare",
+    name: "Phecare",
+    tagline: "ผลิตภัณฑ์ดูแลสุขภาพ",
+    image: "https://www.smoothlife.com/cdn/shop/files/04030021.png?v=1759467065",
+  },
   {
     slug: "physiogel",
     name: "Physiogel",
@@ -331,7 +371,12 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     image:
       "https://www.smoothlife.com/cdn/shop/collections/347815048_1399934397526644_3348982248096400466_n.png?v=1762154092",
   },
-  { slug: "probac7", name: "Probac7", tagline: "โพรไบโอติกเพื่อระบบขับถ่ายและภูมิคุ้มกัน" },
+  {
+    slug: "probac7",
+    name: "Probac7",
+    tagline: "โพรไบโอติกเพื่อระบบขับถ่ายและภูมิคุ้มกัน",
+    image: "https://www.smoothlife.com/cdn/shop/files/FGOT000033.jpg?v=1760954103",
+  },
   {
     slug: "sanita",
     name: "Sanita",
@@ -346,7 +391,12 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     image:
       "https://www.smoothlife.com/cdn/shop/collections/449925629_865585575605336_4192252277912020621_n.jpg?v=1759723942",
   },
-  { slug: "sensiplus", name: "Sensiplus", tagline: "ผลิตภัณฑ์สำหรับผิวแพ้ง่าย" },
+  {
+    slug: "sensiplus",
+    name: "Sensiplus",
+    tagline: "ผลิตภัณฑ์สำหรับผิวแพ้ง่าย",
+    image: "https://www.smoothlife.com/cdn/shop/files/KLEAN_KARE_SENSIPLUS_100_ML_3030116_2.jpg?v=1755248804",
+  },
   {
     slug: "sos",
     name: "Sos",

@@ -44,8 +44,9 @@ function MarqueeRow({ brands, reverse }: { brands: Brand[]; reverse?: boolean })
 }
 
 export default function BrandMarquee({ brands }: { brands: Brand[] }) {
-  const perRow = Math.ceil(brands.length / 3);
-  const rows = [brands.slice(0, perRow), brands.slice(perRow, perRow * 2), brands.slice(perRow * 2)].filter(
+  const ROWS = 4;
+  const perRow = Math.ceil(brands.length / ROWS);
+  const rows = Array.from({ length: ROWS }, (_, i) => brands.slice(i * perRow, (i + 1) * perRow)).filter(
     (r) => r.length > 0
   );
 

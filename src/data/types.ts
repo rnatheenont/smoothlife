@@ -39,6 +39,8 @@ export type Product = {
   compareAtPrice?: number;
   image: string;
   image2?: string;
+  /** Every real product photo from Shopify (image/image2 are just images[0]/images[1] kept for callers — cards, cart rows — that only ever want one shot). Used by the PDP gallery so it isn't capped at 2 when a product has more. */
+  images?: string[];
   rating: number;
   reviewCount: number;
   badges?: ("Bestseller" | "New" | "Sale" | "BOGO" | "Bundle")[];

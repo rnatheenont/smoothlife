@@ -202,6 +202,86 @@ function sections(lines) {
   return out;
 }
 
+/* ---------- structural description parsing ----------
+ * The line-based `sections()`/bullet heuristics above assume a flat wall of
+ * text, but this merchant's real descriptions are consistently structured
+ * as heading + <ul> pairs (<h3>Properties</h3><ul><li>...</li></ul>, or
+ * <p><strong>Who is it suitable for ?</strong></p><ul>...</ul>). Walking
+ * that structure directly — instead of guessing from indentation-free plain
+ * text — is what actually captures every bullet under its real heading
+ * instead of silently truncating to the first 3 lines regardless of which
+ * section they belonged to. Falls back to the line heuristics above for the
+ * (also real) products whose description is just plain prose with no
+ * heading/list structure at all. */
+
+const HEADING_FIELD_RULES = [
+  ["whoFor", ["suitable for", "เหมาะสำหรับ", "เหมาะกับ"]],
+  ["ingredients", ["ingredient", "product detail", "ส่วนผสม", "ส่วนประกอบ", "รายละเอียดสินค้า"]],
+  ["howToUse", ["how to use", "direction", "วิธีใช้", "วิธีการใช้"]],
+  ["benefits", ["propert", "key feature", "benefit", "highlight", "คุณสมบัติ", "จุดเด่น", "ประโยชน์"]],
+];
+
+function classifyHeading(text) {
+  const low = text.toLowerCase();
+  for (const [field, keys] of HEADING_FIELD_RULES) {
+    if (keys.some((k) => low.includes(k))) return field;
+  }
+  return null;
+}
+
+function stripTags(s) {
+  return String(s).replace(/<[^>]+>/g, "").trim();
+}
+
+function parseDescriptionBlocks(html) {
+  if (!html) return [];
+  const s = decodeEntities(decodeEntities(String(html))).replace(/<!--[\s\S]*?-->/g, "");
+  const blockRe = /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>|<ul[^>]*>([\s\S]*?)<\/ul>|<ol[^>]*>([\s\S]*?)<\/ol>|<p[^>]*>([\s\S]*?)<\/p>/gi;
+  const out = [];
+  let m;
+  while ((m = blockRe.exec(s))) {
+    if (m[1] !== undefined) {
+      const text = stripTags(m[1]).replace(/\s+/g, " ");
+      if (text) out.push({ type: "heading", text });
+    } else if (m[2] !== undefined || m[3] !== undefined) {
+      const listHtml = m[2] !== undefined ? m[2] : m[3];
+      const items = [...listHtml.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)]
+        .map((li) => stripTags(li[1]).replace(/\s+/g, " ").trim())
+        .filter((t) => t.length > 1);
+      if (items.length) out.push({ type: "list", items });
+    } else if (m[4] !== undefined) {
+      const raw = m[4];
+      const text = stripTags(raw).replace(/\s+/g, " ").trim();
+      if (!text) continue;
+      // A paragraph that's entirely one bold run (Word/Canva exports often
+      // use <p><strong>Heading</strong></p> instead of a real <h*> tag) is
+      // a heading in disguise — only when short, so a bolded phrase inside
+      // real marketing prose doesn't get misread as a section label.
+      const isAllBold = /^\s*<strong[^>]*>[\s\S]*<\/strong>\s*$/i.test(raw.trim()) && text.length < 60;
+      out.push({ type: isAllBold ? "heading" : "para", text });
+    }
+  }
+  return out;
+}
+
+function structuralSections(html) {
+  const out = { benefits: [], whoFor: [], ingredients: [], howToUse: [], prose: [] };
+  let field = null;
+  for (const b of parseDescriptionBlocks(html)) {
+    if (b.type === "heading") {
+      field = classifyHeading(b.text);
+      continue;
+    }
+    if (b.type === "list") {
+      out[field || "benefits"].push(...b.items);
+    } else if (b.type === "para") {
+      if (field === "whoFor" || field === "howToUse") out[field].push(b.text);
+      else if (!field) out.prose.push(b.text);
+    }
+  }
+  return out;
+}
+
 /* ---------- Storefront API fetch ---------- */
 
 const PRODUCTS_QUERY = `
@@ -218,7 +298,7 @@ const PRODUCTS_QUERY = `
           tags
           descriptionHtml
           publishedAt
-          images(first: 2) { edges { node { url } } }
+          images(first: 10) { edges { node { url } } }
           variants(first: 25) {
             edges {
               node {
@@ -326,6 +406,10 @@ function toProduct(p, usedSlugs) {
 
   const lines = blocks(p.descriptionHtml);
   const sec = sections(lines);
+  const struct = structuralSections(p.descriptionHtml);
+  const isStructured = Boolean(
+    struct.benefits.length || struct.whoFor.length || struct.ingredients.length || struct.howToUse.length
+  );
   const claimed = new Set([sec.howToUse, sec.ingredients, sec.whoFor].filter(Boolean));
   const prose = lines.filter(
     (l) =>
@@ -364,6 +448,7 @@ function toProduct(p, usedSlugs) {
     compareAtPrice: compare > price ? compare : 0,
     image: img(0),
     image2: images[1] ? img(1) : "",
+    images: images.map((_, i) => img(i)),
     rating: 0,
     reviewCount: 0,
     badges: badges.slice(0, 3),
@@ -372,15 +457,20 @@ function toProduct(p, usedSlugs) {
     // page), so clipping them here only produced broken, mid-word "…" cutoffs.
     // shortDesc is the one exception: it's used in product-grid cards with a
     // CSS line-clamp, so it keeps a (word-boundary-safe) length cap.
-    shortDesc: clip(prose[0] || lines[0] || "", 130),
-    description: prose.slice(0, 4).join(" "),
-    benefits:
-      prose.length > 2
+    // Once the structural parser finds *any* real heading/list section, its
+    // (empty) prose result is authoritative — the old flat-line `prose`
+    // would otherwise leak in an unrelated fragment like the registration
+    // number line, which isn't a section heading but also isn't a benefit.
+    shortDesc: clip(struct.prose[0] || (isStructured ? struct.benefits[0] : prose[0]) || lines[0] || "", 130),
+    description: (struct.prose.length ? struct.prose : isStructured ? struct.benefits.slice(0, 4) : prose).join(" "),
+    benefits: struct.benefits.length
+      ? struct.benefits.slice(0, 12)
+      : prose.length > 2
         ? prose.slice(1, 4)
         : lines.filter((l) => /^•/.test(l)).slice(0, 3).map((l) => l.replace(/^•\s*/, "")),
-    howToUse: sec.howToUse,
-    ingredients: sec.ingredients,
-    whoFor: sec.whoFor,
+    howToUse: struct.howToUse.join(" ") || sec.howToUse,
+    ingredients: struct.ingredients.length ? struct.ingredients.join(" ") : sec.ingredients,
+    whoFor: struct.whoFor.length ? struct.whoFor.join(" ") : sec.whoFor,
     inStock: variant.inStock,
     size: variant.size,
     variants: allVariants,
@@ -402,6 +492,7 @@ function serialise(list) {
     if (p.compareAtPrice) f.push(`compareAtPrice:${p.compareAtPrice}`);
     f.push(`image:"${esc(p.image)}"`);
     if (p.image2) f.push(`image2:"${esc(p.image2)}"`);
+    if (p.images.length > 2) f.push(`images:[${p.images.map((i) => `"${esc(i)}"`).join(",")}]`);
     f.push(`rating:${p.rating}`);
     f.push(`reviewCount:${p.reviewCount}`);
     if (p.badges.length) f.push(`badges:[${p.badges.map((b) => `"${b}"`).join(",")}]`);

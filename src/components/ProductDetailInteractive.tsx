@@ -48,7 +48,10 @@ export default function ProductDetailInteractive({
   reviews: ReviewRow[];
   questions: QuestionRow[];
 }) {
-  const images = [product.image, product.image2].filter(Boolean) as string[];
+  const images =
+    product.images && product.images.length > 0
+      ? product.images
+      : ([product.image, product.image2].filter(Boolean) as string[]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState("benefits");

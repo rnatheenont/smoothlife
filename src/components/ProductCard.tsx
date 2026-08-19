@@ -19,6 +19,15 @@ const badgeStyles: Record<string, string> = {
   Bundle: "bg-amber-500 text-white",
 };
 
+// A discount % and a "Sale" badge say the same thing, so the discount
+// chip (more specific) replaces "Sale" rather than stacking on top of
+// it — keeps the corner to at most 2 chips instead of 3 crowded pills.
+function cardBadgeChips(badges: string[] | undefined, discount: number) {
+  const rest = (badges ?? []).filter((b) => b !== "Sale").slice(0, 2);
+  const chips = discount > 0 ? [`-${discount}%`, ...rest] : rest;
+  return chips.slice(0, 2);
+}
+
 export default function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
   const { toggle, has } = useWishlist();
@@ -73,17 +82,18 @@ export default function ProductCard({ product }: { product: Product }) {
             <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-900/80 text-white">สินค้าหมด</span>
           </div>
         ) : (
-          <div className="absolute left-2 top-2 flex flex-col gap-1">
-            {product.badges?.slice(0, 2).map((b) => (
-              <span key={b} className={clsx("text-[10px] font-bold px-2 py-0.5 rounded-full", badgeStyles[b])}>
-                {b}
+          <div className="absolute left-2 top-2 flex flex-wrap gap-1 max-w-[calc(100%-3rem)]">
+            {cardBadgeChips(product.badges, discount).map((label) => (
+              <span
+                key={label}
+                className={clsx(
+                  "text-[10px] font-bold px-2 py-1 rounded-full shadow-sm",
+                  label.startsWith("-") ? "bg-rose-500 text-white" : badgeStyles[label] || "bg-slate-700 text-white"
+                )}
+              >
+                {label}
               </span>
             ))}
-            {discount > 0 && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-white">
-                -{discount}%
-              </span>
-            )}
           </div>
         )}
       </Link>

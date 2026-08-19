@@ -17,6 +17,7 @@ import ScaleReveal from "@/components/ScaleReveal";
 import BrandMarquee from "@/components/BrandMarquee";
 import ProductTabs from "@/components/ProductTabs";
 import BrandShowcase from "@/components/BrandShowcase";
+import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 
 const articleCategoryLabel: Record<string, string> = {
   guide: "คู่มือ",
@@ -51,6 +52,35 @@ export default function HomePage() {
   const houseBrandProducts = Object.fromEntries(houseBrands.map((b) => [b.slug, brandProducts(b.slug)]));
   const featuredArticles = articles.slice(0, 3);
   const usedPromoSlugs = new Set<string>();
+
+  // Real product-video clips (Firework CDN, provided directly — not scraped).
+  // Two clips (ASTA Whi 30ml, and one untitled Thai-named file) had no
+  // confirmed matching product, so they link to /shop generically instead
+  // of guessing which of several similarly-named real products they show.
+  const socialClipSlugs: (string | null)[] = [
+    "dentiste-anticavity-max-fluoride-toothpaste",
+    null,
+    null,
+    "sme-retinal-plus-deep-wrinkle-repair-30-g",
+    "dentiste-repaire-rex3-70g",
+    "smooth-e-anti-hair-loss-hair-thickening-shampoo",
+    "smooth-e-babyface-hydration-foam",
+    "smooth-e-white-babyface-spot-clear",
+  ];
+  const socialClipVideos = [
+    "https://cdn6.fireworktv.com/medias/2025/11/27/1764238313-wfckresm/transcoded/720/KRU20AOM20Formalab.mp4",
+    "https://cdn4.fireworktv.com/medias/2025/10/16/1760607737-gyoksnwq/transcoded/720/ASTA20Whi2030ml.mp4",
+    "https://cdn3.fireworktv.com/medias/2025/11/27/1764229486-uyecdzik/transcoded/720/%E0%B8%AA%E0%B8%A3%E0%B8%B2%E0%B8%A3%E0%B8%B1%E0%B8%AA%E0%B8%A1%E0%B8%B4%E0%B9%8C%20%E0%B8%81%E0%B8%A5%E0%B8%B4%E0%B8%99%E0%B8%97%E0%B9%8C%E0%B8%A3%E0%B8%B1%E0%B8%87%E0%B8%AA%E0%B8%B5.mp4",
+    "https://cdn4.fireworktv.com/medias/2025/10/16/1760608144-edpsbonv/transcoded/720/Serum2030ml.mp4",
+    "https://cdn1.fireworktv.com/medias/2025/10/24/1761300428-djtmelvp/transcoded/720/chaladgin.mp4",
+    "https://cdn1.fireworktv.com/medias/2025/10/17/1760681861-jxlvtwfn/transcoded/720/Hair20W201.mp4",
+    "https://cdn7.fireworktv.com/medias/2025/10/16/1760608081-pwsygcbo/transcoded/720/Foam20Hya201.mp4",
+    "https://cdn3.fireworktv.com/medias/2025/10/16/1760608006-pzikfjsq/watermarked/720/Foam20AHA.mp4",
+  ];
+  const socialClips: SocialClip[] = socialClipVideos.map((video, i) => ({
+    video,
+    product: socialClipSlugs[i] ? products.find((p) => p.slug === socialClipSlugs[i]) : undefined,
+  }));
 
   return (
     <div>
@@ -155,6 +185,10 @@ export default function HomePage() {
           ))}
         </StaggerGrid>
       </section>
+
+      {/* Trending on social — real product-video clips (Firework CDN),
+          each linking through to the real product it shows. */}
+      <TrendingOnSocial clips={socialClips} />
 
       {/* Products — one tabbed section instead of four near-identical
           stacked carousels (Best Sellers / On Sale / New / Bundles), so

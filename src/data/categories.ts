@@ -36,7 +36,8 @@ export const categories: CategoryInfo[] = [
     slug: "body-care",
     name: "Body Care",
     nameTh: "ดูแลผิวกาย",
-    image: "https://www.smoothlife.com/cdn/shop/files/th-11134207-7r992-lxgbv5tesvxs25.webp?width=800",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/dcb36a4c1ed80a8f262719e7b24d0023_e8ec4344-5233-49e6-aa98-177ffa0a05b7.jpg?v=1760415029&width=800",
   },
 ];
 
