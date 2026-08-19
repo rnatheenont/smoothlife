@@ -15,7 +15,6 @@ import StaggerReveal from "@/components/StaggerReveal";
 import StaggerGrid from "@/components/StaggerGrid";
 import ScaleReveal from "@/components/ScaleReveal";
 import BrandMarquee from "@/components/BrandMarquee";
-import ShoppableReels from "@/components/ShoppableReels";
 import ProductTabs from "@/components/ProductTabs";
 import BrandShowcase from "@/components/BrandShowcase";
 
@@ -52,21 +51,6 @@ export default function HomePage() {
   const houseBrandProducts = Object.fromEntries(houseBrands.map((b) => [b.slug, brandProducts(b.slug)]));
   const featuredArticles = articles.slice(0, 3);
   const usedPromoSlugs = new Set<string>();
-  const reelsProducts = (() => {
-    const candidates = [...products]
-      .filter((p) => p.inStock && p.badges && p.badges.length > 0)
-      .sort((a, b) => discountPct(b) - discountPct(a));
-    const perBrand = new Map<string, number>();
-    const picked: Product[] = [];
-    for (const p of candidates) {
-      const used = perBrand.get(p.brand) ?? 0;
-      if (used >= 2) continue;
-      perBrand.set(p.brand, used + 1);
-      picked.push(p);
-      if (picked.length >= 10) break;
-    }
-    return picked;
-  })();
 
   return (
     <div>
@@ -172,18 +156,6 @@ export default function HomePage() {
         </StaggerGrid>
       </section>
 
-      {/* Shoppable video reels */}
-      {reelsProducts.length > 0 && (
-        <section className="py-10 md:py-14">
-          <ScrollReveal className="container-page">
-            <SectionHeading title="ยอดฮิตพร้อมรีวิว" subtitle="Shop by Video" href="/shop" />
-          </ScrollReveal>
-          <div className="container-page">
-            <ShoppableReels products={reelsProducts} />
-          </div>
-        </section>
-      )}
-
       {/* Products — one tabbed section instead of four near-identical
           stacked carousels (Best Sellers / On Sale / New / Bundles), so
           browsing all of them costs one tap instead of a long scroll. */}
@@ -278,34 +250,18 @@ export default function HomePage() {
           exact path ("ให้น้อง Smoothie แนะนำสกินแคร์"), so a second full
           section repeating it further down was pure redundancy. */}
 
-      {/* Brands strip — scrolling logo wall on mobile/tablet (more logos fit
-          in less width that way), back to the original static grid on
-          desktop (plenty of width to just show them all at once). */}
+      {/* Brands strip — scrolling logo wall at every breakpoint. Used to be
+          a static desktop grid capped at the first 10 brands, but the
+          catalogue now spans dozens of real vendors (see brands.ts), so a
+          fixed grid either got enormous or hid most of them; the marquee
+          scales to any count without bloating page height and actually
+          shows the full range of brands we carry. */}
       <section className="py-10 md:py-14 overflow-hidden">
         <ScrollReveal className="container-page">
           <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
         </ScrollReveal>
-        <ScrollReveal className="lg:hidden">
+        <ScrollReveal>
           <BrandMarquee brands={brands} />
-        </ScrollReveal>
-        <ScrollReveal className="hidden lg:block container-page">
-          <div className="grid grid-cols-5 rounded-xl2 border-t border-l border-slate-100 overflow-hidden">
-            {brands.slice(0, 10).map((b) => (
-              <Link
-                key={b.slug}
-                href={`/shop?brand=${b.slug}`}
-                className="border-r border-b border-slate-100 p-4 flex items-center justify-center h-32 hover:bg-surface-soft transition-colors"
-              >
-                {b.image ? (
-                  <div className="relative h-full w-full">
-                    <Image src={b.image} alt={b.name} fill className="object-contain" sizes="220px" />
-                  </div>
-                ) : (
-                  <span className="text-sm font-medium text-slate-600">{b.name}</span>
-                )}
-              </Link>
-            ))}
-          </div>
         </ScrollReveal>
       </section>
 

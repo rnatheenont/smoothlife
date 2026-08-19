@@ -10,8 +10,11 @@ function MarqueeRow({ brands, reverse }: { brands: Brand[]; reverse?: boolean })
   // loop-closing duplicate) is comfortably wider than any real desktop
   // viewport — with only 5 unique logos per row at ~150px each, doubling
   // alone made a ~1500px track that ran out on wide screens, leaving a
-  // dead gap of blank space for most of the animation cycle.
-  const REPEATS = 8;
+  // dead gap of blank space for most of the animation cycle. Now that the
+  // catalogue carries dozens of real brands (see brands.ts) each row is
+  // already much longer, so the repeat count scales back down instead of
+  // multiplying an already-wide row into thousands of DOM nodes.
+  const REPEATS = Math.max(2, Math.ceil(40 / brands.length));
   const half = Array.from({ length: REPEATS }, () => brands).flat();
   const track = [...half, ...half];
   return (

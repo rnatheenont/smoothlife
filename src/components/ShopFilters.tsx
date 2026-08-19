@@ -65,15 +65,17 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
             </button>
           ))}
           <div className="my-1 border-t border-slate-100" />
-          {otherBrands.map((b) => (
-            <button
-              key={b.slug}
-              onClick={() => updateParam("brand", current.brand === b.slug ? null : b.slug)}
-              className={`text-left text-sm py-1 ${current.brand === b.slug ? "font-semibold text-brand-emerald" : "text-slate-600"}`}
-            >
-              {b.name}
-            </button>
-          ))}
+          <div className="flex flex-col gap-1.5 max-h-72 overflow-y-auto pr-1">
+            {otherBrands.map((b) => (
+              <button
+                key={b.slug}
+                onClick={() => updateParam("brand", current.brand === b.slug ? null : b.slug)}
+                className={`text-left text-sm py-1 shrink-0 ${current.brand === b.slug ? "font-semibold text-brand-emerald" : "text-slate-600"}`}
+              >
+                {b.name}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div>
