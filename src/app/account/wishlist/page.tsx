@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Heart } from "lucide-react";
+import Image from "next/image";
 import { useWishlist } from "@/lib/cart-context";
 import { products } from "@/data/products";
 import AccountLayout from "@/components/account/AccountLayout";
@@ -14,8 +14,10 @@ function WishlistContent() {
   if (items.length === 0) {
     return (
       <div className="text-center py-10">
-        <Heart size={40} className="mx-auto text-slate-300" />
-        <p className="text-slate-500 mt-4">คุณยังไม่มีสินค้าในรายการโปรด</p>
+        <span className="relative mx-auto block h-20 w-20">
+          <Image src="/mascot/smoothie-new.png" alt="" fill sizes="80px" className="object-contain" />
+        </span>
+        <p className="text-slate-500 mt-2">คุณยังไม่มีสินค้าในรายการโปรด</p>
         <Link href="/shop" className="inline-block mt-4 text-brand-emerald font-semibold text-sm">เลือกดูสินค้า</Link>
       </div>
     );

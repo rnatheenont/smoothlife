@@ -16,6 +16,21 @@ import { hasStoredConsent, grantConsent } from "@/components/skin-coach/ConsentG
 
 type Msg = { role: "user" | "assistant"; content: string; image?: string };
 
+// Rotates through the launcher badge so a first-time visitor sees both of
+// its jobs (product help + skin advice) without the badge ever growing a
+// paragraph — kept deliberately close in length so the pill never resizes
+// as it cycles. Opens on the brand name, then alternates the two themes.
+const CHAT_BADGE_PHRASES: [string, string][] = [
+  ["ปรึกษาน้อง Smoothie", "Ask Smoothie"],
+  ["หาสินค้าที่ใช่ให้คุณ", "Find your product"],
+  ["กังวลเรื่องผิวไหม ถามได้", "Skin concerns? Ask away"],
+  ["คุยกับน้อง Smoothie", "Chat with Smoothie"],
+  ["แนะนำสินค้าให้เลย", "Get recommendations"],
+  ["ปรึกษาปัญหาผิวฟรี", "Free skin advice"],
+];
+const CHAT_BADGE_INTERVAL_MS = 3500;
+const CHAT_BADGE_FADE_MS = 175;
+
 // Matches the [[slug]] markers the model is told to use, but also tolerates
 // a stray single-bracket [slug] (models occasionally drop a bracket) and
 // bare /product/slug links, so a product card still renders instead of
@@ -176,6 +191,8 @@ export default function QuickChat() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [escalating, setEscalating] = useState(false);
   const [escalateMsg, setEscalateMsg] = useState<string | null>(null);
+  const [badgeIndex, setBadgeIndex] = useState(0);
+  const [badgeFading, setBadgeFading] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Lets the launcher bubble be dragged to wherever's convenient (it can sit
@@ -188,17 +205,28 @@ export default function QuickChat() {
   // below both want a smooth animated transition instead.
   const [isDragging, setIsDragging] = useState(false);
   const dragState = useRef({ dragging: false, moved: false, startX: 0, startY: 0, baseX: 0, baseY: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
   const DRAG_THRESHOLD = 6;
-  const LAUNCHER_SIZE = 64;
   const EDGE_MARGIN = 8;
 
+  // Reads the container's actual current position/size instead of
+  // hardcoding its CSS anchor offsets (right-4/right-5, bottom-[...], the
+  // button's own responsive h-16/h-24 size) — those went stale the moment
+  // any of that CSS changed, which is exactly what silently broke the
+  // edge-snap before (it always overshot past the left edge by ~12px
+  // because the bounds math assumed a 0 right-offset that was never true).
+  // dragPos is subtracted out of the measured rect to recover the
+  // untransformed base position the bounds are relative to.
   function dragBounds() {
-    if (typeof window === "undefined") return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+    if (typeof window === "undefined" || !containerRef.current) return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+    const rect = containerRef.current.getBoundingClientRect();
+    const baseLeft = rect.left - dragPos.x;
+    const baseTop = rect.top - dragPos.y;
     return {
-      minX: -(window.innerWidth - LAUNCHER_SIZE - EDGE_MARGIN),
-      maxX: 0,
-      minY: -(window.innerHeight - LAUNCHER_SIZE - EDGE_MARGIN),
-      maxY: 0,
+      minX: EDGE_MARGIN - baseLeft,
+      maxX: window.innerWidth - EDGE_MARGIN - rect.width - baseLeft,
+      minY: EDGE_MARGIN - baseTop,
+      maxY: window.innerHeight - EDGE_MARGIN - rect.height - baseTop,
     };
   }
   function clampDragPos(x: number, y: number) {
@@ -233,7 +261,8 @@ export default function QuickChat() {
     if (wasRealDrag) {
       setDragPos((pos) => {
         const { minX, maxX } = dragBounds();
-        const centerX = window.innerWidth - 16 - LAUNCHER_SIZE / 2 + pos.x;
+        const rect = containerRef.current?.getBoundingClientRect();
+        const centerX = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
         const snappedX = centerX < window.innerWidth / 2 ? minX : maxX;
         return { x: snappedX, y: pos.y };
       });
@@ -513,14 +542,26 @@ export default function QuickChat() {
     }
   }
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBadgeFading(true);
+      setTimeout(() => {
+        setBadgeIndex((i) => (i + 1) % CHAT_BADGE_PHRASES.length);
+        setBadgeFading(false);
+      }, CHAT_BADGE_FADE_MS);
+    }, CHAT_BADGE_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <>
       <div
+        ref={containerRef}
         className={`fixed ${
           stickyBarVisible
-            ? "bottom-[calc(132px+env(safe-area-inset-bottom))]"
-            : "bottom-[calc(72px+env(safe-area-inset-bottom))]"
-        } lg:bottom-5 right-4 lg:right-5 z-[80] inline-flex transition-[bottom]`}
+            ? "bottom-[calc(120px+env(safe-area-inset-bottom))]"
+            : "bottom-[calc(60px+env(safe-area-inset-bottom))]"
+        } lg:bottom-3 right-4 lg:right-5 z-[80] inline-flex transition-[bottom]`}
         style={{
           transform: `translate(${dragPos.x}px, ${dragPos.y}px)`,
           transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
@@ -533,30 +574,24 @@ export default function QuickChat() {
           onPointerCancel={handleLauncherPointerUp}
           onClick={handleLauncherClick}
           aria-label={t("คุยกับน้อง Smoothie", "Chat with Smoothie")}
-          className={`relative flex items-center justify-center gap-2 rounded-full text-white transition-[transform,background-color,box-shadow] hover:scale-105 active:scale-95 touch-none select-none cursor-grab active:cursor-grabbing ${
-            open
-              ? "bg-brand-gradient shadow-cardHover ring-2 ring-white h-12 w-12"
-              : "h-16 w-16 lg:h-14 lg:w-auto lg:justify-start lg:pl-4 lg:pr-5 lg:bg-brand-gradient lg:shadow-cardHover lg:ring-2 lg:ring-white"
+          className={`relative flex items-center justify-center rounded-full text-white transition-[transform,background-color,box-shadow] hover:scale-105 active:scale-95 touch-none select-none cursor-grab active:cursor-grabbing ${
+            open ? "bg-brand-gradient shadow-cardHover ring-2 ring-white h-12 w-12" : "h-16 w-16 lg:h-24 lg:w-24"
           }`}
         >
           {open ? (
             <X size={20} />
           ) : (
-            <>
-              <span className="relative grid h-16 w-16 lg:h-9 lg:w-9 shrink-0 place-items-center">
-                <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="64px" className="object-contain drop-shadow-md" />
-                {/* Mobile-only label — the mascot alone doesn't read as "tap to
-                    chat with AI"; desktop already spells that out via the
-                    text span below, so this is redundant there. */}
-                <span className="absolute -top-1 -right-1 flex items-center gap-0.5 rounded-full bg-brand-gradient px-1.5 py-0.5 text-[9px] font-bold leading-none text-white shadow-sm lg:hidden">
-                  <MessageCircleQuestion size={9} strokeWidth={3} />
-                  AI
-                </span>
+            <span className="relative grid h-16 w-16 lg:h-24 lg:w-24 shrink-0 place-items-center">
+              <Image src="/mascot/smoothie-new.png" alt="" fill sizes="(min-width: 1024px) 96px, 64px" className="object-contain drop-shadow-md" />
+              <span
+                className={`absolute -top-1 -right-1 whitespace-nowrap rounded-full bg-brand-gradient px-1.5 py-0.5 text-[8px] lg:text-[11px] font-bold leading-none text-white shadow-sm transition-opacity ${
+                  badgeFading ? "opacity-0" : "opacity-100"
+                }`}
+                style={{ transitionDuration: `${CHAT_BADGE_FADE_MS}ms` }}
+              >
+                {t(...CHAT_BADGE_PHRASES[badgeIndex])}
               </span>
-              <span className="hidden lg:inline text-sm font-semibold whitespace-nowrap">
-                {t("คุยกับน้อง Smoothie", "Ask Smoothie")}
-              </span>
-            </>
+            </span>
           )}
         </button>
       </div>
@@ -565,14 +600,14 @@ export default function QuickChat() {
         <div
           className={`fixed ${
             stickyBarVisible
-              ? "bottom-[calc(196px+env(safe-area-inset-bottom))] h-[min(760px,calc(100dvh-196px-env(safe-area-inset-bottom)-16px))]"
-              : "bottom-[calc(136px+env(safe-area-inset-bottom))] h-[min(760px,calc(100dvh-136px-env(safe-area-inset-bottom)-16px))]"
-          } lg:bottom-24 right-4 sm:right-5 z-[80] w-[calc(100vw-2rem)] sm:w-[390px] lg:h-[min(760px,82dvh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp transition-[bottom,height]`}
+              ? "bottom-[calc(184px+env(safe-area-inset-bottom))] h-[min(760px,calc(100dvh-184px-env(safe-area-inset-bottom)-16px))]"
+              : "bottom-[calc(124px+env(safe-area-inset-bottom))] h-[min(760px,calc(100dvh-124px-env(safe-area-inset-bottom)-16px))]"
+          } lg:bottom-[88px] right-4 sm:right-5 z-[80] w-[calc(100vw-2rem)] sm:w-[390px] lg:h-[min(760px,82dvh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp transition-[bottom,height]`}
         >
           <div className="flex items-center justify-between gap-3 bg-brand-ink px-4 py-3">
             <div className="flex items-center gap-2.5 text-white min-w-0">
               <span className="relative grid h-9 w-9 shrink-0 place-items-center">
-                <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="36px" className="object-contain" />
+                <Image src="/mascot/smoothie-new.png" alt="" fill sizes="36px" className="object-contain" />
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-bold leading-tight truncate">
@@ -689,7 +724,7 @@ export default function QuickChat() {
                   </span>
                 ) : (
                   <span className="relative h-10 w-10 shrink-0 -mt-0.5">
-                    <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="40px" className="object-contain" />
+                    <Image src="/mascot/smoothie-say.png" alt="" fill sizes="40px" className="object-contain" />
                   </span>
                 )}
                 <div

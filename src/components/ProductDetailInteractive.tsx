@@ -592,9 +592,14 @@ export default function ProductDetailInteractive({
                 </div>
 
                 {reviewSuccessPoints !== null && (
-                  <p className="mb-4 text-xs font-semibold text-brand-emerald">
-                    ส่งรีวิวสำเร็จ ได้รับ {reviewSuccessPoints} คะแนน ขอบคุณค่ะ!
-                  </p>
+                  <div className="mb-4 flex items-center gap-2">
+                    <span className="relative h-9 w-9 shrink-0">
+                      <Image src="/mascot/smoothie-fun.png" alt="" fill sizes="36px" className="object-contain" />
+                    </span>
+                    <p className="text-xs font-semibold text-brand-emerald">
+                      ส่งรีวิวสำเร็จ ได้รับ {reviewSuccessPoints} คะแนน ขอบคุณค่ะ!
+                    </p>
+                  </div>
                 )}
 
                 {showReviewForm && (

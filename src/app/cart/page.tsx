@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Minus, Plus, Trash2, ShoppingBag, Award, Ticket } from "lucide-react";
+import { Minus, Plus, Trash2, Award, Ticket } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
@@ -27,8 +27,10 @@ export default function CartPage() {
   if (lines.length === 0) {
     return (
       <div className="container-page py-20 text-center">
-        <ShoppingBag size={48} className="mx-auto text-slate-300" />
-        <h1 className="text-xl font-bold text-brand-ink mt-4">{t("ตะกร้าของคุณว่างเปล่า", "Your cart is empty")}</h1>
+        <span className="relative mx-auto block h-24 w-24">
+          <Image src="/mascot/smoothie-say.png" alt="" fill sizes="96px" className="object-contain" />
+        </span>
+        <h1 className="text-xl font-bold text-brand-ink mt-2">{t("ตะกร้าของคุณว่างเปล่า", "Your cart is empty")}</h1>
         <p className="text-sm text-slate-500 mt-1">
           {t("เลือกชมสินค้าคุณภาพดีจาก Smooth Life", "Browse quality products from Smooth Life")}
         </p>
