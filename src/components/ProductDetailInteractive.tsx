@@ -179,7 +179,7 @@ export default function ProductDetailInteractive({
 
   return (
     <div>
-      <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         <div>
           <div
             className="relative aspect-square rounded-xl2 overflow-hidden bg-surface-soft select-none touch-pan-y cursor-zoom-in"
@@ -205,12 +205,12 @@ export default function ProductDetailInteractive({
             )}
           </div>
           {images.length > 1 && (
-            <div className="flex gap-2 mt-3">
+            <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-none">
               {images.map((img, i) => (
                 <button
                   key={img}
                   onClick={() => setActiveIndex(i)}
-                  className={`relative h-16 w-16 rounded-lg overflow-hidden border-2 ${
+                  className={`relative h-16 w-16 shrink-0 rounded-lg overflow-hidden border-2 ${
                     i === activeIndex ? "border-brand-teal" : "border-transparent"
                   }`}
                 >
