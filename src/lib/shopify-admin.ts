@@ -541,3 +541,82 @@ export async function listGiftCards(limit = 20): Promise<ShopifyGiftCardSummary[
   );
   return data.giftCards.edges.map((e) => e.node);
 }
+
+// Creates the real Shopify order for one billing cycle of a "Subscribe &
+// Save" plan, after 2C2P confirms that cycle's charge actually succeeded
+// (lib/2c2p.ts) — this is what makes the shipment visible to fulfillment,
+// since the charge itself never touches Shopify's own checkout. Marked
+// paid immediately via a synthetic SALE/SUCCESS transaction because the
+// money already moved at 2C2P; Shopify is just being told about it after
+// the fact, not asked to collect it.
+export async function createOrderForSubscriptionCycle(opts: {
+  customerId?: string;
+  email?: string;
+  variantId: string;
+  quantity: number;
+  amount: number;
+  currencyCode: string;
+  shippingAddress: {
+    firstName?: string;
+    lastName?: string;
+    address1: string;
+    city: string;
+    provinceCode?: string;
+    zip: string;
+    countryCode: string;
+    phone?: string;
+  };
+  note: string;
+  tranRef: string;
+}): Promise<{ id: string; name: string }> {
+  const data = await adminGraphql<{
+    orderCreate: { order: { id: string; name: string } | null; userErrors: { field: string[]; message: string }[] };
+  }>(
+    `mutation CreateSubscriptionCycleOrder($order: OrderCreateOrderInput!, $options: OrderCreateOptionsInput) {
+      orderCreate(order: $order, options: $options) {
+        order { id name }
+        userErrors { field message }
+      }
+    }`,
+    {
+      order: {
+        email: opts.email,
+        customer: opts.customerId ? { toAssociate: { id: opts.customerId } } : undefined,
+        financialStatus: "PAID",
+        note: opts.note,
+        shippingAddress: {
+          firstName: opts.shippingAddress.firstName,
+          lastName: opts.shippingAddress.lastName,
+          address1: opts.shippingAddress.address1,
+          city: opts.shippingAddress.city,
+          provinceCode: opts.shippingAddress.provinceCode,
+          zip: opts.shippingAddress.zip,
+          countryCode: opts.shippingAddress.countryCode,
+          phone: opts.shippingAddress.phone,
+        },
+        lineItems: [
+          {
+            variantId: opts.variantId,
+            quantity: opts.quantity,
+            priceSet: { shopMoney: { amount: opts.amount, currencyCode: opts.currencyCode } },
+          },
+        ],
+        transactions: [
+          {
+            kind: "SALE",
+            status: "SUCCESS",
+            gateway: "2C2P",
+            amountSet: { shopMoney: { amount: opts.amount, currencyCode: opts.currencyCode } },
+            authorizationCode: opts.tranRef,
+          },
+        ],
+      },
+      options: { inventoryBehaviour: "DECREMENT_OBEYING_POLICY", sendReceipt: true, sendFulfillmentReceipt: false },
+    }
+  );
+  if (data.orderCreate.userErrors.length) {
+    throw new Error(data.orderCreate.userErrors.map((e) => e.message).join(", "));
+  }
+  if (!data.orderCreate.order) throw new Error("Shopify did not return the created order");
+  return data.orderCreate.order;
+}

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getProductBySlug, getRelatedProducts, products } from "@/data/products";
 import { categories } from "@/data/categories";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
+import { twoC2PConfigured } from "@/lib/2c2p";
 import type { ReviewRow } from "@/app/api/reviews/route";
 import type { QuestionRow } from "@/app/api/product-questions/route";
 import ProductDetailInteractive from "@/components/ProductDetailInteractive";
@@ -76,7 +77,13 @@ export default async function ProductPage({ params }: { params: { slug: string }
         <BackButton fallbackHref={`/shop/${product.category}`} />
         <Breadcrumb items={breadcrumbItems} />
       </div>
-      <ProductDetailInteractive product={product} related={related} reviews={reviews} questions={questions} />
+      <ProductDetailInteractive
+        product={product}
+        related={related}
+        reviews={reviews}
+        questions={questions}
+        subscriptionBillingEnabled={twoC2PConfigured()}
+      />
 
       {related.length > 0 && (
         <div className="mt-16">

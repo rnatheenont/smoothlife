@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { pointsForOrder } from "@/lib/points";
+import { products } from "@/data/products";
+import { subscriptionPlans } from "@/data/subscriptions";
 
 // Shopify webhook endpoint — configure in Shopify Admin (or via
 // webhookSubscriptionCreate) to POST here for topics: orders/paid,
@@ -92,7 +94,62 @@ async function handleOrdersPaid(order: any) {
       body: JSON.stringify({ shopify_customer_id: String(order.customer.id) }),
     });
   }
-  return { credited: points, userId };
+
+  const subscriptionResult = await handleSubscriptionOrder(order, userId);
+  return { credited: points, userId, subscriptionResult };
+}
+
+// Auto-detects and tracks a "Subscribe & Save" purchase (product detail
+// page's subscribe panel) so /account/subscriptions can show it and the
+// reminder cron can nudge the customer near renewal — this app has no real
+// recurring-billing backend, so "subscribed" here means "we'll track and
+// remind", not "we'll auto-charge". Detection is a heuristic since the
+// SUB3/SUB6/SUB12 codes are whole-order percent-off codes with no
+// per-line-item scoping in the Shopify discount itself: only a line item
+// whose quantity exactly matches the plan's month count is treated as the
+// subscribed item (this is exactly what the subscribe panel always adds),
+// so an unrelated item that happens to share the same quantity by
+// coincidence is the one false-positive case this can't fully rule out.
+const SUBSCRIPTION_CODES = new Set(subscriptionPlans.map((p) => p.code));
+
+async function handleSubscriptionOrder(order: any, userId: string) {
+  const codes: string[] = (order.discount_codes || []).map((d: any) => String(d.code).toUpperCase());
+  const matchedCode = codes.find((c) => SUBSCRIPTION_CODES.has(c));
+  if (!matchedCode) return { skipped: "no subscription discount code on this order" };
+  const plan = subscriptionPlans.find((p) => p.code === matchedCode);
+  if (!plan) return { skipped: "matched code not found in current plan list" };
+
+  const purchasedAt = new Date(order.created_at ?? Date.now());
+  const nextRenewal = new Date(purchasedAt);
+  nextRenewal.setMonth(nextRenewal.getMonth() + plan.months);
+
+  let tracked = 0;
+  for (const li of order.line_items || []) {
+    if (!li.variant_id || li.quantity !== plan.months) continue;
+    const variantGid = `gid://shopify/ProductVariant/${li.variant_id}`;
+    const product = products.find((p) => p.variants.some((v) => v.variantId === variantGid));
+    if (!product) continue;
+
+    await supabaseRest(`subscription_preferences?on_conflict=shopify_order_id,variant_id`, {
+      method: "POST",
+      headers: { Prefer: "resolution=ignore-duplicates,return=representation" },
+      body: JSON.stringify({
+        user_id: userId,
+        shopify_order_id: String(order.id),
+        shopify_order_name: order.name ?? null,
+        product_slug: product.slug,
+        product_name: li.title || product.name,
+        variant_id: variantGid,
+        plan_months: plan.months,
+        plan_code: plan.code,
+        price_per_cycle: parseFloat(li.price ?? "0"),
+        purchased_at: purchasedAt.toISOString(),
+        next_renewal_at: nextRenewal.toISOString(),
+      }),
+    });
+    tracked++;
+  }
+  return { tracked, plan: matchedCode };
 }
 
 async function handleOrdersCancelled(order: any) {

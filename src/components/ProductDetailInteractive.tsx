@@ -47,11 +47,13 @@ export default function ProductDetailInteractive({
   related,
   reviews,
   questions,
+  subscriptionBillingEnabled = false,
 }: {
   product: Product;
   related: Product[];
   reviews: ReviewRow[];
   questions: QuestionRow[];
+  subscriptionBillingEnabled?: boolean;
 }) {
   const images =
     product.images && product.images.length > 0
@@ -194,11 +196,67 @@ export default function ProductDetailInteractive({
   const subscribeTotalTerm = subscribePricePerCycle * subscribePlan.months;
   const subscribeSaved = subscribeFullTerm - subscribeTotalTerm;
 
+  const [realSubscribeSubmitting, setRealSubscribeSubmitting] = useState(false);
+  const [realSubscribeError, setRealSubscribeError] = useState("");
+
+  // Interim behavior: still used whenever subscriptionBillingEnabled is
+  // false (no 2C2P credentials set yet) — buys the whole term upfront as a
+  // real one-time Shopify order with a real discount code, no recurring
+  // charge. Once 2C2P is configured this function is unreachable; see
+  // handleRealSubscribe below.
   function handleSubscribe() {
     addItem(product.slug, subscribePlan.months, selectedVariant.variantId);
     setCouponCode(subscribePlan.code);
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
+  }
+
+  // Real recurring billing path — charges the customer's card via 2C2P now
+  // and automatically again every cycle, shipping one unit per cycle.
+  // Requires a saved default shipping address (reuses the same address
+  // book /checkout already prefills from) since this bypasses Shopify's
+  // own checkout entirely.
+  async function handleRealSubscribe() {
+    setRealSubscribeError("");
+    setRealSubscribeSubmitting(true);
+    try {
+      const res = await fetch("/api/account/addresses");
+      const data = await res.json();
+      const defaultAddress = data.addresses?.[0];
+      if (!defaultAddress || defaultAddress.country !== "TH") {
+        setRealSubscribeError("กรุณาเพิ่มที่อยู่จัดส่งเริ่มต้นก่อนสมัคร");
+        return;
+      }
+      const checkoutRes = await fetch("/api/subscribe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productSlug: product.slug,
+          variantId: selectedVariant.variantId,
+          months: subscribePlan.months,
+          shippingAddress: {
+            address1: defaultAddress.address_line,
+            city: defaultAddress.district,
+            state: defaultAddress.province,
+            postalCode: defaultAddress.postal_code,
+            countryCode: defaultAddress.country,
+            firstName: defaultAddress.recipient_name?.split(/\s+/)[0],
+            lastName: defaultAddress.recipient_name?.split(/\s+/).slice(1).join(" "),
+            phone: defaultAddress.phone,
+          },
+        }),
+      });
+      const checkoutData = await checkoutRes.json();
+      if (!checkoutData.ok) {
+        setRealSubscribeError(checkoutData.error || "เริ่มการชำระเงินไม่สำเร็จ");
+        return;
+      }
+      window.location.href = checkoutData.webPaymentUrl;
+    } catch {
+      setRealSubscribeError("เริ่มการชำระเงินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setRealSubscribeSubmitting(false);
+    }
   }
 
   const buyButtonRef = useRef<HTMLDivElement>(null);
@@ -393,15 +451,20 @@ export default function ProductDetailInteractive({
                 <p className="mt-1 text-xs font-bold text-brand-emerald">ประหยัดรวม {formatTHB(subscribeSaved)} ตลอดรอบสมัคร</p>
 
                 <button
-                  onClick={handleSubscribe}
-                  disabled={!selectedVariant.inStock}
+                  onClick={() =>
+                    requireLoginThen(subscriptionBillingEnabled ? handleRealSubscribe : handleSubscribe)
+                  }
+                  disabled={!selectedVariant.inStock || realSubscribeSubmitting}
                   className="mt-3 w-full flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
                 >
                   {added ? <Check size={16} /> : <Sparkles size={16} />}
-                  {added ? "เพิ่มลงตะกร้าแล้ว" : "สมัครรับประจำ"}
+                  {realSubscribeSubmitting ? "กำลังเริ่มชำระเงิน..." : added ? "เพิ่มลงตะกร้าแล้ว" : "สมัครรับประจำ"}
                 </button>
+                {realSubscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{realSubscribeError}</p>}
                 <p className="mt-2 text-[10px] text-slate-400 text-center">
-                  เพิ่มสินค้า {subscribePlan.months} ชิ้นลงตะกร้าพร้อมโค้ดส่วนลด {subscribePlan.code} ที่ใช้ได้จริงตอนชำระเงิน — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย
+                  {subscriptionBillingEnabled
+                    ? `ตัดเงิน ${formatTHB(subscribePricePerCycle)} อัตโนมัติทุกเดือน รวม ${subscribePlan.months} รอบ ผ่านบัตรที่ผูกไว้ — ยกเลิกได้ทุกเมื่อที่หน้า "การสมัครของฉัน"`
+                    : `เพิ่มสินค้า ${subscribePlan.months} ชิ้นลงตะกร้าพร้อมโค้ดส่วนลด ${subscribePlan.code} ที่ใช้ได้จริงตอนชำระเงิน — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
                 </p>
               </div>
             )}

@@ -3,7 +3,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, User, MapPin, Receipt, Package, Award, Heart, KeyRound, LogOut, CalendarCheck, Trophy } from "lucide-react";
+import { LayoutGrid, User, MapPin, Receipt, Package, Award, Heart, KeyRound, LogOut, CalendarCheck, Trophy, Repeat } from "lucide-react";
 import AccountGate from "@/components/AccountGate";
 import { useAuth } from "@/lib/auth-context";
 
@@ -13,6 +13,7 @@ const NAV = [
   { href: "/account/addresses", label: "ที่อยู่จัดส่ง", icon: MapPin },
   { href: "/account/tax-addresses", label: "ที่อยู่ใบกำกับภาษี", icon: Receipt },
   { href: "/account/orders", label: "คำสั่งซื้อ", icon: Package },
+  { href: "/account/subscriptions", label: "การสมัครของฉัน", icon: Repeat },
   { href: "/account/checkin", label: "เช็กอินรายวัน", icon: CalendarCheck },
   { href: "/account/points", label: "คะแนนสะสม", icon: Award },
   { href: "/account/leaderboard", label: "อันดับ", icon: Trophy },
