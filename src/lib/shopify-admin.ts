@@ -426,3 +426,118 @@ export async function createSpendThresholdFreeGiftDiscount(opts: {
   if (!id) throw new Error("Shopify did not return a discount node id");
   return id;
 }
+
+// Issues a real, real-money Shopify gift card (GiftCardCreateInput/
+// giftCardCreate — schema-verified against the live Admin API this
+// session). `customerId` must be an existing Shopify customer GID (the
+// caller resolves/creates one via findShopifyCustomerByEmail /
+// createShopifyCustomer first) — Shopify requires the recipient to already
+// be a customer record, there's no "arbitrary email" issue path. The plain
+// code is only ever returned once, at creation time, so callers must
+// persist/display it immediately rather than trying to fetch it back later.
+export async function issueGiftCard(opts: {
+  customerId: string;
+  amount: number;
+  note?: string;
+  expiresOn?: string; // YYYY-MM-DD
+}): Promise<{ id: string; code: string; balance: number; currencyCode: string; lastCharacters: string }> {
+  const data = await adminGraphql<{
+    giftCardCreate: {
+      giftCard: { id: string; balance: { amount: string; currencyCode: string }; lastCharacters: string } | null;
+      giftCardCode: string | null;
+      userErrors: { field: string[]; message: string }[];
+    };
+  }>(
+    `mutation IssueGiftCard($input: GiftCardCreateInput!) {
+      giftCardCreate(input: $input) {
+        giftCard { id balance { amount currencyCode } lastCharacters }
+        giftCardCode
+        userErrors { field message }
+      }
+    }`,
+    {
+      input: {
+        initialValue: opts.amount,
+        customerId: opts.customerId,
+        note: opts.note,
+        expiresOn: opts.expiresOn,
+      },
+    }
+  );
+  if (data.giftCardCreate.userErrors.length) {
+    throw new Error(data.giftCardCreate.userErrors.map((e) => e.message).join(", "));
+  }
+  const giftCard = data.giftCardCreate.giftCard;
+  const code = data.giftCardCreate.giftCardCode;
+  if (!giftCard || !code) throw new Error("Shopify did not return the created gift card");
+  return {
+    id: giftCard.id,
+    code,
+    balance: Number(giftCard.balance.amount),
+    currencyCode: giftCard.balance.currencyCode,
+    lastCharacters: giftCard.lastCharacters,
+  };
+}
+
+// Emails the gift card (code + balance) to the customer it's assigned to,
+// using Shopify's own gift-card notification template — this is what
+// actually delivers it, issueGiftCard alone only creates the record.
+export async function sendGiftCardNotification(giftCardId: string): Promise<void> {
+  const data = await adminGraphql<{
+    giftCardSendNotificationToCustomer: { userErrors: { field: string[]; message: string }[] };
+  }>(
+    `mutation SendGiftCardNotification($id: ID!) {
+      giftCardSendNotificationToCustomer(id: $id) {
+        giftCard { id }
+        userErrors { field message }
+      }
+    }`,
+    { id: giftCardId }
+  );
+  if (data.giftCardSendNotificationToCustomer.userErrors.length) {
+    throw new Error(data.giftCardSendNotificationToCustomer.userErrors.map((e) => e.message).join(", "));
+  }
+}
+
+export type ShopifyGiftCardSummary = {
+  id: string;
+  maskedCode: string;
+  lastCharacters: string;
+  enabled: boolean;
+  createdAt: string;
+  expiresOn: string | null;
+  note: string | null;
+  balance: { amount: string; currencyCode: string };
+  initialValue: { amount: string; currencyCode: string };
+  customer: { firstName: string | null; lastName: string | null; defaultEmailAddress: { emailAddress: string } | null } | null;
+};
+
+// Read-only history for the admin panel — Shopify is the only store of
+// truth for issued gift cards (no local table), so this is just a thin
+// list view over the live data. `maskedCode` only shows the last 4 chars —
+// this is expected, Shopify never returns the full code again after
+// creation.
+export async function listGiftCards(limit = 20): Promise<ShopifyGiftCardSummary[]> {
+  const data = await adminGraphql<{ giftCards: { edges: { node: ShopifyGiftCardSummary }[] } }>(
+    `query ListGiftCards($first: Int!) {
+      giftCards(first: $first, sortKey: CREATED_AT, reverse: true) {
+        edges {
+          node {
+            id
+            maskedCode
+            lastCharacters
+            enabled
+            createdAt
+            expiresOn
+            note
+            balance { amount currencyCode }
+            initialValue { amount currencyCode }
+            customer { firstName lastName defaultEmailAddress { emailAddress } }
+          }
+        }
+      }
+    }`,
+    { first: limit }
+  );
+  return data.giftCards.edges.map((e) => e.node);
+}

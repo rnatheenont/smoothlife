@@ -90,6 +90,7 @@ export default function WidgetsPanel() {
   const [previewKey, setPreviewKey] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [toggleError, setToggleError] = useState<string | null>(null);
 
   async function load() {
     const res = await fetch("/api/admin/free-gifts/widgets");
@@ -102,12 +103,21 @@ export default function WidgetsPanel() {
   }, []);
 
   async function toggle(key: string, enabled: boolean) {
+    setToggleError(null);
     setWidgets((prev) => prev.map((w) => (w.key === key ? { ...w, enabled } : w)));
-    await fetch(`/api/admin/free-gifts/widgets/${key}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled }),
-    });
+    try {
+      const res = await fetch(`/api/admin/free-gifts/widgets/${key}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      // Save failed — revert the optimistic flip instead of leaving the UI
+      // showing a state that was never actually persisted.
+      setWidgets((prev) => prev.map((w) => (w.key === key ? { ...w, enabled: !enabled } : w)));
+      setToggleError("บันทึกไม่สำเร็จ กรุณาเข้าสู่ระบบใหม่แล้วลองอีกครั้ง");
+    }
   }
 
   function openCustomize(w: WidgetRow) {
@@ -142,6 +152,9 @@ export default function WidgetsPanel() {
 
   return (
     <div className="space-y-2.5">
+      {toggleError && (
+        <p className="rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs px-3 py-2">{toggleError}</p>
+      )}
       {widgets.map((w) => (
         <div key={w.key} className="rounded-xl2 border border-slate-100 p-3.5 shadow-card">
           <div className="flex items-center justify-between gap-2">
@@ -154,7 +167,7 @@ export default function WidgetsPanel() {
               className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${w.enabled ? "bg-brand-gradient" : "bg-slate-200"}`}
               aria-label={w.enabled ? "ปิดใช้งาน" : "เปิดใช้งาน"}
             >
-              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${w.enabled ? "translate-x-[22px]" : "translate-x-0.5"}`} />
+              <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${w.enabled ? "translate-x-[22px]" : "translate-x-0"}`} />
             </button>
           </div>
           <div className="flex items-center gap-3 mt-2.5">

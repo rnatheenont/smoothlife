@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { Home, LayoutGrid, ScanFace, ShoppingBag, User } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useCart } from "@/lib/cart-context";
-import { useCartDrawer } from "@/lib/cart-drawer-context";
 
 const tabs = [
   { href: "/", icon: Home, th: "หน้าแรก", en: "Home" },
@@ -19,7 +18,6 @@ export default function MobileTabBar() {
   const pathname = usePathname() || "/";
   const { t } = useLang();
   const { count } = useCart();
-  const { setOpen: setDrawerOpen } = useCartDrawer();
 
   function active(href: string) {
     if (href === "/") return pathname === "/";
@@ -55,15 +53,9 @@ export default function MobileTabBar() {
           );
           return (
             <li key={tab.href}>
-              {isCart ? (
-                <button type="button" onClick={() => setDrawerOpen(true)} className={className}>
-                  {content}
-                </button>
-              ) : (
-                <Link href={tab.href} aria-current={on ? "page" : undefined} className={className}>
-                  {content}
-                </Link>
-              )}
+              <Link href={tab.href} aria-current={on ? "page" : undefined} className={className}>
+                {content}
+              </Link>
             </li>
           );
         })}

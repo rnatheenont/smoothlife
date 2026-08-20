@@ -14,7 +14,7 @@ export type SubscriptionPlan = {
 // genuine price reduction, not a cosmetic-only number on this page.
 export const subscriptionPlans: SubscriptionPlan[] = [
   { months: 3, code: "SUB3", discountPct: 5, label: "ทุก 3 เดือน", sublabel: "เริ่มต้นลองดู" },
-  { months: 6, code: "SUB6", discountPct: 10, label: "ทุก 6 เดือน", sublabel: "คุ้มค่าที่สุด", popular: true },
+  { months: 6, code: "SUB6", discountPct: 15, label: "ทุก 6 เดือน", sublabel: "คุ้มค่าที่สุด", popular: true },
   { months: 12, code: "SUB12", discountPct: 20, label: "ทุก 12 เดือน", sublabel: "ประหยัดสูงสุด" },
 ];
 

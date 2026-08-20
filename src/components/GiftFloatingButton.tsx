@@ -2,10 +2,10 @@
 
 import { useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
+import { useRouter } from "next/navigation";
 import { Gift } from "lucide-react";
 import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
-import { useCartDrawer } from "@/lib/cart-drawer-context";
 import { useQuickChat } from "@/lib/quickchat-context";
 
 // Draggable floating launcher for gift progress — forked from QuickChat's
@@ -16,7 +16,7 @@ import { useQuickChat } from "@/lib/quickchat-context";
 export default function GiftFloatingButton() {
   const evals = useFreeGiftEvals();
   const { settings } = useWidgetSettings();
-  const { setOpen: setDrawerOpen } = useCartDrawer();
+  const router = useRouter();
   const { stickyBarVisible } = useQuickChat();
 
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
@@ -72,7 +72,7 @@ export default function GiftFloatingButton() {
       dragState.current.moved = false;
       return;
     }
-    setDrawerOpen(true);
+    router.push("/cart");
   }
 
   if (!settings.floating_button.enabled) return null;

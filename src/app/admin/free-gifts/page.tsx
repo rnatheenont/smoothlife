@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import {
   Gift,
-  Lock,
   Check,
   Trash2,
   Power,
@@ -19,7 +18,6 @@ import {
 import { FreeGiftPromo, FreeGiftTier } from "@/data/free-gifts";
 import { getProductBySlug } from "@/data/products";
 import ProductPicker from "@/components/admin/ProductPicker";
-import WidgetsPanel from "@/components/admin/WidgetsPanel";
 
 type AdminPromo = FreeGiftPromo & { id: string };
 
@@ -89,9 +87,6 @@ function describeCondition(p: {
 }
 
 export default function AdminFreeGiftsPage() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
   const [promos, setPromos] = useState<AdminPromo[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -100,45 +95,17 @@ export default function AdminFreeGiftsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [tab, setTab] = useState<"promos" | "widgets">("promos");
 
   async function loadList() {
     const res = await fetch("/api/admin/free-gifts");
-    if (res.status === 401) {
-      setAuthed(false);
-      return;
-    }
+    if (res.status === 401) return;
     const data = await res.json();
-    setAuthed(true);
     setPromos(data.promos ?? []);
   }
 
   useEffect(() => {
     loadList();
   }, []);
-
-  async function submitLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setLoginError("");
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    const data = await res.json();
-    if (!data.ok) {
-      setLoginError(data.error || "เข้าสู่ระบบไม่สำเร็จ");
-      return;
-    }
-    setPassword("");
-    loadList();
-  }
-
-  async function logout() {
-    await fetch("/api/admin/logout", { method: "POST" });
-    setAuthed(false);
-    setPromos([]);
-  }
 
   function openCreateForm() {
     setEditingId(null);
@@ -154,7 +121,10 @@ export default function AdminFreeGiftsPage() {
     setSubmitting(true);
     try {
       const body = {
-        slug: form.slug || slugify(form.titleEn || form.titleTh),
+        // slugify() drops any character outside a-z0-9 — a Thai-only title
+        // (titleEn blank) collapses to an empty string, so fall back to a
+        // generated id rather than submitting a slug that fails validation.
+        slug: form.slug || slugify(form.titleEn || form.titleTh) || `promo-${Date.now().toString(36)}`,
         titleTh: form.titleTh,
         titleEn: form.titleEn || form.titleTh,
         kind: form.kind,
@@ -260,72 +230,17 @@ export default function AdminFreeGiftsPage() {
     }
   }
 
-  if (authed === null) {
-    return <div className="container-page py-16 text-center text-sm text-slate-400">กำลังโหลด...</div>;
-  }
-
-  if (authed === false) {
-    return (
-      <div className="container-page py-16 max-w-sm mx-auto">
-        <div className="flex flex-col items-center text-center mb-6">
-          <div className="grid h-12 w-12 place-items-center rounded-full bg-brand-gradient-soft mb-3">
-            <Lock size={20} className="text-brand-emerald" />
-          </div>
-          <h1 className="text-lg font-bold text-brand-ink">ตั้งค่าของแถม & โปรโมชั่น</h1>
-          <p className="text-xs text-slate-400 mt-1">หน้านี้สำหรับทีมงานเท่านั้น กรอกรหัสผ่านเพื่อเข้าใช้งาน</p>
-        </div>
-        <form onSubmit={submitLogin} className="space-y-3">
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="รหัสผ่านแอดมิน"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
-            autoFocus
-          />
-          {loginError && <p className="text-xs text-rose-500">{loginError}</p>}
-          <button type="submit" className="w-full rounded-full bg-brand-gradient text-white text-sm font-semibold py-2.5">
-            เข้าสู่ระบบ
-          </button>
-        </form>
-      </div>
-    );
-  }
-
   return (
-    <div className="container-page py-10 max-w-3xl">
-      <div className="flex items-start justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-brand-ink flex items-center gap-2">
-            <Gift size={22} className="text-brand-emerald" /> ของแถม & โปรโมชั่น
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            ตั้งโปร &ldquo;ซื้อครบแถมฟรี&rdquo; — ระบบจะเพิ่มของแถมในตะกร้าลูกค้าอัตโนมัติ และผูกกับส่วนลดจริงใน Shopify ให้ทันที
-          </p>
-        </div>
-        <button onClick={logout} className="shrink-0 text-xs text-slate-400 hover:text-slate-600">
-          ออกจากระบบ
-        </button>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-brand-ink flex items-center gap-2">
+          <Gift size={22} className="text-brand-emerald" /> ของแถม & โปรโมชั่น
+        </h1>
+        <p className="text-sm text-slate-500 mt-1">
+          ตั้งโปร &ldquo;ซื้อครบแถมฟรี&rdquo; — ระบบจะเพิ่มของแถมในตะกร้าลูกค้าอัตโนมัติ และผูกกับส่วนลดจริงใน Shopify ให้ทันที
+        </p>
       </div>
 
-      <div className="flex gap-2 mb-6 border-b border-slate-100">
-        {(["promos", "widgets"] as const).map((k) => (
-          <button
-            key={k}
-            onClick={() => setTab(k)}
-            className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
-              tab === k ? "border-brand-emerald text-brand-emerald" : "border-transparent text-slate-400"
-            }`}
-          >
-            {k === "promos" ? "โปรโมชั่น" : "Widgets"}
-          </button>
-        ))}
-      </div>
-
-      {tab === "widgets" ? (
-        <WidgetsPanel />
-      ) : (
-        <>
       <button
         onClick={openCreateForm}
         className="w-full mb-6 flex items-center justify-center gap-2 rounded-xl2 border-2 border-dashed border-slate-200 hover:border-brand-teal text-slate-500 hover:text-brand-emerald py-4 text-sm font-semibold transition-colors"
@@ -424,8 +339,6 @@ export default function AdminFreeGiftsPage() {
             );
           })}
         </div>
-      )}
-        </>
       )}
 
       {showForm && (

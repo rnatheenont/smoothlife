@@ -12,17 +12,21 @@ import {
   ShieldCheck,
   RotateCcw,
   CheckCircle2,
+  Check,
   Star,
   MessageCircleQuestion,
   Expand,
   X,
   ChevronLeft,
   ChevronRight,
+  Repeat,
+  Sparkles,
 } from "lucide-react";
 import { Product } from "@/data/types";
 import type { ReviewRow } from "@/app/api/reviews/route";
 import type { QuestionRow } from "@/app/api/product-questions/route";
 import { formatTHB } from "@/lib/format";
+import { subscriptionPlans } from "@/data/subscriptions";
 import StarRating from "./StarRating";
 import MobileStickyBar from "./MobileStickyBar";
 import FreeGiftProgress from "./FreeGiftProgress";
@@ -58,7 +62,10 @@ export default function ProductDetailInteractive({
   const [tab, setTab] = useState("benefits");
   const [added, setAdded] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState(product.variantId);
-  const { addItem } = useCart();
+  const { addItem, setCouponCode } = useCart();
+  const [purchaseMode, setPurchaseMode] = useState<"once" | "subscribe">("once");
+  const popularPlan = subscriptionPlans.find((p) => p.popular) ?? subscriptionPlans[0];
+  const [subscribeMonths, setSubscribeMonths] = useState(popularPlan.months);
   const { toggle, has } = useWishlist();
   const { user } = useAuth();
   const { setOpen: setChatOpen } = useQuickChat();
@@ -176,6 +183,24 @@ export default function ProductDetailInteractive({
     setTimeout(() => setAdded(false), 1800);
   }
 
+  // Reuses the same real-Shopify-discount-code mechanism as the curated
+  // subscription sets (SubscriptionSetDetail/SubscriptionPicker) — adds
+  // `months` units of this one product to the cart (a term's worth,
+  // upfront) and applies the matching SUB3/SUB6/SUB12 code, which is a
+  // genuine checkout-time discount, not a cosmetic number.
+  const subscribePlan = subscriptionPlans.find((p) => p.months === subscribeMonths) ?? popularPlan;
+  const subscribePricePerCycle = Math.round(selectedVariant.price * (1 - subscribePlan.discountPct / 100));
+  const subscribeFullTerm = selectedVariant.price * subscribePlan.months;
+  const subscribeTotalTerm = subscribePricePerCycle * subscribePlan.months;
+  const subscribeSaved = subscribeFullTerm - subscribeTotalTerm;
+
+  function handleSubscribe() {
+    addItem(product.slug, subscribePlan.months, selectedVariant.variantId);
+    setCouponCode(subscribePlan.code);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1800);
+  }
+
   const buyButtonRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -275,38 +300,111 @@ export default function ProductDetailInteractive({
             product.size && <p className="text-xs text-slate-400 mt-1">ขนาด: {product.size}</p>
           )}
 
-          <div ref={buyButtonRef} className="flex items-center gap-3 mt-6">
-            <div className="flex items-center border border-slate-200 rounded-full">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="p-2.5" aria-label="ลดจำนวน">
-                <Minus size={14} />
-              </button>
-              <span className="w-8 text-center text-sm font-semibold">{qty}</span>
+          <div ref={buyButtonRef} className="mt-6">
+            <div className="grid grid-cols-2 gap-2 p-1 rounded-full bg-surface-soft text-sm font-semibold">
               <button
-                onClick={() =>
-                  setQty((q) => (typeof selectedVariant.quantity === "number" ? Math.min(q + 1, selectedVariant.quantity) : q + 1))
-                }
-                disabled={typeof selectedVariant.quantity === "number" && qty >= selectedVariant.quantity}
-                className="p-2.5 disabled:opacity-30 disabled:pointer-events-none"
-                aria-label="เพิ่มจำนวน"
+                onClick={() => setPurchaseMode("once")}
+                className={`rounded-full py-2 transition-colors ${
+                  purchaseMode === "once" ? "bg-white shadow-sm text-brand-ink" : "text-slate-400"
+                }`}
               >
-                <Plus size={14} />
+                ซื้อครั้งเดียว
+              </button>
+              <button
+                onClick={() => setPurchaseMode("subscribe")}
+                className={`flex items-center justify-center gap-1 rounded-full py-2 transition-colors ${
+                  purchaseMode === "subscribe" ? "bg-white shadow-sm text-brand-emerald" : "text-slate-400"
+                }`}
+              >
+                <Repeat size={13} /> สมัครรับประจำ
               </button>
             </div>
-            <button
-              onClick={handleAdd}
-              disabled={!selectedVariant.inStock}
-              className="flex-1 flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
-            >
-              {added ? <CheckCircle2 size={16} /> : <ShoppingBag size={16} />}
-              {added ? "เพิ่มลงตะกร้าแล้ว" : selectedVariant.inStock ? "เพิ่มลงตะกร้า" : "สินค้าหมด"}
-            </button>
-            <button
-              onClick={() => toggle(product.slug)}
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-slate-200"
-              aria-label="Wishlist"
-            >
-              <Heart size={18} className={has(product.slug) ? "fill-rose-500 text-rose-500" : "text-slate-400"} />
-            </button>
+
+            {purchaseMode === "once" ? (
+              <div className="flex items-center gap-3 mt-3">
+                <div className="flex items-center border border-slate-200 rounded-full">
+                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="p-2.5" aria-label="ลดจำนวน">
+                    <Minus size={14} />
+                  </button>
+                  <span className="w-8 text-center text-sm font-semibold">{qty}</span>
+                  <button
+                    onClick={() =>
+                      setQty((q) => (typeof selectedVariant.quantity === "number" ? Math.min(q + 1, selectedVariant.quantity) : q + 1))
+                    }
+                    disabled={typeof selectedVariant.quantity === "number" && qty >= selectedVariant.quantity}
+                    className="p-2.5 disabled:opacity-30 disabled:pointer-events-none"
+                    aria-label="เพิ่มจำนวน"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+                <button
+                  onClick={handleAdd}
+                  disabled={!selectedVariant.inStock}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  {added ? <CheckCircle2 size={16} /> : <ShoppingBag size={16} />}
+                  {added ? "เพิ่มลงตะกร้าแล้ว" : selectedVariant.inStock ? "เพิ่มลงตะกร้า" : "สินค้าหมด"}
+                </button>
+                <button
+                  onClick={() => toggle(product.slug)}
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-slate-200"
+                  aria-label="Wishlist"
+                >
+                  <Heart size={18} className={has(product.slug) ? "fill-rose-500 text-rose-500" : "text-slate-400"} />
+                </button>
+              </div>
+            ) : (
+              <div className="mt-3 rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-4">
+                <div className="grid grid-cols-3 gap-2">
+                  {subscriptionPlans.map((p) => {
+                    const active = p.months === subscribeMonths;
+                    return (
+                      <button
+                        key={p.months}
+                        onClick={() => setSubscribeMonths(p.months)}
+                        className={`relative rounded-xl border-2 py-2.5 text-center transition-all ${
+                          active ? "border-brand-emerald bg-white" : "border-transparent bg-white/50 hover:bg-white/80"
+                        }`}
+                      >
+                        {p.popular && (
+                          <span className="absolute -top-2 right-1 rounded-full bg-brand-gradient text-white text-[8px] font-bold px-1.5 py-0.5 shadow-card">
+                            ยอดนิยม
+                          </span>
+                        )}
+                        <p className="text-base font-extrabold text-brand-ink">{p.months} ด.</p>
+                        <p className={`text-[11px] font-bold ${active ? "text-brand-emerald" : "text-slate-400"}`}>-{p.discountPct}%</p>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-baseline justify-between mt-3">
+                  <span className="text-xs text-slate-500">ราคา/รอบ</span>
+                  <span className="text-xl font-extrabold text-brand-emerald">{formatTHB(subscribePricePerCycle)}</span>
+                </div>
+                <div className="flex items-baseline justify-between mt-0.5">
+                  <span className="text-[11px] text-slate-400">รวม {subscribePlan.months} รอบ</span>
+                  <span className="text-xs text-slate-500">
+                    <span className="line-through text-slate-400 mr-1">{formatTHB(subscribeFullTerm)}</span>
+                    {formatTHB(subscribeTotalTerm)}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs font-bold text-brand-emerald">ประหยัดรวม {formatTHB(subscribeSaved)} ตลอดรอบสมัคร</p>
+
+                <button
+                  onClick={handleSubscribe}
+                  disabled={!selectedVariant.inStock}
+                  className="mt-3 w-full flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  {added ? <Check size={16} /> : <Sparkles size={16} />}
+                  {added ? "เพิ่มลงตะกร้าแล้ว" : "สมัครรับประจำ"}
+                </button>
+                <p className="mt-2 text-[10px] text-slate-400 text-center">
+                  เพิ่มสินค้า {subscribePlan.months} ชิ้นลงตะกร้าพร้อมโค้ดส่วนลด {subscribePlan.code} ที่ใช้ได้จริงตอนชำระเงิน — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mt-6">
