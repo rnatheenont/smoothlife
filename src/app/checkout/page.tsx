@@ -238,7 +238,14 @@ export default function CheckoutPage() {
           <div className="flex flex-col gap-2 mb-4 max-h-56 overflow-y-auto">
             {lines.map((l) => (
               <div key={l.variantId} className="flex justify-between text-xs text-slate-600">
-                <span className="line-clamp-1 pr-2">{l.name} x{l.qty}</span>
+                <span className="line-clamp-1 pr-2">
+                  {l.name} x{l.qty}
+                  {l.isGift && (
+                    <span className="ml-1.5 inline-block align-middle text-[10px] font-semibold text-brand-emerald bg-brand-gradient-soft rounded px-1.5 py-0.5">
+                      ของแถม
+                    </span>
+                  )}
+                </span>
                 <span className="shrink-0">{formatTHB(l.price * l.qty)}</span>
               </div>
             ))}

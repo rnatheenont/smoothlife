@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { products } from "@/data/products";
 import { ProductVariant } from "@/data/types";
 import { useAuth } from "@/lib/auth-context";
+import { CartLine } from "@/data/coupons";
+import { evaluateActiveFreeGifts } from "@/data/free-gifts";
 
 type CartItem = { slug: string; variantId: string; qty: number };
 
@@ -32,6 +34,9 @@ type CartContextValue = {
     variants: ProductVariant[];
     /** Real Shopify stock count for this line's variant, when the store exposes it — undefined means unlimited/unknown, never a fabricated cap. */
     stock?: number;
+    /** True for a synthetic free-gift line derived from an eligible FreeGiftPromo — never persisted, never independently editable. */
+    isGift?: boolean;
+    giftPromoSlug?: string;
   }[];
   couponCode: string | null;
   setCouponCode: (code: string | null) => void;
@@ -153,6 +158,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const count = items.reduce((sum, i) => sum + i.qty, 0);
   const subtotal = lines.reduce((sum, l) => sum + l.price * l.qty, 0);
 
+  // Free-gift lines are fully derived from the real lines above — never
+  // persisted, never independently addable/removable — so a gift always
+  // reflects current cart eligibility and disappears the moment it no
+  // longer applies, with no separate bookkeeping to keep in sync.
+  const cartLinesForEval: CartLine[] = lines.map((l) => ({
+    slug: l.slug,
+    qty: l.qty,
+    price: l.price,
+    brand: l.brand,
+    category: l.category as CartLine["category"],
+  }));
+  const giftLines = evaluateActiveFreeGifts(cartLinesForEval)
+    .filter((e) => e.eligible)
+    .map((e) => {
+      const gp = products.find((pr) => pr.slug === e.promo.giftProductSlug);
+      if (!gp) return null; // misconfigured slug — fail closed, don't crash the cart
+      return {
+        slug: gp.slug,
+        variantId: gp.variantId,
+        qty: e.promo.giftQty,
+        name: gp.name,
+        price: 0,
+        image: gp.image,
+        compareAtPrice: undefined,
+        brand: gp.brand,
+        category: gp.category,
+        size: gp.size || "",
+        variants: gp.variants,
+        stock: undefined,
+        isGift: true,
+        giftPromoSlug: e.promo.slug,
+      };
+    })
+    .filter(Boolean) as CartContextValue["lines"];
+  const linesWithGifts = [...lines, ...giftLines];
+
   return (
     <CartContext.Provider
       value={{
@@ -164,7 +205,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clear,
         count,
         subtotal,
-        lines,
+        lines: linesWithGifts,
         couponCode,
         setCouponCode,
       }}

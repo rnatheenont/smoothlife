@@ -328,3 +328,101 @@ export async function createAmountDiscountCode(opts: {
   }
   return opts.code;
 }
+
+// Creates a real, automatic (no customer-facing code) "buy X get Y free"
+// discount — the free-gifts framework's enforcement side. Not called
+// anywhere yet; run manually (e.g. from a one-off script or directly via
+// the Shopify Admin API) when a real BXGY promo is ready to go live, then
+// paste the returned discount node id into that promo's shopifyDiscountId
+// in src/data/free-gifts.ts for reference. Mutation name/shape confirmed
+// against the live Admin API schema (discountAutomaticBxgyCreate /
+// DiscountAutomaticBxgyInput) but not exercised end-to-end — validate with
+// validate_graphql_codeblocks before first real use.
+export async function createBxgyFreeGiftDiscount(opts: {
+  title: string;
+  buyProductVariantIds: string[];
+  buyQuantity: number;
+  giftVariantIds: string[];
+  giftQuantity: number;
+  startsAt?: string;
+  endsAt?: string;
+}): Promise<string> {
+  const data = await adminGraphql<{
+    discountAutomaticBxgyCreate: {
+      automaticDiscountNode: { id: string } | null;
+      userErrors: { field: string[]; message: string }[];
+    };
+  }>(
+    `mutation CreateBxgyDiscount($automaticBxgyDiscount: DiscountAutomaticBxgyInput!) {
+      discountAutomaticBxgyCreate(automaticBxgyDiscount: $automaticBxgyDiscount) {
+        automaticDiscountNode { id }
+        userErrors { field message }
+      }
+    }`,
+    {
+      automaticBxgyDiscount: {
+        title: opts.title,
+        startsAt: opts.startsAt ?? new Date().toISOString(),
+        endsAt: opts.endsAt,
+        customerBuys: {
+          value: { quantity: opts.buyQuantity },
+          items: { products: { productVariantsToAdd: opts.buyProductVariantIds } },
+        },
+        customerGets: {
+          value: { discountOnQuantity: { quantity: opts.giftQuantity, effect: { percentage: 1.0 } } },
+          items: { products: { productVariantsToAdd: opts.giftVariantIds } },
+        },
+      },
+    }
+  );
+  if (data.discountAutomaticBxgyCreate.userErrors.length) {
+    throw new Error(data.discountAutomaticBxgyCreate.userErrors.map((e) => e.message).join(", "));
+  }
+  const id = data.discountAutomaticBxgyCreate.automaticDiscountNode?.id;
+  if (!id) throw new Error("Shopify did not return a discount node id");
+  return id;
+}
+
+// Same idea but for "spend ≥ ฿N, get a specific product free" — an
+// order-wide subtotal threshold rather than specific "buy" items. Same
+// not-yet-exercised caveat as createBxgyFreeGiftDiscount above.
+export async function createSpendThresholdFreeGiftDiscount(opts: {
+  title: string;
+  minSubtotal: number;
+  giftVariantIds: string[];
+  giftQuantity: number;
+  startsAt?: string;
+  endsAt?: string;
+}): Promise<string> {
+  const data = await adminGraphql<{
+    discountAutomaticBasicCreate: {
+      automaticDiscountNode: { id: string } | null;
+      userErrors: { field: string[]; message: string }[];
+    };
+  }>(
+    `mutation CreateSpendThresholdDiscount($automaticBasicDiscount: DiscountAutomaticBasicInput!) {
+      discountAutomaticBasicCreate(automaticBasicDiscount: $automaticBasicDiscount) {
+        automaticDiscountNode { id }
+        userErrors { field message }
+      }
+    }`,
+    {
+      automaticBasicDiscount: {
+        title: opts.title,
+        startsAt: opts.startsAt ?? new Date().toISOString(),
+        endsAt: opts.endsAt,
+        minimumRequirement: { subtotal: { greaterThanOrEqualToSubtotal: opts.minSubtotal } },
+        customerGets: {
+          value: { discountOnQuantity: { quantity: opts.giftQuantity, effect: { percentage: 1.0 } } },
+          items: { products: { productVariantsToAdd: opts.giftVariantIds } },
+        },
+      },
+    }
+  );
+  if (data.discountAutomaticBasicCreate.userErrors.length) {
+    throw new Error(data.discountAutomaticBasicCreate.userErrors.map((e) => e.message).join(", "));
+  }
+  const id = data.discountAutomaticBasicCreate.automaticDiscountNode?.id;
+  if (!id) throw new Error("Shopify did not return a discount node id");
+  return id;
+}
