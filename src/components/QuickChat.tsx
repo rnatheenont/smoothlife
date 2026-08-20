@@ -28,7 +28,7 @@ const CHAT_BADGE_PHRASES: [string, string][] = [
   ["แนะนำสินค้าให้เลย", "Get recommendations"],
   ["ปรึกษาปัญหาผิวฟรี", "Free skin advice"],
 ];
-const CHAT_BADGE_INTERVAL_MS = 3500;
+const CHAT_BADGE_INTERVAL_MS = 11000;
 const CHAT_BADGE_FADE_MS = 175;
 
 // Matches the [[slug]] markers the model is told to use, but also tolerates
@@ -583,13 +583,20 @@ export default function QuickChat() {
           ) : (
             <span className="relative grid h-16 w-16 lg:h-24 lg:w-24 shrink-0 place-items-center">
               <Image src="/mascot/smoothie-new.png" alt="" fill sizes="(min-width: 1024px) 96px, 64px" className="object-contain drop-shadow-md" />
+              {/* Real speech bubble shape (rounded rect + an actual pointed
+                  tail, not just a clipped corner) aimed down at the
+                  mascot's head, in the original brand-gradient color. */}
               <span
-                className={`absolute -top-1 -right-1 whitespace-nowrap rounded-full bg-brand-gradient px-1.5 py-0.5 text-[8px] lg:text-[11px] font-bold leading-none text-white shadow-sm transition-opacity ${
-                  badgeFading ? "opacity-0" : "opacity-100"
-                }`}
+                className={`absolute -top-3 -right-4 transition-opacity ${badgeFading ? "opacity-0" : "opacity-100"}`}
                 style={{ transitionDuration: `${CHAT_BADGE_FADE_MS}ms` }}
               >
-                {t(...CHAT_BADGE_PHRASES[badgeIndex])}
+                {/* Tail sits behind (lower z-index) so the bubble's own
+                    opaque background covers the part that overlaps it,
+                    leaving only the bottom point visible. */}
+                <span className="absolute -bottom-1 left-4 z-0 h-3 w-3 rotate-45 rounded-[2px] bg-brand-gradient" />
+                <span className="relative z-10 block whitespace-nowrap rounded-2xl bg-brand-gradient px-2.5 py-1.5 text-[8px] lg:text-[11px] font-bold leading-none text-white shadow-md">
+                  {t(...CHAT_BADGE_PHRASES[badgeIndex])}
+                </span>
               </span>
             </span>
           )}
