@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, ReactNode, PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, ReactNode, PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -193,6 +193,15 @@ export default function QuickChat() {
   const [escalateMsg, setEscalateMsg] = useState<string | null>(null);
   const [badgeIndex, setBadgeIndex] = useState(0);
   const [badgeFading, setBadgeFading] = useState(false);
+  // The badge is wider than the round launcher icon, so it must extend
+  // whichever way stays on-screen — anchored to the icon's right edge
+  // (extending left) normally, but flipped to the icon's left edge
+  // (extending right) once the launcher is dragged and snapped to the
+  // left side, or it clips off that edge the same way it did on the right.
+  const [snapSide, setSnapSide] = useState<"left" | "right">("right");
+  const badgeIconRef = useRef<HTMLSpanElement>(null);
+  const badgeBubbleRef = useRef<HTMLSpanElement>(null);
+  const [tailLeft, setTailLeft] = useState(16);
   const scroller = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Lets the launcher bubble be dragged to wherever's convenient (it can sit
@@ -263,8 +272,9 @@ export default function QuickChat() {
         const { minX, maxX } = dragBounds();
         const rect = containerRef.current?.getBoundingClientRect();
         const centerX = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
-        const snappedX = centerX < window.innerWidth / 2 ? minX : maxX;
-        return { x: snappedX, y: pos.y };
+        const snappedLeft = centerX < window.innerWidth / 2;
+        setSnapSide(snappedLeft ? "left" : "right");
+        return { x: snappedLeft ? minX : maxX, y: pos.y };
       });
     }
   }
@@ -553,6 +563,27 @@ export default function QuickChat() {
     return () => clearInterval(interval);
   }, []);
 
+  // Points the tail at the mascot's actual center instead of a hardcoded
+  // offset — a fixed pixel guess drifted badly between the 64px mobile
+  // icon and 96px desktop icon (and between phrases of slightly different
+  // width), landing nowhere near the mascot's head. Recomputed whenever
+  // the phrase, snap side, or viewport size changes.
+  useLayoutEffect(() => {
+    function updateTailPosition() {
+      const icon = badgeIconRef.current;
+      const bubble = badgeBubbleRef.current;
+      if (!icon || !bubble) return;
+      const iconRect = icon.getBoundingClientRect();
+      const bubbleRect = bubble.getBoundingClientRect();
+      const TAIL_SIZE = 12;
+      const iconCenterX = iconRect.left + iconRect.width / 2;
+      setTailLeft(iconCenterX - bubbleRect.left - TAIL_SIZE / 2);
+    }
+    updateTailPosition();
+    window.addEventListener("resize", updateTailPosition);
+    return () => window.removeEventListener("resize", updateTailPosition);
+  }, [badgeIndex, snapSide]);
+
   return (
     <>
       <div
@@ -581,20 +612,30 @@ export default function QuickChat() {
           {open ? (
             <X size={20} />
           ) : (
-            <span className="relative grid h-16 w-16 lg:h-24 lg:w-24 shrink-0 place-items-center">
+            <span ref={badgeIconRef} className="relative grid h-16 w-16 lg:h-24 lg:w-24 shrink-0 place-items-center">
               <Image src="/mascot/smoothie-new.png" alt="" fill sizes="(min-width: 1024px) 96px, 64px" className="object-contain drop-shadow-md" />
               {/* Real speech bubble shape (rounded rect + an actual pointed
                   tail, not just a clipped corner) aimed down at the
                   mascot's head, in the original brand-gradient color. */}
               <span
-                className={`absolute -top-3 -right-4 transition-opacity ${badgeFading ? "opacity-0" : "opacity-100"}`}
+                className={`absolute -top-3 transition-opacity ${snapSide === "left" ? "left-0" : "right-0"} ${
+                  badgeFading ? "opacity-0" : "opacity-100"
+                }`}
                 style={{ transitionDuration: `${CHAT_BADGE_FADE_MS}ms` }}
               >
                 {/* Tail sits behind (lower z-index) so the bubble's own
                     opaque background covers the part that overlaps it,
-                    leaving only the bottom point visible. */}
-                <span className="absolute -bottom-1 left-4 z-0 h-3 w-3 rotate-45 rounded-[2px] bg-brand-gradient" />
-                <span className="relative z-10 block whitespace-nowrap rounded-2xl bg-brand-gradient px-2.5 py-1.5 text-[8px] lg:text-[11px] font-bold leading-none text-white shadow-md">
+                    leaving only the bottom point visible. Its left offset
+                    is computed (see updateTailPosition) to line up with
+                    the mascot's actual center, not a guessed constant. */}
+                <span
+                  className="absolute -bottom-1 z-0 h-3 w-3 rotate-45 rounded-[2px] bg-brand-gradient"
+                  style={{ left: tailLeft }}
+                />
+                <span
+                  ref={badgeBubbleRef}
+                  className="relative z-10 block whitespace-nowrap rounded-2xl bg-brand-gradient px-2.5 py-1.5 text-[8px] lg:text-[11px] font-bold leading-none text-white shadow-md"
+                >
                   {t(...CHAT_BADGE_PHRASES[badgeIndex])}
                 </span>
               </span>
