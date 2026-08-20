@@ -25,6 +25,7 @@ import type { QuestionRow } from "@/app/api/product-questions/route";
 import { formatTHB } from "@/lib/format";
 import StarRating from "./StarRating";
 import MobileStickyBar from "./MobileStickyBar";
+import FreeGiftProgress from "./FreeGiftProgress";
 import { useCart, useWishlist } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useQuickChat } from "@/lib/quickchat-context";
@@ -306,6 +307,10 @@ export default function ProductDetailInteractive({
             >
               <Heart size={18} className={has(product.slug) ? "fill-rose-500 text-rose-500" : "text-slate-400"} />
             </button>
+          </div>
+
+          <div className="mt-6">
+            <FreeGiftProgress scopedToSlug={product.slug} />
           </div>
 
           <div className="grid grid-cols-3 gap-2 mt-6 text-xs text-slate-500">

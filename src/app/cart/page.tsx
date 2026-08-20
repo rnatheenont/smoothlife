@@ -12,6 +12,7 @@ import { formatTHB } from "@/lib/format";
 import { suggestBundlesForCart } from "@/lib/bundle-suggest";
 import CouponPicker from "@/components/CouponPicker";
 import FreeGiftProgress from "@/components/FreeGiftProgress";
+import TieredRewardBox from "@/components/TieredRewardBox";
 import MobileStickyBar from "@/components/MobileStickyBar";
 import ProductCard from "@/components/ProductCard";
 
@@ -44,7 +45,7 @@ export default function CartPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 flex flex-col gap-4">
           {lines.map((line) => (
-            <div key={line.variantId} className="flex gap-4 rounded-xl2 border border-slate-100 p-3 md:p-4 shadow-card">
+            <div key={`${line.variantId}-${line.isGift ? line.giftPromoSlug : "real"}`} className="flex gap-4 rounded-xl2 border border-slate-100 p-3 md:p-4 shadow-card">
               <Link href={`/product/${line.slug}`} className="relative h-20 w-20 md:h-24 md:w-24 shrink-0 self-center rounded-lg overflow-hidden bg-surface-soft">
                 <Image src={line.image} alt={line.name} fill className="object-cover" />
               </Link>
@@ -139,6 +140,7 @@ export default function CartPage() {
 
           <CouponPicker />
           <FreeGiftProgress />
+          <TieredRewardBox />
 
           {bundleSuggestions.length > 0 && (
             <div className="mt-2">

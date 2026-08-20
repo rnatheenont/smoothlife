@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Home, LayoutGrid, ScanFace, ShoppingBag, User } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useCart } from "@/lib/cart-context";
+import { useCartDrawer } from "@/lib/cart-drawer-context";
 
 const tabs = [
   { href: "/", icon: Home, th: "หน้าแรก", en: "Home" },
@@ -18,6 +19,7 @@ export default function MobileTabBar() {
   const pathname = usePathname() || "/";
   const { t } = useLang();
   const { count } = useCart();
+  const { setOpen: setDrawerOpen } = useCartDrawer();
 
   function active(href: string) {
     if (href === "/") return pathname === "/";
@@ -30,31 +32,38 @@ export default function MobileTabBar() {
         {tabs.map((tab) => {
           const on = active(tab.href);
           const Icon = tab.icon;
+          const isCart = tab.href === "/cart";
+          const className = `relative flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition active:scale-90 active:opacity-60 w-full ${
+            on ? "text-brand-emerald" : "text-slate-400"
+          }`;
+          const content = (
+            <>
+              <span className="relative">
+                <Icon size={21} strokeWidth={on ? 2.4 : 1.9} />
+                {isCart && count > 0 && (
+                  <span
+                    key={count}
+                    className="absolute -top-1.5 -right-2 grid h-[15px] min-w-[15px] place-items-center rounded-full bg-brand-sky px-1 text-[9px] font-bold text-white animate-pop"
+                  >
+                    {count}
+                  </span>
+                )}
+              </span>
+              {t(tab.th, tab.en)}
+              {on && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-brand-gradient" />}
+            </>
+          );
           return (
             <li key={tab.href}>
-              <Link
-                href={tab.href}
-                aria-current={on ? "page" : undefined}
-                className={`relative flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition active:scale-90 active:opacity-60 ${
-                  on ? "text-brand-emerald" : "text-slate-400"
-                }`}
-              >
-                <span className="relative">
-                  <Icon size={21} strokeWidth={on ? 2.4 : 1.9} />
-                  {tab.href === "/cart" && count > 0 && (
-                    <span
-                      key={count}
-                      className="absolute -top-1.5 -right-2 grid h-[15px] min-w-[15px] place-items-center rounded-full bg-brand-sky px-1 text-[9px] font-bold text-white animate-pop"
-                    >
-                      {count}
-                    </span>
-                  )}
-                </span>
-                {t(tab.th, tab.en)}
-                {on && (
-                  <span className="absolute top-0 h-0.5 w-8 rounded-full bg-brand-gradient" />
-                )}
-              </Link>
+              {isCart ? (
+                <button type="button" onClick={() => setDrawerOpen(true)} className={className}>
+                  {content}
+                </button>
+              ) : (
+                <Link href={tab.href} aria-current={on ? "page" : undefined} className={className}>
+                  {content}
+                </Link>
+              )}
             </li>
           );
         })}

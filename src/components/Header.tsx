@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
+import { useCartDrawer } from "@/lib/cart-drawer-context";
 import { useLang } from "@/lib/lang-context";
 import { tierBadge, tierCard } from "@/lib/tier";
 import LanguageSwitch from "@/components/LanguageSwitch";
@@ -43,6 +44,7 @@ export default function Header() {
   const lastScrollY = useRef(0);
   const { user } = useAuth();
   const { count } = useCart();
+  const { setOpen: setDrawerOpen } = useCartDrawer();
   const { t } = useLang();
 
   // lock background scroll while the mobile drawer is open
@@ -179,7 +181,12 @@ export default function Header() {
           <div className="hidden lg:block">
             <NotificationBell />
           </div>
-          <Link href="/cart" className="relative hidden lg:block" aria-label="Cart">
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            className="relative hidden lg:block"
+            aria-label="Cart"
+          >
             <ShoppingBag size={22} />
             {count > 0 && (
               <span
@@ -189,7 +196,7 @@ export default function Header() {
                 {count}
               </span>
             )}
-          </Link>
+          </button>
         </div>
       </div>
 

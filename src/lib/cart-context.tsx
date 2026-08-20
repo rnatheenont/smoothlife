@@ -5,7 +5,7 @@ import { products } from "@/data/products";
 import { ProductVariant } from "@/data/types";
 import { useAuth } from "@/lib/auth-context";
 import { CartLine } from "@/data/coupons";
-import { evaluateActiveFreeGifts } from "@/data/free-gifts";
+import { evaluateActiveFreeGifts, FreeGiftPromo } from "@/data/free-gifts";
 
 type CartItem = { slug: string; variantId: string; qty: number };
 
@@ -40,6 +40,7 @@ type CartContextValue = {
   }[];
   couponCode: string | null;
   setCouponCode: (code: string | null) => void;
+  giftPromos: FreeGiftPromo[];
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -50,6 +51,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [couponCode, setCouponCodeState] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [giftPromos, setGiftPromos] = useState<FreeGiftPromo[]>([]);
+
+  useEffect(() => {
+    fetch("/api/free-gifts")
+      .then((r) => r.json())
+      .then((data) => setGiftPromos(Array.isArray(data?.promos) ? data.promos : []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     try {
@@ -169,27 +178,41 @@ export function CartProvider({ children }: { children: ReactNode }) {
     brand: l.brand,
     category: l.category as CartLine["category"],
   }));
-  const giftLines = evaluateActiveFreeGifts(cartLinesForEval)
+  function giftLineFor(gp: ReturnType<typeof products.find>, qty: number, giftPromoSlug: string) {
+    if (!gp) return null; // misconfigured slug — fail closed, don't crash the cart
+    return {
+      slug: gp.slug,
+      variantId: gp.variantId,
+      qty,
+      name: gp.name,
+      price: 0,
+      image: gp.image,
+      compareAtPrice: undefined,
+      brand: gp.brand,
+      category: gp.category,
+      size: gp.size || "",
+      variants: gp.variants,
+      stock: undefined,
+      isGift: true,
+      giftPromoSlug,
+    };
+  }
+  const giftLines = evaluateActiveFreeGifts(giftPromos, cartLinesForEval)
     .filter((e) => e.eligible)
-    .map((e) => {
-      const gp = products.find((pr) => pr.slug === e.promo.giftProductSlug);
-      if (!gp) return null; // misconfigured slug — fail closed, don't crash the cart
-      return {
-        slug: gp.slug,
-        variantId: gp.variantId,
-        qty: e.promo.giftQty,
-        name: gp.name,
-        price: 0,
-        image: gp.image,
-        compareAtPrice: undefined,
-        brand: gp.brand,
-        category: gp.category,
-        size: gp.size || "",
-        variants: gp.variants,
-        stock: undefined,
-        isGift: true,
-        giftPromoSlug: e.promo.slug,
-      };
+    .flatMap((e) => {
+      if (e.unlockedTiers) {
+        // Tiered promo — one synthetic line per unlocked tier, keyed
+        // uniquely per tier so multiple tiers of the same promo don't
+        // collide on giftPromoSlug.
+        return e.unlockedTiers.map((t) =>
+          giftLineFor(
+            products.find((pr) => pr.slug === t.giftProductSlug),
+            t.giftQty,
+            `${e.promo.slug}::tier-${t.tierIndex}`
+          )
+        );
+      }
+      return [giftLineFor(products.find((pr) => pr.slug === e.promo.giftProductSlug), e.promo.giftQty, e.promo.slug)];
     })
     .filter(Boolean) as CartContextValue["lines"];
   const linesWithGifts = [...lines, ...giftLines];
@@ -208,6 +231,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         lines: linesWithGifts,
         couponCode,
         setCouponCode,
+        giftPromos,
       }}
     >
       {children}

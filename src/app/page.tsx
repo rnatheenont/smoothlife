@@ -9,6 +9,8 @@ import { promotions, promotionImage } from "@/data/promotions";
 import { articles } from "@/data/articles";
 import { subscriptionPlans } from "@/data/subscriptions";
 import HeroCarousel from "@/components/HeroCarousel";
+import DealOfTheDayCard from "@/components/DealOfTheDayCard";
+import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
 import SectionHeading from "@/components/SectionHeading";
 import ScrollReveal from "@/components/ScrollReveal";
 import StaggerReveal from "@/components/StaggerReveal";
@@ -184,6 +186,15 @@ export default function HomePage() {
             </Link>
           ))}
         </StaggerGrid>
+      </section>
+
+      {/* Free-gift promos — real active promos, rendered only when the
+          respective widgets are toggled on (both default off) */}
+      <section className="container-page py-6">
+        <DealOfTheDayCard />
+      </section>
+      <section className="container-page py-6">
+        <FreeGiftPromoCard />
       </section>
 
       {/* Trending on social — real product-video clips (Firework CDN),

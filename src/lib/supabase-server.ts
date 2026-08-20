@@ -47,7 +47,12 @@ export async function supabaseRest<T>(
     ...(init.returning !== false ? { Prefer: "return=representation" } : {}),
     ...(init.headers as Record<string, string> | undefined),
   };
-  const res = await fetchWithRetry(`${SUPABASE_URL}/rest/v1/${path}`, { ...init, headers });
+  // This is a live DB client — Next.js's fetch layer will otherwise cache a
+  // GET Route Handler's response (and never refetch) whenever the handler
+  // itself doesn't touch any dynamic API (cookies/headers/searchParams),
+  // silently serving stale data forever within that server process. Opt out
+  // unconditionally so every supabaseRest call is always live.
+  const res = await fetchWithRetry(`${SUPABASE_URL}/rest/v1/${path}`, { ...init, headers, cache: "no-store" });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Supabase REST ${res.status}: ${text}`);

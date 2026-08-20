@@ -9,6 +9,7 @@ import { Product } from "@/data/types";
 import { formatTHB } from "@/lib/format";
 import StarRating from "./StarRating";
 import { useCart, useWishlist } from "@/lib/cart-context";
+import { useWidgetSettings } from "@/lib/use-widget-settings";
 import clsx from "clsx";
 
 const badgeStyles: Record<string, string> = {
@@ -17,20 +18,35 @@ const badgeStyles: Record<string, string> = {
   Sale: "bg-rose-500 text-white",
   BOGO: "bg-violet-500 text-white",
   Bundle: "bg-amber-500 text-white",
+  Gift: "bg-brand-teal text-white",
 };
 
 // A discount % and a "Sale" badge say the same thing, so the discount
 // chip (more specific) replaces "Sale" rather than stacking on top of
-// it — keeps the corner to at most 2 chips instead of 3 crowded pills.
-function cardBadgeChips(badges: string[] | undefined, discount: number) {
+// it — keeps the corner to at most 2 chips instead of 3 crowded pills. A
+// live free-gift promoChip (widget #5, "Promotion badge") takes priority
+// within that same 2-chip cap — an existing chip may get squeezed out on a
+// heavily-badged product, an accepted trade to preserve the density rule.
+function cardBadgeChips(badges: string[] | undefined, discount: number, promoChip?: string | null) {
   const rest = (badges ?? []).filter((b) => b !== "Sale").slice(0, 2);
   const chips = discount > 0 ? [`-${discount}%`, ...rest] : rest;
-  return chips.slice(0, 2);
+  return (promoChip ? [promoChip, ...chips] : chips).slice(0, 2);
 }
 
 export default function ProductCard({ product }: { product: Product }) {
-  const { addItem } = useCart();
+  const { addItem, giftPromos } = useCart();
+  const { settings } = useWidgetSettings();
   const { toggle, has } = useWishlist();
+  const isInActivePromo =
+    settings.promotion_badge.enabled &&
+    giftPromos.some(
+      (p) =>
+        p.active &&
+        (p.giftProductSlug === product.slug ||
+          (p.buyProductSlugs ?? []).includes(product.slug) ||
+          (p.tiers ?? []).some((t) => t.giftProductSlug === product.slug))
+    );
+  const promoChip = isInActivePromo ? ((settings.promotion_badge.config.labelTh as string) || "ของแถม") : null;
   const isWished = has(product.slug);
   const [added, setAdded] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
@@ -83,12 +99,16 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
         ) : (
           <div className="absolute left-2 top-2 flex flex-wrap gap-1 max-w-[calc(100%-3rem)]">
-            {cardBadgeChips(product.badges, discount).map((label) => (
+            {cardBadgeChips(product.badges, discount, promoChip).map((label) => (
               <span
                 key={label}
                 className={clsx(
                   "text-[10px] font-bold px-2 py-1 rounded-full shadow-sm",
-                  label.startsWith("-") ? "bg-rose-500 text-white" : badgeStyles[label] || "bg-slate-700 text-white"
+                  label.startsWith("-")
+                    ? "bg-rose-500 text-white"
+                    : label === promoChip
+                    ? "bg-brand-teal text-white"
+                    : badgeStyles[label] || "bg-slate-700 text-white"
                 )}
               >
                 {label}
