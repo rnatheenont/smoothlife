@@ -138,14 +138,14 @@ export default function HomePage() {
       </section>
 
       {/* Categories */}
-      <section className="container-page py-10 md:py-14">
-        <ScrollReveal>
+      <section className="bg-surface-soft py-10 md:py-14">
+        <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
         </ScrollReveal>
-        <StaggerGrid className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
+        <StaggerGrid className="container-page grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
           {categories.map((c) => (
             <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col items-center gap-2">
-              <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full overflow-hidden bg-surface-soft ring-1 ring-slate-100 group-hover:ring-brand-teal transition-all">
+              <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full overflow-hidden bg-white ring-1 ring-slate-100 group-hover:ring-brand-teal transition-all">
                 <Image src={c.image} alt={c.name} fill className="object-cover" />
               </div>
               <span className="text-xs md:text-sm text-center font-medium text-slate-600 group-hover:text-brand-emerald">
@@ -157,7 +157,7 @@ export default function HomePage() {
       </section>
 
       {/* Promotions */}
-      <section className="bg-surface-soft py-10 md:py-14">
+      <section className="bg-white py-10 md:py-14">
         <ScrollReveal className="container-page">
           <SectionHeading title="โปรโมชั่นและดีลเด็ด" subtitle="New, Best Sellers and Promotions" href="/promotions" />
         </ScrollReveal>
@@ -189,10 +189,10 @@ export default function HomePage() {
 
       {/* Free-gift promos — real active promos, rendered only when the
           respective widgets are toggled on (both default off) */}
-      <section className="container-page py-6">
+      <section className="container-page py-8 md:py-10">
         <DealOfTheDayCard />
       </section>
-      <section className="container-page py-6">
+      <section className="container-page py-8 md:py-10">
         <FreeGiftPromoCard />
       </section>
 
@@ -205,9 +205,9 @@ export default function HomePage() {
           browsing all of them costs one tap instead of a long scroll. */}
       <ProductTabs
         tabs={[
-          { label: "ขายดี", products: bestSellers, flame: false },
+          { label: "ขายดี", products: bestSellers },
           { label: "ลดราคา", products: onSale },
-          { label: "มาใหม่", products: newArrivals, flame: false },
+          { label: "มาใหม่", products: newArrivals },
           { label: "เซ็ตสุดคุ้ม", products: bundles },
         ]}
       />
@@ -272,7 +272,7 @@ export default function HomePage() {
       <BrandShowcase brands={houseBrands} productsBySlug={houseBrandProducts} />
 
       {/* Concern hub teaser */}
-      <section className="bg-brand-gradient-soft py-10 md:py-14">
+      <section className="bg-white py-10 md:py-14">
         <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามปัญหาผิวที่กังวล" subtitle="Shop by Concern" href="/concern" />
         </ScrollReveal>
@@ -300,7 +300,7 @@ export default function HomePage() {
           fixed grid either got enormous or hid most of them; the marquee
           scales to any count without bloating page height and actually
           shows the full range of brands we carry. */}
-      <section className="py-10 md:py-14 overflow-hidden">
+      <section className="bg-surface-soft py-10 md:py-14 overflow-hidden">
         <ScrollReveal className="container-page">
           <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
         </ScrollReveal>
@@ -310,7 +310,7 @@ export default function HomePage() {
       </section>
 
       {/* Wellness / knowledge teaser */}
-      <section className="bg-surface-soft py-10 md:py-14">
+      <section className="bg-brand-gradient-soft py-10 md:py-14">
         <ScrollReveal className="container-page">
           <SectionHeading title="ความรู้เรื่องผิวและสุขภาพ" subtitle="Learn About Wellness" href="/knowledge" />
         </ScrollReveal>

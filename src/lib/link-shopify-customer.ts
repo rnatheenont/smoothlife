@@ -45,7 +45,18 @@ function toAddressSuggestion(addr: ShopifyCustomerAddress | null): AddressSugges
 
 export async function linkOrCreateShopifyCustomer(
   uid: string,
-  opts: { email?: string | null; phone?: string | null; currentDisplayName?: string | null; currentPhone?: string | null }
+  opts: {
+    email?: string | null;
+    phone?: string | null;
+    currentDisplayName?: string | null;
+    currentPhone?: string | null;
+    // false for the self-service "retry linking my orders" flow — a miss
+    // there means the Shopify order used different contact info than the
+    // account, and creating a fresh empty customer would just mask that
+    // (silently flip linked:true with still no real orders showing)
+    // instead of correctly falling back to the "contact support" message.
+    createIfMissing?: boolean;
+  }
 ): Promise<LinkShopifyResult> {
   const result: LinkShopifyResult = { shopifyCustomerId: null, displayName: null, phone: null, addressSuggestion: null };
 
@@ -77,7 +88,7 @@ export async function linkOrCreateShopifyCustomer(
     if ((!existing || existing.length === 0) && match.defaultAddress) {
       result.addressSuggestion = toAddressSuggestion(match.defaultAddress);
     }
-  } else {
+  } else if (opts.createIfMissing !== false) {
     const created = await createShopifyCustomer({
       email: opts.email,
       phone: opts.phone,

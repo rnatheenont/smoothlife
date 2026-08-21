@@ -183,7 +183,7 @@ export default function TrendingOnSocial({ clips }: { clips: SocialClip[] }) {
   if (clips.length === 0) return null;
 
   return (
-    <section className="py-10 md:py-14 overflow-hidden">
+    <section className="bg-surface-soft py-10 md:py-14 overflow-hidden">
       <h2 className="text-center font-extrabold text-2xl md:text-3xl text-brand-ink mb-8">กระแสฮอตบนโซเชียล</h2>
       <div
         ref={scrollerRef}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Package, Loader2, Truck } from "lucide-react";
+import { Package, Loader2, Truck, RefreshCw } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { getProductBySlug } from "@/data/products";
 import AccountLayout from "@/components/account/AccountLayout";
@@ -56,17 +56,40 @@ function OrdersContent() {
   const [linked, setLinked] = useState(false);
   const [orders, setOrders] = useState<ShopifyOrderSummary[]>([]);
   const [error, setError] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const [linkAttempted, setLinkAttempted] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/account/orders")
+  function loadOrders() {
+    return fetch("/api/account/orders")
       .then((r) => r.json())
       .then((data) => {
         setLinked(Boolean(data.linked));
         setOrders(Array.isArray(data.orders) ? data.orders : []);
-      })
+      });
+  }
+
+  useEffect(() => {
+    loadOrders()
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleRetryLink() {
+    setLinking(true);
+    try {
+      const res = await fetch("/api/account/link-shopify", { method: "POST" });
+      const data = await res.json();
+      if (data.linked) {
+        await loadOrders();
+      } else {
+        setLinkAttempted(true);
+      }
+    } catch {
+      setLinkAttempted(true);
+    } finally {
+      setLinking(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -90,7 +113,22 @@ function OrdersContent() {
       <div className="max-w-3xl">
         <h1 className="text-2xl font-bold text-brand-ink mb-2">คำสั่งซื้อและติดตามพัสดุ</h1>
         <div className="rounded-xl2 border border-amber-200 bg-amber-50 p-5 text-sm text-slate-700 leading-relaxed">
-          บัญชีของคุณยังไม่ได้เชื่อมกับระบบคำสั่งซื้อของ Shopify ค่ะ (มักเกิดขึ้นเมื่อสมัครสมาชิกด้วยอีเมล/เบอร์ที่ไม่ตรงกับตอนสั่งซื้อ) ระหว่างนี้ตรวจสอบคำสั่งซื้อได้จาก:
+          บัญชีของคุณยังไม่ได้เชื่อมกับระบบคำสั่งซื้อของ Shopify ค่ะ (มักเกิดขึ้นเมื่อสมัครสมาชิกด้วยอีเมล/เบอร์ที่ไม่ตรงกับตอนสั่งซื้อ)
+          <div className="mt-3">
+            <button
+              onClick={handleRetryLink}
+              disabled={linking}
+              className="flex items-center gap-1.5 rounded-full bg-brand-gradient text-white font-semibold px-4 py-2 text-xs disabled:opacity-60"
+            >
+              <RefreshCw size={13} className={linking ? "animate-spin" : ""} />
+              {linking ? "กำลังเชื่อมบัญชี..." : "ลองเชื่อมบัญชีอีกครั้ง"}
+            </button>
+          </div>
+          {linkAttempted && (
+            <p className="mt-3 text-rose-600 font-medium">
+              ไม่พบคำสั่งซื้อที่ตรงกับอีเมล/เบอร์ของบัญชีนี้ค่ะ แปลว่าตอนสั่งซื้อน่าจะใช้อีเมล/เบอร์อื่น ระหว่างนี้ตรวจสอบคำสั่งซื้อได้จาก:
+            </p>
+          )}
           <ul className="list-disc pl-5 mt-2 space-y-1">
             <li>อีเมลยืนยันการสั่งซื้อ (order confirmation) ที่ส่งไปตอนกดสั่งซื้อ</li>
             <li>
