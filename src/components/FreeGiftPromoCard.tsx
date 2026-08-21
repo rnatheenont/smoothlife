@@ -27,7 +27,7 @@ export default function FreeGiftPromoCard() {
   const cards = active.slice(0, maxCards);
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 my-6 md:my-8">
       {cards.map((promo) => {
         const imgSlug = promo.kind === "tiered" ? promo.tiers?.[0]?.giftProductSlug : promo.giftProductSlug;
         const product = imgSlug ? getProductBySlug(imgSlug) : undefined;

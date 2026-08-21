@@ -32,7 +32,7 @@ export default function DealOfTheDayCard() {
   const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <div className="rounded-xl2 border border-amber-200 bg-amber-50 p-4 relative">
+    <div className="rounded-xl2 border border-amber-200 bg-amber-50 p-4 relative my-6 md:my-8">
       <button onClick={() => setDismissed(true)} className="absolute right-3 top-3 text-slate-400" aria-label="ปิด">
         <X size={15} />
       </button>

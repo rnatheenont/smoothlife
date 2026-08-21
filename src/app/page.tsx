@@ -86,7 +86,7 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-brand-radial">
+      <section className="bg-white">
         <div className="container-page py-6 md:py-16 grid md:grid-cols-2 gap-6 md:gap-8 items-center">
           <StaggerReveal className="order-2 md:order-1">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-emerald shadow-card mb-4">
@@ -188,11 +188,14 @@ export default function HomePage() {
       </section>
 
       {/* Free-gift promos — real active promos, rendered only when the
-          respective widgets are toggled on (both default off) */}
-      <section className="container-page py-8 md:py-10">
+          respective widgets are toggled on (both default off). No py here:
+          each card owns its own vertical margin so a disabled/empty widget
+          (the default) collapses to zero height instead of leaving a big
+          blank padded gap with nothing in it. */}
+      <section className="container-page">
         <DealOfTheDayCard />
       </section>
-      <section className="container-page py-8 md:py-10">
+      <section className="container-page">
         <FreeGiftPromoCard />
       </section>
 
