@@ -10,7 +10,15 @@ export const dynamic = "force-dynamic";
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 
-const MAX_CATALOGUE = 180;
+// Used to cap this at 180 to save tokens, which meant most of the ~976-
+// product catalogue was invisible to the AI on any given turn — anything
+// that didn't score well against a thin/empty customer profile just
+// silently never existed as far as it knew, so a customer asking about a
+// real, in-stock product by name could get told it wasn't carried. Sonnet
+// 5's 1M-token context makes the full catalogue (well under 30K tokens)
+// cheap enough that correctness wins here — this cap is just a safety net
+// against unbounded growth, not a real limit at current catalogue size.
+const MAX_CATALOGUE = 1500;
 
 // House brands to steer recommendations toward first (still only when a
 // genuinely relevant match exists — see the "PREFERRED BRANDS" guidance

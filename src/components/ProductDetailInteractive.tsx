@@ -379,11 +379,16 @@ export default function ProductDetailInteractive({
               </button>
               <button
                 onClick={() => setPurchaseMode("subscribe")}
-                className={`flex items-center justify-center gap-1 rounded-full py-2 transition-colors ${
-                  purchaseMode === "subscribe" ? "bg-white shadow-sm text-brand-emerald" : "text-slate-400"
+                className={`relative flex items-center justify-center gap-1.5 rounded-full py-2 transition-all ${
+                  purchaseMode === "subscribe"
+                    ? "bg-white shadow-sm text-brand-emerald"
+                    : "text-brand-emerald/70 hover:text-brand-emerald"
                 }`}
               >
                 <Repeat size={13} /> สมัครรับประจำ
+                <span className="rounded-full bg-brand-gradient px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  -{Math.max(...subscriptionPlans.map((p) => p.discountPct))}%
+                </span>
               </button>
             </div>
 
