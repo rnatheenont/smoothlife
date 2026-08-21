@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -96,6 +96,15 @@ export default function ProductDetailInteractive({
   const selectedVariant =
     product.variants.find((v) => v.variantId === selectedVariantId) || product.variants[0];
   const hasSizeChoice = product.variants.length > 1;
+
+  // Jump the gallery to whichever photo Shopify has assigned to this specific
+  // size, when it has one of its own (most variants share the product's main
+  // image set, so this only fires for the ones that don't).
+  useEffect(() => {
+    if (!selectedVariant.image) return;
+    const idx = images.indexOf(selectedVariant.image);
+    if (idx !== -1) setActiveIndex(idx);
+  }, [selectedVariantId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [reviewsList, setReviewsList] = useState(reviews);
   const [showReviewForm, setShowReviewForm] = useState(false);

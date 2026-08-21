@@ -308,6 +308,7 @@ const PRODUCTS_QUERY = `
                 quantityAvailable
                 price { amount }
                 compareAtPrice { amount }
+                image { url }
               }
             }
           }
@@ -376,6 +377,10 @@ function toProduct(p, usedSlugs) {
         // Real Shopify inventory count, used only to show an honest "X left"
         // badge when genuinely low — never a fabricated urgency number.
         quantity: typeof v.quantityAvailable === "number" ? v.quantityAvailable : null,
+        // Only set when the merchant actually assigned this specific variant
+        // its own photo in Shopify (e.g. a different bottle size/label) — the
+        // PDP gallery falls back to the product's shared image set otherwise.
+        image: v.image && v.image.url ? v.image.url + (v.image.url.includes("?") ? "&" : "?") + "width=700" : "",
       };
     })
     .filter(Boolean);
@@ -512,6 +517,7 @@ function serialise(list) {
       if (v.compareAtPrice) vf.push(`compareAtPrice:${v.compareAtPrice}`);
       vf.push(`inStock:${v.inStock}`);
       if (typeof v.quantity === "number") vf.push(`quantity:${v.quantity}`);
+      if (v.image) vf.push(`image:"${esc(v.image)}"`);
       return "{" + vf.join(",") + "}";
     });
     f.push(`variants:[${variantRows.join(",")}]`);

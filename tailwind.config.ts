@@ -32,8 +32,8 @@ const config: Config = {
         "brand-radial": "radial-gradient(120% 120% at 100% 0%, #E6F6FE 0%, #F4FAF8 60%)",
       },
       boxShadow: {
-        card: "0 2px 14px rgba(15, 23, 42, 0.06)",
-        cardHover: "0 10px 30px rgba(0, 168, 123, 0.15)",
+        card: "0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -8px rgba(15, 23, 42, 0.08)",
+        cardHover: "0 4px 8px rgba(0, 168, 123, 0.06), 0 24px 48px -12px rgba(0, 168, 123, 0.18)",
       },
       borderRadius: {
         xl2: "1.25rem",

@@ -87,24 +87,30 @@ export default function HomePage() {
     <div>
       {/* Hero */}
       <section className="bg-white">
-        <div className="container-page py-6 md:py-16 grid md:grid-cols-2 gap-6 md:gap-8 items-center">
+        <div className="container-page py-10 md:py-24 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
           <StaggerReveal className="order-2 md:order-1">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-emerald shadow-card mb-4">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-emerald shadow-card mb-5 border border-slate-100">
               <Sparkles size={13} /> แนะนำน้อง Smoothie ผู้ช่วยคนใหม่
             </span>
-            <h1 className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight text-brand-ink">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-[1.05] tracking-tight text-brand-ink">
               สุขภาพดี ผิวสวย <br />
               <span className="brand-text-gradient">ครบทุก Lifestyle</span> ที่เดียว
             </h1>
-            <p className="mt-4 text-slate-600 max-w-md">
+            <p className="mt-5 text-slate-500 max-w-md leading-relaxed">
               ค้นหาสินค้าง่าย ซื้อเร็ว เข้าสู่ระบบด้วย OTP หรือ LINE พร้อมรับคะแนนสะสมทุกการช้อป
               ของแท้ 100% มีอย. จัดส่งฟรีทั่วไทย
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/shop" className="rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm hover:opacity-90 transition-opacity">
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/shop"
+                className="rounded-full bg-brand-gradient text-white font-semibold px-7 py-3.5 text-sm shadow-cardHover hover:-translate-y-0.5 hover:shadow-xl transition-all"
+              >
                 เริ่มช้อปเลย
               </Link>
-              <Link href="/advisor" className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-6 py-3 text-sm hover:border-brand-teal transition-colors">
+              <Link
+                href="/advisor"
+                className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-7 py-3.5 text-sm hover:border-brand-teal hover:-translate-y-0.5 transition-all"
+              >
                 ให้น้อง Smoothie แนะนำสกินแคร์
               </Link>
             </div>
@@ -138,14 +144,14 @@ export default function HomePage() {
       </section>
 
       {/* Categories */}
-      <section className="bg-surface-soft py-10 md:py-14">
+      <section className="bg-surface-soft py-14 md:py-20">
         <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
         </ScrollReveal>
         <StaggerGrid className="container-page grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
           {categories.map((c) => (
             <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col items-center gap-2">
-              <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full overflow-hidden bg-white ring-1 ring-slate-100 group-hover:ring-brand-teal transition-all">
+              <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full overflow-hidden bg-white shadow-card group-hover:shadow-cardHover group-hover:-translate-y-1 transition-all duration-300">
                 <Image src={c.image} alt={c.name} fill className="object-cover" />
               </div>
               <span className="text-xs md:text-sm text-center font-medium text-slate-600 group-hover:text-brand-emerald">
@@ -157,7 +163,7 @@ export default function HomePage() {
       </section>
 
       {/* Promotions */}
-      <section className="bg-white py-10 md:py-14">
+      <section className="bg-white py-14 md:py-20">
         <ScrollReveal className="container-page">
           <SectionHeading title="โปรโมชั่นและดีลเด็ด" subtitle="New, Best Sellers and Promotions" href="/promotions" />
         </ScrollReveal>
@@ -216,7 +222,7 @@ export default function HomePage() {
       />
 
       {/* Subscription teaser */}
-      <section className="container-page py-10 md:py-14">
+      <section className="container-page py-14 md:py-20">
         <ScaleReveal className="relative overflow-hidden rounded-xl2 bg-brand-gradient p-8 md:p-12 text-white">
           <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-white/10 animate-floatSlow" />
           <div className="pointer-events-none absolute right-24 bottom-0 h-24 w-24 rounded-full bg-white/10 animate-floatSlow" />
@@ -275,7 +281,7 @@ export default function HomePage() {
       <BrandShowcase brands={houseBrands} productsBySlug={houseBrandProducts} />
 
       {/* Concern hub teaser */}
-      <section className="bg-white py-10 md:py-14">
+      <section className="bg-white py-14 md:py-20">
         <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามปัญหาผิวที่กังวล" subtitle="Shop by Concern" href="/concern" />
         </ScrollReveal>
@@ -303,7 +309,7 @@ export default function HomePage() {
           fixed grid either got enormous or hid most of them; the marquee
           scales to any count without bloating page height and actually
           shows the full range of brands we carry. */}
-      <section className="bg-surface-soft py-10 md:py-14 overflow-hidden">
+      <section className="bg-surface-soft py-14 md:py-20 overflow-hidden">
         <ScrollReveal className="container-page">
           <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
         </ScrollReveal>
@@ -313,7 +319,7 @@ export default function HomePage() {
       </section>
 
       {/* Wellness / knowledge teaser */}
-      <section className="bg-brand-gradient-soft py-10 md:py-14">
+      <section className="bg-brand-gradient-soft py-14 md:py-20">
         <ScrollReveal className="container-page">
           <SectionHeading title="ความรู้เรื่องผิวและสุขภาพ" subtitle="Learn About Wellness" href="/knowledge" />
         </ScrollReveal>

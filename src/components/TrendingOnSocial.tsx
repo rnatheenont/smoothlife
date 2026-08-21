@@ -58,7 +58,7 @@ function ClipCard({
   }
 
   return (
-    <div ref={cardRef} className="w-[220px] shrink-0 snap-center overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-card">
+    <div ref={cardRef} className="w-[220px] shrink-0 snap-center overflow-hidden rounded-2xl bg-white shadow-card">
       <div
         role="button"
         tabIndex={0}
@@ -154,7 +154,19 @@ export default function TrendingOnSocial({ clips }: { clips: SocialClip[] }) {
       suppressTimerRef.current = setTimeout(() => {
         suppressObserverRef.current = false;
       }, 700);
-      cardRefs.current[clamped]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      // scrollIntoView's block:"nearest" can still drag the whole *page*
+      // vertically if the card isn't fully in view when auto-advance fires
+      // (e.g. the section is only partly scrolled into view) — scrolling the
+      // carousel's own scrollLeft directly touches only that one element,
+      // never the document, so autoplay can never yank the page around.
+      const scroller = scrollerRef.current;
+      const card = cardRefs.current[clamped];
+      if (scroller && card) {
+        const scrollerRect = scroller.getBoundingClientRect();
+        const cardRect = card.getBoundingClientRect();
+        const delta = cardRect.left + cardRect.width / 2 - (scrollerRect.left + scrollerRect.width / 2);
+        scroller.scrollTo({ left: scroller.scrollLeft + delta, behavior: "smooth" });
+      }
     },
     [clips.length]
   );
@@ -183,7 +195,7 @@ export default function TrendingOnSocial({ clips }: { clips: SocialClip[] }) {
   if (clips.length === 0) return null;
 
   return (
-    <section className="bg-surface-soft py-10 md:py-14 overflow-hidden">
+    <section className="bg-surface-soft py-14 md:py-20 overflow-hidden">
       <h2 className="text-center font-extrabold text-2xl md:text-3xl text-brand-ink mb-8">กระแสฮอตบนโซเชียล</h2>
       <div
         ref={scrollerRef}

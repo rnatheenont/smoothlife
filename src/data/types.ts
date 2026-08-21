@@ -24,6 +24,8 @@ export type ProductVariant = {
   inStock: boolean;
   /** Real Shopify inventory count when the store exposes it — undefined if not available. Only ever real data, never a fabricated "X left" number. */
   quantity?: number;
+  /** Only set when the merchant assigned this specific variant its own Shopify image (e.g. a different bottle size) — most variants share the product's main image set instead. */
+  image?: string;
 };
 
 export type Product = {

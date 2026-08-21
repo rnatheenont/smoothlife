@@ -74,7 +74,7 @@ export default function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <div className="group relative flex flex-col rounded-xl2 bg-white shadow-card hover:shadow-cardHover transition-shadow duration-300 overflow-hidden border border-slate-100">
+    <div className="group relative flex h-full flex-col rounded-xl2 bg-white shadow-card hover:shadow-cardHover transition-all duration-300 hover:-translate-y-1 overflow-hidden">
       <button
         onClick={() => toggle(product.slug)}
         aria-label="Add to wishlist"
@@ -133,7 +133,7 @@ export default function ProductCard({ product }: { product: Product }) {
           <p className="text-[11px] text-slate-400 line-clamp-1">{product.shortDesc}</p>
         )}
         {lowStock && <p className="text-[11px] font-semibold text-amber-600">เหลือเพียง {defaultVariant.quantity} ชิ้น</p>}
-        <div className="mt-1 flex items-baseline gap-2">
+        <div className="mt-auto flex items-baseline gap-2 pt-1">
           {hasMultiplePrices && <span className="text-xs text-slate-400">เริ่มต้น</span>}
           <span className="text-base font-bold text-brand-ink">{formatTHB(product.price)}</span>
           {product.compareAtPrice && (

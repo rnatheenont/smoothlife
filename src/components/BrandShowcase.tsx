@@ -23,7 +23,7 @@ export default function BrandShowcase({
   const brandProducts = (productsBySlug[brand.slug] || []).slice(0, 8);
 
   return (
-    <section className="bg-brand-gradient-soft py-10 md:py-14">
+    <section className="bg-brand-gradient-soft py-14 md:py-20">
       <div className="container-page">
         <div className="text-center max-w-xl mx-auto mb-7">
           <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-emerald shadow-card mb-3">
