@@ -18,13 +18,32 @@ export type SubscriptionRow = {
   reminded_at: string | null;
 };
 
+export type RealSubscriptionRow = {
+  id: string;
+  status: "pending" | "active" | "past_due" | "cancelled" | "completed";
+  product_name: string;
+  product_slug: string;
+  plan_months: 3 | 6 | 12;
+  discount_pct: number;
+  amount_per_cycle: number;
+  currency_code: string;
+  cycles_total: number;
+  cycles_completed: number;
+  next_charge_date: string | null;
+};
+
 export async function GET(req: NextRequest) {
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!uid || !supabaseConfigured()) {
     return NextResponse.json({ loggedIn: false });
   }
-  const subscriptions = await supabaseRest<SubscriptionRow[]>(
-    `subscription_preferences?user_id=eq.${uid}&select=id,shopify_order_id,shopify_order_name,product_slug,product_name,variant_id,plan_months,plan_code,price_per_cycle,purchased_at,next_renewal_at,active,reminded_at&order=next_renewal_at.asc`
-  );
-  return NextResponse.json({ loggedIn: true, subscriptions });
+  const [subscriptions, realSubscriptions] = await Promise.all([
+    supabaseRest<SubscriptionRow[]>(
+      `subscription_preferences?user_id=eq.${uid}&select=id,shopify_order_id,shopify_order_name,product_slug,product_name,variant_id,plan_months,plan_code,price_per_cycle,purchased_at,next_renewal_at,active,reminded_at&order=next_renewal_at.asc`
+    ),
+    supabaseRest<RealSubscriptionRow[]>(
+      `real_subscriptions?user_id=eq.${uid}&status=neq.pending&select=id,status,product_name,product_slug,plan_months,discount_pct,amount_per_cycle,currency_code,cycles_total,cycles_completed,next_charge_date&order=created_at.desc`
+    ),
+  ]);
+  return NextResponse.json({ loggedIn: true, subscriptions, realSubscriptions });
 }

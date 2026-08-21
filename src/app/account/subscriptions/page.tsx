@@ -2,26 +2,111 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Repeat, Loader2, Bell, BellOff, Sparkles } from "lucide-react";
+import { Repeat, Loader2, Bell, BellOff, Sparkles, XCircle } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import { formatTHB } from "@/lib/format";
 import { subscriptionPlans } from "@/data/subscriptions";
-import type { SubscriptionRow } from "@/app/api/account/subscriptions/route";
+import type { SubscriptionRow, RealSubscriptionRow } from "@/app/api/account/subscriptions/route";
 
 function daysUntil(iso: string) {
   const diff = new Date(iso).getTime() - Date.now();
   return Math.ceil(diff / (24 * 60 * 60 * 1000));
 }
 
+const REAL_STATUS_LABEL: Record<RealSubscriptionRow["status"], string> = {
+  pending: "รอชำระเงิน",
+  active: "ตัดเงินอัตโนมัติ — กำลังใช้งาน",
+  past_due: "ตัดเงินไม่สำเร็จ กรุณาตรวจสอบบัตร",
+  cancelled: "ยกเลิกแล้ว",
+  completed: "ครบรอบแล้ว",
+};
+
+function RealSubscriptionCard({
+  sub,
+  onCancelled,
+}: {
+  sub: RealSubscriptionRow;
+  onCancelled: (id: string) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const canCancel = sub.status === "active" || sub.status === "past_due";
+
+  async function handleCancel() {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/subscribe/${sub.id}/cancel`, { method: "POST" });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error || "ยกเลิกไม่สำเร็จ");
+        return;
+      }
+      onCancelled(sub.id);
+    } catch {
+      setError("ยกเลิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft/40 p-4 shadow-card">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5 mb-1">
+            <span
+              className={`text-[10px] font-bold rounded-full px-2 py-0.5 ${
+                sub.status === "active"
+                  ? "bg-brand-gradient text-white"
+                  : sub.status === "past_due"
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-slate-100 text-slate-400"
+              }`}
+            >
+              {REAL_STATUS_LABEL[sub.status]}
+            </span>
+            <span className="text-[10px] text-slate-400">
+              ทุก {sub.plan_months} เดือน (-{sub.discount_pct}%) · รอบ {sub.cycles_completed}/{sub.cycles_total}
+            </span>
+          </div>
+          <Link href={`/product/${sub.product_slug}`} className="font-bold text-brand-ink hover:text-brand-emerald">
+            {sub.product_name}
+          </Link>
+          <p className="text-xs text-slate-500 mt-1">
+            {formatTHB(sub.amount_per_cycle)}/รอบ (ตัดอัตโนมัติ)
+            {sub.next_charge_date && ` · ตัดครั้งถัดไป ${new Date(sub.next_charge_date).toLocaleDateString("th-TH")}`}
+          </p>
+          {error && <p className="text-xs text-rose-500 mt-1">{error}</p>}
+        </div>
+        {canCancel && (
+          <button
+            onClick={handleCancel}
+            disabled={busy}
+            className="flex items-center gap-1 shrink-0 rounded-full border border-rose-200 text-rose-500 px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+          >
+            <XCircle size={12} />
+            {busy ? "กำลังยกเลิก..." : "ยกเลิกการตัดเงิน"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SubscriptionsContent() {
   const [loading, setLoading] = useState(true);
   const [subscriptions, setSubscriptions] = useState<SubscriptionRow[]>([]);
+  const [realSubscriptions, setRealSubscriptions] = useState<RealSubscriptionRow[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/account/subscriptions")
       .then((r) => r.json())
-      .then((data) => setSubscriptions(data.subscriptions ?? []))
+      .then((data) => {
+        setSubscriptions(data.subscriptions ?? []);
+        setRealSubscriptions(data.realSubscriptions ?? []);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -57,11 +142,24 @@ function SubscriptionsContent() {
         <h1 className="text-xl font-bold text-brand-ink">การสมัครของฉัน</h1>
       </div>
       <p className="text-sm text-slate-500 mb-6">
-        รายการที่คุณสมัคร &ldquo;สมัครรับประจำ&rdquo; ไว้ — ระบบยังไม่ตัดเงินอัตโนมัติ แต่จะเตือนคุณล่วงหน้าก่อนครบรอบ
-        เพื่อสั่งซื้อต่อและรับส่วนลดต่อเนื่อง
+        รายการที่คุณสมัคร &ldquo;สมัครรับประจำ&rdquo; ไว้ทั้งหมด
       </p>
 
-      {subscriptions.length === 0 ? (
+      {realSubscriptions.length > 0 && (
+        <div className="space-y-3 mb-6">
+          {realSubscriptions.map((sub) => (
+            <RealSubscriptionCard
+              key={sub.id}
+              sub={sub}
+              onCancelled={(id) =>
+                setRealSubscriptions((prev) => prev.map((s) => (s.id === id ? { ...s, status: "cancelled" } : s)))
+              }
+            />
+          ))}
+        </div>
+      )}
+
+      {subscriptions.length === 0 && realSubscriptions.length === 0 ? (
         <div className="rounded-xl2 border border-dashed border-slate-200 py-14 text-center">
           <Sparkles size={26} className="mx-auto text-slate-300 mb-2" />
           <p className="text-sm text-slate-400">ยังไม่มีรายการสมัครรับประจำ</p>

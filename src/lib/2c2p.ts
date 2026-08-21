@@ -13,19 +13,17 @@
 // https://developer.2c2p.com/docs/api-payment-response-backend,
 // https://developer.2c2p.com/docs/json-web-tokens-jwt — NOT verified
 // end-to-end against a real sandbox account (none was available this
-// session). Two things flagged below need confirming against 2C2P support
-// or real sandbox testing before this goes live with real charges:
+// session). Things still flagged for confirming against 2C2P support or
+// real sandbox testing before this goes live with real charges:
 //   1. Exact semantics of `recurringInterval` (days) vs `chargeOnDate`
 //      (ddMM, monthly-billing-day) for a strict "every calendar month"
 //      cadence — implemented here as recurringInterval=30, which drifts
 //      slightly against real calendar months over a 12-cycle term.
-//   2. cancelRecurringPlan() below — 2C2P's docs describe the Recurring
-//      Payment Maintenance (cancel) API on a *different* legacy endpoint
-//      (PaymentAction/2.0/action, XML payload, JWE+JWS with an RSA key
-//      exchange) rather than the same HS256 JWT scheme as paymentToken.
-//      That RSA key-exchange detail can't be fabricated without a real
-//      2C2P sandbox account — do not ship "unsubscribe" as calling this
-//      until it's been confirmed to actually stop future charges.
+//   2. cancelRecurringPlan()/inquireRecurringPlan() further below — now
+//      implemented (see that section's own header comment for exactly
+//      what's confirmed vs. still assumed), but still never exercised
+//      against a live 2C2P response, since that requires completing an
+//      RSA key exchange through their merchant portal first.
 import { createHmac } from "crypto";
 
 const MERCHANT_ID = process.env.TWOC2P_MERCHANT_ID;
@@ -164,12 +162,119 @@ export function verifyPaymentCallback(rawPayload: string): PaymentCallback {
   return verifyJwt<PaymentCallback>(rawPayload);
 }
 
-// NOT SAFE TO CALL YET — see file header note #2. Left as an explicit
-// unimplemented stub (rather than a guessed implementation) so a caller
-// gets a loud, obvious failure instead of silently no-op'ing what looks
-// like a successful cancellation while 2C2P keeps charging the customer.
-export async function cancelRecurringPlan(_recurringUniqueId: string): Promise<never> {
-  throw new Error(
-    "cancelRecurringPlan() is not implemented — 2C2P's Recurring Payment Maintenance (cancel) API uses a different auth scheme (JWE+JWS with an RSA key exchange) than paymentToken's HS256 JWT, which needs confirming against a real 2C2P sandbox account before this can be built safely."
-  );
+// ---------------------------------------------------------------------
+// Recurring Payment Maintenance (cancel / inquire an existing plan) —
+// a separate legacy API from paymentToken above, on its own endpoint,
+// with its own auth scheme: XML payloads wrapped in encrypt-then-sign
+// JOSE (JWE with RSA-OAEP+A256GCM, then JWS PS256), NOT the HS256 JWT
+// used for paymentToken. Shape verified against 2C2P's docs:
+// https://developer.2c2p.com/docs/payment-maintenance-recurring-payment-guide
+// https://developer.2c2p.com/docs/reference-jwt-with-key
+//
+// This needs an RSA key *exchange* with 2C2P before it can work — not
+// just an API key:
+//   1. We generate an RSA keypair (done — see scripts/generate-2c2p-keys.js)
+//      and upload the PUBLIC key at 2C2P's merchant portal: Account >
+//      Options > Merchant Public Keys (must be x509/SPKI PEM format).
+//   2. We download 2C2P's own public key from the same portal: Account >
+//      Options > 2C2P Public Keys.
+//   3. Our private key → TWOC2P_MERCHANT_PRIVATE_KEY (PEM), 2C2P's public
+//      key → TWOC2P_PUBLIC_KEY (PEM). Until both are set,
+//      recurringMaintenanceConfigured() is false.
+// Genuinely unverified: whether 2C2P signs its responses too (verified
+// here against their public key) or only encrypts — their docs show a
+// response example with the same nested-token shape as the request but
+// never state this explicitly. And the exact meaning of the `kid` JOSE
+// header, if 2C2P's portal assigns one, isn't documented — omitted here.
+// Both need confirming against a real sandbox call before trusting this
+// for "unsubscribe" in production.
+import { CompactEncrypt, CompactSign, compactDecrypt, compactVerify, importSPKI, importPKCS8 } from "jose";
+
+// Vercel env vars can't hold real newlines cleanly, so multi-line PEM
+// values are stored with literal \n escapes — same convention as
+// APPLE_PRIVATE_KEY in lib/apple-auth.ts.
+const MERCHANT_PRIVATE_KEY_PEM = process.env.TWOC2P_MERCHANT_PRIVATE_KEY?.replace(/\\n/g, "\n");
+const TWOC2P_PUBLIC_KEY_PEM = process.env.TWOC2P_PUBLIC_KEY?.replace(/\\n/g, "\n");
+const MAINTENANCE_URL = IS_PRODUCTION
+  ? "https://t.2c2p.com/PaymentAction/2.0/action"
+  : "https://demo2.2c2p.com/PaymentAction/2.0/action";
+
+export function recurringMaintenanceConfigured() {
+  return Boolean(MERCHANT_ID && MERCHANT_PRIVATE_KEY_PEM && TWOC2P_PUBLIC_KEY_PEM);
+}
+
+function maintenanceTimestamp(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}${p(d.getMonth() + 1)}${String(d.getFullYear()).slice(-2)}${p(d.getHours())}${p(
+    d.getMinutes()
+  )}${p(d.getSeconds())}`;
+}
+
+async function encryptThenSignXml(xml: string): Promise<string> {
+  const twoC2PPublicKey = await importSPKI(TWOC2P_PUBLIC_KEY_PEM!, "RSA-OAEP");
+  const jwe = await new CompactEncrypt(new TextEncoder().encode(xml))
+    .setProtectedHeader({ alg: "RSA-OAEP", enc: "A256GCM" })
+    .encrypt(twoC2PPublicKey);
+  const merchantPrivateKey = await importPKCS8(MERCHANT_PRIVATE_KEY_PEM!, "PS256");
+  return new CompactSign(new TextEncoder().encode(jwe))
+    .setProtectedHeader({ alg: "PS256" })
+    .sign(merchantPrivateKey);
+}
+
+async function verifyThenDecryptXml(token: string): Promise<string> {
+  const twoC2PPublicKey = await importSPKI(TWOC2P_PUBLIC_KEY_PEM!, "PS256");
+  const { payload: jweBytes } = await compactVerify(token, twoC2PPublicKey);
+  const merchantPrivateKey = await importPKCS8(MERCHANT_PRIVATE_KEY_PEM!, "RSA-OAEP");
+  const { plaintext } = await compactDecrypt(new TextDecoder().decode(jweBytes), merchantPrivateKey);
+  return new TextDecoder().decode(plaintext);
+}
+
+function xmlTag(xml: string, tag: string): string | null {
+  const match = xml.match(new RegExp(`<${tag}>([^<]*)</${tag}>`));
+  return match ? match[1] : null;
+}
+
+export type RecurringMaintenanceResult = { respCode: string; respReason: string; recurringUniqueID: string };
+
+async function callRecurringMaintenance(xml: string): Promise<RecurringMaintenanceResult> {
+  if (!recurringMaintenanceConfigured()) {
+    throw new Error(
+      "2C2P recurring maintenance not configured — set TWOC2P_MERCHANT_PRIVATE_KEY and TWOC2P_PUBLIC_KEY (see file header for the portal key-exchange steps required first)"
+    );
+  }
+  const token = await encryptThenSignXml(xml);
+  const res = await fetch(MAINTENANCE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: token,
+  });
+  if (!res.ok) throw new Error(`2C2P recurring maintenance HTTP ${res.status}`);
+  const responseToken = await res.text();
+  const responseXml = await verifyThenDecryptXml(responseToken);
+  const respCode = xmlTag(responseXml, "respCode");
+  const respReason = xmlTag(responseXml, "respReason");
+  const recurringUniqueID = xmlTag(responseXml, "recurringUniqueID");
+  if (!respCode || !recurringUniqueID) throw new Error(`2C2P recurring maintenance: unexpected response XML: ${responseXml}`);
+  return { respCode, respReason: respReason ?? "", recurringUniqueID };
+}
+
+// Cancels a live recurring plan — respCode "00" means it actually stopped
+// future charges; any other code means it did NOT, so callers must check
+// this, not just "did the request not throw".
+export async function cancelRecurringPlan(recurringUniqueId: string, lastAmount: number): Promise<RecurringMaintenanceResult> {
+  const xml = `<RecurringMaintenanceRequest><version>2.4</version><timeStamp>${maintenanceTimestamp(
+    new Date()
+  )}</timeStamp><merchantID>${MERCHANT_ID}</merchantID><recurringUniqueID>${recurringUniqueId}</recurringUniqueID><processType>C</processType><recurringStatus>Y</recurringStatus><amount>${String(
+    Math.round(lastAmount * 100)
+  ).padStart(12, "0")}</amount><allowAccumulate>N</allowAccumulate></RecurringMaintenanceRequest>`;
+  return callRecurringMaintenance(xml);
+}
+
+// Read-only status check (recurringStatus/currentCount/chargeNextDate) —
+// useful for reconciling our DB against 2C2P's actual plan state.
+export async function inquireRecurringPlan(recurringUniqueId: string): Promise<RecurringMaintenanceResult> {
+  const xml = `<RecurringMaintenanceRequest><version>2.4</version><timeStamp>${maintenanceTimestamp(
+    new Date()
+  )}</timeStamp><merchantID>${MERCHANT_ID}</merchantID><recurringUniqueID>${recurringUniqueId}</recurringUniqueID><processType>I</processType></RecurringMaintenanceRequest>`;
+  return callRecurringMaintenance(xml);
 }

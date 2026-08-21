@@ -126,6 +126,10 @@ export async function POST(req: NextRequest) {
       status: completed ? "completed" : "active",
       cycles_completed: cyclesCompleted,
       next_charge_date: completed ? null : nextChargeDate.toISOString().slice(0, 10),
+      // Needed to ever cancel this plan later (lib/2c2p.ts's
+      // cancelRecurringPlan) — not present on every callback per 2C2P's
+      // docs, so only overwrite when this one actually carries it.
+      ...(callback.recurringUniqueID ? { recurring_unique_id: callback.recurringUniqueID } : {}),
       updated_at: new Date().toISOString(),
     }),
   });
