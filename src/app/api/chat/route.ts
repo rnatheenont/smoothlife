@@ -191,7 +191,16 @@ Guidance:
 - Never promise results or claim to treat disease.
 - If asked something unrelated to beauty, health or the store, politely steer back.
 
-KEEP THE CONVERSATION GOING — after every reply (skip this only for a hard safety refusal), end with one extra line offering 2-3 short follow-up questions the customer might naturally want to ask next, so they don't run out of things to ask. Rules:
+ASK BEFORE YOU RECOMMEND — when the customer's request is broad (e.g. "แนะนำสกินแคร์หน่อย", "อยากได้อะไรดูแลผิว", "help me pick something") and you don't yet have enough of their profile (see "Customer profile so far" below — check it first, never re-ask something already answered there or earlier in this conversation) to make a genuinely targeted pick, don't guess and don't dump a generic list. Ask ONE short qualifying question first, and give them easy tappable answers instead of making them type. Put the question as normal text, then its answer options on their own line at the very end of your reply, wrapped in double square brackets after the literal word ASK and a colon, pipe-separated, exactly like this:
+ให้แนะนำได้ตรงจุดขึ้น ผิวของคุณเป็นแบบไหนคะ
+[[ASK: ผิวมัน | ผิวแห้ง | ผิวผสม | ผิวแพ้ง่าย]]
+- Never use [[SUGGEST: ...]] for this — SUGGEST is only for the optional follow-ups described below. A qualifying question's answer options always use [[ASK: ...]], and a reply must never contain both markers.
+- Good qualifying questions: skin/hair type, main concern (สิว/จุดด่างดำ/ริ้วรอย/ผมร่วง/etc.), who it's for (ตัวเอง/ผิวลูก/ผู้สูงอายุ), or budget range — pick whichever narrows the pick the most given what they already said.
+- Give 3-4 options. Keep each one short (1-4 words) since it renders as a small tappable chip, not a sentence.
+- At most 2 qualifying rounds total (e.g. skin type, then main concern) before you commit to an actual recommendation — never turn this into an endless interrogation, and always recommend something concrete once you have one clear concern + one clear skin/hair type, even if other details are still unknown.
+- Skip this entirely and go straight to recommending when: the customer's message already gives enough detail, their profile already covers it, they asked a narrow factual question (price, ingredients, how to use, order status), or they're just chatting/greeting.
+
+KEEP THE CONVERSATION GOING — after every reply (skip this only for a hard safety refusal or when you just asked a qualifying question above), end with one extra line offering 2-3 short follow-up questions the customer might naturally want to ask next, so they don't run out of things to ask. Rules:
 - Phrase each one as something the CUSTOMER would type (first person / a question), not advice to them, e.g. "มีมอยส์เจอร์ไรเซอร์คู่กันไหม" not "ลองมอยส์เจอร์ไรเซอร์ดูสิ".
 - Keep each one short, under ~8 words, written in ${lang === "en" ? "English" : "Thai"}.
 - They must follow naturally from what you *just* said (the product/topic you just covered), not generic restarts, and must not repeat a question already asked earlier in this conversation.
@@ -418,9 +427,14 @@ export async function POST(req: NextRequest) {
   // Persist the latest user turn (fire-and-forget-ish — awaited but never
   // throws, see persistMessage). Only the newest message, since earlier
   // turns in this request were already persisted on their own request.
+  // The photo itself is never saved (see the consent copy — "temporary
+  // analysis only") but a "[[PHOTO]]" prefix marks that one was attached,
+  // so reopening the chat later still shows a placeholder instead of the
+  // text just looking like a random orphaned question.
   const lastUserMsg = trimmed[trimmed.length - 1];
   if (lastUserMsg?.role === "user") {
-    await persistMessage({ uid, sessionKey, role: "user", content: lastUserMsg.content, viewingSlug: viewingProduct?.slug });
+    const content = imageBase64 ? `[[PHOTO]] ${lastUserMsg.content}` : lastUserMsg.content;
+    await persistMessage({ uid, sessionKey, role: "user", content, viewingSlug: viewingProduct?.slug });
   }
 
   // Attach the photo (if any) to the most recent user turn only — earlier

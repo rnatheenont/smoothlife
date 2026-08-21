@@ -188,6 +188,12 @@ export default function QuickChat() {
   const [imageConsent, setImageConsent] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [followups, setFollowups] = useState<string[]>([]);
+  // Tappable answer options for a qualifying question Smoothie asks before
+  // recommending (see [[ASK: ...]] in route.ts) — distinct from `followups`
+  // (optional extra suggestions, deliberately shown only every other turn)
+  // since these are the actual pending question's answers and must always
+  // show up, whichever turn they land on.
+  const [askOptions, setAskOptions] = useState<string[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [escalating, setEscalating] = useState(false);
   const [escalateMsg, setEscalateMsg] = useState<string | null>(null);
@@ -429,6 +435,7 @@ export default function QuickChat() {
     setInput("");
     setPendingImage(null);
     setFollowups([]);
+    setAskOptions([]);
     setLoading(true);
     try {
       const res = await fetch("/api/chat", {
@@ -473,25 +480,30 @@ export default function QuickChat() {
       let netDone = false;
       const CHARS_PER_TICK = 3;
       const TICK_MS = 16;
-      // The model may tack on a trailing "[[SUGGEST: ...]]" marker (see
-      // route.ts) that must never flash on screen as raw bracket text. The
-      // instant the literal "[[SUGGEST:" substring shows up anywhere in the
-      // accumulated text, freeze the reveal boundary right before it and
-      // never advance past it — everything from there on is the marker
+      // The model may tack on a trailing "[[SUGGEST: ...]]" or "[[ASK: ...]]"
+      // marker (see route.ts) that must never flash on screen as raw bracket
+      // text — the two are mutually exclusive per reply (SUGGEST for
+      // optional follow-ups, ASK for a qualifying question's answer
+      // options). The instant either literal opener shows up anywhere in
+      // the accumulated text, freeze the reveal boundary right before it
+      // and never advance past it — everything from there on is the marker
       // (it's always last), regardless of how much more streams in after.
-      const SUGGEST_OPEN = "[[SUGGEST:";
-      function suggestOpenIndex() {
-        const idx = full.indexOf(SUGGEST_OPEN);
-        if (idx === -1) return -1;
-        return full[idx - 1] === "\n" ? idx - 1 : idx;
+      const MARKER_OPENERS = ["[[SUGGEST:", "[[ASK:"];
+      const MAX_OPENER_LEN = Math.max(...MARKER_OPENERS.map((m) => m.length));
+      function markerOpenIndex() {
+        for (const opener of MARKER_OPENERS) {
+          const idx = full.indexOf(opener);
+          if (idx !== -1) return full[idx - 1] === "\n" ? idx - 1 : idx;
+        }
+        return -1;
       }
       function visibleTarget() {
-        const idx = suggestOpenIndex();
+        const idx = markerOpenIndex();
         if (idx !== -1) return idx;
         if (netDone) return full.length;
         // marker hasn't started (or hasn't fully arrived) yet — hold back a
-        // small safety margin in case "[[SUGGEST:" is split across chunks
-        return Math.max(0, full.length - SUGGEST_OPEN.length);
+        // small safety margin in case an opener is split across chunks
+        return Math.max(0, full.length - MAX_OPENER_LEN);
       }
 
       async function readNetwork() {
@@ -516,26 +528,31 @@ export default function QuickChat() {
 
       await Promise.all([readNetwork(), revealLoop()]);
 
-      const cutIdx = suggestOpenIndex();
+      const cutIdx = markerOpenIndex();
       const finalText = cutIdx !== -1 ? full.slice(0, cutIdx).trimEnd() : full;
       setMessages([...next, { role: "assistant", content: finalText || "…" }]);
 
       assistantTurnCount.current += 1;
+      const markerText = cutIdx !== -1 ? full.slice(cutIdx).replace(/^\n/, "") : "";
+      const isAsk = /^\[\[ASK:/i.test(markerText);
       let parsed: string[] = [];
       if (cutIdx !== -1) {
-        const inner = full
-          .slice(cutIdx)
-          .replace(/^\n/, "")
-          .replace(/^\[\[SUGGEST:/i, "")
-          .replace(/\]\]\s*$/, "");
+        const inner = markerText.replace(/^\[\[(SUGGEST|ASK):/i, "").replace(/\]\]\s*$/, "");
         parsed = inner
           .split("|")
           .map((s) => s.trim())
           .filter(Boolean)
-          .slice(0, 3);
+          .slice(0, 4);
       }
-      // odd turns only (1st, 3rd, 5th assistant reply...) — every other one
-      setFollowups(parsed.length && assistantTurnCount.current % 2 === 1 ? parsed : []);
+      if (isAsk) {
+        // The AI's actual pending question — always show it, whichever turn.
+        setAskOptions(parsed);
+        setFollowups([]);
+      } else {
+        setAskOptions([]);
+        // odd turns only (1st, 3rd, 5th assistant reply...) — every other one
+        setFollowups(parsed.length && assistantTurnCount.current % 2 === 1 ? parsed : []);
+      }
     } catch {
       setMessages([
         ...next,
@@ -686,6 +703,7 @@ export default function QuickChat() {
                   onClick={() => {
                     setMessages([]);
                     setFollowups([]);
+                    setAskOptions([]);
                     setEscalateMsg(null);
                     assistantTurnCount.current = 0;
                   }}
@@ -759,37 +777,54 @@ export default function QuickChat() {
               </div>
             )}
 
-            {messages.map((m, i) => (
-              <div key={i} className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-                {m.role === "user" ? (
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-200 text-slate-600 overflow-hidden">
-                    {user?.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={user.avatar} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
-                    ) : (
-                      <UserIcon size={15} />
-                    )}
-                  </span>
-                ) : (
-                  <span className="relative h-10 w-10 shrink-0 -mt-0.5">
-                    <Image src="/mascot/smoothie-say.png" alt="" fill sizes="40px" className="object-contain" />
-                  </span>
-                )}
-                <div
-                  className={`rounded-2xl px-3.5 py-2.5 text-[13px] whitespace-pre-wrap leading-relaxed ${
-                    m.role === "user"
-                      ? "max-w-[82%] bg-brand-gradient text-white rounded-tr-sm"
-                      : "max-w-[90%] bg-white text-slate-700 border border-slate-100 rounded-tl-sm"
-                  }`}
-                >
-                  {m.image && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.image} alt="" className="mb-2 max-h-40 rounded-lg object-cover" />
+            {messages.map((m, i) => {
+              const PHOTO_MARKER = "[[PHOTO]] ";
+              // A photo attached in an earlier session (before a reload)
+              // never gets its actual image back — it was only ever sent to
+              // the AI for temporary analysis, never stored — but the
+              // "[[PHOTO]] " prefix (see route.ts persistMessage) lets the
+              // bubble at least show a placeholder instead of the text
+              // looking like an orphaned, contextless question.
+              const hadPhoto = m.role === "user" && !m.image && m.content.startsWith(PHOTO_MARKER);
+              const displayContent = hadPhoto ? m.content.slice(PHOTO_MARKER.length) : m.content;
+              return (
+                <div key={i} className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+                  {m.role === "user" ? (
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-200 text-slate-600 overflow-hidden">
+                      {user?.avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={user.avatar} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
+                      ) : (
+                        <UserIcon size={15} />
+                      )}
+                    </span>
+                  ) : (
+                    <span className="relative h-10 w-10 shrink-0 -mt-0.5">
+                      <Image src="/mascot/smoothie-say.png" alt="" fill sizes="40px" className="object-contain" />
+                    </span>
                   )}
-                  {m.role === "assistant" ? renderContent(m.content) : m.content}
+                  <div
+                    className={`rounded-2xl px-3.5 py-2.5 text-[13px] whitespace-pre-wrap leading-relaxed ${
+                      m.role === "user"
+                        ? "max-w-[82%] bg-brand-gradient text-white rounded-tr-sm"
+                        : "max-w-[90%] bg-white text-slate-700 border border-slate-100 rounded-tl-sm"
+                    }`}
+                  >
+                    {m.image && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={m.image} alt="" className="mb-2 max-h-40 rounded-lg object-cover" />
+                    )}
+                    {hadPhoto && (
+                      <span className="mb-1.5 flex items-center gap-1.5 text-[11px] text-white/75">
+                        <Camera size={12} />
+                        {t("แนบรูปไว้ตรงนี้ (ไม่ได้เก็บรูปไว้)", "Photo attached here (not saved)")}
+                      </span>
+                    )}
+                    {m.role === "assistant" ? renderContent(displayContent) : displayContent}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {loading && messages[messages.length - 1]?.role !== "assistant" && (
               <div className="flex gap-2">
@@ -799,6 +834,20 @@ export default function QuickChat() {
                 <div className="rounded-2xl rounded-tl-sm bg-white border border-slate-100 px-3.5 py-2.5 text-[13px] text-slate-400 flex items-center gap-2">
                   <Loader2 size={13} className="animate-spin" /> {t("กำลังคิด...", "Thinking...")}
                 </div>
+              </div>
+            )}
+
+            {!loading && askOptions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pl-11">
+                {askOptions.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => send(s)}
+                    className="rounded-full bg-brand-gradient px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
             )}
 
