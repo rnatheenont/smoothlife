@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Play, Volume2, VolumeX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Volume2, VolumeX, ShoppingBag, Check } from "lucide-react";
 import { Product } from "@/data/types";
+import { useCart } from "@/lib/cart-context";
 
 export type SocialClip = {
   video: string;
@@ -32,6 +33,15 @@ function ClipCard({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
+  const { addItem } = useCart();
+  const [added, setAdded] = useState(false);
+
+  function handleAdd() {
+    if (!clip.product) return;
+    addItem(clip.product.slug);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  }
 
   useEffect(() => {
     const video = videoRef.current;
@@ -99,22 +109,34 @@ function ClipCard({
         </button>
       </div>
 
-      <Link
-        href={clip.product ? `/product/${clip.product.slug}` : "/shop"}
-        className="flex items-center gap-3 border-t border-slate-100 px-3 py-3 hover:bg-surface-soft transition-colors"
-      >
-        {clip.product ? (
-          <>
-            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-surface-soft">
-              <Image src={clip.product.image} alt="" fill className="object-cover" />
-            </div>
-            <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-ink">{clip.product.name}</span>
-          </>
-        ) : (
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-ink">ช้อปสินค้า</span>
+      <div className="flex items-center gap-2 border-t border-slate-100 pl-3 pr-2 py-2">
+        <Link
+          href={clip.product ? `/product/${clip.product.slug}` : "/shop"}
+          className="flex min-w-0 flex-1 items-center gap-3 py-1 hover:opacity-80 transition-opacity"
+        >
+          {clip.product ? (
+            <>
+              <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-surface-soft">
+                <Image src={clip.product.image} alt="" fill className="object-cover" />
+              </div>
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-ink">{clip.product.name}</span>
+            </>
+          ) : (
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-ink">ช้อปสินค้า</span>
+          )}
+        </Link>
+        {clip.product && (
+          <button
+            onClick={handleAdd}
+            aria-label="เพิ่มลงตะกร้า"
+            className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition-all active:scale-90 ${
+              added ? "bg-brand-emerald text-white" : "bg-brand-gradient text-white hover:opacity-90"
+            }`}
+          >
+            {added ? <Check size={15} /> : <ShoppingBag size={15} />}
+          </button>
         )}
-        <ChevronRight size={16} className="shrink-0 text-slate-400" />
-      </Link>
+      </div>
     </div>
   );
 }
@@ -218,7 +240,7 @@ export default function TrendingOnSocial({ clips }: { clips: SocialClip[] }) {
       <div className="mt-5 flex items-center gap-4 px-4 md:px-[calc((100%-1120px)/2)]">
         <div className="h-[2px] flex-1 overflow-hidden rounded-full bg-slate-200">
           <div
-            className="h-full rounded-full bg-brand-ink transition-[width]"
+            className="h-full rounded-full bg-brand-emerald transition-[width]"
             style={{ width: `${Math.max(8, progress * 100)}%` }}
           />
         </div>

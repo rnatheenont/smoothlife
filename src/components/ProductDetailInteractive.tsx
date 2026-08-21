@@ -381,12 +381,16 @@ export default function ProductDetailInteractive({
                 onClick={() => setPurchaseMode("subscribe")}
                 className={`relative flex items-center justify-center gap-1.5 rounded-full py-2 transition-all ${
                   purchaseMode === "subscribe"
-                    ? "bg-white shadow-sm text-brand-emerald"
+                    ? "bg-brand-gradient text-white shadow-cardHover scale-[1.02]"
                     : "text-brand-emerald/70 hover:text-brand-emerald"
                 }`}
               >
                 <Repeat size={13} /> สมัครรับประจำ
-                <span className="rounded-full bg-brand-gradient px-1.5 py-0.5 text-[10px] font-bold text-white">
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                    purchaseMode === "subscribe" ? "bg-white text-brand-emerald" : "bg-brand-gradient text-white"
+                  }`}
+                >
                   -{Math.max(...subscriptionPlans.map((p) => p.discountPct))}%
                 </span>
               </button>
@@ -444,7 +448,7 @@ export default function ProductDetailInteractive({
                             ยอดนิยม
                           </span>
                         )}
-                        <p className="text-base font-extrabold text-brand-ink">{p.months} ด.</p>
+                        <p className="text-base font-extrabold text-brand-ink">{p.months} เดือน</p>
                         <p className={`text-[11px] font-bold ${active ? "text-brand-emerald" : "text-slate-400"}`}>-{p.discountPct}%</p>
                       </button>
                     );
