@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Volume2, VolumeX } from "lucide-react";
 import { Product } from "@/data/types";
 
 export type SocialClip = {
@@ -31,6 +31,7 @@ function ClipCard({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [muted, setMuted] = useState(true);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -57,18 +58,23 @@ function ClipCard({
   }
 
   return (
-    <div ref={cardRef} className="w-[220px] shrink-0 snap-center md:snap-start overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-card">
-      <button
+    <div ref={cardRef} className="w-[220px] shrink-0 snap-center overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-card">
+      <div
+        role="button"
+        tabIndex={0}
         onClick={handleOverlayClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") handleOverlayClick();
+        }}
         aria-label="เล่นวิดีโอ"
-        className="relative block aspect-[9/16] w-full bg-slate-900"
+        className="relative block aspect-[9/16] w-full bg-slate-900 cursor-pointer"
       >
         <video
           ref={videoRef}
           src={clip.video}
           className="h-full w-full object-cover"
           playsInline
-          muted
+          muted={muted}
           preload="metadata"
           onEnded={onEnded}
           onPlay={() => setIsPlaying(true)}
@@ -81,23 +87,33 @@ function ClipCard({
             </span>
           </span>
         )}
-      </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setMuted((m) => !m);
+          }}
+          aria-label={muted ? "เปิดเสียง" : "ปิดเสียง"}
+          className="absolute top-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-black/40 text-white backdrop-blur"
+        >
+          {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+        </button>
+      </div>
 
       <Link
         href={clip.product ? `/product/${clip.product.slug}` : "/shop"}
-        className="flex items-center gap-2 border-t border-slate-100 px-3 py-2.5 hover:bg-surface-soft transition-colors"
+        className="flex items-center gap-3 border-t border-slate-100 px-3 py-3 hover:bg-surface-soft transition-colors"
       >
         {clip.product ? (
           <>
-            <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded bg-surface-soft">
+            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-surface-soft">
               <Image src={clip.product.image} alt="" fill className="object-cover" />
             </div>
-            <span className="min-w-0 flex-1 truncate text-xs text-brand-ink">{clip.product.name}</span>
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-ink">{clip.product.name}</span>
           </>
         ) : (
-          <span className="min-w-0 flex-1 truncate text-xs text-brand-ink">ช้อปสินค้า</span>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-ink">ช้อปสินค้า</span>
         )}
-        <ChevronRight size={14} className="shrink-0 text-slate-400" />
+        <ChevronRight size={16} className="shrink-0 text-slate-400" />
       </Link>
     </div>
   );
