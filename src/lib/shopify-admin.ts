@@ -162,65 +162,89 @@ export type LiveHeroBanner = { slug: string; image: string; href: string };
 // custom app behind SHOPIFY_ADMIN_CLIENT_ID to have the read_themes and
 // read_files Admin scopes; returns null (caller falls back to the static
 // heroBanners list) on any missing scope, structural change, or error.
+// Throws on any failure (missing scope, GraphQL error, bad theme shape) —
+// getLiveHeroBanners() below is the safe wrapper every real call site uses;
+// this raw version exists so the temporary debug route can surface the
+// actual reason instead of a silent null.
+async function getLiveHeroBannersUnsafe(): Promise<LiveHeroBanner[] | null> {
+  const themesData = await adminGraphql<{ themes: { nodes: { id: string; role: string }[] } }>(
+    `query { themes(first: 20) { nodes { id role } } }`
+  );
+  const mainTheme = themesData.themes.nodes.find((t) => t.role === "MAIN");
+  if (!mainTheme) return null;
+
+  const fileData = await adminGraphql<{
+    theme: { files: { nodes: { body: { content?: string } }[] } } | null;
+  }>(
+    `query ThemeIndexFile($id: ID!) {
+      theme(id: $id) {
+        files(filenames: ["templates/index.json"]) {
+          nodes { body { ... on OnlineStoreThemeFileBodyText { content } } }
+        }
+      }
+    }`,
+    { id: mainTheme.id }
+  );
+  const raw = fileData.theme?.files.nodes[0]?.body.content;
+  if (!raw) return null;
+  // Strip Shopify's leading "auto-generated, do not edit" block comment —
+  // the file isn't valid JSON until that's removed.
+  const parsed: ThemeSectionsFile = JSON.parse(raw.replace(/^\s*\/\*[\s\S]*?\*\//, ""));
+  const settings = findSlideshowSettings(parsed);
+  if (!settings) return null;
+
+  const slides: { filename: string; href: string }[] = [];
+  for (let i = 1; i <= 10; i++) {
+    if (settings[`slide_${i}_enabled`] === false) continue;
+    const imageRef = settings[`slide_${i}_image`];
+    if (typeof imageRef !== "string") continue;
+    const match = imageRef.match(/^shopify:\/\/shop_images\/(.+)$/);
+    if (!match) continue;
+    slides.push({ filename: match[1], href: resolveBannerLink(settings[`slide_${i}_link`]) });
+  }
+  if (slides.length === 0) return null;
+
+  const aliasQuery = slides
+    .map(
+      (s, i) =>
+        `f${i}: files(first: 1, query: ${JSON.stringify(`filename:${s.filename}`)}) { nodes { ... on MediaImage { image { url } } } }`
+    )
+    .join("\n");
+  const filesData = await adminGraphql<Record<string, { nodes: { image?: { url: string } }[] }>>(
+    `query BannerImages { ${aliasQuery} }`
+  );
+
+  const banners: LiveHeroBanner[] = [];
+  slides.forEach((slide, i) => {
+    const url = filesData[`f${i}`]?.nodes[0]?.image?.url;
+    if (url) banners.push({ slug: `live-${i}`, image: url, href: slide.href });
+  });
+  return banners.length > 0 ? banners : null;
+}
+
 export async function getLiveHeroBanners(): Promise<LiveHeroBanner[] | null> {
   if (!shopifyAdminConfigured()) return null;
   try {
-    const themesData = await adminGraphql<{ themes: { nodes: { id: string; role: string }[] } }>(
-      `query { themes(first: 20) { nodes { id role } } }`
-    );
-    const mainTheme = themesData.themes.nodes.find((t) => t.role === "MAIN");
-    if (!mainTheme) return null;
-
-    const fileData = await adminGraphql<{
-      theme: { files: { nodes: { body: { content?: string } }[] } } | null;
-    }>(
-      `query ThemeIndexFile($id: ID!) {
-        theme(id: $id) {
-          files(filenames: ["templates/index.json"]) {
-            nodes { body { ... on OnlineStoreThemeFileBodyText { content } } }
-          }
-        }
-      }`,
-      { id: mainTheme.id }
-    );
-    const raw = fileData.theme?.files.nodes[0]?.body.content;
-    if (!raw) return null;
-    // Strip Shopify's leading "auto-generated, do not edit" block comment —
-    // the file isn't valid JSON until that's removed.
-    const parsed: ThemeSectionsFile = JSON.parse(raw.replace(/^\s*\/\*[\s\S]*?\*\//, ""));
-    const settings = findSlideshowSettings(parsed);
-    if (!settings) return null;
-
-    const slides: { filename: string; href: string }[] = [];
-    for (let i = 1; i <= 10; i++) {
-      if (settings[`slide_${i}_enabled`] === false) continue;
-      const imageRef = settings[`slide_${i}_image`];
-      if (typeof imageRef !== "string") continue;
-      const match = imageRef.match(/^shopify:\/\/shop_images\/(.+)$/);
-      if (!match) continue;
-      slides.push({ filename: match[1], href: resolveBannerLink(settings[`slide_${i}_link`]) });
-    }
-    if (slides.length === 0) return null;
-
-    const aliasQuery = slides
-      .map(
-        (s, i) =>
-          `f${i}: files(first: 1, query: ${JSON.stringify(`filename:${s.filename}`)}) { nodes { ... on MediaImage { image { url } } } }`
-      )
-      .join("\n");
-    const filesData = await adminGraphql<Record<string, { nodes: { image?: { url: string } }[] }>>(
-      `query BannerImages { ${aliasQuery} }`
-    );
-
-    const banners: LiveHeroBanner[] = [];
-    slides.forEach((slide, i) => {
-      const url = filesData[`f${i}`]?.nodes[0]?.image?.url;
-      if (url) banners.push({ slug: `live-${i}`, image: url, href: slide.href });
-    });
-    return banners.length > 0 ? banners : null;
+    return await getLiveHeroBannersUnsafe();
   } catch (err) {
     console.error("[shopify-admin] getLiveHeroBanners failed", err);
     return null;
+  }
+}
+
+// TEMPORARY — for diagnosing why production falls back to the static
+// banners despite valid credentials. Remove this and its route once fixed.
+export async function getLiveHeroBannersDebug(): Promise<{
+  configured: boolean;
+  result?: LiveHeroBanner[] | null;
+  error?: string;
+}> {
+  if (!shopifyAdminConfigured()) return { configured: false };
+  try {
+    const result = await getLiveHeroBannersUnsafe();
+    return { configured: true, result };
+  } catch (err) {
+    return { configured: true, error: err instanceof Error ? `${err.name}: ${err.message}` : String(err) };
   }
 }
 
