@@ -21,6 +21,8 @@ import ProductTabs from "@/components/ProductTabs";
 import BrandShowcase from "@/components/BrandShowcase";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 
+export const metadata = { alternates: { canonical: "/" } };
+
 const articleCategoryLabel: Record<string, string> = {
   guide: "คู่มือ",
   ingredient: "ส่วนผสม",

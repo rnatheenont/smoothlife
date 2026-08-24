@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 export type WidgetKey =
   | "milestone_bar"
@@ -29,11 +29,17 @@ const DEFAULT_SETTINGS: WidgetSettings = {
   gifts_on_slide_cart: { enabled: false, config: {} },
 };
 
-// Fetched once per page load — mirrors the fetch("/api/wishlist")/
-// fetch("/api/free-gifts") pattern already used in cart-context.tsx. Widgets
-// default to DEFAULT_SETTINGS (only milestone_bar on) while loading so
-// nothing flashes on before real settings arrive.
-export function useWidgetSettings() {
+type ContextValue = { settings: WidgetSettings; loaded: boolean };
+
+const WidgetSettingsContext = createContext<ContextValue>({ settings: DEFAULT_SETTINGS, loaded: false });
+
+// Every product card (and several other storefront widgets) used to call
+// this hook and fetch independently — on a page with dozens of cards that
+// meant dozens of identical, un-deduped requests to the same endpoint on
+// every load. One provider now fetches once and every caller just reads
+// from context, with the exact same {settings, loaded} shape as before so
+// no call site had to change.
+export function WidgetSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<WidgetSettings>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
 
@@ -55,5 +61,9 @@ export function useWidgetSettings() {
       .finally(() => setLoaded(true));
   }, []);
 
-  return { settings, loaded };
+  return <WidgetSettingsContext.Provider value={{ settings, loaded }}>{children}</WidgetSettingsContext.Provider>;
+}
+
+export function useWidgetSettings() {
+  return useContext(WidgetSettingsContext);
 }

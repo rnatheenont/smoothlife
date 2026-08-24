@@ -66,6 +66,32 @@ export function productJsonLd(product: Product, reviews: ReviewRow[]) {
   };
 }
 
+// Site-wide (rendered once, in the root layout) — not per-page like
+// productJsonLd/breadcrumbJsonLd above.
+export function organizationJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Smoothlife.com",
+    url: SITE_URL,
+    logo: `${SITE_URL}/logo.svg`,
+  };
+}
+
+export function websiteJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Smoothlife.com",
+    url: SITE_URL,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/search?q={search_term_string}` },
+      "query-input": "required name=search_term_string",
+    },
+  };
+}
+
 export function breadcrumbJsonLd(items: { label: string; href?: string }[]) {
   return {
     "@context": "https://schema.org",

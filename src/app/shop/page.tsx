@@ -6,7 +6,9 @@ import ShopFilters from "@/components/ShopFilters";
 import SortSelect from "@/components/SortSelect";
 import Pagination from "@/components/Pagination";
 
-export const metadata = { title: "Shop ทั้งหมด | Smoothlife.com" };
+// Every ?brand=/?page=/?sort= filter combination renders this same route —
+// without a canonical they'd all index as separate near-duplicate pages.
+export const metadata = { title: "Shop ทั้งหมด | Smoothlife.com", alternates: { canonical: "/shop" } };
 
 export default function ShopPage({ searchParams }: { searchParams: ShopSearchParams }) {
   const allItems = filterProducts(searchParams);

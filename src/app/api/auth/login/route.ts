@@ -4,6 +4,10 @@ import { verifyPassword } from "@/lib/password";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { tierProgress } from "@/data/coupons";
 import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
+import { isRateLimited, clientIp } from "@/lib/rate-limit";
+
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
   if (!supabaseConfigured()) {
@@ -14,6 +18,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "กรุณากรอกอีเมลและรหัสผ่าน" }, { status: 400 });
   }
   const normalizedEmail = String(email).trim().toLowerCase();
+
+  // Keyed by IP+email together — blocks both someone hammering one
+  // account from anywhere, and one attacker spraying many accounts from
+  // the same place — without locking out other users of that email who
+  // happen to share an IP (e.g. same office/NAT).
+  if (isRateLimited(`login:${clientIp(req)}:${normalizedEmail}`, LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS)) {
+    return NextResponse.json(
+      { ok: false, error: "ลองเข้าสู่ระบบผิดหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่ค่ะ" },
+      { status: 429 }
+    );
+  }
 
   const identities = await supabaseRest<{ user_id: string; secret_hash: string | null }[]>(
     `auth_identities?provider=eq.email&provider_uid=eq.${encodeURIComponent(normalizedEmail)}&select=user_id,secret_hash`

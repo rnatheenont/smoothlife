@@ -32,6 +32,7 @@ export function generateMetadata({ params }: { params: { category: string } }) {
   return {
     title: c ? `${c.nameTh} | Smoothlife.com` : "Shop | Smoothlife.com",
     description: c ? `ช้อปสินค้าหมวด ${c.nameTh} คุณภาพดี ราคาคุ้มค่า ที่ Smoothlife.com` : undefined,
+    alternates: { canonical: `/shop/${params.category}` },
   };
 }
 

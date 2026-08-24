@@ -7,6 +7,7 @@ import { CartProvider, WishlistProvider } from "@/lib/cart-context";
 import { LangProvider } from "@/lib/lang-context";
 import { QuickChatProvider } from "@/lib/quickchat-context";
 import { RecentlyViewedProvider } from "@/lib/recently-viewed-context";
+import { WidgetSettingsProvider } from "@/lib/use-widget-settings";
 import QuickChat from "@/components/QuickChat";
 import MobileTabBar from "@/components/MobileTabBar";
 import GiftUnlockPopup from "@/components/GiftUnlockPopup";
@@ -38,10 +39,12 @@ export default function Providers({ children }: { children: ReactNode }) {
         <CartProvider>
           <WishlistProvider>
             <RecentlyViewedProvider>
-              <QuickChatProvider>
-                {children}
-                <StorefrontWidgets />
-              </QuickChatProvider>
+              <WidgetSettingsProvider>
+                <QuickChatProvider>
+                  {children}
+                  <StorefrontWidgets />
+                </QuickChatProvider>
+              </WidgetSettingsProvider>
             </RecentlyViewedProvider>
           </WishlistProvider>
         </CartProvider>

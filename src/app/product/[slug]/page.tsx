@@ -20,7 +20,10 @@ export function generateStaticParams() {
 
 export function generateMetadata({ params }: { params: { slug: string } }) {
   const product = getProductBySlug(params.slug);
-  return { title: product ? `${product.name} | Smoothlife.com` : "Product | Smoothlife.com" };
+  return {
+    title: product ? `${product.name} | Smoothlife.com` : "Product | Smoothlife.com",
+    alternates: { canonical: `/product/${params.slug}` },
+  };
 }
 
 // Real, user-submitted reviews/questions only — see product_reviews /
