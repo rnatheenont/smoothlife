@@ -36,10 +36,10 @@ type StatusResponse = {
 };
 
 const dayCircleStyle: Record<DayInfo["status"], string> = {
-  normal: "bg-brand-gradient text-white shadow-sm",
-  recovery: "bg-brand-gradient text-white shadow-sm",
-  today: "bg-white text-brand-emerald shadow-lg ring-4 ring-white/40 scale-110",
-  recoverable: "bg-amber-100 text-amber-700 border-2 border-amber-300",
+  normal: "bg-white text-brand-emerald shadow-sm",
+  recovery: "bg-white text-brand-emerald shadow-sm",
+  today: "bg-white text-brand-emerald shadow-lg ring-4 ring-amber-300/70 scale-110",
+  recoverable: "bg-white text-amber-600 border-2 border-amber-400 shadow-sm",
   missed: "bg-white/10 text-white/40",
   upcoming: "bg-white/5 text-white/30 border border-dashed border-white/20",
 };
