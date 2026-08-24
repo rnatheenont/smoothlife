@@ -36,12 +36,12 @@ type StatusResponse = {
 };
 
 const dayCircleStyle: Record<DayInfo["status"], string> = {
-  normal: "bg-brand-gradient text-white",
-  recovery: "bg-brand-gradient text-white",
-  today: "border-2 border-brand-emerald text-brand-emerald bg-white",
+  normal: "bg-brand-gradient text-white shadow-sm",
+  recovery: "bg-brand-gradient text-white shadow-sm",
+  today: "bg-white text-brand-emerald shadow-lg ring-4 ring-white/40 scale-110",
   recoverable: "bg-amber-100 text-amber-700 border-2 border-amber-300",
-  missed: "bg-slate-100 text-slate-400",
-  upcoming: "bg-slate-50 text-slate-300 border border-dashed border-slate-200",
+  missed: "bg-white/10 text-white/40",
+  upcoming: "bg-white/5 text-white/30 border border-dashed border-white/20",
 };
 
 function CheckinContent() {
@@ -156,6 +156,8 @@ function CheckinContent() {
     .filter((p, i, arr) => arr.findIndex((x) => x.slug === p.slug) === i)
     .slice(0, 4);
 
+  const nextRewardDay = !cycle ? null : !cycle.day3RewardClaimed ? 3 : !cycle.day7RewardClaimed ? 7 : null;
+
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-bold text-brand-ink mb-1">เช็กอินรายวัน</h1>
@@ -178,59 +180,73 @@ function CheckinContent() {
         </div>
       )}
 
-      <div className="rounded-xl2 bg-brand-gradient text-white p-5 md:p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="relative overflow-hidden rounded-xl2 bg-brand-gradient text-white p-5 md:p-7 mb-6 shadow-cardHover">
+        <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute -left-10 -bottom-10 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
+
+        <div className="relative flex items-center justify-between mb-5 gap-3">
           <div>
-            <p className="text-xs text-white/80">แต้มสะสมของคุณ</p>
-            <p className="text-2xl font-bold">{data.recovery.pointBalance.toLocaleString()} แต้ม</p>
+            <p className="text-xs text-white/75 mb-0.5">แต้มสะสมของคุณ</p>
+            <p className="text-3xl font-extrabold tracking-tight">
+              {data.recovery.pointBalance.toLocaleString()} <span className="text-base font-semibold text-white/80">แต้ม</span>
+            </p>
           </div>
           {!data.checkedInToday ? (
             <button
               onClick={doCheckin}
               disabled={busy}
-              className="rounded-full bg-white text-brand-emerald font-bold px-5 py-2.5 text-sm shadow-card disabled:opacity-60"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white text-brand-emerald font-bold px-5 py-2.5 text-sm shadow-card transition-transform active:scale-95 disabled:opacity-60"
             >
+              {busy ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
               {busy ? "กำลังเช็กอิน..." : "เช็กอินวันนี้"}
             </button>
           ) : (
-            <span className="flex items-center gap-1.5 rounded-full bg-white/20 px-4 py-2.5 text-sm font-semibold">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/15 border border-white/25 px-4 py-2.5 text-sm font-bold">
               <CheckCircle2 size={16} /> เช็กอินแล้ววันนี้
             </span>
           )}
         </div>
 
         {cycle ? (
-          <>
-            <div className="flex items-center justify-between text-xs text-white/80 mb-2">
-              <span>
+          <div className="relative">
+            <div className="flex items-center justify-between text-xs text-white/80 mb-3">
+              <span className="inline-flex items-center gap-1.5 font-bold text-white">
+                <Flame size={14} className="text-amber-300" />
                 ความคืบหน้ารอบนี้ {cycle.completedDays}/{cycle.targetDays} วัน
               </span>
-              {cycle.status === "recovery_available" && <span className="font-semibold">มีวันที่พลาด — กู้คืนได้</span>}
+              {cycle.status === "recovery_available" && (
+                <span className="rounded-full bg-amber-400/20 px-2.5 py-1 font-semibold text-amber-200">มีวันที่พลาด — กู้คืนได้</span>
+              )}
             </div>
-            <div className="grid grid-cols-7 gap-1.5 md:gap-2">
-              {cycle.dates.map((d) => (
-                <div key={d.date} className="flex flex-col items-center gap-1">
-                  <button
-                    onClick={() => d.status === "recoverable" && setConfirmDate(d.date)}
-                    disabled={d.status !== "recoverable"}
-                    className={`relative grid h-9 w-9 md:h-11 md:w-11 place-items-center rounded-full text-xs font-bold transition-transform ${dayCircleStyle[d.status]} ${
-                      d.status === "recoverable" ? "active:scale-95 cursor-pointer" : ""
-                    }`}
-                  >
-                    {d.status === "normal" || d.status === "recovery" ? <CheckCircle2 size={16} /> : d.dayNumber}
-                    {(d.dayNumber === 3 || d.dayNumber === 7) && (
-                      <span className="absolute -top-1.5 -right-1.5 grid h-4 w-4 place-items-center rounded-full bg-amber-400 text-white">
-                        <Gift size={9} />
-                      </span>
-                    )}
-                  </button>
-                  <span className="text-[10px] text-white/70">วัน {d.dayNumber}</span>
-                </div>
-              ))}
+            <div className="relative">
+              <div className="pointer-events-none absolute left-[18px] right-[18px] top-[18px] md:left-[22px] md:right-[22px] md:top-[22px] h-0.5 bg-white/20" />
+              <div className="relative grid grid-cols-7 gap-1.5 md:gap-2">
+                {cycle.dates.map((d) => (
+                  <div key={d.date} className="flex flex-col items-center gap-1.5">
+                    <button
+                      onClick={() => d.status === "recoverable" && setConfirmDate(d.date)}
+                      disabled={d.status !== "recoverable"}
+                      className={`relative z-10 grid h-9 w-9 md:h-11 md:w-11 place-items-center rounded-full text-xs font-bold transition-transform ${dayCircleStyle[d.status]} ${
+                        d.status === "recoverable" ? "active:scale-95 cursor-pointer" : ""
+                      }`}
+                    >
+                      {d.status === "normal" || d.status === "recovery" ? <CheckCircle2 size={16} /> : d.dayNumber}
+                      {(d.dayNumber === 3 || d.dayNumber === 7) && (
+                        <span className="absolute -top-1.5 -right-1.5 grid h-4 w-4 place-items-center rounded-full bg-amber-400 text-white shadow-sm">
+                          <Gift size={9} />
+                        </span>
+                      )}
+                    </button>
+                    <span className={`text-[10px] ${d.status === "today" ? "font-bold text-white" : "text-white/60"}`}>
+                      วัน {d.dayNumber}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </>
+          </div>
         ) : (
-          <p className="text-sm text-white/90">เช็กอินวันนี้เพื่อเริ่มรอบใหม่ 7 วันค่ะ</p>
+          <p className="relative text-sm text-white/90">เช็กอินวันนี้เพื่อเริ่มรอบใหม่ 7 วันค่ะ</p>
         )}
       </div>
 
@@ -241,17 +257,26 @@ function CheckinContent() {
       <p className="text-xs font-bold uppercase text-brand-emerald tracking-wide mb-2.5">รางวัลตามเป้าหมาย</p>
       <div className="grid sm:grid-cols-2 gap-4 mb-8">
         <div
-          className={`rounded-xl2 border p-5 shadow-card transition-colors ${
-            cycle?.day3RewardClaimed ? "border-brand-teal/40 bg-brand-gradient-soft" : "border-slate-100 bg-white"
+          className={`relative rounded-xl2 border p-5 shadow-card transition-colors ${
+            cycle?.day3RewardClaimed
+              ? "border-brand-teal/40 bg-brand-gradient-soft"
+              : nextRewardDay === 3
+                ? "border-brand-emerald/50 bg-white ring-2 ring-brand-emerald/20"
+                : "border-slate-100 bg-white"
           }`}
         >
+          {nextRewardDay === 3 && (
+            <span className="absolute -top-2.5 left-4 rounded-full bg-brand-gradient px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+              เป้าหมายถัดไป
+            </span>
+          )}
           <div className="flex items-center gap-3 mb-2">
             <span
-              className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${
+              className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${
                 cycle?.day3RewardClaimed ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-emerald"
               }`}
             >
-              <Gift size={18} />
+              <Gift size={20} />
             </span>
             <div>
               <p className="font-bold text-brand-ink leading-tight">รางวัลวันที่ 3</p>
@@ -272,17 +297,26 @@ function CheckinContent() {
           )}
         </div>
         <div
-          className={`rounded-xl2 border p-5 shadow-card transition-colors ${
-            cycle?.day7RewardClaimed ? "border-brand-teal/40 bg-brand-gradient-soft" : "border-slate-100 bg-white"
+          className={`relative rounded-xl2 border p-5 shadow-card transition-colors ${
+            cycle?.day7RewardClaimed
+              ? "border-brand-teal/40 bg-brand-gradient-soft"
+              : nextRewardDay === 7
+                ? "border-brand-emerald/50 bg-white ring-2 ring-brand-emerald/20"
+                : "border-slate-100 bg-white"
           }`}
         >
+          {nextRewardDay === 7 && (
+            <span className="absolute -top-2.5 left-4 rounded-full bg-brand-gradient px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+              เป้าหมายถัดไป
+            </span>
+          )}
           <div className="flex items-center gap-3 mb-2">
             <span
-              className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${
+              className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${
                 cycle?.day7RewardClaimed ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-emerald"
               }`}
             >
-              <Sparkles size={18} />
+              <Sparkles size={20} />
             </span>
             <div>
               <p className="font-bold text-brand-ink leading-tight">รางวัลวันที่ 7</p>
@@ -321,11 +355,11 @@ function CheckinContent() {
           >
             <div className="flex items-center gap-3 mb-3">
               <span
-                className={`grid h-11 w-11 shrink-0 place-items-center rounded-full ${
+                className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${
                   data.monthlyAttendance.rewarded ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-emerald"
                 }`}
               >
-                <CalendarCheck size={18} />
+                <CalendarCheck size={20} />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
