@@ -19,6 +19,7 @@ const REAL_STATUS_LABEL: Record<RealSubscriptionRow["status"], string> = {
   past_due: "ตัดเงินไม่สำเร็จ กรุณาตรวจสอบบัตร",
   cancelled: "ยกเลิกแล้ว",
   completed: "ครบรอบแล้ว",
+  ended: "สิ้นสุดแล้ว",
 };
 
 function RealSubscriptionCard({
@@ -30,7 +31,7 @@ function RealSubscriptionCard({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const canCancel = sub.status === "active" || sub.status === "past_due";
+  const canCancel = (sub.status === "active" || sub.status === "past_due") && !sub.auto_renew_cancelled;
 
   async function handleCancel() {
     setBusy(true);
@@ -67,16 +68,23 @@ function RealSubscriptionCard({
               {REAL_STATUS_LABEL[sub.status]}
             </span>
             <span className="text-[10px] text-slate-400">
-              ทุก {sub.plan_months} เดือน (-{sub.discount_pct}%) · รอบ {sub.cycles_completed}/{sub.cycles_total}
+              เทอมที่ {sub.current_term_number} ({sub.plan_months} เดือน, -{sub.discount_pct}%) · จัดส่งแล้ว{" "}
+              {sub.cycles_completed_this_term}/{sub.plan_months} เดือน
             </span>
           </div>
           <Link href={`/product/${sub.product_slug}`} className="font-bold text-brand-ink hover:text-brand-emerald">
             {sub.product_name}
           </Link>
           <p className="text-xs text-slate-500 mt-1">
-            {formatTHB(sub.amount_per_cycle)}/รอบ (ตัดอัตโนมัติ)
+            {formatTHB(sub.amount_per_cycle)} ทุก {sub.plan_months} เดือน (ตัดอัตโนมัติเต็มเทอม)
             {sub.next_charge_date && ` · ตัดครั้งถัดไป ${new Date(sub.next_charge_date).toLocaleDateString("th-TH")}`}
+            {sub.next_shipment_date && ` · จัดส่งครั้งถัดไป ${new Date(sub.next_shipment_date).toLocaleDateString("th-TH")}`}
           </p>
+          {sub.auto_renew_cancelled && (
+            <p className="text-xs font-semibold text-amber-600 mt-1">
+              ยกเลิกการต่ออายุแล้ว — จะได้รับสินค้าจนครบเทอมนี้แล้วสิ้นสุด
+            </p>
+          )}
           {error && <p className="text-xs text-rose-500 mt-1">{error}</p>}
         </div>
         {canCancel && (
@@ -152,7 +160,7 @@ function SubscriptionsContent() {
               key={sub.id}
               sub={sub}
               onCancelled={(id) =>
-                setRealSubscriptions((prev) => prev.map((s) => (s.id === id ? { ...s, status: "cancelled" } : s)))
+                setRealSubscriptions((prev) => prev.map((s) => (s.id === id ? { ...s, auto_renew_cancelled: true } : s)))
               }
             />
           ))}

@@ -220,8 +220,10 @@ export default function ProductDetailInteractive({
     setTimeout(() => setAdded(false), 1800);
   }
 
-  // Real recurring billing path — charges the customer's card via 2C2P now
-  // and automatically again every cycle, shipping one unit per cycle.
+  // Real recurring billing path — charges the customer's card the full
+  // term lump sum via 2C2P now, ships one unit/month for the term, then
+  // auto-charges the same term length/amount again forever until
+  // cancelled (see subscribe/checkout route + 2c2p.ts recurringCount:0).
   // Requires a saved default shipping address (reuses the same address
   // book /checkout already prefills from) since this bypasses Shopify's
   // own checkout entirely.
@@ -456,11 +458,13 @@ export default function ProductDetailInteractive({
                 </div>
 
                 <div className="flex items-baseline justify-between mt-3">
-                  <span className="text-xs text-slate-500">ราคา/รอบ</span>
+                  <span className="text-xs text-slate-500">ราคา/เดือน</span>
                   <span className="text-xl font-extrabold text-brand-emerald">{formatTHB(subscribePricePerCycle)}</span>
                 </div>
                 <div className="flex items-baseline justify-between mt-0.5">
-                  <span className="text-[11px] text-slate-400">รวม {subscribePlan.months} รอบ</span>
+                  <span className="text-[11px] text-slate-400">
+                    {subscriptionBillingEnabled ? "ยอดชำระวันนี้" : "รวม"} ({subscribePlan.months} เดือน)
+                  </span>
                   <span className="text-xs text-slate-500">
                     <span className="line-through text-slate-400 mr-1">{formatTHB(subscribeFullTerm)}</span>
                     {formatTHB(subscribeTotalTerm)}
@@ -481,7 +485,7 @@ export default function ProductDetailInteractive({
                 {realSubscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{realSubscribeError}</p>}
                 <p className="mt-2 text-[10px] text-slate-400 text-center">
                   {subscriptionBillingEnabled
-                    ? `ตัดเงิน ${formatTHB(subscribePricePerCycle)} อัตโนมัติทุกเดือน รวม ${subscribePlan.months} รอบ ผ่านบัตรที่ผูกไว้ — ยกเลิกได้ทุกเมื่อที่หน้า "การสมัครของฉัน"`
+                    ? `ชำระ ${formatTHB(subscribeTotalTerm)} วันนี้ ได้รับสินค้าทุกเดือนต่อเนื่อง ${subscribePlan.months} เดือน เมื่อครบเทอมระบบจะต่ออายุอัตโนมัติในราคาเทอมใหม่ (${formatTHB(subscribeTotalTerm)}) ผ่านบัตรที่ผูกไว้ ไปเรื่อยๆ จนกว่าจะยกเลิกที่หน้า "การสมัครของฉัน"`
                     : `เพิ่มสินค้า ${subscribePlan.months} ชิ้นลงตะกร้าพร้อมโค้ดส่วนลด ${subscribePlan.code} ที่ใช้ได้จริงตอนชำระเงิน — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
                 </p>
               </div>

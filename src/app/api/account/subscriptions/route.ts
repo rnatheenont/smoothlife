@@ -20,15 +20,17 @@ export type SubscriptionRow = {
 
 export type RealSubscriptionRow = {
   id: string;
-  status: "pending" | "active" | "past_due" | "cancelled" | "completed";
+  status: "pending" | "active" | "past_due" | "cancelled" | "completed" | "ended";
   product_name: string;
   product_slug: string;
   plan_months: 3 | 6 | 12;
   discount_pct: number;
   amount_per_cycle: number;
   currency_code: string;
-  cycles_total: number;
-  cycles_completed: number;
+  current_term_number: number;
+  cycles_completed_this_term: number;
+  auto_renew_cancelled: boolean;
+  next_shipment_date: string | null;
   next_charge_date: string | null;
 };
 
@@ -42,7 +44,7 @@ export async function GET(req: NextRequest) {
       `subscription_preferences?user_id=eq.${uid}&select=id,shopify_order_id,shopify_order_name,product_slug,product_name,variant_id,plan_months,plan_code,price_per_cycle,purchased_at,next_renewal_at,active,reminded_at&order=next_renewal_at.asc`
     ),
     supabaseRest<RealSubscriptionRow[]>(
-      `real_subscriptions?user_id=eq.${uid}&status=neq.pending&select=id,status,product_name,product_slug,plan_months,discount_pct,amount_per_cycle,currency_code,cycles_total,cycles_completed,next_charge_date&order=created_at.desc`
+      `real_subscriptions?user_id=eq.${uid}&status=neq.pending&select=id,status,product_name,product_slug,plan_months,discount_pct,amount_per_cycle,currency_code,current_term_number,cycles_completed_this_term,auto_renew_cancelled,next_shipment_date,next_charge_date&order=created_at.desc`
     ),
   ]);
   return NextResponse.json({ loggedIn: true, subscriptions, realSubscriptions });

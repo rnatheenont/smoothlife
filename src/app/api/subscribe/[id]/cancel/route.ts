@@ -7,6 +7,7 @@ type SubscriptionRow = {
   id: string;
   user_id: string;
   status: string;
+  auto_renew_cancelled: boolean;
   recurring_unique_id: string | null;
   amount_per_cycle: number;
 };
@@ -28,11 +29,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   const [subscription] = await supabaseRest<SubscriptionRow[]>(
-    `real_subscriptions?id=eq.${params.id}&user_id=eq.${uid}&select=id,user_id,status,recurring_unique_id,amount_per_cycle`
+    `real_subscriptions?id=eq.${params.id}&user_id=eq.${uid}&select=id,user_id,status,auto_renew_cancelled,recurring_unique_id,amount_per_cycle`
   );
   if (!subscription) return NextResponse.json({ ok: false, error: "ไม่พบรายการสมัครนี้" }, { status: 404 });
   if (subscription.status !== "active" && subscription.status !== "past_due") {
     return NextResponse.json({ ok: false, error: "การสมัครนี้ไม่ได้อยู่ในสถานะที่ยกเลิกได้" }, { status: 400 });
+  }
+  if (subscription.auto_renew_cancelled) {
+    return NextResponse.json({ ok: false, error: "ยกเลิกการต่ออายุไปแล้ว" }, { status: 400 });
   }
   if (!subscription.recurring_unique_id) {
     return NextResponse.json(
@@ -54,10 +58,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ ok: false, error: `ยกเลิกไม่สำเร็จ: ${result.respReason || result.respCode}` }, { status: 502 });
   }
 
+  // Policy: paid-for shipments still owed for the current term go out as
+  // normal (no refund for the unshipped months) — only the *next* renewal
+  // charge is stopped. Status stays active/past_due; the fulfillment cron
+  // flips it to "ended" once the term's last shipment goes out.
   await supabaseRest(`real_subscriptions?id=eq.${subscription.id}`, {
     method: "PATCH",
     returning: false,
-    body: JSON.stringify({ status: "cancelled", next_charge_date: null, updated_at: new Date().toISOString() }),
+    body: JSON.stringify({ auto_renew_cancelled: true, next_charge_date: null, updated_at: new Date().toISOString() }),
   });
 
   return NextResponse.json({ ok: true });

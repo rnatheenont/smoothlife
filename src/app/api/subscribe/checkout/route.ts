@@ -41,26 +41,34 @@ export async function POST(req: NextRequest) {
     `auth_identities?user_id=eq.${uid}&provider=eq.email&select=provider_uid`
   );
 
-  const amountPerCycle = Math.round(variant.price * (1 - plan.discountPct / 100));
+  // Lump sum for the *whole term* upfront, not a per-month price — the
+  // discount already applies to this full amount, matching the "pay once,
+  // ship monthly, auto-renew the same term forever" model (see
+  // subscription-feature-plan.md section 1/3). 2C2P has no calendar-month
+  // recurring unit, so the interval is passed as days; recurringCount: 0
+  // means 2C2P keeps auto-charging this same term length/amount forever
+  // until cancelRecurringPlan() is called — no separate "renewal" charge
+  // needs to be created by us.
+  const amountPerTerm = Math.round(variant.price * plan.months * (1 - plan.discountPct / 100));
   const invoicePrefix = `SUB${Date.now().toString(36).toUpperCase()}`.slice(0, 15);
   const invoiceNo = `${invoicePrefix}1`;
   const chargeNextDate = new Date();
-  chargeNextDate.setMonth(chargeNextDate.getMonth() + 1);
+  chargeNextDate.setMonth(chargeNextDate.getMonth() + plan.months);
 
   const [subscription] = await supabaseRest<{ id: string }[]>("real_subscriptions", {
     method: "POST",
     body: JSON.stringify({
       user_id: uid,
       status: "pending",
+      subscription_type: "single_product",
       product_slug: product.slug,
       product_name: product.name,
       variant_id: variant.variantId,
       plan_months: plan.months,
       discount_pct: plan.discountPct,
-      amount_per_cycle: amountPerCycle,
+      amount_per_cycle: amountPerTerm,
       currency_code: "THB",
       invoice_prefix: invoicePrefix,
-      cycles_total: plan.months,
       shipping_address: shippingAddress,
       contact_email: emailIdentity?.provider_uid ?? null,
       contact_phone: user?.phone ?? null,
@@ -74,7 +82,7 @@ export async function POST(req: NextRequest) {
       subscription_id: subscription.id,
       invoice_no: invoiceNo,
       cycle_number: 1,
-      amount: amountPerCycle,
+      amount: amountPerTerm,
     }),
   });
 
@@ -83,9 +91,10 @@ export async function POST(req: NextRequest) {
     const result = await createRecurringPaymentToken({
       invoiceNo,
       invoicePrefix,
-      description: `${product.name} (สมัครรับประจำทุก ${plan.months} เดือน)`.slice(0, 250),
-      amountPerCycle,
-      recurringCount: plan.months,
+      description: `${product.name} (สมัครสมาชิกเทอม ${plan.months} เดือน ต่ออายุอัตโนมัติ)`.slice(0, 250),
+      amountPerCycle: amountPerTerm,
+      recurringCount: 0,
+      recurringIntervalDays: plan.months * 30,
       chargeNextDate,
       frontendReturnUrl: `${origin}/account/subscriptions?justSubscribed=1`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p`,

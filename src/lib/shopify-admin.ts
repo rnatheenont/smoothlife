@@ -661,3 +661,72 @@ export async function createOrderForSubscriptionCycle(opts: {
   if (!data.orderCreate.order) throw new Error("Shopify did not return the created order");
   return data.orderCreate.order;
 }
+
+// Creates a monthly shipment order for month 2+ of an already-paid
+// subscription term. Unlike createOrderForSubscriptionCycle above, this
+// carries NO transaction and a $0 line item — the customer already paid
+// the full term lump sum on month 1's order; recording that same money
+// again on every subsequent month's order would multiply the reported
+// revenue by the term length in Shopify's own sales reports. The order
+// still needs to exist (and be marked paid, since it charges $0) so
+// warehouse/fulfillment sees it in the normal order queue.
+export async function createFulfillmentOnlyOrder(opts: {
+  customerId?: string;
+  email?: string;
+  variantId: string;
+  quantity: number;
+  currencyCode: string;
+  shippingAddress: {
+    firstName?: string;
+    lastName?: string;
+    address1: string;
+    city: string;
+    provinceCode?: string;
+    zip: string;
+    countryCode: string;
+    phone?: string;
+  };
+  note: string;
+}): Promise<{ id: string; name: string }> {
+  const data = await adminGraphql<{
+    orderCreate: { order: { id: string; name: string } | null; userErrors: { field: string[]; message: string }[] };
+  }>(
+    `mutation CreateFulfillmentOnlyOrder($order: OrderCreateOrderInput!, $options: OrderCreateOptionsInput) {
+      orderCreate(order: $order, options: $options) {
+        order { id name }
+        userErrors { field message }
+      }
+    }`,
+    {
+      order: {
+        email: opts.email,
+        customer: opts.customerId ? { toAssociate: { id: opts.customerId } } : undefined,
+        financialStatus: "PAID",
+        note: opts.note,
+        shippingAddress: {
+          firstName: opts.shippingAddress.firstName,
+          lastName: opts.shippingAddress.lastName,
+          address1: opts.shippingAddress.address1,
+          city: opts.shippingAddress.city,
+          provinceCode: opts.shippingAddress.provinceCode,
+          zip: opts.shippingAddress.zip,
+          countryCode: opts.shippingAddress.countryCode,
+          phone: opts.shippingAddress.phone,
+        },
+        lineItems: [
+          {
+            variantId: opts.variantId,
+            quantity: opts.quantity,
+            priceSet: { shopMoney: { amount: "0.00", currencyCode: opts.currencyCode } },
+          },
+        ],
+      },
+      options: { inventoryBehaviour: "DECREMENT_OBEYING_POLICY", sendReceipt: false, sendFulfillmentReceipt: false },
+    }
+  );
+  if (data.orderCreate.userErrors.length) {
+    throw new Error(data.orderCreate.userErrors.map((e) => e.message).join(", "));
+  }
+  if (!data.orderCreate.order) throw new Error("Shopify did not return the created order");
+  return data.orderCreate.order;
+}

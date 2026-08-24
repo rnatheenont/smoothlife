@@ -15,10 +15,14 @@
 // end-to-end against a real sandbox account (none was available this
 // session). Things still flagged for confirming against 2C2P support or
 // real sandbox testing before this goes live with real charges:
-//   1. Exact semantics of `recurringInterval` (days) vs `chargeOnDate`
-//      (ddMM, monthly-billing-day) for a strict "every calendar month"
-//      cadence — implemented here as recurringInterval=30, which drifts
-//      slightly against real calendar months over a 12-cycle term.
+//   1. `recurringCount: 0` is documented as "charge indefinitely until
+//      terminated manually" — exactly what an auto-renewing term
+//      subscription needs, but never exercised against a live account.
+//      `recurringInterval` is always a day-count (no calendar-month unit;
+//      `chargeOnDate` is a same-day-every-month alternative, not usable for
+//      a multi-month term), so a 3/6/12-month term is passed as
+//      recurringIntervalDays ≈ 90/180/365 and will drift slightly against
+//      real calendar months the longer a subscription auto-renews.
 //   2. cancelRecurringPlan()/inquireRecurringPlan() further below — now
 //      implemented (see that section's own header comment for exactly
 //      what's confirmed vs. still assumed), but still never exercised
@@ -76,7 +80,8 @@ export type RecurringPaymentTokenRequest = {
   invoicePrefix: string; // <=15 chars — 2C2P appends 5 digits per subsequent recurring cycle's own invoiceNo
   description: string;
   amountPerCycle: number; // THB, applies to every cycle including the first
-  recurringCount: number; // total cycles in the term (3, 6, or 12)
+  recurringCount: number; // 0 = recur indefinitely until cancelRecurringPlan() is called (confirmed against 2C2P's docs); a positive N stops after N charges
+  recurringIntervalDays: number; // days between charges — 2C2P has no calendar-month unit, so a 3/6/12-month term is passed as ~90/180/365 days and will drift slightly against real calendar months over time
   chargeNextDate: Date; // when the *second* charge should fire (first charge is now)
   frontendReturnUrl: string;
   backendReturnUrl: string;
@@ -104,7 +109,7 @@ export async function createRecurringPaymentToken(req: RecurringPaymentTokenRequ
     recurring: true,
     invoicePrefix: req.invoicePrefix,
     recurringAmount: req.amountPerCycle,
-    recurringInterval: 30, // see file header note — approximation, not a calendar month
+    recurringInterval: req.recurringIntervalDays,
     recurringCount: req.recurringCount,
     chargeNextDate: ddMMyyyy(req.chargeNextDate),
     allowAccumulate: false,
