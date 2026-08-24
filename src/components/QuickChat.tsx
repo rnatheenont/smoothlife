@@ -195,6 +195,8 @@ export default function QuickChat() {
   // show up, whichever turn they land on.
   const [askOptions, setAskOptions] = useState<string[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [restoringHistory, setRestoringHistory] = useState(false);
+  const scrolledOnceRef = useRef(false);
   const [escalating, setEscalating] = useState(false);
   const [escalateMsg, setEscalateMsg] = useState<string | null>(null);
   const [badgeIndex, setBadgeIndex] = useState(0);
@@ -330,6 +332,7 @@ export default function QuickChat() {
   useEffect(() => {
     if (!open || historyLoaded) return;
     setHistoryLoaded(true);
+    setRestoringHistory(true);
     const anonId = user ? undefined : getAnonId();
     const qs = anonId ? `?anonId=${encodeURIComponent(anonId)}` : "";
     fetch(`/api/chat${qs}`)
@@ -339,7 +342,8 @@ export default function QuickChat() {
           setMessages(data.messages);
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error("[QuickChat] history restore failed", err))
+      .finally(() => setRestoringHistory(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -391,9 +395,22 @@ export default function QuickChat() {
           "มีอาหารเสริมช่วยเรื่องการนอนไหม",
         ];
 
+  // The first scroll after opening (which lands on a just-restored history)
+  // should jump straight to the latest message — animating a smooth scroll
+  // through the whole conversation on every open reads as slow and, worse,
+  // makes it look like the chat starts empty before "catching up". Only
+  // messages that arrive while the panel is already open (a new reply
+  // streaming in) get the smooth animation.
   useEffect(() => {
-    scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading, open]);
+    if (!open) {
+      scrolledOnceRef.current = false;
+      return;
+    }
+    if (restoringHistory) return;
+    const behavior = scrolledOnceRef.current ? "smooth" : "auto";
+    scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior });
+    scrolledOnceRef.current = true;
+  }, [messages, loading, open, restoringHistory]);
 
   async function handleImagePick(file: File) {
     setImageError(null);
@@ -737,44 +754,50 @@ export default function QuickChat() {
           )}
 
           <div ref={scroller} className="flex-1 min-h-[200px] overflow-y-auto overscroll-contain bg-surface-soft px-3.5 py-3.5 flex flex-col gap-3">
-            {messages.length === 0 && (
-              <div className="py-2">
-                <p className="text-[13px] font-semibold text-brand-ink mb-1 text-center">
-                  {t(
-                    "สวัสดีค่ะ ฉันน้อง Smoothie ผู้ช่วย AI ของ Smoothlife.com",
-                    "Hi, I'm Smoothie — Smoothlife.com's AI assistant"
-                  )}
-                </p>
-                <p className="text-[13px] text-slate-500 mb-3 text-center">
-                  {hasProfile
-                    ? t(
-                        "ฉันอ่านคำตอบจากแบบประเมินของคุณแล้ว ถามอะไรก็ได้ค่ะ",
-                        "I've read your quiz answers — ask me anything."
-                      )
-                    : t("ถามอะไรก็ได้ หรือเริ่มจากคำถามเหล่านี้", "Ask anything, or start with one of these")}
-                </p>
-                <Link
-                  href="/skin-coach"
-                  className="mb-2 flex items-center gap-2.5 rounded-xl bg-brand-gradient px-3.5 py-2.5 text-left text-[13px] font-semibold text-white shadow-cardHover"
-                >
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/20">
-                    <Camera size={13} />
-                  </span>
-                  {t("วิเคราะห์ผิวหน้าด้วยรูปถ่าย", "Analyze my skin from a photo")}
-                </Link>
-                <div className="flex flex-col gap-2">
-                  {suggestions.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => send(s)}
-                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left text-[13px] text-slate-600 hover:border-brand-teal hover:text-brand-emerald transition-colors"
-                    >
-                      <MessageCircleQuestion size={14} className="shrink-0 text-brand-emerald/70" />
-                      {s}
-                    </button>
-                  ))}
-                </div>
+            {restoringHistory ? (
+              <div className="flex flex-1 items-center justify-center py-10 text-slate-400">
+                <Loader2 size={18} className="animate-spin" />
               </div>
+            ) : (
+              messages.length === 0 && (
+                <div className="py-2">
+                  <p className="text-[13px] font-semibold text-brand-ink mb-1 text-center">
+                    {t(
+                      "สวัสดีค่ะ ฉันน้อง Smoothie ผู้ช่วย AI ของ Smoothlife.com",
+                      "Hi, I'm Smoothie — Smoothlife.com's AI assistant"
+                    )}
+                  </p>
+                  <p className="text-[13px] text-slate-500 mb-3 text-center">
+                    {hasProfile
+                      ? t(
+                          "ฉันอ่านคำตอบจากแบบประเมินของคุณแล้ว ถามอะไรก็ได้ค่ะ",
+                          "I've read your quiz answers — ask me anything."
+                        )
+                      : t("ถามอะไรก็ได้ หรือเริ่มจากคำถามเหล่านี้", "Ask anything, or start with one of these")}
+                  </p>
+                  <Link
+                    href="/skin-coach"
+                    className="mb-2 flex items-center gap-2.5 rounded-xl bg-brand-gradient px-3.5 py-2.5 text-left text-[13px] font-semibold text-white shadow-cardHover"
+                  >
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/20">
+                      <Camera size={13} />
+                    </span>
+                    {t("วิเคราะห์ผิวหน้าด้วยรูปถ่าย", "Analyze my skin from a photo")}
+                  </Link>
+                  <div className="flex flex-col gap-2">
+                    {suggestions.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => send(s)}
+                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left text-[13px] text-slate-600 hover:border-brand-teal hover:text-brand-emerald transition-colors"
+                      >
+                        <MessageCircleQuestion size={14} className="shrink-0 text-brand-emerald/70" />
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
             )}
 
             {messages.map((m, i) => {
