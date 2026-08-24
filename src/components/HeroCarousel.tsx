@@ -13,15 +13,15 @@ export default function HeroCarousel({ banners: heroBanners }: { banners: HeroBa
   const [paused, setPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
-  if (heroBanners.length === 0) return null;
-
   useEffect(() => {
-    if (paused) return;
+    if (paused || heroBanners.length === 0) return;
     const timer = setInterval(() => {
       setIndex((i) => (i + 1) % heroBanners.length);
     }, AUTO_ROTATE_MS);
     return () => clearInterval(timer);
-  }, [paused]);
+  }, [paused, heroBanners.length]);
+
+  if (heroBanners.length === 0) return null;
 
   function showAt(i: number) {
     setIndex((i + heroBanners.length) % heroBanners.length);
