@@ -406,11 +406,18 @@ export default function QuickChat() {
       scrolledOnceRef.current = false;
       return;
     }
-    if (restoringHistory) return;
+    // `historyLoaded` only flips to true (together with `restoringHistory`)
+    // inside the restore effect below — on the very first render right
+    // after `open` becomes true, both are still at their pre-fetch values,
+    // so `restoringHistory` alone doesn't catch this pass. Without the
+    // `!historyLoaded` check here too, this effect fires once on the
+    // still-empty container, "using up" the instant jump — leaving the
+    // real restored history to animate in with a smooth scroll instead.
+    if (!historyLoaded || restoringHistory) return;
     const behavior = scrolledOnceRef.current ? "smooth" : "auto";
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior });
     scrolledOnceRef.current = true;
-  }, [messages, loading, open, restoringHistory]);
+  }, [messages, loading, open, restoringHistory, historyLoaded]);
 
   async function handleImagePick(file: File) {
     setImageError(null);

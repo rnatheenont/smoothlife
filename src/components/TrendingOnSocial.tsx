@@ -141,11 +141,13 @@ function ClipCard({
   );
 }
 
-export default function TrendingOnSocial({ clips }: { clips: SocialClip[] }) {
+export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: SocialClip[]; initialIndex?: number }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [progress, setProgress] = useState(0);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(() =>
+    clips.length && initialIndex >= 0 ? initialIndex % clips.length : 0
+  );
 
   function updateProgress() {
     const el = scrollerRef.current;
@@ -192,6 +194,25 @@ export default function TrendingOnSocial({ clips }: { clips: SocialClip[] }) {
     },
     [clips.length]
   );
+
+  // Land directly on the initial card (no smooth-scroll animation playing
+  // out as the page loads) — same centering math as goTo, just instant.
+  useEffect(() => {
+    suppressObserverRef.current = true;
+    const scroller = scrollerRef.current;
+    const card = cardRefs.current[activeIndex];
+    if (scroller && card) {
+      const scrollerRect = scroller.getBoundingClientRect();
+      const cardRect = card.getBoundingClientRect();
+      const delta = cardRect.left + cardRect.width / 2 - (scrollerRect.left + scrollerRect.width / 2);
+      scroller.scrollTo({ left: scroller.scrollLeft + delta, behavior: "auto" });
+    }
+    clearTimeout(suppressTimerRef.current);
+    suppressTimerRef.current = setTimeout(() => {
+      suppressObserverRef.current = false;
+    }, 700);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Also detect manual drag/swipe/scroll (not just programmatic goTo calls)
   // so whichever card the visitor scrolls to becomes the one that plays.

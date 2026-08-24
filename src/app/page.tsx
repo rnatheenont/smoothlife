@@ -207,7 +207,7 @@ export default function HomePage() {
 
       {/* Trending on social — real product-video clips (Firework CDN),
           each linking through to the real product it shows. */}
-      <TrendingOnSocial clips={socialClips} />
+      <TrendingOnSocial clips={socialClips} initialIndex={socialClipSlugs.indexOf("dentiste-repaire-rex3-70g")} />
 
       {/* Products — one tabbed section instead of four near-identical
           stacked carousels (Best Sellers / On Sale / New / Bundles), so
