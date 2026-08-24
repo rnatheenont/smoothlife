@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { products } from "@/data/products";
-import { subscriptionPlans } from "@/data/subscriptions";
+import { subscriptionPlans, subscriptionSets, subscriptionSetProducts } from "@/data/subscriptions";
 import { twoC2PConfigured, createRecurringPaymentToken } from "@/lib/2c2p";
 
 export async function POST(req: NextRequest) {
@@ -17,13 +17,9 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ ok: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
 
-  const { productSlug, variantId, months, shippingAddress } = body;
+  const { productSlug, variantId, setSlug, months, shippingAddress } = body;
   const plan = subscriptionPlans.find((p) => p.months === months);
   if (!plan) return NextResponse.json({ ok: false, error: "ระยะเวลาสมัครไม่ถูกต้อง" }, { status: 400 });
-
-  const product = products.find((p) => p.slug === productSlug);
-  const variant = product?.variants.find((v) => v.variantId === variantId);
-  if (!product || !variant) return NextResponse.json({ ok: false, error: "ไม่พบสินค้านี้" }, { status: 404 });
 
   if (
     !shippingAddress?.address1 ||
@@ -32,6 +28,32 @@ export async function POST(req: NextRequest) {
     !shippingAddress?.countryCode
   ) {
     return NextResponse.json({ ok: false, error: "กรุณากรอกที่อยู่จัดส่งให้ครบ" }, { status: 400 });
+  }
+
+  // Either a single product (productSlug/variantId) or a curated set
+  // (setSlug, every product in it) — both end up as one lump-sum 2C2P
+  // charge covering the whole term, just a different subscription_type/
+  // shape on the real_subscriptions row (see migration
+  // real_subscriptions_support_sets).
+  let subscriptionType: "single_product" | "set";
+  let displayName: string;
+  let items: { slug: string; variantId: string; price: number }[];
+
+  if (setSlug) {
+    const set = subscriptionSets.find((s) => s.slug === setSlug);
+    if (!set) return NextResponse.json({ ok: false, error: "ไม่พบชุดสินค้านี้" }, { status: 404 });
+    const setProducts = subscriptionSetProducts(set);
+    if (setProducts.length === 0) return NextResponse.json({ ok: false, error: "ชุดสินค้านี้ไม่มีสินค้าพร้อมขาย" }, { status: 400 });
+    subscriptionType = "set";
+    displayName = set.name;
+    items = setProducts.map((p) => ({ slug: p.slug, variantId: p.variantId, price: p.price }));
+  } else {
+    const product = products.find((p) => p.slug === productSlug);
+    const variant = product?.variants.find((v) => v.variantId === variantId);
+    if (!product || !variant) return NextResponse.json({ ok: false, error: "ไม่พบสินค้านี้" }, { status: 404 });
+    subscriptionType = "single_product";
+    displayName = product.name;
+    items = [{ slug: product.slug, variantId: variant.variantId, price: variant.price }];
   }
 
   const [user] = await supabaseRest<{ id: string; display_name: string | null; phone: string | null }[]>(
@@ -49,7 +71,8 @@ export async function POST(req: NextRequest) {
   // means 2C2P keeps auto-charging this same term length/amount forever
   // until cancelRecurringPlan() is called — no separate "renewal" charge
   // needs to be created by us.
-  const amountPerTerm = Math.round(variant.price * plan.months * (1 - plan.discountPct / 100));
+  const totalPerCycle = items.reduce((sum, it) => sum + it.price, 0);
+  const amountPerTerm = Math.round(totalPerCycle * plan.months * (1 - plan.discountPct / 100));
   const invoicePrefix = `SUB${Date.now().toString(36).toUpperCase()}`.slice(0, 15);
   const invoiceNo = `${invoicePrefix}1`;
   const chargeNextDate = new Date();
@@ -60,10 +83,12 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       user_id: uid,
       status: "pending",
-      subscription_type: "single_product",
-      product_slug: product.slug,
-      product_name: product.name,
-      variant_id: variant.variantId,
+      subscription_type: subscriptionType,
+      product_slug: subscriptionType === "single_product" ? items[0].slug : null,
+      variant_id: subscriptionType === "single_product" ? items[0].variantId : null,
+      set_slug: subscriptionType === "set" ? setSlug : null,
+      variant_ids: subscriptionType === "set" ? items.map((it) => it.variantId) : null,
+      product_name: displayName,
       plan_months: plan.months,
       discount_pct: plan.discountPct,
       amount_per_cycle: amountPerTerm,
@@ -91,7 +116,7 @@ export async function POST(req: NextRequest) {
     const result = await createRecurringPaymentToken({
       invoiceNo,
       invoicePrefix,
-      description: `${product.name} (สมัครสมาชิกเทอม ${plan.months} เดือน ต่ออายุอัตโนมัติ)`.slice(0, 250),
+      description: `${displayName} (สมัครสมาชิกเทอม ${plan.months} เดือน ต่ออายุอัตโนมัติ)`.slice(0, 250),
       amountPerCycle: amountPerTerm,
       recurringCount: 0,
       recurringIntervalDays: plan.months * 30,

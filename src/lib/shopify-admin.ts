@@ -7,6 +7,11 @@ const SHOP = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
 const CLIENT_ID = process.env.SHOPIFY_ADMIN_CLIENT_ID;
 const CLIENT_SECRET = process.env.SHOPIFY_ADMIN_CLIENT_SECRET;
 const API_VERSION = process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-10";
+// The live smoothlife.com storefront itself (Shopify's own theme), not this
+// Next.js app's own origin — used to build fallback links to Shopify pages/
+// products/collections this app doesn't have its own route for. Same
+// constant convention as src/lib/json-ld.ts.
+const STOREFRONT_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || "https://www.smoothlife.com";
 
 export function shopifyAdminConfigured() {
   return Boolean(SHOP && CLIENT_ID && CLIENT_SECRET);
@@ -110,6 +115,111 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
     return node || null;
   } catch (err) {
     console.error("[shopify-admin] findShopifyCustomerByPhone failed", err);
+    return null;
+  }
+}
+
+// Turns a theme slide's "shopify://..." link reference into a real URL.
+// Collections/products/pages all live on the real Shopify-hosted storefront
+// (smoothlife.com), not this app, so they resolve there rather than to a
+// local route that doesn't exist.
+function resolveBannerLink(ref: unknown): string {
+  if (typeof ref !== "string" || !ref) return "/shop";
+  const collection = ref.match(/^shopify:\/\/collections\/(.+)$/);
+  if (collection) return `${STOREFRONT_ORIGIN}/collections/${collection[1]}`;
+  const product = ref.match(/^shopify:\/\/products\/(.+)$/);
+  if (product) return `${STOREFRONT_ORIGIN}/products/${product[1]}`;
+  const page = ref.match(/^shopify:\/\/pages\/(.+)$/);
+  if (page) return `${STOREFRONT_ORIGIN}/pages/${page[1]}`;
+  return "/shop";
+}
+
+type ThemeSectionBlock = { type: string; disabled?: boolean; settings?: Record<string, unknown> };
+type ThemeSectionsFile = {
+  sections: Record<string, { type: string; disabled?: boolean; blocks?: Record<string, ThemeSectionBlock> }>;
+};
+
+// The live banner slideshow is a theme "app block" edited via the Shopify
+// theme customizer, not a fixed section — find it by shape (any enabled
+// block whose settings include a slide_1_image), not by section/block id,
+// since the id changes whenever someone edits the slideshow in Shopify.
+function findSlideshowSettings(file: ThemeSectionsFile): Record<string, unknown> | null {
+  for (const section of Object.values(file.sections)) {
+    if (section.disabled) continue;
+    for (const block of Object.values(section.blocks ?? {})) {
+      if (block.disabled) continue;
+      if (typeof block.settings?.slide_1_image === "string") return block.settings;
+    }
+  }
+  return null;
+}
+
+export type LiveHeroBanner = { slug: string; image: string; href: string };
+
+// Pulls the homepage hero banner straight from the *published* Shopify
+// theme (the same slideshow block the team edits on smoothlife.com), so
+// this app's hero mirrors it without a code change/redeploy here. Needs the
+// custom app behind SHOPIFY_ADMIN_CLIENT_ID to have the read_themes and
+// read_files Admin scopes; returns null (caller falls back to the static
+// heroBanners list) on any missing scope, structural change, or error.
+export async function getLiveHeroBanners(): Promise<LiveHeroBanner[] | null> {
+  if (!shopifyAdminConfigured()) return null;
+  try {
+    const themesData = await adminGraphql<{ themes: { nodes: { id: string; role: string }[] } }>(
+      `query { themes(first: 20) { nodes { id role } } }`
+    );
+    const mainTheme = themesData.themes.nodes.find((t) => t.role === "MAIN");
+    if (!mainTheme) return null;
+
+    const fileData = await adminGraphql<{
+      theme: { files: { nodes: { body: { content?: string } }[] } } | null;
+    }>(
+      `query ThemeIndexFile($id: ID!) {
+        theme(id: $id) {
+          files(filenames: ["templates/index.json"]) {
+            nodes { body { ... on OnlineStoreThemeFileBodyText { content } } }
+          }
+        }
+      }`,
+      { id: mainTheme.id }
+    );
+    const raw = fileData.theme?.files.nodes[0]?.body.content;
+    if (!raw) return null;
+    // Strip Shopify's leading "auto-generated, do not edit" block comment —
+    // the file isn't valid JSON until that's removed.
+    const parsed: ThemeSectionsFile = JSON.parse(raw.replace(/^\s*\/\*[\s\S]*?\*\//, ""));
+    const settings = findSlideshowSettings(parsed);
+    if (!settings) return null;
+
+    const slides: { filename: string; href: string }[] = [];
+    for (let i = 1; i <= 10; i++) {
+      if (settings[`slide_${i}_enabled`] === false) continue;
+      const imageRef = settings[`slide_${i}_image`];
+      if (typeof imageRef !== "string") continue;
+      const match = imageRef.match(/^shopify:\/\/shop_images\/(.+)$/);
+      if (!match) continue;
+      slides.push({ filename: match[1], href: resolveBannerLink(settings[`slide_${i}_link`]) });
+    }
+    if (slides.length === 0) return null;
+
+    const aliasQuery = slides
+      .map(
+        (s, i) =>
+          `f${i}: files(first: 1, query: ${JSON.stringify(`filename:${s.filename}`)}) { nodes { ... on MediaImage { image { url } } } }`
+      )
+      .join("\n");
+    const filesData = await adminGraphql<Record<string, { nodes: { image?: { url: string } }[] }>>(
+      `query BannerImages { ${aliasQuery} }`
+    );
+
+    const banners: LiveHeroBanner[] = [];
+    slides.forEach((slide, i) => {
+      const url = filesData[`f${i}`]?.nodes[0]?.image?.url;
+      if (url) banners.push({ slug: `live-${i}`, image: url, href: slide.href });
+    });
+    return banners.length > 0 ? banners : null;
+  } catch (err) {
+    console.error("[shopify-admin] getLiveHeroBanners failed", err);
     return null;
   }
 }
@@ -593,9 +703,12 @@ export async function listGiftCards(limit = 20): Promise<ShopifyGiftCardSummary[
 export async function createOrderForSubscriptionCycle(opts: {
   customerId?: string;
   email?: string;
-  variantId: string;
-  quantity: number;
-  amount: number;
+  // One entry for a single-product subscription, several for a "set"
+  // subscription (one lump-sum charge covers every item in the set) —
+  // `price` is that item's own discounted per-unit price, so the SALE
+  // transaction below (their sum) always reconciles with the line items
+  // instead of arbitrarily assigning the whole charge to one SKU.
+  lineItems: { variantId: string; quantity: number; price: number }[];
   currencyCode: string;
   shippingAddress: {
     firstName?: string;
@@ -610,6 +723,7 @@ export async function createOrderForSubscriptionCycle(opts: {
   note: string;
   tranRef: string;
 }): Promise<{ id: string; name: string }> {
+  const totalAmount = opts.lineItems.reduce((sum, li) => sum + li.price * li.quantity, 0).toFixed(2);
   const data = await adminGraphql<{
     orderCreate: { order: { id: string; name: string } | null; userErrors: { field: string[]; message: string }[] };
   }>(
@@ -635,19 +749,17 @@ export async function createOrderForSubscriptionCycle(opts: {
           countryCode: opts.shippingAddress.countryCode,
           phone: opts.shippingAddress.phone,
         },
-        lineItems: [
-          {
-            variantId: opts.variantId,
-            quantity: opts.quantity,
-            priceSet: { shopMoney: { amount: opts.amount, currencyCode: opts.currencyCode } },
-          },
-        ],
+        lineItems: opts.lineItems.map((li) => ({
+          variantId: li.variantId,
+          quantity: li.quantity,
+          priceSet: { shopMoney: { amount: li.price.toFixed(2), currencyCode: opts.currencyCode } },
+        })),
         transactions: [
           {
             kind: "SALE",
             status: "SUCCESS",
             gateway: "2C2P",
-            amountSet: { shopMoney: { amount: opts.amount, currencyCode: opts.currencyCode } },
+            amountSet: { shopMoney: { amount: totalAmount, currencyCode: opts.currencyCode } },
             authorizationCode: opts.tranRef,
           },
         ],
@@ -673,8 +785,7 @@ export async function createOrderForSubscriptionCycle(opts: {
 export async function createFulfillmentOnlyOrder(opts: {
   customerId?: string;
   email?: string;
-  variantId: string;
-  quantity: number;
+  lineItems: { variantId: string; quantity: number }[];
   currencyCode: string;
   shippingAddress: {
     firstName?: string;
@@ -713,13 +824,11 @@ export async function createFulfillmentOnlyOrder(opts: {
           countryCode: opts.shippingAddress.countryCode,
           phone: opts.shippingAddress.phone,
         },
-        lineItems: [
-          {
-            variantId: opts.variantId,
-            quantity: opts.quantity,
-            priceSet: { shopMoney: { amount: "0.00", currencyCode: opts.currencyCode } },
-          },
-        ],
+        lineItems: opts.lineItems.map((li) => ({
+          variantId: li.variantId,
+          quantity: li.quantity,
+          priceSet: { shopMoney: { amount: "0.00", currencyCode: opts.currencyCode } },
+        })),
       },
       options: { inventoryBehaviour: "DECREMENT_OBEYING_POLICY", sendReceipt: false, sendFulfillmentReceipt: false },
     }

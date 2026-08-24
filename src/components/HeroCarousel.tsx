@@ -4,14 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { heroBanners } from "@/data/heroBanners";
+import { HeroBanner } from "@/data/heroBanners";
 
 const AUTO_ROTATE_MS = 8000;
 
-export default function HeroCarousel() {
+export default function HeroCarousel({ banners: heroBanners }: { banners: HeroBanner[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
+
+  if (heroBanners.length === 0) return null;
 
   useEffect(() => {
     if (paused) return;
@@ -76,13 +78,21 @@ export default function HeroCarousel() {
             sizes="(max-width: 768px) 100vw, 50vw"
             className="object-contain"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white">
-            <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur px-2.5 py-1 rounded-full">
-              {banner.title}
-            </span>
-            <p className="text-base md:text-xl font-bold leading-snug mt-2 drop-shadow-sm">{banner.subtitle}</p>
-          </div>
+          {(banner.title || banner.subtitle) && (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white">
+                {banner.title && (
+                  <span className="inline-block text-[10px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur px-2.5 py-1 rounded-full">
+                    {banner.title}
+                  </span>
+                )}
+                {banner.subtitle && (
+                  <p className="text-base md:text-xl font-bold leading-snug mt-2 drop-shadow-sm">{banner.subtitle}</p>
+                )}
+              </div>
+            </>
+          )}
         </Link>
       ))}
 

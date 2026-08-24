@@ -72,7 +72,10 @@ function RealSubscriptionCard({
               {sub.cycles_completed_this_term}/{sub.plan_months} เดือน
             </span>
           </div>
-          <Link href={`/product/${sub.product_slug}`} className="font-bold text-brand-ink hover:text-brand-emerald">
+          <Link
+            href={sub.subscription_type === "set" ? `/subscription/${sub.set_slug}` : `/product/${sub.product_slug}`}
+            className="font-bold text-brand-ink hover:text-brand-emerald"
+          >
             {sub.product_name}
           </Link>
           <p className="text-xs text-slate-500 mt-1">

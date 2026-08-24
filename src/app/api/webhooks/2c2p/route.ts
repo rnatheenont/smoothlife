@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { twoC2PConfigured, verifyPaymentCallback } from "@/lib/2c2p";
 import { createOrderForSubscriptionCycle } from "@/lib/shopify-admin";
+import { products } from "@/data/products";
 
 type ChargeRow = { id: string; subscription_id: string; cycle_number: number; amount: number };
 type SubscriptionRow = {
   id: string;
   user_id: string;
   status: string;
+  subscription_type: "single_product" | "set";
   product_name: string;
-  variant_id: string;
+  variant_id: string | null;
+  variant_ids: string[] | null;
   plan_months: number;
   currency_code: string;
   invoice_prefix: string;
@@ -25,6 +28,26 @@ type SubscriptionRow = {
     phone?: string;
   };
 };
+
+// Splits a term's total charge across a set's items in proportion to each
+// item's own catalog price, rounding the last one to absorb the remainder
+// so the parts always sum to exactly `totalAmount` — Shopify rejects an
+// order whose line items don't reconcile with its recorded transaction.
+function splitAmountByRealPrice(variantIds: string[], totalAmount: number): { variantId: string; price: number }[] {
+  const catalogPrices = variantIds.map((vid) => {
+    const product = products.find((p) => p.variants.some((v) => v.variantId === vid));
+    const variant = product?.variants.find((v) => v.variantId === vid);
+    return variant?.price ?? 0;
+  });
+  const priceSum = catalogPrices.reduce((s, p) => s + p, 0) || 1;
+  let allocated = 0;
+  return variantIds.map((variantId, i) => {
+    const isLast = i === variantIds.length - 1;
+    const price = isLast ? totalAmount - allocated : Math.round((catalogPrices[i] / priceSum) * totalAmount);
+    allocated += price;
+    return { variantId, price };
+  });
+}
 
 // backendReturnUrl for 2C2P — fires once for the first (browser-initiated)
 // charge and again automatically for every subsequent term renewal, since
@@ -91,7 +114,7 @@ export async function POST(req: NextRequest) {
   });
 
   const [subscription] = await supabaseRest<SubscriptionRow[]>(
-    `real_subscriptions?id=eq.${charge.subscription_id}&select=id,user_id,status,product_name,variant_id,plan_months,currency_code,invoice_prefix,contact_email,shipping_address`
+    `real_subscriptions?id=eq.${charge.subscription_id}&select=id,user_id,status,subscription_type,product_name,variant_id,variant_ids,plan_months,currency_code,invoice_prefix,contact_email,shipping_address`
   );
   if (!subscription) return NextResponse.json({ ok: false, error: "subscription not found" }, { status: 200 });
 
@@ -141,11 +164,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const addr = subscription.shipping_address;
+    const lineItems =
+      subscription.subscription_type === "set" && subscription.variant_ids
+        ? splitAmountByRealPrice(subscription.variant_ids, charge.amount).map((li) => ({ ...li, quantity: 1 }))
+        : [{ variantId: subscription.variant_id!, quantity: 1, price: charge.amount }];
     const order = await createOrderForSubscriptionCycle({
       email: subscription.contact_email ?? undefined,
-      variantId: subscription.variant_id,
-      quantity: 1,
-      amount: charge.amount,
+      lineItems,
       currencyCode: subscription.currency_code,
       shippingAddress: {
         firstName: addr.firstName,

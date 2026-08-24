@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Repeat, Truck, ShieldCheck, CalendarClock, ChevronRight } from "lucide-react";
 import { subscriptionPlans, subscriptionProducts, subscriptionSets, subscriptionSetProducts } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
+import { twoC2PConfigured } from "@/lib/2c2p";
 import SubscriptionPicker from "@/components/SubscriptionPicker";
 
 export const metadata = { title: "Subscription สมัครสมาชิกรายรอบ | Smoothlife.com" };
@@ -90,7 +91,7 @@ export default function SubscriptionPage() {
       <section className="container-page py-10 md:py-14 border-t border-slate-100">
         <h2 className="text-xl md:text-2xl font-extrabold text-brand-ink mb-1">หรือเลือกสินค้าเอง</h2>
         <p className="text-sm text-slate-500 mb-6">อยากได้แค่สินค้าชิ้นเดียวแบบสมัครรายรอบ เลือกได้จากที่นี่</p>
-        <SubscriptionPicker plans={subscriptionPlans} products={subscriptionProducts} />
+        <SubscriptionPicker plans={subscriptionPlans} products={subscriptionProducts} subscriptionBillingEnabled={twoC2PConfigured()} />
       </section>
     </div>
   );

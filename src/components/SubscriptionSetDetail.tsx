@@ -3,30 +3,32 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, ShoppingBag, Sparkles, Info } from "lucide-react";
 import clsx from "clsx";
 import { Product } from "@/data/types";
 import { SubscriptionSet, SubscriptionPlan } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
 
 export default function SubscriptionSetDetail({
   set,
   products,
   plans,
+  subscriptionBillingEnabled = false,
 }: {
   set: SubscriptionSet;
   products: Product[];
   plans: SubscriptionPlan[];
+  subscriptionBillingEnabled?: boolean;
 }) {
   const popular = plans.find((p) => p.popular) ?? plans[0];
   const [selectedMonths, setSelectedMonths] = useState(popular.months);
   const plan = plans.find((p) => p.months === selectedMonths) ?? popular;
-  // Auto-renew is UI-only for now — there's no recurring-billing backend
-  // yet, so leaving it off by default and saying so honestly beats
-  // implying a real auto-charge that can't happen.
-  const [autoRenew, setAutoRenew] = useState(false);
   const { addItem, setCouponCode } = useCart();
+  const { user } = useAuth();
+  const router = useRouter();
   const [added, setAdded] = useState(false);
 
   const totalPerCycle = products.reduce((sum, p) => sum + p.price, 0);
@@ -35,11 +37,67 @@ export default function SubscriptionSetDetail({
   const totalTerm = pricePerCycle * plan.months;
   const savedTerm = fullPriceTerm - totalTerm;
 
+  // Interim fallback (no 2C2P credentials yet): stage every item in the set
+  // in the cart with a real Shopify discount code — same mechanism the
+  // single-product page falls back to.
   function handleSubscribe() {
     for (const p of products) addItem(p.slug, plan.months);
     setCouponCode(plan.code);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+  }
+
+  const [realSubscribeSubmitting, setRealSubscribeSubmitting] = useState(false);
+  const [realSubscribeError, setRealSubscribeError] = useState("");
+
+  // Real recurring billing path — one lump-sum 2C2P charge for the whole
+  // set's term, same auto-renew-forever model as a single product (see
+  // ProductDetailInteractive.handleRealSubscribe). Requires a saved
+  // default shipping address, same as the single-product flow.
+  async function handleRealSubscribe() {
+    if (!user) {
+      router.push(`/account/login?returnTo=${encodeURIComponent(`/subscription/${set.slug}`)}`);
+      return;
+    }
+    setRealSubscribeError("");
+    setRealSubscribeSubmitting(true);
+    try {
+      const res = await fetch("/api/account/addresses");
+      const data = await res.json();
+      const defaultAddress = data.addresses?.[0];
+      if (!defaultAddress || defaultAddress.country !== "TH") {
+        setRealSubscribeError("กรุณาเพิ่มที่อยู่จัดส่งเริ่มต้นก่อนสมัคร");
+        return;
+      }
+      const checkoutRes = await fetch("/api/subscribe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          setSlug: set.slug,
+          months: plan.months,
+          shippingAddress: {
+            address1: defaultAddress.address_line,
+            city: defaultAddress.district,
+            state: defaultAddress.province,
+            postalCode: defaultAddress.postal_code,
+            countryCode: defaultAddress.country,
+            firstName: defaultAddress.recipient_name?.split(/\s+/)[0],
+            lastName: defaultAddress.recipient_name?.split(/\s+/).slice(1).join(" "),
+            phone: defaultAddress.phone,
+          },
+        }),
+      });
+      const checkoutData = await checkoutRes.json();
+      if (!checkoutData.ok) {
+        setRealSubscribeError(checkoutData.error || "เริ่มการชำระเงินไม่สำเร็จ");
+        return;
+      }
+      window.location.href = checkoutData.webPaymentUrl;
+    } catch {
+      setRealSubscribeError("เริ่มการชำระเงินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setRealSubscribeSubmitting(false);
+    }
   }
 
   return (
@@ -63,7 +121,7 @@ export default function SubscriptionSetDetail({
         <div className="mt-6 rounded-xl2 bg-surface-soft p-4">
           <p className="text-sm font-bold text-brand-ink mb-2">มูลค่ารวมถ้าซื้อแยก</p>
           <div className="flex items-baseline justify-between">
-            <span className="text-xs text-slate-500">ราคาปกติต่อรอบ</span>
+            <span className="text-xs text-slate-500">ราคาปกติ/เดือน</span>
             <span className="text-sm text-slate-500 line-through">{formatTHB(totalPerCycle)}</span>
           </div>
         </div>
@@ -101,11 +159,13 @@ export default function SubscriptionSetDetail({
 
           <div className="mt-5 rounded-xl2 bg-surface-soft p-4">
             <div className="flex items-baseline justify-between">
-              <span className="text-xs text-slate-500">ราคา/รอบ</span>
+              <span className="text-xs text-slate-500">ราคา/เดือน</span>
               <span className="text-2xl font-extrabold text-brand-emerald">{formatTHB(pricePerCycle)}</span>
             </div>
             <div className="flex items-baseline justify-between mt-1">
-              <span className="text-[11px] text-slate-400">รวมทั้งเทอม ({plan.months} รอบ)</span>
+              <span className="text-[11px] text-slate-400">
+                {subscriptionBillingEnabled ? "ยอดชำระวันนี้" : "รวม"} ({plan.months} เดือน)
+              </span>
               <span className="text-xs text-slate-500">
                 <span className="line-through text-slate-400 mr-1">{formatTHB(fullPriceTerm)}</span>
                 {formatTHB(totalTerm)}
@@ -115,44 +175,25 @@ export default function SubscriptionSetDetail({
           </div>
 
           <button
-            onClick={() => setAutoRenew((v) => !v)}
-            className="mt-4 flex w-full items-center justify-between rounded-xl2 border border-slate-100 px-3.5 py-3"
-          >
-            <span className="text-left">
-              <span className="block text-sm font-semibold text-brand-ink">ต่ออายุอัตโนมัติ</span>
-              <span className="block text-[11px] text-slate-400">เร็วๆ นี้ — ตอนนี้ทุกการสมัครจบเมื่อครบเทอม</span>
-            </span>
-            <span
-              className={clsx(
-                "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-                autoRenew ? "bg-brand-gradient" : "bg-slate-200"
-              )}
-            >
-              <span
-                className={clsx(
-                  "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-                  autoRenew ? "translate-x-[22px]" : "translate-x-0.5"
-                )}
-              />
-            </span>
-          </button>
-
-          <button
-            onClick={handleSubscribe}
+            onClick={subscriptionBillingEnabled ? handleRealSubscribe : handleSubscribe}
+            disabled={realSubscribeSubmitting}
             className={clsx(
-              "mt-4 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-bold text-white transition-all active:scale-95",
+              "mt-4 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-50",
               added ? "bg-brand-emerald" : "bg-brand-gradient hover:opacity-90"
             )}
           >
             {added ? <Check size={16} /> : <ShoppingBag size={16} />}
-            {added ? "เพิ่มลงตะกร้าแล้ว" : "สมัครสมาชิก"}
+            {realSubscribeSubmitting ? "กำลังเริ่มชำระเงิน..." : added ? "เพิ่มลงตะกร้าแล้ว" : "สมัครสมาชิก"}
           </button>
+          {realSubscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{realSubscribeError}</p>}
 
           <p className="mt-3 flex items-start gap-1.5 text-[11px] text-slate-400">
             <Info size={12} className="shrink-0 mt-0.5" />
-            เพิ่มสินค้าครบชุด {plan.months} รอบลงตะกร้า พร้อมโค้ดส่วนลด {plan.code} ที่ใช้ได้จริงตอนชำระเงิน
+            {subscriptionBillingEnabled
+              ? `ชำระ ${formatTHB(totalTerm)} วันนี้ ได้รับสินค้าทุกเดือนต่อเนื่อง ${plan.months} เดือน เมื่อครบเทอมระบบจะต่ออายุอัตโนมัติในราคาเทอมใหม่ (${formatTHB(totalTerm)}) ผ่านบัตรที่ผูกไว้ ไปเรื่อยๆ จนกว่าจะยกเลิกที่หน้า "การสมัครของฉัน"`
+              : `เพิ่มสินค้าครบชุด ${plan.months} รอบลงตะกร้า พร้อมโค้ดส่วนลด ${plan.code} ที่ใช้ได้จริงตอนชำระเงิน — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
           </p>
-          {added && (
+          {added && !subscriptionBillingEnabled && (
             <Link href="/cart" className="mt-2 flex items-center justify-center gap-1 text-xs font-semibold text-brand-emerald hover:text-brand-sky">
               <Sparkles size={12} /> ไปที่ตะกร้าเพื่อชำระเงิน
             </Link>

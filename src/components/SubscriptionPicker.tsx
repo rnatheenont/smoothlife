@@ -1,34 +1,92 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, ShoppingBag, Sparkles } from "lucide-react";
 import { Product } from "@/data/types";
 import { SubscriptionPlan } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
 import StarRating from "./StarRating";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
 import clsx from "clsx";
 
 export default function SubscriptionPicker({
   plans,
   products,
+  subscriptionBillingEnabled = false,
 }: {
   plans: SubscriptionPlan[];
   products: Product[];
+  subscriptionBillingEnabled?: boolean;
 }) {
   const popular = plans.find((p) => p.popular) ?? plans[0];
   const [selectedMonths, setSelectedMonths] = useState(popular.months);
   const plan = plans.find((p) => p.months === selectedMonths) ?? popular;
   const { addItem, setCouponCode } = useCart();
+  const { user } = useAuth();
+  const router = useRouter();
   const [addedSlug, setAddedSlug] = useState<string | null>(null);
+  const [submittingSlug, setSubmittingSlug] = useState<string | null>(null);
+  const [errorSlug, setErrorSlug] = useState<{ slug: string; message: string } | null>(null);
 
+  // Interim fallback — same discount-code-on-cart mechanism as before.
   function handleAdd(product: Product) {
     addItem(product.slug, plan.months);
     setCouponCode(plan.code);
     setAddedSlug(product.slug);
     setTimeout(() => setAddedSlug((s) => (s === product.slug ? null : s)), 1800);
+  }
+
+  // Real recurring billing — same one-lump-sum-per-term model as the
+  // product page / set page, just triggered from this quick-pick grid.
+  async function handleRealSubscribe(product: Product) {
+    if (!user) {
+      router.push(`/account/login?returnTo=${encodeURIComponent("/subscription")}`);
+      return;
+    }
+    setErrorSlug(null);
+    setSubmittingSlug(product.slug);
+    try {
+      const res = await fetch("/api/account/addresses");
+      const data = await res.json();
+      const defaultAddress = data.addresses?.[0];
+      if (!defaultAddress || defaultAddress.country !== "TH") {
+        setErrorSlug({ slug: product.slug, message: "กรุณาเพิ่มที่อยู่จัดส่งเริ่มต้นก่อนสมัคร" });
+        return;
+      }
+      const checkoutRes = await fetch("/api/subscribe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productSlug: product.slug,
+          variantId: product.variantId,
+          months: plan.months,
+          shippingAddress: {
+            address1: defaultAddress.address_line,
+            city: defaultAddress.district,
+            state: defaultAddress.province,
+            postalCode: defaultAddress.postal_code,
+            countryCode: defaultAddress.country,
+            firstName: defaultAddress.recipient_name?.split(/\s+/)[0],
+            lastName: defaultAddress.recipient_name?.split(/\s+/).slice(1).join(" "),
+            phone: defaultAddress.phone,
+          },
+        }),
+      });
+      const checkoutData = await checkoutRes.json();
+      if (!checkoutData.ok) {
+        setErrorSlug({ slug: product.slug, message: checkoutData.error || "เริ่มการชำระเงินไม่สำเร็จ" });
+        return;
+      }
+      window.location.href = checkoutData.webPaymentUrl;
+    } catch {
+      setErrorSlug({ slug: product.slug, message: "เริ่มการชำระเงินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" });
+    } finally {
+      setSubmittingSlug(null);
+    }
   }
 
   return (
@@ -76,6 +134,8 @@ export default function SubscriptionPicker({
           const fullPrice = product.price * plan.months;
           const saved = fullPrice - total;
           const added = addedSlug === product.slug;
+          const submitting = submittingSlug === product.slug;
+          const error = errorSlug?.slug === product.slug ? errorSlug.message : null;
 
           return (
             <div key={product.slug} className="flex flex-col rounded-xl2 bg-white shadow-card overflow-hidden border border-slate-100">
@@ -97,21 +157,25 @@ export default function SubscriptionPicker({
                     <span className="text-base font-extrabold text-brand-ink">{formatTHB(perMonth)}</span>
                   </div>
                   <div className="flex items-baseline justify-between mt-0.5">
-                    <span className="text-[11px] text-slate-400">รวม {plan.months} เดือน</span>
+                    <span className="text-[11px] text-slate-400">
+                      {subscriptionBillingEnabled ? "ยอดชำระวันนี้" : "รวม"} {plan.months} เดือน
+                    </span>
                     <span className="text-[11px] text-slate-400 line-through">{formatTHB(fullPrice)}</span>
                   </div>
                   <p className="text-[11px] font-bold text-brand-emerald mt-0.5">ประหยัด {formatTHB(saved)}</p>
                 </div>
                 <button
-                  onClick={() => handleAdd(product)}
+                  onClick={() => (subscriptionBillingEnabled ? handleRealSubscribe(product) : handleAdd(product))}
+                  disabled={submitting}
                   className={clsx(
-                    "mt-2 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold py-2 transition-all active:scale-95 text-white",
+                    "mt-2 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold py-2 transition-all active:scale-95 text-white disabled:opacity-50",
                     added ? "bg-brand-emerald" : "bg-brand-gradient hover:opacity-90"
                   )}
                 >
                   {added ? <Check size={14} /> : <ShoppingBag size={14} />}
-                  {added ? `เพิ่มแล้ว (${plan.months} ชิ้น)` : `สมัคร ${plan.months} เดือน`}
+                  {submitting ? "กำลังเริ่ม..." : added ? `เพิ่มแล้ว (${plan.months} ชิ้น)` : `สมัคร ${plan.months} เดือน`}
                 </button>
+                {error && <p className="text-[10px] text-rose-500">{error}</p>}
               </div>
             </div>
           );
@@ -120,8 +184,9 @@ export default function SubscriptionPicker({
 
       <p className="mt-8 flex items-start gap-2 text-xs text-slate-400 max-w-2xl">
         <Sparkles size={14} className="shrink-0 mt-0.5 text-brand-teal" />
-        เมื่อกด &ldquo;สมัคร&rdquo; ระบบจะเพิ่มจำนวนสินค้าตามรอบที่เลือกลงตะกร้า พร้อมใส่โค้ดส่วนลด {plan.code} ให้อัตโนมัติ
-        ใช้ได้จริงตอนชำระเงิน — ยกเลิกหรือเปลี่ยนแผนได้ทุกเมื่อจากหน้าตะกร้า
+        {subscriptionBillingEnabled
+          ? `เมื่อกด "สมัคร" ระบบจะพาไปชำระเงินเต็มเทอมครั้งเดียว แล้วต่ออายุอัตโนมัติในราคาเทอมใหม่ไปเรื่อยๆ จนกว่าจะยกเลิกที่หน้า "การสมัครของฉัน"`
+          : `เมื่อกด "สมัคร" ระบบจะเพิ่มจำนวนสินค้าตามรอบที่เลือกลงตะกร้า พร้อมใส่โค้ดส่วนลด ${plan.code} ให้อัตโนมัติ ใช้ได้จริงตอนชำระเงิน — ยกเลิกหรือเปลี่ยนแผนได้ทุกเมื่อจากหน้าตะกร้า`}
       </p>
     </div>
   );

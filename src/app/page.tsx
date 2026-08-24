@@ -8,6 +8,8 @@ import { brands, houseBrands, slugifyVendor } from "@/data/brands";
 import { promotions, promotionImage } from "@/data/promotions";
 import { articles } from "@/data/articles";
 import { subscriptionPlans } from "@/data/subscriptions";
+import { heroBanners } from "@/data/heroBanners";
+import { getLiveHeroBanners } from "@/lib/shopify-admin";
 import HeroCarousel from "@/components/HeroCarousel";
 import DealOfTheDayCard from "@/components/DealOfTheDayCard";
 import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
@@ -22,6 +24,10 @@ import BrandShowcase from "@/components/BrandShowcase";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 
 export const metadata = { alternates: { canonical: "/" } };
+// Re-pulls the live smoothlife.com banner slideshow at most once an hour —
+// so an edit made there through the Shopify theme customizer shows up here
+// automatically, without a code change or redeploy on this side.
+export const revalidate = 3600;
 
 const articleCategoryLabel: Record<string, string> = {
   guide: "คู่มือ",
@@ -31,7 +37,8 @@ const articleCategoryLabel: Record<string, string> = {
   video: "วิดีโอ",
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const liveHeroBanners = await getLiveHeroBanners();
   const bestSellers = products.filter((p) => p.inStock && p.badges?.includes("Bestseller")).slice(0, 8);
   const newArrivals = products
     .filter((p) => p.inStock && p.badges?.includes("New"))
@@ -116,7 +123,7 @@ export default function HomePage() {
             </div>
           </StaggerReveal>
           <div className="order-1 md:order-2">
-            <HeroCarousel />
+            <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
           </div>
         </div>
       </section>

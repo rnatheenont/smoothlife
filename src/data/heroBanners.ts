@@ -9,8 +9,8 @@
 // vendors in the live catalogue, so the brand filter still matches them.
 export type HeroBanner = {
   slug: string;
-  title: string;
-  subtitle: string;
+  title?: string;
+  subtitle?: string;
   image: string;
   href: string;
 };

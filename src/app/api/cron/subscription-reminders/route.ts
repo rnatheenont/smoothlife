@@ -94,7 +94,8 @@ type ShipmentDue = {
   id: string;
   user_id: string;
   product_name: string;
-  variant_id: string;
+  variant_id: string | null;
+  variant_ids: string[] | null;
   plan_months: number;
   current_term_number: number;
   cycles_completed_this_term: number;
@@ -122,7 +123,7 @@ async function createDueShipments() {
 
   const today = new Date().toISOString().slice(0, 10);
   const due = await supabaseRest<ShipmentDue[]>(
-    `real_subscriptions?status=in.(active,past_due)&next_shipment_date=lte.${today}&select=id,user_id,product_name,variant_id,plan_months,current_term_number,cycles_completed_this_term,auto_renew_cancelled,contact_email,shipping_address`
+    `real_subscriptions?status=in.(active,past_due)&next_shipment_date=lte.${today}&select=id,user_id,product_name,variant_id,variant_ids,plan_months,current_term_number,cycles_completed_this_term,auto_renew_cancelled,contact_email,shipping_address`
   );
 
   let shipped = 0;
@@ -132,10 +133,12 @@ async function createDueShipments() {
 
     try {
       const addr = sub.shipping_address;
+      const lineItems = sub.variant_ids
+        ? sub.variant_ids.map((variantId) => ({ variantId, quantity: 1 }))
+        : [{ variantId: sub.variant_id!, quantity: 1 }];
       const order = await createFulfillmentOnlyOrder({
         email: sub.contact_email ?? undefined,
-        variantId: sub.variant_id,
-        quantity: 1,
+        lineItems,
         currencyCode: "THB",
         shippingAddress: {
           firstName: addr.firstName,

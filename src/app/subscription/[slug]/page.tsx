@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { subscriptionSets, subscriptionSetProducts, subscriptionPlans } from "@/data/subscriptions";
+import { twoC2PConfigured } from "@/lib/2c2p";
 import SubscriptionSetDetail from "@/components/SubscriptionSetDetail";
 
 export function generateStaticParams() {
@@ -28,7 +29,7 @@ export default function SubscriptionSetPage({ params }: { params: { slug: string
         <ChevronRight size={12} />
         <span className="text-slate-600 font-medium">{set.name}</span>
       </nav>
-      <SubscriptionSetDetail set={set} products={products} plans={subscriptionPlans} />
+      <SubscriptionSetDetail set={set} products={products} plans={subscriptionPlans} subscriptionBillingEnabled={twoC2PConfigured()} />
     </div>
   );
 }
