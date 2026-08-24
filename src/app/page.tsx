@@ -58,13 +58,11 @@ export default function HomePage() {
   const usedPromoSlugs = new Set<string>();
 
   // Real product-video clips (Firework CDN, provided directly — not scraped).
-  // ASTA Whi 30ml has no confirmed matching product, so it links to /shop
-  // generically instead of guessing which of several similarly-named real
-  // products it shows. (A second clip, untitled/Thai-named, was pulled —
-  // its Firework CDN link returns 403, source needs to re-export it.)
+  // (A second clip, untitled/Thai-named, was pulled — its Firework CDN
+  // link returns 403, source needs to re-export it.)
   const socialClipSlugs: (string | null)[] = [
     "dentiste-anticavity-max-fluoride-toothpaste",
-    null,
+    "smooth-e-sun-asta-white-spot-clear",
     "sme-retinal-plus-deep-wrinkle-repair-30-g",
     "dentiste-repaire-rex3-70g",
     "smooth-e-anti-hair-loss-hair-thickening-shampoo",
