@@ -252,6 +252,47 @@ export async function hasPaidOrderForProduct(shopifyCustomerId: string, productS
   );
 }
 
+export type VariantAvailability = {
+  availableForSale: boolean;
+  /** Real Shopify inventory count — null when the store doesn't track/expose it for this variant. */
+  inventoryQuantity: number | null;
+  /** DENY = Shopify itself refuses to sell past zero stock; CONTINUE = it allows overselling. */
+  inventoryPolicy: "DENY" | "CONTINUE" | null;
+};
+
+// Live stock check, straight from Shopify — used wherever a decision needs
+// the *current* truth rather than the build-time catalogue snapshot (e.g.
+// before letting a recurring subscription charge go through). Returns null
+// on any failure (unconfigured, bad variant id, API error) — callers must
+// treat that as "couldn't verify," not "in stock."
+export async function getVariantAvailability(variantId: string): Promise<VariantAvailability | null> {
+  if (!shopifyAdminConfigured()) return null;
+  try {
+    const data = await adminGraphql<{
+      productVariant: { availableForSale: boolean; inventoryQuantity: number | null; inventoryPolicy: string } | null;
+    }>(
+      `query VariantAvailability($id: ID!) {
+        productVariant(id: $id) {
+          availableForSale
+          inventoryQuantity
+          inventoryPolicy
+        }
+      }`,
+      { id: variantId }
+    );
+    const v = data.productVariant;
+    if (!v) return null;
+    return {
+      availableForSale: v.availableForSale,
+      inventoryQuantity: v.inventoryQuantity,
+      inventoryPolicy: v.inventoryPolicy === "CONTINUE" ? "CONTINUE" : v.inventoryPolicy === "DENY" ? "DENY" : null,
+    };
+  } catch (err) {
+    console.error("[shopify-admin] getVariantAvailability failed", err);
+    return null;
+  }
+}
+
 // Creates a real, single-use percentage discount code redeemable once per
 // customer. Returns the code string.
 export async function createPercentDiscountCode(opts: {
