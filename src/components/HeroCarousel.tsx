@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { HeroBanner } from "@/data/heroBanners";
 import { Product } from "@/data/types";
 import { formatTHB } from "@/lib/format";
+import StaggerReveal from "./StaggerReveal";
 
 const AUTO_ROTATE_MS = 8000;
 
@@ -166,7 +167,7 @@ export default function HeroCarousel({ banners: heroBanners }: { banners: SlideB
           slide rotates. Kept off the image entirely so it never covers the
           banner's own art/text. */}
       {activeSpotlight.length > 0 && (
-        <div className="md:hidden mt-2 flex gap-2">
+        <StaggerReveal className="md:hidden mt-2 flex gap-2">
           {activeSpotlight.slice(0, 2).map((p) => (
             <Link
               key={p.slug}
@@ -189,7 +190,7 @@ export default function HeroCarousel({ banners: heroBanners }: { banners: SlideB
               </span>
             </Link>
           ))}
-        </div>
+        </StaggerReveal>
       )}
     </div>
   );

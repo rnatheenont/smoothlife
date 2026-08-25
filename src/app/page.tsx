@@ -111,14 +111,16 @@ export default async function HomePage() {
           the only place that CTA ("ให้น้อง Smoothie แนะนำสกินแคร์") appears,
           a second one later would be pure redundancy. */}
       <section className="relative overflow-hidden bg-white">
-        {/* Soft wash across the very top, bridging the header's colored
-            promo bar into this section instead of cutting to flat white
-            right underneath it. (from-brand-gradient-soft doesn't work here
-            — that name is a backgroundImage gradient, not a color, so
-            Tailwind's from-* never resolves it; use real color stops.) */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 md:h-40 bg-gradient-to-b from-brand-teal/10 via-brand-sky/5 to-transparent" />
-        <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/10 blur-3xl animate-floatSlow" />
-        <div className="pointer-events-none absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-brand-sky/10 blur-3xl animate-floatSlow" />
+        {/* Mobile: starts white right under the search bar, easing into a
+            light mint tint by the bottom of the section (around the second
+            category row) — reversed from the earlier top-tinted version.
+            Desktop keeps the old short top banner + two floating blobs —
+            its section is much taller (headline column), so the same
+            full-height gradient would wash out the copy. */}
+        <div className="pointer-events-none absolute inset-0 md:hidden bg-gradient-to-b from-white via-brand-sky/5 via-70% to-brand-teal/10" />
+        <div className="pointer-events-none hidden md:block absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-brand-teal/10 via-brand-sky/5 to-transparent" />
+        <div className="pointer-events-none hidden md:block absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/10 blur-3xl animate-floatSlow" />
+        <div className="pointer-events-none hidden md:block absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-brand-sky/10 blur-3xl animate-floatSlow" />
 
         <div className="container-page relative py-6 md:py-24 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
           <StaggerReveal className="hidden md:block order-3 md:order-1">
@@ -161,7 +163,7 @@ export default async function HomePage() {
               full, not a separate/fake taxonomy. Icon-circle grid (real
               category photos, not illustrations we don't have) instead of
               text tabs. Sits right under the banner, above the headline. */}
-          <div className="order-2 md:hidden grid grid-cols-3 gap-y-3">
+          <StaggerReveal className="order-2 md:hidden grid grid-cols-3 gap-y-3">
             {categories.map((c) => (
               <Link key={c.slug} href={`/shop/${c.slug}`} className="flex flex-col items-center gap-1.5">
                 <span className="relative h-14 w-14 rounded-full overflow-hidden bg-surface-soft border border-slate-100">
@@ -170,17 +172,14 @@ export default async function HomePage() {
                 <span className="text-[11px] font-medium text-slate-600 text-center line-clamp-1">{c.nameTh}</span>
               </Link>
             ))}
-          </div>
+          </StaggerReveal>
         </div>
       </section>
 
       {/* Trust strip */}
       <section className="border-y border-slate-100 bg-white">
         <div className="container-page py-4 md:py-5">
-          <StaggerGrid
-            className="flex md:grid md:grid-cols-4 gap-5 md:gap-4 overflow-x-auto scrollbar-none text-xs md:text-sm"
-            stagger={0.1}
-          >
+          <div className="flex md:grid md:grid-cols-4 gap-5 md:gap-4 overflow-x-auto scrollbar-none text-xs md:text-sm">
             {[
               { icon: ShieldCheck, label: "ของแท้ 100% มีอย." },
               { icon: Truck, label: "ส่งฟรีทั่วไทย ทุกออเดอร์" },
@@ -192,7 +191,7 @@ export default async function HomePage() {
                 <span className="whitespace-nowrap">{f.label}</span>
               </div>
             ))}
-          </StaggerGrid>
+          </div>
         </div>
       </section>
 

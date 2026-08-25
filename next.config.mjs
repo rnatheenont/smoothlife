@@ -9,6 +9,13 @@ const nextConfig = {
       { protocol: "https", hostname: "cdn.shopify.com" },
       { protocol: "https", hostname: "images.unsplash.com" },
     ],
+    // Vercel's Image Optimization has a monthly transformation quota on the
+    // current plan; the catalogue's product photos already come pre-resized
+    // from Shopify's own CDN (`?width=...`), so routing them through
+    // Vercel's optimizer too was pure overhead — and once the quota was
+    // exceeded, new (uncached) images started failing with 402 instead of
+    // rendering. Serving originals directly removes that failure mode.
+    unoptimized: true,
   },
   // A real Content-Security-Policy needs every external origin this app
   // actually calls (LINE/Google/Apple OAuth, 2C2P payment iframe, Firework
