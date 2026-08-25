@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
-  Search,
   ShoppingBag,
   User,
   Menu,
@@ -17,9 +16,10 @@ import {
   HelpCircle,
   ChevronRight,
   Repeat,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useCart } from "@/lib/cart-context";
+import { useCart, useWishlist } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
 import { tierBadge, tierCard } from "@/lib/tier";
 import LanguageSwitch from "@/components/LanguageSwitch";
@@ -43,7 +43,8 @@ export default function Header() {
   const lastScrollY = useRef(0);
   const { user } = useAuth();
   const { count } = useCart();
-  const { t } = useLang();
+  const { slugs: wishlistSlugs } = useWishlist();
+  const { lang, toggle: toggleLang, translating, t } = useLang();
 
   // lock background scroll while the mobile drawer is open
   useEffect(() => {
@@ -129,7 +130,21 @@ export default function Header() {
         </div>
 
         <div className="ml-auto flex items-center gap-3 md:gap-5 shrink-0">
-          <div className="hidden sm:block">
+          {/* Minimal icon-style toggle for the mobile header — the full
+              LanguageSwitch pill (used on desktop and in the drawer) reads
+              as too heavy/colorful sitting directly next to the plain
+              outline icons here, so this mirrors their same neutral
+              h-10 w-10 outline-circle treatment instead. */}
+          <button
+            type="button"
+            onClick={toggleLang}
+            aria-label="เปลี่ยนภาษา"
+            disabled={translating}
+            className="lg:hidden shrink-0 grid h-10 w-10 place-items-center rounded-full border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wide disabled:opacity-60"
+          >
+            {translating ? <Loader2 size={16} className="animate-spin" /> : lang}
+          </button>
+          <div className="hidden lg:block">
             <LanguageSwitch />
           </div>
           {user ? (
@@ -170,8 +185,17 @@ export default function Header() {
               </Link>
             </>
           )}
-          <Link href="/search" className="lg:hidden" aria-label="Search">
-            <Search size={22} />
+          <Link
+            href="/account/wishlist"
+            aria-label="รายการโปรด"
+            className="relative lg:hidden text-slate-500"
+          >
+            <Heart size={22} />
+            {wishlistSlugs.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-brand-sky px-1 text-[9px] font-bold text-white">
+                {wishlistSlugs.length}
+              </span>
+            )}
           </Link>
           <div className="lg:hidden">
             <NotificationBell />
@@ -190,6 +214,20 @@ export default function Header() {
               </span>
             )}
           </Link>
+        </div>
+      </div>
+
+      {/* Mobile-only inline search row — replaces the old icon-only "/search"
+          link with a real search bar (same reusable HeaderSearch used on
+          desktop). Location + wishlist + notifications all live in the logo
+          row above instead of here. */}
+      <div className="md:hidden container-page pb-2.5">
+        <div className="flex items-center gap-2">
+          <HeaderSearch
+            placeholder="ค้นหาสินค้า, ยี่ห้อ..."
+            inputClassName="w-full rounded-full border border-slate-200 bg-surface-soft py-2.5 pl-4 pr-11 text-sm outline-none focus:border-brand-teal transition-colors"
+            buttonClassName="absolute right-1.5 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-brand-ink text-white"
+          />
         </div>
       </div>
 

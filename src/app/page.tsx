@@ -61,6 +61,21 @@ export default async function HomePage() {
     return products.filter((p) => p.inStock && aliases.includes(slugifyVendor(p.brand))).slice(0, 8);
   };
   const houseBrandProducts = Object.fromEntries(houseBrands.map((b) => [b.slug, brandProducts(b.slug)]));
+  // Real products for each hero slide's own floating price cards — pulled
+  // from whichever brand that specific slide links to (via its real
+  // /shop?brand=... href), not a fixed list, so the cards change together
+  // with the banner instead of showing the same 2 products on every slide.
+  // Slides whose href isn't a brand link (a Shopify page/product/collection
+  // URL) get no spotlight cards rather than an unrelated product guess.
+  function spotlightForHref(href: string): Product[] {
+    const match = href.match(/^\/shop\?brand=([a-z0-9-]+)$/);
+    if (!match) return [];
+    return [...brandProducts(match[1])].sort((a, b) => discountPct(b) - discountPct(a)).slice(0, 2);
+  }
+  const bannersWithSpotlight = (liveHeroBanners ?? heroBanners).map((b) => ({
+    ...b,
+    spotlightProducts: spotlightForHref(b.href),
+  }));
   const featuredArticles = articles.slice(0, 3);
   const usedPromoSlugs = new Set<string>();
 
@@ -92,10 +107,21 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* Hero */}
-      <section className="bg-white">
-        <div className="container-page py-10 md:py-24 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
-          <StaggerReveal className="order-2 md:order-1">
+      {/* Hero — no separate AI-advisor CTA section further down: this is
+          the only place that CTA ("ให้น้อง Smoothie แนะนำสกินแคร์") appears,
+          a second one later would be pure redundancy. */}
+      <section className="relative overflow-hidden bg-white">
+        {/* Soft wash across the very top, bridging the header's colored
+            promo bar into this section instead of cutting to flat white
+            right underneath it. (from-brand-gradient-soft doesn't work here
+            — that name is a backgroundImage gradient, not a color, so
+            Tailwind's from-* never resolves it; use real color stops.) */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 md:h-40 bg-gradient-to-b from-brand-teal/10 via-brand-sky/5 to-transparent" />
+        <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/10 blur-3xl animate-floatSlow" />
+        <div className="pointer-events-none absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-brand-sky/10 blur-3xl animate-floatSlow" />
+
+        <div className="container-page relative py-6 md:py-24 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+          <StaggerReveal className="hidden md:block order-3 md:order-1">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-emerald shadow-card mb-5 border border-slate-100">
               <Sparkles size={13} /> แนะนำน้อง Smoothie ผู้ช่วยคนใหม่
             </span>
@@ -110,9 +136,10 @@ export default async function HomePage() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/shop"
-                className="rounded-full bg-brand-gradient text-white font-semibold px-7 py-3.5 text-sm shadow-cardHover hover:-translate-y-0.5 hover:shadow-xl transition-all"
+                className="group rounded-full bg-brand-gradient text-white font-semibold px-7 py-3.5 text-sm shadow-cardHover hover:-translate-y-0.5 hover:shadow-xl transition-all inline-flex items-center gap-1.5"
               >
                 เริ่มช้อปเลย
+                <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
                 href="/advisor"
@@ -122,8 +149,27 @@ export default async function HomePage() {
               </Link>
             </div>
           </StaggerReveal>
-          <div className="order-1 md:order-2">
-            <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
+          <div className="relative order-1 md:order-2">
+            <div className="pointer-events-none absolute -inset-4 rounded-[2rem] bg-brand-gradient opacity-10 blur-2xl" />
+            <div className="relative ring-1 ring-black/5 rounded-xl2">
+              <HeroCarousel banners={bannersWithSpotlight} />
+            </div>
+          </div>
+
+          {/* Mobile-only quick category grid — a fast-access shortcut into
+              the same real categories the Categories section below lists in
+              full, not a separate/fake taxonomy. Icon-circle grid (real
+              category photos, not illustrations we don't have) instead of
+              text tabs. Sits right under the banner, above the headline. */}
+          <div className="order-2 md:hidden grid grid-cols-3 gap-y-3">
+            {categories.map((c) => (
+              <Link key={c.slug} href={`/shop/${c.slug}`} className="flex flex-col items-center gap-1.5">
+                <span className="relative h-14 w-14 rounded-full overflow-hidden bg-surface-soft border border-slate-100">
+                  <Image src={c.image} alt={c.name} fill className="object-cover" />
+                </span>
+                <span className="text-[11px] font-medium text-slate-600 text-center line-clamp-1">{c.nameTh}</span>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
@@ -150,8 +196,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="bg-surface-soft py-14 md:py-20">
+      {/* Categories — hidden on mobile, where the quick category grid right
+          under the header search bar already shows these same categories;
+          desktop keeps this section since it has no such shortcut. */}
+      <section className="hidden md:block bg-surface-soft py-14 md:py-20">
         <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
         </ScrollReveal>
@@ -169,8 +217,31 @@ export default async function HomePage() {
         </StaggerGrid>
       </section>
 
-      {/* Promotions */}
+      {/* Concern hub teaser — moved up next to Categories: both are entry
+          points into the catalogue (browse by type vs. browse by problem),
+          so grouping them together strengthens the "ways to start shopping"
+          cluster right after the hero, instead of splitting it far apart
+          from Categories with unrelated content in between. */}
       <section className="bg-white py-14 md:py-20">
+        <ScrollReveal className="container-page">
+          <SectionHeading title="ช้อปตามปัญหาผิวที่กังวล" subtitle="Shop by Concern" href="/concern" />
+        </ScrollReveal>
+        <StaggerGrid className="container-page grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+          {concerns.map((c) => (
+            <Link key={c.slug} href={`/concern/${c.slug}`} className="group rounded-xl2 bg-white overflow-hidden shadow-card">
+              <div className="relative aspect-square">
+                <Image src={concernImage(c.slug)} alt={c.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+              </div>
+              <div className="p-2.5">
+                <p className="text-xs font-semibold text-brand-ink line-clamp-2">{c.nameTh}</p>
+              </div>
+            </Link>
+          ))}
+        </StaggerGrid>
+      </section>
+
+      {/* Promotions */}
+      <section className="bg-surface-soft py-14 md:py-20">
         <ScrollReveal className="container-page">
           <SectionHeading title="โปรโมชั่นและดีลเด็ด" subtitle="New, Best Sellers and Promotions" href="/promotions" />
         </ScrollReveal>
@@ -204,17 +275,14 @@ export default async function HomePage() {
           respective widgets are toggled on (both default off). No py here:
           each card owns its own vertical margin so a disabled/empty widget
           (the default) collapses to zero height instead of leaving a big
-          blank padded gap with nothing in it. */}
+          blank padded gap with nothing in it. Kept right next to
+          Promotions/ProductTabs since it's the same "deals" cluster. */}
       <section className="container-page">
         <DealOfTheDayCard />
       </section>
       <section className="container-page">
         <FreeGiftPromoCard />
       </section>
-
-      {/* Trending on social — real product-video clips (Firework CDN),
-          each linking through to the real product it shows. */}
-      <TrendingOnSocial clips={socialClips} initialIndex={socialClipSlugs.indexOf("dentiste-repaire-rex3-70g")} />
 
       {/* Products — one tabbed section instead of four near-identical
           stacked carousels (Best Sellers / On Sale / New / Bundles), so
@@ -228,7 +296,25 @@ export default async function HomePage() {
         ]}
       />
 
-      {/* Subscription teaser */}
+      {/* Trending on social — moved after the deals/catalog cluster: video
+          engagement content works better once someone has already seen
+          what's for sale, as a "see it in action" follow-up rather than a
+          detour before they've even reached the product grid. Real
+          product-video clips (Firework CDN), each linking through to the
+          real product it shows. */}
+      <TrendingOnSocial clips={socialClips} initialIndex={socialClipSlugs.indexOf("dentiste-repaire-rex3-70g")} />
+
+      {/* Life So Smooth — house brands (Smooth E > Smooth Life > Dentiste,
+          always in that priority order) told as one story instead of a
+          stack of near-identical per-brand carousels. Sits right before the
+          Subscription ask below so the brand trust it builds carries
+          straight into that higher-commitment pitch. */}
+      <BrandShowcase brands={houseBrands} productsBySlug={houseBrandProducts} />
+
+      {/* Subscription teaser — moved later on purpose: committing to a
+          recurring plan is a bigger ask than a one-off purchase, so it
+          converts better after the catalogue, social proof, and brand story
+          above have already built trust, rather than pitching it early. */}
       <section className="container-page py-14 md:py-20">
         <ScaleReveal className="relative overflow-hidden rounded-xl2 bg-brand-gradient p-8 md:p-12 text-white">
           <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-white/10 animate-floatSlow" />
@@ -282,34 +368,6 @@ export default async function HomePage() {
         </ScaleReveal>
       </section>
 
-      {/* Life So Smooth — house brands (Smooth E > Smooth Life > Dentiste,
-          always in that priority order) told as one story instead of a
-          stack of near-identical per-brand carousels. */}
-      <BrandShowcase brands={houseBrands} productsBySlug={houseBrandProducts} />
-
-      {/* Concern hub teaser */}
-      <section className="bg-white py-14 md:py-20">
-        <ScrollReveal className="container-page">
-          <SectionHeading title="ช้อปตามปัญหาผิวที่กังวล" subtitle="Shop by Concern" href="/concern" />
-        </ScrollReveal>
-        <StaggerGrid className="container-page grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-          {concerns.map((c) => (
-            <Link key={c.slug} href={`/concern/${c.slug}`} className="group rounded-xl2 bg-white overflow-hidden shadow-card">
-              <div className="relative aspect-square">
-                <Image src={concernImage(c.slug)} alt={c.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-              </div>
-              <div className="p-2.5">
-                <p className="text-xs font-semibold text-brand-ink line-clamp-2">{c.nameTh}</p>
-              </div>
-            </Link>
-          ))}
-        </StaggerGrid>
-      </section>
-
-      {/* No separate AI-advisor CTA section — the hero already offers this
-          exact path ("ให้น้อง Smoothie แนะนำสกินแคร์"), so a second full
-          section repeating it further down was pure redundancy. */}
-
       {/* Brands strip — scrolling logo wall at every breakpoint. Used to be
           a static desktop grid capped at the first 10 brands, but the
           catalogue now spans dozens of real vendors (see brands.ts), so a
@@ -325,7 +383,8 @@ export default async function HomePage() {
         </ScrollReveal>
       </section>
 
-      {/* Wellness / knowledge teaser */}
+      {/* Wellness / knowledge teaser — kept last: bottom-funnel content for
+          people still researching rather than ready to buy or subscribe. */}
       <section className="bg-brand-gradient-soft py-14 md:py-20">
         <ScrollReveal className="container-page">
           <SectionHeading title="ความรู้เรื่องผิวและสุขภาพ" subtitle="Learn About Wellness" href="/knowledge" />
