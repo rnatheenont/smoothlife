@@ -4,10 +4,11 @@ import { Sparkles, ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
 import { categories, concerns, concernImage } from "@/data/categories";
-import { brands, houseBrands, slugifyVendor } from "@/data/brands";
+import { brands } from "@/data/brands";
 import { promotions, promotionImage } from "@/data/promotions";
 import { articles } from "@/data/articles";
 import { subscriptionPlans } from "@/data/subscriptions";
+import { formatTHB } from "@/lib/format";
 import { heroBanners } from "@/data/heroBanners";
 import { getLiveHeroBanners } from "@/lib/shopify-admin";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -20,7 +21,6 @@ import StaggerGrid from "@/components/StaggerGrid";
 import ScaleReveal from "@/components/ScaleReveal";
 import BrandMarquee from "@/components/BrandMarquee";
 import ProductTabs from "@/components/ProductTabs";
-import BrandShowcase from "@/components/BrandShowcase";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 
 export const metadata = { alternates: { canonical: "/" } };
@@ -50,32 +50,15 @@ export default async function HomePage() {
   // ranked by popularity — discount depth is the real, non-fabricated
   // signal we do have, so bigger price cuts rank first instead.
   const discountPct = (p: Product) => (p.compareAtPrice ? 1 - p.price / p.compareAtPrice : 0);
+  // Real on-sale products, deepest discount first — the mobile "today's
+  // deals" strip near the top of the page. No fabricated price-off or
+  // "recently searched" data here: everything shown is the product's own
+  // real price/compareAtPrice already in the catalogue.
+  const topDeals = [...onSale].sort((a, b) => discountPct(b) - discountPct(a)).slice(0, 4);
   const bundles = products
     .filter((p) => p.inStock && p.badges?.includes("Bundle"))
     .sort((a, b) => discountPct(b) - discountPct(a))
     .slice(0, 8);
-  const brandProducts = (brandSlug: string) => {
-    const brand = brands.find((b) => b.slug === brandSlug);
-    if (!brand) return [];
-    const aliases = [brand.name, ...(brand.vendorAliases || [])].map(slugifyVendor);
-    return products.filter((p) => p.inStock && aliases.includes(slugifyVendor(p.brand))).slice(0, 8);
-  };
-  const houseBrandProducts = Object.fromEntries(houseBrands.map((b) => [b.slug, brandProducts(b.slug)]));
-  // Real products for each hero slide's own floating price cards — pulled
-  // from whichever brand that specific slide links to (via its real
-  // /shop?brand=... href), not a fixed list, so the cards change together
-  // with the banner instead of showing the same 2 products on every slide.
-  // Slides whose href isn't a brand link (a Shopify page/product/collection
-  // URL) get no spotlight cards rather than an unrelated product guess.
-  function spotlightForHref(href: string): Product[] {
-    const match = href.match(/^\/shop\?brand=([a-z0-9-]+)$/);
-    if (!match) return [];
-    return [...brandProducts(match[1])].sort((a, b) => discountPct(b) - discountPct(a)).slice(0, 2);
-  }
-  const bannersWithSpotlight = (liveHeroBanners ?? heroBanners).map((b) => ({
-    ...b,
-    spotlightProducts: spotlightForHref(b.href),
-  }));
   const featuredArticles = articles.slice(0, 3);
   const usedPromoSlugs = new Set<string>();
 
@@ -153,9 +136,7 @@ export default async function HomePage() {
           </StaggerReveal>
           <div className="relative order-1 md:order-2">
             <div className="pointer-events-none absolute -inset-4 rounded-[2rem] bg-brand-gradient opacity-10 blur-2xl" />
-            <div className="relative ring-1 ring-black/5 rounded-xl2">
-              <HeroCarousel banners={bannersWithSpotlight} />
-            </div>
+            <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
           </div>
 
           {/* Mobile-only quick category grid — a fast-access shortcut into
@@ -163,21 +144,25 @@ export default async function HomePage() {
               full, not a separate/fake taxonomy. Icon-circle grid (real
               category photos, not illustrations we don't have) instead of
               text tabs. Sits right under the banner, above the headline. */}
-          <StaggerReveal className="order-2 md:hidden grid grid-cols-3 gap-y-3">
+          <StaggerReveal className="order-2 md:hidden grid grid-cols-3 gap-y-4">
             {categories.map((c) => (
-              <Link key={c.slug} href={`/shop/${c.slug}`} className="flex flex-col items-center gap-1.5">
-                <span className="relative h-14 w-14 rounded-full overflow-hidden bg-surface-soft border border-slate-100">
+              <Link
+                key={c.slug}
+                href={`/shop/${c.slug}`}
+                className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+              >
+                <span className="relative h-[72px] w-[72px] rounded-full overflow-hidden bg-surface-soft border border-slate-100 shadow-card">
                   <Image src={c.image} alt={c.name} fill className="object-cover" />
                 </span>
-                <span className="text-[11px] font-medium text-slate-600 text-center line-clamp-1">{c.nameTh}</span>
+                <span className="text-xs font-medium text-slate-600 text-center line-clamp-1">{c.nameTh}</span>
               </Link>
             ))}
           </StaggerReveal>
         </div>
       </section>
 
-      {/* Trust strip */}
-      <section className="border-y border-slate-100 bg-white">
+      {/* Trust strip — hidden on mobile */}
+      <section className="hidden md:block border-y border-slate-100 bg-white">
         <div className="container-page py-4 md:py-5">
           <div className="flex md:grid md:grid-cols-4 gap-5 md:gap-4 overflow-x-auto scrollbar-none text-xs md:text-sm">
             {[
@@ -194,6 +179,59 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Mobile-only "today's deals" strip — real on-sale products (their
+          own actual price/compareAtPrice), ranked by real discount depth,
+          not a fabricated "hot" ranking. Desktop already surfaces the same
+          products via the Promotions grid + ProductTabs "ลดราคา" tab
+          further down, so this is additive on mobile only, placed high up
+          (same slot SHEIN-style layouts give deal cards) rather than
+          duplicating a whole second desktop section. */}
+      {topDeals.length > 0 && (
+        <section className="md:hidden bg-white py-6">
+          <ScrollReveal className="container-page">
+            <SectionHeading title="ดีลเด็ดวันนี้" subtitle="Today's Best Deals" href="/promotions" />
+          </ScrollReveal>
+          {/* Plain padding-left on a flex+overflow-x-auto row gets ignored
+              at the leading edge in this browser (confirmed: overflow:visible
+              or display:grid both fix it, padding alone doesn't) — a real
+              spacer element sidesteps that quirk instead of fighting it. */}
+          <StaggerGrid className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-3">
+            <div className="shrink-0 w-1 snap-start" aria-hidden />
+            {topDeals.map((p) => (
+              <Link
+                key={p.slug}
+                href={`/product/${p.slug}`}
+                className="shrink-0 w-[46%] snap-start rounded-xl2 overflow-hidden bg-white shadow-card border border-slate-100"
+              >
+                <div className="relative aspect-square bg-surface-soft">
+                  <Image src={p.image} alt={p.name} fill sizes="50vw" className="object-cover" />
+                  {p.compareAtPrice && (
+                    <span className="absolute left-2 top-2 rounded-full bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5">
+                      -{Math.round(discountPct(p) * 100)}%
+                    </span>
+                  )}
+                </div>
+                <div className="p-2.5">
+                  <p className="text-[11px] text-slate-500 line-clamp-1">{p.name}</p>
+                  <div className="mt-1 flex items-baseline gap-1.5">
+                    <span className="text-base font-extrabold text-brand-ink">{formatTHB(p.price)}</span>
+                    {p.compareAtPrice && (
+                      <span className="text-[11px] text-slate-400 line-through">{formatTHB(p.compareAtPrice)}</span>
+                    )}
+                  </div>
+                  {p.compareAtPrice && (
+                    <p className="text-[10px] text-brand-emerald font-medium mt-0.5">
+                      ประหยัด {formatTHB(p.compareAtPrice - p.price)}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            ))}
+            <div className="shrink-0 w-1 snap-start" aria-hidden />
+          </StaggerGrid>
+        </section>
+      )}
 
       {/* Categories — hidden on mobile, where the quick category grid right
           under the header search bar already shows these same categories;
@@ -303,13 +341,6 @@ export default async function HomePage() {
           real product it shows. */}
       <TrendingOnSocial clips={socialClips} initialIndex={socialClipSlugs.indexOf("dentiste-repaire-rex3-70g")} />
 
-      {/* Life So Smooth — house brands (Smooth E > Smooth Life > Dentiste,
-          always in that priority order) told as one story instead of a
-          stack of near-identical per-brand carousels. Sits right before the
-          Subscription ask below so the brand trust it builds carries
-          straight into that higher-commitment pitch. */}
-      <BrandShowcase brands={houseBrands} productsBySlug={houseBrandProducts} />
-
       {/* Subscription teaser — moved later on purpose: committing to a
           recurring plan is a bigger ask than a one-off purchase, so it
           converts better after the catalogue, social proof, and brand story
@@ -338,7 +369,36 @@ export default async function HomePage() {
                 <PercentCircle size={16} /> ดูแผนสมัครสมาชิก
               </Link>
             </div>
-            <div className="flex flex-col gap-2.5">
+            {/* Mobile: 3 full-width rows stacked made this card very tall
+                with a lot of unused horizontal room either side — a
+                3-across compact grid uses that width instead, so the whole
+                plan picker fits in roughly a third of the vertical space.
+                Desktop keeps the wider stacked rows (room for the sublabel
+                text next to the discount). */}
+            <div className="grid grid-cols-3 gap-2 md:hidden">
+              {subscriptionPlans.map((plan) => (
+                <div
+                  key={plan.months}
+                  className={`relative flex flex-col items-center gap-0.5 rounded-xl2 px-2 py-3 text-center backdrop-blur transition-all ${
+                    plan.popular ? "bg-white text-brand-ink shadow-cardHover scale-[1.03]" : "bg-white/15 text-white"
+                  }`}
+                >
+                  {plan.popular && (
+                    <span className="absolute -top-2 rounded-full bg-brand-gradient text-white text-[9px] font-bold px-2 py-0.5">
+                      ยอดนิยม
+                    </span>
+                  )}
+                  <p className="font-bold text-xs mt-1.5">{plan.months} เดือน</p>
+                  <span className={`text-base font-extrabold ${plan.popular ? "text-brand-emerald" : "text-white"}`}>
+                    -{plan.discountPct}%
+                  </span>
+                  <p className={`text-[10px] leading-tight ${plan.popular ? "text-slate-500" : "text-white/70"}`}>
+                    {plan.sublabel}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:flex flex-col gap-2.5">
               {subscriptionPlans.map((plan) => (
                 <div
                   key={plan.months}
@@ -388,12 +448,22 @@ export default async function HomePage() {
         <ScrollReveal className="container-page">
           <SectionHeading title="ความรู้เรื่องผิวและสุขภาพ" subtitle="Learn About Wellness" href="/knowledge" />
         </ScrollReveal>
-        <StaggerGrid className="container-page grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5" stagger={0.12}>
+        {/* Horizontal swipe on mobile (native scroll-snap, no slider JS)
+            instead of 3 full-width cards stacked one under another —
+            desktop keeps the 3-column grid since there's room for all of
+            them at once. */}
+        {/* container-page's padding is correctly respected once this
+            becomes a grid at sm+, but is silently ignored at the leading
+            edge while it's a flex+overflow-x-auto row on mobile (a real
+            browser quirk, confirmed) — the sm:hidden spacers below give
+            mobile its gutter explicitly instead of fighting that. */}
+        <StaggerGrid className="container-page flex sm:grid overflow-x-auto snap-x snap-mandatory scrollbar-none sm:overflow-visible gap-4 md:gap-5 sm:grid-cols-3">
+          <div className="shrink-0 w-0 sm:hidden snap-start" aria-hidden />
           {featuredArticles.map((a) => (
             <Link
               key={a.slug}
               href={`/knowledge/article/${a.slug}`}
-              className="group rounded-xl2 bg-white overflow-hidden shadow-card hover:shadow-cardHover transition-shadow"
+              className="group shrink-0 w-[78%] sm:w-auto snap-start rounded-xl2 bg-white overflow-hidden shadow-card hover:shadow-cardHover transition-shadow"
             >
               <div className="relative aspect-[16/9]">
                 <Image
@@ -421,6 +491,7 @@ export default async function HomePage() {
               </div>
             </Link>
           ))}
+          <div className="shrink-0 w-0 sm:hidden snap-start" aria-hidden />
         </StaggerGrid>
       </section>
     </div>

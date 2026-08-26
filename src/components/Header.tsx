@@ -111,7 +111,7 @@ export default function Header() {
           ))}
         </div>
       </div>
-      <div className="container-page flex items-center gap-3 md:gap-6 py-2.5 lg:py-3">
+      <div className="container-page flex items-center gap-3 md:gap-6 py-2 lg:py-3">
         <button className="lg:hidden shrink-0" onClick={() => setOpen(true)} aria-label="Open menu">
           <Menu size={24} />
         </button>
@@ -221,7 +221,7 @@ export default function Header() {
           link with a real search bar (same reusable HeaderSearch used on
           desktop). Location + wishlist + notifications all live in the logo
           row above instead of here. */}
-      <div className="md:hidden container-page pb-2.5">
+      <div className="md:hidden container-page pb-1.5">
         <div className="flex items-center gap-2">
           <HeaderSearch
             placeholder="ค้นหาสินค้า, ยี่ห้อ..."

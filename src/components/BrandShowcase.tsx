@@ -25,14 +25,6 @@ export default function BrandShowcase({
   return (
     <section className="bg-brand-gradient-soft py-14 md:py-20">
       <div className="container-page">
-        <div className="text-center max-w-xl mx-auto mb-7">
-          <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-emerald shadow-card mb-3">
-            Our House Brands
-          </span>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-ink">Life So Smooth</h2>
-          <p className="mt-2 text-slate-600">3 แบรนด์ในเครือที่คัดสรรเพื่อไลฟ์สไตล์ที่สมูทขึ้นทุกวัน</p>
-        </div>
-
         <div className="flex justify-center flex-wrap gap-2.5 md:gap-3 mb-2">
           {brands.map((b, i) => (
             <button

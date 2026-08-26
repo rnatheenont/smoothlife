@@ -1,10 +1,5 @@
-"use client";
-
-import { useEffect, useRef } from "react";
-import gsap from "gsap";
-
-// Staggers its direct children in on mount — for above-the-fold content
-// like the hero, where a scroll trigger wouldn't fire anyway.
+// Plain layout wrapper — no entrance animation. Kept as a component (rather
+// than removing every call site) so callers don't need to change.
 export default function StaggerReveal({
   children,
   className,
@@ -12,28 +7,5 @@ export default function StaggerReveal({
   children: React.ReactNode;
   className?: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const ctx = gsap.context(() => {
-      gsap.from(el.children, {
-        opacity: 0,
-        y: 24,
-        duration: 0.6,
-        stagger: 0.12,
-        ease: "power2.out",
-      });
-    }, ref);
-
-    return () => ctx.revert();
-  }, []);
-
-  return (
-    <div ref={ref} className={className}>
-      {children}
-    </div>
-  );
+  return <div className={className}>{children}</div>;
 }
