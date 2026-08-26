@@ -42,7 +42,7 @@ export default function HeroCarousel({ banners: heroBanners }: { banners: HeroBa
   return (
     <div>
       <div
-        className="group relative aspect-[100/53] rounded-xl2 overflow-hidden shadow-[0_16px_28px_-8px_rgba(0,168,123,0.14),0_32px_64px_-16px_rgba(0,168,123,0.32)] select-none touch-pan-y bg-surface-soft"
+        className="group relative aspect-[100/53] rounded-xl2 overflow-hidden select-none touch-pan-y bg-surface-soft"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onMouseEnter={() => setPaused(true)}

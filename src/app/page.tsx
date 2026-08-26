@@ -94,13 +94,9 @@ export default async function HomePage() {
           the only place that CTA ("ให้น้อง Smoothie แนะนำสกินแคร์") appears,
           a second one later would be pure redundancy. */}
       <section className="relative overflow-hidden bg-white">
-        {/* Mobile: starts white right under the search bar, easing into a
-            light mint tint by the bottom of the section (around the second
-            category row) — reversed from the earlier top-tinted version.
-            Desktop keeps the old short top banner + two floating blobs —
-            its section is much taller (headline column), so the same
-            full-height gradient would wash out the copy. */}
-        <div className="pointer-events-none absolute inset-0 md:hidden bg-gradient-to-b from-white via-brand-sky/5 via-70% to-brand-teal/10" />
+        {/* Mobile: plain white, no tint — desktop keeps the old short top
+            banner + two floating blobs since its section is much taller
+            (headline column) and reads fine with the wash. */}
         <div className="pointer-events-none hidden md:block absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-brand-teal/10 via-brand-sky/5 to-transparent" />
         <div className="pointer-events-none hidden md:block absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/10 blur-3xl animate-floatSlow" />
         <div className="pointer-events-none hidden md:block absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-brand-sky/10 blur-3xl animate-floatSlow" />
