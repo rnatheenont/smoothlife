@@ -126,7 +126,7 @@ export default async function HomePage() {
             </div>
           </StaggerReveal>
           <div className="relative order-1 md:order-2">
-            <div className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-brand-gradient opacity-30 blur-2xl" />
+            <div className="pointer-events-none hidden md:block absolute -inset-6 rounded-[2rem] bg-brand-gradient opacity-30 blur-2xl" />
             <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
           </div>
 
