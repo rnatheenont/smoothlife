@@ -5,6 +5,7 @@ import { filterProducts } from "@/lib/filter-products";
 import { categories } from "@/data/categories";
 import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
+import CategoryChips from "@/components/CategoryChips";
 import SortSelect from "@/components/SortSelect";
 import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";
@@ -55,6 +56,7 @@ export default function CategoryPage({
         <BackButton fallbackHref="/shop" />
         <Breadcrumb items={[{ label: "หน้าแรก", href: "/" }, { label: "ช้อป", href: "/shop" }, { label: categoryInfo.nameTh }]} />
       </div>
+      <CategoryChips current={current} />
       <div className="mb-6 flex items-end justify-between gap-3">
         <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">{categoryInfo.nameTh}</h1>
         <span className="text-xs md:text-sm font-medium text-brand-emerald bg-brand-gradient-soft rounded-full px-3 py-1 shrink-0">

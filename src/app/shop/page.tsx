@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { filterProducts, PAGE_SIZE, ShopSearchParams } from "@/lib/filter-products";
 import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
+import CategoryChips from "@/components/CategoryChips";
 import SortSelect from "@/components/SortSelect";
 import Pagination from "@/components/Pagination";
 
@@ -31,6 +32,7 @@ export default function ShopPage({ searchParams }: { searchParams: ShopSearchPar
           {allItems.length} รายการ
         </span>
       </div>
+      <CategoryChips current={searchParams} />
       <div className="flex flex-col lg:flex-row gap-8">
         <ShopFilters current={searchParams} mobileExtra={<SortSelect current={searchParams} />} />
         <div className="flex-1">

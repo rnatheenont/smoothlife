@@ -237,27 +237,6 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
 
   return (
     <>
-      <div className="lg:hidden -mx-4 px-4 mb-3 flex gap-2 overflow-x-auto scrollbar-none">
-        <button
-          onClick={() => updateParam("category", null)}
-          className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-            !current.category ? "bg-brand-gradient text-white shadow-sm" : "bg-surface-soft text-slate-600"
-          }`}
-        >
-          ทั้งหมด
-        </button>
-        {categories.map((c) => (
-          <button
-            key={c.slug}
-            onClick={() => updateParam("category", c.slug)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-              current.category === c.slug ? "bg-brand-gradient text-white shadow-sm" : "bg-surface-soft text-slate-600"
-            }`}
-          >
-            {c.nameTh}
-          </button>
-        ))}
-      </div>
       <div className="lg:hidden flex items-center gap-3 mb-4">
         <div className="min-w-0 flex-1">
           <button
