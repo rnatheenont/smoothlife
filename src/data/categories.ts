@@ -6,19 +6,19 @@ export const categories: CategoryInfo[] = [
     slug: "skincare",
     name: "Skincare",
     nameTh: "สกินแคร์",
-    image: "https://www.smoothlife.com/cdn/shop/collections/Skincare-02.jpg?width=800",
+    image: "/categories/skincare-acne5.jpg",
   },
   {
     slug: "oral-care",
     name: "Oral Care",
     nameTh: "ดูแลช่องปาก",
-    image: "https://www.smoothlife.com/cdn/shop/files/1set_den_002.jpg?width=800",
+    image: "/categories/oral-care-dentiste.jpg",
   },
   {
     slug: "hair-care",
     name: "Hair Care",
     nameTh: "ดูแลเส้นผม",
-    image: "https://www.smoothlife.com/cdn/shop/files/SmoothE_15.png?v=1755249046&width=800",
+    image: "/categories/hair-care-smoothe.jpg",
   },
   {
     slug: "personal-care",
