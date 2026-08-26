@@ -238,7 +238,7 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
   if (clips.length === 0) return null;
 
   return (
-    <section className="bg-surface-soft py-14 md:py-20 overflow-hidden">
+    <section className="bg-surface-soft py-6 md:py-20 overflow-hidden">
       <h2 className="text-center font-extrabold text-2xl md:text-3xl text-brand-ink mb-8">กระแสฮอตบนโซเชียล</h2>
       <div
         ref={scrollerRef}

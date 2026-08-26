@@ -225,7 +225,7 @@ export default function Header() {
         <div className="flex items-center gap-2">
           <HeaderSearch
             placeholder="ค้นหาสินค้า, ยี่ห้อ..."
-            inputClassName="w-full rounded-full border border-slate-200 bg-surface-soft py-1.5 pl-4 pr-9 text-[8px] outline-none focus:border-brand-teal transition-colors"
+            inputClassName="w-full rounded-full border border-slate-200 bg-surface-soft py-1.5 pl-4 pr-9 text-[4px] outline-none focus:border-brand-teal transition-colors"
             buttonClassName="absolute right-1 top-1/2 -translate-y-1/2 grid h-6 w-6 place-items-center rounded-full bg-brand-ink text-white"
           />
         </div>

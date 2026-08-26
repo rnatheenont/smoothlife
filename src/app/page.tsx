@@ -96,7 +96,7 @@ export default async function HomePage() {
         <div className="pointer-events-none hidden md:block absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/10 blur-3xl animate-floatSlow" />
         <div className="pointer-events-none hidden md:block absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-brand-sky/10 blur-3xl animate-floatSlow" />
 
-        <div className="container-page relative py-6 md:py-24 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+        <div className="container-page relative pt-2 pb-6 md:py-24 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
           <StaggerReveal className="hidden md:block order-3 md:order-1">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-emerald shadow-card mb-5 border border-slate-100">
               <Sparkles size={13} /> แนะนำน้อง Smoothie ผู้ช่วยคนใหม่
@@ -173,8 +173,14 @@ export default async function HomePage() {
 
       {/* Promotions — moved up here (was further down) to fill the slot
           the mobile-only "today's deals" slider used to occupy. */}
-      <section className="bg-surface-soft py-14 md:py-20">
-        <ScrollReveal className="container-page">
+      <section className="bg-surface-soft py-8 md:py-20">
+        {/* Thai title hidden on mobile so the cards sit close to the top;
+            the English label stays, centered, as a small standalone eyebrow
+            instead of the full left-aligned heading block. */}
+        <p className="md:hidden text-center text-[11px] font-bold uppercase tracking-[0.2em] text-brand-emerald mb-6">
+          New, Best Sellers and Promotions
+        </p>
+        <ScrollReveal className="container-page hidden md:block">
           <SectionHeading title="โปรโมชั่นและดีลเด็ด" subtitle="New, Best Sellers and Promotions" href="/promotions" />
         </ScrollReveal>
         <StaggerGrid className="container-page grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4" stagger={0.1}>
@@ -206,7 +212,7 @@ export default async function HomePage() {
       {/* Categories — hidden on mobile, where the quick category grid right
           under the header search bar already shows these same categories;
           desktop keeps this section since it has no such shortcut. */}
-      <section className="hidden md:block bg-surface-soft py-14 md:py-20">
+      <section className="hidden md:block bg-surface-soft py-8 md:py-20">
         <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
         </ScrollReveal>
@@ -229,7 +235,7 @@ export default async function HomePage() {
           so grouping them together strengthens the "ways to start shopping"
           cluster right after the hero, instead of splitting it far apart
           from Categories with unrelated content in between. */}
-      <section className="bg-white py-14 md:py-20">
+      <section className="bg-white py-8 md:py-20">
         <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามปัญหาผิวที่กังวล" subtitle="Shop by Concern" href="/concern" />
         </ScrollReveal>
@@ -284,7 +290,7 @@ export default async function HomePage() {
           recurring plan is a bigger ask than a one-off purchase, so it
           converts better after the catalogue, social proof, and brand story
           above have already built trust, rather than pitching it early. */}
-      <section className="container-page py-14 md:py-20">
+      <section className="container-page py-8 md:py-20">
         <ScaleReveal className="relative overflow-hidden rounded-xl2 bg-brand-gradient p-8 md:p-12 text-white">
           <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-white/10 animate-floatSlow" />
           <div className="pointer-events-none absolute right-24 bottom-0 h-24 w-24 rounded-full bg-white/10 animate-floatSlow" />
@@ -372,7 +378,7 @@ export default async function HomePage() {
           fixed grid either got enormous or hid most of them; the marquee
           scales to any count without bloating page height and actually
           shows the full range of brands we carry. */}
-      <section className="bg-surface-soft py-14 md:py-20 overflow-hidden">
+      <section className="bg-surface-soft py-8 md:py-20 overflow-hidden">
         <ScrollReveal className="container-page">
           <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
         </ScrollReveal>
@@ -383,7 +389,7 @@ export default async function HomePage() {
 
       {/* Wellness / knowledge teaser — kept last: bottom-funnel content for
           people still researching rather than ready to buy or subscribe. */}
-      <section className="bg-brand-gradient-soft py-14 md:py-20">
+      <section className="bg-brand-gradient-soft py-8 md:py-20">
         <ScrollReveal className="container-page">
           <SectionHeading title="ความรู้เรื่องผิวและสุขภาพ" subtitle="Learn About Wellness" href="/knowledge" />
         </ScrollReveal>

@@ -36,7 +36,7 @@ export default function ProductTabs({ tabs }: { tabs: ProductTab[] }) {
   }
 
   return (
-    <section className="bg-white py-14 md:py-20 overflow-hidden">
+    <section className="bg-white py-6 md:py-20 overflow-hidden">
       <ScrollReveal className="container-page">
         <div className="flex flex-wrap items-end justify-between gap-4 mb-6 md:mb-8">
           <div>
