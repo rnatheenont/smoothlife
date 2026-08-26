@@ -50,11 +50,6 @@ export default async function HomePage() {
   // ranked by popularity — discount depth is the real, non-fabricated
   // signal we do have, so bigger price cuts rank first instead.
   const discountPct = (p: Product) => (p.compareAtPrice ? 1 - p.price / p.compareAtPrice : 0);
-  // Real on-sale products, deepest discount first — the mobile "today's
-  // deals" strip near the top of the page. No fabricated price-off or
-  // "recently searched" data here: everything shown is the product's own
-  // real price/compareAtPrice already in the catalogue.
-  const topDeals = [...onSale].sort((a, b) => discountPct(b) - discountPct(a)).slice(0, 4);
   const bundles = products
     .filter((p) => p.inStock && p.badges?.includes("Bundle"))
     .sort((a, b) => discountPct(b) - discountPct(a))
@@ -176,58 +171,37 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Mobile-only "today's deals" strip — real on-sale products (their
-          own actual price/compareAtPrice), ranked by real discount depth,
-          not a fabricated "hot" ranking. Desktop already surfaces the same
-          products via the Promotions grid + ProductTabs "ลดราคา" tab
-          further down, so this is additive on mobile only, placed high up
-          (same slot SHEIN-style layouts give deal cards) rather than
-          duplicating a whole second desktop section. */}
-      {topDeals.length > 0 && (
-        <section className="md:hidden bg-white py-6">
-          <ScrollReveal className="container-page">
-            <SectionHeading title="ดีลเด็ดวันนี้" subtitle="Today's Best Deals" href="/promotions" />
-          </ScrollReveal>
-          {/* Plain padding-left on a flex+overflow-x-auto row gets ignored
-              at the leading edge in this browser (confirmed: overflow:visible
-              or display:grid both fix it, padding alone doesn't) — a real
-              spacer element sidesteps that quirk instead of fighting it. */}
-          <StaggerGrid className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-3">
-            <div className="shrink-0 w-1 snap-start" aria-hidden />
-            {topDeals.map((p) => (
-              <Link
-                key={p.slug}
-                href={`/product/${p.slug}`}
-                className="shrink-0 w-[46%] snap-start rounded-xl2 overflow-hidden bg-white shadow-card border border-slate-100"
-              >
-                <div className="relative aspect-square bg-surface-soft">
-                  <Image src={p.image} alt={p.name} fill sizes="50vw" className="object-cover" />
-                  {p.compareAtPrice && (
-                    <span className="absolute left-2 top-2 rounded-full bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5">
-                      -{Math.round(discountPct(p) * 100)}%
-                    </span>
-                  )}
-                </div>
-                <div className="p-2.5">
-                  <p className="text-[11px] text-slate-500 line-clamp-1">{p.name}</p>
-                  <div className="mt-1 flex items-baseline gap-1.5">
-                    <span className="text-base font-extrabold text-brand-ink">{formatTHB(p.price)}</span>
-                    {p.compareAtPrice && (
-                      <span className="text-[11px] text-slate-400 line-through">{formatTHB(p.compareAtPrice)}</span>
-                    )}
-                  </div>
-                  {p.compareAtPrice && (
-                    <p className="text-[10px] text-brand-emerald font-medium mt-0.5">
-                      ประหยัด {formatTHB(p.compareAtPrice - p.price)}
-                    </p>
-                  )}
-                </div>
-              </Link>
-            ))}
-            <div className="shrink-0 w-1 snap-start" aria-hidden />
-          </StaggerGrid>
-        </section>
-      )}
+      {/* Promotions — moved up here (was further down) to fill the slot
+          the mobile-only "today's deals" slider used to occupy. */}
+      <section className="bg-surface-soft py-14 md:py-20">
+        <ScrollReveal className="container-page">
+          <SectionHeading title="โปรโมชั่นและดีลเด็ด" subtitle="New, Best Sellers and Promotions" href="/promotions" />
+        </ScrollReveal>
+        <StaggerGrid className="container-page grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4" stagger={0.1}>
+          {promotions.map((promo) => (
+            <Link
+              key={promo.slug}
+              href={`/promotions#${promo.slug}`}
+              className="relative rounded-xl2 overflow-hidden aspect-[4/3] group shadow-card"
+            >
+              <Image
+                src={promotionImage(promo, products, usedPromoSlugs)}
+                alt={promo.title}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+              <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
+                <span className="text-[10px] font-bold uppercase bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">
+                  {promo.badge}
+                </span>
+                <h3 className="font-bold text-sm md:text-base mt-1">{promo.title}</h3>
+                <p className="text-[11px] md:text-xs text-white/80">{promo.subtitle}</p>
+              </div>
+            </Link>
+          ))}
+        </StaggerGrid>
+      </section>
 
       {/* Categories — hidden on mobile, where the quick category grid right
           under the header search bar already shows these same categories;
@@ -267,37 +241,6 @@ export default async function HomePage() {
               </div>
               <div className="p-2.5">
                 <p className="text-xs font-semibold text-brand-ink line-clamp-2">{c.nameTh}</p>
-              </div>
-            </Link>
-          ))}
-        </StaggerGrid>
-      </section>
-
-      {/* Promotions */}
-      <section className="bg-surface-soft py-14 md:py-20">
-        <ScrollReveal className="container-page">
-          <SectionHeading title="โปรโมชั่นและดีลเด็ด" subtitle="New, Best Sellers and Promotions" href="/promotions" />
-        </ScrollReveal>
-        <StaggerGrid className="container-page grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4" stagger={0.1}>
-          {promotions.map((promo) => (
-            <Link
-              key={promo.slug}
-              href={`/promotions#${promo.slug}`}
-              className="relative rounded-xl2 overflow-hidden aspect-[4/3] group shadow-card"
-            >
-              <Image
-                src={promotionImage(promo, products, usedPromoSlugs)}
-                alt={promo.title}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
-                <span className="text-[10px] font-bold uppercase bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">
-                  {promo.badge}
-                </span>
-                <h3 className="font-bold text-sm md:text-base mt-1">{promo.title}</h3>
-                <p className="text-[11px] md:text-xs text-white/80">{promo.subtitle}</p>
               </div>
             </Link>
           ))}
