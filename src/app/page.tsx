@@ -86,7 +86,7 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero — no separate AI-advisor CTA section further down: this is
-          the only place that CTA ("ให้น้อง Smoothie แนะนำสกินแคร์") appears,
+          the only place that CTA ("น้อง Smoothie แนะนำ") appears,
           a second one later would be pure redundancy. */}
       <section className="relative overflow-hidden bg-white">
         {/* Mobile: plain white, no tint — desktop keeps the old short top
@@ -96,14 +96,14 @@ export default async function HomePage() {
         <div className="pointer-events-none hidden md:block absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/10 blur-3xl animate-floatSlow" />
         <div className="pointer-events-none hidden md:block absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-brand-sky/10 blur-3xl animate-floatSlow" />
 
-        <div className="container-page relative pt-2 pb-6 md:py-24 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+        <div className="container-page relative pt-2 pb-6 md:py-24 grid md:grid-cols-[0.65fr_1.35fr] gap-8 md:gap-12 items-center">
           <StaggerReveal className="hidden md:block order-3 md:order-1">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-emerald shadow-card mb-5 border border-slate-100">
               <Sparkles size={13} /> แนะนำน้อง Smoothie ผู้ช่วยคนใหม่
             </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-[1.05] tracking-tight text-brand-ink">
+            <h1 className="text-4xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold !leading-[1.35] tracking-tight text-brand-ink">
               สุขภาพดี ผิวสวย <br />
-              <span className="brand-text-gradient">ครบทุก Lifestyle</span> ที่เดียว
+              <span className="brand-text-gradient">ครบทุก Lifestyle</span> <span className="whitespace-nowrap">ที่เดียว</span>
             </h1>
             <p className="mt-5 text-slate-500 max-w-md leading-relaxed">
               ค้นหาสินค้าง่าย ซื้อเร็ว เข้าสู่ระบบด้วย OTP หรือ LINE พร้อมรับคะแนนสะสมทุกการช้อป
@@ -121,7 +121,7 @@ export default async function HomePage() {
                 href="/advisor"
                 className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-7 py-3.5 text-sm hover:border-brand-teal hover:-translate-y-0.5 transition-all"
               >
-                ให้น้อง Smoothie แนะนำสกินแคร์
+                น้อง Smoothie แนะนำ
               </Link>
             </div>
           </StaggerReveal>
@@ -171,8 +171,31 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Promotions — moved up here (was further down) to fill the slot
-          the mobile-only "today's deals" slider used to occupy. */}
+      {/* Categories — hidden on mobile, where the quick category grid right
+          under the header search bar already shows these same categories;
+          desktop keeps this section since it has no such shortcut. Moved
+          above Promotions so browsing-by-type comes before deals. */}
+      <section className="hidden md:block bg-white py-8 md:py-20">
+        <ScrollReveal className="container-page">
+          <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
+        </ScrollReveal>
+        <StaggerGrid className="container-page grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-6">
+          {categories.map((c) => (
+            <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col items-center gap-3">
+              <div className="relative h-16 w-16 md:h-28 md:w-28 rounded-full overflow-hidden bg-white shadow-card group-hover:shadow-cardHover group-hover:-translate-y-1 transition-all duration-300">
+                <Image src={c.image} alt={c.name} fill className="object-cover" />
+              </div>
+              <span className="text-xs md:text-base text-center font-medium text-slate-600 group-hover:text-brand-emerald">
+                {c.nameTh}
+              </span>
+            </Link>
+          ))}
+        </StaggerGrid>
+      </section>
+
+      {/* Promotions — was the first section after Trust strip (filling the
+          slot the mobile-only "today's deals" slider used to occupy);
+          Categories now leads instead, so this follows it. */}
       <section className="bg-surface-soft py-8 md:py-20">
         {/* Thai title hidden on mobile so the cards sit close to the top;
             the English label stays, centered, as a small standalone eyebrow
@@ -204,27 +227,6 @@ export default async function HomePage() {
                 <h3 className="font-bold text-sm md:text-base mt-1">{promo.title}</h3>
                 <p className="text-[11px] md:text-xs text-white/80">{promo.subtitle}</p>
               </div>
-            </Link>
-          ))}
-        </StaggerGrid>
-      </section>
-
-      {/* Categories — hidden on mobile, where the quick category grid right
-          under the header search bar already shows these same categories;
-          desktop keeps this section since it has no such shortcut. */}
-      <section className="hidden md:block bg-surface-soft py-8 md:py-20">
-        <ScrollReveal className="container-page">
-          <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
-        </ScrollReveal>
-        <StaggerGrid className="container-page grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
-          {categories.map((c) => (
-            <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col items-center gap-2">
-              <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full overflow-hidden bg-white shadow-card group-hover:shadow-cardHover group-hover:-translate-y-1 transition-all duration-300">
-                <Image src={c.image} alt={c.name} fill className="object-cover" />
-              </div>
-              <span className="text-xs md:text-sm text-center font-medium text-slate-600 group-hover:text-brand-emerald">
-                {c.nameTh}
-              </span>
             </Link>
           ))}
         </StaggerGrid>
