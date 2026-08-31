@@ -4,7 +4,7 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { hashPassword } from "@/lib/password";
 import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
-import { tierProgress } from "@/data/coupons";
+import { getUserLoyalty } from "@/lib/user-tier";
 import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
 
   const [balanceRow] = await supabaseRest<{ balance: number }[]>(`points_balance?user_id=eq.${uid}&select=balance`);
   const points = balanceRow?.balance ?? 0;
+  const loyalty = await getUserLoyalty(uid);
 
   const res = NextResponse.json({
     ok: true,
@@ -116,7 +117,9 @@ export async function POST(req: NextRequest) {
       provider: "email",
       real: true,
       points,
-      tier: tierProgress(points).current,
+      tier: loyalty.tier,
+      tierSpend: loyalty.spend,
+      tierOrders: loyalty.orders,
       createdAt: user.created_at,
       shopifyAddressSuggestion: addressSuggestion,
     },

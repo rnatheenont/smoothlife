@@ -294,6 +294,7 @@ export async function createShopifyCustomer(opts: {
 }
 
 export type ShopifyOrderSummary = {
+  id: string;
   name: string;
   createdAt: string;
   financialStatus: string | null;
@@ -319,6 +320,7 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
         orders: {
           edges: {
             node: {
+              id: string;
               name: string;
               createdAt: string;
               displayFinancialStatus: string | null;
@@ -338,6 +340,7 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
           orders(first: $limit, sortKey: CREATED_AT, reverse: true) {
             edges {
               node {
+                id
                 name
                 createdAt
                 displayFinancialStatus
@@ -354,6 +357,7 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
     );
     const edges = data.customer?.orders.edges || [];
     return edges.map(({ node }) => ({
+      id: node.id,
       name: node.name,
       createdAt: node.createdAt,
       financialStatus: node.displayFinancialStatus,
@@ -373,17 +377,51 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
   }
 }
 
-// Verified-purchase check for the review-points feature: did this customer
-// actually pay for this product? Reuses getCustomerOrders with a larger
-// limit than the chat assistant needs, since here we're scanning full order
-// history rather than just the most recent few. Best-effort like the rest
-// of this file — any lookup failure just means "can't verify," not a crash.
-export async function hasPaidOrderForProduct(shopifyCustomerId: string, productSlug: string): Promise<boolean> {
+// Fulfillment status for a single order by its numeric (webhook-payload)
+// ID. Used as a cron-poll fallback for the referral programme's delivery
+// step, in case the "orders/fulfilled" webhook topic never gets subscribed
+// in Shopify — see @/lib/referral-cron. Best-effort: any failure just means
+// "can't tell yet," not a crash.
+export async function getOrderFulfillmentStatus(orderId: string): Promise<{ fulfilled: boolean } | null> {
+  if (!shopifyAdminConfigured()) return null;
+  const gid = orderId.startsWith("gid://") ? orderId : `gid://shopify/Order/${orderId}`;
+  try {
+    const data = await adminGraphql<{ order: { displayFulfillmentStatus: string } | null }>(
+      `query OrderFulfillmentStatus($id: ID!) {
+        order(id: $id) { displayFulfillmentStatus }
+      }`,
+      { id: gid }
+    );
+    if (!data.order) return null;
+    return { fulfilled: data.order.displayFulfillmentStatus === "FULFILLED" };
+  } catch (err) {
+    console.error("[shopify-admin] getOrderFulfillmentStatus failed", err);
+    return null;
+  }
+}
+
+// Verified-purchase lookup for the review-points feature: did this customer
+// actually pay for this product, and which order? Reuses getCustomerOrders
+// with a larger limit than the chat assistant needs, since here we're
+// scanning full order history rather than just the most recent few.
+// Best-effort like the rest of this file — any lookup failure just means
+// "can't verify," not a crash.
+//
+// The 60-day review window is meant to run from delivery (see the loyalty
+// plan doc), but this app doesn't fetch fulfillment delivery events —
+// order.createdAt (paid date) is used as a conservative stand-in. That
+// means the window can start a few days earlier than true delivery; a real
+// deliveredAt lookup is a follow-up, not implemented here.
+export async function findPaidOrderForProduct(
+  shopifyCustomerId: string,
+  productSlug: string
+): Promise<{ orderId: string; orderName: string; paidAt: string } | null> {
   const orders = await getCustomerOrders(shopifyCustomerId, 100);
-  if (!orders) return false;
-  return orders.some(
+  if (!orders) return null;
+  const match = orders.find(
     (order) => order.financialStatus === "PAID" && order.items.some((item) => item.slug === productSlug)
   );
+  return match ? { orderId: match.id, orderName: match.name, paidAt: match.createdAt } : null;
 }
 
 export type VariantAvailability = {
@@ -467,12 +505,13 @@ export async function createPercentDiscountCode(opts: {
 
 // Same as createPercentDiscountCode but a fixed baht amount off the order
 // total instead of a percentage — used for point-redemption tiers like
-// "1000 points = ฿100 off".
+// "1000 points = ฿100 off", and for referral rewards/welcome discounts.
 export async function createAmountDiscountCode(opts: {
   title: string;
   code: string;
   amount: number; // THB, applied once to the whole order
   usageLimit?: number;
+  minSubtotal?: number; // THB — enforced by Shopify itself, not just app-side display logic
 }): Promise<string> {
   const data = await adminGraphql<{
     discountCodeBasicCreate: { codeDiscountNode: { id: string } | null; userErrors: { field: string[]; message: string }[] };
@@ -491,6 +530,9 @@ export async function createAmountDiscountCode(opts: {
         usageLimit: opts.usageLimit ?? 1,
         appliesOncePerCustomer: true,
         customerSelection: { all: true },
+        minimumRequirement: opts.minSubtotal
+          ? { subtotal: { greaterThanOrEqualToSubtotal: String(opts.minSubtotal) } }
+          : undefined,
         customerGets: {
           value: { discountAmount: { amount: opts.amount, appliesOnEachItem: false } },
           items: { all: true },

@@ -21,6 +21,11 @@ export type SLUser = {
   avatar?: string | null;
   points: number;
   tier: Tier;
+  // Rolling-12-month spend/order-count basis behind `tier` — only present
+  // for real accounts (see @/lib/user-tier). Demo/mock accounts don't set
+  // these; treat as 0 when absent rather than assuming Bronze incorrectly.
+  tierSpend?: number;
+  tierOrders?: number;
   createdAt: string;
 };
 
@@ -32,7 +37,7 @@ type AuthContextValue = {
     phone: string,
     email: string,
     password: string
-  ) => Promise<{ ok: boolean; error?: string; needsVerification?: boolean }>;
+  ) => Promise<{ ok: boolean; error?: string; field?: string; needsVerification?: boolean }>;
   confirmRegisterUpdate: (
     name: string,
     phone: string,
@@ -40,7 +45,7 @@ type AuthContextValue = {
     password: string,
     code: string
   ) => Promise<{ ok: boolean; error?: string }>;
-  loginWithEmail: (email: string, password: string) => Promise<{ ok: boolean; error?: string; needsVerification?: boolean }>;
+  loginWithEmail: (email: string, password: string) => Promise<{ ok: boolean; error?: string; field?: string; needsVerification?: boolean }>;
   completePhoneLogin: (user: SLUser) => void;
   logout: () => void;
   addPoints: (amount: number) => void;
@@ -119,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ name, phone, email, password }),
     });
     const data = await res.json();
-    if (!data.ok) return { ok: false, error: data.error || "สมัครสมาชิกไม่สำเร็จ", needsVerification: data.needsVerification };
+    if (!data.ok) return { ok: false, error: data.error || "สมัครสมาชิกไม่สำเร็จ", field: data.field, needsVerification: data.needsVerification };
     stashAddressSuggestion(data);
     setUser(data.user);
     return { ok: true };

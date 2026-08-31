@@ -80,18 +80,6 @@ export default function CheckoutPage() {
 
   const selectedTaxAddress = taxAddresses.find((a) => a.id === selectedTaxAddressId) || null;
 
-  if (!user) {
-    return (
-      <div className="container-page py-20 text-center max-w-md mx-auto">
-        <h1 className="text-xl font-bold text-brand-ink">เข้าสู่ระบบเพื่อดำเนินการชำระเงิน</h1>
-        <p className="text-sm text-slate-500 mt-2">เข้าสู่ระบบด้วย OTP, LINE หรือ Email เพื่อรับคะแนนสะสมทุกออเดอร์</p>
-        <Link href="/account/login?returnTo=/checkout" className="inline-block mt-6 rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm">
-          เข้าสู่ระบบ / สมัครสมาชิก
-        </Link>
-      </div>
-    );
-  }
-
   if (lines.length === 0) {
     return (
       <div className="container-page py-20 text-center">
@@ -114,10 +102,10 @@ export default function CheckoutPage() {
     try {
       const cart = await cartCreate(
         lines.map((l) => ({ merchandiseId: l.variantId, quantity: l.qty })),
-        couponCode,
-        user.email || null,
+        totals.referralActive ? totals.referralDiscountCode : couponCode,
+        user?.email || null,
         defaultAddress ? toShopifyDeliveryAddress(defaultAddress) : null,
-        user.phone ? toE164Thai(user.phone) : null,
+        user?.phone ? toE164Thai(user.phone) : null,
         wantsTaxInvoice && selectedTaxAddress ? toTaxInvoiceAttributes(selectedTaxAddress) : undefined
       );
       window.location.href = cart.checkoutUrl;
@@ -129,7 +117,20 @@ export default function CheckoutPage() {
 
   return (
     <div className="container-page py-8 md:py-10">
-      <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-6">ดำเนินการชำระเงิน</h1>
+      <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">ดำเนินการชำระเงิน</h1>
+      {!user && (
+        <div className="mb-6 flex items-center justify-between gap-3 rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-4 text-sm">
+          <span className="text-slate-600">
+            สั่งซื้อแบบไม่ต้องสมัครสมาชิกได้เลย — แต่จะไม่ได้แต้มสะสมและสิทธิ์สมาชิกจนกว่าจะสมัคร
+          </span>
+          <Link
+            href="/account/login?returnTo=/checkout"
+            className="shrink-0 rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-2 whitespace-nowrap"
+          >
+            เข้าสู่ระบบ
+          </Link>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 flex flex-col gap-6">
           <div className="rounded-xl2 border border-slate-100 p-5 shadow-card">
@@ -164,7 +165,7 @@ export default function CheckoutPage() {
             )}
           </div>
 
-          {user.real && (
+          {user?.real && (
             <div className="rounded-xl2 border border-slate-100 p-5 shadow-card">
               <h2 className="font-bold text-brand-ink mb-3 flex items-center gap-2">
                 <Receipt size={18} className="text-brand-emerald" /> ใบกำกับภาษี
@@ -257,7 +258,7 @@ export default function CheckoutPage() {
           {totals.discount > 0 && (
             <div className="flex justify-between text-sm text-brand-emerald mb-2">
               <span className="flex items-center gap-1.5">
-                <Ticket size={13} /> {totals.coupon?.code}
+                <Ticket size={13} /> {totals.referralActive ? "ส่วนลดแนะนำเพื่อน" : totals.coupon?.code}
               </span>
               <span>-{formatTHB(totals.discount)}</span>
             </div>
@@ -281,9 +282,13 @@ export default function CheckoutPage() {
           </button>
           <p className="text-[11px] text-slate-500 mt-3 text-center flex items-center justify-center gap-1.5">
             <Award size={12} className="text-amber-500" />
-            {lang === "en"
-              ? `Estimated ${totals.points.toLocaleString()} points once payment is confirmed`
-              : `คาดว่าจะได้รับ ${totals.points.toLocaleString()} คะแนน เมื่อชำระเงินสำเร็จ`}
+            {user
+              ? lang === "en"
+                ? `Estimated ${totals.points.toLocaleString()} points once payment is confirmed`
+                : `คาดว่าจะได้รับ ${totals.points.toLocaleString()} คะแนน เมื่อชำระเงินสำเร็จ`
+              : lang === "en"
+                ? "Create an account to start earning points on this order"
+                : "สมัครสมาชิกเพื่อรับคะแนนสะสมจากคำสั่งซื้อนี้"}
           </p>
         </div>
 

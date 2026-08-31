@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifyPassword } from "@/lib/password";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
-import { tierProgress } from "@/data/coupons";
+import { getUserLoyalty } from "@/lib/user-tier";
 import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
 import { isRateLimited, clientIp } from "@/lib/rate-limit";
 
@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
     addressSuggestion = shopifyLink.addressSuggestion;
   }
 
+  const loyalty = await getUserLoyalty(user.id);
   const res = NextResponse.json({
     ok: true,
     user: {
@@ -75,7 +76,9 @@ export async function POST(req: NextRequest) {
       provider: "email",
       real: true,
       points,
-      tier: tierProgress(points).current,
+      tier: loyalty.tier,
+      tierSpend: loyalty.spend,
+      tierOrders: loyalty.orders,
       createdAt: user.created_at,
       shopifyAddressSuggestion: addressSuggestion,
     },

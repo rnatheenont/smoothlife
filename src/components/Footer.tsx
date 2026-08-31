@@ -29,6 +29,7 @@ const columns = [
       { href: "/help", label: "ศูนย์ช่วยเหลือ" },
       { href: "/help/delivery", label: "การจัดส่งและคืนสินค้า" },
       { href: "/help/payment", label: "การชำระเงิน" },
+      { href: "/loyalty", label: "สิทธิสมาชิก" },
       { href: "/stores", label: "สาขาและติดต่อเรา" },
     ],
   },

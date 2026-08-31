@@ -69,6 +69,13 @@ const config: Config = {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-8px)" },
         },
+        tabPop: {
+          "0%": { transform: "scale(1) translateY(0)" },
+          "30%": { transform: "scale(0.8) translateY(2px)" },
+          "55%": { transform: "scale(1.3) translateY(-4px)" },
+          "80%": { transform: "scale(0.95) translateY(0)" },
+          "100%": { transform: "scale(1) translateY(0)" },
+        },
       },
       animation: {
         fadeUp: "fadeUp 0.4s ease-out both",
@@ -78,6 +85,7 @@ const config: Config = {
         glowPulse: "glowPulse 2s ease-out infinite",
         shimmer: "shimmer 2.5s linear infinite",
         floatSlow: "floatSlow 4s ease-in-out infinite",
+        tabPop: "tabPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both",
       },
     },
   },

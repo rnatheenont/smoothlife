@@ -68,10 +68,10 @@ export const coupons: Coupon[] = [
   },
   {
     code: "GOLD10",
-    titleTh: "ลด 10% สมาชิกระดับ Gold",
-    titleEn: "10% off for Gold members",
-    descTh: "สำหรับสมาชิกระดับ Gold เท่านั้น",
-    descEn: "Gold tier members only",
+    titleTh: "ลด 10% สมาชิกระดับ Luminous",
+    titleEn: "10% off for Luminous members",
+    descTh: "สำหรับสมาชิกระดับ Luminous เท่านั้น",
+    descEn: "Luminous tier members only",
     type: "percent",
     value: 10,
     tier: "Gold",
@@ -181,25 +181,11 @@ export function evaluateAll(lines: CartLine[], opts: { signedIn: boolean; tier?:
     });
 }
 
-export const POINTS_PER_BAHT = 1 / 100;
+// 1 point per ฿1 — same rate at every tier. Higher tiers earn better perks,
+// not a faster point rate (per the loyalty programme handoff doc).
+export const POINTS_PER_BAHT = 1;
 
 export function pointsForAmount(amount: number) {
   return Math.floor(amount * POINTS_PER_BAHT);
 }
 
-export const TIERS = [
-  { name: "Bronze", min: 0 },
-  { name: "Silver", min: 1000 },
-  { name: "Gold", min: 3000 },
-];
-
-export function tierProgress(points: number) {
-  const current = [...TIERS].reverse().find((t) => points >= t.min) || TIERS[0];
-  const next = TIERS.find((t) => t.min > points);
-  return {
-    current: current.name,
-    next: next ? next.name : null,
-    remaining: next ? next.min - points : 0,
-    percent: next ? Math.min(100, Math.round(((points - current.min) / (next.min - current.min)) * 100)) : 100,
-  };
-}

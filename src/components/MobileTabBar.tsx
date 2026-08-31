@@ -36,7 +36,10 @@ export default function MobileTabBar() {
           }`;
           const content = (
             <>
-              <span className="relative">
+              <span
+                key={on ? "active" : "inactive"}
+                className={`relative inline-flex ${on ? "motion-safe:animate-tabPop" : ""}`}
+              >
                 <Icon size={21} strokeWidth={on ? 2.4 : 1.9} />
                 {isCart && count > 0 && (
                   <span

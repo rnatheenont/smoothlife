@@ -42,6 +42,7 @@ const REASON_LABELS: Record<string, string> = {
   skin_coach_points: "Skin Coach",
   monthly_attendance_reward: "รางวัลเข้าระบบรายเดือน",
   challenge_bonus: "โบนัสภารกิจ",
+  birthday_bonus: "โบนัสวันเกิด",
 };
 
 function describeReason(reason: string) {

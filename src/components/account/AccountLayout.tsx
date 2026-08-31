@@ -16,10 +16,13 @@ import {
   CalendarCheck,
   Trophy,
   Repeat,
+  Users,
+  MessageSquareText,
   type LucideIcon,
 } from "lucide-react";
 import AccountGate from "@/components/AccountGate";
 import { useAuth } from "@/lib/auth-context";
+import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 type NavGroup = { label?: string; items: NavItem[] };
@@ -47,16 +50,24 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/account/orders", label: "คำสั่งซื้อ", icon: Package },
       { href: "/account/subscriptions", label: "การสมัครของฉัน", icon: Repeat },
       { href: "/account/wishlist", label: "รายการโปรด", icon: Heart },
+      { href: "/account/reviews", label: "รีวิวของฉัน", icon: MessageSquareText },
     ],
   },
   {
-    label: "กิจกรรมและรางวัล",
-    items: [
-      { href: "/account/checkin", label: "เช็กอินรายวัน", icon: CalendarCheck },
-      { href: "/account/points", label: "คะแนนสะสม", icon: Award },
-      { href: "/account/leaderboard", label: "อันดับ", icon: Trophy },
-    ],
+    items: [{ href: "/account/referral", label: "แนะนำเพื่อน", icon: Users }],
   },
+  ...(REWARDS_ACTIVITIES_ENABLED
+    ? [
+        {
+          label: "กิจกรรมและรางวัล",
+          items: [
+            { href: "/account/checkin", label: "เช็กอินรายวัน", icon: CalendarCheck },
+            { href: "/account/points", label: "คะแนนสะสม", icon: Award },
+            { href: "/account/leaderboard", label: "อันดับ", icon: Trophy },
+          ],
+        },
+      ]
+    : []),
 ];
 
 const NAV = NAV_GROUPS.flatMap((g) => g.items);

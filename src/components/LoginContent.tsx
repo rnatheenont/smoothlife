@@ -6,16 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Phone, MessageCircle, Lock, User as UserIcon, AlertTriangle, Loader2, ArrowLeft, Apple, Eye, EyeOff } from "lucide-react";
 
-// LINE's wordmark in its brand green, sized to sit inside the same
-// bordered white circle as the other login-method buttons.
-function LineIcon({ size = 22 }: { size?: number }) {
-  return (
-    <span style={{ fontSize: size }} className="font-extrabold tracking-tight text-[#06C755]">
-      LINE
-    </span>
-  );
-}
-
 // Google's real 4-color "G" mark, not a generic glyph.
 function GoogleIcon({ size = 22 }: { size?: number }) {
   return (
@@ -72,7 +62,7 @@ import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-
 import DemoBadge from "./DemoBadge";
 import PasswordChecklist from "./PasswordChecklist";
 
-type View = "password" | "phone-otp" | "email-otp" | "line";
+type View = "start" | "password" | "phone-otp" | "email-otp" | "line";
 
 const OAUTH_ERRORS: Record<string, string> = {
   line_not_configured: "ระบบ LINE Login ยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ",
@@ -97,7 +87,11 @@ const APPLE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_APPLE_SIGNIN_ENABLED);
 const GOOGLE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_GOOGLE_SIGNIN_ENABLED);
 
 export default function LoginContent() {
-  const [view, setView] = useState<View>("password");
+  // Phone OTP and LINE are the primary methods (matches the homepage promise
+  // "เข้าสู่ระบบด้วย OTP หรือ LINE" and how Thai users expect Shopee/Lazada-style
+  // sites to work) — email+password starts one tap further in, not as the
+  // landing view.
+  const [view, setView] = useState<View>("start");
   const [mode, setMode] = useState<"login" | "register">("login");
   const { registerWithEmail, confirmRegisterUpdate, loginWithEmail, completePhoneLogin } = useAuth();
   const router = useRouter();
@@ -111,6 +105,11 @@ export default function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
+  // Which field the current emailError belongs to, so it renders right
+  // under that input instead of only as one message at the bottom of the
+  // form — undefined for form-wide errors (rate limit, system down) which
+  // don't belong to any single field.
+  const [emailErrorField, setEmailErrorField] = useState<string | undefined>(undefined);
   // Set when register hits an email that's already registered — the form
   // then asks for the code just emailed to that address to prove ownership
   // before applying name/phone/password as an update to the existing account.
@@ -122,8 +121,6 @@ export default function LoginContent() {
   const [emailOtpAddress, setEmailOtpAddress] = useState("");
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailOtpCode, setEmailOtpCode] = useState("");
-  const [emailOtpName, setEmailOtpName] = useState("");
-  const [emailOtpPhone, setEmailOtpPhone] = useState("");
   const [emailOtpError, setEmailOtpError] = useState("");
   const [emailOtpSending, setEmailOtpSending] = useState(false);
   const [emailOtpVerifying, setEmailOtpVerifying] = useState(false);
@@ -136,7 +133,6 @@ export default function LoginContent() {
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
   const [otpInput, setOtpInput] = useState("");
   const [otpError, setOtpError] = useState("");
-  const [otpName, setOtpName] = useState("");
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   // grecaptcha remembers it already rendered a widget on a given DOM node
@@ -156,9 +152,11 @@ export default function LoginContent() {
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     setEmailError("");
+    setEmailErrorField(undefined);
     setReclaimNeeded(false);
     if (mode === "register" && !isPasswordStrongEnough(password)) {
       setEmailError(PASSWORD_REQUIREMENT_TH);
+      setEmailErrorField("password");
       return;
     }
     setEmailSubmitting(true);
@@ -169,6 +167,10 @@ export default function LoginContent() {
     setEmailSubmitting(false);
     if (!result.ok) {
       setEmailError(result.error || "เกิดข้อผิดพลาด");
+      // Login's "invalid email or password" is deliberately unattributed —
+      // pinning it to one field would tell an attacker which of the two
+      // they got right, so only register's per-field errors get anchored.
+      setEmailErrorField(mode === "register" ? result.field : undefined);
       if (result.needsVerification) setReclaimNeeded(true);
       return;
     }
@@ -226,8 +228,6 @@ export default function LoginContent() {
         body: JSON.stringify({
           email: emailOtpAddress.trim(),
           code: emailOtpCode.trim(),
-          name: emailOtpName || undefined,
-          phone: emailOtpPhone ? toE164Thai(emailOtpPhone) : undefined,
         }),
       });
       const data = await res.json();
@@ -236,7 +236,12 @@ export default function LoginContent() {
         return;
       }
       completePhoneLogin(data.user);
-      router.push(returnTo);
+      // New accounts skip straight in with just email+OTP — ask for
+      // name/phone right after instead of bundling it into this step, same
+      // pattern as the Google/Apple/LINE signup flows.
+      router.push(
+        data.isNew ? `/account/complete-profile?returnTo=${encodeURIComponent(returnTo)}` : returnTo
+      );
     } catch (err) {
       console.error("[email-otp] verify failed", err);
       setEmailOtpError("รหัสไม่ถูกต้อง กรุณาลองใหม่");
@@ -284,7 +289,7 @@ export default function LoginContent() {
       const res = await fetch("/api/auth/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, name: otpName || undefined }),
+        body: JSON.stringify({ idToken }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -292,7 +297,11 @@ export default function LoginContent() {
         return;
       }
       completePhoneLogin(data.user);
-      router.push(returnTo);
+      // Same deferred-profile pattern as email OTP and OAuth — new accounts
+      // land on complete-profile for the name; returning users skip it.
+      router.push(
+        data.isNew ? `/account/complete-profile?returnTo=${encodeURIComponent(returnTo)}` : returnTo
+      );
     } catch (err) {
       console.error("[otp] verify failed", err);
       setOtpError("รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่");
@@ -300,11 +309,6 @@ export default function LoginContent() {
       setOtpVerifying(false);
     }
   }
-
-  const altMethods = [
-    { id: "phone-otp" as View, label: "เบอร์โทร", icon: Phone },
-    { id: "email-otp" as View, label: "อีเมล OTP", icon: Mail },
-  ];
 
   return (
     <div className="container-page min-h-[80vh] flex items-center justify-center py-10 md:py-16">
@@ -335,13 +339,81 @@ export default function LoginContent() {
         </div>
       )}
 
-      {view !== "password" && (
+      {view !== "start" && (
         <button
-          onClick={() => setView("password")}
+          onClick={() => setView("start")}
           className="flex items-center gap-1.5 text-xs text-slate-400 mb-4 hover:text-slate-600"
         >
-          <ArrowLeft size={13} /> กลับไปเข้าสู่ระบบด้วยอีเมล
+          <ArrowLeft size={13} /> กลับ
         </button>
+      )}
+
+      {view === "start" && (
+        <div className="flex flex-col gap-3">
+          {!firebaseConfigured() && (
+            <DemoBadge text="ระบบ OTP เบอร์โทรยังไม่ได้ตั้งค่า Firebase — ใช้ LINE หรืออีเมลแทนได้ค่ะ" />
+          )}
+          <button
+            onClick={() => setView("phone-otp")}
+            className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+            disabled={!firebaseConfigured()}
+          >
+            <Phone size={18} /> เข้าสู่ระบบด้วยเบอร์โทร (OTP)
+          </button>
+          <a
+            href={`/api/auth/line/start?returnTo=${encodeURIComponent(returnTo)}`}
+            className="flex items-center justify-center gap-2 rounded-full bg-[#06C755] text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity"
+          >
+            <MessageCircle size={18} className="text-white" /> เข้าสู่ระบบด้วย LINE
+          </a>
+
+          <div className="flex items-center gap-3 mt-1">
+            <div className="h-px flex-1 bg-slate-200" />
+            <span className="text-xs text-slate-400">หรือ</span>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
+
+          <div className="flex items-center justify-center gap-3.5">
+            <button
+              onClick={() => setView("email-otp")}
+              aria-label="อีเมล OTP"
+              title="อีเมล OTP"
+              className="relative grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-surface-soft hover:border-brand-teal/30 hover:text-brand-emerald transition-colors"
+            >
+              <Mail size={22} />
+              <span className="absolute -bottom-1.5 rounded-full bg-brand-emerald px-1.5 py-[1px] text-[9px] font-bold leading-none text-white shadow-sm">
+                OTP
+              </span>
+            </button>
+            {GOOGLE_CONFIGURED && (
+              <button
+                onClick={() => (window.location.href = `/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`)}
+                aria-label="Google"
+                title="Google"
+                className="grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 hover:bg-surface-soft hover:border-brand-teal/30 transition-colors"
+              >
+                <GoogleIcon size={22} />
+              </button>
+            )}
+            {APPLE_CONFIGURED && (
+              <button
+                onClick={() => (window.location.href = `/api/auth/apple/start?returnTo=${encodeURIComponent(returnTo)}`)}
+                aria-label="Apple"
+                title="Apple"
+                className="grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-900 hover:bg-surface-soft hover:border-brand-teal/30 transition-colors"
+              >
+                <Apple size={22} fill="currentColor" />
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={() => setView("password")}
+            className="text-center text-xs text-slate-400 mt-1 hover:text-slate-600"
+          >
+            เข้าสู่ระบบด้วยอีเมล
+          </button>
+        </div>
       )}
 
       {view === "password" && (
@@ -354,38 +426,52 @@ export default function LoginContent() {
             <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3.5">
               {mode === "register" && (
                 <>
-                  <div className="relative">
-                    <UserIcon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="ชื่อ-นามสกุล"
-                      className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
-                    />
+                  <div>
+                    <div className="relative">
+                      <UserIcon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="ชื่อ-นามสกุล"
+                        autoComplete="name"
+                        className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                      />
+                    </div>
+                    {emailErrorField === "name" && <p className="text-xs text-rose-500 mt-1 ml-4">{emailError}</p>}
                   </div>
-                  <div className="relative">
-                    <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      required
-                      value={regPhone}
-                      onChange={(e) => setRegPhone(e.target.value)}
-                      placeholder="เบอร์โทรศัพท์ (08X-XXX-XXXX)"
-                      className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
-                    />
+                  <div>
+                    <div className="relative">
+                      <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        required
+                        value={regPhone}
+                        onChange={(e) => setRegPhone(e.target.value)}
+                        placeholder="เบอร์โทรศัพท์ (08X-XXX-XXXX)"
+                        autoComplete="tel"
+                        inputMode="tel"
+                        className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                      />
+                    </div>
+                    {emailErrorField === "phone" && <p className="text-xs text-rose-500 mt-1 ml-4">{emailError}</p>}
                   </div>
                 </>
               )}
-              <div className="relative">
-                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  required
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="อีเมล"
-                  className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
-                />
+              <div>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="อีเมล"
+                    autoComplete={mode === "register" ? "email" : "username"}
+                    inputMode="email"
+                    className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                  />
+                </div>
+                {emailErrorField === "email" && <p className="text-xs text-rose-500 mt-1 ml-4">{emailError}</p>}
               </div>
               <div>
                 <div className="relative">
@@ -399,6 +485,7 @@ export default function LoginContent() {
                     // Only enforced at register time — an existing user's older,
                     // shorter password must still be able to log in with it.
                     minLength={mode === "register" ? 8 : undefined}
+                    autoComplete={mode === "register" ? "new-password" : "current-password"}
                     className="w-full rounded-full bg-surface-soft pl-11 pr-11 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                   />
                   <button
@@ -410,6 +497,7 @@ export default function LoginContent() {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                {emailErrorField === "password" && <p className="text-xs text-rose-500 mt-1 ml-4">{emailError}</p>}
                 {mode === "register" && <PasswordChecklist password={password} />}
                 {mode === "login" && (
                   <Link href="/account/forgot-password" className="block text-right text-xs text-slate-400 mt-1.5 hover:text-brand-ink">
@@ -418,7 +506,7 @@ export default function LoginContent() {
                 )}
               </div>
               {mode === "register" && <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />}
-              {emailError && <p className="text-xs text-rose-500">{emailError}</p>}
+              {emailError && !emailErrorField && <p className="text-xs text-rose-500">{emailError}</p>}
               <button
                 disabled={emailSubmitting || (mode === "register" && !agreedTerms)}
                 className="rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60 mt-1"
@@ -439,6 +527,8 @@ export default function LoginContent() {
                 onChange={(e) => setReclaimCode(e.target.value)}
                 placeholder="กรอกรหัสยืนยัน 6 หลัก"
                 maxLength={6}
+                inputMode="numeric"
+                autoComplete="one-time-code"
                 className="rounded-full bg-white border border-amber-200 px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
               <button
@@ -451,59 +541,13 @@ export default function LoginContent() {
             </form>
           )}
 
-          <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-slate-200" />
-            <span className="text-xs text-slate-400">หรือ</span>
-            <div className="h-px flex-1 bg-slate-200" />
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold text-slate-500 text-center mb-3">เข้าสู่ระบบด้วยช่องทางอื่น</p>
-            <div className="flex items-center justify-center gap-3.5">
-              {altMethods.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => setView(m.id)}
-                  aria-label={m.label}
-                  title={m.label}
-                  className="relative grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-surface-soft hover:border-brand-teal/30 hover:text-brand-emerald transition-colors"
-                >
-                  <m.icon size={22} />
-                  <span className="absolute -bottom-1.5 rounded-full bg-brand-emerald px-1.5 py-[1px] text-[9px] font-bold leading-none text-white shadow-sm">
-                    OTP
-                  </span>
-                </button>
-              ))}
-              <button
-                onClick={() => setView("line")}
-                aria-label="LINE"
-                title="LINE"
-                className="grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 hover:bg-surface-soft hover:border-brand-teal/30 transition-colors"
-              >
-                <LineIcon size={15} />
-              </button>
-              {GOOGLE_CONFIGURED && (
-                <button
-                  onClick={() => (window.location.href = `/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`)}
-                  aria-label="Google"
-                  title="Google"
-                  className="grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 hover:bg-surface-soft hover:border-brand-teal/30 transition-colors"
-                >
-                  <GoogleIcon size={22} />
-                </button>
-              )}
-              {APPLE_CONFIGURED && (
-                <button
-                  onClick={() => (window.location.href = `/api/auth/apple/start?returnTo=${encodeURIComponent(returnTo)}`)}
-                  aria-label="Apple"
-                  title="Apple"
-                  className="grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-900 hover:bg-surface-soft hover:border-brand-teal/30 transition-colors"
-                >
-                  <Apple size={22} fill="currentColor" />
-                </button>
-              )}
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => setView("start")}
+            className="text-center text-xs text-slate-400 hover:text-slate-600"
+          >
+            เข้าสู่ระบบด้วยช่องทางอื่น (OTP / LINE)
+          </button>
         </div>
       )}
 
@@ -521,6 +565,8 @@ export default function LoginContent() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="08X-XXX-XXXX"
+                autoComplete="tel"
+                inputMode="tel"
                 className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 disabled:opacity-50"
               />
               <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
@@ -539,16 +585,12 @@ export default function LoginContent() {
                 ส่งรหัส OTP ไปที่ {toE164Thai(phone)} แล้ว กรุณากรอกรหัสที่ได้รับทาง SMS
               </p>
               <input
-                value={otpName}
-                onChange={(e) => setOtpName(e.target.value)}
-                placeholder="ชื่อของคุณ (สำหรับสมาชิกใหม่)"
-                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
-              />
-              <input
                 value={otpInput}
                 onChange={(e) => setOtpInput(e.target.value)}
                 placeholder="กรอกรหัส OTP 6 หลัก"
                 maxLength={6}
+                inputMode="numeric"
+                autoComplete="one-time-code"
                 className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
@@ -576,17 +618,6 @@ export default function LoginContent() {
         </div>
       )}
 
-      {view === "line" && (
-        <div className="flex flex-col gap-4">
-          <a
-            href={`/api/auth/line/start?returnTo=${encodeURIComponent(returnTo)}`}
-            className="flex items-center justify-center gap-2 rounded-full bg-[#06C755] text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity"
-          >
-            <MessageCircle size={18} className="text-white" /> เข้าสู่ระบบด้วย LINE
-          </a>
-        </div>
-      )}
-
       {view === "email-otp" && (
         <div className="flex flex-col gap-3">
           {!emailOtpSent ? (
@@ -599,6 +630,8 @@ export default function LoginContent() {
                   value={emailOtpAddress}
                   onChange={(e) => setEmailOtpAddress(e.target.value)}
                   placeholder="อีเมล"
+                  autoComplete="email"
+                  inputMode="email"
                   className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                 />
               </div>
@@ -625,24 +658,13 @@ export default function LoginContent() {
                   <p className="text-lg font-bold tracking-widest text-center text-amber-900">{emailOtpDevCode}</p>
                 </div>
               )}
-              <p className="text-xs text-slate-400">ข้อมูลด้านล่างสำหรับสมาชิกใหม่เท่านั้น — สมาชิกเดิมข้ามได้เลย</p>
-              <input
-                value={emailOtpName}
-                onChange={(e) => setEmailOtpName(e.target.value)}
-                placeholder="ชื่อของคุณ"
-                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
-              />
-              <input
-                value={emailOtpPhone}
-                onChange={(e) => setEmailOtpPhone(e.target.value)}
-                placeholder="เบอร์โทรศัพท์ (08X-XXX-XXXX)"
-                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
-              />
               <input
                 value={emailOtpCode}
                 onChange={(e) => setEmailOtpCode(e.target.value)}
                 placeholder="กรอกรหัสยืนยัน 6 หลัก"
                 maxLength={6}
+                inputMode="numeric"
+                autoComplete="one-time-code"
                 className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
               {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}

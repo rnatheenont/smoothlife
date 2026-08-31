@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
+import { maybeAwardMigrationBonus } from "@/lib/migration-bonus";
 
 const GENDERS = new Set(["male", "female", "other"]);
 
@@ -106,6 +107,8 @@ export async function PATCH(req: NextRequest) {
       currentPhone: current.phone,
     });
   }
+
+  await maybeAwardMigrationBonus(uid);
 
   return NextResponse.json({ ok: true });
 }

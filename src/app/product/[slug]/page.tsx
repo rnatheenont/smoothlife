@@ -33,7 +33,7 @@ async function getReviews(slug: string): Promise<ReviewRow[]> {
   if (!supabaseConfigured()) return [];
   try {
     return await supabaseRest<ReviewRow[]>(
-      `product_reviews?product_slug=eq.${encodeURIComponent(slug)}&select=id,product_slug,author_name,rating,title,body,created_at&order=created_at.desc`
+      `product_reviews?product_slug=eq.${encodeURIComponent(slug)}&status=eq.approved&select=id,product_slug,author_name,rating,title,body,review_type,status,created_at&order=created_at.desc`
     );
   } catch {
     return [];

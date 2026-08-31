@@ -18,6 +18,7 @@ function CompleteProfileContent() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [needsEmail, setNeedsEmail] = useState(false);
+  const [needsPhone, setNeedsPhone] = useState(false);
   const [wantsAddress, setWantsAddress] = useState(false);
   const [address, setAddress] = useState<AddressFormValue>(emptyAddressForm);
   const [busy, setBusy] = useState(false);
@@ -35,7 +36,15 @@ function CompleteProfileContent() {
           return;
         }
         setName(data.user.name && data.user.name !== PLACEHOLDER_NAME ? data.user.name : "");
-        setPhone(data.user.phone || "");
+        // Phone/email OTP signups already have a verified phone on file (in
+        // +66 E.164 form) — reuse it as the address-recipient default below,
+        // but never re-show or re-validate it as if it still needed typing.
+        const rawPhone: string = data.user.phone || "";
+        if (rawPhone) {
+          setPhone(rawPhone.startsWith("+66") ? "0" + rawPhone.slice(3) : rawPhone);
+        } else {
+          setNeedsPhone(true);
+        }
         if (data.user.email) setEmail(data.user.email);
         else setNeedsEmail(true);
       })
@@ -57,7 +66,7 @@ function CompleteProfileContent() {
       return;
     }
     const phoneDigits = phone.replace(/\D/g, "");
-    if (phoneDigits.length !== 10) {
+    if (needsPhone && phoneDigits.length !== 10) {
       setError("เบอร์มือถือต้องมี 10 หลัก");
       return;
     }
@@ -70,7 +79,11 @@ function CompleteProfileContent() {
     const profileRes = await fetch("/api/auth/profile", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), phone: phoneDigits, ...(needsEmail ? { email: email.trim() } : {}) }),
+      body: JSON.stringify({
+        name: name.trim(),
+        ...(needsPhone ? { phone: phoneDigits } : {}),
+        ...(needsEmail ? { email: email.trim() } : {}),
+      }),
     });
     const profileData = await profileRes.json();
     if (!profileData.ok) {
@@ -105,20 +118,24 @@ function CompleteProfileContent() {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
+              autoComplete="name"
               className="w-full rounded-full bg-surface-soft px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
             />
           </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">เบอร์โทรศัพท์</label>
-            <input
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="08X-XXX-XXXX"
-              inputMode="numeric"
-              className="w-full rounded-full bg-surface-soft px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
-            />
-          </div>
+          {needsPhone && (
+            <div>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">เบอร์โทรศัพท์</label>
+              <input
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="08X-XXX-XXXX"
+                inputMode="numeric"
+                autoComplete="tel"
+                className="w-full rounded-full bg-surface-soft px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+              />
+            </div>
+          )}
           {needsEmail && (
             <div>
               <label className="text-xs font-semibold text-slate-500 mb-1.5 block">อีเมล</label>
@@ -127,6 +144,8 @@ function CompleteProfileContent() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                inputMode="email"
                 className="w-full rounded-full bg-surface-soft px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
               />
             </div>

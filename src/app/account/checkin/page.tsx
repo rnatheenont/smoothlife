@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Loader2, Gift, Coins, CheckCircle2, X, Sparkles, Flame, CalendarCheck } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import ProductCard from "@/components/ProductCard";
 import { useAuth } from "@/lib/auth-context";
 import { products } from "@/data/products";
+import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 
 type DayInfo = {
   date: string;
@@ -487,6 +489,12 @@ function CheckinContent() {
 }
 
 export default function CheckinPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!REWARDS_ACTIVITIES_ENABLED) router.replace("/account");
+  }, [router]);
+  if (!REWARDS_ACTIVITIES_ENABLED) return null;
+
   return (
     <AccountLayout>
       <CheckinContent />

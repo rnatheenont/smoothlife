@@ -32,6 +32,20 @@ export function otpEmailHtml(code: string) {
   `;
 }
 
+export function guestOrderInviteEmailHtml(orderName: string, signupUrl: string) {
+  return `
+    <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:24px">
+      <h2 style="color:#0f766e">Smoothlife.com</h2>
+      <p>ขอบคุณสำหรับคำสั่งซื้อ ${orderName} ค่ะ</p>
+      <p>สมัครสมาชิกฟรีเพื่อติดตามคำสั่งซื้อนี้ สะสมคะแนน และรับสิทธิ์สมาชิกในครั้งถัดไป — ใช้อีเมลเดียวกับที่สั่งซื้อได้เลย</p>
+      <p style="margin:24px 0">
+        <a href="${signupUrl}" style="background:#0f766e;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:bold">สมัครสมาชิกฟรี</a>
+      </p>
+      <p style="color:#64748b;font-size:14px">หากไม่สนใจสมัครสมาชิก สามารถละเว้นอีเมลฉบับนี้ได้ คำสั่งซื้อของคุณดำเนินการตามปกติ</p>
+    </div>
+  `;
+}
+
 export function resetLinkEmailHtml(resetUrl: string) {
   return `
     <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:24px">

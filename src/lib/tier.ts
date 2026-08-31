@@ -1,6 +1,17 @@
 import { Award, Crown, Star, type LucideIcon } from "lucide-react";
 import type { Tier } from "./auth-context";
 
+// Customer-facing tier names — a skin-glow progression, on-brand for a
+// skincare/wellness retailer, standing in for the internal Bronze/Silver/
+// Gold identifiers (which stay as-is everywhere else: DB values, tier
+// comparison logic, coupon eligibility keys). Only the display layer
+// changes here.
+export const tierDisplayName: Record<Tier, { en: string; th: string }> = {
+  Bronze: { en: "Glow", th: "โกลว์" },
+  Silver: { en: "Radiance", th: "เรเดียนซ์" },
+  Gold: { en: "Luminous", th: "ลูมินัส" },
+};
+
 // Shown to customers as "Lv.1/2/3" instead of the internal Bronze/Silver/Gold
 // tier name — simpler at a glance, and the internal names still drive the
 // actual perks/multiplier logic elsewhere (account/points, lib/points.ts).

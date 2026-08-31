@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { getVariantAvailability, shopifyAdminConfigured, createFulfillmentOnlyOrder } from "@/lib/shopify-admin";
 import { cancelRecurringPlan, recurringMaintenanceConfigured } from "@/lib/2c2p";
+import { expireStaleReferrals, releaseMaturedReferralRewards, advanceOrderPlacedReferrals } from "@/lib/referral-cron";
+import { recalculateLoyaltyTiers } from "@/lib/loyalty-cron";
+import { awardBirthdayRewards } from "@/lib/birthday-cron";
+import { expirePoints } from "@/lib/points-expiry-cron";
 
 const RENEWAL_NOTICE_DAYS = 7;
 
@@ -247,9 +251,18 @@ async function notifyUpcomingRenewals() {
 // (cancelOutOfStockSubscriptions), monthly shipment fulfillment
 // (createDueShipments — the only recurring work billing doesn't already
 // trigger, since 2C2P only fires once per term, not once per month), and
-// the pre-renewal notice (notifyUpcomingRenewals). All bundled into this
-// one job since the Vercel Hobby plan caps cron jobs at 2 total and both
-// slots are already spoken for.
+// the pre-renewal notice (notifyUpcomingRenewals), and the referral
+// programme's daily housekeeping — advancing order_placed referrals whose
+// order has since shipped (a poll fallback so this doesn't depend on the
+// "orders/fulfilled" webhook topic ever being subscribed in Shopify),
+// expiring stale click-throughs, and releasing matured rewards — see
+// @/lib/referral-cron — plus the loyalty tier recalculation (rolling
+// 12-month spend/orders, upgrade/downgrade with a 90-day grace period —
+// see @/lib/loyalty-cron), the birthday bonus scan (see
+// @/lib/birthday-cron), and points expiry — 12 months per batch, FIFO
+// (see @/lib/points-expiry-cron). All bundled into this one job since the
+// Vercel Hobby plan caps cron jobs at 2 total and both slots are already
+// spoken for.
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -289,6 +302,24 @@ export async function GET(req: NextRequest) {
   const stockCancelled = await cancelOutOfStockSubscriptions();
   const shipmentsCreated = await createDueShipments();
   const renewalsNotified = await notifyUpcomingRenewals();
+  const referralsAdvanced = await advanceOrderPlacedReferrals();
+  const referralsExpired = await expireStaleReferrals();
+  const referralRewards = await releaseMaturedReferralRewards();
+  const loyaltyTiers = await recalculateLoyaltyTiers();
+  const birthdayRewards = await awardBirthdayRewards();
+  const pointsExpiry = await expirePoints();
 
-  return NextResponse.json({ ok: true, notified, stockCancelled, shipmentsCreated, renewalsNotified });
+  return NextResponse.json({
+    ok: true,
+    notified,
+    stockCancelled,
+    shipmentsCreated,
+    renewalsNotified,
+    referralsAdvanced,
+    referralsExpired,
+    referralRewards,
+    loyaltyTiers,
+    birthdayRewards,
+    pointsExpiry,
+  });
 }

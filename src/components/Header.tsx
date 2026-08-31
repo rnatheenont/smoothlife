@@ -22,6 +22,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useCart, useWishlist } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
 import { tierBadge, tierCard } from "@/lib/tier";
+import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 import LanguageSwitch from "@/components/LanguageSwitch";
 import NotificationBell from "@/components/NotificationBell";
 import HeaderSearch from "@/components/HeaderSearch";
@@ -165,7 +166,7 @@ export default function Header() {
               </span>
               <span className="hidden lg:flex flex-col leading-tight">
                 <span className="text-xs font-bold text-brand-ink max-w-[92px] truncate">{user.name.split(" ")[0]}</span>
-                <span className="text-[11px] text-slate-500">{user.points} pts</span>
+                {REWARDS_ACTIVITIES_ENABLED && <span className="text-[11px] text-slate-500">{user.points} pts</span>}
               </span>
               <span
                 className="rounded-full px-2.5 py-1.5 text-[11px] font-bold text-white whitespace-nowrap shadow-sm"
@@ -278,7 +279,7 @@ export default function Header() {
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-bold text-brand-ink truncate">{user.name.split(" ")[0]}</span>
                     <span className="flex items-center gap-1.5 text-xs text-slate-400">
-                      {user.points} pts
+                      {REWARDS_ACTIVITIES_ENABLED && <>{user.points} pts</>}
                       <span
                         className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${tierBadge[user.tier].className}`}
                       >

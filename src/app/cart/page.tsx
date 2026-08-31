@@ -10,6 +10,7 @@ import { useLang } from "@/lib/lang-context";
 import { useOrderTotals } from "@/lib/use-order-totals";
 import { formatTHB } from "@/lib/format";
 import { suggestBundlesForCart } from "@/lib/bundle-suggest";
+import { pointsForAmount } from "@/data/coupons";
 import CouponPicker from "@/components/CouponPicker";
 import FreeGiftProgress from "@/components/FreeGiftProgress";
 import TieredRewardBox from "@/components/TieredRewardBox";
@@ -130,8 +131,8 @@ export default function CartPage() {
                       <p className="text-[11px] text-brand-emerald flex items-center gap-1 justify-end">
                         <Award size={11} />
                         {lang === "en"
-                          ? `+${Math.floor((line.price * line.qty) / 100)} points`
-                          : `+${Math.floor((line.price * line.qty) / 100)} คะแนน`}
+                          ? `+${pointsForAmount(line.price * line.qty)} points`
+                          : `+${pointsForAmount(line.price * line.qty)} คะแนน`}
                       </p>
                     </div>
                   )}
@@ -168,7 +169,7 @@ export default function CartPage() {
             {totals.discount > 0 && (
               <div className="flex justify-between text-sm text-brand-emerald mb-2">
                 <span className="flex items-center gap-1.5">
-                  <Ticket size={13} /> {totals.coupon?.code}
+                  <Ticket size={13} /> {totals.referralActive ? t("ส่วนลดแนะนำเพื่อน", "Referral discount") : totals.coupon?.code}
                 </span>
                 <span>-{formatTHB(totals.discount)}</span>
               </div>
@@ -207,8 +208,8 @@ export default function CartPage() {
             </p>
             <p className="text-xs text-slate-500 mt-1">
               {lang === "en"
-                ? `1 point per ฿100 spent, calculated on ${formatTHB(totals.netSubtotal)} after discount.`
-                : `รับ 1 คะแนนต่อทุก 100 บาท คำนวณจากยอด ${formatTHB(totals.netSubtotal)} หลังหักส่วนลด`}
+                ? `1 point per ฿1 spent, calculated on ${formatTHB(totals.netSubtotal)} after discount.`
+                : `รับ 1 คะแนนต่อทุก 1 บาท คำนวณจากยอด ${formatTHB(totals.netSubtotal)} หลังหักส่วนลด`}
             </p>
 
             {user ? (
@@ -230,8 +231,8 @@ export default function CartPage() {
                 {totals.progressAfter.next && (
                   <p className="text-[11px] text-slate-500 mt-1.5">
                     {lang === "en"
-                      ? `${totals.progressAfter.remaining.toLocaleString()} more points to ${totals.progressAfter.next}`
-                      : `อีก ${totals.progressAfter.remaining.toLocaleString()} คะแนนถึงระดับ ${totals.progressAfter.next}`}
+                      ? `Spend ${formatTHB(totals.progressAfter.remaining)} more (12mo) to reach ${totals.progressAfter.next}`
+                      : `ซื้อเพิ่มอีก ${formatTHB(totals.progressAfter.remaining)} (รอบ 12 เดือน) ถึงระดับ ${totals.progressAfter.next}`}
                   </p>
                 )}
               </div>

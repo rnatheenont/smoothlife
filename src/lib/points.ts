@@ -1,12 +1,10 @@
-import { tierProgress } from "@/data/coupons";
+import { pointsForAmount } from "@/data/coupons";
+import { getUserLoyalty } from "@/lib/user-tier";
 
-// Gold members earn 1.5x points, matching the copy on /account/points.
-export function tierMultiplier(tier: string) {
-  return tier === "Gold" ? 1.5 : 1;
-}
-
-export function pointsForOrder(subtotalAmount: number, currentBalance: number) {
-  const tier = tierProgress(currentBalance).current;
-  const multiplier = tierMultiplier(tier);
-  return { points: Math.floor((subtotalAmount * multiplier) / 100), multiplier, tier };
+// Every tier earns points at the same rate — the earn rate never varied by
+// tier, only the perks do (see TIER_CRITERIA in @/lib/loyalty-shared). The
+// tier tag on the return value is informational only (ledger metadata).
+export async function pointsForOrder(subtotalAmount: number, userId: string) {
+  const loyalty = await getUserLoyalty(userId);
+  return { points: pointsForAmount(subtotalAmount), tier: loyalty.tier };
 }

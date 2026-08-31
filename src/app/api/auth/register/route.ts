@@ -4,9 +4,11 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { hashPassword } from "@/lib/password";
 import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
-import { tierProgress } from "@/data/coupons";
+import { getUserLoyalty } from "@/lib/user-tier";
 import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
 import { emailConfigured, sendEmail, otpEmailHtml } from "@/lib/email";
+import { attributeReferralSignup } from "@/lib/referral-signup";
+import { maybeAwardMigrationBonus } from "@/lib/migration-bonus";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CODE_TTL_MS = 10 * 60 * 1000;
@@ -22,16 +24,16 @@ export async function POST(req: NextRequest) {
   }
   const { name, phone, email, password } = await req.json().catch(() => ({}));
   if (!name || typeof name !== "string" || !name.trim()) {
-    return NextResponse.json({ ok: false, error: "กรุณากรอกชื่อ" }, { status: 400 });
+    return NextResponse.json({ ok: false, field: "name", error: "กรุณากรอกชื่อ" }, { status: 400 });
   }
   if (!phone || typeof phone !== "string" || phone.trim().length < 9) {
-    return NextResponse.json({ ok: false, error: "กรุณากรอกเบอร์โทรศัพท์" }, { status: 400 });
+    return NextResponse.json({ ok: false, field: "phone", error: "กรุณากรอกเบอร์โทรศัพท์" }, { status: 400 });
   }
   if (!email || typeof email !== "string" || !EMAIL_RE.test(email)) {
-    return NextResponse.json({ ok: false, error: "อีเมลไม่ถูกต้อง" }, { status: 400 });
+    return NextResponse.json({ ok: false, field: "email", error: "อีเมลไม่ถูกต้อง" }, { status: 400 });
   }
   if (!password || typeof password !== "string" || !isPasswordStrongEnough(password)) {
-    return NextResponse.json({ ok: false, error: PASSWORD_REQUIREMENT_TH }, { status: 400 });
+    return NextResponse.json({ ok: false, field: "password", error: PASSWORD_REQUIREMENT_TH }, { status: 400 });
   }
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedPhone = phone.trim();
@@ -85,7 +87,7 @@ export async function POST(req: NextRequest) {
         error: "อีเมลนี้ถูกใช้งานแล้ว กรอกรหัสยืนยัน (dev mode) เพื่ออัปเดตข้อมูลบัญชีเดิม",
       });
     }
-    return NextResponse.json({ ok: false, error: "อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบ" }, { status: 409 });
+    return NextResponse.json({ ok: false, field: "email", error: "อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบ" }, { status: 409 });
   }
 
   let result: { user_id: string; created_at: string }[];
@@ -100,7 +102,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     if (String(err).includes("email_taken")) {
-      return NextResponse.json({ ok: false, error: "อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบ" }, { status: 409 });
+      return NextResponse.json({ ok: false, field: "email", error: "อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบ" }, { status: 409 });
     }
     throw err;
   }
@@ -123,6 +125,14 @@ export async function POST(req: NextRequest) {
     currentPhone: normalizedPhone,
   });
 
+  await attributeReferralSignup(req, {
+    newUserId: user.user_id,
+    isNewAccount: true,
+    shopifyCustomerId: shopifyLink.shopifyCustomerId,
+  });
+  await maybeAwardMigrationBonus(user.user_id);
+
+  const loyalty = await getUserLoyalty(user.user_id);
   const res = NextResponse.json({
     ok: true,
     user: {
@@ -136,7 +146,9 @@ export async function POST(req: NextRequest) {
       provider: "email",
       real: true,
       points: 100,
-      tier: tierProgress(100).current,
+      tier: loyalty.tier,
+      tierSpend: loyalty.spend,
+      tierOrders: loyalty.orders,
       createdAt: user.created_at,
       shopifyAddressSuggestion: shopifyLink.addressSuggestion,
     },

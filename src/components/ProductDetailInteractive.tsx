@@ -34,6 +34,13 @@ import { useCart, useWishlist } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useQuickChat } from "@/lib/quickchat-context";
 
+// Mirrors REVIEW_MIN_TEXT_LENGTH in @/app/api/reviews/route.ts — kept as a
+// separate constant (not imported) since that file is server-only and pulls
+// in Supabase/Shopify admin clients that can't ship to the client bundle.
+// Server-side computes the authoritative point value; this only drives the
+// live preview text.
+const REVIEW_MIN_TEXT_LENGTH = 20;
+
 const tabs = [
   { id: "benefits", label: "คุณประโยชน์และส่วนผสม" },
   { id: "reviews", label: "รีวิวและคำถาม" },
@@ -106,7 +113,7 @@ export default function ProductDetailInteractive({
     if (idx !== -1) setActiveIndex(idx);
   }, [selectedVariantId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [reviewsList, setReviewsList] = useState(reviews);
+  const [reviewsList] = useState(reviews);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewTitle, setReviewTitle] = useState("");
@@ -147,7 +154,6 @@ export default function ProductDetailInteractive({
         setReviewError(data.error || "ส่งรีวิวไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
         return;
       }
-      setReviewsList((prev) => [data.review, ...prev]);
       setReviewTitle("");
       setReviewBody("");
       setReviewRating(5);
@@ -619,7 +625,7 @@ export default function ProductDetailInteractive({
                       <Image src="/mascot/smoothie-fun.png" alt="" fill sizes="36px" className="object-contain" />
                     </span>
                     <p className="text-xs font-semibold text-brand-emerald">
-                      ส่งรีวิวสำเร็จ ได้รับ {reviewSuccessPoints} คะแนน ขอบคุณค่ะ!
+                      ส่งรีวิวสำเร็จ รอตรวจสอบ — ได้รับ {reviewSuccessPoints} คะแนนเมื่อรีวิวได้รับอนุมัติ ขอบคุณค่ะ!
                     </p>
                   </div>
                 )}
@@ -627,7 +633,9 @@ export default function ProductDetailInteractive({
                 {showReviewForm && (
                   <form onSubmit={submitReview} className="mb-5 rounded-xl border border-slate-100 p-4 space-y-3">
                     <p className="text-xs text-slate-400">
-                      ต้องซื้อสินค้านี้และชำระเงินสำเร็จก่อนจึงจะรีวิวได้ครับ รับ 20 คะแนนเมื่อรีวิวสำเร็จ
+                      ต้องซื้อสินค้านี้และชำระเงินสำเร็จก่อนจึงจะรีวิวได้ครับ รีวิวจะแสดงหลังทีมงานตรวจสอบ — รับ{" "}
+                      {reviewBody.trim().length >= REVIEW_MIN_TEXT_LENGTH ? 15 : 5} คะแนนเมื่ออนุมัติ
+                      {reviewBody.trim().length >= REVIEW_MIN_TEXT_LENGTH ? "" : " (เขียนรีวิวอย่างน้อย 20 ตัวอักษรเพื่อรับ 15 คะแนน)"}
                     </p>
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((n) => (
@@ -645,8 +653,7 @@ export default function ProductDetailInteractive({
                     <textarea
                       value={reviewBody}
                       onChange={(e) => setReviewBody(e.target.value)}
-                      placeholder="เล่าประสบการณ์การใช้สินค้านี้..."
-                      required
+                      placeholder="เล่าประสบการณ์การใช้สินค้านี้... (ไม่บังคับ แต่รับแต้มเพิ่มถ้าเขียน)"
                       rows={3}
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-teal resize-none"
                     />

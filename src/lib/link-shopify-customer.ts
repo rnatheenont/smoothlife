@@ -15,7 +15,7 @@ import {
   ShopifyCustomerAddress,
 } from "@/lib/shopify-admin";
 
-const PLACEHOLDER_NAME = "สมาชิกใหม่";
+export const PLACEHOLDER_NAME = "สมาชิกใหม่";
 
 export type AddressSuggestion = {
   address_line: string;

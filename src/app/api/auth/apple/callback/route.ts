@@ -10,6 +10,7 @@ import {
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
+import { attributeReferralSignup } from "@/lib/referral-signup";
 
 function safeEqual(a: string, b: string) {
   const bufA = Buffer.from(a);
@@ -96,13 +97,17 @@ export async function POST(req: NextRequest) {
     const [user] = await supabaseRest<
       { display_name: string | null; phone: string | null; shopify_customer_id: string | null }[]
     >(`users?id=eq.${userId}&select=display_name,phone,shopify_customer_id`);
+    let shopifyCustomerId = user?.shopify_customer_id ?? null;
     if (user && !user.shopify_customer_id) {
-      await linkOrCreateShopifyCustomer(userId, {
+      const shopifyLink = await linkOrCreateShopifyCustomer(userId, {
         email: claims.email || null,
         currentDisplayName: user.display_name,
         currentPhone: user.phone,
       });
+      shopifyCustomerId = shopifyLink.shopifyCustomerId;
     }
+
+    await attributeReferralSignup(req, { newUserId: userId, isNewAccount: isNew, shopifyCustomerId });
 
     // First-time signups land on a short profile-completion step (name,
     // phone, email if missing, address) before the app itself — returning

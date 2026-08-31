@@ -3,7 +3,8 @@ import { createHash } from "crypto";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
-import { tierProgress } from "@/data/coupons";
+import { getUserLoyalty } from "@/lib/user-tier";
+import { attributeReferralSignup } from "@/lib/referral-signup";
 
 const MAX_ATTEMPTS = 5;
 
@@ -90,6 +91,7 @@ export async function POST(req: NextRequest) {
   }
 
   let addressSuggestion = null;
+  let shopifyCustomerId = user.shopify_customer_id;
   if (!user.shopify_customer_id) {
     const shopifyLink = await linkOrCreateShopifyCustomer(row.user_id, {
       email: normalizedEmail,
@@ -100,15 +102,24 @@ export async function POST(req: NextRequest) {
     if (shopifyLink.displayName) displayName = shopifyLink.displayName;
     if (shopifyLink.phone) phone = shopifyLink.phone;
     addressSuggestion = shopifyLink.addressSuggestion;
+    shopifyCustomerId = shopifyLink.shopifyCustomerId;
   }
+
+  await attributeReferralSignup(req, {
+    newUserId: row.user_id,
+    isNewAccount: row.is_new,
+    shopifyCustomerId,
+  });
 
   const [balanceRow] = await supabaseRest<{ balance: number }[]>(
     `points_balance?user_id=eq.${row.user_id}&select=balance`
   );
   const points = balanceRow?.balance ?? 0;
+  const loyalty = await getUserLoyalty(row.user_id);
 
   const res = NextResponse.json({
     ok: true,
+    isNew: row.is_new,
     user: {
       id: user.id,
       name: displayName,
@@ -120,7 +131,9 @@ export async function POST(req: NextRequest) {
       provider: "email",
       real: true,
       points,
-      tier: tierProgress(points).current,
+      tier: loyalty.tier,
+      tierSpend: loyalty.spend,
+      tierOrders: loyalty.orders,
       createdAt: user.created_at,
       shopifyAddressSuggestion: addressSuggestion,
     },

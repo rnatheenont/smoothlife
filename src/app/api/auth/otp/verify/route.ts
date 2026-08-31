@@ -3,7 +3,8 @@ import { verifyFirebasePhoneIdToken } from "@/lib/firebase-verify";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
-import { tierProgress } from "@/data/coupons";
+import { getUserLoyalty } from "@/lib/user-tier";
+import { attributeReferralSignup } from "@/lib/referral-signup";
 
 export async function POST(req: NextRequest) {
   if (!supabaseConfigured()) {
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest) {
   // guard as the email/login paths.
   let displayName = user.display_name;
   let addressSuggestion = null;
+  let shopifyCustomerId = user.shopify_customer_id;
   if (!user.shopify_customer_id) {
     const shopifyLink = await linkOrCreateShopifyCustomer(row.user_id, {
       phone: verified.phoneNumber,
@@ -58,15 +60,24 @@ export async function POST(req: NextRequest) {
     });
     if (shopifyLink.displayName) displayName = shopifyLink.displayName;
     addressSuggestion = shopifyLink.addressSuggestion;
+    shopifyCustomerId = shopifyLink.shopifyCustomerId;
   }
+
+  await attributeReferralSignup(req, {
+    newUserId: row.user_id,
+    isNewAccount: row.is_new,
+    shopifyCustomerId,
+  });
 
   const [balanceRow] = await supabaseRest<{ balance: number }[]>(
     `points_balance?user_id=eq.${row.user_id}&select=balance`
   );
   const points = balanceRow?.balance ?? 0;
+  const loyalty = await getUserLoyalty(row.user_id);
 
   const res = NextResponse.json({
     ok: true,
+    isNew: row.is_new,
     user: {
       id: user.id,
       name: displayName,
@@ -77,7 +88,9 @@ export async function POST(req: NextRequest) {
       provider: "phone",
       real: true,
       points,
-      tier: tierProgress(points).current,
+      tier: loyalty.tier,
+      tierSpend: loyalty.spend,
+      tierOrders: loyalty.orders,
       createdAt: user.created_at,
       shopifyAddressSuggestion: addressSuggestion,
     },

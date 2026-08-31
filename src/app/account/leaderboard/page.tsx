@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2, Trophy, Award, Medal } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import { useAuth } from "@/lib/auth-context";
+import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 
 type Entry = { rank: number; userId: string; name: string; points: number; isYou: boolean };
 type LeaderboardResponse = { ok: boolean; entries: Entry[]; you: { rank: number; points: number } | null; error?: string };
@@ -100,6 +102,12 @@ function LeaderboardContent() {
 }
 
 export default function LeaderboardPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!REWARDS_ACTIVITIES_ENABLED) router.replace("/account");
+  }, [router]);
+  if (!REWARDS_ACTIVITIES_ENABLED) return null;
+
   return (
     <AccountLayout>
       <LeaderboardContent />

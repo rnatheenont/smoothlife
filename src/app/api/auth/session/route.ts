@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
-import { tierProgress } from "@/data/coupons";
+import { getUserLoyalty } from "@/lib/user-tier";
 
 export async function GET(req: NextRequest) {
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
     `points_balance?user_id=eq.${uid}&select=balance`
   );
   const points = balanceRow?.balance ?? 0;
+  const loyalty = await getUserLoyalty(uid);
 
   return NextResponse.json({
     user: {
@@ -40,7 +41,9 @@ export async function GET(req: NextRequest) {
       provider: emailIdentity ? "email" : lineIdentity ? "line" : phoneIdentity ? "phone" : "email",
       real: true,
       points,
-      tier: tierProgress(points).current,
+      tier: loyalty.tier,
+      tierSpend: loyalty.spend,
+      tierOrders: loyalty.orders,
       createdAt: user.created_at,
     },
   });

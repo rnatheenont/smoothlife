@@ -1,17 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Award, Gift, Star, Crown, History, Ticket, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import AccountLayout from "@/components/account/AccountLayout";
 import DemoBadge from "@/components/DemoBadge";
 import type { RedemptionTier } from "@/app/api/account/redeem/route";
+import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
+import { tierDisplayName } from "@/lib/tier";
 
 const tiers = [
-  { name: "Bronze", min: 0, icon: Star, perks: ["สะสมคะแนน 1 บาท = 1 คะแนน", "ส่วนลดวันเกิด 10%"] },
-  { name: "Silver", min: 1000, icon: Award, perks: ["ส่งฟรีทุกออเดอร์", "เข้าถึงดีลพิเศษก่อนใคร"] },
-  { name: "Gold", min: 3000, icon: Crown, perks: ["สะสมคะแนน 1 บาท = 1.5 คะแนน", "ปรึกษาผู้เชี่ยวชาญส่วนตัว"] },
+  { name: "Bronze", min: 0, icon: Star, perks: ["สะสมคะแนน 1 บาท = 1 คะแนน", "คูปองต้อนรับสมาชิกใหม่"] },
+  { name: "Silver", min: 3000, icon: Award, perks: ["ส่วนลดวันเกิด 10% + แต้ม 2 เท่า", "เข้าถึงสินค้าใหม่ก่อนใคร 12 ชม."] },
+  { name: "Gold", min: 10000, icon: Crown, perks: ["ส่วนลดวันเกิด 20% + แต้ม 3 เท่า", "จัดส่งด่วนภายใน 1 วันทำการ"] },
 ];
 
 const reasonLabel: Record<string, string> = {
@@ -27,6 +31,7 @@ const reasonLabel: Record<string, string> = {
   skin_coach_points: "รางวัล Skin Coach",
   monthly_attendance_reward: "เช็กอินครบทุกวันของเดือน",
   challenge_bonus: "โบนัส 7-Day Challenge",
+  birthday_bonus: "โบนัสวันเกิด",
 };
 
 type LedgerEntry = { id: string; delta: number; reason: string; created_at: string };
@@ -105,7 +110,7 @@ function PointsContent() {
         </div>
         <div className="text-right">
           <p className="text-xs text-white/80">ระดับสมาชิกปัจจุบัน</p>
-          <p className="text-xl font-bold">{user.tier}</p>
+          <p className="text-xl font-bold">{tierDisplayName[user.tier].th}</p>
         </div>
       </div>
 
@@ -138,6 +143,12 @@ function PointsContent() {
         </div>
       )}
 
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-bold text-brand-ink">ระดับสมาชิกและสิทธิพิเศษ</h2>
+        <Link href="/loyalty" className="text-xs font-semibold text-brand-emerald">
+          ดูตารางเปรียบเทียบทั้งหมด
+        </Link>
+      </div>
       <div className="grid gap-4">
         {tiers.map((t) => {
           const active = user.tier === t.name;
@@ -151,8 +162,10 @@ function PointsContent() {
                   <t.icon size={16} />
                 </div>
                 <div>
-                  <p className="font-bold text-brand-ink">{t.name}</p>
-                  <p className="text-xs text-slate-400">ตั้งแต่ {t.min.toLocaleString()} คะแนนขึ้นไป</p>
+                  <p className="font-bold text-brand-ink">{tierDisplayName[t.name as keyof typeof tierDisplayName].th}</p>
+                  <p className="text-xs text-slate-400">
+                    {t.min === 0 ? "ระดับเริ่มต้น" : `ยอดใช้จ่ายสะสม 12 เดือนล่าสุด ฿${t.min.toLocaleString()} ขึ้นไป`}
+                  </p>
                 </div>
                 {active && <span className="ml-auto text-xs font-bold text-brand-emerald">ระดับปัจจุบัน</span>}
               </div>
@@ -222,6 +235,12 @@ function PointsContent() {
 }
 
 export default function PointsPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!REWARDS_ACTIVITIES_ENABLED) router.replace("/account");
+  }, [router]);
+  if (!REWARDS_ACTIVITIES_ENABLED) return null;
+
   return (
     <AccountLayout>
       <PointsContent />
