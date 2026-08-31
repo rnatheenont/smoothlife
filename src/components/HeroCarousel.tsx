@@ -42,7 +42,7 @@ export default function HeroCarousel({ banners: heroBanners }: { banners: HeroBa
   return (
     <div>
       <div
-        className="group relative aspect-[100/53] rounded-xl2 overflow-hidden border border-slate-200 select-none touch-pan-y bg-surface-soft"
+        className="group relative aspect-100/53 rounded-xl2 overflow-hidden border border-slate-200 select-none touch-pan-y bg-surface-soft"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onMouseEnter={() => setPaused(true)}
@@ -75,14 +75,14 @@ export default function HeroCarousel({ banners: heroBanners }: { banners: HeroBa
             <button
               onClick={() => showAt(index - 1)}
               aria-label="ก่อนหน้า"
-              className="hidden md:grid absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 place-items-center rounded-full bg-white/80 hover:bg-white text-brand-ink shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+              className="hidden md:grid absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 place-items-center rounded-full bg-white/80 hover:bg-white text-brand-ink shadow-xs opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <ChevronLeft size={18} />
             </button>
             <button
               onClick={() => showAt(index + 1)}
               aria-label="ถัดไป"
-              className="hidden md:grid absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 place-items-center rounded-full bg-white/80 hover:bg-white text-brand-ink shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+              className="hidden md:grid absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 place-items-center rounded-full bg-white/80 hover:bg-white text-brand-ink shadow-xs opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <ChevronRight size={18} />
             </button>

@@ -69,7 +69,7 @@ export default function CouponPicker() {
             setError("");
           }}
           placeholder={t("กรอกโค้ดส่วนลด", "Enter a coupon code")}
-          className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-teal uppercase"
+          className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal uppercase"
         />
         <button type="submit" className="rounded-lg bg-surface-muted px-4 text-sm font-semibold text-brand-dark">
           {t("ใช้โค้ด", "Apply")}
@@ -108,7 +108,7 @@ export default function CouponPicker() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-bold text-brand-ink">{title}</span>
-                    <span className="text-[10px] font-mono font-bold tracking-wide rounded bg-slate-100 px-1.5 py-0.5 text-slate-500">
+                    <span className="text-[10px] font-mono font-bold tracking-wide rounded-sm bg-slate-100 px-1.5 py-0.5 text-slate-500">
                       {ev.coupon.code}
                     </span>
                   </div>

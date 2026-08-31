@@ -210,7 +210,7 @@ function PointsContent() {
       )}
 
       {redeemed && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-110 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
             <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald">
               <CheckCircle2 size={28} />

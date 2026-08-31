@@ -65,7 +65,7 @@ function ProductChip({ slug }: { slug: string }) {
   if (!product) return null;
 
   return (
-    <div className="my-2 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+    <div className="my-2 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2 shadow-xs">
       <Link href={`/product/${product.slug}`} className="shrink-0 relative h-14 w-14 block">
         <Image
           src={product.image}
@@ -633,7 +633,7 @@ export default function QuickChat() {
           stickyBarVisible
             ? "bottom-[calc(120px+env(safe-area-inset-bottom))]"
             : "bottom-[calc(60px+env(safe-area-inset-bottom))]"
-        } lg:bottom-3 right-4 lg:right-5 z-[80] inline-flex transition-[bottom]`}
+        } lg:bottom-3 right-4 lg:right-5 z-80 inline-flex transition-[bottom]`}
         style={{
           transform: `translate(${dragPos.x}px, ${dragPos.y}px)`,
           transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
@@ -691,7 +691,7 @@ export default function QuickChat() {
             stickyBarVisible
               ? "bottom-[calc(184px+env(safe-area-inset-bottom))] h-[min(760px,calc(100dvh-184px-env(safe-area-inset-bottom)-16px))]"
               : "bottom-[calc(124px+env(safe-area-inset-bottom))] h-[min(760px,calc(100dvh-124px-env(safe-area-inset-bottom)-16px))]"
-          } lg:bottom-[88px] right-4 sm:right-5 z-[80] w-[calc(100vw-2rem)] sm:w-[390px] lg:h-[min(760px,82dvh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp transition-[bottom,height]`}
+          } lg:bottom-[88px] right-4 sm:right-5 z-80 w-[calc(100vw-2rem)] sm:w-[390px] lg:h-[min(760px,82dvh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp transition-[bottom,height]`}
         >
           <div className="flex items-center justify-between gap-3 bg-brand-ink px-4 py-3">
             <div className="flex items-center gap-2.5 text-white min-w-0">
@@ -873,7 +873,7 @@ export default function QuickChat() {
                   <button
                     key={s}
                     onClick={() => send(s)}
-                    className="rounded-full bg-brand-gradient px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
+                    className="rounded-full bg-brand-gradient px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-xs hover:opacity-90 transition-opacity"
                   >
                     {s}
                   </button>
@@ -986,7 +986,7 @@ export default function QuickChat() {
                   ? t("ถามเกี่ยวกับรูปนี้... (ไม่พิมพ์ก็ได้)", "Ask about this photo... (optional)")
                   : t("วันนี้คุณรู้สึกยังไง...", "How are you feeling today?")
               }
-              className="flex-1 rounded-full border border-slate-200 bg-surface-soft px-4 py-2.5 text-[13px] outline-none focus:border-brand-teal"
+              className="flex-1 rounded-full border border-slate-200 bg-surface-soft px-4 py-2.5 text-[13px] outline-hidden focus:border-brand-teal"
             />
             <button
               type="submit"

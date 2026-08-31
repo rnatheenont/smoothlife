@@ -23,7 +23,7 @@ export default function SubscriptionPage() {
         <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/25 blur-3xl" />
         <div className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-brand-sky/25 blur-3xl" />
         <div className="container-page relative py-12 md:py-20 text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-3 py-1 text-xs font-semibold mb-4">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur-sm px-3 py-1 text-xs font-semibold mb-4">
             <Repeat size={13} /> Smoothlife Subscription
           </span>
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
@@ -62,7 +62,7 @@ export default function SubscriptionPage() {
                 href={`/subscription/${set.slug}`}
                 className="group flex flex-col rounded-xl2 bg-white shadow-card hover:shadow-cardHover transition-shadow overflow-hidden border border-slate-100"
               >
-                <div className="relative aspect-[4/3] bg-surface-soft grid grid-cols-3 gap-px p-px">
+                <div className="relative aspect-4/3 bg-surface-soft grid grid-cols-3 gap-px p-px">
                   {items.slice(0, 3).map((p) => (
                     <div key={p.slug} className="relative bg-white">
                       <Image src={p.image} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="200px" />

@@ -76,7 +76,7 @@ export default function Header() {
   return (
     <>
     <header
-      className={`sticky top-0 z-40 bg-white/95 backdrop-blur pt-[env(safe-area-inset-top)] transition-transform duration-300 lg:!translate-y-0 lg:border-b lg:border-slate-100 ${
+      className={`sticky top-0 z-40 bg-white/95 backdrop-blur-sm pt-[env(safe-area-inset-top)] transition-transform duration-300 lg:translate-y-0! lg:border-b lg:border-slate-100 ${
         hideHeader && !open ? "-translate-y-full" : "translate-y-0"
       } ${scrolled ? "border-b border-slate-100" : "border-b border-transparent"}`}
     >
@@ -125,7 +125,7 @@ export default function Header() {
         <div className="hidden md:flex flex-1 max-w-xl">
           <HeaderSearch
             placeholder="ค้นหาสินค้า, ยี่ห้อ, หรือปัญหาผิวที่กังวล..."
-            inputClassName="w-full rounded-full border border-slate-200 bg-surface-soft py-2.5 pl-4 pr-11 text-sm outline-none focus:border-brand-teal transition-colors"
+            inputClassName="w-full rounded-full border border-slate-200 bg-surface-soft py-2.5 pl-4 pr-11 text-sm outline-hidden focus:border-brand-teal transition-colors"
             buttonClassName="absolute right-1.5 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-brand-gradient text-white"
           />
         </div>
@@ -151,7 +151,7 @@ export default function Header() {
           {user ? (
             <Link
               href="/account"
-              className="hidden sm:flex items-center gap-2.5 rounded-full bg-gradient-to-b from-white to-slate-50 pl-1.5 pr-1.5 py-1.5 border border-slate-100 shadow-md hover:shadow-lg hover:-translate-y-px transition-all"
+              className="hidden sm:flex items-center gap-2.5 rounded-full bg-linear-to-b from-white to-slate-50 pl-1.5 pr-1.5 py-1.5 border border-slate-100 shadow-md hover:shadow-lg hover:-translate-y-px transition-all"
             >
               <span
                 className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white text-xs font-bold overflow-hidden ring-2 ring-offset-2"
@@ -169,7 +169,7 @@ export default function Header() {
                 {REWARDS_ACTIVITIES_ENABLED && <span className="text-[11px] text-slate-500">{user.points} pts</span>}
               </span>
               <span
-                className="rounded-full px-2.5 py-1.5 text-[11px] font-bold text-white whitespace-nowrap shadow-sm"
+                className="rounded-full px-2.5 py-1.5 text-[11px] font-bold text-white whitespace-nowrap shadow-xs"
                 style={{ background: tierCard[user.tier].gradient }}
               >
                 Lv.{tierBadge[user.tier].level}
@@ -226,7 +226,7 @@ export default function Header() {
         <div className="flex items-center gap-2">
           <HeaderSearch
             placeholder="ค้นหาสินค้า, ยี่ห้อ..."
-            inputClassName="w-full rounded-full border border-slate-200 bg-surface-soft py-1.5 pl-4 pr-9 !text-[14px] outline-none focus:border-brand-teal transition-colors"
+            inputClassName="w-full rounded-full border border-slate-200 bg-surface-soft py-1.5 pl-4 pr-9 text-[14px]! outline-hidden focus:border-brand-teal transition-colors"
             buttonClassName="absolute right-1 top-1/2 -translate-y-1/2 grid h-6 w-6 place-items-center rounded-full bg-brand-ink text-white"
           />
         </div>
@@ -244,9 +244,9 @@ export default function Header() {
     </header>
 
       {open && (
-        <div className="fixed inset-0 z-[100] lg:hidden">
+        <div className="fixed inset-0 z-100 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-0 flex max-h-[100dvh] w-80 max-w-[85vw] flex-col bg-white shadow-xl overflow-y-auto overscroll-contain rounded-br-2xl animate-fadeUp">
+          <div className="absolute left-0 top-0 flex max-h-dvh w-80 max-w-[85vw] flex-col bg-white shadow-xl overflow-y-auto overscroll-contain rounded-br-2xl animate-fadeUp">
             <div className="bg-brand-gradient-soft px-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-5">
               <div className="flex items-center justify-between mb-5">
                 <span className="font-extrabold text-lg">

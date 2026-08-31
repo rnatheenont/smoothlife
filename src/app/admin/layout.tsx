@@ -70,7 +70,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="รหัสผ่านแอดมิน"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-hidden focus:border-brand-teal"
             autoFocus
           />
           {loginError && <p className="text-xs text-rose-500">{loginError}</p>}

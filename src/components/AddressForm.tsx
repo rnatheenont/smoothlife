@@ -139,7 +139,7 @@ function Field({
 }
 
 const base =
-  "w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition-colors bg-white";
+  "w-full rounded-xl border px-3.5 py-2.5 text-sm outline-hidden transition-colors bg-white";
 function ring(bad?: boolean) {
   return bad
     ? `${base} border-rose-300 focus:border-rose-400`

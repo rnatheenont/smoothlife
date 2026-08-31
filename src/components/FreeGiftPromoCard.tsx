@@ -33,7 +33,7 @@ export default function FreeGiftPromoCard() {
         const product = imgSlug ? getProductBySlug(imgSlug) : undefined;
         const badge = KIND_BADGE[promo.kind] ?? KIND_BADGE.spend;
         return (
-          <div key={promo.slug} className="relative rounded-xl2 overflow-hidden aspect-[4/3] group shadow-card">
+          <div key={promo.slug} className="relative rounded-xl2 overflow-hidden aspect-4/3 group shadow-card">
             {product && (
               <Image
                 src={product.image}
@@ -42,9 +42,9 @@ export default function FreeGiftPromoCard() {
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/5 to-transparent" />
             <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
-              <span className="text-[10px] font-bold uppercase bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold uppercase bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full">
                 {lang === "en" ? badge.en : badge.th}
               </span>
               <h3 className="font-bold text-sm md:text-base mt-1 line-clamp-1">{lang === "en" ? promo.titleEn : promo.titleTh}</h3>

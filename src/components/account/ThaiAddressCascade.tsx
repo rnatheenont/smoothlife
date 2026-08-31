@@ -12,7 +12,7 @@ export type ThaiAddressValue = {
 };
 
 const inputClass =
-  "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal disabled:bg-surface-soft disabled:text-slate-400";
+  "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-hidden focus:border-brand-teal disabled:bg-surface-soft disabled:text-slate-400";
 const labelClass = "text-xs font-semibold text-slate-500 mb-1.5 block";
 
 // Province → district → subdistrict, in that order, for anyone who knows

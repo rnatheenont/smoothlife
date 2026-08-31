@@ -381,7 +381,7 @@ export default function LoginContent() {
               className="relative grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-surface-soft hover:border-brand-teal/30 hover:text-brand-emerald transition-colors"
             >
               <Mail size={22} />
-              <span className="absolute -bottom-1.5 rounded-full bg-brand-emerald px-1.5 py-[1px] text-[9px] font-bold leading-none text-white shadow-sm">
+              <span className="absolute -bottom-1.5 rounded-full bg-brand-emerald px-1.5 py-px text-[9px] font-bold leading-none text-white shadow-xs">
                 OTP
               </span>
             </button>
@@ -435,7 +435,7 @@ export default function LoginContent() {
                         onChange={(e) => setName(e.target.value)}
                         placeholder="ชื่อ-นามสกุล"
                         autoComplete="name"
-                        className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                        className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
                       />
                     </div>
                     {emailErrorField === "name" && <p className="text-xs text-rose-500 mt-1 ml-4">{emailError}</p>}
@@ -450,7 +450,7 @@ export default function LoginContent() {
                         placeholder="เบอร์โทรศัพท์ (08X-XXX-XXXX)"
                         autoComplete="tel"
                         inputMode="tel"
-                        className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                        className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
                       />
                     </div>
                     {emailErrorField === "phone" && <p className="text-xs text-rose-500 mt-1 ml-4">{emailError}</p>}
@@ -468,7 +468,7 @@ export default function LoginContent() {
                     placeholder="อีเมล"
                     autoComplete={mode === "register" ? "email" : "username"}
                     inputMode="email"
-                    className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                    className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
                   />
                 </div>
                 {emailErrorField === "email" && <p className="text-xs text-rose-500 mt-1 ml-4">{emailError}</p>}
@@ -486,7 +486,7 @@ export default function LoginContent() {
                     // shorter password must still be able to log in with it.
                     minLength={mode === "register" ? 8 : undefined}
                     autoComplete={mode === "register" ? "new-password" : "current-password"}
-                    className="w-full rounded-full bg-surface-soft pl-11 pr-11 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                    className="w-full rounded-full bg-surface-soft pl-11 pr-11 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
                   />
                   <button
                     type="button"
@@ -529,7 +529,7 @@ export default function LoginContent() {
                 maxLength={6}
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                className="rounded-full bg-white border border-amber-200 px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
+                className="rounded-full bg-white border border-amber-200 px-5 py-3 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
               <button
                 disabled={reclaimSubmitting || reclaimCode.length < 6}
@@ -567,7 +567,7 @@ export default function LoginContent() {
                 placeholder="08X-XXX-XXXX"
                 autoComplete="tel"
                 inputMode="tel"
-                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 disabled:opacity-50"
+                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40 disabled:opacity-50"
               />
               <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
@@ -591,7 +591,7 @@ export default function LoginContent() {
                 maxLength={6}
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
+                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
               <button
@@ -632,7 +632,7 @@ export default function LoginContent() {
                   placeholder="อีเมล"
                   autoComplete="email"
                   inputMode="email"
-                  className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                  className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
                 />
               </div>
               <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
@@ -665,7 +665,7 @@ export default function LoginContent() {
                 maxLength={6}
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
+                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
               {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
               <button

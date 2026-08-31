@@ -77,7 +77,7 @@ function ClipCard({
           if (e.key === "Enter" || e.key === " ") handleOverlayClick();
         }}
         aria-label="เล่นวิดีโอ"
-        className="relative block aspect-[9/16] w-full bg-slate-900 cursor-pointer"
+        className="relative block aspect-9/16 w-full bg-slate-900 cursor-pointer"
       >
         <video
           ref={videoRef}
@@ -92,7 +92,7 @@ function ClipCard({
         />
         {!isPlaying && (
           <span className="absolute inset-0 grid place-items-center bg-black/10">
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-black/40 text-white backdrop-blur">
+            <span className="grid h-11 w-11 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm">
               <Play size={18} className="ml-0.5 fill-white" />
             </span>
           </span>
@@ -103,7 +103,7 @@ function ClipCard({
             setMuted((m) => !m);
           }}
           aria-label={muted ? "เปิดเสียง" : "ปิดเสียง"}
-          className="absolute top-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-black/40 text-white backdrop-blur"
+          className="absolute top-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm"
         >
           {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
         </button>

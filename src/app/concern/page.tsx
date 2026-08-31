@@ -12,9 +12,9 @@ export default function ConcernHubPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
         {concerns.map((c) => (
           <Link key={c.slug} href={`/concern/${c.slug}`} className="group rounded-xl2 overflow-hidden shadow-card">
-            <div className="relative aspect-[4/3]">
+            <div className="relative aspect-4/3">
               <Image src={concernImage(c.slug)} alt={c.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
               <div className="absolute bottom-0 p-4 text-white">
                 <h3 className="font-bold">{c.nameTh}</h3>
                 <p className="text-xs text-white/80 mt-1 line-clamp-2">{c.description}</p>
@@ -22,7 +22,7 @@ export default function ConcernHubPage() {
             </div>
           </Link>
         ))}
-        <Link href="/advisor" className="rounded-xl2 border-2 border-dashed border-brand-teal flex flex-col items-center justify-center text-center p-6 aspect-[4/3]">
+        <Link href="/advisor" className="rounded-xl2 border-2 border-dashed border-brand-teal flex flex-col items-center justify-center text-center p-6 aspect-4/3">
           <p className="font-bold text-brand-ink">ไม่แน่ใจว่าผิวคุณกังวลเรื่องอะไร?</p>
           <span className="text-sm text-brand-emerald font-semibold mt-2">ให้น้อง Smoothie ช่วยประเมิน →</span>
         </Link>

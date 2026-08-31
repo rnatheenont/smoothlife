@@ -101,7 +101,7 @@ export default function SubscriptionSetDetail({
   }
 
   return (
-    <div className="grid md:grid-cols-[1.1fr,1fr] gap-8 md:gap-10">
+    <div className="grid md:grid-cols-[1.1fr_1fr] gap-8 md:gap-10">
       <div>
         <h1 className="text-2xl md:text-3xl font-extrabold text-brand-ink">{set.name}</h1>
         <p className="mt-2 text-slate-600">{set.tagline}</p>

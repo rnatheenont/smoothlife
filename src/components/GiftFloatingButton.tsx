@@ -80,7 +80,7 @@ export default function GiftFloatingButton() {
 
   return (
     <div
-      className={`fixed ${stickyBarVisible ? "bottom-[calc(132px+env(safe-area-inset-bottom))]" : "bottom-[calc(72px+env(safe-area-inset-bottom))]"} lg:bottom-5 left-4 z-[80] inline-flex transition-[bottom]`}
+      className={`fixed ${stickyBarVisible ? "bottom-[calc(132px+env(safe-area-inset-bottom))]" : "bottom-[calc(72px+env(safe-area-inset-bottom))]"} lg:bottom-5 left-4 z-80 inline-flex transition-[bottom]`}
       style={{
         transform: `translate(${dragPos.x}px, ${dragPos.y}px)`,
         transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",

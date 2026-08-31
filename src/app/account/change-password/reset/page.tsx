@@ -67,7 +67,7 @@ function ResetPasswordContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="รหัสผ่านใหม่ (8+ ตัว มีตัวอักษรและตัวเลข)"
                 minLength={8}
-                className="w-full rounded-lg border border-slate-200 px-4 py-3 pr-10 text-sm outline-none focus:border-brand-teal"
+                className="w-full rounded-lg border border-slate-200 px-4 py-3 pr-10 text-sm outline-hidden focus:border-brand-teal"
               />
               <button
                 type="button"
@@ -85,7 +85,7 @@ function ResetPasswordContent() {
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="ยืนยันรหัสผ่านใหม่"
               minLength={8}
-              className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal"
+              className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-hidden focus:border-brand-teal"
             />
             {error && <p className="text-xs text-rose-500">{error}</p>}
             <button

@@ -250,7 +250,7 @@ export default function AdminPointsPage() {
                   aria-label={t.active ? "ปิดใช้งาน" : "เปิดใช้งาน"}
                 >
                   <span
-                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${t.active ? "translate-x-[22px]" : "translate-x-0"}`}
+                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${t.active ? "translate-x-[22px]" : "translate-x-0"}`}
                   />
                 </button>
                 <button onClick={() => startEditTier(t)} className="rounded-full border border-slate-200 text-slate-500 text-xs font-semibold px-3 py-1.5 shrink-0">
@@ -371,7 +371,7 @@ export default function AdminPointsPage() {
       </section>
 
       {showTierForm && (
-        <div className="fixed inset-0 z-[110] bg-black/40 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-110 bg-black/40 flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-xl2 bg-white p-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-bold text-brand-ink text-lg">{editingTierId ? "แก้ไขรายการแลกแต้ม" : "เพิ่มรายการแลกแต้ม"}</h2>

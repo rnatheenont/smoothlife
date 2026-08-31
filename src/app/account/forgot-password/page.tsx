@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="อีเมล"
-              className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal"
+              className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-hidden focus:border-brand-teal"
             />
             {error && <p className="text-xs text-rose-500">{error}</p>}
             <button

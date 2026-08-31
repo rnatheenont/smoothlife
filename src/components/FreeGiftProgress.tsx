@@ -47,7 +47,7 @@ export default function FreeGiftProgress({ scopedToSlug }: { scopedToSlug?: stri
                   <span className="text-[10px] font-semibold text-brand-ink text-center line-clamp-2 max-w-[70px]">{title}</span>
                 </div>
                 {i < sorted.length - 1 && (
-                  <div className={`h-0.5 flex-1 mx-1 rounded ${ev.eligible ? "bg-brand-emerald" : "bg-slate-200"}`} />
+                  <div className={`h-0.5 flex-1 mx-1 rounded-sm ${ev.eligible ? "bg-brand-emerald" : "bg-slate-200"}`} />
                 )}
               </div>
             );

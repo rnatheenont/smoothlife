@@ -35,7 +35,7 @@ export default function AskExpertPage() {
             onChange={(e) => setMessage(e.target.value)}
             rows={5}
             placeholder="อธิบายปัญหาผิวหรือคำถามของคุณ..."
-            className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal resize-none"
+            className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-hidden focus:border-brand-teal resize-none"
           />
           <button className="rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm">
             ส่งคำถามให้ผู้เชี่ยวชาญ

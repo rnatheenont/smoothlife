@@ -92,7 +92,7 @@ export default async function HomePage() {
         {/* Mobile: plain white, no tint — desktop keeps the old short top
             banner + two floating blobs since its section is much taller
             (headline column) and reads fine with the wash. */}
-        <div className="pointer-events-none hidden md:block absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-brand-teal/10 via-brand-sky/5 to-transparent" />
+        <div className="pointer-events-none hidden md:block absolute inset-x-0 top-0 h-40 bg-linear-to-b from-brand-teal/10 via-brand-sky/5 to-transparent" />
         <div className="pointer-events-none hidden md:block absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/10 blur-3xl animate-floatSlow" />
         <div className="pointer-events-none hidden md:block absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-brand-sky/10 blur-3xl animate-floatSlow" />
 
@@ -101,7 +101,7 @@ export default async function HomePage() {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-emerald shadow-card mb-5 border border-slate-100">
               <Sparkles size={13} /> แนะนำน้อง Smoothie ผู้ช่วยคนใหม่
             </span>
-            <h1 className="text-4xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold !leading-[1.35] tracking-tight text-brand-ink">
+            <h1 className="text-4xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-[1.35]! tracking-tight text-brand-ink">
               สุขภาพดี ผิวสวย <br />
               <span className="brand-text-gradient">ครบทุก Lifestyle</span> <span className="whitespace-nowrap">ที่เดียว</span>
             </h1>
@@ -126,7 +126,7 @@ export default async function HomePage() {
             </div>
           </StaggerReveal>
           <div className="relative order-1 md:order-2">
-            <div className="pointer-events-none hidden md:block absolute -inset-6 rounded-[2rem] bg-brand-gradient opacity-30 blur-2xl" />
+            <div className="pointer-events-none hidden md:block absolute -inset-6 rounded-4xl bg-brand-gradient opacity-30 blur-2xl" />
             <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
           </div>
 
@@ -211,7 +211,7 @@ export default async function HomePage() {
             <Link
               key={promo.slug}
               href={`/promotions#${promo.slug}`}
-              className="relative rounded-xl2 overflow-hidden aspect-[4/3] group shadow-card"
+              className="relative rounded-xl2 overflow-hidden aspect-4/3 group shadow-card"
             >
               <Image
                 src={promotionImage(promo, products, usedPromoSlugs)}
@@ -219,9 +219,9 @@ export default async function HomePage() {
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/5 to-transparent" />
               <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
-                <span className="text-[10px] font-bold uppercase bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-bold uppercase bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full">
                   {promo.badge}
                 </span>
                 <h3 className="font-bold text-sm md:text-base mt-1">{promo.title}</h3>
@@ -296,9 +296,9 @@ export default async function HomePage() {
         <ScaleReveal className="relative overflow-hidden rounded-xl2 bg-brand-gradient p-8 md:p-12 text-white">
           <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-white/10 animate-floatSlow" />
           <div className="pointer-events-none absolute right-24 bottom-0 h-24 w-24 rounded-full bg-white/10 animate-floatSlow" />
-          <div className="relative grid md:grid-cols-[1.1fr,1fr] gap-8 items-center">
+          <div className="relative grid md:grid-cols-[1.1fr_1fr] gap-8 items-center">
             <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur px-3 py-1 text-xs font-semibold mb-4">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-semibold mb-4">
                 <Repeat size={13} /> สมัครสมาชิกรายรอบ ไม่ต้องสั่งซ้ำ
               </span>
               <h2 className="text-2xl md:text-4xl font-extrabold tracking-tight leading-tight">
@@ -326,7 +326,7 @@ export default async function HomePage() {
               {subscriptionPlans.map((plan) => (
                 <div
                   key={plan.months}
-                  className={`relative flex flex-col items-center gap-0.5 rounded-xl2 px-2 py-3 text-center backdrop-blur transition-all ${
+                  className={`relative flex flex-col items-center gap-0.5 rounded-xl2 px-2 py-3 text-center backdrop-blur-sm transition-all ${
                     plan.popular ? "bg-white text-brand-ink shadow-cardHover scale-[1.03]" : "bg-white/15 text-white"
                   }`}
                 >
@@ -349,7 +349,7 @@ export default async function HomePage() {
               {subscriptionPlans.map((plan) => (
                 <div
                   key={plan.months}
-                  className={`flex items-center justify-between rounded-xl2 px-4 py-3 backdrop-blur transition-all ${
+                  className={`flex items-center justify-between rounded-xl2 px-4 py-3 backdrop-blur-sm transition-all ${
                     plan.popular ? "bg-white text-brand-ink shadow-cardHover scale-[1.03]" : "bg-white/15 text-white"
                   }`}
                 >
@@ -412,7 +412,7 @@ export default async function HomePage() {
               href={`/knowledge/article/${a.slug}`}
               className="group shrink-0 w-[78%] sm:w-auto snap-start rounded-xl2 bg-white overflow-hidden shadow-card hover:shadow-cardHover transition-shadow"
             >
-              <div className="relative aspect-[16/9]">
+              <div className="relative aspect-video">
                 <Image
                   src={a.image}
                   alt={a.title}

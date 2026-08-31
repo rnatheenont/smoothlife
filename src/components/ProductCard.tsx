@@ -69,7 +69,7 @@ export default function ProductCard({ product }: { product: Product }) {
       <button
         onClick={() => toggle(product.slug)}
         aria-label="Add to wishlist"
-        className="absolute right-2.5 top-2.5 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/90 backdrop-blur shadow-sm hover:scale-105 transition-transform"
+        className="absolute right-2.5 top-2.5 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/90 backdrop-blur-sm shadow-xs hover:scale-105 transition-transform"
       >
         <Heart size={16} className={isWished ? "fill-rose-500 text-rose-500" : "text-slate-400"} />
       </button>
@@ -94,7 +94,7 @@ export default function ProductCard({ product }: { product: Product }) {
               <span
                 key={label}
                 className={clsx(
-                  "text-[10px] font-bold px-2 py-1 rounded-full shadow-sm",
+                  "text-[10px] font-bold px-2 py-1 rounded-full shadow-xs",
                   label.startsWith("-")
                     ? "bg-rose-500 text-white"
                     : label === promoChip
@@ -111,7 +111,7 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className="flex flex-1 flex-col gap-1.5 p-3 md:p-4">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-teal">{product.brand}</span>
         <Link href={`/product/${product.slug}`}>
-          <h3 className="text-sm font-medium text-brand-ink line-clamp-2 min-h-[2.5rem] hover:text-brand-emerald transition-colors">
+          <h3 className="text-sm font-medium text-brand-ink line-clamp-2 min-h-10 hover:text-brand-emerald transition-colors">
             {product.name}
           </h3>
         </Link>

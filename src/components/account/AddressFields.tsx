@@ -30,7 +30,7 @@ export const emptyAddressForm: AddressFormValue = {
 };
 
 const inputClass =
-  "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal";
+  "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-hidden focus:border-brand-teal";
 const labelClass = "text-xs font-semibold text-slate-500 mb-1.5 block";
 
 export default function AddressFields({

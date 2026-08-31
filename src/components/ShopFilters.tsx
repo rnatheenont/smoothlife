@@ -114,7 +114,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
                 >
                   <span
                     className={clsx(
-                      "grid h-4 w-4 shrink-0 place-items-center rounded border-2 transition-colors",
+                      "grid h-4 w-4 shrink-0 place-items-center rounded-sm border-2 transition-colors",
                       selected ? "border-brand-emerald bg-brand-emerald" : "border-slate-300"
                     )}
                   >
@@ -255,7 +255,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
       </div>
       <aside className="hidden lg:block lg:sticky lg:top-[152px] lg:self-start w-56 shrink-0">{content}</aside>
       {mobileOpen && (
-        <div className="fixed inset-0 z-[100] lg:hidden">
+        <div className="fixed inset-0 z-100 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
           <div className="absolute inset-x-0 bottom-0 max-h-[85vh] flex flex-col rounded-t-2xl bg-white shadow-xl animate-slideUp">
             <div className="flex items-center justify-center pt-2.5 pb-1 shrink-0">

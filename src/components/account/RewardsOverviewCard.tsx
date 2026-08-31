@@ -100,13 +100,13 @@ export default function RewardsOverviewCard() {
               Smoothlife<span className="opacity-80">.com</span>
             </p>
           </div>
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur-sm">
             <TierIcon size={20} />
           </div>
         </div>
 
         <div className="relative flex items-center gap-3 mb-5">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur text-lg font-bold overflow-hidden ring-2 ring-white/70">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur-sm text-lg font-bold overflow-hidden ring-2 ring-white/70">
             {user.avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={user.avatar} alt={user.name} className="h-12 w-12 rounded-full object-cover" />

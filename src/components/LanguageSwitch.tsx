@@ -29,7 +29,7 @@ export default function LanguageSwitch({ compact = false }: { compact?: boolean 
   return (
     <div
       ref={groupRef}
-      className={`relative inline-flex items-center gap-1 rounded-full bg-surface-soft border border-slate-200 shadow-sm p-1 ${
+      className={`relative inline-flex items-center gap-1 rounded-full bg-surface-soft border border-slate-200 shadow-xs p-1 ${
         compact ? "text-xs" : "text-sm"
       }`}
       role="group"

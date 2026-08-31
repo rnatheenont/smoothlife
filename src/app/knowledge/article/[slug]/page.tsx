@@ -18,7 +18,7 @@ export default function ArticlePage({ params }: { params: { slug: string } }) {
 
   return (
     <article className="container-page py-8 md:py-10 max-w-2xl mx-auto">
-      <div className="relative aspect-[16/9] rounded-xl2 overflow-hidden mb-6">
+      <div className="relative aspect-video rounded-xl2 overflow-hidden mb-6">
         <Image src={article.image} alt={article.title} fill className="object-cover" />
       </div>
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-3">{article.title}</h1>

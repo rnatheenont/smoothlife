@@ -38,10 +38,10 @@ type StatusResponse = {
 };
 
 const dayCircleStyle: Record<DayInfo["status"], string> = {
-  normal: "bg-white text-brand-emerald shadow-sm",
-  recovery: "bg-white text-brand-emerald shadow-sm",
+  normal: "bg-white text-brand-emerald shadow-xs",
+  recovery: "bg-white text-brand-emerald shadow-xs",
   today: "bg-white text-brand-emerald shadow-lg ring-4 ring-amber-300/70 scale-110",
-  recoverable: "bg-white text-amber-600 border-2 border-amber-400 shadow-sm",
+  recoverable: "bg-white text-amber-600 border-2 border-amber-400 shadow-xs",
   missed: "bg-white/10 text-white/40",
   upcoming: "bg-white/5 text-white/30 border border-dashed border-white/20",
 };
@@ -166,9 +166,9 @@ function CheckinContent() {
       <p className="text-sm text-slate-500 mb-6">เช็กอินทุกวัน สะสมแต้ม ครบ 7 วันรับคูปองส่วนลดพิเศษ</p>
 
       {data.challenge?.active && (
-        <div className="mb-6 rounded-xl2 bg-gradient-to-r from-amber-400 to-orange-400 p-[1px] shadow-card">
-          <div className="rounded-[calc(theme(borderRadius.xl2)-1px)] bg-white flex items-center gap-3 px-4 py-3.5">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm">
+        <div className="mb-6 rounded-xl2 bg-linear-to-r from-amber-400 to-orange-400 p-px shadow-card">
+          <div className="rounded-[calc(var(--radius-xl2)-1px)] bg-white flex items-center gap-3 px-4 py-3.5">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-linear-to-br from-amber-400 to-orange-500 text-white shadow-xs">
               <Flame size={18} />
             </span>
             <div className="min-w-0">
@@ -234,7 +234,7 @@ function CheckinContent() {
                     >
                       {d.status === "normal" || d.status === "recovery" ? <CheckCircle2 size={16} /> : d.dayNumber}
                       {(d.dayNumber === 3 || d.dayNumber === 7) && (
-                        <span className="absolute -top-1.5 -right-1.5 grid h-4 w-4 place-items-center rounded-full bg-amber-400 text-white shadow-sm">
+                        <span className="absolute -top-1.5 -right-1.5 grid h-4 w-4 place-items-center rounded-full bg-amber-400 text-white shadow-xs">
                           <Gift size={9} />
                         </span>
                       )}
@@ -268,14 +268,14 @@ function CheckinContent() {
           }`}
         >
           {nextRewardDay === 3 && (
-            <span className="absolute -top-2.5 left-4 rounded-full bg-brand-gradient px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+            <span className="absolute -top-2.5 left-4 rounded-full bg-brand-gradient px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
               เป้าหมายถัดไป
             </span>
           )}
           <div className="flex items-center gap-3 mb-2">
             <span
               className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${
-                cycle?.day3RewardClaimed ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-emerald"
+                cycle?.day3RewardClaimed ? "bg-brand-gradient text-white shadow-xs" : "bg-brand-gradient-soft text-brand-emerald"
               }`}
             >
               <Gift size={20} />
@@ -308,14 +308,14 @@ function CheckinContent() {
           }`}
         >
           {nextRewardDay === 7 && (
-            <span className="absolute -top-2.5 left-4 rounded-full bg-brand-gradient px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+            <span className="absolute -top-2.5 left-4 rounded-full bg-brand-gradient px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
               เป้าหมายถัดไป
             </span>
           )}
           <div className="flex items-center gap-3 mb-2">
             <span
               className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${
-                cycle?.day7RewardClaimed ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-emerald"
+                cycle?.day7RewardClaimed ? "bg-brand-gradient text-white shadow-xs" : "bg-brand-gradient-soft text-brand-emerald"
               }`}
             >
               <Sparkles size={20} />
@@ -358,7 +358,7 @@ function CheckinContent() {
             <div className="flex items-center gap-3 mb-3">
               <span
                 className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${
-                  data.monthlyAttendance.rewarded ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-emerald"
+                  data.monthlyAttendance.rewarded ? "bg-brand-gradient text-white shadow-xs" : "bg-brand-gradient-soft text-brand-emerald"
                 }`}
               >
                 <CalendarCheck size={20} />
@@ -414,7 +414,7 @@ function CheckinContent() {
       )}
 
       {confirmDate && (
-        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-110 flex items-end sm:items-center justify-center bg-black/40 p-4">
           <div className="w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl bg-white p-5 shadow-xl">
             <div className="flex items-center justify-between mb-3">
               <p className="font-bold text-brand-ink">ยืนยันกู้วันเช็กอิน</p>
@@ -451,7 +451,7 @@ function CheckinContent() {
       )}
 
       {celebration && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-110 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl animate-fadeUp">
             <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-full bg-brand-gradient-soft text-3xl">🎁</div>
             <p className="text-lg font-bold text-brand-ink mb-1">{celebration.title}</p>

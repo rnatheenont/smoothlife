@@ -25,7 +25,7 @@ export default function CategoryChips({ current }: { current: ShopSearchParams }
       <button
         onClick={() => updateParam("category", null)}
         className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-          !current.category ? "bg-brand-gradient text-white shadow-sm" : "bg-surface-soft text-slate-600"
+          !current.category ? "bg-brand-gradient text-white shadow-xs" : "bg-surface-soft text-slate-600"
         }`}
       >
         ทั้งหมด
@@ -35,7 +35,7 @@ export default function CategoryChips({ current }: { current: ShopSearchParams }
           key={c.slug}
           onClick={() => updateParam("category", c.slug)}
           className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-            current.category === c.slug ? "bg-brand-gradient text-white shadow-sm" : "bg-surface-soft text-slate-600"
+            current.category === c.slug ? "bg-brand-gradient text-white shadow-xs" : "bg-surface-soft text-slate-600"
           }`}
         >
           {c.nameTh}
