@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
       contact_email: email ?? null,
       contact_phone: phone ?? null,
       shipping_address: shippingAddress,
+      line_items: resolved.map((l) => ({ variantId: l.variantId, quantity: l.quantity, price: l.price })),
     }),
   });
 

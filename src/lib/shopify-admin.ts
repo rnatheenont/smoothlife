@@ -766,14 +766,16 @@ export async function listGiftCards(limit = 20): Promise<ShopifyGiftCardSummary[
 // paid immediately via a synthetic SALE/SUCCESS transaction because the
 // money already moved at 2C2P; Shopify is just being told about it after
 // the fact, not asked to collect it.
-export async function createOrderForSubscriptionCycle(opts: {
+// Creates a real, financialStatus: PAID Shopify order backed by an
+// already-succeeded 2C2P charge — shared by both the subscription webhook
+// (one or more items per billing cycle) and the one-time custom-checkout
+// webhook (an arbitrary cart's line items). `price` per line is that
+// item's own real per-unit price, so the SALE transaction below (their
+// sum) always reconciles with the line items instead of arbitrarily
+// assigning the whole charge to one SKU.
+export async function createPaidShopifyOrder(opts: {
   customerId?: string;
   email?: string;
-  // One entry for a single-product subscription, several for a "set"
-  // subscription (one lump-sum charge covers every item in the set) —
-  // `price` is that item's own discounted per-unit price, so the SALE
-  // transaction below (their sum) always reconciles with the line items
-  // instead of arbitrarily assigning the whole charge to one SKU.
   lineItems: { variantId: string; quantity: number; price: number }[];
   currencyCode: string;
   shippingAddress: {
@@ -841,7 +843,7 @@ export async function createOrderForSubscriptionCycle(opts: {
 }
 
 // Creates a monthly shipment order for month 2+ of an already-paid
-// subscription term. Unlike createOrderForSubscriptionCycle above, this
+// subscription term. Unlike createPaidShopifyOrder above, this
 // carries NO transaction and a $0 line item — the customer already paid
 // the full term lump sum on month 1's order; recording that same money
 // again on every subsequent month's order would multiply the reported
