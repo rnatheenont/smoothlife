@@ -2,11 +2,28 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Repeat, Loader2, Bell, BellOff, Sparkles, XCircle } from "lucide-react";
+import { Repeat, Loader2, Bell, BellOff, Sparkles, XCircle, ChevronDown, Package, Receipt } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import { formatTHB } from "@/lib/format";
 import { subscriptionPlans } from "@/data/subscriptions";
 import type { SubscriptionRow, RealSubscriptionRow } from "@/app/api/account/subscriptions/route";
+
+type ChargeHistoryRow = {
+  id: string;
+  cycle_number: number;
+  amount: number;
+  success: boolean | null;
+  charged_at: string | null;
+  shopify_order_id: string | null;
+};
+
+type ShipmentHistoryRow = {
+  id: string;
+  term_number: number;
+  cycle_in_term: number;
+  shopify_order_id: string;
+  shipped_at: string;
+};
 
 function daysUntil(iso: string) {
   const diff = new Date(iso).getTime() - Date.now();
@@ -31,7 +48,31 @@ function RealSubscriptionCard({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [charges, setCharges] = useState<ChargeHistoryRow[] | null>(null);
+  const [shipments, setShipments] = useState<ShipmentHistoryRow[] | null>(null);
   const canCancel = (sub.status === "active" || sub.status === "past_due") && !sub.auto_renew_cancelled;
+
+  async function toggleHistory() {
+    if (historyOpen) {
+      setHistoryOpen(false);
+      return;
+    }
+    setHistoryOpen(true);
+    if (charges !== null) return; // already loaded once
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/account/subscriptions/${sub.id}/history`);
+      const data = await res.json();
+      if (data.ok) {
+        setCharges(data.charges ?? []);
+        setShipments(data.shipments ?? []);
+      }
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
 
   async function handleCancel() {
     setBusy(true);
@@ -68,8 +109,7 @@ function RealSubscriptionCard({
               {REAL_STATUS_LABEL[sub.status]}
             </span>
             <span className="text-[10px] text-slate-400">
-              เทอมที่ {sub.current_term_number} ({sub.plan_months} เดือน, -{sub.discount_pct}%) · จัดส่งแล้ว{" "}
-              {sub.cycles_completed_this_term}/{sub.plan_months} เดือน
+              รอบที่ {sub.cycle_in_term}/{sub.plan_months} ของเทอมที่ {sub.current_term_number} (-{sub.discount_pct}%)
             </span>
           </div>
           <Link
@@ -79,16 +119,72 @@ function RealSubscriptionCard({
             {sub.product_name}
           </Link>
           <p className="text-xs text-slate-500 mt-1">
-            {formatTHB(sub.amount_per_cycle)} ทุก {sub.plan_months} เดือน (ตัดอัตโนมัติเต็มเทอม)
+            {formatTHB(sub.amount_per_cycle)} ทุกเดือน
             {sub.next_charge_date && ` · ตัดครั้งถัดไป ${new Date(sub.next_charge_date).toLocaleDateString("th-TH")}`}
-            {sub.next_shipment_date && ` · จัดส่งครั้งถัดไป ${new Date(sub.next_shipment_date).toLocaleDateString("th-TH")}`}
           </p>
           {sub.auto_renew_cancelled && (
-            <p className="text-xs font-semibold text-amber-600 mt-1">
-              ยกเลิกการต่ออายุแล้ว — จะได้รับสินค้าจนครบเทอมนี้แล้วสิ้นสุด
-            </p>
+            <p className="text-xs font-semibold text-amber-600 mt-1">ยกเลิกแล้ว — จะไม่มีการตัดเงินรอบถัดไป</p>
           )}
           {error && <p className="text-xs text-rose-500 mt-1">{error}</p>}
+          <button
+            onClick={toggleHistory}
+            className="flex items-center gap-1 text-xs font-semibold text-brand-emerald mt-2"
+          >
+            <ChevronDown size={13} className={`transition-transform ${historyOpen ? "rotate-180" : ""}`} />
+            ประวัติการตัดเงินและจัดส่ง
+          </button>
+          {historyOpen && (
+            <div className="mt-2 rounded-xl bg-white/70 border border-slate-100 p-3">
+              {historyLoading ? (
+                <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                  <Loader2 size={12} className="animate-spin" /> กำลังโหลด...
+                </p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 mb-1.5">
+                      <Receipt size={12} /> ประวัติการตัดเงิน
+                    </p>
+                    {!charges || charges.length === 0 ? (
+                      <p className="text-xs text-slate-400">ยังไม่มีประวัติ</p>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        {charges.map((c) => (
+                          <div key={c.id} className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500">
+                              รอบที่ {c.cycle_number} · {c.charged_at ? new Date(c.charged_at).toLocaleDateString("th-TH") : "รอตัดเงิน"}
+                            </span>
+                            <span className={c.success ? "text-brand-emerald font-semibold" : "text-rose-500 font-semibold"}>
+                              {formatTHB(c.amount)} {c.success === false ? "(ไม่สำเร็จ)" : ""}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 mb-1.5">
+                      <Package size={12} /> ประวัติการจัดส่ง
+                    </p>
+                    {!shipments || shipments.length === 0 ? (
+                      <p className="text-xs text-slate-400">ยังไม่มีประวัติ</p>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        {shipments.map((s) => (
+                          <div key={s.id} className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500">
+                              รอบที่ {s.cycle_in_term}/{sub.plan_months} (เทอมที่ {s.term_number})
+                            </span>
+                            <span className="text-slate-500">{new Date(s.shipped_at).toLocaleDateString("th-TH")}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         {canCancel && (
           <button
