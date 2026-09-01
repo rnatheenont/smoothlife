@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Repeat, Truck, ShieldCheck, CalendarClock, ChevronRight } from "lucide-react";
+import { Repeat, Truck, ShieldCheck, CalendarClock, ChevronRight, CreditCard, Package, Percent } from "lucide-react";
 import { subscriptionPlans, subscriptionProducts, subscriptionSets, subscriptionSetProducts } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
 import { twoC2PConfigured } from "@/lib/2c2p";
@@ -16,6 +16,7 @@ const perks = [
 
 export default function SubscriptionPage() {
   const maxDiscount = Math.max(...subscriptionPlans.map((p) => p.discountPct));
+  const billingEnabled = twoC2PConfigured();
 
   return (
     <div>
@@ -39,6 +40,74 @@ export default function SubscriptionPage() {
                 <perk.icon size={14} /> {perk.label}
               </span>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Terms explainer — billing cadence, shipping, and the discount
+          table, spelled out plainly before anyone picks a plan. Copy
+          switches on billingEnabled (same flag SubscriptionPicker/
+          ProductDetailInteractive/SubscriptionSetDetail already use) so
+          this never claims real recurring billing while the site is
+          actually still on the discount-code fallback. */}
+      <section className="container-page py-10 md:py-14 border-t border-slate-100">
+        <h2 className="text-xl md:text-2xl font-extrabold text-brand-ink mb-1 text-center">เงื่อนไขการสมัครสมาชิก</h2>
+        <p className="text-sm text-slate-500 mb-6 text-center">อ่านให้ครบก่อนสมัคร — ไม่มีเงื่อนไขซ่อนเร้น</p>
+        <div className="grid sm:grid-cols-3 gap-4 md:gap-5">
+          <div className="rounded-xl2 border border-slate-100 shadow-card p-5">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald mb-3">
+              <CreditCard size={18} />
+            </div>
+            <h3 className="font-bold text-brand-ink mb-2">ตัดรอบ</h3>
+            {billingEnabled ? (
+              <ul className="text-sm text-slate-600 flex flex-col gap-1.5">
+                <li>• ตัดเงินอัตโนมัติ<strong className="text-brand-ink">ทุกเดือน</strong> ในราคาที่ล็อกไว้ตามเทอมที่เลือก ไม่เปลี่ยนแปลงระหว่างทาง</li>
+                <li>• ครบตามจำนวนรอบของเทอมแล้ว ระบบต่อเทอมใหม่ให้อัตโนมัติในเงื่อนไขเดิม ไปเรื่อยๆ จนกว่าจะยกเลิก</li>
+                <li>• ยกเลิกได้ทุกเมื่อที่หน้า &ldquo;การสมัครของฉัน&rdquo; — มีผล<strong className="text-brand-ink">ตั้งแต่รอบถัดไป</strong> รอบปัจจุบันที่จ่ายแล้วยังได้รับตามปกติ ไม่มีค่าปรับ</li>
+              </ul>
+            ) : (
+              <ul className="text-sm text-slate-600 flex flex-col gap-1.5">
+                <li>• กด &ldquo;สมัคร&rdquo; ครั้งเดียว ระบบเพิ่มสินค้าตามจำนวนรอบที่เลือกลงตะกร้า พร้อมส่วนลดให้อัตโนมัติที่หน้าชำระเงิน</li>
+                <li>• ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน — ครบรอบแล้วกลับมาสมัครใหม่อีกครั้งได้เลย</li>
+              </ul>
+            )}
+          </div>
+
+          <div className="rounded-xl2 border border-slate-100 shadow-card p-5">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald mb-3">
+              <Package size={18} />
+            </div>
+            <h3 className="font-bold text-brand-ink mb-2">การจัดส่ง</h3>
+            {billingEnabled ? (
+              <ul className="text-sm text-slate-600 flex flex-col gap-1.5">
+                <li>• จัดส่ง<strong className="text-brand-ink">พร้อมกับทุกรอบที่ตัดเงินสำเร็จ</strong> ไม่ต้องรอแยกต่างหาก</li>
+                <li>• ส่งฟรีทุกรอบ ทั่วไทย</li>
+                <li>• เปลี่ยนที่อยู่จัดส่งได้ทุกเมื่อสำหรับรอบที่ยังไม่ถึงกำหนด</li>
+              </ul>
+            ) : (
+              <ul className="text-sm text-slate-600 flex flex-col gap-1.5">
+                <li>• จัดส่งตามคำสั่งซื้อปกติทันทีที่ชำระเงินสำเร็จ (ได้รับสินค้าตามจำนวนรอบที่เลือกในครั้งเดียว)</li>
+                <li>• ส่งฟรีทุกออเดอร์</li>
+              </ul>
+            )}
+          </div>
+
+          <div className="rounded-xl2 border border-slate-100 shadow-card p-5">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald mb-3">
+              <Percent size={18} />
+            </div>
+            <h3 className="font-bold text-brand-ink mb-2">ส่วนลด</h3>
+            <div className="flex flex-col gap-1.5 text-sm">
+              {subscriptionPlans.map((p) => (
+                <div key={p.months} className="flex items-center justify-between rounded-lg bg-surface-soft px-3 py-1.5">
+                  <span className="text-slate-600">ทุก {p.months} เดือน</span>
+                  <span className="font-bold text-brand-emerald">-{p.discountPct}%</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-slate-400 mt-2">
+              ยิ่งเลือกเทอมยาว ยิ่งได้ส่วนลดต่อเดือนมากขึ้น {billingEnabled ? "และล็อกอัตรานี้ไว้ตลอดการสมัคร" : ""}
+            </p>
           </div>
         </div>
       </section>
