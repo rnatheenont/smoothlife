@@ -3,7 +3,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Lock, Gift, SlidersHorizontal, Award, LogOut, CreditCard, MessageSquareText, Repeat } from "lucide-react";
+import { Lock, Gift, SlidersHorizontal, Award, LogOut, CreditCard, MessageSquareText, Repeat, Receipt } from "lucide-react";
 
 const NAV = [
   { href: "/admin/free-gifts", label: "โปรโมชั่น", icon: Gift },
@@ -12,6 +12,7 @@ const NAV = [
   { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText },
   { href: "/admin/gift-cards", label: "บัตรของขวัญ", icon: CreditCard },
   { href: "/admin/subscription-products", label: "สินค้าสมัครสมาชิก", icon: Repeat },
+  { href: "/admin/checkout-transactions", label: "รายการซื้อ (2C2P)", icon: Receipt },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { twoC2PConfigured, verifyPaymentCallback } from "@/lib/2c2p";
-import { createOrderForSubscriptionCycle } from "@/lib/shopify-admin";
+import { createPaidShopifyOrder } from "@/lib/shopify-admin";
 import { products } from "@/data/products";
 
 type ChargeRow = { id: string; subscription_id: string; cycle_number: number; amount: number };
@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
       subscription.variant_ids
         ? splitAmountByRealPrice(subscription.variant_ids, charge.amount).map((li) => ({ ...li, quantity: 1 }))
         : [{ variantId: subscription.variant_id!, quantity: 1, price: charge.amount }];
-    const order = await createOrderForSubscriptionCycle({
+    const order = await createPaidShopifyOrder({
       email: subscription.contact_email ?? undefined,
       lineItems,
       currencyCode: subscription.currency_code,
