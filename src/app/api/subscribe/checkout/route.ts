@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ ok: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
 
-  const { productSlug, variantId, setSlug, months, shippingAddress } = body;
+  const { productSlug, variantId, setSlug, months, shippingAddress, consentRecurringCharge } = body;
   const plan = subscriptionPlans.find((p) => p.months === months);
   if (!plan) return NextResponse.json({ ok: false, error: "ระยะเวลาสมัครไม่ถูกต้อง" }, { status: 400 });
 
@@ -29,12 +29,14 @@ export async function POST(req: NextRequest) {
   ) {
     return NextResponse.json({ ok: false, error: "กรุณากรอกที่อยู่จัดส่งให้ครบ" }, { status: 400 });
   }
+  if (consentRecurringCharge !== true) {
+    return NextResponse.json({ ok: false, error: "กรุณายืนยันการยอมรับเงื่อนไขการตัดเงินอัตโนมัติ" }, { status: 400 });
+  }
 
   // Either a single product (productSlug/variantId) or a curated set
-  // (setSlug, every product in it) — both end up as one lump-sum 2C2P
-  // charge covering the whole term, just a different subscription_type/
-  // shape on the real_subscriptions row (see migration
-  // real_subscriptions_support_sets).
+  // (setSlug, every product in it) — both end up as one 2C2P recurring
+  // plan billing monthly, just a different subscription_type/shape on the
+  // real_subscriptions row (see migration real_subscriptions_support_sets).
   let subscriptionType: "single_product" | "set";
   let displayName: string;
   let items: { slug: string; variantId: string; price: number }[];
@@ -63,20 +65,20 @@ export async function POST(req: NextRequest) {
     `auth_identities?user_id=eq.${uid}&provider=eq.email&select=provider_uid`
   );
 
-  // Lump sum for the *whole term* upfront, not a per-month price — the
-  // discount already applies to this full amount, matching the "pay once,
-  // ship monthly, auto-renew the same term forever" model (see
-  // subscription-feature-plan.md section 1/3). 2C2P has no calendar-month
-  // recurring unit, so the interval is passed as days; recurringCount: 0
-  // means 2C2P keeps auto-charging this same term length/amount forever
-  // until cancelRecurringPlan() is called — no separate "renewal" charge
-  // needs to be created by us.
+  // Charged every month at the discount rate locked in by the chosen term
+  // (3/6/12 months = 5/15/20% off) — not a term lump sum. 2C2P has no
+  // calendar-month recurring unit, so the interval is passed as ~30 days;
+  // recurringCount: 0 means 2C2P keeps auto-charging this same monthly
+  // amount indefinitely (auto-renewing the term forever at the same locked
+  // rate) until cancelRecurringPlan() is called — no separate "renewal"
+  // charge needs to be created by us, 2C2P's own engine fires the webhook
+  // every cycle (see subscription-feature-plan.md v3).
   const totalPerCycle = items.reduce((sum, it) => sum + it.price, 0);
-  const amountPerTerm = Math.round(totalPerCycle * plan.months * (1 - plan.discountPct / 100));
+  const amountPerCycle = Math.round(totalPerCycle * (1 - plan.discountPct / 100));
   const invoicePrefix = `SUB${Date.now().toString(36).toUpperCase()}`.slice(0, 15);
   const invoiceNo = `${invoicePrefix}1`;
   const chargeNextDate = new Date();
-  chargeNextDate.setMonth(chargeNextDate.getMonth() + plan.months);
+  chargeNextDate.setMonth(chargeNextDate.getMonth() + 1);
 
   const [subscription] = await supabaseRest<{ id: string }[]>("real_subscriptions", {
     method: "POST",
@@ -91,7 +93,7 @@ export async function POST(req: NextRequest) {
       product_name: displayName,
       plan_months: plan.months,
       discount_pct: plan.discountPct,
-      amount_per_cycle: amountPerTerm,
+      amount_per_cycle: amountPerCycle,
       currency_code: "THB",
       invoice_prefix: invoicePrefix,
       shipping_address: shippingAddress,
@@ -107,7 +109,7 @@ export async function POST(req: NextRequest) {
       subscription_id: subscription.id,
       invoice_no: invoiceNo,
       cycle_number: 1,
-      amount: amountPerTerm,
+      amount: amountPerCycle,
     }),
   });
 
@@ -116,10 +118,10 @@ export async function POST(req: NextRequest) {
     const result = await createRecurringPaymentToken({
       invoiceNo,
       invoicePrefix,
-      description: `${displayName} (สมัครสมาชิกเทอม ${plan.months} เดือน ต่ออายุอัตโนมัติ)`.slice(0, 250),
-      amountPerCycle: amountPerTerm,
+      description: `${displayName} (สมัครสมาชิกตัดเงินรายเดือน ล็อกส่วนลด ${plan.discountPct}% เทอม ${plan.months} เดือน)`.slice(0, 250),
+      amountPerCycle,
       recurringCount: 0,
-      recurringIntervalDays: plan.months * 30,
+      recurringIntervalDays: 30,
       chargeNextDate,
       frontendReturnUrl: `${origin}/account/subscriptions?justSubscribed=1`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p`,
