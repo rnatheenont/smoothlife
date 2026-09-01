@@ -196,7 +196,7 @@ export default function SubscriptionSetDetail({
             <Info size={12} className="shrink-0 mt-0.5" />
             {subscriptionBillingEnabled
               ? `ตัดเงิน ${formatTHB(pricePerCycle)} บาททุกเดือน (ล็อกส่วนลด -${plan.discountPct}% ตลอดเทอม ${plan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเทอมและราคาเดิม จนกว่าจะยกเลิก`
-              : `เพิ่มสินค้าครบชุด ${plan.months} รอบลงตะกร้า พร้อมโค้ดส่วนลด ${plan.code} ที่ใช้ได้จริงตอนชำระเงิน — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
+              : `เพิ่มสินค้าครบชุด ${plan.months} รอบลงตะกร้า พร้อมส่วนลด -${plan.discountPct}% ให้อัตโนมัติที่หน้าชำระเงิน — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
           </p>
           {added && !subscriptionBillingEnabled && (
             <Link href="/cart" className="mt-2 flex items-center justify-center gap-1 text-xs font-semibold text-brand-emerald hover:text-brand-sky">

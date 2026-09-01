@@ -507,7 +507,7 @@ export default function ProductDetailInteractive({
                 <p className="mt-2 text-[10px] text-slate-400 text-center">
                   {subscriptionBillingEnabled
                     ? `ตัดเงิน ${formatTHB(subscribePricePerCycle)} บาททุกเดือน (ล็อกส่วนลด -${subscribePlan.discountPct}% ตลอดเทอม ${subscribePlan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเทอมและราคาเดิม จนกว่าจะยกเลิก`
-                    : `เพิ่มสินค้า ${subscribePlan.months} ชิ้นลงตะกร้าพร้อมโค้ดส่วนลด ${subscribePlan.code} ที่ใช้ได้จริงตอนชำระเงิน — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
+                    : `เพิ่มสินค้า ${subscribePlan.months} ชิ้นลงตะกร้าพร้อมส่วนลด -${subscribePlan.discountPct}% ให้อัตโนมัติที่หน้าชำระเงิน — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
                 </p>
               </div>
             )}
