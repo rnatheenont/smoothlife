@@ -51,18 +51,18 @@ async function getQuestions(slug: string): Promise<QuestionRow[]> {
   }
 }
 
-// No row = never explicitly turned off, so it defaults eligible — matches
-// today's actual behavior (every product subscribable) until someone opts
-// a product out from the admin side.
+// No row = never explicitly opted in, so it defaults ineligible — a
+// product only shows the subscribe option once someone turns it on from
+// the admin side (/admin/subscription-products).
 async function getSubscribable(slug: string): Promise<boolean> {
-  if (!supabaseConfigured()) return true;
+  if (!supabaseConfigured()) return false;
   try {
     const [row] = await supabaseRest<{ subscribable: boolean }[]>(
       `product_subscription_settings?product_slug=eq.${encodeURIComponent(slug)}&select=subscribable`
     );
-    return row ? row.subscribable : true;
+    return row ? row.subscribable : false;
   } catch {
-    return true;
+    return false;
   }
 }
 

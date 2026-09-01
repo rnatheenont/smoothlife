@@ -57,7 +57,7 @@ export default function ProductDetailInteractive({
   reviews,
   questions,
   subscriptionBillingEnabled = false,
-  subscribable = true,
+  subscribable = false,
 }: {
   product: Product;
   related: Product[];

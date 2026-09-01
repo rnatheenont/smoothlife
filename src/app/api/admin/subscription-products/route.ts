@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       category: p.category,
       image: p.image,
       inStock: p.inStock,
-      subscribable: settings ? settings.subscribable : true,
+      subscribable: settings ? settings.subscribable : false,
       bundleEligible: settings ? settings.bundle_eligible : false,
     };
   });
@@ -107,7 +107,7 @@ export async function PATCH(req: NextRequest) {
 
   const next = {
     product_slug: productSlug,
-    subscribable: typeof subscribable === "boolean" ? subscribable : existing?.subscribable ?? true,
+    subscribable: typeof subscribable === "boolean" ? subscribable : existing?.subscribable ?? false,
     bundle_eligible: typeof bundleEligible === "boolean" ? bundleEligible : existing?.bundle_eligible ?? false,
     updated_at: new Date().toISOString(),
   };
