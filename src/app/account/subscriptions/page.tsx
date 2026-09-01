@@ -7,6 +7,7 @@ import AccountLayout from "@/components/account/AccountLayout";
 import { formatTHB } from "@/lib/format";
 import { subscriptionPlans } from "@/data/subscriptions";
 import type { SubscriptionRow, RealSubscriptionRow } from "@/app/api/account/subscriptions/route";
+import SubscriptionTermsInfo from "@/components/SubscriptionTermsInfo";
 
 type ChargeHistoryRow = {
   id: string;
@@ -205,6 +206,7 @@ function SubscriptionsContent() {
   const [loading, setLoading] = useState(true);
   const [subscriptions, setSubscriptions] = useState<SubscriptionRow[]>([]);
   const [realSubscriptions, setRealSubscriptions] = useState<RealSubscriptionRow[]>([]);
+  const [billingEnabled, setBillingEnabled] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -213,6 +215,7 @@ function SubscriptionsContent() {
       .then((data) => {
         setSubscriptions(data.subscriptions ?? []);
         setRealSubscriptions(data.realSubscriptions ?? []);
+        setBillingEnabled(Boolean(data.billingEnabled));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -248,9 +251,12 @@ function SubscriptionsContent() {
         <Repeat size={20} className="text-brand-emerald" />
         <h1 className="text-xl font-bold text-brand-ink">การสมัครของฉัน</h1>
       </div>
-      <p className="text-sm text-slate-500 mb-6">
+      <p className="text-sm text-slate-500 mb-3">
         รายการที่คุณสมัคร &ldquo;สมัครรับประจำ&rdquo; ไว้ทั้งหมด
       </p>
+      <div className="mb-6">
+        <SubscriptionTermsInfo billingEnabled={billingEnabled} variant="compact" />
+      </div>
 
       {realSubscriptions.length > 0 && (
         <div className="space-y-3 mb-6">

@@ -30,6 +30,7 @@ import { subscriptionPlans } from "@/data/subscriptions";
 import StarRating from "./StarRating";
 import MobileStickyBar from "./MobileStickyBar";
 import FreeGiftProgress from "./FreeGiftProgress";
+import SubscriptionTermsInfo from "./SubscriptionTermsInfo";
 import { useCart, useWishlist } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useQuickChat } from "@/lib/quickchat-context";
@@ -509,6 +510,9 @@ export default function ProductDetailInteractive({
                     ? `ตัดเงิน ${formatTHB(subscribePricePerCycle)} บาททุกเดือน (ล็อกส่วนลด -${subscribePlan.discountPct}% ตลอดเทอม ${subscribePlan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเทอมและราคาเดิม จนกว่าจะยกเลิก`
                     : `เพิ่มสินค้า ${subscribePlan.months} ชิ้นลงตะกร้าพร้อมส่วนลด -${subscribePlan.discountPct}% ให้อัตโนมัติที่หน้าชำระเงิน — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
                 </p>
+                <div className="mt-3">
+                  <SubscriptionTermsInfo billingEnabled={subscriptionBillingEnabled} variant="compact" />
+                </div>
               </div>
             )}
           </div>
