@@ -58,14 +58,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ ok: false, error: `ยกเลิกไม่สำเร็จ: ${result.respReason || result.respCode}` }, { status: 502 });
   }
 
-  // Policy: paid-for shipments still owed for the current term go out as
-  // normal (no refund for the unshipped months) — only the *next* renewal
-  // charge is stopped. Status stays active/past_due; the fulfillment cron
-  // flips it to "ended" once the term's last shipment goes out.
+  // Policy: nothing is ever prepaid ahead of what's already been charged
+  // and shipped, so once 2C2P confirms the recurring plan is cancelled
+  // there's nothing further owed — end the subscription immediately rather
+  // than deferring to a later cron step.
   await supabaseRest(`real_subscriptions?id=eq.${subscription.id}`, {
     method: "PATCH",
     returning: false,
-    body: JSON.stringify({ auto_renew_cancelled: true, next_charge_date: null, updated_at: new Date().toISOString() }),
+    body: JSON.stringify({
+      status: "ended",
+      auto_renew_cancelled: true,
+      next_charge_date: null,
+      updated_at: new Date().toISOString(),
+    }),
   });
 
   return NextResponse.json({ ok: true });
