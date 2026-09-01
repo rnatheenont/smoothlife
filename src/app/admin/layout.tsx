@@ -11,6 +11,7 @@ const NAV = [
   { href: "/admin/points", label: "คะแนน", icon: Award },
   { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText },
   { href: "/admin/gift-cards", label: "บัตรของขวัญ", icon: CreditCard },
+  { href: "/admin/subscriptions", label: "Subscription", icon: Repeat },
   { href: "/admin/subscription-products", label: "สินค้าสมัครสมาชิก", icon: Repeat },
 ];
 
