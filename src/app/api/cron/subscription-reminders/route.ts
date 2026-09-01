@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
-import { getVariantAvailability, shopifyAdminConfigured, createFulfillmentOnlyOrder } from "@/lib/shopify-admin";
+import { getVariantAvailability, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { cancelRecurringPlan, recurringMaintenanceConfigured } from "@/lib/2c2p";
 import { expireStaleReferrals, releaseMaturedReferralRewards, advanceOrderPlacedReferrals } from "@/lib/referral-cron";
 import { recalculateLoyaltyTiers } from "@/lib/loyalty-cron";
 import { awardBirthdayRewards } from "@/lib/birthday-cron";
 import { expirePoints } from "@/lib/points-expiry-cron";
 
-const RENEWAL_NOTICE_DAYS = 7;
+const RENEWAL_NOTICE_DAYS = 3;
 
 const REMINDER_WINDOW_DAYS = 3;
 // 2C2P charges each cycle automatically on its own schedule — we're never
@@ -94,110 +94,6 @@ async function cancelOutOfStockSubscriptions() {
   return cancelled;
 }
 
-type ShipmentDue = {
-  id: string;
-  user_id: string;
-  product_name: string;
-  variant_id: string | null;
-  variant_ids: string[] | null;
-  plan_months: number;
-  current_term_number: number;
-  cycles_completed_this_term: number;
-  auto_renew_cancelled: boolean;
-  contact_email: string | null;
-  shipping_address: {
-    firstName?: string;
-    lastName?: string;
-    address1: string;
-    city: string;
-    postalCode: string;
-    countryCode: string;
-    state?: string;
-    phone?: string;
-  };
-};
-
-// Months 2..N of an already-paid term — month 1 of each term is created
-// immediately by the 2C2P webhook (that's the one order tied to the actual
-// charge). This is pure fulfillment: no payment happens here, so each
-// order carries a $0 line item (see createFulfillmentOnlyOrder) rather than
-// re-recording the term's lump sum every month.
-async function createDueShipments() {
-  if (!shopifyAdminConfigured()) return 0;
-
-  const today = new Date().toISOString().slice(0, 10);
-  const due = await supabaseRest<ShipmentDue[]>(
-    `real_subscriptions?status=in.(active,past_due)&next_shipment_date=lte.${today}&select=id,user_id,product_name,variant_id,variant_ids,plan_months,current_term_number,cycles_completed_this_term,auto_renew_cancelled,contact_email,shipping_address`
-  );
-
-  let shipped = 0;
-  for (const sub of due) {
-    const cycleInTerm = sub.cycles_completed_this_term + 1;
-    if (cycleInTerm > sub.plan_months) continue; // already fully shipped — shouldn't happen, but never over-ship
-
-    try {
-      const addr = sub.shipping_address;
-      const lineItems = sub.variant_ids
-        ? sub.variant_ids.map((variantId) => ({ variantId, quantity: 1 }))
-        : [{ variantId: sub.variant_id!, quantity: 1 }];
-      const order = await createFulfillmentOnlyOrder({
-        email: sub.contact_email ?? undefined,
-        lineItems,
-        currencyCode: "THB",
-        shippingAddress: {
-          firstName: addr.firstName,
-          lastName: addr.lastName,
-          address1: addr.address1,
-          city: addr.city,
-          provinceCode: addr.state,
-          zip: addr.postalCode,
-          countryCode: addr.countryCode,
-          phone: addr.phone,
-        },
-        note: `Subscribe & Save — เทอมที่ ${sub.current_term_number} (${sub.plan_months} เดือน) รอบจัดส่งที่ ${cycleInTerm}/${sub.plan_months}`,
-      });
-      await supabaseRest("subscription_shipments", {
-        method: "POST",
-        returning: false,
-        body: JSON.stringify({
-          subscription_id: sub.id,
-          term_number: sub.current_term_number,
-          cycle_in_term: cycleInTerm,
-          shopify_order_id: order.id,
-        }),
-      });
-
-      const termFinished = cycleInTerm >= sub.plan_months;
-      let nextShipmentDate: string | null = null;
-      if (!termFinished) {
-        const d = new Date();
-        d.setMonth(d.getMonth() + 1);
-        nextShipmentDate = d.toISOString().slice(0, 10);
-      }
-      await supabaseRest(`real_subscriptions?id=eq.${sub.id}`, {
-        method: "PATCH",
-        returning: false,
-        body: JSON.stringify({
-          cycles_completed_this_term: cycleInTerm,
-          next_shipment_date: nextShipmentDate,
-          // Term fully shipped and the customer already cancelled renewal
-          // (src/app/api/subscribe/[id]/cancel) — nothing left owed to
-          // them, safe to close out. Otherwise leave status alone; it
-          // stays active waiting for 2C2P's next term-renewal charge.
-          ...(termFinished && sub.auto_renew_cancelled ? { status: "ended" } : {}),
-          updated_at: new Date().toISOString(),
-        }),
-      });
-      shipped++;
-    } catch (err) {
-      // Left with the same next_shipment_date so it's retried tomorrow
-      // rather than silently skipped.
-      console.error(`[cron/subscription-reminders] shipment order failed for subscription ${sub.id}`, err);
-    }
-  }
-  return shipped;
-}
-
 type RenewalDue = {
   id: string;
   user_id: string;
@@ -206,11 +102,9 @@ type RenewalDue = {
   amount_per_cycle: number;
 };
 
-// 7 days' notice (RENEWAL_NOTICE_DAYS) before the next lump-sum term
-// charge fires — the amount is large (a whole term paid at once), so this
-// is a real heads-up, not a courtesy ping. renewal_notified_at is cleared
-// by the webhook on every successful charge, so this fires again for each
-// new term rather than only once ever.
+// 3 days' notice (RENEWAL_NOTICE_DAYS) before the next monthly charge
+// fires. renewal_notified_at is cleared by the webhook on every successful
+// charge, so this fires again ahead of every single cycle, not just once.
 async function notifyUpcomingRenewals() {
   const windowEnd = new Date(Date.now() + RENEWAL_NOTICE_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const due = await supabaseRest<RenewalDue[]>(
@@ -225,8 +119,8 @@ async function notifyUpcomingRenewals() {
       body: JSON.stringify({
         user_id: sub.user_id,
         type: "subscription_renewal_charge",
-        title: "ใกล้ถึงรอบต่ออายุสมาชิกแล้ว",
-        body: `${sub.product_name} จะตัดเงิน ${sub.amount_per_cycle.toLocaleString()} บาท เพื่อต่ออายุอีก ${sub.plan_months} เดือน ภายใน ${RENEWAL_NOTICE_DAYS} วัน หากไม่ต้องการต่ออายุ ยกเลิกได้ในหน้าการสมัครสมาชิก`,
+        title: "ใกล้ถึงรอบตัดเงินรายเดือนแล้ว",
+        body: `${sub.product_name} จะตัดเงิน ${sub.amount_per_cycle.toLocaleString()} บาท สำหรับรอบเดือนถัดไป ภายใน ${RENEWAL_NOTICE_DAYS} วัน หากไม่ต้องการต่อ ยกเลิกได้ในหน้าการสมัครสมาชิก มีผลตั้งแต่รอบถัดไป`,
         link: "/account/subscriptions",
         metadata: { subscriptionId: sub.id },
       }),
@@ -247,12 +141,13 @@ async function notifyUpcomingRenewals() {
 // anything, nudging them to repurchase before their current term's supply
 // runs out. Each row is only ever reminded once (reminded_at gate) even if
 // this runs more than once on the same day. Also covers, for the real
-// (2C2P) term-based subscriptions: the pre-charge stock check
-// (cancelOutOfStockSubscriptions), monthly shipment fulfillment
-// (createDueShipments — the only recurring work billing doesn't already
-// trigger, since 2C2P only fires once per term, not once per month), and
-// the pre-renewal notice (notifyUpcomingRenewals), and the referral
-// programme's daily housekeeping — advancing order_placed referrals whose
+// (2C2P) monthly-billed subscriptions: the pre-charge stock check
+// (cancelOutOfStockSubscriptions — 2C2P fires each month's charge on its
+// own schedule, this is the only lever to stop one before it happens) and
+// the pre-charge notice (notifyUpcomingRenewals) — there's no separate
+// fulfillment job anymore, since every month's charge and shipment happen
+// together in the 2C2P webhook itself, not split across a cron. Also the
+// referral programme's daily housekeeping — advancing order_placed referrals whose
 // order has since shipped (a poll fallback so this doesn't depend on the
 // "orders/fulfilled" webhook topic ever being subscribed in Shopify),
 // expiring stale click-throughs, and releasing matured rewards — see
@@ -300,7 +195,6 @@ export async function GET(req: NextRequest) {
   }
 
   const stockCancelled = await cancelOutOfStockSubscriptions();
-  const shipmentsCreated = await createDueShipments();
   const renewalsNotified = await notifyUpcomingRenewals();
   const referralsAdvanced = await advanceOrderPlacedReferrals();
   const referralsExpired = await expireStaleReferrals();
@@ -313,7 +207,6 @@ export async function GET(req: NextRequest) {
     ok: true,
     notified,
     stockCancelled,
-    shipmentsCreated,
     renewalsNotified,
     referralsAdvanced,
     referralsExpired,
