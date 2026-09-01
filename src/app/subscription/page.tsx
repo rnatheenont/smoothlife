@@ -1,7 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Repeat, Truck, ShieldCheck, CalendarClock, ChevronRight } from "lucide-react";
-import { subscriptionPlans, subscriptionProducts, subscriptionSets, subscriptionSetProducts } from "@/data/subscriptions";
+import { Repeat, Truck, ShieldCheck, CalendarClock, ChevronRight, PackagePlus } from "lucide-react";
+import {
+  subscriptionPlans,
+  subscriptionProducts,
+  subscriptionSets,
+  subscriptionSetProducts,
+  BUNDLE_DISCOUNT_PCT,
+} from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
 import { twoC2PConfigured } from "@/lib/2c2p";
 import SubscriptionPicker from "@/components/SubscriptionPicker";
@@ -97,6 +103,28 @@ export default function SubscriptionPage() {
         <p className="text-sm text-slate-500 mb-6">อยากได้แค่สินค้าชิ้นเดียวแบบสมัครรายรอบ เลือกได้จากที่นี่</p>
         <SubscriptionPicker plans={subscriptionPlans} products={subscriptionProducts} subscriptionBillingEnabled={twoC2PConfigured()} />
       </section>
+
+      {billingEnabled && (
+        <section className="container-page py-10 md:py-14 border-t border-slate-100">
+          <Link
+            href="/subscription/build"
+            className="group flex flex-col md:flex-row items-center gap-5 rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-6 md:p-8 hover:shadow-cardHover transition-shadow"
+          >
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-brand-gradient text-white">
+              <PackagePlus size={26} />
+            </div>
+            <div className="flex-1 text-center md:text-left">
+              <h2 className="text-lg md:text-xl font-extrabold text-brand-ink">จัดชุดสินค้าเอง</h2>
+              <p className="text-sm text-slate-500 mt-1">
+                เลือกสินค้าที่ใช้ประจำมาจัดเป็นชุดของตัวเอง รับส่วนลดชุดพิเศษ -{BUNDLE_DISCOUNT_PCT}% ซ้อนทับกับส่วนลดตามรอบที่เลือกได้อีก
+              </p>
+            </div>
+            <span className="flex shrink-0 items-center gap-1 font-semibold text-brand-emerald group-hover:text-brand-sky transition-colors">
+              เริ่มจัดชุด <ChevronRight size={16} />
+            </span>
+          </Link>
+        </section>
+      )}
     </div>
   );
 }

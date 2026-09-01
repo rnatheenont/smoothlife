@@ -9,7 +9,7 @@ type SubscriptionRow = {
   id: string;
   user_id: string;
   status: string;
-  subscription_type: "single_product" | "set";
+  subscription_type: "single_product" | "set" | "custom_bundle";
   product_name: string;
   variant_id: string | null;
   variant_ids: string[] | null;
@@ -174,7 +174,8 @@ export async function POST(req: NextRequest) {
   try {
     const addr = subscription.shipping_address;
     const lineItems =
-      subscription.subscription_type === "set" && subscription.variant_ids
+      (subscription.subscription_type === "set" || subscription.subscription_type === "custom_bundle") &&
+      subscription.variant_ids
         ? splitAmountByRealPrice(subscription.variant_ids, charge.amount).map((li) => ({ ...li, quantity: 1 }))
         : [{ variantId: subscription.variant_id!, quantity: 1, price: charge.amount }];
     const order = await createOrderForSubscriptionCycle({

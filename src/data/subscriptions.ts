@@ -18,6 +18,14 @@ export const subscriptionPlans: SubscriptionPlan[] = [
   { months: 12, code: "SUB12", discountPct: 20, label: "ทุก 12 เดือน", sublabel: "ประหยัดสูงสุด" },
 ];
 
+// Build-Your-Own Bundle Subscription (v3.1) — the % stacks on top of the
+// term discount above (see checkout route). Plain code constants for now,
+// same pattern as subscriptionPlans' own hardcoded rates — no admin UI or
+// DB-driven config yet, easy to tune later without a migration.
+export const BUNDLE_MIN_ITEMS = 3;
+export const BUNDLE_MAX_ITEMS = 6;
+export const BUNDLE_DISCOUNT_PCT = 10;
+
 // Curated for repeat-purchase categories (supplements/wellness, skincare
 // staples). This catalogue sync carries no review/rating data (every
 // product comes through as rating 0 / reviewCount 0), so products with a

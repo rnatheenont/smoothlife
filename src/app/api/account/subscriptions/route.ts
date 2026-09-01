@@ -22,7 +22,7 @@ export type SubscriptionRow = {
 export type RealSubscriptionRow = {
   id: string;
   status: "pending" | "active" | "past_due" | "cancelled" | "completed" | "ended";
-  subscription_type: "single_product" | "set";
+  subscription_type: "single_product" | "set" | "custom_bundle";
   product_name: string;
   product_slug: string | null;
   set_slug: string | null;

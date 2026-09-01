@@ -113,12 +113,16 @@ function RealSubscriptionCard({
               รอบที่ {sub.cycle_in_term}/{sub.plan_months} ของเทอมที่ {sub.current_term_number} (-{sub.discount_pct}%)
             </span>
           </div>
-          <Link
-            href={sub.subscription_type === "set" ? `/subscription/${sub.set_slug}` : `/product/${sub.product_slug}`}
-            className="font-bold text-brand-ink hover:text-brand-emerald"
-          >
-            {sub.product_name}
-          </Link>
+          {sub.subscription_type === "custom_bundle" ? (
+            <span className="font-bold text-brand-ink">{sub.product_name}</span>
+          ) : (
+            <Link
+              href={sub.subscription_type === "set" ? `/subscription/${sub.set_slug}` : `/product/${sub.product_slug}`}
+              className="font-bold text-brand-ink hover:text-brand-emerald"
+            >
+              {sub.product_name}
+            </Link>
+          )}
           <p className="text-xs text-slate-500 mt-1">
             {formatTHB(sub.amount_per_cycle)} ทุกเดือน
             {sub.next_charge_date && ` · ตัดครั้งถัดไป ${new Date(sub.next_charge_date).toLocaleDateString("th-TH")}`}

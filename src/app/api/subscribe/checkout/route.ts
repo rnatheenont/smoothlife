@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { products } from "@/data/products";
-import { subscriptionPlans, subscriptionSets, subscriptionSetProducts } from "@/data/subscriptions";
+import {
+  subscriptionPlans,
+  subscriptionSets,
+  subscriptionSetProducts,
+  BUNDLE_MIN_ITEMS,
+  BUNDLE_MAX_ITEMS,
+  BUNDLE_DISCOUNT_PCT,
+} from "@/data/subscriptions";
 import { twoC2PConfigured, createRecurringPaymentToken } from "@/lib/2c2p";
 
 export async function POST(req: NextRequest) {
@@ -17,7 +24,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ ok: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
 
-  const { productSlug, variantId, setSlug, months, shippingAddress, consentRecurringCharge } = body;
+  const { productSlug, variantId, setSlug, bundleItems, months, shippingAddress, consentRecurringCharge } = body;
   const plan = subscriptionPlans.find((p) => p.months === months);
   if (!plan) return NextResponse.json({ ok: false, error: "ระยะเวลาสมัครไม่ถูกต้อง" }, { status: 400 });
 
@@ -33,15 +40,43 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "กรุณายืนยันการยอมรับเงื่อนไขการตัดเงินอัตโนมัติ" }, { status: 400 });
   }
 
-  // Either a single product (productSlug/variantId) or a curated set
-  // (setSlug, every product in it) — both end up as one 2C2P recurring
-  // plan billing monthly, just a different subscription_type/shape on the
+  // A single product (productSlug/variantId), a curated set (setSlug, every
+  // product in it), or a customer-assembled bundle (bundleItems, picked from
+  // the bundle_eligible pool) — all three end up as one 2C2P recurring plan
+  // billing monthly, just a different subscription_type/shape on the
   // real_subscriptions row (see migration real_subscriptions_support_sets).
-  let subscriptionType: "single_product" | "set";
+  let subscriptionType: "single_product" | "set" | "custom_bundle";
   let displayName: string;
   let items: { slug: string; variantId: string; price: number }[];
 
-  if (setSlug) {
+  if (Array.isArray(bundleItems) && bundleItems.length > 0) {
+    if (bundleItems.length < BUNDLE_MIN_ITEMS || bundleItems.length > BUNDLE_MAX_ITEMS) {
+      return NextResponse.json(
+        { ok: false, error: `เลือกสินค้าได้ ${BUNDLE_MIN_ITEMS}-${BUNDLE_MAX_ITEMS} ชิ้นต่อชุด` },
+        { status: 400 }
+      );
+    }
+    // Never trust the client's picks or prices — re-check eligibility and
+    // resolve current catalogue prices server-side, same principle already
+    // applied to consentRecurringCharge below.
+    const eligibleRows = await supabaseRest<{ product_slug: string }[]>(
+      `product_subscription_settings?bundle_eligible=eq.true&select=product_slug`
+    );
+    const eligibleSlugs = new Set(eligibleRows.map((r) => r.product_slug));
+    const resolved: { slug: string; variantId: string; price: number }[] = [];
+    for (const it of bundleItems as { productSlug?: string; variantId?: string }[]) {
+      if (!it.productSlug || !eligibleSlugs.has(it.productSlug)) {
+        return NextResponse.json({ ok: false, error: "มีสินค้าที่ไม่อยู่ในรายการที่จัดชุดได้" }, { status: 400 });
+      }
+      const product = products.find((p) => p.slug === it.productSlug);
+      const variant = product?.variants.find((v) => v.variantId === it.variantId);
+      if (!product || !variant) return NextResponse.json({ ok: false, error: "ไม่พบสินค้าบางชิ้นในชุด" }, { status: 404 });
+      resolved.push({ slug: product.slug, variantId: variant.variantId, price: variant.price });
+    }
+    subscriptionType = "custom_bundle";
+    displayName = `ชุดที่คุณจัดเอง (${resolved.length} ชิ้น)`;
+    items = resolved;
+  } else if (setSlug) {
     const set = subscriptionSets.find((s) => s.slug === setSlug);
     if (!set) return NextResponse.json({ ok: false, error: "ไม่พบชุดสินค้านี้" }, { status: 404 });
     const setProducts = subscriptionSetProducts(set);
@@ -74,7 +109,12 @@ export async function POST(req: NextRequest) {
   // charge needs to be created by us, 2C2P's own engine fires the webhook
   // every cycle (see subscription-feature-plan.md v3).
   const totalPerCycle = items.reduce((sum, it) => sum + it.price, 0);
-  const amountPerCycle = Math.round(totalPerCycle * (1 - plan.discountPct / 100));
+  // Bundle discount stacks with (applies before) the term discount — e.g.
+  // 10% off the real picked total, then another 5-20% off that for the
+  // chosen term (see BUNDLE_DISCOUNT_PCT in data/subscriptions.ts).
+  const afterBundleDiscount =
+    subscriptionType === "custom_bundle" ? totalPerCycle * (1 - BUNDLE_DISCOUNT_PCT / 100) : totalPerCycle;
+  const amountPerCycle = Math.round(afterBundleDiscount * (1 - plan.discountPct / 100));
   const invoicePrefix = `SUB${Date.now().toString(36).toUpperCase()}`.slice(0, 15);
   const invoiceNo = `${invoicePrefix}1`;
   const chargeNextDate = new Date();
@@ -89,7 +129,8 @@ export async function POST(req: NextRequest) {
       product_slug: subscriptionType === "single_product" ? items[0].slug : null,
       variant_id: subscriptionType === "single_product" ? items[0].variantId : null,
       set_slug: subscriptionType === "set" ? setSlug : null,
-      variant_ids: subscriptionType === "set" ? items.map((it) => it.variantId) : null,
+      variant_ids:
+        subscriptionType === "set" || subscriptionType === "custom_bundle" ? items.map((it) => it.variantId) : null,
       product_name: displayName,
       plan_months: plan.months,
       discount_pct: plan.discountPct,
