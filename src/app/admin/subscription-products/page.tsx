@@ -24,21 +24,62 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "bundle-on", label: "เปิดจัดชุดเอง" },
 ];
 
-function Toggle({ on, onClick, disabled }: { on: boolean; onClick: () => void; disabled: boolean }) {
+// Purely visual — the actual tap target is ToggleRow/ToggleCell below. A
+// bare 24px-tall switch is under Apple/Material's ~44px minimum touch
+// target, so real-device taps that land a few px off it silently do
+// nothing (reported as the button "still being broken" even though
+// clicks on the exact pixel — e.g. automated testing — always worked).
+function ToggleIndicator({ on }: { on: boolean }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-        on ? "bg-brand-emerald" : "bg-slate-200"
-      }`}
+    <span
+      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${on ? "bg-brand-emerald" : "bg-slate-200"}`}
     >
       <span
         className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
           on ? "translate-x-5" : "translate-x-0.5"
         }`}
       />
+    </span>
+  );
+}
+
+// Mobile card rows: the whole row is the tap target, not just the switch.
+function ToggleRow({
+  icon,
+  label,
+  on,
+  onClick,
+  disabled,
+  className = "",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  on: boolean;
+  onClick: () => void;
+  disabled: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex w-full items-center justify-between gap-3 py-1.5 text-left disabled:opacity-50 ${className}`}
+    >
+      <span className="flex items-center gap-1 text-xs text-slate-500">
+        {icon} {label}
+      </span>
+      <ToggleIndicator on={on} />
+    </button>
+  );
+}
+
+// Desktop table cells: enlarge the tap/click box past the visual switch
+// via padding + a matching negative margin, so it doesn't affect layout.
+function ToggleCell({ on, onClick, disabled }: { on: boolean; onClick: () => void; disabled: boolean }) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className="block p-2.5 -m-2.5 disabled:opacity-50">
+      <ToggleIndicator on={on} />
     </button>
   );
 }
@@ -281,26 +322,21 @@ export default function AdminSubscriptionProductsPage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
-                  <span className="flex items-center gap-1 text-xs text-slate-500">
-                    <Repeat size={13} /> สมัครรับประจำ
-                  </span>
-                  <Toggle
-                    on={r.subscribable}
-                    disabled={busySlug === r.slug}
-                    onClick={() => toggle(r.slug, "subscribable", !r.subscribable)}
-                  />
-                </div>
-                <div className="flex items-center justify-between mt-2">
-                  <span className="flex items-center gap-1 text-xs text-slate-500">
-                    <PackagePlus size={13} /> จัดชุดเอง
-                  </span>
-                  <Toggle
-                    on={r.bundleEligible}
-                    disabled={busySlug === r.slug}
-                    onClick={() => toggle(r.slug, "bundleEligible", !r.bundleEligible)}
-                  />
-                </div>
+                <ToggleRow
+                  icon={<Repeat size={13} />}
+                  label="สมัครรับประจำ"
+                  on={r.subscribable}
+                  disabled={busySlug === r.slug}
+                  onClick={() => toggle(r.slug, "subscribable", !r.subscribable)}
+                  className="mt-2 pt-3 border-t border-slate-50"
+                />
+                <ToggleRow
+                  icon={<PackagePlus size={13} />}
+                  label="จัดชุดเอง"
+                  on={r.bundleEligible}
+                  disabled={busySlug === r.slug}
+                  onClick={() => toggle(r.slug, "bundleEligible", !r.bundleEligible)}
+                />
               </div>
             ))}
           </div>
@@ -357,7 +393,7 @@ export default function AdminSubscriptionProductsPage() {
                     </td>
                     <td className="py-2.5 pr-4 text-center">
                       <div className="flex justify-center">
-                        <Toggle
+                        <ToggleCell
                           on={r.subscribable}
                           disabled={busySlug === r.slug}
                           onClick={() => toggle(r.slug, "subscribable", !r.subscribable)}
@@ -366,7 +402,7 @@ export default function AdminSubscriptionProductsPage() {
                     </td>
                     <td className="py-2.5 pr-4 text-center">
                       <div className="flex justify-center">
-                        <Toggle
+                        <ToggleCell
                           on={r.bundleEligible}
                           disabled={busySlug === r.slug}
                           onClick={() => toggle(r.slug, "bundleEligible", !r.bundleEligible)}
