@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useCart } from "./cart-context";
 import { useAuth } from "./auth-context";
 import { coupons, evaluateCoupon, CartLine, pointsForAmount } from "@/data/coupons";
+import { subscriptionPlans } from "@/data/subscriptions";
 import { readReferralCookie, ReferralCookiePayload, REFEREE_DISCOUNT_AMOUNT, REFEREE_MIN_SUBTOTAL } from "@/lib/referral-shared";
 import { loyaltyTierProgress } from "@/lib/loyalty-shared";
 
@@ -47,7 +48,24 @@ export function useOrderTotals() {
     : null;
   const applied = evaluation && evaluation.eligible ? evaluation : null;
 
-  const discount = referralActive ? Math.min(REFEREE_DISCOUNT_AMOUNT, subtotal) : applied ? applied.discount : 0;
+  // Subscribe discount codes (SUB3/SUB6/SUB12) deliberately never live in
+  // `coupons` — that list drives CouponPicker's manually-typeable/visible
+  // coupon list, and these codes must never be enterable or shown there (see
+  // the earlier leaked-code fix). Recognized here only via a matching
+  // subscribeMonths-tagged cart line, which only the subscribe flow itself
+  // creates — never from free-text coupon input — so this can't be used to
+  // self-apply the discount without an actual subscribe-sourced line present.
+  const subscribePlan =
+    !referralActive && !applied && couponCode
+      ? subscriptionPlans.find((p) => p.code === couponCode && lines.some((l) => l.subscribeMonths === p.months)) || null
+      : null;
+  const subscribeDiscount = subscribePlan ? Math.round((subtotal * subscribePlan.discountPct) / 100) : 0;
+
+  const discount = referralActive
+    ? Math.min(REFEREE_DISCOUNT_AMOUNT, subtotal)
+    : applied
+    ? applied.discount
+    : subscribeDiscount;
   const netSubtotal = Math.max(0, subtotal - discount);
   const qualifiesFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0;
   const freeShipping = qualifiesFreeShipping || Boolean(applied && applied.freeShipping);
@@ -75,6 +93,7 @@ export function useOrderTotals() {
     points,
     coupon,
     applied,
+    subscribePlan,
     currentPoints,
     progressNow,
     progressAfter,

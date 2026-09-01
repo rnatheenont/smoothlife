@@ -207,7 +207,12 @@ export default function CartPage() {
             {totals.discount > 0 && (
               <div className="flex justify-between text-sm text-brand-emerald mb-2">
                 <span className="flex items-center gap-1.5">
-                  <Ticket size={13} /> {totals.referralActive ? t("ส่วนลดแนะนำเพื่อน", "Referral discount") : totals.coupon?.code}
+                  <Ticket size={13} />{" "}
+                  {totals.referralActive
+                    ? t("ส่วนลดแนะนำเพื่อน", "Referral discount")
+                    : totals.subscribePlan
+                    ? t(`ส่วนลดสมัครสมาชิก -${totals.subscribePlan.discountPct}%`, `Subscription discount -${totals.subscribePlan.discountPct}%`)
+                    : totals.coupon?.code}
                 </span>
                 <span>-{formatTHB(totals.discount)}</span>
               </div>

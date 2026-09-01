@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   RotateCcw,
   CheckCircle2,
-  Check,
   Star,
   MessageCircleQuestion,
   Expand,
@@ -21,12 +20,14 @@ import {
   ChevronRight,
   Repeat,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Product } from "@/data/types";
 import type { ReviewRow } from "@/app/api/reviews/route";
 import type { QuestionRow } from "@/app/api/product-questions/route";
 import { formatTHB } from "@/lib/format";
 import { subscriptionPlans } from "@/data/subscriptions";
+import { subscribeBuyNow } from "@/lib/subscribe-checkout";
 import StarRating from "./StarRating";
 import MobileStickyBar from "./MobileStickyBar";
 import FreeGiftProgress from "./FreeGiftProgress";
@@ -74,7 +75,7 @@ export default function ProductDetailInteractive({
   const [tab, setTab] = useState("benefits");
   const [added, setAdded] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState(product.variantId);
-  const { addItem, setCouponCode } = useCart();
+  const { addItem } = useCart();
   const [purchaseMode, setPurchaseMode] = useState<"once" | "subscribe">("once");
   const popularPlan = subscriptionPlans.find((p) => p.popular) ?? subscriptionPlans[0];
   const [subscribeMonths, setSubscribeMonths] = useState(popularPlan.months);
@@ -211,22 +212,35 @@ export default function ProductDetailInteractive({
   const subscribePlan = subscriptionPlans.find((p) => p.months === subscribeMonths) ?? popularPlan;
   const subscribePricePerCycle = Math.round(selectedVariant.price * (1 - subscribePlan.discountPct / 100));
 
-  const [realSubscribeSubmitting, setRealSubscribeSubmitting] = useState(false);
-  const [realSubscribeError, setRealSubscribeError] = useState("");
+  const [subscribeSubmitting, setSubscribeSubmitting] = useState(false);
+  const [subscribeError, setSubscribeError] = useState("");
   // Only meaningful for the real-billing path — the discount-code fallback
   // never charges a card on file, so it doesn't need this disclosure.
   const [agreedRecurringCharge, setAgreedRecurringCharge] = useState(false);
 
   // Interim behavior: still used whenever subscriptionBillingEnabled is
-  // false (no 2C2P credentials set yet) — buys the whole term upfront as a
-  // real one-time Shopify order with a real discount code, no recurring
-  // charge. Once 2C2P is configured this function is unreachable; see
-  // handleRealSubscribe below.
-  function handleSubscribe() {
-    addItem(product.slug, subscribePlan.months, selectedVariant.variantId, subscribePlan.months);
-    setCouponCode(subscribePlan.code);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1800);
+  // false (no 2C2P credentials set yet) — sends the whole term's quantity
+  // straight to its own Shopify checkout session (a real one-time order
+  // with the term's discount code pre-applied, no recurring charge),
+  // bypassing this site's own cart/checkout entirely so it never mixes with
+  // a customer's regular-purchase cart. Once 2C2P is configured this
+  // function is unreachable; see handleRealSubscribe below.
+  async function handleSubscribe() {
+    setSubscribeError("");
+    setSubscribeSubmitting(true);
+    try {
+      const checkoutUrl = await subscribeBuyNow(
+        [{ merchandiseId: selectedVariant.variantId, quantity: subscribePlan.months }],
+        subscribePlan.code,
+        user?.email,
+        user?.phone
+      );
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      setSubscribeError(err instanceof Error ? err.message : "เริ่มการชำระเงินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setSubscribeSubmitting(false);
+    }
   }
 
   // Real recurring billing path — charges the customer's card the
@@ -238,14 +252,14 @@ export default function ProductDetailInteractive({
   // entirely.
   async function handleRealSubscribe() {
     if (!agreedRecurringCharge) return;
-    setRealSubscribeError("");
-    setRealSubscribeSubmitting(true);
+    setSubscribeError("");
+    setSubscribeSubmitting(true);
     try {
       const res = await fetch("/api/account/addresses");
       const data = await res.json();
       const defaultAddress = data.addresses?.[0];
       if (!defaultAddress || defaultAddress.country !== "TH") {
-        setRealSubscribeError("กรุณาเพิ่มที่อยู่จัดส่งเริ่มต้นก่อนสมัคร");
+        setSubscribeError("กรุณาเพิ่มที่อยู่จัดส่งเริ่มต้นก่อนสมัคร");
         return;
       }
       const checkoutRes = await fetch("/api/subscribe/checkout", {
@@ -270,14 +284,14 @@ export default function ProductDetailInteractive({
       });
       const checkoutData = await checkoutRes.json();
       if (!checkoutData.ok) {
-        setRealSubscribeError(checkoutData.error || "เริ่มการชำระเงินไม่สำเร็จ");
+        setSubscribeError(checkoutData.error || "เริ่มการชำระเงินไม่สำเร็จ");
         return;
       }
       window.location.href = checkoutData.webPaymentUrl;
     } catch {
-      setRealSubscribeError("เริ่มการชำระเงินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+      setSubscribeError("เริ่มการชำระเงินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     } finally {
-      setRealSubscribeSubmitting(false);
+      setSubscribeSubmitting(false);
     }
   }
 
@@ -496,19 +510,19 @@ export default function ProductDetailInteractive({
                   }
                   disabled={
                     !selectedVariant.inStock ||
-                    realSubscribeSubmitting ||
+                    subscribeSubmitting ||
                     (subscriptionBillingEnabled && !agreedRecurringCharge)
                   }
                   className="mt-3 w-full flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  {added ? <Check size={16} /> : <Sparkles size={16} />}
-                  {realSubscribeSubmitting ? "กำลังเริ่มชำระเงิน..." : added ? "เพิ่มลงตะกร้าแล้ว" : "สมัครรับประจำ"}
+                  {subscribeSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                  {subscribeSubmitting ? "กำลังเริ่มชำระเงิน..." : "สมัครรับประจำ"}
                 </button>
-                {realSubscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{realSubscribeError}</p>}
+                {subscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{subscribeError}</p>}
                 <p className="mt-2 text-[10px] text-slate-400 text-center">
                   {subscriptionBillingEnabled
                     ? `ตัดเงิน ${formatTHB(subscribePricePerCycle)} บาททุกเดือน (ล็อกส่วนลด -${subscribePlan.discountPct}% ตลอดเทอม ${subscribePlan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเทอมและราคาเดิม จนกว่าจะยกเลิก`
-                    : `เพิ่มสินค้า ${subscribePlan.months} ชิ้นลงตะกร้าพร้อมส่วนลด -${subscribePlan.discountPct}% ให้อัตโนมัติที่หน้าชำระเงิน — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
+                    : `ไปหน้าชำระเงินของ Shopify ทันที พร้อมส่วนลด -${subscribePlan.discountPct}% ให้อัตโนมัติ (${subscribePlan.months} ชิ้น) — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
                 </p>
                 <div className="mt-3">
                   <SubscriptionTermsInfo billingEnabled={subscriptionBillingEnabled} variant="compact" />

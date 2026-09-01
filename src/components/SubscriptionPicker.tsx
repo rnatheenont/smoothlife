@@ -9,8 +9,8 @@ import { Product } from "@/data/types";
 import { SubscriptionPlan } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
 import StarRating from "./StarRating";
-import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
+import { subscribeBuyNow } from "@/lib/subscribe-checkout";
 import clsx from "clsx";
 
 export default function SubscriptionPicker({
@@ -25,10 +25,8 @@ export default function SubscriptionPicker({
   const popular = plans.find((p) => p.popular) ?? plans[0];
   const [selectedMonths, setSelectedMonths] = useState(popular.months);
   const plan = plans.find((p) => p.months === selectedMonths) ?? popular;
-  const { addItem, setCouponCode } = useCart();
   const { user } = useAuth();
   const router = useRouter();
-  const [addedSlug, setAddedSlug] = useState<string | null>(null);
   const [submittingSlug, setSubmittingSlug] = useState<string | null>(null);
   const [errorSlug, setErrorSlug] = useState<{ slug: string; message: string } | null>(null);
   const [agreedSlugs, setAgreedSlugs] = useState<Set<string>>(new Set());
@@ -42,12 +40,26 @@ export default function SubscriptionPicker({
     });
   }
 
-  // Interim fallback — same discount-code-on-cart mechanism as before.
-  function handleAdd(product: Product) {
-    addItem(product.slug, plan.months, undefined, plan.months);
-    setCouponCode(plan.code);
-    setAddedSlug(product.slug);
-    setTimeout(() => setAddedSlug((s) => (s === product.slug ? null : s)), 1800);
+  // Interim fallback (no 2C2P credentials yet) — sends this one product's
+  // term quantity straight to its own Shopify checkout session with the
+  // term's discount code pre-applied, bypassing this site's own cart
+  // entirely so it never mixes with a customer's regular-purchase cart.
+  async function handleAdd(product: Product) {
+    setErrorSlug(null);
+    setSubmittingSlug(product.slug);
+    try {
+      const checkoutUrl = await subscribeBuyNow(
+        [{ merchandiseId: product.variantId, quantity: plan.months }],
+        plan.code,
+        user?.email,
+        user?.phone
+      );
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      setErrorSlug({ slug: product.slug, message: err instanceof Error ? err.message : "เริ่มการชำระเงินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" });
+    } finally {
+      setSubmittingSlug(null);
+    }
   }
 
   // Real recurring billing — same one-lump-sum-per-term model as the
@@ -142,7 +154,6 @@ export default function SubscriptionPicker({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
         {products.map((product) => {
           const perMonth = Math.round(product.price * (1 - plan.discountPct / 100));
-          const added = addedSlug === product.slug;
           const submitting = submittingSlug === product.slug;
           const error = errorSlug?.slug === product.slug ? errorSlug.message : null;
           const agreed = agreedSlugs.has(product.slug);
@@ -181,13 +192,10 @@ export default function SubscriptionPicker({
                 <button
                   onClick={() => (subscriptionBillingEnabled ? handleRealSubscribe(product) : handleAdd(product))}
                   disabled={submitting || (subscriptionBillingEnabled && !agreed)}
-                  className={clsx(
-                    "mt-2 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold py-2 transition-all active:scale-95 text-white disabled:opacity-50",
-                    added ? "bg-brand-emerald" : "bg-brand-gradient hover:opacity-90"
-                  )}
+                  className="mt-2 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold py-2 transition-all active:scale-95 text-white disabled:opacity-50 bg-brand-gradient hover:opacity-90"
                 >
-                  {added ? <Check size={14} /> : <ShoppingBag size={14} />}
-                  {submitting ? "กำลังเริ่ม..." : added ? `เพิ่มแล้ว (${plan.months} ชิ้น)` : `สมัคร ${plan.months} เดือน`}
+                  <ShoppingBag size={14} />
+                  {submitting ? "กำลังเริ่ม..." : `สมัคร ${plan.months} เดือน`}
                 </button>
                 {error && <p className="text-[10px] text-rose-500">{error}</p>}
               </div>
@@ -200,7 +208,7 @@ export default function SubscriptionPicker({
         <Sparkles size={14} className="shrink-0 mt-0.5 text-brand-teal" />
         {subscriptionBillingEnabled
           ? `เมื่อกด "สมัคร" ระบบจะตัดเงินราคา/เดือนที่แสดงไว้ทุกเดือน (ล็อกส่วนลดตามเทอมที่เลือก) ต่อเนื่องไปเรื่อยๆ จนกว่าจะยกเลิกที่หน้า "การสมัครของฉัน" — ยกเลิกได้ทุกเมื่อ มีผลตั้งแต่รอบถัดไป`
-          : `เมื่อกด "สมัคร" ระบบจะเพิ่มจำนวนสินค้าตามรอบที่เลือกลงตะกร้า พร้อมส่วนลด -${plan.discountPct}% ให้อัตโนมัติ ใช้ได้จริงตอนชำระเงิน — ยกเลิกหรือเปลี่ยนแผนได้ทุกเมื่อจากหน้าตะกร้า`}
+          : `เมื่อกด "สมัคร" ระบบจะพาไปหน้าชำระเงินของ Shopify ทันที พร้อมจำนวนสินค้าตามรอบที่เลือกและส่วนลด -${plan.discountPct}% ให้อัตโนมัติ แยกจากตะกร้าปกติ — ยกเลิกได้ก่อนกดชำระเงิน`}
       </p>
     </div>
   );
