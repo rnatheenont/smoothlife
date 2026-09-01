@@ -199,7 +199,7 @@ export default function AdminSubscriptionProductsPage() {
         <div className="sticky top-0 z-10 mb-3 flex flex-wrap items-center gap-3 rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft px-4 py-3 text-sm">
           <span className="font-semibold text-brand-ink">เลือกแล้ว {selected.size} รายการ</span>
           {bulkBusy && <Loader2 size={14} className="animate-spin text-brand-emerald" />}
-          <div className="flex items-center gap-1.5 ml-auto">
+          <div className="flex items-center gap-1.5 sm:ml-auto">
             <span className="text-xs text-slate-500 flex items-center gap-1 mr-1">
               <Repeat size={12} /> สมัครรับประจำ
             </span>
@@ -246,7 +246,66 @@ export default function AdminSubscriptionProductsPage() {
         <p className="text-sm text-slate-400 text-center py-10">ไม่พบสินค้าที่ตรงเงื่อนไข</p>
       ) : (
         <>
-          <div className="overflow-x-auto">
+          {/* Mobile: stacked cards — a table forced the two toggle columns
+              off-screen to the right with no scroll affordance, so on a
+              phone the switches were unreachable without knowing to swipe
+              (reported as "the on/off button is broken"). Toggles sit full
+              width below each product here instead, always visible. */}
+          <div className="flex flex-col gap-2 md:hidden">
+            <label className="flex items-center gap-2 text-xs text-slate-500 px-1">
+              <input
+                type="checkbox"
+                checked={selected.size === rows.length}
+                onChange={toggleSelectAll}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              เลือกทั้งหมดในหน้านี้
+            </label>
+            {rows.map((r) => (
+              <div key={r.slug} className="rounded-xl2 border border-slate-100 p-3 shadow-card">
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(r.slug)}
+                    onChange={() => toggleSelectOne(r.slug)}
+                    className="h-4 w-4 rounded border-slate-300 shrink-0"
+                  />
+                  <div className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-surface-soft">
+                    <Image src={r.image} alt="" fill sizes="40px" className="object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-brand-ink line-clamp-2">{r.name}</p>
+                    <p className="text-[11px] text-slate-400">
+                      {r.brand}
+                      {!r.inStock && " · สินค้าหมด"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
+                  <span className="flex items-center gap-1 text-xs text-slate-500">
+                    <Repeat size={13} /> สมัครรับประจำ
+                  </span>
+                  <Toggle
+                    on={r.subscribable}
+                    disabled={busySlug === r.slug}
+                    onClick={() => toggle(r.slug, "subscribable", !r.subscribable)}
+                  />
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="flex items-center gap-1 text-xs text-slate-500">
+                    <PackagePlus size={13} /> จัดชุดเอง
+                  </span>
+                  <Toggle
+                    on={r.bundleEligible}
+                    disabled={busySlug === r.slug}
+                    onClick={() => toggle(r.slug, "bundleEligible", !r.bundleEligible)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm min-w-[600px]">
               <thead>
                 <tr className="text-left text-slate-400 border-b border-slate-100">
