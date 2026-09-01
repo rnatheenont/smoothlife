@@ -42,6 +42,18 @@ export type ShopifyCartLine = {
   };
 };
 
+export type CartDeliveryOption = {
+  handle: string;
+  title: string | null;
+  estimatedCost: ShopifyMoney;
+};
+
+export type CartDeliveryGroup = {
+  id: string;
+  selectedDeliveryOption: { handle: string } | null;
+  deliveryOptions: CartDeliveryOption[];
+};
+
 export type ShopifyCart = {
   id: string;
   checkoutUrl: string;
@@ -49,8 +61,17 @@ export type ShopifyCart = {
   cost: { subtotalAmount: ShopifyMoney; totalAmount: ShopifyMoney };
   discountCodes: { code: string; applicable: boolean }[];
   lines: { edges: { node: ShopifyCartLine }[] };
+  deliveryGroups: { edges: { node: CartDeliveryGroup }[] };
 };
 
+// deliveryGroups only populate real rates once a delivery address is set on
+// the cart (cartDeliveryAddressesAdd below) — Shopify computes them live
+// against that address, same as its own hosted checkout does. No tax field
+// here deliberately: CartCost.totalTaxAmount/totalDutyAmount are deprecated
+// as of API version 2025-01 (Shopify's own stated reason: tax is only
+// finalized at their hosted checkout) — moot for us anyway since Thai
+// retail displays VAT-inclusive prices, this storefront has never shown a
+// separate tax line.
 const CART_FIELDS = `
   id
   checkoutUrl
@@ -73,6 +94,19 @@ const CART_FIELDS = `
             image { url }
             price { amount currencyCode }
           }
+        }
+      }
+    }
+  }
+  deliveryGroups(first: 10) {
+    edges {
+      node {
+        id
+        selectedDeliveryOption { handle }
+        deliveryOptions {
+          handle
+          title
+          estimatedCost { amount currencyCode }
         }
       }
     }
@@ -227,4 +261,53 @@ export async function cartDiscountCodesUpdate(cartId: string, codes: string[]): 
     throw new Error(data.cartDiscountCodesUpdate.userErrors.map((e) => e.message).join(", "));
   }
   return data.cartDiscountCodesUpdate.cart;
+}
+
+// Sets (or replaces) the cart's delivery address — deliveryGroups only
+// return real shipping rates once this is set, computed live against the
+// address, same as Shopify's own hosted checkout does. `selected: true`
+// makes it the active address the rates are computed against.
+export async function cartDeliveryAddressesAdd(
+  cartId: string,
+  address: CartDeliveryAddressInput
+): Promise<ShopifyCart> {
+  const data = await storefrontFetch<{
+    cartDeliveryAddressesAdd: { cart: ShopifyCart; userErrors: { message: string }[] };
+  }>(
+    `mutation CartDeliveryAddressesAdd($cartId: ID!, $addresses: [CartSelectableAddressInput!]!) {
+      cartDeliveryAddressesAdd(cartId: $cartId, addresses: $addresses) {
+        cart { ${CART_FIELDS} }
+        userErrors { message }
+      }
+    }`,
+    { cartId, addresses: [{ address: { deliveryAddress: address }, selected: true, oneTimeUse: true }] }
+  );
+  if (data.cartDeliveryAddressesAdd.userErrors.length) {
+    throw new Error(data.cartDeliveryAddressesAdd.userErrors.map((e) => e.message).join(", "));
+  }
+  return data.cartDeliveryAddressesAdd.cart;
+}
+
+// Picks a shipping rate from the options a prior cartDeliveryAddressesAdd
+// call surfaced — cost.totalAmount reflects the picked rate afterward.
+export async function cartSelectedDeliveryOptionsUpdate(
+  cartId: string,
+  deliveryGroupId: string,
+  deliveryOptionHandle: string
+): Promise<ShopifyCart> {
+  const data = await storefrontFetch<{
+    cartSelectedDeliveryOptionsUpdate: { cart: ShopifyCart; userErrors: { message: string }[] };
+  }>(
+    `mutation CartSelectedDeliveryOptionsUpdate($cartId: ID!, $selectedDeliveryOptions: [CartSelectedDeliveryOptionInput!]!) {
+      cartSelectedDeliveryOptionsUpdate(cartId: $cartId, selectedDeliveryOptions: $selectedDeliveryOptions) {
+        cart { ${CART_FIELDS} }
+        userErrors { message }
+      }
+    }`,
+    { cartId, selectedDeliveryOptions: [{ deliveryGroupId, deliveryOptionHandle }] }
+  );
+  if (data.cartSelectedDeliveryOptionsUpdate.userErrors.length) {
+    throw new Error(data.cartSelectedDeliveryOptionsUpdate.userErrors.map((e) => e.message).join(", "));
+  }
+  return data.cartSelectedDeliveryOptionsUpdate.cart;
 }
