@@ -1,7 +1,10 @@
 // Direct integration with 2C2P's Payment Gateway API (separate merchant
 // credentials from whatever gateway Shopify's own hosted checkout uses) —
 // powers real recurring "Subscribe & Save" billing via 2C2P's Recurring
-// Payment Plan (RPP) feature. Requires TWOC2P_MERCHANT_ID/TWOC2P_SECRET_KEY
+// Payment Plan (RPP) feature (createRecurringPaymentToken), and, further
+// below, one-time regular-purchase payments for the custom checkout
+// (createPaymentToken, inquireTransactionStatus) plus refunds
+// (refundTransaction). Requires TWOC2P_MERCHANT_ID/TWOC2P_SECRET_KEY
 // requested directly from 2C2P (not Shopify) with RPP enabled on the
 // account. Until those env vars are set, twoC2PConfigured() is false and
 // every export here throws — callers must check it first and fall back,
@@ -37,6 +40,9 @@ const IS_PRODUCTION = process.env.TWOC2P_ENV === "production";
 const PAYMENT_TOKEN_URL = IS_PRODUCTION
   ? "https://pgw.2c2p.com/payment/4.3/paymentToken"
   : "https://sandbox-pgw.2c2p.com/payment/4.3/paymentToken";
+const PAYMENT_INQUIRY_URL = IS_PRODUCTION
+  ? "https://pgw.2c2p.com/payment/4.3/paymentinquiry"
+  : "https://sandbox-pgw.2c2p.com/payment/4.3/paymentinquiry";
 
 export function twoC2PConfigured() {
   return Boolean(MERCHANT_ID && SECRET_KEY);
@@ -141,6 +147,106 @@ export async function createRecurringPaymentToken(req: RecurringPaymentTokenRequ
   const decoded = verifyJwt<PaymentTokenResult>(data.payload);
   if (decoded.respCode !== "0000") throw new Error(`2C2P paymentToken failed: ${decoded.respCode} ${decoded.respDesc}`);
   return decoded;
+}
+
+// One-time (non-recurring) equivalent of createRecurringPaymentToken above —
+// for regular cart purchases, not Subscribe & Save. Same Payment Token API
+// v4.3 endpoint/JWT wrapper; the request simply omits every recurring-only
+// field (recurring/invoicePrefix/recurringAmount/recurringInterval/
+// recurringCount/chargeNextDate/allowAccumulate/maxAccumulateAmount) —
+// 2C2P's own docs confirm there's no explicit "one-time" flag, a payment
+// is one-time by default when those are absent. `paymentChannel` restricts
+// which methods 2C2P offers on its Drop-In UI — ["CC","PPQR"] for the
+// card + QR PromptPay MVP scope (channel codes verified against 2C2P's
+// Payment Channel reference: CC = all global card schemes, PPQR = Thai
+// PromptPay QR specifically, under the THQR group — not the generic "QR"
+// code, which is a different scheme). NOT verified end-to-end against a
+// real sandbox account (see file header) — shape only, from docs.
+export type OneTimePaymentTokenRequest = {
+  invoiceNo: string;
+  description: string;
+  amount: number; // THB
+  paymentChannel?: string[]; // e.g. ["CC", "PPQR"] — omit to let 2C2P offer every enabled channel
+  frontendReturnUrl: string;
+  backendReturnUrl: string;
+  customer: { name?: string; email?: string; mobileNo?: string };
+  shippingAddress: { address1: string; city: string; postalCode: string; countryCode: string; state?: string };
+};
+
+export async function createPaymentToken(req: OneTimePaymentTokenRequest): Promise<PaymentTokenResult> {
+  if (!twoC2PConfigured()) throw new Error("2C2P not configured — set TWOC2P_MERCHANT_ID and TWOC2P_SECRET_KEY");
+
+  const payload = {
+    merchantID: MERCHANT_ID,
+    invoiceNo: req.invoiceNo,
+    description: req.description,
+    amount: req.amount,
+    currencyCode: "THB",
+    paymentChannel: req.paymentChannel && req.paymentChannel.length > 0 ? req.paymentChannel : undefined,
+    frontendReturnUrl: req.frontendReturnUrl,
+    backendReturnUrl: req.backendReturnUrl,
+    userInfo:
+      req.customer.name || req.customer.email || req.customer.mobileNo
+        ? { name: req.customer.name, email: req.customer.email, mobileNo: req.customer.mobileNo }
+        : undefined,
+    customerAddress: {
+      billing: {
+        address1: req.shippingAddress.address1,
+        city: req.shippingAddress.city,
+        postalCode: req.shippingAddress.postalCode,
+        countryCode: req.shippingAddress.countryCode,
+        state: req.shippingAddress.state,
+      },
+    },
+  };
+
+  const res = await fetch(PAYMENT_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ payload: signJwt(payload) }),
+  });
+  if (!res.ok) throw new Error(`2C2P paymentToken HTTP ${res.status}`);
+  const data = await res.json().catch(() => null);
+  if (!data?.payload) throw new Error("2C2P paymentToken response missing payload");
+  const decoded = verifyJwt<PaymentTokenResult>(data.payload);
+  if (decoded.respCode !== "0000") throw new Error(`2C2P paymentToken failed: ${decoded.respCode} ${decoded.respDesc}`);
+  return decoded;
+}
+
+// Server-side Payment Inquiry — the "never trust the redirect/webhook
+// alone" verification step: confirms a transaction's real status directly
+// from 2C2P before an order is ever marked paid. Same HS256 JWT wrapper as
+// paymentToken (request/response both {"payload": "<jwt>"}), a separate
+// endpoint. Request only needs merchantID + invoiceNo (verified against
+// 2C2P's Payment Inquiry Response Parameters doc); response carries the
+// full transaction detail plus respCode/respDesc. Response-field shape
+// only, not exercised against a live account — see file header.
+export type PaymentInquiryResult = {
+  invoiceNo: string;
+  amount: number;
+  currencyCode: string;
+  transactionDateTime: string;
+  approvalCode?: string;
+  referenceNo: string;
+  tranRef?: string;
+  channelCode: string;
+  respCode: string;
+  respDesc: string;
+};
+
+export async function inquireTransactionStatus(invoiceNo: string): Promise<PaymentInquiryResult> {
+  if (!twoC2PConfigured()) throw new Error("2C2P not configured — set TWOC2P_MERCHANT_ID and TWOC2P_SECRET_KEY");
+
+  const payload = { merchantID: MERCHANT_ID, invoiceNo };
+  const res = await fetch(PAYMENT_INQUIRY_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ payload: signJwt(payload) }),
+  });
+  if (!res.ok) throw new Error(`2C2P paymentinquiry HTTP ${res.status}`);
+  const data = await res.json().catch(() => null);
+  if (!data?.payload) throw new Error("2C2P paymentinquiry response missing payload");
+  return verifyJwt<PaymentInquiryResult>(data.payload);
 }
 
 export type PaymentCallback = {
@@ -282,4 +388,56 @@ export async function inquireRecurringPlan(recurringUniqueId: string): Promise<R
     new Date()
   )}</timeStamp><merchantID>${MERCHANT_ID}</merchantID><recurringUniqueID>${recurringUniqueId}</recurringUniqueID><processType>I</processType></RecurringMaintenanceRequest>`;
   return callRecurringMaintenance(xml);
+}
+
+// ---------------------------------------------------------------------
+// Refund — reuses the exact same endpoint/JOSE auth as the recurring
+// maintenance API above (same RSA key exchange, gated by the same
+// recurringMaintenanceConfigured()), but is genuinely a different request
+// schema, confirmed against 2C2P's own refund guide — NOT just a third
+// processType value plugged into RecurringMaintenanceRequest:
+//   - Root element is <PaymentProcessRequest>, not <RecurringMaintenanceRequest>
+//   - version "4.3", not "2.4"; no <timeStamp> field at all
+//   - <actionAmount> is a plain decimal string ("25.00"), not the
+//     zero-padded-integer-cents format cancelRecurringPlan uses for <amount>
+//   - Response uses <respDesc>, not <respReason>; no <recurringUniqueID>
+//     (this is a one-time-purchase-style transaction, not a plan) — has
+//     <status>/<refundReferenceNo> instead
+// https://developer.2c2p.com/docs/payment-maintenance-refund-guide —
+// shape only, not exercised against a live account (see file header).
+// Refunds can only be requested for settled transactions per 2C2P's docs;
+// for some payment methods the result is async (`REFUND_PENDING`, needs
+// polling via inquireTransactionStatus or a notifyURL callback) rather
+// than an immediate final result — callers must handle both.
+export type RefundResult = {
+  respCode: string;
+  respDesc: string;
+  status: string; // e.g. "RF" (refunded) — or "REFUND_PENDING" for async methods
+  refundReferenceNo: string | null;
+};
+
+export async function refundTransaction(invoiceNo: string, actionAmount: number): Promise<RefundResult> {
+  if (!recurringMaintenanceConfigured()) {
+    throw new Error(
+      "2C2P refund not configured — set TWOC2P_MERCHANT_PRIVATE_KEY and TWOC2P_PUBLIC_KEY (see file header for the portal key-exchange steps required first)"
+    );
+  }
+  const xml = `<PaymentProcessRequest><version>4.3</version><merchantID>${MERCHANT_ID}</merchantID><invoiceNo>${invoiceNo}</invoiceNo><actionAmount>${actionAmount.toFixed(
+    2
+  )}</actionAmount><processType>R</processType></PaymentProcessRequest>`;
+
+  const token = await encryptThenSignXml(xml);
+  const res = await fetch(MAINTENANCE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: token,
+  });
+  if (!res.ok) throw new Error(`2C2P refund HTTP ${res.status}`);
+  const responseToken = await res.text();
+  const responseXml = await verifyThenDecryptXml(responseToken);
+  const respCode = xmlTag(responseXml, "respCode");
+  const respDesc = xmlTag(responseXml, "respDesc");
+  const status = xmlTag(responseXml, "status");
+  if (!respCode) throw new Error(`2C2P refund: unexpected response XML: ${responseXml}`);
+  return { respCode, respDesc: respDesc ?? "", status: status ?? "", refundReferenceNo: xmlTag(responseXml, "refundReferenceNo") };
 }
