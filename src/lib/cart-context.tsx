@@ -7,16 +7,26 @@ import { useAuth } from "@/lib/auth-context";
 import { CartLine } from "@/data/coupons";
 import { evaluateActiveFreeGifts, FreeGiftPromo } from "@/data/free-gifts";
 
-type CartItem = { slug: string; variantId: string; qty: number };
+type CartItem = {
+  slug: string;
+  variantId: string;
+  qty: number;
+  /** Set only for a line added via the "สมัครรับประจำ" discount-code fallback
+   *  — the plan's month count, so the cart can show it as a distinct
+   *  subscription line (own row, own badge) instead of silently merging
+   *  into a same-variant line added the normal way. */
+  subscribeMonths?: 3 | 6 | 12;
+};
 
 type CartContextValue = {
   items: CartItem[];
-  /** variantId defaults to the product's own default (cheapest in-stock) variant when omitted. */
-  addItem: (slug: string, qty?: number, variantId?: string) => void;
-  removeItem: (variantId: string) => void;
-  updateQty: (variantId: string, qty: number) => void;
-  /** Switch a cart line to a different size of the same product. If that size is already a separate line, the two lines are merged instead of creating a duplicate. */
-  changeVariant: (variantId: string, newVariantId: string) => void;
+  /** variantId defaults to the product's own default (cheapest in-stock) variant when omitted. subscribeMonths tags this as a subscribe-sourced line, kept separate from a normal line of the same variant. */
+  addItem: (slug: string, qty?: number, variantId?: string, subscribeMonths?: 3 | 6 | 12) => void;
+  /** subscribeMonths disambiguates when a subscribe line and a normal line share the same variantId — omit for a normal line. */
+  removeItem: (variantId: string, subscribeMonths?: 3 | 6 | 12) => void;
+  updateQty: (variantId: string, qty: number, subscribeMonths?: 3 | 6 | 12) => void;
+  /** Switch a cart line to a different size of the same product. If that size is already a separate line (same subscribeMonths tag), the two lines are merged instead of creating a duplicate. */
+  changeVariant: (variantId: string, newVariantId: string, subscribeMonths?: 3 | 6 | 12) => void;
   clear: () => void;
   count: number;
   subtotal: number;
@@ -37,6 +47,7 @@ type CartContextValue = {
     /** True for a synthetic free-gift line derived from an eligible FreeGiftPromo — never persisted, never independently editable. */
     isGift?: boolean;
     giftPromoSlug?: string;
+    subscribeMonths?: 3 | 6 | 12;
   }[];
   couponCode: string | null;
   setCouponCode: (code: string | null) => void;
@@ -93,48 +104,56 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }
 
-  function addItem(slug: string, qty = 1, variantId?: string) {
+  // A subscribe-sourced line and a normal line never merge even when they
+  // share a variantId — subscribeMonths is part of a line's identity, not
+  // just display metadata, precisely so the two stay visually and
+  // functionally separate in the cart.
+  function sameLine(i: CartItem, variantId: string, subscribeMonths?: 3 | 6 | 12) {
+    return i.variantId === variantId && i.subscribeMonths === subscribeMonths;
+  }
+
+  function addItem(slug: string, qty = 1, variantId?: string, subscribeMonths?: 3 | 6 | 12) {
     const p = products.find((pr) => pr.slug === slug);
     const resolvedVariantId = variantId || p?.variantId;
     if (!resolvedVariantId) return;
     const stock = p?.variants.find((v) => v.variantId === resolvedVariantId)?.quantity;
     setItems((prev) => {
-      const existing = prev.find((i) => i.variantId === resolvedVariantId);
+      const existing = prev.find((i) => sameLine(i, resolvedVariantId, subscribeMonths));
       const currentQty = existing?.qty ?? 0;
       const nextQty = typeof stock === "number" ? Math.min(currentQty + qty, stock) : currentQty + qty;
       if (nextQty <= 0) return prev;
       if (existing) {
-        return prev.map((i) => (i.variantId === resolvedVariantId ? { ...i, qty: nextQty } : i));
+        return prev.map((i) => (sameLine(i, resolvedVariantId, subscribeMonths) ? { ...i, qty: nextQty } : i));
       }
-      return [...prev, { slug, variantId: resolvedVariantId, qty: nextQty }];
+      return [...prev, { slug, variantId: resolvedVariantId, qty: nextQty, subscribeMonths }];
     });
   }
-  function removeItem(variantId: string) {
-    setItems((prev) => prev.filter((i) => i.variantId !== variantId));
+  function removeItem(variantId: string, subscribeMonths?: 3 | 6 | 12) {
+    setItems((prev) => prev.filter((i) => !sameLine(i, variantId, subscribeMonths)));
   }
-  function updateQty(variantId: string, qty: number) {
-    if (qty <= 0) return removeItem(variantId);
+  function updateQty(variantId: string, qty: number, subscribeMonths?: 3 | 6 | 12) {
+    if (qty <= 0) return removeItem(variantId, subscribeMonths);
     setItems((prev) =>
       prev.map((i) => {
-        if (i.variantId !== variantId) return i;
+        if (!sameLine(i, variantId, subscribeMonths)) return i;
         const p = products.find((pr) => pr.slug === i.slug);
         const stock = p?.variants.find((v) => v.variantId === variantId)?.quantity;
         return { ...i, qty: typeof stock === "number" ? Math.min(qty, stock) : qty };
       })
     );
   }
-  function changeVariant(variantId: string, newVariantId: string) {
+  function changeVariant(variantId: string, newVariantId: string, subscribeMonths?: 3 | 6 | 12) {
     if (variantId === newVariantId) return;
     setItems((prev) => {
-      const item = prev.find((i) => i.variantId === variantId);
+      const item = prev.find((i) => sameLine(i, variantId, subscribeMonths));
       if (!item) return prev;
-      const target = prev.find((i) => i.variantId === newVariantId);
+      const target = prev.find((i) => sameLine(i, newVariantId, subscribeMonths));
       if (target) {
         return prev
-          .map((i) => (i.variantId === newVariantId ? { ...i, qty: i.qty + item.qty } : i))
-          .filter((i) => i.variantId !== variantId);
+          .map((i) => (sameLine(i, newVariantId, subscribeMonths) ? { ...i, qty: i.qty + item.qty } : i))
+          .filter((i) => !sameLine(i, variantId, subscribeMonths));
       }
-      return prev.map((i) => (i.variantId === variantId ? { ...i, variantId: newVariantId } : i));
+      return prev.map((i) => (sameLine(i, variantId, subscribeMonths) ? { ...i, variantId: newVariantId } : i));
     });
   }
   function clear() {
@@ -160,6 +179,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         size: v ? v.size : p.size || "",
         variants: p.variants,
         stock: v?.quantity,
+        subscribeMonths: i.subscribeMonths,
       };
     })
     .filter(Boolean) as CartContextValue["lines"];

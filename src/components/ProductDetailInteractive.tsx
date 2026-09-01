@@ -223,7 +223,7 @@ export default function ProductDetailInteractive({
   // charge. Once 2C2P is configured this function is unreachable; see
   // handleRealSubscribe below.
   function handleSubscribe() {
-    addItem(product.slug, subscribePlan.months, selectedVariant.variantId);
+    addItem(product.slug, subscribePlan.months, selectedVariant.variantId, subscribePlan.months);
     setCouponCode(subscribePlan.code);
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);

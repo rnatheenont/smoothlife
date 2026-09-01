@@ -38,7 +38,7 @@ export default function SubscriptionSetDetail({
   // in the cart with a real Shopify discount code — same mechanism the
   // single-product page falls back to.
   function handleSubscribe() {
-    for (const p of products) addItem(p.slug, plan.months);
+    for (const p of products) addItem(p.slug, plan.months, undefined, plan.months);
     setCouponCode(plan.code);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);

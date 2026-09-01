@@ -44,7 +44,7 @@ export default function SubscriptionPicker({
 
   // Interim fallback — same discount-code-on-cart mechanism as before.
   function handleAdd(product: Product) {
-    addItem(product.slug, plan.months);
+    addItem(product.slug, plan.months, undefined, plan.months);
     setCouponCode(plan.code);
     setAddedSlug(product.slug);
     setTimeout(() => setAddedSlug((s) => (s === product.slug ? null : s)), 1800);
