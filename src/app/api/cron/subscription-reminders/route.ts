@@ -6,6 +6,7 @@ import { expireStaleReferrals, releaseMaturedReferralRewards, advanceOrderPlaced
 import { recalculateLoyaltyTiers } from "@/lib/loyalty-cron";
 import { awardBirthdayRewards } from "@/lib/birthday-cron";
 import { expirePoints } from "@/lib/points-expiry-cron";
+import { expireStaleReservations } from "@/lib/stock-reservation";
 
 const RENEWAL_NOTICE_DAYS = 3;
 
@@ -154,10 +155,13 @@ async function notifyUpcomingRenewals() {
 // @/lib/referral-cron — plus the loyalty tier recalculation (rolling
 // 12-month spend/orders, upgrade/downgrade with a 90-day grace period —
 // see @/lib/loyalty-cron), the birthday bonus scan (see
-// @/lib/birthday-cron), and points expiry — 12 months per batch, FIFO
-// (see @/lib/points-expiry-cron). All bundled into this one job since the
-// Vercel Hobby plan caps cron jobs at 2 total and both slots are already
-// spoken for.
+// @/lib/birthday-cron), points expiry — 12 months per batch, FIFO
+// (see @/lib/points-expiry-cron) — and the stock-reservation expiry sweep
+// (see @/lib/stock-reservation), which frees inventory held by checkout
+// attempts that were abandoned before ever reaching a payment outcome
+// (releaseStock() never got called). All bundled into this one job since
+// the Vercel Hobby plan caps cron jobs at 2 total and both slots are
+// already spoken for.
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -202,6 +206,7 @@ export async function GET(req: NextRequest) {
   const loyaltyTiers = await recalculateLoyaltyTiers();
   const birthdayRewards = await awardBirthdayRewards();
   const pointsExpiry = await expirePoints();
+  const reservationsExpired = await expireStaleReservations();
 
   return NextResponse.json({
     ok: true,
@@ -214,5 +219,6 @@ export async function GET(req: NextRequest) {
     loyaltyTiers,
     birthdayRewards,
     pointsExpiry,
+    reservationsExpired,
   });
 }
