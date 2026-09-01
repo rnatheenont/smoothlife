@@ -51,12 +51,31 @@ async function getQuestions(slug: string): Promise<QuestionRow[]> {
   }
 }
 
+// No row = never explicitly turned off, so it defaults eligible — matches
+// today's actual behavior (every product subscribable) until someone opts
+// a product out from the admin side.
+async function getSubscribable(slug: string): Promise<boolean> {
+  if (!supabaseConfigured()) return true;
+  try {
+    const [row] = await supabaseRest<{ subscribable: boolean }[]>(
+      `product_subscription_settings?product_slug=eq.${encodeURIComponent(slug)}&select=subscribable`
+    );
+    return row ? row.subscribable : true;
+  } catch {
+    return true;
+  }
+}
+
 export default async function ProductPage({ params }: { params: { slug: string } }) {
   const product = getProductBySlug(params.slug);
   if (!product) notFound();
 
   const related = getRelatedProducts(product, 4);
-  const [reviews, questions] = await Promise.all([getReviews(product.slug), getQuestions(product.slug)]);
+  const [reviews, questions, subscribable] = await Promise.all([
+    getReviews(product.slug),
+    getQuestions(product.slug),
+    getSubscribable(product.slug),
+  ]);
   const categoryInfo = categories.find((c) => c.slug === product.category);
   const breadcrumbItems = [
     { label: "หน้าแรก", href: "/" },
@@ -86,6 +105,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
         reviews={reviews}
         questions={questions}
         subscriptionBillingEnabled={twoC2PConfigured()}
+        subscribable={subscribable}
       />
 
       {related.length > 0 && (

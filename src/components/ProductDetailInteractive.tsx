@@ -55,12 +55,14 @@ export default function ProductDetailInteractive({
   reviews,
   questions,
   subscriptionBillingEnabled = false,
+  subscribable = true,
 }: {
   product: Product;
   related: Product[];
   reviews: ReviewRow[];
   questions: QuestionRow[];
   subscriptionBillingEnabled?: boolean;
+  subscribable?: boolean;
 }) {
   const images =
     product.images && product.images.length > 0
@@ -207,12 +209,12 @@ export default function ProductDetailInteractive({
   // genuine checkout-time discount, not a cosmetic number.
   const subscribePlan = subscriptionPlans.find((p) => p.months === subscribeMonths) ?? popularPlan;
   const subscribePricePerCycle = Math.round(selectedVariant.price * (1 - subscribePlan.discountPct / 100));
-  const subscribeFullTerm = selectedVariant.price * subscribePlan.months;
-  const subscribeTotalTerm = subscribePricePerCycle * subscribePlan.months;
-  const subscribeSaved = subscribeFullTerm - subscribeTotalTerm;
 
   const [realSubscribeSubmitting, setRealSubscribeSubmitting] = useState(false);
   const [realSubscribeError, setRealSubscribeError] = useState("");
+  // Only meaningful for the real-billing path — the discount-code fallback
+  // never charges a card on file, so it doesn't need this disclosure.
+  const [agreedRecurringCharge, setAgreedRecurringCharge] = useState(false);
 
   // Interim behavior: still used whenever subscriptionBillingEnabled is
   // false (no 2C2P credentials set yet) — buys the whole term upfront as a
@@ -226,14 +228,15 @@ export default function ProductDetailInteractive({
     setTimeout(() => setAdded(false), 1800);
   }
 
-  // Real recurring billing path — charges the customer's card the full
-  // term lump sum via 2C2P now, ships one unit/month for the term, then
-  // auto-charges the same term length/amount again forever until
-  // cancelled (see subscribe/checkout route + 2c2p.ts recurringCount:0).
-  // Requires a saved default shipping address (reuses the same address
-  // book /checkout already prefills from) since this bypasses Shopify's
-  // own checkout entirely.
+  // Real recurring billing path — charges the customer's card the
+  // discounted monthly amount via 2C2P now, ships that month's unit, then
+  // auto-charges the same amount every ~30 days forever until cancelled
+  // (see subscribe/checkout route + 2c2p.ts recurringCount:0). Requires a
+  // saved default shipping address (reuses the same address book /checkout
+  // already prefills from) since this bypasses Shopify's own checkout
+  // entirely.
   async function handleRealSubscribe() {
+    if (!agreedRecurringCharge) return;
     setRealSubscribeError("");
     setRealSubscribeSubmitting(true);
     try {
@@ -261,6 +264,7 @@ export default function ProductDetailInteractive({
             lastName: defaultAddress.recipient_name?.split(/\s+/).slice(1).join(" "),
             phone: defaultAddress.phone,
           },
+          consentRecurringCharge: agreedRecurringCharge,
         }),
       });
       const checkoutData = await checkoutRes.json();
@@ -376,33 +380,35 @@ export default function ProductDetailInteractive({
           )}
 
           <div ref={buyButtonRef} className="mt-6">
-            <div className="grid grid-cols-2 gap-2 p-1 rounded-full bg-surface-soft text-sm font-semibold">
-              <button
-                onClick={() => setPurchaseMode("once")}
-                className={`rounded-full py-2 transition-colors ${
-                  purchaseMode === "once" ? "bg-white shadow-sm text-brand-ink" : "text-slate-400"
-                }`}
-              >
-                ซื้อครั้งเดียว
-              </button>
-              <button
-                onClick={() => setPurchaseMode("subscribe")}
-                className={`relative flex items-center justify-center gap-1.5 rounded-full py-2 transition-all ${
-                  purchaseMode === "subscribe"
-                    ? "bg-brand-gradient text-white shadow-cardHover scale-[1.02]"
-                    : "text-brand-emerald/70 hover:text-brand-emerald"
-                }`}
-              >
-                <Repeat size={13} /> สมัครรับประจำ
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                    purchaseMode === "subscribe" ? "bg-white text-brand-emerald" : "bg-brand-gradient text-white"
+            {subscribable && (
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-full bg-surface-soft text-sm font-semibold">
+                <button
+                  onClick={() => setPurchaseMode("once")}
+                  className={`rounded-full py-2 transition-colors ${
+                    purchaseMode === "once" ? "bg-white shadow-sm text-brand-ink" : "text-slate-400"
                   }`}
                 >
-                  -{Math.max(...subscriptionPlans.map((p) => p.discountPct))}%
-                </span>
-              </button>
-            </div>
+                  ซื้อครั้งเดียว
+                </button>
+                <button
+                  onClick={() => setPurchaseMode("subscribe")}
+                  className={`relative flex items-center justify-center gap-1.5 rounded-full py-2 transition-all ${
+                    purchaseMode === "subscribe"
+                      ? "bg-brand-gradient text-white shadow-cardHover scale-[1.02]"
+                      : "text-brand-emerald/70 hover:text-brand-emerald"
+                  }`}
+                >
+                  <Repeat size={13} /> สมัครรับประจำ
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                      purchaseMode === "subscribe" ? "bg-white text-brand-emerald" : "bg-brand-gradient text-white"
+                    }`}
+                  >
+                    -{Math.max(...subscriptionPlans.map((p) => p.discountPct))}%
+                  </span>
+                </button>
+              </div>
+            )}
 
             {purchaseMode === "once" ? (
               <div className="flex items-center gap-3 mt-3">
@@ -464,25 +470,34 @@ export default function ProductDetailInteractive({
                 </div>
 
                 <div className="flex items-baseline justify-between mt-3">
-                  <span className="text-xs text-slate-500">ราคา/เดือน</span>
+                  <span className="text-xs text-slate-500">ราคา/เดือน (-{subscribePlan.discountPct}%)</span>
                   <span className="text-xl font-extrabold text-brand-emerald">{formatTHB(subscribePricePerCycle)}</span>
                 </div>
-                <div className="flex items-baseline justify-between mt-0.5">
-                  <span className="text-[11px] text-slate-400">
-                    {subscriptionBillingEnabled ? "ยอดชำระวันนี้" : "รวม"} ({subscribePlan.months} เดือน)
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    <span className="line-through text-slate-400 mr-1">{formatTHB(subscribeFullTerm)}</span>
-                    {formatTHB(subscribeTotalTerm)}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs font-bold text-brand-emerald">ประหยัดรวม {formatTHB(subscribeSaved)} ตลอดรอบสมัคร</p>
+
+                {subscriptionBillingEnabled && (
+                  <label className="mt-3 flex items-start gap-2 text-[11px] text-slate-500">
+                    <input
+                      type="checkbox"
+                      checked={agreedRecurringCharge}
+                      onChange={(e) => setAgreedRecurringCharge(e.target.checked)}
+                      className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-brand-emerald"
+                    />
+                    <span>
+                      ยอมรับให้ตัดเงิน {formatTHB(subscribePricePerCycle)} บาททุกเดือนจากบัตรที่ผูกไว้ ต่อเนื่องไปเรื่อยๆ
+                      จนกว่าจะยกเลิก — ยกเลิกได้ทุกเมื่อที่หน้า &ldquo;การสมัครของฉัน&rdquo; มีผลตั้งแต่รอบถัดไป
+                    </span>
+                  </label>
+                )}
 
                 <button
                   onClick={() =>
                     requireLoginThen(subscriptionBillingEnabled ? handleRealSubscribe : handleSubscribe)
                   }
-                  disabled={!selectedVariant.inStock || realSubscribeSubmitting}
+                  disabled={
+                    !selectedVariant.inStock ||
+                    realSubscribeSubmitting ||
+                    (subscriptionBillingEnabled && !agreedRecurringCharge)
+                  }
                   className="mt-3 w-full flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
                 >
                   {added ? <Check size={16} /> : <Sparkles size={16} />}
@@ -491,7 +506,7 @@ export default function ProductDetailInteractive({
                 {realSubscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{realSubscribeError}</p>}
                 <p className="mt-2 text-[10px] text-slate-400 text-center">
                   {subscriptionBillingEnabled
-                    ? `ชำระ ${formatTHB(subscribeTotalTerm)} วันนี้ ได้รับสินค้าทุกเดือนต่อเนื่อง ${subscribePlan.months} เดือน เมื่อครบเทอมระบบจะต่ออายุอัตโนมัติในราคาเทอมใหม่ (${formatTHB(subscribeTotalTerm)}) ผ่านบัตรที่ผูกไว้ ไปเรื่อยๆ จนกว่าจะยกเลิกที่หน้า "การสมัครของฉัน"`
+                    ? `ตัดเงิน ${formatTHB(subscribePricePerCycle)} บาททุกเดือน (ล็อกส่วนลด -${subscribePlan.discountPct}% ตลอดเทอม ${subscribePlan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเทอมและราคาเดิม จนกว่าจะยกเลิก`
                     : `เพิ่มสินค้า ${subscribePlan.months} ชิ้นลงตะกร้าพร้อมโค้ดส่วนลด ${subscribePlan.code} ที่ใช้ได้จริงตอนชำระเงิน — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
                 </p>
               </div>

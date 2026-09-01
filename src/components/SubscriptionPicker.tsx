@@ -31,6 +31,16 @@ export default function SubscriptionPicker({
   const [addedSlug, setAddedSlug] = useState<string | null>(null);
   const [submittingSlug, setSubmittingSlug] = useState<string | null>(null);
   const [errorSlug, setErrorSlug] = useState<{ slug: string; message: string } | null>(null);
+  const [agreedSlugs, setAgreedSlugs] = useState<Set<string>>(new Set());
+
+  function toggleAgreed(slug: string, checked: boolean) {
+    setAgreedSlugs((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(slug);
+      else next.delete(slug);
+      return next;
+    });
+  }
 
   // Interim fallback — same discount-code-on-cart mechanism as before.
   function handleAdd(product: Product) {
@@ -47,6 +57,7 @@ export default function SubscriptionPicker({
       router.push(`/account/login?returnTo=${encodeURIComponent("/subscription")}`);
       return;
     }
+    if (!agreedSlugs.has(product.slug)) return;
     setErrorSlug(null);
     setSubmittingSlug(product.slug);
     try {
@@ -74,6 +85,7 @@ export default function SubscriptionPicker({
             lastName: defaultAddress.recipient_name?.split(/\s+/).slice(1).join(" "),
             phone: defaultAddress.phone,
           },
+          consentRecurringCharge: agreedSlugs.has(product.slug),
         }),
       });
       const checkoutData = await checkoutRes.json();
@@ -129,13 +141,11 @@ export default function SubscriptionPicker({
       {/* Products at the selected plan */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
         {products.map((product) => {
-          const total = Math.round(product.price * plan.months * (1 - plan.discountPct / 100));
-          const perMonth = Math.round(total / plan.months);
-          const fullPrice = product.price * plan.months;
-          const saved = fullPrice - total;
+          const perMonth = Math.round(product.price * (1 - plan.discountPct / 100));
           const added = addedSlug === product.slug;
           const submitting = submittingSlug === product.slug;
           const error = errorSlug?.slug === product.slug ? errorSlug.message : null;
+          const agreed = agreedSlugs.has(product.slug);
 
           return (
             <div key={product.slug} className="flex flex-col rounded-xl2 bg-white shadow-card overflow-hidden border border-slate-100">
@@ -153,20 +163,24 @@ export default function SubscriptionPicker({
                 )}
                 <div className="mt-1 rounded-lg bg-surface-soft p-2.5">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-xs text-slate-500">ทุกเดือนเฉลี่ย</span>
+                    <span className="text-xs text-slate-500">ราคา/เดือน (-{plan.discountPct}%)</span>
                     <span className="text-base font-extrabold text-brand-ink">{formatTHB(perMonth)}</span>
                   </div>
-                  <div className="flex items-baseline justify-between mt-0.5">
-                    <span className="text-[11px] text-slate-400">
-                      {subscriptionBillingEnabled ? "ยอดชำระวันนี้" : "รวม"} {plan.months} เดือน
-                    </span>
-                    <span className="text-[11px] text-slate-400 line-through">{formatTHB(fullPrice)}</span>
-                  </div>
-                  <p className="text-[11px] font-bold text-brand-emerald mt-0.5">ประหยัด {formatTHB(saved)}</p>
                 </div>
+                {subscriptionBillingEnabled && (
+                  <label className="flex items-start gap-1.5 text-[10px] text-slate-500">
+                    <input
+                      type="checkbox"
+                      checked={agreed}
+                      onChange={(e) => toggleAgreed(product.slug, e.target.checked)}
+                      className="mt-0.5 h-3 w-3 shrink-0 accent-brand-emerald"
+                    />
+                    <span>ยอมรับตัดเงินรายเดือนอัตโนมัติจนกว่าจะยกเลิก</span>
+                  </label>
+                )}
                 <button
                   onClick={() => (subscriptionBillingEnabled ? handleRealSubscribe(product) : handleAdd(product))}
-                  disabled={submitting}
+                  disabled={submitting || (subscriptionBillingEnabled && !agreed)}
                   className={clsx(
                     "mt-2 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold py-2 transition-all active:scale-95 text-white disabled:opacity-50",
                     added ? "bg-brand-emerald" : "bg-brand-gradient hover:opacity-90"
@@ -185,7 +199,7 @@ export default function SubscriptionPicker({
       <p className="mt-8 flex items-start gap-2 text-xs text-slate-400 max-w-2xl">
         <Sparkles size={14} className="shrink-0 mt-0.5 text-brand-teal" />
         {subscriptionBillingEnabled
-          ? `เมื่อกด "สมัคร" ระบบจะพาไปชำระเงินเต็มเทอมครั้งเดียว แล้วต่ออายุอัตโนมัติในราคาเทอมใหม่ไปเรื่อยๆ จนกว่าจะยกเลิกที่หน้า "การสมัครของฉัน"`
+          ? `เมื่อกด "สมัคร" ระบบจะตัดเงินราคา/เดือนที่แสดงไว้ทุกเดือน (ล็อกส่วนลดตามเทอมที่เลือก) ต่อเนื่องไปเรื่อยๆ จนกว่าจะยกเลิกที่หน้า "การสมัครของฉัน" — ยกเลิกได้ทุกเมื่อ มีผลตั้งแต่รอบถัดไป`
           : `เมื่อกด "สมัคร" ระบบจะเพิ่มจำนวนสินค้าตามรอบที่เลือกลงตะกร้า พร้อมใส่โค้ดส่วนลด ${plan.code} ให้อัตโนมัติ ใช้ได้จริงตอนชำระเงิน — ยกเลิกหรือเปลี่ยนแผนได้ทุกเมื่อจากหน้าตะกร้า`}
       </p>
     </div>
