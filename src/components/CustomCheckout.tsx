@@ -2,15 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, Loader2, AlertTriangle, MapPin, QrCode, CreditCard, Award } from "lucide-react";
+import { ShieldCheck, Loader2, AlertTriangle, MapPin, QrCode, CreditCard, Award, Ticket } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { formatTHB } from "@/lib/format";
-import { pointsForAmount } from "@/data/coupons";
+import { coupons, evaluateCoupon, pointsForAmount, CartLine } from "@/data/coupons";
 import AddressFields, { AddressFormValue, emptyAddressForm } from "@/components/account/AddressFields";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 import MobileStickyBar from "@/components/MobileStickyBar";
+import CouponPicker from "@/components/CouponPicker";
 
 // Paid directly through 2C2P (card + QR PromptPay) — the customer never
 // leaves smoothlife.com for a Shopify-hosted checkout page. Real Shopify
@@ -18,21 +19,32 @@ import MobileStickyBar from "@/components/MobileStickyBar";
 // checkout-2c2p-plan.md milestone breakdown) — this page only ever
 // initiates the payment, never marks anything paid itself.
 export default function CustomCheckout() {
-  const { lines } = useCart();
+  const { lines, couponCode } = useCart();
   const { user } = useAuth();
   const { lang } = useLang();
-  // Deliberately not useOrderTotals() here — that hook applies coupon
-  // discounts client-side, but /api/checkout/init doesn't validate/apply
-  // coupons yet (coupon support on this flow is a follow-up, not this
-  // milestone — see checkout-2c2p-plan.md). Showing a discounted total the
-  // server then charges in full would be actively misleading about real
-  // money, so this computes only what the server actually charges:
-  // subtotal + flat shipping, no discount. The existing Shopify-checkout
-  // fallback (used whenever 2C2P isn't configured, i.e. always today)
-  // still fully supports coupons as before.
+  // Deliberately not useOrderTotals() here — that hook also layers in the
+  // referral-cookie discount and the subscribe-flow's own SUB3/6/12 codes,
+  // neither of which this one-time cart checkout supports (see
+  // checkout-2c2p-plan.md's scoping notes). Coupons specifically ARE
+  // supported: evaluateCoupon() is the exact same pure function
+  // /api/checkout/init runs server-side on the resolved (real-price)
+  // lines, so the number shown here always matches what gets charged —
+  // never a client-side estimate the server might disagree with.
   const subtotal = lines.reduce((sum, l) => sum + l.price * l.qty, 0);
+  const cartLines: CartLine[] = lines.map((l) => ({
+    slug: l.slug,
+    qty: l.qty,
+    price: l.price,
+    brand: l.brand,
+    category: l.category as CartLine["category"],
+  }));
+  const coupon = couponCode ? coupons.find((c) => c.code === couponCode) ?? null : null;
+  const evaluation = coupon ? evaluateCoupon(coupon, cartLines, { signedIn: Boolean(user), tier: user?.tier }) : null;
+  const applied = evaluation && evaluation.eligible ? evaluation : null;
+  const discount = applied ? applied.discount : 0;
+  const netSubtotal = Math.max(0, subtotal - discount);
   const shipping = 0; // matches SHIPPING_FEE_THB in api/checkout/init — free nationwide, no minimum
-  const total = subtotal + shipping;
+  const total = netSubtotal + shipping;
   const points = pointsForAmount(total);
   const [address, setAddress] = useState<AddressFormValue>(emptyAddressForm);
   const [addressLoaded, setAddressLoaded] = useState(false);
@@ -93,6 +105,7 @@ export default function CustomCheckout() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lines: lines.map((l) => ({ variantId: l.variantId, quantity: l.qty })),
+          couponCode: applied ? applied.coupon.code : undefined,
           email: user?.email || undefined,
           phone: address.phone,
           shippingAddress: {
@@ -165,6 +178,8 @@ export default function CustomCheckout() {
             </div>
           </div>
 
+          <CouponPicker />
+
           {error && (
             <div className="rounded-xl2 border border-rose-200 bg-rose-50 text-rose-700 text-sm p-4 flex items-start gap-2">
               <AlertTriangle size={16} className="shrink-0 mt-0.5" />
@@ -189,6 +204,14 @@ export default function CustomCheckout() {
             <span>ยอดรวมสินค้า</span>
             <span>{formatTHB(subtotal)}</span>
           </div>
+          {applied && (
+            <div className="flex justify-between text-sm text-brand-emerald mb-2">
+              <span className="flex items-center gap-1">
+                <Ticket size={13} /> คูปอง {applied.coupon.code}
+              </span>
+              <span>-{formatTHB(discount)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm text-slate-600 mb-4">
             <span>ค่าจัดส่ง</span>
             <span>ฟรี</span>
