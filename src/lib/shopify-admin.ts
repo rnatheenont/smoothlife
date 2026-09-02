@@ -907,3 +907,58 @@ export async function createFulfillmentOnlyOrder(opts: {
   if (!data.orderCreate.order) throw new Error("Shopify did not return the created order");
   return data.orderCreate.order;
 }
+
+// One-off ops helper (see api/admin/register-catalogue-webhooks) —
+// registers the webhook subscriptions api/webhooks/shopify already knows
+// how to handle (products/create|update|delete, inventory_levels/update)
+// so its debounced catalogue rebuild actually fires instead of relying
+// solely on the daily cron. Must run with the SAME app credentials that
+// SHOPIFY_WEBHOOK_SECRET belongs to, since Shopify signs webhook
+// deliveries with the registering app's own Client Secret — this file
+// already authenticates as that app via SHOPIFY_ADMIN_CLIENT_ID/SECRET,
+// so calling it from here (rather than an external script) guarantees
+// that. Idempotent: skips any topic that's already subscribed to this
+// exact callback URL instead of erroring.
+export type CatalogueWebhookResult = { topic: string; status: "registered" | "already_registered" | "failed"; detail?: string };
+
+export async function registerCatalogueWebhooks(callbackUrl: string): Promise<CatalogueWebhookResult[]> {
+  const topics = ["PRODUCTS_CREATE", "PRODUCTS_UPDATE", "PRODUCTS_DELETE", "INVENTORY_LEVELS_UPDATE"];
+
+  const existing = await adminGraphql<{
+    webhookSubscriptions: { edges: { node: { topic: string; callbackUrl: string } }[] };
+  }>(`query { webhookSubscriptions(first: 50) { edges { node { topic callbackUrl } } } }`);
+  const alreadySubscribed = new Set(
+    existing.webhookSubscriptions.edges
+      .filter((e) => e.node.callbackUrl === callbackUrl)
+      .map((e) => e.node.topic)
+  );
+
+  const results: CatalogueWebhookResult[] = [];
+  for (const topic of topics) {
+    if (alreadySubscribed.has(topic)) {
+      results.push({ topic, status: "already_registered" });
+      continue;
+    }
+    const data = await adminGraphql<{
+      webhookSubscriptionCreate: {
+        webhookSubscription: { id: string } | null;
+        userErrors: { field: string[]; message: string }[];
+      };
+    }>(
+      `mutation CreateWebhook($topic: WebhookSubscriptionTopic!, $uri: String!) {
+        webhookSubscriptionCreate(topic: $topic, webhookSubscription: { uri: $uri, format: JSON }) {
+          webhookSubscription { id }
+          userErrors { field message }
+        }
+      }`,
+      { topic, uri: callbackUrl }
+    );
+    const { userErrors } = data.webhookSubscriptionCreate;
+    results.push(
+      userErrors.length > 0
+        ? { topic, status: "failed", detail: userErrors.map((e) => e.message).join("; ") }
+        : { topic, status: "registered" }
+    );
+  }
+  return results;
+}
