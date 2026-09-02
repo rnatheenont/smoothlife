@@ -113,6 +113,17 @@ export async function GET(req: NextRequest) {
     twoC2PEnv: process.env.TWOC2P_ENV ?? null,
   };
 
+  // Subscribe & Save rides on 2C2P's Recurring Payment Plan, which is a
+  // separately provisioned feature — an account can be perfectly valid for
+  // one-time payments and still reject `recurring: true`. Unsubscribing is
+  // a different API again (Recurring Payment Maintenance), gated on an RSA
+  // key exchange rather than these credentials, so report whether those
+  // keys exist at all.
+  const subscriptionReadiness = {
+    merchantPrivateKeySet: Boolean(process.env.TWOC2P_MERCHANT_PRIVATE_KEY),
+    twoC2PPublicKeySet: Boolean(process.env.TWOC2P_PUBLIC_KEY),
+  };
+
   const origin = req.nextUrl.origin;
   const results: Record<string, unknown> = {};
   for (const [name, url] of Object.entries(HOSTS)) {
@@ -133,5 +144,41 @@ export async function GET(req: NextRequest) {
     results[name] = await probe(url, payload, secretKey.trim());
   }
 
-  return NextResponse.json({ ok: true, credentialShape, results });
+  // Same request plus the recurring block, against whichever host just
+  // accepted the one-time call — isolates "is RPP enabled?" from "are the
+  // credentials right?", which the one-time probe has already settled.
+  // Still creates nothing chargeable: no plan exists until a customer
+  // completes the first payment on the returned URL.
+  const liveHost = (results.production as { respCode?: string })?.respCode === "0000" ? "production" : "sandbox";
+  const chargeNextDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const dd = String(chargeNextDate.getDate()).padStart(2, "0");
+  const mm = String(chargeNextDate.getMonth() + 1).padStart(2, "0");
+  const recurring = await probe(
+    HOSTS[liveHost],
+    {
+      merchantID: merchantId.trim(),
+      invoiceNo: `PROBER${Date.now().toString(36).toUpperCase()}`,
+      description: "Recurring probe - no payment is collected",
+      amount: 20.0,
+      currencyCode: "THB",
+      recurring: true,
+      invoicePrefix: "PROBER",
+      recurringAmount: 20.0,
+      recurringInterval: 30,
+      recurringCount: 2,
+      chargeNextDate: `${dd}${mm}${chargeNextDate.getFullYear()}`,
+      allowAccumulate: false,
+      maxAccumulateAmount: 20.0,
+      frontendReturnUrl: `${origin}/checkout/success`,
+      backendReturnUrl: `${origin}/api/webhooks/2c2p`,
+    },
+    secretKey.trim()
+  );
+
+  return NextResponse.json({
+    ok: true,
+    credentialShape,
+    results,
+    subscriptionReadiness: { ...subscriptionReadiness, recurringProbeHost: liveHost, recurringProbe: recurring },
+  });
 }
