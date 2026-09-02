@@ -103,6 +103,37 @@ function ddMMyyyy(d: Date): string {
   return `${dd}${mm}${d.getFullYear()}`;
 }
 
+// Shared by createRecurringPaymentToken/createPaymentToken — both POST a
+// signed request to the same paymentToken endpoint and expect the same
+// {"payload": "<jwt>"} envelope back. 2C2P can't JWT-sign a response to a
+// merchantID/request it doesn't recognize (no key to sign with), so a bad
+// Merchant ID, a sandbox/production URL mismatch, or a malformed request
+// all come back as a *plain* JSON error body instead — logging the raw
+// text on that path is what actually makes a real integration failure
+// diagnosable instead of just "missing payload".
+async function postPaymentToken(payload: Record<string, unknown>): Promise<PaymentTokenResult> {
+  const res = await fetch(PAYMENT_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ payload: signJwt(payload) }),
+  });
+  const rawText = await res.text();
+  if (!res.ok) throw new Error(`2C2P paymentToken HTTP ${res.status}: ${rawText.slice(0, 500)}`);
+  let data: { payload?: string } | null;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    data = null;
+  }
+  if (!data?.payload) {
+    console.error("[2c2p] paymentToken response missing payload, raw body:", rawText.slice(0, 1000));
+    throw new Error(`2C2P paymentToken response missing payload: ${rawText.slice(0, 500)}`);
+  }
+  const decoded = verifyJwt<PaymentTokenResult>(data.payload);
+  if (decoded.respCode !== "0000") throw new Error(`2C2P paymentToken failed: ${decoded.respCode} ${decoded.respDesc}`);
+  return decoded;
+}
+
 export async function createRecurringPaymentToken(req: RecurringPaymentTokenRequest): Promise<PaymentTokenResult> {
   if (!twoC2PConfigured()) throw new Error("2C2P not configured — set TWOC2P_MERCHANT_ID and TWOC2P_SECRET_KEY");
 
@@ -136,17 +167,7 @@ export async function createRecurringPaymentToken(req: RecurringPaymentTokenRequ
     },
   };
 
-  const res = await fetch(PAYMENT_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ payload: signJwt(payload) }),
-  });
-  if (!res.ok) throw new Error(`2C2P paymentToken HTTP ${res.status}`);
-  const data = await res.json().catch(() => null);
-  if (!data?.payload) throw new Error("2C2P paymentToken response missing payload");
-  const decoded = verifyJwt<PaymentTokenResult>(data.payload);
-  if (decoded.respCode !== "0000") throw new Error(`2C2P paymentToken failed: ${decoded.respCode} ${decoded.respDesc}`);
-  return decoded;
+  return postPaymentToken(payload);
 }
 
 // One-time (non-recurring) equivalent of createRecurringPaymentToken above —
@@ -200,17 +221,7 @@ export async function createPaymentToken(req: OneTimePaymentTokenRequest): Promi
     },
   };
 
-  const res = await fetch(PAYMENT_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ payload: signJwt(payload) }),
-  });
-  if (!res.ok) throw new Error(`2C2P paymentToken HTTP ${res.status}`);
-  const data = await res.json().catch(() => null);
-  if (!data?.payload) throw new Error("2C2P paymentToken response missing payload");
-  const decoded = verifyJwt<PaymentTokenResult>(data.payload);
-  if (decoded.respCode !== "0000") throw new Error(`2C2P paymentToken failed: ${decoded.respCode} ${decoded.respDesc}`);
-  return decoded;
+  return postPaymentToken(payload);
 }
 
 // Server-side Payment Inquiry — the "never trust the redirect/webhook
