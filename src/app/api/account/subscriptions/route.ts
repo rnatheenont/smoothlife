@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
-import { twoC2PConfigured } from "@/lib/2c2p";
+import { subscriptionBillingConfigured } from "@/lib/2c2p";
 
 export type SubscriptionRow = {
   id: string;
@@ -49,5 +49,5 @@ export async function GET(req: NextRequest) {
       `real_subscriptions?user_id=eq.${uid}&status=neq.pending&select=id,status,subscription_type,product_name,product_slug,set_slug,plan_months,discount_pct,amount_per_cycle,currency_code,current_term_number,cycle_in_term,auto_renew_cancelled,next_charge_date&order=created_at.desc`
     ),
   ]);
-  return NextResponse.json({ loggedIn: true, subscriptions, realSubscriptions, billingEnabled: twoC2PConfigured() });
+  return NextResponse.json({ loggedIn: true, subscriptions, realSubscriptions, billingEnabled: subscriptionBillingConfigured() });
 }

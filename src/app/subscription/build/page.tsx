@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { products } from "@/data/products";
 import { subscriptionPlans } from "@/data/subscriptions";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
-import { twoC2PConfigured } from "@/lib/2c2p";
+import { subscriptionBillingConfigured } from "@/lib/2c2p";
 import BundleBuilder from "@/components/BundleBuilder";
 
 export const metadata = { title: "จัดชุดสินค้าเอง | Smoothlife.com" };
@@ -28,7 +28,7 @@ export default async function BundleBuilderPage() {
   // The discount-code fallback can't apply an arbitrary bundle % (no real
   // Shopify discount code exists for it) — this entry point simply doesn't
   // exist until real 2C2P billing is configured.
-  if (!twoC2PConfigured()) redirect("/subscription");
+  if (!subscriptionBillingConfigured()) redirect("/subscription");
 
   const eligibleProducts = await getBundleEligibleProducts();
 

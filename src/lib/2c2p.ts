@@ -48,6 +48,20 @@ export function twoC2PConfigured() {
   return Boolean(MERCHANT_ID && SECRET_KEY);
 }
 
+// Subscriptions need strictly more than one-time checkout does, so they get
+// their own switch instead of riding on twoC2PConfigured():
+//   - 2C2P provisions Recurring Payment Plan separately, so an account that
+//     takes one-time payments fine can still reject `recurring: true`;
+//   - cancelling a plan goes through the Recurring Payment Maintenance API,
+//     which needs an RSA key exchange (recurringMaintenanceConfigured())
+//     that the paymentToken credentials have nothing to do with.
+// Selling a subscription nobody can cancel is far worse than not offering
+// one, so this is opt-in: set TWOC2P_SUBSCRIPTIONS=enabled only once both
+// have actually been exercised against the live account.
+export function subscriptionBillingConfigured() {
+  return twoC2PConfigured() && process.env.TWOC2P_SUBSCRIPTIONS === "enabled";
+}
+
 function base64url(input: Buffer | string): string {
   return (Buffer.isBuffer(input) ? input : Buffer.from(input))
     .toString("base64")

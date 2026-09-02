@@ -8,7 +8,7 @@ import { subscriptionPlans } from "@/data/subscriptions";
 // used on /subscription (full 3-card layout), the product page, and
 // account/subscriptions (both compact/collapsible) — so the wording never
 // drifts out of sync between the three places it appears. Copy switches on
-// billingEnabled (same twoC2PConfigured() flag every subscribe surface
+// billingEnabled (same subscriptionBillingConfigured() flag every subscribe surface
 // already keys off) so it never describes real recurring billing while the
 // site is still on the discount-code fallback.
 

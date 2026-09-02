@@ -10,14 +10,14 @@ import {
   BUNDLE_MAX_ITEMS,
   BUNDLE_DISCOUNT_PCT,
 } from "@/data/subscriptions";
-import { twoC2PConfigured, createRecurringPaymentToken } from "@/lib/2c2p";
+import { subscriptionBillingConfigured, createRecurringPaymentToken } from "@/lib/2c2p";
 
 export async function POST(req: NextRequest) {
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!uid || !supabaseConfigured()) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบก่อนค่ะ" }, { status: 401 });
   }
-  if (!twoC2PConfigured()) {
+  if (!subscriptionBillingConfigured()) {
     return NextResponse.json({ ok: false, error: "ระบบตัดเงินอัตโนมัติยังไม่พร้อมใช้งาน" }, { status: 503 });
   }
 

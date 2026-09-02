@@ -9,7 +9,7 @@ import {
   BUNDLE_DISCOUNT_PCT,
 } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
-import { twoC2PConfigured } from "@/lib/2c2p";
+import { subscriptionBillingConfigured } from "@/lib/2c2p";
 import SubscriptionPicker from "@/components/SubscriptionPicker";
 import SubscriptionTermsInfo from "@/components/SubscriptionTermsInfo";
 
@@ -23,7 +23,7 @@ const perks = [
 
 export default function SubscriptionPage() {
   const maxDiscount = Math.max(...subscriptionPlans.map((p) => p.discountPct));
-  const billingEnabled = twoC2PConfigured();
+  const billingEnabled = subscriptionBillingConfigured();
 
   return (
     <div>
@@ -101,7 +101,7 @@ export default function SubscriptionPage() {
       <section className="container-page py-10 md:py-14 border-t border-slate-100">
         <h2 className="text-xl md:text-2xl font-extrabold text-brand-ink mb-1">หรือเลือกสินค้าเอง</h2>
         <p className="text-sm text-slate-500 mb-6">อยากได้แค่สินค้าชิ้นเดียวแบบสมัครรายรอบ เลือกได้จากที่นี่</p>
-        <SubscriptionPicker plans={subscriptionPlans} products={subscriptionProducts} subscriptionBillingEnabled={twoC2PConfigured()} />
+        <SubscriptionPicker plans={subscriptionPlans} products={subscriptionProducts} subscriptionBillingEnabled={subscriptionBillingConfigured()} />
       </section>
 
       {billingEnabled && (
