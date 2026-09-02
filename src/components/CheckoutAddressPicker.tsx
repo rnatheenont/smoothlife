@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, MapPin, Plus, X, Check, AlertTriangle } from "lucide-react";
 import AddressFields, { AddressFormValue, emptyAddressForm } from "@/components/account/AddressFields";
+import { isValidPhoneForCountry, THAI_PHONE_HINT } from "@/lib/phone";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 
 // Checkout's shipping-address step. Typing a full address into the checkout
@@ -108,6 +109,12 @@ export default function CheckoutAddressPicker({
   async function saveDraft() {
     if (!isComplete(draft)) {
       setSaveError("กรุณากรอกข้อมูลให้ครบถ้วน");
+      return;
+    }
+    // The field itself already filters and flags this, but an address the
+    // courier can't call is worth stopping at the point of no return too.
+    if (!isValidPhoneForCountry(draft.phone, draft.country)) {
+      setSaveError(THAI_PHONE_HINT);
       return;
     }
     // Signed out: the address is still perfectly usable for this order, it

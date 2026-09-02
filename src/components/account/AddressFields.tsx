@@ -2,6 +2,7 @@
 
 import { COUNTRIES } from "@/components/AddressForm";
 import ThaiAddressCascade from "@/components/account/ThaiAddressCascade";
+import { sanitiseThaiPhoneInput, isValidPhoneForCountry, THAI_PHONE_HINT } from "@/lib/phone";
 
 export type AddressFormValue = {
   label: string;
@@ -46,6 +47,11 @@ export default function AddressFields({
     onChange({ ...value, [key]: v });
   }
 
+  const isTH = !value.country || value.country === "TH";
+  // Only nag once there is something to be wrong about — an empty field is the
+  // `required` attribute's job, not an error message's.
+  const phoneInvalid = value.phone.trim().length > 0 && !isValidPhoneForCountry(value.phone, value.country);
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -75,11 +81,22 @@ export default function AddressFields({
         <label className={labelClass}>โทรศัพท์</label>
         <input
           required
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel-national"
           value={value.phone}
-          onChange={(e) => set("phone", e.target.value)}
-          placeholder="0891234567"
-          className={inputClass}
+          // Filter on the way in rather than only complaining afterwards, so a
+          // pasted "081-234-5678" or "+66 81 234 5678" just works.
+          onChange={(e) => set("phone", isTH ? sanitiseThaiPhoneInput(e.target.value) : e.target.value)}
+          placeholder={isTH ? "0891234567" : "เบอร์ติดต่อ"}
+          aria-invalid={phoneInvalid || undefined}
+          className={`${inputClass} ${phoneInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
+        {phoneInvalid ? (
+          <p className="mt-1 text-[11px] text-rose-500">{THAI_PHONE_HINT}</p>
+        ) : isTH ? (
+          <p className="mt-1 text-[11px] text-slate-400">กรอกเฉพาะตัวเลข ไม่ต้องใส่ขีดหรือเว้นวรรค</p>
+        ) : null}
       </div>
       <div>
         <label className={labelClass}>ที่อยู่บรรทัดที่ 1</label>
