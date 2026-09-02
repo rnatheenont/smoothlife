@@ -104,9 +104,34 @@ export default function ProductDetailInteractive({
     if (delta > SWIPE_THRESHOLD) showPrev();
     else if (delta < -SWIPE_THRESHOLD) showNext();
   }
+  // Live stock overlay — the static catalogue snapshot is only ever as
+  // fresh as the last catalogue rebuild. This fetches the real-time
+  // truth once on mount and merges it over the static variants, so this
+  // page (the actual purchase-decision moment) never shows stale
+  // "in stock"/"out of stock" state. Falls back silently to the static
+  // values if the fetch fails or hasn't resolved yet — never worse than
+  // before, only ever more accurate once it lands.
+  const [liveStock, setLiveStock] = useState<Record<string, { inStock: boolean; quantity: number | null }>>({});
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/products/${product.slug}/stock`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data.ok) setLiveStock(data.stock);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [product.slug]);
+
+  const liveVariants = product.variants.map((v) => {
+    const live = liveStock[v.variantId];
+    return live ? { ...v, inStock: live.inStock, quantity: live.quantity ?? v.quantity } : v;
+  });
   const selectedVariant =
-    product.variants.find((v) => v.variantId === selectedVariantId) || product.variants[0];
-  const hasSizeChoice = product.variants.length > 1;
+    liveVariants.find((v) => v.variantId === selectedVariantId) || liveVariants[0];
+  const hasSizeChoice = liveVariants.length > 1;
 
   // Jump the gallery to whichever photo Shopify has assigned to this specific
   // size, when it has one of its own (most variants share the product's main
@@ -369,7 +394,7 @@ export default function ProductDetailInteractive({
             <div className="mt-4">
               <p className="text-xs font-medium text-slate-500 mb-2">เลือกขนาด</p>
               <div className="flex flex-wrap gap-2">
-                {product.variants.map((v) => (
+                {liveVariants.map((v) => (
                   <button
                     key={v.variantId}
                     onClick={() => {
