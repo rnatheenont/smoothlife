@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
 import { checkAdminPassword } from "@/lib/admin-auth";
+import { recurringMaintenanceConfigured, inquireRecurringPlan } from "@/lib/2c2p";
 
 // Temporary diagnostic endpoint — DELETE once the 2C2P blocker is resolved.
 // Same pattern as the Shopify scope probe that preceded it: TWOC2P_* are
@@ -175,10 +176,30 @@ export async function GET(req: NextRequest) {
     secretKey.trim()
   );
 
+  // Cancelling a plan rides on a completely different auth scheme (JWE
+  // encrypt-then-JWS sign, RSA key exchange) that nothing has ever exercised
+  // against a live 2C2P response. Inquiring about a plan ID that cannot exist
+  // tests exactly that round trip and nothing else: whatever 2C2P says about
+  // the missing plan, getting a reply we can decrypt AND signature-verify
+  // proves the key exchange itself works. Costs nothing and changes nothing.
+  let maintenanceRoundTrip: unknown = { skipped: "recurringMaintenanceConfigured() is false" };
+  if (recurringMaintenanceConfigured()) {
+    try {
+      const result = await inquireRecurringPlan("PROBE-NONEXISTENT-PLAN");
+      maintenanceRoundTrip = { cryptoRoundTripOk: true, twoC2PReply: result };
+    } catch (err) {
+      // A crypto failure (bad key pair, wrong key format, unverifiable
+      // signature) and a plain "no such plan" both land here, so the message
+      // is the diagnosis — keep it verbatim.
+      maintenanceRoundTrip = { cryptoRoundTripOk: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     credentialShape,
     results,
     subscriptionReadiness: { ...subscriptionReadiness, recurringProbeHost: liveHost, recurringProbe: recurring },
+    maintenanceRoundTrip,
   });
 }
