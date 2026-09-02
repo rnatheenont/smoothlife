@@ -154,11 +154,19 @@ export async function POST(req: NextRequest) {
 
   // charge.cycle_number is the lifetime charge count for this
   // subscription (never resets). Derive which cycle-within-the-term this
-  // is (wraps 1..plan_months, i.e. auto-renews into a new term once it
-  // exceeds plan_months) and which term/generation this is, purely from
-  // that immutable ledger value — no separate mutable counter to drift.
+  // is (wraps 1..plan_months) and which term/generation this is, purely
+  // from that immutable ledger value — no separate mutable counter to
+  // drift. The wrap still works if terms are ever chained again.
   const cycleInTerm = ((charge.cycle_number - 1) % subscription.plan_months) + 1;
   const termNumber = Math.floor((charge.cycle_number - 1) / subscription.plan_months) + 1;
+
+  // The 2C2P plan is bounded to exactly this term (recurringCount =
+  // plan.months, see ../../subscribe/checkout/route.ts), so the last cycle
+  // of the term really is the last charge — 2C2P stops on its own and
+  // there is no auto-renewal built yet. Close the row out here, or the
+  // customer would keep seeing "ตัดเงินอัตโนมัติ — กำลังใช้งาน" forever on
+  // a subscription that will never charge again.
+  const isFinalCycleOfTerm = cycleInTerm === subscription.plan_months;
   const nextChargeDate = new Date();
   nextChargeDate.setMonth(nextChargeDate.getMonth() + 1);
 
@@ -166,10 +174,10 @@ export async function POST(req: NextRequest) {
     method: "PATCH",
     returning: false,
     body: JSON.stringify({
-      status: "active",
+      status: isFinalCycleOfTerm ? "ended" : "active",
       current_term_number: termNumber,
       cycle_in_term: cycleInTerm,
-      next_charge_date: nextChargeDate.toISOString().slice(0, 10),
+      next_charge_date: isFinalCycleOfTerm ? null : nextChargeDate.toISOString().slice(0, 10),
       renewal_notified_at: null, // this cycle's reminder hasn't fired yet
       // Needed to ever cancel this plan later (lib/2c2p.ts's
       // cancelRecurringPlan) — not present on every callback per 2C2P's
@@ -236,6 +244,23 @@ export async function POST(req: NextRequest) {
       link: "/account/subscriptions",
     }),
   });
+
+  if (isFinalCycleOfTerm) {
+    // Say it plainly rather than letting the subscription just go quiet:
+    // this was the last charge, nothing more will be taken, and resubscribing
+    // is a deliberate action the customer has to take.
+    await supabaseRest("notifications", {
+      method: "POST",
+      returning: false,
+      body: JSON.stringify({
+        user_id: subscription.user_id,
+        type: "subscription_term_ended",
+        title: `ครบเทอม ${subscription.plan_months} เดือนแล้ว`,
+        body: `${subscription.product_name} — รอบสุดท้ายของเทอมจัดส่งเรียบร้อย ไม่มีการตัดเงินเพิ่มอีก สมัครใหม่ได้ทุกเมื่อถ้าอยากใช้ต่อ`,
+        link: "/account/subscriptions",
+      }),
+    });
+  }
 
   return NextResponse.json({ ok: true, result: "charge_succeeded" });
 }

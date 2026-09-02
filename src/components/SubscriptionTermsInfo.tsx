@@ -15,9 +15,9 @@ import { subscriptionPlans } from "@/data/subscriptions";
 function CycleTerms({ billingEnabled }: { billingEnabled: boolean }) {
   return billingEnabled ? (
     <ul className="text-sm text-slate-600 flex flex-col gap-1.5">
-      <li>• ตัดเงินอัตโนมัติ<strong className="text-brand-ink">ทุกเดือน</strong> ในราคาที่ล็อกไว้ตามเทอมที่เลือก ไม่เปลี่ยนแปลงระหว่างทาง</li>
-      <li>• ครบตามจำนวนรอบของเทอมแล้ว ระบบต่อเทอมใหม่ให้อัตโนมัติในเงื่อนไขเดิม ไปเรื่อยๆ จนกว่าจะยกเลิก</li>
-      <li>• ยกเลิกได้ทุกเมื่อที่หน้า &ldquo;การสมัครของฉัน&rdquo; — มีผล<strong className="text-brand-ink">ตั้งแต่รอบถัดไป</strong> รอบปัจจุบันที่จ่ายแล้วยังได้รับตามปกติ ไม่มีค่าปรับ</li>
+      <li>• ตัดเงินอัตโนมัติ<strong className="text-brand-ink">ทุกเดือนจนครบเทอมที่เลือก</strong> ในราคาที่ล็อกไว้ ไม่เปลี่ยนแปลงระหว่างทาง</li>
+      <li>• ยกเลิกได้ทุกเมื่อที่หน้า &ldquo;การสมัครของฉัน&rdquo; — มีผล<strong className="text-brand-ink">เมื่อจบเทอมปัจจุบัน</strong> รอบที่เหลือในเทอมยังตัดเงินและจัดส่งตามปกติ ไม่มีค่าปรับ</li>
+      <li>• <strong className="text-brand-ink">ยังไม่มีต่อเทอมอัตโนมัติ</strong> — ครบเทอมแล้วระบบปิดรายการให้เอง ไม่มีการตัดเงินต่อ สมัครใหม่ได้ทุกเมื่อ</li>
     </ul>
   ) : (
     <ul className="text-sm text-slate-600 flex flex-col gap-1.5">
