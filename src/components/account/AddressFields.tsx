@@ -3,6 +3,7 @@
 import { COUNTRIES } from "@/components/AddressForm";
 import ThaiAddressCascade from "@/components/account/ThaiAddressCascade";
 import { sanitiseThaiPhoneInput, isValidPhoneForCountry, THAI_PHONE_HINT } from "@/lib/phone";
+import { isPersonName, isAddressLine, VALIDATION_HINTS } from "@/lib/form-validation";
 
 export type AddressFormValue = {
   label: string;
@@ -51,6 +52,8 @@ export default function AddressFields({
   // Only nag once there is something to be wrong about — an empty field is the
   // `required` attribute's job, not an error message's.
   const phoneInvalid = value.phone.trim().length > 0 && !isValidPhoneForCountry(value.phone, value.country);
+  const nameInvalid = value.recipient_name.trim().length > 0 && !isPersonName(value.recipient_name);
+  const addressInvalid = value.address_line.trim().length > 0 && !isAddressLine(value.address_line);
 
   return (
     <div className="flex flex-col gap-4">
@@ -72,10 +75,13 @@ export default function AddressFields({
         <label className={labelClass}>ชื่อ-นามสกุล</label>
         <input
           required
+          autoComplete="name"
           value={value.recipient_name}
           onChange={(e) => set("recipient_name", e.target.value)}
-          className={inputClass}
+          aria-invalid={nameInvalid || undefined}
+          className={`${inputClass} ${nameInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
+        {nameInvalid && <p className="mt-1 text-[11px] text-rose-500">{VALIDATION_HINTS.name}</p>}
       </div>
       <div>
         <label className={labelClass}>โทรศัพท์</label>
@@ -102,10 +108,14 @@ export default function AddressFields({
         <label className={labelClass}>ที่อยู่บรรทัดที่ 1</label>
         <input
           required
+          autoComplete="address-line1"
+          placeholder="บ้านเลขที่ หมู่ ซอย ถนน"
           value={value.address_line}
           onChange={(e) => set("address_line", e.target.value)}
-          className={inputClass}
+          aria-invalid={addressInvalid || undefined}
+          className={`${inputClass} ${addressInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
+        {addressInvalid && <p className="mt-1 text-[11px] text-rose-500">{VALIDATION_HINTS.addressLine}</p>}
       </div>
       <ThaiAddressCascade value={value} onChange={(patch) => onChange({ ...value, ...patch })} />
       {showDefaultToggle && (

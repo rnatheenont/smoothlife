@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePostcodeMatches, useThaiProvinces, useThaiDistricts, useThaiSubdistricts } from "@/lib/postcode-lookup";
+import { isThaiPostcode, VALIDATION_HINTS } from "@/lib/form-validation";
 
 export type ThaiAddressValue = {
   subdistrict: string;
@@ -27,6 +28,9 @@ export default function ThaiAddressCascade({
   onChange: (patch: Partial<ThaiAddressValue>) => void;
 }) {
   const isTH = value.country === "TH";
+  // Half-typed postcodes are normal while typing, so only complain once the
+  // field is as long as a Thai postcode can be and still doesn't look like one.
+  const postcodeInvalid = isTH && value.postal_code.length === 5 && !isThaiPostcode(value.postal_code);
   const provinces = useThaiProvinces(value.country);
   const districts = useThaiDistricts(value.country, value.province);
   const subdistricts = useThaiSubdistricts(value.country, value.province, value.district);
@@ -63,13 +67,18 @@ export default function ThaiAddressCascade({
             );
           }}
           placeholder="10110"
-          className={inputClass}
+          inputMode={isTH ? "numeric" : undefined}
+          autoComplete="postal-code"
+          aria-invalid={postcodeInvalid || undefined}
+          className={`${inputClass} ${postcodeInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
-        {isTH && (
+        {postcodeInvalid ? (
+          <p className="mt-1.5 text-[11px] text-rose-500">{VALIDATION_HINTS.postcode}</p>
+        ) : isTH ? (
           <p className="mt-1.5 text-[11px] text-slate-400">
             ไม่ทราบรหัสไปรษณีย์ก็เลือกจังหวัดด้านล่างได้เลย ระบบจะเติมรหัสให้อัตโนมัติ
           </p>
-        )}
+        ) : null}
       </div>
       <div>
         <label className={labelClass}>จังหวัด</label>

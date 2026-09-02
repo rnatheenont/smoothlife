@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, MapPin, Plus, X, Check, AlertTriangle } from "lucide-react";
 import AddressFields, { AddressFormValue, emptyAddressForm } from "@/components/account/AddressFields";
 import { isValidPhoneForCountry, THAI_PHONE_HINT } from "@/lib/phone";
+import { isPersonName, isAddressLine, isThaiPostcode, VALIDATION_HINTS } from "@/lib/form-validation";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 
 // Checkout's shipping-address step. Typing a full address into the checkout
@@ -111,10 +112,16 @@ export default function CheckoutAddressPicker({
       setSaveError("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
-    // The field itself already filters and flags this, but an address the
-    // courier can't call is worth stopping at the point of no return too.
-    if (!isValidPhoneForCountry(draft.phone, draft.country)) {
-      setSaveError(THAI_PHONE_HINT);
+    // The fields already flag these inline, but the modal is the last point
+    // where a bad address can still be corrected cheaply — after this it is a
+    // failed delivery. Report the first real problem rather than a generic one.
+    const problem =
+      (!isPersonName(draft.recipient_name) && VALIDATION_HINTS.name) ||
+      (!isValidPhoneForCountry(draft.phone, draft.country) && THAI_PHONE_HINT) ||
+      (!isAddressLine(draft.address_line) && VALIDATION_HINTS.addressLine) ||
+      (draft.country === "TH" && !isThaiPostcode(draft.postal_code) && VALIDATION_HINTS.postcode);
+    if (problem) {
+      setSaveError(problem);
       return;
     }
     // Signed out: the address is still perfectly usable for this order, it

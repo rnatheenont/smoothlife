@@ -2,6 +2,8 @@
 
 import { COUNTRIES } from "@/components/AddressForm";
 import ThaiAddressCascade from "@/components/account/ThaiAddressCascade";
+import { sanitiseThaiPhoneInput, isValidPhoneForCountry, THAI_PHONE_HINT } from "@/lib/phone";
+import { isPersonName, isThaiTaxId, isEmailish, isAddressLine, VALIDATION_HINTS } from "@/lib/form-validation";
 
 export type TaxAddressFormValue = {
   label: string;
@@ -52,6 +54,15 @@ export default function TaxAddressFields({
     onChange({ ...value, [key]: v });
   }
 
+  const isTH = !value.country || value.country === "TH";
+  // Same rule everywhere: say nothing while a field is still empty, flag it
+  // the moment it holds something that can't be right.
+  const nameInvalid = value.recipient_name.trim().length > 0 && !isPersonName(value.recipient_name);
+  const taxIdInvalid = value.tax_id.trim().length > 0 && !isThaiTaxId(value.tax_id);
+  const phoneInvalid = value.phone.trim().length > 0 && !isValidPhoneForCountry(value.phone, value.country);
+  const emailInvalid = value.email.trim().length > 0 && !isEmailish(value.email);
+  const addressInvalid = value.address_line.trim().length > 0 && !isAddressLine(value.address_line);
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -76,34 +87,54 @@ export default function TaxAddressFields({
         <label className={labelClass}>{value.is_company ? "ชื่อบริษัท" : "ชื่อ-นามสกุล"}</label>
         <input
           required
+          autoComplete={value.is_company ? "organization" : "name"}
           value={value.recipient_name}
           onChange={(e) => set("recipient_name", e.target.value)}
-          className={inputClass}
+          aria-invalid={nameInvalid || undefined}
+          className={`${inputClass} ${nameInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
+        {nameInvalid && <p className="mt-1 text-[11px] text-rose-500">{VALIDATION_HINTS.name}</p>}
       </div>
       <div>
         <label className={labelClass}>เลขประจำตัวผู้เสียภาษี</label>
         <input
           required
+          inputMode="numeric"
           value={value.tax_id}
           onChange={(e) => set("tax_id", e.target.value.replace(/\D/g, "").slice(0, 13))}
           placeholder="13 หลัก"
-          className={inputClass}
+          aria-invalid={taxIdInvalid || undefined}
+          className={`${inputClass} ${taxIdInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
+        {taxIdInvalid && <p className="mt-1 text-[11px] text-rose-500">{VALIDATION_HINTS.taxId}</p>}
       </div>
       <div>
         <label className={labelClass}>โทรศัพท์</label>
-        <input required value={value.phone} onChange={(e) => set("phone", e.target.value)} placeholder="0891234567" className={inputClass} />
+        <input
+          required
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel-national"
+          value={value.phone}
+          onChange={(e) => set("phone", isTH ? sanitiseThaiPhoneInput(e.target.value) : e.target.value)}
+          placeholder={isTH ? "0891234567" : "เบอร์ติดต่อ"}
+          aria-invalid={phoneInvalid || undefined}
+          className={`${inputClass} ${phoneInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
+        />
+        {phoneInvalid && <p className="mt-1 text-[11px] text-rose-500">{THAI_PHONE_HINT}</p>}
       </div>
       <div>
         <label className={labelClass}>อีเมล</label>
         <input
           type="email"
+          autoComplete="email"
           value={value.email}
           onChange={(e) => set("email", e.target.value)}
           placeholder="email@example.com"
-          className={inputClass}
+          aria-invalid={emailInvalid || undefined}
+          className={`${inputClass} ${emailInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
+        {emailInvalid && <p className="mt-1 text-[11px] text-rose-500">{VALIDATION_HINTS.email}</p>}
       </div>
       <div>
         <label className={labelClass}>ประเทศ</label>
@@ -121,8 +152,10 @@ export default function TaxAddressFields({
           required
           value={value.address_line}
           onChange={(e) => set("address_line", e.target.value)}
-          className={inputClass}
+          aria-invalid={addressInvalid || undefined}
+          className={`${inputClass} ${addressInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
+        {addressInvalid && <p className="mt-1 text-[11px] text-rose-500">{VALIDATION_HINTS.addressLine}</p>}
       </div>
       <ThaiAddressCascade value={value} onChange={(patch) => onChange({ ...value, ...patch })} />
       {showDefaultToggle && (
