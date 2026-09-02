@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { ShieldCheck, Loader2, AlertTriangle, MapPin, QrCode, CreditCard, Award, Ticket } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
@@ -8,7 +8,8 @@ import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { formatTHB } from "@/lib/format";
 import { coupons, evaluateCoupon, pointsForAmount, CartLine } from "@/data/coupons";
-import AddressFields, { AddressFormValue, emptyAddressForm } from "@/components/account/AddressFields";
+import { AddressFormValue, emptyAddressForm } from "@/components/account/AddressFields";
+import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 import MobileStickyBar from "@/components/MobileStickyBar";
 import CouponPicker from "@/components/CouponPicker";
@@ -46,38 +47,15 @@ export default function CustomCheckout() {
   const shipping = 0; // matches SHIPPING_FEE_THB in api/checkout/init — free nationwide, no minimum
   const total = netSubtotal + shipping;
   const points = pointsForAmount(total);
+  // CheckoutAddressPicker owns loading and choosing saved addresses and hands
+  // the chosen one up here; this is only ever the address the order ships to.
   const [address, setAddress] = useState<AddressFormValue>(emptyAddressForm);
-  const [addressLoaded, setAddressLoaded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const addressReady = Boolean(
+    address.recipient_name && address.phone && address.address_line && address.postal_code
+  );
   const [error, setError] = useState<string | null>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!user?.real) {
-      setAddressLoaded(true);
-      return;
-    }
-    fetch("/api/account/addresses")
-      .then((r) => r.json())
-      .then((data) => {
-        const saved: AddressRow | undefined = data.addresses?.[0];
-        if (saved) {
-          setAddress({
-            label: saved.label ?? "บ้าน",
-            recipient_name: saved.recipient_name,
-            phone: saved.phone,
-            address_line: saved.address_line,
-            subdistrict: saved.subdistrict,
-            district: saved.district,
-            province: saved.province,
-            postal_code: saved.postal_code,
-            country: saved.country,
-            is_default: false,
-          });
-        }
-      })
-      .finally(() => setAddressLoaded(true));
-  }, [user?.real]);
 
   if (lines.length === 0) {
     return (
@@ -154,13 +132,7 @@ export default function CustomCheckout() {
             <h2 className="font-bold text-brand-ink mb-4 flex items-center gap-2">
               <MapPin size={18} className="text-brand-emerald" /> ที่อยู่จัดส่ง
             </h2>
-            {!addressLoaded ? (
-              <p className="text-sm text-slate-400 flex items-center gap-1.5">
-                <Loader2 size={14} className="animate-spin" /> กำลังโหลด...
-              </p>
-            ) : (
-              <AddressFields value={address} onChange={setAddress} showDefaultToggle={false} />
-            )}
+            <CheckoutAddressPicker value={address} onChange={setAddress} canSave={Boolean(user?.real)} />
           </div>
 
           <div className="rounded-xl2 border border-slate-100 p-5 shadow-card">
@@ -223,7 +195,7 @@ export default function CustomCheckout() {
           <button
             ref={submitButtonRef}
             type="submit"
-            disabled={submitting || !addressLoaded || lines.length === 0}
+            disabled={submitting || !addressReady || lines.length === 0}
             className="w-full flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
           >
             {submitting && <Loader2 size={16} className="animate-spin" />}
@@ -248,7 +220,7 @@ export default function CustomCheckout() {
           </div>
           <button
             type="submit"
-            disabled={submitting || !addressLoaded || lines.length === 0}
+            disabled={submitting || !addressReady || lines.length === 0}
             className="flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white font-semibold px-5 py-2.5 text-xs shrink-0 active:scale-95 transition-transform disabled:opacity-60"
           >
             {submitting && <Loader2 size={14} className="animate-spin" />}
