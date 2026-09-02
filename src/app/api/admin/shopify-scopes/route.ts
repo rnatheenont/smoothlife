@@ -11,9 +11,10 @@ import { checkAdminPassword } from "@/lib/admin-auth";
 //
 //   curl -H "Authorization: Bearer $ADMIN_PANEL_SECRET" https://.../api/admin/shopify-scopes
 //
-// Never returns the client secret or the access token itself — only the
-// client_id prefix (enough to match against a shopify.app.toml) and the
-// granted scope list.
+// Never returns the client secret or the access token itself. The client_id
+// IS returned in full — it is a public OAuth identifier (it travels in
+// authorize URLs), and `shopify app config link --client-id=...` needs the
+// whole thing to pull down the owning app's config.
 export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
   const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
@@ -28,8 +29,7 @@ export async function GET(req: NextRequest) {
 
   const identity = {
     shop: shop ?? null,
-    clientIdPrefix: clientId ? `${clientId.slice(0, 8)}…` : null,
-    clientIdLength: clientId?.length ?? 0,
+    clientId: clientId ?? null,
     clientSecretSet: Boolean(clientSecret),
     apiVersion,
   };
