@@ -10,6 +10,7 @@ import { formatTHB } from "@/lib/format";
 import { coupons, evaluateCoupon, pointsForAmount, CartLine } from "@/data/coupons";
 import { AddressFormValue, emptyAddressForm } from "@/components/account/AddressFields";
 import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
+import PaymentModal from "@/components/PaymentModal";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 import MobileStickyBar from "@/components/MobileStickyBar";
 import CouponPicker from "@/components/CouponPicker";
@@ -20,7 +21,7 @@ import CouponPicker from "@/components/CouponPicker";
 // checkout-2c2p-plan.md milestone breakdown) — this page only ever
 // initiates the payment, never marks anything paid itself.
 export default function CustomCheckout() {
-  const { lines, couponCode } = useCart();
+  const { lines, couponCode, clear } = useCart();
   const { user } = useAuth();
   const { lang } = useLang();
   // Deliberately not useOrderTotals() here — that hook also layers in the
@@ -51,6 +52,10 @@ export default function CustomCheckout() {
   // the chosen one up here; this is only ever the address the order ships to.
   const [address, setAddress] = useState<AddressFormValue>(emptyAddressForm);
   const [submitting, setSubmitting] = useState(false);
+  // Set once /api/checkout/init has a real 2C2P session — the payment then
+  // happens in a frame over this page instead of navigating away, so the cart
+  // and address stay put if the customer backs out.
+  const [payment, setPayment] = useState<{ url: string; cartToken: string } | null>(null);
   const addressReady = Boolean(
     address.recipient_name && address.phone && address.address_line && address.postal_code
   );
@@ -103,7 +108,8 @@ export default function CustomCheckout() {
         setSubmitting(false);
         return;
       }
-      window.location.href = data.webPaymentUrl;
+      setPayment({ url: data.webPaymentUrl, cartToken: data.cartToken });
+      setSubmitting(false);
     } catch {
       setError("เริ่มการชำระเงินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
       setSubmitting(false);
@@ -228,6 +234,17 @@ export default function CustomCheckout() {
           </button>
         </MobileStickyBar>
       </form>
+
+      {payment && (
+        <PaymentModal
+          webPaymentUrl={payment.url}
+          cartToken={payment.cartToken}
+          onClose={() => setPayment(null)}
+          // Only fires once our own backend confirms the charge, so emptying
+          // the cart here can't strand a customer whose payment actually failed.
+          onPaid={clear}
+        />
+      )}
     </div>
   );
 }
