@@ -13,9 +13,9 @@ import { emailConfigured, sendEmail, guestOrderInviteEmailHtml } from "@/lib/ema
 // orders/fulfilled (needed for the referral programme's delivery step —
 // not yet subscribed as of this writing, see loyalty-program-plan.md),
 // orders/cancelled, refunds/create, products/create, products/update,
-// products/delete, customers/delete. Verifies the HMAC signature so only
-// Shopify (holding SHOPIFY_WEBHOOK_SECRET) can trigger point changes,
-// rebuilds, or account updates.
+// products/delete, inventory_levels/update, customers/delete. Verifies
+// the HMAC signature so only Shopify (holding SHOPIFY_WEBHOOK_SECRET)
+// can trigger point changes, rebuilds, or account updates.
 
 // The product catalogue (src/data/products.generated.ts) is only ever
 // written by scripts/fetch-products.js during `next build` — see
@@ -376,6 +376,13 @@ export async function POST(req: NextRequest) {
       case "products/create":
       case "products/update":
       case "products/delete":
+      case "inventory_levels/update":
+        // A pure stock change doesn't reliably fire products/update in
+        // modern Shopify (inventory is a separate resource from the
+        // product) — subscribed separately so stock staleness gets the
+        // same near-instant rebuild as product edits, not just the daily
+        // cron. Payload isn't parsed; any inventory change is reason
+        // enough to refresh the whole catalogue.
         result = await triggerCatalogueRebuildIfDue();
         break;
       case "customers/delete":
