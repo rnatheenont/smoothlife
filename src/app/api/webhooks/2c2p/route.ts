@@ -72,6 +72,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "invalid signature" }, { status: 200 });
   }
 
+  // 2C2P's docs never state which response field carries the card token
+  // created by `tokenize: true` (they variously call it cardToken and
+  // storeCardUniqueID), and guessing wrong in code that later charges a card
+  // unattended is not acceptable — so learn the real name from a real
+  // transaction. Keys only, never values: the token itself does not belong in
+  // a log. Remove once the field is known and stored properly.
+  console.log("[webhooks/2c2p] callback fields:", Object.keys(callback).sort().join(","));
+
   const success = callback.respCode === "0000";
 
   let [charge] = await supabaseRest<ChargeRow[]>(`real_subscription_charges?invoice_no=eq.${callback.invoiceNo}&select=id,subscription_id,cycle_number,amount`);

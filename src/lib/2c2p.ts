@@ -162,6 +162,16 @@ export async function createRecurringPaymentToken(req: RecurringPaymentTokenRequ
     amount: req.amountPerCycle,
     currencyCode: "THB",
     recurring: true,
+    // A term-bounded plan (recurringCount = the term length) ends on 2C2P's
+    // side at the term boundary, so renewing into the next term has to start
+    // a brand-new plan — with no cardholder at a payment page to re-enter a
+    // card. `tokenize` offers to store the card on this first payment and
+    // `storeCredentials: "F"` marks it as the first payment of a card-on-file
+    // arrangement, which is what makes a later merchant-initiated charge
+    // legitimate to the issuer. Without both set here, a subscription taken
+    // today can never be auto-renewed later.
+    tokenize: true,
+    storeCredentials: "F",
     invoicePrefix: req.invoicePrefix,
     recurringAmount: req.amountPerCycle,
     recurringInterval: req.recurringIntervalDays,
