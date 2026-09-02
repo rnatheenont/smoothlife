@@ -61,6 +61,10 @@ function base64urlDecode(input: string): string {
   return Buffer.from(padded, "base64").toString("utf8");
 }
 
+// Customer identity goes in `uiParams.userInfo`, never as a top-level
+// `userInfo` — the Payment Token API 4.3 request-parameter reference nests
+// it (https://developer.2c2p.com/docs/api-payment-token-request-parameter).
+//
 // 2C2P wraps every request/response body as a bare HS256 JWT (header +
 // payload + HMAC-SHA256 signature, all base64url) — no JWT library needed
 // for this one fixed shape, matching this codebase's existing no-dependency
@@ -153,8 +157,8 @@ export async function createRecurringPaymentToken(req: RecurringPaymentTokenRequ
     maxAccumulateAmount: req.amountPerCycle,
     frontendReturnUrl: req.frontendReturnUrl,
     backendReturnUrl: req.backendReturnUrl,
-    userInfo: req.customer.name || req.customer.email || req.customer.mobileNo
-      ? { name: req.customer.name, email: req.customer.email, mobileNo: req.customer.mobileNo }
+    uiParams: req.customer.name || req.customer.email || req.customer.mobileNo
+      ? { userInfo: { name: req.customer.name, email: req.customer.email, mobileNo: req.customer.mobileNo } }
       : undefined,
     customerAddress: {
       billing: {
@@ -206,9 +210,9 @@ export async function createPaymentToken(req: OneTimePaymentTokenRequest): Promi
     paymentChannel: req.paymentChannel && req.paymentChannel.length > 0 ? req.paymentChannel : undefined,
     frontendReturnUrl: req.frontendReturnUrl,
     backendReturnUrl: req.backendReturnUrl,
-    userInfo:
+    uiParams:
       req.customer.name || req.customer.email || req.customer.mobileNo
-        ? { name: req.customer.name, email: req.customer.email, mobileNo: req.customer.mobileNo }
+        ? { userInfo: { name: req.customer.name, email: req.customer.email, mobileNo: req.customer.mobileNo } }
         : undefined,
     customerAddress: {
       billing: {
