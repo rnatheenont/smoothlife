@@ -102,12 +102,16 @@ export async function POST(req: NextRequest) {
 
   // Charged every month at the discount rate locked in by the chosen term
   // (3/6/12 months = 5/15/20% off) — not a term lump sum. 2C2P has no
-  // calendar-month recurring unit, so the interval is passed as ~30 days;
-  // recurringCount: 0 means 2C2P keeps auto-charging this same monthly
-  // amount indefinitely (auto-renewing the term forever at the same locked
-  // rate) until cancelRecurringPlan() is called — no separate "renewal"
-  // charge needs to be created by us, 2C2P's own engine fires the webhook
-  // every cycle (see subscription-feature-plan.md v3).
+  // calendar-month recurring unit, so the interval is passed as ~30 days.
+  //
+  // recurringCount is the term length, NOT 0 ("charge forever"). A term
+  // never stops early — cancelling only means "don't start the next term"
+  // — so a plan bounded to exactly this term's cycles expires on its own
+  // at the term boundary and there is nothing left to cancel. That keeps
+  // the whole subscription lifecycle off the Recurring Payment Maintenance
+  // API, which this merchant account currently answers with HTTP 401.
+  // Renewing into the next term therefore has to start a *new* plan rather
+  // than letting an open-ended one roll on.
   const totalPerCycle = items.reduce((sum, it) => sum + it.price, 0);
   // Bundle discount stacks with (applies before) the term discount — e.g.
   // 10% off the real picked total, then another 5-20% off that for the
@@ -161,7 +165,7 @@ export async function POST(req: NextRequest) {
       invoicePrefix,
       description: `${displayName} (สมัครสมาชิกตัดเงินรายเดือน ล็อกส่วนลด ${plan.discountPct}% เทอม ${plan.months} เดือน)`.slice(0, 250),
       amountPerCycle,
-      recurringCount: 0,
+      recurringCount: plan.months,
       recurringIntervalDays: 30,
       chargeNextDate,
       frontendReturnUrl: `${origin}/account/subscriptions?justSubscribed=1`,

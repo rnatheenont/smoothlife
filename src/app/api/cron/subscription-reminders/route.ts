@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { getVariantAvailability, shopifyAdminConfigured } from "@/lib/shopify-admin";
-import { cancelRecurringPlan, recurringMaintenanceConfigured } from "@/lib/2c2p";
 import { expireStaleReferrals, releaseMaturedReferralRewards, advanceOrderPlacedReferrals } from "@/lib/referral-cron";
 import { recalculateLoyaltyTiers } from "@/lib/loyalty-cron";
 import { awardBirthdayRewards } from "@/lib/birthday-cron";
@@ -32,6 +31,7 @@ type DueSubscription = {
 type RealSubscriptionDue = {
   id: string;
   user_id: string;
+  next_charge_date: string;
   product_name: string;
   product_slug: string;
   variant_id: string;
@@ -39,24 +39,28 @@ type RealSubscriptionDue = {
   amount_per_cycle: number;
 };
 
-// Real subscriptions (2C2P recurring billing) whose next charge is coming
-// up soon — cancel any that are genuinely out of stock so the customer is
-// never charged for something we can't ship. Best-effort: any row we can't
-// confidently verify (API unreachable, no recurring_unique_id yet, cancel
-// itself fails) is left untouched rather than guessed at, since acting on
-// bad data here risks the opposite mistake — stopping a plan that's fine.
-async function cancelOutOfStockSubscriptions() {
-  if (!shopifyAdminConfigured() || !recurringMaintenanceConfigured()) return 0;
+// Real subscriptions (2C2P recurring billing) whose next charge is coming up
+// soon while the item is out of stock. This used to cancel the plan outright,
+// which is no longer possible or wanted: a term never stops early (see
+// ../../subscribe/[id]/cancel/route.ts), and the Recurring Payment
+// Maintenance API that would stop one answers HTTP 401 on this account.
+//
+// So this now only *surfaces* the problem: the charge will fire and has to be
+// refunded by hand in the 2C2P merchant portal (Card Transactions > REFUND).
+// Detection is still worth doing — an out-of-stock cycle that nobody notices
+// until the customer complains is far worse than a logged one.
+// Best-effort: any row we can't confidently verify is left alone rather than
+// guessed at.
+async function flagOutOfStockSubscriptions() {
+  if (!shopifyAdminConfigured()) return 0;
 
   const windowEnd = new Date(Date.now() + STOCK_CHECK_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const due = await supabaseRest<RealSubscriptionDue[]>(
-    `real_subscriptions?status=eq.active&next_charge_date=lte.${windowEnd}&select=id,user_id,product_name,product_slug,variant_id,recurring_unique_id,amount_per_cycle`
+    `real_subscriptions?status=eq.active&next_charge_date=lte.${windowEnd}&select=id,user_id,next_charge_date,product_name,product_slug,variant_id`
   );
 
-  let cancelled = 0;
+  let flagged = 0;
   for (const sub of due) {
-    if (!sub.recurring_unique_id) continue;
-
     const availability = await getVariantAvailability(sub.variant_id);
     if (!availability) continue; // couldn't verify — don't act on it
 
@@ -65,34 +69,26 @@ async function cancelOutOfStockSubscriptions() {
       (availability.inventoryPolicy === "DENY" && availability.inventoryQuantity !== null && availability.inventoryQuantity <= 0);
     if (!outOfStock) continue;
 
-    const result = await cancelRecurringPlan(sub.recurring_unique_id, sub.amount_per_cycle);
-    if (result.respCode !== "00") {
-      console.error(
-        `[cron/subscription-reminders] 2C2P refused to cancel out-of-stock subscription ${sub.id}: ${result.respCode} ${result.respReason}`
-      );
-      continue; // left as "active" — 2C2P still thinks it's live, don't claim otherwise
-    }
-
-    await supabaseRest(`real_subscriptions?id=eq.${sub.id}`, {
-      method: "PATCH",
-      returning: false,
-      body: JSON.stringify({ status: "cancelled", updated_at: new Date().toISOString() }),
-    });
+    // Deliberately does NOT touch `status` — 2C2P will still charge this
+    // cycle, and claiming otherwise in our own data would be a lie.
+    console.error(
+      `[cron/subscription-reminders] subscription ${sub.id} (${sub.product_name}) charges on ${sub.next_charge_date} but the variant is out of stock — refund that cycle manually in the 2C2P portal if it cannot ship`
+    );
     await supabaseRest("notifications", {
       method: "POST",
       returning: false,
       body: JSON.stringify({
         user_id: sub.user_id,
         type: "subscription_out_of_stock",
-        title: "ยกเลิกการสมัครอัตโนมัติ — สินค้าหมดสต็อก",
-        body: `${sub.product_name} หมดสต็อกชั่วคราว ระบบยกเลิกรอบตัดเงินถัดไปให้แล้ว ไม่มีการเก็บเงินเพิ่ม สมัครใหม่ได้เมื่อสินค้ากลับมามีสต็อก`,
+        title: "สินค้าในแพ็กสมาชิกหมดสต็อกชั่วคราว",
+        body: `${sub.product_name} หมดสต็อกชั่วคราว ทีมงานกำลังตรวจสอบรอบจัดส่งถัดไปให้ และจะติดต่อกลับหากต้องเลื่อนส่งหรือคืนเงินรอบนี้`,
         link: `/product/${sub.product_slug}`,
         metadata: { subscriptionId: sub.id },
       }),
     });
-    cancelled++;
+    flagged++;
   }
-  return cancelled;
+  return flagged;
 }
 
 type RenewalDue = {
@@ -143,8 +139,8 @@ async function notifyUpcomingRenewals() {
 // runs out. Each row is only ever reminded once (reminded_at gate) even if
 // this runs more than once on the same day. Also covers, for the real
 // (2C2P) monthly-billed subscriptions: the pre-charge stock check
-// (cancelOutOfStockSubscriptions — 2C2P fires each month's charge on its
-// own schedule, this is the only lever to stop one before it happens) and
+// (flagOutOfStockSubscriptions — surfaces a cycle that will charge for
+// something unshippable, since a term is never stopped early) and
 // the pre-charge notice (notifyUpcomingRenewals) — there's no separate
 // fulfillment job anymore, since every month's charge and shipment happen
 // together in the 2C2P webhook itself, not split across a cron. Also the
@@ -198,7 +194,7 @@ export async function GET(req: NextRequest) {
     notified++;
   }
 
-  const stockCancelled = await cancelOutOfStockSubscriptions();
+  const stockFlagged = await flagOutOfStockSubscriptions();
   const renewalsNotified = await notifyUpcomingRenewals();
   const referralsAdvanced = await advanceOrderPlacedReferrals();
   const referralsExpired = await expireStaleReferrals();
@@ -211,7 +207,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     notified,
-    stockCancelled,
+    stockFlagged,
     renewalsNotified,
     referralsAdvanced,
     referralsExpired,
