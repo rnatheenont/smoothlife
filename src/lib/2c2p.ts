@@ -328,7 +328,7 @@ export function verifyPaymentCallback(rawPayload: string): PaymentCallback {
 // header, if 2C2P's portal assigns one, isn't documented — omitted here.
 // Both need confirming against a real sandbox call before trusting this
 // for "unsubscribe" in production.
-import { CompactEncrypt, CompactSign, compactDecrypt, compactVerify, importSPKI, importPKCS8 } from "jose";
+import { CompactEncrypt, CompactSign, compactDecrypt, compactVerify, importSPKI, importX509, importPKCS8 } from "jose";
 
 // Vercel env vars can't hold real newlines cleanly, so multi-line PEM
 // values are stored with literal \n escapes — same convention as
@@ -343,6 +343,17 @@ export function recurringMaintenanceConfigured() {
   return Boolean(MERCHANT_ID && MERCHANT_PRIVATE_KEY_PEM && TWOC2P_PUBLIC_KEY_PEM);
 }
 
+// 2C2P's portal (Account > Options > 2C2P Public Keys, JWE tab) hands out
+// their key as an X.509 certificate — "-----BEGIN CERTIFICATE-----", not the
+// bare "-----BEGIN PUBLIC KEY-----" SPKI that importSPKI() takes. Accept
+// either so TWOC2P_PUBLIC_KEY can hold whatever the portal actually gave us,
+// rather than requiring an openssl conversion step that will be forgotten
+// the next time 2C2P rotates the cert.
+function importTwoC2PPublicKey(alg: string) {
+  const pem = TWOC2P_PUBLIC_KEY_PEM!;
+  return pem.includes("BEGIN CERTIFICATE") ? importX509(pem, alg) : importSPKI(pem, alg);
+}
+
 function maintenanceTimestamp(d: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${p(d.getDate())}${p(d.getMonth() + 1)}${String(d.getFullYear()).slice(-2)}${p(d.getHours())}${p(
@@ -351,7 +362,7 @@ function maintenanceTimestamp(d: Date): string {
 }
 
 async function encryptThenSignXml(xml: string): Promise<string> {
-  const twoC2PPublicKey = await importSPKI(TWOC2P_PUBLIC_KEY_PEM!, "RSA-OAEP");
+  const twoC2PPublicKey = await importTwoC2PPublicKey("RSA-OAEP");
   const jwe = await new CompactEncrypt(new TextEncoder().encode(xml))
     .setProtectedHeader({ alg: "RSA-OAEP", enc: "A256GCM" })
     .encrypt(twoC2PPublicKey);
@@ -362,7 +373,7 @@ async function encryptThenSignXml(xml: string): Promise<string> {
 }
 
 async function verifyThenDecryptXml(token: string): Promise<string> {
-  const twoC2PPublicKey = await importSPKI(TWOC2P_PUBLIC_KEY_PEM!, "PS256");
+  const twoC2PPublicKey = await importTwoC2PPublicKey("PS256");
   const { payload: jweBytes } = await compactVerify(token, twoC2PPublicKey);
   const merchantPrivateKey = await importPKCS8(MERCHANT_PRIVATE_KEY_PEM!, "RSA-OAEP");
   const { plaintext } = await compactDecrypt(new TextDecoder().decode(jweBytes), merchantPrivateKey);
