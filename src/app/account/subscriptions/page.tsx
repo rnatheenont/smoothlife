@@ -76,6 +76,16 @@ function RealSubscriptionCard({
   }
 
   async function handleCancel() {
+    // A term is a commitment: cancelling stops the *next* term, it does not
+    // stop the cycles still owed on this one. Say that before they click, not
+    // after they wonder why another charge arrived.
+    const remaining = Math.max(0, sub.plan_months - sub.cycle_in_term);
+    const ok = window.confirm(
+      remaining > 0
+        ? `ยกเลิกการต่อเทอมถัดไป?\n\nเทอมปัจจุบันยังเหลืออีก ${remaining} รอบ ซึ่งจะตัดเงินและจัดส่งตามปกติจนครบ จากนั้นจะไม่มีการตัดเงินอีก`
+        : "ยกเลิกการต่อเทอมถัดไป?\n\nเทอมปัจจุบันครบแล้ว จะไม่มีการตัดเงินอีก"
+    );
+    if (!ok) return;
     setBusy(true);
     setError("");
     try {
@@ -128,7 +138,11 @@ function RealSubscriptionCard({
             {sub.next_charge_date && ` · ตัดครั้งถัดไป ${new Date(sub.next_charge_date).toLocaleDateString("th-TH")}`}
           </p>
           {sub.auto_renew_cancelled && (
-            <p className="text-xs font-semibold text-amber-600 mt-1">ยกเลิกแล้ว — จะไม่มีการตัดเงินรอบถัดไป</p>
+            <p className="text-xs font-semibold text-amber-600 mt-1">
+              {sub.cycle_in_term < sub.plan_months
+                ? `ยกเลิกการต่อเทอมแล้ว — ตัดเงินต่ออีก ${sub.plan_months - sub.cycle_in_term} รอบจนครบเทอม แล้วจบ`
+                : "ยกเลิกการต่อเทอมแล้ว — ครบเทอมแล้ว จะไม่มีการตัดเงินอีก"}
+            </p>
           )}
           {error && <p className="text-xs text-rose-500 mt-1">{error}</p>}
           <button
@@ -198,7 +212,7 @@ function RealSubscriptionCard({
             className="flex items-center gap-1 shrink-0 rounded-full border border-rose-200 text-rose-500 px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
           >
             <XCircle size={12} />
-            {busy ? "กำลังยกเลิก..." : "ยกเลิกการตัดเงิน"}
+            {busy ? "กำลังยกเลิก..." : "ยกเลิกการต่อเทอม"}
           </button>
         )}
       </div>
