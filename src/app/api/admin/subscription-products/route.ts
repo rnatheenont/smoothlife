@@ -24,7 +24,8 @@ export async function GET(req: NextRequest) {
 
   const q = req.nextUrl.searchParams.get("q")?.trim().toLowerCase() ?? "";
   const category = req.nextUrl.searchParams.get("category")?.trim() ?? "";
-  const status = req.nextUrl.searchParams.get("status")?.trim() ?? "all"; // all | subscribable-off | bundle-on
+  // all | subscribable-on | subscribable-off | bundle-on | bundle-off
+  const status = req.nextUrl.searchParams.get("status")?.trim() ?? "all";
   const page = Math.max(1, Number(req.nextUrl.searchParams.get("page")) || 1);
 
   const settingsRows = await supabaseRest<SettingsRow[]>(
@@ -52,12 +53,23 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  const filtered =
-    status === "subscribable-off"
-      ? withSettings.filter((p) => !p.subscribable)
-      : status === "bundle-on"
-        ? withSettings.filter((p) => p.bundleEligible)
-        : withSettings;
+  // Counted before the status filter is applied, so the summary answers "how
+  // many of the products I'm looking at are on?" rather than restating the
+  // filter back at the reader.
+  const counts = {
+    total: withSettings.length,
+    subscribableOn: withSettings.filter((p) => p.subscribable).length,
+    bundleOn: withSettings.filter((p) => p.bundleEligible).length,
+  };
+
+  const STATUS_PREDICATES: Record<string, (p: (typeof withSettings)[number]) => boolean> = {
+    "subscribable-on": (p) => p.subscribable,
+    "subscribable-off": (p) => !p.subscribable,
+    "bundle-on": (p) => p.bundleEligible,
+    "bundle-off": (p) => !p.bundleEligible,
+  };
+  const predicate = STATUS_PREDICATES[status];
+  const filtered = predicate ? withSettings.filter(predicate) : withSettings;
 
   filtered.sort((a, b) => a.name.localeCompare(b.name, "th"));
 
@@ -65,7 +77,15 @@ export async function GET(req: NextRequest) {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  return NextResponse.json({ ok: true, products: rows, total, page: Math.min(page, totalPages), totalPages, pageSize: PAGE_SIZE });
+  return NextResponse.json({
+    ok: true,
+    products: rows,
+    total,
+    counts,
+    page: Math.min(page, totalPages),
+    totalPages,
+    pageSize: PAGE_SIZE,
+  });
 }
 
 export async function PATCH(req: NextRequest) {

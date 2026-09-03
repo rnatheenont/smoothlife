@@ -16,12 +16,18 @@ type ProductRow = {
   bundleEligible: boolean;
 };
 
-type StatusFilter = "all" | "subscribable-off" | "bundle-on";
+type StatusFilter = "all" | "subscribable-on" | "subscribable-off" | "bundle-on" | "bundle-off";
 
+// Both polarities of both switches. The old set offered "ปิดสมัครรับประจำ" and
+// "เปิดจัดชุดเอง" — opposite polarities of different switches, and no way at
+// all to answer "which products ARE open for subscription?", which is the
+// first thing anyone opens this page to find out.
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "ทั้งหมด" },
+  { value: "subscribable-on", label: "เปิดสมัครรับประจำ" },
   { value: "subscribable-off", label: "ปิดสมัครรับประจำ" },
   { value: "bundle-on", label: "เปิดจัดชุดเอง" },
+  { value: "bundle-off", label: "ปิดจัดชุดเอง" },
 ];
 
 // Purely visual — the actual tap target is ToggleRow/ToggleCell below. A
@@ -29,16 +35,26 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 // target, so real-device taps that land a few px off it silently do
 // nothing (reported as the button "still being broken" even though
 // clicks on the exact pixel — e.g. automated testing — always worked).
+//
+// The word is not decoration. On a page where almost everything is off, a
+// column of grey switches reads as a column of empty circles — you cannot
+// tell "off" from "not loaded yet", and there is nothing to compare a single
+// green one against. Saying เปิด/ปิด removes the guess entirely.
 function ToggleIndicator({ on }: { on: boolean }) {
   return (
-    <span
-      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${on ? "bg-brand-emerald" : "bg-slate-200"}`}
-    >
+    <span className="inline-flex shrink-0 items-center gap-1.5">
       <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-          on ? "translate-x-5" : "translate-x-0.5"
-        }`}
-      />
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${on ? "bg-brand-emerald" : "bg-slate-200"}`}
+      >
+        <span
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+            on ? "translate-x-5" : "translate-x-0.5"
+          }`}
+        />
+      </span>
+      <span className={`w-6 text-[11px] font-semibold ${on ? "text-brand-emerald" : "text-slate-400"}`}>
+        {on ? "เปิด" : "ปิด"}
+      </span>
     </span>
   );
 }
@@ -93,6 +109,7 @@ export default function AdminSubscriptionProductsPage() {
 
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState({ total: 0, subscribableOn: 0, bundleOn: 0 });
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [busySlug, setBusySlug] = useState<string | null>(null);
@@ -121,6 +138,7 @@ export default function AdminSubscriptionProductsPage() {
       if (data.ok) {
         setRows(data.products);
         setTotal(data.total);
+        setCounts(data.counts ?? { total: 0, subscribableOn: 0, bundleOn: 0 });
         setTotalPages(data.totalPages);
       }
     } finally {
@@ -144,6 +162,12 @@ export default function AdminSubscriptionProductsPage() {
       const data = await res.json();
       if (data.ok) {
         setRows((prev) => prev.map((r) => (r.slug === slug ? { ...r, [field]: value } : r)));
+        // Keep the summary honest without refetching — a counter that only
+        // updates on reload is worse than no counter.
+        setCounts((c) => {
+          const key = field === "subscribable" ? "subscribableOn" : "bundleOn";
+          return { ...c, [key]: Math.max(0, c[key] + (value ? 1 : -1)) };
+        });
       }
     } finally {
       setBusySlug(null);
@@ -161,7 +185,12 @@ export default function AdminSubscriptionProductsPage() {
       });
       const data = await res.json();
       if (data.ok) {
+        const changed = rows.filter((r) => selected.has(r.slug) && r[field] !== value).length;
         setRows((prev) => prev.map((r) => (selected.has(r.slug) ? { ...r, [field]: value } : r)));
+        setCounts((c) => {
+          const key = field === "subscribable" ? "subscribableOn" : "bundleOn";
+          return { ...c, [key]: Math.max(0, c[key] + (value ? changed : -changed)) };
+        });
       }
     } finally {
       setBulkBusy(false);
@@ -188,8 +217,36 @@ export default function AdminSubscriptionProductsPage() {
           <Repeat size={20} className="text-brand-emerald" /> สินค้าที่สมัครสมาชิกได้
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          เปิด/ปิดว่าสินค้าไหนสมัครรับประจำได้ (สมัครรับประจำ) และเอาไปจัดชุดเองได้ไหม (จัดชุดสินค้าเอง) — เลือกได้หลายรายการเพื่อเปิด/ปิดพร้อมกัน
+          กำหนดว่าสินค้าไหนลูกค้าสมัครรับประจำได้ และสินค้าไหนเอาไปจัดชุดเองได้ — ติ๊กหลายรายการเพื่อเปิด/ปิดพร้อมกันได้
         </p>
+      </div>
+
+      {/* The first question anyone opens this page with is "how many are on?"
+          — a list of 900 switches cannot answer it, and scrolling to count is
+          not an answer either. */}
+      <div className="mb-4 grid gap-2 sm:grid-cols-2">
+        <div className="rounded-xl2 border border-slate-100 px-4 py-3">
+          <p className="flex items-center gap-1.5 text-xs text-slate-500">
+            <Repeat size={13} className="text-brand-emerald" /> สมัครรับประจำ
+          </p>
+          <p className="mt-0.5 text-sm text-slate-500">
+            <span className="text-xl font-bold text-brand-ink">{counts.subscribableOn.toLocaleString()}</span>
+            {" / "}
+            {counts.total.toLocaleString()} รายการ
+          </p>
+          <p className="mt-0.5 text-[11px] text-slate-400">ลูกค้าเลือกสมัครรับสินค้านี้ทุกเดือนได้</p>
+        </div>
+        <div className="rounded-xl2 border border-slate-100 px-4 py-3">
+          <p className="flex items-center gap-1.5 text-xs text-slate-500">
+            <PackagePlus size={13} className="text-brand-emerald" /> จัดชุดเอง
+          </p>
+          <p className="mt-0.5 text-sm text-slate-500">
+            <span className="text-xl font-bold text-brand-ink">{counts.bundleOn.toLocaleString()}</span>
+            {" / "}
+            {counts.total.toLocaleString()} รายการ
+          </p>
+          <p className="mt-0.5 text-[11px] text-slate-400">ลูกค้าหยิบสินค้านี้ใส่ชุดสมาชิกที่จัดเองได้</p>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 mb-3">
@@ -354,13 +411,13 @@ export default function AdminSubscriptionProductsPage() {
                     />
                   </th>
                   <th className="py-2 pr-4 font-medium">สินค้า</th>
-                  <th className="py-2 pr-4 font-medium text-center">
-                    <span className="flex items-center gap-1 justify-center">
+                  <th className="py-2 pr-4 font-medium text-center w-40">
+                    <span className="flex items-center gap-1 justify-center text-slate-500">
                       <Repeat size={13} /> สมัครรับประจำ
                     </span>
                   </th>
-                  <th className="py-2 pr-4 font-medium text-center">
-                    <span className="flex items-center gap-1 justify-center">
+                  <th className="py-2 pr-4 font-medium text-center w-40">
+                    <span className="flex items-center gap-1 justify-center text-slate-500">
                       <PackagePlus size={13} /> จัดชุดเอง
                     </span>
                   </th>
@@ -383,7 +440,10 @@ export default function AdminSubscriptionProductsPage() {
                           <Image src={r.image} alt="" fill sizes="40px" className="object-cover" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-brand-ink line-clamp-1">{r.name}</p>
+                          {/* Two lines, not one: these names run long and share a prefix
+                              ("[1 Free 1] Smooth E 24k Glow Booster…"), so a single
+                              clipped line makes different products look identical. */}
+                          <p className="text-xs font-semibold text-brand-ink line-clamp-2">{r.name}</p>
                           <p className="text-[11px] text-slate-400">
                             {r.brand}
                             {!r.inStock && " · สินค้าหมด"}
