@@ -3,9 +3,10 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Lock, Gift, SlidersHorizontal, Award, LogOut, CreditCard, MessageSquareText, Repeat, Receipt } from "lucide-react";
+import { Lock, Gift, SlidersHorizontal, Award, LogOut, CreditCard, MessageSquareText, Repeat, Receipt, Inbox } from "lucide-react";
 
 const NAV = [
+  { href: "/admin/inbox", label: "กล่องข้อความ", icon: Inbox },
   { href: "/admin/free-gifts", label: "โปรโมชั่น", icon: Gift },
   { href: "/admin/free-gifts/widgets", label: "Widgets", icon: SlidersHorizontal },
   { href: "/admin/points", label: "คะแนน", icon: Award },
