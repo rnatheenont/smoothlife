@@ -46,16 +46,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "maintenance keys not configured" }, { status: 412 });
   }
 
-  const xml =
+  const xmlFor = (planId: string) =>
     `<RecurringMaintenanceRequest><version>2.4</version><timeStamp>${timestamp(new Date())}</timeStamp>` +
-    `<merchantID>${merchantId}</merchantID><recurringUniqueID>PROBE-NONEXISTENT</recurringUniqueID>` +
+    `<merchantID>${merchantId}</merchantID><recurringUniqueID>${planId}</recurringUniqueID>` +
     `<processType>I</processType></RecurringMaintenanceRequest>`;
-  const bytes = new TextEncoder().encode(xml);
 
-  async function build(order: "encrypt-then-sign" | "sign-then-encrypt", withKid: boolean): Promise<string> {
+  async function build(
+    order: "encrypt-then-sign" | "sign-then-encrypt" | "encrypt-only",
+    withKid: boolean,
+    planId: string
+  ): Promise<string> {
+    const bytes = new TextEncoder().encode(xmlFor(planId));
     const signHeader: Record<string, string> = { alg: "PS256" };
     if (withKid) signHeader.kid = merchantId!;
 
+    if (order === "encrypt-only") {
+      return new CompactEncrypt(bytes)
+        .setProtectedHeader({ alg: "RSA-OAEP", enc: "A256GCM" })
+        .encrypt(await importTheirKey(theirPem!, "RSA-OAEP"));
+    }
     if (order === "encrypt-then-sign") {
       const jwe = await new CompactEncrypt(bytes)
         .setProtectedHeader({ alg: "RSA-OAEP", enc: "A256GCM" })
@@ -72,17 +81,29 @@ export async function GET(req: NextRequest) {
       .encrypt(await importTheirKey(theirPem!, "RSA-OAEP"));
   }
 
-  const variants: { name: string; order: "encrypt-then-sign" | "sign-then-encrypt"; kid: boolean }[] = [
-    { name: "encrypt-then-sign, no kid (current code)", order: "encrypt-then-sign", kid: false },
-    { name: "encrypt-then-sign, with kid", order: "encrypt-then-sign", kid: true },
-    { name: "sign-then-encrypt, no kid", order: "sign-then-encrypt", kid: false },
-    { name: "sign-then-encrypt, with kid", order: "sign-then-encrypt", kid: true },
+  // Round 1 established that a JWS on the outside gets an IIS-level 401
+  // ("access denied") while a JWE on the outside reaches the application and
+  // gets a plain 400 — so sign-then-encrypt is the shape 2C2P expects. Round 2
+  // narrows down what the surviving 400 is actually complaining about, since
+  // "PROBE-NONEXISTENT" is not a plausible recurringUniqueID and could be the
+  // entire reason on its own.
+  const variants: {
+    name: string;
+    order: "encrypt-then-sign" | "sign-then-encrypt" | "encrypt-only";
+    kid: boolean;
+    planId?: string;
+  }[] = [
+    { name: "sign-then-encrypt, numeric planId", order: "sign-then-encrypt", kid: false, planId: "123456789" },
+    { name: "sign-then-encrypt, kid, numeric planId", order: "sign-then-encrypt", kid: true, planId: "123456789" },
+    { name: "encrypt-only (no inner JWS), numeric planId", order: "encrypt-only", kid: false, planId: "123456789" },
+    { name: "sign-then-encrypt, original probe planId", order: "sign-then-encrypt", kid: false },
+    { name: "encrypt-then-sign (old code, for contrast)", order: "encrypt-then-sign", kid: false },
   ];
 
   const results = [];
   for (const v of variants) {
     try {
-      const token = await build(v.order, v.kid);
+      const token = await build(v.order, v.kid, v.planId ?? "PROBE-NONEXISTENT");
       const res = await fetch(MAINTENANCE_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
