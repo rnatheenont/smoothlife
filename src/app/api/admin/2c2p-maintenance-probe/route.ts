@@ -46,17 +46,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "maintenance keys not configured" }, { status: 412 });
   }
 
-  const xmlFor = (planId: string) =>
+  // The guide lists recurringStatus and amount as REQUIRED even for an
+  // inquiry, and says the elements must appear in the documented order — the
+  // "minimal" shape below omits both, which is the most likely reason every
+  // JWE-wrapped attempt so far came back 400.
+  const minimalXml = (planId: string) =>
     `<RecurringMaintenanceRequest><version>2.4</version><timeStamp>${timestamp(new Date())}</timeStamp>` +
     `<merchantID>${merchantId}</merchantID><recurringUniqueID>${planId}</recurringUniqueID>` +
     `<processType>I</processType></RecurringMaintenanceRequest>`;
 
+  const fullXml = (planId: string) =>
+    `<RecurringMaintenanceRequest><version>2.4</version><timeStamp>${timestamp(new Date())}</timeStamp>` +
+    `<merchantID>${merchantId}</merchantID><recurringUniqueID>${planId}</recurringUniqueID>` +
+    `<processType>I</processType><recurringStatus>Y</recurringStatus><amount>0.00</amount>` +
+    `<allowAccumulate></allowAccumulate><maxAccumulateAmount></maxAccumulateAmount>` +
+    `<recurringInterval></recurringInterval><recurringCount></recurringCount>` +
+    `<chargeNextDate></chargeNextDate><chargeOnDate></chargeOnDate></RecurringMaintenanceRequest>`;
+
   async function build(
     order: "encrypt-then-sign" | "sign-then-encrypt" | "encrypt-only",
     withKid: boolean,
-    planId: string
+    planId: string,
+    full: boolean
   ): Promise<string> {
-    const bytes = new TextEncoder().encode(xmlFor(planId));
+    const bytes = new TextEncoder().encode(full ? fullXml(planId) : minimalXml(planId));
     const signHeader: Record<string, string> = { alg: "PS256" };
     if (withKid) signHeader.kid = merchantId!;
 
@@ -91,19 +104,18 @@ export async function GET(req: NextRequest) {
     name: string;
     order: "encrypt-then-sign" | "sign-then-encrypt" | "encrypt-only";
     kid: boolean;
-    planId?: string;
+    full: boolean;
   }[] = [
-    { name: "sign-then-encrypt, numeric planId", order: "sign-then-encrypt", kid: false, planId: "123456789" },
-    { name: "sign-then-encrypt, kid, numeric planId", order: "sign-then-encrypt", kid: true, planId: "123456789" },
-    { name: "encrypt-only (no inner JWS), numeric planId", order: "encrypt-only", kid: false, planId: "123456789" },
-    { name: "sign-then-encrypt, original probe planId", order: "sign-then-encrypt", kid: false },
-    { name: "encrypt-then-sign (old code, for contrast)", order: "encrypt-then-sign", kid: false },
+    { name: "sign-then-encrypt, FULL xml", order: "sign-then-encrypt", kid: false, full: true },
+    { name: "sign-then-encrypt, FULL xml, kid", order: "sign-then-encrypt", kid: true, full: true },
+    { name: "encrypt-only, FULL xml", order: "encrypt-only", kid: false, full: true },
+    { name: "sign-then-encrypt, minimal xml (control)", order: "sign-then-encrypt", kid: false, full: false },
   ];
 
   const results = [];
   for (const v of variants) {
     try {
-      const token = await build(v.order, v.kid, v.planId ?? "PROBE-NONEXISTENT");
+      const token = await build(v.order, v.kid, "123456789", v.full);
       const res = await fetch(MAINTENANCE_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
