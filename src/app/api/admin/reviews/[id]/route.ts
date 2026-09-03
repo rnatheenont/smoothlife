@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
+import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import type { PendingReviewRow } from "../route";
 
@@ -21,12 +21,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const [review] = await supabaseRest<(PendingReviewRow & { user_id: string })[]>(
-    `product_reviews?id=eq.${params.id}&status=eq.pending_review&select=id,user_id,product_slug,points_awarded,review_type`
+    `product_reviews?id=eq.${pgValue(params.id)}&status=eq.pending_review&select=id,user_id,product_slug,points_awarded,review_type`
   );
   if (!review) return NextResponse.json({ ok: false, error: "ไม่พบรีวิวที่รออนุมัติรายการนี้" }, { status: 404 });
 
   if (action === "reject") {
-    await supabaseRest(`product_reviews?id=eq.${params.id}`, {
+    await supabaseRest(`product_reviews?id=eq.${pgValue(params.id)}`, {
       method: "PATCH",
       returning: false,
       body: JSON.stringify({ status: "rejected" }),
@@ -34,7 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ ok: true, status: "rejected" });
   }
 
-  await supabaseRest(`product_reviews?id=eq.${params.id}`, {
+  await supabaseRest(`product_reviews?id=eq.${pgValue(params.id)}`, {
     method: "PATCH",
     returning: false,
     body: JSON.stringify({ status: "approved", approved_at: new Date().toISOString() }),

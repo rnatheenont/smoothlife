@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
+import { supabaseRest, supabaseConfigured, pgValue } from "@/lib/supabase-server";
 
 // Bookkeeping-only fallback for when the real 2C2P refund call
 // (checkout-transactions/refund) isn't usable yet (RSA key exchange not
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const transactionId = body?.transactionId;
   if (!transactionId) return NextResponse.json({ ok: false, error: "missing transactionId" }, { status: 400 });
 
-  await supabaseRest(`payment_transactions?id=eq.${transactionId}`, {
+  await supabaseRest(`payment_transactions?id=eq.${pgValue(transactionId)}`, {
     method: "PATCH",
     returning: false,
     body: JSON.stringify({

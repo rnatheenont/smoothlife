@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
+import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { WidgetRow } from "@/app/api/free-gifts/widgets/route";
 
@@ -16,7 +16,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { key: strin
   if (typeof body.enabled === "boolean") patch.enabled = body.enabled;
   if (body.config && typeof body.config === "object") patch.config = body.config;
 
-  const [row] = await supabaseRest<WidgetRow[]>(`free_gift_widgets?key=eq.${params.key}`, {
+  const [row] = await supabaseRest<WidgetRow[]>(`free_gift_widgets?key=eq.${pgValue(params.key)}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
   });

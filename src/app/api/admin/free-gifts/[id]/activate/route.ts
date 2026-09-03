@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
+import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { FreeGiftPromoRow, rowToPromo } from "@/data/free-gifts";
 import { getProductBySlug } from "@/data/products";
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
   }
 
-  const [row] = await supabaseRest<FreeGiftPromoRow[]>(`free_gift_promos?id=eq.${params.id}&select=*`);
+  const [row] = await supabaseRest<FreeGiftPromoRow[]>(`free_gift_promos?id=eq.${pgValue(params.id)}&select=*`);
   if (!row) return NextResponse.json({ ok: false, error: "ไม่พบโปรโมชั่นนี้" }, { status: 404 });
   if (row.active) return NextResponse.json({ ok: false, error: "โปรโมชั่นนี้เปิดใช้งานอยู่แล้ว" }, { status: 400 });
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       console.error("[admin/free-gifts/activate] tiered", err);
       return NextResponse.json({ ok: false, error: "สร้างส่วนลดใน Shopify ไม่สำเร็จ" }, { status: 502 });
     }
-    const [updated] = await supabaseRest<FreeGiftPromoRow[]>(`free_gift_promos?id=eq.${params.id}`, {
+    const [updated] = await supabaseRest<FreeGiftPromoRow[]>(`free_gift_promos?id=eq.${pgValue(params.id)}`, {
       method: "PATCH",
       body: JSON.stringify({ active: true, tiers: updatedTiers, updated_at: new Date().toISOString() }),
     });
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ ok: false, error: "สร้างส่วนลดใน Shopify ไม่สำเร็จ" }, { status: 502 });
   }
 
-  const [updated] = await supabaseRest<FreeGiftPromoRow[]>(`free_gift_promos?id=eq.${params.id}`, {
+  const [updated] = await supabaseRest<FreeGiftPromoRow[]>(`free_gift_promos?id=eq.${pgValue(params.id)}`, {
     method: "PATCH",
     body: JSON.stringify({ active: true, shopify_discount_id: discountId, updated_at: new Date().toISOString() }),
   });

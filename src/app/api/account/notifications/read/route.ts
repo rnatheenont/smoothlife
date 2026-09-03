@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
+import { supabaseRest, supabaseConfigured, pgValue } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 
 function requireUid(req: NextRequest) {
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   const id = typeof body.id === "string" ? body.id : null;
   if (!id) return NextResponse.json({ ok: false, error: "คำขอไม่ถูกต้อง" }, { status: 400 });
 
-  await supabaseRest(`notifications?id=eq.${id}&user_id=eq.${uid}`, {
+  await supabaseRest(`notifications?id=eq.${pgValue(id)}&user_id=eq.${uid}`, {
     method: "PATCH",
     body: JSON.stringify({ read_at: readAt }),
     returning: false,

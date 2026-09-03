@@ -33,6 +33,17 @@ async function fetchWithRetry(url: string, init: RequestInit): Promise<Response>
   }
 }
 
+// PostgREST filters are plain query-string parameters, and supabaseRest sends
+// them with the service-role key — so a value carrying a bare `&` stops being
+// a value and becomes another filter. `?id=eq.${x}&user_id=eq.${uid}` with
+// x = "1&or=(id.not.is.null)" reads every row in the table, ownership check and
+// all. Wrap anything that came from a request in this before interpolating it;
+// values that came from a verified session or a previous database read are
+// already trustworthy, but wrapping those too costs nothing.
+export function pgValue(value: string): string {
+  return encodeURIComponent(value);
+}
+
 export async function supabaseRest<T>(
   path: string,
   init: RequestInit & { returning?: boolean } = {}

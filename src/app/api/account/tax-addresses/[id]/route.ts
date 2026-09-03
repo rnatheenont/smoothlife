@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
+import { supabaseRest, supabaseConfigured, pgValue } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import type { TaxAddressRow } from "../route";
 
@@ -42,7 +42,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   for (const key of ALLOWED_FIELDS) if (key in body) patch[key] = body[key];
   if (typeof patch.tax_id === "string") patch.tax_id = patch.tax_id.replace(/\D/g, "");
 
-  const [updated] = await supabaseRest<TaxAddressRow[]>(`tax_invoice_addresses?id=eq.${params.id}&user_id=eq.${uid}`, {
+  const [updated] = await supabaseRest<TaxAddressRow[]>(`tax_invoice_addresses?id=eq.${pgValue(params.id)}&user_id=eq.${uid}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
   });
@@ -55,7 +55,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!uid || !supabaseConfigured()) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบก่อนครับ" }, { status: 401 });
   }
-  await supabaseRest(`tax_invoice_addresses?id=eq.${params.id}&user_id=eq.${uid}`, {
+  await supabaseRest(`tax_invoice_addresses?id=eq.${pgValue(params.id)}&user_id=eq.${uid}`, {
     method: "DELETE",
     returning: false,
   });

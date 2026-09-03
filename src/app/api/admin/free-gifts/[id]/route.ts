@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
+import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { FreeGiftPromoRow, rowToPromo } from "@/data/free-gifts";
 import { getProductBySlug } from "@/data/products";
@@ -54,7 +54,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   patch.updated_at = new Date().toISOString();
 
-  const [row] = await supabaseRest<FreeGiftPromoRow[]>(`free_gift_promos?id=eq.${params.id}`, {
+  const [row] = await supabaseRest<FreeGiftPromoRow[]>(`free_gift_promos?id=eq.${pgValue(params.id)}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
   });
@@ -66,10 +66,10 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) return unauthorized();
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
-  const [row] = await supabaseRest<FreeGiftPromoRow[]>(`free_gift_promos?id=eq.${params.id}&select=id,active`);
+  const [row] = await supabaseRest<FreeGiftPromoRow[]>(`free_gift_promos?id=eq.${pgValue(params.id)}&select=id,active`);
   if (!row) return NextResponse.json({ ok: false, error: "ไม่พบโปรโมชั่นนี้" }, { status: 404 });
   if (row.active) return NextResponse.json({ ok: false, error: "ปิดใช้งานก่อนลบ" }, { status: 400 });
 
-  await supabaseRest(`free_gift_promos?id=eq.${params.id}`, { method: "DELETE", returning: false });
+  await supabaseRest(`free_gift_promos?id=eq.${pgValue(params.id)}`, { method: "DELETE", returning: false });
   return NextResponse.json({ ok: true });
 }
