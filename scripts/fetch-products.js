@@ -16,6 +16,9 @@ const DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
 const TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 const API_VERSION = process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-10";
 const OUT = path.join(__dirname, "..", "src", "data", "products.generated.ts");
+const COLLECTIONS_OUT = path.join(__dirname, "..", "src", "data", "collections.generated.ts");
+const EMPTY_COLLECTIONS =
+  'import { ShopifyCollection } from "./types";\nexport const generatedCollections: ShopifyCollection[] = [];\n';
 // Working snapshot consumed by scripts/fill-content-gaps.js — not checked
 // into git (see .gitignore), just a hand-off between the two scripts.
 const SNAPSHOT = path.join(__dirname, "..", "src", "data", "products.snapshot.json");
@@ -319,6 +322,30 @@ const PRODUCTS_QUERY = `
   }
 `;
 
+// Shopify collections are how the marketing team actually merchandises the
+// store (clearance-sale, buy-1-get-1-free-deal, brand pages…), and none of it
+// existed on this site before — the 13 categories in src/data/categories.ts
+// are hand-written and unrelated. Products come back by id rather than handle
+// because our own slugs get a numeric suffix on collision (see toProduct), so
+// a handle is not a reliable join key.
+const COLLECTIONS_QUERY = `
+  query Collections($first: Int!, $after: String) {
+    collections(first: $first, after: $after) {
+      edges {
+        cursor
+        node {
+          handle
+          title
+          description
+          image { url }
+          products(first: 250) { edges { node { id } } }
+        }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`;
+
 async function storefrontFetch(query, variables) {
   const res = await fetch(`https://${DOMAIN}/api/${API_VERSION}/graphql.json`, {
     method: "POST",
@@ -358,6 +385,40 @@ async function fetchAll() {
 }
 
 /* ---------- mapping ---------- */
+
+async function fetchCollections() {
+  if (!DOMAIN || !TOKEN) return [];
+  const all = [];
+  let after = null;
+  for (;;) {
+    const data = await storefrontFetch(COLLECTIONS_QUERY, { first: 50, after });
+    const conn = data.collections;
+    all.push(...conn.edges.map((e) => e.node));
+    if (!conn.pageInfo.hasNextPage) break;
+    after = conn.pageInfo.endCursor;
+  }
+  return all;
+}
+
+function serialiseCollections(rows) {
+  const esc = (v) => String(v).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ").trim();
+  const body = rows
+    .map((c) => {
+      const f = [`handle:"${esc(c.handle)}"`, `title:"${esc(c.title)}"`];
+      if (c.description) f.push(`description:"${esc(c.description).slice(0, 300)}"`);
+      if (c.image) f.push(`image:"${esc(c.image)}"`);
+      f.push(`productSlugs:[${c.productSlugs.map((sl) => `"${esc(sl)}"`).join(",")}]`);
+      return "{" + f.join(",") + "}";
+    })
+    .join(",\n");
+  return (
+    'import { ShopifyCollection } from "./types";\n' +
+    "// AUTO-GENERATED at build time from the Shopify Storefront API — do not edit.\n" +
+    "export const generatedCollections: ShopifyCollection[] = [\n" +
+    body +
+    "\n];\n"
+  );
+}
 
 function toProduct(p, usedSlugs) {
   const variantNodes = ((p.variants && p.variants.edges) || []).map((e) => e.node).filter(Boolean);
@@ -536,7 +597,16 @@ async function main() {
   console.log("[catalogue] fetching live catalogue from " + (DOMAIN || "(CATALOGUE_FIXTURE)"));
   const raw = await fetchAll();
   const usedSlugs = new Set();
-  const mapped = raw.map((p) => toProduct(p, usedSlugs)).filter(Boolean);
+  // Keep the Shopify id -> our slug mapping while building it; collections
+  // reference products by id and our slugs are not always the handle.
+  const idToSlug = new Map();
+  const mapped = [];
+  for (const p of raw) {
+    const m = toProduct(p, usedSlugs);
+    if (!m) continue;
+    mapped.push(m);
+    idToSlug.set(p.id, m.slug);
+  }
   const min = process.env.CATALOGUE_FIXTURE ? 1 : 1;
   if (mapped.length < min) throw new Error("only " + mapped.length + " usable products");
   applyContentCache(mapped);
@@ -547,6 +617,31 @@ async function main() {
   console.log(
     "[catalogue] wrote " + mapped.length + " products " + JSON.stringify(byCat)
   );
+
+  // Collections are a bonus, never a build blocker: a store with none, or a
+  // Storefront token without collection read access, should still ship a site
+  // full of products.
+  try {
+    const rawCollections = await fetchCollections();
+    const collections = rawCollections
+      .map((c) => ({
+        handle: c.handle,
+        title: c.title,
+        description: c.description || "",
+        image: c.image?.url || "",
+        productSlugs: c.products.edges.map((e) => idToSlug.get(e.node.id)).filter(Boolean),
+      }))
+      // An empty collection is a dead end for a shopper — skip rather than
+      // publish a page with nothing on it.
+      .filter((c) => c.productSlugs.length > 0);
+    fs.writeFileSync(COLLECTIONS_OUT, serialiseCollections(collections), "utf8");
+    console.log("[catalogue] wrote " + collections.length + " collections");
+  } catch (e) {
+    console.warn("[catalogue] collection fetch failed, keeping the site collection-free:", e.message);
+    if (!fs.existsSync(COLLECTIONS_OUT)) {
+      fs.writeFileSync(COLLECTIONS_OUT, EMPTY_COLLECTIONS, "utf8");
+    }
+  }
 }
 
 module.exports = { sourceHash, CONTENT_CACHE, SNAPSHOT };
@@ -561,6 +656,7 @@ main().catch((e) => {
       "utf8"
     );
   }
+  if (!fs.existsSync(COLLECTIONS_OUT)) fs.writeFileSync(COLLECTIONS_OUT, EMPTY_COLLECTIONS, "utf8");
   process.exit(0);
 });
 }

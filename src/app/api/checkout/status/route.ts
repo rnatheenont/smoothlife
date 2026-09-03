@@ -14,11 +14,22 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 export async function GET(req: NextRequest) {
   const cartToken = req.nextUrl.searchParams.get("cartToken");
   if (!cartToken) return NextResponse.json({ ok: false, error: "missing cartToken" }, { status: 400 });
+  // supabaseRest talks to PostgREST with the service-role key and takes a raw
+  // query string, so an un-validated value here is a filter-injection with
+  // full table access — appending `&select=*&or=(...)` would dump every
+  // customer's email, phone and shipping address out of payment_transactions.
+  // cart_token is always a crypto.randomUUID(), so anything that isn't shaped
+  // like one is not a real token and never needs to reach the database.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cartToken)) {
+    return NextResponse.json({ ok: false, error: "not found" }, { status: 404 });
+  }
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "not configured" }, { status: 503 });
 
   const [transaction] = await supabaseRest<
     { status: string; shopify_order_id: string | null; amount: number; resp_desc: string | null }[]
-  >(`payment_transactions?cart_token=eq.${cartToken}&select=status,shopify_order_id,amount,resp_desc&limit=1`);
+  >(
+    `payment_transactions?cart_token=eq.${encodeURIComponent(cartToken)}&select=status,shopify_order_id,amount,resp_desc&limit=1`
+  );
 
   if (!transaction) return NextResponse.json({ ok: false, error: "not found" }, { status: 404 });
 

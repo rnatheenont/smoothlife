@@ -9,3 +9,4 @@ tsconfig.tsbuildinfo
 src/data/products.generated.ts
 src/data/products.snapshot.json
 .env*
+src/data/collections.generated.ts

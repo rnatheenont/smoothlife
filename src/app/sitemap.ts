@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import { products } from "@/data/products";
 import { categories, concerns } from "@/data/categories";
+import { collections } from "@/data/collections";
 import { articles } from "@/data/articles";
 import { brands } from "@/data/brands";
 
@@ -41,6 +42,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }
   for (const c of categories) {
     entries.push({ url: `${SITE_URL}/shop/${c.slug}`, lastModified: now });
+  }
+  for (const c of collections) {
+    entries.push({ url: `${SITE_URL}/collections/${c.handle}`, lastModified: now });
   }
   for (const c of concerns) {
     entries.push({ url: `${SITE_URL}/concern/${c.slug}`, lastModified: now });

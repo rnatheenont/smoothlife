@@ -94,3 +94,13 @@ export type Article = {
   sources: string[];
   readMins: number;
 };
+
+/** A real Shopify collection, mirrored at build time by scripts/fetch-products.js. */
+export type ShopifyCollection = {
+  handle: string;
+  title: string;
+  description?: string;
+  image?: string;
+  /** Our own product slugs, resolved from Shopify product ids. Never empty — empty collections are dropped at generation time. */
+  productSlugs: string[];
+};
