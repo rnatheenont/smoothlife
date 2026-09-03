@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CompactEncrypt, CompactSign, importPKCS8, importSPKI, importX509 } from "jose";
+import { createPublicKey, createHash, X509Certificate } from "crypto";
 import { checkAdminPassword } from "@/lib/admin-auth";
 
 // Temporary diagnostic endpoint — DELETE once the maintenance API works.
@@ -112,7 +113,55 @@ export async function GET(req: NextRequest) {
     { name: "sign-then-encrypt, minimal xml (control)", order: "sign-then-encrypt", kid: false, full: false },
   ];
 
+  // Baselines first. Three rounds of comparing our own envelope shapes against
+  // each other established nothing, because the endpoint's *neutral* answer was
+  // never measured. If plain garbage also returns 400, then 400 just means
+  // "unparseable" and the JWS-outer 401 is the more meaningful reply — it would
+  // mean 2C2P parsed the request and rejected the credentials, which points at
+  // key registration rather than envelope nesting.
+  const baselines: { name: string; body: string }[] = [
+    { name: "BASELINE: plain text 'hello'", body: "hello" },
+    { name: "BASELINE: empty body", body: "" },
+    { name: "BASELINE: random base64url, JWS-shaped (3 parts)", body: "aaaa.bbbb.cccc" },
+    { name: "BASELINE: random base64url, JWE-shaped (5 parts)", body: "aaaa.bbbb.cccc.dddd.eeee" },
+  ];
+
+  // Derives the public half of the key sitting in Vercel. Whatever was pasted
+  // into 2C2P's portal has to match this exactly — if it doesn't, 2C2P can
+  // never verify anything we sign, and no amount of envelope tweaking helps.
+  // The public half is not a secret, so returning it in full is fine and is
+  // the only way to actually compare the two by eye.
+  let keyCheck: Record<string, unknown>;
+  try {
+    const ourPublicPem = createPublicKey(privatePem).export({ type: "spki", format: "pem" }).toString();
+    const theirCert = theirPem.includes("BEGIN CERTIFICATE") ? new X509Certificate(theirPem) : null;
+    keyCheck = {
+      ourPublicKeyToUploadToPortal: ourPublicPem.trim(),
+      ourPublicKeySha256: createHash("sha256").update(ourPublicPem.trim()).digest("hex").slice(0, 16),
+      twoC2PKeyIsCertificate: Boolean(theirCert),
+      twoC2PCertSubject: theirCert?.subject ?? null,
+      twoC2PCertIssuer: theirCert?.issuer ?? null,
+      twoC2PCertValidTo: theirCert?.validTo ?? null,
+    };
+  } catch (err) {
+    keyCheck = { error: err instanceof Error ? err.message : String(err) };
+  }
+
   const results = [];
+  for (const b of baselines) {
+    try {
+      const res = await fetch(MAINTENANCE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: b.body,
+      });
+      const body = await res.text();
+      results.push({ variant: b.name, httpStatus: res.status, bodyPrefix: body.slice(0, 120), bodyLength: body.length });
+    } catch (err) {
+      results.push({ variant: b.name, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
   for (const v of variants) {
     try {
       const token = await build(v.order, v.kid, "123456789", v.full);
@@ -135,5 +184,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, endpoint: MAINTENANCE_URL, results });
+  return NextResponse.json({ ok: true, endpoint: MAINTENANCE_URL, keyCheck, results });
 }
