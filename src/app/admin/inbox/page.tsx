@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus } from "lucide-react";
+import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 
 // Unified inbox (plan §7.2): conversation list, thread, customer panel.
@@ -54,6 +54,8 @@ export default function AdminInboxPage() {
   const [drafting, setDrafting] = useState(false);
   const [canned, setCanned] = useState<Canned[]>([]);
   const [showCanned, setShowCanned] = useState(false);
+  const [caseUrl, setCaseUrl] = useState<string | null>(null);
+  const [filingCase, setFilingCase] = useState(false);
   const [error, setError] = useState("");
 
   const loadList = useCallback(async () => {
@@ -86,6 +88,7 @@ export default function AdminInboxPage() {
       const data = await res.json();
       setMessages(data.messages ?? []);
       setCustomer(data.customer ?? null);
+      setCaseUrl(data.conversation?.clickup_task_url ?? null);
     } finally {
       setLoadingThread(false);
     }
@@ -140,6 +143,25 @@ export default function AdminInboxPage() {
       setError("ร่างคำตอบไม่สำเร็จ");
     } finally {
       setDrafting(false);
+    }
+  }
+
+  async function sendToClickUp() {
+    if (!selectedId) return;
+    setFilingCase(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/inbox/${selectedId}/clickup`, { method: "POST" });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error || "สร้างเคสไม่สำเร็จ");
+        return;
+      }
+      setCaseUrl(data.url);
+    } catch {
+      setError("สร้างเคสไม่สำเร็จ");
+    } finally {
+      setFilingCase(false);
     }
   }
 
@@ -231,6 +253,26 @@ export default function AdminInboxPage() {
                 <span className="text-xs font-semibold text-slate-500">
                   {STATUS_LABEL[selected.status] ?? selected.status} · {selected.channel}
                 </span>
+                {caseUrl ? (
+                  <a
+                    href={caseUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-auto flex items-center gap-1 rounded-full border border-brand-teal/40 px-2.5 py-1 text-[11px] font-semibold text-brand-emerald"
+                  >
+                    <ExternalLink size={11} /> เปิดเคสใน ClickUp
+                  </a>
+                ) : (
+                  <button
+                    onClick={sendToClickUp}
+                    disabled={filingCase}
+                    className="ml-auto flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 disabled:opacity-50"
+                    title="ส่งต่อเป็นเคสที่ต้องติดตามงาน (ร้องเรียน/คืนสินค้า)"
+                  >
+                    {filingCase ? <Loader2 size={11} className="animate-spin" /> : <ClipboardList size={11} />}
+                    ส่งต่อเป็นเคส
+                  </button>
+                )}
                 <button
                   onClick={() => setStatus("resolved")}
                   className="flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600"
