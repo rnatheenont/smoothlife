@@ -4,6 +4,7 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { products } from "@/data/products";
 import { twoC2PConfigured, createPaymentToken } from "@/lib/2c2p";
 import { reserveStock, releaseStock } from "@/lib/stock-reservation";
+import { isRateLimitedShared, clientIp } from "@/lib/rate-limit";
 import { coupons, evaluateCoupon, CartLine } from "@/data/coupons";
 import { getUserLoyalty } from "@/lib/user-tier";
 
@@ -62,6 +63,8 @@ function applyDiscount(lines: ResolvedLine[], discount: number): ResolvedLine[] 
   });
 }
 
+const CHECKOUT_INIT_MAX_PER_HOUR = 15;
+
 export async function POST(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
   if (!twoC2PConfigured()) {
@@ -88,6 +91,21 @@ export async function POST(req: NextRequest) {
   if (!resolved) return NextResponse.json({ ok: false, error: "มีสินค้าที่ไม่พบในระบบ" }, { status: 404 });
 
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
+
+  // Every call past this point holds real inventory for 15 minutes, so an
+  // unthrottled loop here can park the last unit of anything and keep it out
+  // of other shoppers' carts without ever paying. The cap is deliberately far
+  // above normal use — a real customer retrying a declined card a few times
+  // must never hit it — and is keyed per account when there is one, so a
+  // shared office IP doesn't lock colleagues out of checking out.
+  const limitKey = uid ? `checkout-init:user:${uid}` : `checkout-init:ip:${clientIp(req)}`;
+  if (await isRateLimitedShared(limitKey, CHECKOUT_INIT_MAX_PER_HOUR, 60 * 60 * 1000)) {
+    return NextResponse.json(
+      { ok: false, error: "เริ่มการชำระเงินบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่ค่ะ" },
+      { status: 429 }
+    );
+  }
+
   const cartToken = crypto.randomUUID();
 
   const reservation = await reserveStock(
