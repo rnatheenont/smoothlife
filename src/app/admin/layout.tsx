@@ -3,9 +3,10 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Lock, Gift, SlidersHorizontal, Award, LogOut, CreditCard, MessageSquareText, Repeat, Receipt, Inbox } from "lucide-react";
+import { Lock, Gift, SlidersHorizontal, Award, LogOut, CreditCard, MessageSquareText, Repeat, Receipt, Inbox, LayoutDashboard } from "lucide-react";
 
 const NAV = [
+  { href: "/admin", label: "ภาพรวม", icon: LayoutDashboard },
   { href: "/admin/inbox", label: "กล่องข้อความ", icon: Inbox },
   { href: "/admin/free-gifts", label: "โปรโมชั่น", icon: Gift },
   { href: "/admin/free-gifts/widgets", label: "Widgets", icon: SlidersHorizontal },
@@ -91,7 +92,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <aside className="md:w-52 shrink-0">
           <div className="flex md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
             {NAV.map((item) => {
-              const active = pathname === item.href || (item.href !== "/admin/free-gifts" && pathname?.startsWith(item.href));
+              const active =
+                pathname === item.href ||
+                // "/admin" is a prefix of every admin route, and
+                // "/admin/free-gifts" is a prefix of the widgets route — an
+                // exact match is the only correct test for both.
+                (item.href !== "/admin" && item.href !== "/admin/free-gifts" && pathname?.startsWith(item.href));
               const Icon = item.icon;
               return (
                 <Link
