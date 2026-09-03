@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { aiRateLimit } from "@/lib/ai-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,6 +46,11 @@ function extractJson(text: string): any | null {
 }
 
 export async function POST(req: NextRequest) {
+  // Each call here bills the Anthropic account, and this endpoint needs no
+  // login — cap it before any work happens.
+  const limited = aiRateLimit(req, "skin-analysis");
+  if (limited) return limited;
+
   let body: any;
   try {
     body = await req.json();

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { aiRateLimit } from "@/lib/ai-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,6 +11,11 @@ const API_URL = "https://api.anthropic.com/v1/messages";
 const memo = new Map<string, string>();
 
 export async function POST(req: NextRequest) {
+  // Each call here bills the Anthropic account, and this endpoint needs no
+  // login — cap it before any work happens.
+  const limited = aiRateLimit(req, "translate");
+  if (limited) return limited;
+
   let body: any;
   try {
     body = await req.json();
