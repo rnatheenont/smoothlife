@@ -26,11 +26,11 @@
 //      a multi-month term), so a 3/6/12-month term is passed as
 //      recurringIntervalDays ≈ 90/180/365 and will drift slightly against
 //      real calendar months the longer a subscription auto-renews.
-//   2. cancelRecurringPlan()/inquireRecurringPlan() further below — now
-//      implemented (see that section's own header comment for exactly
-//      what's confirmed vs. still assumed), but still never exercised
-//      against a live 2C2P response, since that requires completing an
-//      RSA key exchange through their merchant portal first.
+//   2. cancelRecurringPlan()/inquireRecurringPlan() further below — the RSA
+//      key exchange is done and the JOSE nesting has been corrected to
+//      sign-then-encrypt (see signThenEncryptXml for the evidence), but no
+//      call has yet come back with a decryptable 2C2P response, so the
+//      response *shape* below is still docs-only.
 import { createHmac } from "crypto";
 
 const MERCHANT_ID = process.env.TWOC2P_MERCHANT_ID;
@@ -371,23 +371,37 @@ function maintenanceTimestamp(d: Date): string {
   )}${p(d.getSeconds())}`;
 }
 
-async function encryptThenSignXml(xml: string): Promise<string> {
-  const twoC2PPublicKey = await importTwoC2PPublicKey("RSA-OAEP");
-  const jwe = await new CompactEncrypt(new TextEncoder().encode(xml))
-    .setProtectedHeader({ alg: "RSA-OAEP", enc: "A256GCM" })
-    .encrypt(twoC2PPublicKey);
+// Sign first, then encrypt — the JWE is the OUTER layer. 2C2P's docs only ever
+// say "JWE + JWS" without stating the nesting, and this was originally guessed
+// the other way round, which is what produced the long-running HTTP 401.
+//
+// The evidence for this order is the shape of the two rejections, probed
+// against the live endpoint: a JWS on the outside comes back as an IIS error
+// page ("401 - Unauthorized: Access is denied due to invalid credentials"),
+// i.e. refused by the web server before the application ever saw it, while a
+// JWE on the outside reaches the application and gets a plain "Bad Request".
+// Only one of those is a request 2C2P is willing to open at all.
+async function signThenEncryptXml(xml: string): Promise<string> {
   const merchantPrivateKey = await importPKCS8(MERCHANT_PRIVATE_KEY_PEM!, "PS256");
-  return new CompactSign(new TextEncoder().encode(jwe))
+  const jws = await new CompactSign(new TextEncoder().encode(xml))
     .setProtectedHeader({ alg: "PS256" })
     .sign(merchantPrivateKey);
+  const twoC2PPublicKey = await importTwoC2PPublicKey("RSA-OAEP");
+  return new CompactEncrypt(new TextEncoder().encode(jws))
+    .setProtectedHeader({ alg: "RSA-OAEP", enc: "A256GCM" })
+    .encrypt(twoC2PPublicKey);
 }
 
-async function verifyThenDecryptXml(token: string): Promise<string> {
-  const twoC2PPublicKey = await importTwoC2PPublicKey("PS256");
-  const { payload: jweBytes } = await compactVerify(token, twoC2PPublicKey);
+// Mirror image of the request: decrypt the outer JWE with our own private key,
+// then verify 2C2P's signature on what was inside. Flipping the request
+// without flipping this would leave us able to send but unable to read the
+// reply — a quieter failure than the 401, and a worse one.
+async function decryptThenVerifyXml(token: string): Promise<string> {
   const merchantPrivateKey = await importPKCS8(MERCHANT_PRIVATE_KEY_PEM!, "RSA-OAEP");
-  const { plaintext } = await compactDecrypt(new TextDecoder().decode(jweBytes), merchantPrivateKey);
-  return new TextDecoder().decode(plaintext);
+  const { plaintext } = await compactDecrypt(token, merchantPrivateKey);
+  const twoC2PPublicKey = await importTwoC2PPublicKey("PS256");
+  const { payload } = await compactVerify(new TextDecoder().decode(plaintext), twoC2PPublicKey);
+  return new TextDecoder().decode(payload);
 }
 
 function xmlTag(xml: string, tag: string): string | null {
@@ -403,7 +417,7 @@ async function callRecurringMaintenance(xml: string): Promise<RecurringMaintenan
       "2C2P recurring maintenance not configured — set TWOC2P_MERCHANT_PRIVATE_KEY and TWOC2P_PUBLIC_KEY (see file header for the portal key-exchange steps required first)"
     );
   }
-  const token = await encryptThenSignXml(xml);
+  const token = await signThenEncryptXml(xml);
   const res = await fetch(MAINTENANCE_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
@@ -411,7 +425,7 @@ async function callRecurringMaintenance(xml: string): Promise<RecurringMaintenan
   });
   if (!res.ok) throw new Error(`2C2P recurring maintenance HTTP ${res.status}`);
   const responseToken = await res.text();
-  const responseXml = await verifyThenDecryptXml(responseToken);
+  const responseXml = await decryptThenVerifyXml(responseToken);
   const respCode = xmlTag(responseXml, "respCode");
   const respReason = xmlTag(responseXml, "respReason");
   const recurringUniqueID = xmlTag(responseXml, "recurringUniqueID");
@@ -476,7 +490,7 @@ export async function refundTransaction(invoiceNo: string, actionAmount: number)
     2
   )}</actionAmount><processType>R</processType></PaymentProcessRequest>`;
 
-  const token = await encryptThenSignXml(xml);
+  const token = await signThenEncryptXml(xml);
   const res = await fetch(MAINTENANCE_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
@@ -484,7 +498,7 @@ export async function refundTransaction(invoiceNo: string, actionAmount: number)
   });
   if (!res.ok) throw new Error(`2C2P refund HTTP ${res.status}`);
   const responseToken = await res.text();
-  const responseXml = await verifyThenDecryptXml(responseToken);
+  const responseXml = await decryptThenVerifyXml(responseToken);
   const respCode = xmlTag(responseXml, "respCode");
   const respDesc = xmlTag(responseXml, "respDesc");
   const status = xmlTag(responseXml, "status");
