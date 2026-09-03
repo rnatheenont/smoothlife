@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isRateLimited, clientIp } from "@/lib/rate-limit";
+import { isRateLimitedShared, clientIp } from "@/lib/rate-limit";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 
 // The AI endpoints (translate, skin analysis, skin coach) each spend real money
@@ -17,15 +17,18 @@ const WINDOW_MS = 60 * 60 * 1000;
 
 /**
  * Returns a 429 response when the caller is over budget, or null to proceed.
+ * Backed by the shared (database) limiter rather than the per-instance one —
+ * an allowance that silently multiplies by the number of warm lambdas is not
+ * an allowance when each call bills an API.
  * `feature` keeps the three endpoints on separate allowances — using the skin
  * advisor shouldn't eat into the translation budget of the same page.
  */
-export function aiRateLimit(req: NextRequest, feature: string): NextResponse | null {
+export async function aiRateLimit(req: NextRequest, feature: string): Promise<NextResponse | null> {
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   const key = uid ? `ai:${feature}:user:${uid}` : `ai:${feature}:ip:${clientIp(req)}`;
   const max = uid ? SIGNED_IN_MAX_PER_HOUR : ANON_MAX_PER_HOUR;
 
-  if (!isRateLimited(key, max, WINDOW_MS)) return null;
+  if (!(await isRateLimitedShared(key, max, WINDOW_MS))) return null;
 
   return NextResponse.json(
     {

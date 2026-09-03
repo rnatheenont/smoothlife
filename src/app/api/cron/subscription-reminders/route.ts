@@ -6,6 +6,7 @@ import { recalculateLoyaltyTiers } from "@/lib/loyalty-cron";
 import { awardBirthdayRewards } from "@/lib/birthday-cron";
 import { expirePoints } from "@/lib/points-expiry-cron";
 import { expireStaleReservations } from "@/lib/stock-reservation";
+import { purgeExpiredRateLimitHits } from "@/lib/rate-limit";
 
 const RENEWAL_NOTICE_DAYS = 3;
 
@@ -194,6 +195,7 @@ export async function GET(req: NextRequest) {
     notified++;
   }
 
+  await purgeExpiredRateLimitHits();
   const stockFlagged = await flagOutOfStockSubscriptions();
   const renewalsNotified = await notifyUpcomingRenewals();
   const referralsAdvanced = await advanceOrderPlacedReferrals();
