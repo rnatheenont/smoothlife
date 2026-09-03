@@ -100,3 +100,45 @@ export async function appendMessage(opts: {
     });
   }
 }
+
+/**
+ * True when staff have taken this conversation over in the inbox.
+ *
+ * Fails **open** (returns false, AI keeps answering) on any error: a database
+ * blip should leave customers talking to a bot, not to silence.
+ */
+export async function isHumanHandling(
+  channel: ConversationChannel,
+  channelUserId: string
+): Promise<boolean> {
+  if (!supabaseConfigured()) return false;
+  try {
+    const [row] = await supabaseRest<{ status: ConversationStatus }[]>(
+      `conversations?channel=eq.${pgValue(channel)}&channel_user_id=eq.${pgValue(channelUserId)}` +
+        `&status=in.(waiting_human,assigned)&select=status&limit=1`
+    );
+    return Boolean(row);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Files an inbound customer message against their open conversation, so a
+ * question asked while waiting for a human isn't lost to the AI's silence.
+ */
+export async function recordCustomerMessage(
+  channel: ConversationChannel,
+  channelUserId: string,
+  content: string,
+  userId?: string | null
+): Promise<void> {
+  try {
+    const conversation = await openConversation({ channel, channelUserId, userId });
+    if (conversation) {
+      await appendMessage({ conversationId: conversation.id, senderType: "customer", content });
+    }
+  } catch (err) {
+    console.error("[conversations] could not record customer message", err);
+  }
+}

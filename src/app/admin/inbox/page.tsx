@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck } from "lucide-react";
+import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 
 // Unified inbox (plan §7.2): conversation list, thread, customer panel.
@@ -9,6 +9,7 @@ import type { InboxListItem } from "@/app/api/admin/inbox/route";
 // the same tables, so they will appear here without this screen changing.
 
 type Message = { id: string; sender_type: string; content: string; is_draft: boolean; created_at: string };
+type Canned = { id: string; title: string; content: string; category: string | null };
 type Customer = {
   name: string | null;
   phone: string | null;
@@ -50,6 +51,9 @@ export default function AdminInboxPage() {
   const [loadingThread, setLoadingThread] = useState(false);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+  const [canned, setCanned] = useState<Canned[]>([]);
+  const [showCanned, setShowCanned] = useState(false);
   const [error, setError] = useState("");
 
   const loadList = useCallback(async () => {
@@ -66,6 +70,13 @@ export default function AdminInboxPage() {
   useEffect(() => {
     loadList();
   }, [loadList]);
+
+  useEffect(() => {
+    fetch("/api/admin/canned-responses")
+      .then((r) => r.json())
+      .then((d) => setCanned(d.responses ?? []))
+      .catch(() => {});
+  }, []);
 
   const loadThread = useCallback(async (id: string) => {
     setLoadingThread(true);
@@ -108,6 +119,27 @@ export default function AdminInboxPage() {
       setError("ส่งไม่สำเร็จ กรุณาลองใหม่");
     } finally {
       setSending(false);
+    }
+  }
+
+  async function draftWithAi() {
+    if (!selectedId) return;
+    setDrafting(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/inbox/${selectedId}/draft`, { method: "POST" });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error || "ร่างคำตอบไม่สำเร็จ");
+        return;
+      }
+      // Replaces the box rather than appending: a draft is a starting point to
+      // edit, and silently merging it into half-typed text would be worse.
+      setReply(data.draft);
+    } catch {
+      setError("ร่างคำตอบไม่สำเร็จ");
+    } finally {
+      setDrafting(false);
     }
   }
 
@@ -231,6 +263,53 @@ export default function AdminInboxPage() {
 
               <div className="border-t border-slate-100 p-3">
                 {error && <p className="mb-2 text-[11px] text-rose-500">{error}</p>}
+                <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                  <button
+                    onClick={draftWithAi}
+                    disabled={drafting}
+                    className="flex items-center gap-1 rounded-full border border-brand-teal/40 px-2.5 py-1 text-[11px] font-semibold text-brand-emerald disabled:opacity-50"
+                  >
+                    {drafting ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                    ให้ AI ร่างคำตอบ
+                  </button>
+                  <button
+                    onClick={() => setShowCanned((v) => !v)}
+                    className="flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600"
+                  >
+                    <Plus size={11} /> คำตอบสำเร็จรูป ({canned.length})
+                  </button>
+                  <button
+                    onClick={() => setStatus(selected.status === "ai_handling" ? "assigned" : "ai_handling")}
+                    className="flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600"
+                    title="สลับว่าจะให้ AI ตอบต่อ หรือทีมงานดูแลเอง"
+                  >
+                    {selected.status === "ai_handling" ? <Bot size={11} /> : <UserRound size={11} />}
+                    {selected.status === "ai_handling" ? "AI ตอบอยู่" : "ทีมงานดูแลอยู่"}
+                  </button>
+                </div>
+
+                {showCanned && (
+                  <div className="mb-2 max-h-32 overflow-y-auto rounded-lg border border-slate-100">
+                    {canned.length === 0 ? (
+                      <p className="p-2 text-[11px] text-slate-400">ยังไม่มีคำตอบสำเร็จรูป</p>
+                    ) : (
+                      canned.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => {
+                            setReply(c.content);
+                            setShowCanned(false);
+                          }}
+                          className="block w-full border-b border-slate-50 p-2 text-left text-[11px] hover:bg-surface-soft"
+                        >
+                          <span className="font-semibold text-brand-ink">{c.title}</span>
+                          <span className="line-clamp-1 text-slate-400">{c.content}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <textarea
                     value={reply}

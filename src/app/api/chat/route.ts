@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { products } from "@/data/products";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
+import { isHumanHandling, recordCustomerMessage } from "@/lib/conversations";
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 
 export const runtime = "nodejs";
@@ -390,6 +391,22 @@ export async function POST(req: NextRequest) {
       lang === "en"
         ? "Smoothie isn't connected yet. Add an ANTHROPIC_API_KEY environment variable in your Vercel project settings and redeploy to enable live chat. In the meantime, the personalised product picks above are based on your quiz answers."
         : "ยังไม่ได้เชื่อมต่อน้อง Smoothie ค่ะ — กรุณาเพิ่มค่า ANTHROPIC_API_KEY ใน Environment Variables ของโปรเจกต์บน Vercel แล้ว deploy ใหม่ เพื่อเปิดใช้งานแชทสด ระหว่างนี้สินค้าที่แนะนำด้านบนคัดมาจากคำตอบในแบบประเมินของคุณแล้วค่ะ"
+    );
+  }
+
+  // Once staff have taken the conversation over in the unified inbox, the AI
+  // must stop answering — two replies to one question, disagreeing with each
+  // other, is worse than a short wait. The customer's message is still
+  // recorded so it shows up in the inbox for the person now handling it.
+  if (uid && (await isHumanHandling("web", uid))) {
+    const lastUserMessage = [...messages].reverse().find((m: { role?: string }) => m?.role === "user");
+    if (typeof lastUserMessage?.content === "string") {
+      await recordCustomerMessage("web", uid, lastUserMessage.content);
+    }
+    return textResponse(
+      lang === "en"
+        ? "A member of our team is looking at your message and will reply here shortly."
+        : "ทีมงานกำลังดูข้อความของคุณอยู่ และจะตอบกลับที่นี่เร็ว ๆ นี้ค่ะ"
     );
   }
 
