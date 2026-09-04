@@ -111,7 +111,7 @@ export default function ResultsView({
         </div>
 
         <div className="flex flex-wrap gap-3 mt-4">
-          <Button size="none" className="px-4 py-2.5 text-xs shadow-cardHover" onClick={askAdvisor}>
+          <Button size="none" className="gap-1.5 px-4 py-2.5 text-xs shadow-cardHover" onClick={askAdvisor}>
             <Sparkles size={13} /> คุยกับน้อง Smoothie เรื่องผลสแกนนี้
           </Button>
           {photo && <ShareCard metrics={metrics} photoDataUrl={photo} zones={zones} />}

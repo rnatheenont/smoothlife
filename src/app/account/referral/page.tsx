@@ -87,7 +87,7 @@ function ReferralContent() {
               value={shareUrl ?? ""}
               className="flex-1 min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 bg-slate-50"
             />
-            <Button size="none" className="px-4 py-2.5 text-xs shrink-0" onClick={copyLink}>
+            <Button size="none" className="shrink-0 gap-1 px-4 py-2.5 text-xs" onClick={copyLink}>
               {copied ? <Check size={14} /> : <Copy size={14} />}
               {copied ? "คัดลอกแล้ว" : "คัดลอก"}
             </Button>

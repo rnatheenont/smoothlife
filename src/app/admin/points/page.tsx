@@ -225,7 +225,7 @@ export default function AdminPointsPage() {
       <section className="mb-8">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-brand-ink">รายการแลกแต้ม</h2>
-          <Button size="none" className="px-3 py-1.5 text-xs" onClick={openCreateTier}>
+          <Button size="none" className="gap-1 px-3 py-1.5 text-xs" onClick={openCreateTier}>
             <Plus size={13} /> เพิ่มรายการ
           </Button>
         </div>
@@ -277,7 +277,7 @@ export default function AdminPointsPage() {
             placeholder="ค้นหาด้วยชื่อ, เบอร์โทร, หรืออีเมล"
             className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
           />
-          <Button size="none" className="px-4 text-xs" type="submit" disabled={searching}>
+          <Button size="none" className="gap-1 px-4 text-xs" type="submit" disabled={searching}>
             <Search size={13} /> ค้นหา
           </Button>
         </form>

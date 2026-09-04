@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, ReactNode, PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, ReactNode, PointerEvent as ReactPointerEvent, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -9,6 +9,8 @@ import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
 import { useCart } from "@/lib/cart-context";
+import { useRecentlyViewed } from "@/lib/recently-viewed-context";
+import { pickSuggestions, interestsFromProducts } from "@/lib/chat-suggestions";
 import { getProductBySlug } from "@/data/products";
 import { formatTHB } from "@/lib/format";
 import { resizeForUpload, ResizedImage } from "@/lib/image-utils";
@@ -178,6 +180,7 @@ export default function QuickChat() {
   const { user } = useAuth();
   const { open, setOpen, profile, stickyBarVisible } = useQuickChat();
   const { lines: cartLines } = useCart();
+  const { slugs: recentSlugs } = useRecentlyViewed();
   const pathname = usePathname();
   const viewingSlug = pathname?.match(/^\/product\/([a-z0-9-]+)/i)?.[1];
   const viewingProduct = viewingSlug ? getProductBySlug(viewingSlug) : undefined;
@@ -381,20 +384,26 @@ export default function QuickChat() {
 
   const hasProfile = Object.keys(profile || {}).length > 0;
 
-  const suggestions =
-    lang === "en"
-      ? [
-          "Build me a simple morning routine",
-          "Which serum suits me best?",
-          "Can I use vitamin C with retinol?",
-          "Any supplements for better sleep?",
-        ]
-      : [
-          "ช่วยจัดรูทีนเช้าแบบง่ายๆ ให้หน่อย",
-          "เซรั่มตัวไหนเหมาะกับฉันที่สุด",
-          "ใช้วิตามินซีคู่กับเรตินอลได้ไหม",
-          "มีอาหารเสริมช่วยเรื่องการนอนไหม",
-        ];
+  // Bumped on each open so the starter questions move on rather than
+  // presenting the same four a customer has already declined. Kept in state
+  // rather than derived from the clock so the server and client agree during
+  // hydration.
+  const [suggestionSeed, setSuggestionSeed] = useState(0);
+  useEffect(() => {
+    if (open) setSuggestionSeed((n) => n + 1);
+  }, [open]);
+
+  const suggestions = useMemo(() => {
+    // What they've been looking at, nearest first: the product page they're on
+    // now, then the cart, then recently viewed.
+    const seen = [
+      viewingProduct,
+      ...cartLines.map((l) => getProductBySlug(l.slug)),
+      ...recentSlugs.map((slug) => getProductBySlug(slug)),
+    ].filter((p): p is NonNullable<typeof p> => Boolean(p));
+    const { categories, concerns } = interestsFromProducts(seen);
+    return pickSuggestions({ lang, categories, concerns, seed: suggestionSeed });
+  }, [lang, viewingProduct, cartLines, recentSlugs, suggestionSeed]);
 
   // The first scroll after opening (which lands on a just-restored history)
   // should jump straight to the latest message — animating a smooth scroll
@@ -783,7 +792,12 @@ export default function QuickChat() {
                         )
                       : t("ถามอะไรก็ได้ หรือเริ่มจากคำถามเหล่านี้", "Ask anything, or start with one of these")}
                   </p>
-                  <Button size="none" className="px-3.5 py-2.5 mb-2 rounded-xl text-left text-[13px] shadow-cardHover" href="/skin-coach">
+                  <Button
+                    size="none"
+                    fullWidth
+                    href="/skin-coach"
+                    className="mb-2 justify-start gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-[13px] shadow-cardHover"
+                  >
                     <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/20">
                       <Camera size={13} />
                     </span>

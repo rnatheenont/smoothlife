@@ -41,11 +41,15 @@ const SIZE: Record<Size, string> = {
   // are matched to the code being replaced so migrating a call site does
   // not silently resize the button.
   lg: "px-6 py-3 text-sm gap-2",
-  // Emits no padding at all, for the rare call site that needs its own.
-  // Necessary because clsx concatenates — it does not resolve conflicts, and
-  // Tailwind decides px-6-vs-px-4 by stylesheet order, so a *smaller* override
+  // No *padding*, for the rare call site that needs its own. Necessary
+  // because clsx concatenates — it does not resolve conflicts, and Tailwind
+  // decides px-6-vs-px-4 by stylesheet order, so a smaller padding override
   // would silently lose. Pass size="none" and set the padding yourself.
-  none: "",
+  //
+  // It keeps a gap: dropping that too is how a camera icon ended up sitting
+  // on top of its own label in the chat. Override with your own gap-* if you
+  // need a different one.
+  none: "gap-2",
 };
 
 /**

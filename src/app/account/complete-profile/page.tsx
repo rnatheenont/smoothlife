@@ -164,7 +164,7 @@ function CompleteProfileContent() {
           {wantsAddress && <AddressFields value={address} onChange={setAddress} showDefaultToggle={false} />}
 
           {error && <p className="text-xs text-rose-500">{error}</p>}
-          <Button type="submit" size="none" className="py-3.5 text-sm mt-1" disabled={busy}>
+          <Button type="submit" size="none" fullWidth className="mt-1 py-3.5 text-sm" disabled={busy}>
             {busy && <Loader2 size={15} className="animate-spin" />}
             เริ่มใช้งาน
           </Button>
