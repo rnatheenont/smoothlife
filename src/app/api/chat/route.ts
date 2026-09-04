@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { products } from "@/data/products";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
-import { isHumanHandling, recordCustomerMessage } from "@/lib/conversations";
+import { isHumanHandling, hasWaitingCase, recordCustomerMessage } from "@/lib/conversations";
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 
 export const runtime = "nodejs";
@@ -161,7 +161,8 @@ function systemPrompt(
   viewingProduct: ViewingProduct | undefined,
   reviewsQa: string | null,
   orderHistory: string | null,
-  hasShopifyLink: boolean
+  hasShopifyLink: boolean,
+  caseWaiting: boolean
 ) {
   const profileText =
     profile && Object.keys(profile).length
@@ -170,8 +171,24 @@ function systemPrompt(
           .join(", ")
       : "not provided yet";
 
+  // Injected only while a case is queued. Without it the model has no idea a
+  // ticket is open and can cheerfully offer to "pass this to the team" that
+  // has already been passed it — or, worse, answer as if the request had
+  // never been made.
+  const waitingNote = caseWaiting
+    ? `
+OPEN SUPPORT CASE
+This customer has already asked for a human and their case is queued; nobody has picked it up yet.
+- Do NOT go quiet or keep repeating that the team will reply. Keep helping with whatever they ask.
+- Do not offer to escalate again, and do not promise anything on the team's behalf (no refunds, no delivery dates, no exceptions to policy).
+- If they ask how long it will take, say honestly that the team replies within 1 business day and you can keep helping meanwhile.
+- If they raise something the team clearly must handle, acknowledge it is already with the team rather than answering as if it were resolved.
+`
+    : "";
+
   return `You are Smoothie (น้อง Smoothie), Smoothlife.com's AI beauty advisor — a warm, knowledgeable skincare and wellness consultant for a Thai health & beauty retailer. Smoothie is female.
 
+${waitingNote}
 Reply in ${lang === "en" ? "English" : "Thai"}. Keep answers short and practical: 2-4 short paragraphs or a tight bullet list.
 
 ${lang === "en" ? "" : "Speak with a female voice: use ค่ะ/คะ and ฉัน, never ครับ or the male ผม.\n\n"}
@@ -398,8 +415,18 @@ export async function POST(req: NextRequest) {
   // must stop answering — two replies to one question, disagreeing with each
   // other, is worse than a short wait. The customer's message is still
   // recorded so it shows up in the inbox for the person now handling it.
+  const lastUserMessage = [...messages].reverse().find((m: { role?: string }) => m?.role === "user");
+
+  // A case that is merely queued does not silence the AI — see
+  // isHumanHandling in lib/conversations. The message is still filed so the
+  // person who eventually opens the case sees everything that was said while
+  // it sat in the queue.
+  const caseWaiting = uid ? await hasWaitingCase("web", uid) : false;
+  if (caseWaiting && typeof lastUserMessage?.content === "string") {
+    await recordCustomerMessage("web", uid as string, lastUserMessage.content);
+  }
+
   if (uid && (await isHumanHandling("web", uid))) {
-    const lastUserMessage = [...messages].reverse().find((m: { role?: string }) => m?.role === "user");
     if (typeof lastUserMessage?.content === "string") {
       await recordCustomerMessage("web", uid, lastUserMessage.content);
     }
@@ -484,7 +511,7 @@ export async function POST(req: NextRequest) {
 
   const client = new Anthropic({ apiKey: key });
   const encoder = new TextEncoder();
-  const system = systemPrompt(profile, lang, cart, viewingProduct, reviewsQa, orderHistory, hasShopifyLink);
+  const system = systemPrompt(profile, lang, cart, viewingProduct, reviewsQa, orderHistory, hasShopifyLink, caseWaiting);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {

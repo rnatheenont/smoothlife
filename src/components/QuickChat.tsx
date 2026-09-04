@@ -13,7 +13,8 @@ import { useRecentlyViewed } from "@/lib/recently-viewed-context";
 import { pickSuggestions, interestsFromProducts } from "@/lib/chat-suggestions";
 import { getProductBySlug } from "@/data/products";
 import { formatTHB } from "@/lib/format";
-import { resizeForUpload, ResizedImage } from "@/lib/image-utils";
+import { resizeForUpload, resizeForThumbnail, ResizedImage } from "@/lib/image-utils";
+import { rememberChatImage, attachStoredImages, clearChatImages, PHOTO_MARKER } from "@/lib/chat-image-store";
 import { hasStoredConsent, grantConsent } from "@/components/skin-coach/ConsentGate";
 import { Button } from "@/components/ui";
 
@@ -201,6 +202,8 @@ export default function QuickChat() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [restoringHistory, setRestoringHistory] = useState(false);
   const scrolledOnceRef = useRef(false);
+  // Thumbnail of the photo being sent, held from pick until send.
+  const thumbRef = useRef<string | null>(null);
   const [escalating, setEscalating] = useState(false);
   const [escalateMsg, setEscalateMsg] = useState<string | null>(null);
   const [badgeIndex, setBadgeIndex] = useState(0);
@@ -343,7 +346,7 @@ export default function QuickChat() {
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data?.messages) && data.messages.length) {
-          setMessages(data.messages);
+          setMessages(attachStoredImages(data.messages as Msg[]));
         }
       })
       .catch((err) => console.error("[QuickChat] history restore failed", err))
@@ -371,7 +374,10 @@ export default function QuickChat() {
       } else {
         setEscalateMsg(
           data.contactValue
-            ? t(`ส่งถึงทีมงานแล้วค่ะ ทีมงานจะติดต่อกลับที่ ${data.contactValue} ภายใน 1 วันทำการค่ะ`, `Sent to our team — they'll reach you at ${data.contactValue} within 1 business day.`)
+            ? t(
+                `ส่งถึงทีมงานแล้วค่ะ ทีมงานจะติดต่อกลับที่ ${data.contactValue} ภายใน 1 วันทำการค่ะ — ระหว่างรอ ถามน้อง Smoothie เรื่องอื่นต่อได้เลยนะคะ`,
+                `Sent to our team — they'll reach you at ${data.contactValue} within 1 business day. Meanwhile, keep asking Smoothie anything else.`
+              )
             : t("ส่งถึงทีมงานแล้วค่ะ แต่ยังไม่มีช่องทางติดต่อกลับในโปรไฟล์ — กรุณาเพิ่มเบอร์โทรหรืออีเมลในบัญชีค่ะ", "Sent to our team, but no contact method is on file — please add a phone or email to your account.")
         );
       }
@@ -432,7 +438,10 @@ export default function QuickChat() {
   async function handleImagePick(file: File) {
     setImageError(null);
     try {
-      const resized = await resizeForUpload(file);
+      // Two sizes: the big one goes to the model and is never stored, the
+      // ~160px one is what gets kept on the device for the history.
+      const [resized, thumb] = await Promise.all([resizeForUpload(file), resizeForThumbnail(file)]);
+      thumbRef.current = thumb.dataUrl;
       if (imageConsent) {
         setPendingImage(resized);
       } else {
@@ -464,6 +473,12 @@ export default function QuickChat() {
     if ((!clean && !image) || loading) return;
     const fallbackText = lang === "en" ? "What product is this? Do you carry it?" : "รูปนี้คือสินค้าอะไรครับ มีขายไหม";
     const userMsg: Msg = { role: "user", content: clean || fallbackText, image: image?.dataUrl };
+    // Filed against the message text, which is what the server history gives
+    // us back later — see chat-image-store.ts for why this stays on-device.
+    if (image && thumbRef.current) {
+      rememberChatImage(userMsg.content, thumbRef.current);
+      thumbRef.current = null;
+    }
     const next: Msg[] = [...messages, userMsg];
     setMessages(next);
     setInput("");
@@ -740,6 +755,10 @@ export default function QuickChat() {
                     setAskOptions([]);
                     setEscalateMsg(null);
                     assistantTurnCount.current = 0;
+                    // Resetting the chat clears the photos with it — leaving
+                    // someone's face in storage after they asked to start
+                    // over would be the wrong default.
+                    clearChatImages();
                   }}
                   aria-label={t("เริ่มใหม่", "Reset")}
                   className="grid h-7 w-7 place-items-center rounded-full text-white/60 hover:text-white hover:bg-white/10"
@@ -820,7 +839,6 @@ export default function QuickChat() {
             )}
 
             {messages.map((m, i) => {
-              const PHOTO_MARKER = "[[PHOTO]] ";
               // A photo attached in an earlier session (before a reload)
               // never gets its actual image back — it was only ever sent to
               // the AI for temporary analysis, never stored — but the
@@ -859,7 +877,7 @@ export default function QuickChat() {
                     {hadPhoto && (
                       <span className="mb-1.5 flex items-center gap-1.5 text-[11px] text-white/75">
                         <Camera size={12} />
-                        {t("แนบรูปไว้ตรงนี้ (ไม่ได้เก็บรูปไว้)", "Photo attached here (not saved)")}
+                        {t("แนบรูปไว้ตรงนี้ (รูปไม่ได้อยู่ในเครื่องนี้)", "Photo was attached here (not on this device)")}
                       </span>
                     )}
                     {m.role === "assistant" ? renderContent(displayContent) : displayContent}
@@ -916,6 +934,33 @@ export default function QuickChat() {
             )}
           </div>
 
+          {/* Reaching a human was previously a 28px headset icon in the header
+              that only appeared once a conversation existed — findable if you
+              already knew it was there. These say what they do, and are
+              present from the first screen. */}
+          <div className="flex items-center gap-1.5 border-t border-slate-100 bg-white px-3 pt-2">
+            <Button
+              href="/help"
+              variant="ghost"
+              size="none"
+              className="gap-1 px-2.5 py-1 text-[11px]"
+              onClick={() => setOpen(false)}
+            >
+              <MessageCircleQuestion size={13} />
+              {t("ศูนย์ช่วยเหลือ", "Help centre")}
+            </Button>
+            <Button
+              variant="ghost"
+              size="none"
+              className="gap-1 px-2.5 py-1 text-[11px]"
+              onClick={escalate}
+              disabled={escalating}
+            >
+              <Headset size={13} />
+              {escalating ? t("กำลังส่ง...", "Sending...") : t("ติดต่อแอดมิน", "Contact our team")}
+            </Button>
+          </div>
+
           {imageError && (
             <p className="bg-white px-4 pt-2 text-[11px] text-red-500 text-center">{imageError}</p>
           )}
@@ -923,8 +968,8 @@ export default function QuickChat() {
             <div className="border-t border-slate-100 bg-amber-50 px-3.5 py-3">
               <p className="mb-2 text-[12px] leading-relaxed text-slate-700">
                 {t(
-                  "รูปที่แนบอาจมีข้อมูลอ่อนไหว (เช่น ผิวหรือปัญหาสุขภาพ) เราจะส่งไปให้ AI วิเคราะห์ชั่วคราวเท่านั้น ไม่เก็บรูปไว้บนเซิร์ฟเวอร์ ยินยอมให้ดำเนินการต่อไหมคะ",
-                  "The photo may contain sensitive info (e.g. skin/health). We only send it to the AI temporarily and don't store it on our server. Consent to continue?"
+                  "รูปที่แนบอาจมีข้อมูลอ่อนไหว (เช่น ผิวหรือปัญหาสุขภาพ) เราจะส่งไปให้ AI วิเคราะห์ชั่วคราวเท่านั้น ไม่เก็บรูปไว้บนเซิร์ฟเวอร์ — จะเก็บสำเนาย่อไว้ในเครื่องนี้เท่านั้น เพื่อให้คุณย้อนดูประวัติได้ ยินยอมให้ดำเนินการต่อไหมคะ",
+                  "The photo may contain sensitive info (e.g. skin/health). We only send it to the AI temporarily and don't store it on our server — a small copy stays on this device so you can see it in your history. Consent to continue?"
                 )}
               </p>
               <div className="flex gap-2">

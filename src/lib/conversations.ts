@@ -101,26 +101,51 @@ export async function appendMessage(opts: {
   }
 }
 
-/**
- * True when staff have taken this conversation over in the inbox.
- *
- * Fails **open** (returns false, AI keeps answering) on any error: a database
- * blip should leave customers talking to a bot, not to silence.
- */
-export async function isHumanHandling(
+async function hasConversationIn(
   channel: ConversationChannel,
-  channelUserId: string
+  channelUserId: string,
+  statuses: ConversationStatus[]
 ): Promise<boolean> {
   if (!supabaseConfigured()) return false;
   try {
     const [row] = await supabaseRest<{ status: ConversationStatus }[]>(
       `conversations?channel=eq.${pgValue(channel)}&channel_user_id=eq.${pgValue(channelUserId)}` +
-        `&status=in.(waiting_human,assigned)&select=status&limit=1`
+        `&status=in.(${statuses.join(",")})&select=status&limit=1`
     );
     return Boolean(row);
   } catch {
+    // Fails **open** (AI keeps answering): a database blip should leave
+    // customers talking to a bot, not to silence.
     return false;
   }
+}
+
+/**
+ * True when a member of staff has actually **taken** this conversation.
+ *
+ * Deliberately not true for `waiting_human`. That status means the case is
+ * queued and nobody has opened it yet — and it used to silence the AI too,
+ * so the moment a customer asked for a human the bot stopped answering
+ * anything at all, including unrelated product questions, until someone got
+ * round to the ticket. A queue is not a conversation; going quiet for it left
+ * people staring at the same canned line.
+ *
+ * Once a human is genuinely on the case the AI does stand down, because two
+ * replies to one question, disagreeing with each other, is worse than a wait.
+ */
+export async function isHumanHandling(
+  channel: ConversationChannel,
+  channelUserId: string
+): Promise<boolean> {
+  return hasConversationIn(channel, channelUserId, ["assigned"]);
+}
+
+/** True when a case is open but nobody has picked it up yet. */
+export async function hasWaitingCase(
+  channel: ConversationChannel,
+  channelUserId: string
+): Promise<boolean> {
+  return hasConversationIn(channel, channelUserId, ["waiting_human"]);
 }
 
 /**
