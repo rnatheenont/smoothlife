@@ -22,7 +22,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ linked: false, orders: [] });
   }
 
-  const orders = await getCustomerOrders(row.shopify_customer_id, 20);
+  // 50, not 20: the busiest repeat customer in the store is on 11 orders
+  // today, so 20 hides nothing yet — but it is a ceiling that would start
+  // silently dropping the oldest orders off the page the day someone reaches
+  // their 21st, with nothing on screen to say anything was left out. Other
+  // call sites of getCustomerOrders already pass 100 and 250, so the page
+  // size itself is not a constraint.
+  const orders = await getCustomerOrders(row.shopify_customer_id, 50);
   // Tracking is assembled here rather than in the browser because whether a
   // courier feed exists is a server-side fact (an API key), and a client that
   // guessed it would quietly claim we know less — or more — than we do.
