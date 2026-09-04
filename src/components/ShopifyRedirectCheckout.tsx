@@ -13,6 +13,7 @@ import { toE164Thai } from "@/lib/firebase-client";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 import type { TaxAddressRow } from "@/app/api/account/tax-addresses/route";
 import MobileStickyBar from "@/components/MobileStickyBar";
+import { Button } from "@/components/ui";
 
 function toTaxInvoiceAttributes(addr: TaxAddressRow): { key: string; value: string }[] {
   return [
@@ -128,12 +129,9 @@ export default function ShopifyRedirectCheckout() {
           <span className="text-slate-600">
             สั่งซื้อแบบไม่ต้องสมัครสมาชิกได้เลย — แต่จะไม่ได้แต้มสะสมและสิทธิ์สมาชิกจนกว่าจะสมัคร
           </span>
-          <Link
-            href="/account/login?returnTo=/checkout"
-            className="shrink-0 rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-2 whitespace-nowrap"
-          >
+          <Button size="sm" className="shrink-0 whitespace-nowrap" href="/account/login?returnTo=/checkout">
             เข้าสู่ระบบ
-          </Link>
+          </Button>
         </div>
       )}
       <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8">
@@ -276,15 +274,10 @@ export default function ShopifyRedirectCheckout() {
             <span>ยอดรวมโดยประมาณ</span>
             <span>{formatTHB(total)}</span>
           </div>
-          <button
-            ref={submitButtonRef}
-            type="submit"
-            disabled={submitting || lines.length === 0}
-            className="w-full flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
-          >
+          <Button size="lg" fullWidth ref={submitButtonRef} type="submit" disabled={submitting || lines.length === 0}>
             {submitting && <Loader2 size={16} className="animate-spin" />}
             {submitting ? "กำลังไปหน้าชำระเงิน..." : "ไปหน้าชำระเงินของ Shopify"}
-          </button>
+          </Button>
           <p className="text-[11px] text-slate-500 mt-3 text-center flex items-center justify-center gap-1.5">
             <Award size={12} className="text-amber-500" />
             {user
@@ -302,14 +295,10 @@ export default function ShopifyRedirectCheckout() {
             <p className="text-xs text-slate-500">ยอดรวมโดยประมาณ</p>
             <p className="text-sm font-bold text-brand-ink">{formatTHB(total)}</p>
           </div>
-          <button
-            type="submit"
-            disabled={submitting || lines.length === 0}
-            className="flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white font-semibold px-5 py-2.5 text-xs shrink-0 active:scale-95 transition-transform disabled:opacity-60"
-          >
+          <Button className="text-xs shrink-0 active:scale-95 transition-transform" type="submit" disabled={submitting || lines.length === 0}>
             {submitting && <Loader2 size={14} className="animate-spin" />}
             {submitting ? "กำลังไป..." : "ไปหน้าชำระเงิน"}
-          </button>
+          </Button>
         </MobileStickyBar>
       </form>
     </div>

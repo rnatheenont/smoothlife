@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { useGlowChallenge } from "@/lib/glow-challenge-context";
+import { Button } from "@/components/ui";
 
 export default function ConsentGate() {
   const { giveConsent } = useGlowChallenge();
@@ -61,13 +62,9 @@ export default function ConsentGate() {
           </span>
         </label>
 
-        <button
-          disabled={!canContinue}
-          onClick={giveConsent}
-          className="w-full rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-        >
+        <Button size="lg" fullWidth disabled={!canContinue} onClick={giveConsent}>
           ยินยอมและเริ่มต้น
-        </button>
+        </Button>
         <p className="text-xs text-slate-400 mt-3">
           สอบถามเรื่องข้อมูลส่วนบุคคลเพิ่มเติมได้ที่หน้า{" "}
           <a href="/help/contact" className="underline">

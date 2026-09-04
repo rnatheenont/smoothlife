@@ -7,6 +7,7 @@ import { Gift } from "lucide-react";
 import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
 import { useQuickChat } from "@/lib/quickchat-context";
+import { Button } from "@/components/ui";
 
 // Draggable floating launcher for gift progress — forked from QuickChat's
 // exact drag-to-snap-to-edge implementation (same DRAG_THRESHOLD/EDGE_MARGIN/
@@ -86,19 +87,10 @@ export default function GiftFloatingButton() {
         transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
       }}
     >
-      <button
-        type="button"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onClick={handleClick}
-        aria-label="ของแถมที่ปลดล็อกแล้ว"
-        className="relative grid h-14 w-14 place-items-center rounded-full bg-brand-gradient text-white shadow-cardHover touch-none"
-      >
+      <Button size="none" className="relative grid h-14 w-14 place-items-center shadow-cardHover touch-none" type="button" onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} onClick={handleClick} aria-label="ของแถมที่ปลดล็อกแล้ว">
         <Gift size={24} />
         <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-rose-500 animate-pop" />
-      </button>
+      </Button>
     </div>
   );
 }

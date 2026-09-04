@@ -26,6 +26,7 @@ import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 import LanguageSwitch from "@/components/LanguageSwitch";
 import NotificationBell from "@/components/NotificationBell";
 import HeaderSearch from "@/components/HeaderSearch";
+import { Button } from "@/components/ui";
 
 const navLinks = [
   { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: LayoutGrid },
@@ -290,14 +291,10 @@ export default function Header() {
                   <ChevronRight size={16} className="text-slate-300 shrink-0" />
                 </Link>
               ) : (
-                <Link
-                  href="/account/login"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm shadow-card"
-                >
+                <Button href="/account/login" size="lg" fullWidth onClick={() => setOpen(false)} className="shadow-card">
                   <User size={16} />
                   {t("เข้าสู่ระบบ / สมัครสมาชิก", "Sign in / Sign up")}
-                </Link>
+                </Button>
               )}
             </div>
 

@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, Phone, MessageCircle, Lock, User as UserIcon, AlertTriangle, Loader2, ArrowLeft, Apple, Eye, EyeOff } from "lucide-react";
+import { Mail, Phone, MessageCircle, Lock, User as UserIcon, AlertTriangle, ArrowLeft, Apple, Eye, EyeOff } from "lucide-react";
 
 // Google's real 4-color "G" mark, not a generic glyph.
 function GoogleIcon({ size = 22 }: { size?: number }) {
@@ -61,6 +61,7 @@ import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-
 import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
 import DemoBadge from "./DemoBadge";
 import PasswordChecklist from "./PasswordChecklist";
+import { Button } from "@/components/ui";
 
 type View = "start" | "password" | "phone-otp" | "email-otp" | "line";
 
@@ -353,13 +354,9 @@ export default function LoginContent() {
           {!firebaseConfigured() && (
             <DemoBadge text="ระบบ OTP เบอร์โทรยังไม่ได้ตั้งค่า Firebase — ใช้ LINE หรืออีเมลแทนได้ค่ะ" />
           )}
-          <button
-            onClick={() => setView("phone-otp")}
-            className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-            disabled={!firebaseConfigured()}
-          >
+          <Button size="lg" onClick={() => setView("phone-otp")} disabled={!firebaseConfigured()}>
             <Phone size={18} /> เข้าสู่ระบบด้วยเบอร์โทร (OTP)
-          </button>
+          </Button>
           <a
             href={`/api/auth/line/start?returnTo=${encodeURIComponent(returnTo)}`}
             className="flex items-center justify-center gap-2 rounded-full bg-[#06C755] text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity"
@@ -507,12 +504,15 @@ export default function LoginContent() {
               </div>
               {mode === "register" && <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />}
               {emailError && !emailErrorField && <p className="text-xs text-rose-500">{emailError}</p>}
-              <button
-                disabled={emailSubmitting || (mode === "register" && !agreedTerms)}
-                className="rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60 mt-1"
+              <Button
+                type="submit"
+                size="lg"
+                className="mt-1"
+                loading={emailSubmitting}
+                disabled={mode === "register" && !agreedTerms}
               >
                 {emailSubmitting ? "กำลังดำเนินการ..." : mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
-              </button>
+              </Button>
             </form>
           )}
 
@@ -531,13 +531,9 @@ export default function LoginContent() {
                 autoComplete="one-time-code"
                 className="rounded-full bg-white border border-amber-200 px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
-              <button
-                disabled={reclaimSubmitting || reclaimCode.length < 6}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                {reclaimSubmitting && <Loader2 size={15} className="animate-spin" />}
+              <Button type="submit" size="lg" loading={reclaimSubmitting} disabled={reclaimCode.length < 6}>
                 {reclaimSubmitting ? "กำลังยืนยัน..." : "ยืนยันและอัปเดตข้อมูล"}
-              </button>
+              </Button>
             </form>
           )}
 
@@ -571,13 +567,9 @@ export default function LoginContent() {
               />
               <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
-              <button
-                disabled={!firebaseConfigured() || otpSending || !agreedTerms}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                {otpSending && <Loader2 size={15} className="animate-spin" />}
+              <Button type="submit" size="lg" loading={otpSending} disabled={!firebaseConfigured() || !agreedTerms}>
                 {otpSending ? "กำลังส่งรหัส..." : "ส่งรหัส OTP"}
-              </button>
+              </Button>
             </form>
           ) : (
             <form onSubmit={handleVerifyOtp} className="flex flex-col gap-3">
@@ -594,13 +586,9 @@ export default function LoginContent() {
                 className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
-              <button
-                disabled={otpVerifying || otpInput.length < 6}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                {otpVerifying && <Loader2 size={15} className="animate-spin" />}
+              <Button type="submit" size="lg" loading={otpVerifying} disabled={otpInput.length < 6}>
                 {otpVerifying ? "กำลังยืนยัน..." : "ยืนยันรหัส OTP"}
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={() => {
@@ -637,13 +625,9 @@ export default function LoginContent() {
               </div>
               <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
               {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
-              <button
-                disabled={emailOtpSending || !agreedTerms}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                {emailOtpSending && <Loader2 size={15} className="animate-spin" />}
+              <Button type="submit" size="lg" loading={emailOtpSending} disabled={!agreedTerms}>
                 {emailOtpSending ? "กำลังส่งรหัส..." : "ส่งรหัสยืนยัน"}
-              </button>
+              </Button>
             </form>
           ) : (
             <form onSubmit={handleVerifyEmailOtp} className="flex flex-col gap-3">
@@ -668,13 +652,9 @@ export default function LoginContent() {
                 className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
               {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
-              <button
-                disabled={emailOtpVerifying || emailOtpCode.length < 6}
-                className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                {emailOtpVerifying && <Loader2 size={15} className="animate-spin" />}
+              <Button type="submit" size="lg" loading={emailOtpVerifying} disabled={emailOtpCode.length < 6}>
                 {emailOtpVerifying ? "กำลังยืนยัน..." : "ยืนยันรหัส"}
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={() => {

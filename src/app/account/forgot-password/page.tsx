@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { KeyRound, Loader2, Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -61,13 +62,10 @@ export default function ForgotPasswordPage() {
               className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal"
             />
             {error && <p className="text-xs text-rose-500">{error}</p>}
-            <button
-              disabled={busy}
-              className="rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm disabled:opacity-60 flex items-center justify-center gap-2"
-            >
+            <Button type="submit" size="lg" disabled={busy}>
               {busy && <Loader2 size={15} className="animate-spin" />}
               ส่งลิงก์ตั้งรหัสผ่านใหม่
-            </button>
+            </Button>
           </form>
         ) : (
           <div className="flex flex-col gap-3">
@@ -84,12 +82,14 @@ export default function ForgotPasswordPage() {
                   <span className="truncate">{devLink}</span>
                   {copied ? <Check size={14} className="text-brand-emerald shrink-0" /> : <Copy size={14} className="text-slate-400 shrink-0" />}
                 </button>
-                <a
+                <Button
                   href={devLink}
-                  className="mt-3 block text-center rounded-full bg-brand-gradient text-white font-semibold px-6 py-2.5 text-xs"
+                  size="none"
+                  fullWidth
+                  className="mt-3 px-6 py-2.5 text-xs"
                 >
                   ไปตั้งรหัสผ่านใหม่
-                </a>
+                </Button>
               </div>
             )}
           </div>

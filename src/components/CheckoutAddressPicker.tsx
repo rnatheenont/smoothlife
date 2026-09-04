@@ -6,6 +6,7 @@ import AddressFields, { AddressFormValue, emptyAddressForm } from "@/components/
 import { isValidPhoneForCountry, THAI_PHONE_HINT } from "@/lib/phone";
 import { isPersonName, isAddressLine, isThaiPostcode, VALIDATION_HINTS } from "@/lib/form-validation";
 import type { AddressRow } from "@/app/api/account/addresses/route";
+import { Button } from "@/components/ui";
 
 // Checkout's shipping-address step. Typing a full address into the checkout
 // page itself is the slowest possible path for a returning customer who has
@@ -286,12 +287,7 @@ export default function CheckoutAddressPicker({
               >
                 ยกเลิก
               </button>
-              <button
-                type="button"
-                onClick={saveDraft}
-                disabled={saving}
-                className="flex-1 rounded-full bg-brand-gradient py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-              >
+              <Button className="flex-1" type="button" onClick={saveDraft} disabled={saving}>
                 {saving ? (
                   <span className="flex items-center justify-center gap-1.5">
                     <Loader2 size={14} className="animate-spin" /> กำลังบันทึก...
@@ -301,7 +297,7 @@ export default function CheckoutAddressPicker({
                 ) : (
                   "ใช้ที่อยู่นี้"
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

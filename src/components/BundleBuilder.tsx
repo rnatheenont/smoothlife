@@ -10,6 +10,7 @@ import { categories } from "@/data/categories";
 import { formatTHB } from "@/lib/format";
 import { useAuth } from "@/lib/auth-context";
 import clsx from "clsx";
+import { Button } from "@/components/ui";
 
 export default function BundleBuilder({
   products,
@@ -228,14 +229,10 @@ export default function BundleBuilder({
             </span>
           </label>
 
-          <button
-            onClick={handleRealSubscribe}
-            disabled={!meetsMin || submitting || !agreedRecurringCharge}
-            className="w-full flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
-          >
+          <Button size="none" fullWidth className="py-3.5 text-sm" onClick={handleRealSubscribe} disabled={!meetsMin || submitting || !agreedRecurringCharge}>
             <Sparkles size={16} />
             {submitting ? "กำลังเริ่มชำระเงิน..." : !meetsMin ? `เลือกอีก ${BUNDLE_MIN_ITEMS - selected.size} ชิ้น` : "สมัครสมาชิก"}
-          </button>
+          </Button>
           {error && <p className="mt-2 text-[11px] text-rose-500 text-center">{error}</p>}
           <p className="mt-3 text-[10px] text-slate-400 text-center">
             ตัดเงิน {formatTHB(pricePerCycle)} บาททุกเดือน (ล็อกส่วนลดชุด + ส่วนลดตามเทอม {plan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเงื่อนไขเดิม จนกว่าจะยกเลิก

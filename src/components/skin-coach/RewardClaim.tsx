@@ -6,6 +6,7 @@ import { Gift, Copy, Check, Loader2, Award } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 import { discountForScore, SKIN_COACH_POINTS_REWARD } from "@/lib/skin-coach";
+import { Button } from "@/components/ui";
 
 export default function RewardClaim({ score }: { score: number }) {
   const { user, refreshUser } = useAuth();
@@ -60,12 +61,9 @@ export default function RewardClaim({ score }: { score: number }) {
         <Gift size={20} className="mx-auto text-amber-500 mb-2" />
         <p className="text-sm text-brand-ink font-semibold mb-1">เข้าสู่ระบบเพื่อรับคูปองส่วนลด</p>
         <p className="text-xs text-slate-500 mb-3">ทำกิจกรรมสแกนผิวครบแล้ว รับส่วนลดได้ทันทีหลังเข้าสู่ระบบ</p>
-        <Link
-          href="/account/login?returnTo=/skin-coach"
-          className="inline-block rounded-full bg-brand-gradient text-white font-semibold px-5 py-2.5 text-xs"
-        >
+        <Button className="text-xs" href="/account/login?returnTo=/skin-coach">
           เข้าสู่ระบบ / สมัครสมาชิก
-        </Link>
+        </Button>
       </div>
     );
   }

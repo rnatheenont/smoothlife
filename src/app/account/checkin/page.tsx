@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, Gift, Coins, CheckCircle2, X, Sparkles, Flame, CalendarCheck } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
@@ -9,6 +8,7 @@ import ProductCard from "@/components/ProductCard";
 import { useAuth } from "@/lib/auth-context";
 import { products } from "@/data/products";
 import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
+import { Button } from "@/components/ui";
 
 type DayInfo = {
   date: string;
@@ -429,19 +429,16 @@ function CheckinContent() {
               <Coins size={14} /> ใช้ {data.recovery.costPerDay} แต้ม (คงเหลือ {data.recovery.pointBalance} แต้ม)
             </p>
             <div className="flex gap-2">
-              <button
-                onClick={() => setConfirmDate(null)}
-                className="flex-1 rounded-full border border-slate-200 text-slate-600 font-semibold py-2.5 text-sm"
-              >
+              <Button variant="secondary" onClick={() => setConfirmDate(null)} className="flex-1">
                 ยกเลิก
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => doRecover(confirmDate)}
                 disabled={busy || data.recovery.pointBalance < data.recovery.costPerDay}
-                className="flex-1 rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm disabled:opacity-50"
+                className="flex-1"
               >
                 ยืนยัน
-              </button>
+              </Button>
             </div>
             {data.recovery.pointBalance < data.recovery.costPerDay && (
               <p className="mt-2 text-xs text-rose-500">แต้มของคุณไม่พอสำหรับกู้วันนี้ค่ะ</p>
@@ -464,22 +461,18 @@ function CheckinContent() {
             )}
             <div className="flex gap-2">
               {celebration.coupon && (
-                <Link
-                  href="/cart"
-                  className="flex-1 rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm"
-                  onClick={() => setCelebration(null)}
-                >
+                <Button href="/cart" className="flex-1" onClick={() => setCelebration(null)}>
                   ไปใช้ในตะกร้า
-                </Link>
+                </Button>
               )}
-              <button
+              <Button
+                variant={celebration.coupon ? "secondary" : "primary"}
+                fullWidth={!celebration.coupon}
                 onClick={() => setCelebration(null)}
-                className={`rounded-full font-semibold py-2.5 text-sm ${
-                  celebration.coupon ? "flex-1 border border-slate-200 text-slate-600" : "w-full bg-brand-gradient text-white"
-                }`}
+                className={celebration.coupon ? "flex-1" : undefined}
               >
                 ปิด
-              </button>
+              </Button>
             </div>
           </div>
         </div>

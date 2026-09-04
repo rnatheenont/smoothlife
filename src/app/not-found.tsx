@@ -1,5 +1,5 @@
-import Link from "next/link";
 import Image from "next/image";
+import { Button } from "@/components/ui";
 
 export default function NotFound() {
   return (
@@ -9,9 +9,9 @@ export default function NotFound() {
       </span>
       <h1 className="text-4xl font-bold brand-text-gradient mt-4 mb-3">404</h1>
       <p className="text-slate-500 mb-6">ไม่พบหน้าที่คุณต้องการ</p>
-      <Link href="/" className="rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm">
+      <Button size="lg" href="/">
         กลับหน้าแรก
-      </Link>
+      </Button>
     </div>
   );
 }

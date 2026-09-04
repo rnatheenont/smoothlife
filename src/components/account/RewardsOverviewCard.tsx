@@ -6,6 +6,7 @@ import { CheckCircle2, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { tierBadge, tierCard, tierDisplayName } from "@/lib/tier";
 import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
+import { Button } from "@/components/ui";
 
 type DayInfo = { date: string; dayNumber: number; status: string };
 type StatusResponse = {
@@ -159,13 +160,9 @@ export default function RewardsOverviewCard() {
                   <CheckCircle2 size={13} /> เช็กอินแล้ว
                 </span>
               ) : (
-                <button
-                  onClick={doCheckin}
-                  disabled={busy}
-                  className="shrink-0 rounded-full bg-brand-gradient text-white font-bold px-3.5 py-1.5 text-xs disabled:opacity-60"
-                >
+                <Button size="none" className="px-3.5 py-1.5 text-xs shrink-0" onClick={doCheckin} disabled={busy}>
                   {busy ? "..." : "เช็กอินวันนี้"}
-                </button>
+                </Button>
               ))}
           </div>
 

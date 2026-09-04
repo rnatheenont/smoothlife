@@ -3,25 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import {
-  Heart,
-  ShoppingBag,
-  Minus,
-  Plus,
-  Truck,
-  ShieldCheck,
-  RotateCcw,
-  CheckCircle2,
-  Star,
-  MessageCircleQuestion,
-  Expand,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Repeat,
-  Sparkles,
-  Loader2,
-} from "lucide-react";
+import { Heart, ShoppingBag, Minus, Plus, Truck, ShieldCheck, RotateCcw, CheckCircle2, Star, MessageCircleQuestion, Expand, X, ChevronLeft, ChevronRight, Repeat, Sparkles } from "lucide-react";
 import { Product } from "@/data/types";
 import type { ReviewRow } from "@/app/api/reviews/route";
 import type { QuestionRow } from "@/app/api/product-questions/route";
@@ -35,6 +17,7 @@ import SubscriptionTermsInfo from "./SubscriptionTermsInfo";
 import { useCart, useWishlist } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useQuickChat } from "@/lib/quickchat-context";
+import { Button } from "@/components/ui";
 
 // Mirrors REVIEW_MIN_TEXT_LENGTH in @/app/api/reviews/route.ts — kept as a
 // separate constant (not imported) since that file is server-only and pulls
@@ -468,14 +451,15 @@ export default function ProductDetailInteractive({
                     <Plus size={14} />
                   </button>
                 </div>
-                <button
+                <Button
                   onClick={handleAdd}
                   disabled={!selectedVariant.inStock}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
+                  size="lg"
+                  className="flex-1"
                 >
                   {added ? <CheckCircle2 size={16} /> : <ShoppingBag size={16} />}
                   {added ? "เพิ่มลงตะกร้าแล้ว" : selectedVariant.inStock ? "เพิ่มลงตะกร้า" : "สินค้าหมด"}
-                </button>
+                </Button>
                 <button
                   onClick={() => toggle(product.slug)}
                   className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-slate-200"
@@ -530,20 +514,22 @@ export default function ProductDetailInteractive({
                   </label>
                 )}
 
-                <button
+                <Button
                   onClick={() =>
                     requireLoginThen(subscriptionBillingEnabled ? handleRealSubscribe : handleSubscribe)
                   }
                   disabled={
                     !selectedVariant.inStock ||
-                    subscribeSubmitting ||
                     (subscriptionBillingEnabled && !agreedRecurringCharge)
                   }
-                  className="mt-3 w-full flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:pointer-events-none"
+                  size="lg"
+                  fullWidth
+                  loading={subscribeSubmitting}
+                  className="mt-3"
                 >
-                  {subscribeSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                  {!subscribeSubmitting && <Sparkles size={16} />}
                   {subscribeSubmitting ? "กำลังเริ่มชำระเงิน..." : "สมัครรับประจำ"}
-                </button>
+                </Button>
                 {subscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{subscribeError}</p>}
                 <p className="mt-2 text-[10px] text-slate-400 text-center">
                   {subscriptionBillingEnabled
@@ -717,13 +703,9 @@ export default function ProductDetailInteractive({
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-teal resize-none"
                     />
                     {reviewError && <p className="text-xs text-rose-500">{reviewError}</p>}
-                    <button
-                      type="submit"
-                      disabled={reviewSubmitting}
-                      className="rounded-full bg-brand-gradient text-white text-sm font-semibold px-5 py-2 disabled:opacity-50"
-                    >
+                    <Button type="submit" loading={reviewSubmitting}>
                       {reviewSubmitting ? "กำลังส่ง..." : "ส่งรีวิว"}
-                    </button>
+                    </Button>
                   </form>
                 )}
 
@@ -770,13 +752,9 @@ export default function ProductDetailInteractive({
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-teal resize-none"
                     />
                     {questionError && <p className="text-xs text-rose-500">{questionError}</p>}
-                    <button
-                      type="submit"
-                      disabled={questionSubmitting}
-                      className="rounded-full bg-brand-gradient text-white text-sm font-semibold px-5 py-2 disabled:opacity-50"
-                    >
+                    <Button type="submit" loading={questionSubmitting}>
                       {questionSubmitting ? "กำลังส่ง..." : "ส่งคำถาม"}
-                    </button>
+                    </Button>
                   </form>
                 )}
 
@@ -837,14 +815,14 @@ export default function ProductDetailInteractive({
           </p>
           <p className="text-sm font-bold text-brand-ink">{formatTHB(selectedVariant.price)}</p>
         </div>
-        <button
+        <Button
           onClick={handleAdd}
           disabled={!selectedVariant.inStock}
-          className="flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white font-semibold px-5 py-2.5 text-xs shrink-0 active:scale-95 transition-transform disabled:opacity-40 disabled:pointer-events-none"
+          className="shrink-0 text-xs active:scale-95"
         >
           {added ? <CheckCircle2 size={15} /> : <ShoppingBag size={15} />}
           {added ? "เพิ่มแล้ว" : selectedVariant.inStock ? "เพิ่มลงตะกร้า" : "สินค้าหมด"}
-        </button>
+        </Button>
       </MobileStickyBar>
 
       {zoomOpen && (

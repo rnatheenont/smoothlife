@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
+import { Button } from "@/components/ui";
 
 // Unified inbox (plan §7.2): conversation list, thread, customer panel.
 // Only the web channel exists so far — LINE and Facebook adapters write into
@@ -360,13 +361,9 @@ export default function AdminInboxPage() {
                     placeholder="พิมพ์คำตอบ..."
                     className="flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs outline-none focus:border-brand-teal"
                   />
-                  <button
-                    onClick={send}
-                    disabled={sending || !reply.trim()}
-                    className="shrink-0 rounded-lg bg-brand-gradient px-3 text-white disabled:opacity-50"
-                  >
+                  <Button size="none" className="px-3 shrink-0 rounded-lg" onClick={send} disabled={sending || !reply.trim()}>
                     {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </>

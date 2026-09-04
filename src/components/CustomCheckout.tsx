@@ -14,6 +14,7 @@ import PaymentModal from "@/components/PaymentModal";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 import MobileStickyBar from "@/components/MobileStickyBar";
 import CouponPicker from "@/components/CouponPicker";
+import { Button } from "@/components/ui";
 
 // Paid directly through 2C2P (card + QR PromptPay) — the customer never
 // leaves smoothlife.com for a Shopify-hosted checkout page. Real Shopify
@@ -124,12 +125,9 @@ export default function CustomCheckout() {
           <span className="text-slate-600">
             สั่งซื้อแบบไม่ต้องสมัครสมาชิกได้เลย — แต่จะไม่ได้แต้มสะสมและสิทธิ์สมาชิกจนกว่าจะสมัคร
           </span>
-          <Link
-            href="/account/login?returnTo=/checkout"
-            className="shrink-0 rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-2 whitespace-nowrap"
-          >
+          <Button size="sm" className="shrink-0 whitespace-nowrap" href="/account/login?returnTo=/checkout">
             เข้าสู่ระบบ
-          </Link>
+          </Button>
         </div>
       )}
       <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8">
@@ -198,15 +196,10 @@ export default function CustomCheckout() {
             <span>ยอดรวมทั้งหมด</span>
             <span>{formatTHB(total)}</span>
           </div>
-          <button
-            ref={submitButtonRef}
-            type="submit"
-            disabled={submitting || !addressReady || lines.length === 0}
-            className="w-full flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
-          >
+          <Button size="lg" fullWidth ref={submitButtonRef} type="submit" disabled={submitting || !addressReady || lines.length === 0}>
             {submitting && <Loader2 size={16} className="animate-spin" />}
             {submitting ? "กำลังไปหน้าชำระเงิน..." : "ชำระเงิน"}
-          </button>
+          </Button>
           <p className="text-[11px] text-slate-500 mt-3 text-center flex items-center justify-center gap-1.5">
             <Award size={12} className="text-amber-500" />
             {user
@@ -224,14 +217,10 @@ export default function CustomCheckout() {
             <p className="text-xs text-slate-500">ยอดรวมทั้งหมด</p>
             <p className="text-sm font-bold text-brand-ink">{formatTHB(total)}</p>
           </div>
-          <button
-            type="submit"
-            disabled={submitting || !addressReady || lines.length === 0}
-            className="flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white font-semibold px-5 py-2.5 text-xs shrink-0 active:scale-95 transition-transform disabled:opacity-60"
-          >
+          <Button className="text-xs shrink-0 active:scale-95 transition-transform" type="submit" disabled={submitting || !addressReady || lines.length === 0}>
             {submitting && <Loader2 size={14} className="animate-spin" />}
             {submitting ? "กำลังไป..." : "ชำระเงิน"}
-          </button>
+          </Button>
         </MobileStickyBar>
       </form>
 

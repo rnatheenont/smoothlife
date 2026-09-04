@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui";
 
 const KEY = "sl_skin_coach_consent";
 
@@ -63,13 +64,9 @@ export default function ConsentGate({ onConsent }: { onConsent: () => void }) {
           </span>
         </label>
 
-        <button
-          disabled={!canContinue}
-          onClick={handleConsent}
-          className="w-full rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-        >
+        <Button size="lg" fullWidth disabled={!canContinue} onClick={handleConsent}>
           ยินยอมและเริ่มสแกนผิว
-        </button>
+        </Button>
         <p className="text-xs text-slate-400 mt-3">
           สอบถามเรื่องข้อมูลส่วนบุคคลเพิ่มเติมได้ที่หน้า{" "}
           <a href="/help/contact" className="underline">

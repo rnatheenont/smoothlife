@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ShieldCheck, Loader2, Eye, EyeOff } from "lucide-react";
 import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 import PasswordChecklist from "@/components/PasswordChecklist";
+import { Button } from "@/components/ui";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -88,13 +89,10 @@ function ResetPasswordContent() {
               className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal"
             />
             {error && <p className="text-xs text-rose-500">{error}</p>}
-            <button
-              disabled={busy}
-              className="rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm disabled:opacity-60 flex items-center justify-center gap-2"
-            >
+            <Button type="submit" size="lg" disabled={busy}>
               {busy && <Loader2 size={15} className="animate-spin" />}
               บันทึกรหัสผ่านใหม่
-            </button>
+            </Button>
           </form>
         )}
 

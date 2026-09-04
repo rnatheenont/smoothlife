@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MessageCircle, Phone, Mail, CheckCircle2 } from "lucide-react";
 import DemoBadge from "@/components/DemoBadge";
+import { Button } from "@/components/ui";
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
@@ -50,7 +51,7 @@ export default function ContactPage() {
             placeholder="พิมพ์ข้อความของคุณ..."
             className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal resize-none"
           />
-          <button className="rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm">ส่งข้อความ</button>
+          <Button type="submit" size="lg">ส่งข้อความ</Button>
         </form>
       )}
     </div>

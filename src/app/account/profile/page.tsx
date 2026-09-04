@@ -8,6 +8,7 @@ import AccountLayout from "@/components/account/AccountLayout";
 import { useAuth } from "@/lib/auth-context";
 import { resizeForAvatar } from "@/lib/image-utils";
 import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
+import { Button } from "@/components/ui";
 
 const inputClass =
   "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal";
@@ -295,13 +296,10 @@ function EmailLinkCard() {
             className={inputClass}
           />
           {error && <p className="text-xs text-rose-500">{error}</p>}
-          <button
-            disabled={sending}
-            className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm disabled:opacity-60"
-          >
+          <Button type="submit" disabled={sending}>
             {sending && <Loader2 size={14} className="animate-spin" />}
             {sending ? "กำลังส่งรหัส..." : "ส่งรหัสยืนยัน"}
-          </button>
+          </Button>
           {isChanging && (
             <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-400">
               ยกเลิก
@@ -327,13 +325,10 @@ function EmailLinkCard() {
             className={`${inputClass} tracking-widest text-center`}
           />
           {error && <p className="text-xs text-rose-500">{error}</p>}
-          <button
-            disabled={verifying || code.length < 6}
-            className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm disabled:opacity-60"
-          >
+          <Button type="submit" disabled={verifying || code.length < 6}>
             {verifying && <Loader2 size={14} className="animate-spin" />}
             {verifying ? "กำลังยืนยัน..." : "ยืนยันอีเมล"}
-          </button>
+          </Button>
           <button
             type="button"
             onClick={() => {
@@ -489,13 +484,10 @@ function PhoneChangeCard() {
             className={inputClass}
           />
           {error && <p className="text-xs text-rose-500">{error}</p>}
-          <button
-            disabled={sending || !firebaseConfigured() || phone.trim().length < 9}
-            className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm disabled:opacity-60"
-          >
+          <Button type="submit" disabled={sending || !firebaseConfigured() || phone.trim().length < 9}>
             {sending && <Loader2 size={14} className="animate-spin" />}
             {sending ? "กำลังส่งรหัส..." : "ส่งรหัส OTP"}
-          </button>
+          </Button>
           {isChanging && (
             <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-400">
               ยกเลิก
@@ -514,13 +506,10 @@ function PhoneChangeCard() {
             className={`${inputClass} tracking-widest text-center`}
           />
           {error && <p className="text-xs text-rose-500">{error}</p>}
-          <button
-            disabled={verifying || code.length < 6}
-            className="flex items-center justify-center gap-2 rounded-full bg-brand-gradient text-white font-semibold py-2.5 text-sm disabled:opacity-60"
-          >
+          <Button type="submit" disabled={verifying || code.length < 6}>
             {verifying && <Loader2 size={14} className="animate-spin" />}
             {verifying ? "กำลังยืนยัน..." : "ยืนยันเบอร์โทร"}
-          </button>
+          </Button>
           <button
             type="button"
             onClick={() => {

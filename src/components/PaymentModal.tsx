@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Loader2, X, ExternalLink, AlertTriangle } from "lucide-react";
 import { formatTHB } from "@/lib/format";
+import { Button } from "@/components/ui";
 
 // Keeps the customer on smoothlife.com through the whole payment: 2C2P's page
 // runs in a frame here instead of taking over the browser. 2C2P allows this
@@ -206,12 +207,9 @@ export default function PaymentModal({
               เราได้รับคำสั่งซื้อของคุณแล้ว รายละเอียดการจัดส่งจะถูกส่งไปที่อีเมลของคุณ
             </p>
             <div className="mt-6 flex flex-col gap-2.5">
-              <Link
-                href="/account/orders"
-                className="rounded-full bg-brand-gradient py-2.5 text-sm font-semibold text-white"
-              >
+              <Button href="/account/orders">
                 ดูคำสั่งซื้อของฉัน
-              </Link>
+              </Button>
               <Link href="/shop" className="rounded-full border border-slate-200 py-2.5 text-sm font-semibold text-slate-600">
                 ช้อปต่อ
               </Link>
@@ -229,13 +227,9 @@ export default function PaymentModal({
               {failureReason || "การชำระเงินถูกปฏิเสธ ไม่มีการตัดเงินจากบัญชีของคุณ"}
             </p>
             <p className="mt-2 text-xs text-slate-400">สินค้าในตะกร้ายังอยู่ครบ ลองชำระเงินใหม่ได้เลย</p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-6 w-full rounded-full bg-brand-gradient py-2.5 text-sm font-semibold text-white"
-            >
+            <Button fullWidth className="mt-6" type="button" onClick={onClose}>
               ลองใหม่อีกครั้ง
-            </button>
+            </Button>
           </div>
         )}
 
@@ -250,12 +244,9 @@ export default function PaymentModal({
             </p>
             <p className="mt-2 text-xs text-slate-400">กรุณาอย่าชำระเงินซ้ำ เพื่อไม่ให้ถูกตัดเงินสองครั้ง</p>
             <div className="mt-6 flex flex-col gap-2.5">
-              <Link
-                href="/account/orders"
-                className="rounded-full bg-brand-gradient py-2.5 text-sm font-semibold text-white"
-              >
+              <Button href="/account/orders">
                 ตรวจสอบคำสั่งซื้อของฉัน
-              </Link>
+              </Button>
               <button
                 type="button"
                 onClick={onClose}

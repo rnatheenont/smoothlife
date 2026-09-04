@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MessageCircle, CheckCircle2 } from "lucide-react";
 import DemoBadge from "@/components/DemoBadge";
+import { Button } from "@/components/ui";
 
 export default function AskExpertPage() {
   const [sent, setSent] = useState(false);
@@ -37,9 +38,9 @@ export default function AskExpertPage() {
             placeholder="อธิบายปัญหาผิวหรือคำถามของคุณ..."
             className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal resize-none"
           />
-          <button className="rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm">
+          <Button type="submit" size="lg">
             ส่งคำถามให้ผู้เชี่ยวชาญ
-          </button>
+          </Button>
         </form>
       )}
     </div>

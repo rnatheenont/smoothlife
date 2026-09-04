@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import { Loader2 } from "lucide-react";
@@ -14,7 +15,7 @@ import { Loader2 } from "lucide-react";
 // bundle imports it rather than dragging server pages onto the client.
 
 type Variant = "primary" | "secondary" | "soft" | "ghost" | "danger";
-type Size = "sm" | "md" | "lg";
+type Size = "sm" | "md" | "lg" | "none";
 
 const VARIANT: Record<Variant, string> = {
   primary: "bg-brand-gradient text-white hover:opacity-90",
@@ -36,7 +37,15 @@ const VARIANT: Record<Variant, string> = {
 const SIZE: Record<Size, string> = {
   sm: "px-4 py-2 text-xs gap-1.5",
   md: "px-5 py-2.5 text-sm gap-2",
-  lg: "px-6 py-3.5 text-sm gap-2",
+  // px-6 py-3 is what the existing primary CTAs actually use — the sizes
+  // are matched to the code being replaced so migrating a call site does
+  // not silently resize the button.
+  lg: "px-6 py-3 text-sm gap-2",
+  // Emits no padding at all, for the rare call site that needs its own.
+  // Necessary because clsx concatenates — it does not resolve conflicts, and
+  // Tailwind decides px-6-vs-px-4 by stylesheet order, so a *smaller* override
+  // would silently lose. Pass size="none" and set the padding yourself.
+  none: "",
 };
 
 /**
@@ -67,7 +76,10 @@ type ButtonProps = CommonProps &
 type LinkProps = CommonProps &
   Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "children" | "className" | "href"> & { href: string };
 
-export default function Button(props: ButtonProps | LinkProps) {
+// forwardRef because real call sites hold onto the element — the cart, for
+// one, scrolls its checkout button into view.
+const Button = forwardRef<HTMLElement, ButtonProps | LinkProps>(
+  function Button(props, ref) {
   const {
     variant = "primary",
     size = "md",
@@ -89,7 +101,9 @@ export default function Button(props: ButtonProps | LinkProps) {
   if (typeof props.href === "string") {
     const { href, ...anchorRest } = rest as Omit<LinkProps, keyof CommonProps>;
     return (
-      <Link href={href} className={classes} {...anchorRest}>
+      // HTMLElement so one ref type covers both branches; the cast is the
+      // price of the element type only being known at runtime.
+      <Link href={href} ref={ref as React.Ref<HTMLAnchorElement>} className={classes} {...anchorRest}>
         {content}
       </Link>
     );
@@ -98,6 +112,7 @@ export default function Button(props: ButtonProps | LinkProps) {
   const buttonRest = rest as Omit<ButtonProps, keyof CommonProps>;
   return (
     <button
+      ref={ref as React.Ref<HTMLButtonElement>}
       {...buttonRest}
       // Defaults to "button": inside a <form>, HTML's default of "submit"
       // makes an unrelated button submit the form, which is never what the
@@ -112,4 +127,7 @@ export default function Button(props: ButtonProps | LinkProps) {
       {content}
     </button>
   );
-}
+  }
+);
+
+export default Button;

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CreditCard, Check, Copy } from "lucide-react";
+import { Button } from "@/components/ui";
 
 type GiftCardSummary = {
   id: string;
@@ -163,13 +164,9 @@ export default function AdminGiftCardsPage() {
             </div>
           </div>
           {error && <p className="text-xs text-rose-500">{error}</p>}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-full bg-brand-gradient text-white text-sm font-semibold py-2.5 disabled:opacity-50"
-          >
+          <Button fullWidth type="submit" disabled={submitting}>
             {submitting ? "กำลังออกบัตร..." : "ออกบัตรของขวัญและส่งอีเมล"}
-          </button>
+          </Button>
         </form>
 
         {issued && (

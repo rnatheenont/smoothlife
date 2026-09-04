@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Facebook, Instagram, MessageCircle, Send, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui";
 
 const columns = [
   {
@@ -83,14 +84,9 @@ function NewsletterForm() {
           placeholder="อีเมลของคุณ"
           className="flex-1 min-w-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-brand-teal"
         />
-        <button
-          type="submit"
-          disabled={status === "loading"}
-          aria-label="สมัครรับข่าวสาร"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white disabled:opacity-60"
-        >
+        <Button size="none" className="grid h-9 w-9 shrink-0 place-items-center" type="submit" disabled={status === "loading"} aria-label="สมัครรับข่าวสาร">
           <Send size={14} />
-        </button>
+        </Button>
       </div>
       {error && <p className="text-xs text-rose-500 mt-1.5">{error}</p>}
     </form>

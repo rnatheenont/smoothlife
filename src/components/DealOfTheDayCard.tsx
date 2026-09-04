@@ -6,6 +6,7 @@ import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
 import { useCountdown } from "@/lib/use-countdown";
 import { useLang } from "@/lib/lang-context";
+import { Button } from "@/components/ui";
 
 // A promo's real `expires` date drives the countdown when set; otherwise
 // falls back to a rolling window anchored to when this card first mounted
@@ -55,9 +56,9 @@ export default function DealOfTheDayCard() {
           </p>
         ))}
       </div>
-      <button className="w-full rounded-full bg-brand-gradient text-white text-xs font-semibold py-2">
+      <Button size="sm" fullWidth>
         {t(cta, cta)}
-      </button>
+      </Button>
     </div>
   );
 }

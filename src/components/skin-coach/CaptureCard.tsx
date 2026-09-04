@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Camera, Loader2, AlertTriangle, Check, Sparkles } from "lucide-react";
 import { resizeForUpload, ResizedImage } from "@/lib/image-utils";
 import { SkinCoachMetrics } from "@/lib/skin-coach";
+import { Button } from "@/components/ui";
 
 // Schematic viewfinder + face guide (not a real photo) showing how to frame
 // the shot — corner brackets like a camera focus guide, soft face outline
@@ -185,14 +186,10 @@ export default function CaptureCard({
         }}
       />
 
-      <button
-        disabled={busy || capturedCount === 0}
-        onClick={submit}
-        className="flex items-center gap-2 mx-auto rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm disabled:opacity-40"
-      >
+      <Button size="lg" className="mx-auto" disabled={busy || capturedCount === 0} onClick={submit}>
         {busy ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
         {busy ? "กำลังวิเคราะห์..." : capturedCount === 0 ? "เลือกถ่ายรูปอย่างน้อย 1 มุม" : `วิเคราะห์ผิวเลย (${capturedCount} มุม)`}
-      </button>
+      </Button>
     </div>
   );
 }

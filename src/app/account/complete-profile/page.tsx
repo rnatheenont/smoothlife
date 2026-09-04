@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import AddressFields, { AddressFormValue, emptyAddressForm } from "@/components/account/AddressFields";
+import { Button } from "@/components/ui";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PLACEHOLDER_NAME = "สมาชิกใหม่";
@@ -163,13 +164,10 @@ function CompleteProfileContent() {
           {wantsAddress && <AddressFields value={address} onChange={setAddress} showDefaultToggle={false} />}
 
           {error && <p className="text-xs text-rose-500">{error}</p>}
-          <button
-            disabled={busy}
-            className="rounded-full bg-brand-gradient text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-60 mt-1 flex items-center justify-center gap-2"
-          >
+          <Button type="submit" size="none" className="py-3.5 text-sm mt-1" disabled={busy}>
             {busy && <Loader2 size={15} className="animate-spin" />}
             เริ่มใช้งาน
-          </button>
+          </Button>
         </form>
       </div>
     </div>

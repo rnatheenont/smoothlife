@@ -22,6 +22,7 @@ import ScaleReveal from "@/components/ScaleReveal";
 import BrandMarquee from "@/components/BrandMarquee";
 import ProductTabs from "@/components/ProductTabs";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
+import { Button } from "@/components/ui";
 
 export const metadata = { alternates: { canonical: "/" } };
 // Re-pulls the live smoothlife.com banner slideshow at most once an hour —
@@ -110,13 +111,14 @@ export default async function HomePage() {
               ของแท้ 100% มีอย. จัดส่งฟรีทั่วไทย
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
+              <Button
                 href="/shop"
-                className="group rounded-full bg-brand-gradient text-white font-semibold px-7 py-3.5 text-sm shadow-cardHover hover:-translate-y-0.5 hover:shadow-xl transition-all inline-flex items-center gap-1.5"
+                size="none"
+                className="group gap-1.5 px-7 py-3.5 text-sm shadow-cardHover hover:-translate-y-0.5 hover:shadow-xl"
               >
                 เริ่มช้อปเลย
                 <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
-              </Link>
+              </Button>
               <Link
                 href="/advisor"
                 className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-7 py-3.5 text-sm hover:border-brand-teal hover:-translate-y-0.5 transition-all"

@@ -8,6 +8,7 @@ import { useQuickChat } from "@/lib/quickchat-context";
 import { recommendSupplementPlan, PREGNANT_OR_BREASTFEEDING } from "@/lib/supplement-advisor";
 import { formatTHB } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
+import { Button } from "@/components/ui";
 
 const GOAL_OPTIONS = ["ผิวสวย", "ผมแข็งแรง", "ภูมิคุ้มกัน", "ระบบขับถ่าย", "นอนหลับ", "พลังงาน", "ข้อกระดูก"];
 const AGE_OPTIONS = ["18-25", "26-35", "36-45", "46+"];
@@ -76,9 +77,9 @@ export default function SupplementAdvisorQuiz() {
               เนื่องจากคุณอยู่ในช่วงตั้งครรภ์หรือให้นมบุตร ทางเราขอไม่แนะนำผลิตภัณฑ์เสริมอาหารแบบอัตโนมัติ
               เพื่อความปลอดภัยของคุณและลูกน้อย กรุณาปรึกษาแพทย์หรือเภสัชกรก่อนใช้ผลิตภัณฑ์ใดๆ
             </p>
-            <Link href="/help" className="inline-block rounded-full bg-brand-gradient text-white text-sm font-semibold px-6 py-3">
+            <Button size="lg" href="/help">
               ปรึกษาเภสัชกร
-            </Link>
+            </Button>
           </div>
         ) : (
           <>

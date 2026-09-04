@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { Download, Trash2 } from "lucide-react";
 import { DayEntry, useGlowChallenge } from "@/lib/glow-challenge-context";
+import { Button } from "@/components/ui";
 
 function ScoreRow({ label, score }: { label: string; score: number }) {
   const clarity = Math.max(0, Math.min(100, 100 - score));
@@ -156,13 +157,10 @@ export default function ScoreSummary() {
           <h3 className="font-bold text-brand-ink mb-1">เปรียบเทียบวันที่ {day1.day} กับวันที่ {latest.day}</h3>
           <p className="text-xs text-slate-500 mb-5">บันทึกภาพผลลัพธ์เพื่อแชร์ได้เลย</p>
           <canvas ref={canvasRef} className="hidden" />
-          <button
-            onClick={handleDownload}
-            className="inline-flex items-center gap-2 rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm"
-          >
+          <Button size="lg" onClick={handleDownload}>
             <Download size={16} />
             บันทึกรูปสรุปผล
-          </button>
+          </Button>
         </div>
       )}
 

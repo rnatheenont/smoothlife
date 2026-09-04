@@ -11,6 +11,7 @@ import { SubscriptionSet, SubscriptionPlan } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
 import { useAuth } from "@/lib/auth-context";
 import { subscribeBuyNow } from "@/lib/subscribe-checkout";
+import { Button } from "@/components/ui";
 
 export default function SubscriptionSetDetail({
   set,
@@ -190,14 +191,10 @@ export default function SubscriptionSetDetail({
             </label>
           )}
 
-          <button
-            onClick={subscriptionBillingEnabled ? handleRealSubscribe : handleSubscribe}
-            disabled={subscribeSubmitting || (subscriptionBillingEnabled && !agreedRecurringCharge)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-50 bg-brand-gradient hover:opacity-90"
-          >
+          <Button size="none" fullWidth className="py-3.5 text-sm mt-4 active:scale-95" onClick={subscriptionBillingEnabled ? handleRealSubscribe : handleSubscribe} disabled={subscribeSubmitting || (subscriptionBillingEnabled && !agreedRecurringCharge)}>
             <ShoppingBag size={16} />
             {subscribeSubmitting ? "กำลังเริ่มชำระเงิน..." : "สมัครสมาชิก"}
-          </button>
+          </Button>
           {subscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{subscribeError}</p>}
 
           <p className="mt-3 flex items-start gap-1.5 text-[11px] text-slate-400">

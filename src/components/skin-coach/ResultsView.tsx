@@ -13,6 +13,7 @@ import {
   overallScore,
   scoreBand as sharedScoreBand,
 } from "@/lib/skin-coach";
+import { Button } from "@/components/ui";
 
 function MetricRow({ label, score }: { label: string; score: number }) {
   const clarity = Math.max(0, Math.min(100, 100 - score));
@@ -110,12 +111,9 @@ export default function ResultsView({
         </div>
 
         <div className="flex flex-wrap gap-3 mt-4">
-          <button
-            onClick={askAdvisor}
-            className="flex items-center justify-center gap-1.5 rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-2.5 shadow-cardHover"
-          >
+          <Button size="none" className="px-4 py-2.5 text-xs shadow-cardHover" onClick={askAdvisor}>
             <Sparkles size={13} /> คุยกับน้อง Smoothie เรื่องผลสแกนนี้
-          </button>
+          </Button>
           {photo && <ShareCard metrics={metrics} photoDataUrl={photo} zones={zones} />}
         </div>
 

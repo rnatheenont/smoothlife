@@ -13,6 +13,7 @@ import { suggestBundlesForCart } from "@/lib/bundle-suggest";
 import { pointsForAmount } from "@/data/coupons";
 import { subscriptionPlans } from "@/data/subscriptions";
 import CouponPicker from "@/components/CouponPicker";
+import { Button } from "@/components/ui";
 import FreeGiftProgress from "@/components/FreeGiftProgress";
 import TieredRewardBox from "@/components/TieredRewardBox";
 import MobileStickyBar from "@/components/MobileStickyBar";
@@ -23,7 +24,7 @@ export default function CartPage() {
   const { user } = useAuth();
   const { lang, t } = useLang();
   const totals = useOrderTotals();
-  const checkoutButtonRef = useRef<HTMLAnchorElement>(null);
+  const checkoutButtonRef = useRef<HTMLElement>(null);
   const bundleSuggestions = suggestBundlesForCart(lines.filter((l) => !l.isGift).map((l) => l.slug));
   // Subscribe-added lines never merge with a normal line of the same
   // product (see cart-context's sameLine) — grouped into their own section
@@ -42,9 +43,9 @@ export default function CartPage() {
         <p className="text-sm text-slate-500 mt-1">
           {t("เลือกชมสินค้าคุณภาพดีจาก Smooth Life", "Browse quality products from Smooth Life")}
         </p>
-        <Link href="/shop" className="inline-block mt-6 rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm">
+        <Button href="/shop" size="lg" className="mt-6">
           {t("เริ่มช้อปเลย", "Start shopping")}
-        </Link>
+        </Button>
       </div>
     );
   }
@@ -232,13 +233,9 @@ export default function CartPage() {
               <span>{t("ยอดรวมทั้งหมด", "Total")}</span>
               <span>{formatTHB(totals.total)}</span>
             </div>
-            <Link
-              ref={checkoutButtonRef}
-              href="/checkout"
-              className="block text-center rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity"
-            >
+            <Button ref={checkoutButtonRef} href="/checkout" size="lg" fullWidth>
               {t("ดำเนินการชำระเงิน", "Proceed to checkout")}
-            </Link>
+            </Button>
           </div>
 
           <div className="rounded-xl2 border border-amber-200 bg-amber-50/60 p-5">
@@ -296,12 +293,9 @@ export default function CartPage() {
           <p className="text-xs text-slate-500">{t("ยอดรวมทั้งหมด", "Total")}</p>
           <p className="text-sm font-bold text-brand-ink">{formatTHB(totals.total)}</p>
         </div>
-        <Link
-          href="/checkout"
-          className="flex items-center justify-center rounded-full bg-brand-gradient text-white font-semibold px-5 py-2.5 text-xs shrink-0 active:scale-95 transition-transform"
-        >
+        <Button href="/checkout" className="shrink-0 text-xs active:scale-95">
           {t("ดำเนินการชำระเงิน", "Proceed to checkout")}
-        </Link>
+        </Button>
       </MobileStickyBar>
     </div>
   );

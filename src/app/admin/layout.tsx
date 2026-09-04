@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Lock, Gift, SlidersHorizontal, Award, LogOut, CreditCard, MessageSquareText, Repeat, Receipt, Inbox, LayoutDashboard, MessageCircle, Palette } from "lucide-react";
+import { Button } from "@/components/ui";
 
 const NAV = [
   { href: "/admin", label: "ภาพรวม", icon: LayoutDashboard },
@@ -80,9 +81,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             autoFocus
           />
           {loginError && <p className="text-xs text-rose-500">{loginError}</p>}
-          <button type="submit" className="w-full rounded-full bg-brand-gradient text-white text-sm font-semibold py-2.5">
+          <Button fullWidth type="submit">
             เข้าสู่ระบบ
-          </button>
+          </Button>
         </form>
       </div>
     );

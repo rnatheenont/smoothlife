@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui";
 
 // 2C2P's frontendReturnUrl lands here. Two very different arrivals share it:
 //
@@ -48,9 +49,9 @@ function SuccessContent() {
         เราได้รับคำสั่งซื้อของคุณแล้ว ใบยืนยันคำสั่งซื้อและรายละเอียดการจัดส่งจะถูกส่งไปยังอีเมลที่ระบุไว้กับ Shopify
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-        <Link href="/shop" className="rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm">
+        <Button size="lg" href="/shop">
           ช้อปต่อ
-        </Link>
+        </Button>
         <Link href="/account" className="rounded-full border border-slate-200 font-semibold px-6 py-3 text-sm">
           กลับสู่บัญชีของฉัน
         </Link>

@@ -5,6 +5,7 @@ import { ShieldCheck, Loader2, Copy, Check } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import { useAuth } from "@/lib/auth-context";
 import DemoBadge from "@/components/DemoBadge";
+import { Button } from "@/components/ui";
 
 function ChangePasswordContent() {
   const { user } = useAuth();
@@ -91,12 +92,14 @@ function ChangePasswordContent() {
               <span className="truncate">{devLink}</span>
               {copied ? <Check size={14} className="text-brand-emerald shrink-0" /> : <Copy size={14} className="text-slate-400 shrink-0" />}
             </button>
-            <a
+            <Button
               href={devLink}
-              className="mt-3 block text-center rounded-full bg-brand-gradient text-white font-semibold px-6 py-2.5 text-xs"
+              size="none"
+              fullWidth
+              className="mt-3 px-6 py-2.5 text-xs"
             >
               ไปตั้งรหัสผ่านใหม่
-            </a>
+            </Button>
           </div>
         )}
       </div>

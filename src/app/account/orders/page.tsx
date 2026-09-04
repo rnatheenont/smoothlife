@@ -9,6 +9,7 @@ import { getProductBySlug } from "@/data/products";
 import AccountLayout from "@/components/account/AccountLayout";
 import { formatTHB } from "@/lib/format";
 import type { ShopifyOrderSummary } from "@/lib/shopify-admin";
+import { Button } from "@/components/ui";
 
 const fulfillmentLabel: Record<string, string> = {
   FULFILLED: "จัดส่งแล้ว",
@@ -115,14 +116,10 @@ function OrdersContent() {
         <div className="rounded-xl2 border border-amber-200 bg-amber-50 p-5 text-sm text-slate-700 leading-relaxed">
           บัญชีของคุณยังไม่ได้เชื่อมกับระบบคำสั่งซื้อของ Shopify ค่ะ (มักเกิดขึ้นเมื่อสมัครสมาชิกด้วยอีเมล/เบอร์ที่ไม่ตรงกับตอนสั่งซื้อ)
           <div className="mt-3">
-            <button
-              onClick={handleRetryLink}
-              disabled={linking}
-              className="flex items-center gap-1.5 rounded-full bg-brand-gradient text-white font-semibold px-4 py-2 text-xs disabled:opacity-60"
-            >
+            <Button size="sm" onClick={handleRetryLink} disabled={linking}>
               <RefreshCw size={13} className={linking ? "animate-spin" : ""} />
               {linking ? "กำลังเชื่อมบัญชี..." : "ลองเชื่อมบัญชีอีกครั้ง"}
-            </button>
+            </Button>
           </div>
           {linkAttempted && (
             <p className="mt-3 text-rose-600 font-medium">

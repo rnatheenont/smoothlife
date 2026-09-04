@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Award, Plus, X, Trash2, Search } from "lucide-react";
+import { Button } from "@/components/ui";
 
 type Tier = {
   id: string;
@@ -224,12 +225,9 @@ export default function AdminPointsPage() {
       <section className="mb-8">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-brand-ink">รายการแลกแต้ม</h2>
-          <button
-            onClick={openCreateTier}
-            className="flex items-center gap-1 rounded-full bg-brand-gradient text-white text-xs font-semibold px-3 py-1.5"
-          >
+          <Button size="none" className="px-3 py-1.5 text-xs" onClick={openCreateTier}>
             <Plus size={13} /> เพิ่มรายการ
-          </button>
+          </Button>
         </div>
         {tiers.length === 0 ? (
           <p className="text-sm text-slate-400 text-center py-6">ยังไม่มีรายการแลกแต้ม</p>
@@ -279,13 +277,9 @@ export default function AdminPointsPage() {
             placeholder="ค้นหาด้วยชื่อ, เบอร์โทร, หรืออีเมล"
             className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
           />
-          <button
-            type="submit"
-            disabled={searching}
-            className="flex items-center gap-1 rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 disabled:opacity-50"
-          >
+          <Button size="none" className="px-4 text-xs" type="submit" disabled={searching}>
             <Search size={13} /> ค้นหา
-          </button>
+          </Button>
         </form>
 
         {searched && !searching && results.length === 0 && (
@@ -337,13 +331,9 @@ export default function AdminPointsPage() {
                 placeholder="หมายเหตุ (ไม่บังคับ)"
                 className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
               />
-              <button
-                type="submit"
-                disabled={adjusting}
-                className="rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-2 disabled:opacity-50 shrink-0"
-              >
+              <Button size="sm" className="shrink-0" type="submit" disabled={adjusting}>
                 {adjusting ? "กำลังบันทึก..." : "ปรับแต้ม"}
-              </button>
+              </Button>
             </form>
             {adjustError && <p className="text-xs text-rose-500 mb-3">{adjustError}</p>}
 
@@ -445,13 +435,9 @@ export default function AdminPointsPage() {
                 />
               </div>
               {tierFormError && <p className="text-xs text-rose-500">{tierFormError}</p>}
-              <button
-                type="submit"
-                disabled={tierSubmitting}
-                className="w-full rounded-full bg-brand-gradient text-white text-sm font-semibold py-2.5 disabled:opacity-50"
-              >
+              <Button fullWidth type="submit" disabled={tierSubmitting}>
                 {tierSubmitting ? "กำลังบันทึก..." : "บันทึก"}
-              </button>
+              </Button>
             </form>
           </div>
         </div>

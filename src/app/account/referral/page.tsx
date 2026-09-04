@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Users, Copy, Check, Gift } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
+import { Button } from "@/components/ui";
 
 type ReferralHistoryRow = {
   id: string;
@@ -86,13 +87,10 @@ function ReferralContent() {
               value={shareUrl ?? ""}
               className="flex-1 min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 bg-slate-50"
             />
-            <button
-              onClick={copyLink}
-              className="shrink-0 flex items-center gap-1 rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-2.5"
-            >
+            <Button size="none" className="px-4 py-2.5 text-xs shrink-0" onClick={copyLink}>
               {copied ? <Check size={14} /> : <Copy size={14} />}
               {copied ? "คัดลอกแล้ว" : "คัดลอก"}
-            </button>
+            </Button>
           </div>
           <p className="text-[11px] text-slate-400 mt-2">
             เป็นลิงก์เฉพาะตัวคุณ ห้ามแชร์เป็นโค้ดส่วนลดสาธารณะ — ใช้ได้สูงสุด 20 คนต่อปี

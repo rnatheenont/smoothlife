@@ -13,6 +13,7 @@ import { getProductBySlug } from "@/data/products";
 import { formatTHB } from "@/lib/format";
 import { resizeForUpload, ResizedImage } from "@/lib/image-utils";
 import { hasStoredConsent, grantConsent } from "@/components/skin-coach/ConsentGate";
+import { Button } from "@/components/ui";
 
 type Msg = { role: "user" | "assistant"; content: string; image?: string };
 
@@ -782,15 +783,12 @@ export default function QuickChat() {
                         )
                       : t("ถามอะไรก็ได้ หรือเริ่มจากคำถามเหล่านี้", "Ask anything, or start with one of these")}
                   </p>
-                  <Link
-                    href="/skin-coach"
-                    className="mb-2 flex items-center gap-2.5 rounded-xl bg-brand-gradient px-3.5 py-2.5 text-left text-[13px] font-semibold text-white shadow-cardHover"
-                  >
+                  <Button size="none" className="px-3.5 py-2.5 mb-2 rounded-xl text-left text-[13px] shadow-cardHover" href="/skin-coach">
                     <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white/20">
                       <Camera size={13} />
                     </span>
                     {t("วิเคราะห์ผิวหน้าด้วยรูปถ่าย", "Analyze my skin from a photo")}
-                  </Link>
+                  </Button>
                   <div className="flex flex-col gap-2">
                     {suggestions.map((s) => (
                       <button
@@ -916,13 +914,9 @@ export default function QuickChat() {
                 )}
               </p>
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={confirmImageConsent}
-                  className="rounded-full bg-brand-gradient px-3.5 py-1.5 text-[12px] font-semibold text-white"
-                >
+                <Button size="none" className="px-3.5 py-1.5 text-[12px]" type="button" onClick={confirmImageConsent}>
                   {t("ยินยอม ดำเนินการต่อ", "Consent & continue")}
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={() => setAwaitingConsentImage(null)}
@@ -988,14 +982,9 @@ export default function QuickChat() {
               }
               className="flex-1 rounded-full border border-slate-200 bg-surface-soft px-4 py-2.5 text-[13px] outline-none focus:border-brand-teal"
             />
-            <button
-              type="submit"
-              disabled={loading || (!input.trim() && !pendingImage)}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white disabled:opacity-40"
-              aria-label="Send"
-            >
+            <Button size="none" className="grid h-9 w-9 shrink-0 place-items-center" type="submit" disabled={loading || (!input.trim() && !pendingImage)} aria-label="Send">
               <Send size={15} />
-            </button>
+            </Button>
           </form>
           <p className="bg-white px-4 pb-2.5 text-[10px] text-slate-400 text-center leading-snug">
             {lang === "en"
