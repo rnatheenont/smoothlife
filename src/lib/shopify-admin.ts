@@ -425,7 +425,13 @@ export type GuestTrackingOrder = {
 /**
  * Looks up one order for the signed-out tracking page.
  *
- * Takes the order number *and* a contact detail, and checks the contact
+ * Accepts either the order number (#4195) or the courier tracking number
+ * (SMEP00041022). The tracking number is the one the customer actually has in
+ * front of them — it is on the box and in the shipping SMS — so demanding the
+ * order number instead sends people back to hunt through old email for a
+ * number they never needed until now.
+ *
+ * Takes that *and* a contact detail, and checks the contact
  * against the order itself. Order numbers are sequential — #4195 tells you
  * #4194 exists — so the number alone must never be enough to read someone
  * else's delivery status. The contact is compared here rather than returned
@@ -436,35 +442,31 @@ export type GuestTrackingOrder = {
  * caller cannot tell the two apart, and so neither can someone guessing.
  */
 export async function getOrderForGuestTracking(
-  orderName: string,
+  reference: string,
   contact: string
 ): Promise<GuestTrackingOrder | null> {
   if (!shopifyAdminConfigured()) return null;
-  const name = orderName.trim().replace(/^#/, "");
-  if (!/^[A-Za-z0-9._-]{1,32}$/.test(name)) return null;
+  const ref = reference.trim().replace(/^#/, "");
+  if (!/^[A-Za-z0-9._-]{1,32}$/.test(ref)) return null;
 
-  try {
-    const data = await adminGraphql<{
-      orders: {
-        edges: {
-          node: {
-            name: string;
-            createdAt: string;
-            email: string | null;
-            phone: string | null;
-            displayFinancialStatus: string | null;
-            displayFulfillmentStatus: string | null;
-            shippingAddress: { phone: string | null } | null;
-            fulfillments: {
-              createdAt: string | null;
-              deliveredAt: string | null;
-              estimatedDeliveryAt: string | null;
-              trackingInfo: { company: string | null; number: string | null; url: string | null }[];
-            }[];
-          };
-        }[];
-      };
-    }>(
+  type Node = {
+    name: string;
+    createdAt: string;
+    email: string | null;
+    phone: string | null;
+    displayFinancialStatus: string | null;
+    displayFulfillmentStatus: string | null;
+    shippingAddress: { phone: string | null } | null;
+    fulfillments: {
+      createdAt: string | null;
+      deliveredAt: string | null;
+      estimatedDeliveryAt: string | null;
+      trackingInfo: { company: string | null; number: string | null; url: string | null }[];
+    }[];
+  };
+
+  async function lookup(query: string): Promise<Node | null> {
+    const data = await adminGraphql<{ orders: { edges: { node: Node }[] } }>(
       `query GuestTracking($q: String!) {
         orders(first: 1, query: $q) {
           edges {
@@ -486,10 +488,25 @@ export async function getOrderForGuestTracking(
           }
         }
       }`,
-      { q: `name:${name}` }
+      { q: query }
     );
+    return data.orders.edges[0]?.node ?? null;
+  }
 
-    const node = data.orders.edges[0]?.node;
+  try {
+    // Order number first, then the courier tracking number. Shopify's order
+    // search indexes tracking numbers, so the second lookup is a plain search
+    // rather than a filter — which is loose enough to also match a customer
+    // name or email, so the result is checked to actually carry the number
+    // that was typed before it counts as a match.
+    let node = await lookup(`name:${ref}`);
+    if (!node) {
+      const candidate = await lookup(ref);
+      const carriesNumber = candidate?.fulfillments.some((f) =>
+        f.trackingInfo.some((t) => t.number?.toLowerCase() === ref.toLowerCase())
+      );
+      node = carriesNumber ? candidate : null;
+    }
     if (!node) return null;
 
     const given = contact.trim().toLowerCase();

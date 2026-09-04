@@ -3,7 +3,8 @@ import { getOrderForGuestTracking, shopifyAdminConfigured } from "@/lib/shopify-
 import { isRateLimitedShared, clientIp } from "@/lib/rate-limit";
 import { buildTracking } from "@/lib/tracking";
 
-// Signed-out parcel tracking: order number + the phone or email on the order.
+// Signed-out parcel tracking: order number *or* courier tracking number,
+// plus the phone or email on the order.
 //
 // Rate limited by IP rather than by order number on purpose. Limiting per
 // order would let someone walk the whole sequence — #4190, #4191, #4192 — one
@@ -28,21 +29,24 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const orderName = typeof body.orderName === "string" ? body.orderName.trim() : "";
+  // `orderName` is the older field name, still accepted so a page cached in
+  // someone's browser keeps working after this deploy.
+  const raw = body.reference ?? body.orderName;
+  const reference = typeof raw === "string" ? raw.trim() : "";
   const contact = typeof body.contact === "string" ? body.contact.trim() : "";
-  if (!orderName || !contact) {
+  if (!reference || !contact) {
     return NextResponse.json(
-      { ok: false, error: "กรุณากรอกเลขคำสั่งซื้อและเบอร์โทรหรืออีเมล" },
+      { ok: false, error: "กรุณากรอกเลขคำสั่งซื้อหรือเลขพัสดุ และเบอร์โทรหรืออีเมล" },
       { status: 400 }
     );
   }
 
-  const order = await getOrderForGuestTracking(orderName, contact);
+  const order = await getOrderForGuestTracking(reference, contact);
   // One message for "no such order" and for "that contact isn't on this
   // order" — telling them apart would confirm which order numbers exist.
   if (!order) {
     return NextResponse.json(
-      { ok: false, error: "ไม่พบคำสั่งซื้อนี้ กรุณาตรวจสอบเลขคำสั่งซื้อและเบอร์โทร/อีเมลอีกครั้ง" },
+      { ok: false, error: "ไม่พบคำสั่งซื้อนี้ กรุณาตรวจสอบเลขที่กรอกและเบอร์โทร/อีเมลอีกครั้ง" },
       { status: 404 }
     );
   }
