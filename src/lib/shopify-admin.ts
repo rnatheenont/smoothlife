@@ -414,6 +414,161 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
   }
 }
 
+export type ShopifyOrderDetail = {
+  id: string;
+  name: string;
+  createdAt: string;
+  financialStatus: string | null;
+  fulfillmentStatus: string | null;
+  subtotal: string;
+  shipping: string;
+  discounts: string;
+  total: string;
+  currency: string;
+  shippingAddress: {
+    name: string | null;
+    address1: string | null;
+    address2: string | null;
+    city: string | null;
+    province: string | null;
+    zip: string | null;
+    phone: string | null;
+  } | null;
+  items: { title: string; quantity: number; total: string; slug: string | null }[];
+  shipments: ShopifyShipment[];
+};
+
+/**
+ * One order in full, for the customer's own order-detail page.
+ *
+ * Takes the viewer's Shopify customer id and refuses to return an order that
+ * belongs to anyone else. The check is here rather than in the route because
+ * the thing being protected is a home address and a phone number, and an
+ * ownership test that lives in the caller is one refactor away from being
+ * forgotten. Numeric order ids are guessable in exactly the way order numbers
+ * are, so this is the only thing standing between a URL and someone else's
+ * delivery details.
+ */
+export async function getCustomerOrderDetail(
+  shopifyCustomerId: string,
+  orderId: string
+): Promise<ShopifyOrderDetail | null> {
+  if (!shopifyAdminConfigured()) return null;
+  if (!/^\d{1,20}$/.test(orderId)) return null;
+
+  const viewerGid = shopifyCustomerId.startsWith("gid://")
+    ? shopifyCustomerId
+    : `gid://shopify/Customer/${shopifyCustomerId}`;
+
+  try {
+    const data = await adminGraphql<{
+      order: {
+        id: string;
+        name: string;
+        createdAt: string;
+        displayFinancialStatus: string | null;
+        displayFulfillmentStatus: string | null;
+        customer: { id: string } | null;
+        subtotalPriceSet: { shopMoney: { amount: string } } | null;
+        totalShippingPriceSet: { shopMoney: { amount: string } } | null;
+        totalDiscountsSet: { shopMoney: { amount: string } } | null;
+        currentTotalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
+        shippingAddress: {
+          name: string | null;
+          address1: string | null;
+          address2: string | null;
+          city: string | null;
+          province: string | null;
+          zip: string | null;
+          phone: string | null;
+        } | null;
+        lineItems: {
+          edges: {
+            node: {
+              title: string;
+              quantity: number;
+              discountedTotalSet: { shopMoney: { amount: string } };
+              product: { handle: string } | null;
+            };
+          }[];
+        };
+        fulfillments: {
+          createdAt: string | null;
+          deliveredAt: string | null;
+          estimatedDeliveryAt: string | null;
+          trackingInfo: { company: string | null; number: string | null; url: string | null }[];
+        }[];
+      } | null;
+    }>(
+      `query OrderDetail($id: ID!) {
+        order(id: $id) {
+          id
+          name
+          createdAt
+          displayFinancialStatus
+          displayFulfillmentStatus
+          customer { id }
+          subtotalPriceSet { shopMoney { amount } }
+          totalShippingPriceSet { shopMoney { amount } }
+          totalDiscountsSet { shopMoney { amount } }
+          currentTotalPriceSet { shopMoney { amount currencyCode } }
+          shippingAddress { name address1 address2 city province zip phone }
+          lineItems(first: 50) {
+            edges { node { title quantity discountedTotalSet { shopMoney { amount } } product { handle } } }
+          }
+          fulfillments(first: 5) {
+            createdAt
+            deliveredAt
+            estimatedDeliveryAt
+            trackingInfo { company number url }
+          }
+        }
+      }`,
+      { id: `gid://shopify/Order/${orderId}` }
+    );
+
+    const o = data.order;
+    // Same null for "no such order" and "not yours" — telling them apart would
+    // confirm which order ids exist.
+    if (!o || o.customer?.id !== viewerGid) return null;
+
+    return {
+      id: o.id,
+      name: o.name,
+      createdAt: o.createdAt,
+      financialStatus: o.displayFinancialStatus,
+      fulfillmentStatus: o.displayFulfillmentStatus,
+      subtotal: o.subtotalPriceSet?.shopMoney.amount ?? "0",
+      shipping: o.totalShippingPriceSet?.shopMoney.amount ?? "0",
+      discounts: o.totalDiscountsSet?.shopMoney.amount ?? "0",
+      total: o.currentTotalPriceSet.shopMoney.amount,
+      currency: o.currentTotalPriceSet.shopMoney.currencyCode,
+      shippingAddress: o.shippingAddress,
+      items: o.lineItems.edges.map((e) => ({
+        title: e.node.title,
+        quantity: e.node.quantity,
+        total: e.node.discountedTotalSet.shopMoney.amount,
+        slug: e.node.product?.handle ?? null,
+      })),
+      shipments: o.fulfillments.flatMap((f) =>
+        f.trackingInfo
+          .filter((t) => t.number)
+          .map((t) => ({
+            company: t.company,
+            number: t.number as string,
+            url: t.url,
+            shippedAt: f.createdAt,
+            deliveredAt: f.deliveredAt,
+            estimatedDeliveryAt: f.estimatedDeliveryAt,
+          }))
+      ),
+    };
+  } catch (err) {
+    console.error("[shopify-admin] getCustomerOrderDetail failed", err);
+    return null;
+  }
+}
+
 export type GuestTrackingOrder = {
   name: string;
   createdAt: string;

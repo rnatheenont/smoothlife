@@ -3,55 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Package, Loader2, Truck, RefreshCw } from "lucide-react";
+import { Package, Loader2, Truck, RefreshCw, ChevronRight } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { getProductBySlug } from "@/data/products";
 import AccountLayout from "@/components/account/AccountLayout";
 import { formatTHB } from "@/lib/format";
+import { fulfillmentBadge, financialLabel, orderIdFromGid } from "@/lib/order-status";
 import type { ShopifyOrderSummary } from "@/lib/shopify-admin";
 import type { buildTracking } from "@/lib/tracking";
 import ShipmentTracker from "@/components/ShipmentTracker";
 import { Button } from "@/components/ui";
 
-const fulfillmentLabel: Record<string, string> = {
-  FULFILLED: "จัดส่งแล้ว",
-  IN_PROGRESS: "กำลังเตรียมจัดส่ง",
-  PARTIALLY_FULFILLED: "จัดส่งบางส่วน",
-  UNFULFILLED: "รอดำเนินการ",
-  PENDING_FULFILLMENT: "รอดำเนินการ",
-  ON_HOLD: "พักคำสั่งซื้อ",
-  OPEN: "เปิดอยู่",
-  SCHEDULED: "กำหนดส่งแล้ว",
-  RESTOCKED: "คืนสต็อกแล้ว",
-  REQUEST_DECLINED: "คำขอถูกปฏิเสธ",
-};
-const fulfillmentColor: Record<string, string> = {
-  FULFILLED: "bg-emerald-100 text-emerald-700",
-  IN_PROGRESS: "bg-sky-100 text-sky-700",
-  PARTIALLY_FULFILLED: "bg-sky-100 text-sky-700",
-  UNFULFILLED: "bg-amber-100 text-amber-700",
-  PENDING_FULFILLMENT: "bg-amber-100 text-amber-700",
-  ON_HOLD: "bg-slate-100 text-slate-600",
-  OPEN: "bg-amber-100 text-amber-700",
-  SCHEDULED: "bg-sky-100 text-sky-700",
-  RESTOCKED: "bg-slate-100 text-slate-600",
-  REQUEST_DECLINED: "bg-rose-100 text-rose-700",
-};
-const financialLabel: Record<string, string> = {
-  PAID: "ชำระเงินแล้ว",
-  PENDING: "รอชำระเงิน",
-  PARTIALLY_PAID: "ชำระบางส่วน",
-  REFUNDED: "คืนเงินแล้ว",
-  PARTIALLY_REFUNDED: "คืนเงินบางส่วน",
-  VOIDED: "ยกเลิกรายการ",
-  AUTHORIZED: "อนุมัติวงเงินแล้ว",
-  EXPIRED: "หมดอายุ",
-};
-
-function fulfillmentBadge(status: string | null) {
-  const s = status || "UNFULFILLED";
-  return { label: fulfillmentLabel[s] || s, color: fulfillmentColor[s] || "bg-slate-100 text-slate-600" };
-}
 
 type OrderWithTracking = ShopifyOrderSummary & { tracking?: ReturnType<typeof buildTracking> };
 
@@ -163,10 +125,19 @@ function OrdersContent() {
         {orders.map((o) => {
           const badge = fulfillmentBadge(o.fulfillmentStatus);
           return (
-            <div key={o.name} className="rounded-xl2 border border-slate-100 p-5 shadow-card">
+            <div key={o.id} className="rounded-xl2 border border-slate-100 p-5 shadow-card">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-sm font-bold text-brand-ink">{o.name}</p>
+                  {/* The whole header links through — the order number is what
+                      people reach for, and a separate "details" link would be
+                      one more thing to aim at on a phone. */}
+                  <Link
+                    href={`/account/orders/${orderIdFromGid(o.id)}`}
+                    className="group inline-flex items-center gap-1 rounded-s focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                  >
+                    <span className="text-sm font-bold text-brand-ink group-hover:text-brand-800">{o.name}</span>
+                    <ChevronRight size={14} className="text-slate-300 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
                   <p className="text-xs text-slate-400">
                     {new Date(o.createdAt).toLocaleDateString("th-TH")}
                     {o.financialStatus ? ` · ${financialLabel[o.financialStatus] || o.financialStatus}` : ""}
