@@ -2,6 +2,13 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
+  // Required, not optional, now that the ui/ primitives carry `dark:` classes.
+  // Tailwind's default is `media`, which would switch those primitives to
+  // their dark styling for anyone whose OS is in dark mode while the other
+  // ~100 files stayed light — dark text on dark panels, on the live shop, with
+  // nobody having asked for dark mode. "class" means dark styling only ever
+  // applies when something deliberately puts `class="dark"` on <html>.
+  darkMode: "class",
   theme: {
     extend: {
       colors: {

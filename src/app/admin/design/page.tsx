@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
+import { Sun, Moon, ShoppingBag } from "lucide-react";
 import config from "../../../../tailwind.config";
+import { Button, Badge, Card, Field, Modal } from "@/components/ui";
 
 // A living style guide: it reads the real tailwind.config, so it cannot drift
 // from what the code actually ships. A design system that lives only in a
@@ -53,6 +56,9 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 
 export default function AdminDesignSystemPage() {
   const colorGroups = Object.entries(theme.colors ?? {});
+  const [dark, setDark] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [demoEmail, setDemoEmail] = useState("");
 
   return (
     <div className="max-w-4xl">
@@ -136,6 +142,109 @@ export default function AdminDesignSystemPage() {
             </div>
           ))}
         </div>
+      </Section>
+
+      <Section
+        title="คอมโพเนนต์"
+        hint="ของจริงที่เรียกใช้ได้เลย — import { Button, Badge, Card, Field, Modal } from '@/components/ui'"
+      >
+        <div className="mb-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setDark((d) => !d)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-body-xs font-semibold text-slate-600 transition hover:border-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+          >
+            {dark ? <Sun size={13} /> : <Moon size={13} />}
+            ดูโหมด{dark ? "สว่าง" : "มืด"}
+          </button>
+          <span className="text-[11px] text-slate-400">
+            สลับเฉพาะกล่องด้านล่าง — ทั้งเว็บยังเป็นโหมดสว่างอยู่
+          </span>
+        </div>
+
+        {/* The `dark` class scopes Tailwind's dark: variants to this subtree
+            only, which is the whole point of darkMode:"class" — the rest of the
+            page keeps rendering exactly as it does in production. */}
+        <div className={dark ? "dark" : undefined}>
+          <div className="rounded-l bg-sand-50 p-5 dark:bg-slate-950">
+            <p className="mb-2 text-label font-semibold uppercase tracking-wide text-slate-400">Button</p>
+            <div className="mb-1.5 flex flex-wrap items-center gap-2">
+              <Button>ซื้อเลย</Button>
+              <Button variant="secondary">ดูรายละเอียด</Button>
+              <Button variant="soft">บันทึกไว้ก่อน</Button>
+              <Button variant="ghost">ยกเลิก</Button>
+              <Button variant="danger">ลบ</Button>
+            </div>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <Button size="sm">เล็ก</Button>
+              <Button size="lg">ใหญ่</Button>
+              <Button loading>กำลังส่ง</Button>
+              <Button disabled>กดไม่ได้</Button>
+              <Button href="/shop" variant="secondary" size="sm">
+                <ShoppingBag size={13} /> เป็นลิงก์
+              </Button>
+            </div>
+
+            <p className="mb-2 text-label font-semibold uppercase tracking-wide text-slate-400">Badge</p>
+            <div className="mb-4 flex flex-wrap items-center gap-1.5">
+              <Badge tone="brand">สมาชิก Gold</Badge>
+              <Badge tone="success">ชำระแล้ว</Badge>
+              <Badge tone="warning">รอตรวจสอบ</Badge>
+              <Badge tone="danger">ยกเลิก</Badge>
+              <Badge tone="info">ส่งของแล้ว</Badge>
+              <Badge>ทั่วไป</Badge>
+            </div>
+
+            <p className="mb-2 text-label font-semibold uppercase tracking-wide text-slate-400">Card + Field</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Card>
+                <p className="text-title font-bold text-brand-ink dark:text-slate-100">การ์ดปกติ</p>
+                <p className="mt-1 text-body-xs text-slate-500 dark:text-slate-400">
+                  ใช้ shadow-card กับ rounded-xl2 ตัวเดิม ไม่ได้เปลี่ยนหน้าตา
+                </p>
+              </Card>
+              <Card>
+                <div className="flex flex-col gap-3">
+                  <Field
+                    label="อีเมล"
+                    type="email"
+                    placeholder="you@example.com"
+                    hint="ใช้สำหรับส่งใบเสร็จ"
+                    value={demoEmail}
+                    onChange={(e) => setDemoEmail(e.target.value)}
+                  />
+                  <Field label="เบอร์โทร" required error="กรุณากรอกเบอร์โทร 10 หลัก" defaultValue="08" />
+                </div>
+              </Card>
+            </div>
+
+            <p className="mb-2 mt-4 text-label font-semibold uppercase tracking-wide text-slate-400">Modal</p>
+            <Button variant="secondary" size="sm" onClick={() => setModalOpen(true)}>
+              เปิดตัวอย่าง Modal
+            </Button>
+          </div>
+        </div>
+
+        <Modal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title="ยืนยันการยกเลิก"
+          description="กด Esc หรือคลิกพื้นหลังเพื่อปิด — โฟกัสจะวนอยู่ในกล่องนี้เท่านั้น"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setModalOpen(false)}>
+                ไม่ใช่ตอนนี้
+              </Button>
+              <Button variant="danger" onClick={() => setModalOpen(false)}>
+                ยืนยันยกเลิก
+              </Button>
+            </>
+          }
+        >
+          <p className="text-body-s text-slate-600 dark:text-slate-300">
+            ลองกด Tab ดู — โฟกัสจะไม่หลุดออกไปหน้าเบื้องหลัง และเมื่อปิดจะกลับไปที่ปุ่มเดิมที่กดเปิด
+          </p>
+        </Modal>
       </Section>
 
       <Section title="ระยะห่าง" hint="ใช้กับ p- m- gap- w- h- ได้ทั้งหมด">
