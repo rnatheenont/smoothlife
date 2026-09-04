@@ -28,6 +28,7 @@ const columns = [
     title: "Help & Account",
     links: [
       { href: "/help", label: "ศูนย์ช่วยเหลือ" },
+      { href: "/track", label: "ติดตามพัสดุ" },
       { href: "/help/delivery", label: "การจัดส่งและคืนสินค้า" },
       { href: "/help/payment", label: "การชำระเงิน" },
       { href: "/loyalty", label: "สิทธิสมาชิก" },

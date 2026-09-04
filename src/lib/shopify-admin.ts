@@ -293,6 +293,17 @@ export async function createShopifyCustomer(opts: {
   }
 }
 
+export type ShopifyShipment = {
+  /** Courier name exactly as the shipping app wrote it, e.g. "Kerry Express Thailand". */
+  company: string | null;
+  number: string;
+  /** Courier's own tracking page, as stored by Shopify. */
+  url: string | null;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+  estimatedDeliveryAt: string | null;
+};
+
 export type ShopifyOrderSummary = {
   id: string;
   name: string;
@@ -303,6 +314,8 @@ export type ShopifyOrderSummary = {
   currency: string;
   items: { title: string; quantity: number; slug: string | null }[];
   trackingNumbers: string[];
+  /** One entry per parcel — an order split across boxes has several. */
+  shipments: ShopifyShipment[];
 };
 
 // Real recent order history + fulfillment status for a linked Shopify
@@ -329,7 +342,12 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
               lineItems: {
                 edges: { node: { title: string; quantity: number; product: { handle: string } | null } }[];
               };
-              fulfillments: { trackingInfo: { number: string | null }[] }[];
+              fulfillments: {
+                createdAt: string | null;
+                deliveredAt: string | null;
+                estimatedDeliveryAt: string | null;
+                trackingInfo: { company: string | null; number: string | null; url: string | null }[];
+              }[];
             };
           }[];
         };
@@ -347,7 +365,12 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
                 displayFulfillmentStatus
                 currentTotalPriceSet { shopMoney { amount currencyCode } }
                 lineItems(first: 5) { edges { node { title quantity product { handle } } } }
-                fulfillments(first: 3) { trackingInfo { number } }
+                fulfillments(first: 5) {
+                  createdAt
+                  deliveredAt
+                  estimatedDeliveryAt
+                  trackingInfo { company number url }
+                }
               }
             }
           }
@@ -370,9 +393,140 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
         slug: e.node.product?.handle || null,
       })),
       trackingNumbers: node.fulfillments.flatMap((f) => f.trackingInfo.map((t) => t.number).filter(Boolean) as string[]),
+      shipments: node.fulfillments.flatMap((f) =>
+        f.trackingInfo
+          .filter((t) => t.number)
+          .map((t) => ({
+            company: t.company,
+            number: t.number as string,
+            url: t.url,
+            // A fulfillment is created at the moment the parcel is handed to
+            // the courier, so its createdAt is the "shipped" timestamp.
+            shippedAt: f.createdAt,
+            deliveredAt: f.deliveredAt,
+            estimatedDeliveryAt: f.estimatedDeliveryAt,
+          }))
+      ),
     }));
   } catch (err) {
     console.error("[shopify-admin] getCustomerOrders failed", err);
+    return null;
+  }
+}
+
+export type GuestTrackingOrder = {
+  name: string;
+  createdAt: string;
+  financialStatus: string | null;
+  fulfillmentStatus: string | null;
+  shipments: ShopifyShipment[];
+};
+
+/**
+ * Looks up one order for the signed-out tracking page.
+ *
+ * Takes the order number *and* a contact detail, and checks the contact
+ * against the order itself. Order numbers are sequential — #4195 tells you
+ * #4194 exists — so the number alone must never be enough to read someone
+ * else's delivery status. The contact is compared here rather than returned
+ * for the caller to check, so there is no version of this function that hands
+ * back an order it has not verified.
+ *
+ * Returns null for "no such order" and for "contact doesn't match" alike: the
+ * caller cannot tell the two apart, and so neither can someone guessing.
+ */
+export async function getOrderForGuestTracking(
+  orderName: string,
+  contact: string
+): Promise<GuestTrackingOrder | null> {
+  if (!shopifyAdminConfigured()) return null;
+  const name = orderName.trim().replace(/^#/, "");
+  if (!/^[A-Za-z0-9._-]{1,32}$/.test(name)) return null;
+
+  try {
+    const data = await adminGraphql<{
+      orders: {
+        edges: {
+          node: {
+            name: string;
+            createdAt: string;
+            email: string | null;
+            phone: string | null;
+            displayFinancialStatus: string | null;
+            displayFulfillmentStatus: string | null;
+            shippingAddress: { phone: string | null } | null;
+            fulfillments: {
+              createdAt: string | null;
+              deliveredAt: string | null;
+              estimatedDeliveryAt: string | null;
+              trackingInfo: { company: string | null; number: string | null; url: string | null }[];
+            }[];
+          };
+        }[];
+      };
+    }>(
+      `query GuestTracking($q: String!) {
+        orders(first: 1, query: $q) {
+          edges {
+            node {
+              name
+              createdAt
+              email
+              phone
+              displayFinancialStatus
+              displayFulfillmentStatus
+              shippingAddress { phone }
+              fulfillments(first: 5) {
+                createdAt
+                deliveredAt
+                estimatedDeliveryAt
+                trackingInfo { company number url }
+              }
+            }
+          }
+        }
+      }`,
+      { q: `name:${name}` }
+    );
+
+    const node = data.orders.edges[0]?.node;
+    if (!node) return null;
+
+    const given = contact.trim().toLowerCase();
+    const digits = given.replace(/\D/g, "");
+    const emails = [node.email].filter(Boolean).map((e) => (e as string).toLowerCase());
+    const phones = [node.phone, node.shippingAddress?.phone]
+      .filter(Boolean)
+      .map((p) => (p as string).replace(/\D/g, ""));
+
+    // A Thai number reaches Shopify as 08xxxxxxxx or +66 8xxxxxxxx depending
+    // on where it was entered, so compare on the last 9 digits rather than
+    // demanding the two strings match.
+    const phoneMatches =
+      digits.length >= 9 && phones.some((p) => p.slice(-9) === digits.slice(-9));
+    const emailMatches = emails.includes(given);
+    if (!phoneMatches && !emailMatches) return null;
+
+    return {
+      name: node.name,
+      createdAt: node.createdAt,
+      financialStatus: node.displayFinancialStatus,
+      fulfillmentStatus: node.displayFulfillmentStatus,
+      shipments: node.fulfillments.flatMap((f) =>
+        f.trackingInfo
+          .filter((t) => t.number)
+          .map((t) => ({
+            company: t.company,
+            number: t.number as string,
+            url: t.url,
+            shippedAt: f.createdAt,
+            deliveredAt: f.deliveredAt,
+            estimatedDeliveryAt: f.estimatedDeliveryAt,
+          }))
+      ),
+    };
+  } catch (err) {
+    console.error("[shopify-admin] getOrderForGuestTracking failed", err);
     return null;
   }
 }

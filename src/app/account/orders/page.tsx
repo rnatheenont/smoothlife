@@ -9,6 +9,8 @@ import { getProductBySlug } from "@/data/products";
 import AccountLayout from "@/components/account/AccountLayout";
 import { formatTHB } from "@/lib/format";
 import type { ShopifyOrderSummary } from "@/lib/shopify-admin";
+import type { buildTracking } from "@/lib/tracking";
+import ShipmentTracker from "@/components/ShipmentTracker";
 import { Button } from "@/components/ui";
 
 const fulfillmentLabel: Record<string, string> = {
@@ -51,11 +53,13 @@ function fulfillmentBadge(status: string | null) {
   return { label: fulfillmentLabel[s] || s, color: fulfillmentColor[s] || "bg-slate-100 text-slate-600" };
 }
 
+type OrderWithTracking = ShopifyOrderSummary & { tracking?: ReturnType<typeof buildTracking> };
+
 function OrdersContent() {
   const { addItem } = useCart();
   const [loading, setLoading] = useState(true);
   const [linked, setLinked] = useState(false);
-  const [orders, setOrders] = useState<ShopifyOrderSummary[]>([]);
+  const [orders, setOrders] = useState<OrderWithTracking[]>([]);
   const [error, setError] = useState(false);
   const [linking, setLinking] = useState(false);
   const [linkAttempted, setLinkAttempted] = useState(false);
@@ -200,10 +204,19 @@ function OrdersContent() {
                 })}
               </div>
 
-              {o.trackingNumbers.length > 0 && (
-                <p className="flex items-center gap-1.5 text-xs text-slate-500 mb-3">
-                  <Truck size={13} /> เลขพัสดุ: {o.trackingNumbers.join(", ")}
-                </p>
+              {o.tracking ? (
+                <div className="mb-3">
+                  <ShipmentTracker
+                    shipments={o.tracking.shipments}
+                    hasCourierFeed={o.tracking.hasCourierFeed}
+                  />
+                </div>
+              ) : (
+                o.trackingNumbers.length > 0 && (
+                  <p className="flex items-center gap-1.5 text-xs text-slate-500 mb-3">
+                    <Truck size={13} /> เลขพัสดุ: {o.trackingNumbers.join(", ")}
+                  </p>
+                )
               )}
 
               <div className="flex items-center justify-between border-t border-slate-100 pt-3">
