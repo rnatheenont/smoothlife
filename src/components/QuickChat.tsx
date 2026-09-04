@@ -206,6 +206,11 @@ export default function QuickChat() {
   const thumbRef = useRef<string | null>(null);
   const [escalating, setEscalating] = useState(false);
   const [escalateMsg, setEscalateMsg] = useState<string | null>(null);
+  // Leaving a message is a compose step, not a one-tap send: the team needs
+  // to know what the customer actually wants, and a bare transcript makes
+  // them guess it from a conversation they weren't part of.
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [note, setNote] = useState("");
   const [badgeIndex, setBadgeIndex] = useState(0);
   const [badgeFading, setBadgeFading] = useState(false);
   // The badge is wider than the round launcher icon, so it must extend
@@ -354,7 +359,7 @@ export default function QuickChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  async function escalate() {
+  async function escalate(customerNote: string) {
     if (!user) {
       setEscalateMsg(t("กรุณาเข้าสู่ระบบก่อน เพื่อให้ทีมงานติดต่อกลับได้ค่ะ", "Please sign in first so our team can contact you back."));
       return;
@@ -366,12 +371,14 @@ export default function QuickChat() {
       const res = await fetch("/api/chat/escalate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript }),
+        body: JSON.stringify({ transcript, note: customerNote }),
       });
       const data = await res.json();
       if (!data.ok) {
         setEscalateMsg(data.error || t("ส่งไม่สำเร็จ กรุณาลองใหม่ค่ะ", "Couldn't send — please try again."));
       } else {
+        setNoteOpen(false);
+        setNote("");
         setEscalateMsg(
           data.contactValue
             ? t(
@@ -739,9 +746,9 @@ export default function QuickChat() {
             <div className="flex items-center gap-1 shrink-0">
               {messages.length > 0 && (
                 <button
-                  onClick={escalate}
+                  onClick={() => setNoteOpen((v) => !v)}
                   disabled={escalating}
-                  aria-label={t("คุยกับทีมงาน", "Talk to our team")}
+                  aria-label={t("ฝากข้อความถึงแอดมิน", "Leave a message for our team")}
                   className="grid h-7 w-7 place-items-center rounded-full text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-50"
                 >
                   <Headset size={14} />
@@ -934,6 +941,46 @@ export default function QuickChat() {
             )}
           </div>
 
+          {noteOpen && (
+            <div className="border-t border-slate-100 bg-surface-soft px-3.5 py-3">
+              <p className="mb-1.5 text-[12px] font-semibold text-brand-ink">
+                {t("ฝากข้อความถึงแอดมิน", "Leave a message for our team")}
+              </p>
+              <p className="mb-2 text-[11px] leading-relaxed text-slate-500">
+                {t(
+                  "ทีมงานจะติดต่อกลับภายใน 1 วันทำการ ระหว่างรอ คุยกับน้อง Smoothie ต่อได้ตามปกติค่ะ",
+                  "The team replies within 1 business day. You can keep chatting with Smoothie meanwhile."
+                )}
+              </p>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                maxLength={1000}
+                placeholder={t("เช่น ของยังไม่ถึง อยากเปลี่ยนที่อยู่จัดส่ง", "e.g. my parcel hasn't arrived, I need to change the address")}
+                className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] outline-none focus-visible:border-brand-600 focus-visible:ring-2 focus-visible:ring-brand-600"
+              />
+              <div className="mt-2 flex items-center gap-2">
+                <Button
+                  size="none"
+                  className="px-3.5 py-1.5 text-[12px]"
+                  onClick={() => escalate(note)}
+                  loading={escalating}
+                  disabled={!note.trim()}
+                >
+                  {escalating ? t("กำลังส่ง...", "Sending...") : t("ฝากข้อความ", "Send")}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setNoteOpen(false)}
+                  className="rounded-full border border-slate-200 px-3.5 py-1.5 text-[12px] text-slate-500"
+                >
+                  {t("ยกเลิก", "Cancel")}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Reaching a human was previously a 28px headset icon in the header
               that only appeared once a conversation existed — findable if you
               already knew it was there. These say what they do, and are
@@ -953,11 +1000,11 @@ export default function QuickChat() {
               variant="ghost"
               size="none"
               className="gap-1 px-2.5 py-1 text-[11px]"
-              onClick={escalate}
+              onClick={() => setNoteOpen((v) => !v)}
               disabled={escalating}
             >
               <Headset size={13} />
-              {escalating ? t("กำลังส่ง...", "Sending...") : t("ติดต่อแอดมิน", "Contact our team")}
+              {t("ฝากข้อความถึงแอดมิน", "Leave a message")}
             </Button>
           </div>
 
