@@ -661,6 +661,72 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
   }
 }
 
+/**
+ * Writes a tracking number onto an existing fulfillment.
+ *
+ * Only ever *updates* — it will not create a fulfillment. Creating one marks
+ * the items shipped and is a bigger claim than "here is the parcel number";
+ * today a person fulfils the order and then keys the number, and this
+ * replaces the second half of that, not the first.
+ *
+ * `notifyCustomer` sends Shopify's shipping email. That email cannot be
+ * recalled, so it is passed explicitly by the caller rather than defaulted.
+ */
+export async function setFulfillmentTracking(opts: {
+  fulfillmentId: string;
+  number: string;
+  company: string;
+  notifyCustomer: boolean;
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!shopifyAdminConfigured()) return { ok: false, error: "shopify admin not configured" };
+  try {
+    const data = await adminGraphql<{
+      fulfillmentTrackingInfoUpdate: {
+        fulfillment: { id: string } | null;
+        userErrors: { field: string[] | null; message: string }[];
+      };
+    }>(
+      `mutation SetTracking($fulfillmentId: ID!, $info: FulfillmentTrackingInput!, $notify: Boolean) {
+        fulfillmentTrackingInfoUpdate(fulfillmentId: $fulfillmentId, trackingInfoInput: $info, notifyCustomer: $notify) {
+          fulfillment { id }
+          userErrors { field message }
+        }
+      }`,
+      {
+        fulfillmentId: opts.fulfillmentId,
+        info: { number: opts.number, company: opts.company },
+        notify: opts.notifyCustomer,
+      }
+    );
+
+    const errs = data.fulfillmentTrackingInfoUpdate.userErrors;
+    if (errs?.length) return { ok: false, error: errs.map((e) => e.message).join("; ") };
+    if (!data.fulfillmentTrackingInfoUpdate.fulfillment) {
+      return { ok: false, error: "Shopify ไม่ได้คืน fulfillment กลับมา" };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/** The scopes the *website's* own Admin app holds — not the same app as any other integration. */
+export async function getOwnAccessScopes(): Promise<{ app: string | null; scopes: string[] } | null> {
+  if (!shopifyAdminConfigured()) return null;
+  try {
+    const data = await adminGraphql<{
+      currentAppInstallation: { app: { title: string } | null; accessScopes: { handle: string }[] };
+    }>(`query OwnScopes { currentAppInstallation { app { title } accessScopes { handle } } }`);
+    return {
+      app: data.currentAppInstallation?.app?.title ?? null,
+      scopes: (data.currentAppInstallation?.accessScopes ?? []).map((s) => s.handle),
+    };
+  } catch (err) {
+    console.error("[shopify-admin] getOwnAccessScopes failed", err);
+    return null;
+  }
+}
+
 export type GuestTrackingOrder = {
   name: string;
   createdAt: string;

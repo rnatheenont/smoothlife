@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
+import { getOwnAccessScopes } from "@/lib/shopify-admin";
 
 // What the tracking sync has been told and what it decided. During dry-run
 // this is the whole product: the mismatches are the thing worth looking at,
@@ -38,10 +39,17 @@ export async function GET(req: NextRequest) {
     return acc;
   }, {});
 
+  // Asked of Shopify rather than assumed: which app the website authenticates
+  // as is exactly the thing that was guessed wrong once already, and writing
+  // needs a scope the read-only work never did.
+  const own = await getOwnAccessScopes();
+
   return NextResponse.json({
     ok: true,
     mode: process.env.TRACKING_SYNC_MODE || "dry-run",
     configured: Boolean(process.env.TRACKING_WEBHOOK_SECRET),
+    app: own?.app ?? null,
+    canWrite: Boolean(own?.scopes.includes("write_fulfillments")),
     counts,
     rows,
   });

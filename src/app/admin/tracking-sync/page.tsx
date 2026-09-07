@@ -22,6 +22,8 @@ const ACTION: Record<string, { label: string; tone: "success" | "neutral" | "dan
 type Payload = {
   mode: string;
   configured: boolean;
+  app: string | null;
+  canWrite: boolean;
   counts: Record<string, number>;
   rows: TrackingSyncRow[];
 };
@@ -82,6 +84,16 @@ export default function AdminTrackingSyncPage() {
           {data && !data.configured && (
             <p className="mt-1 text-body-xs text-rose-600">
               ยังไม่ได้ตั้ง TRACKING_WEBHOOK_SECRET — endpoint จะปฏิเสธทุกคำขอจนกว่าจะตั้งค่า
+            </p>
+          )}
+          {data && (
+            <p className="mt-1 text-body-xs text-slate-500">
+              เว็บใช้แอป Shopify: <b>{data.app ?? "ไม่ทราบ"}</b> · สิทธิ์เขียน fulfillment:{" "}
+              {data.canWrite ? (
+                <b className="text-brand-800">มี ✅</b>
+              ) : (
+                <b className="text-rose-600">ยังไม่มี ❌ (เปิดโหมดเขียนไม่ได้จนกว่าจะเพิ่ม write_fulfillments)</b>
+              )}
             </p>
           )}
         </div>
