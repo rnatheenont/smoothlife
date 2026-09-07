@@ -120,8 +120,11 @@ export async function fetchPackedOrders(limit = 40): Promise<{ orderRef: string;
   const list = await listRes.text();
   if (/LoginForm\[password\]/.test(list)) throw new SokoError("session soko หมดอายุระหว่างดึงข้อมูล");
 
-  // View links are the only per-order handle the list gives us.
-  const hrefs = [...list.matchAll(/href="([^"]*r=order%2Fview[^"]*)"/gi)].map((m) => decode(m[1]));
+  // View links are the only per-order handle the list gives us. Matched with
+  // the slash both encoded and not: soko writes `r=order/view` plainly, and an
+  // earlier version only looked for `%2F`, which found nothing at all and made
+  // a working login look like an empty warehouse.
+  const hrefs = [...list.matchAll(/href="([^"]*r=order(?:%2F|\/)view[^"]*)"/gi)].map((m) => decode(m[1]));
   const unique = [...new Set(hrefs)].slice(0, limit);
   if (unique.length === 0) return [];
 
