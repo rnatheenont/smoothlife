@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchPackedOrders, sokoConfigured, SokoError } from "@/lib/soko";
+import { fetchPackedOrders, sokoConfigured, SokoError, lastDiagnostics } from "@/lib/soko";
 import { processTrackingUpdate, logSyncFailure, trackingMode } from "@/lib/tracking-apply";
 import { supabaseConfigured } from "@/lib/supabase-server";
 import { shopifyAdminConfigured } from "@/lib/shopify-admin";
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     // Genuinely normal on a quiet hour, so not an error — but still worth
     // being able to tell apart from a broken run, which is why the failure
     // above writes a row and this does not.
-    return NextResponse.json({ ok: true, mode: trackingMode(), found: 0, results: [] });
+    return NextResponse.json({ ok: true, mode: trackingMode(), found: 0, diagnostics: lastDiagnostics, results: [] });
   }
 
   const results = [];

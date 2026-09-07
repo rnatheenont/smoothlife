@@ -105,6 +105,16 @@ async function trackingFromView(url: string, jar: string): Promise<{ orderRef: s
  * therefore the number — exists, and to this one store so a mistake here can
  * never reach into the other brands sharing the same warehouse account.
  */
+export type SokoDiagnostics = {
+  listBytes: number;
+  sawLoginForm: boolean;
+  orderNumbersOnPage: number;
+  viewLinks: number;
+};
+
+/** Set by the last fetchPackedOrders call, so an empty run can be explained. */
+export let lastDiagnostics: SokoDiagnostics | null = null;
+
 export async function fetchPackedOrders(limit = 40): Promise<{ orderRef: string; trackingNumber: string }[]> {
   if (!sokoConfigured()) throw new SokoError("ยังไม่ได้ตั้งค่า SOKO_USERNAME / SOKO_PASSWORD");
   const jar = await login();
@@ -118,7 +128,18 @@ export async function fetchPackedOrders(limit = 40): Promise<{ orderRef: string;
   });
   const listRes = await fetch(`${BASE}?${params}`, { headers: { Cookie: jar } });
   const list = await listRes.text();
-  if (/LoginForm\[password\]/.test(list)) throw new SokoError("session soko หมดอายุระหว่างดึงข้อมูล");
+
+  // Recorded before anything can throw: "logged in fine, found nothing" and
+  // "cannot see this page at all" produce the same empty result otherwise,
+  // and telling them apart is most of debugging a scraper.
+  lastDiagnostics = {
+    listBytes: list.length,
+    sawLoginForm: /LoginForm\[password\]/.test(list),
+    orderNumbersOnPage: (list.match(/#\d{4}/g) || []).length,
+    viewLinks: (list.match(/r=order(?:%2F|\/)view/gi) || []).length,
+  };
+
+  if (lastDiagnostics.sawLoginForm) throw new SokoError("session soko หมดอายุระหว่างดึงข้อมูล");
 
   // View links are the only per-order handle the list gives us. Matched with
   // the slash both encoded and not: soko writes `r=order/view` plainly, and an
