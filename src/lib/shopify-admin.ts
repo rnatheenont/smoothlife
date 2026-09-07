@@ -581,6 +581,8 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
   financialStatus: string | null;
   cancelled: boolean;
   fulfillmentId: string | null;
+  /** Open fulfillment orders — what fulfillmentCreate needs to ship the order. */
+  openFulfillmentOrderIds: string[];
   shipments: ShopifyShipment[];
 } | null> {
   if (!shopifyAdminConfigured()) return null;
@@ -603,6 +605,7 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
               estimatedDeliveryAt: string | null;
               trackingInfo: { company: string | null; number: string | null; url: string | null }[];
             }[];
+            fulfillmentOrders: { edges: { node: { id: string; status: string } }[] };
           };
         }[];
       };
@@ -622,6 +625,7 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
                 estimatedDeliveryAt
                 trackingInfo { company number url }
               }
+              fulfillmentOrders(first: 10) { edges { node { id status } } }
             }
           }
         }
@@ -642,6 +646,10 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
       // rather than fulfillmentTrackingInfoUpdate — a distinction the write
       // phase has to make, recorded here so dry-run can already report it.
       fulfillmentId: node.fulfillments[0]?.id ?? null,
+      // CLOSED means already fulfilled; those are not shippable again.
+      openFulfillmentOrderIds: node.fulfillmentOrders.edges
+        .filter((e) => e.node.status !== "CLOSED" && e.node.status !== "CANCELLED")
+        .map((e) => e.node.id),
       shipments: node.fulfillments.flatMap((f) =>
         f.trackingInfo
           .filter((t) => t.number)
@@ -705,6 +713,62 @@ export async function setFulfillmentTracking(opts: {
       return { ok: false, error: "Shopify ไม่ได้คืน fulfillment กลับมา" };
     }
     return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
+ * Fulfils the order and attaches the tracking number in one call.
+ *
+ * This is a bigger claim than adding a number to a fulfillment somebody else
+ * created: it is the system declaring the parcel shipped, on the strength of
+ * a message from the warehouse. With notifyCustomer on, the customer is told
+ * so — and that email cannot be recalled. Everything upstream of here (paid,
+ * not cancelled, no existing number, hourly cap) exists because of that.
+ *
+ * Line items are left out on purpose: omitting them fulfils the whole
+ * fulfillment order, which is what shipping one parcel for one order means.
+ * Naming quantities would be this code deciding a partial shipment, which is
+ * not something the warehouse told it.
+ */
+export async function createFulfillmentWithTracking(opts: {
+  fulfillmentOrderIds: string[];
+  number: string;
+  company: string;
+  notifyCustomer: boolean;
+}): Promise<{ ok: boolean; error?: string; fulfillmentId?: string }> {
+  if (!shopifyAdminConfigured()) return { ok: false, error: "shopify admin not configured" };
+  if (opts.fulfillmentOrderIds.length === 0) {
+    return { ok: false, error: "ไม่มี fulfillment order ที่เปิดอยู่" };
+  }
+  try {
+    const data = await adminGraphql<{
+      fulfillmentCreate: {
+        fulfillment: { id: string } | null;
+        userErrors: { field: string[] | null; message: string }[];
+      };
+    }>(
+      `mutation CreateFulfillment($fulfillment: FulfillmentInput!) {
+        fulfillmentCreate(fulfillment: $fulfillment) {
+          fulfillment { id }
+          userErrors { field message }
+        }
+      }`,
+      {
+        fulfillment: {
+          lineItemsByFulfillmentOrder: opts.fulfillmentOrderIds.map((id) => ({ fulfillmentOrderId: id })),
+          trackingInfo: { number: opts.number, company: opts.company },
+          notifyCustomer: opts.notifyCustomer,
+        },
+      }
+    );
+
+    const errs = data.fulfillmentCreate.userErrors;
+    if (errs?.length) return { ok: false, error: errs.map((e) => e.message).join("; ") };
+    const id = data.fulfillmentCreate.fulfillment?.id;
+    if (!id) return { ok: false, error: "Shopify ไม่ได้คืน fulfillment กลับมา" };
+    return { ok: true, fulfillmentId: id };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }

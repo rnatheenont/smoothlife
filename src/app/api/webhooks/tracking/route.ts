@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
-import { getOrderForTrackingSync, setFulfillmentTracking, shopifyAdminConfigured } from "@/lib/shopify-admin";
+import {
+  getOrderForTrackingSync,
+  setFulfillmentTracking,
+  createFulfillmentWithTracking,
+  shopifyAdminConfigured,
+} from "@/lib/shopify-admin";
 import { decide, SyncMode, MAX_FILLS_PER_HOUR } from "@/lib/tracking-sync";
 
 // Receives a tracking number from the warehouse system and records what it
@@ -11,7 +16,8 @@ import { decide, SyncMode, MAX_FILLS_PER_HOUR } from "@/lib/tracking-sync";
 //
 //   dry-run      (default, and what anything unset means) — resolve, decide,
 //                log. Shopify is not touched.
-//   write        — fill in a missing tracking number. No customer email.
+//   write        — fulfil the order if it isn't already, and attach the
+//                  tracking number. No customer email.
 //   write-notify — the same, and Shopify emails the customer.
 //
 // The order matters because the last step cannot be undone: a shipping email
@@ -119,11 +125,34 @@ export async function POST(req: NextRequest) {
         notified = false;
       }
     }
-  } else if (currentMode !== "dry-run" && decision.action === "fill" && !order?.fulfillmentId) {
-    // The order has no fulfillment to attach a number to. Creating one would
-    // mark the items shipped, which is a different and bigger claim than
-    // "here is the parcel number" — that stays a human's decision.
-    error = "ออเดอร์ยังไม่ได้ fulfill — ต้องกด fulfill ใน Shopify ก่อน";
+  } else if (currentMode !== "dry-run" && decision.action === "fill" && order) {
+    // No fulfillment yet, so create one and attach the number in the same
+    // call. This is the system declaring the parcel shipped on the strength
+    // of the warehouse's message — which is the whole point of removing the
+    // manual step, and the reason every guard above it exists.
+    const recent = await countFillsLastHour();
+    if (recent >= MAX_FILLS_PER_HOUR) {
+      error = `หยุดชั่วคราว: เขียนไปแล้ว ${recent} รายการในชั่วโมงนี้ (เพดาน ${MAX_FILLS_PER_HOUR})`;
+    } else if (order.openFulfillmentOrderIds.length === 0) {
+      // Nothing left to ship: every fulfillment order is closed or cancelled,
+      // yet no tracking number is on the order. That is odd enough to want a
+      // person to look rather than to guess at.
+      error = "ไม่มี fulfillment order ที่เปิดอยู่ — ต้องให้แอดมินตรวจสอบ";
+    } else {
+      notified = currentMode === "write-notify";
+      const res = await createFulfillmentWithTracking({
+        fulfillmentOrderIds: order.openFulfillmentOrderIds,
+        number: trackingNumber,
+        company: courier,
+        notifyCustomer: notified,
+      });
+      if (res.ok) {
+        applied = true;
+      } else {
+        error = res.error ?? "สร้าง fulfillment ไม่สำเร็จ";
+        notified = false;
+      }
+    }
   }
 
   await supabaseRest("tracking_sync_log", {
