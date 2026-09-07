@@ -50,6 +50,13 @@ export async function GET(req: NextRequest) {
     configured: Boolean(process.env.TRACKING_WEBHOOK_SECRET),
     app: own?.app ?? null,
     canWrite: Boolean(own?.scopes.includes("write_fulfillments")),
+    // Option B (fulfil automatically) additionally needs to read and write
+    // fulfillment orders — a different scope from write_fulfillments, and the
+    // one whose absence made every order look like it didn't exist.
+    canFulfil: Boolean(
+      own?.scopes.includes("write_merchant_managed_fulfillment_orders") &&
+        own?.scopes.includes("read_merchant_managed_fulfillment_orders")
+    ),
     counts,
     rows,
   });

@@ -605,7 +605,6 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
               estimatedDeliveryAt: string | null;
               trackingInfo: { company: string | null; number: string | null; url: string | null }[];
             }[];
-            fulfillmentOrders: { edges: { node: { id: string; status: string } }[] };
           };
         }[];
       };
@@ -625,7 +624,6 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
                 estimatedDeliveryAt
                 trackingInfo { company number url }
               }
-              fulfillmentOrders(first: 10) { edges { node { id status } } }
             }
           }
         }
@@ -646,10 +644,8 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
       // rather than fulfillmentTrackingInfoUpdate — a distinction the write
       // phase has to make, recorded here so dry-run can already report it.
       fulfillmentId: node.fulfillments[0]?.id ?? null,
-      // CLOSED means already fulfilled; those are not shippable again.
-      openFulfillmentOrderIds: node.fulfillmentOrders.edges
-        .filter((e) => e.node.status !== "CLOSED" && e.node.status !== "CANCELLED")
-        .map((e) => e.node.id),
+      // Asked for separately — see getOpenFulfillmentOrderIds for why.
+      openFulfillmentOrderIds: await getOpenFulfillmentOrderIds(node.id),
       shipments: node.fulfillments.flatMap((f) =>
         f.trackingInfo
           .filter((t) => t.number)
@@ -664,6 +660,10 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
       ),
     };
   } catch (err) {
+    // Distinguished from "no such order" by the caller only through this log
+    // today; an API failure and an unknown order are not the same thing and
+    // conflating them once already made a permissions problem look like
+    // missing data.
     console.error("[shopify-admin] getOrderForTrackingSync failed", err);
     return null;
   }
@@ -715,6 +715,40 @@ export async function setFulfillmentTracking(opts: {
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
+ * The order's open fulfillment orders, asked for on its own.
+ *
+ * This started life as one more field on the tracking-sync lookup, which was
+ * a mistake: `fulfillmentOrders` needs a fulfillment-order read scope the
+ * website's app does not hold, and one unauthorised field fails the whole
+ * GraphQL request. The lookup then caught that and returned null, so every
+ * order in the store reported itself as "not found" — a missing permission
+ * disguised as missing data.
+ *
+ * Separated, a refusal here costs only the ability to fulfil automatically,
+ * and says so in the log instead of vanishing.
+ */
+export async function getOpenFulfillmentOrderIds(orderId: string): Promise<string[]> {
+  if (!shopifyAdminConfigured()) return [];
+  try {
+    const data = await adminGraphql<{
+      order: { fulfillmentOrders: { edges: { node: { id: string; status: string } }[] } } | null;
+    }>(
+      `query OpenFulfillmentOrders($id: ID!) {
+        order(id: $id) { fulfillmentOrders(first: 10) { edges { node { id status } } } }
+      }`,
+      { id: orderId }
+    );
+    return (data.order?.fulfillmentOrders.edges ?? [])
+      // CLOSED means already fulfilled; those are not shippable again.
+      .filter((e) => e.node.status !== "CLOSED" && e.node.status !== "CANCELLED")
+      .map((e) => e.node.id);
+  } catch (err) {
+    console.error("[shopify-admin] getOpenFulfillmentOrderIds failed (scope?)", err);
+    return [];
   }
 }
 

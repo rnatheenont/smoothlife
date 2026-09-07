@@ -24,6 +24,7 @@ type Payload = {
   configured: boolean;
   app: string | null;
   canWrite: boolean;
+  canFulfil: boolean;
   counts: Record<string, number>;
   rows: TrackingSyncRow[];
 };
@@ -88,12 +89,13 @@ export default function AdminTrackingSyncPage() {
           )}
           {data && (
             <p className="mt-1 text-body-xs text-slate-500">
-              เว็บใช้แอป Shopify: <b>{data.app ?? "ไม่ทราบ"}</b> · สิทธิ์เขียน fulfillment:{" "}
-              {data.canWrite ? (
-                <b className="text-brand-800">มี ✅</b>
-              ) : (
-                <b className="text-rose-600">ยังไม่มี ❌ (เปิดโหมดเขียนไม่ได้จนกว่าจะเพิ่ม write_fulfillments)</b>
-              )}
+              เว็บใช้แอป Shopify: <b>{data.app ?? "ไม่ทราบ"}</b>
+              <br />
+              เขียนเลขพัสดุ (write_fulfillments):{" "}
+              {data.canWrite ? <b className="text-brand-800">มี ✅</b> : <b className="text-rose-600">ยังไม่มี ❌</b>}
+              <br />
+              สั่ง fulfill เองได้ (merchant_managed_fulfillment_orders):{" "}
+              {data.canFulfil ? <b className="text-brand-800">มี ✅</b> : <b className="text-rose-600">ยังไม่มี ❌</b>}
             </p>
           )}
         </div>
