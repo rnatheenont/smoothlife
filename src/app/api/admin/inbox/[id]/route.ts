@@ -32,8 +32,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (conversation.user_id) {
     const uid = pgValue(conversation.user_id);
     const [user] = await supabaseRest<
-      { id: string; first_name: string | null; last_name: string | null; phone: string | null }[]
-    >(`users?id=eq.${uid}&select=id,first_name,last_name,phone&limit=1`);
+      { id: string; display_name: string | null; phone: string | null }[]
+    >(`users?id=eq.${uid}&select=id,display_name,phone&limit=1`);
     // Tier lives in user_loyalty.current_tier (maintained by the daily cron);
     // the spendable balance is the points_balance view, the same source
     // /api/account/redeem trusts before letting anyone spend.
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     ).catch(() => []);
 
     customer = {
-      name: [user?.first_name, user?.last_name].filter(Boolean).join(" ") || null,
+      name: user?.display_name || null,
       phone: user?.phone ?? null,
       email: email?.provider_uid ?? null,
       tier: loyalty?.current_tier ?? null,

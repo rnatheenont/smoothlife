@@ -41,13 +41,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   let customerLine = `ช่องทาง: ${conversation.channel} · id: ${conversation.channel_user_id}`;
   if (conversation.user_id) {
     const uid = pgValue(conversation.user_id);
-    const [user] = await supabaseRest<{ first_name: string | null; last_name: string | null; phone: string | null }[]>(
-      `users?id=eq.${uid}&select=first_name,last_name,phone&limit=1`
+    const [user] = await supabaseRest<{ display_name: string | null; phone: string | null }[]>(
+      `users?id=eq.${uid}&select=display_name,phone&limit=1`
     ).catch(() => []);
     const [email] = await supabaseRest<{ provider_uid: string }[]>(
       `auth_identities?user_id=eq.${uid}&provider=eq.email&select=provider_uid&limit=1`
     ).catch(() => []);
-    const name = [user?.first_name, user?.last_name].filter(Boolean).join(" ");
+    const name = user?.display_name || "";
     // Whoever picks this task up needs to be able to reach the customer
     // without coming back to ask the inbox for their phone number.
     customerLine =

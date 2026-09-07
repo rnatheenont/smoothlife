@@ -43,11 +43,11 @@ export async function GET(req: NextRequest) {
   const userIds = [...new Set(conversations.map((c) => c.user_id).filter(Boolean))] as string[];
   const names = new Map<string, string>();
   if (userIds.length) {
-    const users = await supabaseRest<{ id: string; first_name: string | null; last_name: string | null }[]>(
-      `users?id=in.(${userIds.map((id) => pgValue(id)).join(",")})&select=id,first_name,last_name`
+    const users = await supabaseRest<{ id: string; display_name: string | null }[]>(
+      `users?id=in.(${userIds.map((id) => pgValue(id)).join(",")})&select=id,display_name`
     );
     for (const u of users) {
-      names.set(u.id, [u.first_name, u.last_name].filter(Boolean).join(" ") || "");
+      names.set(u.id, u.display_name || "");
     }
   }
 
