@@ -133,16 +133,22 @@ export async function fetchPackedOrders(limit = 40): Promise<{ orderRef: string;
   if (!sokoConfigured()) throw new SokoError("ยังไม่ได้ตั้งค่า SOKO_USERNAME / SOKO_PASSWORD");
   const jar = await login();
 
-  // The store is deliberately NOT sent as a filter. Its dropdown values are
-  // scoped per user, and the API account sees a different list from an admin
-  // — passing the admin's value returned zero rows while the unfiltered query
-  // returned ten. Rows are matched on the store name below instead, which
-  // does not depend on whose menu rendered the page.
+  // Free-text search rather than the store dropdown or a status filter.
+  //
+  // The dropdown's values are scoped per user — passing the admin's returned
+  // nothing for the API account while an unfiltered query returned ten rows,
+  // all of them other brands. Search matches the store column whoever is
+  // logged in.
+  //
+  // Status is deliberately not filtered either. Orders packed this morning
+  // were already "Shipped by KND" by the afternoon, so a once-a-day run that
+  // only looked at Packed would miss almost everything. Rows without a
+  // tracking number are skipped when their View page is read, which costs a
+  // request and removes a whole class of timing bug.
   const params = new URLSearchParams({
     r: "order/index",
     "Merchantorders[m_id]": "2",
-    "Merchantorders[mo_status]": "2",
-    "Merchantorders[mo_cancle]": "0",
+    "Merchantorders[search_txt]": STORE,
   });
   const listRes = await fetch(`${BASE}?${params}`, { headers: { Cookie: jar } });
   const list = await listRes.text();
