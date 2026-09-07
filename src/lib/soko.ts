@@ -86,11 +86,21 @@ function decode(s: string) {
     .trim();
 }
 
-/** The tracking number lives only on the per-order View page, not the list. */
+const STORE = "SmoothLife Shopify";
+
+/**
+ * The tracking number lives only on the per-order View page, not the list.
+ *
+ * The store is re-checked here even though the list was already filtered by
+ * it. Order numbers are per-store and collide across brands — #4203 exists in
+ * several — so a row that slipped through would put one brand's parcel number
+ * onto another brand's order.
+ */
 async function trackingFromView(url: string, jar: string): Promise<{ orderRef: string; trackingNumber: string } | null> {
   const res = await fetch(url, { headers: { Cookie: jar } });
   const html = await res.text();
   const text = html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<[^>]+>/g, "\n");
+  if (!text.includes(STORE)) return null;
   const order = text.match(/Order#\s*\n+\s*(#?\d+)/);
   const tracking = text.match(/Tracking No\.?\s*\n+\s*([A-Za-z0-9-]{6,})/);
   if (!order || !tracking) return null;
@@ -110,6 +120,8 @@ export type SokoDiagnostics = {
   sawLoginForm: boolean;
   orderNumbersOnPage: number;
   viewLinks: number;
+  /** Rows belonging to our store — the number that actually gets processed. */
+  storeRows: number;
   /** First visible words of the page, so an unexpected one identifies itself. */
   sample: string;
 };
@@ -121,9 +133,13 @@ export async function fetchPackedOrders(limit = 40): Promise<{ orderRef: string;
   if (!sokoConfigured()) throw new SokoError("ยังไม่ได้ตั้งค่า SOKO_USERNAME / SOKO_PASSWORD");
   const jar = await login();
 
+  // The store is deliberately NOT sent as a filter. Its dropdown values are
+  // scoped per user, and the API account sees a different list from an admin
+  // — passing the admin's value returned zero rows while the unfiltered query
+  // returned ten. Rows are matched on the store name below instead, which
+  // does not depend on whose menu rendered the page.
   const params = new URLSearchParams({
     r: "order/index",
-    "Merchantorders[store]": "SmoothLife Shopify",
     "Merchantorders[m_id]": "2",
     "Merchantorders[mo_status]": "2",
     "Merchantorders[mo_cancle]": "0",
@@ -139,6 +155,7 @@ export async function fetchPackedOrders(limit = 40): Promise<{ orderRef: string;
     sawLoginForm: /LoginForm\[password\]/.test(list),
     orderNumbersOnPage: (list.match(/#\d{4}/g) || []).length,
     viewLinks: (list.match(/r=order(?:%2F|\/)view/gi) || []).length,
+    storeRows: list.split(/<tr[\s>]/i).filter((r) => r.includes(STORE)).length,
     // URLs stripped: the sample is for identifying the page, and query
     // strings in a log are how session ids end up somewhere they shouldn't.
     sample: list
@@ -153,11 +170,16 @@ export async function fetchPackedOrders(limit = 40): Promise<{ orderRef: string;
 
   if (lastDiagnostics.sawLoginForm) throw new SokoError("session soko หมดอายุระหว่างดึงข้อมูล");
 
-  // View links are the only per-order handle the list gives us. Matched with
-  // the slash both encoded and not: soko writes `r=order/view` plainly, and an
-  // earlier version only looked for `%2F`, which found nothing at all and made
-  // a working login look like an empty warehouse.
-  const hrefs = [...list.matchAll(/href="([^"]*r=order(?:%2F|\/)view[^"]*)"/gi)].map((m) => decode(m[1]));
+  // Row by row, so the store can be matched on the same row as the link.
+  // Matched with the slash both encoded and not: soko writes `r=order/view`
+  // plainly, and an earlier version only looked for `%2F`, which found nothing
+  // at all and made a working login look like an empty warehouse.
+  const hrefs: string[] = [];
+  for (const row of list.split(/<tr[\s>]/i)) {
+    if (!row.includes(STORE)) continue;
+    const m = row.match(/href="([^"]*r=order(?:%2F|\/)view[^"]*)"/i);
+    if (m) hrefs.push(decode(m[1]));
+  }
   const unique = [...new Set(hrefs)].slice(0, limit);
   if (unique.length === 0) return [];
 
