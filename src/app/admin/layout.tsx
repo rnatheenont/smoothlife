@@ -3,11 +3,12 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Lock, Gift, SlidersHorizontal, Award, LogOut, CreditCard, MessageSquareText, Repeat, Receipt, Inbox, LayoutDashboard, MessageCircle, Palette } from "lucide-react";
+import { Lock, Gift, SlidersHorizontal, Award, LogOut, CreditCard, MessageSquareText, Repeat, Receipt, Inbox, LayoutDashboard, MessageCircle, Palette, Truck } from "lucide-react";
 import { Button } from "@/components/ui";
 
 const NAV = [
   { href: "/admin", label: "ภาพรวม", icon: LayoutDashboard },
+  { href: "/admin/tracking-sync", label: "ซิงก์เลขพัสดุ", icon: Truck },
   { href: "/admin/inbox", label: "กล่องข้อความ", icon: Inbox },
   { href: "/admin/free-gifts", label: "โปรโมชั่น", icon: Gift },
   { href: "/admin/free-gifts/widgets", label: "Widgets", icon: SlidersHorizontal },

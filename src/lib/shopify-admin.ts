@@ -569,6 +569,98 @@ export async function getCustomerOrderDetail(
   }
 }
 
+/**
+ * Looks an order up by its Shopify order name for the tracking-number sync.
+ *
+ * Exact match only — `name:` is a filter, not a search, so "#4196" finds
+ * #4196 or nothing. The sync must never act on a near-miss.
+ */
+export async function getOrderForTrackingSync(orderName: string): Promise<{
+  id: string;
+  name: string;
+  financialStatus: string | null;
+  cancelled: boolean;
+  fulfillmentId: string | null;
+  shipments: ShopifyShipment[];
+} | null> {
+  if (!shopifyAdminConfigured()) return null;
+  const name = orderName.trim().replace(/^#/, "");
+  if (!/^[A-Za-z0-9._-]{1,32}$/.test(name)) return null;
+
+  try {
+    const data = await adminGraphql<{
+      orders: {
+        edges: {
+          node: {
+            id: string;
+            name: string;
+            displayFinancialStatus: string | null;
+            cancelledAt: string | null;
+            fulfillments: {
+              id: string;
+              createdAt: string | null;
+              deliveredAt: string | null;
+              estimatedDeliveryAt: string | null;
+              trackingInfo: { company: string | null; number: string | null; url: string | null }[];
+            }[];
+          };
+        }[];
+      };
+    }>(
+      `query TrackingSyncLookup($q: String!) {
+        orders(first: 1, query: $q) {
+          edges {
+            node {
+              id
+              name
+              displayFinancialStatus
+              cancelledAt
+              fulfillments(first: 5) {
+                id
+                createdAt
+                deliveredAt
+                estimatedDeliveryAt
+                trackingInfo { company number url }
+              }
+            }
+          }
+        }
+      }`,
+      { q: `name:${name}` }
+    );
+
+    const node = data.orders.edges[0]?.node;
+    if (!node) return null;
+
+    return {
+      id: node.id,
+      name: node.name,
+      financialStatus: node.displayFinancialStatus,
+      cancelled: Boolean(node.cancelledAt),
+      // The fulfillment a tracking number would be written to. Null means the
+      // order has not been fulfilled yet, which needs fulfillmentCreate
+      // rather than fulfillmentTrackingInfoUpdate — a distinction the write
+      // phase has to make, recorded here so dry-run can already report it.
+      fulfillmentId: node.fulfillments[0]?.id ?? null,
+      shipments: node.fulfillments.flatMap((f) =>
+        f.trackingInfo
+          .filter((t) => t.number)
+          .map((t) => ({
+            company: t.company,
+            number: t.number as string,
+            url: t.url,
+            shippedAt: f.createdAt,
+            deliveredAt: f.deliveredAt,
+            estimatedDeliveryAt: f.estimatedDeliveryAt,
+          }))
+      ),
+    };
+  } catch (err) {
+    console.error("[shopify-admin] getOrderForTrackingSync failed", err);
+    return null;
+  }
+}
+
 export type GuestTrackingOrder = {
   name: string;
   createdAt: string;
