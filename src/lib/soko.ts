@@ -110,6 +110,8 @@ export type SokoDiagnostics = {
   sawLoginForm: boolean;
   orderNumbersOnPage: number;
   viewLinks: number;
+  /** First visible words of the page, so an unexpected one identifies itself. */
+  sample: string;
 };
 
 /** Set by the last fetchPackedOrders call, so an empty run can be explained. */
@@ -137,6 +139,16 @@ export async function fetchPackedOrders(limit = 40): Promise<{ orderRef: string;
     sawLoginForm: /LoginForm\[password\]/.test(list),
     orderNumbersOnPage: (list.match(/#\d{4}/g) || []).length,
     viewLinks: (list.match(/r=order(?:%2F|\/)view/gi) || []).length,
+    // URLs stripped: the sample is for identifying the page, and query
+    // strings in a log are how session ids end up somewhere they shouldn't.
+    sample: list
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/https?:\/\/\S+/g, "[url]")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 400),
   };
 
   if (lastDiagnostics.sawLoginForm) throw new SokoError("session soko หมดอายุระหว่างดึงข้อมูล");
