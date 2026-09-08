@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import clsx from "clsx";
-import { Truck, RefreshCw, ShieldCheck, AlertTriangle, Info } from "lucide-react";
+import { Truck, RefreshCw, ShieldCheck, AlertTriangle, Info, Play, Loader2 } from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 import type { TrackingSyncRow } from "@/app/api/admin/tracking-sync/route";
 
@@ -51,16 +51,62 @@ export default function AdminTrackingSyncPage() {
   const conflicts = data?.counts.conflict ?? 0;
   const dryRun = data?.mode === "dry-run";
 
+  const [running, setRunning] = useState(false);
+  const [runResult, setRunResult] = useState<string | null>(null);
+
+  async function runNow() {
+    setRunning(true);
+    setRunResult(null);
+    try {
+      const res = await fetch("/api/admin/tracking-sync/run", { method: "POST" });
+      const r = await res.json();
+      if (!r.ok) {
+        setRunResult(`ไม่สำเร็จ: ${r.error ?? "ไม่ทราบสาเหตุ"}`);
+      } else if (!r.found) {
+        const d = r.diagnostics;
+        setRunResult(
+          `ไม่มีรายการใหม่ — อ่าน ${d?.pagesScanned ?? "?"} หน้า พบ ${d?.candidates ?? "?"} ออเดอร์ ` +
+            `ข้ามที่ทำไปแล้ว ${d?.skipped ?? 0} รายการ`
+        );
+      } else {
+        setRunResult(
+          `ดึงมา ${r.found} รายการ · เขียนลง Shopify ${r.applied ?? 0} · ต้องตรวจสอบ ${r.conflicts ?? 0}`
+        );
+      }
+    } catch (err) {
+      setRunResult(`ไม่สำเร็จ: ${err}`);
+    } finally {
+      setRunning(false);
+      // The table is the record; whatever the run did should be visible in it.
+      load();
+    }
+  }
+
   return (
     <div className="max-w-4xl">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
           <Truck size={20} className="text-brand-600" /> ซิงก์เลขพัสดุ
         </h1>
-        <Button variant="secondary" size="sm" onClick={load} disabled={loading}>
-          <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> รีเฟรช
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* CRON_SECRET is stored on Vercel as a sensitive value, so nobody
+              can read it back — triggering a run by hand meant rotating it and
+              redeploying. Staff are already signed in here; that is the key. */}
+          <Button variant="secondary" size="sm" onClick={runNow} disabled={running || loading}>
+            {running ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
+            {running ? "กำลังดึง..." : "ดึงจาก soko เดี๋ยวนี้"}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={load} disabled={loading}>
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> รีเฟรช
+          </Button>
+        </div>
       </div>
+
+      {runResult && (
+        <p className="mb-3 rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-2.5 text-body-xs text-slate-700">
+          {runResult}
+        </p>
+      )}
 
       <div
         className={clsx(
