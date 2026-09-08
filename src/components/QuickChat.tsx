@@ -385,10 +385,18 @@ export default function QuickChat() {
         if (cancelled || !Array.isArray(data?.messages)) return;
         setHumanHandling(Boolean(data.humanHandling));
         if (open) {
-          // Never overwrite a reply that is still streaming in.
+          // Only ever grows the thread. The server copy is written a moment
+          // after the message is shown, so a poll landing in that gap used to
+          // replace the list with a shorter one and the customer watched their
+          // own message vanish. Never overwrite a reply still streaming in
+          // either.
           if (!loading) {
-            setMessages(attachStoredImages(data.messages as Msg[]));
-            seenCountRef.current = data.messages.length;
+            setMessages((current) =>
+              data.messages.length > current.length
+                ? attachStoredImages(data.messages as Msg[])
+                : current
+            );
+            seenCountRef.current = Math.max(seenCountRef.current, data.messages.length);
             setUnread(0);
           }
         } else {
@@ -559,7 +567,17 @@ export default function QuickChat() {
   async function send(text: string, image?: ResizedImage | null) {
     const clean = text.trim();
     if ((!clean && !image) || loading) return;
-    const fallbackText = lang === "en" ? "What product is this? Do you carry it?" : "รูปนี้คือสินค้าอะไรครับ มีขายไหม";
+    // A photo with no caption needs *something* for the model to answer, but
+    // only when the model is answering. Putting words in a customer's mouth to
+    // a member of staff is worse than an empty caption — they never asked what
+    // the product was.
+    const fallbackText = humanHandling
+      ? lang === "en"
+        ? "(photo)"
+        : "(ส่งรูป)"
+      : lang === "en"
+        ? "What product is this? Do you carry it?"
+        : "รูปนี้คือสินค้าอะไรครับ มีขายไหม";
     const userMsg: Msg = { role: "user", content: clean || fallbackText, image: image?.dataUrl };
     // Filed against the message text, which is what the server history gives
     // us back later — see chat-image-store.ts for why this stays on-device.
