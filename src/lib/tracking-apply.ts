@@ -70,29 +70,16 @@ export async function processTrackingUpdate(input: {
   let notified = false;
   let error: string | null = null;
 
-  // "fill" and "add-parcel" write; "conflict" is left for a person by design,
-  // and "already-set" must stay silent — writing again would re-send the
-  // shipping email for a parcel already announced.
-  const writes = decision.action === "fill" || decision.action === "add-parcel";
-  if (mode !== "dry-run" && writes && order) {
+  // Only ever "fill". "conflict" is left for a person by design, and
+  // "already-set" must stay silent — writing again would re-send the shipping
+  // email for a parcel already announced.
+  if (mode !== "dry-run" && decision.action === "fill" && order) {
     const recent = await countFillsLastHour();
     if (recent >= MAX_FILLS_PER_HOUR) {
       error = `หยุดชั่วคราว: เขียนไปแล้ว ${recent} รายการในชั่วโมงนี้ (เพดาน ${MAX_FILLS_PER_HOUR})`;
     } else {
       notified = mode === "write-notify";
-      // A second box must never take the setFulfillmentTracking path: that
-      // edits the existing fulfillment, so the first parcel's number would be
-      // replaced by the second one rather than joined by it.
-      const res = decision.action === "add-parcel"
-        ? order.openFulfillmentOrderIds.length > 0
-          ? await createFulfillmentWithTracking({
-              fulfillmentOrderIds: order.openFulfillmentOrderIds,
-              number: input.trackingNumber,
-              company: courier,
-              notifyCustomer: notified,
-            })
-          : { ok: false, error: "กล่องเพิ่มแต่ไม่มีสินค้าค้างส่งใน Shopify — ต้องให้แอดมินตรวจสอบ" }
-        : order.fulfillmentId
+      const res = order.fulfillmentId
         ? await setFulfillmentTracking({
             fulfillmentId: order.fulfillmentId,
             number: input.trackingNumber,
@@ -129,8 +116,7 @@ export async function processTrackingUpdate(input: {
       resolved_order_name: order?.name ?? null,
       action: decision.action,
       reason: decision.reason,
-      existing_numbers:
-        decision.action === "conflict" || decision.action === "add-parcel" ? decision.existing : null,
+      existing_numbers: decision.action === "conflict" ? decision.existing : null,
       applied,
       notified,
       error,

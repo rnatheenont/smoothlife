@@ -14,7 +14,6 @@ export type SyncMode = "dry-run" | "write" | "write-notify";
 export type SyncDecision =
   | { action: "fill"; reason: string }
   | { action: "already-set"; reason: string }
-  | { action: "add-parcel"; reason: string; existing: string[] }
   | { action: "conflict"; reason: string; existing: string[] }
   | { action: "no-order"; reason: string }
   | { action: "not-eligible"; reason: string };
@@ -35,13 +34,12 @@ export function decide(
   order: OrderForSync | null,
   incoming: string,
   /**
-   * The warehouse says this is another box on an order that already has a
-   * number, not a competing claim about the same box — soko files it under
-   * its own reference ("#4161_F"). Only that suffix turns a conflict into an
-   * addition; anything arriving as a plain order number keeps the old,
-   * suspicious reading.
+   * soko filed this under its own reference rather than the order number —
+   * "#4161_F" is the follow-up box sent when the first shipment went out
+   * short. Those are handled outside this sync, so they are recorded and
+   * left alone rather than written to Shopify.
    */
-  additionalParcel = false
+  followUpParcel = false
 ): SyncDecision {
   const number = normalise(incoming);
   if (!number) return { action: "not-eligible", reason: "ไม่มีเลขพัสดุในข้อมูลที่ส่งมา" };
@@ -49,6 +47,13 @@ export function decide(
   // No fuzzy matching anywhere: an order we cannot identify exactly is an
   // order we do not touch.
   if (!order) return { action: "no-order", reason: "ไม่พบออเดอร์นี้ใน Shopify" };
+
+  // Follow-up boxes are somebody else's job. Checked before the number
+  // comparisons so one never reads as a conflict and starts asking a person
+  // about a decision that has already been made here.
+  if (followUpParcel) {
+    return { action: "not-eligible", reason: "ของส่งตาม (_F) — ไม่ใส่ให้ตามที่ตั้งค่าไว้" };
+  }
 
   if (order.cancelled) {
     return { action: "not-eligible", reason: "ออเดอร์ถูกยกเลิกแล้ว" };
@@ -69,17 +74,6 @@ export function decide(
   // Two systems claiming different numbers for one order. Which is right is
   // not something this code can know — one of them is a typo, and guessing
   // wrong sends a customer to somebody else's parcel.
-  // A second box, filed by the warehouse under its own reference. Adding it
-  // is right where overwriting would be wrong: the first parcel keeps its
-  // number and the customer gets both.
-  if (existing.length > 0 && additionalParcel) {
-    return {
-      action: "add-parcel",
-      reason: "กล่องเพิ่มของออเดอร์เดิม — เพิ่มเลขใหม่โดยไม่แตะเลขเดิม",
-      existing: order.shipments.map((s) => s.number),
-    };
-  }
-
   if (existing.length > 0) {
     return {
       action: "conflict",
