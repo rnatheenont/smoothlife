@@ -15,6 +15,7 @@ import { getProductBySlug } from "@/data/products";
 import { formatTHB } from "@/lib/format";
 import { resizeForUpload, resizeForThumbnail, ResizedImage } from "@/lib/image-utils";
 import { rememberChatImage, attachStoredImages, clearChatImages, PHOTO_MARKER } from "@/lib/chat-image-store";
+import { splitMarker, markerIndex, MARKER_OPENERS } from "@/lib/chat-markers";
 import { hasStoredConsent, grantConsent } from "@/components/skin-coach/ConsentGate";
 import { Avatar, Button } from "@/components/ui";
 
@@ -154,6 +155,21 @@ function renderTextBlock(text: string, keyPrefix: string): ReactNode[] {
     }
   }
   return blocks;
+}
+
+// Server history is whatever was persisted, and rows written before the server
+// learned to strip [[ASK: ...]] still carry it — so clean the marker off for
+// display, and hand back the last reply's options so reopening the panel
+// restores the tappable answers instead of leaving dead bracket text.
+function hydrateHistory(raw: Msg[]): { messages: Msg[]; ask: string[] } {
+  let ask: string[] = [];
+  const messages = raw.map((m, i) => {
+    if (m.role !== "assistant") return m;
+    const { text, kind, options } = splitMarker(m.content);
+    if (kind === "ask" && i === raw.length - 1) ask = options;
+    return { ...m, content: text || m.content };
+  });
+  return { messages: attachStoredImages(messages), ask };
 }
 
 function renderContent(text: string) {
@@ -367,7 +383,9 @@ export default function QuickChat() {
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data?.messages) && data.messages.length) {
-          setMessages(attachStoredImages(data.messages as Msg[]));
+          const { messages, ask } = hydrateHistory(data.messages as Msg[]);
+          setMessages(messages);
+          setAskOptions(ask);
           seenCountRef.current = data.messages.length;
         }
         setHumanHandling(Boolean(data?.humanHandling));
@@ -402,7 +420,7 @@ export default function QuickChat() {
           if (!loading) {
             setMessages((current) =>
               data.messages.length > current.length
-                ? attachStoredImages(data.messages as Msg[])
+                ? hydrateHistory(data.messages as Msg[]).messages
                 : current
             );
             seenCountRef.current = Math.max(seenCountRef.current, data.messages.length);
@@ -688,15 +706,8 @@ export default function QuickChat() {
       // the accumulated text, freeze the reveal boundary right before it
       // and never advance past it — everything from there on is the marker
       // (it's always last), regardless of how much more streams in after.
-      const MARKER_OPENERS = ["[[SUGGEST:", "[[ASK:"];
       const MAX_OPENER_LEN = Math.max(...MARKER_OPENERS.map((m) => m.length));
-      function markerOpenIndex() {
-        for (const opener of MARKER_OPENERS) {
-          const idx = full.indexOf(opener);
-          if (idx !== -1) return full[idx - 1] === "\n" ? idx - 1 : idx;
-        }
-        return -1;
-      }
+      const markerOpenIndex = () => markerIndex(full);
       function visibleTarget() {
         const idx = markerOpenIndex();
         if (idx !== -1) return idx;
@@ -733,17 +744,8 @@ export default function QuickChat() {
       setMessages([...next, { role: "assistant", content: finalText || "…" }]);
 
       assistantTurnCount.current += 1;
-      const markerText = cutIdx !== -1 ? full.slice(cutIdx).replace(/^\n/, "") : "";
-      const isAsk = /^\[\[ASK:/i.test(markerText);
-      let parsed: string[] = [];
-      if (cutIdx !== -1) {
-        const inner = markerText.replace(/^\[\[(SUGGEST|ASK):/i, "").replace(/\]\]\s*$/, "");
-        parsed = inner
-          .split("|")
-          .map((s) => s.trim())
-          .filter(Boolean)
-          .slice(0, 4);
-      }
+      const { kind, options: parsed } = splitMarker(full);
+      const isAsk = kind === "ask";
       if (isAsk) {
         // The AI's actual pending question — always show it, whichever turn.
         setAskOptions(parsed);
