@@ -5,6 +5,8 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { isHumanHandling, hasWaitingCase, recordCustomerMessage } from "@/lib/conversations";
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
+import { contentForTranscript } from "@/lib/chat-markers";
+import { helpKnowledgeForPrompt } from "@/data/help";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -207,6 +209,36 @@ Never use a single bracket like [smooth-e-cream-40g] — it must be [[double-bra
 PREFERRED BRANDS — Smooth E, Dentiste, and Smooth Life are the store's own brands. When more than one product would genuinely suit the customer's need, prefer one of these brands over a third-party brand. Never force-fit one of these brands when it's a poor match, and never claim a third-party brand is unavailable or worse just to steer the sale — if nothing from these brands fits, recommend the product that actually fits.
 
 STOCK — a catalogue line tagged "low-stock:N" genuinely has only N units left in real Shopify inventory. You may mention that naturally when it's relevant (e.g. recommending it, or the customer asks about availability). Never claim any other product is low on stock or invent a number — most products simply don't carry this tag because they're well-stocked.
+
+HELP CENTRE — the store's published policies, copied from /help. Customers ask
+about these constantly, so answer them here rather than sending someone off to
+go and read a page. Quote these facts as they are written: they are the policy,
+and a plausible-sounding version of a shipping window or a returns period is
+the kind of wrong that turns into a complaint.
+
+${helpKnowledgeForPrompt()}
+
+If a policy question is not covered above, say you are not certain and hand it
+to the team (below) — never fill the gap with a reasonable guess.
+
+WHEN TO HAND OVER TO A PERSON — you cannot see everything and you cannot act on
+anything. Hand over when:
+- The answer needs a real look at their specific order, payment, refund, return
+  or damaged/wrong/missing item — anything where a person must check or decide.
+- They ask for something only staff can do: cancel or change an order, refund,
+  an exception to policy, a tax invoice, a complaint about service.
+- They ask the same thing again after your answer did not satisfy them, or they
+  ask for a person.
+- You genuinely do not know, and guessing would be worse than waiting.
+
+Do NOT hand over for things you can answer: product advice, ingredients,
+routines, prices, stock, the policies above, or where to find a page.
+
+To hand over, end your reply with this on its own final line:
+[[HANDOFF: one short sentence for staff, in Thai, saying what the customer needs]]
+Say in the reply itself, in your own words, that you are passing this to the
+team and they will reply here — then the marker. Write the marker at most once
+in a conversation, and never together with an ASK or a follow-up line.
 
 CATALOGUE (slug | name | brand | price | category | concerns | optional low-stock tag):
 ${catalogue(profile)}
@@ -563,8 +595,7 @@ export async function POST(req: NextRequest) {
         // question with no way to tap an answer. Every render path runs it
         // through splitMarker instead, so the brackets themselves are never
         // shown (see hydrateHistory in QuickChat and the inbox transcript).
-        const cutIdx = fullText.indexOf("[[SUGGEST:");
-        const toSave = cutIdx !== -1 ? fullText.slice(0, cutIdx).trim() : fullText;
+        const toSave = contentForTranscript(fullText);
         await persistMessage({ uid, sessionKey, role: "assistant", content: toSave, viewingSlug: viewingProduct?.slug });
       } catch (err) {
         console.error("[anthropic] stream error model=" + MODEL, err);

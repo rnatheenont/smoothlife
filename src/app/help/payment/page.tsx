@@ -1,20 +1,18 @@
-import { QrCode, CreditCard, Banknote, Truck } from "lucide-react";
+import { helpTopics } from "@/data/help";
 import ContentPage from "@/components/ContentPage";
+import { helpIcon } from "../icons";
 
 export const metadata = { title: "การชำระเงิน | Smoothlife.com" };
+
+const topic = helpTopics.find((t) => t.href === "/help/payment")!;
 
 export default function PaymentPage() {
   return (
     <ContentPage
-      eyebrow="Payment"
-      title="ช่องทางการชำระเงิน"
-      intro="เลือกวิธีการชำระเงินที่สะดวกและปลอดภัยที่สุดสำหรับคุณ"
-      sections={[
-        { icon: QrCode, title: "PromptPay QR", body: "สแกนจ่ายผ่านแอปธนาคารได้ทันที ยืนยันคำสั่งซื้อรวดเร็ว" },
-        { icon: CreditCard, title: "บัตรเครดิต/เดบิต", body: "รองรับ Visa, Mastercard และ JCB พร้อมระบบเข้ารหัสความปลอดภัย" },
-        { icon: Banknote, title: "โอนเงินผ่านธนาคาร", body: "โอนเงินและแนบสลิปเพื่อยืนยันคำสั่งซื้อผ่านระบบอัตโนมัติ" },
-        { icon: Truck, title: "เก็บเงินปลายทาง (COD)", body: "ชำระเงินสดเมื่อได้รับสินค้า สำหรับพื้นที่ที่รองรับบริการ" },
-      ]}
+      eyebrow={topic.eyebrow}
+      title={topic.title}
+      intro={topic.intro}
+      sections={topic.sections.map((s) => ({ icon: helpIcon(s.icon), title: s.title, body: s.body }))}
     />
   );
 }

@@ -221,6 +221,8 @@ export default function QuickChat() {
   // Thumbnail of the photo being sent, held from pick until send.
   const thumbRef = useRef<string | null>(null);
   const [escalating, setEscalating] = useState(false);
+  /** Stops a second automatic handoff in the same thread. */
+  const handedOff = useRef(false);
   const [escalateMsg, setEscalateMsg] = useState<string | null>(null);
   // Leaving a message is a compose step, not a one-tap send: the team needs
   // to know what the customer actually wants, and a bare transcript makes
@@ -744,8 +746,18 @@ export default function QuickChat() {
       setMessages([...next, { role: "assistant", content: finalText || "…" }]);
 
       assistantTurnCount.current += 1;
-      const { kind, options: parsed } = splitMarker(full);
+      const { kind, options: parsed, reason } = splitMarker(full);
       const isAsk = kind === "ask";
+
+      // Smoothie decided this needs a person. She has already said so in the
+      // reply above, so file it rather than asking the customer to press a
+      // button confirming what she just told them. Once per conversation: the
+      // guard is here because a second ticket for the same thread is noise in
+      // the inbox, not extra help.
+      if (kind === "handoff" && !humanHandling && !handedOff.current) {
+        handedOff.current = true;
+        void escalate(reason || t("ลูกค้าต้องการคุยกับแอดมิน", "Customer asked for a person"));
+      }
       if (isAsk) {
         // The AI's actual pending question — always show it, whichever turn.
         setAskOptions(parsed);

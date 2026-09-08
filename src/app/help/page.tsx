@@ -1,22 +1,17 @@
 import Link from "next/link";
-import { Truck, CreditCard, MessageCircle, ChevronRight } from "lucide-react";
+import { MessageCircle, ChevronRight } from "lucide-react";
 import Faq from "@/components/Faq";
+import { helpFaqs, helpTopics } from "@/data/help";
+import { helpIcon } from "./icons";
 
 export const metadata = { title: "ศูนย์ช่วยเหลือ | Smoothlife.com" };
 
 const topics = [
-  { href: "/help/delivery", label: "การจัดส่งและคืนสินค้า", icon: Truck },
-  { href: "/help/payment", label: "การชำระเงิน", icon: CreditCard },
+  ...helpTopics.map((t) => ({ href: t.href, label: t.label, icon: helpIcon(t.sections[0].icon) })),
   { href: "/help/contact", label: "แชทและติดต่อเรา", icon: MessageCircle },
 ];
 
-const faqs = [
-  { q: "สั่งซื้อสินค้าอย่างไร?", a: "เลือกสินค้าที่ต้องการ กดเพิ่มลงตะกร้า แล้วดำเนินการชำระเงินผ่านหน้าตะกร้าสินค้า" },
-  { q: "ใช้เวลาจัดส่งกี่วัน?", a: "โดยทั่วไปจัดส่งภายใน 1-3 วันทำการทั่วประเทศไทย" },
-  { q: "สินค้าของแท้หรือไม่?", a: "สินค้าทุกชิ้นนำเข้าและจัดจำหน่ายโดยตรง 100% พร้อมการรับรองจาก อย." },
-  { q: "เข้าสู่ระบบด้วยวิธีไหนได้บ้าง?", a: "รองรับการเข้าสู่ระบบผ่าน OTP เบอร์โทรศัพท์, LINE Login และอีเมล" },
-  { q: "สะสมคะแนนได้อย่างไร?", a: "ทุกการสั่งซื้อที่เข้าสู่ระบบแล้วจะได้รับคะแนนสะสมโดยอัตโนมัติ ดูรายละเอียดได้ที่หน้าคะแนนสะสม" },
-];
+const faqs = helpFaqs;
 
 export default function HelpPage() {
   return (
