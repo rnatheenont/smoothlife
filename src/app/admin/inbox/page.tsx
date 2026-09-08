@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 import { Button } from "@/components/ui";
+import { splitMarker } from "@/lib/chat-markers";
 
 // Unified inbox (plan §7.2): conversation list, thread, customer panel.
 // Only the web channel exists so far — LINE and Facebook adapters write into
@@ -349,7 +350,11 @@ export default function AdminInboxPage() {
                           />
                         </a>
                       )}
-                      {m.content}
+                      {/* The AI's replies still carry their trailing
+                          [[ASK: ...]] marker in storage — the customer's panel
+                          needs it to rebuild the answer buttons. Staff should
+                          just see the question. */}
+                      {splitMarker(m.content).text}
                     </div>
                   ))
                 )}

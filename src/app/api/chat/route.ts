@@ -4,7 +4,6 @@ import { products } from "@/data/products";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { isHumanHandling, hasWaitingCase, recordCustomerMessage } from "@/lib/conversations";
-import { splitMarker } from "@/lib/chat-markers";
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 
 export const runtime = "nodejs";
@@ -540,11 +539,18 @@ export async function POST(req: NextRequest) {
         });
         await anthropicStream.finalMessage();
         controller.close();
-        // Strip the trailing marker before persisting — it's UI plumbing, not
-        // something worth keeping in the transcript. This used to name
-        // [[SUGGEST: only, so every [[ASK: survived into the stored copy and
-        // came back as raw brackets the next time the panel loaded history.
-        const toSave = splitMarker(fullText).text;
+        // Drop a trailing [[SUGGEST: ...]] — those chips are optional
+        // follow-ups, worth nothing once the turn is over, and not worth
+        // keeping in the transcript.
+        //
+        // [[ASK: ...]] stays. It carries the answer options for a question
+        // the customer has not answered yet, and reopening the panel has to
+        // put those buttons back — strip it here and history comes back as a
+        // question with no way to tap an answer. Every render path runs it
+        // through splitMarker instead, so the brackets themselves are never
+        // shown (see hydrateHistory in QuickChat and the inbox transcript).
+        const cutIdx = fullText.indexOf("[[SUGGEST:");
+        const toSave = cutIdx !== -1 ? fullText.slice(0, cutIdx).trim() : fullText;
         await persistMessage({ uid, sessionKey, role: "assistant", content: toSave, viewingSlug: viewingProduct?.slug });
       } catch (err) {
         console.error("[anthropic] stream error model=" + MODEL, err);
