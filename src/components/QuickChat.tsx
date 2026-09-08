@@ -20,7 +20,13 @@ import { helpChatTopics as HELP_TOPICS } from "@/data/help";
 import { hasStoredConsent, grantConsent } from "@/components/skin-coach/ConsentGate";
 import { Avatar, Button } from "@/components/ui";
 
-type Msg = { role: "user" | "assistant"; content: string; image?: string };
+type Msg = {
+  role: "user" | "assistant";
+  content: string;
+  image?: string;
+  /** A person answered this one, not Smoothie. See from_staff in the API. */
+  fromStaff?: boolean;
+};
 
 // Rotates through the launcher badge so a first-time visitor sees both of
 // its jobs (product help + skin advice) without the badge ever growing a
@@ -162,13 +168,15 @@ function renderTextBlock(text: string, keyPrefix: string): ReactNode[] {
 // learned to strip [[ASK: ...]] still carry it — so clean the marker off for
 // display, and hand back the last reply's options so reopening the panel
 // restores the tappable answers instead of leaving dead bracket text.
-function hydrateHistory(raw: Msg[]): { messages: Msg[]; ask: string[] } {
+function hydrateHistory(raw: (Msg & { from_staff?: boolean })[]): { messages: Msg[]; ask: string[] } {
   let ask: string[] = [];
   const messages = raw.map((m, i) => {
-    if (m.role !== "assistant") return m;
+    // The API sends the column name; the component uses its own casing.
+    const withSender: Msg = { ...m, fromStaff: m.fromStaff ?? m.from_staff ?? false };
+    if (m.role !== "assistant") return withSender;
     const { text, kind, options } = splitMarker(m.content);
     if (kind === "ask" && i === raw.length - 1) ask = options;
-    return { ...m, content: text || m.content };
+    return { ...withSender, content: text || m.content };
   });
   return { messages: attachStoredImages(messages), ask };
 }
@@ -386,7 +394,7 @@ export default function QuickChat() {
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data?.messages) && data.messages.length) {
-          const { messages, ask } = hydrateHistory(data.messages as Msg[]);
+          const { messages, ask } = hydrateHistory(data.messages);
           setMessages(messages);
           setAskOptions(ask);
           seenCountRef.current = data.messages.length;
@@ -423,7 +431,7 @@ export default function QuickChat() {
           if (!loading) {
             setMessages((current) =>
               data.messages.length > current.length
-                ? hydrateHistory(data.messages as Msg[]).messages
+                ? hydrateHistory(data.messages).messages
                 : current
             );
             seenCountRef.current = Math.max(seenCountRef.current, data.messages.length);
@@ -1057,6 +1065,10 @@ export default function QuickChat() {
                         fallback={<UserIcon size={15} />}
                       />
                     </span>
+                  ) : m.fromStaff ? (
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-800 ring-1 ring-brand-200">
+                      <Headset size={16} />
+                    </span>
                   ) : (
                     <span className="relative h-10 w-10 shrink-0 -mt-0.5">
                       <Image src="/mascot/smoothie-say.png" alt="" fill sizes="40px" className="object-contain" />
@@ -1066,9 +1078,20 @@ export default function QuickChat() {
                     className={`rounded-2xl px-3.5 py-2.5 text-[13px] whitespace-pre-wrap leading-relaxed ${
                       m.role === "user"
                         ? "max-w-[82%] bg-brand-gradient text-white rounded-tr-sm"
-                        : "max-w-[90%] bg-white text-slate-700 border border-slate-100 rounded-tl-sm"
+                        : m.fromStaff
+                          ? "max-w-[90%] bg-brand-50 text-slate-700 border border-brand-200 rounded-tl-sm"
+                          : "max-w-[90%] bg-white text-slate-700 border border-slate-100 rounded-tl-sm"
                     }`}
                   >
+                    {/* Staff replies are delivered through the same field the
+                        AI's answers use, so without this the customer watches
+                        a person reply under Smoothie's name — most confusing
+                        right after they have chosen to go back to the bot. */}
+                    {m.fromStaff && (
+                      <span className="mb-1 block text-[11px] font-semibold text-brand-800">
+                        {t("ทีมงาน Smoothlife", "Smoothlife team")}
+                      </span>
+                    )}
                     {m.image && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={m.image} alt="" className="mb-2 max-h-40 rounded-lg object-cover" />

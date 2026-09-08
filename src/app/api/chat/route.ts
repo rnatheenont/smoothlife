@@ -389,8 +389,8 @@ export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return Response.json({ messages: [] });
   try {
     const [rows, handling] = await Promise.all([
-      supabaseRest<{ role: "user" | "assistant"; content: string }[]>(
-        `chat_messages?session_key=eq.${encodeURIComponent(sessionKey)}&select=role,content&order=created_at.asc&limit=40`
+      supabaseRest<{ role: "user" | "assistant"; content: string; from_staff: boolean }[]>(
+        `chat_messages?session_key=eq.${encodeURIComponent(sessionKey)}&select=role,content,from_staff&order=created_at.asc&limit=40`
       ),
       // Whether a person has taken this conversation over. The customer's
       // panel needs it for two things: to stop pretending the AI is answering,

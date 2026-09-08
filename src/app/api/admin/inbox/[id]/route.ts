@@ -148,6 +148,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       session_key: conversation.channel_user_id,
       user_id: conversation.user_id,
       role: "assistant",
+      // Marks it as a person for the customer's panel. The role column only
+      // allows user/assistant — that same value is replayed to Anthropic as
+      // conversation history — so who sent it rides alongside instead.
+      from_staff: true,
       content,
     }),
   });
