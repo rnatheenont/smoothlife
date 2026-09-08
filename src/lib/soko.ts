@@ -92,6 +92,14 @@ const STORE = "SmoothLife Shopify";
 // every page is one cheap request, unlike the per-order View reads.
 const LIST_PAGES = 5;
 
+export type SokoParcel = {
+  /** The Shopify order this belongs to, e.g. "#4161". */
+  orderRef: string;
+  /** soko's own reference, e.g. "#4161_F" for a second box on that order. */
+  parcelRef: string;
+  trackingNumber: string;
+};
+
 /**
  * The tracking number lives only on the per-order View page, not the list.
  *
@@ -100,15 +108,22 @@ const LIST_PAGES = 5;
  * several — so a row that slipped through would put one brand's parcel number
  * onto another brand's order.
  */
-async function trackingFromView(url: string, jar: string): Promise<{ orderRef: string; trackingNumber: string } | null> {
+async function trackingFromView(url: string, jar: string): Promise<SokoParcel | null> {
   const res = await fetch(url, { headers: { Cookie: jar } });
   const html = await res.text();
   const text = html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<[^>]+>/g, "\n");
   if (!text.includes(STORE)) return null;
-  const order = text.match(/Order#\s*\n+\s*(#?\d+)/);
+  // The suffix matters and used to be thrown away. When a Shopify order ships
+  // in two boxes soko files the second as "#4161_F" — same order, its own
+  // parcel and its own number. Capturing only the digits made that look like
+  // a second, contradictory number for #4161, which the sync (rightly, on the
+  // information it had) refused to write.
+  const order = text.match(/Order#\s*\n+\s*(#?\d+[A-Za-z_]*)/);
   const tracking = text.match(/Tracking No\.?\s*\n+\s*([A-Za-z0-9-]{6,})/);
   if (!order || !tracking) return null;
-  return { orderRef: decode(order[1]), trackingNumber: decode(tracking[1]) };
+  const parcelRef = decode(order[1]);
+  const orderRef = parcelRef.match(/#?\d+/)?.[0] ?? parcelRef;
+  return { orderRef, parcelRef, trackingNumber: decode(tracking[1]) };
 }
 
 /**
@@ -145,7 +160,7 @@ export let lastDiagnostics: SokoDiagnostics | null = null;
 export async function fetchPackedOrders(
   limit = 15,
   skipRefs: Set<string> = new Set()
-): Promise<{ orderRef: string; trackingNumber: string }[]> {
+): Promise<SokoParcel[]> {
   if (!sokoConfigured()) throw new SokoError("ยังไม่ได้ตั้งค่า SOKO_USERNAME / SOKO_PASSWORD");
   const jar = await login();
 
@@ -232,7 +247,7 @@ export async function fetchPackedOrders(
   const unique = fresh.map((c) => c.href).slice(0, limit);
   if (unique.length === 0) return [];
 
-  const out: { orderRef: string; trackingNumber: string }[] = [];
+  const out: SokoParcel[] = [];
   for (const href of unique) {
     const url = href.startsWith("http") ? href : `https://shg.sokochan.com/${href.replace(/^\//, "")}`;
     try {

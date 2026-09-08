@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     console.error("[soko-sync] could not load already-synced refs", err);
   }
 
-  let rows: { orderRef: string; trackingNumber: string }[];
+  let rows: Awaited<ReturnType<typeof fetchPackedOrders>>;
   try {
     rows = await fetchPackedOrders(15, skipRefs);
   } catch (err) {
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
     // Sequential on purpose: the hourly cap is counted from rows already
     // written, and firing these in parallel would let a batch race past it.
     const r = await processTrackingUpdate({ ...row, source: "soko-puller" });
-    results.push({ orderRef: row.orderRef, ...r });
+    results.push({ orderRef: row.parcelRef, ...r });
   }
 
   return NextResponse.json({

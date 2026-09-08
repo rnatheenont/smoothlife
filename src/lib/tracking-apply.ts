@@ -47,6 +47,8 @@ export async function processTrackingUpdate(input: {
   trackingNumber: string;
   courier?: string;
   source?: string;
+  /** soko's own reference. Differs from orderRef only for a second box. */
+  parcelRef?: string;
 }): Promise<ProcessResult> {
   const courier = input.courier?.trim() || "Kerry Express Thailand";
   const source = input.source?.trim().slice(0, 40) || "webhook";
@@ -60,23 +62,37 @@ export async function processTrackingUpdate(input: {
       cancelled: order.cancelled,
       shipments: order.shipments,
     },
-    input.trackingNumber
+    input.trackingNumber,
+    Boolean(input.parcelRef && input.parcelRef !== input.orderRef)
   );
 
   let applied = false;
   let notified = false;
   let error: string | null = null;
 
-  // Only ever "fill". "conflict" is left for a person by design, and
-  // "already-set" must stay silent — writing again would re-send the shipping
-  // email for a parcel already announced.
-  if (mode !== "dry-run" && decision.action === "fill" && order) {
+  // "fill" and "add-parcel" write; "conflict" is left for a person by design,
+  // and "already-set" must stay silent — writing again would re-send the
+  // shipping email for a parcel already announced.
+  const writes = decision.action === "fill" || decision.action === "add-parcel";
+  if (mode !== "dry-run" && writes && order) {
     const recent = await countFillsLastHour();
     if (recent >= MAX_FILLS_PER_HOUR) {
       error = `หยุดชั่วคราว: เขียนไปแล้ว ${recent} รายการในชั่วโมงนี้ (เพดาน ${MAX_FILLS_PER_HOUR})`;
     } else {
       notified = mode === "write-notify";
-      const res = order.fulfillmentId
+      // A second box must never take the setFulfillmentTracking path: that
+      // edits the existing fulfillment, so the first parcel's number would be
+      // replaced by the second one rather than joined by it.
+      const res = decision.action === "add-parcel"
+        ? order.openFulfillmentOrderIds.length > 0
+          ? await createFulfillmentWithTracking({
+              fulfillmentOrderIds: order.openFulfillmentOrderIds,
+              number: input.trackingNumber,
+              company: courier,
+              notifyCustomer: notified,
+            })
+          : { ok: false, error: "กล่องเพิ่มแต่ไม่มีสินค้าค้างส่งใน Shopify — ต้องให้แอดมินตรวจสอบ" }
+        : order.fulfillmentId
         ? await setFulfillmentTracking({
             fulfillmentId: order.fulfillmentId,
             number: input.trackingNumber,
@@ -107,13 +123,14 @@ export async function processTrackingUpdate(input: {
     body: JSON.stringify({
       source,
       mode,
-      order_ref: input.orderRef,
+      order_ref: input.parcelRef || input.orderRef,
       tracking_number: input.trackingNumber,
       courier,
       resolved_order_name: order?.name ?? null,
       action: decision.action,
       reason: decision.reason,
-      existing_numbers: decision.action === "conflict" ? decision.existing : null,
+      existing_numbers:
+        decision.action === "conflict" || decision.action === "add-parcel" ? decision.existing : null,
       applied,
       notified,
       error,

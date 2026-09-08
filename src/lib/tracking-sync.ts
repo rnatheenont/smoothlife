@@ -14,6 +14,7 @@ export type SyncMode = "dry-run" | "write" | "write-notify";
 export type SyncDecision =
   | { action: "fill"; reason: string }
   | { action: "already-set"; reason: string }
+  | { action: "add-parcel"; reason: string; existing: string[] }
   | { action: "conflict"; reason: string; existing: string[] }
   | { action: "no-order"; reason: string }
   | { action: "not-eligible"; reason: string };
@@ -30,7 +31,18 @@ function normalise(n: string) {
   return n.trim().toUpperCase().replace(/\s+/g, "");
 }
 
-export function decide(order: OrderForSync | null, incoming: string): SyncDecision {
+export function decide(
+  order: OrderForSync | null,
+  incoming: string,
+  /**
+   * The warehouse says this is another box on an order that already has a
+   * number, not a competing claim about the same box — soko files it under
+   * its own reference ("#4161_F"). Only that suffix turns a conflict into an
+   * addition; anything arriving as a plain order number keeps the old,
+   * suspicious reading.
+   */
+  additionalParcel = false
+): SyncDecision {
   const number = normalise(incoming);
   if (!number) return { action: "not-eligible", reason: "ไม่มีเลขพัสดุในข้อมูลที่ส่งมา" };
 
@@ -57,6 +69,17 @@ export function decide(order: OrderForSync | null, incoming: string): SyncDecisi
   // Two systems claiming different numbers for one order. Which is right is
   // not something this code can know — one of them is a typo, and guessing
   // wrong sends a customer to somebody else's parcel.
+  // A second box, filed by the warehouse under its own reference. Adding it
+  // is right where overwriting would be wrong: the first parcel keeps its
+  // number and the customer gets both.
+  if (existing.length > 0 && additionalParcel) {
+    return {
+      action: "add-parcel",
+      reason: "กล่องเพิ่มของออเดอร์เดิม — เพิ่มเลขใหม่โดยไม่แตะเลขเดิม",
+      existing: order.shipments.map((s) => s.number),
+    };
+  }
+
   if (existing.length > 0) {
     return {
       action: "conflict",
