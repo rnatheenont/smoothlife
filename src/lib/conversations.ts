@@ -152,6 +152,23 @@ export async function hasWaitingCase(
 }
 
 /**
+ * True when this customer has a case that is open in any state — including
+ * "ai_handling", which is where a case sits after they choose to go back to
+ * the bot.
+ *
+ * Everything they say from then on still belongs in the inbox. It did not go
+ * there: the thread recorded the question before they switched back and the
+ * staff reply after, and nothing in between, so the person reading it saw an
+ * answer to a question that was not on the page.
+ */
+export async function hasOpenCase(
+  channel: ConversationChannel,
+  channelUserId: string
+): Promise<boolean> {
+  return hasConversationIn(channel, channelUserId, ["waiting_human", "assigned", "ai_handling"]);
+}
+
+/**
  * Files an inbound customer message against their open conversation, so a
  * question asked while waiting for a human isn't lost to the AI's silence.
  */
@@ -168,5 +185,24 @@ export async function recordCustomerMessage(
     }
   } catch (err) {
     console.error("[conversations] could not record customer message", err);
+  }
+}
+
+/**
+ * Files what Smoothie answered, so staff opening the case can see what the
+ * customer has already been told rather than repeating it or contradicting it.
+ */
+export async function recordAiMessage(
+  channel: ConversationChannel,
+  channelUserId: string,
+  content: string
+): Promise<void> {
+  try {
+    const conversation = await openConversation({ channel, channelUserId });
+    if (conversation) {
+      await appendMessage({ conversationId: conversation.id, senderType: "ai", content });
+    }
+  } catch (err) {
+    console.error("[conversations] could not record ai message", err);
   }
 }

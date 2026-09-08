@@ -3,7 +3,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import { products } from "@/data/products";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
-import { isHumanHandling, hasWaitingCase, recordCustomerMessage } from "@/lib/conversations";
+import {
+  isHumanHandling,
+  hasWaitingCase,
+  hasOpenCase,
+  recordCustomerMessage,
+  recordAiMessage,
+} from "@/lib/conversations";
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { contentForTranscript } from "@/lib/chat-markers";
 import { helpKnowledgeForPrompt } from "@/data/help";
@@ -461,6 +467,12 @@ export async function POST(req: NextRequest) {
   // it sat in the queue.
   const caseWaiting = uid ? await hasWaitingCase("web", uid) : false;
   const humanHandling = uid ? await isHumanHandling("web", uid) : false;
+  // Anything said while a case is open belongs in the inbox, even the turns
+  // the AI is handling. Recording only during waiting/assigned left a hole:
+  // the question asked before the customer went back to the bot, then the
+  // staff reply after, and nothing between — so staff read an answer to a
+  // question that was not on the page.
+  const caseOpen = caseWaiting || humanHandling || (uid ? await hasOpenCase("web", uid) : false);
 
   // Both branches below skip the AI, and with it the persistMessage that the
   // normal path does further down — so the customer's own message never
@@ -469,12 +481,12 @@ export async function POST(req: NextRequest) {
   // a customer coming back to a handed-over conversation saw only our half of
   // it: three questions from us and nothing they had said. Mirror their side
   // too, once, before either branch takes over.
-  if ((caseWaiting || humanHandling) && typeof lastUserMessage?.content === "string") {
+  if (caseOpen && typeof lastUserMessage?.content === "string") {
     const content = imageBase64 ? `[[PHOTO]] ${lastUserMessage.content}` : lastUserMessage.content;
     await persistMessage({ uid, sessionKey, role: "user", content, viewingSlug: viewingProduct?.slug });
   }
 
-  if (caseWaiting && typeof lastUserMessage?.content === "string") {
+  if (caseOpen && !humanHandling && typeof lastUserMessage?.content === "string") {
     await recordCustomerMessage("web", uid as string, lastUserMessage.content);
   }
 
@@ -596,6 +608,11 @@ export async function POST(req: NextRequest) {
         // through splitMarker instead, so the brackets themselves are never
         // shown (see hydrateHistory in QuickChat and the inbox transcript).
         const toSave = contentForTranscript(fullText);
+        // Same reason as the customer's side above — a thread with only half
+        // the exchange in it is worse than no thread.
+        if (caseOpen && uid && toSave.trim()) {
+          await recordAiMessage("web", uid, toSave);
+        }
         await persistMessage({ uid, sessionKey, role: "assistant", content: toSave, viewingSlug: viewingProduct?.slug });
       } catch (err) {
         console.error("[anthropic] stream error model=" + MODEL, err);
