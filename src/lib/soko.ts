@@ -92,6 +92,28 @@ const STORE = "SmoothLife Shopify";
 // every page is one cheap request, unlike the per-order View reads.
 const LIST_PAGES = 5;
 
+// soko answers in its own time and the cron function is killed at 60s. Doing
+// five list pages and a dozen order pages one after another blew straight
+// through that — the 15:00 run died with a Vercel timeout and wrote nothing,
+// which is the silent failure this whole scraper is supposed to avoid. A few
+// at a time is enough to fit and stays polite: this runs five times a day.
+const CONCURRENCY = 4;
+
+async function mapLimit<T, R>(items: T[], fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, items.length) }, async () => {
+      for (;;) {
+        const i = next++;
+        if (i >= items.length) return;
+        out[i] = await fn(items[i]);
+      }
+    })
+  );
+  return out;
+}
+
 export type SokoParcel = {
   /** The Shopify order this belongs to, e.g. "#4161". */
   orderRef: string;
@@ -180,17 +202,23 @@ export async function fetchPackedOrders(
   let pagesScanned = 0;
   let firstPage = "";
 
-  for (let page = 1; page <= LIST_PAGES; page++) {
-    const params = new URLSearchParams({
-      r: "order/index",
-      "Merchantorders[m_id]": "2",
-      "Merchantorders[search_txt]": STORE,
-      Merchantorders_page: String(page),
-    });
-    const listRes = await fetch(`${BASE}?${params}`, { headers: { Cookie: jar } });
-    const list = await listRes.text();
+  const pages = await mapLimit(
+    Array.from({ length: LIST_PAGES }, (_, i) => i + 1),
+    async (page) => {
+      const params = new URLSearchParams({
+        r: "order/index",
+        "Merchantorders[m_id]": "2",
+        "Merchantorders[search_txt]": STORE,
+        Merchantorders_page: String(page),
+      });
+      const listRes = await fetch(`${BASE}?${params}`, { headers: { Cookie: jar } });
+      return listRes.text();
+    }
+  );
+
+  for (const list of pages) {
     pagesScanned++;
-    if (page === 1) firstPage = list;
+    if (!firstPage) firstPage = list;
     if (/LoginForm\[password\]/.test(list)) break;
 
     // Row by row, so the store can be matched on the same row as the link.
@@ -247,16 +275,15 @@ export async function fetchPackedOrders(
   const unique = fresh.map((c) => c.href).slice(0, limit);
   if (unique.length === 0) return [];
 
-  const out: SokoParcel[] = [];
-  for (const href of unique) {
+  const rows = await mapLimit(unique, async (href) => {
     const url = href.startsWith("http") ? href : `https://shg.sokochan.com/${href.replace(/^\//, "")}`;
     try {
-      const row = await trackingFromView(url, jar);
-      // An order that is packed but has no number yet is normal, not an error.
-      if (row) out.push(row);
+      return await trackingFromView(url, jar);
     } catch {
       // One unreadable order must not lose the rest of the batch.
+      return null;
     }
-  }
-  return out;
+  });
+  // An order that is packed but has no number yet is normal, not an error.
+  return rows.filter((r): r is SokoParcel => r !== null);
 }

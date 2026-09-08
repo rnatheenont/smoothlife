@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
 
   let rows: Awaited<ReturnType<typeof fetchPackedOrders>>;
   try {
-    rows = await fetchPackedOrders(15, skipRefs);
+    rows = await fetchPackedOrders(12, skipRefs);
   } catch (err) {
     // A scraper's worst failure is the silent one: the login page changes, the
     // run returns nothing, and everyone assumes there was nothing to send.
