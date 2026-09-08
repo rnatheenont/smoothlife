@@ -428,13 +428,27 @@ export async function POST(req: NextRequest) {
   // person who eventually opens the case sees everything that was said while
   // it sat in the queue.
   const caseWaiting = uid ? await hasWaitingCase("web", uid) : false;
+  const humanHandling = uid ? await isHumanHandling("web", uid) : false;
+
+  // Both branches below skip the AI, and with it the persistMessage that the
+  // normal path does further down — so the customer's own message never
+  // reached chat_messages. That is the table their panel replays on reload,
+  // and staff replies are already mirrored into it (see the inbox route), so
+  // a customer coming back to a handed-over conversation saw only our half of
+  // it: three questions from us and nothing they had said. Mirror their side
+  // too, once, before either branch takes over.
+  if ((caseWaiting || humanHandling) && typeof lastUserMessage?.content === "string") {
+    const content = imageBase64 ? `[[PHOTO]] ${lastUserMessage.content}` : lastUserMessage.content;
+    await persistMessage({ uid, sessionKey, role: "user", content, viewingSlug: viewingProduct?.slug });
+  }
+
   if (caseWaiting && typeof lastUserMessage?.content === "string") {
     await recordCustomerMessage("web", uid as string, lastUserMessage.content);
   }
 
-  if (uid && (await isHumanHandling("web", uid))) {
+  if (humanHandling) {
     if (typeof lastUserMessage?.content === "string") {
-      await recordCustomerMessage("web", uid, lastUserMessage.content);
+      await recordCustomerMessage("web", uid as string, lastUserMessage.content);
     }
     return textResponse(
       lang === "en"
