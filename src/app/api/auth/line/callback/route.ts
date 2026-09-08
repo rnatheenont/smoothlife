@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
-import { LINE_STATE_COOKIE, LINE_RETURN_COOKIE, lineConfigured } from "@/lib/line-auth";
+import {
+  LINE_STATE_COOKIE,
+  LINE_RETURN_COOKIE,
+  lineConfigured,
+  lineEmailFromIdToken,
+} from "@/lib/line-auth";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
@@ -63,6 +68,9 @@ export async function GET(req: NextRequest) {
         p_line_user_id: profile.userId,
         p_display_name: profile.displayName,
         p_avatar_url: profile.pictureUrl || null,
+        // Only present once the channel holds LINE's email permission. Null
+        // otherwise, which is simply the behaviour from before it was asked for.
+        p_email: await lineEmailFromIdToken(tokenData.id_token),
       }),
     });
     const userId = result[0]?.user_id;

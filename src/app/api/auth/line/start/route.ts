@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
-import { LINE_STATE_COOKIE, LINE_RETURN_COOKIE, lineConfigured, lineOauthCookieOptions } from "@/lib/line-auth";
+import {
+  LINE_STATE_COOKIE,
+  LINE_RETURN_COOKIE,
+  lineConfigured,
+  lineEmailScopeEnabled,
+  lineOauthCookieOptions,
+} from "@/lib/line-auth";
 
 export async function GET(req: NextRequest) {
   const returnTo = req.nextUrl.searchParams.get("returnTo") || "/account";
@@ -19,7 +25,11 @@ export async function GET(req: NextRequest) {
   authorizeUrl.searchParams.set("client_id", process.env.LINE_CHANNEL_ID!);
   authorizeUrl.searchParams.set("redirect_uri", redirectUri);
   authorizeUrl.searchParams.set("state", state);
-  authorizeUrl.searchParams.set("scope", "profile");
+  // "openid email" is what makes LINE return an id_token with the address we
+  // match existing members on. Gated: LINE refuses the whole authorization if
+  // the channel asks for a permission it has not been granted, so an
+  // un-approved channel would break every login rather than skip the email.
+  authorizeUrl.searchParams.set("scope", lineEmailScopeEnabled() ? "profile openid email" : "profile");
   authorizeUrl.searchParams.set("ui_locales", "th");
 
   const res = NextResponse.redirect(authorizeUrl);

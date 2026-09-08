@@ -9,6 +9,51 @@ export function lineConfigured() {
   return Boolean(process.env.LINE_CHANNEL_ID && process.env.LINE_CHANNEL_SECRET);
 }
 
+/**
+ * Whether to ask LINE for the member's email address.
+ *
+ * Worth having because LINE is the one login that cannot recognise a member it
+ * has already met: `profile` carries no email, so there is nothing to match on
+ * and a returning customer gets a second, empty account. The email fixes that.
+ *
+ * Behind a flag because the scope needs LINE's own approval first, and LINE
+ * rejects the whole authorization request if a channel asks for a permission it
+ * has not been granted — turning "no email" into "nobody can log in at all".
+ * Set LINE_EMAIL_SCOPE=1 once the LINE console shows the email permission as
+ * approved, and not before.
+ */
+export function lineEmailScopeEnabled() {
+  return process.env.LINE_EMAIL_SCOPE === "1";
+}
+
+/**
+ * The email out of an OpenID id_token, or null.
+ *
+ * Verified through LINE rather than just decoded: the token arrives over a
+ * direct TLS call, but this costs one request and removes the question.
+ */
+export async function lineEmailFromIdToken(idToken: string | undefined): Promise<string | null> {
+  if (!idToken) return null;
+  try {
+    const res = await fetch("https://api.line.me/oauth2/v2.1/verify", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ id_token: idToken, client_id: process.env.LINE_CHANNEL_ID! }),
+    });
+    if (!res.ok) {
+      console.error("[line] id_token verify failed", res.status, await res.text());
+      return null;
+    }
+    const claims: { email?: string } = await res.json();
+    return claims.email?.toLowerCase() || null;
+  } catch (err) {
+    // A missing email must never cost someone their login — they simply get
+    // the pre-email behaviour for this sign-in.
+    console.error("[line] id_token verify threw", err);
+    return null;
+  }
+}
+
 export const lineOauthCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
