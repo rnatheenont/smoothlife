@@ -16,6 +16,7 @@ import { formatTHB } from "@/lib/format";
 import { resizeForUpload, resizeForThumbnail, ResizedImage } from "@/lib/image-utils";
 import { rememberChatImage, attachStoredImages, clearChatImages, PHOTO_MARKER } from "@/lib/chat-image-store";
 import { splitMarker, markerIndex, MARKER_OPENERS } from "@/lib/chat-markers";
+import { helpChatTopics as HELP_TOPICS } from "@/data/help";
 import { hasStoredConsent, grantConsent } from "@/components/skin-coach/ConsentGate";
 import { Avatar, Button } from "@/components/ui";
 
@@ -475,6 +476,27 @@ export default function QuickChat() {
     } finally {
       setBackToAiBusy(false);
     }
+  }
+
+  // Tapping "ศูนย์ช่วยเหลือ" used to close the panel and navigate to /help,
+  // which abandons the conversation to go and read a page. Offer the same
+  // subjects as chips instead: each one sends the customer's question into
+  // this thread, so the answer arrives here — and a subject Smoothie cannot
+  // settle takes the same route to a person that a typed question does.
+  function openHelpTopics() {
+    setNoteOpen(false);
+    setFollowups([]);
+    setMessages((m) => [
+      ...m,
+      {
+        role: "assistant",
+        content: t(
+          "ยินดีช่วยค่ะ อยากทราบเรื่องไหนดีคะ — หรือพิมพ์คำถามมาได้เลย ถ้าเรื่องไหนฉันตอบไม่ได้ จะส่งต่อให้แอดมินนะคะ",
+          "Happy to help — which would you like to know about? Or just type your question; anything I can't settle I'll pass to our team."
+        ),
+      },
+    ]);
+    setAskOptions(HELP_TOPICS);
   }
 
   async function escalate(customerNote: string) {
@@ -1155,13 +1177,19 @@ export default function QuickChat() {
               that only appeared once a conversation existed — findable if you
               already knew it was there. These say what they do, and are
               present from the first screen. */}
-          <div className="flex items-center gap-1.5 border-t border-slate-100 bg-white px-3 pt-2">
+          <div className="scrollbar-none flex items-center gap-1.5 overflow-x-auto border-t border-slate-100 bg-white px-3 py-2">
+            {/* nowrap + shrink-0 + a scrolling row, because these labels are
+                Thai and the panel is ~340px: left to wrap they broke across
+                two lines mid-word and the bar came out ragged. Scrolling keeps
+                every label whole at any width, including the third button that
+                only appears while a person has the conversation. */}
             <Button
-              href="/help"
               variant="ghost"
               size="none"
-              className="gap-1 px-2.5 py-1 text-[11px]"
-              onClick={() => setOpen(false)}
+              className={`shrink-0 gap-1.5 whitespace-nowrap rounded-full border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-brand-800 ${
+                askOptions.length > 0 ? "border-brand-200 bg-brand-50 text-brand-800" : ""
+              }`}
+              onClick={openHelpTopics}
             >
               <MessageCircleQuestion size={13} />
               {t("ศูนย์ช่วยเหลือ", "Help centre")}
@@ -1169,25 +1197,25 @@ export default function QuickChat() {
             <Button
               variant="ghost"
               size="none"
-              className="gap-1 px-2.5 py-1 text-[11px]"
+              className={`shrink-0 gap-1.5 whitespace-nowrap rounded-full border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-brand-800 ${
+                noteOpen ? "border-brand-200 bg-brand-50 text-brand-800" : ""
+              }`}
               onClick={() => setNoteOpen((v) => !v)}
               disabled={escalating}
             >
               <Headset size={13} />
-              {t("ฝากข้อความถึงแอดมิน", "Leave a message")}
+              {t("ฝากข้อความ", "Leave a message")}
             </Button>
             {humanHandling && (
               <Button
                 variant="ghost"
                 size="none"
-                className="gap-1 px-2.5 py-1 text-[11px]"
+                className="shrink-0 gap-1.5 whitespace-nowrap rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-[11px] font-medium text-brand-800 transition-colors hover:bg-brand-100"
                 onClick={backToAi}
                 disabled={backToAiBusy}
               >
                 <Bot size={13} />
-                {backToAiBusy
-                  ? t("กำลังเปลี่ยน...", "Switching...")
-                  : t("กลับไปคุยกับน้อง Smoothie", "Back to Smoothie")}
+                {backToAiBusy ? t("กำลังเปลี่ยน...", "Switching...") : t("คุยกับ Smoothie", "Back to Smoothie")}
               </Button>
             )}
           </div>

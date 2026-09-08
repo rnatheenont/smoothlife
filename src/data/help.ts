@@ -95,3 +95,21 @@ export function helpKnowledgeForPrompt(): string {
   const faqs = helpFaqs.map((f) => `- ${f.q} — ${f.a}`).join("\n");
   return `${topics}\n\nคำถามที่พบบ่อย (/help)\n${faqs}`;
 }
+
+/**
+ * The chips offered when someone taps "ศูนย์ช่วยเหลือ" inside the chat.
+ *
+ * Each one is worded as the customer's own question, because tapping it sends
+ * exactly that as their message — so the reply is a real answer in the thread
+ * rather than a menu that dead-ends. Anything not covered by the content above
+ * reaches the same place a typed question would: Smoothie says she is not sure
+ * and hands it to the team.
+ */
+export const helpChatTopics: string[] = [
+  "จัดส่งกี่วันถึง",
+  "ส่งฟรีไหม",
+  "คืนสินค้าทำยังไง",
+  "ชำระเงินได้ทางไหนบ้าง",
+  "ติดตามพัสดุยังไง",
+  "แต้มสะสมใช้ยังไง",
+];
