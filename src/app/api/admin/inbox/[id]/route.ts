@@ -14,16 +14,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) return unauthorized();
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "not configured" }, { status: 503 });
 
-  const [conversation] = await supabaseRest<ConversationRow[]>(
-    `conversations?id=eq.${pgValue(params.id)}&select=*&limit=1`
-  );
+  // The thread is worth fetching even if the conversation row turns out to be
+  // missing: one wasted query on a 404 costs less than a round trip on every
+  // open that succeeds.
+  const [[conversation], messages] = await Promise.all([
+    supabaseRest<ConversationRow[]>(`conversations?id=eq.${pgValue(params.id)}&select=*&limit=1`),
+    supabaseRest<{ id: string; sender_type: string; content: string; is_draft: boolean; created_at: string }[]>(
+      `conversation_messages?conversation_id=eq.${pgValue(params.id)}&select=id,sender_type,content,is_draft,created_at&order=created_at.asc&limit=200`
+    ),
+  ]);
   if (!conversation) return NextResponse.json({ ok: false, error: "ไม่พบบทสนทนานี้" }, { status: 404 });
-
-  const messages = await supabaseRest<
-    { id: string; sender_type: string; content: string; is_draft: boolean; created_at: string }[]
-  >(
-    `conversation_messages?conversation_id=eq.${pgValue(params.id)}&select=id,sender_type,content,is_draft,created_at&order=created_at.asc&limit=200`
-  );
 
   // Everything below is best-effort context: a conversation with an
   // unidentified customer is still perfectly answerable, just with less
@@ -31,29 +31,35 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   let customer: Record<string, unknown> | null = null;
   if (conversation.user_id) {
     const uid = pgValue(conversation.user_id);
-    const [user] = await supabaseRest<
-      { id: string; display_name: string | null; phone: string | null }[]
-    >(`users?id=eq.${uid}&select=id,display_name,phone&limit=1`);
-    // Tier lives in user_loyalty.current_tier (maintained by the daily cron);
-    // the spendable balance is the points_balance view, the same source
-    // /api/account/redeem trusts before letting anyone spend.
-    const [loyalty] = await supabaseRest<
-      { current_tier: string | null; rolling_12mo_spend: number | null }[]
-    >(`user_loyalty?user_id=eq.${uid}&select=current_tier,rolling_12mo_spend&limit=1`).catch(() => []);
-    const [points] = await supabaseRest<{ balance: number }[]>(
-      `points_balance?user_id=eq.${uid}&select=balance&limit=1`
-    ).catch(() => []);
-    const [email] = await supabaseRest<{ provider_uid: string }[]>(
-      `auth_identities?user_id=eq.${uid}&provider=eq.email&select=provider_uid&limit=1`
-    ).catch(() => []);
-    const subscriptions = await supabaseRest<
-      { id: string; product_name: string; status: string; plan_months: number; next_charge_date: string | null }[]
-    >(
-      `real_subscriptions?user_id=eq.${uid}&select=id,product_name,status,plan_months,next_charge_date&order=created_at.desc&limit=5`
-    ).catch(() => []);
+    // Fired together, not one after another. These are five independent
+    // lookups and running them in sequence added most of a second to the only
+    // screen staff keep open all day — the customer is not more identified for
+    // having been fetched slowly.
+    const [[user], [loyalty], [points], [email], subscriptions] = await Promise.all([
+      supabaseRest<{ id: string; display_name: string | null; phone: string | null }[]>(
+        `users?id=eq.${uid}&select=id,display_name,phone&limit=1`
+      ).catch(() => []),
+      // Tier lives in user_loyalty.current_tier (maintained by the daily cron);
+      // the spendable balance is the points_balance view, the same source
+      // /api/account/redeem trusts before letting anyone spend.
+      supabaseRest<{ current_tier: string | null; rolling_12mo_spend: number | null }[]>(
+        `user_loyalty?user_id=eq.${uid}&select=current_tier,rolling_12mo_spend&limit=1`
+      ).catch(() => []),
+      supabaseRest<{ balance: number }[]>(
+        `points_balance?user_id=eq.${uid}&select=balance&limit=1`
+      ).catch(() => []),
+      supabaseRest<{ provider_uid: string }[]>(
+        `auth_identities?user_id=eq.${uid}&provider=eq.email&select=provider_uid&limit=1`
+      ).catch(() => []),
+      supabaseRest<
+        { id: string; product_name: string; status: string; plan_months: number; next_charge_date: string | null }[]
+      >(
+        `real_subscriptions?user_id=eq.${uid}&select=id,product_name,status,plan_months,next_charge_date&order=created_at.desc&limit=5`
+      ).catch(() => []),
+    ]);
 
     customer = {
-      name: user?.display_name || null,
+      name: user?.display_name ?? null,
       phone: user?.phone ?? null,
       email: email?.provider_uid ?? null,
       tier: loyalty?.current_tier ?? null,

@@ -123,7 +123,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <LogOut size={13} /> ออกจากระบบ
           </button>
         </aside>
-        <div className="flex-1 min-w-0 max-w-3xl">
+        {/* Most admin screens are forms and read better narrow. The inbox is
+            three columns of conversation and suffocates at max-w-3xl, so it
+            opts out rather than every other page opting in. */}
+        <div className={`flex-1 min-w-0 ${pathname?.startsWith("/admin/inbox") ? "" : "max-w-3xl"}`}>
           {children}
           <button onClick={logout} className="md:hidden flex items-center gap-2 mt-8 text-xs text-slate-400">
             <LogOut size={13} /> ออกจากระบบ

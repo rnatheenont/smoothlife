@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 import { Button } from "@/components/ui";
@@ -58,15 +58,16 @@ export default function AdminInboxPage() {
   const [caseUrl, setCaseUrl] = useState<string | null>(null);
   const [filingCase, setFilingCase] = useState(false);
   const [error, setError] = useState("");
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  const loadList = useCallback(async () => {
-    setLoadingList(true);
+  const loadList = useCallback(async (silent = false) => {
+    if (!silent) setLoadingList(true);
     try {
       const res = await fetch(`/api/admin/inbox?status=${filter}`);
       const data = await res.json();
       setConversations(data.conversations ?? []);
     } finally {
-      setLoadingList(false);
+      if (!silent) setLoadingList(false);
     }
   }, [filter]);
 
@@ -81,9 +82,11 @@ export default function AdminInboxPage() {
       .catch(() => {});
   }, []);
 
-  const loadThread = useCallback(async (id: string) => {
-    setLoadingThread(true);
-    setError("");
+  const loadThread = useCallback(async (id: string, silent = false) => {
+    if (!silent) {
+      setLoadingThread(true);
+      setError("");
+    }
     try {
       const res = await fetch(`/api/admin/inbox/${id}`);
       const data = await res.json();
@@ -91,7 +94,7 @@ export default function AdminInboxPage() {
       setCustomer(data.customer ?? null);
       setCaseUrl(data.conversation?.clickup_task_url ?? null);
     } finally {
-      setLoadingThread(false);
+      if (!silent) setLoadingThread(false);
     }
   }, []);
 
@@ -176,14 +179,42 @@ export default function AdminInboxPage() {
     await loadList();
   }
 
+  // Polls instead of waiting for a click. Staff sit on this screen while a
+  // customer types, so a reply that only appears on refresh is a reply they
+  // answer late. Five seconds is short enough to feel live and long enough
+  // that an idle tab isn't hammering the database all day.
+  useEffect(() => {
+    const tick = () => {
+      if (document.hidden) return;
+      loadList(true);
+      if (selectedId) loadThread(selectedId, true);
+    };
+    const id = window.setInterval(tick, 5000);
+    // A tab that was hidden for a while is stale the moment it comes back.
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [selectedId, loadList, loadThread]);
+
+  // Jump to the newest message. Without this a polled reply lands below the
+  // fold and the thread looks unchanged.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [messages.length]);
+
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-brand-ink">กล่องข้อความรวม</h1>
+        <span className="ml-auto flex items-center gap-1.5 text-[11px] text-slate-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> อัปเดตอัตโนมัติทุก 5 วินาที
+        </span>
         <button
-          onClick={loadList}
+          onClick={() => loadList()}
           className="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600"
         >
           <RefreshCw size={13} /> รีเฟรช
@@ -302,6 +333,8 @@ export default function AdminInboxPage() {
                     </div>
                   ))
                 )}
+                {/* Scroll anchor — see the effect that pins the view here. */}
+                <div ref={bottomRef} />
               </div>
 
               <div className="border-t border-slate-100 p-3">
