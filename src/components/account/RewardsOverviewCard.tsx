@@ -5,7 +5,9 @@ import Link from "next/link";
 import { CheckCircle2, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { tierBadge, tierCard, tierDisplayName } from "@/lib/tier";
-import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
+import { DAILY_CHECKIN_ENABLED, REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
+import { loyaltyTierProgress } from "@/lib/loyalty-shared";
+import { formatTHB } from "@/lib/format";
 import { Avatar, Button } from "@/components/ui";
 
 type DayInfo = { date: string; dayNumber: number; status: string };
@@ -80,6 +82,7 @@ export default function RewardsOverviewCard() {
   const card = tierCard[user.tier];
   const TierIcon = badge.icon;
   const pointBalance = data?.recovery.pointBalance ?? user.points;
+  const progress = loyaltyTierProgress(user.tierSpend ?? 0, user.tierOrders ?? 0);
 
   return (
     <div className="rounded-2xl overflow-hidden shadow-cardHover">
@@ -144,6 +147,28 @@ export default function RewardsOverviewCard() {
           </Link>
         </div>
 
+        {/* How far off the next tier is. The card showed the tier name and
+            nothing about reaching the next one, so "Bronze" read as a label
+            rather than a position on a ladder. Spend-based, matching the bar
+            in the cart — the tiers are earned by spend, not by points. */}
+        <div className="mb-4">
+          <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px]">
+            <span className="font-semibold text-brand-ink">ระดับ {tierDisplayName[user.tier].en}</span>
+            <span className="text-slate-500">
+              {progress.next
+                ? `อีก ${formatTHB(progress.remaining)} ถึง ${progress.next}`
+                : "ระดับสูงสุดแล้ว"}
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+            <div className="h-full bg-brand-gradient transition-all" style={{ width: `${progress.percent}%` }} />
+          </div>
+          {progress.next && (
+            <p className="mt-1.5 text-[11px] text-slate-400">นับยอดซื้อรอบ 12 เดือนล่าสุด</p>
+          )}
+        </div>
+
+        {DAILY_CHECKIN_ENABLED && (
         <div className="border-t border-slate-100 pt-4">
           <div className="flex items-center justify-between mb-2.5 gap-3">
             <Link href="/account/checkin" className="text-sm font-semibold text-brand-ink hover:text-brand-emerald">
@@ -182,6 +207,7 @@ export default function RewardsOverviewCard() {
             </Link>
           )}
         </div>
+        )}
       </div>
       )}
     </div>

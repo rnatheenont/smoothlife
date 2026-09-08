@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import AccountGate from "@/components/AccountGate";
 import { useAuth } from "@/lib/auth-context";
-import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
+import { DAILY_CHECKIN_ENABLED, REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 type NavGroup = { label?: string; items: NavItem[] };
@@ -61,7 +61,11 @@ const NAV_GROUPS: NavGroup[] = [
         {
           label: "กิจกรรมและรางวัล",
           items: [
-            { href: "/account/checkin", label: "เช็กอินรายวัน", icon: CalendarCheck },
+            // Hidden with the card's check-in panel — a menu entry for a
+            // feature that no longer shows anywhere is just a dead end.
+            ...(DAILY_CHECKIN_ENABLED
+              ? [{ href: "/account/checkin", label: "เช็กอินรายวัน", icon: CalendarCheck }]
+              : []),
             { href: "/account/points", label: "คะแนนสะสม", icon: Award },
             { href: "/account/leaderboard", label: "อันดับ", icon: Trophy },
           ],
