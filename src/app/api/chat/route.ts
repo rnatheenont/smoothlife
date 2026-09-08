@@ -474,14 +474,17 @@ export async function POST(req: NextRequest) {
   // question that was not on the page.
   const caseOpen = caseWaiting || humanHandling || (uid ? await hasOpenCase("web", uid) : false);
 
-  // Both branches below skip the AI, and with it the persistMessage that the
-  // normal path does further down — so the customer's own message never
-  // reached chat_messages. That is the table their panel replays on reload,
-  // and staff replies are already mirrored into it (see the inbox route), so
-  // a customer coming back to a handed-over conversation saw only our half of
-  // it: three questions from us and nothing they had said. Mirror their side
-  // too, once, before either branch takes over.
-  if (caseOpen && typeof lastUserMessage?.content === "string") {
+  // Only the humanHandling branch below returns before the AI path, and with
+  // it the persistMessage further down — so only it has to write the
+  // customer's message to chat_messages itself. That is the table their panel
+  // replays on reload, and staff replies are already mirrored into it, so a
+  // customer coming back to a handed-over conversation would otherwise see
+  // only our half of it.
+  //
+  // Gated on humanHandling and not caseOpen: with a case merely open the AI
+  // still answers, so the path below persists the same message a second or
+  // two later and the customer's panel showed everything they said twice.
+  if (humanHandling && typeof lastUserMessage?.content === "string") {
     const content = imageBase64 ? `[[PHOTO]] ${lastUserMessage.content}` : lastUserMessage.content;
     await persistMessage({ uid, sessionKey, role: "user", content, viewingSlug: viewingProduct?.slug });
   }
