@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { appendMessage, ConversationRow } from "@/lib/conversations";
+import { signedAttachmentUrl, deleteAttachmentsForConversation } from "@/lib/chat-attachments";
 
 // One conversation: the whole thread plus the customer context staff would
 // otherwise go and look up in three other screens.
@@ -19,8 +20,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   // open that succeeds.
   const [[conversation], messages] = await Promise.all([
     supabaseRest<ConversationRow[]>(`conversations?id=eq.${pgValue(params.id)}&select=*&limit=1`),
-    supabaseRest<{ id: string; sender_type: string; content: string; is_draft: boolean; created_at: string }[]>(
-      `conversation_messages?conversation_id=eq.${pgValue(params.id)}&select=id,sender_type,content,is_draft,created_at&order=created_at.asc&limit=200`
+    supabaseRest<
+      { id: string; sender_type: string; content: string; is_draft: boolean; created_at: string; attachment_path: string | null }[]
+    >(
+      `conversation_messages?conversation_id=eq.${pgValue(params.id)}&select=id,sender_type,content,is_draft,created_at,attachment_path&order=created_at.asc&limit=200`
     ),
   ]);
   if (!conversation) return NextResponse.json({ ok: false, error: "ไม่พบบทสนทนานี้" }, { status: 404 });
@@ -69,7 +72,17 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     };
   }
 
-  return NextResponse.json({ ok: true, conversation, messages, customer });
+  // Signed per request and short-lived: the bucket is private, so a link
+  // copied out of this screen stops working instead of becoming a permanent
+  // public address for a customer's photo.
+  const withUrls = await Promise.all(
+    messages.map(async (m) => ({
+      ...m,
+      attachmentUrl: m.attachment_path ? await signedAttachmentUrl(m.attachment_path) : null,
+    }))
+  );
+
+  return NextResponse.json({ ok: true, conversation, messages: withUrls, customer });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -88,6 +101,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     returning: false,
     body: JSON.stringify(patch),
   });
+
+  // Closing the case is the moment the consent text promised the photos would
+  // go. Doing it here rather than on a schedule is what makes that true.
+  if (patch.status === "resolved") {
+    await deleteAttachmentsForConversation(params.id).catch((err) =>
+      console.error("[admin/inbox] could not delete attachments on close", err)
+    );
+  }
   return NextResponse.json({ ok: true });
 }
 

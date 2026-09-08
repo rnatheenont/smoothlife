@@ -9,7 +9,15 @@ import { Button } from "@/components/ui";
 // Only the web channel exists so far — LINE and Facebook adapters write into
 // the same tables, so they will appear here without this screen changing.
 
-type Message = { id: string; sender_type: string; content: string; is_draft: boolean; created_at: string };
+type Message = {
+  id: string;
+  sender_type: string;
+  content: string;
+  is_draft: boolean;
+  created_at: string;
+  /** Short-lived signed link — the bucket is private, so this expires. */
+  attachmentUrl?: string | null;
+};
 type Canned = { id: string; title: string; content: string; category: string | null };
 type Customer = {
   name: string | null;
@@ -329,6 +337,18 @@ export default function AdminInboxPage() {
                       }`}
                     >
                       {m.sender_type === "ai" && <span className="mb-0.5 block text-[10px] opacity-60">น้อง Smoothie</span>}
+                      {m.attachmentUrl && (
+                        <a href={m.attachmentUrl} target="_blank" rel="noopener noreferrer">
+                          {/* Signed URLs expire, so next/image's optimiser —
+                              which caches by URL — is the wrong tool here. */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={m.attachmentUrl}
+                            alt=""
+                            className="mb-1.5 max-h-56 rounded-lg border border-slate-200 object-contain"
+                          />
+                        </a>
+                      )}
                       {m.content}
                     </div>
                   ))

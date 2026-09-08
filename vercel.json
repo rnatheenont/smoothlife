@@ -27,6 +27,10 @@
     {
       "path": "/api/cron/soko-sync",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/purge-chat-attachments",
+      "schedule": "30 1 * * *"
     }
   ]
 }

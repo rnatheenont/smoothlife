@@ -210,6 +210,15 @@ export default function QuickChat() {
   // to know what the customer actually wants, and a bare transcript makes
   // them guess it from a conversation they weren't part of.
   const [humanHandling, setHumanHandling] = useState(false);
+  // Storing a photo on our server is a different promise from showing it to
+  // the model, so it needs its own answer. Someone who agreed to "sent to the
+  // AI, never stored" has not agreed to this.
+  const [storageConsent, setStorageConsent] = useState(false);
+  useEffect(() => {
+    try {
+      setStorageConsent(localStorage.getItem("sl_chat_storage_consent") === "1");
+    } catch {}
+  }, []);
   const [unread, setUnread] = useState(0);
   const [backToAiBusy, setBackToAiBusy] = useState(false);
   // How many messages had been seen the last time the panel was open. Kept on
@@ -538,7 +547,10 @@ export default function QuickChat() {
       // ~160px one is what gets kept on the device for the history.
       const [resized, thumb] = await Promise.all([resizeForUpload(file), resizeForThumbnail(file)]);
       thumbRef.current = thumb.dataUrl;
-      if (imageConsent) {
+      // Consent given for the AI path does not carry over to the staff path,
+      // where the photo is stored on our server — so ask again the first time.
+      const needsAsking = humanHandling ? !storageConsent : !imageConsent;
+      if (!needsAsking) {
         setPendingImage(resized);
       } else {
         setAwaitingConsentImage(resized);
@@ -551,6 +563,13 @@ export default function QuickChat() {
   function confirmImageConsent() {
     grantConsent();
     setImageConsent(true);
+    // Answering the staff-storage question also records that separate consent.
+    if (humanHandling) {
+      setStorageConsent(true);
+      try {
+        localStorage.setItem("sl_chat_storage_consent", "1");
+      } catch {}
+    }
     if (awaitingConsentImage) setPendingImage(awaitingConsentImage);
     setAwaitingConsentImage(null);
   }
@@ -567,6 +586,32 @@ export default function QuickChat() {
   async function send(text: string, image?: ResizedImage | null) {
     const clean = text.trim();
     if ((!clean && !image) || loading) return;
+
+    // A photo sent while staff are handling the case goes to them, not to the
+    // model — uploaded so they can actually see it, which is the whole reason
+    // the second consent exists. The AI is not asked to answer it.
+    if (image && humanHandling) {
+      const body = new FormData();
+      const blob = await (await fetch(image.dataUrl)).blob();
+      body.append("image", new File([blob], "photo.jpg", { type: "image/jpeg" }));
+      body.append("caption", clean);
+      setMessages((m) => [...m, { role: "user", content: clean || "(ส่งรูป)", image: image.dataUrl }]);
+      if (thumbRef.current) {
+        rememberChatImage(clean || "(ส่งรูป)", thumbRef.current);
+        thumbRef.current = null;
+      }
+      setInput("");
+      setPendingImage(null);
+      try {
+        const res = await fetch("/api/chat/attachment", { method: "POST", body });
+        const data = await res.json();
+        if (!data.ok) setImageError(data.error || t("ส่งรูปไม่สำเร็จ", "Couldn't send the photo"));
+      } catch {
+        setImageError(t("ส่งรูปไม่สำเร็จ", "Couldn't send the photo"));
+      }
+      return;
+    }
+
     // A photo with no caption needs *something* for the model to answer, but
     // only when the model is answering. Putting words in a customer's mouth to
     // a member of staff is worse than an empty caption — they never asked what
@@ -1139,10 +1184,15 @@ export default function QuickChat() {
           {awaitingConsentImage && (
             <div className="border-t border-slate-100 bg-amber-50 px-3.5 py-3">
               <p className="mb-2 text-[12px] leading-relaxed text-slate-700">
-                {t(
-                  "รูปที่แนบอาจมีข้อมูลอ่อนไหว (เช่น ผิวหรือปัญหาสุขภาพ) เราจะส่งไปให้ AI วิเคราะห์ชั่วคราวเท่านั้น ไม่เก็บรูปไว้บนเซิร์ฟเวอร์ — จะเก็บสำเนาย่อไว้ในเครื่องนี้เท่านั้น เพื่อให้คุณย้อนดูประวัติได้ ยินยอมให้ดำเนินการต่อไหมคะ",
-                  "The photo may contain sensitive info (e.g. skin/health). We only send it to the AI temporarily and don't store it on our server — a small copy stays on this device so you can see it in your history. Consent to continue?"
-                )}
+                {humanHandling
+                  ? t(
+                      "ตอนนี้ทีมงานเป็นผู้ดูแลเคสของคุณอยู่ รูปที่ส่งจะถูกเก็บไว้บนระบบของเรา เพื่อให้ทีมงานเปิดดูได้ — เฉพาะเจ้าหน้าที่ที่ดูแลเคสนี้เท่านั้น ไม่เปิดเผยต่อบุคคลอื่น และจะลบอัตโนมัติเมื่อปิดเคส หรืออย่างช้าภายใน 30 วัน รูปอาจมีข้อมูลอ่อนไหว (เช่น ผิวหรือสุขภาพ) กรุณาส่งเท่าที่จำเป็นต่อการตรวจสอบ ยินยอมให้เก็บรูปไว้ให้ทีมงานตรวจสอบไหมคะ",
+                      "A member of our team is handling your case, so this photo will be stored on our system for them to see — visible only to the staff on this case, deleted when the case is closed, and within 30 days at the latest. Photos may contain sensitive information (e.g. skin or health); please send only what's needed. Consent to store it for the team?"
+                    )
+                  : t(
+                      "รูปที่แนบอาจมีข้อมูลอ่อนไหว (เช่น ผิวหรือปัญหาสุขภาพ) เราจะส่งไปให้ AI วิเคราะห์ชั่วคราวเท่านั้น ไม่เก็บรูปไว้บนเซิร์ฟเวอร์ — จะเก็บสำเนาย่อไว้ในเครื่องนี้เท่านั้น เพื่อให้คุณย้อนดูประวัติได้ ยินยอมให้ดำเนินการต่อไหมคะ",
+                      "The photo may contain sensitive info (e.g. skin/health). We only send it to the AI temporarily and don't store it on our server — a small copy stays on this device so you can see it in your history. Consent to continue?"
+                    )}
               </p>
               <div className="flex gap-2">
                 <Button size="none" className="px-3.5 py-1.5 text-[12px]" type="button" onClick={confirmImageConsent}>
