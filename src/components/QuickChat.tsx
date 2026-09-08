@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, ReactNode, PointerEvent a
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Send, Loader2, RotateCcw, User as UserIcon, X, Plus, Check, Camera, ImagePlus, MessageCircleQuestion, Headset } from "lucide-react";
+import { Send, Loader2, RotateCcw, User as UserIcon, X, Plus, Check, Camera, ImagePlus, MessageCircleQuestion, Headset, Bot } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
@@ -209,6 +209,13 @@ export default function QuickChat() {
   // Leaving a message is a compose step, not a one-tap send: the team needs
   // to know what the customer actually wants, and a bare transcript makes
   // them guess it from a conversation they weren't part of.
+  const [humanHandling, setHumanHandling] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const [backToAiBusy, setBackToAiBusy] = useState(false);
+  // How many messages had been seen the last time the panel was open. Kept on
+  // the device so a badge survives a reload — the point of the badge is that
+  // the customer wasn't looking.
+  const seenCountRef = useRef<number>(0);
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
   const [badgeIndex, setBadgeIndex] = useState(0);
@@ -352,12 +359,86 @@ export default function QuickChat() {
       .then((data) => {
         if (Array.isArray(data?.messages) && data.messages.length) {
           setMessages(attachStoredImages(data.messages as Msg[]));
+          seenCountRef.current = data.messages.length;
         }
+        setHumanHandling(Boolean(data?.humanHandling));
       })
       .catch((err) => console.error("[QuickChat] history restore failed", err))
       .finally(() => setRestoringHistory(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Polls for replies. Staff answer from the inbox, and those replies land in
+  // the same history this panel reads — without polling the customer only sees
+  // them by reloading the page, which is exactly when they have given up.
+  //
+  // Also runs while the panel is closed, more slowly: that is the case the
+  // unread badge exists for.
+  useEffect(() => {
+    let cancelled = false;
+    async function poll() {
+      if (document.hidden) return;
+      try {
+        const anonId = user ? undefined : getAnonId();
+        const qs = anonId ? `?anonId=${encodeURIComponent(anonId)}` : "";
+        const data = await fetch(`/api/chat${qs}`).then((r) => r.json());
+        if (cancelled || !Array.isArray(data?.messages)) return;
+        setHumanHandling(Boolean(data.humanHandling));
+        if (open) {
+          // Never overwrite a reply that is still streaming in.
+          if (!loading) {
+            setMessages(attachStoredImages(data.messages as Msg[]));
+            seenCountRef.current = data.messages.length;
+            setUnread(0);
+          }
+        } else {
+          setUnread(Math.max(0, data.messages.length - seenCountRef.current));
+        }
+      } catch {
+        // A failed poll is not worth telling the customer about; the next one
+        // is a few seconds away.
+      }
+    }
+    const every = open ? 5000 : 30000;
+    const id = window.setInterval(poll, every);
+    document.addEventListener("visibilitychange", poll);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", poll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, loading, user]);
+
+  // Opening the panel is the customer reading what arrived.
+  useEffect(() => {
+    if (open) {
+      setUnread(0);
+      seenCountRef.current = messages.length;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  async function backToAi() {
+    setBackToAiBusy(true);
+    try {
+      const res = await fetch("/api/chat/back-to-ai", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) {
+        setHumanHandling(false);
+        setEscalateMsg(
+          t(
+            "กลับมาคุยกับน้อง Smoothie แล้วค่ะ ถามต่อได้เลย — เรื่องที่ฝากไว้ทีมงานยังดูให้อยู่นะคะ",
+            "You're back with Smoothie — ask away. The team is still on your earlier request."
+          )
+        );
+      }
+    } catch {
+      /* leave the panel as it was */
+    } finally {
+      setBackToAiBusy(false);
+    }
+  }
 
   async function escalate(customerNote: string) {
     if (!user) {
@@ -677,11 +758,23 @@ export default function QuickChat() {
           onPointerUp={handleLauncherPointerUp}
           onPointerCancel={handleLauncherPointerUp}
           onClick={handleLauncherClick}
-          aria-label={t("คุยกับน้อง Smoothie", "Chat with Smoothie")}
+          aria-label={
+            unread > 0
+              ? t(`มีข้อความใหม่ ${unread} ข้อความ`, `${unread} new messages`)
+              : t("คุยกับน้อง Smoothie", "Chat with Smoothie")
+          }
           className={`relative flex items-center justify-center rounded-full text-white transition-[transform,background-color,box-shadow] hover:scale-105 active:scale-95 touch-none select-none cursor-grab active:cursor-grabbing ${
             open ? "bg-brand-gradient shadow-cardHover ring-2 ring-white h-12 w-12" : "h-16 w-16 lg:h-24 lg:w-24"
           }`}
         >
+          {/* Unread count. Only ever appears when the panel is closed — while
+              it is open the customer is reading, and a badge over what they
+              are already looking at is noise. */}
+          {!open && unread > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 z-20 grid h-6 min-w-6 place-items-center rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-white shadow-md ring-2 ring-white">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          )}
           {open ? (
             <X size={20} />
           ) : (
@@ -1006,6 +1099,20 @@ export default function QuickChat() {
               <Headset size={13} />
               {t("ฝากข้อความถึงแอดมิน", "Leave a message")}
             </Button>
+            {humanHandling && (
+              <Button
+                variant="ghost"
+                size="none"
+                className="gap-1 px-2.5 py-1 text-[11px]"
+                onClick={backToAi}
+                disabled={backToAiBusy}
+              >
+                <Bot size={13} />
+                {backToAiBusy
+                  ? t("กำลังเปลี่ยน...", "Switching...")
+                  : t("กลับไปคุยกับน้อง Smoothie", "Back to Smoothie")}
+              </Button>
+            )}
           </div>
 
           {imageError && (

@@ -347,13 +347,19 @@ async function persistMessage(opts: {
 // persisted (matches the "we don't store your photo" consent copy).
 export async function GET(req: NextRequest) {
   const anonId = req.nextUrl.searchParams.get("anonId") || undefined;
-  const { sessionKey } = requestIdentity(req, anonId);
+  const { sessionKey, uid } = requestIdentity(req, anonId);
   if (!supabaseConfigured()) return Response.json({ messages: [] });
   try {
-    const rows = await supabaseRest<{ role: "user" | "assistant"; content: string }[]>(
-      `chat_messages?session_key=eq.${encodeURIComponent(sessionKey)}&select=role,content&order=created_at.asc&limit=40`
-    );
-    return Response.json({ messages: rows });
+    const [rows, handling] = await Promise.all([
+      supabaseRest<{ role: "user" | "assistant"; content: string }[]>(
+        `chat_messages?session_key=eq.${encodeURIComponent(sessionKey)}&select=role,content&order=created_at.asc&limit=40`
+      ),
+      // Whether a person has taken this conversation over. The customer's
+      // panel needs it for two things: to stop pretending the AI is answering,
+      // and to offer them a way back to it.
+      uid ? isHumanHandling("web", uid) : Promise.resolve(false),
+    ]);
+    return Response.json({ messages: rows, humanHandling: handling });
   } catch (err) {
     console.error("[chat] history fetch failed", err);
     return Response.json({ messages: [] });
