@@ -119,3 +119,35 @@ export async function installRichMenu(image: { bytes: ArrayBuffer; contentType: 
 export async function deleteRichMenu(richMenuId: string) {
   await lineFetch(`${API}/richmenu/${richMenuId}`, { method: "DELETE" });
 }
+
+/**
+ * Turns LINE's "Authentication failed" into the sentence that actually helps.
+ *
+ * A channel access token is issued per channel, and only a Messaging API
+ * channel owns rich menus — paste one from the LINE *Login* channel and every
+ * call here 401s while looking, from the console, like a perfectly valid token.
+ * LINE will say which channel a token belongs to, so ask, and compare it with
+ * the login channel we already know the id of.
+ */
+export async function diagnoseToken(): Promise<string> {
+  if (!TOKEN) return "ยังไม่ได้ตั้งค่า LINE_MESSAGING_ACCESS_TOKEN";
+  try {
+    const res = await fetch(
+      `https://api.line.me/oauth2/v2.1/verify?access_token=${encodeURIComponent(TOKEN)}`
+    );
+    if (!res.ok) {
+      return "LINE ไม่รู้จัก token นี้ — อาจ copy มาไม่ครบ หมดอายุ หรือถูก revoke ไปแล้ว กรุณา issue ใหม่";
+    }
+    const info: { client_id?: string; expires_in?: number } = await res.json();
+    const channel = info.client_id;
+    if (channel && channel === process.env.LINE_CHANNEL_ID) {
+      return `token นี้เป็นของ channel ${channel} ซึ่งเป็น LINE Login ไม่ใช่ Messaging API — เมนูต้องใช้ token จาก channel ของ LINE Official Account เท่านั้น`;
+    }
+    if (info.expires_in !== undefined && info.expires_in <= 0) {
+      return `token ของ channel ${channel} หมดอายุแล้ว กรุณา issue ใหม่`;
+    }
+    return `token นี้เป็นของ channel ${channel} แต่ LINE ไม่ให้เข้าถึง Rich Menu — แปลว่า channel นั้นยังไม่ได้เปิด Messaging API`;
+  } catch {
+    return "ตรวจสอบ token กับ LINE ไม่สำเร็จ";
+  }
+}

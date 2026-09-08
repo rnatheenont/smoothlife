@@ -6,6 +6,7 @@ import {
   getDefaultRichMenuId,
   installRichMenu,
   deleteRichMenu,
+  diagnoseToken,
   RICH_MENU_BUTTONS,
 } from "@/lib/line-rich-menu";
 
@@ -54,8 +55,17 @@ export async function GET(req: NextRequest) {
     const [menus, defaultId] = await Promise.all([listRichMenus(), getDefaultRichMenuId()]);
     return NextResponse.json({ ok: true, configured: true, buttons, menus, defaultRichMenuId: defaultId });
   } catch (err) {
+    // The raw LINE error is "Authentication failed. Confirm that the access
+    // token ... is valid", which is true and useless: the token is valid, it
+    // just belongs to the wrong channel. Ask LINE which one and say so.
     return NextResponse.json(
-      { ok: false, configured: true, buttons, error: err instanceof Error ? err.message : String(err) },
+      {
+        ok: false,
+        configured: true,
+        buttons,
+        error: await diagnoseToken(),
+        detail: err instanceof Error ? err.message : String(err),
+      },
       { status: 502 }
     );
   }
