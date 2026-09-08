@@ -11,7 +11,10 @@
 const API = "https://api.line.me/v2/bot";
 const DATA_API = "https://api-data.line.me/v2/bot";
 
-const TOKEN = process.env.LINE_MESSAGING_ACCESS_TOKEN;
+// Trimmed: a channel access token is ~170 characters and gets there by
+// copy-paste, so it arrives with a stray newline or space more often than not,
+// and LINE answers a padded bearer with the same flat 401 as a wrong one.
+const TOKEN = process.env.LINE_MESSAGING_ACCESS_TOKEN?.trim();
 const LIFF_ID = process.env.NEXT_PUBLIC_LIFF_ID;
 
 export function richMenuConfigured() {
@@ -130,24 +133,38 @@ export async function deleteRichMenu(richMenuId: string) {
  * the login channel we already know the id of.
  */
 export async function diagnoseToken(): Promise<string> {
-  if (!TOKEN) return "ยังไม่ได้ตั้งค่า LINE_MESSAGING_ACCESS_TOKEN";
-  try {
-    const res = await fetch(
-      `https://api.line.me/oauth2/v2.1/verify?access_token=${encodeURIComponent(TOKEN)}`
-    );
-    if (!res.ok) {
-      return "LINE ไม่รู้จัก token นี้ — อาจ copy มาไม่ครบ หมดอายุ หรือถูก revoke ไปแล้ว กรุณา issue ใหม่";
+  const raw = process.env.LINE_MESSAGING_ACCESS_TOKEN;
+  if (!raw) return "ยังไม่ได้ตั้งค่า LINE_MESSAGING_ACCESS_TOKEN";
+  const token = raw.trim();
+
+  async function channelOf(url: string): Promise<string | null> {
+    try {
+      const res = await fetch(`${url}?access_token=${encodeURIComponent(token)}`);
+      if (!res.ok) return null;
+      const info: { client_id?: string } = await res.json();
+      return info.client_id ?? null;
+    } catch {
+      return null;
     }
-    const info: { client_id?: string; expires_in?: number } = await res.json();
-    const channel = info.client_id;
-    if (channel && channel === process.env.LINE_CHANNEL_ID) {
-      return `token นี้เป็นของ channel ${channel} ซึ่งเป็น LINE Login ไม่ใช่ Messaging API — เมนูต้องใช้ token จาก channel ของ LINE Official Account เท่านั้น`;
-    }
-    if (info.expires_in !== undefined && info.expires_in <= 0) {
-      return `token ของ channel ${channel} หมดอายุแล้ว กรุณา issue ใหม่`;
-    }
-    return `token นี้เป็นของ channel ${channel} แต่ LINE ไม่ให้เข้าถึง Rich Menu — แปลว่า channel นั้นยังไม่ได้เปิด Messaging API`;
-  } catch {
-    return "ตรวจสอบ token กับ LINE ไม่สำเร็จ";
   }
+
+  // Two different verify endpoints, and they are not interchangeable: /v2/oauth
+  // answers for a Messaging API channel access token, /oauth2/v2.1 for a LINE
+  // Login one. Asking only the second is how a perfectly good OA token got
+  // reported as "LINE doesn't recognise this".
+  const messagingChannel = await channelOf("https://api.line.me/v2/oauth/verify");
+  if (messagingChannel) {
+    return `token เป็นของ Messaging API channel ${messagingChannel} และ LINE ยอมรับ แต่เรียก Rich Menu ไม่ผ่าน — ตรวจว่า channel นี้ผูกกับ LINE Official Account ที่เปิดใช้งานแล้ว`;
+  }
+
+  const loginChannel = await channelOf("https://api.line.me/oauth2/v2.1/verify");
+  if (loginChannel) {
+    return `token นี้เป็นของ channel ${loginChannel} ซึ่งเป็น LINE Login ไม่ใช่ Messaging API — เมนูต้องใช้ token จาก channel ของ LINE Official Account เท่านั้น`;
+  }
+
+  // Neither endpoint knows it. Almost always a copy-paste that lost the tail:
+  // the value is ~170 characters and the console shows it in a one-line box.
+  // Report the shape, never the token.
+  const padding = raw !== token ? " (มีช่องว่าง/ขึ้นบรรทัดใหม่ติดมาด้วย — ตัดออกให้แล้ว)" : "";
+  return `LINE ไม่รู้จัก token นี้เลย — ค่าที่ตั้งไว้ยาว ${token.length} ตัวอักษร${padding} ปกติ Channel access token (long-lived) ยาวประมาณ 170 ตัว ถ้าสั้นกว่านั้นมากแปลว่า copy มาไม่ครบ หรือ copy ผิดช่อง (Channel secret ไม่ใช่ access token)`;
 }
