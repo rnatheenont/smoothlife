@@ -88,6 +88,10 @@ function decode(s: string) {
 
 const STORE = "SmoothLife Shopify";
 
+// soko shows ten rows a page. Five covers a busy day with room to spare;
+// every page is one cheap request, unlike the per-order View reads.
+const LIST_PAGES = 5;
+
 /**
  * The tracking number lives only on the per-order View page, not the list.
  *
@@ -108,18 +112,27 @@ async function trackingFromView(url: string, jar: string): Promise<{ orderRef: s
 }
 
 /**
- * Every packed, uncancelled order for the Shopify store, with its parcel
- * number.
+ * Orders for the Shopify store that carry a parcel number.
  *
- * Scoped to `mo_status=2` (Packed) because that is the moment the label — and
- * therefore the number — exists, and to this one store so a mistake here can
- * never reach into the other brands sharing the same warehouse account.
+ * Walks several list pages rather than trusting the first. soko paginates at
+ * ten rows and does not order the list newest-first, so reading page one only
+ * meant the run saw the same ten orders every time — the sync log shows the
+ * identical set on four consecutive runs, all "already-set", while #4207 sat
+ * packed with a number and never appeared once. A run that finds nothing new
+ * for days looks exactly like a quiet warehouse, which is what made it survive.
+ *
+ * Scoped to this one store so a mistake here can never reach into the other
+ * brands sharing the same warehouse account.
  */
 export type SokoDiagnostics = {
   listBytes: number;
   sawLoginForm: boolean;
   orderNumbersOnPage: number;
   viewLinks: number;
+  /** How many list pages were walked, and what they yielded in total. */
+  pagesScanned: number;
+  candidates: number;
+  skipped: number;
   /** Rows belonging to our store — the number that actually gets processed. */
   storeRows: number;
   /** First visible words of the page, so an unexpected one identifies itself. */
@@ -129,7 +142,10 @@ export type SokoDiagnostics = {
 /** Set by the last fetchPackedOrders call, so an empty run can be explained. */
 export let lastDiagnostics: SokoDiagnostics | null = null;
 
-export async function fetchPackedOrders(limit = 40): Promise<{ orderRef: string; trackingNumber: string }[]> {
+export async function fetchPackedOrders(
+  limit = 15,
+  skipRefs: Set<string> = new Set()
+): Promise<{ orderRef: string; trackingNumber: string }[]> {
   if (!sokoConfigured()) throw new SokoError("ยังไม่ได้ตั้งค่า SOKO_USERNAME / SOKO_PASSWORD");
   const jar = await login();
 
@@ -145,26 +161,63 @@ export async function fetchPackedOrders(limit = 40): Promise<{ orderRef: string;
   // only looked at Packed would miss almost everything. Rows without a
   // tracking number are skipped when their View page is read, which costs a
   // request and removes a whole class of timing bug.
-  const params = new URLSearchParams({
-    r: "order/index",
-    "Merchantorders[m_id]": "2",
-    "Merchantorders[search_txt]": STORE,
-  });
-  const listRes = await fetch(`${BASE}?${params}`, { headers: { Cookie: jar } });
-  const list = await listRes.text();
+  const candidates: { ref: string | null; href: string }[] = [];
+  let pagesScanned = 0;
+  let firstPage = "";
+
+  for (let page = 1; page <= LIST_PAGES; page++) {
+    const params = new URLSearchParams({
+      r: "order/index",
+      "Merchantorders[m_id]": "2",
+      "Merchantorders[search_txt]": STORE,
+      Merchantorders_page: String(page),
+    });
+    const listRes = await fetch(`${BASE}?${params}`, { headers: { Cookie: jar } });
+    const list = await listRes.text();
+    pagesScanned++;
+    if (page === 1) firstPage = list;
+    if (/LoginForm\[password\]/.test(list)) break;
+
+    // Row by row, so the store can be matched on the same row as the link.
+    // Matched with the slash both encoded and not: soko writes `r=order/view`
+    // plainly, and an earlier version only looked for `%2F`, which found
+    // nothing at all and made a working login look like an empty warehouse.
+    let rowsOnPage = 0;
+    for (const row of list.split(/<tr[\s>]/i)) {
+      if (!row.includes(STORE)) continue;
+      rowsOnPage++;
+      const href = row.match(/href="([^"]*r=order(?:%2F|\/)view[^"]*)"/i);
+      if (!href) continue;
+      // Only used to skip work, so a wrong guess costs one extra request
+      // rather than a missed parcel — the View page stays the authority.
+      const ref = row.match(/#\d{3,}[A-Za-z_]*/);
+      candidates.push({ ref: ref ? ref[0] : null, href: decode(href[1]) });
+    }
+    if (rowsOnPage === 0) break;
+  }
 
   // Recorded before anything can throw: "logged in fine, found nothing" and
   // "cannot see this page at all" produce the same empty result otherwise,
   // and telling them apart is most of debugging a scraper.
+  const seen = new Set<string>();
+  const fresh = candidates.filter((c) => {
+    if (seen.has(c.href)) return false;
+    seen.add(c.href);
+    return !(c.ref && skipRefs.has(c.ref));
+  });
+
   lastDiagnostics = {
-    listBytes: list.length,
-    sawLoginForm: /LoginForm\[password\]/.test(list),
-    orderNumbersOnPage: (list.match(/#\d{4}/g) || []).length,
-    viewLinks: (list.match(/r=order(?:%2F|\/)view/gi) || []).length,
-    storeRows: list.split(/<tr[\s>]/i).filter((r) => r.includes(STORE)).length,
+    listBytes: firstPage.length,
+    sawLoginForm: /LoginForm\[password\]/.test(firstPage),
+    orderNumbersOnPage: (firstPage.match(/#\d{4}/g) || []).length,
+    viewLinks: (firstPage.match(/r=order(?:%2F|\/)view/gi) || []).length,
+    storeRows: firstPage.split(/<tr[\s>]/i).filter((r) => r.includes(STORE)).length,
+    pagesScanned,
+    candidates: seen.size,
+    skipped: seen.size - fresh.length,
     // URLs stripped: the sample is for identifying the page, and query
     // strings in a log are how session ids end up somewhere they shouldn't.
-    sample: list
+    sample: firstPage
       .replace(/<script[\s\S]*?<\/script>/gi, " ")
       .replace(/<style[\s\S]*?<\/style>/gi, " ")
       .replace(/<[^>]+>/g, " ")
@@ -176,17 +229,7 @@ export async function fetchPackedOrders(limit = 40): Promise<{ orderRef: string;
 
   if (lastDiagnostics.sawLoginForm) throw new SokoError("session soko หมดอายุระหว่างดึงข้อมูล");
 
-  // Row by row, so the store can be matched on the same row as the link.
-  // Matched with the slash both encoded and not: soko writes `r=order/view`
-  // plainly, and an earlier version only looked for `%2F`, which found nothing
-  // at all and made a working login look like an empty warehouse.
-  const hrefs: string[] = [];
-  for (const row of list.split(/<tr[\s>]/i)) {
-    if (!row.includes(STORE)) continue;
-    const m = row.match(/href="([^"]*r=order(?:%2F|\/)view[^"]*)"/i);
-    if (m) hrefs.push(decode(m[1]));
-  }
-  const unique = [...new Set(hrefs)].slice(0, limit);
+  const unique = fresh.map((c) => c.href).slice(0, limit);
   if (unique.length === 0) return [];
 
   const out: { orderRef: string; trackingNumber: string }[] = [];
