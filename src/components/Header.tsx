@@ -26,7 +26,7 @@ import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 import LanguageSwitch from "@/components/LanguageSwitch";
 import NotificationBell from "@/components/NotificationBell";
 import HeaderSearch from "@/components/HeaderSearch";
-import { Button } from "@/components/ui";
+import { Avatar, Button } from "@/components/ui";
 
 const navLinks = [
   { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: LayoutGrid },
@@ -158,12 +158,7 @@ export default function Header() {
                 className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white text-xs font-bold overflow-hidden ring-2 ring-offset-2"
                 style={{ ["--tw-ring-color" as string]: tierCard[user.tier].accent }}
               >
-                {user.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.avatar} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
-                ) : (
-                  user.name.charAt(0).toUpperCase()
-                )}
+                <Avatar src={user.avatar} name={user.name} className="h-9 w-9" />
               </span>
               <span className="hidden lg:flex flex-col leading-tight">
                 <span className="text-xs font-bold text-brand-ink max-w-[92px] truncate">{user.name.split(" ")[0]}</span>
@@ -270,12 +265,7 @@ export default function Header() {
                   className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-card"
                 >
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-gradient text-white font-bold overflow-hidden ring-2 ring-white">
-                    {user.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={user.avatar} alt={user.name} className="h-11 w-11 rounded-full object-cover" />
-                    ) : (
-                      user.name.charAt(0).toUpperCase()
-                    )}
+                    <Avatar src={user.avatar} name={user.name} className="h-11 w-11" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-bold text-brand-ink truncate">{user.name.split(" ")[0]}</span>

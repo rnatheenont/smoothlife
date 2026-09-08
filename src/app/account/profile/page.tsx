@@ -8,7 +8,7 @@ import AccountLayout from "@/components/account/AccountLayout";
 import { useAuth } from "@/lib/auth-context";
 import { resizeForAvatar } from "@/lib/image-utils";
 import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
-import { Button } from "@/components/ui";
+import { Avatar, Button } from "@/components/ui";
 
 const inputClass =
   "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal";
@@ -85,12 +85,12 @@ function ProfileContent() {
         <div className="flex items-center gap-4 mb-2">
           <div className="relative shrink-0">
             <div className="grid h-16 w-16 place-items-center rounded-full bg-brand-gradient text-white text-xl font-bold overflow-hidden">
-              {user.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.avatar} alt={user.name} className="h-16 w-16 rounded-full object-cover" />
-              ) : (
-                name.charAt(0).toUpperCase() || "?"
-              )}
+              <Avatar
+                src={user.avatar}
+                name={user.name}
+                className="h-16 w-16"
+                fallback={name.charAt(0).toUpperCase() || "?"}
+              />
               {avatarBusy && (
                 <div className="absolute inset-0 grid place-items-center rounded-full bg-black/40">
                   <Loader2 size={18} className="animate-spin text-white" />

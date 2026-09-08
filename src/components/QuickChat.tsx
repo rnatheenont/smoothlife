@@ -16,7 +16,7 @@ import { formatTHB } from "@/lib/format";
 import { resizeForUpload, resizeForThumbnail, ResizedImage } from "@/lib/image-utils";
 import { rememberChatImage, attachStoredImages, clearChatImages, PHOTO_MARKER } from "@/lib/chat-image-store";
 import { hasStoredConsent, grantConsent } from "@/components/skin-coach/ConsentGate";
-import { Button } from "@/components/ui";
+import { Avatar, Button } from "@/components/ui";
 
 type Msg = { role: "user" | "assistant"; content: string; image?: string };
 
@@ -1014,12 +1014,12 @@ export default function QuickChat() {
                 <div key={i} className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
                   {m.role === "user" ? (
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-200 text-slate-600 overflow-hidden">
-                      {user?.avatar ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={user.avatar} alt={user.name} className="h-9 w-9 rounded-full object-cover" />
-                      ) : (
-                        <UserIcon size={15} />
-                      )}
+                      <Avatar
+                        src={user?.avatar}
+                        name={user?.name ?? ""}
+                        className="h-9 w-9"
+                        fallback={<UserIcon size={15} />}
+                      />
                     </span>
                   ) : (
                     <span className="relative h-10 w-10 shrink-0 -mt-0.5">

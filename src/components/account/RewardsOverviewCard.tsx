@@ -6,7 +6,7 @@ import { CheckCircle2, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { tierBadge, tierCard, tierDisplayName } from "@/lib/tier";
 import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
-import { Button } from "@/components/ui";
+import { Avatar, Button } from "@/components/ui";
 
 type DayInfo = { date: string; dayNumber: number; status: string };
 type StatusResponse = {
@@ -108,12 +108,7 @@ export default function RewardsOverviewCard() {
 
         <div className="relative flex items-center gap-3 mb-5">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur text-lg font-bold overflow-hidden ring-2 ring-white/70">
-            {user.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.avatar} alt={user.name} className="h-12 w-12 rounded-full object-cover" />
-            ) : (
-              user.name.charAt(0).toUpperCase()
-            )}
+            <Avatar src={user.avatar} name={user.name} className="h-12 w-12" />
           </span>
           <div className="min-w-0">
             <p className="text-xl md:text-2xl font-bold truncate">{user.name}</p>
