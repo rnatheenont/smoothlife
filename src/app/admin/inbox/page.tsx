@@ -51,6 +51,33 @@ const FILTERS = [
   { key: "resolved", label: "ปิดแล้ว" },
 ];
 
+// Who said it and when. The thread showed neither: staff and AI replies were
+// told apart only by bubble colour, and nothing on screen said whether a
+// message arrived a minute or a day ago.
+function senderLabel(sender: string) {
+  if (sender === "customer") return "ลูกค้า";
+  if (sender === "staff") return "ทีมงาน";
+  if (sender === "ai") return "น้อง Smoothie";
+  return sender;
+}
+
+function timeLabel(iso: string) {
+  return new Date(iso).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+}
+
+function sameDay(a: string, b: string) {
+  return new Date(a).toDateString() === new Date(b).toDateString();
+}
+
+function dayLabel(iso: string) {
+  const d = new Date(iso);
+  const today = new Date();
+  if (d.toDateString() === today.toDateString()) return "วันนี้";
+  const yesterday = new Date(today.getTime() - 86400000);
+  if (d.toDateString() === yesterday.toDateString()) return "เมื่อวาน";
+  return d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" });
+}
+
 export default function AdminInboxPage() {
   const [filter, setFilter] = useState("waiting_human");
   const [conversations, setConversations] = useState<InboxListItem[]>([]);
@@ -215,8 +242,25 @@ export default function AdminInboxPage() {
 
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
 
+  // Measured rather than calculated. This was h-[calc(100vh-8rem)], and 8rem
+  // is a guess at the site header plus the admin page padding — it was short,
+  // so the panel ran past the bottom of the window and the reply box was cut
+  // off the screen. Reading the container's own offset gets it right whatever
+  // sits above it.
+  const shellRef = useRef<HTMLDivElement>(null);
+  const [shellHeight, setShellHeight] = useState<number>();
+  useEffect(() => {
+    const measure = () => {
+      const el = shellRef.current;
+      if (el) setShellHeight(Math.max(420, window.innerHeight - el.getBoundingClientRect().top - 24));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col">
+    <div ref={shellRef} style={shellHeight ? { height: shellHeight } : undefined} className="flex flex-col">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-brand-ink">กล่องข้อความรวม</h1>
         <span className="ml-auto flex items-center gap-1.5 text-[11px] text-slate-400">
@@ -326,37 +370,57 @@ export default function AdminInboxPage() {
                 {loadingThread ? (
                   <p className="text-xs text-slate-400">กำลังโหลด...</p>
                 ) : (
-                  messages.map((m) => (
-                    <div
-                      key={m.id}
-                      className={`max-w-[85%] rounded-xl px-3 py-2 text-xs whitespace-pre-wrap ${
-                        m.sender_type === "customer"
-                          ? "bg-surface-soft text-slate-700"
-                          : m.sender_type === "staff"
-                            ? "ml-auto bg-brand-gradient text-white"
-                            : "ml-auto bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {m.sender_type === "ai" && <span className="mb-0.5 block text-[10px] opacity-60">น้อง Smoothie</span>}
-                      {m.attachmentUrl && (
-                        <a href={m.attachmentUrl} target="_blank" rel="noopener noreferrer">
-                          {/* Signed URLs expire, so next/image's optimiser —
-                              which caches by URL — is the wrong tool here. */}
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={m.attachmentUrl}
-                            alt=""
-                            className="mb-1.5 max-h-56 rounded-lg border border-slate-200 object-contain"
-                          />
-                        </a>
-                      )}
-                      {/* The AI's replies still carry their trailing
-                          [[ASK: ...]] marker in storage — the customer's panel
-                          needs it to rebuild the answer buttons. Staff should
-                          just see the question. */}
-                      {splitMarker(m.content).text}
-                    </div>
-                  ))
+                  messages.map((m, i) => {
+                    const fromCustomer = m.sender_type === "customer";
+                    const prev = messages[i - 1];
+                    const newDay = !prev || !sameDay(prev.created_at, m.created_at);
+                    return (
+                      <div key={m.id}>
+                        {/* This thread ran across two days with nothing to say
+                            so — "ก็ยังโอเคอยู่นะคะ" and the question under it
+                            were a day apart and read as one exchange. */}
+                        {newDay && (
+                          <div className="my-3 flex items-center gap-2">
+                            <span className="h-px flex-1 bg-slate-100" />
+                            <span className="text-[10px] font-medium text-slate-400">{dayLabel(m.created_at)}</span>
+                            <span className="h-px flex-1 bg-slate-100" />
+                          </div>
+                        )}
+                        <div className={`flex flex-col gap-0.5 ${fromCustomer ? "items-start" : "items-end"}`}>
+                          <span className="px-1 text-[10px] text-slate-400">
+                            {senderLabel(m.sender_type)} · {timeLabel(m.created_at)}
+                          </span>
+                          <div
+                            className={`max-w-[85%] rounded-xl px-3 py-2 text-xs whitespace-pre-wrap ${
+                              fromCustomer
+                                ? "bg-surface-soft text-slate-700"
+                                : m.sender_type === "staff"
+                                  ? "bg-brand-gradient text-white"
+                                  : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {m.attachmentUrl && (
+                              <a href={m.attachmentUrl} target="_blank" rel="noopener noreferrer" title="เปิดรูปขนาดเต็ม">
+                                {/* Signed URLs expire, so next/image's optimiser —
+                                    which caches by URL — is the wrong tool here. */}
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={m.attachmentUrl}
+                                  alt=""
+                                  className="mb-1.5 max-h-40 rounded-lg border border-slate-200 object-contain"
+                                />
+                              </a>
+                            )}
+                            {/* The AI's replies still carry their trailing
+                                [[ASK: ...]] marker in storage — the customer's
+                                panel needs it to rebuild the answer buttons.
+                                Staff should just see the question. */}
+                            {splitMarker(m.content).text}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
                 )}
                 {/* Scroll anchor — see the effect that pins the view here. */}
                 <div ref={bottomRef} />
