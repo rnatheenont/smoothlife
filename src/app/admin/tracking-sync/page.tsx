@@ -26,8 +26,24 @@ type Payload = {
   canWrite: boolean;
   canFulfil: boolean;
   counts: Record<string, number>;
+  connection: {
+    lastSuccessAt: string | null;
+    lastFailureAt: string | null;
+    lastFailureReason: string | null;
+    consecutiveFailures: number;
+  };
+  testRowCount: number;
   rows: TrackingSyncRow[];
 };
+
+function fmt(iso: string) {
+  return new Date(iso).toLocaleString("th-TH", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default function AdminTrackingSyncPage() {
   const [data, setData] = useState<Payload | null>(null);
@@ -51,6 +67,7 @@ export default function AdminTrackingSyncPage() {
   const conflicts = data?.counts.conflict ?? 0;
   const dryRun = data?.mode === "dry-run";
 
+  const [showTests, setShowTests] = useState(false);
   const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<string | null>(null);
 
@@ -126,6 +143,41 @@ export default function AdminTrackingSyncPage() {
         </p>
       )}
 
+      {/* Kept apart from the mode card below on purpose. "Can the scraper get
+          into soko" and "what is it allowed to write" are different questions,
+          and when one sentence answered both, a login that had been failing
+          for an hour read as a note about write mode. */}
+      {data && (
+        <div
+          className={clsx(
+            "mb-3 flex items-start gap-2 rounded-xl2 border p-4 text-sm",
+            data.connection.consecutiveFailures >= 2
+              ? "border-rose-200 bg-rose-50/70"
+              : "border-emerald-200 bg-emerald-50/50"
+          )}
+        >
+          {data.connection.consecutiveFailures >= 2 ? (
+            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-rose-600" />
+          ) : (
+            <ShieldCheck size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+          )}
+          <div className="min-w-0">
+            <p className="font-semibold text-brand-ink">
+              {data.connection.consecutiveFailures >= 2
+                ? `เชื่อมต่อ soko ไม่ได้ — ล้มเหลวติดกัน ${data.connection.consecutiveFailures} รอบ`
+                : "เชื่อมต่อ soko ได้ปกติ"}
+            </p>
+            <p className="mt-0.5 text-body-xs text-slate-600">
+              ดึงข้อมูลสำเร็จล่าสุด: {data.connection.lastSuccessAt ? fmt(data.connection.lastSuccessAt) : "ยังไม่เคย"}
+              {data.connection.lastFailureAt && ` · ล้มเหลวล่าสุด: ${fmt(data.connection.lastFailureAt)}`}
+            </p>
+            {data.connection.consecutiveFailures >= 2 && data.connection.lastFailureReason && (
+              <p className="mt-1 text-body-xs text-rose-700">{data.connection.lastFailureReason}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       <div
         className={clsx(
           "mb-4 flex items-start gap-2 rounded-xl2 border p-4 text-sm",
@@ -177,9 +229,30 @@ export default function AdminTrackingSyncPage() {
       {conflicts > 0 && (
         <p className="mb-4 flex items-start gap-1.5 rounded-m bg-rose-50 p-3 text-[12px] leading-relaxed text-rose-700">
           <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-          มี {conflicts} รายการที่เลขไม่ตรงกัน — แต่ละรายการคือเลขที่คีย์มือผิด หรือการจับคู่ผิดพลาด
-          ต้องตรวจให้หมดก่อนเปิดโหมดเขียนจริง
+          {/* This used to say "check them all before turning on real writing"
+              regardless of mode — while the mode was already write-notify and
+              writing. Staff read it as "nothing has been written yet". */}
+          <span>
+            มี {conflicts} รายการที่เลขไม่ตรงกัน — แต่ละรายการคือเลขที่คีย์มือผิด หรือการจับคู่ผิดพลาด
+            {dryRun
+              ? " ต้องตรวจให้หมดก่อนเปิดโหมดเขียนจริง"
+              : " ระบบข้ามเฉพาะรายการเหล่านี้ไว้ ไม่ได้เขียนทับของเดิม ส่วนออเดอร์อื่นเขียนตามปกติ — ต้องมีคนตัดสินว่าเลขไหนถูก"}
+          </span>
         </p>
+      )}
+
+      {data && data.testRowCount > 0 && (
+        <button
+          onClick={() => setShowTests((v) => !v)}
+          className={clsx(
+            "mb-3 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors",
+            showTests
+              ? "border-brand-200 bg-brand-50 text-brand-800"
+              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+          )}
+        >
+          {showTests ? "ซ่อน" : "แสดง"}รายการทดสอบ ({data.testRowCount})
+        </button>
       )}
 
       {loading && !data ? (
@@ -203,7 +276,7 @@ export default function AdminTrackingSyncPage() {
               </tr>
             </thead>
             <tbody>
-              {data.rows.map((r) => {
+              {data.rows.filter((r) => showTests || !r.is_test).map((r) => {
                 const meta = ACTION[r.action] ?? { label: r.action, tone: "neutral" as const };
                 return (
                   <tr key={r.id} className="border-t border-slate-100 align-top">

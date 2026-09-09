@@ -20,6 +20,9 @@ export type TrackingSyncRow = {
   reason: string | null;
   existing_numbers: string[] | null;
   applied: boolean;
+  error: string | null;
+  /** Numbers invented while wiring the integration up, not real parcels. */
+  is_test: boolean;
 };
 
 export async function GET(req: NextRequest) {
@@ -34,10 +37,29 @@ export async function GET(req: NextRequest) {
     "tracking_sync_log?select=*&order=received_at.desc&limit=200"
   ).catch((): TrackingSyncRow[] => []);
 
-  const counts = rows.reduce<Record<string, number>>((acc, r) => {
+  // Test rows are excluded from the counts. Leaving them in meant the tiles
+  // above the table described a warehouse that had shipped parcels nobody
+  // ever packed.
+  const real = rows.filter((r) => !r.is_test);
+  const counts = real.reduce<Record<string, number>>((acc, r) => {
     acc[r.action] = (acc[r.action] ?? 0) + 1;
     return acc;
   }, {});
+
+  // Whether the scraper can still get in, kept apart from what it is allowed
+  // to write. They are different questions and the page used to answer them in
+  // one sentence, so a login that had been failing for an hour read as a note
+  // about write mode.
+  const failures = real.filter((r) => r.action === "run-failed");
+  const lastSuccess = real.find((r) => r.action !== "run-failed")?.received_at ?? null;
+  const lastFailure = failures[0] ?? null;
+  // Consecutive, from the newest backwards: one bad run in a good stretch is
+  // noise, four in a row is the integration being down.
+  let consecutiveFailures = 0;
+  for (const r of real) {
+    if (r.action !== "run-failed") break;
+    consecutiveFailures++;
+  }
 
   // Asked of Shopify rather than assumed: which app the website authenticates
   // as is exactly the thing that was guessed wrong once already, and writing
@@ -58,6 +80,13 @@ export async function GET(req: NextRequest) {
         own?.scopes.includes("read_merchant_managed_fulfillment_orders")
     ),
     counts,
+    connection: {
+      lastSuccessAt: lastSuccess,
+      lastFailureAt: lastFailure?.received_at ?? null,
+      lastFailureReason: lastFailure?.error ?? lastFailure?.reason ?? null,
+      consecutiveFailures,
+    },
+    testRowCount: rows.length - real.length,
     rows,
   });
 }
