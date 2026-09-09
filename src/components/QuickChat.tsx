@@ -276,6 +276,8 @@ export default function QuickChat() {
   const [humanHandling, setHumanHandling] = useState(false);
   /** A case already queued and waiting — survives a reload, unlike handedOff. */
   const [caseQueued, setCaseQueued] = useState(false);
+  /** The help chips are showing, so offer the way to a person alongside them. */
+  const [helpOpen, setHelpOpen] = useState(false);
   /**
    * Timestamp of the newest message the server had last time we looked.
    *
@@ -557,6 +559,7 @@ export default function QuickChat() {
       },
     ]);
     setAskOptions(HELP_TOPICS);
+    setHelpOpen(true);
   }
 
   async function escalate(customerNote: string) {
@@ -1182,17 +1185,33 @@ export default function QuickChat() {
               </div>
             )}
 
-            {!loading && askOptions.length > 0 && (
+            {!loading && (askOptions.length > 0 || helpOpen) && (
               <div className="flex flex-wrap items-center gap-1.5 pl-11">
                 {askOptions.map((s) => (
                   <button
                     key={s}
-                    onClick={() => send(s)}
+                    onClick={() => {
+                      setHelpOpen(false);
+                      send(s);
+                    }}
                     className="rounded-full bg-brand-gradient px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
                   >
                     {s}
                   </button>
                 ))}
+                {helpOpen && (
+                  <button
+                    onClick={() => {
+                      setHelpOpen(false);
+                      setAskOptions([]);
+                      setNoteOpen(true);
+                    }}
+                    className="flex items-center gap-1 rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-[12px] font-semibold text-brand-800 hover:bg-brand-50"
+                  >
+                    <Headset size={12} />
+                    {t("ติดต่อแอดมิน", "Talk to a person")}
+                  </button>
+                )}
               </div>
             )}
 
@@ -1269,28 +1288,23 @@ export default function QuickChat() {
                 two lines mid-word and the bar came out ragged. Scrolling keeps
                 every label whole at any width, including the third button that
                 only appears while a person has the conversation. */}
+            {/* One door, not two. "Help centre" and "Leave a message" were the
+                same intent — I need something the bot cannot give me — and
+                splitting them made the customer guess which was which before
+                they had said what they wanted. Reaching a person is now the
+                last chip in the list, after the questions that can be answered
+                without one. */}
             <Button
               variant="ghost"
               size="none"
               className={`shrink-0 gap-1.5 whitespace-nowrap rounded-full border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-brand-800 ${
-                askOptions.length > 0 ? "border-brand-200 bg-brand-50 text-brand-800" : ""
+                helpOpen || noteOpen ? "border-brand-200 bg-brand-50 text-brand-800" : ""
               }`}
               onClick={openHelpTopics}
-            >
-              <MessageCircleQuestion size={13} />
-              {t("ศูนย์ช่วยเหลือ", "Help centre")}
-            </Button>
-            <Button
-              variant="ghost"
-              size="none"
-              className={`shrink-0 gap-1.5 whitespace-nowrap rounded-full border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-brand-800 ${
-                noteOpen ? "border-brand-200 bg-brand-50 text-brand-800" : ""
-              }`}
-              onClick={() => setNoteOpen((v) => !v)}
               disabled={escalating}
             >
-              <Headset size={13} />
-              {t("ฝากข้อความ", "Leave a message")}
+              <MessageCircleQuestion size={13} />
+              {t("ช่วยเหลือ / ติดต่อแอดมิน", "Help & contact")}
             </Button>
             {humanHandling && (
               <Button
