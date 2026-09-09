@@ -124,6 +124,61 @@ function sinceLabel(iso: string) {
   return days === 1 ? "เมื่อวาน" : `${days} วันที่แล้ว`;
 }
 
+type ProductCard = { name: string; image: string; price: number; compareAtPrice?: number };
+
+const PRODUCT_MARKER = /\[\[([a-z0-9-]+)\]\]/gi;
+
+const baht = (n: number) => `฿${n.toLocaleString("th-TH")}`;
+
+/**
+ * The same card the customer saw, without the add-to-cart button.
+ *
+ * Staff were reading "[[smooth-e-physical-white-extra-fluid-spf50-pa]]" and
+ * having to guess which product that was; seeing what the customer was shown is
+ * most of answering a question about it. Buying on their behalf is not
+ * something this screen should offer, so the button is not here.
+ */
+function ProductCardView({ slug, card }: { slug: string; card: ProductCard }) {
+  return (
+    <a
+      href={`/product/${slug}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="my-1.5 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2 no-underline hover:border-brand-200"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={card.image} alt="" className="h-12 w-12 shrink-0 rounded-lg bg-surface-soft object-cover" />
+      <span className="min-w-0 flex-1">
+        <span className="line-clamp-2 block text-[12px] font-semibold leading-snug text-brand-ink">{card.name}</span>
+        <span className="mt-0.5 flex items-baseline gap-1.5">
+          <span className="text-[12px] font-bold text-brand-emerald">{baht(card.price)}</span>
+          {card.compareAtPrice ? (
+            <span className="text-[10px] text-slate-400 line-through">{baht(card.compareAtPrice)}</span>
+          ) : null}
+        </span>
+      </span>
+    </a>
+  );
+}
+
+function renderMessage(text: string, cards: Record<string, ProductCard>): ReactNode[] {
+  const parts: ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let k = 0;
+  PRODUCT_MARKER.lastIndex = 0;
+  while ((m = PRODUCT_MARKER.exec(text))) {
+    if (m.index > last) parts.push(...withLinks(text.slice(last, m.index)));
+    const card = cards[m[1]];
+    // An unknown slug keeps its raw marker rather than vanishing: a product
+    // that has been delisted is worth noticing, not hiding.
+    parts.push(card ? <ProductCardView key={`p${k++}`} slug={m[1]} card={card} /> : m[0]);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push(...withLinks(text.slice(last)));
+  return parts;
+}
+
 function senderLabel(sender: string) {
   if (sender === "customer") return "ลูกค้า";
   if (sender === "staff") return "ทีมงาน";
@@ -156,6 +211,7 @@ export default function AdminInboxPage() {
   const [handler, setHandler] = useState<Handler>("any");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [productCards, setProductCards] = useState<Record<string, ProductCard>>({});
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loadingThread, setLoadingThread] = useState(false);
   const [reply, setReply] = useState("");
@@ -204,6 +260,7 @@ export default function AdminInboxPage() {
       const data = await res.json();
       setMessages(data.messages ?? []);
       setCustomer(data.customer ?? null);
+      setProductCards(data.products ?? {});
       setCaseUrl(data.conversation?.clickup_task_url ?? null);
       setSubject(data.conversation?.subject ?? null);
     } finally {
@@ -613,7 +670,7 @@ export default function AdminInboxPage() {
                                 [[ASK: ...]] marker in storage — the customer's
                                 panel needs it to rebuild the answer buttons.
                                 Staff should just see the question. */}
-                            {withLinks(splitMarker(m.content).text)}
+                            {renderMessage(splitMarker(m.content).text, productCards)}
                           </div>
                           )}
                         </div>

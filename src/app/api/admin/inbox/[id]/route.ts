@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
+import { getProductBySlug } from "@/data/products";
 import { appendMessage, ConversationRow } from "@/lib/conversations";
 import {
   signedAttachmentUrl,
@@ -87,6 +88,27 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }))
   );
 
+  // Products Smoothie recommended, resolved here rather than in the browser:
+  // the catalogue is a megabyte, and the admin bundle should not carry it just
+  // to draw a few cards. Staff need to see what was recommended — a bare
+  // [[slug]] tells them nothing about which product the customer was shown.
+  const slugs = new Set<string>();
+  for (const m of messages) {
+    for (const match of m.content.matchAll(/\[\[([a-z0-9-]+)\]\]/gi)) slugs.add(match[1]);
+  }
+  const productCards: Record<string, { name: string; image: string; price: number; compareAtPrice?: number }> = {};
+  for (const slug of slugs) {
+    const product = getProductBySlug(slug);
+    if (product) {
+      productCards[slug] = {
+        name: product.name,
+        image: product.image,
+        price: product.price,
+        compareAtPrice: product.compareAtPrice,
+      };
+    }
+  }
+
   // Opening the thread is what "read" means here. Fire-and-forget: a failed
   // marker should leave the badge up, never block the thread from loading.
   supabaseRest(`conversations?id=eq.${pgValue(params.id)}`, {
@@ -95,7 +117,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     body: JSON.stringify({ staff_read_at: new Date().toISOString() }),
   }).catch((err) => console.error("[admin/inbox] could not mark read", err));
 
-  return NextResponse.json({ ok: true, conversation, messages: withUrls, customer });
+  return NextResponse.json({ ok: true, conversation, messages: withUrls, customer, products: productCards });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
