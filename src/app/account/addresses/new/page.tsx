@@ -15,18 +15,33 @@ function NewAddressContent() {
   const [error, setError] = useState<string | null>(null);
   const [fromShopify, setFromShopify] = useState(false);
 
-  // One-time prefill from a Shopify default-address suggestion, if the
-  // customer got here via the banner on /account/addresses. Never fills
-  // subdistrict/district — Shopify's address has no such fields to draw
-  // from reliably, so the customer must pick those themselves.
+  // One-time prefill from the Shopify address suggestion, if the customer got
+  // here via the banner on /account/addresses.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(SHOPIFY_ADDRESS_SUGGESTION_KEY);
       if (!raw) return;
-      const suggestion = JSON.parse(raw) as { address_line: string; province: string; postal_code: string; country: string };
+      const suggestion = JSON.parse(raw) as {
+        address_line: string;
+        province: string;
+        postal_code: string;
+        country: string;
+        recipient_name?: string;
+        phone?: string;
+        subdistrict?: string;
+        district?: string;
+      };
       setValue((v) => ({
         ...v,
+        recipient_name: suggestion.recipient_name || v.recipient_name,
+        phone: suggestion.phone || v.phone,
         address_line: suggestion.address_line || v.address_line,
+        // Filled now when they can be worked out: the postcode index gives the
+        // district and its แขวง, and the address text says which one. Left
+        // empty when it cannot be resolved rather than guessed — see
+        // lib/shopify-address.ts.
+        subdistrict: suggestion.subdistrict || v.subdistrict,
+        district: suggestion.district || v.district,
         province: suggestion.province || v.province,
         postal_code: suggestion.postal_code || v.postal_code,
         country: suggestion.country || v.country,
@@ -63,7 +78,7 @@ function NewAddressContent() {
       <h1 className="text-2xl font-bold text-brand-ink mb-2">เพิ่มที่อยู่จัดส่ง</h1>
       {fromShopify && (
         <p className="text-xs text-brand-emerald bg-brand-gradient-soft rounded-lg px-3 py-2 mb-4">
-          เติมที่อยู่จากบัญชี Shopify ของคุณให้แล้ว กรุณาตรวจสอบและกรอกชื่อผู้รับ เบอร์โทร ตำบล/อำเภอ ให้ครบก่อนบันทึก
+          เติมที่อยู่จากคำสั่งซื้อที่ผ่านมาให้แล้ว กรุณาตรวจสอบความถูกต้อง และกรอกช่องที่ยังว่างให้ครบก่อนบันทึก
         </p>
       )}
       <form onSubmit={submit} className="flex flex-col gap-5">

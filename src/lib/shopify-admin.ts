@@ -50,6 +50,8 @@ async function adminGraphql<T>(query: string, variables?: Record<string, unknown
   return json.data as T;
 }
 
+import type { ShopifyAddressLike } from "@/lib/shopify-address";
+
 export type ShopifyCustomerAddress = {
   address1: string | null;
   address2: string | null;
@@ -115,6 +117,51 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
     return node || null;
   } catch (err) {
     console.error("[shopify-admin] findShopifyCustomerByPhone failed", err);
+    return null;
+  }
+}
+
+/**
+ * The address to offer a returning customer, straight from Shopify.
+ *
+ * Their saved default first, and the last order they had shipped as a fallback
+ * — someone who checked out as a guest may have no default address at all
+ * while every parcel went to the same place. Orders older than 60 days are not
+ * returned without the read_all_orders scope, which is why the default address
+ * is asked for first rather than second.
+ */
+export async function getCustomerShopifyAddress(
+  shopifyCustomerId: string
+): Promise<{ address: ShopifyAddressLike; source: "default" | "order" } | null> {
+  if (!shopifyAdminConfigured()) return null;
+  const gid = shopifyCustomerId.startsWith("gid://")
+    ? shopifyCustomerId
+    : `gid://shopify/Customer/${shopifyCustomerId}`;
+  const FIELDS = "name firstName lastName phone address1 address2 city province zip country countryCodeV2";
+  try {
+    const data = await adminGraphql<{
+      customer: {
+        defaultAddress: ShopifyAddressLike | null;
+        orders: { edges: { node: { shippingAddress: ShopifyAddressLike | null } }[] };
+      } | null;
+    }>(
+      `query CustomerAddress($id: ID!) {
+        customer(id: $id) {
+          defaultAddress { ${FIELDS} }
+          orders(first: 1, sortKey: CREATED_AT, reverse: true) {
+            edges { node { shippingAddress { ${FIELDS} } } }
+          }
+        }
+      }`,
+      { id: gid }
+    );
+    const def = data.customer?.defaultAddress;
+    if (def?.address1) return { address: def, source: "default" };
+    const shipped = data.customer?.orders.edges[0]?.node.shippingAddress;
+    if (shipped?.address1) return { address: shipped, source: "order" };
+    return null;
+  } catch (err) {
+    console.error("[shopify-admin] getCustomerShopifyAddress failed", err);
     return null;
   }
 }

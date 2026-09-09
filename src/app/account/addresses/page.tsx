@@ -10,7 +10,17 @@ import DemoBadge from "@/components/DemoBadge";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 import { countryName } from "@/components/AddressForm";
 
-type AddressSuggestion = { address_line: string; province: string; postal_code: string; country: string };
+type AddressSuggestion = {
+  address_line: string;
+  province: string;
+  postal_code: string;
+  country: string;
+  recipient_name?: string;
+  phone?: string;
+  subdistrict?: string;
+  district?: string;
+  missing?: string[];
+};
 
 function AddressesContent() {
   const { user } = useAuth();
@@ -18,7 +28,16 @@ function AddressesContent() {
   const [addresses, setAddresses] = useState<AddressRow[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<AddressSuggestion | null>(null);
+  // Session-scoped: dismissing hides it now without deciding for them forever,
+  // since the address is read live and they may want it on a later visit.
+  const [dismissed, setDismissed] = useState(false);
 
+  // The one carried from a fresh login, if there is one — then the live copy.
+  //
+  // Reading it from the server as well is what makes this work for a returning
+  // customer whose account was linked to their old orders after they signed up:
+  // nothing was ever put in their localStorage, so the banner could not appear
+  // however many parcels we had shipped them.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(SHOPIFY_ADDRESS_SUGGESTION_KEY);
@@ -26,9 +45,32 @@ function AddressesContent() {
     } catch {}
   }, []);
 
+  useEffect(() => {
+    if (!isReal || dismissed) return;
+    let cancelled = false;
+    fetch("/api/account/shopify-address")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data?.suggestion) setSuggestion(data.suggestion);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReal, dismissed]);
+
   function dismissSuggestion() {
     localStorage.removeItem(SHOPIFY_ADDRESS_SUGGESTION_KEY);
     setSuggestion(null);
+    setDismissed(true);
+  }
+
+  /** Hands the draft to the new-address form, which prefills from this key. */
+  function useSuggestion() {
+    try {
+      localStorage.setItem(SHOPIFY_ADDRESS_SUGGESTION_KEY, JSON.stringify(suggestion));
+    } catch {}
   }
 
   function load() {
@@ -73,23 +115,40 @@ function AddressesContent() {
         </div>
       )}
 
-      {isReal && addresses?.length === 0 && suggestion && (
+      {/* Shown whether or not the book is empty: a customer who saved a work
+          address is exactly the one who still needs their home one offered.
+          The API withholds it once it is actually in the book. */}
+      {isReal && suggestion && (
         <div className="mb-6 rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-4">
           <div className="flex items-start gap-3">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gradient text-white">
               <Sparkles size={16} />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-brand-ink">เราเจอที่อยู่จากบัญชีลูกค้าเดิมของคุณ</p>
+              <p className="text-sm font-bold text-brand-ink">ที่อยู่จากคำสั่งซื้อที่ผ่านมาของคุณ</p>
+              {suggestion.recipient_name && (
+                <p className="text-xs font-semibold text-slate-600 mt-0.5">
+                  {suggestion.recipient_name}
+                  {suggestion.phone ? ` · ${suggestion.phone}` : ""}
+                </p>
+              )}
               <p className="text-xs text-slate-500 mt-0.5">
                 {suggestion.address_line}
+                {suggestion.subdistrict ? ` แขวง/ตำบล${suggestion.subdistrict}` : ""}
+                {suggestion.district ? ` ${suggestion.district}` : ""}
                 {suggestion.province ? ` ${suggestion.province}` : ""} {suggestion.postal_code}
               </p>
               <p className="text-[11px] text-slate-400 mt-1">
-                กรุณาตรวจสอบและเติมข้อมูลให้ครบก่อนบันทึก (ระบบไม่ได้กรอกตำบล/อำเภอให้อัตโนมัติ)
+                {suggestion.missing && suggestion.missing.length > 0
+                  ? `กรุณาตรวจสอบและกรอก${suggestion.missing.join(" / ")}ให้ครบก่อนบันทึก`
+                  : "ตรวจสอบความถูกต้องอีกครั้งก่อนบันทึกได้เลย"}
               </p>
               <div className="flex items-center gap-3 mt-2.5">
-                <Link href="/account/addresses/new" className="text-xs font-semibold text-brand-emerald">
+                <Link
+                  href="/account/addresses/new"
+                  onClick={useSuggestion}
+                  className="text-xs font-semibold text-brand-emerald"
+                >
                   ใช้ที่อยู่นี้
                 </Link>
                 <button onClick={dismissSuggestion} className="text-xs text-slate-400">
