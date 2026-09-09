@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
+import { isTranscriptDump } from "@/lib/inbox-transcript";
 
 // Conversation list for the unified inbox. One list for every channel — web
 // today, LINE and Facebook once their adapters land — so staff never have to
@@ -58,6 +59,10 @@ export async function GET(req: NextRequest) {
   );
   for (const m of latest) {
     // Ordered newest-first, so the first one seen per thread is the latest.
+    // Pasted transcripts are skipped: they all open with the same greeting, so
+    // every case in the list read identically and none of them said what it
+    // was about.
+    if (isTranscriptDump(m.content)) continue;
     if (!previews.has(m.conversation_id)) previews.set(m.conversation_id, m.content.slice(0, 120));
   }
 

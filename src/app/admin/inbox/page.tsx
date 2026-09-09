@@ -5,6 +5,7 @@ import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, S
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 import { Button } from "@/components/ui";
 import { splitMarker } from "@/lib/chat-markers";
+import { isTranscriptDump } from "@/lib/inbox-transcript";
 
 // Unified inbox (plan §7.2): conversation list, thread, customer panel.
 // Only the web channel exists so far — LINE and Facebook adapters write into
@@ -92,6 +93,7 @@ export default function AdminInboxPage() {
   const [canned, setCanned] = useState<Canned[]>([]);
   const [showCanned, setShowCanned] = useState(false);
   const [caseUrl, setCaseUrl] = useState<string | null>(null);
+  const [subject, setSubject] = useState<string | null>(null);
   const [filingCase, setFilingCase] = useState(false);
   const [error, setError] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -129,10 +131,18 @@ export default function AdminInboxPage() {
       setMessages(data.messages ?? []);
       setCustomer(data.customer ?? null);
       setCaseUrl(data.conversation?.clickup_task_url ?? null);
+      setSubject(data.conversation?.subject ?? null);
     } finally {
       if (!silent) setLoadingThread(false);
     }
   }, []);
+
+  // Prefer what the escalation recorded as the request; fall back to the first
+  // thing the customer actually said. Pasted transcripts are never it.
+  const caseRequest =
+    subject ||
+    messages.find((m) => m.sender_type === "customer" && !isTranscriptDump(m.content))?.content.slice(0, 300) ||
+    null;
 
   function select(id: string) {
     setSelectedId(id);
@@ -366,6 +376,17 @@ export default function AdminInboxPage() {
                 </button>
               </div>
 
+              {/* The request, pinned. The thread scrolls to the newest message,
+                  so what the customer actually asked for sat at the top out of
+                  view and staff had to scroll up past the whole conversation to
+                  find out what the case was about. */}
+              {caseRequest && (
+                <div className="border-b border-amber-100 bg-amber-50/60 px-4 py-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">เรื่องที่แจ้ง</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-slate-700">{caseRequest}</p>
+                </div>
+              )}
+
               <div className="flex-1 space-y-2.5 overflow-y-auto p-4">
                 {loadingThread ? (
                   <p className="text-xs text-slate-400">กำลังโหลด...</p>
@@ -390,6 +411,19 @@ export default function AdminInboxPage() {
                           <span className="px-1 text-[10px] text-slate-400">
                             {senderLabel(m.sender_type)} · {timeLabel(m.created_at)}
                           </span>
+                          {isTranscriptDump(m.content) ? (
+                            // Folded away rather than deleted. It is the chat
+                            // that led here, worth keeping, but at full length
+                            // it pushed the customer's actual request off the
+                            // screen — staff had to scroll up to find out what
+                            // the case was even about.
+                            <details className="max-w-[85%] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs">
+                              <summary className="cursor-pointer select-none font-medium text-slate-500">
+                                บทสนทนากับน้อง Smoothie ก่อนหน้านี้
+                              </summary>
+                              <p className="mt-2 whitespace-pre-wrap text-slate-500">{m.content}</p>
+                            </details>
+                          ) : (
                           <div
                             className={`max-w-[85%] rounded-xl px-3 py-2 text-xs whitespace-pre-wrap ${
                               fromCustomer
@@ -417,6 +451,7 @@ export default function AdminInboxPage() {
                                 Staff should just see the question. */}
                             {splitMarker(m.content).text}
                           </div>
+                          )}
                         </div>
                       </div>
                     );
