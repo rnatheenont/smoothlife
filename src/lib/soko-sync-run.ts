@@ -14,6 +14,8 @@ export type SyncRunResult = {
   mode?: string;
   found?: number;
   skipped?: number;
+  /** Rows the clock ran out on. They stay unwritten and come back next run. */
+  unfinished?: number;
   applied?: number;
   conflicts?: number;
   diagnostics?: unknown;
@@ -78,8 +80,18 @@ export async function runSokoSync(): Promise<SyncRunResult> {
     };
   }
 
+  // This loop, not the scraper, is what kept overrunning the minute. soko
+  // answers in under half a second — measured — while each order here means
+  // several Shopify calls, and a dozen of those is easily past 60s. Stop at 50
+  // and leave the rest: an order that was not written is not in the skip list,
+  // so the next run picks it up exactly where this one stopped.
   const results = [];
+  let unfinished = 0;
   for (const row of rows) {
+    if (Date.now() - started > 50_000) {
+      unfinished = rows.length - results.length;
+      break;
+    }
     // Sequential on purpose: the hourly cap is counted from rows already
     // written, and firing these in parallel would let a batch race past it.
     const r = await processTrackingUpdate({ ...row, source: "soko-puller" });
@@ -90,7 +102,8 @@ export async function runSokoSync(): Promise<SyncRunResult> {
     ok: true,
     status: 200,
     mode: trackingMode(),
-    found: rows.length,
+    found: results.length,
+    unfinished,
     skipped: skipRefs.size,
     diagnostics: lastDiagnostics,
     applied: results.filter((r) => r.applied).length,

@@ -87,7 +87,8 @@ export default function AdminTrackingSyncPage() {
         );
       } else {
         setRunResult(
-          `ดึงมา ${r.found} รายการ · เขียนลง Shopify ${r.applied ?? 0} · ต้องตรวจสอบ ${r.conflicts ?? 0}`
+          `ดึงมา ${r.found} รายการ · เขียนลง Shopify ${r.applied ?? 0} · ต้องตรวจสอบ ${r.conflicts ?? 0}` +
+            (Number(r.unfinished) > 0 ? ` · เหลืออีก ${r.unfinished} รายการ กดอีกครั้งเพื่อทำต่อ` : "")
         );
       }
     } catch (err) {
