@@ -237,6 +237,8 @@ export default function QuickChat() {
   // to know what the customer actually wants, and a bare transcript makes
   // them guess it from a conversation they weren't part of.
   const [humanHandling, setHumanHandling] = useState(false);
+  /** A case already queued and waiting — survives a reload, unlike handedOff. */
+  const [caseQueued, setCaseQueued] = useState(false);
   // Storing a photo on our server is a different promise from showing it to
   // the model, so it needs its own answer. Someone who agreed to "sent to the
   // AI, never stored" has not agreed to this.
@@ -400,6 +402,7 @@ export default function QuickChat() {
           seenCountRef.current = data.messages.length;
         }
         setHumanHandling(Boolean(data?.humanHandling));
+        setCaseQueued(Boolean(data?.caseQueued));
       })
       .catch((err) => console.error("[QuickChat] history restore failed", err))
       .finally(() => setRestoringHistory(false));
@@ -422,6 +425,7 @@ export default function QuickChat() {
         const data = await fetch(`/api/chat${qs}`).then((r) => r.json());
         if (cancelled || !Array.isArray(data?.messages)) return;
         setHumanHandling(Boolean(data.humanHandling));
+        setCaseQueued(Boolean(data.caseQueued));
         if (open) {
           // Only ever grows the thread. The server copy is written a moment
           // after the message is shown, so a poll landing in that gap used to
@@ -523,6 +527,7 @@ export default function QuickChat() {
       });
       const data = await res.json();
       if (!data.ok) {
+        handedOff.current = false;
         setEscalateMsg(data.error || t("ส่งไม่สำเร็จ กรุณาลองใหม่ค่ะ", "Couldn't send — please try again."));
       } else {
         setNoteOpen(false);
@@ -537,7 +542,15 @@ export default function QuickChat() {
         );
       }
     } catch {
-      setEscalateMsg(t("ส่งไม่สำเร็จ กรุณาลองใหม่ค่ะ", "Couldn't send — please try again."));
+      // Smoothie has already told them it is on its way, so a silent failure
+      // here leaves someone waiting for a reply nobody will write.
+      handedOff.current = false;
+      setEscalateMsg(
+        t(
+          "ส่งถึงทีมงานไม่สำเร็จ กรุณากด \"ฝากข้อความ\" ด้านล่างอีกครั้งค่ะ",
+          "Couldn't reach our team — please use \"Leave a message\" below to try again."
+        )
+      );
     } finally {
       setEscalating(false);
     }
@@ -784,7 +797,9 @@ export default function QuickChat() {
       // button confirming what she just told them. Once per conversation: the
       // guard is here because a second ticket for the same thread is noise in
       // the inbox, not extra help.
-      if (kind === "handoff" && !humanHandling && !handedOff.current) {
+      // handedOff only lives as long as the component; caseQueued comes from
+      // the server, so a reload cannot turn one unanswered request into two.
+      if (kind === "handoff" && !humanHandling && !caseQueued && !handedOff.current) {
         handedOff.current = true;
         void escalate(reason || t("ลูกค้าต้องการคุยกับแอดมิน", "Customer asked for a person"));
       }

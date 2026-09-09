@@ -170,7 +170,8 @@ function systemPrompt(
   reviewsQa: string | null,
   orderHistory: string | null,
   hasShopifyLink: boolean,
-  caseWaiting: boolean
+  caseWaiting: boolean,
+  signedIn: boolean
 ) {
   const profileText =
     profile && Object.keys(profile).length
@@ -240,7 +241,17 @@ anything. Hand over when:
 Do NOT hand over for things you can answer: product advice, ingredients,
 routines, prices, stock, the policies above, or where to find a page.
 
-To hand over, end your reply with this on its own final line:
+${
+    signedIn
+      ? ""
+      : `THIS CUSTOMER IS NOT SIGNED IN. There is no way to reply to them, so a
+handover cannot happen — asking for one would be a promise that quietly fails.
+When something needs a person, say so and ask them to sign in first (LINE, or
+their phone number) so the team has somewhere to answer, and do NOT write the
+marker below.
+
+`
+  }To hand over, end your reply with this on its own final line:
 [[HANDOFF: one short sentence for staff, in Thai, saying what the customer needs]]
 Say in the reply itself, in your own words, that you are passing this to the
 team and they will reply here — then the marker. Write the marker at most once
@@ -397,7 +408,11 @@ export async function GET(req: NextRequest) {
       // and to offer them a way back to it.
       uid ? isHumanHandling("web", uid) : Promise.resolve(false),
     ]);
-    return Response.json({ messages: rows, humanHandling: handling });
+    // Queued counts as well as picked-up: after a reload the panel forgets it
+    // has already handed over, and without this the next handover marker files
+    // a second ticket for a case nobody has answered yet.
+    const queued = uid ? await hasWaitingCase("web", uid) : false;
+    return Response.json({ messages: rows, humanHandling: handling, caseQueued: queued });
   } catch (err) {
     console.error("[chat] history fetch failed", err);
     return Response.json({ messages: [] });
@@ -578,7 +593,17 @@ export async function POST(req: NextRequest) {
 
   const client = new Anthropic({ apiKey: key });
   const encoder = new TextEncoder();
-  const system = systemPrompt(profile, lang, cart, viewingProduct, reviewsQa, orderHistory, hasShopifyLink, caseWaiting);
+  const system = systemPrompt(
+    profile,
+    lang,
+    cart,
+    viewingProduct,
+    reviewsQa,
+    orderHistory,
+    hasShopifyLink,
+    caseWaiting,
+    Boolean(uid)
+  );
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {

@@ -71,13 +71,12 @@ export async function POST(req: NextRequest) {
           content: note,
         });
       }
-      if (transcript) {
-        await appendMessage({
-          conversationId: conversation.id,
-          senderType: "customer",
-          content: `— บทสนทนากับน้อง Smoothie ก่อนหน้านี้ —\n${transcript}`,
-        });
-      }
+      // The transcript is deliberately NOT appended as a message. Everything
+      // the customer said is already filed here as it happened (see caseOpen
+      // in api/chat), so pasting the whole conversation in again buried the
+      // one line staff actually need under a wall of chat they were not part
+      // of — and repeated every customer message twice. It stays on the
+      // chat_escalations row as the durable record.
     }
   } catch (err) {
     console.error("[chat/escalate] escalation saved but inbox handoff failed", err);
