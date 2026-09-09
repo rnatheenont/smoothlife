@@ -713,22 +713,41 @@ export default function AdminInboxPage() {
                 </div>
 
                 {showCanned && (
-                  <div className="mb-2 max-h-32 overflow-y-auto rounded-lg border border-slate-100">
+                  // Grouped and taller: thirteen replies through a 128px window
+                  // is a scroll to find anything, and the category is what
+                  // staff are actually looking under — "จัดส่ง", "คืนสินค้า".
+                  <div className="mb-2 max-h-64 overflow-y-auto rounded-lg border border-slate-100">
                     {canned.length === 0 ? (
                       <p className="p-2 text-[11px] text-slate-400">ยังไม่มีคำตอบสำเร็จรูป</p>
                     ) : (
-                      canned.map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            setReply(c.content);
-                            setShowCanned(false);
-                          }}
-                          className="block w-full border-b border-slate-50 p-2 text-left text-[11px] hover:bg-surface-soft"
-                        >
-                          <span className="font-semibold text-brand-ink">{c.title}</span>
-                          <span className="line-clamp-1 text-slate-400">{c.content}</span>
-                        </button>
+                      Object.entries(
+                        canned.reduce<Record<string, Canned[]>>((acc, c) => {
+                          const key = c.category || "ทั่วไป";
+                          (acc[key] ??= []).push(c);
+                          return acc;
+                        }, {})
+                      ).map(([category, items]) => (
+                        <div key={category}>
+                          <p className="sticky top-0 bg-surface-soft px-2 py-1 text-[10px] font-semibold text-slate-500">
+                            {category}
+                          </p>
+                          {items.map((c) => (
+                            <button
+                              key={c.id}
+                              onClick={() => {
+                                // Appended, not replaced: staff often type a
+                                // name or an order number first and losing it
+                                // to a template is a small daily annoyance.
+                                setReply((prev) => (prev.trim() ? `${prev.trimEnd()}\n${c.content}` : c.content));
+                                setShowCanned(false);
+                              }}
+                              className="block w-full border-b border-slate-50 p-2 text-left text-[11px] hover:bg-surface-soft"
+                            >
+                              <span className="font-semibold text-brand-ink">{c.title}</span>
+                              <span className="line-clamp-1 text-slate-400">{c.content}</span>
+                            </button>
+                          ))}
+                        </div>
                       ))
                     )}
                   </div>
