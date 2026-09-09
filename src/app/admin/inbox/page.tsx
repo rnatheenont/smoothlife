@@ -410,6 +410,16 @@ export default function AdminInboxPage() {
 
   const visible = conversations.filter((c) => handler === "any" || handlerOf(c.status) === handler);
 
+  // Staff were closing cases on a hunch. The useful fact is that the last word
+  // was ours and the customer has not come back — that is what "probably done"
+  // actually looks like, and saying it beats making them read timestamps.
+  const lastMsg = messages[messages.length - 1];
+  const quietFor = lastMsg ? (Date.now() - new Date(lastMsg.created_at).getTime()) / 3_600_000 : 0;
+  const quietHint =
+    lastMsg && lastMsg.sender_type === "staff" && quietFor >= 24
+      ? `ลูกค้าไม่ตอบมา ${sinceLabel(lastMsg.created_at).replace("ที่แล้ว", "")} — น่าจะปิดเคสได้`
+      : null;
+
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
 
   // Measured rather than calculated. This was h-[calc(100vh-8rem)], and 8rem
@@ -592,9 +602,18 @@ export default function AdminInboxPage() {
                     ส่งต่อเป็นเคส
                   </button>
                 )}
+                {quietHint && (
+                  <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-700">
+                    {quietHint}
+                  </span>
+                )}
                 <button
                   onClick={() => setStatus("resolved")}
-                  className="flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600"
+                  className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                    quietHint
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                      : "border-slate-200 text-slate-600"
+                  }`}
                 >
                   <CheckCheck size={12} /> ปิดเคส
                 </button>

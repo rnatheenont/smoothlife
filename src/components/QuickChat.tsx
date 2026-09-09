@@ -519,6 +519,30 @@ export default function QuickChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  const [resolvingCase, setResolvingCase] = useState(false);
+
+  async function resolveCase() {
+    setResolvingCase(true);
+    try {
+      await fetch("/api/chat/resolve-case", { method: "POST" });
+      setHumanHandling(false);
+      setCaseQueued(false);
+      handedOff.current = false;
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content: t(
+            "ดีใจที่ช่วยได้นะคะ ปิดเรื่องนี้ให้แล้วค่ะ — มีอะไรอีกทักมาได้เลยนะคะ 😊",
+            "Glad that helped — this one's closed. Message us any time."
+          ),
+        },
+      ]);
+    } finally {
+      setResolvingCase(false);
+    }
+  }
+
   async function backToAi() {
     setBackToAiBusy(true);
     try {
@@ -1185,7 +1209,10 @@ export default function QuickChat() {
               </div>
             )}
 
-            {!loading && (askOptions.length > 0 || helpOpen) && (
+            {!loading &&
+              (askOptions.length > 0 ||
+                helpOpen ||
+                (humanHandling && messages[messages.length - 1]?.fromStaff)) && (
               <div className="flex flex-wrap items-center gap-1.5 pl-11">
                 {askOptions.map((s) => (
                   <button
@@ -1199,6 +1226,20 @@ export default function QuickChat() {
                     {s}
                   </button>
                 ))}
+                {/* Offered only after a person has actually answered. Quiet
+                    means "that solved it" or "they gave up" and those look
+                    identical from the inbox — the customer is the only one who
+                    knows which, and this is one tap. */}
+                {humanHandling && messages[messages.length - 1]?.fromStaff && !helpOpen && (
+                  <button
+                    onClick={resolveCase}
+                    disabled={resolvingCase}
+                    className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-[12px] font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                  >
+                    <Check size={12} />
+                    {t("เรื่องนี้เรียบร้อยแล้ว", "This is sorted")}
+                  </button>
+                )}
                 {helpOpen && (
                   <button
                     onClick={() => {
