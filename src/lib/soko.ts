@@ -92,18 +92,33 @@ const STORE = "SmoothLife Shopify";
 // every page is one cheap request, unlike the per-order View reads.
 const LIST_PAGES = 5;
 
-// soko answers in its own time and the cron function is killed at 60s. Doing
-// five list pages and a dozen order pages one after another blew straight
-// through that — the 15:00 run died with a Vercel timeout and wrote nothing,
-// which is the silent failure this whole scraper is supposed to avoid. A few
-// at a time is enough to fit and stays polite: this runs five times a day.
-const CONCURRENCY = 4;
+// One request at a time, because soko will not do better.
+//
+// Yii holds the PHP session file locked for the length of a request, so four
+// requests sharing our one login cookie do not run in parallel — they queue,
+// each one's clock already running. That was invisible while soko answered in
+// under half a second. On 09/09 it started taking nine seconds a page: the
+// four queued pages sat waiting, every one of them hit the 12s ceiling, and
+// the run reported "no new parcels" having read nothing at all.
+//
+// Sequential is not slower here, it is the same work with honest timings — and
+// a page that overruns costs its own ten rows instead of everyone else's.
+const CONCURRENCY = 1;
 
 // One soko request that never answers used to take the whole function with it:
 // the 60s Vercel allows would run out mid-request, the process was killed, and
 // the run produced neither a result nor a log row. A per-request ceiling turns
 // that into one skipped page instead of a dead run.
-const REQUEST_TIMEOUT_MS = 12_000;
+//
+// 18s, not 12: measured 9s a page on 09/09 against 0.05-0.4s when this was
+// written, and a ceiling under what the server actually takes turns a slow day
+// into a blind one.
+const REQUEST_TIMEOUT_MS = 18_000;
+
+// How much of the run may go on list pages. The rest belongs to the order View
+// pages, which are the only place a tracking number actually appears — five
+// perfectly-read list pages and no time left to open an order is a wasted run.
+const LIST_BUDGET_MS = 22_000;
 
 async function fetchSoko(url: string, init: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
   const abort = new AbortController();
@@ -241,8 +256,13 @@ export async function probeOrderList(timeoutMs = 25_000) {
     },
   ];
 
-  const results = await Promise.all(
-    variants.map(async (v) => {
+  // Sequential, because parallel is exactly what made the timings lie: Yii
+  // locks the session for the length of a request, so four at once queue and
+  // the last one's "25 seconds" is mostly time spent waiting for the first.
+  const results = [];
+  for (const v of variants) {
+    results.push(
+      await (async () => {
       const at = Date.now();
       try {
         const res = await fetchSoko(`${BASE}?${new URLSearchParams(v.params)}`, { headers: { Cookie: jar } }, timeoutMs);
@@ -262,8 +282,9 @@ export async function probeOrderList(timeoutMs = 25_000) {
           error: (err as { name?: string })?.name === "AbortError" ? `timeout ${timeoutMs / 1000}s` : String(err).slice(0, 120),
         };
       }
-    })
-  );
+      })()
+    );
+  }
 
   return { loginMs, timeoutMs, results };
 }
@@ -302,40 +323,49 @@ export async function fetchPackedOrders(
   let pagesScanned = 0;
   let firstPage = "";
 
-  const attempts = await mapLimit(
-    Array.from({ length: LIST_PAGES }, (_, i) => i + 1),
-    async (page): Promise<PageAttempt> => {
-      const params = new URLSearchParams({
-        r: "order/index",
-        "Merchantorders[m_id]": "2",
-        "Merchantorders[search_txt]": STORE,
-        Merchantorders_page: String(page),
-      });
-      // Checked here too, not only before the order pages: on a slow day the
-      // list alone can eat the budget, and a page fetched at second 59 is a
-      // page nobody gets to use.
-      if (Date.now() - startedAt > deadlineMs) return { page, ms: 0, outcome: "deadline" };
-      const at = Date.now();
-      try {
-        const listRes = await fetchSoko(`${BASE}?${params}`, { headers: { Cookie: jar } });
-        const html = await listRes.text();
-        return { page, ms: Date.now() - at, status: listRes.status, bytes: html.length, outcome: "ok", html };
-      } catch (err) {
-        // A page that times out costs its ten rows, not the run — but what
-        // went wrong is kept, because five of these is not a quiet warehouse.
-        const aborted = (err as { name?: string })?.name === "AbortError";
-        return {
-          page,
-          ms: Date.now() - at,
-          outcome: aborted ? "timeout" : "error",
-          detail: aborted ? `เกิน ${REQUEST_TIMEOUT_MS / 1000} วินาที` : String((err as Error)?.message ?? err).slice(0, 120),
-        };
-      }
+  // One page at a time, and only as many as the clock allows.
+  //
+  // Asking for all five up front was fine when a page came back instantly. Now
+  // that one costs seconds, the last pages are the ones nobody has time to
+  // read — and reading page 1 is what finds this morning's parcels, since the
+  // list is newest first. Stopping early costs the oldest rows, which the next
+  // run picks up; stopping late used to cost the whole run.
+  const attempts: PageAttempt[] = [];
+  for (let page = 1; page <= LIST_PAGES; page++) {
+    const spent = Date.now() - startedAt;
+    if (spent > Math.min(deadlineMs, LIST_BUDGET_MS)) {
+      attempts.push({ page, ms: 0, outcome: "deadline" });
+      break;
     }
-  );
 
-  for (const attempt of attempts) {
-    const list = attempt.html;
+    const params = new URLSearchParams({
+      r: "order/index",
+      "Merchantorders[m_id]": "2",
+      "Merchantorders[search_txt]": STORE,
+      Merchantorders_page: String(page),
+    });
+
+    const at = Date.now();
+    let list = "";
+    try {
+      const listRes = await fetchSoko(`${BASE}?${params}`, { headers: { Cookie: jar } });
+      list = await listRes.text();
+      attempts.push({ page, ms: Date.now() - at, status: listRes.status, bytes: list.length, outcome: "ok" });
+    } catch (err) {
+      // A page that times out costs its ten rows, not the run — but what went
+      // wrong is kept, because five of these is not a quiet warehouse.
+      const aborted = (err as { name?: string })?.name === "AbortError";
+      attempts.push({
+        page,
+        ms: Date.now() - at,
+        outcome: aborted ? "timeout" : "error",
+        detail: aborted
+          ? `เกิน ${REQUEST_TIMEOUT_MS / 1000} วินาที`
+          : String((err as Error)?.message ?? err).slice(0, 120),
+      });
+      continue;
+    }
+
     if (!list) continue;
     pagesScanned++;
     if (!firstPage) firstPage = list;
