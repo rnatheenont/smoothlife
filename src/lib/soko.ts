@@ -348,9 +348,14 @@ export async function fetchPackedOrders(
       break;
     }
 
+    // No m_id. It was carried from the browser's own request and is the one
+    // condition soko has become unable to answer quickly: measured today, the
+    // list with the store search alone takes 20s and returns all eleven of our
+    // rows, while the same query with m_id on it does not come back at all
+    // inside 30s. The search is what does the filtering; m_id only made the
+    // query expensive enough to fail.
     const params = new URLSearchParams({
       r: "order/index",
-      "Merchantorders[m_id]": "2",
       "Merchantorders[search_txt]": STORE,
       Merchantorders_page: String(page),
     });
