@@ -105,9 +105,9 @@ const CONCURRENCY = 4;
 // that into one skipped page instead of a dead run.
 const REQUEST_TIMEOUT_MS = 12_000;
 
-async function fetchSoko(url: string, init: RequestInit = {}): Promise<Response> {
+async function fetchSoko(url: string, init: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
   const abort = new AbortController();
-  const timer = setTimeout(() => abort.abort(), REQUEST_TIMEOUT_MS);
+  const timer = setTimeout(() => abort.abort(), timeoutMs);
   try {
     return await fetch(url, { ...init, signal: abort.signal });
   } finally {
@@ -209,6 +209,64 @@ type PageAttempt = {
 
 /** Set by the last fetchPackedOrders call, so an empty run can be explained. */
 export let lastDiagnostics: SokoDiagnostics | null = null;
+
+/**
+ * Times the order-list query four ways, for when the list stops answering.
+ *
+ * The scrape went blind on 09/09: login returned a session in under a second
+ * and then every list page hit the 12s ceiling. That pattern says the query
+ * itself is the problem, not the network or the credentials — so this asks
+ * soko the same question with progressively fewer conditions and reports how
+ * long each takes, which is the difference between "their search is slow" and
+ * "they are refusing us".
+ */
+export async function probeOrderList(timeoutMs = 25_000) {
+  if (!sokoConfigured()) throw new SokoError("ยังไม่ได้ตั้งค่า SOKO_USERNAME / SOKO_PASSWORD");
+  const loginAt = Date.now();
+  const jar = await login();
+  const loginMs = Date.now() - loginAt;
+
+  const variants: { name: string; params: Record<string, string> }[] = [
+    { name: "ไม่มีเงื่อนไข", params: { r: "order/index" } },
+    { name: "m_id เท่านั้น", params: { r: "order/index", "Merchantorders[m_id]": "2" } },
+    { name: "ค้นชื่อร้าน", params: { r: "order/index", "Merchantorders[m_id]": "2", "Merchantorders[search_txt]": STORE } },
+    {
+      name: "ค้นชื่อร้าน + หน้า 1",
+      params: {
+        r: "order/index",
+        "Merchantorders[m_id]": "2",
+        "Merchantorders[search_txt]": STORE,
+        Merchantorders_page: "1",
+      },
+    },
+  ];
+
+  const results = await Promise.all(
+    variants.map(async (v) => {
+      const at = Date.now();
+      try {
+        const res = await fetchSoko(`${BASE}?${new URLSearchParams(v.params)}`, { headers: { Cookie: jar } }, timeoutMs);
+        const html = await res.text();
+        return {
+          name: v.name,
+          ms: Date.now() - at,
+          status: res.status,
+          bytes: html.length,
+          storeRows: html.split(/<tr[\s>]/i).filter((r) => r.includes(STORE)).length,
+          loginForm: /LoginForm\[password\]/.test(html),
+        };
+      } catch (err) {
+        return {
+          name: v.name,
+          ms: Date.now() - at,
+          error: (err as { name?: string })?.name === "AbortError" ? `timeout ${timeoutMs / 1000}s` : String(err).slice(0, 120),
+        };
+      }
+    })
+  );
+
+  return { loginMs, timeoutMs, results };
+}
 
 export async function fetchPackedOrders(
   limit = 15,
