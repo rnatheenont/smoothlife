@@ -20,6 +20,7 @@ type Message = {
   created_at: string;
   /** Short-lived signed link — the bucket is private, so this expires. */
   attachmentUrl?: string | null;
+  delivered_content?: string | null;
 };
 type Canned = { id: string; title: string; content: string; category: string | null };
 type Customer = {
@@ -697,6 +698,13 @@ export default function AdminInboxPage() {
                                 panel needs it to rebuild the answer buttons.
                                 Staff should just see the question. */}
                             {renderMessage(splitMarker(m.content).text, productCards)}
+                            {/* Staff should be able to see what went out in
+                                their name, not just what they typed. */}
+                            {m.delivered_content && (
+                              <span className="mt-1.5 block border-t border-white/25 pt-1.5 text-[11px] opacity-90">
+                                <span className="font-semibold">ส่งให้ลูกค้าเป็น:</span> {m.delivered_content}
+                              </span>
+                            )}
                           </div>
                           )}
                         </div>

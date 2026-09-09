@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { getProductBySlug } from "@/data/products";
+import { translateForCustomer } from "@/lib/reply-translate";
 import { appendMessage, ConversationRow } from "@/lib/conversations";
 import {
   signedAttachmentUrl,
@@ -27,9 +28,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const [[conversation], messages] = await Promise.all([
     supabaseRest<ConversationRow[]>(`conversations?id=eq.${pgValue(params.id)}&select=*&limit=1`),
     supabaseRest<
-      { id: string; sender_type: string; content: string; is_draft: boolean; created_at: string; attachment_path: string | null }[]
+      { id: string; sender_type: string; content: string; is_draft: boolean; created_at: string; attachment_path: string | null; delivered_content: string | null }[]
     >(
-      `conversation_messages?conversation_id=eq.${pgValue(params.id)}&select=id,sender_type,content,is_draft,created_at,attachment_path&order=created_at.asc&limit=200`
+      `conversation_messages?conversation_id=eq.${pgValue(params.id)}&select=id,sender_type,content,is_draft,created_at,attachment_path,delivered_content&order=created_at.asc&limit=200`
     ),
   ]);
   if (!conversation) return NextResponse.json({ ok: false, error: "ไม่พบบทสนทนานี้" }, { status: 404 });
@@ -194,11 +195,28 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
   }
 
+  // What the customer will read. Staff answer in Thai; someone who wrote in
+  // English or Japanese should not have to translate their own support reply.
+  // Only when it differs — a staff member who already answered in their
+  // language gets delivered verbatim.
+  let delivered: string | null = null;
+  if (content) {
+    const prior = await supabaseRest<{ content: string }[]>(
+      `conversation_messages?conversation_id=eq.${pgValue(conversation.id)}&sender_type=eq.customer` +
+        `&select=content&order=created_at.desc&limit=6`
+    ).catch((): { content: string }[] => []);
+    delivered = await translateForCustomer({
+      staffReply: content,
+      customerMessages: prior.map((m) => m.content).reverse(),
+    });
+  }
+
   await appendMessage({
     conversationId: conversation.id,
     senderType: "staff",
     content,
     attachmentPath,
+    deliveredContent: delivered,
   });
 
   // Delivery for web: the customer's chat widget reads its history out of
@@ -216,7 +234,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       // allows user/assistant — that same value is replayed to Anthropic as
       // conversation history — so who sent it rides alongside instead.
       from_staff: true,
-      content,
+      content: delivered ?? content,
       attachment_path: attachmentPath,
     }),
   });

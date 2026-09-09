@@ -85,6 +85,8 @@ export async function appendMessage(opts: {
   isDraft?: boolean;
   /** Storage path of a photo attached to this message — staff-handled cases only. */
   attachmentPath?: string | null;
+  /** What the customer received, when it was translated on the way out. */
+  deliveredContent?: string | null;
 }): Promise<void> {
   if (!supabaseConfigured()) return;
   await supabaseRest("conversation_messages", {
@@ -96,6 +98,7 @@ export async function appendMessage(opts: {
       content: opts.content.slice(0, 8000),
       sender_staff_id: opts.senderStaffId ?? null,
       attachment_path: opts.attachmentPath ?? null,
+      delivered_content: opts.deliveredContent ?? null,
       is_draft: opts.isDraft ?? false,
     }),
   });
