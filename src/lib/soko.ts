@@ -341,9 +341,14 @@ export async function fetchPackedOrders(
   // list is newest first. Stopping early costs the oldest rows, which the next
   // run picks up; stopping late used to cost the whole run.
   const attempts: PageAttempt[] = [];
+  let lastPageMs = 0;
   for (let page = 1; page <= LIST_PAGES; page++) {
     const spent = Date.now() - startedAt;
-    if (spent > Math.min(deadlineMs, LIST_BUDGET_MS)) {
+    // Room for another page like the last one, not merely room to start one.
+    // A 22s page begun with 4s of budget left finishes at second 46 and the
+    // order pages — the only place a tracking number lives — never get read.
+    const budget = Math.min(deadlineMs, LIST_BUDGET_MS);
+    if (spent + lastPageMs > budget) {
       attempts.push({ page, ms: 0, outcome: "deadline" });
       break;
     }
@@ -365,7 +370,8 @@ export async function fetchPackedOrders(
     try {
       const listRes = await fetchSoko(`${BASE}?${params}`, { headers: { Cookie: jar } }, LIST_TIMEOUT_MS);
       list = await listRes.text();
-      attempts.push({ page, ms: Date.now() - at, status: listRes.status, bytes: list.length, outcome: "ok" });
+      lastPageMs = Date.now() - at;
+      attempts.push({ page, ms: lastPageMs, status: listRes.status, bytes: list.length, outcome: "ok" });
     } catch (err) {
       // A page that times out costs its ten rows, not the run — but what went
       // wrong is kept, because five of these is not a quiet warehouse.
