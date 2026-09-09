@@ -201,13 +201,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   // language gets delivered verbatim.
   let delivered: string | null = null;
   if (content) {
+    // Read from chat_messages, not the inbox copy. Rows filed there as
+    // "customer" include things the customer never typed — our own
+    // "— เรื่องใหม่จากลูกค้า —" divider, and the request summary Smoothie writes
+    // in Thai when she hands over — so a customer writing in English looked
+    // like a Thai speaker and the reply went out untranslated. role='user' is
+    // only ever their own words.
     const prior = await supabaseRest<{ content: string }[]>(
-      `conversation_messages?conversation_id=eq.${pgValue(conversation.id)}&sender_type=eq.customer` +
+      `chat_messages?session_key=eq.${pgValue(conversation.channel_user_id)}&role=eq.user` +
         `&select=content&order=created_at.desc&limit=6`
     ).catch((): { content: string }[] => []);
     delivered = await translateForCustomer({
       staffReply: content,
-      customerMessages: prior.map((m) => m.content).reverse(),
+      customerMessages: prior
+        .map((m) => m.content.replace(/^\[\[PHOTO\]\]\s*/, "").trim())
+        .filter((c) => c && c !== "(ส่งรูป)")
+        .reverse(),
     });
   }
 

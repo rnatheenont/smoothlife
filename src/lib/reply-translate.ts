@@ -13,6 +13,8 @@ You are given recent messages from the customer, then the reply staff wrote.
 Rules:
 - Work out the language the CUSTOMER writes in. Ignore the staff reply when
   deciding this.
+- The customer's messages are given oldest to newest. Weigh the LAST one most:
+  someone who wrote Thai earlier and English just now wants English now.
 - If the staff reply is already in that language, return it EXACTLY as given,
   character for character. Do not improve it, reword it or fix its typos.
 - Otherwise translate it into the customer's language, keeping the warm,
