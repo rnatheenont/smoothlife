@@ -21,6 +21,11 @@ export type SyncRunResult = {
 };
 
 export async function runSokoSync(): Promise<SyncRunResult> {
+  // Everything below shares the one minute Vercel allows. The scraper gets 40
+  // seconds of it and hands back whatever it has; the Shopify writes that
+  // follow are quick, and a partial run that reports itself beats a 504 that
+  // reports nothing.
+  const started = Date.now();
   if (!supabaseConfigured() || !shopifyAdminConfigured()) {
     return { ok: false, status: 503, error: "not configured" };
   }
@@ -48,7 +53,7 @@ export async function runSokoSync(): Promise<SyncRunResult> {
 
   let rows: Awaited<ReturnType<typeof fetchPackedOrders>>;
   try {
-    rows = await fetchPackedOrders(12, skipRefs);
+    rows = await fetchPackedOrders(12, skipRefs, 40_000 - (Date.now() - started));
   } catch (err) {
     // A scraper's worst failure is the silent one: the login page changes, the
     // run returns nothing, and everyone assumes there was nothing to send.

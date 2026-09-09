@@ -170,6 +170,8 @@ export type SokoDiagnostics = {
   pagesScanned: number;
   candidates: number;
   skipped: number;
+  /** True when the deadline cut the order reads short. */
+  ranOutOfTime?: boolean;
   /** Rows belonging to our store — the number that actually gets processed. */
   storeRows: number;
   /** First visible words of the page, so an unexpected one identifies itself. */
@@ -181,8 +183,19 @@ export let lastDiagnostics: SokoDiagnostics | null = null;
 
 export async function fetchPackedOrders(
   limit = 15,
-  skipRefs: Set<string> = new Set()
+  skipRefs: Set<string> = new Set(),
+  /**
+   * Stop opening order pages once this much time has passed.
+   *
+   * Vercel kills the function at 60s and returns an HTML error page, so a run
+   * that overruns produces no result and no log row at all — indistinguishable
+   * from a quiet warehouse, which is the exact failure this whole thing is
+   * built to make visible. Better to come back with eight orders and say so
+   * than with a 504.
+   */
+  deadlineMs = 40_000
 ): Promise<SokoParcel[]> {
+  const startedAt = Date.now();
   if (!sokoConfigured()) throw new SokoError("ยังไม่ได้ตั้งค่า SOKO_USERNAME / SOKO_PASSWORD");
   const jar = await login();
 
@@ -275,7 +288,12 @@ export async function fetchPackedOrders(
   const unique = fresh.map((c) => c.href).slice(0, limit);
   if (unique.length === 0) return [];
 
+  let ranOutOfTime = false;
   const rows = await mapLimit(unique, async (href) => {
+    if (Date.now() - startedAt > deadlineMs) {
+      ranOutOfTime = true;
+      return null;
+    }
     const url = href.startsWith("http") ? href : `https://shg.sokochan.com/${href.replace(/^\//, "")}`;
     try {
       return await trackingFromView(url, jar);
@@ -284,6 +302,7 @@ export async function fetchPackedOrders(
       return null;
     }
   });
+  if (lastDiagnostics) lastDiagnostics.ranOutOfTime = ranOutOfTime;
   // An order that is packed but has no number yet is normal, not an error.
   return rows.filter((r): r is SokoParcel => r !== null);
 }

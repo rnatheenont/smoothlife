@@ -59,14 +59,31 @@ export default function AdminTrackingSyncPage() {
     setRunResult(null);
     try {
       const res = await fetch("/api/admin/tracking-sync/run", { method: "POST" });
-      const r = await res.json();
+      // A run that overruns Vercel's 60s limit comes back as an HTML error
+      // page, and calling .json() on that surfaced a raw SyntaxError to staff
+      // instead of saying what happened.
+      const raw = await res.text();
+      let r: Record<string, unknown>;
+      try {
+        r = JSON.parse(raw);
+      } catch {
+        setRunResult(
+          res.status === 504 || /timed out/i.test(raw)
+            ? "หมดเวลา 60 วินาที — soko ตอบช้ากว่าปกติ ลองกดใหม่อีกครั้ง"
+            : `ไม่สำเร็จ (HTTP ${res.status}) — ${raw.slice(0, 120)}`
+        );
+        return;
+      }
       if (!r.ok) {
         setRunResult(`ไม่สำเร็จ: ${r.error ?? "ไม่ทราบสาเหตุ"}`);
       } else if (!r.found) {
-        const d = r.diagnostics;
+        const d = r.diagnostics as
+          | { pagesScanned?: number; candidates?: number; skipped?: number; ranOutOfTime?: boolean }
+          | undefined;
         setRunResult(
           `ไม่มีรายการใหม่ — อ่าน ${d?.pagesScanned ?? "?"} หน้า พบ ${d?.candidates ?? "?"} ออเดอร์ ` +
-            `ข้ามที่ทำไปแล้ว ${d?.skipped ?? 0} รายการ`
+            `ข้ามที่ทำไปแล้ว ${d?.skipped ?? 0} รายการ` +
+            (d?.ranOutOfTime ? " (อ่านไม่ครบ เพราะใกล้หมดเวลา — กดอีกครั้งเพื่ออ่านต่อ)" : "")
         );
       } else {
         setRunResult(
