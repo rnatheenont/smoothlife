@@ -110,15 +110,27 @@ const CONCURRENCY = 1;
 // the run produced neither a result nor a log row. A per-request ceiling turns
 // that into one skipped page instead of a dead run.
 //
-// 18s, not 12: measured 9s a page on 09/09 against 0.05-0.4s when this was
-// written, and a ceiling under what the server actually takes turns a slow day
-// into a blind one.
-const REQUEST_TIMEOUT_MS = 18_000;
+// Measured on 09/09, against 0.05-0.4s when this was written: an unfiltered
+// order list comes back in 3.4s, the same list with the store search on it
+// takes 20s. The search is what soko has become slow at, and a ceiling under
+// what the server actually takes turns a slow day into a blind one — the 12s
+// this used to be made every single page fail while the site was working.
+const LIST_TIMEOUT_MS = 30_000;
+
+// An order's own page is one record and stays quick. Keeping this well under
+// the list ceiling means a stuck order costs a few seconds, not the run.
+const VIEW_TIMEOUT_MS = 12_000;
+
+const REQUEST_TIMEOUT_MS = LIST_TIMEOUT_MS;
 
 // How much of the run may go on list pages. The rest belongs to the order View
 // pages, which are the only place a tracking number actually appears — five
 // perfectly-read list pages and no time left to open an order is a wasted run.
-const LIST_BUDGET_MS = 22_000;
+//
+// At today's speed this buys exactly one page, which is the newest ten orders
+// — the ones a sync running five times a day is actually for. If soko gets
+// quick again the loop takes more pages on its own, no change needed here.
+const LIST_BUDGET_MS = 26_000;
 
 async function fetchSoko(url: string, init: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
   const abort = new AbortController();
@@ -162,7 +174,7 @@ export type SokoParcel = {
  * onto another brand's order.
  */
 async function trackingFromView(url: string, jar: string): Promise<SokoParcel | null> {
-  const res = await fetchSoko(url, { headers: { Cookie: jar } });
+  const res = await fetchSoko(url, { headers: { Cookie: jar } }, VIEW_TIMEOUT_MS);
   const html = await res.text();
   const text = html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<[^>]+>/g, "\n");
   if (!text.includes(STORE)) return null;
@@ -346,7 +358,7 @@ export async function fetchPackedOrders(
     const at = Date.now();
     let list = "";
     try {
-      const listRes = await fetchSoko(`${BASE}?${params}`, { headers: { Cookie: jar } });
+      const listRes = await fetchSoko(`${BASE}?${params}`, { headers: { Cookie: jar } }, LIST_TIMEOUT_MS);
       list = await listRes.text();
       attempts.push({ page, ms: Date.now() - at, status: listRes.status, bytes: list.length, outcome: "ok" });
     } catch (err) {
@@ -358,7 +370,7 @@ export async function fetchPackedOrders(
         ms: Date.now() - at,
         outcome: aborted ? "timeout" : "error",
         detail: aborted
-          ? `เกิน ${REQUEST_TIMEOUT_MS / 1000} วินาที`
+          ? `เกิน ${LIST_TIMEOUT_MS / 1000} วินาที`
           : String((err as Error)?.message ?? err).slice(0, 120),
       });
       continue;
