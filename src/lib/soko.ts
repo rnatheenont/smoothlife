@@ -188,10 +188,23 @@ export type SokoDiagnostics = {
   skipped: number;
   /** True when the deadline cut the order reads short. */
   ranOutOfTime?: boolean;
+  /** Every list page attempt, so a blind run says what it hit rather than 0. */
+  pageAttempts?: { page: number; ms: number; status?: number; bytes?: number; outcome: string; detail?: string }[];
   /** Rows belonging to our store — the number that actually gets processed. */
   storeRows: number;
   /** First visible words of the page, so an unexpected one identifies itself. */
   sample: string;
+};
+
+/** One list page as it went: kept even when it failed, which is the point. */
+type PageAttempt = {
+  page: number;
+  ms: number;
+  status?: number;
+  bytes?: number;
+  outcome: "ok" | "timeout" | "error" | "deadline";
+  detail?: string;
+  html?: string;
 };
 
 /** Set by the last fetchPackedOrders call, so an empty run can be explained. */
@@ -231,9 +244,9 @@ export async function fetchPackedOrders(
   let pagesScanned = 0;
   let firstPage = "";
 
-  const pages = await mapLimit(
+  const attempts = await mapLimit(
     Array.from({ length: LIST_PAGES }, (_, i) => i + 1),
-    async (page) => {
+    async (page): Promise<PageAttempt> => {
       const params = new URLSearchParams({
         r: "order/index",
         "Merchantorders[m_id]": "2",
@@ -243,18 +256,28 @@ export async function fetchPackedOrders(
       // Checked here too, not only before the order pages: on a slow day the
       // list alone can eat the budget, and a page fetched at second 59 is a
       // page nobody gets to use.
-      if (Date.now() - startedAt > deadlineMs) return "";
+      if (Date.now() - startedAt > deadlineMs) return { page, ms: 0, outcome: "deadline" };
+      const at = Date.now();
       try {
         const listRes = await fetchSoko(`${BASE}?${params}`, { headers: { Cookie: jar } });
-        return await listRes.text();
-      } catch {
-        // A page that times out costs its ten rows, not the run.
-        return "";
+        const html = await listRes.text();
+        return { page, ms: Date.now() - at, status: listRes.status, bytes: html.length, outcome: "ok", html };
+      } catch (err) {
+        // A page that times out costs its ten rows, not the run — but what
+        // went wrong is kept, because five of these is not a quiet warehouse.
+        const aborted = (err as { name?: string })?.name === "AbortError";
+        return {
+          page,
+          ms: Date.now() - at,
+          outcome: aborted ? "timeout" : "error",
+          detail: aborted ? `เกิน ${REQUEST_TIMEOUT_MS / 1000} วินาที` : String((err as Error)?.message ?? err).slice(0, 120),
+        };
       }
     }
   );
 
-  for (const list of pages) {
+  for (const attempt of attempts) {
+    const list = attempt.html;
     if (!list) continue;
     pagesScanned++;
     if (!firstPage) firstPage = list;
@@ -295,6 +318,7 @@ export async function fetchPackedOrders(
     viewLinks: (firstPage.match(/r=order(?:%2F|\/)view/gi) || []).length,
     storeRows: firstPage.split(/<tr[\s>]/i).filter((r) => r.includes(STORE)).length,
     pagesScanned,
+    pageAttempts: attempts.map(({ html: _html, ...rest }) => rest),
     candidates: seen.size,
     skipped: seen.size - fresh.length,
     // URLs stripped: the sample is for identifying the page, and query
@@ -310,6 +334,16 @@ export async function fetchPackedOrders(
   };
 
   if (lastDiagnostics.sawLoginForm) throw new SokoError("session soko หมดอายุระหว่างดึงข้อมูล");
+
+  // Zero readable pages is not an empty warehouse — it is a blind run, and it
+  // used to be logged as "ไม่มีเลขใหม่" because both come back with nothing.
+  // Once that mistake costs a day of parcels it is worth an exception.
+  if (pagesScanned === 0) {
+    const why = attempts
+      .map((a) => `หน้า ${a.page}: ${a.outcome === "ok" ? `ว่าง (${a.status})` : a.outcome}${a.detail ? ` ${a.detail}` : ""}`)
+      .join(" · ");
+    throw new SokoError(`อ่านหน้ารายการ soko ไม่ได้เลยสักหน้า — ${why}`);
+  }
 
   const unique = fresh.map((c) => c.href).slice(0, limit);
   if (unique.length === 0) return [];
