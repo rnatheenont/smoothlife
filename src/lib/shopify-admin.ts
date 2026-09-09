@@ -119,6 +119,88 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
   }
 }
 
+export type ShopifyCustomerCandidate = {
+  id: string;
+  email: string | null;
+  phone: string | null;
+  displayName: string | null;
+  numberOfOrders: string;
+  amountSpent: string;
+  currency: string;
+  createdAt: string;
+  lastOrderAt: string | null;
+  address: string | null;
+};
+
+/**
+ * Free-text customer search for the support screen.
+ *
+ * Shopify's own `query` grammar is used unchanged, so a staff member can paste
+ * an email, a phone number or a name and get what the Shopify admin search
+ * would give them. Order count and spend come back with it because that is the
+ * question being asked — "which of these three duplicate records has their
+ * history in it" — and opening each one in Shopify to find out is the manual
+ * work this screen exists to remove.
+ */
+export async function searchShopifyCustomers(term: string, limit = 10): Promise<ShopifyCustomerCandidate[]> {
+  if (!shopifyAdminConfigured() || !term.trim()) return [];
+  try {
+    const data = await adminGraphql<{
+      customers: {
+        edges: {
+          node: {
+            id: string;
+            email: string | null;
+            phone: string | null;
+            displayName: string | null;
+            numberOfOrders: string;
+            amountSpent: { amount: string; currencyCode: string };
+            createdAt: string;
+            defaultAddress: { address1: string | null; city: string | null; zip: string | null } | null;
+            orders: { edges: { node: { createdAt: string } }[] };
+          };
+        }[];
+      };
+    }>(
+      `query SearchCustomers($query: String!, $limit: Int!) {
+        customers(first: $limit, query: $query) {
+          edges {
+            node {
+              id
+              email
+              phone
+              displayName
+              numberOfOrders
+              amountSpent { amount currencyCode }
+              createdAt
+              defaultAddress { address1 city zip }
+              orders(first: 1, sortKey: CREATED_AT, reverse: true) { edges { node { createdAt } } }
+            }
+          }
+        }
+      }`,
+      { query: term.trim(), limit }
+    );
+    return data.customers.edges.map(({ node }) => ({
+      id: node.id,
+      email: node.email,
+      phone: node.phone,
+      displayName: node.displayName,
+      numberOfOrders: node.numberOfOrders,
+      amountSpent: node.amountSpent.amount,
+      currency: node.amountSpent.currencyCode,
+      createdAt: node.createdAt,
+      lastOrderAt: node.orders.edges[0]?.node.createdAt ?? null,
+      address: node.defaultAddress
+        ? [node.defaultAddress.address1, node.defaultAddress.city, node.defaultAddress.zip].filter(Boolean).join(" ")
+        : null,
+    }));
+  } catch (err) {
+    console.error("[shopify-admin] searchShopifyCustomers failed", err);
+    return [];
+  }
+}
+
 // Turns a theme slide's "shopify://..." link reference into a real URL.
 // Collections/products/pages all live on the real Shopify-hosted storefront
 // (smoothlife.com), not this app, so they resolve there rather than to a
