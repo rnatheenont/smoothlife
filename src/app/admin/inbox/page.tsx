@@ -53,6 +53,22 @@ const FILTERS = [
   { key: "resolved", label: "ปิดแล้ว" },
 ];
 
+// A second, independent question from the queue tabs above: not "where is this
+// in the workflow" but "who is the customer talking to right now". A thread the
+// bot is handling needs nobody; one a person has taken over is somebody's job
+// until they finish it, and the two were mixed together under "ทั้งหมด".
+const HANDLERS = [
+  { key: "any", label: "ทุกคน" },
+  { key: "ai", label: "AI ตอบอยู่" },
+  { key: "staff", label: "ทีมงานดูแล" },
+] as const;
+
+type Handler = (typeof HANDLERS)[number]["key"];
+
+function handlerOf(status: string): Handler {
+  return status === "ai_handling" ? "ai" : status === "resolved" ? "any" : "staff";
+}
+
 // Who said it and when. The thread showed neither: staff and AI replies were
 // told apart only by bubble colour, and nothing on screen said whether a
 // message arrived a minute or a day ago.
@@ -137,6 +153,7 @@ export default function AdminInboxPage() {
   const [conversations, setConversations] = useState<InboxListItem[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [handler, setHandler] = useState<Handler>("any");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -331,6 +348,8 @@ export default function AdminInboxPage() {
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [messages.length]);
 
+  const visible = conversations.filter((c) => handler === "any" || handlerOf(c.status) === handler);
+
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
 
   // Measured rather than calculated. This was h-[calc(100vh-8rem)], and 8rem
@@ -395,15 +414,38 @@ export default function AdminInboxPage() {
         )}
       </div>
 
+      <div className="mb-3 flex flex-wrap items-center gap-1.5">
+        <span className="mr-0.5 text-[11px] text-slate-400">กำลังคุยกับ</span>
+        {HANDLERS.map((h) => {
+          const n = conversations.filter((c) => h.key === "any" || handlerOf(c.status) === h.key).length;
+          return (
+            <button
+              key={h.key}
+              onClick={() => setHandler(h.key)}
+              className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                handler === h.key
+                  ? "border-brand-200 bg-brand-50 text-brand-800"
+                  : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              {h.key === "ai" && <Bot size={11} />}
+              {h.key === "staff" && <UserRound size={11} />}
+              {h.label}
+              {n > 0 && <span className="text-slate-400">{n}</span>}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[280px_1fr_260px]">
         {/* list */}
         <div className="min-h-0 overflow-y-auto rounded-xl2 border border-slate-100">
           {loadingList ? (
             <p className="p-4 text-xs text-slate-400">กำลังโหลด...</p>
-          ) : conversations.length === 0 ? (
+          ) : visible.length === 0 ? (
             <p className="p-4 text-xs text-slate-400">ไม่มีบทสนทนาในหมวดนี้</p>
           ) : (
-            conversations.map((c) => {
+            visible.map((c) => {
               const Icon = CHANNEL_ICON[c.channel] ?? Globe;
               return (
                 <button
