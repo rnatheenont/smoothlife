@@ -85,6 +85,29 @@ function withLinks(text: string) {
   return parts;
 }
 
+const CHANNEL_LABEL: Record<string, string> = {
+  web: "เว็บไซต์",
+  line: "LINE",
+  facebook: "Facebook",
+};
+
+function countFor(key: string, counts: Record<string, number>) {
+  if (key === "all") return (counts.waiting_human ?? 0) + (counts.assigned ?? 0) + (counts.ai_handling ?? 0);
+  return counts[key] ?? 0;
+}
+
+// "3 ชม.ที่แล้ว" answers the question staff are actually asking — how long has
+// this person been waiting — which a formatted date makes them work out.
+function sinceLabel(iso: string) {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (mins < 1) return "เมื่อครู่";
+  if (mins < 60) return `${mins} นาทีที่แล้ว`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} ชม.ที่แล้ว`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? "เมื่อวาน" : `${days} วันที่แล้ว`;
+}
+
 function senderLabel(sender: string) {
   if (sender === "customer") return "ลูกค้า";
   if (sender === "staff") return "ทีมงาน";
@@ -113,6 +136,7 @@ export default function AdminInboxPage() {
   const [filter, setFilter] = useState("waiting_human");
   const [conversations, setConversations] = useState<InboxListItem[]>([]);
   const [loadingList, setLoadingList] = useState(true);
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -136,6 +160,7 @@ export default function AdminInboxPage() {
       const res = await fetch(`/api/admin/inbox?status=${filter}`);
       const data = await res.json();
       setConversations(data.conversations ?? []);
+      setCounts(data.counts ?? {});
     } finally {
       if (!silent) setLoadingList(false);
     }
@@ -350,8 +375,24 @@ export default function AdminInboxPage() {
             }`}
           >
             {f.label}
+            {/* The number is the point of the tab: "รอตอบ 3" is a queue, "รอตอบ"
+                is a place you have to click to find out. */}
+            {countFor(f.key, counts) > 0 && (
+              <span
+                className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] ${
+                  filter === f.key ? "bg-white/25" : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                {countFor(f.key, counts)}
+              </span>
+            )}
           </button>
         ))}
+        {counts.unread > 0 && (
+          <span className="ml-auto self-center rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-600">
+            ยังไม่ได้อ่าน {counts.unread}
+          </span>
+        )}
       </div>
 
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[280px_1fr_260px]">
@@ -375,19 +416,44 @@ export default function AdminInboxPage() {
                   <span className="flex items-center gap-1.5">
                     <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[c.status] ?? "bg-slate-300"}`} />
                     <Icon size={12} className="shrink-0 text-slate-400" />
-                    <span className="truncate text-xs font-semibold text-brand-ink">
+                    <span className={`truncate text-xs ${c.unread > 0 ? "font-bold text-brand-ink" : "font-semibold text-brand-ink"}`}>
                       {c.customerName || c.channel_user_id.slice(0, 12)}
                     </span>
-                    {c.urgency === "urgent" && (
+                    {c.unread > 0 && (
+                      <span className="ml-auto shrink-0 rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                        {c.unread}
+                      </span>
+                    )}
+                    {c.unread === 0 && c.urgency === "urgent" && (
                       <span className="ml-auto shrink-0 rounded-full bg-rose-50 px-1.5 text-[10px] font-semibold text-rose-500">
                         ด่วน
                       </span>
                     )}
                   </span>
-                  <span className="line-clamp-2 text-[11px] text-slate-500">{c.preview || c.subject || "—"}</span>
-                  <span className="text-[10px] text-slate-400">
-                    {new Date(c.last_message_at).toLocaleString("th-TH")}
+
+                  {/* Where it came from. A case Smoothie could not answer is a
+                      different thing from someone chatting to the bot, and the
+                      channel says which of three inboxes it would have been. */}
+                  <span className="flex flex-wrap items-center gap-1">
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                        c.origin === "escalation"
+                          ? "bg-amber-50 text-amber-700"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {c.origin === "escalation" ? "ส่งต่อจาก AI" : "แชทกับ AI"}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                      {CHANNEL_LABEL[c.channel] ?? c.channel}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                      {STATUS_LABEL[c.status] ?? c.status}
+                    </span>
                   </span>
+
+                  <span className="line-clamp-2 text-[11px] text-slate-500">{c.preview || c.subject || "—"}</span>
+                  <span className="text-[10px] text-slate-400">{sinceLabel(c.last_message_at)}</span>
                 </button>
               );
             })

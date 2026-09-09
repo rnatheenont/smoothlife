@@ -87,6 +87,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }))
   );
 
+  // Opening the thread is what "read" means here. Fire-and-forget: a failed
+  // marker should leave the badge up, never block the thread from loading.
+  supabaseRest(`conversations?id=eq.${pgValue(params.id)}`, {
+    method: "PATCH",
+    returning: false,
+    body: JSON.stringify({ staff_read_at: new Date().toISOString() }),
+  }).catch((err) => console.error("[admin/inbox] could not mark read", err));
+
   return NextResponse.json({ ok: true, conversation, messages: withUrls, customer });
 }
 
