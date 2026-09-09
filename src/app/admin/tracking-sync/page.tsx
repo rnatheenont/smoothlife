@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import clsx from "clsx";
-import { Truck, RefreshCw, ShieldCheck, AlertTriangle, Info, Play, Loader2 } from "lucide-react";
+import { Truck, RefreshCw, ShieldCheck, AlertTriangle, Info, Play, Loader2, ExternalLink } from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 import type { TrackingSyncRow } from "@/app/api/admin/tracking-sync/route";
 
@@ -26,6 +26,7 @@ type Payload = {
   canWrite: boolean;
   canFulfil: boolean;
   counts: Record<string, number>;
+  shopDomain: string | null;
   connection: {
     lastSuccessAt: string | null;
     lastFailureAt: string | null;
@@ -113,6 +114,40 @@ export default function AdminTrackingSyncPage() {
     } finally {
       setRunning(false);
       // The table is the record; whatever the run did should be visible in it.
+      load();
+    }
+  }
+
+  const [resolving, setResolving] = useState<string | null>(null);
+
+  async function resolve(row: TrackingSyncRow, resolution: "overwritten" | "ignored") {
+    const order = row.resolved_order_name || row.order_ref;
+    const message =
+      resolution === "overwritten"
+        ? `เขียนทับเลขพัสดุของ ${order}\n\nของเดิม: ${(row.existing_numbers ?? []).join(", ") || "—"}\nเลขใหม่: ${row.tracking_number}\n\nลูกค้าจะได้รับอีเมลแจ้งเลขใหม่ ยืนยันหรือไม่?`
+        : `เก็บเลขเดิมของ ${order} ไว้ และเพิกเฉยเลข ${row.tracking_number} ที่ soko ส่งมา ยืนยันหรือไม่?`;
+    if (!window.confirm(message)) return;
+
+    setResolving(row.id);
+    setRunResult(null);
+    try {
+      const res = await fetch("/api/admin/tracking-sync/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: row.id, resolution }),
+      });
+      const r = await res.json();
+      setRunResult(
+        r.ok
+          ? resolution === "overwritten"
+            ? `เขียนทับ ${order} เป็น ${row.tracking_number} แล้ว${r.notified ? " · แจ้งลูกค้าทางอีเมลแล้ว" : ""}`
+            : `เก็บเลขเดิมของ ${order} ไว้แล้ว`
+          : `ไม่สำเร็จ: ${r.error ?? "ไม่ทราบสาเหตุ"}`
+      );
+    } catch (err) {
+      setRunResult(`ไม่สำเร็จ: ${err}`);
+    } finally {
+      setResolving(null);
       load();
     }
   }
@@ -305,6 +340,48 @@ export default function AdminTrackingSyncPage() {
                           ใน Shopify: {r.existing_numbers.join(", ")}
                         </span>
                       ) : null}
+
+                      {/* A mismatch used to end here: the page named the
+                          problem and offered nothing to do about it, so
+                          settling one meant opening Shopify and keying the
+                          number in — the manual step this replaces. */}
+                      {r.action === "conflict" && !r.resolved_at && (
+                        <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          <button
+                            onClick={() => resolve(r, "overwritten")}
+                            disabled={resolving === r.id}
+                            className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                          >
+                            ใช้เลขใหม่ทับ
+                          </button>
+                          <button
+                            onClick={() => resolve(r, "ignored")}
+                            disabled={resolving === r.id}
+                            className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                          >
+                            เก็บเลขเดิมไว้
+                          </button>
+                        </span>
+                      )}
+                      {r.resolved_at && (
+                        <span className="mt-1 block text-[11px] font-medium text-slate-400">
+                          {r.resolution === "overwritten" ? "เขียนทับแล้ว" : "เก็บเลขเดิมไว้"} · {fmt(r.resolved_at)}
+                        </span>
+                      )}
+
+                      {/* "Not found" is usually a number keyed against the
+                          wrong order, so the useful next step is a search, not
+                          a second message saying it is still not found. */}
+                      {r.action === "no-order" && data.shopDomain && (
+                        <a
+                          href={`https://admin.shopify.com/store/${data.shopDomain}/orders?query=${encodeURIComponent(r.order_ref.replace(/^#/, ""))}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                        >
+                          ค้นหาใน Shopify <ExternalLink size={10} />
+                        </a>
+                      )}
                     </td>
                   </tr>
                 );

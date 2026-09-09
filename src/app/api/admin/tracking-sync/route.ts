@@ -20,6 +20,8 @@ export type TrackingSyncRow = {
   reason: string | null;
   existing_numbers: string[] | null;
   applied: boolean;
+  resolved_at: string | null;
+  resolution: string | null;
   error: string | null;
   /** Numbers invented while wiring the integration up, not real parcels. */
   is_test: boolean;
@@ -71,6 +73,8 @@ export async function GET(req: NextRequest) {
     mode: process.env.TRACKING_SYNC_MODE || "dry-run",
     configured: Boolean(process.env.TRACKING_WEBHOOK_SECRET),
     app: own?.app ?? null,
+    // For the "search in Shopify" link on rows whose order could not be found.
+    shopDomain: process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN?.replace(".myshopify.com", "") ?? null,
     canWrite: Boolean(own?.scopes.includes("write_fulfillments")),
     // Option B (fulfil automatically) additionally needs to read and write
     // fulfillment orders — a different scope from write_fulfillments, and the
