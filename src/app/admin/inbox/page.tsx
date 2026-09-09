@@ -46,10 +46,13 @@ const STATUS_DOT: Record<string, string> = {
 };
 const CHANNEL_ICON: Record<string, typeof Globe> = { web: Globe, line: MessageCircle, facebook: Facebook };
 
+// "ทั้งหมด" leads, and is where the page opens. Landing on "รอตอบ" meant
+// starting on a tab that is empty whenever the team is on top of things, which
+// reads as an empty inbox rather than a cleared one.
 const FILTERS = [
+  { key: "all", label: "ทั้งหมด" },
   { key: "waiting_human", label: "รอตอบ" },
   { key: "assigned", label: "รับแล้ว" },
-  { key: "all", label: "ทั้งหมด" },
   { key: "resolved", label: "ปิดแล้ว" },
 ];
 
@@ -204,7 +207,7 @@ function dayLabel(iso: string) {
 }
 
 export default function AdminInboxPage() {
-  const [filter, setFilter] = useState("waiting_human");
+  const [filter, setFilter] = useState("all");
   const [conversations, setConversations] = useState<InboxListItem[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [counts, setCounts] = useState<Record<string, number>>({});
