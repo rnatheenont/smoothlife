@@ -551,7 +551,7 @@ export default function AdminInboxPage() {
                   </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex items-end gap-2">
                   <input
                     ref={fileRef}
                     type="file"
@@ -572,7 +572,7 @@ export default function AdminInboxPage() {
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     title="แนบรูป"
-                    className="shrink-0 self-end rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-surface-soft"
+                    className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-surface-soft"
                   >
                     <ImagePlus size={15} />
                   </button>
@@ -589,18 +589,19 @@ export default function AdminInboxPage() {
                       }
                     }}
                     rows={2}
-                    placeholder="พิมพ์คำตอบ... (Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่)"
-                    className="flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs outline-none focus:border-brand-teal"
+                    placeholder="พิมพ์คำตอบ..."
+                    className="min-w-0 flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs outline-none focus:border-brand-teal"
                   />
                   <Button
                     size="none"
-                    className="px-3 shrink-0 self-end rounded-lg"
+                    className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-lg p-0"
                     onClick={send}
                     disabled={sending || (!reply.trim() && !attachment)}
                   >
                     {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                   </Button>
                 </div>
+                <p className="mt-1.5 text-[10px] text-slate-400">Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่</p>
               </div>
             </>
           )}
