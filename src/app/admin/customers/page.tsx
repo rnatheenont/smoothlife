@@ -164,7 +164,12 @@ export default function AdminCustomersPage() {
           <Card className="p-4">
             <h2 className="text-sm font-bold text-brand-ink mb-1">บัญชีในเว็บ ({accounts.length})</h2>
             <p className="text-[11px] text-slate-400 mb-3">เลือกบัญชีที่ลูกค้าใช้ล็อกอินอยู่</p>
-            {accounts.length === 0 && <p className="text-xs text-slate-400">ไม่พบบัญชีที่ตรงกับคำค้นนี้</p>}
+            {accounts.length === 0 && (
+              <p className="text-xs text-slate-400">
+                ไม่พบบัญชีที่ตรงกับคำค้นนี้ — ถ้าค้นด้วยอีเมลเดิมของลูกค้า บัญชีในเว็บมักใช้คนละอีเมล
+                ลองค้นด้วยเบอร์โทรหรือชื่อที่ลูกค้าใช้สมัครแทน
+              </p>
+            )}
             <div className="space-y-2">
               {accounts.map((a) => (
                 <button
@@ -228,7 +233,20 @@ export default function AdminCustomersPage() {
                       {c.email && <div>{c.email}</div>}
                       {c.phone && <div>{c.phone}</div>}
                       {c.address && <div className="truncate">{c.address}</div>}
-                      <div>ซื้อล่าสุด {fmtDate(c.lastOrderAt)} · สร้าง {fmtDate(c.createdAt)}</div>
+                      {/* Shopify only returns orders from the last 60 days
+                          without the read_all_orders scope, so a blank date on
+                          a record that clearly has orders means "older than
+                          that", not "never bought" — and reading it as the
+                          latter is how the wrong record gets picked. */}
+                      <div>
+                        ซื้อล่าสุด{" "}
+                        {c.lastOrderAt
+                          ? fmtDate(c.lastOrderAt)
+                          : Number(c.numberOfOrders) > 0
+                            ? "เกิน 60 วันที่แล้ว"
+                            : "—"}{" "}
+                        · สร้าง {fmtDate(c.createdAt)}
+                      </div>
                     </div>
                     <div className="mt-2 flex items-center gap-2">
                       {linkedHere ? (
