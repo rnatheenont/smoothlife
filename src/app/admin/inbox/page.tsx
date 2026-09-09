@@ -635,7 +635,11 @@ export default function AdminInboxPage() {
                           <span className="px-1 text-[10px] text-slate-400">
                             {senderLabel(m.sender_type)} · {timeLabel(m.created_at)}
                           </span>
-                          {isTranscriptDump(m.content) ? (
+                          {m.content === "— เรื่องใหม่จากลูกค้า —" ? (
+                            <span className="my-1 w-full text-center text-[10px] font-semibold text-amber-600">
+                              — เรื่องใหม่จากลูกค้า —
+                            </span>
+                          ) : isTranscriptDump(m.content) ? (
                             // Folded away rather than deleted. It is the chat
                             // that led here, worth keeping, but at full length
                             // it pushed the customer's actual request off the

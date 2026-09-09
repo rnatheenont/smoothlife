@@ -64,6 +64,18 @@ export async function POST(req: NextRequest) {
       subject: note ? note.slice(0, 120) : "ขอคุยกับทีมงาน (จากแชทน้อง Smoothie)",
     });
     if (conversation) {
+      // A boundary staff can see. One open thread per customer is the right
+      // shape — their chat window is a single stream, so splitting it would
+      // leave replies with nowhere obvious to land — but without a marker the
+      // second request reads as more of the first.
+      const secondRequest = conversation.subject && conversation.status !== "ai_handling";
+      if (secondRequest) {
+        await appendMessage({
+          conversationId: conversation.id,
+          senderType: "customer",
+          content: "— เรื่องใหม่จากลูกค้า —",
+        });
+      }
       if (note) {
         await appendMessage({
           conversationId: conversation.id,

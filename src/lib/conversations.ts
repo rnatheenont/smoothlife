@@ -48,6 +48,12 @@ export async function openConversation(opts: {
     // history and a tier beside it.
     const patch: Record<string, unknown> = { last_message_at: new Date().toISOString() };
     if (opts.userId && !existing.user_id) patch.user_id = opts.userId;
+    // The newest request wins the subject. One customer can raise a second
+    // matter before the first is closed — a refund, then a question about a
+    // different order — and the thread pins its subject at the top, so leaving
+    // the original there had staff reading an answer to a question the
+    // customer had moved on from.
+    if (opts.subject) patch.subject = opts.subject;
     if (opts.status) patch.status = opts.status;
     if (opts.urgency) patch.urgency = opts.urgency;
     const [updated] = await supabaseRest<ConversationRow[]>(`conversations?id=eq.${pgValue(existing.id)}`, {
