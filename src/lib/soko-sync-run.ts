@@ -53,7 +53,7 @@ export async function runSokoSync(): Promise<SyncRunResult> {
 
   let rows: Awaited<ReturnType<typeof fetchPackedOrders>>;
   try {
-    rows = await fetchPackedOrders(12, skipRefs, 40_000 - (Date.now() - started));
+    rows = await fetchPackedOrders(12, skipRefs, Math.max(5_000, 38_000 - (Date.now() - started)));
   } catch (err) {
     // A scraper's worst failure is the silent one: the login page changes, the
     // run returns nothing, and everyone assumes there was nothing to send.

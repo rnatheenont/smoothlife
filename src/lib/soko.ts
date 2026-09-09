@@ -50,7 +50,7 @@ async function login(): Promise<string> {
   const username = process.env.SOKO_USERNAME as string;
   const password = process.env.SOKO_PASSWORD as string;
 
-  const first = await fetch(`${BASE}?r=site/login`, { redirect: "manual" });
+  const first = await fetchSoko(`${BASE}?r=site/login`, { redirect: "manual" });
   let jar = jarFrom(first);
 
   const body = new URLSearchParams({
@@ -60,7 +60,7 @@ async function login(): Promise<string> {
     yt0: "Login",
   });
 
-  const res = await fetch(`${BASE}?r=site/login`, {
+  const res = await fetchSoko(`${BASE}?r=site/login`, {
     method: "POST",
     redirect: "manual",
     headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: jar },
@@ -99,6 +99,22 @@ const LIST_PAGES = 5;
 // at a time is enough to fit and stays polite: this runs five times a day.
 const CONCURRENCY = 4;
 
+// One soko request that never answers used to take the whole function with it:
+// the 60s Vercel allows would run out mid-request, the process was killed, and
+// the run produced neither a result nor a log row. A per-request ceiling turns
+// that into one skipped page instead of a dead run.
+const REQUEST_TIMEOUT_MS = 12_000;
+
+async function fetchSoko(url: string, init: RequestInit = {}): Promise<Response> {
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: abort.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function mapLimit<T, R>(items: T[], fn: (item: T) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(items.length);
   let next = 0;
@@ -131,7 +147,7 @@ export type SokoParcel = {
  * onto another brand's order.
  */
 async function trackingFromView(url: string, jar: string): Promise<SokoParcel | null> {
-  const res = await fetch(url, { headers: { Cookie: jar } });
+  const res = await fetchSoko(url, { headers: { Cookie: jar } });
   const html = await res.text();
   const text = html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<[^>]+>/g, "\n");
   if (!text.includes(STORE)) return null;
@@ -224,12 +240,22 @@ export async function fetchPackedOrders(
         "Merchantorders[search_txt]": STORE,
         Merchantorders_page: String(page),
       });
-      const listRes = await fetch(`${BASE}?${params}`, { headers: { Cookie: jar } });
-      return listRes.text();
+      // Checked here too, not only before the order pages: on a slow day the
+      // list alone can eat the budget, and a page fetched at second 59 is a
+      // page nobody gets to use.
+      if (Date.now() - startedAt > deadlineMs) return "";
+      try {
+        const listRes = await fetchSoko(`${BASE}?${params}`, { headers: { Cookie: jar } });
+        return await listRes.text();
+      } catch {
+        // A page that times out costs its ten rows, not the run.
+        return "";
+      }
     }
   );
 
   for (const list of pages) {
+    if (!list) continue;
     pagesScanned++;
     if (!firstPage) firstPage = list;
     if (/LoginForm\[password\]/.test(list)) break;
