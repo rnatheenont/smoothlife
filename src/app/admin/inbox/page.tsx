@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList, ImagePlus } from "lucide-react";
+import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList, ImagePlus, Languages } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 import { Button } from "@/components/ui";
 import { splitMarker } from "@/lib/chat-markers";
@@ -21,6 +21,7 @@ type Message = {
   /** Short-lived signed link — the bucket is private, so this expires. */
   attachmentUrl?: string | null;
   delivered_content?: string | null;
+  translation?: string | null;
 };
 type Canned = { id: string; title: string; content: string; category: string | null };
 type Customer = {
@@ -222,6 +223,7 @@ export default function AdminInboxPage() {
   const [attachment, setAttachment] = useState<ResizedImage | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
+  const [translating, setTranslating] = useState<string | null>(null);
   const [drafting, setDrafting] = useState(false);
   const [canned, setCanned] = useState<Canned[]>([]);
   const [showCanned, setShowCanned] = useState(false);
@@ -283,6 +285,27 @@ export default function AdminInboxPage() {
     setSelectedId(id);
     setReply("");
     loadThread(id);
+  }
+
+  async function translate(messageId: string) {
+    setTranslating(messageId);
+    try {
+      const res = await fetch(`/api/admin/inbox/${selectedId}/translate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messageId }),
+      });
+      const r = await res.json();
+      if (r.ok) {
+        setMessages((cur) => cur.map((m) => (m.id === messageId ? { ...m, translation: r.translation } : m)));
+      } else {
+        setError(r.error || "แปลไม่สำเร็จ");
+      }
+    } catch {
+      setError("แปลไม่สำเร็จ");
+    } finally {
+      setTranslating(null);
+    }
   }
 
   async function send() {
@@ -700,6 +723,28 @@ export default function AdminInboxPage() {
                             {renderMessage(splitMarker(m.content).text, productCards)}
                             {/* Staff should be able to see what went out in
                                 their name, not just what they typed. */}
+                            {/* On demand. Most threads are Thai and an agent
+                                who reads English does not need this, so
+                                translating every foreign message on open would
+                                spend a model call on work nobody asked for. */}
+                            {m.sender_type === "customer" &&
+                              !m.translation &&
+                              !/[\u0E00-\u0E7F]/.test(m.content) &&
+                              /\p{L}/u.test(m.content) && (
+                                <button
+                                  onClick={() => translate(m.id)}
+                                  disabled={translating === m.id}
+                                  className="mt-1.5 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 hover:bg-surface-soft disabled:opacity-50"
+                                >
+                                  {translating === m.id ? <Loader2 size={10} className="animate-spin" /> : <Languages size={10} />}
+                                  {translating === m.id ? "กำลังแปล..." : "แปลเป็นไทย"}
+                                </button>
+                              )}
+                            {m.translation && (
+                              <span className="mt-1.5 block border-t border-slate-200 pt-1.5 text-[11px] text-slate-500">
+                                <span className="font-semibold">แปล:</span> {m.translation}
+                              </span>
+                            )}
                             {m.delivered_content && (
                               <span className="mt-1.5 block border-t border-white/25 pt-1.5 text-[11px] opacity-90">
                                 <span className="font-semibold">ส่งให้ลูกค้าเป็น:</span> {m.delivered_content}

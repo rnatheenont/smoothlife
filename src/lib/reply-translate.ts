@@ -76,3 +76,63 @@ export async function translateForCustomer(opts: {
     return null;
   }
 }
+
+const TO_THAI_SYSTEM = `You translate customer messages into Thai so a support agent can read them.
+
+You are given messages, one per line, each prefixed with an index like "1|".
+Return one line per input, in the same order, in the form "1|<Thai translation>".
+
+Rules:
+- If a message is already Thai, return it unchanged.
+- Keep it literal and plain. This is for a support agent working out what the
+  customer wants, not customer-facing copy — do not soften, embellish or answer.
+- Copy verbatim: order numbers, tracking numbers, product codes, prices, URLs,
+  email addresses, phone numbers, names.
+- Return nothing but the numbered lines.`;
+
+/**
+ * Thai renderings of customer messages, keyed by the index passed in.
+ *
+ * Batched into one call: a thread can hold a dozen untranslated messages and a
+ * request each would make opening it slow enough to notice.
+ */
+export async function translateToThai(messages: { id: string; content: string }[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key || messages.length === 0) return out;
+
+  const numbered = messages.map((m, i) => `${i + 1}|${m.content.replace(/\n/g, " ")}`).join("\n");
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1500,
+        system: TO_THAI_SYSTEM,
+        messages: [{ role: "user", content: numbered }],
+      }),
+    });
+    if (!res.ok) {
+      console.error("[reply-translate] to-thai error", res.status);
+      return out;
+    }
+    const data = await res.json();
+    const text = (data?.content ?? [])
+      .filter((b: { type?: string }) => b?.type === "text")
+      .map((b: { text?: string }) => b.text ?? "")
+      .join("");
+    for (const line of text.split("\n")) {
+      const m = line.match(/^\s*(\d+)\|(.*)$/);
+      if (!m) continue;
+      const source = messages[Number(m[1]) - 1];
+      const thai = m[2].trim();
+      // A translation identical to the input means it was Thai already; storing
+      // that would just duplicate every line under itself in the thread.
+      if (source && thai && thai !== source.content.replace(/\n/g, " ").trim()) out.set(source.id, thai);
+    }
+  } catch (err) {
+    console.error("[reply-translate] to-thai failed", err);
+  }
+  return out;
+}

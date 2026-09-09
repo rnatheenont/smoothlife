@@ -28,9 +28,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const [[conversation], messages] = await Promise.all([
     supabaseRest<ConversationRow[]>(`conversations?id=eq.${pgValue(params.id)}&select=*&limit=1`),
     supabaseRest<
-      { id: string; sender_type: string; content: string; is_draft: boolean; created_at: string; attachment_path: string | null; delivered_content: string | null }[]
+      { id: string; sender_type: string; content: string; is_draft: boolean; created_at: string; attachment_path: string | null; delivered_content: string | null; translation: string | null }[]
     >(
-      `conversation_messages?conversation_id=eq.${pgValue(params.id)}&select=id,sender_type,content,is_draft,created_at,attachment_path,delivered_content&order=created_at.asc&limit=200`
+      `conversation_messages?conversation_id=eq.${pgValue(params.id)}&select=id,sender_type,content,is_draft,created_at,attachment_path,delivered_content,translation&order=created_at.asc&limit=200`
     ),
   ]);
   if (!conversation) return NextResponse.json({ ok: false, error: "ไม่พบบทสนทนานี้" }, { status: 404 });
