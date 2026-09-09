@@ -26,6 +26,8 @@ type Msg = {
   image?: string;
   /** A person answered this one, not Smoothie. See from_staff in the API. */
   fromStaff?: boolean;
+  /** Server timestamp, present on anything replayed from history. */
+  createdAt?: string;
 };
 
 // Rotates through the launcher badge so a first-time visitor sees both of
@@ -199,13 +201,16 @@ function renderTextBlock(text: string, keyPrefix: string): ReactNode[] {
 // learned to strip [[ASK: ...]] still carry it — so clean the marker off for
 // display, and hand back the last reply's options so reopening the panel
 // restores the tappable answers instead of leaving dead bracket text.
-function hydrateHistory(raw: (Msg & { from_staff?: boolean; attachmentUrl?: string | null })[]): { messages: Msg[]; ask: string[] } {
+function hydrateHistory(
+  raw: (Msg & { from_staff?: boolean; created_at?: string; attachmentUrl?: string | null })[]
+): { messages: Msg[]; ask: string[] } {
   let ask: string[] = [];
   const messages = raw.map((m, i) => {
     // The API sends the column name; the component uses its own casing.
     const withSender: Msg = {
       ...m,
       fromStaff: m.fromStaff ?? m.from_staff ?? false,
+      createdAt: m.createdAt ?? m.created_at,
       // A photo staff attached. The customer's own photos are kept in the
       // browser (see chat-image-store) and attached separately below.
       image: m.image ?? m.attachmentUrl ?? undefined,
@@ -520,6 +525,17 @@ export default function QuickChat() {
   }, [open]);
 
   const [resolvingCase, setResolvingCase] = useState(false);
+
+  // Offered when the conversation has gone quiet after a staff reply — not the
+  // instant one lands. Staff had just asked for an order number and the panel
+  // was already offering "this is sorted" underneath it, which is a strange
+  // thing to be asked while someone is waiting for you to answer them.
+  const lastMessage = messages[messages.length - 1];
+  const caseLooksSettled =
+    humanHandling &&
+    Boolean(lastMessage?.fromStaff) &&
+    Boolean(lastMessage?.createdAt) &&
+    Date.now() - new Date(lastMessage!.createdAt!).getTime() > 10 * 60 * 1000;
 
   async function resolveCase() {
     setResolvingCase(true);
@@ -1210,9 +1226,7 @@ export default function QuickChat() {
             )}
 
             {!loading &&
-              (askOptions.length > 0 ||
-                helpOpen ||
-                (humanHandling && messages[messages.length - 1]?.fromStaff)) && (
+              (askOptions.length > 0 || helpOpen || caseLooksSettled) && (
               <div className="flex flex-wrap items-center gap-1.5 pl-11">
                 {askOptions.map((s) => (
                   <button
@@ -1230,7 +1244,7 @@ export default function QuickChat() {
                     means "that solved it" or "they gave up" and those look
                     identical from the inbox — the customer is the only one who
                     knows which, and this is one tap. */}
-                {humanHandling && messages[messages.length - 1]?.fromStaff && !helpOpen && (
+                {caseLooksSettled && !helpOpen && (
                   <button
                     onClick={resolveCase}
                     disabled={resolvingCase}
