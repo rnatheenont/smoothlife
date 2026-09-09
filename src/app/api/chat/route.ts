@@ -13,6 +13,7 @@ import {
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { contentForTranscript } from "@/lib/chat-markers";
 import { helpKnowledgeForPrompt } from "@/data/help";
+import { signedAttachmentUrl } from "@/lib/chat-attachments";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -403,8 +404,10 @@ export async function GET(req: NextRequest) {
       // Newest 40, not oldest. This asked for the first 40 ever written, so
       // once a thread passed forty messages the panel was serving a
       // conversation from days ago and nothing new could ever appear in it.
-      supabaseRest<{ role: "user" | "assistant"; content: string; from_staff: boolean; created_at: string }[]>(
-        `chat_messages?session_key=eq.${encodeURIComponent(sessionKey)}&select=role,content,from_staff,created_at&order=created_at.desc&limit=40`
+      supabaseRest<
+        { role: "user" | "assistant"; content: string; from_staff: boolean; created_at: string; attachment_path: string | null }[]
+      >(
+        `chat_messages?session_key=eq.${encodeURIComponent(sessionKey)}&select=role,content,from_staff,created_at,attachment_path&order=created_at.desc&limit=40`
       ),
       // Whether a person has taken this conversation over. The customer's
       // panel needs it for two things: to stop pretending the AI is answering,
@@ -418,7 +421,16 @@ export async function GET(req: NextRequest) {
     // Back into reading order, and with the newest timestamp alongside: the
     // panel decides whether to adopt this copy by whether time has moved, not
     // by whether the list got longer — which stopped being true at the cap.
-    const messages = [...rows].reverse();
+    // Signed on every read: the bucket is private and a link goes stale in
+    // minutes, so a photo staff attached stays viewable without ever becoming
+    // a permanent public address for it.
+    const ordered = [...rows].reverse();
+    const messages = await Promise.all(
+      ordered.map(async (m) => ({
+        ...m,
+        attachmentUrl: m.attachment_path ? await signedAttachmentUrl(m.attachment_path) : null,
+      }))
+    );
     return Response.json({
       messages,
       latestAt: messages[messages.length - 1]?.created_at ?? null,

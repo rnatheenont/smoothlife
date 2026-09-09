@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList } from "lucide-react";
+import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList, ImagePlus } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 import { Button } from "@/components/ui";
 import { splitMarker } from "@/lib/chat-markers";
 import { isTranscriptDump } from "@/lib/inbox-transcript";
+import { resizeForUpload, type ResizedImage } from "@/lib/image-utils";
 
 // Unified inbox (plan §7.2): conversation list, thread, customer panel.
 // Only the web channel exists so far — LINE and Facebook adapters write into
@@ -88,6 +89,8 @@ export default function AdminInboxPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loadingThread, setLoadingThread] = useState(false);
   const [reply, setReply] = useState("");
+  const [attachment, setAttachment] = useState<ResizedImage | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
   const [drafting, setDrafting] = useState(false);
   const [canned, setCanned] = useState<Canned[]>([]);
@@ -151,22 +154,46 @@ export default function AdminInboxPage() {
   }
 
   async function send() {
-    if (!selectedId || !reply.trim()) return;
+    if (!selectedId || (!reply.trim() && !attachment)) return;
+    const text = reply.trim();
+    const image = attachment;
     setSending(true);
     setError("");
+    // Shown before the round trip. The reload afterwards used to blank the
+    // thread to "กำลังโหลด..." and scroll it back, so every send flashed the
+    // whole conversation away and staff lost their place.
+    setMessages((m) => [
+      ...m,
+      {
+        id: `pending-${Date.now()}`,
+        sender_type: "staff",
+        content: text,
+        is_draft: false,
+        created_at: new Date().toISOString(),
+        attachmentUrl: image?.dataUrl ?? null,
+      },
+    ]);
+    setReply("");
+    setAttachment(null);
     try {
       const res = await fetch(`/api/admin/inbox/${selectedId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: reply.trim() }),
+        body: JSON.stringify({
+          content: text,
+          image: image ? { base64: image.base64, mediaType: image.mediaType } : undefined,
+        }),
       });
       const data = await res.json();
       if (!data.ok) {
         setError(data.error || "ส่งไม่สำเร็จ");
+        setReply(text);
+        setAttachment(image);
         return;
       }
-      setReply("");
-      await loadThread(selectedId);
+      // Silent: reconciles the optimistic message with the stored one without
+      // emptying the panel on the way.
+      await loadThread(selectedId, true);
       await loadList();
     } catch {
       setError("ส่งไม่สำเร็จ กรุณาลองใหม่");
@@ -510,15 +537,67 @@ export default function AdminInboxPage() {
                   </div>
                 )}
 
+                {attachment && (
+                  <div className="mb-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-surface-soft p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={attachment.dataUrl} alt="" className="h-12 w-12 rounded object-cover" />
+                    <span className="flex-1 text-[11px] text-slate-500">แนบรูปนี้ไปกับข้อความ</span>
+                    <button
+                      onClick={() => setAttachment(null)}
+                      className="rounded-full px-2 py-1 text-[11px] font-semibold text-slate-500 hover:bg-white"
+                    >
+                      เอาออก
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+                      try {
+                        setAttachment(await resizeForUpload(file));
+                      } catch {
+                        setError("อ่านไฟล์รูปไม่สำเร็จ");
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    title="แนบรูป"
+                    className="shrink-0 self-end rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-surface-soft"
+                  >
+                    <ImagePlus size={15} />
+                  </button>
                   <textarea
                     value={reply}
                     onChange={(e) => setReply(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Enter sends, Shift+Enter starts a line. Staff answer
+                      // dozens of these; reaching for the mouse every time is
+                      // the slow part.
+                      if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                        e.preventDefault();
+                        void send();
+                      }
+                    }}
                     rows={2}
-                    placeholder="พิมพ์คำตอบ..."
+                    placeholder="พิมพ์คำตอบ... (Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่)"
                     className="flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs outline-none focus:border-brand-teal"
                   />
-                  <Button size="none" className="px-3 shrink-0 rounded-lg" onClick={send} disabled={sending || !reply.trim()}>
+                  <Button
+                    size="none"
+                    className="px-3 shrink-0 self-end rounded-lg"
+                    onClick={send}
+                    disabled={sending || (!reply.trim() && !attachment)}
+                  >
                     {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                   </Button>
                 </div>

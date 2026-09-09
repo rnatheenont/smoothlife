@@ -168,11 +168,17 @@ function renderTextBlock(text: string, keyPrefix: string): ReactNode[] {
 // learned to strip [[ASK: ...]] still carry it — so clean the marker off for
 // display, and hand back the last reply's options so reopening the panel
 // restores the tappable answers instead of leaving dead bracket text.
-function hydrateHistory(raw: (Msg & { from_staff?: boolean })[]): { messages: Msg[]; ask: string[] } {
+function hydrateHistory(raw: (Msg & { from_staff?: boolean; attachmentUrl?: string | null })[]): { messages: Msg[]; ask: string[] } {
   let ask: string[] = [];
   const messages = raw.map((m, i) => {
     // The API sends the column name; the component uses its own casing.
-    const withSender: Msg = { ...m, fromStaff: m.fromStaff ?? m.from_staff ?? false };
+    const withSender: Msg = {
+      ...m,
+      fromStaff: m.fromStaff ?? m.from_staff ?? false,
+      // A photo staff attached. The customer's own photos are kept in the
+      // browser (see chat-image-store) and attached separately below.
+      image: m.image ?? m.attachmentUrl ?? undefined,
+    };
     if (m.role !== "assistant") return withSender;
     const { text, kind, options } = splitMarker(m.content);
     if (kind === "ask" && i === raw.length - 1) ask = options;

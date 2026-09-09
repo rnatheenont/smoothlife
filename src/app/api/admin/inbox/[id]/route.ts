@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { appendMessage, ConversationRow } from "@/lib/conversations";
-import { signedAttachmentUrl, deleteAttachmentsForConversation } from "@/lib/chat-attachments";
+import {
+  signedAttachmentUrl,
+  deleteAttachmentsForConversation,
+  uploadAttachment,
+  MAX_ATTACHMENT_BYTES,
+} from "@/lib/chat-attachments";
 
 // One conversation: the whole thread plus the customer context staff would
 // otherwise go and look up in three other screens.
@@ -118,7 +123,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const body = await req.json().catch(() => ({}));
   const content = typeof body.content === "string" ? body.content.trim() : "";
-  if (!content) return NextResponse.json({ ok: false, error: "กรุณาพิมพ์ข้อความ" }, { status: 400 });
+  const imageBase64 = typeof body.image?.base64 === "string" ? body.image.base64 : "";
+  const imageType = body.image?.mediaType === "image/png" ? "image/png" : "image/jpeg";
+  // A photo on its own is a perfectly good reply — "does it look like this?"
+  if (!content && !imageBase64) {
+    return NextResponse.json({ ok: false, error: "กรุณาพิมพ์ข้อความหรือแนบรูป" }, { status: 400 });
+  }
+  if (imageBase64.length > MAX_ATTACHMENT_BYTES * 1.4) {
+    return NextResponse.json({ ok: false, error: "รูปใหญ่เกินไป (จำกัด 5 MB)" }, { status: 413 });
+  }
 
   const [conversation] = await supabaseRest<ConversationRow[]>(
     `conversations?id=eq.${pgValue(params.id)}&select=*&limit=1`
@@ -135,7 +148,28 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     );
   }
 
-  await appendMessage({ conversationId: conversation.id, senderType: "staff", content });
+  // Uploaded before either row is written, so a storage failure never leaves a
+  // message claiming a photo that is not there.
+  let attachmentPath: string | null = null;
+  if (imageBase64) {
+    try {
+      attachmentPath = await uploadAttachment({
+        conversationId: conversation.id,
+        bytes: Buffer.from(imageBase64, "base64"),
+        contentType: imageType,
+      });
+    } catch (err) {
+      console.error("[admin/inbox] attachment upload failed", err);
+      return NextResponse.json({ ok: false, error: "อัปโหลดรูปไม่สำเร็จ" }, { status: 502 });
+    }
+  }
+
+  await appendMessage({
+    conversationId: conversation.id,
+    senderType: "staff",
+    content,
+    attachmentPath,
+  });
 
   // Delivery for web: the customer's chat widget reads its history out of
   // chat_messages keyed by session_key, which for a signed-in customer is
@@ -153,6 +187,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       // conversation history — so who sent it rides alongside instead.
       from_staff: true,
       content,
+      attachment_path: attachmentPath,
     }),
   });
 
