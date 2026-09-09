@@ -13,6 +13,7 @@ import {
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { contentForTranscript } from "@/lib/chat-markers";
 import { helpKnowledgeForPrompt } from "@/data/help";
+import { deliveryStatusForPrompt } from "@/lib/delivery-status";
 import { signedAttachmentUrl } from "@/lib/chat-attachments";
 
 export const runtime = "nodejs";
@@ -170,6 +171,7 @@ function systemPrompt(
   viewingProduct: ViewingProduct | undefined,
   reviewsQa: string | null,
   orderHistory: string | null,
+  deliveryStatus: string | null,
   hasShopifyLink: boolean,
   caseWaiting: boolean,
   signedIn: boolean
@@ -333,6 +335,52 @@ CUSTOMER'S ORDER HISTORY: linked to a Shopify account but no recent orders found
 CUSTOMER'S ORDER HISTORY: not available — their account isn't linked to a Shopify customer record yet (or they aren't logged in). If asked about an order, say you can't look it up here and suggest checking their Shopify confirmation email, or logging in first if they haven't.
 `
 }
+${
+  deliveryStatus
+    ? `
+DELIVERY STATUS — WORKED OUT FOR YOU (real Shopify data, already checked against
+the shop's normal timings):
+${deliveryStatus}
+
+How to use it when they ask "ของถึงไหนแล้ว" / "where is my order" / "ยังไม่ได้ของ":
+- Answer with the lines above. Say what actually happened and when, give the
+  tracking number and the tracking link if there is one, and say what happens
+  next. Never invent a status, a date, a courier or a location the lines above
+  do not contain, and never say "delivered" unless a line says so.
+- If it is still inside normal timing, say so plainly and reassuringly, with the
+  date it was shipped or ordered and roughly when to expect it. That is a
+  complete answer — handle it yourself, do not pass it to the team.
+- If a line says a person must check it, do not tell them to keep waiting.
+  Apologise briefly, say the team will chase the parcel, and hand over.
+
+SENSITIVE DELIVERY CASES — always hand to a person, never settle these yourself,
+even if you think you know the answer:
+- Tracking says delivered but they did not receive it, or the parcel went to
+  the wrong person/address.
+- Parcel damaged, broken, leaking, opened, or items missing / wrong item sent.
+- Parcel returned to sender, held by the courier, or stuck with no movement
+  past the normal window.
+- They want the address changed, the order cancelled, a refund, a replacement,
+  or compensation.
+- They mention a reaction to a product, a health worry, a legal threat, a
+  complaint about staff, or they are clearly upset.
+- Anything about money: double charge, payment taken with no order, tax invoice.
+`
+    : ""
+}
+CLOSING A SIMPLE CASE YOURSELF — for questions you fully answered and where
+nothing above is sensitive (a delivery still on time, a tracking number, a
+policy, how to use a product), you may offer to close it instead of leaving it
+open for the team. Put this on its own final line:
+[[CLOSE: สั้นๆ ว่าเรื่องอะไรที่ตอบจบแล้ว]]
+The customer then gets two buttons: confirm it is sorted, or ask for a person.
+Rules:
+- Only after you have actually answered — never as a way to end a conversation
+  you could not help with.
+- Never together with HANDOFF, and never on any sensitive case listed above.
+- Not while the team is already handling this thread.
+- At most once per topic; if they come back with the same problem, hand over.
+
 PHOTOS ATTACHED IN CHAT (the user has already given consent for photo analysis before you see it) — exactly two kinds, handle whichever it is:
 1. PRODUCT photo (packaging, label, bottle, tube): identify what you can read/see and try to match it against the catalogue above by name or brand. If you find a confident match, use its [[slug]] marker as usual. If it looks like a different brand we don't carry, say so honestly and suggest the closest catalogue product instead — never claim a low-confidence guess is a match.
 2. SKIN/FACE photo — either a specific problem spot (rash, bump, breakout patch, redness, irritation) or a fuller face/selfie: give a short, warm, NON-diagnostic cosmetic observation of what's visible (plain description only, e.g. "ดูเหมือนมีผื่นแดงเล็กน้อยบริเวณนี้ค่ะ" or "โดยรวมผิวดูสดใสดีค่ะ มีจุดด่างดำเล็กน้อยแถวโหนกแก้ม") and suggest 1-2 relevant catalogue products with their [[slug]] markers so they get an actual recommendation, not just a comment. Always add that this is not a medical diagnosis, and if it looks painful, spreading, infected, or has lasted a while, recommend seeing a doctor or pharmacist instead. Never name a disease or clinical condition, never promise it will clear up. You may also mention that the Skin Coach tool (/skin-coach) can give a fuller multi-angle scored breakdown if they want to go deeper — but always give your own take here first, don't just redirect.`;
@@ -570,6 +618,7 @@ export async function POST(req: NextRequest) {
   // customer record. Best-effort: any failure just falls back to "not
   // available" rather than breaking the reply.
   let orderHistory: string | null = null;
+  let deliveryStatus: string | null = null;
   let hasShopifyLink = false;
   if (uid && supabaseConfigured() && shopifyAdminConfigured()) {
     try {
@@ -580,6 +629,10 @@ export async function POST(req: NextRequest) {
         hasShopifyLink = true;
         const orders = await getCustomerOrders(row.shopify_customer_id);
         orderHistory = orderHistorySummary(orders);
+        // Dates and thresholds worked out in code — see delivery-status.ts.
+        // The model is given conclusions to repeat, not raw timestamps to
+        // reason about, because "9 days ago" is not a judgement call.
+        deliveryStatus = deliveryStatusForPrompt(orders);
       }
     } catch (err) {
       console.error("[chat] order history lookup failed", err);
@@ -639,6 +692,7 @@ export async function POST(req: NextRequest) {
     viewingProduct,
     reviewsQa,
     orderHistory,
+    deliveryStatus,
     hasShopifyLink,
     caseWaiting,
     Boolean(uid)

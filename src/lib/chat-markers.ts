@@ -9,23 +9,32 @@
 // moment the panel reloaded its history — and with no buttons, since the
 // options were sitting inside that text instead of driving the UI.
 
-export const MARKER_OPENERS = ["[[SUGGEST:", "[[ASK:", "[[HANDOFF:"];
+export const MARKER_OPENERS = ["[[SUGGEST:", "[[ASK:", "[[HANDOFF:", "[[CLOSE:"];
 
-/** Where the trailing marker starts, including the newline before it, or -1. */
+/**
+ * Where the trailing markers start, including the newline before them, or -1.
+ *
+ * The EARLIEST opener in the text, not the first one in the list above. Sorting
+ * by list order cut a reply that carried two markers at the second one, leaving
+ * the first sitting in the customer's message as literal "[[CLOSE: ...]]" —
+ * everything from the first marker on is plumbing, whichever kind it is.
+ */
 export function markerIndex(text: string): number {
+  let best = -1;
   for (const opener of MARKER_OPENERS) {
     const idx = text.indexOf(opener);
-    if (idx !== -1) return text[idx - 1] === "\n" ? idx - 1 : idx;
+    if (idx !== -1 && (best === -1 || idx < best)) best = idx;
   }
-  return -1;
+  if (best === -1) return -1;
+  return text[best - 1] === "\n" ? best - 1 : best;
 }
 
 export type SplitMessage = {
   /** The reply as the customer should see it. */
   text: string;
-  kind: "ask" | "suggest" | "handoff" | null;
+  kind: "ask" | "suggest" | "handoff" | "close" | null;
   options: string[];
-  /** For "handoff": why Smoothie is passing this to a person, in her words. */
+  /** For "handoff" and "close": why, in her words. */
   reason: string;
 };
 
@@ -38,11 +47,12 @@ export function splitMarker(content: string): SplitMessage {
   // same turn, and reading from the first opener to the last "]]" made one
   // giant marker whose final "option" was a chip containing the literal text
   // "]] [[HANDOFF: ลูกค้าถามว่า...". The customer was offered it as an answer.
-  const found: { kind: "ask" | "suggest" | "handoff"; inner: string }[] = [];
-  for (const m of content.matchAll(/\[\[(SUGGEST|ASK|HANDOFF):([\s\S]*?)\]\]/gi)) {
+  const found: { kind: "ask" | "suggest" | "handoff" | "close"; inner: string }[] = [];
+  for (const m of content.matchAll(/\[\[(SUGGEST|ASK|HANDOFF|CLOSE):([\s\S]*?)\]\]/gi)) {
     const name = m[1].toUpperCase();
     found.push({
-      kind: name === "ASK" ? "ask" : name === "HANDOFF" ? "handoff" : "suggest",
+      kind:
+        name === "ASK" ? "ask" : name === "HANDOFF" ? "handoff" : name === "CLOSE" ? "close" : "suggest",
       inner: m[2].trim(),
     });
   }
@@ -59,14 +69,14 @@ export function splitMarker(content: string): SplitMessage {
     text,
     kind: chosen.kind,
     options:
-      chosen.kind === "handoff"
+      chosen.kind === "handoff" || chosen.kind === "close"
         ? []
         : chosen.inner
             .split("|")
             .map((s) => s.trim())
             .filter(Boolean)
             .slice(0, 4),
-    reason: chosen.kind === "handoff" ? chosen.inner : "",
+    reason: chosen.kind === "handoff" || chosen.kind === "close" ? chosen.inner : "",
   };
 }
 
@@ -74,7 +84,9 @@ export function splitMarker(content: string): SplitMessage {
  * What to keep in the stored transcript.
  *
  * ASK stays — it is an unanswered question and reopening the panel has to put
- * its buttons back. SUGGEST and HANDOFF are spent the moment the turn ends.
+ * its buttons back. SUGGEST, HANDOFF and CLOSE are spent the moment the turn
+ * ends: a closing offer the customer never answered should not come back as
+ * two buttons under a week-old message.
  */
 export function contentForTranscript(content: string): string {
   const { text, kind } = splitMarker(content);

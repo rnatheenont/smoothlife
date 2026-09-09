@@ -526,6 +526,16 @@ export default function QuickChat() {
 
   const [resolvingCase, setResolvingCase] = useState(false);
 
+  /**
+   * Smoothie answered something simple in full and offered to close it.
+   *
+   * Left as an offer rather than done silently: she is right often enough to
+   * ask, and wrong often enough that closing without the customer saying so
+   * would file "still waiting for my parcel" as solved. Whichever button they
+   * press is a real answer — the other path hands it straight to a person.
+   */
+  const [closeOffer, setCloseOffer] = useState(false);
+
   // Offered when the conversation has gone quiet after a staff reply — not the
   // instant one lands. Staff had just asked for an order number and the panel
   // was already offering "this is sorted" underneath it, which is a strange
@@ -740,6 +750,8 @@ export default function QuickChat() {
   async function send(text: string, image?: ResizedImage | null) {
     const clean = text.trim();
     if ((!clean && !image) || loading) return;
+    // The offer belongs to the turn that made it; a new question replaces it.
+    setCloseOffer(false);
 
     // A photo sent while staff are handling the case goes to them, not to the
     // model — uploaded so they can actually see it, which is the whole reason
@@ -894,6 +906,9 @@ export default function QuickChat() {
         handedOff.current = true;
         void escalate(reason || t("ลูกค้าต้องการคุยกับแอดมิน", "Customer asked for a person"));
       }
+      // Never offered while a person is on the thread: closing is theirs to
+      // judge then, and two sources of "this is finished" is one too many.
+      setCloseOffer(kind === "close" && !humanHandling && !caseQueued);
       if (isAsk) {
         // The AI's actual pending question — always show it, whichever turn.
         setAskOptions(parsed);
@@ -1226,7 +1241,7 @@ export default function QuickChat() {
             )}
 
             {!loading &&
-              (askOptions.length > 0 || helpOpen || caseLooksSettled) && (
+              (askOptions.length > 0 || helpOpen || caseLooksSettled || closeOffer) && (
               <div className="flex flex-wrap items-center gap-1.5 pl-11">
                 {askOptions.map((s) => (
                   <button
@@ -1253,6 +1268,35 @@ export default function QuickChat() {
                     <Check size={12} />
                     {t("เรื่องนี้เรียบร้อยแล้ว", "This is sorted")}
                   </button>
+                )}
+                {/* Smoothie thinks she finished this one. Two ways out, both
+                    one tap: agree, or say it is not finished — the second is
+                    what stops a wrong guess from burying a real problem. */}
+                {closeOffer && !helpOpen && !caseLooksSettled && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setCloseOffer(false);
+                        void resolveCase();
+                      }}
+                      disabled={resolvingCase}
+                      className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-[12px] font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                    >
+                      <Check size={12} />
+                      {t("เรียบร้อยแล้ว ขอบคุณ", "All sorted, thanks")}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCloseOffer(false);
+                        setAskOptions([]);
+                        setNoteOpen(true);
+                      }}
+                      className="flex items-center gap-1 rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-[12px] font-semibold text-brand-800 hover:bg-brand-50"
+                    >
+                      <Headset size={12} />
+                      {t("ยังไม่จบ ขอคุยกับแอดมิน", "Not yet — talk to a person")}
+                    </button>
+                  </>
                 )}
                 {helpOpen && (
                   <button
