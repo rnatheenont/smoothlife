@@ -235,55 +235,53 @@ export let lastDiagnostics: SokoDiagnostics | null = null;
  * long each takes, which is the difference between "their search is slow" and
  * "they are refusing us".
  */
-export async function probeOrderList(timeoutMs = 25_000) {
+export async function probeOrderList(pick: string[] = ["none", "mid", "txt"], timeoutMs = 25_000) {
   if (!sokoConfigured()) throw new SokoError("ยังไม่ได้ตั้งค่า SOKO_USERNAME / SOKO_PASSWORD");
   const loginAt = Date.now();
   const jar = await login();
   const loginMs = Date.now() - loginAt;
 
-  const variants: { name: string; params: Record<string, string> }[] = [
-    { name: "ไม่มีเงื่อนไข", params: { r: "order/index" } },
-    { name: "m_id เท่านั้น", params: { r: "order/index", "Merchantorders[m_id]": "2" } },
-    { name: "ค้นชื่อร้าน", params: { r: "order/index", "Merchantorders[m_id]": "2", "Merchantorders[search_txt]": STORE } },
-    {
-      name: "ค้นชื่อร้าน + หน้า 1",
-      params: {
-        r: "order/index",
-        "Merchantorders[m_id]": "2",
-        "Merchantorders[search_txt]": STORE,
-        Merchantorders_page: "1",
-      },
-    },
-  ];
+  const catalogue: Record<string, Record<string, string>> = {
+    none: { r: "order/index" },
+    nonep2: { r: "order/index", Merchantorders_page: "2" },
+    mid: { r: "order/index", "Merchantorders[m_id]": "2" },
+    txt: { r: "order/index", "Merchantorders[search_txt]": STORE },
+    txtp2: { r: "order/index", "Merchantorders[search_txt]": STORE, Merchantorders_page: "2" },
+    midtxt: { r: "order/index", "Merchantorders[m_id]": "2", "Merchantorders[search_txt]": STORE },
+  };
 
   // Sequential, because parallel is exactly what made the timings lie: Yii
   // locks the session for the length of a request, so four at once queue and
   // the last one's "25 seconds" is mostly time spent waiting for the first.
   const results = [];
-  for (const v of variants) {
-    results.push(
-      await (async () => {
-      const at = Date.now();
-      try {
-        const res = await fetchSoko(`${BASE}?${new URLSearchParams(v.params)}`, { headers: { Cookie: jar } }, timeoutMs);
-        const html = await res.text();
-        return {
-          name: v.name,
-          ms: Date.now() - at,
-          status: res.status,
-          bytes: html.length,
-          storeRows: html.split(/<tr[\s>]/i).filter((r) => r.includes(STORE)).length,
-          loginForm: /LoginForm\[password\]/.test(html),
-        };
-      } catch (err) {
-        return {
-          name: v.name,
-          ms: Date.now() - at,
-          error: (err as { name?: string })?.name === "AbortError" ? `timeout ${timeoutMs / 1000}s` : String(err).slice(0, 120),
-        };
-      }
-      })()
-    );
+  for (const name of pick) {
+    const params = catalogue[name];
+    if (!params) {
+      results.push({ name, error: "ไม่รู้จักแบบนี้" });
+      continue;
+    }
+    const at = Date.now();
+    try {
+      const res = await fetchSoko(`${BASE}?${new URLSearchParams(params)}`, { headers: { Cookie: jar } }, timeoutMs);
+      const html = await res.text();
+      results.push({
+        name,
+        ms: Date.now() - at,
+        status: res.status,
+        bytes: html.length,
+        rows: html.split(/<tr[\s>]/i).length - 1,
+        storeRows: html.split(/<tr[\s>]/i).filter((r) => r.includes(STORE)).length,
+        viewLinks: (html.match(/r=order(?:%2F|\/)view/gi) || []).length,
+        orderRefs: (html.match(/#\d{3,}[A-Za-z_]*/g) || []).slice(0, 12),
+        loginForm: /LoginForm\[password\]/.test(html),
+      });
+    } catch (err) {
+      results.push({
+        name,
+        ms: Date.now() - at,
+        error: (err as { name?: string })?.name === "AbortError" ? `timeout ${timeoutMs / 1000}s` : String(err).slice(0, 120),
+      });
+    }
   }
 
   return { loginMs, timeoutMs, results };
