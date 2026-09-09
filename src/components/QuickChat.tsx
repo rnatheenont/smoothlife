@@ -54,6 +54,37 @@ const MARKER = /\[\[([a-z0-9-]+)\]\]|\[([a-z0-9]+(?:-[a-z0-9]+)+)\]|\/product\/(
 // bubble is plain whitespace-pre-wrap text, not a markdown renderer.
 const BOLD = /\*\*(.+?)\*\*/g;
 
+// Staff paste links — a Kerry depot on Google Maps, a tracking page — and the
+// bubble is plain text, so they arrived as something to copy by hand off a
+// phone screen. Trailing punctuation is left out of the link: a URL at the end
+// of a Thai sentence usually has a full stop or a bracket after it.
+const URL_RE = /https?:\/\/[^\s<]+[^\s<.,:;"')\]}]/g;
+
+function renderLinks(text: string, keyPrefix: string): ReactNode[] {
+  const parts: ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let k = 0;
+  URL_RE.lastIndex = 0;
+  while ((m = URL_RE.exec(text))) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    parts.push(
+      <a
+        key={`${keyPrefix}u${k++}`}
+        href={m[0]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="break-all underline underline-offset-2 hover:opacity-80"
+      >
+        {m[0]}
+      </a>
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
 function renderInline(text: string, keyPrefix: string): ReactNode[] {
   const parts: ReactNode[] = [];
   let last = 0;
@@ -61,11 +92,11 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
   BOLD.lastIndex = 0;
   let k = 0;
   while ((bm = BOLD.exec(text))) {
-    if (bm.index > last) parts.push(text.slice(last, bm.index));
+    if (bm.index > last) parts.push(...renderLinks(text.slice(last, bm.index), `${keyPrefix}${k}`));
     parts.push(<strong key={`${keyPrefix}b${k++}`}>{bm[1]}</strong>);
     last = bm.index + bm[0].length;
   }
-  if (last < text.length) parts.push(text.slice(last));
+  if (last < text.length) parts.push(...renderLinks(text.slice(last), `${keyPrefix}t`));
   return parts;
 }
 

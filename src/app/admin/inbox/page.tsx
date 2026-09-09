@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList, ImagePlus } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 import { Button } from "@/components/ui";
@@ -56,6 +56,35 @@ const FILTERS = [
 // Who said it and when. The thread showed neither: staff and AI replies were
 // told apart only by bubble colour, and nothing on screen said whether a
 // message arrived a minute or a day ago.
+// Links go both ways: staff paste a depot map, customers paste a tracking
+// page or a Shopee order. Same treatment on both sides of the thread.
+const URL_RE = /https?:\/\/[^\s<]+[^\s<.,:;"')\]}]/g;
+
+function withLinks(text: string) {
+  const parts: ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let k = 0;
+  URL_RE.lastIndex = 0;
+  while ((m = URL_RE.exec(text))) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    parts.push(
+      <a
+        key={k++}
+        href={m[0]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="break-all underline underline-offset-2"
+      >
+        {m[0]}
+      </a>
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
 function senderLabel(sender: string) {
   if (sender === "customer") return "ลูกค้า";
   if (sender === "staff") return "ทีมงาน";
@@ -476,7 +505,7 @@ export default function AdminInboxPage() {
                                 [[ASK: ...]] marker in storage — the customer's
                                 panel needs it to rebuild the answer buttons.
                                 Staff should just see the question. */}
-                            {splitMarker(m.content).text}
+                            {withLinks(splitMarker(m.content).text)}
                           </div>
                           )}
                         </div>
