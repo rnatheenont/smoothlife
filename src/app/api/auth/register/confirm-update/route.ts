@@ -5,7 +5,7 @@ import { hashPassword } from "@/lib/password";
 import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { getUserLoyalty } from "@/lib/user-tier";
-import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
+import { ensureShopifyLink } from "@/lib/link-shopify-customer";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_ATTEMPTS = 5;
@@ -90,10 +90,11 @@ export async function POST(req: NextRequest) {
   >(`users?id=eq.${uid}&select=id,display_name,created_at,phone,gender,birthdate,avatar_url,shopify_customer_id`);
 
   let addressSuggestion = null;
-  if (!user.shopify_customer_id) {
-    const shopifyLink = await linkOrCreateShopifyCustomer(uid, {
+  {
+    const shopifyLink = await ensureShopifyLink(uid, {
       email: normalizedEmail,
       phone: normalizedPhone,
+      currentShopifyCustomerId: user.shopify_customer_id,
       currentDisplayName: user.display_name,
       currentPhone: user.phone,
     });

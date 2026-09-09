@@ -3,7 +3,7 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifyPassword } from "@/lib/password";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { getUserLoyalty } from "@/lib/user-tier";
-import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
+import { ensureShopifyLink } from "@/lib/link-shopify-customer";
 import { isRateLimited, clientIp } from "@/lib/rate-limit";
 
 const LOGIN_MAX_ATTEMPTS = 5;
@@ -51,9 +51,10 @@ export async function POST(req: NextRequest) {
   let phone = user.phone;
   let displayName = user.display_name;
   let addressSuggestion = null;
-  if (!user.shopify_customer_id) {
-    const shopifyLink = await linkOrCreateShopifyCustomer(user.id, {
+  {
+    const shopifyLink = await ensureShopifyLink(user.id, {
       email: normalizedEmail,
+      currentShopifyCustomerId: user.shopify_customer_id,
       currentDisplayName: user.display_name,
       currentPhone: user.phone,
     });

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { shopifyAdminConfigured } from "@/lib/shopify-admin";
-import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
+import { ensureShopifyLink } from "@/lib/link-shopify-customer";
 
 // Self-service retry for accounts that ended up with no shopify_customer_id
 // (pre-dates this link system, or the auth-time attempt errored). Every
@@ -22,17 +22,18 @@ export async function POST(req: NextRequest) {
   >(`users?id=eq.${uid}&select=display_name,phone,shopify_customer_id`);
   if (!current) return NextResponse.json({ ok: false, error: "ไม่พบบัญชีผู้ใช้" }, { status: 404 });
 
-  if (current.shopify_customer_id) {
-    return NextResponse.json({ ok: true, linked: true });
-  }
-
+  // A link to an empty Shopify record is not a finished job, so this no longer
+  // returns early on one — pressing "my orders are missing" while linked to a
+  // record with nothing in it used to answer "already linked" and change
+  // nothing, which is the most annoying possible reply to that complaint.
   const [emailIdentity] = await supabaseRest<{ provider_uid: string }[]>(
-    `auth_identities?user_id=eq.${uid}&provider=eq.email&select=provider_uid`
+    `auth_identities?user_id=eq.${uid}&provider=eq.email&select=provider_uid&order=verified_at.desc.nullslast&limit=1`
   );
 
-  const result = await linkOrCreateShopifyCustomer(uid, {
+  const result = await ensureShopifyLink(uid, {
     email: emailIdentity?.provider_uid || null,
     phone: current.phone,
+    currentShopifyCustomerId: current.shopify_customer_id,
     currentDisplayName: current.display_name,
     currentPhone: current.phone,
     createIfMissing: false,

@@ -122,6 +122,31 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
 }
 
 /**
+ * How many orders a Shopify customer has, or null when we could not ask.
+ *
+ * Used to tell a real customer record from the empty one an account was given
+ * by mistake. null is deliberately not zero: a Shopify hiccup must not be read
+ * as "this customer never bought anything" and trigger a re-link.
+ */
+export async function getCustomerOrderCount(shopifyCustomerId: string): Promise<number | null> {
+  if (!shopifyAdminConfigured()) return null;
+  const gid = shopifyCustomerId.startsWith("gid://")
+    ? shopifyCustomerId
+    : `gid://shopify/Customer/${shopifyCustomerId}`;
+  try {
+    const data = await adminGraphql<{ customer: { numberOfOrders: string } | null }>(
+      `query CustomerOrderCount($id: ID!) { customer(id: $id) { numberOfOrders } }`,
+      { id: gid }
+    );
+    const n = Number(data.customer?.numberOfOrders);
+    return Number.isFinite(n) ? n : null;
+  } catch (err) {
+    console.error("[shopify-admin] getCustomerOrderCount failed", err);
+    return null;
+  }
+}
+
+/**
  * The address to offer a returning customer, straight from Shopify.
  *
  * Their saved default first, and the last order they had shipped as a fallback

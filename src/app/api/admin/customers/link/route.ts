@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseRest, supabaseConfigured, pgValue } from "@/lib/supabase-server";
+import { provenMatch } from "@/lib/account-match";
+import { searchShopifyCustomers } from "@/lib/shopify-admin";
 
 // Point a site account at a Shopify customer, or cut it loose.
 //
@@ -27,6 +29,7 @@ export async function POST(req: NextRequest) {
   // field cannot silently unlink an account.
   const unlink = body?.unlink === true;
   const shopifyCustomerId = typeof body?.shopifyCustomerId === "string" ? body.shopifyCustomerId : "";
+  const auto = body?.auto === true;
 
   if (!/^[0-9a-f-]{36}$/i.test(userId)) {
     return NextResponse.json({ ok: false, error: "ไม่พบบัญชีผู้ใช้" }, { status: 400 });
@@ -34,7 +37,32 @@ export async function POST(req: NextRequest) {
   if (!unlink && !/^gid:\/\/shopify\/Customer\/\d+$/.test(shopifyCustomerId)) {
     return NextResponse.json({ ok: false, error: "รหัสลูกค้า Shopify ไม่ถูกต้อง" }, { status: 400 });
   }
-  if (note.length < 3) {
+  // An automatic link is proved here, never taken on the caller's word: the
+  // browser saying "this one matches" is not evidence, and this endpoint is
+  // the thing standing between an account and someone else's order history.
+  let reason = note;
+  if (auto && !unlink) {
+    const identities = await supabaseRest<{ provider: string; provider_uid: string; verified_at: string | null }[]>(
+      `auth_identities?user_id=eq.${pgValue(userId)}&select=provider,provider_uid,verified_at`
+    ).catch(() => []);
+    const numericId = shopifyCustomerId.split("/").pop() || "";
+    const [candidate] = await searchShopifyCustomers(`id:${numericId}`, 1);
+    const proof =
+      candidate &&
+      provenMatch(
+        identities.map((i) => ({ provider: i.provider, uid: i.provider_uid, verified: Boolean(i.verified_at) })),
+        candidate
+      );
+    if (!proof) {
+      return NextResponse.json(
+        { ok: false, error: "ยืนยันอัตโนมัติไม่ได้ — ต้องตรวจสอบเองและระบุเหตุผล" },
+        { status: 409 }
+      );
+    }
+    reason = `ระบบยืนยันอัตโนมัติ: ${proof}`;
+  }
+
+  if (reason.length < 3) {
     return NextResponse.json({ ok: false, error: "กรุณาระบุเหตุผลสั้นๆ ว่ายืนยันตัวตนลูกค้าจากอะไร" }, { status: 400 });
   }
 
@@ -70,7 +98,7 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       action: unlink ? "account.unlink-shopify" : "account.link-shopify",
       target: userId,
-      detail: { from: current.shopify_customer_id, to: unlink ? null : shopifyCustomerId, note },
+      detail: { from: current.shopify_customer_id, to: unlink ? null : shopifyCustomerId, note: reason, auto },
     }),
   }).catch((err) => console.error("[admin/customers/link] audit write failed", err));
 

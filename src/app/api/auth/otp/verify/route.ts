@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyFirebasePhoneIdToken } from "@/lib/firebase-verify";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
-import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
+import { ensureShopifyLink } from "@/lib/link-shopify-customer";
 import { getUserLoyalty } from "@/lib/user-tier";
 import { attributeReferralSignup } from "@/lib/referral-signup";
 
@@ -52,9 +52,10 @@ export async function POST(req: NextRequest) {
   let displayName = user.display_name;
   let addressSuggestion = null;
   let shopifyCustomerId = user.shopify_customer_id;
-  if (!user.shopify_customer_id) {
-    const shopifyLink = await linkOrCreateShopifyCustomer(row.user_id, {
+  {
+    const shopifyLink = await ensureShopifyLink(row.user_id, {
       phone: verified.phoneNumber,
+      currentShopifyCustomerId: user.shopify_customer_id,
       currentDisplayName: user.display_name,
       currentPhone: verified.phoneNumber,
     });

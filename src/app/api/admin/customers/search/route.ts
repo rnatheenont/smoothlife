@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseRest, supabaseConfigured, pgValue } from "@/lib/supabase-server";
 import { searchShopifyCustomers, shopifyAdminConfigured } from "@/lib/shopify-admin";
+import { provenMatch } from "@/lib/account-match";
 
 // Support search: one term, both sides of the join.
 //
@@ -77,14 +78,22 @@ export async function GET(req: NextRequest) {
 
   const shopify = shopifyAdminConfigured() ? await searchShopifyCustomers(term) : [];
 
-  return NextResponse.json({
-    ok: true,
-    accounts: accounts.map((a) => ({
-      ...a,
-      identities: allIdentities
-        .filter((i) => i.user_id === a.id)
-        .map((i) => ({ provider: i.provider, uid: i.provider_uid, verified: Boolean(i.verified_at) })),
-    })),
-    shopify,
-  });
+  const withIdentities = accounts.map((a) => ({
+    ...a,
+    identities: allIdentities
+      .filter((i) => i.user_id === a.id)
+      .map((i) => ({ provider: i.provider, uid: i.provider_uid, verified: Boolean(i.verified_at) })),
+  }));
+
+  // Which pairs the system can link on its own — the customer already proved
+  // the email or phone on that Shopify record. Staff still see it and can
+  // still decline; what they are spared is typing out a justification for a
+  // match nobody has to take their word for.
+  const proven = withIdentities.flatMap((a) =>
+    shopify
+      .map((c) => ({ userId: a.id, shopifyCustomerId: c.id, reason: provenMatch(a.identities, c) }))
+      .filter((m): m is { userId: string; shopifyCustomerId: string; reason: string } => Boolean(m.reason))
+  );
+
+  return NextResponse.json({ ok: true, accounts: withIdentities, shopify, proven });
 }

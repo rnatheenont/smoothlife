@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import clsx from "clsx";
-import { Users, Search, Link2, Unlink, Loader2, ShoppingBag, AlertTriangle, Check, ExternalLink } from "lucide-react";
+import { Users, Search, Link2, Unlink, Loader2, ShoppingBag, AlertTriangle, Check, ExternalLink, ShieldCheck, Merge } from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 
 // Attaching a returning customer's purchase history to their login.
@@ -59,6 +59,8 @@ export default function AdminCustomersPage() {
   const [error, setError] = useState("");
   const [accounts, setAccounts] = useState<Account[] | null>(null);
   const [shopify, setShopify] = useState<Candidate[]>([]);
+  /** Pairs the server can prove belong together — see lib/account-match.ts. */
+  const [proven, setProven] = useState<{ userId: string; shopifyCustomerId: string; reason: string }[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState("");
@@ -82,6 +84,7 @@ export default function AdminCustomersPage() {
       }
       setAccounts(json.accounts);
       setShopify(json.shopify);
+      setProven(json.proven || []);
       setSelected(json.accounts.length === 1 ? json.accounts[0].id : null);
     } catch {
       setError("ค้นหาไม่สำเร็จ กรุณาลองใหม่");
@@ -90,7 +93,7 @@ export default function AdminCustomersPage() {
     }
   }
 
-  async function link(shopifyCustomerId: string | null) {
+  async function link(shopifyCustomerId: string | null, auto = false) {
     if (!selected) return;
     setBusy(shopifyCustomerId || "unlink");
     setError("");
@@ -103,6 +106,7 @@ export default function AdminCustomersPage() {
           shopifyCustomerId,
           unlink: shopifyCustomerId === null,
           note,
+          auto,
         }),
       });
       const json = await res.json();
@@ -120,7 +124,38 @@ export default function AdminCustomersPage() {
     }
   }
 
+  async function merge(loserId: string) {
+    if (!selected) return;
+    if (
+      !confirm(
+        "รวมบัญชีนี้เข้ากับบัญชีที่เลือกไว้? ประวัติ คะแนน และช่องทางล็อกอินทั้งหมดจะย้ายมา และบัญชีที่ถูกรวมจะหายไป — ย้อนกลับไม่ได้"
+      )
+    )
+      return;
+    setBusy(loserId);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/customers/merge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ survivorId: selected, loserId, note }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        setError(json.error || "รวมบัญชีไม่สำเร็จ");
+        return;
+      }
+      setDone("รวมบัญชีเรียบร้อย — ลูกค้าล็อกอินช่องทางไหนก็เข้าบัญชีเดียวกันแล้ว");
+      setNote("");
+      await search();
+    } finally {
+      setBusy("");
+    }
+  }
+
   const account = accounts?.find((a) => a.id === selected) || null;
+  const provenFor = (shopifyCustomerId: string) =>
+    proven.find((p) => p.userId === selected && p.shopifyCustomerId === shopifyCustomerId) || null;
 
   return (
     <div className="space-y-5">
@@ -200,6 +235,35 @@ export default function AdminCustomersPage() {
                     ))}
                     <span>สมัคร {fmtDate(a.created_at)}</span>
                   </div>
+                  {/* Two accounts for one person is our doing, not theirs —
+                      the second one exists because the first showed no orders.
+                      Joining them is the fix; the note is required because the
+                      losing account is gone afterwards. */}
+                  {selected && selected !== a.id && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void merge(a.id);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.stopPropagation();
+                          void merge(a.id);
+                        }
+                      }}
+                      className={clsx(
+                        "mt-2 inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold",
+                        note.trim().length < 3 || busy !== ""
+                          ? "text-slate-300 pointer-events-none"
+                          : "text-slate-600 hover:bg-white"
+                      )}
+                    >
+                      {busy === a.id ? <Loader2 size={11} className="animate-spin" /> : <Merge size={11} />}
+                      รวมบัญชีนี้เข้ากับบัญชีที่เลือก
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -238,6 +302,12 @@ export default function AdminCustomersPage() {
                           a record that clearly has orders means "older than
                           that", not "never bought" — and reading it as the
                           latter is how the wrong record gets picked. */}
+                      {provenFor(c.id) && (
+                        <div className="flex items-start gap-1 text-emerald-700">
+                          <ShieldCheck size={11} className="mt-0.5 shrink-0" />
+                          <span>{provenFor(c.id)?.reason} — ผูกได้เลยโดยไม่ต้องกรอกเหตุผล</span>
+                        </div>
+                      )}
                       <div>
                         ซื้อล่าสุด{" "}
                         {c.lastOrderAt
@@ -251,6 +321,11 @@ export default function AdminCustomersPage() {
                     <div className="mt-2 flex items-center gap-2">
                       {linkedHere ? (
                         <Badge tone="success">ผูกกับบัญชีนี้อยู่</Badge>
+                      ) : provenFor(c.id) ? (
+                        <Button size="sm" disabled={!selected || busy !== ""} onClick={() => link(c.id, true)}>
+                          {busy === c.id ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
+                          ผูกอัตโนมัติ
+                        </Button>
                       ) : (
                         <Button
                           size="sm"

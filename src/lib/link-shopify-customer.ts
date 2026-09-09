@@ -12,6 +12,7 @@ import {
   createShopifyCustomer,
   findShopifyCustomerByEmail,
   findShopifyCustomerByPhone,
+  getCustomerOrderCount,
   ShopifyCustomerAddress,
 } from "@/lib/shopify-admin";
 
@@ -74,6 +75,8 @@ export async function linkOrCreateShopifyCustomer(
     // (silently flip linked:true with still no real orders showing)
     // instead of correctly falling back to the "contact support" message.
     createIfMissing?: boolean;
+    /** Set by ensureShopifyLink: only a candidate with orders may replace. */
+    replacingEmptyLink?: boolean;
   }
 ): Promise<LinkShopifyResult> {
   const result: LinkShopifyResult = { shopifyCustomerId: null, displayName: null, phone: null, addressSuggestion: null };
@@ -100,6 +103,14 @@ export async function linkOrCreateShopifyCustomer(
   // A Shopify record already attached to a different account is not a match to
   // adopt: one of the two is wrong, and quietly showing the same orders to both
   // people is the worse way to find out which.
+  if (match && opts.replacingEmptyLink) {
+    const orders = await getCustomerOrderCount(match.id);
+    if (!orders) {
+      // Same emptiness, different id. Nothing to gain and a link to lose.
+      match = null;
+    }
+  }
+
   if (match) {
     const taken = await supabaseRest<{ id: string }[]>(
       `users?shopify_customer_id=eq.${encodeURIComponent(match.id)}&id=neq.${uid}&select=id&limit=1`
@@ -153,4 +164,51 @@ export async function linkOrCreateShopifyCustomer(
   }
 
   return result;
+}
+
+/**
+ * What every sign-in should call: make sure this account points at the Shopify
+ * customer that actually holds their purchases.
+ *
+ * The old rule — link only when nothing is linked yet — sounds thrifty and is
+ * the reason a returning customer could stay stuck forever. Signing up with a
+ * new email created a fresh, empty Shopify record and wrote it to the account,
+ * which then counted as "already linked", so no later sign-in ever looked
+ * again. Their orders sat on the old record with nobody willing to check.
+ *
+ * So a link to a record with no orders is treated as unfinished business and
+ * re-checked, while a link to one with orders is left alone — the customer may
+ * genuinely have bought under this record and a re-point would take their
+ * history away. Only a candidate that has orders can replace an existing link;
+ * swapping one empty record for another would be churn.
+ */
+export async function ensureShopifyLink(
+  uid: string,
+  opts: {
+    email?: string | null;
+    phone?: string | null;
+    currentShopifyCustomerId?: string | null;
+    currentDisplayName?: string | null;
+    currentPhone?: string | null;
+    createIfMissing?: boolean;
+    /** Set by ensureShopifyLink: only a candidate with orders may replace. */
+    replacingEmptyLink?: boolean;
+  }
+): Promise<LinkShopifyResult> {
+  const current = opts.currentShopifyCustomerId || null;
+  if (current) {
+    const orders = await getCustomerOrderCount(current);
+    // null means Shopify did not answer — leave a working link alone rather
+    // than re-point on the strength of a failed request.
+    if (orders === null || orders > 0) {
+      return { shopifyCustomerId: current, displayName: null, phone: null, addressSuggestion: null };
+    }
+  }
+
+  return linkOrCreateShopifyCustomer(uid, {
+    ...opts,
+    // Already has a record, empty or not: making a second one helps nobody.
+    createIfMissing: current ? false : opts.createIfMissing,
+    replacingEmptyLink: Boolean(current),
+  });
 }

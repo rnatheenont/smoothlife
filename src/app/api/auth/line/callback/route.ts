@@ -8,7 +8,7 @@ import {
 } from "@/lib/line-auth";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
-import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
+import { ensureShopifyLink } from "@/lib/link-shopify-customer";
 import { attributeReferralSignup } from "@/lib/referral-signup";
 
 function safeEqual(a: string, b: string) {
@@ -85,8 +85,18 @@ export async function GET(req: NextRequest) {
       { display_name: string | null; phone: string | null; shopify_customer_id: string | null }[]
     >(`users?id=eq.${userId}&select=display_name,phone,shopify_customer_id`);
     let shopifyCustomerId = user?.shopify_customer_id ?? null;
-    if (user && !user.shopify_customer_id) {
-      const shopifyLink = await linkOrCreateShopifyCustomer(userId, {
+    if (user) {
+      // LINE hands over no email address without the extra scope, so the one
+      // on the account is used instead — a returning customer who signed in
+      // with LINE has the same claim on their old orders as one who typed the
+      // address in, and matching on nothing at all is what made a second,
+      // empty Shopify record for them.
+      const [emailIdentity] = await supabaseRest<{ provider_uid: string }[]>(
+        `auth_identities?user_id=eq.${userId}&provider=eq.email&select=provider_uid&order=verified_at.desc.nullslast&limit=1`
+      ).catch(() => []);
+      const shopifyLink = await ensureShopifyLink(userId, {
+        email: emailIdentity?.provider_uid || null,
+        currentShopifyCustomerId: user.shopify_customer_id,
         currentDisplayName: user.display_name,
         currentPhone: user.phone,
       });
