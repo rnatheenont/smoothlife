@@ -239,6 +239,16 @@ export default function QuickChat() {
   const [humanHandling, setHumanHandling] = useState(false);
   /** A case already queued and waiting — survives a reload, unlike handedOff. */
   const [caseQueued, setCaseQueued] = useState(false);
+  /**
+   * Timestamp of the newest message the server had last time we looked.
+   *
+   * The panel used to adopt the server copy only when it was longer than the
+   * local one, which quietly stopped working at the forty-message cap: both
+   * sides sat at forty and a staff reply could never get in. Time only moves
+   * forward, and a message the customer has just sent is not on the server
+   * yet, so this both notices new replies and keeps the send race safe.
+   */
+  const latestAtRef = useRef<string | null>(null);
   // Storing a photo on our server is a different promise from showing it to
   // the model, so it needs its own answer. Someone who agreed to "sent to the
   // AI, never stored" has not agreed to this.
@@ -400,6 +410,7 @@ export default function QuickChat() {
           setMessages(messages);
           setAskOptions(ask);
           seenCountRef.current = data.messages.length;
+          latestAtRef.current = data.latestAt ?? null;
         }
         setHumanHandling(Boolean(data?.humanHandling));
         setCaseQueued(Boolean(data?.caseQueued));
@@ -433,16 +444,16 @@ export default function QuickChat() {
           // own message vanish. Never overwrite a reply still streaming in
           // either.
           if (!loading) {
-            setMessages((current) =>
-              data.messages.length > current.length
-                ? hydrateHistory(data.messages).messages
-                : current
-            );
+            const moved = data.latestAt && data.latestAt !== latestAtRef.current;
+            if (moved) {
+              latestAtRef.current = data.latestAt;
+              setMessages(hydrateHistory(data.messages).messages);
+            }
             seenCountRef.current = Math.max(seenCountRef.current, data.messages.length);
             setUnread(0);
           }
-        } else {
-          setUnread(Math.max(0, data.messages.length - seenCountRef.current));
+        } else if (data.latestAt && data.latestAt !== latestAtRef.current) {
+          setUnread(Math.max(1, data.messages.length - seenCountRef.current));
         }
       } catch {
         // A failed poll is not worth telling the customer about; the next one

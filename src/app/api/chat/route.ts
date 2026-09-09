@@ -400,8 +400,11 @@ export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return Response.json({ messages: [] });
   try {
     const [rows, handling] = await Promise.all([
-      supabaseRest<{ role: "user" | "assistant"; content: string; from_staff: boolean }[]>(
-        `chat_messages?session_key=eq.${encodeURIComponent(sessionKey)}&select=role,content,from_staff&order=created_at.asc&limit=40`
+      // Newest 40, not oldest. This asked for the first 40 ever written, so
+      // once a thread passed forty messages the panel was serving a
+      // conversation from days ago and nothing new could ever appear in it.
+      supabaseRest<{ role: "user" | "assistant"; content: string; from_staff: boolean; created_at: string }[]>(
+        `chat_messages?session_key=eq.${encodeURIComponent(sessionKey)}&select=role,content,from_staff,created_at&order=created_at.desc&limit=40`
       ),
       // Whether a person has taken this conversation over. The customer's
       // panel needs it for two things: to stop pretending the AI is answering,
@@ -412,7 +415,16 @@ export async function GET(req: NextRequest) {
     // has already handed over, and without this the next handover marker files
     // a second ticket for a case nobody has answered yet.
     const queued = uid ? await hasWaitingCase("web", uid) : false;
-    return Response.json({ messages: rows, humanHandling: handling, caseQueued: queued });
+    // Back into reading order, and with the newest timestamp alongside: the
+    // panel decides whether to adopt this copy by whether time has moved, not
+    // by whether the list got longer — which stopped being true at the cap.
+    const messages = [...rows].reverse();
+    return Response.json({
+      messages,
+      latestAt: messages[messages.length - 1]?.created_at ?? null,
+      humanHandling: handling,
+      caseQueued: queued,
+    });
   } catch (err) {
     console.error("[chat] history fetch failed", err);
     return Response.json({ messages: [] });
