@@ -1,5 +1,5 @@
 import { fetchPackedOrders, sokoConfigured, SokoError, lastDiagnostics } from "@/lib/soko";
-import { processTrackingUpdate, logSyncFailure, trackingMode } from "@/lib/tracking-apply";
+import { processTrackingUpdate, logSyncFailure, logSyncHeartbeat, trackingMode } from "@/lib/tracking-apply";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { shopifyAdminConfigured } from "@/lib/shopify-admin";
 
@@ -66,9 +66,15 @@ export async function runSokoSync(): Promise<SyncRunResult> {
   }
 
   if (rows.length === 0) {
-    // Genuinely normal on a quiet hour, so not an error — but still worth
-    // being able to tell apart from a broken run, which is why the failure
-    // above writes a row and this does not.
+    // Recorded, not silent. A quiet warehouse and a scraper that has gone
+    // blind used to leave identical evidence — nothing — and telling those
+    // apart took a day each of the two times it mattered.
+    await logSyncHeartbeat("soko-puller", {
+      pagesScanned: lastDiagnostics?.pagesScanned,
+      candidates: lastDiagnostics?.candidates,
+      skipped: lastDiagnostics?.skipped,
+      ranOutOfTime: lastDiagnostics?.ranOutOfTime,
+    });
     return {
       ok: true,
       status: 200,

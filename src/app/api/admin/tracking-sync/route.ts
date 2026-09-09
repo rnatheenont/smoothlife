@@ -43,10 +43,12 @@ export async function GET(req: NextRequest) {
   // above the table described a warehouse that had shipped parcels nobody
   // ever packed.
   const real = rows.filter((r) => !r.is_test);
-  const counts = real.reduce<Record<string, number>>((acc, r) => {
-    acc[r.action] = (acc[r.action] ?? 0) + 1;
-    return acc;
-  }, {});
+  const counts = real
+    .filter((r) => r.action !== "run-empty" && r.action !== "run-failed")
+    .reduce<Record<string, number>>((acc, r) => {
+      acc[r.action] = (acc[r.action] ?? 0) + 1;
+      return acc;
+    }, {});
 
   // Whether the scraper can still get in, kept apart from what it is allowed
   // to write. They are different questions and the page used to answer them in

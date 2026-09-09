@@ -17,6 +17,8 @@ const ACTION: Record<string, { label: string; tone: "success" | "neutral" | "dan
   conflict: { label: "ไม่ตรงกัน", tone: "danger" },
   "no-order": { label: "ไม่พบออเดอร์", tone: "warning" },
   "not-eligible": { label: "ไม่เข้าเงื่อนไข", tone: "neutral" },
+  "run-empty": { label: "รันแล้ว ไม่มีของใหม่", tone: "neutral" },
+  "run-failed": { label: "รันไม่สำเร็จ", tone: "danger" },
 };
 
 type Payload = {

@@ -138,6 +138,41 @@ export async function processTrackingUpdate(input: {
  * trace instead of simply going quiet — the failure mode that matters most
  * for a scraper nobody is watching.
  */
+/**
+ * A row for a run that worked and had nothing to do.
+ *
+ * Without one, a healthy quiet day and a scraper that has stopped seeing
+ * anything produce exactly the same evidence: no rows. That ambiguity has cost
+ * two days of this integration already — once when it was reading the same ten
+ * orders forever, and again when every run was dying on a timeout. A heartbeat
+ * makes "no log at all" mean one thing only: it did not run.
+ */
+export async function logSyncHeartbeat(
+  source: string,
+  detail: { pagesScanned?: number; candidates?: number; skipped?: number; ranOutOfTime?: boolean }
+) {
+  const parts = [
+    `อ่าน ${detail.pagesScanned ?? "?"} หน้า`,
+    `พบ ${detail.candidates ?? "?"} ออเดอร์`,
+    `ข้ามที่ทำไปแล้ว ${detail.skipped ?? 0}`,
+  ];
+  if (detail.ranOutOfTime) parts.push("อ่านไม่ครบ (ใกล้หมดเวลา)");
+  await supabaseRest("tracking_sync_log", {
+    method: "POST",
+    returning: false,
+    body: JSON.stringify({
+      source,
+      mode: trackingMode(),
+      order_ref: "-",
+      tracking_number: "-",
+      action: "run-empty",
+      reason: `ไม่มีเลขใหม่ — ${parts.join(" · ")}`,
+      applied: false,
+      notified: false,
+    }),
+  }).catch(() => {});
+}
+
 export async function logSyncFailure(source: string, message: string) {
   await supabaseRest("tracking_sync_log", {
     method: "POST",
