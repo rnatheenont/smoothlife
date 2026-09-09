@@ -111,12 +111,18 @@ export async function linkOrCreateShopifyCustomer(
     }
   }
 
+  // Set when the right record was found but belongs to another account — the
+  // customer's own duplicate, nearly always. Creating a third empty record for
+  // them is the exact behaviour that produced this mess, so nothing is created
+  // in that case: staff merge the two accounts and the link comes with it.
+  let takenByAnotherAccount = false;
   if (match) {
     const taken = await supabaseRest<{ id: string }[]>(
       `users?shopify_customer_id=eq.${encodeURIComponent(match.id)}&id=neq.${uid}&select=id&limit=1`
     ).catch(() => []);
     if (taken.length > 0) {
       console.warn("[link-shopify-customer] candidate already linked elsewhere", { uid, candidate: match.id });
+      takenByAnotherAccount = true;
       match = null;
     }
   }
@@ -143,7 +149,7 @@ export async function linkOrCreateShopifyCustomer(
     if ((!existing || existing.length === 0) && match.defaultAddress) {
       result.addressSuggestion = toAddressSuggestion(match.defaultAddress);
     }
-  } else if (opts.createIfMissing !== false) {
+  } else if (opts.createIfMissing !== false && !takenByAnotherAccount) {
     const created = await createShopifyCustomer({
       email: opts.email,
       phone: opts.phone,
