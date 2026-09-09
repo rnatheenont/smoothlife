@@ -43,6 +43,24 @@ function toAddressSuggestion(addr: ShopifyCustomerAddress | null): AddressSugges
   };
 }
 
+/**
+ * A phone number this account has proved it holds, or null.
+ *
+ * The OTP sign-in path writes an auth_identities row for the number it just
+ * sent a code to, so that row — and not users.phone, which anyone can type —
+ * is what makes a phone match safe to act on.
+ */
+async function verifiedPhone(uid: string): Promise<string | null> {
+  const rows = await supabaseRest<{ provider_uid: string; verified_at: string | null }[]>(
+    // "phone_otp" — the provider name the OTP sign-in actually writes. Asking
+    // for "phone" matched nothing and made this fallback a no-op that looked
+    // like it worked.
+    `auth_identities?user_id=eq.${uid}&provider=eq.phone_otp&select=provider_uid,verified_at&limit=1`
+  ).catch(() => []);
+  const row = rows[0];
+  return row?.verified_at && row.provider_uid ? row.provider_uid : null;
+}
+
 export async function linkOrCreateShopifyCustomer(
   uid: string,
   opts: {
@@ -60,11 +78,37 @@ export async function linkOrCreateShopifyCustomer(
 ): Promise<LinkShopifyResult> {
   const result: LinkShopifyResult = { shopifyCustomerId: null, displayName: null, phone: null, addressSuggestion: null };
 
-  const match = opts.email
-    ? await findShopifyCustomerByEmail(opts.email)
-    : opts.phone
-    ? await findShopifyCustomerByPhone(opts.phone)
-    : null;
+  // Email first, then the phone — and the phone even when there IS an email.
+  //
+  // The old rule was "email if we have one, otherwise phone", so a customer who
+  // had bought before and then signed up with a NEW address stopped at the miss
+  // and got a fresh, empty Shopify record: their orders stayed on the old one,
+  // invisible in their account, and only support editing the database could
+  // join them back up. Their phone number had been sitting on the old record
+  // the whole time.
+  //
+  // The fallback only trusts a phone we have actually proved they hold — an
+  // OTP identity, or the number they are signing in with right now. A number
+  // typed into a profile is not proof of anything, and matching on one would
+  // hand whoever typed it somebody else's orders and home address.
+  let match = opts.email ? await findShopifyCustomerByEmail(opts.email) : null;
+  if (!match) {
+    const phone = opts.email ? await verifiedPhone(uid) : opts.phone;
+    if (phone) match = await findShopifyCustomerByPhone(phone);
+  }
+
+  // A Shopify record already attached to a different account is not a match to
+  // adopt: one of the two is wrong, and quietly showing the same orders to both
+  // people is the worse way to find out which.
+  if (match) {
+    const taken = await supabaseRest<{ id: string }[]>(
+      `users?shopify_customer_id=eq.${encodeURIComponent(match.id)}&id=neq.${uid}&select=id&limit=1`
+    ).catch(() => []);
+    if (taken.length > 0) {
+      console.warn("[link-shopify-customer] candidate already linked elsewhere", { uid, candidate: match.id });
+      match = null;
+    }
+  }
 
   const patch: Record<string, unknown> = {};
 
