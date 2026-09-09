@@ -258,6 +258,11 @@ Say in the reply itself, in your own words, that you are passing this to the
 team and they will reply here — then the marker. Write the marker at most once
 in a conversation, and never together with an ASK or a follow-up line.
 
+NEVER write two markers in one reply, whatever the combination. If the customer
+raises something needing a person while you were also about to ask a qualifying
+question, hand over and leave the question for later — they cannot answer chips
+about their skin type while waiting to hear about a refund.
+
 CATALOGUE (slug | name | brand | price | category | concerns | optional low-stock tag):
 ${catalogue(profile)}
 

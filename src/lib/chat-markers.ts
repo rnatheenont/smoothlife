@@ -32,23 +32,41 @@ export type SplitMessage = {
 export function splitMarker(content: string): SplitMessage {
   const idx = markerIndex(content);
   if (idx === -1) return { text: content, kind: null, options: [], reason: "" };
-  const marker = content.slice(idx).replace(/^\n/, "");
-  const inner = marker.replace(/^\[\[(SUGGEST|ASK|HANDOFF):/i, "").replace(/\]\]\s*$/, "");
-  const kind = /^\[\[ASK:/i.test(marker) ? "ask" : /^\[\[HANDOFF:/i.test(marker) ? "handoff" : "suggest";
+
+  // Every marker in the reply, not just the first. The model is told to write
+  // at most one, and it does not always: an ASK and a HANDOFF arrived in the
+  // same turn, and reading from the first opener to the last "]]" made one
+  // giant marker whose final "option" was a chip containing the literal text
+  // "]] [[HANDOFF: ลูกค้าถามว่า...". The customer was offered it as an answer.
+  const found: { kind: "ask" | "suggest" | "handoff"; inner: string }[] = [];
+  for (const m of content.matchAll(/\[\[(SUGGEST|ASK|HANDOFF):([\s\S]*?)\]\]/gi)) {
+    const name = m[1].toUpperCase();
+    found.push({
+      kind: name === "ASK" ? "ask" : name === "HANDOFF" ? "handoff" : "suggest",
+      inner: m[2].trim(),
+    });
+  }
+
+  const text = content.slice(0, idx).trimEnd();
+  if (found.length === 0) return { text, kind: null, options: [], reason: "" };
+
+  // A handover wins when both appear. Dropping it would leave the customer
+  // waiting on a request nobody received; dropping the chips only costs them a
+  // tap they can type instead.
+  const chosen = found.find((f) => f.kind === "handoff") ?? found[0];
+
   return {
-    text: content.slice(0, idx).trimEnd(),
-    kind,
-    // A handoff carries one sentence of context for staff, not a pipe-separated
-    // list of chips, so it is deliberately not split.
+    text,
+    kind: chosen.kind,
     options:
-      kind === "handoff"
+      chosen.kind === "handoff"
         ? []
-        : inner
+        : chosen.inner
             .split("|")
             .map((s) => s.trim())
             .filter(Boolean)
             .slice(0, 4),
-    reason: kind === "handoff" ? inner.trim() : "",
+    reason: chosen.kind === "handoff" ? chosen.inner : "",
   };
 }
 
