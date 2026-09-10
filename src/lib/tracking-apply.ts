@@ -99,12 +99,16 @@ export async function processTrackingUpdate(input: {
 
       if (res.ok) {
         applied = true;
-        // Start watching the parcel the moment its number is real. Doing it
-        // here rather than on the first page view means the early scans — the
-        // ones that happen while the customer is still waiting to hear
-        // anything — are already collected when they look.
+        // Watching every parcel from the moment its number is real is the best
+        // experience and the most expensive one: courier feeds charge per
+        // parcel, and this store ships 300-500 a month while only a fraction
+        // of those orders are ever opened by anyone. Off by default, so the
+        // quota is spent on parcels a customer actually looked at (see
+        // shipment-sync.ts); turn it on when the plan is big enough not to
+        // care.
         void (async () => {
           try {
+            if (process.env.COURIER_WATCH_EVERY_PARCEL !== "1") return;
             if (aftershipConfigured() && (await registerTracking(input.trackingNumber))) {
               await markRegistered(input.trackingNumber, courier);
             }
