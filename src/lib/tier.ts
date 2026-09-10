@@ -1,15 +1,18 @@
 import { Award, Crown, Star, type LucideIcon } from "lucide-react";
 import type { Tier } from "./auth-context";
 
-// Customer-facing tier names — a skin-glow progression, on-brand for a
-// skincare/wellness retailer, standing in for the internal Bronze/Silver/
-// Gold identifiers (which stay as-is everywhere else: DB values, tier
-// comparison logic, coupon eligibility keys). Only the display layer
-// changes here.
+// Tier names, settled: Bronze / Silver / Gold.
+//
+// These were briefly shown as a skin-glow progression (Glow / Radiance /
+// Luminous) while the handoff doc still said "Tier names TBC". The doc's
+// own tables, the database values, coupon eligibility and every internal
+// comparison all say Bronze/Silver/Gold, so the display layer now says it
+// too — one vocabulary, no translation step for staff reading a support
+// ticket next to a database row.
 export const tierDisplayName: Record<Tier, { en: string; th: string }> = {
-  Bronze: { en: "Glow", th: "โกลว์" },
-  Silver: { en: "Radiance", th: "เรเดียนซ์" },
-  Gold: { en: "Luminous", th: "ลูมินัส" },
+  Bronze: { en: "Bronze", th: "บรอนซ์" },
+  Silver: { en: "Silver", th: "ซิลเวอร์" },
+  Gold: { en: "Gold", th: "โกลด์" },
 };
 
 // Shown to customers as "Lv.1/2/3" instead of the internal Bronze/Silver/Gold
@@ -60,6 +63,6 @@ export const tierPerks: Record<Tier, string[]> = {
     "โบนัสวันเกิด +100 แต้ม",
     "คูปองแนะนำเพื่อน ฿100",
   ],
-  Silver: ["โบนัสวันเกิด +200 แต้ม พร้อมส่วนลด 10%", "สิทธิ์ทุกอย่างของระดับ Glow"],
-  Gold: ["โบนัสวันเกิด +300 แต้ม พร้อมส่วนลด 20%", "สิทธิ์ทุกอย่างของระดับ Radiance"],
+  Silver: ["โบนัสวันเกิด +200 แต้ม พร้อมส่วนลด 10%", "สิทธิ์ทุกอย่างของระดับ Bronze"],
+  Gold: ["โบนัสวันเกิด +300 แต้ม พร้อมส่วนลด 20%", "สิทธิ์ทุกอย่างของระดับ Silver"],
 };
