@@ -82,7 +82,9 @@ export default function OrderDetailView({
         </div>
       ) : (
         <p className="mb-4 rounded-xl2 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-500">
-          รายการนี้ปิดแล้ว ไม่มีการจัดส่ง
+          {order.financialStatus === "EXPIRED"
+                    ? "รายการนี้ไม่ได้ชำระเงินภายในเวลาที่กำหนด จึงไม่มีการจัดส่ง"
+                    : "รายการนี้ปิดแล้ว ไม่มีการจัดส่ง"}
           {refunded ? ` — คืนเงิน ${formatTHB(Number(order.refunded))} เรียบร้อยแล้ว` : ""}
         </p>
       )}

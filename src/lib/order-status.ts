@@ -36,7 +36,7 @@ export const financialLabel: Record<string, string> = {
   PARTIALLY_REFUNDED: "คืนเงินบางส่วน",
   VOIDED: "ยกเลิกรายการ",
   AUTHORIZED: "อนุมัติวงเงินแล้ว",
-  EXPIRED: "หมดอายุ",
+  EXPIRED: "ชำระเงินไม่สำเร็จ",
 };
 
 export function fulfillmentBadge(status: string | null) {
@@ -83,6 +83,13 @@ export function orderStateBadge(order: {
   if (order.cancelledAt) return { label: "ยกเลิกแล้ว", color: "bg-slate-100 text-slate-600" };
   if (order.financialStatus === "REFUNDED") return { label: "คืนเงินแล้ว", color: "bg-slate-100 text-slate-600" };
   if (order.financialStatus === "VOIDED") return { label: "ยกเลิกรายการ", color: "bg-slate-100 text-slate-600" };
+  // EXPIRED is Shopify's word for a checkout that was never paid for. The
+  // store has dozens, some over a year old, and calling them "รอดำเนินการ"
+  // told those customers a parcel was on its way — for an order that was
+  // never paid and will never ship.
+  if (order.financialStatus === "EXPIRED") {
+    return { label: "ไม่ได้ชำระเงิน", color: "bg-slate-100 text-slate-600" };
+  }
   return fulfillmentBadge(order.fulfillmentStatus);
 }
 
@@ -98,7 +105,10 @@ export function stillShipping(order: {
   shipments?: { number: string }[];
 }): boolean {
   if (order.cancelledAt) return false;
-  const done = order.financialStatus === "REFUNDED" || order.financialStatus === "VOIDED";
+  const done =
+    order.financialStatus === "REFUNDED" ||
+    order.financialStatus === "VOIDED" ||
+    order.financialStatus === "EXPIRED";
   // A refunded order that already shipped keeps its tracker: the parcel is
   // real, and it may be the return the customer is watching.
   return !done || (order.shipments?.length ?? 0) > 0;
