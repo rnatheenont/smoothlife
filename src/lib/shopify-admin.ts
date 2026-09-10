@@ -121,6 +121,44 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
   }
 }
 
+/** The scopes this app's token actually carries, for diagnosing what it may read. */
+export async function grantedScopes(): Promise<string[] | null> {
+  if (!shopifyAdminConfigured()) return null;
+  try {
+    const data = await adminGraphql<{ currentAppInstallation: { accessScopes: { handle: string }[] } }>(
+      `query GrantedScopes { currentAppInstallation { accessScopes { handle } } }`
+    );
+    return data.currentAppInstallation.accessScopes.map((s) => s.handle);
+  } catch (err) {
+    console.error("[shopify-admin] grantedScopes failed", err);
+    return null;
+  }
+}
+
+/** The store's orders filtered to one customer, as opposed to the customer's own connection. */
+export async function ordersByCustomerId(
+  numericCustomerId: string,
+  limit = 50
+): Promise<{ name: string; createdAt: string }[] | null> {
+  if (!shopifyAdminConfigured()) return null;
+  try {
+    const data = await adminGraphql<{
+      orders: { edges: { node: { name: string; createdAt: string } }[] };
+    }>(
+      `query OrdersForCustomer($query: String!, $limit: Int!) {
+        orders(first: $limit, query: $query, sortKey: CREATED_AT, reverse: true) {
+          edges { node { name createdAt } }
+        }
+      }`,
+      { query: `customer_id:${numericCustomerId}`, limit }
+    );
+    return data.orders.edges.map((e) => e.node);
+  } catch (err) {
+    console.error("[shopify-admin] ordersByCustomerId failed", err);
+    return null;
+  }
+}
+
 /**
  * Lifetime totals from the customer record itself.
  *

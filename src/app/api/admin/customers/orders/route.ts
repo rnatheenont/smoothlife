@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
+import { getCustomerOrders, ordersByCustomerId, grantedScopes, shopifyAdminConfigured } from "@/lib/shopify-admin";
 
 // Exactly what the customer's own order page would show them.
 //
@@ -27,10 +27,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "รหัสลูกค้าไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const orders = await getCustomerOrders(id, 50);
+  const numericId = id.replace("gid://shopify/Customer/", "");
+  // Two ways of asking the same question, because they are not documented to
+  // behave the same: the customer's own orders connection, and a store-wide
+  // order search filtered to that customer. If one of them returns the older
+  // orders, the customer can have their history today instead of after a scope
+  // change. The granted scopes come back too — "which orders may we read" is
+  // decided by that list and nothing else.
+  const [viaCustomer, viaOrderSearch, scopes] = await Promise.all([
+    getCustomerOrders(id, 50),
+    ordersByCustomerId(numericId, 50),
+    grantedScopes(),
+  ]);
+  const orders = viaCustomer;
   return NextResponse.json({
     ok: true,
     visible: orders?.length ?? 0,
+    viaOrderSearch: viaOrderSearch?.map((o) => `${o.name} ${o.createdAt.slice(0, 10)}`) ?? null,
+    canReadAllOrders: scopes?.includes("read_all_orders") ?? null,
+    scopes: scopes?.filter((x) => x.includes("order") || x.includes("customer")) ?? null,
     orders: (orders || []).map((o) => ({
       name: o.name,
       createdAt: o.createdAt,
