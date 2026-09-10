@@ -326,6 +326,11 @@ export async function probeOrderList(pick: string[] = ["none", "mid", "txt"], ti
         storeRows: html.split(/<tr[\s>]/i).filter((r) => r.includes(STORE)).length,
         viewLinks: (html.match(/r=order(?:%2F|\/)view/gi) || []).length,
         orderRefs: (html.match(/#\d{3,}[A-Za-z_]*/g) || []).slice(0, 12),
+        // Internal soko links only — no customer data — so a follow-up probe
+        // can open one order page without a second round of guessing.
+        viewHrefs: (html.match(/href="([^"]*r=order(?:%2F|\/)view[^"]*)"/gi) || [])
+          .slice(0, 3)
+          .map((h) => decode(h.replace(/^href="/i, "").replace(/"$/, ""))),
         loginForm: /LoginForm\[password\]/.test(html),
       });
     } catch (err) {
