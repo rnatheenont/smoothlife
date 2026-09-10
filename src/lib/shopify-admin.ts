@@ -122,26 +122,31 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
 }
 
 /**
- * How many orders a Shopify customer has, or null when we could not ask.
+ * Whether a Shopify customer record still exists, and how much is in it.
  *
- * Used to tell a real customer record from the empty one an account was given
- * by mistake. null is deliberately not zero: a Shopify hiccup must not be read
- * as "this customer never bought anything" and trigger a re-link.
+ * Both halves matter and they fail differently. A record with no orders is the
+ * empty one an account was given by mistake; a record that is not there at all
+ * is a link to a deleted customer, which reads as "linked" forever while
+ * showing nothing. null is neither — it means Shopify did not answer, and a
+ * hiccup must never be read as "this customer never bought anything".
  */
-export async function getCustomerOrderCount(shopifyCustomerId: string): Promise<number | null> {
+export async function getCustomerLinkState(
+  shopifyCustomerId: string
+): Promise<{ exists: boolean; orders: number } | null> {
   if (!shopifyAdminConfigured()) return null;
   const gid = shopifyCustomerId.startsWith("gid://")
     ? shopifyCustomerId
     : `gid://shopify/Customer/${shopifyCustomerId}`;
   try {
     const data = await adminGraphql<{ customer: { numberOfOrders: string } | null }>(
-      `query CustomerOrderCount($id: ID!) { customer(id: $id) { numberOfOrders } }`,
+      `query CustomerLinkState($id: ID!) { customer(id: $id) { numberOfOrders } }`,
       { id: gid }
     );
-    const n = Number(data.customer?.numberOfOrders);
-    return Number.isFinite(n) ? n : null;
+    if (!data.customer) return { exists: false, orders: 0 };
+    const n = Number(data.customer.numberOfOrders);
+    return { exists: true, orders: Number.isFinite(n) ? n : 0 };
   } catch (err) {
-    console.error("[shopify-admin] getCustomerOrderCount failed", err);
+    console.error("[shopify-admin] getCustomerLinkState failed", err);
     return null;
   }
 }

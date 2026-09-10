@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import clsx from "clsx";
-import { Users, Search, Link2, Unlink, Loader2, ShoppingBag, AlertTriangle, Check, ExternalLink, ShieldCheck, Merge } from "lucide-react";
+import { Users, Search, Link2, Unlink, Loader2, ShoppingBag, AlertTriangle, Check, ExternalLink, ShieldCheck, Merge, Stethoscope } from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 
 // Attaching a returning customer's purchase history to their login.
@@ -36,6 +36,18 @@ type Candidate = {
   address: string | null;
 };
 
+type HealthAccount = { id: string; name: string | null; phone: string | null; contact: string | null; shopify?: string };
+type Health = {
+  checked: number;
+  capped: boolean;
+  healthy: number;
+  unknown: number;
+  unlinked: HealthAccount[];
+  dangling: HealthAccount[];
+  empty: HealthAccount[];
+  duplicates: { phone: string; accounts: HealthAccount[] }[];
+};
+
 const PROVIDER_LABEL: Record<string, string> = {
   email: "อีเมล",
   line: "LINE",
@@ -61,6 +73,8 @@ export default function AdminCustomersPage() {
   const [shopify, setShopify] = useState<Candidate[]>([]);
   /** Pairs the server can prove belong together — see lib/account-match.ts. */
   const [proven, setProven] = useState<{ userId: string; shopifyCustomerId: string; reason: string }[]>([]);
+  const [health, setHealth] = useState<Health | null>(null);
+  const [checking, setChecking] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState("");
@@ -122,6 +136,32 @@ export default function AdminCustomersPage() {
     } finally {
       setBusy("");
     }
+  }
+
+  async function runHealthCheck() {
+    setChecking(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/customers/health");
+      const json = await res.json();
+      if (!json.ok) {
+        setError(json.error || "ตรวจสอบไม่สำเร็จ");
+        return;
+      }
+      setHealth(json);
+    } catch {
+      setError("ตรวจสอบไม่สำเร็จ");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  /** Puts a flagged account into the search box, ready to fix. */
+  function inspect(a: HealthAccount) {
+    const term = a.contact || a.phone || a.name || "";
+    setTerm(term);
+    setTimeout(() => void search(), 0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function merge(loserId: string) {
@@ -193,6 +233,83 @@ export default function AdminCustomersPage() {
           {done}
         </div>
       )}
+
+      <Card className="p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-1.5 text-sm font-bold text-brand-ink">
+              <Stethoscope size={14} className="text-brand-emerald" /> ตรวจสุขภาพการผูกบัญชี
+            </h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              หาบัญชีที่มองไม่เห็นออเดอร์ตัวเอง โดยไม่ต้องรอลูกค้าทัก
+            </p>
+          </div>
+          <Button size="sm" variant="soft" onClick={runHealthCheck} disabled={checking}>
+            {checking ? <Loader2 size={13} className="animate-spin" /> : <Stethoscope size={13} />}
+            ตรวจเลย
+          </Button>
+        </div>
+
+        {health && (
+          <div className="mt-3 space-y-3">
+            <div className="flex flex-wrap gap-1.5">
+              <Badge tone="neutral">ตรวจ {health.checked} บัญชี</Badge>
+              <Badge tone="success">ปกติ {health.healthy}</Badge>
+              {health.dangling.length > 0 && <Badge tone="danger">ใบถูกลบ {health.dangling.length}</Badge>}
+              {health.empty.length > 0 && <Badge tone="warning">ใบไม่มีออเดอร์ {health.empty.length}</Badge>}
+              {health.unlinked.length > 0 && <Badge tone="warning">ยังไม่ผูก {health.unlinked.length}</Badge>}
+              {health.duplicates.length > 0 && <Badge tone="info">เบอร์ซ้ำ {health.duplicates.length} กลุ่ม</Badge>}
+              {health.unknown > 0 && <Badge tone="neutral">เช็คไม่ได้ {health.unknown}</Badge>}
+            </div>
+
+            {[
+              { rows: health.dangling, title: "ผูกกับใบ Shopify ที่ถูกลบไปแล้ว — นับว่าผูกแล้วแต่ไม่มีอะไรให้ดู", tone: "text-rose-700" },
+              { rows: health.empty, title: "ผูกกับใบที่ไม่มีออเดอร์ — ถ้าลูกค้าเคยซื้อ ประวัติอยู่อีกใบ", tone: "text-amber-700" },
+              { rows: health.unlinked, title: "ยังไม่ได้ผูกกับใบ Shopify", tone: "text-amber-700" },
+            ]
+              .filter((g) => g.rows.length > 0)
+              .map((g) => (
+                <div key={g.title}>
+                  <p className={clsx("text-[11px] font-semibold", g.tone)}>{g.title}</p>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {g.rows.map((a) => (
+                      <button
+                        key={a.id}
+                        onClick={() => inspect(a)}
+                        className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] text-slate-600 hover:bg-slate-50"
+                      >
+                        {a.name || "(ไม่มีชื่อ)"} · {a.contact || a.phone || a.id.slice(0, 8)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+            {health.duplicates.length > 0 && (
+              <div>
+                <p className="text-[11px] font-semibold text-sky-700">
+                  เบอร์เดียวกันมีหลายบัญชี — มักเกิดจากลูกค้าสมัครใหม่เพราะบัญชีเดิมไม่ขึ้นออเดอร์
+                </p>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {health.duplicates.map((d) => (
+                    <button
+                      key={d.phone}
+                      onClick={() => inspect(d.accounts[0])}
+                      className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] text-sky-700 hover:bg-sky-100"
+                    >
+                      {d.phone} · {d.accounts.length} บัญชี
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {health.capped && (
+              <p className="text-[11px] text-slate-400">แสดงเฉพาะ {health.checked} บัญชีล่าสุด</p>
+            )}
+          </div>
+        )}
+      </Card>
 
       {accounts && (
         <div className="grid gap-5 lg:grid-cols-2">

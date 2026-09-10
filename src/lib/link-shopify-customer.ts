@@ -12,7 +12,7 @@ import {
   createShopifyCustomer,
   findShopifyCustomerByEmail,
   findShopifyCustomerByPhone,
-  getCustomerOrderCount,
+  getCustomerLinkState,
   ShopifyCustomerAddress,
 } from "@/lib/shopify-admin";
 
@@ -104,8 +104,8 @@ export async function linkOrCreateShopifyCustomer(
   // adopt: one of the two is wrong, and quietly showing the same orders to both
   // people is the worse way to find out which.
   if (match && opts.replacingEmptyLink) {
-    const orders = await getCustomerOrderCount(match.id);
-    if (!orders) {
+    const state = await getCustomerLinkState(match.id);
+    if (!state?.orders) {
       // Same emptiness, different id. Nothing to gain and a link to lose.
       match = null;
     }
@@ -202,19 +202,24 @@ export async function ensureShopifyLink(
   }
 ): Promise<LinkShopifyResult> {
   const current = opts.currentShopifyCustomerId || null;
+  const state = current ? await getCustomerLinkState(current) : null;
   if (current) {
-    const orders = await getCustomerOrderCount(current);
     // null means Shopify did not answer — leave a working link alone rather
     // than re-point on the strength of a failed request.
-    if (orders === null || orders > 0) {
+    if (state === null || (state.exists && state.orders > 0)) {
       return { shopifyCustomerId: current, displayName: null, phone: null, addressSuggestion: null };
     }
   }
 
+  // A record that is gone is worse than none: it counts as linked and shows
+  // nothing forever. Those accounts may have a replacement made for them; the
+  // ones merely pointing at an empty record may not, since a second empty
+  // record is what got them here.
+  const linkIsDangling = Boolean(current) && state?.exists === false;
+
   return linkOrCreateShopifyCustomer(uid, {
     ...opts,
-    // Already has a record, empty or not: making a second one helps nobody.
-    createIfMissing: current ? false : opts.createIfMissing,
-    replacingEmptyLink: Boolean(current),
+    createIfMissing: current && !linkIsDangling ? false : opts.createIfMissing,
+    replacingEmptyLink: Boolean(current) && !linkIsDangling,
   });
 }
