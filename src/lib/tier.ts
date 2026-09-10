@@ -46,12 +46,20 @@ export const tierCard: Record<Tier, { gradient: string; shine: string; accent: s
 
 // What each tier actually gives you, in one place.
 //
-// The account card teases the next tier's headline perk and the points page
-// lists them all; when these lived in the points page alone, the card could
-// only say "อีก ฿3,000 ถึง Silver" — a target with no reason attached, which
-// is a chore rather than an invitation.
+// Real perks only. The handoff doc lists a great deal more — member pricing,
+// early access windows, gift wrapping, partner discounts, event invites,
+// priority shipping, a personalised shopping day — and none of that was
+// built. Listing it here would have the member card promising a customer
+// something nobody can deliver when they ask for it, which is worse than a
+// short list. /loyalty follows the same rule; when a perk ships, it goes in
+// both places at once.
 export const tierPerks: Record<Tier, string[]> = {
-  Bronze: ["สะสมคะแนน 1 บาท = 1 คะแนน", "คูปองต้อนรับสมาชิกใหม่"],
-  Silver: ["ส่วนลดวันเกิด 10% + แต้ม 2 เท่า", "เข้าถึงสินค้าใหม่ก่อนใคร 12 ชม."],
-  Gold: ["ส่วนลดวันเกิด 20% + แต้ม 3 เท่า", "จัดส่งด่วนภายใน 1 วันทำการ"],
+  Bronze: [
+    "สะสม 1 แต้ม ทุกการใช้จ่าย ฿1",
+    "แต้มจากรีวิวสินค้า +5 ถึง +30",
+    "โบนัสวันเกิด +100 แต้ม",
+    "คูปองแนะนำเพื่อน ฿100",
+  ],
+  Silver: ["โบนัสวันเกิด +200 แต้ม พร้อมส่วนลด 10%", "สิทธิ์ทุกอย่างของระดับ Glow"],
+  Gold: ["โบนัสวันเกิด +300 แต้ม พร้อมส่วนลด 20%", "สิทธิ์ทุกอย่างของระดับ Radiance"],
 };
