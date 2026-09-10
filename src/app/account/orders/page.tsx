@@ -166,8 +166,17 @@ function OrdersContent() {
                     <span className="text-sm font-bold text-brand-ink group-hover:text-brand-800">{o.name}</span>
                     <ChevronRight size={14} className="text-slate-300 transition-transform group-hover:translate-x-0.5" />
                   </Link>
+                  {/* Labelled and spelled out. "29/8/2569" next to a parcel
+                      that shipped on 1 Sep invites the reading that one of the
+                      two dates is wrong, when they are simply the order date
+                      and the dispatch date. */}
                   <p className="text-xs text-slate-400">
-                    {new Date(o.createdAt).toLocaleDateString("th-TH")}
+                    สั่งเมื่อ{" "}
+                    {new Date(o.createdAt).toLocaleDateString("th-TH", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
                     {o.financialStatus ? ` · ${financialLabel[o.financialStatus] || o.financialStatus}` : ""}
                   </p>
                 </div>
