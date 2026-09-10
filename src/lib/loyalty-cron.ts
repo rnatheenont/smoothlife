@@ -1,6 +1,7 @@
 import { supabaseRest } from "@/lib/supabase-server";
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { TierName, TIER_RANK, qualifiedTier } from "@/lib/loyalty-shared";
+import { maybeAwardMigrationBonus } from "@/lib/migration-bonus";
 
 // Populates user_loyalty — a real "how much has this customer spent"
 // record, independent of the redeemable points balance (which drains on
@@ -90,6 +91,15 @@ export async function recalculateLoyaltyTiers(): Promise<{
       graceUntil = null;
     }
 
+    // Same orders, second question: does this account qualify for the
+    // one-time bonus for customers who were already ours before the
+    // membership existed? It used to be asked only at signup and profile
+    // save, so anyone whose orders were linked later — which is most of the
+    // people it was written for — never got it.
+    await maybeAwardMigrationBonus(candidate.id, orders).catch((err) =>
+      console.error("[loyalty] legacy bonus check failed", candidate.id, err)
+    );
+
     await supabaseRest("user_loyalty?on_conflict=user_id", {
       method: "POST",
       headers: { Prefer: "resolution=merge-duplicates,return=representation" },
@@ -159,6 +169,7 @@ export async function recalculateLoyaltyForUser(userId: string): Promise<UserLoy
         updated_at: new Date().toISOString(),
       }),
     });
+    await maybeAwardMigrationBonus(userId, orders).catch(() => {});
     return { tier: finalTier, spend, orders: orderCount };
   } catch (err) {
     console.error("[loyalty] single-user recalculation failed", userId, err);

@@ -14,7 +14,11 @@ import { PLACEHOLDER_NAME } from "@/lib/link-shopify-customer";
 // feature rather than introducing a second reason code for the same bonus.
 const MIGRATION_BONUS_POINTS = 500;
 
-export async function maybeAwardMigrationBonus(userId: string): Promise<{ awarded: boolean }> {
+export async function maybeAwardMigrationBonus(
+  userId: string,
+  /** Orders already fetched by the caller, to save a second Shopify round trip. */
+  knownOrders?: Awaited<ReturnType<typeof getCustomerOrders>>
+): Promise<{ awarded: boolean }> {
   const [user] = await supabaseRest<
     { display_name: string | null; phone: string | null; shopify_customer_id: string | null }[]
   >(`users?id=eq.${userId}&select=display_name,phone,shopify_customer_id`);
@@ -31,7 +35,10 @@ export async function maybeAwardMigrationBonus(userId: string): Promise<{ awarde
   );
   if (alreadyAwarded.length) return { awarded: false };
 
-  const orders = await getCustomerOrders(user.shopify_customer_id, 5);
+  // 50, not 5: the check is "have they ever really bought from us", and a
+  // customer whose purchases are older than the last five orders on the
+  // account is exactly the long-standing customer this bonus is for.
+  const orders = knownOrders ?? (await getCustomerOrders(user.shopify_customer_id, 50));
   const hasRealOrder = Boolean(orders?.some((o) => o.financialStatus === "PAID"));
   if (!hasRealOrder) return { awarded: false };
 
