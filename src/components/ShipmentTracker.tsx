@@ -5,6 +5,7 @@ import clsx from "clsx";
 import {
   CheckCircle2,
   Circle,
+  Loader2,
   Copy,
   Check,
   ExternalLink,
@@ -124,6 +125,24 @@ function ShipmentCard({
   index: number;
   total: number;
 }) {
+  // Confirming receipt, by the only person who can see the parcel.
+  const [confirming, setConfirming] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+
+  async function confirmDelivery() {
+    if (!shipment.trackingNumber) return;
+    setConfirming(true);
+    try {
+      const res = await fetch("/api/account/shipments/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trackingNumber: shipment.trackingNumber }),
+      });
+      if ((await res.json())?.ok) setConfirmed(true);
+    } finally {
+      setConfirming(false);
+    }
+  }
   // Only while "handed to the courier" is the *furthest* thing we know. Once
   // the parcel is delivered there is nothing left to go and look up.
   const stalledAtShipped = furthestStep(shipment.steps) === "shipped";
@@ -131,6 +150,10 @@ function ShipmentCard({
   // ASSUME_DELIVERED_AFTER_DAYS in lib/shipment.ts. Saying so matters: the
   // customer is the one who knows whether it really arrived.
   const assumedDelivered = shipment.steps.some((s) => s.assumed && s.key === "delivered");
+  // Offered while the parcel is out of our sight and nobody has said it landed
+  // — which, without a courier feed, is every parcel in transit.
+  const canConfirm =
+    !confirmed && Boolean(shipment.trackingNumber) && furthestStep(shipment.steps) !== "delivered";
 
   return (
     <div className="rounded-xl2 border border-slate-100 p-4">
@@ -192,7 +215,24 @@ function ShipmentCard({
           over and nothing after that, so we say exactly that and point at the
           one place that does know, rather than leaving three grey steps to be
           read as "stuck". */}
-      {assumedDelivered && (
+      {confirmed && (
+        <p className="mt-3 flex items-center gap-1.5 rounded-m bg-emerald-50 p-2.5 text-[11px] font-semibold text-emerald-700">
+          <CheckCircle2 size={13} className="shrink-0" />
+          ขอบคุณที่ยืนยันค่ะ — บันทึกว่าได้รับพัสดุแล้ว
+        </p>
+      )}
+
+      {canConfirm && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-m bg-sand-50 p-2.5">
+          <span className="text-[11px] text-slate-500">ได้รับพัสดุนี้แล้วหรือยังคะ?</span>
+          <Button variant="secondary" size="sm" onClick={confirmDelivery} disabled={confirming}>
+            {confirming ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+            ได้รับของแล้ว
+          </Button>
+        </div>
+      )}
+
+      {assumedDelivered && !confirmed && (
         <p className="mt-3 flex items-start gap-1.5 rounded-m bg-sand-50 p-2.5 text-[11px] leading-relaxed text-slate-500">
           <Info size={12} className="mt-0.5 shrink-0 text-slate-400" />
           <span>

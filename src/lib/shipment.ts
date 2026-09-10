@@ -25,11 +25,11 @@ export type Step = {
 // Kerry's domestic service is one to four days and nobody sends us a delivery
 // scan, so a parcel handed over in June sat at "เข้าระบบขนส่งแล้ว" forever —
 // a customer looking at an order from three months ago was shown a delivery
-// still in progress. After two weeks of silence the overwhelmingly likely
-// truth is that it arrived, and the tracker says so while marking the step as
-// inferred rather than reported. A customer who did not receive it tells us,
-// and that always beats an inference.
-const ASSUME_DELIVERED_AFTER_DAYS = 14;
+// still in progress. A week of silence past a four-day service is already well
+// past the likely truth, so the tracker says delivered and marks the step as
+// inferred rather than reported. Two things beat the inference: a courier feed,
+// and the customer pressing "ได้รับของแล้ว" — see api/account/shipments/confirm.
+const ASSUME_DELIVERED_AFTER_DAYS = 7;
 
 const STEP_LABELS: Record<StepKey, string> = {
   confirmed: "ยืนยันคำสั่งซื้อ",
