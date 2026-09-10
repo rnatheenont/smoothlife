@@ -3,6 +3,7 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { getCustomerOrderDetail, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { buildTracking } from "@/lib/tracking";
+import { trackingForOrders } from "@/lib/shipment-sync";
 
 // One order, for the customer it belongs to. Read-only — never writes to
 // Shopify. Ownership is enforced inside getCustomerOrderDetail, which needs
@@ -27,5 +28,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ ok: false, error: "ไม่พบคำสั่งซื้อนี้" }, { status: 404 });
   }
 
-  return NextResponse.json({ ok: true, order, tracking: buildTracking(order) });
+  const feed = await trackingForOrders([order]);
+  return NextResponse.json({ ok: true, order, tracking: buildTracking(order, feed) });
 }

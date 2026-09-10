@@ -3,6 +3,7 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { getCustomerOrders, getCustomerTotals, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { buildTracking } from "@/lib/tracking";
+import { trackingForOrders } from "@/lib/shipment-sync";
 
 // Real Shopify order history for the logged-in customer — read-only, never
 // writes to Shopify. `linked: false` means the account isn't matched to a
@@ -40,7 +41,10 @@ export async function GET(req: NextRequest) {
   // Tracking is assembled here rather than in the browser because whether a
   // courier feed exists is a server-side fact (an API key), and a client that
   // guessed it would quietly claim we know less — or more — than we do.
-  const withTracking = (orders || []).map((o) => ({ ...o, tracking: buildTracking(o) }));
+  // Courier scans for every parcel on the page, in one read — and a quiet
+  // nudge for any number the feed has never been told about.
+  const feed = await trackingForOrders(orders || []);
+  const withTracking = (orders || []).map((o) => ({ ...o, tracking: buildTracking(o, feed) }));
   const hidden = totals ? Math.max(0, totals.orders - withTracking.length) : 0;
   return NextResponse.json({ linked: true, orders: withTracking, totals, hidden });
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOrderForGuestTracking, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { isRateLimitedShared, clientIp } from "@/lib/rate-limit";
 import { buildTracking } from "@/lib/tracking";
+import { trackingForOrders } from "@/lib/shipment-sync";
 
 // Signed-out parcel tracking: order number *or* courier tracking number,
 // plus the phone or email on the order.
@@ -51,5 +52,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true, ...buildTracking(order) });
+  const feed = await trackingForOrders([order]);
+  return NextResponse.json({ ok: true, ...buildTracking(order, feed) });
 }

@@ -19,6 +19,9 @@
 // then `fetchEvents` reports that it cannot, and the UI says so plainly
 // rather than inventing a journey.
 
+import { aftershipConfigured, fetchTracking } from "@/lib/aftership";
+import { saveTracking } from "@/lib/shipment-store";
+
 export type CourierId = "kerry" | "flash" | "thailand_post" | "unknown";
 
 export type CourierEvent = {
@@ -67,14 +70,17 @@ const KERRY: Courier = {
   // with a bare "ok" instead of a page — checked, not assumed. So the link
   // opens their search and the number sits next to it with a copy button.
   trackingUrl: () => "https://th.kex-express.com/th/track/",
-  configured: () => Boolean(process.env.KERRY_API_KEY),
+  // AfterShip carries KEX's scans and needs no agreement with KEX to start,
+  // so the feature does not have to wait on a sales conversation. If KEX's own
+  // API arrives later it becomes another branch here and nothing above this
+  // file changes.
+  configured: () => aftershipConfigured(),
   async fetchEvents(trackingNumber) {
     if (!KERRY.configured()) throw new NotConfiguredError("Kerry Express");
-    // Deliberately unimplemented rather than guessed: Kerry's business API
-    // contract is not in hand yet, and a wrong request shape would fail at
-    // runtime in a way that looks like a bug in this feature instead of a
-    // missing integration. See the tracking plan, open question 1.
-    throw new NotConfiguredError("Kerry Express");
+    const tracking = await fetchTracking(trackingNumber);
+    if (!tracking) return [];
+    await saveTracking(tracking);
+    return tracking.events;
   },
 };
 

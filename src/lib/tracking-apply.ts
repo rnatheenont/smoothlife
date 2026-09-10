@@ -1,4 +1,6 @@
 import { supabaseRest } from "@/lib/supabase-server";
+import { aftershipConfigured, registerTracking } from "@/lib/aftership";
+import { markRegistered } from "@/lib/shipment-store";
 import {
   getOrderForTrackingSync,
   setFulfillmentTracking,
@@ -97,6 +99,19 @@ export async function processTrackingUpdate(input: {
 
       if (res.ok) {
         applied = true;
+        // Start watching the parcel the moment its number is real. Doing it
+        // here rather than on the first page view means the early scans — the
+        // ones that happen while the customer is still waiting to hear
+        // anything — are already collected when they look.
+        void (async () => {
+          try {
+            if (aftershipConfigured() && (await registerTracking(input.trackingNumber))) {
+              await markRegistered(input.trackingNumber, courier);
+            }
+          } catch (err) {
+            console.error("[tracking-apply] could not register with the courier feed", err);
+          }
+        })();
       } else {
         error = res.error ?? "เขียนลง Shopify ไม่สำเร็จ";
         notified = false;
