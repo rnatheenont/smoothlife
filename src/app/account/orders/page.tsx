@@ -8,7 +8,7 @@ import { useCart } from "@/lib/cart-context";
 import { getProductBySlug } from "@/data/products";
 import AccountLayout from "@/components/account/AccountLayout";
 import { formatTHB } from "@/lib/format";
-import { fulfillmentBadge, financialLabel, orderIdFromGid } from "@/lib/order-status";
+import { orderStateBadge, stillShipping, stalledOrder, financialText, orderIdFromGid } from "@/lib/order-status";
 import type { ShopifyOrderSummary } from "@/lib/shopify-admin";
 import type { buildTracking } from "@/lib/tracking";
 import ShipmentTracker from "@/components/ShipmentTracker";
@@ -151,7 +151,10 @@ function OrdersContent() {
       )}
       <div className="flex flex-col gap-4">
         {orders.map((o) => {
-          const badge = fulfillmentBadge(o.fulfillmentStatus);
+          const badge = orderStateBadge(o);
+          const shipping = stillShipping(o);
+          const refunded = Number(o.refunded) > 0;
+          const stalled = stalledOrder(o);
           return (
             <div key={o.id} className="rounded-xl2 border border-slate-100 p-5 shadow-card">
               <div className="flex items-center justify-between mb-3">
@@ -177,7 +180,7 @@ function OrdersContent() {
                       month: "short",
                       year: "numeric",
                     })}
-                    {o.financialStatus ? ` · ${financialLabel[o.financialStatus] || o.financialStatus}` : ""}
+                    {financialText(o.financialStatus) ? ` · ${financialText(o.financialStatus)}` : ""}
                   </p>
                 </div>
                 <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badge.color}`}>{badge.label}</span>
@@ -222,12 +225,26 @@ function OrdersContent() {
                 })}
               </div>
 
-              {o.tracking ? (
+              {/* No tracker on an order that will never ship. Five grey steps
+                  under a refunded order read as "your parcel is stuck", which
+                  is the opposite of what happened. */}
+              {!shipping ? (
+                <p className="mb-3 rounded-xl2 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-500">
+                  รายการนี้ปิดแล้ว ไม่มีการจัดส่ง
+                  {refunded ? ` — คืนเงิน ${formatTHB(Number(o.refunded))} เรียบร้อยแล้ว` : ""}
+                </p>
+              ) : o.tracking ? (
                 <div className="mb-3">
                   <ShipmentTracker
                     shipments={o.tracking.shipments}
                     hasCourierFeed={o.tracking.hasCourierFeed}
                   />
+                  {stalled && (
+                    <p className="mt-2 rounded-xl2 border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800">
+                      รายการนี้ชำระเงินแล้วแต่ยังไม่ได้จัดส่ง และเกินกำหนดปกติไปมากแล้ว — ทักหาทีมงานได้เลยค่ะ
+                      เราจะตรวจสอบให้ทันที
+                    </p>
+                  )}
                 </div>
               ) : (
                 o.trackingNumbers.length > 0 && (
@@ -238,7 +255,15 @@ function OrdersContent() {
               )}
 
               <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                <span className="text-sm font-bold text-brand-ink">{formatTHB(Number(o.total))}</span>
+                {/* What they paid, not what is left after a refund. ฿0 on an
+                    order somebody paid 546 baht for is not a total, it is a
+                    missing story. */}
+                <span className="text-sm font-bold text-brand-ink">{formatTHB(Number(o.originalTotal || o.total))}</span>
+                {refunded && (
+                  <span className="text-xs font-semibold text-slate-500">
+                    คืนเงินแล้ว {formatTHB(Number(o.refunded))}
+                  </span>
+                )}
               </div>
             </div>
           );

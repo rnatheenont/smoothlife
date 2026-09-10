@@ -25,7 +25,17 @@ export function buildTracking(
    */
   stored?: Map<string, StoredTracking>
 ) {
-  const paidAt = order.financialStatus === "PAID" ? order.createdAt : null;
+  // The order exists, so it was confirmed — that step never depended on
+  // payment and pretending it did left a partially refunded or unpaid order
+  // with five grey steps and no way to tell it apart from one that had gone
+  // wrong. Preparing still keys off money actually having arrived.
+  const confirmedAt = order.createdAt;
+  const paidAt =
+    order.financialStatus === "PAID" ||
+    order.financialStatus === "PARTIALLY_REFUNDED" ||
+    order.financialStatus === "REFUNDED"
+      ? order.createdAt
+      : null;
   const hasCourierFeed = anyCourierConfigured();
 
   const shipments = order.shipments.map((s) => {
@@ -44,6 +54,7 @@ export function buildTracking(
       // whatever the shop typed at fulfillment time.
       estimatedDeliveryAt: feed?.expectedDelivery ?? s.estimatedDeliveryAt,
       steps: deriveSteps({
+        confirmedAt,
         paidAt,
         shippedAt: s.shippedAt,
         // A delivery scan is the strongest thing anyone has; Shopify's own
@@ -68,7 +79,7 @@ export function buildTracking(
           courierLabel: "ขนส่ง",
           trackingUrl: null,
           estimatedDeliveryAt: null,
-          steps: deriveSteps({ paidAt, shippedAt: null, deliveredAt: null, events: [] }),
+          steps: deriveSteps({ confirmedAt, paidAt, shippedAt: null, deliveredAt: null, events: [] }),
           events: [],
         },
       ],

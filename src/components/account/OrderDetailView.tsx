@@ -8,7 +8,7 @@ import { Button, Card } from "@/components/ui";
 import { useCart } from "@/lib/cart-context";
 import { getProductBySlug } from "@/data/products";
 import { formatTHB } from "@/lib/format";
-import { fulfillmentBadge, financialLabel } from "@/lib/order-status";
+import { orderStateBadge, stillShipping, stalledOrder, financialText } from "@/lib/order-status";
 import type { ShopifyOrderDetail } from "@/lib/shopify-admin";
 import type { buildTracking } from "@/lib/tracking";
 
@@ -34,7 +34,12 @@ export default function OrderDetailView({
   tracking: ReturnType<typeof buildTracking>;
 }) {
   const { addItem } = useCart();
-  const badge = fulfillmentBadge(order.fulfillmentStatus);
+  const badge = orderStateBadge(order);
+  // Same rule as the order list, from the same helper: the two screens must
+  // never describe one order differently.
+  const shipping = stillShipping({ ...order, shipments: order.shipments });
+  const refunded = Number(order.refunded) > 0;
+  const stalled = stalledOrder({ ...order, shipments: order.shipments });
   const addr = order.shippingAddress;
   const discounts = Number(order.discounts);
   // Shopify's subtotalPrice is already net of discounts, so printing it above
@@ -57,9 +62,7 @@ export default function OrderDetailView({
           <h1 className="text-xl font-bold text-brand-ink">{order.name}</h1>
           <p className="text-xs text-slate-400">
             สั่งเมื่อ {new Date(order.createdAt).toLocaleDateString("th-TH", { dateStyle: "long" })}
-            {order.financialStatus
-              ? ` · ${financialLabel[order.financialStatus] || order.financialStatus}`
-              : ""}
+            {financialText(order.financialStatus) ? ` · ${financialText(order.financialStatus)}` : ""}
           </p>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${badge.color}`}>
@@ -67,9 +70,22 @@ export default function OrderDetailView({
         </span>
       </div>
 
-      <div className="mb-4">
-        <ShipmentTracker shipments={tracking.shipments} hasCourierFeed={tracking.hasCourierFeed} />
-      </div>
+      {shipping ? (
+        <div className="mb-4">
+          <ShipmentTracker shipments={tracking.shipments} hasCourierFeed={tracking.hasCourierFeed} />
+          {stalled && (
+            <p className="mt-2 rounded-xl2 border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800">
+              รายการนี้ชำระเงินแล้วแต่ยังไม่ได้จัดส่ง และเกินกำหนดปกติไปมากแล้ว — ทักหาทีมงานได้เลยค่ะ
+              เราจะตรวจสอบให้ทันที
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="mb-4 rounded-xl2 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-500">
+          รายการนี้ปิดแล้ว ไม่มีการจัดส่ง
+          {refunded ? ` — คืนเงิน ${formatTHB(Number(order.refunded))} เรียบร้อยแล้ว` : ""}
+        </p>
+      )}
 
       <Card className="mb-4">
         <h2 className="mb-3 text-sm font-bold text-brand-ink">รายการสินค้า</h2>
@@ -130,8 +146,16 @@ export default function OrderDetailView({
           <div className="mt-1.5 border-t border-slate-100 pt-2.5">
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold text-brand-ink">ยอดรวมทั้งหมด</span>
-              <span className="text-sm font-bold text-brand-ink">{formatTHB(Number(order.total))}</span>
+              <span className="text-sm font-bold text-brand-ink">
+                {formatTHB(Number(order.originalTotal || order.total))}
+              </span>
             </div>
+            {refunded && (
+              <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
+                <span>คืนเงินแล้ว</span>
+                <span className="font-semibold">-{formatTHB(Number(order.refunded))}</span>
+              </div>
+            )}
           </div>
         </div>
       </Card>

@@ -54,6 +54,8 @@ const STATUS_TO_STEP: Record<ShipmentStatus, StepKey> = {
 };
 
 export type ShipmentInput = {
+  /** When the order was placed. Proof on its own that it was confirmed. */
+  confirmedAt?: string | null;
   paidAt: string | null;
   /** Shopify fulfillment created — the parcel was handed over. */
   shippedAt: string | null;
@@ -64,8 +66,9 @@ export type ShipmentInput = {
 export function deriveSteps(input: ShipmentInput): Step[] {
   const at: Partial<Record<StepKey, string>> = {};
 
+  if (input.confirmedAt) at.confirmed = input.confirmedAt;
   if (input.paidAt) {
-    at.confirmed = input.paidAt;
+    at.confirmed = at.confirmed ?? input.paidAt;
     // Paying is what starts packing, so "preparing" is true from the same
     // moment — Shopify has no separate "started packing" timestamp and
     // inventing one would be a guess presented as a fact.

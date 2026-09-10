@@ -579,7 +579,13 @@ export type ShopifyOrderSummary = {
   createdAt: string;
   financialStatus: string | null;
   fulfillmentStatus: string | null;
+  /** null unless the order was cancelled outright. */
+  cancelledAt: string | null;
+  /** What the order is worth now — refunds have already been taken off. */
   total: string;
+  /** What it was worth when placed. Differs from `total` once money goes back. */
+  originalTotal: string;
+  refunded: string;
   currency: string;
   items: { title: string; quantity: number; slug: string | null; imageUrl: string | null }[];
   trackingNumbers: string[];
@@ -607,7 +613,10 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
               createdAt: string;
               displayFinancialStatus: string | null;
               displayFulfillmentStatus: string | null;
+              cancelledAt: string | null;
               currentTotalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
+              totalPriceSet: { shopMoney: { amount: string } };
+              totalRefundedSet: { shopMoney: { amount: string } } | null;
               lineItems: {
                 edges: {
                   node: {
@@ -639,7 +648,10 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
                 createdAt
                 displayFinancialStatus
                 displayFulfillmentStatus
+                cancelledAt
                 currentTotalPriceSet { shopMoney { amount currencyCode } }
+                totalPriceSet { shopMoney { amount } }
+                totalRefundedSet { shopMoney { amount } }
                 lineItems(first: 20) { edges { node { title quantity image { url } product { handle } } } }
                 fulfillments(first: 5) {
                   createdAt
@@ -661,7 +673,10 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
       createdAt: node.createdAt,
       financialStatus: node.displayFinancialStatus,
       fulfillmentStatus: node.displayFulfillmentStatus,
+      cancelledAt: node.cancelledAt,
       total: node.currentTotalPriceSet.shopMoney.amount,
+      originalTotal: node.totalPriceSet.shopMoney.amount,
+      refunded: node.totalRefundedSet?.shopMoney.amount ?? "0",
       currency: node.currentTotalPriceSet.shopMoney.currencyCode,
       items: node.lineItems.edges.map((e) => ({
         title: e.node.title,
@@ -700,6 +715,10 @@ export type ShopifyOrderDetail = {
   createdAt: string;
   financialStatus: string | null;
   fulfillmentStatus: string | null;
+  cancelledAt: string | null;
+  /** Before refunds — what the customer actually paid. */
+  originalTotal: string;
+  refunded: string;
   subtotal: string;
   shipping: string;
   discounts: string;
@@ -748,6 +767,9 @@ export async function getCustomerOrderDetail(
         createdAt: string;
         displayFinancialStatus: string | null;
         displayFulfillmentStatus: string | null;
+        cancelledAt: string | null;
+        totalPriceSet: { shopMoney: { amount: string } };
+        totalRefundedSet: { shopMoney: { amount: string } } | null;
         customer: { id: string } | null;
         subtotalPriceSet: { shopMoney: { amount: string } } | null;
         totalShippingPriceSet: { shopMoney: { amount: string } } | null;
@@ -788,11 +810,14 @@ export async function getCustomerOrderDetail(
           createdAt
           displayFinancialStatus
           displayFulfillmentStatus
+          cancelledAt
           customer { id }
           subtotalPriceSet { shopMoney { amount } }
           totalShippingPriceSet { shopMoney { amount } }
           totalDiscountsSet { shopMoney { amount } }
           currentTotalPriceSet { shopMoney { amount currencyCode } }
+          totalPriceSet { shopMoney { amount } }
+          totalRefundedSet { shopMoney { amount } }
           shippingAddress { name address1 address2 city province zip phone }
           lineItems(first: 50) {
             edges {
@@ -821,6 +846,9 @@ export async function getCustomerOrderDetail(
       createdAt: o.createdAt,
       financialStatus: o.displayFinancialStatus,
       fulfillmentStatus: o.displayFulfillmentStatus,
+      cancelledAt: o.cancelledAt,
+      originalTotal: o.totalPriceSet.shopMoney.amount,
+      refunded: o.totalRefundedSet?.shopMoney.amount ?? "0",
       subtotal: o.subtotalPriceSet?.shopMoney.amount ?? "0",
       shipping: o.totalShippingPriceSet?.shopMoney.amount ?? "0",
       discounts: o.totalDiscountsSet?.shopMoney.amount ?? "0",
