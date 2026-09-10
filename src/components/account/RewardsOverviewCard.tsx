@@ -187,7 +187,7 @@ export default function RewardsOverviewCard() {
           {/* One continuous ladder with the rungs marked, so "where am I"
               is answered by looking rather than by reading a number. */}
           <div className="relative mt-3 mb-6">
-            <div className="h-2.5 overflow-hidden rounded-full bg-white shadow-inner">
+            <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/70">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${ladderPercent}%`, background: card.gradient }}
@@ -199,7 +199,13 @@ export default function RewardsOverviewCard() {
               return (
                 <div
                   key={t.name}
-                  className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
+                  className={clsx(
+                    "absolute top-0 flex flex-col",
+                    // The first and last rungs sit on the bar's ends, so
+                    // centring them on the point would hang half the dot and
+                    // its label off the card.
+                    at <= 0 ? "items-start" : at >= 100 ? "items-end -translate-x-full" : "-translate-x-1/2 items-center"
+                  )}
                   style={{ left: `${Math.min(at, 100)}%` }}
                 >
                   <span
