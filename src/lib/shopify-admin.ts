@@ -130,14 +130,24 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
   }
 }
 
-/** The scopes this app's token actually carries, for diagnosing what it may read. */
-export async function grantedScopes(): Promise<string[] | null> {
+/**
+ * Who this token says we are, and what it says we may read.
+ *
+ * The app's title and key are here because "the scope is granted but the token
+ * does not have it" has two explanations, and they are told apart by which app
+ * the credentials actually belong to.
+ */
+export async function grantedScopes(): Promise<{ app: string; apiKey: string; scopes: string[] } | null> {
   if (!shopifyAdminConfigured()) return null;
   try {
-    const data = await adminGraphql<{ currentAppInstallation: { accessScopes: { handle: string }[] } }>(
-      `query GrantedScopes { currentAppInstallation { accessScopes { handle } } }`
-    );
-    return data.currentAppInstallation.accessScopes.map((s) => s.handle);
+    const data = await adminGraphql<{
+      currentAppInstallation: { app: { title: string; apiKey: string }; accessScopes: { handle: string }[] };
+    }>(`query GrantedScopes { currentAppInstallation { app { title apiKey } accessScopes { handle } } }`);
+    return {
+      app: data.currentAppInstallation.app.title,
+      apiKey: data.currentAppInstallation.app.apiKey,
+      scopes: data.currentAppInstallation.accessScopes.map((s) => s.handle),
+    };
   } catch (err) {
     console.error("[shopify-admin] grantedScopes failed", err);
     return null;

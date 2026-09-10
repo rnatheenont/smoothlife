@@ -44,8 +44,9 @@ export async function GET(req: NextRequest) {
     ok: true,
     visible: orders?.length ?? 0,
     viaOrderSearch: viaOrderSearch?.map((o) => `${o.name} ${o.createdAt.slice(0, 10)}`) ?? null,
-    canReadAllOrders: scopes?.includes("read_all_orders") ?? null,
-    scopes: scopes?.filter((x) => x.includes("order") || x.includes("customer")) ?? null,
+    app: scopes ? `${scopes.app} (${scopes.apiKey})` : null,
+    canReadAllOrders: scopes?.scopes.includes("read_all_orders") ?? null,
+    scopes: scopes?.scopes ?? null,
     orders: (orders || []).map((o) => ({
       name: o.name,
       createdAt: o.createdAt,
