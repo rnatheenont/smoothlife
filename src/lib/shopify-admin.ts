@@ -34,7 +34,16 @@ async function getAdminAccessToken(): Promise<string> {
   });
   if (!res.ok) throw new Error(`Shopify OAuth token exchange failed: ${res.status}`);
   const data = await res.json();
-  cachedToken = { token: data.access_token, expiresAt: Date.now() + (data.expires_in || 3600) * 1000 };
+  // Capped at ten minutes rather than the 24 hours Shopify offers.
+  //
+  // A client-credentials token carries the scopes it was issued with, so a
+  // scope added in the Shopify admin does nothing until a new one is fetched.
+  // Holding one for a day meant a granted permission could appear not to work
+  // — measured today: the token in flight was missing several scopes the
+  // installation had been given. Re-fetching costs one request per instance
+  // per ten minutes.
+  const lifetime = Math.min((data.expires_in || 3600) * 1000, 10 * 60 * 1000);
+  cachedToken = { token: data.access_token, expiresAt: Date.now() + lifetime };
   return cachedToken.token;
 }
 
