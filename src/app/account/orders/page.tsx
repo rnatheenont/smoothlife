@@ -22,6 +22,9 @@ function OrdersContent() {
   const [loading, setLoading] = useState(true);
   const [linked, setLinked] = useState(false);
   const [orders, setOrders] = useState<OrderWithTracking[]>([]);
+  const [totals, setTotals] = useState<{ orders: number; spend: number; currency: string } | null>(null);
+  /** Orders Shopify counts but will not hand to this app — see the API route. */
+  const [hidden, setHidden] = useState(0);
   const [error, setError] = useState(false);
   const [linking, setLinking] = useState(false);
   const [linkAttempted, setLinkAttempted] = useState(false);
@@ -32,6 +35,8 @@ function OrdersContent() {
       .then((data) => {
         setLinked(Boolean(data.linked));
         setOrders(Array.isArray(data.orders) ? data.orders : []);
+        setTotals(data.totals ?? null);
+        setHidden(Number(data.hidden) || 0);
       });
   }
 
@@ -110,7 +115,14 @@ function OrdersContent() {
     return (
       <div className="text-center py-10">
         <Package size={40} className="mx-auto text-slate-300" />
-        <p className="text-slate-500 mt-4">คุณยังไม่มีคำสั่งซื้อ</p>
+        {/* "You have no orders" would be a lie to a customer whose purchases
+            are simply older than what we may list. The totals come from the
+            customer record and are right either way. */}
+        <p className="text-slate-500 mt-4">
+          {totals && totals.orders > 0
+            ? `คุณมีคำสั่งซื้อ ${totals.orders} รายการ ยอดรวม ${formatTHB(totals.spend)} — แต่ทั้งหมดเก่ากว่า 60 วัน จึงยังไม่แสดงที่นี่ ติดต่อทีมงานได้เลยหากต้องการรายละเอียดค่ะ`
+            : "คุณยังไม่มีคำสั่งซื้อ"}
+        </p>
         <Link href="/shop" className="inline-block mt-4 text-brand-emerald font-semibold text-sm">
           เริ่มช้อปเลย
         </Link>
@@ -120,7 +132,23 @@ function OrdersContent() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold text-brand-ink mb-6">คำสั่งซื้อและติดตามพัสดุ</h1>
+      <h1 className="text-2xl font-bold text-brand-ink mb-2">คำสั่งซื้อและติดตามพัสดุ</h1>
+      {totals && totals.orders > 0 && (
+        <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <span className="text-slate-500">
+            สั่งซื้อทั้งหมด <span className="font-bold text-brand-ink">{totals.orders}</span> รายการ
+          </span>
+          <span className="text-slate-500">
+            ยอดสะสม <span className="font-bold text-brand-ink">{formatTHB(totals.spend)}</span>
+          </span>
+        </div>
+      )}
+      {hidden > 0 && (
+        <p className="mb-5 rounded-xl2 border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-500">
+          แสดงคำสั่งซื้อย้อนหลัง 60 วัน — อีก {hidden} รายการก่อนหน้านั้นยังดูรายละเอียดที่นี่ไม่ได้
+          แต่ยอดสะสมด้านบนนับรวมไว้ครบแล้ว หากต้องการรายละเอียดคำสั่งซื้อเก่า ติดต่อทีมงานได้เลยค่ะ
+        </p>
+      )}
       <div className="flex flex-col gap-4">
         {orders.map((o) => {
           const badge = fulfillmentBadge(o.fulfillmentStatus);

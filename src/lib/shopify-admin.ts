@@ -122,6 +122,41 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
 }
 
 /**
+ * Lifetime totals from the customer record itself.
+ *
+ * These are aggregates Shopify keeps on the customer, so they stay correct
+ * even for orders our token may not list — which is how the account page can
+ * tell someone they have four orders while only being allowed to show one.
+ */
+export async function getCustomerTotals(
+  shopifyCustomerId: string
+): Promise<{ orders: number; spend: number; currency: string } | null> {
+  if (!shopifyAdminConfigured()) return null;
+  const gid = shopifyCustomerId.startsWith("gid://")
+    ? shopifyCustomerId
+    : `gid://shopify/Customer/${shopifyCustomerId}`;
+  try {
+    const data = await adminGraphql<{
+      customer: { numberOfOrders: string; amountSpent: { amount: string; currencyCode: string } } | null;
+    }>(
+      `query CustomerTotals($id: ID!) {
+        customer(id: $id) { numberOfOrders amountSpent { amount currencyCode } }
+      }`,
+      { id: gid }
+    );
+    if (!data.customer) return null;
+    return {
+      orders: Number(data.customer.numberOfOrders) || 0,
+      spend: Number(data.customer.amountSpent.amount) || 0,
+      currency: data.customer.amountSpent.currencyCode || "THB",
+    };
+  } catch (err) {
+    console.error("[shopify-admin] getCustomerTotals failed", err);
+    return null;
+  }
+}
+
+/**
  * Whether a Shopify customer record still exists, and how much is in it.
  *
  * Both halves matter and they fail differently. A record with no orders is the

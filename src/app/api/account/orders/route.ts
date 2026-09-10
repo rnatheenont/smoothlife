@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
-import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
+import { getCustomerOrders, getCustomerTotals, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { buildTracking } from "@/lib/tracking";
 
 // Real Shopify order history for the logged-in customer — read-only, never
@@ -28,10 +28,19 @@ export async function GET(req: NextRequest) {
   // their 21st, with nothing on screen to say anything was left out. Other
   // call sites of getCustomerOrders already pass 100 and 250, so the page
   // size itself is not a constraint.
-  const orders = await getCustomerOrders(row.shopify_customer_id, 50);
+  const [orders, totals] = await Promise.all([
+    getCustomerOrders(row.shopify_customer_id, 50),
+    // The customer record's own lifetime counters, which do not depend on our
+    // token's reach. Shopify withholds orders older than sixty days from an
+    // app without read_all_orders, so a customer with four purchases can be
+    // shown a list of one — and a list that quietly loses three orders reads
+    // as "you lost my history", which is worse than saying what we can see.
+    getCustomerTotals(row.shopify_customer_id),
+  ]);
   // Tracking is assembled here rather than in the browser because whether a
   // courier feed exists is a server-side fact (an API key), and a client that
   // guessed it would quietly claim we know less — or more — than we do.
   const withTracking = (orders || []).map((o) => ({ ...o, tracking: buildTracking(o) }));
-  return NextResponse.json({ linked: true, orders: withTracking });
+  const hidden = totals ? Math.max(0, totals.orders - withTracking.length) : 0;
+  return NextResponse.json({ linked: true, orders: withTracking, totals, hidden });
 }
