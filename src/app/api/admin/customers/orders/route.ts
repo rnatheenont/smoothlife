@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { getCustomerOrders, ordersByCustomerId, grantedScopes, shopifyAdminConfigured } from "@/lib/shopify-admin";
+import { getCustomerOrders, ordersByCustomerId, orderProbe, grantedScopes, shopifyAdminConfigured } from "@/lib/shopify-admin";
 
 // Exactly what the customer's own order page would show them.
 //
@@ -34,10 +34,12 @@ export async function GET(req: NextRequest) {
   // orders, the customer can have their history today instead of after a scope
   // change. The granted scopes come back too — "which orders may we read" is
   // decided by that list and nothing else.
-  const [viaCustomer, viaOrderSearch, scopes] = await Promise.all([
+  const probeId = (req.nextUrl.searchParams.get("order") || "").replace(/\D/g, "");
+  const [viaCustomer, viaOrderSearch, scopes, probe] = await Promise.all([
     getCustomerOrders(id, 50),
     ordersByCustomerId(numericId, 50),
     grantedScopes(),
+    probeId ? orderProbe(probeId) : Promise.resolve(null),
   ]);
   const orders = viaCustomer;
   return NextResponse.json({
@@ -45,6 +47,7 @@ export async function GET(req: NextRequest) {
     visible: orders?.length ?? 0,
     viaOrderSearch: viaOrderSearch?.map((o) => `${o.name} ${o.createdAt.slice(0, 10)}`) ?? null,
     app: scopes ? `${scopes.app} (${scopes.apiKey})` : null,
+    orderProbe: probeId ? (probe ? `${probe.name} ${probe.createdAt.slice(0, 10)}` : "อ่านไม่ได้") : null,
     canReadAllOrders: scopes?.scopes.includes("read_all_orders") ?? null,
     scopes: scopes?.scopes ?? null,
     orders: (orders || []).map((o) => ({

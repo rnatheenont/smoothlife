@@ -130,6 +130,21 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
   }
 }
 
+/** One order by numeric id — proves whether an old order is readable at all. */
+export async function orderProbe(numericOrderId: string): Promise<{ name: string; createdAt: string } | null> {
+  if (!shopifyAdminConfigured()) return null;
+  try {
+    const data = await adminGraphql<{ order: { name: string; createdAt: string } | null }>(
+      `query OrderProbe($id: ID!) { order(id: $id) { name createdAt } }`,
+      { id: `gid://shopify/Order/${numericOrderId}` }
+    );
+    return data.order;
+  } catch (err) {
+    console.error("[shopify-admin] orderProbe failed", err);
+    return null;
+  }
+}
+
 /**
  * Who this token says we are, and what it says we may read.
  *
@@ -169,7 +184,10 @@ export async function ordersByCustomerId(
           edges { node { name createdAt } }
         }
       }`,
-      { query: `customer_id:${numericCustomerId}`, limit }
+      // status:any because Shopify's order search hides archived orders by
+      // default, and an order that was paid and shipped months ago is exactly
+      // the one the store has archived.
+      { query: `customer_id:${numericCustomerId} status:any`, limit }
     );
     return data.orders.edges.map((e) => e.node);
   } catch (err) {
