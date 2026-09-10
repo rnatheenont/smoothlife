@@ -62,7 +62,11 @@ const KERRY: Courier = {
   label: "Kerry Express",
   // The URL Shopify itself stores on the fulfillment, so a customer clicking
   // through from us lands exactly where Shopify's own emails send them.
-  trackingUrl: (n) => `https://th.kerryexpress.com/en/track/v2/?track=${encodeURIComponent(n)}`,
+  // The number cannot be put in the link: kerryexpress.com is retired, and on
+  // the KEX site that replaced it a URL carrying a tracking number answers
+  // with a bare "ok" instead of a page — checked, not assumed. So the link
+  // opens their search and the number sits next to it with a copy button.
+  trackingUrl: () => "https://th.kex-express.com/th/track/",
   configured: () => Boolean(process.env.KERRY_API_KEY),
   async fetchEvents(trackingNumber) {
     if (!KERRY.configured()) throw new NotConfiguredError("Kerry Express");

@@ -581,7 +581,7 @@ export type ShopifyOrderSummary = {
   fulfillmentStatus: string | null;
   total: string;
   currency: string;
-  items: { title: string; quantity: number; slug: string | null }[];
+  items: { title: string; quantity: number; slug: string | null; imageUrl: string | null }[];
   trackingNumbers: string[];
   /** One entry per parcel — an order split across boxes has several. */
   shipments: ShopifyShipment[];
@@ -609,7 +609,14 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
               displayFulfillmentStatus: string | null;
               currentTotalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
               lineItems: {
-                edges: { node: { title: string; quantity: number; product: { handle: string } | null } }[];
+                edges: {
+                  node: {
+                    title: string;
+                    quantity: number;
+                    image: { url: string } | null;
+                    product: { handle: string } | null;
+                  };
+                }[];
               };
               fulfillments: {
                 createdAt: string | null;
@@ -633,7 +640,7 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
                 displayFinancialStatus
                 displayFulfillmentStatus
                 currentTotalPriceSet { shopMoney { amount currencyCode } }
-                lineItems(first: 5) { edges { node { title quantity product { handle } } } }
+                lineItems(first: 20) { edges { node { title quantity image { url } product { handle } } } }
                 fulfillments(first: 5) {
                   createdAt
                   deliveredAt
@@ -660,6 +667,10 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
         title: e.node.title,
         quantity: e.node.quantity,
         slug: e.node.product?.handle || null,
+        // Straight from the order line, so a free gift, a bundle or a
+        // seasonal SKU that never made it into the local catalogue still has
+        // its picture — those were the ones showing an empty grey box.
+        imageUrl: e.node.image?.url || null,
       })),
       trackingNumbers: node.fulfillments.flatMap((f) => f.trackingInfo.map((t) => t.number).filter(Boolean) as string[]),
       shipments: node.fulfillments.flatMap((f) =>
@@ -703,7 +714,7 @@ export type ShopifyOrderDetail = {
     zip: string | null;
     phone: string | null;
   } | null;
-  items: { title: string; quantity: number; total: string; slug: string | null }[];
+  items: { title: string; quantity: number; total: string; slug: string | null; imageUrl: string | null }[];
   shipments: ShopifyShipment[];
 };
 
@@ -757,6 +768,7 @@ export async function getCustomerOrderDetail(
               title: string;
               quantity: number;
               discountedTotalSet: { shopMoney: { amount: string } };
+              image: { url: string } | null;
               product: { handle: string } | null;
             };
           }[];
@@ -783,7 +795,9 @@ export async function getCustomerOrderDetail(
           currentTotalPriceSet { shopMoney { amount currencyCode } }
           shippingAddress { name address1 address2 city province zip phone }
           lineItems(first: 50) {
-            edges { node { title quantity discountedTotalSet { shopMoney { amount } } product { handle } } }
+            edges {
+              node { title quantity discountedTotalSet { shopMoney { amount } } image { url } product { handle } }
+            }
           }
           fulfillments(first: 5) {
             createdAt
@@ -816,6 +830,7 @@ export async function getCustomerOrderDetail(
       items: o.lineItems.edges.map((e) => ({
         title: e.node.title,
         quantity: e.node.quantity,
+        imageUrl: e.node.image?.url || null,
         total: e.node.discountedTotalSet.shopMoney.amount,
         slug: e.node.product?.handle ?? null,
       })),

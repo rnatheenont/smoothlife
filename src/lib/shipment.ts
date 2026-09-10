@@ -16,7 +16,20 @@ export type Step = {
   /** "done" — proven. "current" — the furthest proven step. "todo" — not yet. */
   state: "done" | "current" | "todo";
   at: string | null;
+  /** True when this step is inferred from age rather than reported to us. */
+  assumed?: boolean;
 };
+
+// How long a parcel may go unreported before the tracker calls it delivered.
+//
+// Kerry's domestic service is one to four days and nobody sends us a delivery
+// scan, so a parcel handed over in June sat at "เข้าระบบขนส่งแล้ว" forever —
+// a customer looking at an order from three months ago was shown a delivery
+// still in progress. After two weeks of silence the overwhelmingly likely
+// truth is that it arrived, and the tracker says so while marking the step as
+// inferred rather than reported. A customer who did not receive it tells us,
+// and that always beats an inference.
+const ASSUME_DELIVERED_AFTER_DAYS = 14;
 
 const STEP_LABELS: Record<StepKey, string> = {
   confirmed: "ยืนยันคำสั่งซื้อ",
@@ -69,13 +82,30 @@ export function deriveSteps(input: ShipmentInput): Step[] {
     if (!at[key] || e.eventTime < at[key]!) at[key] = e.eventTime;
   }
 
-  const lastProven = [...ORDER].reverse().find((k) => at[k]);
+  // Nothing since the hand-over, and long enough ago that "still on its way"
+  // stopped being the likely reading.
+  const stale =
+    !at.delivered &&
+    !at.out_for_delivery &&
+    input.events.length === 0 &&
+    input.shippedAt !== null &&
+    Date.now() - new Date(input.shippedAt).getTime() > ASSUME_DELIVERED_AFTER_DAYS * 86_400_000;
+
+  const assumedKeys = new Set<StepKey>();
+  if (stale) {
+    for (const key of ["out_for_delivery", "delivered"] as StepKey[]) assumedKeys.add(key);
+  }
+
+  const lastProven = stale ? "delivered" : [...ORDER].reverse().find((k) => at[k]);
   const furthest = lastProven ? ORDER.indexOf(lastProven) : -1;
 
   return ORDER.map((key, i) => ({
     key,
     label: STEP_LABELS[key],
+    // No timestamp on an inferred step: a date nobody recorded would be an
+    // invention, and the caption already explains where the step came from.
     at: at[key] ?? null,
+    assumed: assumedKeys.has(key) || undefined,
     // Steps before the furthest proven one count as done even with no
     // timestamp of their own. A parcel that is confirmed delivered must have
     // gone out for delivery, whether or not anyone scanned it doing so, and

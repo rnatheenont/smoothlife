@@ -127,6 +127,10 @@ function ShipmentCard({
   // Only while "handed to the courier" is the *furthest* thing we know. Once
   // the parcel is delivered there is nothing left to go and look up.
   const stalledAtShipped = furthestStep(shipment.steps) === "shipped";
+  // The last step was reached by age rather than by anyone telling us — see
+  // ASSUME_DELIVERED_AFTER_DAYS in lib/shipment.ts. Saying so matters: the
+  // customer is the one who knows whether it really arrived.
+  const assumedDelivered = shipment.steps.some((s) => s.assumed && s.key === "delivered");
 
   return (
     <div className="rounded-xl2 border border-slate-100 p-4">
@@ -188,6 +192,16 @@ function ShipmentCard({
           over and nothing after that, so we say exactly that and point at the
           one place that does know, rather than leaving three grey steps to be
           read as "stuck". */}
+      {assumedDelivered && (
+        <p className="mt-3 flex items-start gap-1.5 rounded-m bg-sand-50 p-2.5 text-[11px] leading-relaxed text-slate-500">
+          <Info size={12} className="mt-0.5 shrink-0 text-slate-400" />
+          <span>
+            พัสดุนี้ส่งออกไปนานแล้ว ระบบจึงถือว่าจัดส่งสำเร็จ — ขนส่งไม่ได้แจ้งวันที่รับพัสดุกลับมาให้เรา
+            หากยังไม่ได้รับ ทักหาทีมงานได้เลยค่ะ
+          </span>
+        </p>
+      )}
+
       {stalledAtShipped && !hasCourierFeed && shipment.trackingUrl && (
         <p className="mt-3 flex items-start gap-1.5 rounded-m bg-sand-50 p-2.5 text-[11px] leading-relaxed text-slate-500">
           <Info size={12} className="mt-0.5 shrink-0 text-slate-400" />

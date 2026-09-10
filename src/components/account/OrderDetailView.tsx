@@ -79,8 +79,18 @@ export default function OrderDetailView({
             return (
               <div key={i} className="flex items-center gap-3">
                 <div className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-soft">
-                  {product ? (
-                    <Image src={product.image} alt={it.title} fill className="object-cover" />
+                  {/* The order line's own picture first. The local catalogue holds
+                      only what is on sale today, so free gifts, bundles and seasonal
+                      SKUs fell through to a grey box — on the very page a customer
+                      opens to recognise what they bought. */}
+                  {it.imageUrl || product ? (
+                    <Image
+                      src={it.imageUrl || product!.image}
+                      alt={it.title}
+                      fill
+                      sizes="56px"
+                      className="object-cover"
+                    />
                   ) : (
                     <Package size={18} className="text-slate-300" />
                   )}

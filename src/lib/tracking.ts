@@ -23,7 +23,11 @@ export function buildTracking(order: {
       trackingNumber: s.number,
       courierId: courier.id,
       courierLabel: courier.label,
-      trackingUrl: s.url || courier.trackingUrl(s.number),
+      // Ours first, Shopify's second. Shopify stores whatever link was right
+      // when the fulfillment was created and never revisits it, so orders from
+      // months ago still point at kerryexpress.com — a domain that no longer
+      // tracks anything. courier.ts is the one place that knows today's link.
+      trackingUrl: courier.trackingUrl(s.number) || s.url,
       estimatedDeliveryAt: s.estimatedDeliveryAt,
       steps: deriveSteps({
         paidAt,

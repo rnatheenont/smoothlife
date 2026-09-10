@@ -189,8 +189,18 @@ function OrdersContent() {
                   return (
                     <div key={i} className="flex items-center gap-2.5">
                       <div className="relative h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-surface-soft grid place-items-center">
-                        {product ? (
-                          <Image src={product.image} alt={it.title} fill className="object-cover" />
+                        {/* The order line's own picture first. The local catalogue holds
+                            only what is on sale today, so free gifts, bundles and seasonal
+                            SKUs fell through to a grey box — on the very page a customer
+                            opens to recognise what they bought. */}
+                        {it.imageUrl || product ? (
+                          <Image
+                            src={it.imageUrl || product!.image}
+                            alt={it.title}
+                            fill
+                            sizes="56px"
+                            className="object-cover"
+                          />
                         ) : (
                           <Package size={18} className="text-slate-300" />
                         )}
