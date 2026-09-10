@@ -8,6 +8,7 @@
 // address form splits ตำบล/อำเภอ out and Shopify's address has no such
 // fields to split from reliably.
 import { supabaseRest } from "@/lib/supabase-server";
+import { recalculateLoyaltyForUser } from "@/lib/loyalty-cron";
 import {
   createShopifyCustomer,
   findShopifyCustomerByEmail,
@@ -164,6 +165,13 @@ export async function linkOrCreateShopifyCustomer(
   if (Object.keys(patch).length > 0) {
     try {
       await supabaseRest(`users?id=eq.${uid}`, { method: "PATCH", returning: false, body: JSON.stringify(patch) });
+      // Newly linked to a Shopify customer means their purchase history just
+      // became readable. Working the tier out now — rather than waiting for a
+      // nightly pass that covers 25 accounts at a time — is the difference
+      // between a member card that knows them and one that says ฿0.
+      if (patch.shopify_customer_id) {
+        void recalculateLoyaltyForUser(uid).catch(() => {});
+      }
     } catch (err) {
       console.error("[link-shopify-customer] failed to patch user", err);
     }

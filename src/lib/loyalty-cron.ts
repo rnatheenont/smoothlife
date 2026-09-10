@@ -108,3 +108,62 @@ export async function recalculateLoyaltyTiers(): Promise<{
 
   return { reviewed: batch.length, upgraded, downgraded, gracePeriodStarted };
 }
+
+/**
+ * One account's spend and tier, worked out now rather than by tomorrow's cron.
+ *
+ * The nightly pass covers 25 accounts at a time, so a customer who linked their
+ * orders today saw "อีก ฿3,000 ถึง Silver" with an empty bar — their four
+ * purchases were sitting in Shopify unread. This runs at the moment a link is
+ * made, which is the moment the spend becomes knowable.
+ *
+ * Never throws: a failure here must not break the sign-in that triggered it.
+ * Tomorrow's cron catches whatever this misses.
+ */
+export async function recalculateLoyaltyForUser(userId: string): Promise<UserLoyaltySnapshot | null> {
+  if (!shopifyAdminConfigured()) return null;
+  try {
+    const [user] = await supabaseRest<{ id: string; shopify_customer_id: string | null }[]>(
+      `users?id=eq.${userId}&select=id,shopify_customer_id&limit=1`
+    );
+    if (!user?.shopify_customer_id) return null;
+
+    const orders = await getCustomerOrders(user.shopify_customer_id, 250);
+    const cutoff = Date.now() - ROLLING_WINDOW_DAYS * 86_400_000;
+    const recentPaid = (orders ?? []).filter(
+      (o) => o.financialStatus === "PAID" && new Date(o.createdAt).getTime() >= cutoff
+    );
+    const spend = recentPaid.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
+    const orderCount = recentPaid.length;
+
+    const [existing] = await supabaseRest<LoyaltyRow[]>(
+      `user_loyalty?user_id=eq.${userId}&select=user_id,current_tier,tier_downgrade_grace_until,last_reviewed_at`
+    );
+    const currentTier: TierName = existing?.current_tier ?? "Bronze";
+    const qualified = qualifiedTier(spend, orderCount);
+    // Upgrades apply at once; downgrades are left to the cron, which owns the
+    // grace period. Nobody should lose a tier as a side effect of signing in.
+    const finalTier = TIER_RANK[qualified] > TIER_RANK[currentTier] ? qualified : currentTier;
+
+    await supabaseRest("user_loyalty?on_conflict=user_id", {
+      method: "POST",
+      headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+      returning: false,
+      body: JSON.stringify({
+        user_id: userId,
+        current_tier: finalTier,
+        rolling_12mo_spend: spend,
+        rolling_12mo_orders: orderCount,
+        tier_downgrade_grace_until: existing?.tier_downgrade_grace_until ?? null,
+        last_reviewed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }),
+    });
+    return { tier: finalTier, spend, orders: orderCount };
+  } catch (err) {
+    console.error("[loyalty] single-user recalculation failed", userId, err);
+    return null;
+  }
+}
+
+export type UserLoyaltySnapshot = { tier: TierName; spend: number; orders: number };

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseRest, supabaseConfigured, pgValue } from "@/lib/supabase-server";
+import { recalculateLoyaltyForUser } from "@/lib/loyalty-cron";
 
 // Folding a customer's duplicate account into the one they keep.
 //
@@ -64,6 +65,9 @@ export async function POST(req: NextRequest) {
       method: "POST",
       body: JSON.stringify({ p_survivor: survivorId, p_loser: loserId }),
     });
+    // The survivor may have just inherited the Shopify link, and with it a
+    // purchase history its tier was never calculated from.
+    void recalculateLoyaltyForUser(survivorId).catch(() => {});
     return NextResponse.json({ ok: true, moved: result });
   } catch (err) {
     console.error("[admin/customers/merge] failed", err);

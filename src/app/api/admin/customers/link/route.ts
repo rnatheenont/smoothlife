@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseRest, supabaseConfigured, pgValue } from "@/lib/supabase-server";
 import { provenMatch } from "@/lib/account-match";
+import { recalculateLoyaltyForUser } from "@/lib/loyalty-cron";
 import { searchShopifyCustomers } from "@/lib/shopify-admin";
 
 // Point a site account at a Shopify customer, or cut it loose.
@@ -91,6 +92,11 @@ export async function POST(req: NextRequest) {
     returning: false,
     body: JSON.stringify({ shopify_customer_id: unlink ? null : shopifyCustomerId }),
   });
+
+  // The customer's tier is computed from spend we could not see until this
+  // link existed; leaving it for tomorrow's cron means staff fix the orders
+  // and the member card still says ฿0 when the customer looks.
+  if (!unlink) void recalculateLoyaltyForUser(userId).catch(() => {});
 
   await supabaseRest("admin_audit_log", {
     method: "POST",

@@ -43,3 +43,15 @@ export const tierCard: Record<Tier, { gradient: string; shine: string; accent: s
     accent: "#e8bd4e",
   },
 };
+
+// What each tier actually gives you, in one place.
+//
+// The account card teases the next tier's headline perk and the points page
+// lists them all; when these lived in the points page alone, the card could
+// only say "อีก ฿3,000 ถึง Silver" — a target with no reason attached, which
+// is a chore rather than an invitation.
+export const tierPerks: Record<Tier, string[]> = {
+  Bronze: ["สะสมคะแนน 1 บาท = 1 คะแนน", "คูปองต้อนรับสมาชิกใหม่"],
+  Silver: ["ส่วนลดวันเกิด 10% + แต้ม 2 เท่า", "เข้าถึงสินค้าใหม่ก่อนใคร 12 ชม."],
+  Gold: ["ส่วนลดวันเกิด 20% + แต้ม 3 เท่า", "จัดส่งด่วนภายใน 1 วันทำการ"],
+};

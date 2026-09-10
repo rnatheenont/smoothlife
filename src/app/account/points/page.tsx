@@ -10,13 +10,17 @@ import AccountLayout from "@/components/account/AccountLayout";
 import DemoBadge from "@/components/DemoBadge";
 import type { RedemptionTier } from "@/app/api/account/redeem/route";
 import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
-import { tierDisplayName } from "@/lib/tier";
+import { TIER_CRITERIA } from "@/lib/loyalty-shared";
+import { tierPerks, tierDisplayName } from "@/lib/tier";
 
-const tiers = [
-  { name: "Bronze", min: 0, icon: Star, perks: ["สะสมคะแนน 1 บาท = 1 คะแนน", "คูปองต้อนรับสมาชิกใหม่"] },
-  { name: "Silver", min: 3000, icon: Award, perks: ["ส่วนลดวันเกิด 10% + แต้ม 2 เท่า", "เข้าถึงสินค้าใหม่ก่อนใคร 12 ชม."] },
-  { name: "Gold", min: 10000, icon: Crown, perks: ["ส่วนลดวันเกิด 20% + แต้ม 3 เท่า", "จัดส่งด่วนภายใน 1 วันทำการ"] },
-];
+// Thresholds and perks both come from shared modules so this page, the member
+// card and the tier logic can never quote different numbers at the customer.
+const tiers = TIER_CRITERIA.map((t) => ({
+  name: t.name,
+  min: t.minSpend,
+  icon: { Bronze: Star, Silver: Award, Gold: Crown }[t.name],
+  perks: tierPerks[t.name],
+}));
 
 const reasonLabel: Record<string, string> = {
   order_paid: "ได้รับจากคำสั่งซื้อ",

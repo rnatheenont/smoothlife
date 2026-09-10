@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { tierBadge, tierCard, tierDisplayName } from "@/lib/tier";
+import clsx from "clsx";
+import { tierBadge, tierCard, tierDisplayName, tierPerks } from "@/lib/tier";
+import { TIER_CRITERIA } from "@/lib/loyalty-shared";
+import type { Tier } from "@/lib/auth-context";
 import { DAILY_CHECKIN_ENABLED, REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 import { loyaltyTierProgress } from "@/lib/loyalty-shared";
 import { formatTHB } from "@/lib/format";
@@ -82,7 +85,15 @@ export default function RewardsOverviewCard() {
   const card = tierCard[user.tier];
   const TierIcon = badge.icon;
   const pointBalance = data?.recovery.pointBalance ?? user.points;
-  const progress = loyaltyTierProgress(user.tierSpend ?? 0, user.tierOrders ?? 0);
+  const spend = user.tierSpend ?? 0;
+  const progress = loyaltyTierProgress(spend, user.tierOrders ?? 0);
+  const topThreshold = TIER_CRITERIA[TIER_CRITERIA.length - 1].minSpend;
+  const nextThreshold = TIER_CRITERIA.find((t) => t.name === progress.next)?.minSpend ?? topThreshold;
+  const nextPerk = progress.next ? tierPerks[progress.next as Tier]?.[0] : null;
+  // Position along the whole ladder rather than within one segment: the point
+  // of the bar is to show where they stand overall, and a segment-relative
+  // bar jumps backwards to near-zero every time someone levels up.
+  const ladderPercent = Math.min(100, Math.round((spend / topThreshold) * 100));
 
   return (
     <div className="rounded-2xl overflow-hidden shadow-cardHover">
@@ -147,25 +158,79 @@ export default function RewardsOverviewCard() {
           </Link>
         </div>
 
-        {/* How far off the next tier is. The card showed the tier name and
-            nothing about reaching the next one, so "Bronze" read as a label
-            rather than a position on a ladder. Spend-based, matching the bar
-            in the cart — the tiers are earned by spend, not by points. */}
-        <div className="mb-4">
-          <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px]">
-            <span className="font-semibold text-brand-ink">ระดับ {tierDisplayName[user.tier].en}</span>
-            <span className="text-slate-500">
-              {progress.next
-                ? `อีก ${formatTHB(progress.remaining)} ถึง ${progress.next}`
-                : "ระดับสูงสุดแล้ว"}
+        {/* The ladder, not just the next rung.
+            It used to read "อีก ฿3,000 ถึง Silver" over an empty bar: a target
+            with no progress attached to it and no reason to want it. Now it
+            shows how far along they are, where the rungs sit, and what the
+            next one actually gives them. */}
+        <div className="mb-4 rounded-xl2 border border-slate-100 bg-surface-soft/60 p-4">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">ยอดสะสมระดับสมาชิก</p>
+              <p className="mt-0.5 text-lg font-extrabold text-brand-ink">
+                {formatTHB(spend)}
+                {progress.next && (
+                  <span className="ml-1 text-xs font-medium text-slate-400">
+                    / {formatTHB(nextThreshold)}
+                  </span>
+                )}
+              </p>
+            </div>
+            <span
+              className="rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
+              style={{ background: card.gradient }}
+            >
+              {tierDisplayName[user.tier].en}
             </span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full bg-brand-gradient transition-all" style={{ width: `${progress.percent}%` }} />
+
+          {/* One continuous ladder with the rungs marked, so "where am I"
+              is answered by looking rather than by reading a number. */}
+          <div className="relative mt-3 mb-6">
+            <div className="h-2.5 overflow-hidden rounded-full bg-white shadow-inner">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${ladderPercent}%`, background: card.gradient }}
+              />
+            </div>
+            {TIER_CRITERIA.map((t) => {
+              const at = (t.minSpend / topThreshold) * 100;
+              const reached = spend >= t.minSpend;
+              return (
+                <div
+                  key={t.name}
+                  className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
+                  style={{ left: `${Math.min(at, 100)}%` }}
+                >
+                  <span
+                    className={clsx(
+                      "h-2.5 w-2.5 rounded-full border-2 border-white",
+                      reached ? "bg-brand-emerald" : "bg-slate-300"
+                    )}
+                  />
+                  <span
+                    className={clsx(
+                      "mt-1 whitespace-nowrap text-[10px]",
+                      reached ? "font-semibold text-brand-ink" : "text-slate-400"
+                    )}
+                  >
+                    {tierDisplayName[t.name].en}
+                  </span>
+                </div>
+              );
+            })}
           </div>
-          {progress.next && (
-            <p className="mt-1.5 text-[11px] text-slate-400">นับยอดซื้อรอบ 12 เดือนล่าสุด</p>
+
+          {progress.next ? (
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              อีก <span className="font-bold text-brand-emerald">{formatTHB(progress.remaining)}</span> ก็ขึ้นระดับ{" "}
+              <span className="font-semibold text-brand-ink">{tierDisplayName[progress.next as Tier].en}</span>
+              {nextPerk ? <> — ได้ {nextPerk}</> : null}
+            </p>
+          ) : (
+            <p className="text-[11px] font-semibold text-brand-emerald">คุณอยู่ระดับสูงสุดแล้ว ขอบคุณที่อยู่กับเรานะคะ 💚</p>
           )}
+          <p className="mt-1 text-[10px] text-slate-400">นับยอดซื้อ 12 เดือนล่าสุด · อัปเดตอัตโนมัติหลังคำสั่งซื้อสำเร็จ</p>
         </div>
 
         {DAILY_CHECKIN_ENABLED && (
