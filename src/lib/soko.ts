@@ -282,6 +282,16 @@ export async function probeOrderList(pick: string[] = ["none", "mid", "txt"], ti
         status: res.status,
         bytes: html.length,
         rows: html.split(/<tr[\s>]/i).length - 1,
+        // Which parcel statuses the warehouse itself publishes. If "Delivered"
+        // appears here, delivery confirmation is already in a system we can
+        // read and there is no need to buy it from a courier feed. Counted as
+        // keywords rather than dumped as rows, because those rows carry
+        // customers' names and addresses.
+        statuses: Object.fromEntries(
+          ["Packed", "Picking", "Pick", "Shipped", "Delivered", "Deliver", "Return", "Cancel", "Transit", "Received"]
+            .map((k) => [k, (html.match(new RegExp(`\\b${k}`, "g")) || []).length])
+            .filter(([, n]) => (n as number) > 0)
+        ),
         storeRows: html.split(/<tr[\s>]/i).filter((r) => r.includes(STORE)).length,
         viewLinks: (html.match(/r=order(?:%2F|\/)view/gi) || []).length,
         orderRefs: (html.match(/#\d{3,}[A-Za-z_]*/g) || []).slice(0, 12),
