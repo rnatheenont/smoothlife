@@ -247,6 +247,37 @@ export let lastDiagnostics: SokoDiagnostics | null = null;
  * long each takes, which is the difference between "their search is slow" and
  * "they are refusing us".
  */
+/**
+ * What a single order's page in soko actually says about its parcel.
+ *
+ * The list view stops at "Shipped", but the warehouse holds the KEX account —
+ * if their order page carries a delivery status, the data we want is already
+ * in a system we can read and nobody needs to be asked for anything. Reported
+ * as keyword counts, never as page text: those pages carry the customer's
+ * name, address and phone.
+ */
+export async function probeOrderStatuses(orderHref: string, timeoutMs = 20_000) {
+  if (!sokoConfigured()) throw new SokoError("ยังไม่ได้ตั้งค่า SOKO_USERNAME / SOKO_PASSWORD");
+  const jar = await login();
+  const url = orderHref.startsWith("http") ? orderHref : `https://shg.sokochan.com/${orderHref.replace(/^\//, "")}`;
+  const res = await fetchSoko(url, { headers: { Cookie: jar } }, timeoutMs);
+  const html = await res.text();
+  const text = html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<[^>]+>/g, "\n");
+  const words = [
+    "Delivered", "Delivery", "Deliver", "Received", "Signed", "POD", "Kerry", "KEX", "KND",
+    "Status", "Track", "Transit", "Out for", "Shipped", "Packed", "Return", "Cancel", "History", "Timeline",
+  ];
+  return {
+    bytes: html.length,
+    keywords: Object.fromEntries(
+      words.map((w) => [w, (text.match(new RegExp(w, "gi")) || []).length]).filter(([, n]) => (n as number) > 0)
+    ),
+    // Field labels only — the lines that name a field, not the ones that hold
+    // somebody's address.
+    labels: [...new Set((text.match(/^[A-Za-z][A-Za-z .#/_-]{2,28}:?$/gm) || []).map((l) => l.trim()))].slice(0, 60),
+  };
+}
+
 export async function probeOrderList(pick: string[] = ["none", "mid", "txt"], timeoutMs = 25_000) {
   if (!sokoConfigured()) throw new SokoError("ยังไม่ได้ตั้งค่า SOKO_USERNAME / SOKO_PASSWORD");
   const loginAt = Date.now();
