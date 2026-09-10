@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { normaliseTracking, verifyWebhookSignature } from "@/lib/aftership";
+import { normaliseTracking, verifyWebhookSignature, SIGNATURE_HEADERS } from "@/lib/aftership";
 import { saveTracking } from "@/lib/shipment-store";
 
 // Courier scans arriving on their own.
@@ -17,7 +17,15 @@ export async function POST(req: NextRequest) {
   // Read raw: the signature covers the exact bytes, and JSON.parse then
   // re-stringify would change them.
   const raw = await req.text();
-  if (!verifyWebhookSignature(raw, req.headers.get("aftership-hmac-sha256"))) {
+  const signed = SIGNATURE_HEADERS.some((h) => verifyWebhookSignature(raw, req.headers.get(h)));
+  if (!signed) {
+    // Logged with the header names actually present, because "AfterShip is
+    // configured but nothing ever updates" is otherwise a silent mystery, and
+    // the answer is usually that the secret was pasted from the wrong page.
+    console.error(
+      "[aftership-webhook] rejected — headers present:",
+      [...req.headers.keys()].filter((k) => k.includes("sign") || k.includes("hmac")).join(",") || "none"
+    );
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 

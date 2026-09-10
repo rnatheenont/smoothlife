@@ -167,7 +167,23 @@ export function verifyWebhookSignature(rawBody: string, signature: string | null
   const secret = process.env.AFTERSHIP_WEBHOOK_SECRET;
   if (!secret || !signature) return false;
   const expected = createHmac("sha256", secret).update(rawBody, "utf8").digest("base64");
-  const a = Buffer.from(signature);
+  const a = Buffer.from(signature.trim());
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
 }
+
+/**
+ * The header carrying the signature, whichever name this account's plan uses.
+ *
+ * AfterShip's own documentation names two — aftership-hmac-sha256 for Tracking
+ * and am-webhook-signature for Shipping — and the admin has more than one place
+ * to turn webhooks on. Reading all of them costs nothing; guessing one and
+ * being wrong means every update is rejected as forged and the tracker quietly
+ * never updates, which is the hardest kind of failure to notice.
+ */
+export const SIGNATURE_HEADERS = [
+  "aftership-hmac-sha256",
+  "am-webhook-signature",
+  "as-signature-hmac-sha256",
+  "x-aftership-hmac-sha256",
+];
