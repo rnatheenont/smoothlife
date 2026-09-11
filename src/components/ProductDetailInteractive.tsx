@@ -315,12 +315,12 @@ export default function ProductDetailInteractive({
           <button
             type="button"
             aria-label="ขยายรูปสินค้า"
-            className="relative block aspect-square w-full cursor-zoom-in select-none overflow-hidden rounded-xl2 bg-surface-mist touch-pan-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+            className="relative block aspect-square w-full cursor-zoom-in select-none overflow-hidden rounded-xl2 bg-white touch-pan-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
             onTouchStart={onImageTouchStart}
             onTouchEnd={onImageTouchEnd}
             onClick={() => setZoomOpen(true)}
           >
-            <Image src={activeImage} alt={product.name} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-contain p-4 mix-blend-multiply" priority />
+            <Image src={activeImage} alt={product.name} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" priority />
             <span aria-hidden="true" className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-brand-ink ring-1 ring-surface-line">
               <Expand size={16} />
             </span>
@@ -345,11 +345,11 @@ export default function ProductDetailInteractive({
                   onClick={() => setActiveIndex(i)}
                   aria-label={`ดูรูปที่ ${i + 1}`}
                   aria-current={i === activeIndex}
-                  className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-surface-mist ${
+                  className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-white ${
                     i === activeIndex ? "border-brand-action" : "border-transparent hover:border-surface-line"
                   }`}
                 >
-                  <Image src={img} alt="" fill sizes="64px" className="object-contain p-1 mix-blend-multiply" />
+                  <Image src={img} alt="" fill sizes="64px" className="object-cover" />
                 </button>
               ))}
             </div>

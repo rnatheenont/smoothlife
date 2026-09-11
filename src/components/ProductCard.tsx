@@ -98,18 +98,17 @@ export default function ProductCard({ product }: { product: Product }) {
       >
         <Heart size={16} className={isWished ? "fill-sale text-sale" : "text-slate-500"} />
       </button>
-      {/* Every product sits on the same mist ground, contained rather than
-          cropped. White-background packshots melt into it (multiply), and
-          the grid stops alternating between product photos and full-bleed
-          campaign art. No zoom on hover — the card lifting its shadow is
-          enough to say it is clickable. */}
-      <Link href={`/product/${product.slug}`} className="relative block aspect-square overflow-hidden bg-surface-mist">
+      {/* The photo fills the square edge to edge, in its own colours. The
+          mist well with multiply blending tinted every packshot green-grey
+          and shrank it inside padding. No zoom on hover — the card lifting
+          its shadow is enough to say it is clickable. */}
+      <Link href={`/product/${product.slug}`} className="relative block aspect-square overflow-hidden bg-white">
         <Image
           src={product.image}
           alt={product.name}
           fill
           sizes="(max-width: 768px) 50vw, 25vw"
-          className={clsx("object-contain p-3 mix-blend-multiply", soldOut && "grayscale opacity-60")}
+          className={clsx("object-cover", soldOut && "grayscale opacity-60")}
         />
         {soldOut ? (
           <div className="absolute inset-0 grid place-items-center bg-black/10">
