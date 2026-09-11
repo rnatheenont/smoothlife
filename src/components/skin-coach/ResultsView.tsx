@@ -155,6 +155,20 @@ export default function ResultsView({
   const withProducts = new Set<MetricKey>([...needsCare, ...(preferred ? [preferred] : [])]);
   if (withProducts.size === 0) withProducts.add(weakest);
 
+  // One product, one finding: the rows are filled in page order and a pick
+  // already shown above is skipped below, so "สิว" and "รูขุมขน" never show
+  // the same tube twice.
+  const picksByMetric = new Map<MetricKey, Product[]>();
+  {
+    const shown = new Set<string>(bought);
+    for (const m of METRIC_ROWS) {
+      if (!withProducts.has(m.key)) continue;
+      const picks = recommendForMetric(m.key, 3, shown);
+      picks.forEach((p) => shown.add(p.slug));
+      picksByMetric.set(m.key, picks);
+    }
+  }
+
   function reasonFor(key: MetricKey, topic: string) {
     if (key === preferred) return `เพราะคุณบอกว่ากังวลเรื่อง${topic}`;
     const level = clarityLevel(metrics[key].score);
@@ -191,7 +205,7 @@ export default function ResultsView({
       setSaved(data.scan.id);
       setBonus(data.bonusPoints ?? 0);
       if (data.bonusPoints) refreshUser();
-      history.setScans((prev) => [data.scan, ...prev]);
+      history.setScans((prev) => (prev.some((x) => x.id === data.scan.id) ? prev : [data.scan, ...prev]));
     } catch {
       setSaveError("บันทึกไม่สำเร็จ ลองอีกครั้ง");
     } finally {
@@ -260,6 +274,7 @@ export default function ResultsView({
         <ul className="mt-2 divide-y divide-surface-line">
           {METRIC_ROWS.map((m) => {
             const show = withProducts.has(m.key);
+            const picks = show ? picksByMetric.get(m.key) ?? [] : [];
             return (
               <MetricRow
                 key={m.key}
@@ -267,7 +282,7 @@ export default function ResultsView({
                 score={metrics[m.key].score}
                 note={metrics[m.key].note}
                 reason={show ? reasonFor(m.key, m.topic) : null}
-                products={show ? recommendForMetric(m.key, 3, bought) : []}
+                products={picks}
                 skipped={show ? boughtCountForMetric(m.key, bought) : 0}
               />
             );

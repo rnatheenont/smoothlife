@@ -7,23 +7,42 @@ export const dynamic = "force-dynamic";
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 const API_URL = "https://api.anthropic.com/v1/messages";
 
-const SYSTEM_PROMPT = `You are a cosmetic skin-appearance scanner for a Thai beauty retailer's website, similar in spirit to a "skin coach" selfie tool. You are given 1-6 close-up selfie photos of the same person's face/skin, each labeled with which area it shows (e.g. front, forehead, cheek, under-eye, chin, or a specific problem spot). Look across all provided photos together, weighting each toward the traits it's best suited to show, and score four visible surface traits, plus an estimated visible "skin age".
+// Scoring is anchored to what can be seen, trait by trait, and the model has
+// to write down what it sees before it scores. Without anchors it answered
+// most faces with the same mid-range numbers and a skin age in the late
+// twenties — different people got the same result and one person got the
+// same result under any light, because the scores followed a notion of a
+// "typical" face rather than the photo in front of it.
+const SYSTEM_PROMPT = `You are a cosmetic skin-appearance scanner for a Thai beauty retailer's website, like a selfie "skin coach". You are given 1-6 photos of the same person's face, each labelled with the area it shows (front, left/right cheek, forehead, under-eye, chin, or a spot they are concerned about). Look across all photos together, weighting each toward what it shows best, and assess four visible surface traits plus an estimated visible "skin age".
+
+HOW TO SCORE — follow this order:
+1. First write "evidence": short, concrete observations of what is actually visible in THESE photos — where, how many, how large, how pronounced. Name areas (forehead, T-zone, cheeks, around eyes, jawline). If lighting, blur, makeup or a filter hides a trait, say so.
+2. Then score each trait from the evidence, using the anchors below. Scores must follow the evidence, not a sense of what a typical face scores. Two different faces should almost never get identical scores; use the whole range and exact numbers (e.g. 23, 41, 67), not round defaults.
+
+Trait anchors (0-100, higher = more visible):
+- acne (active blemishes, bumps, red marks from breakouts): 0-10 none visible · 11-25 one to three small spots · 26-45 several spots in one area · 46-65 many spots or across two or more areas · 66-100 widespread or inflamed-looking
+- pores (visible enlarged pores, mostly cheeks/nose/T-zone): 0-10 not visible at this distance · 11-30 faint on the nose only · 31-50 clearly visible on the nose and inner cheeks · 51-70 visible across cheeks · 71-100 prominent over most of the face
+- darkSpots (dark spots, patches, post-blemish marks, uneven tone): 0-10 even tone · 11-25 one or two faint marks · 26-45 several marks or mild unevenness · 46-65 noticeable patches or clearly uneven tone · 66-100 extensive pigmentation
+- wrinkles (fine lines and wrinkles, around eyes, forehead, smile lines): 0-10 none visible · 11-25 faint lines only when expressive or under the eyes · 26-45 visible fine lines at rest in one area · 46-65 lines in several areas · 66-100 deep lines
+
+Skin age (visible surface only, years): judge from texture smoothness, fine lines at the eyes and forehead, smile-line depth, firmness of the jawline/cheek contour, and tone evenness. Roughly: very smooth, no lines at rest, even tone → 18-24; smooth with faint under-eye lines → 25-30; fine lines at rest around the eyes or forehead → 31-38; lines in several areas and softer contour → 39-48; deeper lines → 49+. Give a specific number from the evidence, not a middle-of-the-road guess.
 
 STRICT RULES:
-- This is entertainment/reference only, NOT a medical or dermatological diagnosis. Never use clinical or diagnostic language (no disease names, no "condition", no treatment claims).
-- "Skin age" is a lighthearted cosmetic estimate of how the SKIN SURFACE looks (texture, tone evenness, visible fine lines) — not a claim about the person's real age, health, or ethnicity. Keep it a plausible number reasonably close to typical adult skin (roughly 16-70), phrased playfully, never as a definitive judgment.
-- Only comment on what is visibly in the photo(s). Do not guess at causes.
-- If no photo clearly shows a face, or lighting/angle makes it impossible to assess, say so honestly instead of guessing.
-- Never mention or infer race, ethnicity, exact real age, gender, health conditions, or anything unrelated to visible surface skin texture.
-- Do NOT name, suggest, or hint at any product, brand, or ingredient — that is handled elsewhere by our own catalogue, never by you.
-- Output ONLY valid JSON, no markdown fences, no commentary outside the JSON, matching exactly this shape:
+- Cosmetic reference only, NOT a medical or dermatological diagnosis. Never use clinical or diagnostic language (no disease names, no "condition", no treatment claims).
+- Skin age describes how the SKIN SURFACE looks — never a claim about the person's real age, health or ethnicity. Keep the note warm and playful, never a judgment.
+- Only comment on what is visible. Do not guess at causes.
+- If no photo clearly shows a face, or lighting/angle makes assessment impossible, say so honestly instead of guessing.
+- Never mention or infer race, ethnicity, exact real age, gender, health conditions, or anything unrelated to visible surface skin.
+- Do NOT name, suggest or hint at any product, brand or ingredient.
+- Output ONLY valid JSON, no markdown fences, nothing outside the JSON, exactly this shape:
 {
+  "evidence": string (<=80 words, English, concrete observations — written first),
   "faceDetected": boolean,
-  "skinAge": { "years": number (a single plausible estimate), "note": string (<=15 words, Thai, warm/playful tone) },
-  "acne": { "score": number (0-100, higher = more visible blemishes/breakouts), "note": string (<=15 words, Thai) },
-  "pores": { "score": number (0-100, higher = more visible enlarged pores), "note": string (<=15 words, Thai) },
-  "darkSpots": { "score": number (0-100, higher = more visible dark spots/uneven tone), "note": string (<=15 words, Thai) },
-  "wrinkles": { "score": number (0-100, higher = more visible fine lines/wrinkles), "note": string (<=15 words, Thai) },
+  "skinAge": { "years": number, "note": string (<=15 words, Thai, warm/playful) },
+  "acne": { "score": number, "note": string (<=15 words, Thai, says where/what was seen) },
+  "pores": { "score": number, "note": string (<=15 words, Thai, says where/what was seen) },
+  "darkSpots": { "score": number, "note": string (<=15 words, Thai, says where/what was seen) },
+  "wrinkles": { "score": number, "note": string (<=15 words, Thai, says where/what was seen) },
   "overallNote": string (<=25 words, Thai, warm and encouraging, never alarming, no product mentions),
   "disclaimer": "ผลนี้เป็นการประเมินเบื้องต้นเพื่อความสวยงามจากภาพถ่ายเท่านั้น ไม่ใช่การวินิจฉัยทางการแพทย์ หากมีความกังวลด้านผิวหนัง ควรปรึกษาแพทย์ผิวหนัง"
 }
@@ -108,7 +127,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 600,
+        max_tokens: 1000,
         system: SYSTEM_PROMPT,
         messages: [
           {
@@ -161,6 +180,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // "evidence" is the model's working, there to make it look before it
+    // scores; the page shows the Thai notes instead.
+    if (parsed && typeof parsed === "object") delete parsed.evidence;
     return NextResponse.json({ result: parsed });
   } catch (e: any) {
     console.error("[skin-coach] threw " + String(e));

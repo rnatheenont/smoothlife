@@ -78,6 +78,23 @@ export async function POST(req: NextRequest) {
     : [];
   if (!angles.includes("front")) angles.unshift("front");
 
+  // A double tap, or "save" pressed again on the same result, returns the
+  // row already saved rather than a second identical one (and no second bonus).
+  const since = new Date(Date.now() - 10 * 60_000).toISOString();
+  const [recent] = await supabaseRest<SkinScanRow[]>(
+    `skin_scans?user_id=eq.${uid}&scanned_at=gte.${since}&skin_age=eq.${skinAge}&order=scanned_at.desc&limit=1` +
+      `&select=id,scanned_at,angles,confidence,skin_age,age_range,skin_type,main_concern,metrics`
+  );
+  if (
+    recent &&
+    recent.metrics.acne === metrics.acne &&
+    recent.metrics.pores === metrics.pores &&
+    recent.metrics.darkSpots === metrics.darkSpots &&
+    recent.metrics.wrinkles === metrics.wrinkles
+  ) {
+    return NextResponse.json({ ok: true, scan: recent, bonusPoints: 0, duplicate: true });
+  }
+
   const [row] = await supabaseRest<SkinScanRow[]>("skin_scans", {
     method: "POST",
     body: JSON.stringify({
