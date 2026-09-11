@@ -30,7 +30,7 @@ export default function MiniProductCard({ product }: { product: Product }) {
   return (
     <div className="w-32 shrink-0 snap-start sm:w-36">
       <div className="relative">
-        <Link href={href} className="relative block aspect-square overflow-hidden rounded-xl bg-white ring-1 ring-surface-line">
+        <Link href={href} className="relative block aspect-square overflow-hidden rounded-xl border border-surface-line bg-white">
           <Image src={product.image} alt={product.name} fill sizes="144px" className="object-cover" />
           {discount > 0 && (
             <span className="absolute left-1.5 top-1.5 rounded-full bg-sale px-1.5 py-0.5 text-[10px] font-bold text-white tabular-nums">

@@ -76,9 +76,10 @@ export type ScanAnswers = {
 export function ageComparison(skinAge: number, ageRange?: AgeRangeKey): string | null {
   const range = AGE_RANGES.find((r) => r.key === ageRange);
   if (!range || !skinAge) return null;
-  if (skinAge < range.min) return `ผิวดูอ่อนกว่าช่วงอายุ ${range.label} ปีของคุณ`;
-  if (skinAge > range.max) return `ผิวดูมากกว่าช่วงอายุ ${range.label} ปีของคุณเล็กน้อย`;
-  return `ผิวดูสมวัย อยู่ในช่วงอายุ ${range.label} ปีของคุณ`;
+  const yours = `ช่วงอายุของคุณ (${range.label} ปี)`;
+  if (skinAge < range.min) return `ผิวดูอ่อนกว่า${yours}`;
+  if (skinAge > range.max) return skinAge - range.max <= 5 ? `ผิวดูมากกว่า${yours}เล็กน้อย` : `ผิวดูมากกว่า${yours}`;
+  return `ผิวดูสมวัย อยู่ใน${yours}`;
 }
 
 /**
