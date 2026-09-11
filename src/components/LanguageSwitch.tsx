@@ -118,7 +118,7 @@ export default function LanguageSwitch({
           open ? "visible scale-100 opacity-100" : "invisible scale-95 opacity-0"
         )}
       >
-        <p className="px-2.5 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+        <p className="px-2.5 pb-1.5 pt-1 text-xs font-medium text-slate-600">
           ภาษา · Language
         </p>
         {LANGS.map((l) => {
@@ -139,7 +139,7 @@ export default function LanguageSwitch({
               <span
                 className={clsx(
                   "grid h-7 w-7 shrink-0 place-items-center rounded-full text-[10px] font-bold uppercase",
-                  active ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-500"
+                  active ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-600"
                 )}
               >
                 {l.code}
@@ -148,7 +148,7 @@ export default function LanguageSwitch({
                 <span className={clsx("block text-sm", active ? "font-bold text-brand-ink" : "font-medium text-slate-700")}>
                   {l.native}
                 </span>
-                <span className="block text-[10px] text-slate-500">{l.hint}</span>
+                <span className="block text-[11px] text-slate-600">{l.hint}</span>
               </span>
               {active && <Check size={15} className="shrink-0 text-brand-emerald" />}
             </button>

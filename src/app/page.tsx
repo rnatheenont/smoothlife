@@ -216,13 +216,16 @@ export default async function HomePage() {
                 fill
                 className="object-cover transition-transform duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+              {/* Most of these photos are packshots on white, so the scrim has to be
+                  dark right up to where the title sits — the old 55%-to-5% fade
+                  left white text on near-white at the title line. */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 via-50% to-transparent" />
               <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
                 <span className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-brand-ink">
                   {promo.badge}
                 </span>
-                <h3 className="font-bold text-sm md:text-base mt-1">{promo.title}</h3>
-                <p className="text-[11px] md:text-xs text-white/80">{promo.subtitle}</p>
+                <h3 className="mt-1 text-sm font-bold [text-shadow:0_1px_2px_rgb(0_0_0/0.45)] md:text-base">{promo.title}</h3>
+                <p className="text-[11px] text-white/90 [text-shadow:0_1px_2px_rgb(0_0_0/0.45)] md:text-xs">{promo.subtitle}</p>
               </div>
             </Link>
           ))}
@@ -303,14 +306,14 @@ export default async function HomePage() {
               for no one's benefit. */}
           <div className="relative grid md:grid-cols-[1.1fr,1fr] gap-8 items-center">
             <div>
-              <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+              <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-black/15 px-3 py-1 text-xs font-semibold">
                 <Repeat size={13} /> สมัครสมาชิกรายรอบ ไม่ต้องสั่งซ้ำ
               </span>
               <h2 className="text-2xl font-extrabold leading-tight md:text-4xl">
                 เลือกรอบส่ง<span className="whitespace-nowrap">ของคุณเอง</span> <br className="hidden md:block" />
                 ยิ่งนานยิ่งประหยัด
               </h2>
-              <p className="mt-3 text-white/85 max-w-md">
+              <p className="mt-3 max-w-md text-white">
                 สมัคร Subscription สินค้าสุขภาพและความงามที่คุณใช้ประจำ เลือกได้ 3 / 6 / 12 เดือน
                 ประหยัดสูงสุด {Math.max(...subscriptionPlans.map((p) => p.discountPct))}%
               </p>
@@ -331,8 +334,8 @@ export default async function HomePage() {
               {subscriptionPlans.map((plan) => (
                 <div
                   key={plan.months}
-                  className={`relative flex flex-col items-center gap-0.5 rounded-xl2 px-2 py-3 text-center backdrop-blur transition ${
-                    plan.popular ? "bg-white text-brand-ink" : "bg-white/15 text-white"
+                  className={`relative flex flex-col items-center gap-0.5 rounded-xl2 px-2 py-3 text-center ${
+                    plan.popular ? "bg-white text-brand-ink" : "bg-black/15 text-white"
                   }`}
                 >
                   {plan.popular && (
@@ -344,7 +347,7 @@ export default async function HomePage() {
                   <span className={`text-base font-extrabold ${plan.popular ? "text-brand-action" : "text-white"}`}>
                     -{plan.discountPct}%
                   </span>
-                  <p className={`text-[10px] leading-tight ${plan.popular ? "text-slate-500" : "text-white/70"}`}>
+                  <p className={`text-[10px] leading-tight ${plan.popular ? "text-slate-600" : "text-white/85"}`}>
                     {plan.sublabel}
                   </p>
                 </div>
@@ -354,8 +357,8 @@ export default async function HomePage() {
               {subscriptionPlans.map((plan) => (
                 <div
                   key={plan.months}
-                  className={`flex items-center justify-between rounded-xl2 px-4 py-3 backdrop-blur transition ${
-                    plan.popular ? "bg-white text-brand-ink" : "bg-white/15 text-white"
+                  className={`flex items-center justify-between rounded-xl2 px-4 py-3 ${
+                    plan.popular ? "bg-white text-brand-ink" : "bg-black/15 text-white"
                   }`}
                 >
                   <div>
@@ -367,7 +370,7 @@ export default async function HomePage() {
                         </span>
                       )}
                     </p>
-                    <p className={`text-xs ${plan.popular ? "text-slate-500" : "text-white/70"}`}>{plan.sublabel}</p>
+                    <p className={`text-xs ${plan.popular ? "text-slate-600" : "text-white/85"}`}>{plan.sublabel}</p>
                   </div>
                   <span className={`text-lg font-extrabold ${plan.popular ? "text-brand-action" : "text-white"}`}>
                     -{plan.discountPct}%
