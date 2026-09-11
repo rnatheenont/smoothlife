@@ -138,25 +138,37 @@ export default function ProductCard({ product }: { product: Product }) {
         ) : (
           <p className="text-[11px] text-slate-400 line-clamp-1">{product.shortDesc}</p>
         )}
-        {/* Real units sold, counted at build time from paid orders net of
-            refunds — see fetchUnitsSold in scripts/fetch-products.js. Shown
-            only once something has sold: "ขายแล้ว 0 ชิ้น" is a reason not to
+        {/* Sold and stock share one line: they answer the same question —
+            "is this popular, and will it still be here" — and two short lines
+            cost the card height it does not have.
+            Sold is real: units counted at build time from paid orders net of
+            refunds (fetchUnitsSold in scripts/fetch-products.js), and shown
+            only once something has sold — "ขายแล้ว 0 ชิ้น" is a reason not to
             buy, and inventing a number is not an option. */}
-        {(product.sold ?? 0) > 0 && (
-          <p translate="no" className="flex items-center gap-1 text-[11px] text-slate-500">
-            <Flame size={11} className="shrink-0 text-orange-500" />
-            {lang === "en" ? (
-              <>
-                <span className="font-semibold text-slate-700">{formatSold(product.sold!, lang)}</span> sold
-              </>
-            ) : (
-              <>
-                ขายแล้ว <span className="font-semibold text-slate-700">{formatSold(product.sold!, lang)}</span> ชิ้น
-              </>
+        {((product.sold ?? 0) > 0 || lowStock) && (
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px]">
+            {(product.sold ?? 0) > 0 && (
+              <span translate="no" className="flex items-center gap-1 text-slate-500">
+                <Flame size={11} className="shrink-0 text-orange-500" />
+                {lang === "en" ? (
+                  <>
+                    <span className="font-semibold text-slate-700">{formatSold(product.sold!, lang)}</span> sold
+                  </>
+                ) : (
+                  <>
+                    ขายแล้ว <span className="font-semibold text-slate-700">{formatSold(product.sold!, lang)}</span> ชิ้น
+                  </>
+                )}
+              </span>
+            )}
+            {(product.sold ?? 0) > 0 && lowStock && (
+              <span aria-hidden="true" className="text-slate-300">·</span>
+            )}
+            {lowStock && (
+              <span className="font-semibold text-amber-600">เหลือเพียง {defaultVariant.quantity} ชิ้น</span>
             )}
           </p>
         )}
-        {lowStock && <p className="text-[11px] font-semibold text-amber-600">เหลือเพียง {defaultVariant.quantity} ชิ้น</p>}
         {/* Price and the add button share one row: the full-width button
             under every card turned a grid of products into a grid of green
             bars, and it was the tallest thing on the card. */}
