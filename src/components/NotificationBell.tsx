@@ -103,14 +103,14 @@ export default function NotificationBell() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
             <span className="font-bold text-sm text-brand-ink">การแจ้งเตือน</span>
             {unreadCount > 0 && (
-              <button type="button" onClick={markAllRead} className="text-xs font-semibold text-brand-emerald">
+              <button type="button" onClick={markAllRead} className="text-xs font-semibold text-brand-800">
                 อ่านทั้งหมด
               </button>
             )}
           </div>
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-slate-400">ยังไม่มีการแจ้งเตือน</p>
+              <p className="px-4 py-8 text-center text-sm text-slate-500">ยังไม่มีการแจ้งเตือน</p>
             ) : (
               notifications.map((n) => {
                 const Icon = ICONS[n.type] || Package;
@@ -124,7 +124,7 @@ export default function NotificationBell() {
                       unread ? "bg-brand-gradient-soft/40" : ""
                     }`}
                   >
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">
                       <Icon size={15} />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -135,7 +135,7 @@ export default function NotificationBell() {
                         {unread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-sky" />}
                       </span>
                       {n.body && <span className="block text-xs text-slate-500 truncate">{n.body}</span>}
-                      <span className="block text-[11px] text-slate-400 mt-0.5">
+                      <span className="block text-[11px] text-slate-500 mt-0.5">
                         {new Date(n.created_at).toLocaleString("th-TH")}
                       </span>
                     </span>

@@ -20,17 +20,17 @@ export default function RoutineBuilderPage() {
               <ol className="flex flex-col gap-3">
                 {items.map((p, idx) => (
                   <li key={p.slug} className="flex items-center gap-3">
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald text-xs font-bold">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-gradient-soft text-brand-800 text-xs font-bold">
                       {idx + 1}
                     </span>
-                    <Link href={`/product/${p.slug}`} className="flex-1 text-sm text-slate-600 hover:text-brand-emerald line-clamp-1">
+                    <Link href={`/product/${p.slug}`} className="flex-1 text-sm text-slate-600 hover:text-brand-800 line-clamp-1">
                       {p.name}
                     </Link>
                     <span className="text-xs font-semibold text-brand-ink shrink-0">{formatTHB(p.price)}</span>
                   </li>
                 ))}
               </ol>
-              <Link href={`/concern/${c.slug}`} className="text-xs font-semibold text-brand-emerald mt-4 inline-block">
+              <Link href={`/concern/${c.slug}`} className="text-xs font-semibold text-brand-800 mt-4 inline-block">
                 ดูรูทีนแบบเต็ม →
               </Link>
             </div>

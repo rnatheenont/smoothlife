@@ -143,7 +143,7 @@ export default function PaymentModal({
                   href={webPaymentUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-[11px] font-semibold text-brand-emerald"
+                  className="flex items-center gap-1 text-[11px] font-semibold text-brand-800"
                 >
                   <ExternalLink size={12} /> เปิดในแท็บใหม่
                 </a>
@@ -184,7 +184,7 @@ export default function PaymentModal({
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/95">
                   <Loader2 size={28} className="animate-spin text-brand-emerald" />
                   <p className="text-sm text-slate-500">กำลังตรวจสอบผลการชำระเงิน…</p>
-                  <p className="text-[11px] text-slate-400">กรุณาอย่าปิดหน้าต่างนี้</p>
+                  <p className="text-[11px] text-slate-500">กรุณาอย่าปิดหน้าต่างนี้</p>
                 </div>
               )}
             </div>
@@ -226,7 +226,7 @@ export default function PaymentModal({
             <p className="mt-2 text-sm text-slate-500">
               {failureReason || "การชำระเงินถูกปฏิเสธ ไม่มีการตัดเงินจากบัญชีของคุณ"}
             </p>
-            <p className="mt-2 text-xs text-slate-400">สินค้าในตะกร้ายังอยู่ครบ ลองชำระเงินใหม่ได้เลย</p>
+            <p className="mt-2 text-xs text-slate-500">สินค้าในตะกร้ายังอยู่ครบ ลองชำระเงินใหม่ได้เลย</p>
             <Button fullWidth className="mt-6" type="button" onClick={onClose}>
               ลองใหม่อีกครั้ง
             </Button>
@@ -242,7 +242,7 @@ export default function PaymentModal({
             <p className="mt-2 text-sm text-slate-500">
               ระบบยังยืนยันผลไม่ได้ในขณะนี้ หากเงินถูกตัดแล้ว คำสั่งซื้อจะขึ้นในบัญชีของคุณภายในไม่กี่นาที
             </p>
-            <p className="mt-2 text-xs text-slate-400">กรุณาอย่าชำระเงินซ้ำ เพื่อไม่ให้ถูกตัดเงินสองครั้ง</p>
+            <p className="mt-2 text-xs text-slate-500">กรุณาอย่าชำระเงินซ้ำ เพื่อไม่ให้ถูกตัดเงินสองครั้ง</p>
             <div className="mt-6 flex flex-col gap-2.5">
               <Button href="/account/orders">
                 ตรวจสอบคำสั่งซื้อของฉัน

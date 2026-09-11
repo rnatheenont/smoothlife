@@ -49,11 +49,11 @@ function DiscountTable({ billingEnabled }: { billingEnabled: boolean }) {
         {subscriptionPlans.map((p) => (
           <div key={p.months} className="flex items-center justify-between rounded-lg bg-surface-soft px-3 py-1.5">
             <span className="text-slate-600">ทุก {p.months} เดือน</span>
-            <span className="font-bold text-brand-emerald">-{p.discountPct}%</span>
+            <span className="font-bold text-brand-800">-{p.discountPct}%</span>
           </div>
         ))}
       </div>
-      <p className="text-xs text-slate-400 mt-2">
+      <p className="text-xs text-slate-500 mt-2">
         ยิ่งเลือกเทอมยาว ยิ่งได้ส่วนลดต่อเดือนมากขึ้น {billingEnabled ? "และล็อกอัตรานี้ไว้ตลอดการสมัคร" : ""}
       </p>
     </>
@@ -111,7 +111,7 @@ export default function SubscriptionTermsInfo({
       <p className="text-sm text-slate-500 mb-6 text-center">อ่านให้ครบก่อนสมัคร — ไม่มีเงื่อนไขซ่อนเร้น</p>
       <div className="grid sm:grid-cols-3 gap-4 md:gap-5">
         <div className="rounded-xl2 border border-slate-100 shadow-card p-5">
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald mb-3">
+          <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-gradient-soft text-brand-800 mb-3">
             <CreditCard size={18} />
           </div>
           <h3 className="font-bold text-brand-ink mb-2">ตัดรอบ</h3>
@@ -119,7 +119,7 @@ export default function SubscriptionTermsInfo({
         </div>
 
         <div className="rounded-xl2 border border-slate-100 shadow-card p-5">
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald mb-3">
+          <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-gradient-soft text-brand-800 mb-3">
             <Package size={18} />
           </div>
           <h3 className="font-bold text-brand-ink mb-2">การจัดส่ง</h3>
@@ -127,7 +127,7 @@ export default function SubscriptionTermsInfo({
         </div>
 
         <div className="rounded-xl2 border border-slate-100 shadow-card p-5">
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald mb-3">
+          <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-gradient-soft text-brand-800 mb-3">
             <Percent size={18} />
           </div>
           <h3 className="font-bold text-brand-ink mb-2">ส่วนลด</h3>

@@ -13,7 +13,7 @@ export default function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
             <li key={i} className="flex items-center gap-1.5">
               {i > 0 && <ChevronRight size={12} className="text-slate-300 shrink-0" />}
               {item.href && !isLast ? (
-                <Link href={item.href} className="hover:text-brand-emerald transition-colors">
+                <Link href={item.href} className="hover:text-brand-800 transition-colors">
                   {item.label}
                 </Link>
               ) : (

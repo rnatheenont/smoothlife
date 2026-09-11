@@ -138,7 +138,7 @@ export default function Modal({
               type="button"
               onClick={onClose}
               aria-label="ปิด"
-              className="shrink-0 rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 dark:hover:bg-slate-800"
+              className="shrink-0 rounded-full p-1.5 text-slate-500 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 dark:hover:bg-slate-800"
             >
               <X size={18} />
             </button>

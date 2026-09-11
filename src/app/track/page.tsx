@@ -90,7 +90,7 @@ export default function TrackPage() {
         </div>
       )}
 
-      <p className="mt-5 text-center text-xs text-slate-400">
+      <p className="mt-5 text-center text-xs text-slate-500">
         มีบัญชีอยู่แล้ว?{" "}
         <a href="/account/orders" className="font-semibold text-brand-800 underline">
           ดูคำสั่งซื้อทั้งหมดในบัญชี

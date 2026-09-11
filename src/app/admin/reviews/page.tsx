@@ -85,7 +85,7 @@ export default function AdminReviewsPage() {
                     {r.product_slug} · {new Date(r.created_at).toLocaleString("th-TH")}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full bg-brand-gradient-soft text-brand-emerald text-[11px] font-semibold px-2.5 py-1">
+                <span className="shrink-0 rounded-full bg-brand-gradient-soft text-brand-800 text-[11px] font-semibold px-2.5 py-1">
                   +{r.points_awarded ?? 0} แต้ม
                 </span>
               </div>

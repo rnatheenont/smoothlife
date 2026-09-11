@@ -30,9 +30,9 @@ export default function SkinCoachPage() {
           <Image src="/mascot/smoothie-hi.png" alt="Smoothie" fill sizes="80px" className="object-contain" priority />
         </div>
       </div>
-      <div className="flex items-center justify-center gap-2 text-brand-emerald mb-2">
+      <div className="flex items-center justify-center gap-2 text-brand-800 mb-2">
         <Sparkles size={18} />
-        <span className="text-xs font-semibold uppercase tracking-wide">Skin Coach</span>
+        <span className="text-xs font-semibold">Skin Coach</span>
       </div>
       <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-brand-ink mb-2 leading-tight text-center">
         สแกนผิวกับน้อง Smoothie

@@ -65,7 +65,7 @@ function OrdersContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-slate-400">
+      <div className="flex items-center justify-center py-16 text-slate-500">
         <Loader2 size={24} className="animate-spin" />
       </div>
     );
@@ -100,7 +100,7 @@ function OrdersContent() {
           <ul className="list-disc pl-5 mt-2 space-y-1">
             <li>อีเมลยืนยันการสั่งซื้อ (order confirmation) ที่ส่งไปตอนกดสั่งซื้อ</li>
             <li>
-              <Link href="/help/contact" className="text-brand-emerald font-semibold">
+              <Link href="/help/contact" className="text-brand-800 font-semibold">
                 ติดต่อทีมงาน
               </Link>{" "}
               เพื่อให้ช่วยเชื่อมบัญชีให้ค่ะ
@@ -123,7 +123,7 @@ function OrdersContent() {
             ? `คุณมีคำสั่งซื้อ ${totals.orders} รายการ ยอดรวม ${formatTHB(totals.spend)} — แต่ทั้งหมดเก่ากว่า 60 วัน จึงยังไม่แสดงที่นี่ ติดต่อทีมงานได้เลยหากต้องการรายละเอียดค่ะ`
             : "คุณยังไม่มีคำสั่งซื้อ"}
         </p>
-        <Link href="/shop" className="inline-block mt-4 text-brand-emerald font-semibold text-sm">
+        <Link href="/shop" className="inline-block mt-4 text-brand-800 font-semibold text-sm">
           เริ่มช้อปเลย
         </Link>
       </div>
@@ -173,7 +173,7 @@ function OrdersContent() {
                       that shipped on 1 Sep invites the reading that one of the
                       two dates is wrong, when they are simply the order date
                       and the dispatch date. */}
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     สั่งเมื่อ{" "}
                     {new Date(o.createdAt).toLocaleDateString("th-TH", {
                       day: "numeric",
@@ -210,12 +210,12 @@ function OrdersContent() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p translate="no" className="text-xs text-slate-600 truncate">{it.title}</p>
-                        <p className="text-[11px] text-slate-400">x{it.quantity}</p>
+                        <p className="text-[11px] text-slate-500">x{it.quantity}</p>
                       </div>
                       {product && (
                         <button
                           onClick={() => addItem(product.slug, it.quantity)}
-                          className="shrink-0 text-[11px] font-semibold text-brand-emerald border border-brand-emerald rounded-full px-3 py-1"
+                          className="shrink-0 text-[11px] font-semibold text-brand-800 border border-brand-emerald rounded-full px-3 py-1"
                         >
                           ซื้อซ้ำ
                         </button>

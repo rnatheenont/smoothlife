@@ -84,10 +84,10 @@ export default function SubscriptionPage() {
                   <p className="text-xs text-slate-500 line-clamp-2 flex-1">{set.tagline}</p>
                   <div className="mt-1 flex items-end justify-between">
                     <div>
-                      <span className="text-[11px] text-slate-400">เริ่มต้น/รอบ</span>
-                      <p className="text-lg font-extrabold text-brand-emerald">{formatTHB(perCyclePrice)}</p>
+                      <span className="text-[11px] text-slate-500">เริ่มต้น/รอบ</span>
+                      <p className="text-lg font-extrabold text-brand-800">{formatTHB(perCyclePrice)}</p>
                     </div>
-                    <span className="flex items-center gap-0.5 text-xs font-semibold text-brand-emerald group-hover:text-brand-sky transition-colors">
+                    <span className="flex items-center gap-0.5 text-xs font-semibold text-brand-800 group-hover:text-brand-800 transition-colors">
                       ดูรายละเอียด <ChevronRight size={13} />
                     </span>
                   </div>
@@ -119,7 +119,7 @@ export default function SubscriptionPage() {
                 เลือกสินค้าที่ใช้ประจำมาจัดเป็นชุดของตัวเอง รับส่วนลดชุดพิเศษ -{BUNDLE_DISCOUNT_PCT}% ซ้อนทับกับส่วนลดตามรอบที่เลือกได้อีก
               </p>
             </div>
-            <span className="flex shrink-0 items-center gap-1 font-semibold text-brand-emerald group-hover:text-brand-sky transition-colors">
+            <span className="flex shrink-0 items-center gap-1 font-semibold text-brand-800 group-hover:text-brand-800 transition-colors">
               เริ่มจัดชุด <ChevronRight size={16} />
             </span>
           </Link>

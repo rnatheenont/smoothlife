@@ -298,7 +298,7 @@ export default function AdminPointsPage() {
                   <p className="text-sm font-semibold text-brand-ink truncate">{c.displayName || "ไม่ระบุชื่อ"}</p>
                   <p className="text-[11px] text-slate-400">{[c.phone, c.email].filter(Boolean).join(" · ") || "-"}</p>
                 </div>
-                <p className="text-sm font-bold text-brand-emerald shrink-0 ml-3">{c.balance.toLocaleString()} แต้ม</p>
+                <p className="text-sm font-bold text-brand-800 shrink-0 ml-3">{c.balance.toLocaleString()} แต้ม</p>
               </button>
             ))}
           </div>
@@ -348,7 +348,7 @@ export default function AdminPointsPage() {
                       <p className="text-slate-600">{describeReason(entry.reason)}</p>
                       <p className="text-[10px] text-slate-400">{new Date(entry.created_at).toLocaleString("th-TH")}</p>
                     </div>
-                    <span className={`font-semibold shrink-0 ml-2 ${entry.delta > 0 ? "text-brand-emerald" : "text-rose-500"}`}>
+                    <span className={`font-semibold shrink-0 ml-2 ${entry.delta > 0 ? "text-brand-800" : "text-rose-500"}`}>
                       {entry.delta > 0 ? "+" : ""}
                       {entry.delta.toLocaleString()}
                     </span>
@@ -406,7 +406,7 @@ export default function AdminPointsPage() {
                   type="button"
                   onClick={() => setTierForm({ ...tierForm, discountType: "percent" })}
                   className={`rounded-lg border-2 py-2 text-xs font-semibold ${
-                    tierForm.discountType === "percent" ? "border-brand-teal bg-brand-gradient-soft text-brand-emerald" : "border-slate-200 text-slate-500"
+                    tierForm.discountType === "percent" ? "border-brand-teal bg-brand-gradient-soft text-brand-800" : "border-slate-200 text-slate-500"
                   }`}
                 >
                   ลดเป็นเปอร์เซ็นต์
@@ -415,7 +415,7 @@ export default function AdminPointsPage() {
                   type="button"
                   onClick={() => setTierForm({ ...tierForm, discountType: "amount" })}
                   className={`rounded-lg border-2 py-2 text-xs font-semibold ${
-                    tierForm.discountType === "amount" ? "border-brand-teal bg-brand-gradient-soft text-brand-emerald" : "border-slate-200 text-slate-500"
+                    tierForm.discountType === "amount" ? "border-brand-teal bg-brand-gradient-soft text-brand-800" : "border-slate-200 text-slate-500"
                   }`}
                 >
                   ลดเป็นจำนวนเงิน

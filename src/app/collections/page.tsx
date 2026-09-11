@@ -22,7 +22,7 @@ export default function CollectionsIndexPage() {
       <p className="mt-1 text-sm text-slate-500">{sorted.length} คอลเลกชัน อัปเดตตรงจากร้าน</p>
 
       {sorted.length === 0 ? (
-        <p className="mt-8 text-sm text-slate-400">ยังไม่มีคอลเลกชันในขณะนี้</p>
+        <p className="mt-8 text-sm text-slate-500">ยังไม่มีคอลเลกชันในขณะนี้</p>
       ) : (
         <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
           {sorted.map((c) => (
@@ -41,14 +41,14 @@ export default function CollectionsIndexPage() {
                     sizes="(max-width: 768px) 50vw, 25vw"
                   />
                 ) : (
-                  <div className="grid h-full place-items-center bg-brand-gradient-soft text-2xl font-bold text-brand-emerald/40">
+                  <div className="grid h-full place-items-center bg-brand-gradient-soft text-2xl font-bold text-brand-800/40">
                     {c.title.slice(0, 1)}
                   </div>
                 )}
               </div>
               <div className="p-3">
                 <p className="line-clamp-2 text-sm font-semibold text-brand-ink">{c.title}</p>
-                <p className="mt-0.5 text-xs text-slate-400">{c.productSlugs.length} รายการ</p>
+                <p className="mt-0.5 text-xs text-slate-500">{c.productSlugs.length} รายการ</p>
               </div>
             </Link>
           ))}

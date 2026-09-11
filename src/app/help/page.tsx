@@ -22,7 +22,7 @@ export default function HelpPage() {
       <div className="grid sm:grid-cols-3 gap-4 mb-10">
         {topics.map((t) => (
           <Link key={t.href} href={t.href} className="flex items-center gap-3 rounded-xl2 border border-slate-100 p-5 shadow-card hover:border-brand-teal transition-colors">
-            <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald shrink-0">
+            <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-800 shrink-0">
               <t.icon size={18} />
             </div>
             <span className="flex-1 text-sm font-medium text-brand-ink">{t.label}</span>

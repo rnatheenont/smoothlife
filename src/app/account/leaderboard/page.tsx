@@ -47,7 +47,7 @@ function LeaderboardContent() {
 
   if (loading || !data) {
     return (
-      <div className="flex items-center justify-center py-16 text-slate-400">
+      <div className="flex items-center justify-center py-16 text-slate-500">
         <Loader2 size={24} className="animate-spin" />
       </div>
     );
@@ -76,7 +76,7 @@ function LeaderboardContent() {
           >
             <RankBadge rank={e.rank} />
             <span className={`flex-1 text-sm ${e.isYou ? "font-bold text-brand-ink" : "text-slate-700"}`}>
-              {e.name} {e.isYou && <span className="text-xs text-brand-emerald font-semibold">(คุณ)</span>}
+              {e.name} {e.isYou && <span className="text-xs text-brand-800 font-semibold">(คุณ)</span>}
             </span>
             <span className="flex items-center gap-1 text-sm font-bold text-brand-ink">
               <Award size={14} className="text-amber-500" /> {e.points.toLocaleString()}
@@ -84,7 +84,7 @@ function LeaderboardContent() {
           </div>
         ))}
         {data.entries.length === 0 && (
-          <p className="px-4 py-8 text-center text-sm text-slate-400">ยังไม่มีข้อมูลอันดับค่ะ</p>
+          <p className="px-4 py-8 text-center text-sm text-slate-500">ยังไม่มีข้อมูลอันดับค่ะ</p>
         )}
       </div>
 

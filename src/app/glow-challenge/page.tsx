@@ -16,9 +16,9 @@ function GlowChallengeApp() {
 
   return (
     <div className="container-page py-8 md:py-10 max-w-xl">
-      <div className="flex items-center gap-2 text-brand-emerald mb-1">
+      <div className="flex items-center gap-2 text-brand-800 mb-1">
         <Sparkles size={18} />
-        <span className="text-xs font-semibold uppercase tracking-wide">Glow Challenge</span>
+        <span className="text-xs font-semibold">Glow Challenge</span>
       </div>
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-6">ท้าทาย 7 วัน เพื่อผิวใสขึ้น</h1>
 
@@ -33,7 +33,7 @@ function GlowChallengeApp() {
             onClick={() => {
               if (confirm("เริ่ม Challenge รอบใหม่ใช่หรือไม่? ข้อมูล 7 วันก่อนหน้าจะถูกลบ")) resetAll();
             }}
-            className="text-xs text-brand-emerald underline mt-2"
+            className="text-xs text-brand-800 underline mt-2"
           >
             เริ่มรอบใหม่
           </button>

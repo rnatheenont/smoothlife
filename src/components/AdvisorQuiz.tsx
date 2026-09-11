@@ -64,7 +64,7 @@ export default function AdvisorQuiz() {
     return (
       <div>
         <div className="rounded-xl2 bg-brand-gradient-soft p-6 md:p-8 mb-8">
-          <div className="flex items-center gap-2 text-brand-emerald font-semibold text-sm mb-2">
+          <div className="flex items-center gap-2 text-brand-800 font-semibold text-sm mb-2">
             <Sparkles size={16} /> Personalized Recommendations
           </div>
           <h2 className="text-xl md:text-2xl font-bold text-brand-ink mb-3">
@@ -108,7 +108,7 @@ export default function AdvisorQuiz() {
         </div>
 
 
-        <button onClick={reset} className="flex items-center gap-1.5 text-sm text-slate-400">
+        <button onClick={reset} className="flex items-center gap-1.5 text-sm text-slate-500">
           <RotateCcw size={14} /> ทำแบบประเมินใหม่
         </button>
       </div>
@@ -124,7 +124,7 @@ export default function AdvisorQuiz() {
           <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= step ? "bg-brand-gradient" : "bg-slate-100"}`} />
         ))}
       </div>
-      <p className="text-xs font-semibold text-brand-emerald mb-2">
+      <p className="text-xs font-semibold text-brand-800 mb-2">
         คำถามที่ {step + 1} จาก {steps.length}
       </p>
       <h2 className="text-xl md:text-2xl font-bold text-brand-ink mb-6">{current.question}</h2>
@@ -140,7 +140,7 @@ export default function AdvisorQuiz() {
         ))}
       </div>
       {step > 0 && (
-        <button onClick={() => setStep(step - 1)} className="text-xs text-slate-400 mt-6">
+        <button onClick={() => setStep(step - 1)} className="text-xs text-slate-500 mt-6">
           ← ย้อนกลับ
         </button>
       )}

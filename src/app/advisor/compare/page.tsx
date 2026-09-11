@@ -15,7 +15,7 @@ export default function ComparePage() {
         <table className="w-full min-w-[700px] text-sm border-collapse">
           <thead>
             <tr>
-              <th className="text-left p-3 text-slate-400 font-medium">สินค้า</th>
+              <th className="text-left p-3 text-slate-500 font-medium">สินค้า</th>
               {items.map((p) => (
                 <th key={p.slug} className="p-3 text-center font-semibold text-brand-ink min-w-[150px]">
                   {p.name}
@@ -25,19 +25,19 @@ export default function ComparePage() {
           </thead>
           <tbody>
             <tr className="border-t border-slate-100">
-              <td className="p-3 text-slate-400 font-medium">แบรนด์</td>
+              <td className="p-3 text-slate-500 font-medium">แบรนด์</td>
               {items.map((p) => (
                 <td key={p.slug} className="p-3 text-center">{p.brand}</td>
               ))}
             </tr>
             <tr className="border-t border-slate-100 bg-surface-soft">
-              <td className="p-3 text-slate-400 font-medium">ราคา</td>
+              <td className="p-3 text-slate-500 font-medium">ราคา</td>
               {items.map((p) => (
                 <td key={p.slug} className="p-3 text-center font-bold text-brand-ink">{formatTHB(p.price)}</td>
               ))}
             </tr>
             <tr className="border-t border-slate-100">
-              <td className="p-3 text-slate-400 font-medium">คะแนนรีวิว</td>
+              <td className="p-3 text-slate-500 font-medium">คะแนนรีวิว</td>
               {items.map((p) => (
                 <td key={p.slug} className="p-3">
                   <div className="flex justify-center"><StarRating rating={p.rating} size={12} /></div>
@@ -45,7 +45,7 @@ export default function ComparePage() {
               ))}
             </tr>
             <tr className="border-t border-slate-100 bg-surface-soft">
-              <td className="p-3 text-slate-400 font-medium">เหมาะสำหรับ</td>
+              <td className="p-3 text-slate-500 font-medium">เหมาะสำหรับ</td>
               {items.map((p) => (
                 <td key={p.slug} className="p-3 text-center text-xs">{p.whoFor}</td>
               ))}

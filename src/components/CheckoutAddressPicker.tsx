@@ -165,7 +165,7 @@ export default function CheckoutAddressPicker({
 
   if (loading) {
     return (
-      <p className="text-sm text-slate-400 flex items-center gap-1.5">
+      <p className="text-sm text-slate-500 flex items-center gap-1.5">
         <Loader2 size={14} className="animate-spin" /> กำลังโหลด…
       </p>
     );
@@ -205,7 +205,7 @@ export default function CheckoutAddressPicker({
                       </span>
                     )}
                     {row.is_default && (
-                      <span className="rounded-full bg-brand-gradient-soft px-2 py-0.5 text-[11px] font-semibold text-brand-emerald">
+                      <span className="rounded-full bg-brand-gradient-soft px-2 py-0.5 text-[11px] font-semibold text-brand-800">
                         ค่าเริ่มต้น
                       </span>
                     )}
@@ -230,7 +230,7 @@ export default function CheckoutAddressPicker({
               <button
                 type="button"
                 onClick={openEditCurrent}
-                className="shrink-0 text-xs font-semibold text-brand-emerald"
+                className="shrink-0 text-xs font-semibold text-brand-800"
               >
                 แก้ไข
               </button>
@@ -245,7 +245,7 @@ export default function CheckoutAddressPicker({
         <button
           type="button"
           onClick={openNew}
-          className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 px-4 py-3 text-sm font-semibold text-brand-emerald transition-colors hover:border-brand-teal"
+          className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 px-4 py-3 text-sm font-semibold text-brand-800 transition-colors hover:border-brand-teal"
         >
           <Plus size={15} /> เพิ่มที่อยู่ใหม่
         </button>
@@ -272,7 +272,7 @@ export default function CheckoutAddressPicker({
                 </p>
               )}
               {!canSave && (
-                <p className="mt-3 text-[11px] text-slate-400">
+                <p className="mt-3 text-[11px] text-slate-500">
                   เข้าสู่ระบบเพื่อบันทึกที่อยู่นี้ไว้ใช้ครั้งต่อไป — สั่งซื้อครั้งนี้ไม่ต้องเข้าสู่ระบบก็ได้
                 </p>
               )}

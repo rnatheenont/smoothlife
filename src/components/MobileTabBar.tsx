@@ -32,7 +32,7 @@ export default function MobileTabBar() {
           const Icon = tab.icon;
           const isCart = tab.href === "/cart";
           const className = `relative flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition active:scale-90 active:opacity-60 w-full ${
-            on ? "text-brand-emerald" : "text-slate-400"
+            on ? "text-brand-800" : "text-slate-500"
           }`;
           const content = (
             <>

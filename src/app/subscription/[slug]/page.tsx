@@ -22,8 +22,8 @@ export default function SubscriptionSetPage({ params }: { params: { slug: string
 
   return (
     <div className="container-page py-8 md:py-10">
-      <nav className="mb-4 flex items-center gap-1.5 text-xs text-slate-400">
-        <Link href="/subscription" className="hover:text-brand-emerald">
+      <nav className="mb-4 flex items-center gap-1.5 text-xs text-slate-500">
+        <Link href="/subscription" className="hover:text-brand-800">
           Subscription
         </Link>
         <ChevronRight size={12} />

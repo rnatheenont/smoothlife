@@ -23,9 +23,9 @@ type StatusResponse = {
 const dotStyle: Record<string, string> = {
   normal: "bg-brand-gradient text-white",
   recovery: "bg-brand-gradient text-white",
-  today: "border-2 border-brand-emerald text-brand-emerald bg-white",
+  today: "border-2 border-brand-emerald text-brand-800 bg-white",
   recoverable: "bg-amber-100 text-amber-700 border border-amber-300",
-  missed: "bg-slate-100 text-slate-400",
+  missed: "bg-slate-100 text-slate-500",
   upcoming: "bg-slate-50 text-slate-300 border border-dashed border-slate-200",
 };
 
@@ -147,13 +147,13 @@ export default function RewardsOverviewCard() {
       <div className="bg-white p-5 md:p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-xs text-slate-400 mb-0.5">แต้มสะสมของคุณ</p>
+            <p className="text-xs text-slate-500 mb-0.5">แต้มสะสมของคุณ</p>
             <p className="text-2xl font-bold text-brand-ink">
               {loading ? "…" : pointBalance.toLocaleString()}{" "}
-              <span className="text-sm font-medium text-slate-400">แต้ม</span>
+              <span className="text-sm font-medium text-slate-500">แต้ม</span>
             </p>
           </div>
-          <Link href="/account/points" className="flex items-center gap-0.5 text-xs font-semibold text-brand-emerald">
+          <Link href="/account/points" className="flex items-center gap-0.5 text-xs font-semibold text-brand-800">
             ดูทั้งหมด <ChevronRight size={12} />
           </Link>
         </div>
@@ -171,13 +171,13 @@ export default function RewardsOverviewCard() {
 
           <div className="relative flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                 ยอดสะสมระดับสมาชิก
               </p>
               <p className="mt-1 flex items-baseline gap-1.5">
                 <span className="text-2xl font-extrabold leading-none text-brand-ink">{formatTHB(spend)}</span>
                 {progress.next && (
-                  <span className="text-xs font-medium text-slate-400">/ {formatTHB(nextThreshold)}</span>
+                  <span className="text-xs font-medium text-slate-500">/ {formatTHB(nextThreshold)}</span>
                 )}
               </p>
             </div>
@@ -230,7 +230,7 @@ export default function RewardsOverviewCard() {
                   <span
                     className={clsx(
                       "mt-1.5 whitespace-nowrap text-[10px] tracking-wide",
-                      isCurrent ? "font-bold text-brand-ink" : reached ? "font-semibold text-slate-500" : "text-slate-400"
+                      isCurrent ? "font-bold text-brand-ink" : reached ? "font-semibold text-slate-500" : "text-slate-500"
                     )}
                   >
                     {tierDisplayName[t.name].en}
@@ -244,7 +244,7 @@ export default function RewardsOverviewCard() {
             <div className="relative flex items-start gap-2 rounded-lg bg-brand-gradient-soft px-3 py-2.5">
               <Gift size={14} className="mt-0.5 shrink-0 text-brand-emerald" />
               <p className="text-[11px] leading-relaxed text-slate-600">
-                อีก <span className="font-bold text-brand-emerald">{formatTHB(progress.remaining)}</span> ก็ขึ้นระดับ{" "}
+                อีก <span className="font-bold text-brand-800">{formatTHB(progress.remaining)}</span> ก็ขึ้นระดับ{" "}
                 <span className="font-bold text-brand-ink">{tierDisplayName[progress.next as Tier].en}</span>
                 {nextPerk ? (
                   <>
@@ -262,7 +262,7 @@ export default function RewardsOverviewCard() {
               </p>
             </div>
           )}
-          <p className="relative mt-2 text-[10px] text-slate-400">
+          <p className="relative mt-2 text-[10px] text-slate-500">
             นับยอดซื้อ 12 เดือนล่าสุด · อัปเดตอัตโนมัติหลังคำสั่งซื้อสำเร็จ
           </p>
         </div>
@@ -270,12 +270,12 @@ export default function RewardsOverviewCard() {
         {DAILY_CHECKIN_ENABLED && (
         <div className="border-t border-slate-100 pt-4">
           <div className="flex items-center justify-between mb-2.5 gap-3">
-            <Link href="/account/checkin" className="text-sm font-semibold text-brand-ink hover:text-brand-emerald">
+            <Link href="/account/checkin" className="text-sm font-semibold text-brand-ink hover:text-brand-800">
               เช็กอินรายวัน{data?.cycle ? ` — ${data.cycle.completedDays}/${data.cycle.targetDays} วัน` : ""}
             </Link>
             {!loading &&
               (data?.checkedInToday ? (
-                <span className="flex items-center gap-1 shrink-0 text-xs font-semibold text-brand-emerald">
+                <span className="flex items-center gap-1 shrink-0 text-xs font-semibold text-brand-800">
                   <CheckCircle2 size={13} /> เช็กอินแล้ว
                 </span>
               ) : (

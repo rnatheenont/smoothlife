@@ -230,7 +230,7 @@ export default function AdminSubscriptionProductsPage() {
       {searching ? (
         <p className="mb-2 text-xs text-slate-500">
           ผลการค้นหา {total.toLocaleString()} รายการ — กด{" "}
-          <span className="font-semibold text-brand-emerald">เพิ่ม</span> เพื่อเปิด &ldquo;{active.label}&rdquo;
+          <span className="font-semibold text-brand-800">เพิ่ม</span> เพื่อเปิด &ldquo;{active.label}&rdquo;
         </p>
       ) : (
         <p className="mb-2 text-xs text-slate-500">

@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="container-page py-16 max-w-sm mx-auto">
       <div className="rounded-xl2 border border-slate-100 shadow-card p-6 md:p-8 text-center">
-        <div className="grid h-12 w-12 mx-auto place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald mb-4">
+        <div className="grid h-12 w-12 mx-auto place-items-center rounded-full bg-brand-gradient-soft text-brand-800 mb-4">
           <KeyRound size={22} />
         </div>
         <h1 className="text-xl font-bold text-brand-ink mb-1">ลืมรหัสผ่าน?</h1>
@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
           </form>
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="text-sm text-brand-emerald bg-brand-gradient-soft rounded-lg px-3.5 py-3">{message}</p>
+            <p className="text-sm text-brand-800 bg-brand-gradient-soft rounded-lg px-3.5 py-3">{message}</p>
             {devLink && (
               <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-left">
                 <p className="text-xs font-semibold text-amber-800 mb-2">
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
           </div>
         )}
 
-        <Link href="/account/login" className="inline-block mt-6 text-xs text-slate-400">
+        <Link href="/account/login" className="inline-block mt-6 text-xs text-slate-500">
           กลับไปหน้าเข้าสู่ระบบ
         </Link>
       </div>

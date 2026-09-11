@@ -18,7 +18,7 @@ export default function KnowledgePage() {
       <p className="text-sm text-slate-500 mb-6">คลังความรู้เรื่องผิวพรรณจากผู้เชี่ยวชาญ พร้อมแหล่งอ้างอิงที่น่าเชื่อถือ</p>
       <div className="flex flex-wrap gap-3 mb-8">
         {sections.map((s) => (
-          <Link key={s.href} href={s.href} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium hover:border-brand-teal hover:text-brand-emerald transition-colors">
+          <Link key={s.href} href={s.href} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium hover:border-brand-teal hover:text-brand-800 transition-colors">
             {s.label}
           </Link>
         ))}

@@ -64,10 +64,10 @@ export default function CartPage() {
         </Link>
         <div className="flex-1 min-w-0 flex flex-col">
           <div translate="no" className="flex items-start justify-between gap-2">
-            <Link href={`/product/${line.slug}`} className="text-sm font-medium text-brand-ink line-clamp-2 hover:text-brand-emerald">
+            <Link href={`/product/${line.slug}`} className="text-sm font-medium text-brand-ink line-clamp-2 hover:text-brand-800">
               {line.name}
               {line.isGift && (
-                <span className="ml-1.5 inline-block align-middle text-[10px] font-semibold text-brand-emerald bg-brand-gradient-soft rounded px-1.5 py-0.5">
+                <span className="ml-1.5 inline-block align-middle text-[10px] font-semibold text-brand-800 bg-brand-gradient-soft rounded px-1.5 py-0.5">
                   {t("ของแถม", "Free gift")}
                 </span>
               )}
@@ -80,7 +80,7 @@ export default function CartPage() {
             {!line.isGift && (
               <button
                 onClick={() => removeItem(line.variantId, line.subscribeMonths)}
-                className="shrink-0 text-slate-400 hover:text-rose-500"
+                className="shrink-0 text-slate-500 hover:text-rose-500"
                 aria-label="Remove"
               >
                 <Trash2 size={16} />
@@ -102,13 +102,13 @@ export default function CartPage() {
                 ))}
               </select>
             ) : (
-              line.size && <p className="text-xs text-slate-400 mt-0.5">{line.size}</p>
+              line.size && <p className="text-xs text-slate-500 mt-0.5">{line.size}</p>
             ))}
 
           <div className="flex items-baseline gap-2 mt-1.5">
             <span className="font-bold text-brand-ink">{line.isGift ? t("ฟรี", "Free") : formatTHB(line.price)}</span>
             {line.compareAtPrice && (
-              <span className="text-xs text-slate-400 line-through">{formatTHB(line.compareAtPrice)}</span>
+              <span className="text-xs text-slate-500 line-through">{formatTHB(line.compareAtPrice)}</span>
             )}
           </div>
 
@@ -139,11 +139,11 @@ export default function CartPage() {
             {!line.isGift && (
               <div className="text-right">
                 {line.qty > 1 && (
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-500">
                     {t("รวม", "Total")} {formatTHB(line.price * line.qty)}
                   </p>
                 )}
-                <p className="text-[11px] text-brand-emerald flex items-center gap-1 justify-end">
+                <p className="text-[11px] text-brand-800 flex items-center gap-1 justify-end">
                   <Award size={11} />
                   {lang === "en"
                     ? `+${pointsForAmount(line.price * line.qty)} points`
@@ -206,7 +206,7 @@ export default function CartPage() {
               <span>{formatTHB(totals.subtotal)}</span>
             </div>
             {totals.discount > 0 && (
-              <div className="flex justify-between text-sm text-brand-emerald mb-2">
+              <div className="flex justify-between text-sm text-brand-800 mb-2">
                 <span className="flex items-center gap-1.5">
                   <Ticket size={13} />{" "}
                   {totals.referralActive
@@ -223,7 +223,7 @@ export default function CartPage() {
               <span>{totals.freeShipping ? t("ฟรี", "Free") : formatTHB(totals.shipping)}</span>
             </div>
             {!totals.freeShipping && (
-              <p className="text-xs text-brand-emerald bg-brand-gradient-soft rounded-lg p-2 mb-4">
+              <p className="text-xs text-brand-800 bg-brand-gradient-soft rounded-lg p-2 mb-4">
                 {lang === "en"
                   ? `Spend ${formatTHB(totals.amountToFreeShipping)} more for free shipping!`
                   : `ซื้อเพิ่มอีก ${formatTHB(totals.amountToFreeShipping)} เพื่อรับส่งฟรี!`}

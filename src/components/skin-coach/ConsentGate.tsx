@@ -21,7 +21,7 @@ export default function ConsentGate({ onConsent }: { onConsent: () => void }) {
   return (
     <div className="container-page py-10 md:py-14 max-w-2xl">
       <div className="rounded-xl2 border border-slate-100 shadow-card p-6 md:p-8">
-        <div className="flex items-center gap-2 text-brand-emerald mb-4">
+        <div className="flex items-center gap-2 text-brand-800 mb-4">
           <ShieldCheck size={22} />
           <span className="text-sm font-semibold">ก่อนเริ่ม Skin Coach</span>
         </div>
@@ -67,7 +67,7 @@ export default function ConsentGate({ onConsent }: { onConsent: () => void }) {
         <Button size="lg" fullWidth disabled={!canContinue} onClick={handleConsent}>
           ยินยอมและเริ่มสแกนผิว
         </Button>
-        <p className="text-xs text-slate-400 mt-3">
+        <p className="text-xs text-slate-500 mt-3">
           สอบถามเรื่องข้อมูลส่วนบุคคลเพิ่มเติมได้ที่หน้า{" "}
           <a href="/help/contact" className="underline">
             ติดต่อเรา

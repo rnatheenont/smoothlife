@@ -36,17 +36,17 @@ export default function TieredRewardBox() {
                 return (
                   <div key={i} className="flex flex-col items-center gap-1 text-center flex-1">
                     <div
-                      className={`grid h-8 w-8 place-items-center rounded-full ${unlocked ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-400"}`}
+                      className={`grid h-8 w-8 place-items-center rounded-full ${unlocked ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-500"}`}
                     >
                       {unlocked ? <Check size={14} /> : <span className="text-[10px] font-bold">{i + 1}</span>}
                     </div>
                     <span className="text-[10px] text-slate-500">฿{tier.minSubtotal.toLocaleString()}</span>
-                    <span className="text-[9px] text-slate-400 line-clamp-1 max-w-[60px]">{gp?.name ?? tier.giftProductSlug}</span>
+                    <span className="text-[9px] text-slate-500 line-clamp-1 max-w-[60px]">{gp?.name ?? tier.giftProductSlug}</span>
                   </div>
                 );
               })}
             </div>
-            <p className="text-xs mt-3 font-semibold text-center text-brand-emerald">
+            <p className="text-xs mt-3 font-semibold text-center text-brand-800">
               {lang === "en" ? ev.reasonEn : ev.reasonTh}
             </p>
           </div>

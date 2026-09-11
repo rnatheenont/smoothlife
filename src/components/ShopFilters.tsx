@@ -52,7 +52,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
             onClick={() => updateParam("category", null)}
             className={clsx(
               "rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
-              !current.category ? "bg-brand-gradient-soft font-semibold text-brand-emerald" : "text-slate-600 hover:bg-surface-soft"
+              !current.category ? "bg-brand-gradient-soft font-semibold text-brand-800" : "text-slate-600 hover:bg-surface-soft"
             )}
           >
             ทั้งหมด
@@ -64,7 +64,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
               className={clsx(
                 "rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
                 current.category === c.slug
-                  ? "bg-brand-gradient-soft font-semibold text-brand-emerald"
+                  ? "bg-brand-gradient-soft font-semibold text-brand-800"
                   : "text-slate-600 hover:bg-surface-soft"
               )}
             >
@@ -84,7 +84,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
                 onClick={() => updateParam("brand", selected ? null : b.slug)}
                 className={clsx(
                   "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-bold transition-colors",
-                  selected ? "bg-brand-gradient-soft text-brand-emerald" : "text-brand-ink hover:bg-surface-soft"
+                  selected ? "bg-brand-gradient-soft text-brand-800" : "text-brand-ink hover:bg-surface-soft"
                 )}
               >
                 <span
@@ -109,7 +109,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
                   onClick={() => updateParam("brand", selected ? null : b.slug)}
                   className={clsx(
                     "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm shrink-0 transition-colors",
-                    selected ? "bg-brand-gradient-soft font-semibold text-brand-emerald" : "text-slate-600 hover:bg-surface-soft"
+                    selected ? "bg-brand-gradient-soft font-semibold text-brand-800" : "text-slate-600 hover:bg-surface-soft"
                   )}
                 >
                   <span
@@ -128,7 +128,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
           {otherBrands.length > VISIBLE_BRANDS && (
             <button
               onClick={() => setShowAllBrands((v) => !v)}
-              className="mt-1 flex items-center gap-1 px-2 py-1.5 text-left text-xs font-semibold text-brand-emerald hover:text-brand-sky transition-colors"
+              className="mt-1 flex items-center gap-1 px-2 py-1.5 text-left text-xs font-semibold text-brand-800 hover:text-brand-800 transition-colors"
             >
               <ChevronDown size={13} className={clsx("transition-transform", brandsExpanded && "rotate-180")} />
               {brandsExpanded ? "แสดงน้อยลง" : `แสดงเพิ่มเติม (${otherBrands.length - VISIBLE_BRANDS})`}
@@ -146,7 +146,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
               className={clsx(
                 "rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
                 current.concern === c.slug
-                  ? "bg-brand-gradient-soft font-semibold text-brand-emerald"
+                  ? "bg-brand-gradient-soft font-semibold text-brand-800"
                   : "text-slate-600 hover:bg-surface-soft"
               )}
             >
@@ -171,7 +171,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
   const mobileContent = (
     <div className="flex flex-col gap-7">
       <div>
-        <h4 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">แบรนด์ในเครือ · Life So Smooth</h4>
+        <h4 className="text-xs font-bold text-slate-500 mb-3">แบรนด์ในเครือ · Life So Smooth</h4>
         <div className="flex flex-col rounded-xl border border-brand-emerald/30 mb-4">
           {houseBrands.map((b) => {
             const selected = current.brand === b.slug;
@@ -180,7 +180,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
                 key={b.slug}
                 onClick={() => updateParam("brand", selected ? null : b.slug)}
                 className={`flex items-center justify-between px-3.5 py-3 text-sm text-left font-bold border-b border-slate-50 last:border-0 ${
-                  selected ? "text-brand-emerald bg-brand-gradient-soft" : "text-brand-ink"
+                  selected ? "text-brand-800 bg-brand-gradient-soft" : "text-brand-ink"
                 }`}
               >
                 <span translate="no">{b.name}</span>
@@ -189,7 +189,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
             );
           })}
         </div>
-        <h4 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">แบรนด์อื่นๆ</h4>
+        <h4 className="text-xs font-bold text-slate-500 mb-3">แบรนด์อื่นๆ</h4>
         <div className="flex flex-col rounded-xl border border-slate-100">
           {otherBrands.map((b) => {
             const selected = current.brand === b.slug;
@@ -198,7 +198,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
                 key={b.slug}
                 onClick={() => updateParam("brand", selected ? null : b.slug)}
                 className={`flex items-center justify-between px-3.5 py-3 text-sm text-left border-b border-slate-50 last:border-0 ${
-                  selected ? "font-semibold text-brand-emerald bg-brand-gradient-soft" : "text-slate-600"
+                  selected ? "font-semibold text-brand-800 bg-brand-gradient-soft" : "text-slate-600"
                 }`}
               >
                 <span translate="no">{b.name}</span>
@@ -209,7 +209,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
         </div>
       </div>
       <div>
-        <h4 className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">ปัญหาผิวที่กังวล</h4>
+        <h4 className="text-xs font-bold text-slate-500 mb-3">ปัญหาผิวที่กังวล</h4>
         <div className="flex flex-wrap gap-2">
           {concerns.map((c) => (
             <button

@@ -67,7 +67,7 @@ export default function CustomCheckout() {
     return (
       <div className="container-page py-20 text-center">
         <p className="text-slate-500">ตะกร้าของคุณว่างเปล่า</p>
-        <Link href="/shop" className="inline-block mt-4 text-brand-emerald font-semibold">เริ่มช้อป</Link>
+        <Link href="/shop" className="inline-block mt-4 text-brand-800 font-semibold">เริ่มช้อป</Link>
       </div>
     );
   }
@@ -181,7 +181,7 @@ export default function CustomCheckout() {
             <span>{formatTHB(subtotal)}</span>
           </div>
           {applied && (
-            <div className="flex justify-between text-sm text-brand-emerald mb-2">
+            <div className="flex justify-between text-sm text-brand-800 mb-2">
               <span className="flex items-center gap-1">
                 <Ticket size={13} /> คูปอง {applied.coupon.code}
               </span>

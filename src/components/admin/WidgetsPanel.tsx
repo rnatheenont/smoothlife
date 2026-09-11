@@ -173,14 +173,14 @@ export default function WidgetsPanel() {
           <div className="flex items-center gap-3 mt-2.5">
             <button
               onClick={() => openCustomize(w)}
-              className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand-emerald"
+              className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand-800"
             >
               <Sliders size={12} /> ปรับแต่ง
               <ChevronDown size={12} className={openKey === w.key ? "rotate-180 transition-transform" : "transition-transform"} />
             </button>
             <button
               onClick={() => setPreviewKey(previewKey === w.key ? null : w.key)}
-              className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand-emerald"
+              className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand-800"
             >
               <Eye size={12} /> ดูตัวอย่าง
             </button>

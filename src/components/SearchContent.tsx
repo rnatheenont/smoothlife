@@ -107,9 +107,9 @@ export default function SearchContent() {
 
       {noResults && (
         <>
-          <div className="text-center py-10 text-slate-400">
+          <div className="text-center py-10 text-slate-500">
             <p>ไม่พบผลลัพธ์สำหรับ &quot;{input.trim()}&quot;</p>
-            <Link href="/shop" className="text-brand-emerald font-semibold text-sm mt-2 inline-block">ดูสินค้าทั้งหมด</Link>
+            <Link href="/shop" className="text-brand-800 font-semibold text-sm mt-2 inline-block">ดูสินค้าทั้งหมด</Link>
           </div>
 
           <div>
@@ -128,7 +128,7 @@ export default function SearchContent() {
           <h2 className="font-bold text-brand-ink mb-3">ปัญหาผิวที่เกี่ยวข้อง</h2>
           <div className="flex flex-wrap gap-2">
             {matchedConcerns.map((c) => (
-              <Link key={c.slug} href={`/concern/${c.slug}`} className="rounded-full bg-brand-gradient-soft text-brand-emerald text-sm font-medium px-4 py-2">
+              <Link key={c.slug} href={`/concern/${c.slug}`} className="rounded-full bg-brand-gradient-soft text-brand-800 text-sm font-medium px-4 py-2">
                 {c.nameTh}
               </Link>
             ))}
@@ -152,7 +152,7 @@ export default function SearchContent() {
           <h2 className="font-bold text-brand-ink mb-3">บทความและคู่มือ</h2>
           <div className="flex flex-col gap-2">
             {matchedArticles.map((a) => (
-              <Link key={a.slug} href={`/knowledge/article/${a.slug}`} className="text-sm font-medium text-brand-emerald hover:underline">
+              <Link key={a.slug} href={`/knowledge/article/${a.slug}`} className="text-sm font-medium text-brand-800 hover:underline">
                 {a.title}
               </Link>
             ))}

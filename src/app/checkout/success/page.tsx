@@ -44,7 +44,7 @@ function SuccessContent() {
         <CheckCircle2 size={32} className="text-brand-emerald" />
       </div>
       <h1 className="text-2xl font-bold text-brand-ink mt-5">ขอบคุณสำหรับคำสั่งซื้อ!</h1>
-      {orderId && <p className="text-lg font-bold text-brand-emerald mt-1">{orderId}</p>}
+      {orderId && <p className="text-lg font-bold text-brand-800 mt-1">{orderId}</p>}
       <p className="text-sm text-slate-500 mt-4">
         เราได้รับคำสั่งซื้อของคุณแล้ว ใบยืนยันคำสั่งซื้อและรายละเอียดการจัดส่งจะถูกส่งไปยังอีเมลที่ระบุไว้กับ Shopify
       </p>
@@ -62,7 +62,7 @@ function SuccessContent() {
 
 export default function CheckoutSuccessPage() {
   return (
-    <Suspense fallback={<div className="container-page py-20 text-center text-slate-400">กำลังโหลด…</div>}>
+    <Suspense fallback={<div className="container-page py-20 text-center text-slate-500">กำลังโหลด…</div>}>
       <SuccessContent />
     </Suspense>
   );

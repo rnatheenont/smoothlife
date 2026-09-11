@@ -28,14 +28,14 @@ function LatestEntry({ entry }: { entry: DayEntry }) {
         <img src={entry.thumbDataUrl} alt={`รูปวันที่ ${entry.day}`} className="h-16 w-16 rounded-full object-cover" />
         <div>
           <h3 className="font-bold text-brand-ink">ผลวันที่ {entry.day}</h3>
-          <p className="text-xs text-slate-400">{new Date(entry.capturedAt).toLocaleDateString("th-TH")}</p>
+          <p className="text-xs text-slate-500">{new Date(entry.capturedAt).toLocaleDateString("th-TH")}</p>
         </div>
       </div>
       <ScoreRow label="ความเรียบเนียนของผิว (สิว)" score={entry.result.acne.score} />
       <ScoreRow label="ความสม่ำเสมอของสีผิว (จุดด่างดำ)" score={entry.result.darkSpots.score} />
       <ScoreRow label="ความเรียบเนียน (ริ้วรอย)" score={entry.result.wrinkles.score} />
       <p className="text-sm text-slate-600 mt-4">{entry.result.overallNote}</p>
-      <p className="text-[11px] text-slate-400 mt-3 border-t border-slate-100 pt-3">{entry.result.disclaimer}</p>
+      <p className="text-[11px] text-slate-500 mt-3 border-t border-slate-100 pt-3">{entry.result.disclaimer}</p>
     </div>
   );
 }
@@ -168,7 +168,7 @@ export default function ScoreSummary() {
         onClick={() => {
           if (confirm("ต้องการลบข้อมูล Glow Challenge ทั้งหมดในเบราว์เซอร์นี้ใช่หรือไม่?")) resetAll();
         }}
-        className="mx-auto flex items-center gap-2 text-xs text-slate-400 hover:text-red-500 mt-2"
+        className="mx-auto flex items-center gap-2 text-xs text-slate-500 hover:text-red-500 mt-2"
       >
         <Trash2 size={14} />
         ลบข้อมูลทั้งหมด

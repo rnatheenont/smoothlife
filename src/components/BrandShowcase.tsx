@@ -60,14 +60,14 @@ export default function BrandShowcase({
             <div className="text-center mt-5">
               <Link
                 href={`/shop?brand=${brand.slug}`}
-                className="text-sm font-semibold text-brand-emerald hover:text-brand-sky transition-colors"
+                className="text-sm font-semibold text-brand-800 hover:text-brand-800 transition-colors"
               >
                 ดูสินค้าทั้งหมดของ {brand.name} →
               </Link>
             </div>
           </>
         ) : (
-          <p className="text-center text-sm text-slate-400">เร็วๆ นี้จะมีสินค้าเพิ่มเติม</p>
+          <p className="text-center text-sm text-slate-500">เร็วๆ นี้จะมีสินค้าเพิ่มเติม</p>
         )}
       </div>
     </section>

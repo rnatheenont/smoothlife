@@ -352,7 +352,7 @@ export default function ShareCard({
       <button
         disabled={busy}
         onClick={handleShare}
-        className="flex items-center gap-2 rounded-full border border-brand-teal text-brand-emerald font-semibold px-5 py-2.5 text-xs disabled:opacity-60"
+        className="flex items-center gap-2 rounded-full border border-brand-teal text-brand-800 font-semibold px-5 py-2.5 text-xs disabled:opacity-60"
       >
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
         แชร์ผลลัพธ์

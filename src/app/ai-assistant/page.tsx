@@ -35,7 +35,7 @@ export default function AiAssistantPage() {
           <Image src="/mascot/smoothie-hi.png" alt="Smoothie" fill sizes="64px" className="object-contain" priority />
         </div>
         <div>
-          <div className="flex items-center gap-2 text-brand-emerald font-semibold text-sm mb-1">
+          <div className="flex items-center gap-2 text-brand-800 font-semibold text-sm mb-1">
             <Sparkles size={16} /> ผู้ช่วย AI
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">เลือกแบบทดสอบที่ใช่สำหรับคุณ</h1>

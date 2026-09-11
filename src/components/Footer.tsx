@@ -67,7 +67,7 @@ function NewsletterForm() {
 
   if (status === "done") {
     return (
-      <p className="flex items-center gap-1.5 text-sm text-brand-emerald font-medium mt-4">
+      <p className="flex items-center gap-1.5 text-sm text-brand-800 font-medium mt-4">
         <CheckCircle2 size={16} /> สมัครรับข่าวสารสำเร็จแล้วค่ะ
       </p>
     );
@@ -101,19 +101,19 @@ export default function Footer() {
         <div className="col-span-2">
           <div className="font-extrabold text-xl mb-3">
             <span className="brand-text-gradient">Smoothlife</span>
-            <span className="text-brand-sky">.com</span>
+            <span className="text-brand-800">.com</span>
           </div>
           <p className="text-sm text-slate-500 max-w-xs">
             ศูนย์รวมสินค้าและบริการเพื่อสุขภาพและความงาม ของแท้ 100% มีอย. จัดส่งทั่วไทย
           </p>
           <div className="flex items-center gap-3 mt-4">
-            <a href="#" aria-label="Facebook" className="grid h-9 w-9 place-items-center rounded-full bg-white shadow-card text-slate-500 hover:text-brand-emerald">
+            <a href="#" aria-label="Facebook" className="grid h-9 w-9 place-items-center rounded-full bg-white shadow-card text-slate-500 hover:text-brand-800">
               <Facebook size={16} />
             </a>
-            <a href="#" aria-label="Instagram" className="grid h-9 w-9 place-items-center rounded-full bg-white shadow-card text-slate-500 hover:text-brand-emerald">
+            <a href="#" aria-label="Instagram" className="grid h-9 w-9 place-items-center rounded-full bg-white shadow-card text-slate-500 hover:text-brand-800">
               <Instagram size={16} />
             </a>
-            <a href="#" aria-label="LINE Official" className="grid h-9 w-9 place-items-center rounded-full bg-white shadow-card text-slate-500 hover:text-brand-emerald">
+            <a href="#" aria-label="LINE Official" className="grid h-9 w-9 place-items-center rounded-full bg-white shadow-card text-slate-500 hover:text-brand-800">
               <MessageCircle size={16} />
             </a>
           </div>
@@ -125,7 +125,7 @@ export default function Footer() {
             <ul className="space-y-2">
               {col.links.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="text-sm text-slate-500 hover:text-brand-emerald transition-colors">
+                  <Link href={l.href} className="text-sm text-slate-500 hover:text-brand-800 transition-colors">
                     {l.label}
                   </Link>
                 </li>
@@ -135,11 +135,11 @@ export default function Footer() {
         ))}
       </div>
       <div className="border-t border-slate-200">
-        <div className="container-page py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
+        <div className="container-page py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
           <span>© 2026 Smoothlife.com — เว็บไซต์เดโมสำหรับการนำเสนอ (Prototype)</span>
           <div className="flex items-center gap-4">
-            <Link href="/privacy" className="hover:text-brand-emerald">นโยบายความเป็นส่วนตัว</Link>
-            <Link href="/terms" className="hover:text-brand-emerald">เงื่อนไขการใช้บริการ</Link>
+            <Link href="/privacy" className="hover:text-brand-800">นโยบายความเป็นส่วนตัว</Link>
+            <Link href="/terms" className="hover:text-brand-800">เงื่อนไขการใช้บริการ</Link>
           </div>
         </div>
       </div>

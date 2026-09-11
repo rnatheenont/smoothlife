@@ -131,7 +131,7 @@ function PointsContent() {
                 <div key={t.id} className="rounded-xl2 border border-slate-100 p-4 flex items-center justify-between gap-3">
                   <div>
                     <p className="font-bold text-brand-ink text-sm">{t.label_th}</p>
-                    <p className="text-xs text-slate-400">{t.points_cost.toLocaleString()} แต้ม</p>
+                    <p className="text-xs text-slate-500">{t.points_cost.toLocaleString()} แต้ม</p>
                   </div>
                   <button
                     onClick={() => redeem(t)}
@@ -149,7 +149,7 @@ function PointsContent() {
 
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-bold text-brand-ink">ระดับสมาชิกและสิทธิพิเศษ</h2>
-        <Link href="/loyalty" className="text-xs font-semibold text-brand-emerald">
+        <Link href="/loyalty" className="text-xs font-semibold text-brand-800">
           ดูตารางเปรียบเทียบทั้งหมด
         </Link>
       </div>
@@ -162,16 +162,16 @@ function PointsContent() {
               className={`rounded-xl2 border p-5 ${active ? "border-brand-teal bg-brand-gradient-soft" : "border-slate-100"}`}
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className={`grid h-9 w-9 place-items-center rounded-full ${active ? "bg-brand-gradient text-white" : "bg-surface-muted text-slate-400"}`}>
+                <div className={`grid h-9 w-9 place-items-center rounded-full ${active ? "bg-brand-gradient text-white" : "bg-surface-muted text-slate-500"}`}>
                   <t.icon size={16} />
                 </div>
                 <div>
                   <p className="font-bold text-brand-ink">{tierDisplayName[t.name as keyof typeof tierDisplayName].th}</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     {t.min === 0 ? "ระดับเริ่มต้น" : `ยอดใช้จ่ายสะสม 12 เดือนล่าสุด ฿${t.min.toLocaleString()} ขึ้นไป`}
                   </p>
                 </div>
-                {active && <span className="ml-auto text-xs font-bold text-brand-emerald">ระดับปัจจุบัน</span>}
+                {active && <span className="ml-auto text-xs font-bold text-brand-800">ระดับปัจจุบัน</span>}
               </div>
               <ul className="text-sm text-slate-600 flex flex-col gap-1 pl-12">
                 {t.perks.map((p) => (
@@ -191,18 +191,18 @@ function PointsContent() {
             <History size={16} className="text-brand-emerald" /> ประวัติคะแนน
           </h2>
           {entries === null ? (
-            <p className="text-sm text-slate-400">กำลังโหลด…</p>
+            <p className="text-sm text-slate-500">กำลังโหลด…</p>
           ) : entries.length === 0 ? (
-            <p className="text-sm text-slate-400">ยังไม่มีประวัติคะแนน</p>
+            <p className="text-sm text-slate-500">ยังไม่มีประวัติคะแนน</p>
           ) : (
             <div className="flex flex-col gap-2">
               {entries.map((e) => (
                 <div key={e.id} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3 text-sm">
                   <div>
                     <p className="font-medium text-brand-ink">{reasonLabel[e.reason] || e.reason}</p>
-                    <p className="text-xs text-slate-400">{new Date(e.created_at).toLocaleString("th-TH")}</p>
+                    <p className="text-xs text-slate-500">{new Date(e.created_at).toLocaleString("th-TH")}</p>
                   </div>
-                  <span className={`font-bold ${e.delta >= 0 ? "text-brand-emerald" : "text-rose-500"}`}>
+                  <span className={`font-bold ${e.delta >= 0 ? "text-brand-800" : "text-rose-500"}`}>
                     {e.delta >= 0 ? "+" : ""}
                     {e.delta.toLocaleString()}
                   </span>
@@ -216,14 +216,14 @@ function PointsContent() {
       {redeemed && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
-            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald">
+            <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">
               <CheckCircle2 size={28} />
             </div>
             <p className="text-lg font-bold text-brand-ink mb-1">แลกแต้มสำเร็จ!</p>
             <p className="text-sm text-slate-600 mb-4">{redeemed.tier.label_th}</p>
             <div className="mb-4 rounded-xl border border-dashed border-brand-teal bg-brand-gradient-soft px-4 py-3">
               <p className="text-xs text-slate-500 mb-1">โค้ดส่วนลดของคุณ (ใส่ในตะกร้าให้แล้ว)</p>
-              <p className="font-mono text-lg font-bold text-brand-emerald">{redeemed.code}</p>
+              <p className="font-mono text-lg font-bold text-brand-800">{redeemed.code}</p>
             </div>
             <button
               onClick={() => setRedeemed(null)}

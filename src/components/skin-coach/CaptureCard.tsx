@@ -160,7 +160,7 @@ export default function CaptureCard({
                   </div>
                 )}
               </div>
-              <span className={`text-[11px] sm:text-xs font-medium ${shot ? "text-brand-emerald" : "text-slate-500"}`}>{z.label}</span>
+              <span className={`text-[11px] sm:text-xs font-medium ${shot ? "text-brand-800" : "text-slate-500"}`}>{z.label}</span>
             </button>
           );
         })}

@@ -39,7 +39,7 @@ export default function FreeGiftProgress({ scopedToSlug }: { scopedToSlug?: stri
                 <div className="flex flex-col items-center gap-1.5 min-w-0">
                   <div
                     className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
-                      ev.eligible ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-400"
+                      ev.eligible ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-500"
                     }`}
                   >
                     {ev.eligible ? <Check size={15} /> : <Lock size={13} />}
@@ -59,13 +59,13 @@ export default function FreeGiftProgress({ scopedToSlug }: { scopedToSlug?: stri
             >
               <div className="flex items-start gap-3">
                 <div
-                  className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full ${ev.eligible ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-400"}`}
+                  className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full ${ev.eligible ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-500"}`}
                 >
                   {ev.eligible ? <Check size={14} /> : <Lock size={12} />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="text-sm font-bold text-brand-ink">{title}</span>
-                  <p className={`text-xs mt-1 font-semibold ${ev.eligible ? "text-brand-emerald" : "text-amber-600"}`}>{reason}</p>
+                  <p className={`text-xs mt-1 font-semibold ${ev.eligible ? "text-brand-800" : "text-amber-600"}`}>{reason}</p>
                 </div>
               </div>
             </div>

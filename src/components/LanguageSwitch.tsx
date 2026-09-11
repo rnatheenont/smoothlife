@@ -78,7 +78,7 @@ export default function LanguageSwitch({
           aria-label={`ภาษา: ${current.native}`}
           className={clsx(
             "grid h-10 w-10 place-items-center rounded-full border text-xs font-bold uppercase tracking-wide transition-colors disabled:opacity-60",
-            open ? "border-brand-teal text-brand-emerald" : "border-slate-200 text-slate-500"
+            open ? "border-brand-teal text-brand-800" : "border-slate-200 text-slate-500"
           )}
         >
           {translating ? <Loader2 size={16} className="animate-spin" /> : current.code}
@@ -97,7 +97,7 @@ export default function LanguageSwitch({
             open ? "border-brand-teal shadow-card" : "border-slate-200"
           )}
         >
-          <span className="text-brand-emerald">
+          <span className="text-brand-800">
             {translating ? <Loader2 size={compact ? 14 : 15} className="animate-spin" /> : <Globe size={compact ? 14 : 15} />}
           </span>
           <span className="font-bold text-brand-ink">{current.native}</span>
@@ -118,7 +118,7 @@ export default function LanguageSwitch({
           open ? "visible scale-100 opacity-100" : "invisible scale-95 opacity-0"
         )}
       >
-        <p className="px-2.5 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+        <p className="px-2.5 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
           ภาษา · Language
         </p>
         {LANGS.map((l) => {
@@ -148,7 +148,7 @@ export default function LanguageSwitch({
                 <span className={clsx("block text-sm", active ? "font-bold text-brand-ink" : "font-medium text-slate-700")}>
                   {l.native}
                 </span>
-                <span className="block text-[10px] text-slate-400">{l.hint}</span>
+                <span className="block text-[10px] text-slate-500">{l.hint}</span>
               </span>
               {active && <Check size={15} className="shrink-0 text-brand-emerald" />}
             </button>

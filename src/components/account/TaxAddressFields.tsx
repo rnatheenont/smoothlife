@@ -73,7 +73,7 @@ export default function TaxAddressFields({
       <label className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
         <div>
           <span className="text-sm text-slate-700 font-medium">ที่อยู่บริษัท</span>
-          <p className="text-xs text-slate-400">เลือกหากเป็นที่อยู่บริษัท/ธุรกิจ</p>
+          <p className="text-xs text-slate-500">เลือกหากเป็นที่อยู่บริษัท/ธุรกิจ</p>
         </div>
         <input
           type="checkbox"

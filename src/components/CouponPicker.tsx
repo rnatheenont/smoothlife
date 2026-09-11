@@ -53,11 +53,11 @@ export default function CouponPicker() {
           <Ticket size={17} className="text-brand-emerald" />
           {t("คูปองส่วนลด", "Coupons")}
         </h2>
-        <span className="text-[11px] font-semibold text-brand-emerald bg-brand-gradient-soft rounded-full px-2.5 py-1">
+        <span className="text-[11px] font-semibold text-brand-800 bg-brand-gradient-soft rounded-full px-2.5 py-1">
           {lang === "en" ? `${usableCount} available` : `ใช้ได้ ${usableCount} ใบ`}
         </span>
       </div>
-      <p className="text-xs text-slate-400 mb-4">
+      <p className="text-xs text-slate-500 mb-4">
         {t("เลือกคูปองที่ตรงเงื่อนไข ระบบจะคำนวณส่วนลดให้ทันที", "Pick an eligible coupon and the discount applies instantly")}
       </p>
 
@@ -100,7 +100,7 @@ export default function CouponPicker() {
               <div className="flex items-start gap-3">
                 <div
                   className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full ${
-                    active ? "bg-brand-gradient text-white" : ev.eligible ? "bg-surface-muted text-brand-emerald" : "bg-slate-100 text-slate-400"
+                    active ? "bg-brand-gradient text-white" : ev.eligible ? "bg-surface-muted text-brand-800" : "bg-slate-100 text-slate-500"
                   }`}
                 >
                   {active ? <Check size={14} /> : ev.eligible ? <Ticket size={14} /> : <Lock size={12} />}
@@ -113,12 +113,12 @@ export default function CouponPicker() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
-                  <p className={`text-xs mt-1 font-semibold ${ev.eligible ? "text-brand-emerald" : "text-amber-600"}`}>
+                  <p className={`text-xs mt-1 font-semibold ${ev.eligible ? "text-brand-800" : "text-amber-600"}`}>
                     {reason}
                   </p>
                 </div>
                 {active && (
-                  <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1 shrink-0">
+                  <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 shrink-0">
                     <X size={12} /> {t("ยกเลิก", "Remove")}
                   </span>
                 )}

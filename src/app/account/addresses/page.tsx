@@ -138,7 +138,7 @@ function AddressesContent() {
                 {suggestion.district ? ` ${suggestion.district}` : ""}
                 {suggestion.province ? ` ${suggestion.province}` : ""} {suggestion.postal_code}
               </p>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-slate-500 mt-1">
                 {suggestion.missing && suggestion.missing.length > 0
                   ? `กรุณาตรวจสอบและกรอก${suggestion.missing.join(" / ")}ให้ครบก่อนบันทึก`
                   : "ตรวจสอบความถูกต้องอีกครั้งก่อนบันทึกได้เลย"}
@@ -147,11 +147,11 @@ function AddressesContent() {
                 <Link
                   href="/account/addresses/new"
                   onClick={useSuggestion}
-                  className="text-xs font-semibold text-brand-emerald"
+                  className="text-xs font-semibold text-brand-800"
                 >
                   ใช้ที่อยู่นี้
                 </Link>
-                <button onClick={dismissSuggestion} className="text-xs text-slate-400">
+                <button onClick={dismissSuggestion} className="text-xs text-slate-500">
                   ไม่ใช้ตอนนี้
                 </button>
               </div>
@@ -163,12 +163,12 @@ function AddressesContent() {
         </div>
       )}
 
-      {isReal && addresses === null && <p className="text-sm text-slate-400">กำลังโหลด…</p>}
+      {isReal && addresses === null && <p className="text-sm text-slate-500">กำลังโหลด…</p>}
 
       {isReal && addresses && (
         <div className="flex flex-col gap-3 mb-5">
           {addresses.length === 0 && (
-            <div className="rounded-xl2 border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">
+            <div className="rounded-xl2 border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
               ยังไม่มีที่อยู่จัดส่ง
             </div>
           )}
@@ -181,7 +181,7 @@ function AddressesContent() {
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-sm font-bold text-brand-ink">{a.label}</span>
                       {a.is_default && (
-                        <span className="text-[10px] font-semibold text-brand-emerald bg-brand-gradient-soft rounded-full px-2 py-0.5">
+                        <span className="text-[10px] font-semibold text-brand-800 bg-brand-gradient-soft rounded-full px-2 py-0.5">
                           ค่าเริ่มต้น
                         </span>
                       )}
@@ -199,14 +199,14 @@ function AddressesContent() {
                   <div className="flex gap-1.5">
                     <Link
                       href={`/account/addresses/${a.id}/edit`}
-                      className="grid h-7 w-7 place-items-center rounded-full text-slate-400 hover:bg-surface-soft"
+                      className="grid h-7 w-7 place-items-center rounded-full text-slate-500 hover:bg-surface-soft"
                     >
                       <Pencil size={13} />
                     </Link>
                     <button
                       onClick={() => remove(a.id)}
                       disabled={busyId === a.id}
-                      className="grid h-7 w-7 place-items-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+                      className="grid h-7 w-7 place-items-center rounded-full text-slate-500 hover:bg-rose-50 hover:text-rose-500"
                     >
                       {busyId === a.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                     </button>
@@ -215,7 +215,7 @@ function AddressesContent() {
                     <button
                       onClick={() => setDefault(a.id)}
                       disabled={busyId === a.id}
-                      className="flex items-center gap-1 text-[11px] font-semibold text-brand-emerald"
+                      className="flex items-center gap-1 text-[11px] font-semibold text-brand-800"
                     >
                       <Check size={11} /> ตั้งเป็นค่าเริ่มต้น
                     </button>
@@ -229,7 +229,7 @@ function AddressesContent() {
 
       <Link
         href="/account/addresses/new"
-        className="flex items-center justify-center gap-2 rounded-xl2 border border-dashed border-slate-200 py-3.5 text-sm font-semibold text-brand-emerald hover:border-brand-teal"
+        className="flex items-center justify-center gap-2 rounded-xl2 border border-dashed border-slate-200 py-3.5 text-sm font-semibold text-brand-800 hover:border-brand-teal"
       >
         <Plus size={16} /> เพิ่มที่อยู่ใหม่
       </Link>

@@ -44,7 +44,7 @@ export default function FreeGiftPromoCard() {
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
             <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
-              <span className="text-[10px] font-bold uppercase bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">
                 {lang === "en" ? badge.en : badge.th}
               </span>
               <h3 className="font-bold text-sm md:text-base mt-1 line-clamp-1">{lang === "en" ? promo.titleEn : promo.titleTh}</h3>

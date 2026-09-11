@@ -17,13 +17,13 @@ type ReferralHistoryRow = {
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   pending: { label: "รอเพื่อนกดลิงก์", className: "bg-slate-100 text-slate-500" },
-  link_clicked: { label: "เพื่อนกดลิงก์แล้ว", className: "bg-brand-gradient-soft text-brand-emerald" },
-  registered: { label: "เพื่อนสมัครสมาชิกแล้ว", className: "bg-brand-gradient-soft text-brand-emerald" },
+  link_clicked: { label: "เพื่อนกดลิงก์แล้ว", className: "bg-brand-gradient-soft text-brand-800" },
+  registered: { label: "เพื่อนสมัครสมาชิกแล้ว", className: "bg-brand-gradient-soft text-brand-800" },
   order_placed: { label: "เพื่อนสั่งซื้อแล้ว รอจัดส่ง", className: "bg-amber-50 text-amber-600" },
   delivered: { label: "จัดส่งสำเร็จ รอปล่อยรางวัล", className: "bg-amber-50 text-amber-600" },
-  reward_released: { label: "ได้รับคูปอง ฿100 แล้ว", className: "bg-brand-gradient-soft text-brand-emerald" },
+  reward_released: { label: "ได้รับคูปอง ฿100 แล้ว", className: "bg-brand-gradient-soft text-brand-800" },
   void: { label: "ไม่ผ่านเงื่อนไข", className: "bg-rose-50 text-rose-500" },
-  expired: { label: "หมดอายุ", className: "bg-slate-100 text-slate-400" },
+  expired: { label: "หมดอายุ", className: "bg-slate-100 text-slate-500" },
 };
 
 function ReferralContent() {
@@ -71,7 +71,7 @@ function ReferralContent() {
       </p>
 
       {loading ? (
-        <p className="text-sm text-slate-400 text-center py-10">กำลังโหลด…</p>
+        <p className="text-sm text-slate-500 text-center py-10">กำลังโหลด…</p>
       ) : error ? (
         <p className="text-sm text-rose-500 text-center py-10">{error}</p>
       ) : !eligible ? (
@@ -80,7 +80,7 @@ function ReferralContent() {
         </div>
       ) : (
         <div className="rounded-xl2 border border-slate-100 p-5 shadow-card mb-8">
-          <p className="text-xs text-slate-400 mb-2">ลิงก์แนะนำเพื่อนของคุณ</p>
+          <p className="text-xs text-slate-500 mb-2">ลิงก์แนะนำเพื่อนของคุณ</p>
           <div className="flex items-center gap-2">
             <input
               readOnly
@@ -92,7 +92,7 @@ function ReferralContent() {
               {copied ? "คัดลอกแล้ว" : "คัดลอก"}
             </Button>
           </div>
-          <p className="text-[11px] text-slate-400 mt-2">
+          <p className="text-[11px] text-slate-500 mt-2">
             เป็นลิงก์เฉพาะตัวคุณ ห้ามแชร์เป็นโค้ดส่วนลดสาธารณะ — ใช้ได้สูงสุด 20 คนต่อปี
           </p>
         </div>
@@ -102,7 +102,7 @@ function ReferralContent() {
         <Gift size={16} className="text-brand-emerald" /> ประวัติการแนะนำ
       </h2>
       {referrals.length === 0 ? (
-        <p className="text-sm text-slate-400 text-center py-6">ยังไม่มีประวัติการแนะนำเพื่อน</p>
+        <p className="text-sm text-slate-500 text-center py-6">ยังไม่มีประวัติการแนะนำเพื่อน</p>
       ) : (
         <div className="space-y-2.5">
           {referrals.map((r) => {
@@ -110,7 +110,7 @@ function ReferralContent() {
             return (
               <div key={r.id} className="rounded-xl2 border border-slate-100 p-3.5 shadow-card flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString("th-TH")}</p>
+                  <p className="text-xs text-slate-500">{new Date(r.created_at).toLocaleDateString("th-TH")}</p>
                   {r.order_amount != null && (
                     <p className="text-xs text-slate-500 mt-0.5">ยอดสั่งซื้อของเพื่อน ฿{r.order_amount.toLocaleString()}</p>
                   )}

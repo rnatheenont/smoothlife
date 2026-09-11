@@ -12,13 +12,17 @@ import { useWidgetSettings } from "@/lib/use-widget-settings";
 import clsx from "clsx";
 import { useLang } from "@/lib/lang-context";
 
-const badgeStyles: Record<string, string> = {
-  Bestseller: "bg-brand-emerald text-white",
-  New: "bg-brand-sky text-white",
-  Sale: "bg-rose-500 text-white",
-  BOGO: "bg-violet-500 text-white",
-  Bundle: "bg-amber-500 text-white",
-  Gift: "bg-brand-teal text-white",
+// Badges in Thai, and in two voices only. Red is money off — nothing else on
+// the card is red, so a red chip always means a discount. Every other badge
+// is a quiet white chip. There used to be six colours (sky, violet, amber,
+// teal…) with white text, several of them under 3:1, and a corner of the
+// card that looked like a sweet shop.
+const badgeLabel: Record<string, string> = {
+  Bestseller: "ขายดี",
+  New: "มาใหม่",
+  BOGO: "1 แถม 1",
+  Bundle: "เซต",
+  Gift: "ของแถม",
 };
 
 // A discount % and a "Sale" badge say the same thing, so the discount
@@ -85,24 +89,27 @@ export default function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <div className="group relative flex h-full flex-col rounded-xl2 bg-white shadow-card hover:shadow-cardHover transition duration-300 hover:-translate-y-1 overflow-hidden">
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-xl2 bg-white shadow-card transition-shadow duration-200 hover:shadow-cardHover">
       <button
         onClick={() => toggle(product.slug)}
-        aria-label="Add to wishlist"
-        className="absolute right-2.5 top-2.5 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/90 backdrop-blur shadow-sm hover:scale-105 transition-transform"
+        aria-label={isWished ? "เอาออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}
+        aria-pressed={isWished}
+        className="absolute right-2.5 top-2.5 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/90 ring-1 ring-surface-line transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
       >
-        <Heart size={16} className={isWished ? "fill-rose-500 text-rose-500" : "text-slate-400"} />
+        <Heart size={16} className={isWished ? "fill-sale text-sale" : "text-slate-500"} />
       </button>
-      <Link href={`/product/${product.slug}`} className="block relative aspect-square bg-surface-soft overflow-hidden">
+      {/* Every product sits on the same mist ground, contained rather than
+          cropped. White-background packshots melt into it (multiply), and
+          the grid stops alternating between product photos and full-bleed
+          campaign art. No zoom on hover — the card lifting its shadow is
+          enough to say it is clickable. */}
+      <Link href={`/product/${product.slug}`} className="relative block aspect-square overflow-hidden bg-surface-mist">
         <Image
           src={product.image}
           alt={product.name}
           fill
           sizes="(max-width: 768px) 50vw, 25vw"
-          className={clsx(
-            "object-cover transition-transform duration-500",
-            soldOut ? "grayscale opacity-60" : "group-hover:scale-105"
-          )}
+          className={clsx("object-contain p-3 mix-blend-multiply", soldOut && "grayscale opacity-60")}
         />
         {soldOut ? (
           <div className="absolute inset-0 grid place-items-center bg-black/10">
@@ -114,34 +121,30 @@ export default function ProductCard({ product }: { product: Product }) {
               <span
                 key={label}
                 className={clsx(
-                  "text-[10px] font-bold px-2 py-1 rounded-full shadow-sm",
-                  label.startsWith("-")
-                    ? "bg-rose-500 text-white"
-                    : label === promoChip
-                    ? "bg-brand-teal text-white"
-                    : badgeStyles[label] || "bg-slate-700 text-white"
+                  "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                  label.startsWith("-") ? "bg-sale text-white" : "bg-white/95 text-brand-ink ring-1 ring-surface-line"
                 )}
               >
-                {label}
+                {badgeLabel[label] ?? label}
               </span>
             ))}
           </div>
         )}
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-3 md:p-4">
-        <span translate="no" className="text-[11px] font-semibold uppercase tracking-wide text-brand-teal">{product.brand}</span>
+        <span translate="no" className="truncate text-xs font-medium text-slate-500">{product.brand}</span>
         <Link href={`/product/${product.slug}`}>
-          <h3 translate="no" className="text-sm font-medium text-brand-ink line-clamp-2 min-h-[2.5rem] hover:text-brand-emerald transition-colors">
+          <h3 translate="no" className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-snug text-brand-ink transition-colors hover:text-brand-800">
             {product.name}
           </h3>
         </Link>
         {product.reviewCount > 0 ? (
           <div className="flex items-center gap-1.5">
             <StarRating rating={product.rating} size={12} />
-            <span className="text-[11px] text-slate-400">({product.reviewCount})</span>
+            <span className="text-[11px] text-slate-500">({product.reviewCount})</span>
           </div>
         ) : (
-          <p className="text-[11px] text-slate-400 line-clamp-1">{product.shortDesc}</p>
+          <p className="text-[11px] text-slate-500 line-clamp-1">{product.shortDesc}</p>
         )}
         {/* Sold and stock share one line: they answer the same question —
             "is this popular, and will it still be here" — and two short lines
@@ -158,7 +161,7 @@ export default function ProductCard({ product }: { product: Product }) {
           // overflowing; ml-auto keeps the sold count on the right either way.
           <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
             {lowStock && (
-              <span className="font-semibold text-amber-600">เหลือเพียง {defaultVariant.quantity} ชิ้น</span>
+              <span className="font-semibold text-amber-700">เหลือเพียง {defaultVariant.quantity} ชิ้น</span>
             )}
             {showSold && (
               <span translate="no" className="ml-auto flex shrink-0 items-center gap-1 text-slate-500">
@@ -181,14 +184,14 @@ export default function ProductCard({ product }: { product: Product }) {
             bars, and it was the tallest thing on the card. */}
         <div className="mt-auto flex items-end justify-between gap-2 pt-1">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-            {hasMultiplePrices && <span className="text-xs text-slate-400">เริ่มต้น</span>}
-            <span className="text-base font-bold text-brand-ink">{formatTHB(product.price)}</span>
+            {hasMultiplePrices && <span className="text-xs text-slate-500">เริ่มต้น</span>}
+            <span className="text-base font-bold tabular-nums text-brand-ink">{formatTHB(product.price)}</span>
             {product.compareAtPrice && (
-              <span className="text-xs text-slate-400 line-through">{formatTHB(product.compareAtPrice)}</span>
+              <span className="text-xs tabular-nums text-slate-500 line-through">{formatTHB(product.compareAtPrice)}</span>
             )}
           </div>
           {soldOut ? (
-            <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1.5 text-[11px] font-semibold text-slate-400">
+            <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500">
               สินค้าหมด
             </span>
           ) : (

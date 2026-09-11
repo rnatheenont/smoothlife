@@ -119,7 +119,7 @@ export default function Header() {
 
         <Link href="/" className="shrink-0 font-extrabold text-xl md:text-2xl tracking-tight">
           <span className="brand-text-gradient">Smoothlife</span>
-          <span className="text-brand-sky">.com</span>
+          <span className="text-brand-800">.com</span>
         </Link>
 
         <div className="hidden md:flex flex-1 max-w-xl">
@@ -164,7 +164,7 @@ export default function Header() {
             </Link>
           ) : (
             <>
-              <Link href="/ai-assistant" className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-brand-emerald">
+              <Link href="/ai-assistant" className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-brand-800">
                 <Sparkles size={14} /> น้อง Smoothie
               </Link>
               <Link href="/account/login" className="hidden lg:flex items-center gap-1.5" aria-label="Account">
@@ -222,7 +222,7 @@ export default function Header() {
       <nav className="hidden lg:block border-t border-slate-100">
         <div className="container-page flex items-center gap-7 py-2.5 text-sm font-medium text-slate-600">
           {navLinks.map((l) => (
-            <Link key={l.href} href={l.href} className="hover:text-brand-emerald transition-colors">
+            <Link key={l.href} href={l.href} className="hover:text-brand-800 transition-colors">
               {t(l.th, l.en)}
             </Link>
           ))}
@@ -238,7 +238,7 @@ export default function Header() {
               <div className="flex items-center justify-between mb-5">
                 <span className="font-extrabold text-lg">
                   <span className="brand-text-gradient">Smoothlife</span>
-                  <span className="text-brand-sky">.com</span>
+                  <span className="text-brand-800">.com</span>
                 </span>
                 <button
                   onClick={() => setOpen(false)}
@@ -260,7 +260,7 @@ export default function Header() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-bold text-brand-ink truncate">{user.name.split(" ")[0]}</span>
-                    <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                    <span className="flex items-center gap-1.5 text-xs text-slate-500">
                       {REWARDS_ACTIVITIES_ENABLED && <>{user.points} pts</>}
                       <span
                         className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${tierBadge[user.tier].className}`}
@@ -290,7 +290,7 @@ export default function Header() {
                     onClick={() => setOpen(false)}
                     className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm font-medium text-slate-700 hover:bg-surface-soft transition-colors"
                   >
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">
                       <l.icon size={15} />
                     </span>
                     {t(l.th, l.en)}

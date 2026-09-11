@@ -154,7 +154,7 @@ export default function BundleBuilder({
                   )}
                 </div>
                 <div className="p-3">
-                  <span translate="no" className="text-[10px] font-semibold uppercase tracking-wide text-brand-teal">{product.brand}</span>
+                  <span translate="no" className="text-[10px] font-semibold text-brand-800">{product.brand}</span>
                   <p translate="no" className="text-xs font-medium text-brand-ink line-clamp-2 min-h-[2rem]">{product.name}</p>
                   <p className="text-sm font-bold text-brand-ink mt-1">{formatTHB(product.price)}</p>
                 </div>
@@ -163,7 +163,7 @@ export default function BundleBuilder({
           })}
         </div>
         {visibleProducts.length === 0 && (
-          <p className="text-sm text-slate-400 py-10 text-center">
+          <p className="text-sm text-slate-500 py-10 text-center">
             {products.length === 0 ? "ยังไม่มีสินค้าที่จัดชุดได้ในขณะนี้" : "ไม่มีสินค้าในหมวดนี้"}
           </p>
         )}
@@ -175,7 +175,7 @@ export default function BundleBuilder({
             <Package size={16} className="text-brand-emerald" /> ชุดของคุณ
           </h2>
           {selectedProducts.length === 0 ? (
-            <p className="text-xs text-slate-400 mb-4">ยังไม่ได้เลือกสินค้า</p>
+            <p className="text-xs text-slate-500 mb-4">ยังไม่ได้เลือกสินค้า</p>
           ) : (
             <div className="flex flex-col gap-1.5 mb-4 max-h-40 overflow-y-auto">
               {selectedProducts.map((p) => (
@@ -202,7 +202,7 @@ export default function BundleBuilder({
                 >
                   <p className="text-base font-extrabold text-brand-ink">{p.months}</p>
                   <p className="text-[10px] text-slate-500">เดือน</p>
-                  <p className={`mt-0.5 text-[10px] font-bold ${active ? "text-brand-emerald" : "text-slate-400"}`}>-{p.discountPct}%</p>
+                  <p className={`mt-0.5 text-[10px] font-bold ${active ? "text-brand-800" : "text-slate-500"}`}>-{p.discountPct}%</p>
                 </button>
               );
             })}
@@ -211,7 +211,7 @@ export default function BundleBuilder({
           <div className="rounded-xl2 bg-surface-soft p-4 mb-3">
             <div className="flex items-baseline justify-between">
               <span className="text-xs text-slate-500">ราคา/เดือน (ลดชุด -{BUNDLE_DISCOUNT_PCT}% + เทอม -{plan.discountPct}%)</span>
-              <span className="text-xl font-extrabold text-brand-emerald">{formatTHB(pricePerCycle)}</span>
+              <span className="text-xl font-extrabold text-brand-800">{formatTHB(pricePerCycle)}</span>
             </div>
           </div>
 
@@ -234,7 +234,7 @@ export default function BundleBuilder({
             {submitting ? "กำลังเริ่มชำระเงิน…" : !meetsMin ? `เลือกอีก ${BUNDLE_MIN_ITEMS - selected.size} ชิ้น` : "สมัครสมาชิก"}
           </Button>
           {error && <p className="mt-2 text-[11px] text-rose-500 text-center">{error}</p>}
-          <p className="mt-3 text-[10px] text-slate-400 text-center">
+          <p className="mt-3 text-[10px] text-slate-500 text-center">
             ตัดเงิน {formatTHB(pricePerCycle)} บาททุกเดือน (ล็อกส่วนลดชุด + ส่วนลดตามเทอม {plan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเงื่อนไขเดิม จนกว่าจะยกเลิก
           </p>
         </div>

@@ -33,9 +33,9 @@ function NewTaxAddressContent() {
 
   return (
     <div className="max-w-lg">
-      <div className="flex items-center gap-2 text-brand-emerald mb-2">
+      <div className="flex items-center gap-2 text-brand-800 mb-2">
         <Receipt size={18} />
-        <span className="text-xs font-semibold uppercase tracking-wide">Tax invoice address</span>
+        <span className="text-xs font-semibold">Tax invoice address</span>
       </div>
       <h1 className="text-2xl font-bold text-brand-ink mb-6">เพิ่มที่อยู่ใบกำกับภาษี</h1>
       <form onSubmit={submit} className="flex flex-col gap-5">
@@ -48,7 +48,7 @@ function NewTaxAddressContent() {
           {busy && <Loader2 size={15} className="animate-spin" />}
           บันทึกที่อยู่
         </button>
-        <Link href="/account/tax-addresses" className="flex items-center justify-center gap-1.5 text-sm text-slate-400">
+        <Link href="/account/tax-addresses" className="flex items-center justify-center gap-1.5 text-sm text-slate-500">
           <ArrowLeft size={14} /> กลับ
         </Link>
       </form>

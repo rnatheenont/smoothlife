@@ -77,13 +77,13 @@ function Stepper({ steps }: { steps: Step[] }) {
             <span
               className={clsx(
                 "mt-1.5 text-center text-[10px] leading-tight",
-                reached ? "font-semibold text-brand-ink" : "text-slate-400"
+                reached ? "font-semibold text-brand-ink" : "text-slate-500"
               )}
             >
               {step.label}
             </span>
             {step.at && (
-              <span className="mt-0.5 text-center text-[9px] text-slate-400">
+              <span className="mt-0.5 text-center text-[9px] text-slate-500">
                 {formatThaiDateTime(step.at)}
               </span>
             )}
@@ -158,7 +158,7 @@ function ShipmentCard({
   return (
     <div className="rounded-xl2 border border-slate-100 p-4">
       {total > 1 && (
-        <p className="mb-2 text-[11px] font-semibold text-slate-400">
+        <p className="mb-2 text-[11px] font-semibold text-slate-500">
           กล่องที่ {index + 1} จาก {total}
         </p>
       )}
@@ -201,7 +201,7 @@ function ShipmentCard({
               )}
               <div className="min-w-0">
                 <p className="text-xs font-medium text-brand-ink">{e.statusText}</p>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-slate-500">
                   {formatThaiDateTime(e.eventTime)}
                   {e.locationName ? ` · ${e.locationName}` : ""}
                 </p>

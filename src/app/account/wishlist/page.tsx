@@ -18,7 +18,7 @@ function WishlistContent() {
           <Image src="/mascot/smoothie-new.png" alt="" fill sizes="80px" className="object-contain" />
         </span>
         <p className="text-slate-500 mt-2">คุณยังไม่มีสินค้าในรายการโปรด</p>
-        <Link href="/shop" className="inline-block mt-4 text-brand-emerald font-semibold text-sm">เลือกดูสินค้า</Link>
+        <Link href="/shop" className="inline-block mt-4 text-brand-800 font-semibold text-sm">เลือกดูสินค้า</Link>
       </div>
     );
   }

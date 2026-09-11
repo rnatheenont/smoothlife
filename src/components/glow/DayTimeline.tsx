@@ -22,13 +22,13 @@ export default function DayTimeline({
                 (done
                   ? "bg-brand-gradient text-white border-transparent"
                   : isToday
-                  ? "border-brand-emerald text-brand-emerald bg-white"
+                  ? "border-brand-emerald text-brand-800 bg-white"
                   : "border-slate-200 text-slate-300 bg-white")
               }
             >
               {done ? <Check size={16} /> : day}
             </div>
-            <span className="text-[10px] text-slate-400">วัน {day}</span>
+            <span className="text-[10px] text-slate-500">วัน {day}</span>
           </div>
         );
       })}

@@ -34,7 +34,7 @@ export default function DealOfTheDayCard() {
 
   return (
     <div className="rounded-xl2 border border-amber-200 bg-amber-50 p-4 relative my-6 md:my-8">
-      <button onClick={() => setDismissed(true)} className="absolute right-3 top-3 text-slate-400" aria-label="ปิด">
+      <button onClick={() => setDismissed(true)} className="absolute right-3 top-3 text-slate-500" aria-label="ปิด">
         <X size={15} />
       </button>
       <div className="flex items-center gap-2 mb-2">

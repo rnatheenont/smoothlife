@@ -60,7 +60,7 @@ function LiffEntryContent() {
     return <p className="text-sm text-slate-500">{error}</p>;
   }
   return (
-    <div className="flex items-center gap-2 text-slate-400">
+    <div className="flex items-center gap-2 text-slate-500">
       <Loader2 size={20} className="animate-spin" />
       <span className="text-sm">กำลังเข้าสู่ระบบ…</span>
     </div>

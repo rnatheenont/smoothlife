@@ -132,7 +132,7 @@ function Field({
           <AlertCircle size={12} /> {error}
         </span>
       ) : hint ? (
-        <span className="mt-1 block text-[11px] text-slate-400">{hint}</span>
+        <span className="mt-1 block text-[11px] text-slate-500">{hint}</span>
       ) : null}
     </label>
   );

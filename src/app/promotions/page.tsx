@@ -22,7 +22,7 @@ export default function PromotionsPage() {
               <Image src={promotionImage(promo, products, usedPromoSlugs)} alt={promo.title} fill className="object-cover" />
               <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
               <div className="absolute inset-0 flex flex-col justify-center p-6 md:p-10 text-white">
-                <span className="text-[11px] font-bold uppercase bg-white/20 backdrop-blur px-2 py-0.5 rounded-full w-fit">
+                <span className="text-[11px] font-bold bg-white/20 backdrop-blur px-2 py-0.5 rounded-full w-fit">
                   {promo.badge}
                 </span>
                 <h2 className="text-xl md:text-3xl font-bold mt-2">{promo.title}</h2>

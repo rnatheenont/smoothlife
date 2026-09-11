@@ -101,7 +101,7 @@ export default function AddressFields({
         {phoneInvalid ? (
           <p className="mt-1 text-[11px] text-rose-500">{THAI_PHONE_HINT}</p>
         ) : isTH ? (
-          <p className="mt-1 text-[11px] text-slate-400">กรอกเฉพาะตัวเลข ไม่ต้องใส่ขีดหรือเว้นวรรค</p>
+          <p className="mt-1 text-[11px] text-slate-500">กรอกเฉพาะตัวเลข ไม่ต้องใส่ขีดหรือเว้นวรรค</p>
         ) : null}
       </div>
       <div>

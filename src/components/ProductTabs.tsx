@@ -40,7 +40,7 @@ export default function ProductTabs({ tabs }: { tabs: ProductTab[] }) {
       <ScrollReveal className="container-page">
         <div className="flex flex-wrap items-end justify-between gap-4 mb-6 md:mb-8">
           <div>
-            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-brand-ink">สินค้าแนะนำ</h2>
+            <h2 className="text-xl font-bold leading-tight text-brand-ink md:text-[1.75rem]">สินค้าแนะนำ</h2>
             <p className="mt-1 text-sm text-slate-500">คัดมาให้แล้วจากสิ่งที่ลูกค้าชอบที่สุด</p>
           </div>
           <div className="flex items-center gap-4 sm:gap-5 overflow-x-auto scrollbar-none">
@@ -51,10 +51,11 @@ export default function ProductTabs({ tabs }: { tabs: ProductTab[] }) {
                   setActive(i);
                   scrollerRef.current?.scrollTo({ left: 0 });
                 }}
-                className={`shrink-0 pb-1 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                aria-pressed={i === active}
+                className={`shrink-0 whitespace-nowrap border-b-2 pb-1 text-sm font-semibold transition-colors ${
                   i === active
-                    ? "border-brand-emerald text-brand-ink"
-                    : "border-transparent text-slate-400 hover:text-brand-ink"
+                    ? "border-brand-action text-brand-ink"
+                    : "border-transparent text-slate-500 hover:text-brand-ink"
                 }`}
               >
                 {t.label}
@@ -78,13 +79,13 @@ export default function ProductTabs({ tabs }: { tabs: ProductTab[] }) {
       <div className="container-page mt-6 flex items-center gap-4">
         <div className="h-[2px] flex-1 overflow-hidden rounded-full bg-surface-muted">
           <div
-            className="h-full rounded-full bg-brand-emerald transition-[width]"
+            className="h-full rounded-full bg-brand-action transition-[width]"
             style={{ width: `${Math.max(8, progress * 100)}%` }}
           />
         </div>
         <Link
           href="/shop"
-          className="hidden sm:flex items-center gap-1 text-sm font-medium text-brand-emerald hover:text-brand-ink transition-colors shrink-0"
+          className="flex shrink-0 items-center gap-0.5 text-sm font-semibold text-brand-800 transition-colors hover:text-brand-action"
         >
           ดูทั้งหมด <ChevronRight size={16} />
         </Link>
@@ -92,14 +93,14 @@ export default function ProductTabs({ tabs }: { tabs: ProductTab[] }) {
           <button
             onClick={() => scrollByCard(-1)}
             aria-label="ก่อนหน้า"
-            className="grid h-8 w-8 place-items-center rounded-full border border-slate-200 hover:border-brand-emerald transition-colors"
+            className="grid h-9 w-9 place-items-center rounded-full border border-surface-line text-brand-ink transition-colors hover:border-brand-action/40 hover:bg-surface-mist"
           >
             <ChevronLeft size={16} />
           </button>
           <button
             onClick={() => scrollByCard(1)}
             aria-label="ถัดไป"
-            className="grid h-8 w-8 place-items-center rounded-full border border-slate-200 hover:border-brand-emerald transition-colors"
+            className="grid h-9 w-9 place-items-center rounded-full border border-surface-line text-brand-ink transition-colors hover:border-brand-action/40 hover:bg-surface-mist"
           >
             <ChevronRight size={16} />
           </button>

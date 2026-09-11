@@ -49,14 +49,14 @@ function ResetPasswordContent() {
   return (
     <div className="container-page py-16 max-w-sm mx-auto">
       <div className="rounded-xl2 border border-slate-100 shadow-card p-6 md:p-8 text-center">
-        <div className="grid h-12 w-12 mx-auto place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald mb-4">
+        <div className="grid h-12 w-12 mx-auto place-items-center rounded-full bg-brand-gradient-soft text-brand-800 mb-4">
           <ShieldCheck size={22} />
         </div>
         <h1 className="text-xl font-bold text-brand-ink mb-1">ตั้งรหัสผ่านใหม่</h1>
 
         {!token && <p className="text-sm text-rose-500 mt-4">ลิงก์ไม่ถูกต้อง กรุณาขอลิงก์ใหม่จากหน้าบัญชีของคุณ</p>}
 
-        {token && done && <p className="text-sm text-brand-emerald mt-4">เปลี่ยนรหัสผ่านสำเร็จ กำลังพาไปหน้าเข้าสู่ระบบ…</p>}
+        {token && done && <p className="text-sm text-brand-800 mt-4">เปลี่ยนรหัสผ่านสำเร็จ กำลังพาไปหน้าเข้าสู่ระบบ…</p>}
 
         {token && !done && (
           <form onSubmit={submit} className="flex flex-col gap-3 mt-5 text-left">
@@ -73,7 +73,7 @@ function ResetPasswordContent() {
               <button
                 type="button"
                 onClick={() => setShow(!show)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500"
               >
                 {show ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
@@ -96,7 +96,7 @@ function ResetPasswordContent() {
           </form>
         )}
 
-        <Link href="/account" className="inline-block mt-6 text-xs text-slate-400">
+        <Link href="/account" className="inline-block mt-6 text-xs text-slate-500">
           กลับไปหน้าบัญชี
         </Link>
       </div>
@@ -106,7 +106,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="container-page py-20 text-center text-slate-400">กำลังโหลด…</div>}>
+    <Suspense fallback={<div className="container-page py-20 text-center text-slate-500">กำลังโหลด…</div>}>
       <ResetPasswordContent />
     </Suspense>
   );

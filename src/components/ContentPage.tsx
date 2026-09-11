@@ -23,7 +23,7 @@ export default function ContentPage({
   return (
     <div className="container-page py-8 md:py-10">
       <div className="max-w-2xl mb-8">
-        {eyebrow && <p className="text-xs font-bold uppercase text-brand-emerald tracking-wide mb-2">{eyebrow}</p>}
+        {eyebrow && <p className="text-xs font-bold text-brand-800 mb-2">{eyebrow}</p>}
         <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-3">{title}</h1>
         <p className="text-sm text-slate-600">{intro}</p>
       </div>
@@ -36,7 +36,7 @@ export default function ContentPage({
         {sections.map((s) => (
           <div key={s.title} className="rounded-xl2 border border-slate-100 p-5 shadow-card">
             {s.icon && (
-              <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-emerald mb-3">
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-800 mb-3">
                 <s.icon size={18} />
               </div>
             )}

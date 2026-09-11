@@ -185,7 +185,7 @@ export default function AdminCheckoutTransactionsPage() {
                     {tx.status === "refunded" ? (
                       <span className="rounded-full bg-slate-100 text-slate-600 px-2 py-0.5">คืนเงินแล้ว</span>
                     ) : (
-                      <span className="rounded-full bg-brand-gradient-soft text-brand-emerald px-2 py-0.5">สำเร็จ</span>
+                      <span className="rounded-full bg-brand-gradient-soft text-brand-800 px-2 py-0.5">สำเร็จ</span>
                     )}
                     {tx.refund_note && <p className="text-slate-400 mt-1 max-w-[16rem]">{tx.refund_note}</p>}
                   </td>

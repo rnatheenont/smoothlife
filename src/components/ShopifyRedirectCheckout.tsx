@@ -90,7 +90,7 @@ export default function ShopifyRedirectCheckout() {
     return (
       <div className="container-page py-20 text-center">
         <p className="text-slate-500">ตะกร้าของคุณว่างเปล่า</p>
-        <Link href="/shop" className="inline-block mt-4 text-brand-emerald font-semibold">เริ่มช้อป</Link>
+        <Link href="/shop" className="inline-block mt-4 text-brand-800 font-semibold">เริ่มช้อป</Link>
       </div>
     );
   }
@@ -155,14 +155,14 @@ export default function ShopifyRedirectCheckout() {
                     {defaultAddress.address_line} ตำบล/แขวง{defaultAddress.subdistrict} เขต/อำเภอ
                     {defaultAddress.district} จ.{defaultAddress.province} {defaultAddress.postal_code}
                   </p>
-                  <Link href="/account/addresses" target="_blank" className="text-brand-emerald font-semibold">
+                  <Link href="/account/addresses" target="_blank" className="text-brand-800 font-semibold">
                     เปลี่ยนที่อยู่
                   </Link>
                 </div>
               </div>
             )}
             {defaultAddress === null && (
-              <p className="mt-4 text-xs text-slate-400">
+              <p className="mt-4 text-xs text-slate-500">
                 ยังไม่มีที่อยู่จัดส่งในระบบ — กรอกได้ที่หน้าชำระเงินของ Shopify โดยตรง
               </p>
             )}
@@ -178,15 +178,15 @@ export default function ShopifyRedirectCheckout() {
                   type="checkbox"
                   checked={wantsTaxInvoice}
                   onChange={(e) => setWantsTaxInvoice(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-emerald focus:ring-brand-emerald"
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-800 focus:ring-brand-emerald"
                 />
                 <span>ต้องการใบกำกับภาษีเต็มรูปสำหรับคำสั่งซื้อนี้</span>
               </label>
 
               {wantsTaxInvoice && taxAddresses.length === 0 && (
-                <p className="mt-3 text-xs text-slate-400">
+                <p className="mt-3 text-xs text-slate-500">
                   ยังไม่มีข้อมูลใบกำกับภาษีในระบบ —{" "}
-                  <Link href="/account/tax-addresses/new" target="_blank" className="text-brand-emerald font-semibold">
+                  <Link href="/account/tax-addresses/new" target="_blank" className="text-brand-800 font-semibold">
                     เพิ่มข้อมูลใบกำกับภาษี
                   </Link>{" "}
                   ก่อนแล้วกลับมากดเลือกอีกครั้ง
@@ -207,7 +207,7 @@ export default function ShopifyRedirectCheckout() {
                         name="taxAddress"
                         checked={selectedTaxAddressId === addr.id}
                         onChange={() => setSelectedTaxAddressId(addr.id)}
-                        className="mt-0.5 h-3.5 w-3.5 text-brand-emerald focus:ring-brand-emerald"
+                        className="mt-0.5 h-3.5 w-3.5 text-brand-800 focus:ring-brand-emerald"
                       />
                       <span className="text-slate-600 leading-relaxed">
                         <span className="font-semibold text-brand-ink">
@@ -221,7 +221,7 @@ export default function ShopifyRedirectCheckout() {
                       </span>
                     </label>
                   ))}
-                  <Link href="/account/tax-addresses/new" target="_blank" className="text-xs text-brand-emerald font-semibold">
+                  <Link href="/account/tax-addresses/new" target="_blank" className="text-xs text-brand-800 font-semibold">
                     + เพิ่มที่อยู่ใบกำกับภาษีใหม่
                   </Link>
                 </div>
@@ -245,7 +245,7 @@ export default function ShopifyRedirectCheckout() {
                 <span className="line-clamp-1 pr-2">
                   {l.name} x{l.qty}
                   {l.isGift && (
-                    <span className="ml-1.5 inline-block align-middle text-[10px] font-semibold text-brand-emerald bg-brand-gradient-soft rounded px-1.5 py-0.5">
+                    <span className="ml-1.5 inline-block align-middle text-[10px] font-semibold text-brand-800 bg-brand-gradient-soft rounded px-1.5 py-0.5">
                       ของแถม
                     </span>
                   )}
@@ -259,7 +259,7 @@ export default function ShopifyRedirectCheckout() {
             <span>{formatTHB(subtotal)}</span>
           </div>
           {totals.discount > 0 && (
-            <div className="flex justify-between text-sm text-brand-emerald mb-2">
+            <div className="flex justify-between text-sm text-brand-800 mb-2">
               <span className="flex items-center gap-1.5">
                 <Ticket size={13} /> {totals.referralActive ? "ส่วนลดแนะนำเพื่อน" : totals.coupon?.code}
               </span>

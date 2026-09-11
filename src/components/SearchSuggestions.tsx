@@ -25,7 +25,7 @@ export default function SearchSuggestions({ query, onSelect }: { query: string; 
   return (
     <div className="absolute left-0 right-0 top-full mt-2 rounded-2xl border border-slate-100 bg-white shadow-cardHover overflow-hidden z-50 text-left">
       {matches.length === 0 ? (
-        <p className="px-4 py-4 text-sm text-slate-400">ไม่พบสินค้าที่ตรงกับ &ldquo;{query}&rdquo;</p>
+        <p className="px-4 py-4 text-sm text-slate-500">ไม่พบสินค้าที่ตรงกับ &ldquo;{query}&rdquo;</p>
       ) : (
         <>
           <ul className="max-h-[70vh] overflow-y-auto">
@@ -40,7 +40,7 @@ export default function SearchSuggestions({ query, onSelect }: { query: string; 
                     <Image src={p.image} alt={p.name} fill sizes="44px" className="object-cover" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span translate="no" className="block text-xs font-semibold text-brand-teal uppercase truncate">{p.brand}</span>
+                    <span translate="no" className="block text-xs font-semibold text-brand-800 truncate">{p.brand}</span>
                     <span translate="no" className="block text-sm text-brand-ink line-clamp-1">{p.name}</span>
                   </span>
                   <span className="shrink-0 text-sm font-bold text-brand-ink">{formatTHB(p.price)}</span>
@@ -51,7 +51,7 @@ export default function SearchSuggestions({ query, onSelect }: { query: string; 
           <Link
             href={`/search?q=${encodeURIComponent(query.trim())}`}
             onClick={onSelect}
-            className="block text-center text-sm font-semibold text-brand-emerald hover:text-brand-sky py-3 border-t border-slate-50"
+            className="block text-center text-sm font-semibold text-brand-800 hover:text-brand-800 py-3 border-t border-slate-50"
           >
             ดูผลการค้นหาทั้งหมดสำหรับ &ldquo;{query.trim()}&rdquo;
           </Link>

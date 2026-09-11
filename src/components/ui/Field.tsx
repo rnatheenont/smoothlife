@@ -79,7 +79,7 @@ export default function Field({
       )}
 
       {hint && !error && (
-        <p id={hintId} className="mt-1 text-[11px] text-slate-400">
+        <p id={hintId} className="mt-1 text-[11px] text-slate-500">
           {hint}
         </p>
       )}

@@ -167,6 +167,26 @@ const CONCERN_CATEGORIES = {
   "sleep-stress": ["wellness", "personal-care"],
 };
 
+// Shopify's vendor field is typed by whoever created the product, so the same
+// brand arrives as "Smooth Life" and "smoothlifethailand", "Dentiste" and
+// "Dentiste thailand". Left alone, the shop's brand filter listed them as
+// separate brands and product cards printed the store account name instead of
+// the brand. Keyed on a squashed form so spacing, case and hyphens all match.
+const BRAND_ALIASES = {
+  smoothlifethailand: "Smooth Life",
+  smoothlife: "Smooth Life",
+  smoothethailand: "Smooth E",
+  smoothe: "Smooth E",
+  dentistethailand: "Dentiste",
+  dentiste: "Dentiste",
+  blistex: "Blistex",
+};
+function canonicalBrand(vendor) {
+  const raw = String(vendor || "Smooth Life").trim();
+  const key = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return BRAND_ALIASES[key] || raw;
+}
+
 function matchRules(rules, haystack, fallback) {
   const hits = [];
   for (const [key, words] of rules) {
@@ -525,7 +545,7 @@ function toProduct(p, usedSlugs) {
     slug,
     variantId: variant.variantId,
     name: String(p.title || "").replace(/\s+/g, " ").trim(),
-    brand: String(p.vendor || "Smooth Life").trim(),
+    brand: canonicalBrand(p.vendor),
     category,
     concerns,
     price,

@@ -16,7 +16,7 @@ export default function PasswordChecklist({ password }: { password: string }) {
   return (
     <ul className="flex flex-col gap-1 mt-1.5 ml-1">
       {rules.map((r) => (
-        <li key={r.label} className={`flex items-center gap-1.5 text-xs ${r.met ? "text-brand-emerald" : "text-slate-400"}`}>
+        <li key={r.label} className={`flex items-center gap-1.5 text-xs ${r.met ? "text-brand-800" : "text-slate-500"}`}>
           <span
             className={`grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full ${
               r.met ? "bg-brand-emerald text-white" : "border border-slate-300"

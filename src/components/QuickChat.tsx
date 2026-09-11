@@ -123,14 +123,14 @@ function ProductChip({ slug }: { slug: string }) {
         <Link
           href={`/product/${product.slug}`}
           translate="no"
-          className="block text-[12px] font-semibold leading-snug text-brand-ink line-clamp-2 hover:text-brand-emerald"
+          className="block text-[12px] font-semibold leading-snug text-brand-ink line-clamp-2 hover:text-brand-800"
         >
           {product.name}
         </Link>
         <div className="mt-0.5 flex items-baseline gap-1.5">
-          <span className="text-[12px] font-bold text-brand-emerald">{formatTHB(product.price)}</span>
+          <span className="text-[12px] font-bold text-brand-800">{formatTHB(product.price)}</span>
           {product.compareAtPrice ? (
-            <span className="text-[10px] text-slate-400 line-through">{formatTHB(product.compareAtPrice)}</span>
+            <span className="text-[10px] text-slate-500 line-through">{formatTHB(product.compareAtPrice)}</span>
           ) : null}
         </div>
       </div>
@@ -1111,7 +1111,7 @@ export default function QuickChat() {
               <button
                 onClick={() => setEscalateMsg(null)}
                 aria-label={t("ปิด", "Close")}
-                className="shrink-0 text-slate-400 hover:text-slate-600"
+                className="shrink-0 text-slate-500 hover:text-slate-600"
               >
                 <X size={13} />
               </button>
@@ -1120,7 +1120,7 @@ export default function QuickChat() {
 
           <div ref={scroller} className="flex-1 min-h-[200px] overflow-y-auto overscroll-contain bg-surface-soft px-3.5 py-3.5 flex flex-col gap-3">
             {restoringHistory ? (
-              <div className="flex flex-1 items-center justify-center py-10 text-slate-400">
+              <div className="flex flex-1 items-center justify-center py-10 text-slate-500">
                 <Loader2 size={18} className="animate-spin" />
               </div>
             ) : (
@@ -1156,7 +1156,7 @@ export default function QuickChat() {
                       <button
                         key={s}
                         onClick={() => send(s)}
-                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left text-[13px] text-slate-600 hover:border-brand-teal hover:text-brand-emerald transition-colors"
+                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left text-[13px] text-slate-600 hover:border-brand-teal hover:text-brand-800 transition-colors"
                       >
                         <MessageCircleQuestion size={14} className="shrink-0 text-brand-emerald/70" />
                         {s}
@@ -1235,7 +1235,7 @@ export default function QuickChat() {
                 <span className="relative h-10 w-10 shrink-0 -mt-0.5">
                   <Image src="/mascot/smoothie-question.png" alt="" fill sizes="40px" className="object-contain" />
                 </span>
-                <div className="rounded-2xl rounded-tl-sm bg-white border border-slate-100 px-3.5 py-2.5 text-[13px] text-slate-400 flex items-center gap-2">
+                <div className="rounded-2xl rounded-tl-sm bg-white border border-slate-100 px-3.5 py-2.5 text-[13px] text-slate-500 flex items-center gap-2">
                   <Loader2 size={13} className="animate-spin" /> {t("กำลังคิด…", "Thinking…")}
                 </div>
               </div>
@@ -1321,7 +1321,7 @@ export default function QuickChat() {
                   <button
                     key={s}
                     onClick={() => send(s)}
-                    className="flex items-center gap-1.5 rounded-full border border-brand-teal/40 bg-white px-3 py-1.5 text-[12px] text-brand-emerald hover:bg-brand-gradient-soft transition-colors"
+                    className="flex items-center gap-1.5 rounded-full border border-brand-teal/40 bg-white px-3 py-1.5 text-[12px] text-brand-800 hover:bg-brand-gradient-soft transition-colors"
                   >
                     <MessageCircleQuestion size={13} className="shrink-0" />
                     {s}
@@ -1464,7 +1464,7 @@ export default function QuickChat() {
                   <X size={11} />
                 </button>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500">
                 {t("แนบรูปสินค้าไว้แล้ว พิมพ์คำถามเพิ่มเติมได้ (ไม่บังคับ)", "Photo attached — add a question if you like (optional)")}
               </p>
             </div>
@@ -1491,7 +1491,7 @@ export default function QuickChat() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               aria-label={t("แนบรูปสินค้าเพื่อถาม", "Attach a product photo")}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-surface-soft hover:text-brand-emerald"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-800"
             >
               <ImagePlus size={17} />
             </button>
@@ -1509,7 +1509,7 @@ export default function QuickChat() {
               <Send size={15} />
             </Button>
           </form>
-          <p className="bg-white px-4 pb-2.5 text-[10px] text-slate-400 text-center leading-snug">
+          <p className="bg-white px-4 pb-2.5 text-[10px] text-slate-500 text-center leading-snug">
             {lang === "en"
               ? "AI guidance only — not a substitute for a doctor or pharmacist."
               : "คำแนะนำจาก AI เป็นข้อมูลทั่วไป ไม่ใช่คำวินิจฉัยทางการแพทย์"}

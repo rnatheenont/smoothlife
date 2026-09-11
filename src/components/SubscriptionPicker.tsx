@@ -137,7 +137,7 @@ export default function SubscriptionPicker({
               )}
               <p className="text-2xl md:text-3xl font-extrabold text-brand-ink">{p.months} เดือน</p>
               <p className="text-xs text-slate-500 mt-0.5">{p.sublabel}</p>
-              <p className={clsx("mt-3 text-lg font-extrabold", active ? "text-brand-emerald" : "text-slate-400")}>
+              <p className={clsx("mt-3 text-lg font-extrabold", active ? "text-brand-800" : "text-slate-500")}>
                 ประหยัด {p.discountPct}%
               </p>
               {active && (
@@ -164,12 +164,12 @@ export default function SubscriptionPicker({
                 <Image src={product.image} alt={product.name} fill sizes="(max-width:768px) 50vw, 25vw" className="object-cover" />
               </Link>
               <div className="flex flex-1 flex-col gap-1.5 p-3.5">
-                <span translate="no" className="text-[11px] font-semibold uppercase tracking-wide text-brand-teal">{product.brand}</span>
+                <span translate="no" className="text-[11px] font-semibold text-brand-800">{product.brand}</span>
                 <h3 translate="no" className="text-sm font-medium text-brand-ink line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
                 {product.reviewCount > 0 && (
                   <div className="flex items-center gap-1.5">
                     <StarRating rating={product.rating} size={12} />
-                    <span className="text-[11px] text-slate-400">({product.reviewCount})</span>
+                    <span className="text-[11px] text-slate-500">({product.reviewCount})</span>
                   </div>
                 )}
                 <div className="mt-1 rounded-lg bg-surface-soft p-2.5">
@@ -204,8 +204,8 @@ export default function SubscriptionPicker({
         })}
       </div>
 
-      <p className="mt-8 flex items-start gap-2 text-xs text-slate-400 max-w-2xl">
-        <Sparkles size={14} className="shrink-0 mt-0.5 text-brand-teal" />
+      <p className="mt-8 flex items-start gap-2 text-xs text-slate-500 max-w-2xl">
+        <Sparkles size={14} className="shrink-0 mt-0.5 text-brand-800" />
         {subscriptionBillingEnabled
           ? `เมื่อกด "สมัคร" ระบบจะตัดเงินราคา/เดือนที่แสดงไว้ทุกเดือนจนครบเทอม ${plan.months} เดือน (ล็อกส่วนลดตามเทอมที่เลือก) แล้วปิดรายการให้เอง ไม่มีต่อเทอมอัตโนมัติ — ยกเลิกได้ทุกเมื่อที่หน้า "การสมัครของฉัน" มีผลเมื่อจบเทอม รอบที่เหลือยังตัดและจัดส่งตามปกติ`
           : `เมื่อกด "สมัคร" ระบบจะพาไปหน้าชำระเงินของ Shopify ทันที พร้อมจำนวนสินค้าตามรอบที่เลือกและส่วนลด -${plan.discountPct}% ให้อัตโนมัติ แยกจากตะกร้าปกติ — ยกเลิกได้ก่อนกดชำระเงิน`}

@@ -75,9 +75,9 @@ function ProfileContent() {
 
   return (
     <div className="max-w-md">
-      <div className="flex items-center gap-2 text-brand-emerald mb-2">
+      <div className="flex items-center gap-2 text-brand-800 mb-2">
         <UserIcon size={18} />
-        <span className="text-xs font-semibold uppercase tracking-wide">Profile</span>
+        <span className="text-xs font-semibold">Profile</span>
       </div>
       <h1 className="text-2xl font-bold text-brand-ink mb-6">แก้ไขโปรไฟล์</h1>
 
@@ -102,7 +102,7 @@ function ProfileContent() {
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarBusy}
               aria-label="เปลี่ยนรูปโปรไฟล์"
-              className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-white text-brand-emerald border border-slate-200 shadow-sm disabled:opacity-60"
+              className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-white text-brand-800 border border-slate-200 shadow-sm disabled:opacity-60"
             >
               <Camera size={12} />
             </button>
@@ -116,7 +116,7 @@ function ProfileContent() {
           </div>
           <div>
             <p className="text-sm font-bold text-brand-ink">{user.name}</p>
-            <p className="text-xs text-slate-400">{user.email || user.phone}</p>
+            <p className="text-xs text-slate-500">{user.email || user.phone}</p>
             {avatarError && <p className="text-xs text-rose-500 mt-1">{avatarError}</p>}
           </div>
         </div>
@@ -149,7 +149,7 @@ function ProfileContent() {
         </div>
 
         {error && <p className="text-sm text-rose-500">{error}</p>}
-        {saved && <p className="text-sm text-brand-emerald">บันทึกแล้ว</p>}
+        {saved && <p className="text-sm text-brand-800">บันทึกแล้ว</p>}
 
         <button
           disabled={busy}
@@ -186,9 +186,9 @@ function EmailLinkCard() {
   if (hasEmail && !editing) {
     return (
       <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
-        <div className="flex items-center gap-2 text-brand-emerald mb-1">
+        <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Mail size={16} />
-          <span className="text-xs font-semibold uppercase tracking-wide">Email</span>
+          <span className="text-xs font-semibold">Email</span>
         </div>
         <h2 className="text-sm font-bold text-brand-ink mb-3">อีเมล</h2>
         <div className="flex items-center justify-between gap-3">
@@ -196,7 +196,7 @@ function EmailLinkCard() {
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="text-xs font-semibold text-brand-emerald shrink-0"
+            className="text-xs font-semibold text-brand-800 shrink-0"
           >
             เปลี่ยนอีเมล
           </button>
@@ -260,12 +260,12 @@ function EmailLinkCard() {
   if (justLinked) {
     return (
       <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
-        <div className="flex items-center gap-2 text-brand-emerald mb-1">
+        <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Mail size={16} />
-          <span className="text-xs font-semibold uppercase tracking-wide">Email</span>
+          <span className="text-xs font-semibold">Email</span>
         </div>
         <h2 className="text-sm font-bold text-brand-ink mb-3">อีเมล</h2>
-        <p className="flex items-center gap-2 text-sm text-brand-emerald">
+        <p className="flex items-center gap-2 text-sm text-brand-800">
           <CheckCircle2 size={16} /> ยืนยัน {justLinked} สำเร็จแล้ว
         </p>
       </div>
@@ -274,12 +274,12 @@ function EmailLinkCard() {
 
   return (
     <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
-      <div className="flex items-center gap-2 text-brand-emerald mb-1">
+      <div className="flex items-center gap-2 text-brand-800 mb-1">
         <Mail size={16} />
-        <span className="text-xs font-semibold uppercase tracking-wide">Email</span>
+        <span className="text-xs font-semibold">Email</span>
       </div>
       <h2 className="text-sm font-bold text-brand-ink mb-1">{isChanging ? "เปลี่ยนอีเมล" : "เพิ่มและยืนยันอีเมล"}</h2>
-      <p className="text-xs text-slate-400 mb-4">
+      <p className="text-xs text-slate-500 mb-4">
         {isChanging
           ? `อีเมลปัจจุบัน: ${user.email} — กรอกอีเมลใหม่แล้วยืนยันด้วยรหัสที่ส่งไปที่อีเมลนั้น`
           : "บัญชีนี้ยังไม่มีอีเมล เพิ่มไว้เพื่อใช้เข้าสู่ระบบได้อีกทาง และรับการแจ้งเตือนคำสั่งซื้อ"}
@@ -301,7 +301,7 @@ function EmailLinkCard() {
             {sending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
           </Button>
           {isChanging && (
-            <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-400">
+            <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-500">
               ยกเลิก
             </button>
           )}
@@ -337,7 +337,7 @@ function EmailLinkCard() {
               setError("");
               setDevCode("");
             }}
-            className="text-xs text-slate-400"
+            className="text-xs text-slate-500"
           >
             เปลี่ยนอีเมล
           </button>
@@ -372,9 +372,9 @@ function PhoneChangeCard() {
   if (hasPhone && !editing) {
     return (
       <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
-        <div className="flex items-center gap-2 text-brand-emerald mb-1">
+        <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Phone size={16} />
-          <span className="text-xs font-semibold uppercase tracking-wide">Phone</span>
+          <span className="text-xs font-semibold">Phone</span>
         </div>
         <h2 className="text-sm font-bold text-brand-ink mb-3">เบอร์โทรศัพท์</h2>
         <div className="flex items-center justify-between gap-3">
@@ -382,7 +382,7 @@ function PhoneChangeCard() {
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="text-xs font-semibold text-brand-emerald shrink-0"
+            className="text-xs font-semibold text-brand-800 shrink-0"
           >
             เปลี่ยนเบอร์โทร
           </button>
@@ -446,12 +446,12 @@ function PhoneChangeCard() {
   if (justLinked) {
     return (
       <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
-        <div className="flex items-center gap-2 text-brand-emerald mb-1">
+        <div className="flex items-center gap-2 text-brand-800 mb-1">
           <Phone size={16} />
-          <span className="text-xs font-semibold uppercase tracking-wide">Phone</span>
+          <span className="text-xs font-semibold">Phone</span>
         </div>
         <h2 className="text-sm font-bold text-brand-ink mb-3">เบอร์โทรศัพท์</h2>
-        <p className="flex items-center gap-2 text-sm text-brand-emerald">
+        <p className="flex items-center gap-2 text-sm text-brand-800">
           <CheckCircle2 size={16} /> ยืนยัน {justLinked} สำเร็จแล้ว
         </p>
       </div>
@@ -460,12 +460,12 @@ function PhoneChangeCard() {
 
   return (
     <div className="max-w-md mt-6 rounded-xl2 border border-slate-200 p-5">
-      <div className="flex items-center gap-2 text-brand-emerald mb-1">
+      <div className="flex items-center gap-2 text-brand-800 mb-1">
         <Phone size={16} />
-        <span className="text-xs font-semibold uppercase tracking-wide">Phone</span>
+        <span className="text-xs font-semibold">Phone</span>
       </div>
       <h2 className="text-sm font-bold text-brand-ink mb-1">{isChanging ? "เปลี่ยนเบอร์โทร" : "เพิ่มและยืนยันเบอร์โทร"}</h2>
-      <p className="text-xs text-slate-400 mb-4">
+      <p className="text-xs text-slate-500 mb-4">
         {isChanging
           ? `เบอร์ปัจจุบัน: ${user.phone} — กรอกเบอร์ใหม่แล้วยืนยันด้วยรหัสที่ส่ง SMS ไปที่เบอร์นั้น`
           : "ยังไม่มีเบอร์โทรในระบบ เพิ่มไว้เพื่อใช้เข้าสู่ระบบได้อีกทาง"}
@@ -489,7 +489,7 @@ function PhoneChangeCard() {
             {sending ? "กำลังส่งรหัส…" : "ส่งรหัส OTP"}
           </Button>
           {isChanging && (
-            <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-400">
+            <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-500">
               ยกเลิก
             </button>
           )}
@@ -517,7 +517,7 @@ function PhoneChangeCard() {
               setCode("");
               setError("");
             }}
-            className="text-xs text-slate-400"
+            className="text-xs text-slate-500"
           >
             เปลี่ยนเบอร์โทร
           </button>

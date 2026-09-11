@@ -160,7 +160,7 @@ export default function SubscriptionSetDetail({
                   )}
                   <p className="text-lg font-extrabold text-brand-ink">{p.months}</p>
                   <p className="text-[11px] text-slate-500">เดือน</p>
-                  <p className={clsx("mt-1 text-[11px] font-bold", active ? "text-brand-emerald" : "text-slate-400")}>
+                  <p className={clsx("mt-1 text-[11px] font-bold", active ? "text-brand-800" : "text-slate-500")}>
                     -{p.discountPct}%
                   </p>
                 </button>
@@ -171,7 +171,7 @@ export default function SubscriptionSetDetail({
           <div className="mt-5 rounded-xl2 bg-surface-soft p-4">
             <div className="flex items-baseline justify-between">
               <span className="text-xs text-slate-500">ราคา/เดือน (-{plan.discountPct}%)</span>
-              <span className="text-2xl font-extrabold text-brand-emerald">{formatTHB(pricePerCycle)}</span>
+              <span className="text-2xl font-extrabold text-brand-800">{formatTHB(pricePerCycle)}</span>
             </div>
           </div>
 
@@ -197,7 +197,7 @@ export default function SubscriptionSetDetail({
           </Button>
           {subscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{subscribeError}</p>}
 
-          <p className="mt-3 flex items-start gap-1.5 text-[11px] text-slate-400">
+          <p className="mt-3 flex items-start gap-1.5 text-[11px] text-slate-500">
             <Info size={12} className="shrink-0 mt-0.5" />
             {subscriptionBillingEnabled
               ? `ตัดเงิน ${formatTHB(pricePerCycle)} บาททุกเดือน (ล็อกส่วนลด -${plan.discountPct}% ตลอดเทอม ${plan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเทอมและราคาเดิม จนกว่าจะยกเลิก`

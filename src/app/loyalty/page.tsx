@@ -29,11 +29,11 @@ export default function LoyaltyPage() {
     <div className="container-page py-4 md:py-8 flex flex-col md:min-h-[calc(100vh-260px)] md:justify-center">
       <div className="flex items-baseline justify-between gap-3 mb-1">
         <h1 className="text-lg md:text-2xl font-bold text-brand-ink">สิทธิสมาชิกแต่ละระดับ</h1>
-        <Link href="/account" className="shrink-0 text-xs font-semibold text-brand-emerald whitespace-nowrap">
+        <Link href="/account" className="shrink-0 text-xs font-semibold text-brand-800 whitespace-nowrap">
           ไปที่บัญชี →
         </Link>
       </div>
-      <p className="text-xs text-slate-400 mb-3">คำนวณจากยอดใช้จ่ายสะสม 12 เดือน (หรือจำนวนออเดอร์) อัปเดตอัตโนมัติทุกวัน</p>
+      <p className="text-xs text-slate-500 mb-3">คำนวณจากยอดใช้จ่ายสะสม 12 เดือน (หรือจำนวนออเดอร์) อัปเดตอัตโนมัติทุกวัน</p>
 
       <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
         <table className="w-full min-w-[520px] border-collapse text-xs md:text-sm">
@@ -68,7 +68,7 @@ export default function LoyaltyPage() {
         </table>
       </div>
 
-      <p className="text-[11px] text-slate-400 mt-2.5">
+      <p className="text-[11px] text-slate-500 mt-2.5">
         สิทธิ์บางอย่างต้องมีประวัติสั่งซื้อสินค้าจริงก่อนจึงจะได้รับ (เช่น โบนัสวันเกิด)
       </p>
     </div>

@@ -95,7 +95,7 @@ export default function AdminGiftCardsPage() {
         </h1>
         <p className="text-sm text-slate-500 mt-1">
           ออกบัตรของขวัญจริงให้ลูกค้าและส่งอีเมลแจ้งทันที (ผ่าน Shopify) — ลูกค้าเองก็ซื้อได้ที่หน้าสินค้า{" "}
-          <a href="/product/smoothlife-gift-card" target="_blank" className="text-brand-emerald underline">
+          <a href="/product/smoothlife-gift-card" target="_blank" className="text-brand-800 underline">
             Smoothlife Gift Card
           </a>
         </p>
@@ -171,7 +171,7 @@ export default function AdminGiftCardsPage() {
 
         {issued && (
           <div className="mt-4 rounded-xl bg-brand-gradient-soft p-3.5">
-            <p className="text-xs font-bold text-brand-emerald flex items-center gap-1 mb-2">
+            <p className="text-xs font-bold text-brand-800 flex items-center gap-1 mb-2">
               <Check size={13} /> ออกบัตรสำเร็จ ส่งอีเมลให้ลูกค้าแล้ว
             </p>
             <div className="flex items-center justify-between gap-2 bg-white rounded-lg px-3 py-2">
@@ -211,7 +211,7 @@ export default function AdminGiftCardsPage() {
                   </p>
                   <span
                     className={`inline-block text-[10px] font-bold rounded-full px-2 py-0.5 mt-1 ${
-                      g.enabled ? "bg-brand-gradient-soft text-brand-emerald" : "bg-slate-100 text-slate-400"
+                      g.enabled ? "bg-brand-gradient-soft text-brand-800" : "bg-slate-100 text-slate-400"
                     }`}
                   >
                     {g.enabled ? "ใช้งานได้" : "ปิดใช้งานแล้ว"}

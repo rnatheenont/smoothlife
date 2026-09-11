@@ -156,7 +156,7 @@ function ProductCardView({ slug, card }: { slug: string; card: ProductCard }) {
       <span className="min-w-0 flex-1">
         <span className="line-clamp-2 block text-[12px] font-semibold leading-snug text-brand-ink">{card.name}</span>
         <span className="mt-0.5 flex items-baseline gap-1.5">
-          <span className="text-[12px] font-bold text-brand-emerald">{baht(card.price)}</span>
+          <span className="text-[12px] font-bold text-brand-800">{baht(card.price)}</span>
           {card.compareAtPrice ? (
             <span className="text-[10px] text-slate-400 line-through">{baht(card.compareAtPrice)}</span>
           ) : null}
@@ -611,7 +611,7 @@ export default function AdminInboxPage() {
                     href={caseUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="ml-auto flex items-center gap-1 rounded-full border border-brand-teal/40 px-2.5 py-1 text-[11px] font-semibold text-brand-emerald"
+                    className="ml-auto flex items-center gap-1 rounded-full border border-brand-teal/40 px-2.5 py-1 text-[11px] font-semibold text-brand-800"
                   >
                     <ExternalLink size={11} /> เปิดเคสใน ClickUp
                   </a>
@@ -767,7 +767,7 @@ export default function AdminInboxPage() {
                   <button
                     onClick={draftWithAi}
                     disabled={drafting}
-                    className="flex items-center gap-1 rounded-full border border-brand-teal/40 px-2.5 py-1 text-[11px] font-semibold text-brand-emerald disabled:opacity-50"
+                    className="flex items-center gap-1 rounded-full border border-brand-teal/40 px-2.5 py-1 text-[11px] font-semibold text-brand-800 disabled:opacity-50"
                   >
                     {drafting ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
                     ให้ AI ร่างคำตอบ

@@ -11,7 +11,7 @@ export default function AskExpertPage() {
 
   return (
     <div className="container-page py-8 md:py-10 max-w-lg mx-auto">
-      <div className="flex items-center gap-2 text-brand-emerald font-semibold text-sm mb-2">
+      <div className="flex items-center gap-2 text-brand-800 font-semibold text-sm mb-2">
         <MessageCircle size={16} /> Ask an Expert
       </div>
       <h1 className="text-2xl font-bold text-brand-ink mb-2">ปรึกษาผู้เชี่ยวชาญด้านผิวฟรี</h1>

@@ -75,9 +75,9 @@ export default function TermsPage() {
           </div>
         ))}
       </div>
-      <p className="text-xs text-slate-400 mt-10">
+      <p className="text-xs text-slate-500 mt-10">
         หากมีคำถามเกี่ยวกับเงื่อนไขการใช้บริการนี้ กรุณาติดต่อทีมงานผ่าน{" "}
-        <a href="/help" className="text-brand-emerald hover:underline">
+        <a href="/help" className="text-brand-800 hover:underline">
           ศูนย์ช่วยเหลือ
         </a>
       </p>

@@ -343,7 +343,7 @@ export default function LoginContent() {
       {view !== "start" && (
         <button
           onClick={() => setView("start")}
-          className="flex items-center gap-1.5 text-xs text-slate-400 mb-4 hover:text-slate-600"
+          className="flex items-center gap-1.5 text-xs text-slate-500 mb-4 hover:text-slate-600"
         >
           <ArrowLeft size={13} /> กลับ
         </button>
@@ -366,7 +366,7 @@ export default function LoginContent() {
 
           <div className="flex items-center gap-3 mt-1">
             <div className="h-px flex-1 bg-slate-200" />
-            <span className="text-xs text-slate-400">หรือ</span>
+            <span className="text-xs text-slate-500">หรือ</span>
             <div className="h-px flex-1 bg-slate-200" />
           </div>
 
@@ -375,7 +375,7 @@ export default function LoginContent() {
               onClick={() => setView("email-otp")}
               aria-label="อีเมล OTP"
               title="อีเมล OTP"
-              className="relative grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-surface-soft hover:border-brand-teal/30 hover:text-brand-emerald transition-colors"
+              className="relative grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-surface-soft hover:border-brand-teal/30 hover:text-brand-800 transition-colors"
             >
               <Mail size={22} />
               <span className="absolute -bottom-1.5 rounded-full bg-brand-emerald px-1.5 py-[1px] text-[9px] font-bold leading-none text-white shadow-sm">
@@ -406,7 +406,7 @@ export default function LoginContent() {
 
           <button
             onClick={() => setView("password")}
-            className="text-center text-xs text-slate-400 mt-1 hover:text-slate-600"
+            className="text-center text-xs text-slate-500 mt-1 hover:text-slate-600"
           >
             เข้าสู่ระบบด้วยอีเมล
           </button>
@@ -489,7 +489,7 @@ export default function LoginContent() {
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -497,7 +497,7 @@ export default function LoginContent() {
                 {emailErrorField === "password" && <p className="text-xs text-rose-500 mt-1 ml-4">{emailError}</p>}
                 {mode === "register" && <PasswordChecklist password={password} />}
                 {mode === "login" && (
-                  <Link href="/account/forgot-password" className="block text-right text-xs text-slate-400 mt-1.5 hover:text-brand-ink">
+                  <Link href="/account/forgot-password" className="block text-right text-xs text-slate-500 mt-1.5 hover:text-brand-ink">
                     ลืมรหัสผ่าน?
                   </Link>
                 )}
@@ -540,7 +540,7 @@ export default function LoginContent() {
           <button
             type="button"
             onClick={() => setView("start")}
-            className="text-center text-xs text-slate-400 hover:text-slate-600"
+            className="text-center text-xs text-slate-500 hover:text-slate-600"
           >
             เข้าสู่ระบบด้วยช่องทางอื่น (OTP / LINE)
           </button>
@@ -597,7 +597,7 @@ export default function LoginContent() {
                   setOtpError("");
                   confirmationResultRef.current = null;
                 }}
-                className="text-xs text-slate-400"
+                className="text-xs text-slate-500"
               >
                 เปลี่ยนเบอร์โทรศัพท์
               </button>
@@ -663,7 +663,7 @@ export default function LoginContent() {
                   setEmailOtpError("");
                   setEmailOtpDevCode("");
                 }}
-                className="text-xs text-slate-400"
+                className="text-xs text-slate-500"
               >
                 เปลี่ยนอีเมล
               </button>

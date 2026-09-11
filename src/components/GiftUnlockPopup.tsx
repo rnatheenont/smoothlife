@@ -54,7 +54,7 @@ export default function GiftUnlockPopup() {
         <h3 className="font-bold text-brand-ink text-lg">{headline}</h3>
         <div className="mt-3 space-y-1.5">
           {visible.map((ev) => (
-            <p key={ev.promo.slug} className="text-sm text-brand-emerald font-semibold">
+            <p key={ev.promo.slug} className="text-sm text-brand-800 font-semibold">
               🎁 {lang === "en" ? ev.promo.titleEn : ev.promo.titleTh}
             </p>
           ))}

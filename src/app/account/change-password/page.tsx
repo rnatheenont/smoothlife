@@ -43,7 +43,7 @@ function ChangePasswordContent() {
   return (
     <div className="max-w-md">
       <div className="rounded-xl2 border border-slate-100 shadow-card p-6 md:p-8">
-        <div className="flex items-center gap-2 text-brand-emerald mb-4">
+        <div className="flex items-center gap-2 text-brand-800 mb-4">
           <ShieldCheck size={20} />
           <span className="text-sm font-semibold">เปลี่ยนรหัสผ่าน</span>
         </div>
@@ -75,7 +75,7 @@ function ChangePasswordContent() {
         )}
 
         {emailSent && (
-          <p className="text-sm text-brand-emerald bg-brand-gradient-soft rounded-lg px-3.5 py-3">
+          <p className="text-sm text-brand-800 bg-brand-gradient-soft rounded-lg px-3.5 py-3">
             ส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปที่อีเมลของคุณแล้ว กรุณาตรวจสอบกล่องอีเมล (รวมถึงโฟลเดอร์สแปม)
           </p>
         )}

@@ -38,9 +38,9 @@ type StatusResponse = {
 };
 
 const dayCircleStyle: Record<DayInfo["status"], string> = {
-  normal: "bg-white text-brand-emerald shadow-sm",
-  recovery: "bg-white text-brand-emerald shadow-sm",
-  today: "bg-white text-brand-emerald shadow-lg ring-4 ring-amber-300/70 scale-110",
+  normal: "bg-white text-brand-800 shadow-sm",
+  recovery: "bg-white text-brand-800 shadow-sm",
+  today: "bg-white text-brand-800 shadow-lg ring-4 ring-amber-300/70 scale-110",
   recoverable: "bg-white text-amber-600 border-2 border-amber-400 shadow-sm",
   missed: "bg-white/10 text-white/40",
   upcoming: "bg-white/5 text-white/30 border border-dashed border-white/20",
@@ -140,7 +140,7 @@ function CheckinContent() {
 
   if (loading || !data) {
     return (
-      <div className="flex items-center justify-center py-16 text-slate-400">
+      <div className="flex items-center justify-center py-16 text-slate-500">
         <Loader2 size={24} className="animate-spin" />
       </div>
     );
@@ -197,7 +197,7 @@ function CheckinContent() {
             <button
               onClick={doCheckin}
               disabled={busy}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white text-brand-emerald font-bold px-5 py-2.5 text-sm shadow-card transition-transform active:scale-95 disabled:opacity-60"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white text-brand-800 font-bold px-5 py-2.5 text-sm shadow-card transition-transform active:scale-95 disabled:opacity-60"
             >
               {busy ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
               {busy ? "กำลังเช็กอิน…" : "เช็กอินวันนี้"}
@@ -256,7 +256,7 @@ function CheckinContent() {
         <div className="mb-6 rounded-xl2 bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-600">{message}</div>
       )}
 
-      <p className="text-xs font-bold uppercase text-brand-emerald tracking-wide mb-2.5">รางวัลตามเป้าหมาย</p>
+      <p className="text-xs font-bold text-brand-800 mb-2.5">รางวัลตามเป้าหมาย</p>
       <div className="grid sm:grid-cols-2 gap-4 mb-8">
         <div
           className={`relative rounded-xl2 border p-5 shadow-card transition-colors ${
@@ -275,14 +275,14 @@ function CheckinContent() {
           <div className="flex items-center gap-3 mb-2">
             <span
               className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${
-                cycle?.day3RewardClaimed ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-emerald"
+                cycle?.day3RewardClaimed ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-800"
               }`}
             >
               <Gift size={20} />
             </span>
             <div>
               <p className="font-bold text-brand-ink leading-tight">รางวัลวันที่ 3</p>
-              <p className="text-lg font-bold text-brand-emerald leading-tight">
+              <p className="text-lg font-bold text-brand-800 leading-tight">
                 +{data.config.day3Points} แต้ม
                 {data.challenge?.active && (
                   <span className="ml-1 text-xs font-bold text-amber-600 align-middle">x{data.challenge.multiplier}</span>
@@ -291,11 +291,11 @@ function CheckinContent() {
             </div>
           </div>
           {cycle?.day3RewardClaimed ? (
-            <p className="flex items-center gap-1 text-xs font-semibold text-brand-emerald">
+            <p className="flex items-center gap-1 text-xs font-semibold text-brand-800">
               <CheckCircle2 size={13} /> รับแล้ว
             </p>
           ) : (
-            <p className="text-xs text-slate-400">เช็กอินครบ 3 วันติดต่อกันเพื่อรับรางวัล</p>
+            <p className="text-xs text-slate-500">เช็กอินครบ 3 วันติดต่อกันเพื่อรับรางวัล</p>
           )}
         </div>
         <div
@@ -315,14 +315,14 @@ function CheckinContent() {
           <div className="flex items-center gap-3 mb-2">
             <span
               className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${
-                cycle?.day7RewardClaimed ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-emerald"
+                cycle?.day7RewardClaimed ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-800"
               }`}
             >
               <Sparkles size={20} />
             </span>
             <div>
               <p className="font-bold text-brand-ink leading-tight">รางวัลวันที่ 7</p>
-              <p className="text-lg font-bold text-brand-emerald leading-tight">
+              <p className="text-lg font-bold text-brand-800 leading-tight">
                 +{data.config.day7Points} แต้ม
                 {data.challenge?.active && (
                   <span className="ml-1 text-xs font-bold text-amber-600 align-middle">x{data.challenge.multiplier}</span>
@@ -330,26 +330,26 @@ function CheckinContent() {
               </p>
             </div>
           </div>
-          <p className="text-xs text-slate-400 mb-1">+ คูปองส่วนลด 10%</p>
+          <p className="text-xs text-slate-500 mb-1">+ คูปองส่วนลด 10%</p>
           {cycle?.day7RewardClaimed ? (
             cycle.day7CouponCode ? (
-              <p className="inline-block rounded-lg bg-white/70 px-2.5 py-1 font-mono text-xs font-bold text-brand-emerald border border-brand-teal/30">
+              <p className="inline-block rounded-lg bg-white/70 px-2.5 py-1 font-mono text-xs font-bold text-brand-800 border border-brand-teal/30">
                 {cycle.day7CouponCode}
               </p>
             ) : (
-              <p className="flex items-center gap-1 text-xs font-semibold text-brand-emerald">
+              <p className="flex items-center gap-1 text-xs font-semibold text-brand-800">
                 <CheckCircle2 size={13} /> รับแล้ว
               </p>
             )
           ) : (
-            <p className="text-xs text-slate-400">เช็กอินครบ 7 วันเพื่อรับรางวัล</p>
+            <p className="text-xs text-slate-500">เช็กอินครบ 7 วันเพื่อรับรางวัล</p>
           )}
         </div>
       </div>
 
       {data.monthlyAttendance && (
         <div>
-          <p className="text-xs font-bold uppercase text-brand-emerald tracking-wide mb-2.5">เป้าหมายประจำเดือน</p>
+          <p className="text-xs font-bold text-brand-800 mb-2.5">เป้าหมายประจำเดือน</p>
           <div
             className={`rounded-xl2 border p-5 mb-8 shadow-card ${
               data.monthlyAttendance.rewarded ? "border-brand-teal/40 bg-brand-gradient-soft" : "border-slate-100 bg-white"
@@ -358,7 +358,7 @@ function CheckinContent() {
             <div className="flex items-center gap-3 mb-3">
               <span
                 className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${
-                  data.monthlyAttendance.rewarded ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-emerald"
+                  data.monthlyAttendance.rewarded ? "bg-brand-gradient text-white shadow-sm" : "bg-brand-gradient-soft text-brand-800"
                 }`}
               >
                 <CalendarCheck size={20} />
@@ -366,9 +366,9 @@ function CheckinContent() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-bold text-brand-ink">เช็กอินครบทุกวันของเดือน</p>
-                  <span className="shrink-0 text-lg font-bold text-brand-emerald">+200 แต้ม</span>
+                  <span className="shrink-0 text-lg font-bold text-brand-800">+200 แต้ม</span>
                 </div>
-                <p className="text-xs text-slate-400">รับ 200 แต้มพิเศษ เมื่อเช็กอินครบทุกวันที่มีสิทธิ์ในเดือนนี้</p>
+                <p className="text-xs text-slate-500">รับ 200 แต้มพิเศษ เมื่อเช็กอินครบทุกวันที่มีสิทธิ์ในเดือนนี้</p>
               </div>
             </div>
             <div>
@@ -377,11 +377,11 @@ function CheckinContent() {
                   {data.monthlyAttendance.completedDays}/{data.monthlyAttendance.requiredDays} วัน
                 </span>
                 {data.monthlyAttendance.rewarded ? (
-                  <span className="flex items-center gap-1 font-semibold text-brand-emerald">
+                  <span className="flex items-center gap-1 font-semibold text-brand-800">
                     <CheckCircle2 size={13} /> รับรางวัลแล้ว
                   </span>
                 ) : (
-                  <span className="text-slate-400">
+                  <span className="text-slate-500">
                     เหลืออีก {Math.max(0, data.monthlyAttendance.requiredDays - data.monthlyAttendance.completedDays)} วัน
                   </span>
                 )}
@@ -418,7 +418,7 @@ function CheckinContent() {
           <div className="w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl bg-white p-5 shadow-xl">
             <div className="flex items-center justify-between mb-3">
               <p className="font-bold text-brand-ink">ยืนยันกู้วันเช็กอิน</p>
-              <button onClick={() => setConfirmDate(null)} aria-label="ปิด" className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setConfirmDate(null)} aria-label="ปิด" className="text-slate-500 hover:text-slate-600">
                 <X size={18} />
               </button>
             </div>
@@ -456,7 +456,7 @@ function CheckinContent() {
             {celebration.coupon && (
               <div className="mb-4 rounded-xl border border-dashed border-brand-teal bg-brand-gradient-soft px-4 py-3">
                 <p className="text-xs text-slate-500 mb-1">โค้ดส่วนลดของคุณ</p>
-                <p className="font-mono text-lg font-bold text-brand-emerald">{celebration.coupon}</p>
+                <p className="font-mono text-lg font-bold text-brand-800">{celebration.coupon}</p>
               </div>
             )}
             <div className="flex gap-2">

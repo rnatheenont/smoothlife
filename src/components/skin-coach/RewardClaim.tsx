@@ -91,7 +91,7 @@ export default function RewardClaim({ score }: { score: number }) {
       <div className="rounded-xl2 border border-brand-teal bg-brand-gradient-soft p-5 text-center">
         <Award size={20} className="mx-auto text-brand-emerald mb-2" />
         <p className="text-sm text-brand-ink font-semibold mb-1">ได้รับ {pointsAwarded} คะแนนเรียบร้อย!</p>
-        <Link href="/account/points" className="text-xs font-semibold text-brand-emerald underline">
+        <Link href="/account/points" className="text-xs font-semibold text-brand-800 underline">
           ดูคะแนนสะสม
         </Link>
         <p className="text-[11px] text-slate-500 mt-3">สิทธิ์ 1 ครั้งต่อบัญชีต่อเดือน</p>

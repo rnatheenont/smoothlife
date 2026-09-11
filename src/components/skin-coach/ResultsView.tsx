@@ -78,7 +78,7 @@ export default function ResultsView({
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-2xl sm:text-3xl font-bold text-brand-ink leading-none">{total}</span>
-              <span className="text-[10px] text-slate-400">/100</span>
+              <span className="text-[10px] text-slate-500">/100</span>
             </div>
           </div>
           <div className="text-center sm:text-left">
@@ -93,13 +93,13 @@ export default function ResultsView({
         </div>
 
         <div className="flex items-center gap-4 rounded-xl2 bg-brand-gradient-soft p-5 mb-6">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white text-brand-emerald">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white text-brand-800">
             <CalendarClock size={22} />
           </div>
           <div>
             <p className="text-xs text-slate-500">อายุผิวโดยประมาณ</p>
             <p className="text-3xl font-extrabold text-brand-ink leading-tight">{metrics.skinAge.years} ปี</p>
-            <p className="text-xs text-brand-emerald mt-0.5">{metrics.skinAge.note}</p>
+            <p className="text-xs text-brand-800 mt-0.5">{metrics.skinAge.note}</p>
           </div>
         </div>
 
@@ -148,7 +148,7 @@ export default function ResultsView({
 
       <button
         onClick={onRestart}
-        className="mx-auto flex items-center gap-2 text-xs text-slate-400 hover:text-brand-emerald mt-2"
+        className="mx-auto flex items-center gap-2 text-xs text-slate-500 hover:text-brand-800 mt-2"
       >
         <RotateCcw size={14} />
         สแกนใหม่อีกครั้ง

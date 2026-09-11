@@ -243,7 +243,7 @@ export default function AdminFreeGiftsPage() {
 
       <button
         onClick={openCreateForm}
-        className="w-full mb-6 flex items-center justify-center gap-2 rounded-xl2 border-2 border-dashed border-slate-200 hover:border-brand-teal text-slate-500 hover:text-brand-emerald py-4 text-sm font-semibold transition-colors"
+        className="w-full mb-6 flex items-center justify-center gap-2 rounded-xl2 border-2 border-dashed border-slate-200 hover:border-brand-teal text-slate-500 hover:text-brand-800 py-4 text-sm font-semibold transition-colors"
       >
         <Plus size={17} /> สร้างโปรโมชั่นใหม่
       </button>
@@ -274,7 +274,7 @@ export default function AdminFreeGiftsPage() {
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span
                         className={`flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-0.5 ${
-                          p.active ? "bg-brand-gradient-soft text-brand-emerald" : "bg-slate-100 text-slate-400"
+                          p.active ? "bg-brand-gradient-soft text-brand-800" : "bg-slate-100 text-slate-400"
                         }`}
                       >
                         <span className={`h-1.5 w-1.5 rounded-full ${p.active ? "bg-brand-emerald" : "bg-slate-300"}`} />
@@ -295,7 +295,7 @@ export default function AdminFreeGiftsPage() {
                       )}
                     </p>
                     {(p.shopifyDiscountId || tierDiscountsLinked) && (
-                      <p className="flex items-center gap-1 text-[10px] text-brand-emerald mt-1">
+                      <p className="flex items-center gap-1 text-[10px] text-brand-800 mt-1">
                         <Check size={11} /> เชื่อมกับส่วนลดจริงใน Shopify แล้ว
                       </p>
                     )}
@@ -531,7 +531,7 @@ export default function AdminFreeGiftsPage() {
                     <button
                       type="button"
                       onClick={() => setForm({ ...form, tiers: [...form.tiers, { ...EMPTY_TIER_ROW }] })}
-                      className="flex items-center gap-1 text-xs font-semibold text-brand-emerald"
+                      className="flex items-center gap-1 text-xs font-semibold text-brand-800"
                     >
                       <Plus size={13} /> เพิ่มระดับ
                     </button>
@@ -577,7 +577,7 @@ export default function AdminFreeGiftsPage() {
               {/* preview */}
               {form.titleTh && (form.kind === "tiered" ? form.tiers.some((t) => t.giftProductSlug) : form.giftProductSlug) && (
                 <div className="rounded-xl bg-brand-gradient-soft p-3">
-                  <p className="text-[10px] font-bold text-brand-emerald uppercase mb-1">ตัวอย่างที่ลูกค้าจะเห็น</p>
+                  <p className="text-[10px] font-bold text-brand-800 uppercase mb-1">ตัวอย่างที่ลูกค้าจะเห็น</p>
                   <p className="text-xs text-brand-ink">
                     {form.kind === "tiered"
                       ? describeCondition(form)

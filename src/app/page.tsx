@@ -433,10 +433,10 @@ export default async function HomePage() {
                 <h3 className="font-bold text-sm text-brand-ink mt-2 line-clamp-2">{a.title}</h3>
                 <p className="text-xs text-slate-500 mt-1 line-clamp-2">{a.excerpt}</p>
                 <div className="flex items-center justify-between mt-3">
-                  <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                  <span className="flex items-center gap-1 text-[11px] text-slate-500">
                     <Clock size={11} /> {a.readMins} นาที
                   </span>
-                  <span className="flex items-center gap-0.5 text-xs font-semibold text-brand-emerald">
+                  <span className="flex items-center gap-0.5 text-xs font-semibold text-brand-800">
                     อ่านต่อ <ChevronRight size={13} />
                   </span>
                 </div>

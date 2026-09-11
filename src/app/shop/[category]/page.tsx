@@ -59,7 +59,7 @@ export default function CategoryPage({
       <CategoryChips current={current} />
       <div className="mb-6 flex items-end justify-between gap-3">
         <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">{categoryInfo.nameTh}</h1>
-        <span className="text-xs md:text-sm font-medium text-brand-emerald bg-brand-gradient-soft rounded-full px-3 py-1 shrink-0">
+        <span className="text-xs md:text-sm font-medium text-brand-800 bg-brand-gradient-soft rounded-full px-3 py-1 shrink-0">
           {items.length} รายการ
         </span>
       </div>
@@ -86,7 +86,7 @@ export default function CategoryPage({
             <SortSelect current={current} />
           </div>
           {items.length === 0 ? (
-            <div className="text-center py-20 text-slate-400">ไม่พบสินค้าในหมวดนี้</div>
+            <div className="text-center py-20 text-slate-500">ไม่พบสินค้าในหมวดนี้</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
               {items.map((p) => (

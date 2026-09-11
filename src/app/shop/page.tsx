@@ -19,8 +19,8 @@ export default function ShopPage({ searchParams }: { searchParams: ShopSearchPar
 
   return (
     <div className="container-page py-8 md:py-10">
-      <nav className="mb-3 flex items-center gap-1.5 text-xs text-slate-400">
-        <Link href="/" className="hover:text-brand-emerald">
+      <nav className="mb-3 flex items-center gap-1.5 text-xs text-slate-500">
+        <Link href="/" className="hover:text-brand-800">
           หน้าแรก
         </Link>
         <ChevronRight size={12} />
@@ -28,7 +28,7 @@ export default function ShopPage({ searchParams }: { searchParams: ShopSearchPar
       </nav>
       <div className="mb-6 flex items-end justify-between gap-3">
         <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">สินค้าทั้งหมด</h1>
-        <span className="text-xs md:text-sm font-medium text-brand-emerald bg-brand-gradient-soft rounded-full px-3 py-1 shrink-0">
+        <span className="text-xs md:text-sm font-medium text-brand-800 bg-brand-gradient-soft rounded-full px-3 py-1 shrink-0">
           {allItems.length} รายการ
         </span>
       </div>
@@ -40,7 +40,7 @@ export default function ShopPage({ searchParams }: { searchParams: ShopSearchPar
             <SortSelect current={searchParams} />
           </div>
           {items.length === 0 ? (
-            <div className="text-center py-20 text-slate-400">
+            <div className="text-center py-20 text-slate-500">
               <p>ไม่พบสินค้าที่ตรงกับตัวกรองของคุณ</p>
             </div>
           ) : (

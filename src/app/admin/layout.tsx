@@ -109,7 +109,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                   key={item.href}
                   href={item.href}
                   className={`flex items-center gap-2 shrink-0 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
-                    active ? "bg-brand-gradient-soft text-brand-emerald" : "text-slate-500 hover:bg-surface-soft"
+                    active ? "bg-brand-gradient-soft text-brand-800" : "text-slate-500 hover:bg-surface-soft"
                   }`}
                 >
                   <Icon size={16} /> {item.label}

@@ -100,7 +100,7 @@ function AccountShell({ children }: { children: ReactNode }) {
             {NAV_GROUPS.map((group, i) => (
               <div key={group.label ?? `group-${i}`} className={i > 0 ? "mt-4 pt-4 border-t border-slate-100" : undefined}>
                 {group.label && (
-                  <p className="px-3.5 mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  <p className="px-3.5 mb-1.5 text-[11px] font-bold text-slate-500">
                     {group.label}
                   </p>
                 )}
@@ -112,7 +112,7 @@ function AccountShell({ children }: { children: ReactNode }) {
                         key={item.href}
                         href={item.href}
                         className={`flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
-                          active ? "bg-brand-gradient-soft text-brand-emerald" : "text-slate-600 hover:bg-surface-soft"
+                          active ? "bg-brand-gradient-soft text-brand-800" : "text-slate-600 hover:bg-surface-soft"
                         }`}
                       >
                         <item.icon size={16} />
@@ -147,7 +147,7 @@ function AccountShell({ children }: { children: ReactNode }) {
                     key={item.href}
                     href={item.href}
                     className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold whitespace-nowrap transition-colors ${
-                      active ? "border-brand-teal bg-brand-gradient-soft text-brand-emerald" : "border-slate-200 text-slate-500"
+                      active ? "border-brand-teal bg-brand-gradient-soft text-brand-800" : "border-slate-200 text-slate-500"
                     }`}
                   >
                     <item.icon size={13} />

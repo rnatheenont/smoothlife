@@ -114,12 +114,12 @@ function RealSubscriptionCard({
                   ? "bg-brand-gradient text-white"
                   : sub.status === "past_due"
                   ? "bg-amber-100 text-amber-700"
-                  : "bg-slate-100 text-slate-400"
+                  : "bg-slate-100 text-slate-500"
               }`}
             >
               {REAL_STATUS_LABEL[sub.status]}
             </span>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-slate-500">
               รอบที่ {sub.cycle_in_term}/{sub.plan_months} ของเทอมที่ {sub.current_term_number} (-{sub.discount_pct}%)
             </span>
           </div>
@@ -128,7 +128,7 @@ function RealSubscriptionCard({
           ) : (
             <Link
               href={sub.subscription_type === "set" ? `/subscription/${sub.set_slug}` : `/product/${sub.product_slug}`}
-              className="font-bold text-brand-ink hover:text-brand-emerald"
+              className="font-bold text-brand-ink hover:text-brand-800"
             >
               {sub.product_name}
             </Link>
@@ -147,7 +147,7 @@ function RealSubscriptionCard({
           {error && <p className="text-xs text-rose-500 mt-1">{error}</p>}
           <button
             onClick={toggleHistory}
-            className="flex items-center gap-1 text-xs font-semibold text-brand-emerald mt-2"
+            className="flex items-center gap-1 text-xs font-semibold text-brand-800 mt-2"
           >
             <ChevronDown size={13} className={`transition-transform ${historyOpen ? "rotate-180" : ""}`} />
             ประวัติการตัดเงินและจัดส่ง
@@ -155,7 +155,7 @@ function RealSubscriptionCard({
           {historyOpen && (
             <div className="mt-2 rounded-xl bg-white/70 border border-slate-100 p-3">
               {historyLoading ? (
-                <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                <p className="text-xs text-slate-500 flex items-center gap-1.5">
                   <Loader2 size={12} className="animate-spin" /> กำลังโหลด…
                 </p>
               ) : (
@@ -165,7 +165,7 @@ function RealSubscriptionCard({
                       <Receipt size={12} /> ประวัติการตัดเงิน
                     </p>
                     {!charges || charges.length === 0 ? (
-                      <p className="text-xs text-slate-400">ยังไม่มีประวัติ</p>
+                      <p className="text-xs text-slate-500">ยังไม่มีประวัติ</p>
                     ) : (
                       <div className="flex flex-col gap-1">
                         {charges.map((c) => (
@@ -173,7 +173,7 @@ function RealSubscriptionCard({
                             <span className="text-slate-500">
                               รอบที่ {c.cycle_number} · {c.charged_at ? new Date(c.charged_at).toLocaleDateString("th-TH") : "รอตัดเงิน"}
                             </span>
-                            <span className={c.success ? "text-brand-emerald font-semibold" : "text-rose-500 font-semibold"}>
+                            <span className={c.success ? "text-brand-800 font-semibold" : "text-rose-500 font-semibold"}>
                               {formatTHB(c.amount)} {c.success === false ? "(ไม่สำเร็จ)" : ""}
                             </span>
                           </div>
@@ -186,7 +186,7 @@ function RealSubscriptionCard({
                       <Package size={12} /> ประวัติการจัดส่ง
                     </p>
                     {!shipments || shipments.length === 0 ? (
-                      <p className="text-xs text-slate-400">ยังไม่มีประวัติ</p>
+                      <p className="text-xs text-slate-500">ยังไม่มีประวัติ</p>
                     ) : (
                       <div className="flex flex-col gap-1">
                         {shipments.map((s) => (
@@ -257,7 +257,7 @@ function SubscriptionsContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20 text-slate-400">
+      <div className="flex items-center justify-center py-20 text-slate-500">
         <Loader2 size={22} className="animate-spin" />
       </div>
     );
@@ -293,8 +293,8 @@ function SubscriptionsContent() {
       {subscriptions.length === 0 && realSubscriptions.length === 0 ? (
         <div className="rounded-xl2 border border-dashed border-slate-200 py-14 text-center">
           <Sparkles size={26} className="mx-auto text-slate-300 mb-2" />
-          <p className="text-sm text-slate-400">ยังไม่มีรายการสมัครรับประจำ</p>
-          <p className="text-xs text-slate-400 mt-1">เลือก &ldquo;สมัครรับประจำ&rdquo; ได้จากหน้าสินค้าทุกชิ้น</p>
+          <p className="text-sm text-slate-500">ยังไม่มีรายการสมัครรับประจำ</p>
+          <p className="text-xs text-slate-500 mt-1">เลือก &ldquo;สมัครรับประจำ&rdquo; ได้จากหน้าสินค้าทุกชิ้น</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -308,23 +308,23 @@ function SubscriptionsContent() {
                     <div className="flex flex-wrap items-center gap-1.5 mb-1">
                       <span
                         className={`text-[10px] font-bold rounded-full px-2 py-0.5 ${
-                          sub.active ? "bg-brand-gradient-soft text-brand-emerald" : "bg-slate-100 text-slate-400"
+                          sub.active ? "bg-brand-gradient-soft text-brand-800" : "bg-slate-100 text-slate-500"
                         }`}
                       >
                         {sub.active ? "กำลังติดตาม" : "ปิดการแจ้งเตือนแล้ว"}
                       </span>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-slate-500">
                         ทุก {sub.plan_months} เดือน{plan ? ` (-${plan.discountPct}%)` : ""}
                       </span>
                     </div>
-                    <Link href={`/product/${sub.product_slug}`} className="font-bold text-brand-ink hover:text-brand-emerald">
+                    <Link href={`/product/${sub.product_slug}`} className="font-bold text-brand-ink hover:text-brand-800">
                       {sub.product_name}
                     </Link>
                     <p className="text-xs text-slate-500 mt-1">
                       {formatTHB(sub.price_per_cycle)}/ชิ้น · ซื้อเมื่อ {new Date(sub.purchased_at).toLocaleDateString("th-TH")}
                     </p>
                     {sub.active && (
-                      <p className="text-xs font-semibold text-brand-emerald mt-1">
+                      <p className="text-xs font-semibold text-brand-800 mt-1">
                         {remaining > 0 ? `ครบรอบในอีก ${remaining} วัน` : "ครบรอบแล้ว — สั่งซื้อต่อได้เลย"}
                       </p>
                     )}

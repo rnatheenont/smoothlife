@@ -12,7 +12,7 @@ export default function BrandsPage() {
 
       {houseBrands.length > 0 && (
         <div className="mb-10">
-          <p className="text-xs font-bold uppercase tracking-wider text-brand-emerald mb-3">แบรนด์ในเครือของเรา</p>
+          <p className="text-xs font-bold text-brand-800 mb-3">แบรนด์ในเครือของเรา</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {houseBrands.map((b) => (
               <Link
@@ -30,14 +30,14 @@ export default function BrandsPage() {
                 )}
                 <h3 translate="no" className="font-bold text-lg text-brand-ink">{b.name}</h3>
                 <p className="text-sm text-slate-600 mt-1">{b.tagline}</p>
-                <p className="text-xs text-brand-emerald font-semibold mt-3">{b.productCount}+ สินค้า</p>
+                <p className="text-xs text-brand-800 font-semibold mt-3">{b.productCount}+ สินค้า</p>
               </Link>
             ))}
           </div>
         </div>
       )}
 
-      <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">แบรนด์อื่นๆ</p>
+      <p className="text-xs font-bold text-slate-500 mb-3">แบรนด์อื่นๆ</p>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {otherBrands.map((b) => (
           <Link
@@ -52,7 +52,7 @@ export default function BrandsPage() {
             )}
             <h3 translate="no" className="font-bold text-brand-ink">{b.name}</h3>
             <p className="text-xs text-slate-500 mt-1">{b.tagline}</p>
-            <p className="text-xs text-brand-emerald font-semibold mt-3">{b.productCount}+ สินค้า</p>
+            <p className="text-xs text-brand-800 font-semibold mt-3">{b.productCount}+ สินค้า</p>
           </Link>
         ))}
       </div>

@@ -60,7 +60,7 @@ export default function OrderDetailView({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold text-brand-ink">{order.name}</h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             สั่งเมื่อ {new Date(order.createdAt).toLocaleDateString("th-TH", { dateStyle: "long" })}
             {financialText(order.financialStatus) ? ` · ${financialText(order.financialStatus)}` : ""}
           </p>
@@ -115,7 +115,7 @@ export default function OrderDetailView({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p translate="no" className="truncate text-xs text-slate-700">{it.title}</p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-500">
                     x{it.quantity} · {formatTHB(Number(it.total))}
                   </p>
                 </div>

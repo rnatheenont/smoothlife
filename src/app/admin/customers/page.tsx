@@ -405,7 +405,7 @@ export default function AdminCustomersPage() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-semibold text-brand-ink truncate">{c.displayName || c.email || "—"}</span>
-                      <span className="flex items-center gap-1 text-[11px] font-semibold text-brand-emerald shrink-0">
+                      <span className="flex items-center gap-1 text-[11px] font-semibold text-brand-800 shrink-0">
                         <ShoppingBag size={12} />
                         {c.numberOfOrders} ออเดอร์ · ฿{Number(c.amountSpent).toLocaleString("th-TH")}
                       </span>
@@ -457,7 +457,7 @@ export default function AdminCustomersPage() {
                         href={`https://admin.shopify.com/store/smoothlifethailand/customers/${shortId(c.id)}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-brand-emerald"
+                        className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-brand-800"
                       >
                         <ExternalLink size={11} /> เปิดใน Shopify
                       </a>

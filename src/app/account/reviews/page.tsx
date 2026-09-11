@@ -22,7 +22,7 @@ type MyReviewRow = {
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   pending_review: { label: "รอตรวจสอบ", className: "bg-amber-50 text-amber-600" },
-  approved: { label: "อนุมัติแล้ว", className: "bg-brand-gradient-soft text-brand-emerald" },
+  approved: { label: "อนุมัติแล้ว", className: "bg-brand-gradient-soft text-brand-800" },
   rejected: { label: "ไม่ผ่านการตรวจสอบ", className: "bg-rose-50 text-rose-500" },
 };
 
@@ -57,13 +57,13 @@ function ReviewsContent() {
       <p className="text-sm text-slate-500 mb-6">ประวัติรีวิวสินค้าที่คุณเคยเขียน และสถานะการอนุมัติ</p>
 
       {loading ? (
-        <p className="text-sm text-slate-400 text-center py-10">กำลังโหลด…</p>
+        <p className="text-sm text-slate-500 text-center py-10">กำลังโหลด…</p>
       ) : error ? (
         <p className="text-sm text-rose-500 text-center py-10">{error}</p>
       ) : reviews.length === 0 ? (
         <div className="text-center py-10">
           <p className="text-slate-500">คุณยังไม่เคยเขียนรีวิวสินค้าเลยค่ะ</p>
-          <Link href="/account/orders" className="inline-block mt-4 text-brand-emerald font-semibold text-sm">
+          <Link href="/account/orders" className="inline-block mt-4 text-brand-800 font-semibold text-sm">
             ไปดูคำสั่งซื้อของคุณ
           </Link>
         </div>
@@ -84,13 +84,13 @@ function ReviewsContent() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         {product ? (
-                          <Link href={`/product/${product.slug}`} className="text-sm font-bold text-brand-ink truncate block hover:text-brand-emerald">
+                          <Link href={`/product/${product.slug}`} className="text-sm font-bold text-brand-ink truncate block hover:text-brand-800">
                             {product.name}
                           </Link>
                         ) : (
                           <p className="text-sm font-bold text-brand-ink truncate">{r.product_slug}</p>
                         )}
-                        <p className="text-[11px] text-slate-400 mt-0.5">{new Date(r.created_at).toLocaleDateString("th-TH")}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{new Date(r.created_at).toLocaleDateString("th-TH")}</p>
                       </div>
                       <span className={`shrink-0 rounded-full text-[11px] font-semibold px-2.5 py-1 ${status.className}`}>
                         {status.label}
@@ -101,7 +101,7 @@ function ReviewsContent() {
                         <Star key={n} size={13} className={n <= r.rating ? "fill-amber-400 text-amber-400" : "text-slate-200"} />
                       ))}
                       {r.points_awarded != null && (
-                        <span className="ml-2 text-[11px] font-semibold text-brand-emerald">
+                        <span className="ml-2 text-[11px] font-semibold text-brand-800">
                           {r.status === "approved" ? `+${r.points_awarded} แต้ม` : `+${r.points_awarded} แต้ม (รออนุมัติ)`}
                         </span>
                       )}

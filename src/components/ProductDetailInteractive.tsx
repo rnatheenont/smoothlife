@@ -350,7 +350,7 @@ export default function ProductDetailInteractive({
         </div>
 
         <div>
-          <span translate="no" className="text-xs font-bold uppercase tracking-wide text-brand-teal">{product.brand}</span>
+          <span translate="no" className="text-xs font-bold text-brand-800">{product.brand}</span>
           <h1 translate="no" className="text-2xl md:text-3xl font-bold text-brand-ink mt-1">{product.name}</h1>
           {reviewsList.length > 0 && (
             <button onClick={() => setTab("reviews")} className="flex items-center gap-2 mt-2">
@@ -363,7 +363,7 @@ export default function ProductDetailInteractive({
           <div className="flex items-baseline gap-3 mt-4">
             <span className="text-3xl font-bold text-brand-ink">{formatTHB(selectedVariant.price)}</span>
             {selectedVariant.compareAtPrice ? (
-              <span className="text-lg text-slate-400 line-through">{formatTHB(selectedVariant.compareAtPrice)}</span>
+              <span className="text-lg text-slate-500 line-through">{formatTHB(selectedVariant.compareAtPrice)}</span>
             ) : null}
           </div>
           <p className="text-sm text-slate-600 mt-4">{product.shortDesc}</p>
@@ -399,7 +399,7 @@ export default function ProductDetailInteractive({
               </div>
             </div>
           ) : (
-            product.size && <p className="text-xs text-slate-400 mt-1">ขนาด: {product.size}</p>
+            product.size && <p className="text-xs text-slate-500 mt-1">ขนาด: {product.size}</p>
           )}
 
           <div ref={buyButtonRef} className="mt-6">
@@ -408,7 +408,7 @@ export default function ProductDetailInteractive({
                 <button
                   onClick={() => setPurchaseMode("once")}
                   className={`rounded-full py-2 transition-colors ${
-                    purchaseMode === "once" ? "bg-white shadow-sm text-brand-ink" : "text-slate-400"
+                    purchaseMode === "once" ? "bg-white shadow-sm text-brand-ink" : "text-slate-500"
                   }`}
                 >
                   ซื้อครั้งเดียว
@@ -418,13 +418,13 @@ export default function ProductDetailInteractive({
                   className={`relative flex items-center justify-center gap-1.5 rounded-full py-2 transition ${
                     purchaseMode === "subscribe"
                       ? "bg-brand-gradient text-white shadow-cardHover scale-[1.02]"
-                      : "text-brand-emerald/70 hover:text-brand-emerald"
+                      : "text-brand-800/70 hover:text-brand-800"
                   }`}
                 >
                   <Repeat size={13} /> สมัครรับประจำ
                   <span
                     className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                      purchaseMode === "subscribe" ? "bg-white text-brand-emerald" : "bg-brand-gradient text-white"
+                      purchaseMode === "subscribe" ? "bg-white text-brand-800" : "bg-brand-gradient text-white"
                     }`}
                   >
                     -{Math.max(...subscriptionPlans.map((p) => p.discountPct))}%
@@ -487,7 +487,7 @@ export default function ProductDetailInteractive({
                           </span>
                         )}
                         <p className="text-base font-extrabold text-brand-ink">{p.months} เดือน</p>
-                        <p className={`text-[11px] font-bold ${active ? "text-brand-emerald" : "text-slate-400"}`}>-{p.discountPct}%</p>
+                        <p className={`text-[11px] font-bold ${active ? "text-brand-800" : "text-slate-500"}`}>-{p.discountPct}%</p>
                       </button>
                     );
                   })}
@@ -495,7 +495,7 @@ export default function ProductDetailInteractive({
 
                 <div className="flex items-baseline justify-between mt-3">
                   <span className="text-xs text-slate-500">ราคา/เดือน (-{subscribePlan.discountPct}%)</span>
-                  <span className="text-xl font-extrabold text-brand-emerald">{formatTHB(subscribePricePerCycle)}</span>
+                  <span className="text-xl font-extrabold text-brand-800">{formatTHB(subscribePricePerCycle)}</span>
                 </div>
 
                 {subscriptionBillingEnabled && (
@@ -531,7 +531,7 @@ export default function ProductDetailInteractive({
                   {subscribeSubmitting ? "กำลังเริ่มชำระเงิน…" : "สมัครรับประจำ"}
                 </Button>
                 {subscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{subscribeError}</p>}
-                <p className="mt-2 text-[10px] text-slate-400 text-center">
+                <p className="mt-2 text-[10px] text-slate-500 text-center">
                   {subscriptionBillingEnabled
                     ? `ตัดเงิน ${formatTHB(subscribePricePerCycle)} บาททุกเดือน (ล็อกส่วนลด -${subscribePlan.discountPct}% ตลอดเทอม ${subscribePlan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเทอมและราคาเดิม จนกว่าจะยกเลิก`
                     : `ไปหน้าชำระเงินของ Shopify ทันที พร้อมส่วนลด -${subscribePlan.discountPct}% ให้อัตโนมัติ (${subscribePlan.months} ชิ้น) — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
@@ -579,7 +579,7 @@ export default function ProductDetailInteractive({
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                tab === t.id ? "border-brand-emerald text-brand-emerald" : "border-transparent text-slate-500"
+                tab === t.id ? "border-brand-emerald text-brand-800" : "border-transparent text-slate-500"
               }`}
             >
               {t.label}
@@ -627,7 +627,7 @@ export default function ProductDetailInteractive({
               <div className="overflow-x-auto">
                 <table className="w-full text-sm min-w-[500px]">
                   <thead>
-                    <tr className="text-left text-slate-400 border-b border-slate-100">
+                    <tr className="text-left text-slate-500 border-b border-slate-100">
                       <th className="py-2 pr-4 font-medium">สินค้า</th>
                       <th className="py-2 pr-4 font-medium">ราคา</th>
                       <th className="py-2 pr-4 font-medium">แบรนด์</th>
@@ -658,7 +658,7 @@ export default function ProductDetailInteractive({
                   <h3 className="font-bold text-brand-ink">รีวิวจากลูกค้า</h3>
                   <button
                     onClick={() => requireLoginThen(() => setShowReviewForm((s) => !s))}
-                    className="text-xs font-semibold text-brand-emerald hover:text-brand-sky transition-colors"
+                    className="text-xs font-semibold text-brand-800 hover:text-brand-800 transition-colors"
                   >
                     + เขียนรีวิว
                   </button>
@@ -669,7 +669,7 @@ export default function ProductDetailInteractive({
                     <span className="relative h-9 w-9 shrink-0">
                       <Image src="/mascot/smoothie-fun.png" alt="" fill sizes="36px" className="object-contain" />
                     </span>
-                    <p className="text-xs font-semibold text-brand-emerald">
+                    <p className="text-xs font-semibold text-brand-800">
                       ส่งรีวิวสำเร็จ รอตรวจสอบ — ได้รับ {reviewSuccessPoints} คะแนนเมื่อรีวิวได้รับอนุมัติ ขอบคุณค่ะ!
                     </p>
                   </div>
@@ -677,7 +677,7 @@ export default function ProductDetailInteractive({
 
                 {showReviewForm && (
                   <form onSubmit={submitReview} className="mb-5 rounded-xl border border-slate-100 p-4 space-y-3">
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-500">
                       ต้องซื้อสินค้านี้และชำระเงินสำเร็จก่อนจึงจะรีวิวได้ครับ รีวิวจะแสดงหลังทีมงานตรวจสอบ — รับ{" "}
                       {reviewBody.trim().length >= REVIEW_MIN_TEXT_LENGTH ? 15 : 5} คะแนนเมื่ออนุมัติ
                       {reviewBody.trim().length >= REVIEW_MIN_TEXT_LENGTH ? "" : " (เขียนรีวิวอย่างน้อย 20 ตัวอักษรเพื่อรับ 15 คะแนน)"}
@@ -710,14 +710,14 @@ export default function ProductDetailInteractive({
                 )}
 
                 {reviewsList.length === 0 ? (
-                  <p className="text-sm text-slate-400">ยังไม่มีรีวิวสำหรับสินค้านี้ค่ะ เป็นคนแรกที่รีวิวสิ!</p>
+                  <p className="text-sm text-slate-500">ยังไม่มีรีวิวสำหรับสินค้านี้ค่ะ เป็นคนแรกที่รีวิวสิ!</p>
                 ) : (
                   <div className="space-y-5">
                     {reviewsList.map((r) => (
                       <div key={r.id} className="border-b border-slate-100 pb-5">
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-sm">{r.author_name}</span>
-                          <span className="text-xs text-slate-400">
+                          <span className="text-xs text-slate-500">
                             {new Date(r.created_at).toLocaleDateString("th-TH")}
                           </span>
                         </div>
@@ -735,7 +735,7 @@ export default function ProductDetailInteractive({
                   <h3 className="font-bold text-brand-ink">คำถามจากลูกค้า</h3>
                   <button
                     onClick={() => requireLoginThen(() => setShowQuestionForm((s) => !s))}
-                    className="text-xs font-semibold text-brand-emerald hover:text-brand-sky transition-colors"
+                    className="text-xs font-semibold text-brand-800 hover:text-brand-800 transition-colors"
                   >
                     + ถามคำถาม
                   </button>
@@ -759,7 +759,7 @@ export default function ProductDetailInteractive({
                 )}
 
                 {questionsList.length === 0 ? (
-                  <p className="text-sm text-slate-400">ยังไม่มีคำถามสำหรับสินค้านี้ค่ะ ถามได้เลย!</p>
+                  <p className="text-sm text-slate-500">ยังไม่มีคำถามสำหรับสินค้านี้ค่ะ ถามได้เลย!</p>
                 ) : (
                   <div className="space-y-5">
                     {questionsList.map((q) => (
@@ -771,9 +771,9 @@ export default function ProductDetailInteractive({
                         {q.answer ? (
                           <p className="text-sm text-slate-600 mt-1.5 pl-[22px]">{q.answer}</p>
                         ) : (
-                          <p className="text-xs text-slate-400 mt-1.5 pl-[22px] italic">รอทีมงานตอบกลับ</p>
+                          <p className="text-xs text-slate-500 mt-1.5 pl-[22px] italic">รอทีมงานตอบกลับ</p>
                         )}
-                        <span className="text-xs text-slate-400 pl-[22px] block mt-1">
+                        <span className="text-xs text-slate-500 pl-[22px] block mt-1">
                           {q.author_name} · {new Date(q.created_at).toLocaleDateString("th-TH")}
                         </span>
                       </div>
@@ -787,7 +787,7 @@ export default function ProductDetailInteractive({
             <div className="grid md:grid-cols-3 gap-6 text-sm text-slate-600">
               <div>
                 <h4 className="font-bold text-brand-ink mb-2">สถานะสินค้า</h4>
-                <p className={selectedVariant.inStock ? "text-brand-emerald font-medium" : "text-rose-500 font-medium"}>
+                <p className={selectedVariant.inStock ? "text-brand-800 font-medium" : "text-rose-500 font-medium"}>
                   {selectedVariant.inStock ? "มีสินค้าพร้อมส่ง" : "สินค้าหมดชั่วคราว"}
                 </p>
               </div>
