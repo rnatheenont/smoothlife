@@ -38,6 +38,10 @@ function cardBadgeChips(badges: string[] | undefined, discount: number, promoChi
  * thousand, then พัน / หมื่น — and "k" for English readers, since the page
  * translator would otherwise turn "1.2พัน" into something nobody recognises.
  */
+// "ขายแล้ว 3 ชิ้น" reads as a product nobody buys — a small true number does
+// more harm than no number. Shown only above this, i.e. from 11 units.
+const SHOW_SOLD_ABOVE = 10;
+
 function formatSold(n: number, lang: string) {
   const trim = (x: number) => x.toFixed(1).replace(/\.0$/, "");
   if (lang === "en") return n < 1000 ? String(n) : `${trim(n / 1000)}k`;
@@ -63,6 +67,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const isWished = has(product.slug);
   const [added, setAdded] = useState(false);
   const { lang } = useLang();
+  const showSold = (product.sold ?? 0) > SHOW_SOLD_ABOVE;
   const discount = product.compareAtPrice
     ? Math.round(100 - (product.price / product.compareAtPrice) * 100)
     : 0;
@@ -145,9 +150,9 @@ export default function ProductCard({ product }: { product: Product }) {
             refunds (fetchUnitsSold in scripts/fetch-products.js), and shown
             only once something has sold — "ขายแล้ว 0 ชิ้น" is a reason not to
             buy, and inventing a number is not an option. */}
-        {((product.sold ?? 0) > 0 || lowStock) && (
+        {(showSold || lowStock) && (
           <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px]">
-            {(product.sold ?? 0) > 0 && (
+            {showSold && (
               <span translate="no" className="flex items-center gap-1 text-slate-500">
                 <Flame size={11} className="shrink-0 text-orange-500" />
                 {lang === "en" ? (
@@ -161,7 +166,7 @@ export default function ProductCard({ product }: { product: Product }) {
                 )}
               </span>
             )}
-            {(product.sold ?? 0) > 0 && lowStock && (
+            {showSold && lowStock && (
               <span aria-hidden="true" className="text-slate-300">·</span>
             )}
             {lowStock && (
