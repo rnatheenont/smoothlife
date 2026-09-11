@@ -27,8 +27,12 @@ export const SHOPIFY_AUTH_COOKIE = "sl_shopify_auth";
 
 export const SHOPIFY_AUTH_INTENTS: ShopifyAuthIntent[] = ["login", "link", "reset", "reclaim"];
 
+// NEXT_PUBLIC_SHOPIFY_EMAIL_LOGIN_ENABLED is the one switch: without it the
+// server routes (register reclaim, change password) fall back to the old
+// emailed-code flows too, not just the buttons — so the credentials can stay
+// in Vercel while the feature is off.
 export function shopifyEmailAuthConfigured() {
-  return Boolean(SHOP && CLIENT_ID);
+  return Boolean(SHOP && CLIENT_ID && process.env.NEXT_PUBLIC_SHOPIFY_EMAIL_LOGIN_ENABLED);
 }
 
 export const shopifyAuthCookieOptions = {
