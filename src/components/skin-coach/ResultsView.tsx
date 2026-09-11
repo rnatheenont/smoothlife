@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import { Info, MessageCircle, RotateCcw } from "lucide-react";
-import ProductCard from "@/components/ProductCard";
+import MiniProductCard from "@/components/skin-coach/MiniProductCard";
 import type { Product } from "@/data/types";
 import { useQuickChat } from "@/lib/quickchat-context";
 import { useAuth } from "@/lib/auth-context";
@@ -87,11 +87,9 @@ function MetricRow({
           {skipped > 0 && (
             <p className="mt-0.5 text-xs text-slate-600">ไม่แสดง {skipped} รายการที่คุณเคยซื้อแล้ว ถ้ายังใช้อยู่ ใช้ต่อได้เลย</p>
           )}
-          <div className="-mx-5 mt-2 flex snap-x gap-3 overflow-x-auto px-5 pb-1 sm:-mx-7 sm:px-7">
+          <div className="scrollbar-none -mx-5 mt-2.5 flex snap-x gap-3 overflow-x-auto px-5 pb-2 sm:-mx-7 sm:px-7">
             {products.map((p) => (
-              <div key={p.slug} className="w-40 shrink-0 snap-start sm:w-44">
-                <ProductCard product={p} />
-              </div>
+              <MiniProductCard key={p.slug} product={p} />
             ))}
           </div>
         </div>
