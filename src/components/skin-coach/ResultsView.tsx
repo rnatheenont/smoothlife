@@ -87,7 +87,7 @@ function MetricRow({
           {skipped > 0 && (
             <p className="mt-0.5 text-xs text-slate-600">ไม่แสดง {skipped} รายการที่คุณเคยซื้อแล้ว ถ้ายังใช้อยู่ ใช้ต่อได้เลย</p>
           )}
-          <div className="scrollbar-none -mx-5 mt-2.5 flex snap-x gap-3 overflow-x-auto px-5 pb-2 sm:-mx-7 sm:px-7">
+          <div className="scrollbar-none mt-2.5 flex snap-x gap-3 overflow-x-auto pb-2">
             {products.map((p) => (
               <MiniProductCard key={p.slug} product={p} />
             ))}
