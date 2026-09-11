@@ -41,7 +41,7 @@ export default function BrandShowcase({
                   <Image src={b.image} alt={b.name} fill className="object-contain p-1" sizes="32px" />
                 </span>
               )}
-              <span className="text-sm font-bold text-brand-ink">{b.name}</span>
+              <span translate="no" className="text-sm font-bold text-brand-ink">{b.name}</span>
             </button>
           ))}
         </div>

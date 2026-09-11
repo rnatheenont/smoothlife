@@ -154,8 +154,8 @@ export default function BundleBuilder({
                   )}
                 </div>
                 <div className="p-3">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-teal">{product.brand}</span>
-                  <p className="text-xs font-medium text-brand-ink line-clamp-2 min-h-[2rem]">{product.name}</p>
+                  <span translate="no" className="text-[10px] font-semibold uppercase tracking-wide text-brand-teal">{product.brand}</span>
+                  <p translate="no" className="text-xs font-medium text-brand-ink line-clamp-2 min-h-[2rem]">{product.name}</p>
                   <p className="text-sm font-bold text-brand-ink mt-1">{formatTHB(product.price)}</p>
                 </div>
               </button>
@@ -180,7 +180,7 @@ export default function BundleBuilder({
             <div className="flex flex-col gap-1.5 mb-4 max-h-40 overflow-y-auto">
               {selectedProducts.map((p) => (
                 <div key={p.slug} className="flex justify-between text-xs text-slate-600">
-                  <span className="line-clamp-1 pr-2">{p.name}</span>
+                  <span translate="no" className="line-clamp-1 pr-2">{p.name}</span>
                   <span className="shrink-0">{formatTHB(p.price)}</span>
                 </div>
               ))}

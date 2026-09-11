@@ -109,9 +109,9 @@ export default function ProductCard({ product }: { product: Product }) {
         )}
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-3 md:p-4">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-teal">{product.brand}</span>
+        <span translate="no" className="text-[11px] font-semibold uppercase tracking-wide text-brand-teal">{product.brand}</span>
         <Link href={`/product/${product.slug}`}>
-          <h3 className="text-sm font-medium text-brand-ink line-clamp-2 min-h-[2.5rem] hover:text-brand-emerald transition-colors">
+          <h3 translate="no" className="text-sm font-medium text-brand-ink line-clamp-2 min-h-[2.5rem] hover:text-brand-emerald transition-colors">
             {product.name}
           </h3>
         </Link>

@@ -169,7 +169,7 @@ export default function CustomCheckout() {
           <div className="flex flex-col gap-2 mb-4 max-h-56 overflow-y-auto">
             {lines.map((l) => (
               <div key={l.variantId} className="flex justify-between text-xs text-slate-600">
-                <span className="line-clamp-1 pr-2">
+                <span translate="no" className="line-clamp-1 pr-2">
                   {l.name} x{l.qty}
                 </span>
                 <span className="shrink-0">{formatTHB(l.price * l.qty)}</span>

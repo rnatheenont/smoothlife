@@ -40,8 +40,8 @@ export default function SearchSuggestions({ query, onSelect }: { query: string; 
                     <Image src={p.image} alt={p.name} fill sizes="44px" className="object-cover" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-xs font-semibold text-brand-teal uppercase truncate">{p.brand}</span>
-                    <span className="block text-sm text-brand-ink line-clamp-1">{p.name}</span>
+                    <span translate="no" className="block text-xs font-semibold text-brand-teal uppercase truncate">{p.brand}</span>
+                    <span translate="no" className="block text-sm text-brand-ink line-clamp-1">{p.name}</span>
                   </span>
                   <span className="shrink-0 text-sm font-bold text-brand-ink">{formatTHB(p.price)}</span>
                 </Link>

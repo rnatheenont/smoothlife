@@ -28,7 +28,7 @@ export default function BrandsPage() {
                     <Image src={b.image} alt={b.name} fill className="object-contain object-left" sizes="240px" />
                   </div>
                 )}
-                <h3 className="font-bold text-lg text-brand-ink">{b.name}</h3>
+                <h3 translate="no" className="font-bold text-lg text-brand-ink">{b.name}</h3>
                 <p className="text-sm text-slate-600 mt-1">{b.tagline}</p>
                 <p className="text-xs text-brand-emerald font-semibold mt-3">{b.productCount}+ สินค้า</p>
               </Link>
@@ -50,7 +50,7 @@ export default function BrandsPage() {
                 <Image src={b.image} alt={b.name} fill className="object-contain object-left" sizes="240px" />
               </div>
             )}
-            <h3 className="font-bold text-brand-ink">{b.name}</h3>
+            <h3 translate="no" className="font-bold text-brand-ink">{b.name}</h3>
             <p className="text-xs text-slate-500 mt-1">{b.tagline}</p>
             <p className="text-xs text-brand-emerald font-semibold mt-3">{b.productCount}+ สินค้า</p>
           </Link>

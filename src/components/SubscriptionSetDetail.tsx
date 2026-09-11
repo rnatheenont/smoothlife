@@ -123,7 +123,7 @@ export default function SubscriptionSetDetail({
               <div className="relative aspect-square rounded-xl2 overflow-hidden bg-surface-soft border border-slate-100">
                 <Image src={p.image} alt={p.name} fill sizes="200px" className="object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
-              <p className="text-xs text-slate-600 line-clamp-2">{p.name}</p>
+              <p translate="no" className="text-xs text-slate-600 line-clamp-2">{p.name}</p>
               <p className="text-xs font-bold text-brand-ink">{formatTHB(p.price)}</p>
             </Link>
           ))}

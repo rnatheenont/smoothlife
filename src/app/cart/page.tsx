@@ -63,7 +63,7 @@ export default function CartPage() {
           <Image src={line.image} alt={line.name} fill className="object-cover" />
         </Link>
         <div className="flex-1 min-w-0 flex flex-col">
-          <div className="flex items-start justify-between gap-2">
+          <div translate="no" className="flex items-start justify-between gap-2">
             <Link href={`/product/${line.slug}`} className="text-sm font-medium text-brand-ink line-clamp-2 hover:text-brand-emerald">
               {line.name}
               {line.isGift && (

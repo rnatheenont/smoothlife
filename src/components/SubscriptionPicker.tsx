@@ -164,8 +164,8 @@ export default function SubscriptionPicker({
                 <Image src={product.image} alt={product.name} fill sizes="(max-width:768px) 50vw, 25vw" className="object-cover" />
               </Link>
               <div className="flex flex-1 flex-col gap-1.5 p-3.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-teal">{product.brand}</span>
-                <h3 className="text-sm font-medium text-brand-ink line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
+                <span translate="no" className="text-[11px] font-semibold uppercase tracking-wide text-brand-teal">{product.brand}</span>
+                <h3 translate="no" className="text-sm font-medium text-brand-ink line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
                 {product.reviewCount > 0 && (
                   <div className="flex items-center gap-1.5">
                     <StarRating rating={product.rating} size={12} />

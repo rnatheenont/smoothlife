@@ -114,7 +114,7 @@ export default function OrderDetailView({
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs text-slate-700">{it.title}</p>
+                  <p translate="no" className="truncate text-xs text-slate-700">{it.title}</p>
                   <p className="text-[11px] text-slate-400">
                     x{it.quantity} · {formatTHB(Number(it.total))}
                   </p>

@@ -34,7 +34,7 @@ function MarqueeRow({ brands, reverse }: { brands: Brand[]; reverse?: boolean })
                 <Image src={b.image} alt={b.name} fill className="object-contain" sizes="144px" />
               </div>
             ) : (
-              <span className="text-base font-medium text-slate-600">{b.name}</span>
+              <span translate="no" className="text-base font-medium text-slate-600">{b.name}</span>
             )}
           </Link>
         ))}

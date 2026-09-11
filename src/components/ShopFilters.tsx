@@ -95,7 +95,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
                 >
                   {selected && <Check size={10} className="text-white" strokeWidth={3} />}
                 </span>
-                {b.name}
+                <span translate="no">{b.name}</span>
               </button>
             );
           })}
@@ -120,7 +120,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
                   >
                     {selected && <Check size={10} className="text-white" strokeWidth={3} />}
                   </span>
-                  {b.name}
+                  <span translate="no">{b.name}</span>
                 </button>
               );
             })}
@@ -183,7 +183,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
                   selected ? "text-brand-emerald bg-brand-gradient-soft" : "text-brand-ink"
                 }`}
               >
-                {b.name}
+                <span translate="no">{b.name}</span>
                 {selected && <Check size={16} className="text-brand-emerald shrink-0" />}
               </button>
             );
@@ -201,7 +201,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
                   selected ? "font-semibold text-brand-emerald bg-brand-gradient-soft" : "text-slate-600"
                 }`}
               >
-                {b.name}
+                <span translate="no">{b.name}</span>
                 {selected && <Check size={16} className="text-brand-emerald shrink-0" />}
               </button>
             );

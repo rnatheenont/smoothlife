@@ -122,6 +122,7 @@ function ProductChip({ slug }: { slug: string }) {
       <div className="min-w-0 flex-1">
         <Link
           href={`/product/${product.slug}`}
+          translate="no"
           className="block text-[12px] font-semibold leading-snug text-brand-ink line-clamp-2 hover:text-brand-emerald"
         >
           {product.name}

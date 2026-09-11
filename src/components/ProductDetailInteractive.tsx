@@ -350,8 +350,8 @@ export default function ProductDetailInteractive({
         </div>
 
         <div>
-          <span className="text-xs font-bold uppercase tracking-wide text-brand-teal">{product.brand}</span>
-          <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mt-1">{product.name}</h1>
+          <span translate="no" className="text-xs font-bold uppercase tracking-wide text-brand-teal">{product.brand}</span>
+          <h1 translate="no" className="text-2xl md:text-3xl font-bold text-brand-ink mt-1">{product.name}</h1>
           {reviewsList.length > 0 && (
             <button onClick={() => setTab("reviews")} className="flex items-center gap-2 mt-2">
               <StarRating rating={avgRating} />
@@ -635,12 +635,12 @@ export default function ProductDetailInteractive({
                   </thead>
                   <tbody>
                     <tr className="border-b border-slate-50 bg-brand-gradient-soft">
-                      <td className="py-2.5 pr-4 font-medium">{product.name} (สินค้านี้)</td>
-                      <td className="py-2.5 pr-4">{formatTHB(product.price)}</td>
+                      <td translate="no" className="py-2.5 pr-4 font-medium">{product.name} (สินค้านี้)</td>
+                      <td translate="no" className="py-2.5 pr-4">{formatTHB(product.price)}</td>
                       <td className="py-2.5 pr-4">{product.brand}</td>
                     </tr>
                     {related.slice(0, 3).map((r) => (
-                      <tr key={r.slug} className="border-b border-slate-50">
+                      <tr translate="no" key={r.slug} className="border-b border-slate-50">
                         <td className="py-2.5 pr-4">{r.name}</td>
                         <td className="py-2.5 pr-4">{formatTHB(r.price)}</td>
                         <td className="py-2.5 pr-4">{r.brand}</td>
