@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Repeat, PercentCircle } from "lucide-react";
+import { Sparkles, ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Repeat, PercentCircle } from "lucide-react";
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
 import { categories, concerns, concernImage } from "@/data/categories";
@@ -93,40 +93,42 @@ export default async function HomePage() {
         {/* Mobile: plain white, no tint — desktop keeps the old short top
             banner + two floating blobs since its section is much taller
             (headline column) and reads fine with the wash. */}
-        {/* No wash, no drifting blobs, no glow behind the carousel: the
-            campaign banners are already the loudest thing on the page, and
-            decoration moving on its own competed with them for attention. */}
+        <div className="pointer-events-none hidden md:block absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-brand-teal/10 via-brand-sky/5 to-transparent" />
+        <div className="pointer-events-none hidden md:block absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/10 blur-3xl animate-floatSlow" />
+        <div className="pointer-events-none hidden md:block absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-brand-sky/10 blur-3xl animate-floatSlow" />
 
         <div className="container-page relative pt-2 pb-6 md:py-24 grid md:grid-cols-[0.65fr_1.35fr] gap-8 md:gap-12 items-center">
           <StaggerReveal className="hidden md:block order-3 md:order-1">
-            {/* One colour for the whole headline. Picking out a single phrase
-                in the brand gradient is the most recognisable tell of a
-                generated page, and the wordmark above already carries it. */}
-            <h1 className="text-4xl font-extrabold !leading-[1.3] text-brand-ink md:text-3xl lg:text-4xl xl:text-[3.25rem]">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-800 shadow-card mb-5 border border-slate-100">
+              <Sparkles size={13} aria-hidden="true" /> แนะนำน้อง Smoothie ผู้ช่วยคนใหม่
+            </span>
+            <h1 className="text-4xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold !leading-[1.35] tracking-tight text-brand-ink">
               สุขภาพดี ผิวสวย <br />
-              ครบทุก Lifestyle <span className="whitespace-nowrap">ที่เดียว</span>
+              <span className="brand-text-gradient">ครบทุก Lifestyle</span> <span className="whitespace-nowrap">ที่เดียว</span>
             </h1>
-            <p className="mt-5 max-w-md leading-relaxed text-slate-600">
-              ของแท้ 100% มี อย. ทุกชิ้น ส่งฟรีทั่วไทย และสะสมคะแนนทุกการสั่งซื้อ
+            <p className="mt-5 text-slate-600 max-w-md leading-relaxed">
+              ค้นหาสินค้าง่าย ซื้อเร็ว เข้าสู่ระบบด้วย OTP หรือ LINE พร้อมรับคะแนนสะสมทุกการช้อป
+              ของแท้ 100% มีอย. จัดส่งฟรีทั่วไทย
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button
                 href="/shop"
                 size="none"
-                className="group gap-1.5 px-7 py-3.5 text-sm"
+                className="group gap-1.5 px-7 py-3.5 text-sm shadow-cardHover"
               >
                 เริ่มช้อปเลย
                 <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
               </Button>
               <Link
                 href="/advisor"
-                className="rounded-full border border-surface-line bg-white px-7 py-3.5 text-sm font-semibold text-brand-ink transition-colors hover:border-brand-action/40 hover:bg-surface-mist"
+                className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-7 py-3.5 text-sm hover:border-brand-teal transition-colors"
               >
                 น้อง Smoothie แนะนำ
               </Link>
             </div>
           </StaggerReveal>
           <div className="relative order-1 md:order-2">
+            <div className="pointer-events-none hidden md:block absolute -inset-6 rounded-[2rem] bg-brand-gradient opacity-30 blur-2xl" />
             <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
           </div>
 
@@ -244,16 +246,15 @@ export default async function HomePage() {
         <StaggerGrid className="container-page grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
           {concerns.map((c) => (
             <Link key={c.slug} href={`/concern/${c.slug}`} className="group">
-              {/* A packshot sitting on the mist well, contained rather than
-                  cropped — every tile now reads as the same kind of object,
-                  instead of product photos next to full-bleed campaign art. */}
-              <div className="relative aspect-square overflow-hidden rounded-xl2 bg-surface-mist transition-colors group-hover:bg-brand-100">
+              {/* The photo fills the tile in its own colours — no tinted well
+                  or blend, same as the product cards. */}
+              <div className="relative aspect-square overflow-hidden rounded-xl2 bg-white ring-1 ring-surface-line transition-shadow group-hover:ring-brand-800/30">
                 <Image
                   src={concernImage(c.slug)}
                   alt=""
                   fill
                   sizes="(max-width:768px) 50vw, 16vw"
-                  className="object-contain p-5 mix-blend-multiply"
+                  className="object-cover"
                 />
               </div>
               <p className="mt-2 line-clamp-2 text-sm font-semibold text-brand-ink group-hover:text-brand-800">{c.nameTh}</p>

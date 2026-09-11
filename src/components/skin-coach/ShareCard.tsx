@@ -5,7 +5,7 @@ import { Share2, Loader2 } from "lucide-react";
 import { SkinCoachMetrics, overallScore, scoreBand } from "@/lib/skin-coach";
 
 const BRAND = {
-  emerald: "#00AA85",
+  emerald: "#00A87B",
   teal: "#00B39B",
   sky: "#00AEEF",
   blue: "#0091E6",

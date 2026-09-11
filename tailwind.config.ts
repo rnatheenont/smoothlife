@@ -15,22 +15,18 @@ const config: Config = {
         brand: {
           // Named brand colours the whole site already uses — do not rename or
           // remove these, they appear in 100+ files.
-          emerald: "#00AA85",
+          emerald: "#00A87B",
           teal: "#00B39B",
           sky: "#00AEEF",
           blue: "#0091E6",
           dark: "#0B3B36",
-          // Deep green-black. The old slate #0F172A was a cold blue-grey that
-          // belonged to no part of this brand; this sits in the same family as
-          // the mint and still measures 16.4:1 on white.
-          ink: "#10231C",
+          ink: "#0F172A",
 
-          // The primary colour — every primary button and solid brand fill.
-          // #00AA85 is the owner's pick. White text on it measures 2.96:1,
-          // under WCAG AA (4.5 for body text, 3 for large), so green text on
-          // white never uses this token: anything that is *read* uses 800.
-          action: "#00AA85",
-          "action-hover": "#009675",
+          // Solid brand fill where a gradient won't do (borders, rings, small
+          // fills). The owner's original mint; primary buttons use the
+          // brand-gradient itself. Text on white uses 800, not this.
+          action: "#00A87B",
+          "action-hover": "#00956D",
 
           // Numeric ladder derived from the brand mint (the emerald above sits at
           // 600), merged into the same key so both naming styles coexist.
@@ -38,7 +34,7 @@ const config: Config = {
           // stays in the same family as body text instead of drifting grey.
           //
           // Contrast on white, measured not guessed:
-          //   600 #00aa85 → 2.96  large text / UI fills only (AA needs 4.5)
+          //   600 #00a87b → 3.05  large text / UI fills only (AA needs 4.5)
           //   800 #05755f → 5.63  passes AA for body text and links
           //   1000 #09514a → 9.18 passes AAA
           // So: fills and buttons use 600, anything that is *read* uses 800.
@@ -46,7 +42,7 @@ const config: Config = {
           100: "#d1efe7",
           200: "#9edecd",
           400: "#40be9c",
-          600: "#00aa85",
+          600: "#00a87b",
           800: "#05755f",
           1000: "#09514a",
         },
@@ -92,15 +88,11 @@ const config: Config = {
         sans: ["var(--font-noto-thai)", "Noto Sans Thai", "sans-serif"],
       },
       backgroundImage: {
-        // Spent in one place only. The mint-to-sky gradient used to fill 210
-        // buttons, badges, chips and bars — and when everything shimmers,
-        // nothing stands out. These two names are kept because 330 call sites
-        // use them, but they now paint flat: brand-gradient is the action
-        // green, brand-gradient-soft the mist tint. The real gradient lives on
-        // as brand-signature, for the membership card and the wordmark.
-        "brand-gradient": "linear-gradient(#00AA85, #00AA85)",
-        "brand-gradient-soft": "linear-gradient(#EEF5F1, #EEF5F1)",
-        "brand-signature": "linear-gradient(90deg, #00AA85 0%, #00B39B 45%, #00AEEF 100%)",
+        // The owner's original colours: the mint-to-sky gradient on buttons,
+        // badges and accents, and its soft tint behind panels.
+        "brand-gradient": "linear-gradient(90deg, #00A87B 0%, #00B39B 45%, #00AEEF 100%)",
+        "brand-gradient-soft": "linear-gradient(135deg, #E6FBF5 0%, #E6F6FE 100%)",
+        "brand-signature": "linear-gradient(90deg, #00A87B 0%, #00B39B 45%, #00AEEF 100%)",
         "brand-radial": "radial-gradient(120% 120% at 100% 0%, #E6F6FE 0%, #F4FAF8 60%)",
       },
       // Type ladder. All names are new — the site keeps using Tailwind's

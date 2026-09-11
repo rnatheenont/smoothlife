@@ -24,7 +24,7 @@ function ExampleFrame() {
         "M86 74v10a2 2 0 0 1-2 2H74",
         "M22 86H12a2 2 0 0 1-2-2V74",
       ].map((d, i) => (
-        <path key={i} d={d} stroke="#00AA85" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+        <path key={i} d={d} stroke="#00A87B" strokeWidth="3.5" strokeLinecap="round" fill="none" />
       ))}
       <defs>
         <linearGradient id="exampleBg" x1="0" y1="0" x2="96" y2="96">

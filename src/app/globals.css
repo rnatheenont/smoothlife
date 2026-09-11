@@ -11,7 +11,7 @@ html {
 }
 
 body {
-  color: #10231c;
+  color: #0f172a;
   background: #ffffff;
 }
 
@@ -71,7 +71,7 @@ p {
 }
 
 .brand-text-gradient {
-  background: linear-gradient(90deg, #00aa85 0%, #00b39b 45%, #00aeef 100%);
+  background: linear-gradient(90deg, #00a87b 0%, #00b39b 45%, #00aeef 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
