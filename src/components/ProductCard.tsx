@@ -151,9 +151,17 @@ export default function ProductCard({ product }: { product: Product }) {
             only once something has sold — "ขายแล้ว 0 ชิ้น" is a reason not to
             buy, and inventing a number is not an option. */}
         {(showSold || lowStock) && (
-          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px]">
+          // Stock on the left where the eye starts, sold count pushed to the
+          // right edge — two separate facts, so they sit apart rather than
+          // being run together with a separator.
+          // Wraps on the narrowest cards (two-up on a phone) instead of
+          // overflowing; ml-auto keeps the sold count on the right either way.
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+            {lowStock && (
+              <span className="font-semibold text-amber-600">เหลือเพียง {defaultVariant.quantity} ชิ้น</span>
+            )}
             {showSold && (
-              <span translate="no" className="flex items-center gap-1 text-slate-500">
+              <span translate="no" className="ml-auto flex shrink-0 items-center gap-1 text-slate-500">
                 <Flame size={11} className="shrink-0 text-orange-500" />
                 {lang === "en" ? (
                   <>
@@ -165,12 +173,6 @@ export default function ProductCard({ product }: { product: Product }) {
                   </>
                 )}
               </span>
-            )}
-            {showSold && lowStock && (
-              <span aria-hidden="true" className="text-slate-300">·</span>
-            )}
-            {lowStock && (
-              <span className="font-semibold text-amber-600">เหลือเพียง {defaultVariant.quantity} ชิ้น</span>
             )}
           </p>
         )}
