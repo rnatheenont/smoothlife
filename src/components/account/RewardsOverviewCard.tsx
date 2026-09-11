@@ -132,11 +132,11 @@ export default function RewardsOverviewCard() {
 
         <div className="relative flex items-end justify-between gap-3">
           <div>
-            <p className="text-[9px] uppercase tracking-widest text-white/60 mb-0.5">เลขสมาชิก</p>
+            <p className="mb-0.5 text-[10px] uppercase tracking-widest text-white/80">เลขสมาชิก</p>
             <p className="font-mono text-sm tracking-widest">{formatMemberId(user.id)}</p>
           </div>
           <div className="text-right">
-            <p className="text-[9px] uppercase tracking-widest text-white/60 mb-0.5">{tierDisplayName[user.tier].en} Member</p>
+            <p className="mb-0.5 text-[10px] uppercase tracking-widest text-white/80">{tierDisplayName[user.tier].en} Member</p>
             <p className="text-xl font-extrabold">Lv.{badge.level}</p>
           </div>
         </div>
