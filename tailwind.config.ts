@@ -70,12 +70,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: [
-          "var(--font-plex-thai)",
-          "ui-sans-serif",
-          "system-ui",
-          "sans-serif",
-        ],
+        sans: ["var(--font-noto-thai)", "Noto Sans Thai", "sans-serif"],
       },
       backgroundImage: {
         "brand-gradient": "linear-gradient(90deg, #00A87B 0%, #00B39B 45%, #00AEEF 100%)",

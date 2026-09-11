@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Sans_Thai } from "next/font/google";
+import { Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import Header from "@/components/Header";
@@ -8,10 +8,13 @@ import { organizationJsonLd, websiteJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const plexSansThai = IBM_Plex_Sans_Thai({
+// Noto Sans Thai, self-hosted through next/font so there is no request to
+// Google at page load and no layout shift when it arrives. Loaded as the
+// variable font rather than a list of weights: the old list stopped at 700,
+// so every font-extrabold on the site was a browser-synthesised fake bold.
+const notoSansThai = Noto_Sans_Thai({
   subsets: ["thai", "latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-plex-thai",
+  variable: "--font-noto-thai",
   display: "swap",
 });
 
@@ -56,7 +59,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th" className={plexSansThai.variable}>
+    <html lang="th" className={notoSansThai.variable}>
       <body className="min-h-screen flex flex-col antialiased font-sans">
         <script
           type="application/ld+json"
