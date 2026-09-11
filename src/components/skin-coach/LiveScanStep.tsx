@@ -21,14 +21,21 @@ type Shots = Partial<Record<AngleKey, ResizedImage>>;
 type Phase = "intro" | "loading" | "front" | "sideA" | "sideB" | "error";
 type Connection = { start: number; end: number };
 
-const HOLD_MS = 700; // steady this long before a photo is taken
-const FRONT_YAW = 0.08; // how far off straight still counts as straight
-const SIDE_YAW_MIN = 0.17; // turned enough to show a cheek
-const SIDE_YAW_MAX = 0.42; // past this the far side of the face is lost
-const MIN_WIDTH = 0.28; // cheek-to-cheek, as a share of the frame
-const MAX_WIDTH = 0.72;
-const MIN_LIGHT = 55; // average brightness, 0–255
-const MAX_LIGHT = 245;
+// Tuned for "easy" over "perfect": the analysis copes with a slightly turned
+// or off-centre face far better than a person copes with a scan that won't
+// fire. Anything stricter goes back to the photo picker's single tap.
+const HOLD_MS = 400; // steady this long before a photo is taken
+const GRACE_MS = 250; // a wobble shorter than this doesn't restart the hold
+const FRONT_YAW = 0.12; // how far off straight still counts as straight
+const SIDE_YAW_MIN = 0.12; // turned enough to show a cheek
+const SIDE_YAW_MAX = 0.65; // past this the far side of the face is lost
+const MIN_WIDTH = 0.2; // cheek-to-cheek, as a share of the frame
+const MAX_WIDTH = 0.85;
+const MAX_ROLL = 14; // degrees of head tilt
+const MAX_OFFCENTRE = 0.2;
+const MIN_LIGHT = 45; // average brightness, 0–255
+const MAX_LIGHT = 248;
+const SMOOTH = 0.35; // share of each new reading in the running average
 
 export function liveScanSupported() {
   return typeof navigator !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
@@ -113,6 +120,11 @@ export default function LiveScanStep({
   const [shots, setShots] = useState<Shots>({});
   const [flash, setFlash] = useState(false);
   const [error, setError] = useState<string | null>(notice ?? null);
+  const [holdPct, setHoldPct] = useState(0);
+  const [faceSeen, setFaceSeen] = useState(false);
+  // Set while the camera runs: takes the photo for the current step now,
+  // whatever the checks say, as long as a face is in view.
+  const shutterRef = useRef<(() => void) | null>(null);
 
   function go(next: Phase) {
     phaseRef.current = next;
@@ -120,6 +132,7 @@ export default function LiveScanStep({
   }
 
   function stopCamera() {
+    shutterRef.current = null;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -183,15 +196,33 @@ export default function LiveScanStep({
 
     let lastTime = -1;
     let holdSince: number | null = null;
+    let badSince: number | null = null;
     let capturing = false;
     let light = 128;
     let lastLightAt = 0;
     let lastHint = "";
+    let lastPct = -1;
+    let lastSeen = false;
+    let avg: ReturnType<typeof geometry> | null = null;
+    let latestLm: NormalizedLandmark[] | undefined;
 
     const say = (text: string) => {
       if (text !== lastHint) {
         lastHint = text;
         setHint(text);
+      }
+    };
+    const showPct = (pct: number) => {
+      const stepped = Math.round(pct / 10) * 10;
+      if (stepped !== lastPct) {
+        lastPct = stepped;
+        setHoldPct(stepped);
+      }
+    };
+    const showSeen = (seen: boolean) => {
+      if (seen !== lastSeen) {
+        lastSeen = seen;
+        setFaceSeen(seen);
       }
     };
 
@@ -239,7 +270,34 @@ export default function LiveScanStep({
         setShots(shotsRef.current);
       }
       holdSince = null;
+      badSince = null;
+      avg = null;
+      showPct(0);
       capturing = false;
+    };
+
+    // Straight on first, then whichever way they turn, then the other way.
+    // The cheek is named by the turn: turning to their own left shows the
+    // right cheek. A turn too small to tell which way (a manual shot) takes
+    // whichever cheek is still missing.
+    const takeStep = (phaseNow: Phase, yaw: number) => {
+      const turned = Math.abs(yaw) >= 0.05;
+      const missing: AngleKey = shotsRef.current.cheek ? "cheekRight" : "cheek";
+      const sideKey: AngleKey = turned ? (yaw > 0 ? "cheekRight" : "cheek") : missing;
+      if (phaseNow === "front") {
+        void capture("front").then(() => go("sideA"));
+      } else if (phaseNow === "sideA") {
+        sideASignRef.current = turned ? Math.sign(yaw) : sideKey === "cheekRight" ? 1 : -1;
+        void capture(sideKey).then(() => go("sideB"));
+      } else if (phaseNow === "sideB") {
+        const key = sideKey in shotsRef.current ? missing : sideKey;
+        void capture(key).then(() => finish(shotsRef.current));
+      }
+    };
+
+    shutterRef.current = () => {
+      if (capturing || !latestLm) return;
+      takeStep(phaseRef.current, avg?.yaw ?? 0);
     };
 
     const tick = () => {
@@ -252,6 +310,8 @@ export default function LiveScanStep({
       const now = performance.now();
       const result = landmarker.detectForVideo(video, now);
       const lm = result.faceLandmarks?.[0];
+      latestLm = lm;
+      showSeen(Boolean(lm));
 
       if (now - lastLightAt > 400) {
         lastLightAt = now;
@@ -263,50 +323,60 @@ export default function LiveScanStep({
       }
 
       let problem: string | null = null;
-      let g: ReturnType<typeof geometry> | null = null;
-      if (!lm) problem = "มองไม่เห็นใบหน้า ขยับหน้าเข้ามาในกรอบ";
-      else {
-        g = geometry(lm);
+      if (!lm) {
+        problem = "มองไม่เห็นใบหน้า ขยับหน้าเข้ามาในกรอบ";
+        avg = null;
+      } else {
+        // A running average, so the jitter of a hand-held phone doesn't flip
+        // the checks on and off from one frame to the next.
+        const g = geometry(lm);
+        avg = avg
+          ? {
+              width: avg.width + SMOOTH * (g.width - avg.width),
+              yaw: avg.yaw + SMOOTH * (g.yaw - avg.yaw),
+              roll: avg.roll + SMOOTH * (g.roll - avg.roll),
+              cx: avg.cx + SMOOTH * (g.cx - avg.cx),
+              cy: avg.cy + SMOOTH * (g.cy - avg.cy),
+            }
+          : g;
+        const a = avg;
         if (light < MIN_LIGHT) problem = "มืดไป หาที่สว่างขึ้นอีกหน่อย";
         else if (light > MAX_LIGHT) problem = "แสงจ้าไป ขยับออกจากแสงตรงนิดหนึ่ง";
-        else if (g.width < MIN_WIDTH) problem = "ขยับเข้าใกล้กล้องอีกนิด";
-        else if (g.width > MAX_WIDTH) problem = "ถอยออกจากกล้องนิดหนึ่ง";
-        else if (Math.abs(g.roll) > 9) problem = "ตั้งศีรษะให้ตรง ไม่เอียง";
+        else if (a.width < MIN_WIDTH) problem = "ขยับเข้าใกล้กล้องอีกนิด";
+        else if (a.width > MAX_WIDTH) problem = "ถอยออกจากกล้องนิดหนึ่ง";
+        else if (Math.abs(a.roll) > MAX_ROLL) problem = "ตั้งศีรษะให้ตรง ไม่เอียง";
         else if (phaseNow === "front") {
-          if (Math.abs(g.cx - 0.5) > 0.13 || Math.abs(g.cy - 0.5) > 0.16) problem = "เลื่อนหน้ามาไว้กลางกรอบ";
-          else if (Math.abs(g.yaw) > FRONT_YAW) problem = "หันหน้าตรงเข้ากล้อง";
+          if (Math.abs(a.cx - 0.5) > MAX_OFFCENTRE || Math.abs(a.cy - 0.5) > MAX_OFFCENTRE + 0.05) problem = "เลื่อนหน้ามาไว้กลางกรอบ";
+          else if (Math.abs(a.yaw) > FRONT_YAW) problem = "หันหน้าตรงเข้ากล้อง";
         } else {
-          const turn = Math.abs(g.yaw);
-          const wrongWay = phaseNow === "sideB" && Math.sign(g.yaw) === sideASignRef.current;
+          const turn = Math.abs(a.yaw);
+          const wrongWay = phaseNow === "sideB" && turn >= SIDE_YAW_MIN && Math.sign(a.yaw) === sideASignRef.current;
           if (wrongWay) problem = "หันไปอีกด้านหนึ่ง";
-          else if (turn < SIDE_YAW_MIN) problem = phaseNow === "sideA" ? "หันหน้าไปด้านข้างช้าๆ" : "ทีนี้หันไปอีกด้านช้าๆ";
+          else if (turn < SIDE_YAW_MIN) problem = phaseNow === "sideA" ? "หันหน้าไปด้านข้างอีกนิด" : "ทีนี้หันไปอีกด้าน";
           else if (turn > SIDE_YAW_MAX) problem = "หันกลับมานิดหนึ่ง";
         }
       }
 
-      const ready = !problem;
-      draw(lm, ready);
-      if (!ready) {
-        holdSince = null;
-        say(problem!);
-        return;
+      if (problem) {
+        badSince ??= now;
+        // Brief misses keep the hold going; a real one resets it.
+        if (now - badSince > GRACE_MS || !lm) {
+          holdSince = null;
+          showPct(0);
+          draw(lm, false);
+          say(problem);
+          return;
+        }
+      } else {
+        badSince = null;
       }
+      draw(lm, true);
       holdSince ??= now;
       say("ค้างไว้แบบนี้…");
-      if (now - holdSince < HOLD_MS) return;
-
-      // Straight on first, then whichever way they turn, then the other way.
-      // The cheek is named by the turn: turning to their own left shows the
-      // right cheek.
-      const sideKey = (yaw: number): AngleKey => (yaw > 0 ? "cheekRight" : "cheek");
-      if (phaseNow === "front") {
-        void capture("front").then(() => go("sideA"));
-      } else if (phaseNow === "sideA") {
-        sideASignRef.current = Math.sign(g!.yaw);
-        void capture(sideKey(g!.yaw)).then(() => go("sideB"));
-      } else {
-        void capture(sideKey(g!.yaw)).then(() => finish(shotsRef.current));
-      }
+      const held = now - holdSince;
+      showPct(Math.min(100, (held / HOLD_MS) * 100));
+      if (held < HOLD_MS) return;
+      takeStep(phaseNow, avg!.yaw);
     };
     tick();
   }
@@ -376,11 +446,32 @@ export default function LiveScanStep({
           </div>
         )}
         {hint && phase !== "loading" && (
-          <p className="absolute inset-x-3 bottom-3 rounded-full bg-black/60 px-4 py-2 text-center text-sm font-semibold text-white">
-            {hint}
-          </p>
+          <div className="absolute inset-x-3 top-3 overflow-hidden rounded-full bg-black/60 text-center text-sm font-semibold text-white">
+            <p className="px-4 py-2">{hint}</p>
+            {/* Fills while the face is held in place, so the shot never
+                comes as a surprise. */}
+            <span
+              aria-hidden="true"
+              className="absolute bottom-0 left-0 h-0.5 bg-brand-action transition-[width] duration-100"
+              style={{ width: `${holdPct}%` }}
+            />
+          </div>
+        )}
+        {phase !== "loading" && (
+          <button
+            type="button"
+            onClick={() => shutterRef.current?.()}
+            disabled={!faceSeen}
+            aria-label="ถ่ายเลย"
+            className="absolute bottom-4 left-1/2 grid h-16 w-16 -translate-x-1/2 place-items-center rounded-full border-4 border-white/90 bg-white/25 backdrop-blur transition-opacity disabled:opacity-40"
+          >
+            <span className="h-11 w-11 rounded-full bg-white" />
+          </button>
         )}
       </div>
+      <p className="mx-auto mt-2 max-w-sm text-center text-xs text-slate-600">
+        ระบบถ่ายให้เองเมื่อพร้อม หรือกดปุ่มกลมเพื่อถ่ายเลย
+      </p>
 
       <ol className="mx-auto mt-4 flex max-w-sm justify-between gap-2" aria-label="มุมที่ถ่าย">
         {STEPS.map((s, i) => {
