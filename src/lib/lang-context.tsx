@@ -78,7 +78,13 @@ export function LangProvider({ children }: { children: ReactNode }) {
       while (node) {
         const parent = node.parentElement;
         const tag = parent?.tagName;
-        if (tag !== "SCRIPT" && tag !== "STYLE" && tag !== "NOSCRIPT") {
+        // translate="no" is the HTML standard for "leave this text alone" —
+        // the same attribute Chrome's and Google's translators honour. Needed
+        // first by the language menu, which names each language in itself:
+        // translated, "ไทย" became "Thai" and the English page offered a
+        // choice between "Thai" and "English" to someone who reads neither.
+        const optedOut = Boolean(parent?.closest('[translate="no"]'));
+        if (tag !== "SCRIPT" && tag !== "STYLE" && tag !== "NOSCRIPT" && !optedOut) {
           const stored = origText.current.get(node);
           const original = stored !== undefined ? stored : node.nodeValue || "";
           const trimmed = original.trim();
@@ -103,6 +109,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
       // placeholders, titles and aria-labels
       const els = document.body.querySelectorAll<HTMLElement>("[placeholder],[title],[aria-label]");
       els.forEach((el) => {
+        if (el.closest('[translate="no"]')) return;
         const attrs = ["placeholder", "title", "aria-label"];
         let store = origAttr.current.get(el);
         attrs.forEach((a) => {

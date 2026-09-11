@@ -16,7 +16,6 @@ import {
   HelpCircle,
   ChevronRight,
   Repeat,
-  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart, useWishlist } from "@/lib/cart-context";
@@ -46,7 +45,7 @@ export default function Header() {
   const { user } = useAuth();
   const { count } = useCart();
   const { slugs: wishlistSlugs } = useWishlist();
-  const { lang, toggle: toggleLang, translating, t } = useLang();
+  const { t } = useLang();
 
   // lock background scroll while the mobile drawer is open
   useEffect(() => {
@@ -132,20 +131,12 @@ export default function Header() {
         </div>
 
         <div className="ml-auto flex items-center gap-3 md:gap-5 shrink-0">
-          {/* Minimal icon-style toggle for the mobile header — the full
-              LanguageSwitch pill (used on desktop and in the drawer) reads
-              as too heavy/colorful sitting directly next to the plain
-              outline icons here, so this mirrors their same neutral
-              h-10 w-10 outline-circle treatment instead. */}
-          <button
-            type="button"
-            onClick={toggleLang}
-            aria-label="เปลี่ยนภาษา"
-            disabled={translating}
-            className="lg:hidden shrink-0 grid h-10 w-10 place-items-center rounded-full border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wide disabled:opacity-60"
-          >
-            {translating ? <Loader2 size={16} className="animate-spin" /> : lang}
-          </button>
+          {/* Mobile keeps the outline-circle trigger so it sits quietly with
+              the icons beside it; desktop gets the labelled one. Same menu
+              behind both. */}
+          <div className="lg:hidden shrink-0">
+            <LanguageSwitch variant="icon" />
+          </div>
           <div className="hidden lg:block">
             <LanguageSwitch />
           </div>
