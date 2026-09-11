@@ -1,11 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { SHOPIFY_EMAIL_LOGIN, shopifyAuthStartPath } from "@/lib/shopify-email-login";
 import { KeyRound, Loader2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui";
 
-export default function ForgotPasswordPage() {
+const RETURN_ERRORS: Record<string, string> = {
+  shopify_no_account: "ยังไม่มีบัญชีที่ใช้อีเมลนี้ เข้าสู่ระบบด้วยอีเมลนี้เพื่อสมัครใหม่ได้เลย",
+  shopify_denied: "ยกเลิกการยืนยันอีเมลแล้ว",
+  shopify_state_mismatch: "หมดเวลายืนยัน กรุณาลองใหม่อีกครั้ง",
+  shopify_error: "ยืนยันอีเมลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+};
+
+function ForgotPasswordContent() {
+  const returnError = useSearchParams().get("error");
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,6 +25,12 @@ export default function ForgotPasswordPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    // Shopify emails the code; its callback lands on the set-new-password
+    // form once the inbox is confirmed.
+    if (SHOPIFY_EMAIL_LOGIN) {
+      window.location.href = shopifyAuthStartPath({ intent: "reset", hint: email.trim() });
+      return;
+    }
     setBusy(true);
     setError(null);
     setMessage(null);
@@ -49,7 +65,14 @@ export default function ForgotPasswordPage() {
           <KeyRound size={22} />
         </div>
         <h1 className="text-xl font-bold text-brand-ink mb-1">ลืมรหัสผ่าน?</h1>
-        <p className="text-sm text-slate-500 mt-1 mb-5">กรอกอีเมลที่ใช้สมัคร เราจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปให้</p>
+        <p className="text-sm text-slate-500 mt-1 mb-5">
+          {SHOPIFY_EMAIL_LOGIN
+            ? "กรอกอีเมลที่ใช้สมัคร แล้วยืนยันด้วยรหัสที่ส่งไปทางอีเมล จากนั้นตั้งรหัสผ่านใหม่ได้ทันที"
+            : "กรอกอีเมลที่ใช้สมัคร เราจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปให้"}
+        </p>
+        {returnError && RETURN_ERRORS[returnError] && (
+          <p className="mb-4 rounded-lg bg-amber-50 px-3.5 py-2.5 text-left text-xs text-amber-800">{RETURN_ERRORS[returnError]}</p>
+        )}
 
         {!message ? (
           <form onSubmit={submit} className="flex flex-col gap-3 text-left">
@@ -64,7 +87,7 @@ export default function ForgotPasswordPage() {
             {error && <p className="text-xs text-rose-700">{error}</p>}
             <Button type="submit" size="lg" disabled={busy}>
               {busy && <Loader2 size={15} className="animate-spin" />}
-              ส่งลิงก์ตั้งรหัสผ่านใหม่
+              {SHOPIFY_EMAIL_LOGIN ? "รับรหัสยืนยันทางอีเมล" : "ส่งลิงก์ตั้งรหัสผ่านใหม่"}
             </Button>
           </form>
         ) : (
@@ -101,5 +124,14 @@ export default function ForgotPasswordPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+// useSearchParams needs a Suspense boundary on a statically rendered page.
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense>
+      <ForgotPasswordContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { User as UserIcon, Loader2, Camera, Mail, Phone, CheckCircle2 } from "lucide-react";
@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { resizeForAvatar } from "@/lib/image-utils";
 import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
 import { Avatar, Button } from "@/components/ui";
+import { SHOPIFY_EMAIL_LOGIN, shopifyAuthStartPath } from "@/lib/shopify-email-login";
 
 const inputClass =
   "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal";
@@ -180,6 +181,25 @@ function EmailLinkCard() {
   const [devCode, setDevCode] = useState("");
   const [justLinked, setJustLinked] = useState<string | null>(null);
 
+  // Back from Shopify's confirm-your-email page (see sendCode): the callback
+  // reports the outcome in the query string. Read once, then tidy the URL so
+  // a refresh doesn't replay the message.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const linked = params.get("emailLinked");
+    const failed = params.get("emailError") || (params.get("error")?.startsWith("shopify_") ? "ยืนยันอีเมลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" : null);
+    if (!linked && !failed) return;
+    if (linked) {
+      setJustLinked(linked);
+      refreshUser();
+    } else if (failed) {
+      setEditing(true);
+      setError(failed);
+    }
+    window.history.replaceState(null, "", window.location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!user) return null;
   const hasEmail = Boolean(user.email) && !justLinked;
 
@@ -208,6 +228,12 @@ function EmailLinkCard() {
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
+    // Shopify emails the code on its own page and comes back here with the
+    // new address attached to this account.
+    if (SHOPIFY_EMAIL_LOGIN) {
+      window.location.href = shopifyAuthStartPath({ intent: "link", hint: email.trim(), returnTo: "/account/profile" });
+      return;
+    }
     setError("");
     setDevCode("");
     setSending(true);
@@ -298,7 +324,7 @@ function EmailLinkCard() {
           {error && <p className="text-xs text-rose-700">{error}</p>}
           <Button type="submit" disabled={sending}>
             {sending && <Loader2 size={14} className="animate-spin" />}
-            {sending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
+            {sending ? "กำลังส่งรหัส…" : SHOPIFY_EMAIL_LOGIN ? "รับรหัสทางอีเมล" : "ส่งรหัสยืนยัน"}
           </Button>
           {isChanging && (
             <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-500">

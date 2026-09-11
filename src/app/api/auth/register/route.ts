@@ -9,6 +9,8 @@ import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
 import { emailConfigured, sendEmail, otpEmailHtml } from "@/lib/email";
 import { attributeReferralSignup } from "@/lib/referral-signup";
 import { maybeAwardMigrationBonus } from "@/lib/migration-bonus";
+import { shopifyEmailAuthConfigured } from "@/lib/shopify-customer-auth";
+import { shopifyAuthStartPath } from "@/lib/shopify-email-login";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CODE_TTL_MS = 10 * 60 * 1000;
@@ -47,6 +49,26 @@ export async function POST(req: NextRequest) {
     `auth_identities?provider=eq.email&provider_uid=eq.${encodeURIComponent(normalizedEmail)}&select=user_id`
   );
   if (existingIdentity.length) {
+    // Preferred: Shopify emails the code. Park what they typed until they're
+    // back from Shopify's login page with that inbox proven.
+    if (shopifyEmailAuthConfigured()) {
+      const [pending] = await supabaseRest<{ id: string }[]>("pending_account_reclaims", {
+        method: "POST",
+        body: JSON.stringify({
+          email: normalizedEmail,
+          display_name: name.trim(),
+          phone: normalizedPhone,
+          secret_hash: hashPassword(password),
+        }),
+      });
+      return NextResponse.json({
+        ok: false,
+        needsVerification: true,
+        verifyUrl: shopifyAuthStartPath({ intent: "reclaim", hint: normalizedEmail, pending: pending.id }),
+        error: "อีเมลนี้มีบัญชีอยู่แล้ว ยืนยันว่าเป็นอีเมลของคุณเพื่ออัปเดตข้อมูลบัญชีเดิม",
+      });
+    }
+
     const recent = await supabaseRest<{ created_at: string }[]>(
       `otp_challenges?provider=eq.register_reclaim&target=eq.${encodeURIComponent(normalizedEmail)}&order=created_at.desc&limit=1&select=created_at`
     );

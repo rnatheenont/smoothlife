@@ -28,6 +28,12 @@ function ChangePasswordContent() {
       setError(data.error || "ส่งคำขอไม่สำเร็จ");
       return;
     }
+    // Shopify sends the code: go to its login page, which comes back to the
+    // set-new-password form once the inbox is confirmed.
+    if (data.verifyUrl) {
+      window.location.href = data.verifyUrl;
+      return;
+    }
     if (data.devResetLink) setDevLink(data.devResetLink);
     else setEmailSent(true);
   }

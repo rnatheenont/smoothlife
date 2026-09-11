@@ -3,6 +3,8 @@ import { createHash, randomBytes } from "crypto";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { emailConfigured, sendEmail, resetLinkEmailHtml } from "@/lib/email";
+import { shopifyEmailAuthConfigured } from "@/lib/shopify-customer-auth";
+import { shopifyAuthStartPath } from "@/lib/shopify-email-login";
 
 const TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -25,6 +27,12 @@ export async function POST(req: NextRequest) {
       { ok: false, error: "บัญชีนี้ไม่ได้ผูกกับอีเมล ไม่สามารถเปลี่ยนรหัสผ่านด้วยวิธีนี้ได้" },
       { status: 400 }
     );
+  }
+
+  // Shopify emails the code; the callback issues the reset token once the
+  // inbox is proven, so nothing is created here.
+  if (shopifyEmailAuthConfigured()) {
+    return NextResponse.json({ ok: true, email, verifyUrl: shopifyAuthStartPath({ intent: "reset", hint: email }) });
   }
 
   const token = randomBytes(32).toString("base64url");

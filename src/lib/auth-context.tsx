@@ -37,7 +37,7 @@ type AuthContextValue = {
     phone: string,
     email: string,
     password: string
-  ) => Promise<{ ok: boolean; error?: string; field?: string; needsVerification?: boolean }>;
+  ) => Promise<{ ok: boolean; error?: string; field?: string; needsVerification?: boolean; verifyUrl?: string }>;
   confirmRegisterUpdate: (
     name: string,
     phone: string,
@@ -124,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ name, phone, email, password }),
     });
     const data = await res.json();
-    if (!data.ok) return { ok: false, error: data.error || "สมัครสมาชิกไม่สำเร็จ", field: data.field, needsVerification: data.needsVerification };
+    if (!data.ok) return { ok: false, error: data.error || "สมัครสมาชิกไม่สำเร็จ", field: data.field, needsVerification: data.needsVerification, verifyUrl: data.verifyUrl };
     stashAddressSuggestion(data);
     setUser(data.user);
     return { ok: true };

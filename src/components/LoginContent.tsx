@@ -62,6 +62,7 @@ import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-
 import DemoBadge from "./DemoBadge";
 import PasswordChecklist from "./PasswordChecklist";
 import { Button } from "@/components/ui";
+import { SHOPIFY_EMAIL_LOGIN, shopifyAuthStartPath } from "@/lib/shopify-email-login";
 
 type View = "start" | "password" | "phone-otp" | "email-otp" | "line";
 
@@ -78,6 +79,10 @@ const OAUTH_ERRORS: Record<string, string> = {
   google_denied: "คุณยกเลิกการเข้าสู่ระบบด้วย Google",
   google_state_mismatch: "เซสชันหมดอายุ กรุณาลองเข้าสู่ระบบด้วย Google อีกครั้ง",
   google_error: "เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+  shopify_not_configured: "ระบบรหัสทางอีเมลยังไม่ได้ตั้งค่า กรุณาใช้เบอร์โทรหรือ LINE แทน",
+  shopify_denied: "ยกเลิกการยืนยันอีเมลแล้ว",
+  shopify_state_mismatch: "หมดเวลายืนยันอีเมล กรุณาลองใหม่อีกครั้ง",
+  shopify_error: "ยืนยันอีเมลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
 };
 
 // Sign in with Apple needs a real Apple Developer account (Services ID +
@@ -117,6 +122,9 @@ export default function LoginContent() {
   const [reclaimNeeded, setReclaimNeeded] = useState(false);
   const [reclaimCode, setReclaimCode] = useState("");
   const [reclaimSubmitting, setReclaimSubmitting] = useState(false);
+  // Set instead of a code when Shopify sends the confirmation email: the
+  // reclaim is finished on Shopify's page and applied on the way back.
+  const [reclaimUrl, setReclaimUrl] = useState<string | null>(null);
 
   // Email OTP state
   const [emailOtpAddress, setEmailOtpAddress] = useState("");
@@ -155,6 +163,7 @@ export default function LoginContent() {
     setEmailError("");
     setEmailErrorField(undefined);
     setReclaimNeeded(false);
+    setReclaimUrl(null);
     if (mode === "register" && !isPasswordStrongEnough(password)) {
       setEmailError(PASSWORD_REQUIREMENT_TH);
       setEmailErrorField("password");
@@ -173,6 +182,9 @@ export default function LoginContent() {
       // they got right, so only register's per-field errors get anchored.
       setEmailErrorField(mode === "register" ? result.field : undefined);
       if (result.needsVerification) setReclaimNeeded(true);
+      if ("verifyUrl" in result && result.verifyUrl) {
+        setReclaimUrl(`${result.verifyUrl}&returnTo=${encodeURIComponent(returnTo)}`);
+      }
       return;
     }
     router.push(returnTo);
@@ -194,6 +206,12 @@ export default function LoginContent() {
   async function handleSendEmailOtp(e: React.FormEvent) {
     e.preventDefault();
     if (!emailOtpAddress.trim()) return;
+    // Shopify emails the code on its own login page and sends the customer
+    // back signed in — nothing for this form to verify.
+    if (SHOPIFY_EMAIL_LOGIN) {
+      window.location.href = shopifyAuthStartPath({ intent: "login", returnTo, hint: emailOtpAddress.trim() });
+      return;
+    }
     setEmailOtpError("");
     setEmailOtpDevCode("");
     setEmailOtpSending(true);
@@ -516,7 +534,21 @@ export default function LoginContent() {
             </form>
           )}
 
-          {mode === "register" && reclaimNeeded && (
+          {mode === "register" && reclaimNeeded && reclaimUrl && (
+            <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-xs text-amber-800">
+                {email} มีบัญชีอยู่แล้ว ยืนยันว่าเป็นอีเมลของคุณด้วยรหัสที่ส่งไปทางอีเมล
+                แล้วเราจะอัปเดตชื่อ เบอร์ และรหัสผ่านของบัญชีเดิมตามที่กรอกไว้
+              </p>
+              {/* A full navigation, not <Link>: this is an API route that
+                  redirects off-site, and Link would prefetch it. */}
+              <Button size="lg" onClick={() => (window.location.href = reclaimUrl)}>
+                รับรหัสยืนยันทางอีเมล
+              </Button>
+            </div>
+          )}
+
+          {mode === "register" && reclaimNeeded && !reclaimUrl && (
             <form onSubmit={handleConfirmReclaim} className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
               <p className="text-xs text-amber-800">
                 อีเมลนี้มีบัญชีอยู่แล้ว กรอกรหัสยืนยันที่ส่งไปในอีเมลเพื่ออัปเดตชื่อ/เบอร์/รหัสผ่านของบัญชีเดิมด้วยข้อมูลด้านบน
@@ -623,10 +655,15 @@ export default function LoginContent() {
                   className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                 />
               </div>
+              {SHOPIFY_EMAIL_LOGIN && (
+                <p className="text-xs text-slate-600">
+                  รหัสยืนยันจะส่งจากระบบสมาชิกของร้านบน Shopify กรอกรหัสในหน้าถัดไปแล้วระบบจะพากลับมาที่นี่
+                </p>
+              )}
               <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
               {emailOtpError && <p className="text-xs text-rose-700">{emailOtpError}</p>}
               <Button type="submit" size="lg" loading={emailOtpSending} disabled={!agreedTerms}>
-                {emailOtpSending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
+                {emailOtpSending ? "กำลังส่งรหัส…" : SHOPIFY_EMAIL_LOGIN ? "รับรหัสทางอีเมล" : "ส่งรหัสยืนยัน"}
               </Button>
             </form>
           ) : (
