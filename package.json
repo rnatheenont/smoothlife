@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/fetch-products.js",
+    "prebuild": "node scripts/copy-mediapipe.js && node scripts/fetch-products.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -12,6 +12,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
     "@line/liff": "^2.30.0",
+    "@mediapipe/tasks-vision": "1.0.1",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "clsx": "2.1.1",

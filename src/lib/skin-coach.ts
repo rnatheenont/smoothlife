@@ -19,7 +19,8 @@ export type ConcernSlug = "acne" | "dark-spots" | "aging";
 // offered after the first shot with what it helps the scan see.
 export const ANGLES = [
   { key: "front", label: "หน้าตรง", helps: "ภาพรวมทั้งใบหน้า" },
-  { key: "cheek", label: "แก้ม", helps: "รูขุมขนและสิวชัดขึ้น" },
+  { key: "cheek", label: "แก้มซ้าย", helps: "รูขุมขนและสิวชัดขึ้น" },
+  { key: "cheekRight", label: "แก้มขวา", helps: "รูขุมขนและสิวอีกข้าง" },
   { key: "forehead", label: "หน้าผาก", helps: "ริ้วรอยและความมัน" },
   { key: "eye", label: "ขอบตา", helps: "ริ้วรอยรอบดวงตา" },
   { key: "chin", label: "คาง", helps: "สิวและรอยดำบริเวณคาง" },

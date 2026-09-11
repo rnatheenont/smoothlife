@@ -40,12 +40,14 @@ export default function FrontStep({
   onPhoto,
   onError,
   onNext,
+  onUseLive,
 }: {
   photo?: ResizedImage;
   error: string | null;
   onPhoto: (image: ResizedImage) => void;
   onError: (message: string) => void;
   onNext: () => void;
+  onUseLive?: () => void;
 }) {
   const picker = usePhotoPicker(onPhoto, onError);
 
@@ -91,6 +93,11 @@ export default function FrontStep({
               </>
             )}
           </div>
+          {onUseLive && !photo && (
+            <button type="button" onClick={onUseLive} className="mt-3 text-sm font-semibold text-brand-800 hover:underline">
+              สแกนสดด้วยกล้องแทน (ถ่ายให้เอง 3 มุม)
+            </button>
+          )}
         </div>
       </div>
       {picker.inputs}

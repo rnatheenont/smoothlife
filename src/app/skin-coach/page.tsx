@@ -6,6 +6,7 @@ import { ChevronLeft } from "lucide-react";
 import ConsentGate, { hasStoredConsent } from "@/components/skin-coach/ConsentGate";
 import Stepper from "@/components/skin-coach/Stepper";
 import FrontStep from "@/components/skin-coach/FrontStep";
+import LiveScanStep, { liveScanSupported } from "@/components/skin-coach/LiveScanStep";
 import AnglesStep from "@/components/skin-coach/AnglesStep";
 import QuestionsStep from "@/components/skin-coach/QuestionsStep";
 import AnalyzingStep from "@/components/skin-coach/AnalyzingStep";
@@ -29,9 +30,13 @@ export default function SkinCoachPage() {
   const [metrics, setMetrics] = useState<SkinCoachMetrics | null>(null);
   const [frontError, setFrontError] = useState<string | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  // Live camera scan where the browser can do it; the photo picker otherwise,
+  // or whenever the person chooses it.
+  const [captureMode, setCaptureMode] = useState<"live" | "photo">("photo");
 
   useEffect(() => {
     setConsented(hasStoredConsent());
+    if (liveScanSupported()) setCaptureMode("live");
     setHydrated(true);
   }, []);
 
@@ -72,7 +77,10 @@ export default function SkinCoachPage() {
       if (!result.faceDetected) {
         // The photo is the problem, so go back to where it's taken.
         setFrontError("มองไม่เห็นใบหน้าชัดพอ ลองถ่ายใหม่ในที่สว่าง หันหน้าตรงเข้ากล้อง");
+        // A live scan's three photos were taken together, so all of them go;
+        // a picked photo set keeps its extra angles and replaces the front.
         setShots((prev) => {
+          if (captureMode === "live") return {};
           const { front, ...rest } = prev;
           void front;
           return rest;
@@ -94,6 +102,7 @@ export default function SkinCoachPage() {
     setMetrics(null);
     setFrontError(null);
     setAnalyzeError(null);
+    if (liveScanSupported()) setCaptureMode("live");
     setStep("front");
   }
 
@@ -111,7 +120,20 @@ export default function SkinCoachPage() {
 
       <Stepper current={STEP_INDEX[step]} />
 
-      {step === "front" && (
+      {step === "front" && captureMode === "live" && (
+        <LiveScanStep
+          notice={frontError}
+          onComplete={(captured) => {
+            setShots(captured);
+            setFrontError(null);
+            // All three angles came from the live scan: straight to the
+            // questions. Fewer, and the add-an-angle step offers the rest.
+            setStep(Object.keys(captured).length >= 3 ? "questions" : captured.front ? "angles" : "front");
+          }}
+          onUsePhoto={() => setCaptureMode("photo")}
+        />
+      )}
+      {step === "front" && captureMode === "photo" && (
         <FrontStep
           photo={shots.front}
           error={frontError}
@@ -121,6 +143,7 @@ export default function SkinCoachPage() {
           }}
           onError={setFrontError}
           onNext={() => setStep("angles")}
+          onUseLive={liveScanSupported() ? () => setCaptureMode("live") : undefined}
         />
       )}
       {step === "angles" && (
