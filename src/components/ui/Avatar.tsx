@@ -31,6 +31,10 @@ export default function Avatar({ src, name, className = "h-9 w-9", fallback }: A
     <img
       src={src}
       alt={name}
+      // Intrinsic size so the browser reserves a square before the photo
+      // loads; the className still sets the size it's drawn at.
+      width={96}
+      height={96}
       onError={() => setFailed(true)}
       className={`${className} rounded-full object-cover`}
     />

@@ -129,6 +129,9 @@ export default function LanguageSwitch({
               type="button"
               role="menuitemradio"
               aria-checked={active}
+              // Read as one name. Without it a screen reader ran the code
+              // bubble and both names together: "thไทยThai".
+              aria-label={`${l.native} (${l.hint})`}
               tabIndex={open ? 0 : -1}
               onClick={() => choose(l.code)}
               className={clsx(
@@ -137,6 +140,7 @@ export default function LanguageSwitch({
               )}
             >
               <span
+                aria-hidden="true"
                 className={clsx(
                   "grid h-7 w-7 shrink-0 place-items-center rounded-full text-[10px] font-bold uppercase",
                   active ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-600"

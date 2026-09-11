@@ -29,6 +29,19 @@ summary {
   touch-action: manipulation;
 }
 
+/* One keyboard focus ring for the whole site. Without it each browser drew
+   its own — a 1px orange hairline in Chrome — which barely shows on the
+   green buttons. :focus-visible only fires for keyboard (and programmatic
+   after keyboard) focus, so taps and clicks never see it. Kept out of the
+   Tailwind layers on purpose so a stray `outline-none` can't remove it,
+   while `focus-visible:outline-none` + a ring still opts out. Text fields
+   are left out: they match :focus-visible on every click and already carry
+   their own focus ring or border. */
+:where(a, button, select, summary, [role="button"], [tabindex], input[type="checkbox"], input[type="radio"]):focus-visible {
+  outline: 2px solid #05755f;
+  outline-offset: 2px;
+}
+
 /* Headings break evenly instead of leaving one word stranded on the last
    line; body copy breaks without orphans. Both ignored where unsupported. */
 h1,

@@ -143,7 +143,7 @@ const base =
 function ring(bad?: boolean) {
   return bad
     ? `${base} border-rose-300 focus:border-rose-400`
-    : `${base} border-slate-200 focus:border-brand-teal`;
+    : `${base} border-slate-200 focus:border-brand-800`;
 }
 
 /* ---------- form ---------- */
