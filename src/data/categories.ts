@@ -88,16 +88,64 @@ export const concerns: ConcernInfo[] = [
 
 // The static `image` above is a marketing banner (campaign creative, not
 // always tied to what's actually sold under that concern). Pages that show
-// a concern to shoppers should call this instead — it picks the real photo
-// of an in-stock product under that concern (preferring ones the store is
-// already merchandising with a badge), so the picture always matches real,
-// current catalogue data rather than a hand-picked graphic that can drift
-// out of sync. (This sync carries no review/rating data — every product
-// comes through as rating 0 / reviewCount 0 — so badge count is the real
-// signal available, not popularity.)
+// a concern to shoppers use the photo of a real, in-stock product instead.
+//
+// Picking it well matters more than it looks. The first version took the
+// product with the most badges, and badges pile up on bundles — which also
+// carry every concern of every item inside them. One hair-thickening gift set
+// won both "สิวและผิวแพ้ง่าย" and "ผิวแห้งและเกราะผิว", so two tiles showed the
+// same shampoo under two skin problems it has nothing to do with.
+//
+// So: single products over sets, the most specific product for the concern
+// (fewest other concerns), then the best seller — real units sold, from the
+// build. Each image is used once across all tiles, so no two concerns can
+// ever show the same picture.
+const isBundle = (p: (typeof products)[number]) =>
+  Boolean(p.badges?.includes("Bundle")) || /\b(set|pack)\b|เซต|เซ็ต|\(pack/i.test(p.name);
+
+// Which categories a concern can honestly apply to — mirrors the build-time
+// rule in scripts/fetch-products.js, applied again here so tiles are right
+// even before the next catalogue build re-tags everything.
+export const CONCERN_CATEGORIES: Record<Concern, string[]> = {
+  acne: ["skincare", "body-care", "wellness"],
+  dryness: ["skincare", "body-care", "wellness"],
+  "dark-spots": ["skincare", "body-care", "wellness"],
+  aging: ["skincare", "body-care", "wellness"],
+  "hair-scalp": ["hair-care", "wellness"],
+  "sleep-stress": ["wellness", "personal-care"],
+};
+
+let assigned: Map<Concern, string> | null = null;
+
+function assignConcernImages(): Map<Concern, string> {
+  const used = new Set<string>();
+  const out = new Map<Concern, string>();
+  for (const c of concerns) {
+    const pick = products
+      .filter(
+        (p) =>
+          p.inStock &&
+          p.image &&
+          p.concerns.includes(c.slug) &&
+          CONCERN_CATEGORIES[c.slug]?.includes(p.category) &&
+          !used.has(p.image)
+      )
+      .sort(
+        (a, b) =>
+          Number(isBundle(a)) - Number(isBundle(b)) ||
+          a.concerns.length - b.concerns.length ||
+          (b.sold ?? 0) - (a.sold ?? 0) ||
+          (b.badges?.length ?? 0) - (a.badges?.length ?? 0)
+      )[0];
+    if (pick) {
+      used.add(pick.image);
+      out.set(c.slug, pick.image);
+    }
+  }
+  return out;
+}
+
 export function concernImage(slug: Concern): string {
-  const best = [...products]
-    .filter((p) => p.inStock && p.concerns.includes(slug))
-    .sort((a, b) => (b.badges?.length ?? 0) - (a.badges?.length ?? 0))[0];
-  return best?.image || concerns.find((c) => c.slug === slug)?.image || "";
+  if (!assigned) assigned = assignConcernImages();
+  return assigned.get(slug) || concerns.find((c) => c.slug === slug)?.image || "";
 }

@@ -155,6 +155,18 @@ const CONCERN_RULES = [
   ["sleep-stress", ["นอนหลับ", "ผ่อนคลาย", "ความเครียด", "melatonin", "sleep", "relax", "stress", "magnesium"]],
 ];
 
+// Which categories each concern can honestly apply to. Kept in step with
+// CONCERN_CATEGORIES in src/data/categories.ts, which applies the same rule at
+// runtime so a stale catalogue cannot show a toothbrush for dark spots either.
+const CONCERN_CATEGORIES = {
+  acne: ["skincare", "body-care", "wellness"],
+  dryness: ["skincare", "body-care", "wellness"],
+  "dark-spots": ["skincare", "body-care", "wellness"],
+  aging: ["skincare", "body-care", "wellness"],
+  "hair-scalp": ["hair-care", "wellness"],
+  "sleep-stress": ["wellness", "personal-care"],
+};
+
 function matchRules(rules, haystack, fallback) {
   const hits = [];
   for (const [key, words] of rules) {
@@ -468,7 +480,13 @@ function toProduct(p, usedSlugs) {
   const category = matchRules(CATEGORY_RULES, hay, ["skincare"])[0];
   const softFallback =
     category === "skincare" || category === "body-care" ? ["dryness"] : [];
-  const concerns = matchRules(CONCERN_RULES, hay, softFallback).slice(0, 3);
+  // A concern only applies where it makes sense for the category. Keyword
+  // matching alone tagged whitening toothpaste as "dark-spots" (the word is
+  // the same, the problem is not) and put oral-care products on the skin
+  // concern pages, the chat's recommendations and the home-page tiles.
+  const concerns = matchRules(CONCERN_RULES, hay, softFallback)
+    .filter((c) => (CONCERN_CATEGORIES[c] || []).includes(category))
+    .slice(0, 3);
 
   const lines = blocks(p.descriptionHtml);
   const sec = sections(lines);
