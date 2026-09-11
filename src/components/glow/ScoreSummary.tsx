@@ -59,7 +59,7 @@ async function drawShareCard(canvas: HTMLCanvasElement, day1: DayEntry, latest: 
   ctx.textAlign = "center";
   ctx.fillText("Glow Challenge 7 Days", W / 2, 90);
   ctx.font = "20px sans-serif";
-  ctx.fillStyle = "#00A87B";
+  ctx.fillStyle = "#00AA85";
   ctx.fillText("smoothlife.com", W / 2, 125);
 
   const loadImg = (src: string) =>
@@ -113,7 +113,7 @@ async function drawShareCard(canvas: HTMLCanvasElement, day1: DayEntry, latest: 
     ctx.fillText(label, 80, y);
 
     ctx.textAlign = "right";
-    ctx.fillStyle = delta >= 0 ? "#00A87B" : "#0091E6";
+    ctx.fillStyle = delta >= 0 ? "#00AA85" : "#0091E6";
     ctx.fillText(`${before} → ${after} (${delta >= 0 ? "+" : ""}${delta})`, W - 80, y);
 
     y += 60;

@@ -319,7 +319,7 @@ export default async function HomePage() {
               </p>
               <Link
                 href="/subscription"
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-brand-action transition-colors hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-action"
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-brand-800 transition-colors hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-action"
               >
                 <PercentCircle size={16} /> ดูแผนสมัครสมาชิก
               </Link>
@@ -344,7 +344,7 @@ export default async function HomePage() {
                     </span>
                   )}
                   <p className="font-bold text-xs mt-1.5">{plan.months} เดือน</p>
-                  <span className={`text-base font-extrabold ${plan.popular ? "text-brand-action" : "text-white"}`}>
+                  <span className={`text-base font-extrabold ${plan.popular ? "text-brand-800" : "text-white"}`}>
                     -{plan.discountPct}%
                   </span>
                   <p className={`text-[10px] leading-tight ${plan.popular ? "text-slate-600" : "text-white"}`}>
@@ -372,7 +372,7 @@ export default async function HomePage() {
                     </p>
                     <p className={`text-xs ${plan.popular ? "text-slate-600" : "text-white"}`}>{plan.sublabel}</p>
                   </div>
-                  <span className={`text-lg font-extrabold ${plan.popular ? "text-brand-action" : "text-white"}`}>
+                  <span className={`text-lg font-extrabold ${plan.popular ? "text-brand-800" : "text-white"}`}>
                     -{plan.discountPct}%
                   </span>
                 </div>

@@ -85,7 +85,7 @@ export default function ProductTabs({ tabs }: { tabs: ProductTab[] }) {
         </div>
         <Link
           href="/shop"
-          className="flex shrink-0 items-center gap-0.5 text-sm font-semibold text-brand-800 transition-colors hover:text-brand-action"
+          className="flex shrink-0 items-center gap-0.5 text-sm font-semibold text-brand-800 transition-colors hover:text-brand-1000"
         >
           ดูทั้งหมด <ChevronRight size={16} />
         </Link>

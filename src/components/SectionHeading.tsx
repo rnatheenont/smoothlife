@@ -39,7 +39,7 @@ export default function SectionHeading({
       {href && (
         <Link
           href={href}
-          className="flex shrink-0 items-center gap-0.5 rounded-full py-1 text-sm font-semibold text-brand-800 transition-colors hover:text-brand-action focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+          className="flex shrink-0 items-center gap-0.5 rounded-full py-1 text-sm font-semibold text-brand-800 transition-colors hover:text-brand-1000 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
         >
           {hrefLabel}
           <ChevronRight size={16} aria-hidden="true" />

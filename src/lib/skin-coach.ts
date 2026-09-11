@@ -27,7 +27,7 @@ export function overallScore(metrics: SkinCoachMetrics) {
 }
 
 export function scoreBand(score: number) {
-  if (score >= 85) return { label: "ผิวสุขภาพดีมาก", hex: "#00A87B" };
+  if (score >= 85) return { label: "ผิวสุขภาพดีมาก", hex: "#00AA85" };
   if (score >= 70) return { label: "ผิวสุขภาพดี", hex: "#00B39B" };
   if (score >= 50) return { label: "ผิวปานกลาง ดูแลเพิ่มได้", hex: "#F59E0B" };
   return { label: "ควรดูแลผิวเพิ่มเติม", hex: "#F43F5E" };
