@@ -511,7 +511,7 @@ export default function LoginContent() {
                 loading={emailSubmitting}
                 disabled={mode === "register" && !agreedTerms}
               >
-                {emailSubmitting ? "กำลังดำเนินการ..." : mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
+                {emailSubmitting ? "กำลังดำเนินการ…" : mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
               </Button>
             </form>
           )}
@@ -532,7 +532,7 @@ export default function LoginContent() {
                 className="rounded-full bg-white border border-amber-200 px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
               <Button type="submit" size="lg" loading={reclaimSubmitting} disabled={reclaimCode.length < 6}>
-                {reclaimSubmitting ? "กำลังยืนยัน..." : "ยืนยันและอัปเดตข้อมูล"}
+                {reclaimSubmitting ? "กำลังยืนยัน…" : "ยืนยันและอัปเดตข้อมูล"}
               </Button>
             </form>
           )}
@@ -568,7 +568,7 @@ export default function LoginContent() {
               <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
               <Button type="submit" size="lg" loading={otpSending} disabled={!firebaseConfigured() || !agreedTerms}>
-                {otpSending ? "กำลังส่งรหัส..." : "ส่งรหัส OTP"}
+                {otpSending ? "กำลังส่งรหัส…" : "ส่งรหัส OTP"}
               </Button>
             </form>
           ) : (
@@ -587,7 +587,7 @@ export default function LoginContent() {
               />
               {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
               <Button type="submit" size="lg" loading={otpVerifying} disabled={otpInput.length < 6}>
-                {otpVerifying ? "กำลังยืนยัน..." : "ยืนยันรหัส OTP"}
+                {otpVerifying ? "กำลังยืนยัน…" : "ยืนยันรหัส OTP"}
               </Button>
               <button
                 type="button"
@@ -626,7 +626,7 @@ export default function LoginContent() {
               <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
               {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
               <Button type="submit" size="lg" loading={emailOtpSending} disabled={!agreedTerms}>
-                {emailOtpSending ? "กำลังส่งรหัส..." : "ส่งรหัสยืนยัน"}
+                {emailOtpSending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
               </Button>
             </form>
           ) : (
@@ -653,7 +653,7 @@ export default function LoginContent() {
               />
               {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
               <Button type="submit" size="lg" loading={emailOtpVerifying} disabled={emailOtpCode.length < 6}>
-                {emailOtpVerifying ? "กำลังยืนยัน..." : "ยืนยันรหัส"}
+                {emailOtpVerifying ? "กำลังยืนยัน…" : "ยืนยันรหัส"}
               </Button>
               <button
                 type="button"

@@ -17,7 +17,7 @@ export default function AccountGate({ children }: { children: ReactNode }) {
     }
   }, [loading, user, pathname, router]);
 
-  if (loading || !user) return <div className="container-page py-20 text-center text-slate-400">กำลังโหลด...</div>;
+  if (loading || !user) return <div className="container-page py-20 text-center text-slate-400">กำลังโหลด…</div>;
 
   return <>{children}</>;
 }

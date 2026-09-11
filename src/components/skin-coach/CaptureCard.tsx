@@ -188,7 +188,7 @@ export default function CaptureCard({
 
       <Button size="lg" className="mx-auto" disabled={busy || capturedCount === 0} onClick={submit}>
         {busy ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-        {busy ? "กำลังวิเคราะห์..." : capturedCount === 0 ? "เลือกถ่ายรูปอย่างน้อย 1 มุม" : `วิเคราะห์ผิวเลย (${capturedCount} มุม)`}
+        {busy ? "กำลังวิเคราะห์…" : capturedCount === 0 ? "เลือกถ่ายรูปอย่างน้อย 1 มุม" : `วิเคราะห์ผิวเลย (${capturedCount} มุม)`}
       </Button>
     </div>
   );

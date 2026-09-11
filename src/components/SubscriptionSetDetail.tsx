@@ -149,7 +149,7 @@ export default function SubscriptionSetDetail({
                   key={p.months}
                   onClick={() => setSelectedMonths(p.months)}
                   className={clsx(
-                    "relative rounded-xl2 p-3 text-center transition-all border-2",
+                    "relative rounded-xl2 p-3 text-center transition border-2",
                     active ? "border-brand-emerald bg-brand-gradient-soft" : "border-slate-100 hover:border-slate-200"
                   )}
                 >
@@ -193,7 +193,7 @@ export default function SubscriptionSetDetail({
 
           <Button size="none" fullWidth className="py-3.5 text-sm mt-4 active:scale-95" onClick={subscriptionBillingEnabled ? handleRealSubscribe : handleSubscribe} disabled={subscribeSubmitting || (subscriptionBillingEnabled && !agreedRecurringCharge)}>
             <ShoppingBag size={16} />
-            {subscribeSubmitting ? "กำลังเริ่มชำระเงิน..." : "สมัครสมาชิก"}
+            {subscribeSubmitting ? "กำลังเริ่มชำระเงิน…" : "สมัครสมาชิก"}
           </Button>
           {subscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{subscribeError}</p>}
 

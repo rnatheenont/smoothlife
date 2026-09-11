@@ -77,6 +77,7 @@ export default function ForgotPasswordPage() {
                 </p>
                 <button
                   onClick={copyLink}
+                  aria-label={copied ? "คัดลอกลิงก์แล้ว" : "คัดลอกลิงก์"}
                   className="flex w-full items-center justify-between gap-2 rounded-lg bg-white border border-amber-200 px-3.5 py-2.5 text-left text-xs font-mono text-slate-600 break-all"
                 >
                   <span className="truncate">{devLink}</span>

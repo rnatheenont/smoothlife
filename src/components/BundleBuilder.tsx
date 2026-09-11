@@ -141,7 +141,7 @@ export default function BundleBuilder({
                 type="button"
                 onClick={() => toggleProduct(product.slug)}
                 disabled={disabled}
-                className={`flex flex-col rounded-xl2 bg-white shadow-card overflow-hidden border-2 text-left transition-all disabled:opacity-40 disabled:pointer-events-none ${
+                className={`flex flex-col rounded-xl2 bg-white shadow-card overflow-hidden border-2 text-left transition disabled:opacity-40 disabled:pointer-events-none ${
                   isSelected ? "border-brand-emerald" : "border-transparent hover:border-slate-200"
                 }`}
               >
@@ -196,7 +196,7 @@ export default function BundleBuilder({
                   key={p.months}
                   type="button"
                   onClick={() => setSelectedMonths(p.months)}
-                  className={`rounded-xl2 p-2.5 text-center transition-all border-2 ${
+                  className={`rounded-xl2 p-2.5 text-center transition border-2 ${
                     active ? "border-brand-emerald bg-brand-gradient-soft" : "border-slate-100 hover:border-slate-200"
                   }`}
                 >
@@ -231,7 +231,7 @@ export default function BundleBuilder({
 
           <Button size="none" fullWidth className="py-3.5 text-sm" onClick={handleRealSubscribe} disabled={!meetsMin || submitting || !agreedRecurringCharge}>
             <Sparkles size={16} />
-            {submitting ? "กำลังเริ่มชำระเงิน..." : !meetsMin ? `เลือกอีก ${BUNDLE_MIN_ITEMS - selected.size} ชิ้น` : "สมัครสมาชิก"}
+            {submitting ? "กำลังเริ่มชำระเงิน…" : !meetsMin ? `เลือกอีก ${BUNDLE_MIN_ITEMS - selected.size} ชิ้น` : "สมัครสมาชิก"}
           </Button>
           {error && <p className="mt-2 text-[11px] text-rose-500 text-center">{error}</p>}
           <p className="mt-3 text-[10px] text-slate-400 text-center">

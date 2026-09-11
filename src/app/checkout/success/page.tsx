@@ -33,7 +33,7 @@ function SuccessContent() {
   if (framed) {
     return (
       <div className="py-16 text-center text-sm text-slate-500 flex items-center justify-center gap-2">
-        <Loader2 size={16} className="animate-spin" /> กำลังยืนยันการชำระเงิน...
+        <Loader2 size={16} className="animate-spin" /> กำลังยืนยันการชำระเงิน…
       </div>
     );
   }
@@ -62,7 +62,7 @@ function SuccessContent() {
 
 export default function CheckoutSuccessPage() {
   return (
-    <Suspense fallback={<div className="container-page py-20 text-center text-slate-400">กำลังโหลด...</div>}>
+    <Suspense fallback={<div className="container-page py-20 text-center text-slate-400">กำลังโหลด…</div>}>
       <SuccessContent />
     </Suspense>
   );

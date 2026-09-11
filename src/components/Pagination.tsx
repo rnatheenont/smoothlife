@@ -15,13 +15,13 @@ function pageHref(current: ShopSearchParams, page: number) {
 // Keeps the page-number list short even with hundreds of pages: always show
 // the first/last page, the current page and its neighbors, and collapse the
 // rest into "…" instead of rendering every single page number.
-function pageNumbers(current: number, total: number): (number | "...")[] {
+function pageNumbers(current: number, total: number): (number | "…")[] {
   const pages = new Set<number>([1, total, current, current - 1, current + 1]);
   const sorted = [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
-  const out: (number | "...")[] = [];
+  const out: (number | "…")[] = [];
   let prev = 0;
   for (const p of sorted) {
-    if (prev && p - prev > 1) out.push("...");
+    if (prev && p - prev > 1) out.push("…");
     out.push(p);
     prev = p;
   }
@@ -53,7 +53,7 @@ export default function Pagination({
         <ChevronLeft size={16} />
       </Link>
       {pageNumbers(page, totalPages).map((p, i) =>
-        p === "..." ? (
+        p === "…" ? (
           <span key={`dots-${i}`} className="px-1 text-sm text-slate-300">
             …
           </span>

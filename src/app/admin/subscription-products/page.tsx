@@ -193,7 +193,7 @@ export default function AdminSubscriptionProductsPage() {
           <input
             value={queryInput}
             onChange={(e) => setQueryInput(e.target.value)}
-            placeholder="พิมพ์ชื่อสินค้าหรือยี่ห้อ เพื่อเพิ่มเข้าลิสต์..."
+            placeholder="พิมพ์ชื่อสินค้าหรือยี่ห้อ เพื่อเพิ่มเข้าลิสต์…"
             className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-9 text-sm outline-none focus:border-brand-teal"
           />
           {queryInput && (
@@ -239,7 +239,7 @@ export default function AdminSubscriptionProductsPage() {
       )}
 
       {loading ? (
-        <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด...</p>
+        <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด…</p>
       ) : rows.length === 0 ? (
         <div className="rounded-xl2 border border-dashed border-slate-200 py-10 text-center">
           {searching ? (

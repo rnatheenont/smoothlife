@@ -28,7 +28,7 @@ export default function ProductPicker({ onSelect }: { onSelect: (slug: string) =
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="พิมพ์ชื่อสินค้าเพื่อค้นหา..."
+        placeholder="พิมพ์ชื่อสินค้าเพื่อค้นหา…"
         className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-teal"
       />
       {matches.length > 0 && (

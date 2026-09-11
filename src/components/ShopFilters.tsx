@@ -256,7 +256,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
       <aside className="hidden lg:block lg:sticky lg:top-[152px] lg:self-start w-56 shrink-0">{content}</aside>
       {mobileOpen && (
         <div className="fixed inset-0 z-[100] lg:hidden">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
+          <div aria-hidden="true" className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
           <div className="absolute inset-x-0 bottom-0 max-h-[85vh] flex flex-col rounded-t-2xl bg-white shadow-xl animate-slideUp">
             <div className="flex items-center justify-center pt-2.5 pb-1 shrink-0">
               <span className="h-1.5 w-10 rounded-full bg-slate-200" />

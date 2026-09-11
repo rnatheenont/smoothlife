@@ -152,7 +152,7 @@ function ProductCardView({ slug, card }: { slug: string; card: ProductCard }) {
       className="my-1.5 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2 no-underline hover:border-brand-200"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={card.image} alt="" className="h-12 w-12 shrink-0 rounded-lg bg-surface-soft object-cover" />
+      <img src={card.image} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-lg bg-surface-soft object-cover" />
       <span className="min-w-0 flex-1">
         <span className="line-clamp-2 block text-[12px] font-semibold leading-snug text-brand-ink">{card.name}</span>
         <span className="mt-0.5 flex items-baseline gap-1.5">
@@ -315,7 +315,7 @@ export default function AdminInboxPage() {
     setSending(true);
     setError("");
     // Shown before the round trip. The reload afterwards used to blank the
-    // thread to "กำลังโหลด..." and scroll it back, so every send flashed the
+    // thread to "กำลังโหลด…" and scroll it back, so every send flashed the
     // whole conversation away and staff lost their place.
     setMessages((m) => [
       ...m,
@@ -535,7 +535,7 @@ export default function AdminInboxPage() {
         {/* list */}
         <div className="min-h-0 overflow-y-auto rounded-xl2 border border-slate-100">
           {loadingList ? (
-            <p className="p-4 text-xs text-slate-400">กำลังโหลด...</p>
+            <p className="p-4 text-xs text-slate-400">กำลังโหลด…</p>
           ) : visible.length === 0 ? (
             <p className="p-4 text-xs text-slate-400">ไม่มีบทสนทนาในหมวดนี้</p>
           ) : (
@@ -656,7 +656,7 @@ export default function AdminInboxPage() {
 
               <div className="flex-1 space-y-2.5 overflow-y-auto p-4">
                 {loadingThread ? (
-                  <p className="text-xs text-slate-400">กำลังโหลด...</p>
+                  <p className="text-xs text-slate-400">กำลังโหลด…</p>
                 ) : (
                   messages.map((m, i) => {
                     const fromCustomer = m.sender_type === "customer";
@@ -737,7 +737,7 @@ export default function AdminInboxPage() {
                                   className="mt-1.5 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 hover:bg-surface-soft disabled:opacity-50"
                                 >
                                   {translating === m.id ? <Loader2 size={10} className="animate-spin" /> : <Languages size={10} />}
-                                  {translating === m.id ? "กำลังแปล..." : "แปลเป็นไทย"}
+                                  {translating === m.id ? "กำลังแปล…" : "แปลเป็นไทย"}
                                 </button>
                               )}
                             {m.translation && (
@@ -832,7 +832,7 @@ export default function AdminInboxPage() {
                 {attachment && (
                   <div className="mb-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-surface-soft p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={attachment.dataUrl} alt="" className="h-12 w-12 rounded object-cover" />
+                    <img src={attachment.dataUrl} alt="" width={48} height={48} className="h-12 w-12 rounded object-cover" />
                     <span className="flex-1 text-[11px] text-slate-500">แนบรูปนี้ไปกับข้อความ</span>
                     <button
                       onClick={() => setAttachment(null)}
@@ -881,7 +881,7 @@ export default function AdminInboxPage() {
                       }
                     }}
                     rows={2}
-                    placeholder="พิมพ์คำตอบ..."
+                    placeholder="พิมพ์คำตอบ…"
                     className="min-w-0 flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs outline-none focus:border-brand-teal"
                   />
                   <Button

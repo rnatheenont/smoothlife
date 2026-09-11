@@ -4,11 +4,57 @@
 
 html {
   scroll-behavior: smooth;
+  /* The site is designed light-only. Saying so stops browsers in dark mode
+     from repainting native controls — selects, date pickers, scrollbars —
+     in dark chrome that sits on a white page. */
+  color-scheme: light;
 }
 
 body {
   color: #0f172a;
   background: #ffffff;
+}
+
+/* Taps register immediately instead of waiting ~300ms to rule out a
+   double-tap zoom — the difference between a button that responds and one
+   that feels broken on a phone. */
+a,
+button,
+[role="button"],
+input,
+select,
+textarea,
+label,
+summary {
+  touch-action: manipulation;
+}
+
+/* Headings break evenly instead of leaving one word stranded on the last
+   line; body copy breaks without orphans. Both ignored where unsupported. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+
+/* People who ask their device for less motion get less motion: no smooth
+   scrolling, no carousels gliding, no transitions. Kept to near-zero rather
+   than none so JavaScript waiting on transitionend still fires. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .brand-text-gradient {

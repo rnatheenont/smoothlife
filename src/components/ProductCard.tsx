@@ -85,7 +85,7 @@ export default function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <div className="group relative flex h-full flex-col rounded-xl2 bg-white shadow-card hover:shadow-cardHover transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+    <div className="group relative flex h-full flex-col rounded-xl2 bg-white shadow-card hover:shadow-cardHover transition duration-300 hover:-translate-y-1 overflow-hidden">
       <button
         onClick={() => toggle(product.slug)}
         aria-label="Add to wishlist"
@@ -197,7 +197,7 @@ export default function ProductCard({ product }: { product: Product }) {
               aria-label={added ? "เพิ่มลงตะกร้าแล้ว" : `เพิ่ม ${product.name} ลงตะกร้า`}
               title={added ? "เพิ่มแล้ว" : "เพิ่มลงตะกร้า"}
               className={clsx(
-                "grid h-9 w-9 shrink-0 place-items-center rounded-full text-white shadow-card transition-all hover:shadow-cardHover active:scale-90",
+                "grid h-9 w-9 shrink-0 place-items-center rounded-full text-white shadow-card transition hover:shadow-cardHover active:scale-90",
                 added ? "bg-brand-emerald" : "bg-brand-gradient hover:brightness-105"
               )}
             >

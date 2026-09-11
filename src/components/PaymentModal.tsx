@@ -123,7 +123,7 @@ export default function PaymentModal({
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={requestClose} />
+      <div aria-hidden="true" className="absolute inset-0 bg-black/50" onClick={requestClose} />
 
       <div
         className={`relative flex w-full flex-col overflow-hidden rounded-xl2 bg-white shadow-cardHover animate-fadeUp ${
@@ -136,7 +136,7 @@ export default function PaymentModal({
           <>
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
               <p className="text-sm font-bold text-brand-ink">
-                {phase === "verifying" ? "กำลังยืนยันการชำระเงิน..." : "ชำระเงินอย่างปลอดภัย"}
+                {phase === "verifying" ? "กำลังยืนยันการชำระเงิน…" : "ชำระเงินอย่างปลอดภัย"}
               </p>
               <div className="flex items-center gap-3">
                 <a
@@ -183,7 +183,7 @@ export default function PaymentModal({
               {phase === "verifying" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/95">
                   <Loader2 size={28} className="animate-spin text-brand-emerald" />
-                  <p className="text-sm text-slate-500">กำลังตรวจสอบผลการชำระเงิน...</p>
+                  <p className="text-sm text-slate-500">กำลังตรวจสอบผลการชำระเงิน…</p>
                   <p className="text-[11px] text-slate-400">กรุณาอย่าปิดหน้าต่างนี้</p>
                 </div>
               )}

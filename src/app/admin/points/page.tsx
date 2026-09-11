@@ -332,7 +332,7 @@ export default function AdminPointsPage() {
                 className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
               />
               <Button size="sm" className="shrink-0" type="submit" disabled={adjusting}>
-                {adjusting ? "กำลังบันทึก..." : "ปรับแต้ม"}
+                {adjusting ? "กำลังบันทึก…" : "ปรับแต้ม"}
               </Button>
             </form>
             {adjustError && <p className="text-xs text-rose-500 mb-3">{adjustError}</p>}
@@ -436,7 +436,7 @@ export default function AdminPointsPage() {
               </div>
               {tierFormError && <p className="text-xs text-rose-500">{tierFormError}</p>}
               <Button fullWidth type="submit" disabled={tierSubmitting}>
-                {tierSubmitting ? "กำลังบันทึก..." : "บันทึก"}
+                {tierSubmitting ? "กำลังบันทึก…" : "บันทึก"}
               </Button>
             </form>
           </div>

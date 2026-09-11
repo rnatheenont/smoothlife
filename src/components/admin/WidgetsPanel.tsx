@@ -207,7 +207,7 @@ export default function WidgetsPanel() {
                 disabled={saving === w.key}
                 className="rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-1.5 disabled:opacity-50"
               >
-                {saving === w.key ? "กำลังบันทึก..." : "บันทึกการปรับแต่ง"}
+                {saving === w.key ? "กำลังบันทึก…" : "บันทึกการปรับแต่ง"}
               </button>
             </div>
           )}

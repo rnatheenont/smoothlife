@@ -89,7 +89,7 @@ function OrdersContent() {
           <div className="mt-3">
             <Button size="sm" onClick={handleRetryLink} disabled={linking}>
               <RefreshCw size={13} className={linking ? "animate-spin" : ""} />
-              {linking ? "กำลังเชื่อมบัญชี..." : "ลองเชื่อมบัญชีอีกครั้ง"}
+              {linking ? "กำลังเชื่อมบัญชี…" : "ลองเชื่อมบัญชีอีกครั้ง"}
             </Button>
           </div>
           {linkAttempted && (

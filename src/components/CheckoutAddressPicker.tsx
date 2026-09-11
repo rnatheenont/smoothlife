@@ -166,7 +166,7 @@ export default function CheckoutAddressPicker({
   if (loading) {
     return (
       <p className="text-sm text-slate-400 flex items-center gap-1.5">
-        <Loader2 size={14} className="animate-spin" /> กำลังโหลด...
+        <Loader2 size={14} className="animate-spin" /> กำลังโหลด…
       </p>
     );
   }
@@ -253,7 +253,7 @@ export default function CheckoutAddressPicker({
 
       {modalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" onClick={() => !saving && setModalOpen(false)} />
+          <div aria-hidden="true" className="absolute inset-0 bg-black/40" onClick={() => !saving && setModalOpen(false)} />
           <div className="relative flex max-h-[88vh] w-full max-w-lg flex-col rounded-xl2 bg-white shadow-cardHover animate-fadeUp">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <h3 className="flex items-center gap-2 font-bold text-brand-ink">
@@ -290,7 +290,7 @@ export default function CheckoutAddressPicker({
               <Button className="flex-1" type="button" onClick={saveDraft} disabled={saving}>
                 {saving ? (
                   <span className="flex items-center justify-center gap-1.5">
-                    <Loader2 size={14} className="animate-spin" /> กำลังบันทึก...
+                    <Loader2 size={14} className="animate-spin" /> กำลังบันทึก…
                   </span>
                 ) : canSave ? (
                   "บันทึกและใช้ที่อยู่นี้"

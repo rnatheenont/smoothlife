@@ -121,7 +121,7 @@ export default async function HomePage() {
               </Button>
               <Link
                 href="/advisor"
-                className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-7 py-3.5 text-sm hover:border-brand-teal hover:-translate-y-0.5 transition-all"
+                className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-7 py-3.5 text-sm hover:border-brand-teal hover:-translate-y-0.5 transition"
               >
                 น้อง Smoothie แนะนำ
               </Link>
@@ -184,7 +184,7 @@ export default async function HomePage() {
         <StaggerGrid className="container-page grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-6">
           {categories.map((c) => (
             <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col items-center gap-3">
-              <div className="relative h-16 w-16 md:h-28 md:w-28 rounded-full overflow-hidden bg-white shadow-card group-hover:shadow-cardHover group-hover:-translate-y-1 transition-all duration-300">
+              <div className="relative h-16 w-16 md:h-28 md:w-28 rounded-full overflow-hidden bg-white shadow-card group-hover:shadow-cardHover group-hover:-translate-y-1 transition duration-300">
                 <Image src={c.image} alt={c.name} fill className="object-cover" />
               </div>
               <span className="text-xs md:text-base text-center font-medium text-slate-600 group-hover:text-brand-emerald">
@@ -313,7 +313,7 @@ export default async function HomePage() {
               </p>
               <Link
                 href="/subscription"
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-white text-brand-emerald font-bold px-6 py-3 text-sm shadow-card hover:shadow-cardHover hover:-translate-y-0.5 transition-all"
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-white text-brand-emerald font-bold px-6 py-3 text-sm shadow-card hover:shadow-cardHover hover:-translate-y-0.5 transition"
               >
                 <PercentCircle size={16} /> ดูแผนสมัครสมาชิก
               </Link>
@@ -328,7 +328,7 @@ export default async function HomePage() {
               {subscriptionPlans.map((plan) => (
                 <div
                   key={plan.months}
-                  className={`relative flex flex-col items-center gap-0.5 rounded-xl2 px-2 py-3 text-center backdrop-blur transition-all ${
+                  className={`relative flex flex-col items-center gap-0.5 rounded-xl2 px-2 py-3 text-center backdrop-blur transition ${
                     plan.popular ? "bg-white text-brand-ink shadow-cardHover scale-[1.03]" : "bg-white/15 text-white"
                   }`}
                 >
@@ -351,7 +351,7 @@ export default async function HomePage() {
               {subscriptionPlans.map((plan) => (
                 <div
                   key={plan.months}
-                  className={`flex items-center justify-between rounded-xl2 px-4 py-3 backdrop-blur transition-all ${
+                  className={`flex items-center justify-between rounded-xl2 px-4 py-3 backdrop-blur transition ${
                     plan.popular ? "bg-white text-brand-ink shadow-cardHover scale-[1.03]" : "bg-white/15 text-white"
                   }`}
                 >

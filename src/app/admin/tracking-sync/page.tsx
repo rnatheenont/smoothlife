@@ -166,7 +166,7 @@ export default function AdminTrackingSyncPage() {
               redeploying. Staff are already signed in here; that is the key. */}
           <Button variant="secondary" size="sm" onClick={runNow} disabled={running || loading}>
             {running ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
-            {running ? "กำลังดึง..." : "ดึงจาก soko เดี๋ยวนี้"}
+            {running ? "กำลังดึง…" : "ดึงจาก soko เดี๋ยวนี้"}
           </Button>
           <Button variant="secondary" size="sm" onClick={load} disabled={loading}>
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> รีเฟรช
@@ -293,7 +293,7 @@ export default function AdminTrackingSyncPage() {
       )}
 
       {loading && !data ? (
-        <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด...</p>
+        <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด…</p>
       ) : !data?.rows.length ? (
         <p className="flex items-start gap-1.5 rounded-xl2 border border-slate-100 p-4 text-body-xs text-slate-500">
           <Info size={13} className="mt-0.5 shrink-0 text-slate-400" />

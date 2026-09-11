@@ -75,7 +75,7 @@ export default function AdminLineRichMenuPage() {
       </div>
 
       {loading ? (
-        <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด...</p>
+        <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด…</p>
       ) : (
         <>
           <div
@@ -146,7 +146,7 @@ export default function AdminLineRichMenuPage() {
           />
           {installing && (
             <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-              <Loader2 size={13} className="animate-spin" /> กำลังติดตั้ง...
+              <Loader2 size={13} className="animate-spin" /> กำลังติดตั้ง…
             </p>
           )}
           {message && (

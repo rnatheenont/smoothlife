@@ -43,7 +43,7 @@ export default function GiftUnlockPopup() {
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={() => setVisible([])} />
+      <div aria-hidden="true" className="absolute inset-0 bg-black/40" onClick={() => setVisible([])} />
       <div className="relative w-full max-w-sm rounded-xl2 bg-white p-6 text-center shadow-cardHover animate-fadeUp">
         <button onClick={() => setVisible([])} className="absolute right-3 top-3" aria-label="ปิด">
           <X size={18} className="text-slate-400" />

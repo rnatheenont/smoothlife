@@ -165,7 +165,7 @@ export default function AdminGiftCardsPage() {
           </div>
           {error && <p className="text-xs text-rose-500">{error}</p>}
           <Button fullWidth type="submit" disabled={submitting}>
-            {submitting ? "กำลังออกบัตร..." : "ออกบัตรของขวัญและส่งอีเมล"}
+            {submitting ? "กำลังออกบัตร…" : "ออกบัตรของขวัญและส่งอีเมล"}
           </Button>
         </form>
 
@@ -189,7 +189,7 @@ export default function AdminGiftCardsPage() {
 
       <h2 className="font-bold text-brand-ink mb-3">ประวัติบัตรของขวัญล่าสุด</h2>
       {loadingHistory ? (
-        <p className="text-sm text-slate-400 text-center py-6">กำลังโหลด...</p>
+        <p className="text-sm text-slate-400 text-center py-6">กำลังโหลด…</p>
       ) : history.length === 0 ? (
         <p className="text-sm text-slate-400 text-center py-6">ยังไม่มีบัตรของขวัญ</p>
       ) : (

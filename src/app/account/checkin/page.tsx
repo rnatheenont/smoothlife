@@ -200,7 +200,7 @@ function CheckinContent() {
               className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white text-brand-emerald font-bold px-5 py-2.5 text-sm shadow-card transition-transform active:scale-95 disabled:opacity-60"
             >
               {busy ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
-              {busy ? "กำลังเช็กอิน..." : "เช็กอินวันนี้"}
+              {busy ? "กำลังเช็กอิน…" : "เช็กอินวันนี้"}
             </button>
           ) : (
             <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/15 border border-white/25 px-4 py-2.5 text-sm font-bold">
@@ -388,7 +388,7 @@ function CheckinContent() {
               </div>
               <div className="h-2.5 rounded-full bg-surface-muted overflow-hidden">
                 <div
-                  className="h-full bg-brand-gradient rounded-full transition-all"
+                  className="h-full bg-brand-gradient rounded-full transition"
                   style={{
                     width: `${Math.min(
                       100,

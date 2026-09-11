@@ -48,13 +48,13 @@ export default function AiAssistantPage() {
           <Link
             key={a.href}
             href={a.href}
-            className="group flex items-center gap-4 rounded-xl2 border border-slate-100 p-5 shadow-card transition-all hover:border-brand-teal hover:shadow-cardHover"
+            className="group flex items-center gap-4 rounded-xl2 border border-slate-100 p-5 shadow-card transition hover:border-brand-teal hover:shadow-cardHover"
           >
             <div className="flex-1 min-w-0">
               <p className="font-bold text-brand-ink leading-tight">{a.title}</p>
               <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{a.subtitle}</p>
             </div>
-            <ChevronRight size={20} className="text-slate-300 shrink-0 group-hover:translate-x-0.5 group-hover:text-brand-emerald transition-all" />
+            <ChevronRight size={20} className="text-slate-300 shrink-0 group-hover:translate-x-0.5 group-hover:text-brand-emerald transition" />
           </Link>
         ))}
       </div>

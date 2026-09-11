@@ -148,7 +148,7 @@ export default function AdminCheckoutTransactionsPage() {
       <p className="text-sm text-slate-500 mb-6">รายการชำระเงินครั้งเดียวผ่านหน้าชำระเงินของเว็บไซต์เอง (2C2P) — คืนเงินได้จากที่นี่</p>
 
       {loading ? (
-        <p className="text-sm text-slate-400">กำลังโหลด...</p>
+        <p className="text-sm text-slate-400">กำลังโหลด…</p>
       ) : transactions.length === 0 ? (
         <p className="text-sm text-slate-400">ยังไม่มีรายการ</p>
       ) : (

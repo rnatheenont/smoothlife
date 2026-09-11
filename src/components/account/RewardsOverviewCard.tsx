@@ -280,7 +280,7 @@ export default function RewardsOverviewCard() {
                 </span>
               ) : (
                 <Button size="none" className="px-3.5 py-1.5 text-xs shrink-0" onClick={doCheckin} disabled={busy}>
-                  {busy ? "..." : "เช็กอินวันนี้"}
+                  {busy ? "…" : "เช็กอินวันนี้"}
                 </Button>
               ))}
           </div>

@@ -18,7 +18,7 @@ export default function BrandsPage() {
               <Link
                 key={b.slug}
                 href={`/shop?brand=${b.slug}`}
-                className="relative rounded-xl2 border-2 border-brand-emerald/30 bg-brand-gradient-soft p-6 shadow-card hover:border-brand-emerald hover:shadow-cardHover transition-all"
+                className="relative rounded-xl2 border-2 border-brand-emerald/30 bg-brand-gradient-soft p-6 shadow-card hover:border-brand-emerald hover:shadow-cardHover transition"
               >
                 <span className="absolute right-4 top-4 rounded-full bg-brand-gradient text-white text-[10px] font-bold px-2 py-0.5">
                   Life So Smooth

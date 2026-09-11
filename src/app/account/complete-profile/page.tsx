@@ -105,7 +105,7 @@ function CompleteProfileContent() {
     router.push(returnTo);
   }
 
-  if (loading) return <div className="container-page py-20 text-center text-slate-400">กำลังโหลด...</div>;
+  if (loading) return <div className="container-page py-20 text-center text-slate-400">กำลังโหลด…</div>;
 
   return (
     <div className="container-page min-h-[70vh] flex items-center justify-center py-10 md:py-16">
@@ -176,7 +176,7 @@ function CompleteProfileContent() {
 
 export default function CompleteProfilePage() {
   return (
-    <Suspense fallback={<div className="container-page py-20 text-center text-slate-400">กำลังโหลด...</div>}>
+    <Suspense fallback={<div className="container-page py-20 text-center text-slate-400">กำลังโหลด…</div>}>
       <CompleteProfileContent />
     </Suspense>
   );

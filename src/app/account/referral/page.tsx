@@ -71,7 +71,7 @@ function ReferralContent() {
       </p>
 
       {loading ? (
-        <p className="text-sm text-slate-400 text-center py-10">กำลังโหลด...</p>
+        <p className="text-sm text-slate-400 text-center py-10">กำลังโหลด…</p>
       ) : error ? (
         <p className="text-sm text-rose-500 text-center py-10">{error}</p>
       ) : !eligible ? (

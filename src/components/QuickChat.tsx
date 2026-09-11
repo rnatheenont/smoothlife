@@ -1236,7 +1236,7 @@ export default function QuickChat() {
                   <Image src="/mascot/smoothie-question.png" alt="" fill sizes="40px" className="object-contain" />
                 </span>
                 <div className="rounded-2xl rounded-tl-sm bg-white border border-slate-100 px-3.5 py-2.5 text-[13px] text-slate-400 flex items-center gap-2">
-                  <Loader2 size={13} className="animate-spin" /> {t("กำลังคิด...", "Thinking...")}
+                  <Loader2 size={13} className="animate-spin" /> {t("กำลังคิด…", "Thinking…")}
                 </div>
               </div>
             )}
@@ -1365,7 +1365,7 @@ export default function QuickChat() {
                   loading={escalating}
                   disabled={!note.trim()}
                 >
-                  {escalating ? t("กำลังส่ง...", "Sending...") : t("ฝากข้อความ", "Send")}
+                  {escalating ? t("กำลังส่ง…", "Sending…") : t("ฝากข้อความ", "Send")}
                 </Button>
                 <button
                   type="button"
@@ -1415,7 +1415,7 @@ export default function QuickChat() {
                 disabled={backToAiBusy}
               >
                 <Bot size={13} />
-                {backToAiBusy ? t("กำลังเปลี่ยน...", "Switching...") : t("คุยกับ Smoothie", "Back to Smoothie")}
+                {backToAiBusy ? t("กำลังเปลี่ยน…", "Switching…") : t("คุยกับ Smoothie", "Back to Smoothie")}
               </Button>
             )}
           </div>
@@ -1454,7 +1454,7 @@ export default function QuickChat() {
             <div className="flex items-center gap-2 border-t border-slate-100 bg-white px-3 pt-2.5">
               <div className="relative h-12 w-12 shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={pendingImage.dataUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                <img src={pendingImage.dataUrl} alt="" width={48} height={48} className="h-12 w-12 rounded-lg object-cover" />
                 <button
                   type="button"
                   onClick={() => setPendingImage(null)}
@@ -1501,7 +1501,7 @@ export default function QuickChat() {
               placeholder={
                 pendingImage
                   ? t("ถามเกี่ยวกับรูปนี้... (ไม่พิมพ์ก็ได้)", "Ask about this photo... (optional)")
-                  : t("วันนี้คุณรู้สึกยังไง...", "How are you feeling today?")
+                  : t("วันนี้คุณรู้สึกยังไง…", "How are you feeling today?")
               }
               className="flex-1 rounded-full border border-slate-200 bg-surface-soft px-4 py-2.5 text-[13px] outline-none focus:border-brand-teal"
             />

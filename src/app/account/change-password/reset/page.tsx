@@ -56,7 +56,7 @@ function ResetPasswordContent() {
 
         {!token && <p className="text-sm text-rose-500 mt-4">ลิงก์ไม่ถูกต้อง กรุณาขอลิงก์ใหม่จากหน้าบัญชีของคุณ</p>}
 
-        {token && done && <p className="text-sm text-brand-emerald mt-4">เปลี่ยนรหัสผ่านสำเร็จ กำลังพาไปหน้าเข้าสู่ระบบ...</p>}
+        {token && done && <p className="text-sm text-brand-emerald mt-4">เปลี่ยนรหัสผ่านสำเร็จ กำลังพาไปหน้าเข้าสู่ระบบ…</p>}
 
         {token && !done && (
           <form onSubmit={submit} className="flex flex-col gap-3 mt-5 text-left">
@@ -106,7 +106,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="container-page py-20 text-center text-slate-400">กำลังโหลด...</div>}>
+    <Suspense fallback={<div className="container-page py-20 text-center text-slate-400">กำลังโหลด…</div>}>
       <ResetPasswordContent />
     </Suspense>
   );

@@ -75,7 +75,7 @@ export default function TrackPage() {
             error={error || undefined}
           />
           <Button type="submit" size="lg" fullWidth loading={loading} disabled={!reference || !contact}>
-            {loading ? "กำลังค้นหา..." : "ติดตามพัสดุ"}
+            {loading ? "กำลังค้นหา…" : "ติดตามพัสดุ"}
           </Button>
         </form>
       </Card>

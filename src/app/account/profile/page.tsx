@@ -298,7 +298,7 @@ function EmailLinkCard() {
           {error && <p className="text-xs text-rose-500">{error}</p>}
           <Button type="submit" disabled={sending}>
             {sending && <Loader2 size={14} className="animate-spin" />}
-            {sending ? "กำลังส่งรหัส..." : "ส่งรหัสยืนยัน"}
+            {sending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
           </Button>
           {isChanging && (
             <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-400">
@@ -327,7 +327,7 @@ function EmailLinkCard() {
           {error && <p className="text-xs text-rose-500">{error}</p>}
           <Button type="submit" disabled={verifying || code.length < 6}>
             {verifying && <Loader2 size={14} className="animate-spin" />}
-            {verifying ? "กำลังยืนยัน..." : "ยืนยันอีเมล"}
+            {verifying ? "กำลังยืนยัน…" : "ยืนยันอีเมล"}
           </Button>
           <button
             type="button"
@@ -486,7 +486,7 @@ function PhoneChangeCard() {
           {error && <p className="text-xs text-rose-500">{error}</p>}
           <Button type="submit" disabled={sending || !firebaseConfigured() || phone.trim().length < 9}>
             {sending && <Loader2 size={14} className="animate-spin" />}
-            {sending ? "กำลังส่งรหัส..." : "ส่งรหัส OTP"}
+            {sending ? "กำลังส่งรหัส…" : "ส่งรหัส OTP"}
           </Button>
           {isChanging && (
             <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-400">
@@ -508,7 +508,7 @@ function PhoneChangeCard() {
           {error && <p className="text-xs text-rose-500">{error}</p>}
           <Button type="submit" disabled={verifying || code.length < 6}>
             {verifying && <Loader2 size={14} className="animate-spin" />}
-            {verifying ? "กำลังยืนยัน..." : "ยืนยันเบอร์โทร"}
+            {verifying ? "กำลังยืนยัน…" : "ยืนยันเบอร์โทร"}
           </Button>
           <button
             type="button"

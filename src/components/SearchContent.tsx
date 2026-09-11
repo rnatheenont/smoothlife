@@ -58,7 +58,7 @@ export default function SearchContent() {
           type="text"
           inputMode="search"
           enterKeyHint="search"
-          placeholder="ค้นหาสินค้า, แบรนด์ หรือปัญหาผิว..."
+          placeholder="ค้นหาสินค้า, แบรนด์ หรือปัญหาผิว…"
           className="w-full rounded-full border border-slate-200 bg-surface-soft py-3 pl-11 pr-11 text-sm outline-none focus:border-brand-teal transition-colors"
         />
         {input && (

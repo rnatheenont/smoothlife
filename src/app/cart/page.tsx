@@ -264,7 +264,7 @@ export default function CartPage() {
                 </div>
                 <div className="h-2 rounded-full bg-white overflow-hidden">
                   <div
-                    className="h-full bg-brand-gradient transition-all"
+                    className="h-full bg-brand-gradient transition"
                     style={{ width: `${totals.progressAfter.percent}%` }}
                   />
                 </div>

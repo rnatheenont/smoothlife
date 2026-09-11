@@ -30,7 +30,7 @@ export default function BrandShowcase({
             <button
               key={b.slug}
               onClick={() => setActive(i)}
-              className={`flex items-center gap-2.5 rounded-full pl-2 pr-4 py-2 border-2 transition-all ${
+              className={`flex items-center gap-2.5 rounded-full pl-2 pr-4 py-2 border-2 transition ${
                 i === active
                   ? "border-brand-emerald bg-white shadow-cardHover"
                   : "border-transparent bg-white/60 hover:bg-white"

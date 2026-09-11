@@ -308,7 +308,7 @@ export default function AdminFreeGiftsPage() {
                       disabled={busyId === p.id}
                       className="flex items-center gap-1 rounded-full bg-brand-gradient text-white text-xs font-semibold px-3 py-1.5 disabled:opacity-50"
                     >
-                      <Check size={12} /> {busyId === p.id ? "กำลังเปิดใช้งาน..." : "เปิดใช้งานจริง"}
+                      <Check size={12} /> {busyId === p.id ? "กำลังเปิดใช้งาน…" : "เปิดใช้งานจริง"}
                     </button>
                   )}
                   {p.active && (
@@ -626,7 +626,7 @@ export default function AdminFreeGiftsPage() {
                 disabled={submitting || (form.kind === "tiered" ? !form.tiers.some((t) => t.giftProductSlug) : !form.giftProductSlug)}
                 className="w-full rounded-full bg-brand-gradient text-white text-sm font-semibold py-3 disabled:opacity-50"
               >
-                {submitting ? "กำลังบันทึก..." : "บันทึกเป็นร่าง (ยังไม่เปิดใช้งาน)"}
+                {submitting ? "กำลังบันทึก…" : "บันทึกเป็นร่าง (ยังไม่เปิดใช้งาน)"}
               </button>
               <p className="text-[11px] text-slate-400 text-center">
                 บันทึกแล้วยังไม่มีผลกับลูกค้า ต้องกด &ldquo;เปิดใช้งานจริง&rdquo; ในหน้ารายการอีกครั้ง

@@ -324,7 +324,7 @@ export default function ProductDetailInteractive({
                 {images.map((img, i) => (
                   <span
                     key={img}
-                    className={`h-1.5 rounded-full transition-all shadow-[0_0_0_1px_rgba(0,0,0,0.15)] ${
+                    className={`h-1.5 rounded-full transition shadow-[0_0_0_1px_rgba(0,0,0,0.15)] ${
                       i === activeIndex ? "w-4 bg-white" : "w-1.5 bg-white/70"
                     }`}
                   />
@@ -415,7 +415,7 @@ export default function ProductDetailInteractive({
                 </button>
                 <button
                   onClick={() => setPurchaseMode("subscribe")}
-                  className={`relative flex items-center justify-center gap-1.5 rounded-full py-2 transition-all ${
+                  className={`relative flex items-center justify-center gap-1.5 rounded-full py-2 transition ${
                     purchaseMode === "subscribe"
                       ? "bg-brand-gradient text-white shadow-cardHover scale-[1.02]"
                       : "text-brand-emerald/70 hover:text-brand-emerald"
@@ -477,7 +477,7 @@ export default function ProductDetailInteractive({
                       <button
                         key={p.months}
                         onClick={() => setSubscribeMonths(p.months)}
-                        className={`relative rounded-xl border-2 py-2.5 text-center transition-all ${
+                        className={`relative rounded-xl border-2 py-2.5 text-center transition ${
                           active ? "border-brand-emerald bg-white" : "border-transparent bg-white/50 hover:bg-white/80"
                         }`}
                       >
@@ -528,7 +528,7 @@ export default function ProductDetailInteractive({
                   className="mt-3"
                 >
                   {!subscribeSubmitting && <Sparkles size={16} />}
-                  {subscribeSubmitting ? "กำลังเริ่มชำระเงิน..." : "สมัครรับประจำ"}
+                  {subscribeSubmitting ? "กำลังเริ่มชำระเงิน…" : "สมัครรับประจำ"}
                 </Button>
                 {subscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{subscribeError}</p>}
                 <p className="mt-2 text-[10px] text-slate-400 text-center">
@@ -704,7 +704,7 @@ export default function ProductDetailInteractive({
                     />
                     {reviewError && <p className="text-xs text-rose-500">{reviewError}</p>}
                     <Button type="submit" loading={reviewSubmitting}>
-                      {reviewSubmitting ? "กำลังส่ง..." : "ส่งรีวิว"}
+                      {reviewSubmitting ? "กำลังส่ง…" : "ส่งรีวิว"}
                     </Button>
                   </form>
                 )}
@@ -746,14 +746,14 @@ export default function ProductDetailInteractive({
                     <textarea
                       value={questionText}
                       onChange={(e) => setQuestionText(e.target.value)}
-                      placeholder="อยากรู้อะไรเกี่ยวกับสินค้านี้..."
+                      placeholder="อยากรู้อะไรเกี่ยวกับสินค้านี้…"
                       required
                       rows={2}
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-teal resize-none"
                     />
                     {questionError && <p className="text-xs text-rose-500">{questionError}</p>}
                     <Button type="submit" loading={questionSubmitting}>
-                      {questionSubmitting ? "กำลังส่ง..." : "ส่งคำถาม"}
+                      {questionSubmitting ? "กำลังส่ง…" : "ส่งคำถาม"}
                     </Button>
                   </form>
                 )}
@@ -875,7 +875,7 @@ export default function ProductDetailInteractive({
                   key={img}
                   onClick={() => setActiveIndex(i)}
                   aria-label={`ไปที่รูปที่ ${i + 1}`}
-                  className={`h-1.5 rounded-full transition-all ${i === activeIndex ? "w-5 bg-white" : "w-1.5 bg-white/40"}`}
+                  className={`h-1.5 rounded-full transition ${i === activeIndex ? "w-5 bg-white" : "w-1.5 bg-white/40"}`}
                 />
               ))}
             </div>

@@ -129,7 +129,7 @@ function ClipCard({
           <button
             onClick={handleAdd}
             aria-label="เพิ่มลงตะกร้า"
-            className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition-all active:scale-90 ${
+            className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition active:scale-90 ${
               added ? "bg-brand-emerald text-white" : "bg-brand-gradient text-white hover:opacity-90"
             }`}
           >

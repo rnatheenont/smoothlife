@@ -99,7 +99,7 @@ export default function CaptureStep({ day }: { day: number }) {
         onClick={() => inputRef.current?.click()}
         className="rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm disabled:opacity-50"
       >
-        {busy ? "กำลังวิเคราะห์..." : `ถ่ายรูปวันที่ ${day}`}
+        {busy ? "กำลังวิเคราะห์…" : `ถ่ายรูปวันที่ ${day}`}
       </button>
     </div>
   );

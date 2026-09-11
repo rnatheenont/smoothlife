@@ -191,7 +191,7 @@ function PointsContent() {
             <History size={16} className="text-brand-emerald" /> ประวัติคะแนน
           </h2>
           {entries === null ? (
-            <p className="text-sm text-slate-400">กำลังโหลด...</p>
+            <p className="text-sm text-slate-400">กำลังโหลด…</p>
           ) : entries.length === 0 ? (
             <p className="text-sm text-slate-400">ยังไม่มีประวัติคะแนน</p>
           ) : (

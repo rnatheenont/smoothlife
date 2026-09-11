@@ -198,7 +198,7 @@ export default function CustomCheckout() {
           </div>
           <Button size="lg" fullWidth ref={submitButtonRef} type="submit" disabled={submitting || !addressReady || lines.length === 0}>
             {submitting && <Loader2 size={16} className="animate-spin" />}
-            {submitting ? "กำลังไปหน้าชำระเงิน..." : "ชำระเงิน"}
+            {submitting ? "กำลังไปหน้าชำระเงิน…" : "ชำระเงิน"}
           </Button>
           <p className="text-[11px] text-slate-500 mt-3 text-center flex items-center justify-center gap-1.5">
             <Award size={12} className="text-amber-500" />
@@ -219,7 +219,7 @@ export default function CustomCheckout() {
           </div>
           <Button className="text-xs shrink-0 active:scale-95 transition-transform" type="submit" disabled={submitting || !addressReady || lines.length === 0}>
             {submitting && <Loader2 size={14} className="animate-spin" />}
-            {submitting ? "กำลังไป..." : "ชำระเงิน"}
+            {submitting ? "กำลังไป…" : "ชำระเงิน"}
           </Button>
         </MobileStickyBar>
       </form>

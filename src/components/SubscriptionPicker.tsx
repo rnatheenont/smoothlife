@@ -124,7 +124,7 @@ export default function SubscriptionPicker({
               key={p.months}
               onClick={() => setSelectedMonths(p.months)}
               className={clsx(
-                "relative rounded-xl2 p-4 md:p-6 text-left transition-all border-2",
+                "relative rounded-xl2 p-4 md:p-6 text-left transition border-2",
                 active
                   ? "border-brand-emerald bg-brand-gradient-soft shadow-cardHover scale-[1.02]"
                   : "border-slate-100 bg-white hover:border-slate-200"
@@ -192,10 +192,10 @@ export default function SubscriptionPicker({
                 <button
                   onClick={() => (subscriptionBillingEnabled ? handleRealSubscribe(product) : handleAdd(product))}
                   disabled={submitting || (subscriptionBillingEnabled && !agreed)}
-                  className="mt-2 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold py-2 transition-all active:scale-95 text-white disabled:opacity-50 bg-brand-gradient hover:opacity-90"
+                  className="mt-2 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold py-2 transition active:scale-95 text-white disabled:opacity-50 bg-brand-gradient hover:opacity-90"
                 >
                   <ShoppingBag size={14} />
-                  {submitting ? "กำลังเริ่ม..." : `สมัคร ${plan.months} เดือน`}
+                  {submitting ? "กำลังเริ่ม…" : `สมัคร ${plan.months} เดือน`}
                 </button>
                 {error && <p className="text-[10px] text-rose-500">{error}</p>}
               </div>

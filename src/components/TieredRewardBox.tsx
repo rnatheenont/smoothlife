@@ -27,7 +27,7 @@ export default function TieredRewardBox() {
               <Gift size={15} className="text-brand-emerald" /> {lang === "en" ? ev.promo.titleEn : ev.promo.titleTh}
             </h3>
             <div className="relative h-1.5 rounded-full bg-slate-100 mb-4">
-              <div className="h-full rounded-full bg-brand-gradient transition-all" style={{ width: `${percent}%` }} />
+              <div className="h-full rounded-full bg-brand-gradient transition" style={{ width: `${percent}%` }} />
             </div>
             <div className="flex justify-between">
               {tiers.map((tier, i) => {

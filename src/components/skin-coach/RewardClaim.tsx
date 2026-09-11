@@ -75,6 +75,7 @@ export default function RewardClaim({ score }: { score: number }) {
         <p className="text-sm text-brand-ink font-semibold mb-3">รับส่วนลด {label} เรียบร้อย!</p>
         <button
           onClick={copyCode}
+          aria-label={copied ? `คัดลอกโค้ด ${code} แล้ว` : `คัดลอกโค้ด ${code}`}
           className="inline-flex items-center gap-2 rounded-full bg-white border border-brand-teal px-5 py-2.5 font-mono text-sm font-bold text-brand-ink"
         >
           {code}
@@ -111,7 +112,7 @@ export default function RewardClaim({ score }: { score: number }) {
           className="inline-flex items-center gap-2 rounded-full bg-brand-gradient text-white font-semibold px-6 py-3 text-sm disabled:opacity-60"
         >
           {busy === "coupon" && <Loader2 size={14} className="animate-spin" />}
-          {busy === "coupon" ? "กำลังออกคูปอง..." : `รับคูปองส่วนลด ${label}`}
+          {busy === "coupon" ? "กำลังออกคูปอง…" : `รับคูปองส่วนลด ${label}`}
         </button>
         <button
           disabled={busy !== null}
@@ -119,7 +120,7 @@ export default function RewardClaim({ score }: { score: number }) {
           className="inline-flex items-center gap-2 rounded-full bg-white border border-brand-teal text-brand-ink font-semibold px-6 py-3 text-sm disabled:opacity-60"
         >
           {busy === "points" && <Loader2 size={14} className="animate-spin" />}
-          {busy === "points" ? "กำลังบันทึกคะแนน..." : `รับ ${SKIN_COACH_POINTS_REWARD} คะแนนแทน`}
+          {busy === "points" ? "กำลังบันทึกคะแนน…" : `รับ ${SKIN_COACH_POINTS_REWARD} คะแนนแทน`}
         </button>
       </div>
     </div>

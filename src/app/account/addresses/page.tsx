@@ -163,7 +163,7 @@ function AddressesContent() {
         </div>
       )}
 
-      {isReal && addresses === null && <p className="text-sm text-slate-400">กำลังโหลด...</p>}
+      {isReal && addresses === null && <p className="text-sm text-slate-400">กำลังโหลด…</p>}
 
       {isReal && addresses && (
         <div className="flex flex-col gap-3 mb-5">

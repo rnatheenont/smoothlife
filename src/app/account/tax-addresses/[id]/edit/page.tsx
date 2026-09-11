@@ -70,7 +70,7 @@ function EditTaxAddressContent() {
       </div>
       <h1 className="text-2xl font-bold text-brand-ink mb-6">แก้ไขที่อยู่ใบกำกับภาษี</h1>
       {!value ? (
-        <p className="text-sm text-slate-400">กำลังโหลด...</p>
+        <p className="text-sm text-slate-400">กำลังโหลด…</p>
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-5">
           <TaxAddressFields value={value} onChange={setValue} />

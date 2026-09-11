@@ -35,7 +35,7 @@ export default function AskExpertPage() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={5}
-            placeholder="อธิบายปัญหาผิวหรือคำถามของคุณ..."
+            placeholder="อธิบายปัญหาผิวหรือคำถามของคุณ…"
             className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal resize-none"
           />
           <Button type="submit" size="lg">

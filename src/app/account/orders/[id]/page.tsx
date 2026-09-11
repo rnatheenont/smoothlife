@@ -45,7 +45,7 @@ function OrderDetailContent() {
   if (loading) {
     return (
       <p className="flex items-center gap-2 py-16 text-sm text-slate-400">
-        <Loader2 size={15} className="animate-spin" /> กำลังโหลด...
+        <Loader2 size={15} className="animate-spin" /> กำลังโหลด…
       </p>
     );
   }

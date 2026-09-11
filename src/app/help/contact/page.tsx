@@ -48,7 +48,7 @@ export default function ContactPage() {
             value={msg}
             onChange={(e) => setMsg(e.target.value)}
             rows={4}
-            placeholder="พิมพ์ข้อความของคุณ..."
+            placeholder="พิมพ์ข้อความของคุณ…"
             className="rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal resize-none"
           />
           <Button type="submit" size="lg">ส่งข้อความ</Button>

@@ -27,7 +27,7 @@ function MarqueeRow({ brands, reverse }: { brands: Brand[]; reverse?: boolean })
           <Link
             key={`${b.slug}-${i}`}
             href={`/shop?brand=${b.slug}`}
-            className="shrink-0 grid place-items-center h-16 w-28 md:h-20 md:w-36 rounded-xl border border-slate-100 bg-white hover:border-brand-teal hover:shadow-card transition-all overflow-hidden"
+            className="shrink-0 grid place-items-center h-16 w-28 md:h-20 md:w-36 rounded-xl border border-slate-100 bg-white hover:border-brand-teal hover:shadow-card transition overflow-hidden"
           >
             {b.image ? (
               <div className="relative h-full w-full scale-[1.5]">

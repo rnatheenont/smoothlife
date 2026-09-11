@@ -156,7 +156,7 @@ function RealSubscriptionCard({
             <div className="mt-2 rounded-xl bg-white/70 border border-slate-100 p-3">
               {historyLoading ? (
                 <p className="text-xs text-slate-400 flex items-center gap-1.5">
-                  <Loader2 size={12} className="animate-spin" /> กำลังโหลด...
+                  <Loader2 size={12} className="animate-spin" /> กำลังโหลด…
                 </p>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -212,7 +212,7 @@ function RealSubscriptionCard({
             className="flex items-center gap-1 shrink-0 rounded-full border border-rose-200 text-rose-500 px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
           >
             <XCircle size={12} />
-            {busy ? "กำลังยกเลิก..." : "ยกเลิกการต่อเทอม"}
+            {busy ? "กำลังยกเลิก…" : "ยกเลิกการต่อเทอม"}
           </button>
         )}
       </div>

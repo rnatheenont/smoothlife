@@ -60,7 +60,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   if (authed === null) {
-    return <div className="container-page py-16 text-center text-sm text-slate-400">กำลังโหลด...</div>;
+    return <div className="container-page py-16 text-center text-sm text-slate-400">กำลังโหลด…</div>;
   }
 
   if (authed === false) {

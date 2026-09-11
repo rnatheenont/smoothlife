@@ -71,7 +71,7 @@ export default function AdminReviewsPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-400 text-center py-10">กำลังโหลด...</p>
+        <p className="text-sm text-slate-400 text-center py-10">กำลังโหลด…</p>
       ) : reviews.length === 0 ? (
         <p className="text-sm text-slate-400 text-center py-10">ไม่มีรีวิวที่รออนุมัติในตอนนี้</p>
       ) : (
@@ -103,7 +103,7 @@ export default function AdminReviewsPage() {
                 <div className="flex gap-2 mb-2 overflow-x-auto">
                   {r.media_urls.map((url) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img key={url} src={url} alt="" className="h-16 w-16 rounded-lg object-cover shrink-0" />
+                    <img key={url} src={url} alt="" width={64} height={64} className="h-16 w-16 rounded-lg object-cover shrink-0" />
                   ))}
                 </div>
               )}

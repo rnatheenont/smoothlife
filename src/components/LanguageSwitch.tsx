@@ -92,7 +92,7 @@ export default function LanguageSwitch({
           aria-expanded={open}
           aria-controls={menuId}
           className={clsx(
-            "flex items-center gap-1.5 rounded-full border bg-surface-soft shadow-sm transition-all hover:border-brand-teal hover:shadow-card disabled:opacity-70",
+            "flex items-center gap-1.5 rounded-full border bg-surface-soft shadow-sm transition hover:border-brand-teal hover:shadow-card disabled:opacity-70",
             compact ? "h-9 pl-2.5 pr-2 text-xs" : "h-10 pl-3 pr-2.5 text-sm",
             open ? "border-brand-teal shadow-card" : "border-slate-200"
           )}
@@ -113,7 +113,7 @@ export default function LanguageSwitch({
         role="menu"
         aria-label="เลือกภาษา / Language"
         className={clsx(
-          "absolute z-50 mt-2 w-48 origin-top rounded-xl2 border border-slate-100 bg-white p-1.5 shadow-cardHover transition-all duration-150",
+          "absolute z-50 mt-2 w-48 origin-top rounded-xl2 border border-slate-100 bg-white p-1.5 shadow-cardHover transition duration-150",
           align === "right" ? "right-0" : "left-0",
           open ? "visible scale-100 opacity-100" : "invisible scale-95 opacity-0"
         )}
