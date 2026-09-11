@@ -23,15 +23,16 @@ export default function AdvisorPage() {
 
       <Link
         href="/skin-coach"
-        className="group mb-8 flex items-center gap-4 rounded-xl2 bg-brand-ink p-5 md:p-6 text-white shadow-cardHover transition-transform hover:"
+        className="group mb-8 flex items-center gap-4 rounded-xl2 bg-brand-ink p-5 md:p-6 text-white shadow-cardHover"
       >
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand-gradient">
           <Camera size={20} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold leading-tight">วิเคราะห์ผิวหน้าด้วยรูปถ่าย</p>
-          <p className="text-xs text-white/60 mt-0.5">
-            อัพโหลดรูปเซลฟี ให้ AI ให้คะแนนแต่ละจุด สรุปคะแนนรวม แล้วแนะนำสินค้าที่ใช่สำหรับคุณ
+          <p className="font-bold leading-tight">สแกนผิวสดด้วยกล้องหน้า</p>
+          <p className="text-xs text-white/80 mt-0.5">
+            ระบบจับโครงหน้าแล้วถ่ายให้เอง 3 มุมในราว 10 วินาที บอกอายุผิว สิว รูขุมขน จุดด่างดำ ริ้วรอย
+            พร้อมสินค้าที่ตรงกับผลของคุณ
           </p>
         </div>
         <ChevronRight size={20} className="text-white/50 shrink-0 group-hover:translate-x-0.5 transition-transform" />
