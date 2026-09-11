@@ -121,7 +121,7 @@ export default function SubscriptionSetDetail({
           {products.map((p) => (
             <Link key={p.slug} href={`/product/${p.slug}`} className="group flex flex-col gap-2">
               <div className="relative aspect-square rounded-xl2 overflow-hidden bg-surface-soft border border-slate-100">
-                <Image src={p.image} alt={p.name} fill sizes="200px" className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                <Image src={p.image} alt={p.name} fill sizes="200px" className="object-cover transition-transform duration-500" />
               </div>
               <p translate="no" className="text-xs text-slate-600 line-clamp-2">{p.name}</p>
               <p className="text-xs font-bold text-brand-ink">{formatTHB(p.price)}</p>
@@ -195,7 +195,7 @@ export default function SubscriptionSetDetail({
             <ShoppingBag size={16} />
             {subscribeSubmitting ? "กำลังเริ่มชำระเงิน…" : "สมัครสมาชิก"}
           </Button>
-          {subscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{subscribeError}</p>}
+          {subscribeError && <p className="mt-2 text-[11px] text-rose-700 text-center">{subscribeError}</p>}
 
           <p className="mt-3 flex items-start gap-1.5 text-[11px] text-slate-500">
             <Info size={12} className="shrink-0 mt-0.5" />

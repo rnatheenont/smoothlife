@@ -301,7 +301,7 @@ export default function RewardsOverviewCard() {
           )}
 
           {data?.cycle?.status === "recovery_available" && (
-            <Link href="/account/checkin" className="mt-2 block text-xs font-semibold text-amber-600 hover:underline">
+            <Link href="/account/checkin" className="mt-2 block text-xs font-semibold text-amber-700 hover:underline">
               มีวันที่พลาด — กู้คืนได้ →
             </Link>
           )}

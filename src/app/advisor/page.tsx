@@ -23,7 +23,7 @@ export default function AdvisorPage() {
 
       <Link
         href="/skin-coach"
-        className="group mb-8 flex items-center gap-4 rounded-xl2 bg-brand-ink p-5 md:p-6 text-white shadow-cardHover transition-transform hover:scale-[1.01]"
+        className="group mb-8 flex items-center gap-4 rounded-xl2 bg-brand-ink p-5 md:p-6 text-white shadow-cardHover transition-transform hover:"
       >
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand-gradient">
           <Camera size={20} />

@@ -21,9 +21,9 @@ type MyReviewRow = {
 };
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  pending_review: { label: "รอตรวจสอบ", className: "bg-amber-50 text-amber-600" },
+  pending_review: { label: "รอตรวจสอบ", className: "bg-amber-50 text-amber-700" },
   approved: { label: "อนุมัติแล้ว", className: "bg-brand-gradient-soft text-brand-800" },
-  rejected: { label: "ไม่ผ่านการตรวจสอบ", className: "bg-rose-50 text-rose-500" },
+  rejected: { label: "ไม่ผ่านการตรวจสอบ", className: "bg-rose-50 text-rose-700" },
 };
 
 function ReviewsContent() {
@@ -59,7 +59,7 @@ function ReviewsContent() {
       {loading ? (
         <p className="text-sm text-slate-500 text-center py-10">กำลังโหลด…</p>
       ) : error ? (
-        <p className="text-sm text-rose-500 text-center py-10">{error}</p>
+        <p className="text-sm text-rose-700 text-center py-10">{error}</p>
       ) : reviews.length === 0 ? (
         <div className="text-center py-10">
           <p className="text-slate-500">คุณยังไม่เคยเขียนรีวิวสินค้าเลยค่ะ</p>

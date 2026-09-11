@@ -39,7 +39,7 @@ export default function FreeGiftPromoCard() {
                 src={product.image}
                 alt={product.name}
                 fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                className="object-cover transition-transform duration-500"
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />

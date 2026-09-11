@@ -435,7 +435,7 @@ export default function LoginContent() {
                         className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                       />
                     </div>
-                    {emailErrorField === "name" && <p className="text-xs text-rose-500 mt-1 ml-4">{emailError}</p>}
+                    {emailErrorField === "name" && <p className="text-xs text-rose-700 mt-1 ml-4">{emailError}</p>}
                   </div>
                   <div>
                     <div className="relative">
@@ -450,7 +450,7 @@ export default function LoginContent() {
                         className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                       />
                     </div>
-                    {emailErrorField === "phone" && <p className="text-xs text-rose-500 mt-1 ml-4">{emailError}</p>}
+                    {emailErrorField === "phone" && <p className="text-xs text-rose-700 mt-1 ml-4">{emailError}</p>}
                   </div>
                 </>
               )}
@@ -468,7 +468,7 @@ export default function LoginContent() {
                     className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                   />
                 </div>
-                {emailErrorField === "email" && <p className="text-xs text-rose-500 mt-1 ml-4">{emailError}</p>}
+                {emailErrorField === "email" && <p className="text-xs text-rose-700 mt-1 ml-4">{emailError}</p>}
               </div>
               <div>
                 <div className="relative">
@@ -494,7 +494,7 @@ export default function LoginContent() {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-                {emailErrorField === "password" && <p className="text-xs text-rose-500 mt-1 ml-4">{emailError}</p>}
+                {emailErrorField === "password" && <p className="text-xs text-rose-700 mt-1 ml-4">{emailError}</p>}
                 {mode === "register" && <PasswordChecklist password={password} />}
                 {mode === "login" && (
                   <Link href="/account/forgot-password" className="block text-right text-xs text-slate-500 mt-1.5 hover:text-brand-ink">
@@ -503,7 +503,7 @@ export default function LoginContent() {
                 )}
               </div>
               {mode === "register" && <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />}
-              {emailError && !emailErrorField && <p className="text-xs text-rose-500">{emailError}</p>}
+              {emailError && !emailErrorField && <p className="text-xs text-rose-700">{emailError}</p>}
               <Button
                 type="submit"
                 size="lg"
@@ -566,7 +566,7 @@ export default function LoginContent() {
                 className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 disabled:opacity-50"
               />
               <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
-              {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
+              {otpError && <p className="text-xs text-rose-700">{otpError}</p>}
               <Button type="submit" size="lg" loading={otpSending} disabled={!firebaseConfigured() || !agreedTerms}>
                 {otpSending ? "กำลังส่งรหัส…" : "ส่งรหัส OTP"}
               </Button>
@@ -585,7 +585,7 @@ export default function LoginContent() {
                 autoComplete="one-time-code"
                 className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
-              {otpError && <p className="text-xs text-rose-500">{otpError}</p>}
+              {otpError && <p className="text-xs text-rose-700">{otpError}</p>}
               <Button type="submit" size="lg" loading={otpVerifying} disabled={otpInput.length < 6}>
                 {otpVerifying ? "กำลังยืนยัน…" : "ยืนยันรหัส OTP"}
               </Button>
@@ -624,7 +624,7 @@ export default function LoginContent() {
                 />
               </div>
               <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
-              {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
+              {emailOtpError && <p className="text-xs text-rose-700">{emailOtpError}</p>}
               <Button type="submit" size="lg" loading={emailOtpSending} disabled={!agreedTerms}>
                 {emailOtpSending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
               </Button>
@@ -651,7 +651,7 @@ export default function LoginContent() {
                 autoComplete="one-time-code"
                 className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
               />
-              {emailOtpError && <p className="text-xs text-rose-500">{emailOtpError}</p>}
+              {emailOtpError && <p className="text-xs text-rose-700">{emailOtpError}</p>}
               <Button type="submit" size="lg" loading={emailOtpVerifying} disabled={emailOtpCode.length < 6}>
                 {emailOtpVerifying ? "กำลังยืนยัน…" : "ยืนยันรหัส"}
               </Button>

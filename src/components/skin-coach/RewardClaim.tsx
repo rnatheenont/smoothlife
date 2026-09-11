@@ -104,7 +104,7 @@ export default function RewardClaim({ score }: { score: number }) {
       <Gift size={20} className="mx-auto text-amber-500 mb-2" />
       <p className="text-sm text-brand-ink font-semibold mb-1">ทำกิจกรรมสแกนผิวครบแล้ว!</p>
       <p className="text-xs text-slate-500 mb-3">เลือกรับส่วนลด {label} หรือคะแนนสะสม สำหรับคำสั่งซื้อถัดไป</p>
-      {error && <p className="text-xs text-rose-500 mb-3">{error}</p>}
+      {error && <p className="text-xs text-rose-700 mb-3">{error}</p>}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
         <button
           disabled={busy !== null}

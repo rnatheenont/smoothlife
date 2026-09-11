@@ -546,7 +546,7 @@ export default function ProductDetailInteractive({
                   {!subscribeSubmitting && <Sparkles size={16} />}
                   {subscribeSubmitting ? "กำลังเริ่มชำระเงิน…" : "สมัครรับประจำ"}
                 </Button>
-                {subscribeError && <p className="mt-2 text-[11px] text-rose-500 text-center">{subscribeError}</p>}
+                {subscribeError && <p className="mt-2 text-[11px] text-rose-700 text-center">{subscribeError}</p>}
                 <p className="mt-2 text-[10px] text-slate-500 text-center">
                   {subscriptionBillingEnabled
                     ? `ตัดเงิน ${formatTHB(subscribePricePerCycle)} บาททุกเดือน (ล็อกส่วนลด -${subscribePlan.discountPct}% ตลอดเทอม ${subscribePlan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเทอมและราคาเดิม จนกว่าจะยกเลิก`
@@ -722,7 +722,7 @@ export default function ProductDetailInteractive({
                       rows={3}
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-teal resize-none"
                     />
-                    {reviewError && <p className="text-xs text-rose-500">{reviewError}</p>}
+                    {reviewError && <p className="text-xs text-rose-700">{reviewError}</p>}
                     <Button type="submit" loading={reviewSubmitting}>
                       {reviewSubmitting ? "กำลังส่ง…" : "ส่งรีวิว"}
                     </Button>
@@ -771,7 +771,7 @@ export default function ProductDetailInteractive({
                       rows={2}
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-teal resize-none"
                     />
-                    {questionError && <p className="text-xs text-rose-500">{questionError}</p>}
+                    {questionError && <p className="text-xs text-rose-700">{questionError}</p>}
                     <Button type="submit" loading={questionSubmitting}>
                       {questionSubmitting ? "กำลังส่ง…" : "ส่งคำถาม"}
                     </Button>
@@ -807,7 +807,7 @@ export default function ProductDetailInteractive({
             <div className="grid md:grid-cols-3 gap-6 text-sm text-slate-600">
               <div>
                 <h4 className="font-bold text-brand-ink mb-2">สถานะสินค้า</h4>
-                <p className={selectedVariant.inStock ? "text-brand-800 font-medium" : "text-rose-500 font-medium"}>
+                <p className={selectedVariant.inStock ? "text-brand-800 font-medium" : "text-rose-700 font-medium"}>
                   {selectedVariant.inStock ? "มีสินค้าพร้อมส่ง" : "สินค้าหมดชั่วคราว"}
                 </p>
               </div>

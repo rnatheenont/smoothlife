@@ -66,7 +66,7 @@ export default function CategoryPage({
       {ADVISOR_ENTRY[params.category] && (
         <Link
           href={ADVISOR_ENTRY[params.category].href}
-          className="group mb-6 flex items-center gap-4 rounded-xl2 bg-brand-ink p-4 md:p-5 text-white shadow-cardHover transition-transform hover:scale-[1.01]"
+          className="group mb-6 flex items-center gap-4 rounded-xl2 bg-brand-ink p-4 md:p-5 text-white shadow-cardHover transition-transform hover:"
         >
           <div className="relative h-12 w-12 shrink-0">
             <Image src="/mascot/smoothie-hi.png" alt="Smoothie" fill sizes="48px" className="object-contain" />

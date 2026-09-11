@@ -41,7 +41,7 @@ const dayCircleStyle: Record<DayInfo["status"], string> = {
   normal: "bg-white text-brand-800 shadow-sm",
   recovery: "bg-white text-brand-800 shadow-sm",
   today: "bg-white text-brand-800 shadow-lg ring-4 ring-amber-300/70 scale-110",
-  recoverable: "bg-white text-amber-600 border-2 border-amber-400 shadow-sm",
+  recoverable: "bg-white text-amber-700 border-2 border-amber-400 shadow-sm",
   missed: "bg-white/10 text-white/40",
   upcoming: "bg-white/5 text-white/30 border border-dashed border-white/20",
 };
@@ -285,7 +285,7 @@ function CheckinContent() {
               <p className="text-lg font-bold text-brand-800 leading-tight">
                 +{data.config.day3Points} แต้ม
                 {data.challenge?.active && (
-                  <span className="ml-1 text-xs font-bold text-amber-600 align-middle">x{data.challenge.multiplier}</span>
+                  <span className="ml-1 text-xs font-bold text-amber-700 align-middle">x{data.challenge.multiplier}</span>
                 )}
               </p>
             </div>
@@ -325,7 +325,7 @@ function CheckinContent() {
               <p className="text-lg font-bold text-brand-800 leading-tight">
                 +{data.config.day7Points} แต้ม
                 {data.challenge?.active && (
-                  <span className="ml-1 text-xs font-bold text-amber-600 align-middle">x{data.challenge.multiplier}</span>
+                  <span className="ml-1 text-xs font-bold text-amber-700 align-middle">x{data.challenge.multiplier}</span>
                 )}
               </p>
             </div>
@@ -425,7 +425,7 @@ function CheckinContent() {
             <p className="text-sm text-slate-600 mb-1">
               กู้วันที่ {new Date(confirmDate).toLocaleDateString("th-TH", { day: "numeric", month: "long" })}
             </p>
-            <p className="flex items-center gap-1.5 text-sm text-amber-600 font-semibold mb-4">
+            <p className="flex items-center gap-1.5 text-sm text-amber-700 font-semibold mb-4">
               <Coins size={14} /> ใช้ {data.recovery.costPerDay} แต้ม (คงเหลือ {data.recovery.pointBalance} แต้ม)
             </p>
             <div className="flex gap-2">
@@ -441,7 +441,7 @@ function CheckinContent() {
               </Button>
             </div>
             {data.recovery.pointBalance < data.recovery.costPerDay && (
-              <p className="mt-2 text-xs text-rose-500">แต้มของคุณไม่พอสำหรับกู้วันนี้ค่ะ</p>
+              <p className="mt-2 text-xs text-rose-700">แต้มของคุณไม่พอสำหรับกู้วันนี้ค่ะ</p>
             )}
           </div>
         </div>

@@ -73,7 +73,7 @@ export default function ThaiAddressCascade({
           className={`${inputClass} ${postcodeInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
         {postcodeInvalid ? (
-          <p className="mt-1.5 text-[11px] text-rose-500">{VALIDATION_HINTS.postcode}</p>
+          <p className="mt-1.5 text-[11px] text-rose-700">{VALIDATION_HINTS.postcode}</p>
         ) : isTH ? (
           <p className="mt-1.5 text-[11px] text-slate-500">
             ไม่ทราบรหัสไปรษณีย์ก็เลือกจังหวัดด้านล่างได้เลย ระบบจะเติมรหัสให้อัตโนมัติ

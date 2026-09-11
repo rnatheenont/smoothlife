@@ -81,7 +81,7 @@ export default function AddressFields({
           aria-invalid={nameInvalid || undefined}
           className={`${inputClass} ${nameInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
-        {nameInvalid && <p className="mt-1 text-[11px] text-rose-500">{VALIDATION_HINTS.name}</p>}
+        {nameInvalid && <p className="mt-1 text-[11px] text-rose-700">{VALIDATION_HINTS.name}</p>}
       </div>
       <div>
         <label className={labelClass}>โทรศัพท์</label>
@@ -99,7 +99,7 @@ export default function AddressFields({
           className={`${inputClass} ${phoneInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
         {phoneInvalid ? (
-          <p className="mt-1 text-[11px] text-rose-500">{THAI_PHONE_HINT}</p>
+          <p className="mt-1 text-[11px] text-rose-700">{THAI_PHONE_HINT}</p>
         ) : isTH ? (
           <p className="mt-1 text-[11px] text-slate-500">กรอกเฉพาะตัวเลข ไม่ต้องใส่ขีดหรือเว้นวรรค</p>
         ) : null}
@@ -115,7 +115,7 @@ export default function AddressFields({
           aria-invalid={addressInvalid || undefined}
           className={`${inputClass} ${addressInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
-        {addressInvalid && <p className="mt-1 text-[11px] text-rose-500">{VALIDATION_HINTS.addressLine}</p>}
+        {addressInvalid && <p className="mt-1 text-[11px] text-rose-700">{VALIDATION_HINTS.addressLine}</p>}
       </div>
       <ThaiAddressCascade value={value} onChange={(patch) => onChange({ ...value, ...patch })} />
       {showDefaultToggle && (

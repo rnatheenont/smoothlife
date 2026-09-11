@@ -54,7 +54,7 @@ function LeaderboardContent() {
   }
 
   if (!data.ok) {
-    return <p className="text-sm text-rose-500">{data.error || "โหลดอันดับไม่สำเร็จค่ะ"}</p>;
+    return <p className="text-sm text-rose-700">{data.error || "โหลดอันดับไม่สำเร็จค่ะ"}</p>;
   }
 
   const youInTop = data.entries.some((e) => e.isYou);

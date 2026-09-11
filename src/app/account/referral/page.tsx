@@ -19,10 +19,10 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   pending: { label: "รอเพื่อนกดลิงก์", className: "bg-slate-100 text-slate-500" },
   link_clicked: { label: "เพื่อนกดลิงก์แล้ว", className: "bg-brand-gradient-soft text-brand-800" },
   registered: { label: "เพื่อนสมัครสมาชิกแล้ว", className: "bg-brand-gradient-soft text-brand-800" },
-  order_placed: { label: "เพื่อนสั่งซื้อแล้ว รอจัดส่ง", className: "bg-amber-50 text-amber-600" },
-  delivered: { label: "จัดส่งสำเร็จ รอปล่อยรางวัล", className: "bg-amber-50 text-amber-600" },
+  order_placed: { label: "เพื่อนสั่งซื้อแล้ว รอจัดส่ง", className: "bg-amber-50 text-amber-700" },
+  delivered: { label: "จัดส่งสำเร็จ รอปล่อยรางวัล", className: "bg-amber-50 text-amber-700" },
   reward_released: { label: "ได้รับคูปอง ฿100 แล้ว", className: "bg-brand-gradient-soft text-brand-800" },
-  void: { label: "ไม่ผ่านเงื่อนไข", className: "bg-rose-50 text-rose-500" },
+  void: { label: "ไม่ผ่านเงื่อนไข", className: "bg-rose-50 text-rose-700" },
   expired: { label: "หมดอายุ", className: "bg-slate-100 text-slate-500" },
 };
 
@@ -73,7 +73,7 @@ function ReferralContent() {
       {loading ? (
         <p className="text-sm text-slate-500 text-center py-10">กำลังโหลด…</p>
       ) : error ? (
-        <p className="text-sm text-rose-500 text-center py-10">{error}</p>
+        <p className="text-sm text-rose-700 text-center py-10">{error}</p>
       ) : !eligible ? (
         <div className="rounded-xl2 border border-amber-200 bg-amber-50/60 p-5 text-sm text-amber-700">
           ต้องมีคำสั่งซื้อสำเร็จอย่างน้อย 1 ครั้งในช่วง 3 เดือนล่าสุด จึงจะแชร์ลิงก์แนะนำเพื่อนได้ค่ะ

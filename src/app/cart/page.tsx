@@ -132,7 +132,7 @@ export default function CartPage() {
                   </button>
                 </div>
                 {typeof line.stock === "number" && line.qty >= line.stock && (
-                  <p className="text-[11px] text-amber-600 mt-1">มีสินค้าเหลือ {line.stock} ชิ้น</p>
+                  <p className="text-[11px] text-amber-700 mt-1">มีสินค้าเหลือ {line.stock} ชิ้น</p>
                 )}
               </div>
             )}

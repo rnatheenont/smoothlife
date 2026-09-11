@@ -25,7 +25,7 @@ export default function Card({
       className={clsx(
         "rounded-xl2 bg-white shadow-card dark:bg-slate-900 dark:shadow-none dark:ring-1 dark:ring-slate-800",
         padded && "p-5",
-        interactive && "transition hover:-translate-y-0.5 hover:shadow-cardHover",
+        interactive && "transition hover:shadow-cardHover",
         className
       )}
       {...rest}

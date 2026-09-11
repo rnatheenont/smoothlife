@@ -126,7 +126,7 @@ export default function SubscriptionPicker({
               className={clsx(
                 "relative rounded-xl2 p-4 md:p-6 text-left transition border-2",
                 active
-                  ? "border-brand-emerald bg-brand-gradient-soft shadow-cardHover scale-[1.02]"
+                  ? "border-brand-emerald bg-brand-gradient-soft shadow-cardHover"
                   : "border-slate-100 bg-white hover:border-slate-200"
               )}
             >
@@ -197,7 +197,7 @@ export default function SubscriptionPicker({
                   <ShoppingBag size={14} />
                   {submitting ? "กำลังเริ่ม…" : `สมัคร ${plan.months} เดือน`}
                 </button>
-                {error && <p className="text-[10px] text-rose-500">{error}</p>}
+                {error && <p className="text-[10px] text-rose-700">{error}</p>}
               </div>
             </div>
           );

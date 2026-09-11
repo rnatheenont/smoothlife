@@ -123,7 +123,7 @@ function PointsContent() {
           <h2 className="font-bold text-brand-ink flex items-center gap-2 mb-3">
             <Ticket size={16} className="text-brand-emerald" /> แลกแต้มเป็นส่วนลด
           </h2>
-          {redeemError && <p className="text-sm text-rose-500 mb-3">{redeemError}</p>}
+          {redeemError && <p className="text-sm text-rose-700 mb-3">{redeemError}</p>}
           <div className="grid sm:grid-cols-2 gap-3">
             {tiersList.map((t) => {
               const canAfford = user.points >= t.points_cost;
@@ -202,7 +202,7 @@ function PointsContent() {
                     <p className="font-medium text-brand-ink">{reasonLabel[e.reason] || e.reason}</p>
                     <p className="text-xs text-slate-500">{new Date(e.created_at).toLocaleString("th-TH")}</p>
                   </div>
-                  <span className={`font-bold ${e.delta >= 0 ? "text-brand-800" : "text-rose-500"}`}>
+                  <span className={`font-bold ${e.delta >= 0 ? "text-brand-800" : "text-rose-700"}`}>
                     {e.delta >= 0 ? "+" : ""}
                     {e.delta.toLocaleString()}
                   </span>

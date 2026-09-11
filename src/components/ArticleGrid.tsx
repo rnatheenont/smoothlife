@@ -9,7 +9,7 @@ export default function ArticleGrid({ articles }: { articles: Article[] }) {
       {articles.map((a) => (
         <Link key={a.slug} href={`/knowledge/article/${a.slug}`} className="group rounded-xl2 border border-slate-100 shadow-card overflow-hidden">
           <div className="relative aspect-[16/10]">
-            <Image src={a.image} alt={a.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+            <Image src={a.image} alt={a.title} fill className="object-cover transition-transform duration-500" />
           </div>
           <div className="p-4">
             <h3 className="font-bold text-brand-ink text-sm line-clamp-2 group-hover:text-brand-800 transition-colors">{a.title}</h3>

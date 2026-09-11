@@ -45,7 +45,7 @@ export default function DealOfTheDayCard() {
         {[countdown.hours, countdown.minutes, countdown.seconds].map((v, i) => (
           <span key={i} className="flex items-center gap-1">
             <span className="rounded-md bg-brand-ink text-white text-xs font-bold px-2 py-1 tabular-nums">{pad(v)}</span>
-            {i < 2 && <span className="text-amber-500 font-bold">:</span>}
+            {i < 2 && <span className="text-amber-700 font-bold">:</span>}
           </span>
         ))}
       </div>

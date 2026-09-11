@@ -156,7 +156,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
         </div>
       </div>
       {(current.category || current.brand || current.concern) && (
-        <button onClick={() => router.push(pathname)} className="text-xs text-rose-500 font-medium text-left">
+        <button onClick={() => router.push(pathname)} className="text-xs text-rose-700 font-medium text-left">
           ล้างตัวกรองทั้งหมด
         </button>
       )}
@@ -227,7 +227,7 @@ export default function ShopFilters({ current, mobileExtra }: { current: ShopSea
       {activeSecondaryCount > 0 && (
         <button
           onClick={clearSecondaryFilters}
-          className="rounded-full border border-rose-200 text-rose-500 font-semibold text-sm py-2.5"
+          className="rounded-full border border-rose-200 text-rose-700 font-semibold text-sm py-2.5"
         >
           ล้างตัวกรองแบรนด์และปัญหาผิว
         </button>

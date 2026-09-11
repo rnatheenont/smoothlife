@@ -52,7 +52,7 @@ export default function Field({
       <label htmlFor={fieldId} className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">
         {label}
         {required && (
-          <span className="ml-0.5 text-rose-500" aria-hidden>
+          <span className="ml-0.5 text-rose-700" aria-hidden>
             *
           </span>
         )}

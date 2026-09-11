@@ -89,7 +89,7 @@ function NewsletterForm() {
           <Send size={14} />
         </Button>
       </div>
-      {error && <p className="text-xs text-rose-500 mt-1.5">{error}</p>}
+      {error && <p className="text-xs text-rose-700 mt-1.5">{error}</p>}
     </form>
   );
 }

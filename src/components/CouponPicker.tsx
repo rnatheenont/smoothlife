@@ -75,7 +75,7 @@ export default function CouponPicker() {
           {t("ใช้โค้ด", "Apply")}
         </button>
       </form>
-      {error && <p className="text-xs text-rose-500 -mt-2 mb-3">{error}</p>}
+      {error && <p className="text-xs text-rose-700 -mt-2 mb-3">{error}</p>}
 
       <div className="flex flex-col gap-2.5">
         {evals.map((ev) => {
@@ -113,7 +113,7 @@ export default function CouponPicker() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
-                  <p className={`text-xs mt-1 font-semibold ${ev.eligible ? "text-brand-800" : "text-amber-600"}`}>
+                  <p className={`text-xs mt-1 font-semibold ${ev.eligible ? "text-brand-800" : "text-amber-700"}`}>
                     {reason}
                   </p>
                 </div>

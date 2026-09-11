@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
               placeholder="อีเมล"
               className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal"
             />
-            {error && <p className="text-xs text-rose-500">{error}</p>}
+            {error && <p className="text-xs text-rose-700">{error}</p>}
             <Button type="submit" size="lg" disabled={busy}>
               {busy && <Loader2 size={15} className="animate-spin" />}
               ส่งลิงก์ตั้งรหัสผ่านใหม่

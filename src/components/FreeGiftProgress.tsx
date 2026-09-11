@@ -65,7 +65,7 @@ export default function FreeGiftProgress({ scopedToSlug }: { scopedToSlug?: stri
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="text-sm font-bold text-brand-ink">{title}</span>
-                  <p className={`text-xs mt-1 font-semibold ${ev.eligible ? "text-brand-800" : "text-amber-600"}`}>{reason}</p>
+                  <p className={`text-xs mt-1 font-semibold ${ev.eligible ? "text-brand-800" : "text-amber-700"}`}>{reason}</p>
                 </div>
               </div>
             </div>

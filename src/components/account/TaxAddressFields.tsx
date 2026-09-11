@@ -93,7 +93,7 @@ export default function TaxAddressFields({
           aria-invalid={nameInvalid || undefined}
           className={`${inputClass} ${nameInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
-        {nameInvalid && <p className="mt-1 text-[11px] text-rose-500">{VALIDATION_HINTS.name}</p>}
+        {nameInvalid && <p className="mt-1 text-[11px] text-rose-700">{VALIDATION_HINTS.name}</p>}
       </div>
       <div>
         <label className={labelClass}>เลขประจำตัวผู้เสียภาษี</label>
@@ -106,7 +106,7 @@ export default function TaxAddressFields({
           aria-invalid={taxIdInvalid || undefined}
           className={`${inputClass} ${taxIdInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
-        {taxIdInvalid && <p className="mt-1 text-[11px] text-rose-500">{VALIDATION_HINTS.taxId}</p>}
+        {taxIdInvalid && <p className="mt-1 text-[11px] text-rose-700">{VALIDATION_HINTS.taxId}</p>}
       </div>
       <div>
         <label className={labelClass}>โทรศัพท์</label>
@@ -121,7 +121,7 @@ export default function TaxAddressFields({
           aria-invalid={phoneInvalid || undefined}
           className={`${inputClass} ${phoneInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
-        {phoneInvalid && <p className="mt-1 text-[11px] text-rose-500">{THAI_PHONE_HINT}</p>}
+        {phoneInvalid && <p className="mt-1 text-[11px] text-rose-700">{THAI_PHONE_HINT}</p>}
       </div>
       <div>
         <label className={labelClass}>อีเมล</label>
@@ -134,7 +134,7 @@ export default function TaxAddressFields({
           aria-invalid={emailInvalid || undefined}
           className={`${inputClass} ${emailInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
-        {emailInvalid && <p className="mt-1 text-[11px] text-rose-500">{VALIDATION_HINTS.email}</p>}
+        {emailInvalid && <p className="mt-1 text-[11px] text-rose-700">{VALIDATION_HINTS.email}</p>}
       </div>
       <div>
         <label className={labelClass}>ประเทศ</label>
@@ -155,7 +155,7 @@ export default function TaxAddressFields({
           aria-invalid={addressInvalid || undefined}
           className={`${inputClass} ${addressInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
-        {addressInvalid && <p className="mt-1 text-[11px] text-rose-500">{VALIDATION_HINTS.addressLine}</p>}
+        {addressInvalid && <p className="mt-1 text-[11px] text-rose-700">{VALIDATION_HINTS.addressLine}</p>}
       </div>
       <ThaiAddressCascade value={value} onChange={(patch) => onChange({ ...value, ...patch })} />
       {showDefaultToggle && (

@@ -138,13 +138,13 @@ function RealSubscriptionCard({
             {sub.next_charge_date && ` · ตัดครั้งถัดไป ${new Date(sub.next_charge_date).toLocaleDateString("th-TH")}`}
           </p>
           {sub.auto_renew_cancelled && (
-            <p className="text-xs font-semibold text-amber-600 mt-1">
+            <p className="text-xs font-semibold text-amber-700 mt-1">
               {sub.cycle_in_term < sub.plan_months
                 ? `ยกเลิกการต่อเทอมแล้ว — ตัดเงินต่ออีก ${sub.plan_months - sub.cycle_in_term} รอบจนครบเทอม แล้วจบ`
                 : "ยกเลิกการต่อเทอมแล้ว — ครบเทอมแล้ว จะไม่มีการตัดเงินอีก"}
             </p>
           )}
-          {error && <p className="text-xs text-rose-500 mt-1">{error}</p>}
+          {error && <p className="text-xs text-rose-700 mt-1">{error}</p>}
           <button
             onClick={toggleHistory}
             className="flex items-center gap-1 text-xs font-semibold text-brand-800 mt-2"
@@ -173,7 +173,7 @@ function RealSubscriptionCard({
                             <span className="text-slate-500">
                               รอบที่ {c.cycle_number} · {c.charged_at ? new Date(c.charged_at).toLocaleDateString("th-TH") : "รอตัดเงิน"}
                             </span>
-                            <span className={c.success ? "text-brand-800 font-semibold" : "text-rose-500 font-semibold"}>
+                            <span className={c.success ? "text-brand-800 font-semibold" : "text-rose-700 font-semibold"}>
                               {formatTHB(c.amount)} {c.success === false ? "(ไม่สำเร็จ)" : ""}
                             </span>
                           </div>
@@ -209,7 +209,7 @@ function RealSubscriptionCard({
           <button
             onClick={handleCancel}
             disabled={busy}
-            className="flex items-center gap-1 shrink-0 rounded-full border border-rose-200 text-rose-500 px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+            className="flex items-center gap-1 shrink-0 rounded-full border border-rose-200 text-rose-700 px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
           >
             <XCircle size={12} />
             {busy ? "กำลังยกเลิก…" : "ยกเลิกการต่อเทอม"}
@@ -333,7 +333,7 @@ function SubscriptionsContent() {
                     onClick={() => toggleActive(sub)}
                     disabled={busyId === sub.id}
                     className={`flex items-center gap-1 shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
-                      sub.active ? "border-rose-200 text-rose-500" : "border-slate-200 text-slate-500"
+                      sub.active ? "border-rose-200 text-rose-700" : "border-slate-200 text-slate-500"
                     }`}
                   >
                     {sub.active ? <BellOff size={12} /> : <Bell size={12} />}

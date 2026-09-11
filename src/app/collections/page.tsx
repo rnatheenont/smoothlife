@@ -37,7 +37,7 @@ export default function CollectionsIndexPage() {
                     src={c.image}
                     alt={c.title}
                     fill
-                    className="object-cover transition-transform group-hover:scale-105"
+                    className="object-cover transition-transform"
                     sizes="(max-width: 768px) 50vw, 25vw"
                   />
                 ) : (

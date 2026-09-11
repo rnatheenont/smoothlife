@@ -125,7 +125,7 @@ function AccountShell({ children }: { children: ReactNode }) {
             ))}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium text-rose-500 hover:bg-rose-50 mt-2"
+              className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium text-rose-700 hover:bg-rose-50 mt-2"
             >
               <LogOut size={16} />
               ออกจากระบบ

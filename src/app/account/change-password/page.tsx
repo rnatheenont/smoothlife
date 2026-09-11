@@ -62,7 +62,7 @@ function ChangePasswordContent() {
 
         {isReal && !devLink && !emailSent && (
           <>
-            {error && <p className="text-sm text-rose-500 mb-3">{error}</p>}
+            {error && <p className="text-sm text-rose-700 mb-3">{error}</p>}
             <button
               disabled={busy}
               onClick={requestReset}

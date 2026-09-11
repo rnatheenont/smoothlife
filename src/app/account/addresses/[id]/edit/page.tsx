@@ -71,7 +71,7 @@ function EditAddressContent() {
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-5">
           <AddressFields value={value} onChange={setValue} />
-          {error && <p className="text-sm text-rose-500">{error}</p>}
+          {error && <p className="text-sm text-rose-700">{error}</p>}
           <button
             disabled={busy}
             className="flex items-center justify-center gap-2 rounded-full bg-brand-ink text-white font-semibold py-3.5 text-sm disabled:opacity-60"

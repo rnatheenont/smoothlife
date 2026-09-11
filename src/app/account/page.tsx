@@ -277,7 +277,7 @@ function AccountDashboard() {
 
       <button
         onClick={handleLogout}
-        className="lg:hidden flex w-full items-center justify-center gap-2 rounded-xl2 border border-rose-200 py-3 text-sm font-semibold text-rose-500 mt-8"
+        className="lg:hidden flex w-full items-center justify-center gap-2 rounded-xl2 border border-rose-200 py-3 text-sm font-semibold text-rose-700 mt-8"
       >
         <LogOut size={16} />
         ออกจากระบบ

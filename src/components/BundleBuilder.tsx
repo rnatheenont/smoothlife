@@ -233,7 +233,7 @@ export default function BundleBuilder({
             <Sparkles size={16} />
             {submitting ? "กำลังเริ่มชำระเงิน…" : !meetsMin ? `เลือกอีก ${BUNDLE_MIN_ITEMS - selected.size} ชิ้น` : "สมัครสมาชิก"}
           </Button>
-          {error && <p className="mt-2 text-[11px] text-rose-500 text-center">{error}</p>}
+          {error && <p className="mt-2 text-[11px] text-rose-700 text-center">{error}</p>}
           <p className="mt-3 text-[10px] text-slate-500 text-center">
             ตัดเงิน {formatTHB(pricePerCycle)} บาททุกเดือน (ล็อกส่วนลดชุด + ส่วนลดตามเทอม {plan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเงื่อนไขเดิม จนกว่าจะยกเลิก
           </p>

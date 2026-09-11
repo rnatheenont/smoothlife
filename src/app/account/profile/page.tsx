@@ -117,7 +117,7 @@ function ProfileContent() {
           <div>
             <p className="text-sm font-bold text-brand-ink">{user.name}</p>
             <p className="text-xs text-slate-500">{user.email || user.phone}</p>
-            {avatarError && <p className="text-xs text-rose-500 mt-1">{avatarError}</p>}
+            {avatarError && <p className="text-xs text-rose-700 mt-1">{avatarError}</p>}
           </div>
         </div>
 
@@ -148,7 +148,7 @@ function ProfileContent() {
           />
         </div>
 
-        {error && <p className="text-sm text-rose-500">{error}</p>}
+        {error && <p className="text-sm text-rose-700">{error}</p>}
         {saved && <p className="text-sm text-brand-800">บันทึกแล้ว</p>}
 
         <button
@@ -295,7 +295,7 @@ function EmailLinkCard() {
             placeholder="อีเมลใหม่"
             className={inputClass}
           />
-          {error && <p className="text-xs text-rose-500">{error}</p>}
+          {error && <p className="text-xs text-rose-700">{error}</p>}
           <Button type="submit" disabled={sending}>
             {sending && <Loader2 size={14} className="animate-spin" />}
             {sending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
@@ -324,7 +324,7 @@ function EmailLinkCard() {
             maxLength={6}
             className={`${inputClass} tracking-widest text-center`}
           />
-          {error && <p className="text-xs text-rose-500">{error}</p>}
+          {error && <p className="text-xs text-rose-700">{error}</p>}
           <Button type="submit" disabled={verifying || code.length < 6}>
             {verifying && <Loader2 size={14} className="animate-spin" />}
             {verifying ? "กำลังยืนยัน…" : "ยืนยันอีเมล"}
@@ -471,7 +471,7 @@ function PhoneChangeCard() {
           : "ยังไม่มีเบอร์โทรในระบบ เพิ่มไว้เพื่อใช้เข้าสู่ระบบได้อีกทาง"}
       </p>
       {!firebaseConfigured() && (
-        <p className="text-xs text-rose-500 mb-3">ระบบยืนยันเบอร์โทรยังไม่ได้ตั้งค่า</p>
+        <p className="text-xs text-rose-700 mb-3">ระบบยืนยันเบอร์โทรยังไม่ได้ตั้งค่า</p>
       )}
 
       {!sent ? (
@@ -483,7 +483,7 @@ function PhoneChangeCard() {
             placeholder="เบอร์โทรใหม่ (08X-XXX-XXXX)"
             className={inputClass}
           />
-          {error && <p className="text-xs text-rose-500">{error}</p>}
+          {error && <p className="text-xs text-rose-700">{error}</p>}
           <Button type="submit" disabled={sending || !firebaseConfigured() || phone.trim().length < 9}>
             {sending && <Loader2 size={14} className="animate-spin" />}
             {sending ? "กำลังส่งรหัส…" : "ส่งรหัส OTP"}
@@ -505,7 +505,7 @@ function PhoneChangeCard() {
             maxLength={6}
             className={`${inputClass} tracking-widest text-center`}
           />
-          {error && <p className="text-xs text-rose-500">{error}</p>}
+          {error && <p className="text-xs text-rose-700">{error}</p>}
           <Button type="submit" disabled={verifying || code.length < 6}>
             {verifying && <Loader2 size={14} className="animate-spin" />}
             {verifying ? "กำลังยืนยัน…" : "ยืนยันเบอร์โทร"}

@@ -75,7 +75,7 @@ export default function SubscriptionPage() {
                 <div className="relative aspect-[4/3] bg-surface-soft grid grid-cols-3 gap-px p-px">
                   {items.slice(0, 3).map((p) => (
                     <div key={p.slug} className="relative bg-white">
-                      <Image src={p.image} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="200px" />
+                      <Image src={p.image} alt={p.name} fill className="object-cover transition-transform duration-500" sizes="200px" />
                     </div>
                   ))}
                 </div>

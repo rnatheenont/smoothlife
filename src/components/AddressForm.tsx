@@ -128,7 +128,7 @@ function Field({
       <span className="mb-1 block text-xs font-semibold text-brand-ink">{label}</span>
       {children}
       {show ? (
-        <span className="mt-1 flex items-center gap-1 text-[11px] text-rose-500">
+        <span className="mt-1 flex items-center gap-1 text-[11px] text-rose-700">
           <AlertCircle size={12} /> {error}
         </span>
       ) : hint ? (

@@ -54,7 +54,7 @@ function ResetPasswordContent() {
         </div>
         <h1 className="text-xl font-bold text-brand-ink mb-1">ตั้งรหัสผ่านใหม่</h1>
 
-        {!token && <p className="text-sm text-rose-500 mt-4">ลิงก์ไม่ถูกต้อง กรุณาขอลิงก์ใหม่จากหน้าบัญชีของคุณ</p>}
+        {!token && <p className="text-sm text-rose-700 mt-4">ลิงก์ไม่ถูกต้อง กรุณาขอลิงก์ใหม่จากหน้าบัญชีของคุณ</p>}
 
         {token && done && <p className="text-sm text-brand-800 mt-4">เปลี่ยนรหัสผ่านสำเร็จ กำลังพาไปหน้าเข้าสู่ระบบ…</p>}
 
@@ -88,7 +88,7 @@ function ResetPasswordContent() {
               minLength={8}
               className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal"
             />
-            {error && <p className="text-xs text-rose-500">{error}</p>}
+            {error && <p className="text-xs text-rose-700">{error}</p>}
             <Button type="submit" size="lg" disabled={busy}>
               {busy && <Loader2 size={15} className="animate-spin" />}
               บันทึกรหัสผ่านใหม่
