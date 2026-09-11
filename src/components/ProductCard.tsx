@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingBag, Check } from "lucide-react";
+import { Heart, Plus, Check, Flame } from "lucide-react";
 import { Product } from "@/data/types";
 import { formatTHB } from "@/lib/format";
 import StarRating from "./StarRating";
 import { useCart, useWishlist } from "@/lib/cart-context";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
 import clsx from "clsx";
+import { useLang } from "@/lib/lang-context";
 
 const badgeStyles: Record<string, string> = {
   Bestseller: "bg-brand-emerald text-white",
@@ -32,6 +33,19 @@ function cardBadgeChips(badges: string[] | undefined, discount: number, promoChi
   return (promoChip ? [promoChip, ...chips] : chips).slice(0, 2);
 }
 
+/**
+ * Units sold the way Thai shoppers read it on every marketplace: exact under a
+ * thousand, then พัน / หมื่น — and "k" for English readers, since the page
+ * translator would otherwise turn "1.2พัน" into something nobody recognises.
+ */
+function formatSold(n: number, lang: string) {
+  const trim = (x: number) => x.toFixed(1).replace(/\.0$/, "");
+  if (lang === "en") return n < 1000 ? String(n) : `${trim(n / 1000)}k`;
+  if (n < 1000) return n.toLocaleString("th-TH");
+  if (n < 10000) return `${trim(n / 1000)}พัน`;
+  return `${trim(n / 10000)}หมื่น`;
+}
+
 export default function ProductCard({ product }: { product: Product }) {
   const { addItem, giftPromos } = useCart();
   const { settings } = useWidgetSettings();
@@ -48,6 +62,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const promoChip = isInActivePromo ? ((settings.promotion_badge.config.labelTh as string) || "ของแถม") : null;
   const isWished = has(product.slug);
   const [added, setAdded] = useState(false);
+  const { lang } = useLang();
   const discount = product.compareAtPrice
     ? Math.round(100 - (product.price / product.compareAtPrice) * 100)
     : 0;
@@ -123,27 +138,54 @@ export default function ProductCard({ product }: { product: Product }) {
         ) : (
           <p className="text-[11px] text-slate-400 line-clamp-1">{product.shortDesc}</p>
         )}
+        {/* Real units sold, counted at build time from paid orders net of
+            refunds — see fetchUnitsSold in scripts/fetch-products.js. Shown
+            only once something has sold: "ขายแล้ว 0 ชิ้น" is a reason not to
+            buy, and inventing a number is not an option. */}
+        {(product.sold ?? 0) > 0 && (
+          <p translate="no" className="flex items-center gap-1 text-[11px] text-slate-500">
+            <Flame size={11} className="shrink-0 text-orange-500" />
+            {lang === "en" ? (
+              <>
+                <span className="font-semibold text-slate-700">{formatSold(product.sold!, lang)}</span> sold
+              </>
+            ) : (
+              <>
+                ขายแล้ว <span className="font-semibold text-slate-700">{formatSold(product.sold!, lang)}</span> ชิ้น
+              </>
+            )}
+          </p>
+        )}
         {lowStock && <p className="text-[11px] font-semibold text-amber-600">เหลือเพียง {defaultVariant.quantity} ชิ้น</p>}
-        <div className="mt-auto flex items-baseline gap-2 pt-1">
-          {hasMultiplePrices && <span className="text-xs text-slate-400">เริ่มต้น</span>}
-          <span className="text-base font-bold text-brand-ink">{formatTHB(product.price)}</span>
-          {product.compareAtPrice && (
-            <span className="text-xs text-slate-400 line-through">{formatTHB(product.compareAtPrice)}</span>
+        {/* Price and the add button share one row: the full-width button
+            under every card turned a grid of products into a grid of green
+            bars, and it was the tallest thing on the card. */}
+        <div className="mt-auto flex items-end justify-between gap-2 pt-1">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+            {hasMultiplePrices && <span className="text-xs text-slate-400">เริ่มต้น</span>}
+            <span className="text-base font-bold text-brand-ink">{formatTHB(product.price)}</span>
+            {product.compareAtPrice && (
+              <span className="text-xs text-slate-400 line-through">{formatTHB(product.compareAtPrice)}</span>
+            )}
+          </div>
+          {soldOut ? (
+            <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1.5 text-[11px] font-semibold text-slate-400">
+              สินค้าหมด
+            </span>
+          ) : (
+            <button
+              onClick={handleAdd}
+              aria-label={added ? "เพิ่มลงตะกร้าแล้ว" : `เพิ่ม ${product.name} ลงตะกร้า`}
+              title={added ? "เพิ่มแล้ว" : "เพิ่มลงตะกร้า"}
+              className={clsx(
+                "grid h-9 w-9 shrink-0 place-items-center rounded-full text-white shadow-card transition-all hover:shadow-cardHover active:scale-90",
+                added ? "bg-brand-emerald" : "bg-brand-gradient hover:brightness-105"
+              )}
+            >
+              {added ? <Check size={17} strokeWidth={2.75} /> : <Plus size={18} strokeWidth={2.75} />}
+            </button>
           )}
         </div>
-        <button
-          onClick={handleAdd}
-          disabled={soldOut}
-          className={clsx(
-            "mt-2 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold py-2 transition-all active:scale-95",
-            soldOut
-              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-              : clsx("text-white", added ? "bg-brand-emerald" : "bg-brand-gradient hover:opacity-90")
-          )}
-        >
-          {soldOut ? null : added ? <Check size={14} /> : <ShoppingBag size={14} />}
-          {soldOut ? "สินค้าหมด" : added ? "เพิ่มแล้ว" : "เพิ่มลงตะกร้า"}
-        </button>
       </div>
     </div>
   );

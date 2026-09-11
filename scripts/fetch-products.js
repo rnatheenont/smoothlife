@@ -561,6 +561,7 @@ function serialise(list) {
     if (p.images.length > 2) f.push(`images:[${p.images.map((i) => `"${esc(i)}"`).join(",")}]`);
     f.push(`rating:${p.rating}`);
     f.push(`reviewCount:${p.reviewCount}`);
+    if (p.sold) f.push(`sold:${p.sold}`);
     if (p.badges.length) f.push(`badges:[${p.badges.map((b) => `"${b}"`).join(",")}]`);
     f.push(`shortDesc:"${esc(p.shortDesc)}"`);
     if (p.description) f.push(`description:"${esc(p.description)}"`);
@@ -593,6 +594,104 @@ function serialise(list) {
   );
 }
 
+/* ---------- units sold ---------- */
+
+// How many of each product have actually been sold, for the "ขายแล้ว" line on
+// product cards. Real orders only, read through the Admin API: paid and
+// partially refunded orders, minus cancellations, counting each line's
+// currentQuantity — Shopify's quantity after refunds and edits, so a returned
+// item does not keep counting as a sale.
+//
+// A bulk operation rather than paginated queries: the shop has thousands of
+// orders, and orders × line items blows straight through the per-query cost
+// limit. Bulk runs server-side with no such limit and hands back a file.
+//
+// Never fails the build. A card without a sold count is fine; a site with no
+// catalogue because an optional number could not be fetched is not.
+async function fetchUnitsSold() {
+  const clientId = process.env.SHOPIFY_ADMIN_CLIENT_ID;
+  const clientSecret = process.env.SHOPIFY_ADMIN_CLIENT_SECRET;
+  if (!DOMAIN || !clientId || !clientSecret) {
+    console.log("[catalogue] units sold: no admin credentials — skipping");
+    return new Map();
+  }
+  try {
+    const tokenRes = await fetch(`https://${DOMAIN}/admin/oauth/access_token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+      body: new URLSearchParams({ grant_type: "client_credentials", client_id: clientId, client_secret: clientSecret }),
+    });
+    if (!tokenRes.ok) throw new Error("token exchange " + tokenRes.status);
+    const token = (await tokenRes.json()).access_token;
+
+    const admin = async (query, variables) => {
+      const res = await fetch(`https://${DOMAIN}/admin/api/${API_VERSION}/graphql.json`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": token },
+        body: JSON.stringify({ query, variables }),
+      });
+      const json = await res.json();
+      if (json.errors) throw new Error(JSON.stringify(json.errors).slice(0, 300));
+      return json.data;
+    };
+
+    const bulkQuery = `{
+      orders(query: "financial_status:paid OR financial_status:partially_refunded") {
+        edges { node { id cancelledAt lineItems { edges { node { currentQuantity product { id } } } } } }
+      }
+    }`;
+    const started = await admin(
+      `mutation Bulk($q: String!) { bulkOperationRunQuery(query: $q) { bulkOperation { id } userErrors { message } } }`,
+      { q: bulkQuery }
+    );
+    const errs = started.bulkOperationRunQuery.userErrors;
+    if (errs && errs.length) throw new Error(errs.map((e) => e.message).join("; "));
+    const opId = started.bulkOperationRunQuery.bulkOperation.id;
+
+    // A few thousand orders finish in well under a minute; three is generous
+    // and still nothing next to a build.
+    let url = null;
+    for (let i = 0; i < 60; i++) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const poll = await admin(`query Op($id: ID!) { node(id: $id) { ... on BulkOperation { status url errorCode } } }`, { id: opId });
+      const op = poll.node;
+      if (op.status === "COMPLETED") {
+        url = op.url;
+        break;
+      }
+      if (["FAILED", "CANCELED", "EXPIRED"].includes(op.status)) throw new Error("bulk " + op.status + " " + (op.errorCode || ""));
+    }
+    if (url === null) throw new Error("bulk operation did not finish in time");
+
+    const sold = new Map();
+    if (!url) return sold; // COMPLETED with no rows: nothing sold yet
+    const text = await (await fetch(url)).text();
+    const cancelled = new Set();
+    const lines = [];
+    for (const raw of text.split("\n")) {
+      if (!raw.trim()) continue;
+      const row = JSON.parse(raw);
+      if (row.id && row.id.includes("/Order/")) {
+        if (row.cancelledAt) cancelled.add(row.id);
+      } else if (row.__parentId) {
+        lines.push(row);
+      }
+    }
+    for (const line of lines) {
+      if (cancelled.has(line.__parentId)) continue;
+      const productId = line.product && line.product.id;
+      const qty = Number(line.currentQuantity) || 0;
+      if (!productId || qty <= 0) continue;
+      sold.set(productId, (sold.get(productId) || 0) + qty);
+    }
+    console.log(`[catalogue] units sold: ${sold.size} products from ${lines.length} order lines`);
+    return sold;
+  } catch (err) {
+    console.warn("[catalogue] units sold unavailable — cards will show none:", err.message || err);
+    return new Map();
+  }
+}
+
 async function main() {
   console.log("[catalogue] fetching live catalogue from " + (DOMAIN || "(CATALOGUE_FIXTURE)"));
   const raw = await fetchAll();
@@ -606,6 +705,16 @@ async function main() {
     if (!m) continue;
     mapped.push(m);
     idToSlug.set(p.id, m.slug);
+  }
+  // Fetched after the catalogue so a slow or failed sales read can only ever
+  // cost the "ขายแล้ว" line, never the products themselves.
+  if (!process.env.CATALOGUE_FIXTURE) {
+    const sold = await fetchUnitsSold();
+    for (const p of raw) {
+      const slug = idToSlug.get(p.id);
+      const m = slug && mapped.find((x) => x.slug === slug);
+      if (m && sold.get(p.id)) m.sold = sold.get(p.id);
+    }
   }
   const min = process.env.CATALOGUE_FIXTURE ? 1 : 1;
   if (mapped.length < min) throw new Error("only " + mapped.length + " usable products");

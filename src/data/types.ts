@@ -45,6 +45,8 @@ export type Product = {
   images?: string[];
   rating: number;
   reviewCount: number;
+  /** Units actually sold (paid orders, net of refunds and cancellations). Set at build time. */
+  sold?: number;
   badges?: ("Bestseller" | "New" | "Sale" | "BOGO" | "Bundle")[];
   shortDesc: string;
   description?: string;
