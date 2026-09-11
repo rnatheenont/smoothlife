@@ -26,6 +26,7 @@ import LanguageSwitch from "@/components/LanguageSwitch";
 import NotificationBell from "@/components/NotificationBell";
 import HeaderSearch from "@/components/HeaderSearch";
 import { Avatar, Button } from "@/components/ui";
+import BrandLogo from "@/components/BrandLogo";
 
 const navLinks = [
   { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: LayoutGrid },
@@ -117,9 +118,8 @@ export default function Header() {
           <Menu size={24} />
         </button>
 
-        <Link href="/" className="shrink-0 font-extrabold text-xl md:text-2xl tracking-tight">
-          <span className="brand-text-gradient">Smoothlife</span>
-          <span className="text-brand-800">.com</span>
+        <Link href="/" aria-label="Smoothlife.com หน้าแรก" className="shrink-0">
+          <BrandLogo priority className="h-6 md:h-7" />
         </Link>
 
         <div className="hidden md:flex flex-1 max-w-xl">
@@ -236,10 +236,7 @@ export default function Header() {
           <div className="absolute left-0 top-0 flex max-h-[100dvh] w-80 max-w-[85vw] flex-col bg-white shadow-xl overflow-y-auto overscroll-contain rounded-br-2xl animate-fadeUp">
             <div className="bg-brand-gradient-soft px-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-5">
               <div className="flex items-center justify-between mb-5">
-                <span className="font-extrabold text-lg">
-                  <span className="brand-text-gradient">Smoothlife</span>
-                  <span className="text-brand-800">.com</span>
-                </span>
+                <BrandLogo className="h-6" />
                 <button
                   onClick={() => setOpen(false)}
                   aria-label="Close menu"

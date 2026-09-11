@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Facebook, Instagram, MessageCircle, Send, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui";
+import BrandLogo from "@/components/BrandLogo";
 
 const columns = [
   {
@@ -99,10 +100,7 @@ export default function Footer() {
     <footer className="mt-16 border-t border-slate-100 bg-surface-soft">
       <div className="container-page py-12 grid grid-cols-2 md:grid-cols-5 gap-8">
         <div className="col-span-2">
-          <div className="font-extrabold text-xl mb-3">
-            <span className="brand-text-gradient">Smoothlife</span>
-            <span className="text-brand-800">.com</span>
-          </div>
+          <BrandLogo className="mb-3 h-7" />
           <p className="text-sm text-slate-500 max-w-xs">
             ศูนย์รวมสินค้าและบริการเพื่อสุขภาพและความงาม ของแท้ 100% มีอย. จัดส่งทั่วไทย
           </p>
