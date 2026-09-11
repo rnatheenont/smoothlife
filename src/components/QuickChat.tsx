@@ -202,6 +202,43 @@ function renderTextBlock(text: string, keyPrefix: string): ReactNode[] {
 // learned to strip [[ASK: ...]] still carry it — so clean the marker off for
 // display, and hand back the last reply's options so reopening the panel
 // restores the tappable answers instead of leaving dead bracket text.
+// The unread badge counts replies — from the AI or from staff — that arrived
+// after the customer last had the panel open. The marker is a timestamp kept
+// on the device, so it survives reloads; it used to be a count held in memory
+// that started from zero on every page, which made a customer with any
+// history at all see "9+" on arrival.
+const CHAT_SEEN_KEY = "sl_chat_seen_at";
+
+function readChatSeen(): string | null {
+  try {
+    return localStorage.getItem(CHAT_SEEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function markChatSeen(latestAt: string | null | undefined) {
+  try {
+    localStorage.setItem(CHAT_SEEN_KEY, latestAt || new Date().toISOString());
+  } catch {}
+}
+
+function countUnread(
+  messages: { role: string; created_at?: string }[],
+  latestAt: string | null | undefined
+): number {
+  const seen = readChatSeen();
+  if (!seen) {
+    // First time this device has checked: the history so far is not news.
+    if (latestAt) markChatSeen(latestAt);
+    return 0;
+  }
+  const seenAt = Date.parse(seen);
+  return messages.filter(
+    (m) => m.role === "assistant" && m.created_at && Date.parse(m.created_at) > seenAt
+  ).length;
+}
+
 function hydrateHistory(
   raw: (Msg & { from_staff?: boolean; created_at?: string; attachmentUrl?: string | null })[]
 ): { messages: Msg[]; ask: string[] } {
@@ -305,10 +342,6 @@ export default function QuickChat() {
   }, []);
   const [unread, setUnread] = useState(0);
   const [backToAiBusy, setBackToAiBusy] = useState(false);
-  // How many messages had been seen the last time the panel was open. Kept on
-  // the device so a badge survives a reload — the point of the badge is that
-  // the customer wasn't looking.
-  const seenCountRef = useRef<number>(0);
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
   const [badgeIndex, setBadgeIndex] = useState(0);
@@ -454,8 +487,8 @@ export default function QuickChat() {
           const { messages, ask } = hydrateHistory(data.messages);
           setMessages(messages);
           setAskOptions(ask);
-          seenCountRef.current = data.messages.length;
           latestAtRef.current = data.latestAt ?? null;
+          markChatSeen(data.latestAt);
         }
         setHumanHandling(Boolean(data?.humanHandling));
         setCaseQueued(Boolean(data?.caseQueued));
@@ -494,11 +527,11 @@ export default function QuickChat() {
               latestAtRef.current = data.latestAt;
               setMessages(hydrateHistory(data.messages).messages);
             }
-            seenCountRef.current = Math.max(seenCountRef.current, data.messages.length);
+            markChatSeen(data.latestAt);
             setUnread(0);
           }
-        } else if (data.latestAt && data.latestAt !== latestAtRef.current) {
-          setUnread(Math.max(1, data.messages.length - seenCountRef.current));
+        } else {
+          setUnread(countUnread(data.messages, data.latestAt));
         }
       } catch {
         // A failed poll is not worth telling the customer about; the next one
@@ -507,6 +540,10 @@ export default function QuickChat() {
     }
     const every = open ? 5000 : 30000;
     const id = window.setInterval(poll, every);
+    // Check straight away for anyone who has chatted before, so a reply that
+    // came while they were gone shows on arrival rather than 30 s later.
+    // Everyone else has nothing to be told about yet.
+    if (!open && (user || readChatSeen())) void poll();
     document.addEventListener("visibilitychange", poll);
     return () => {
       cancelled = true;
@@ -520,7 +557,7 @@ export default function QuickChat() {
   useEffect(() => {
     if (open) {
       setUnread(0);
-      seenCountRef.current = messages.length;
+      markChatSeen(latestAtRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -1000,7 +1037,8 @@ export default function QuickChat() {
               it is open the customer is reading, and a badge over what they
               are already looking at is noise. */}
           {!open && unread > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 z-20 grid h-6 min-w-6 place-items-center rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-white shadow-md ring-2 ring-white">
+            // Low on the mascot's side, clear of the speech bubble above it.
+            <span className="absolute -right-0.5 bottom-0.5 z-20 grid h-6 min-w-6 place-items-center rounded-full bg-rose-500 px-1.5 text-[11px] font-bold tabular-nums text-white shadow-md ring-2 ring-white">
               {unread > 9 ? "9+" : unread}
             </span>
           )}
