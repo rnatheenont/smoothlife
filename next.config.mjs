@@ -28,6 +28,14 @@ const nextConfig = {
   // without asking.
   async headers() {
     return [
+      // The live skin scan's face model and WASM runtime (~7 MB compressed
+      // together) don't change between deploys of the same package version,
+      // so a returning scanner shouldn't have to revalidate them each visit.
+      // A day, not forever: the filenames aren't content-hashed.
+      {
+        source: "/:dir(models|mediapipe)/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
+      },
       {
         source: "/:path*",
         headers: [

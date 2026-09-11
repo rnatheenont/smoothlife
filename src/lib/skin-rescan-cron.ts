@@ -22,7 +22,9 @@ export async function remindSkinRescans() {
   let notified = 0;
   let pushed = 0;
   for (const scan of due) {
-    const body = `ครั้งก่อนอายุผิวประมาณ ${scan.skin_age} ปี สแกนอีกครั้งเพื่อดูว่าผิวเปลี่ยนไปแค่ไหน ใช้แค่รูปหน้าตรงรูปเดียว`;
+    // No result in the text: a notification or LINE message can be seen on a
+    // lock screen, and it outlives the scan if the member deletes it.
+    const body = "สแกนอีกครั้งเพื่อดูว่าผิวเปลี่ยนไปแค่ไหนตั้งแต่ครั้งก่อน ใช้เวลาไม่ถึงนาที";
     try {
       await supabaseRest("notifications", {
         method: "POST",

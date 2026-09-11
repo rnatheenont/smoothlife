@@ -1,4 +1,4 @@
-import { AGE_RANGES, MAIN_CONCERNS, SKIN_TYPES, clarityLevel } from "@/lib/skin-coach";
+import { AGE_RANGES, CONCERNS, SKIN_TYPES, clarityLevel } from "@/lib/skin-coach";
 
 export type AdminSkinScan = {
   id: string;
@@ -18,8 +18,13 @@ const METRICS: [keyof AdminSkinScan["metrics"], string][] = [
   ["wrinkles", "ริ้วรอย"],
 ];
 
-const label = <T extends { key: string; label: string }>(list: readonly T[], key: string | null) =>
-  list.find((x) => x.key === key)?.label ?? null;
+// Skin types and concerns are stored comma-joined (several can be chosen).
+const label = <T extends { key: string; label: string }>(list: readonly T[], keys: string | null) =>
+  (keys ?? "")
+    .split(",")
+    .map((k) => list.find((x) => x.key === k)?.label)
+    .filter(Boolean)
+    .join(", ") || null;
 
 /**
  * Saved Skin Coach scans for support staff: newest in full, older ones as a
@@ -32,7 +37,7 @@ export default function SkinScanSummary({ scans, compact = false }: { scans: Adm
   const said = [
     label(AGE_RANGES, latest.age_range) && `อายุ ${label(AGE_RANGES, latest.age_range)}`,
     label(SKIN_TYPES, latest.skin_type),
-    label(MAIN_CONCERNS, latest.main_concern) && `กังวล${label(MAIN_CONCERNS, latest.main_concern)}`,
+    label(CONCERNS, latest.main_concern) && `กังวล${label(CONCERNS, latest.main_concern)}`,
   ].filter(Boolean);
 
   return (

@@ -3,6 +3,9 @@ import { aiRateLimit } from "@/lib/ai-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Up to six photos, and the model thinks before it answers: well past the
+// 10-15 s some plans default a function to.
+export const maxDuration = 60;
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 const API_URL = "https://api.anthropic.com/v1/messages";
@@ -65,6 +68,42 @@ function extractJson(text: string): any | null {
   }
 }
 
+const DISCLAIMER =
+  "ผลนี้เป็นการประเมินเบื้องต้นเพื่อความสวยงามจากภาพถ่ายเท่านั้น ไม่ใช่การวินิจฉัยทางการแพทย์ หากมีความกังวลด้านผิวหนัง ควรปรึกษาแพทย์ผิวหนัง";
+
+/**
+ * Makes the model's JSON safe for the page: numbers as numbers, clamped to
+ * their ranges, notes as strings, the disclaimer always present. "evidence"
+ * — the model's working, there to make it look before it scores — is dropped.
+ * Only an explicit `faceDetected: false` counts as "no face"; a missing flag
+ * with real scores is treated as a face.
+ */
+function normalise(raw: any) {
+  const num = (v: unknown, min: number, max: number) => {
+    const n = typeof v === "number" ? v : typeof v === "string" ? parseFloat(v) : NaN;
+    return Number.isFinite(n) ? Math.round(Math.min(max, Math.max(min, n))) : null;
+  };
+  const str = (v: unknown, fallback = "") => (typeof v === "string" ? v.slice(0, 200) : fallback);
+  const trait = (t: any) => ({ score: num(t?.score, 0, 100), note: str(t?.note) });
+  const acne = trait(raw?.acne);
+  const pores = trait(raw?.pores);
+  const darkSpots = trait(raw?.darkSpots);
+  const wrinkles = trait(raw?.wrinkles);
+  const years = num(raw?.skinAge?.years, 0, 100);
+  const complete = [acne, pores, darkSpots, wrinkles].every((t) => t.score !== null) && years !== null;
+  if (!complete) return null;
+  return {
+    faceDetected: raw?.faceDetected !== false && years! > 0,
+    skinAge: { years: years!, note: str(raw?.skinAge?.note) },
+    acne: acne as { score: number; note: string },
+    pores: pores as { score: number; note: string },
+    darkSpots: darkSpots as { score: number; note: string },
+    wrinkles: wrinkles as { score: number; note: string },
+    overallNote: str(raw?.overallNote),
+    disclaimer: str(raw?.disclaimer, DISCLAIMER) || DISCLAIMER,
+  };
+}
+
 type ImageInput = { base64: string; mediaType: "image/jpeg" | "image/png"; zone?: string };
 
 export async function POST(req: NextRequest) {
@@ -101,8 +140,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "missing image" }, { status: 400 });
   }
   const totalSize = images.reduce((sum, i) => sum + i.base64.length, 0);
-  if (totalSize > 14_000_000) {
-    return NextResponse.json({ error: "image too large" }, { status: 413 });
+  if (totalSize > 4_000_000) {
+    return NextResponse.json(
+      { error: "image_too_large", message: "รูปใหญ่เกินไป ลองถ่ายใหม่หรือใช้จำนวนมุมน้อยลง" },
+      { status: 413 }
+    );
   }
 
   const key = process.env.ANTHROPIC_API_KEY;
@@ -111,7 +153,7 @@ export async function POST(req: NextRequest) {
       {
         error: "not_configured",
         message:
-          "ยังไม่ได้เชื่อมต่อระบบวิเคราะห์ผิวครับ กรุณาเพิ่มค่า ANTHROPIC_API_KEY ใน Environment Variables แล้ว deploy ใหม่",
+          "ระบบวิเคราะห์ผิวยังไม่พร้อมใช้งานในตอนนี้ กรุณาลองใหม่ภายหลัง",
       },
       { status: 200 }
     );
@@ -127,7 +169,9 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 1000,
+        // Sonnet 5 thinks by default and thinking counts against this cap;
+        // at 1000 a long look at six photos could be cut off before the JSON.
+        max_tokens: 8000,
         system: SYSTEM_PROMPT,
         messages: [
           {
@@ -166,6 +210,15 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
+    if (data?.stop_reason === "refusal") {
+      return NextResponse.json(
+        { error: "refused", message: "ระบบวิเคราะห์รูปนี้ไม่ได้ ลองถ่ายใหม่ให้เห็นผิวหน้าชัดๆ" },
+        { status: 200 }
+      );
+    }
+    if (data?.stop_reason === "max_tokens") {
+      console.error("[skin-coach] hit max_tokens before finishing the JSON");
+    }
     const text = (data?.content || [])
       .filter((b: any) => b.type === "text")
       .map((b: any) => b.text)
@@ -173,17 +226,14 @@ export async function POST(req: NextRequest) {
       .trim();
 
     const parsed = extractJson(text);
-    if (!parsed) {
+    if (!parsed || !normalise(parsed)) {
       return NextResponse.json(
         { error: "parse_error", message: "ขออภัยครับ ผลวิเคราะห์ไม่สมบูรณ์ กรุณาลองใหม่อีกครั้ง" },
         { status: 200 }
       );
     }
 
-    // "evidence" is the model's working, there to make it look before it
-    // scores; the page shows the Thai notes instead.
-    if (parsed && typeof parsed === "object") delete parsed.evidence;
-    return NextResponse.json({ result: parsed });
+    return NextResponse.json({ result: normalise(parsed) });
   } catch (e: any) {
     console.error("[skin-coach] threw " + String(e));
     return NextResponse.json(

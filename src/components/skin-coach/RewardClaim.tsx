@@ -32,6 +32,10 @@ export default function RewardClaim({ score }: { score: number }) {
         setError(data.error || "ขออภัยค่ะ รับรางวัลไม่สำเร็จ");
         return;
       }
+      if (data.alreadyClaimed && data.rewardType === "points") {
+        setError("เดือนนี้รับรางวัลสแกนผิวไปแล้ว รับได้อีกครั้งเดือนหน้า");
+        return;
+      }
       if (data.rewardType === "points") {
         setPointsAwarded(data.points ?? SKIN_COACH_POINTS_REWARD);
         refreshUser();

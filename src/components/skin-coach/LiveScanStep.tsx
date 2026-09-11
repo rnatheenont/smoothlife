@@ -24,7 +24,8 @@ type Connection = { start: number; end: number };
 // Tuned for "easy" over "perfect": the analysis copes with a slightly turned
 // or off-centre face far better than a person copes with a scan that won't
 // fire. Anything stricter goes back to the photo picker's single tap.
-const HOLD_MS = 400; // steady this long before a photo is taken
+const HOLD_MS = 1500; // steady this long before a photo is taken, counted down 3-2-1
+const SETTLE_MS = 1800; // after each step starts: time to read it and get into place
 const GRACE_MS = 250; // a wobble shorter than this doesn't restart the hold
 const FRONT_YAW = 0.12; // how far off straight still counts as straight
 const SIDE_YAW_MIN = 0.12; // turned enough to show a cheek
@@ -75,18 +76,27 @@ function loadLandmarker() {
  * turned neither left nor right nor tipped sideways, and a strict pitch gate
  * mostly stops people who hold the phone a little low.
  */
-function geometry(lm: NormalizedLandmark[]) {
+function geometry(lm: NormalizedLandmark[], aspect: number) {
   // 1 nose tip, 234 / 454 the two sides of the face, 10 top of forehead, 152 chin.
   const nose = lm[1];
   const a = lm[234];
   const b = lm[454];
+  // Landmarks are normalised per axis, so on a non-square frame a unit of y
+  // isn't a unit of x; `aspect` (height / width) puts both in widths.
   const dx = b.x - a.x;
-  const width = Math.hypot(dx, b.y - a.y);
+  const dy = (b.y - a.y) * aspect;
+  const width = Math.hypot(dx, dy);
   // Signed: positive means the nose has swung toward landmark 454 — the
   // person turned to their own left, showing their right cheek. Independent
   // of whether the preview is mirrored.
-  const yaw = (nose.x - (a.x + b.x) / 2) / (dx || 1e-6);
-  let roll = (Math.atan2(b.y - a.y, dx) * 180) / Math.PI;
+  // The nose's offset from the face's midpoint, measured along the
+  // cheek-to-cheek line rather than the screen's x-axis — so a head that is
+  // tipped a little doesn't read as turned, which made "look straight at the
+  // camera" impossible to satisfy for anyone holding their head at an angle.
+  const nx = nose.x - (a.x + b.x) / 2;
+  const ny = (nose.y - (a.y + b.y) / 2) * aspect;
+  const yaw = (nx * dx + ny * dy) / (dx * dx + dy * dy || 1e-6);
+  let roll = (Math.atan2(dy, dx) * 180) / Math.PI;
   if (Math.abs(roll) > 90) roll -= 180 * Math.sign(roll);
   return { width, yaw, roll, cx: (a.x + b.x) / 2, cy: (lm[10].y + lm[152].y) / 2 };
 }
@@ -114,6 +124,9 @@ export default function LiveScanStep({
   const phaseRef = useRef<Phase>("intro");
   const shotsRef = useRef<Shots>({});
   const sideASignRef = useRef(0);
+  // Once the scan has handed its photos on (or been abandoned), a capture
+  // still finishing must not hand them on a second time.
+  const finishedRef = useRef(false);
 
   const [phase, setPhase] = useState<Phase>("intro");
   const [hint, setHint] = useState("");
@@ -142,7 +155,9 @@ export default function LiveScanStep({
   // Warm the model up while the intro is being read, so pressing start
   // mostly waits on the camera rather than a 4 MB download.
   useEffect(() => {
-    const idle = window.setTimeout(() => void loadLandmarker().catch(() => {}), 300);
+    // Skipped on data saver: the model and runtime are several megabytes.
+    const saveData = (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
+    const idle = saveData ? undefined : window.setTimeout(() => void loadLandmarker().catch(() => {}), 300);
     return () => {
       window.clearTimeout(idle);
       stopCamera();
@@ -150,22 +165,40 @@ export default function LiveScanStep({
   }, []);
 
   function finish(final: Shots) {
+    if (finishedRef.current) return;
     stopCamera();
+    if (!final.front) {
+      // Nothing usable to analyse: say so here rather than handing on nothing.
+      setError("ยังไม่ได้รูปหน้าตรง ลองสแกนอีกครั้ง หรือถ่ายรูปเองแทน");
+      go("error");
+      return;
+    }
+    finishedRef.current = true;
     onComplete(final);
+  }
+
+  function abandon() {
+    finishedRef.current = true;
+    stopCamera();
+    onUsePhoto();
   }
 
   async function start() {
     go("loading");
     setError(null);
+    finishedRef.current = false;
+    shotsRef.current = {};
+    setShots({});
     try {
-      const [stream, { landmarker, contours }] = await Promise.all([
-        navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 960 } },
-          audio: false,
-        }),
-        loadLandmarker(),
-      ]);
-      streamRef.current = stream;
+      // The stream is kept the moment it arrives, so if the model then fails
+      // to load, stopCamera still has it to switch off.
+      const streamPromise = navigator.mediaDevices
+        .getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false })
+        .then((stream) => {
+          streamRef.current = stream;
+          return stream;
+        });
+      const [stream, { landmarker, contours }] = await Promise.all([streamPromise, loadLandmarker()]);
       const video = videoRef.current!;
       video.srcObject = stream;
       await video.play();
@@ -205,6 +238,9 @@ export default function LiveScanStep({
     let lastSeen = false;
     let avg: ReturnType<typeof geometry> | null = null;
     let latestLm: NormalizedLandmark[] | undefined;
+    // No auto-capture until this time: a moment at the start of each step to
+    // read what it asks and get into place.
+    let settleUntil = performance.now() + SETTLE_MS;
 
     const say = (text: string) => {
       if (text !== lastHint) {
@@ -255,25 +291,45 @@ export default function LiveScanStep({
       ctx.stroke();
     };
 
-    const capture = async (key: AngleKey) => {
-      capturing = true;
-      setFlash(true);
-      window.setTimeout(() => setFlash(false), 180);
+    const grabFrame = async (): Promise<Blob | null> => {
       const frame = document.createElement("canvas");
       frame.width = video.videoWidth;
       frame.height = video.videoHeight;
       frame.getContext("2d")!.drawImage(video, 0, 0); // un-mirrored: the real face, as the model should see it
       const blob = await new Promise<Blob | null>((resolve) => frame.toBlob(resolve, "image/jpeg", 0.92));
-      if (blob) {
+      if (blob) return blob;
+      // Some browsers hand back null under memory pressure; the data URL route
+      // usually still works.
+      try {
+        return await (await fetch(frame.toDataURL("image/jpeg", 0.92))).blob();
+      } catch {
+        return null;
+      }
+    };
+
+    /** Takes the photo for `key`. False (and a message) if it couldn't. */
+    const capture = async (key: AngleKey): Promise<boolean> => {
+      capturing = true;
+      setFlash(true);
+      window.setTimeout(() => setFlash(false), 180);
+      try {
+        const blob = await grabFrame();
+        if (!blob) throw new Error("no frame");
         const image = await resizeForUpload(blob);
         shotsRef.current = { ...shotsRef.current, [key]: image };
         setShots(shotsRef.current);
+        return true;
+      } catch {
+        say("ถ่ายไม่สำเร็จ ลองค้างไว้อีกครั้ง");
+        return false;
+      } finally {
+        holdSince = null;
+        badSince = null;
+        avg = null;
+        showPct(0);
+        settleUntil = performance.now() + SETTLE_MS;
+        capturing = false;
       }
-      holdSince = null;
-      badSince = null;
-      avg = null;
-      showPct(0);
-      capturing = false;
     };
 
     // Straight on first, then whichever way they turn, then the other way.
@@ -284,14 +340,17 @@ export default function LiveScanStep({
       const turned = Math.abs(yaw) >= 0.05;
       const missing: AngleKey = shotsRef.current.cheek ? "cheekRight" : "cheek";
       const sideKey: AngleKey = turned ? (yaw > 0 ? "cheekRight" : "cheek") : missing;
+      const after = (next: () => void) => (ok: boolean) => {
+        if (ok && !finishedRef.current) next();
+      };
       if (phaseNow === "front") {
-        void capture("front").then(() => go("sideA"));
+        void capture("front").then(after(() => go("sideA")));
       } else if (phaseNow === "sideA") {
         sideASignRef.current = turned ? Math.sign(yaw) : sideKey === "cheekRight" ? 1 : -1;
-        void capture(sideKey).then(() => go("sideB"));
+        void capture(sideKey).then(after(() => go("sideB")));
       } else if (phaseNow === "sideB") {
         const key = sideKey in shotsRef.current ? missing : sideKey;
-        void capture(key).then(() => finish(shotsRef.current));
+        void capture(key).then(after(() => finish(shotsRef.current)));
       }
     };
 
@@ -308,8 +367,16 @@ export default function LiveScanStep({
       lastTime = video.currentTime;
 
       const now = performance.now();
-      const result = landmarker.detectForVideo(video, now);
-      const lm = result.faceLandmarks?.[0];
+      let lm: NormalizedLandmark[] | undefined;
+      try {
+        lm = landmarker.detectForVideo(video, now).faceLandmarks?.[0];
+      } catch {
+        // A tracker that throws once will throw every frame: stop and offer photos.
+        stopCamera();
+        setError("การสแกนสดขัดข้องในเครื่องนี้ ถ่ายหรือเลือกรูปเองแทนได้เลย");
+        go("error");
+        return;
+      }
       latestLm = lm;
       showSeen(Boolean(lm));
 
@@ -329,7 +396,7 @@ export default function LiveScanStep({
       } else {
         // A running average, so the jitter of a hand-held phone doesn't flip
         // the checks on and off from one frame to the next.
-        const g = geometry(lm);
+        const g = geometry(lm, video.videoHeight / (video.videoWidth || 1));
         avg = avg
           ? {
               width: avg.width + SMOOTH * (g.width - avg.width),
@@ -371,9 +438,16 @@ export default function LiveScanStep({
         badSince = null;
       }
       draw(lm, true);
+      if (now < settleUntil) {
+        // In place already, but give the step its moment before counting.
+        holdSince = null;
+        showPct(0);
+        say("ดีแล้ว เตรียมค้างไว้…");
+        return;
+      }
       holdSince ??= now;
-      say("ค้างไว้แบบนี้…");
       const held = now - holdSince;
+      say(`ค้างไว้ ถ่ายใน ${Math.max(1, Math.ceil((HOLD_MS - held) / 500))}…`);
       showPct(Math.min(100, (held / HOLD_MS) * 100));
       if (held < HOLD_MS) return;
       takeStep(phaseNow, avg!.yaw);
@@ -390,7 +464,7 @@ export default function LiveScanStep({
       <section>
         <h2 className="text-lg font-bold text-brand-ink md:text-xl">สแกนสดด้วยกล้องหน้า</h2>
         <p className="mt-1 text-sm text-slate-600">
-          ใช้เวลาประมาณ 10 วินาที ระบบจะจับตำแหน่งใบหน้าแล้วถ่ายให้เอง 3 มุม หน้าตรงและแก้มสองข้าง
+          ใช้เวลาไม่ถึงนาที ระบบจะจับตำแหน่งใบหน้าแล้วนับถอยหลังถ่ายให้เอง 3 มุม หน้าตรงและแก้มสองข้าง
           การจับตำแหน่งทำในเครื่องของคุณ
         </p>
         <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-slate-600 marker:text-brand-800/50">
@@ -407,7 +481,7 @@ export default function LiveScanStep({
           <Button size="lg" onClick={start}>
             <Camera size={17} aria-hidden="true" /> {phase === "error" ? "ลองเปิดกล้องอีกครั้ง" : "เริ่มสแกนสด"}
           </Button>
-          <Button size="lg" variant="secondary" onClick={onUsePhoto}>
+          <Button size="lg" variant="secondary" onClick={abandon}>
             <ImageIcon size={17} aria-hidden="true" /> ถ่ายหรือเลือกรูปเองแทน
           </Button>
         </div>
@@ -511,10 +585,7 @@ export default function LiveScanStep({
         )}
         <button
           type="button"
-          onClick={() => {
-            stopCamera();
-            onUsePhoto();
-          }}
+          onClick={abandon}
           className="text-slate-600 hover:text-brand-ink"
         >
           ถ่ายหรือเลือกรูปเองแทน

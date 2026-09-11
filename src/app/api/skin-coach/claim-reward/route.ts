@@ -4,8 +4,10 @@ import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { createPercentDiscountCode, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { discountForScore, SKIN_COACH_POINTS_REWARD } from "@/lib/skin-coach";
 
+// The month as Bangkok sees it (UTC+7), so "once a month" resets at local
+// midnight on the 1st rather than 7 am.
 function currentPeriod() {
-  const now = new Date();
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
@@ -77,7 +79,7 @@ export async function POST(req: NextRequest) {
       {
         ok: false,
         error:
-          "ยังไม่ได้ตั้งค่าระบบออกคูปองอัตโนมัติ กรุณาติดต่อผู้ดูแลระบบ (SHOPIFY_ADMIN_CLIENT_ID / SHOPIFY_ADMIN_CLIENT_SECRET)",
+          "ระบบออกคูปองยังไม่พร้อมในตอนนี้ เลือกรับคะแนนแทนได้เลย",
       },
       { status: 200 }
     );

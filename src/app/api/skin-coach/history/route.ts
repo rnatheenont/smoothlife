@@ -4,7 +4,7 @@ import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import {
   AGE_RANGES,
   ANGLES,
-  MAIN_CONCERNS,
+  CONCERNS,
   SCAN_BONUS_EVERY_DAYS,
   SCAN_BONUS_MIN_ANGLES,
   SCAN_BONUS_POINTS,
@@ -44,6 +44,13 @@ function score(value: unknown) {
 
 function oneOf<T extends string>(value: unknown, allowed: readonly T[]): T | null {
   return typeof value === "string" && (allowed as readonly string[]).includes(value) ? (value as T) : null;
+}
+
+/** Known keys from a list, comma-joined for the text column; null when none. */
+function someOf(value: unknown, allowed: readonly string[], max = 5): string | null {
+  if (!Array.isArray(value)) return null;
+  const keys = Array.from(new Set(value.filter((v): v is string => typeof v === "string" && allowed.includes(v)))).slice(0, max);
+  return keys.length ? keys.join(",") : null;
 }
 
 export async function GET(req: NextRequest) {
@@ -103,8 +110,8 @@ export async function POST(req: NextRequest) {
       confidence: confidenceFor(angles.length).level,
       skin_age: skinAge,
       age_range: oneOf(body?.ageRange, AGE_RANGES.map((r) => r.key)),
-      skin_type: oneOf(body?.skinType, SKIN_TYPES.map((t) => t.key)),
-      main_concern: oneOf(body?.mainConcern, MAIN_CONCERNS.map((c) => c.key)),
+      skin_type: someOf(body?.skinTypes, SKIN_TYPES.map((t) => t.key)),
+      main_concern: someOf(body?.concerns, CONCERNS.map((c) => c.key)),
       metrics,
     }),
   });

@@ -21,7 +21,9 @@ import {
   recommendForMetric,
   scoreBand,
   type AngleKey,
-  type ConcernSlug,
+  CONCERNS,
+  SKIN_TYPES,
+  type ExtraKey,
   type MetricKey,
   type ScanAnswers,
   type SkinCoachMetrics,
@@ -35,8 +37,6 @@ const METRIC_ROWS: { key: MetricKey; label: string; topic: string }[] = [
   { key: "wrinkles", label: "ริ้วรอย", topic: "ริ้วรอย" },
 ];
 
-// What the person said they worry about, as the metric it corresponds to.
-const CONCERN_TO_METRIC: Record<ConcernSlug, MetricKey> = { acne: "acne", "dark-spots": "darkSpots", aging: "wrinkles" };
 
 // Four pips and a word, not a bar to a percent: the model's scores are rough
 // reads of a photo, and a level says only as much as they can. Products for
@@ -147,30 +147,43 @@ export default function ResultsView({
   const confidence = confidenceFor(angles.length);
   const comparison = ageComparison(metrics.skinAge.years, answers.ageRange);
   // Products go under the metrics that need care, and under whatever the
-  // person said they worry about. When everything reads well, the weakest
-  // metric still gets a couple of picks for keeping it that way.
-  const preferred = answers.mainConcern ? CONCERN_TO_METRIC[answers.mainConcern] : undefined;
+  // person said they worry about. Concerns a photo can't measure (dryness,
+  // sensitivity) get a row of their own below. When everything reads well
+  // and nothing was named, the weakest metric still gets a few picks.
+  const chosen = (answers.concerns ?? [])
+    .map((k) => CONCERNS.find((c) => c.key === k))
+    .filter((c): c is (typeof CONCERNS)[number] => Boolean(c));
+  const namedByMetric = new Map<MetricKey, string[]>();
+  const extras: { key: ExtraKey; label: string }[] = [];
+  for (const c of chosen) {
+    if ("metric" in c) namedByMetric.set(c.metric, [...(namedByMetric.get(c.metric) ?? []), c.label]);
+    else if ("extra" in c) extras.push({ key: c.extra, label: c.label });
+  }
   const needsCare = METRIC_ROWS.filter((m) => clarityLevel(metrics[m.key].score).tone !== "good").map((m) => m.key);
   const weakest = [...METRIC_ROWS].sort((a, b) => metrics[b.key].score - metrics[a.key].score)[0].key;
-  const withProducts = new Set<MetricKey>([...needsCare, ...(preferred ? [preferred] : [])]);
-  if (withProducts.size === 0) withProducts.add(weakest);
+  const withProducts = new Set<MetricKey>([...needsCare, ...namedByMetric.keys()]);
+  if (withProducts.size === 0 && extras.length === 0) withProducts.add(weakest);
+  const skinTypes = answers.skinTypes ?? [];
 
-  // One product, one finding: the rows are filled in page order and a pick
-  // already shown above is skipped below, so "สิว" and "รูขุมขน" never show
-  // the same tube twice.
-  const picksByMetric = new Map<MetricKey, Product[]>();
+  // One product, one finding: rows are filled in page order and a pick
+  // already shown above is skipped below, so no tube appears twice.
+  const picks = new Map<MetricKey | ExtraKey, Product[]>();
   {
     const shown = new Set<string>(bought);
-    for (const m of METRIC_ROWS) {
-      if (!withProducts.has(m.key)) continue;
-      const picks = recommendForMetric(m.key, 3, shown);
-      picks.forEach((p) => shown.add(p.slug));
-      picksByMetric.set(m.key, picks);
+    const keys: (MetricKey | ExtraKey)[] = [
+      ...METRIC_ROWS.filter((m) => withProducts.has(m.key)).map((m) => m.key),
+      ...extras.map((e) => e.key),
+    ];
+    for (const key of keys) {
+      const list = recommendForMetric(key, 3, shown, skinTypes);
+      list.forEach((p) => shown.add(p.slug));
+      picks.set(key, list);
     }
   }
 
   function reasonFor(key: MetricKey, topic: string) {
-    if (key === preferred) return `เพราะคุณบอกว่ากังวลเรื่อง${topic}`;
+    const named = namedByMetric.get(key);
+    if (named) return `เพราะคุณบอกว่ากังวลเรื่อง${named.join(" และ ")}`;
     const level = clarityLevel(metrics[key].score);
     return level.tone === "good" ? `ดูแลต่อให้${topic}อยู่ในระดับ "${level.label}"` : `แนะนำเพราะ${topic}อยู่ในระดับ "${level.label}"`;
   }
@@ -214,7 +227,8 @@ export default function ResultsView({
   }
 
   function askAdvisor() {
-    const info = METRIC_ROWS.filter((m) => withProducts.has(m.key)).map((m) => m.topic).join(", ");
+    const told = [...chosen.map((c) => c.label), ...skinTypes.map((t) => SKIN_TYPES.find((x) => x.key === t)?.label ?? t)];
+    const info = [...METRIC_ROWS.filter((m) => withProducts.has(m.key)).map((m) => m.topic), ...told].join(", ");
     openWithProfile({
       scan: `อายุผิวประมาณ ${metrics.skinAge.years} ปี, ภาพรวม${band.label}`,
       concern: info || "สุขภาพผิวโดยรวม",
@@ -274,7 +288,7 @@ export default function ResultsView({
         <ul className="mt-2 divide-y divide-surface-line">
           {METRIC_ROWS.map((m) => {
             const show = withProducts.has(m.key);
-            const picks = show ? picksByMetric.get(m.key) ?? [] : [];
+            const rowPicks = show ? picks.get(m.key) ?? [] : [];
             return (
               <MetricRow
                 key={m.key}
@@ -282,9 +296,26 @@ export default function ResultsView({
                 score={metrics[m.key].score}
                 note={metrics[m.key].note}
                 reason={show ? reasonFor(m.key, m.topic) : null}
-                products={picks}
+                products={rowPicks}
                 skipped={show ? boughtCountForMetric(m.key, bought) : 0}
               />
+            );
+          })}
+          {extras.map((e) => {
+            const list = picks.get(e.key) ?? [];
+            if (list.length === 0) return null;
+            return (
+              <li key={e.key} className="py-4">
+                <p className="text-sm font-semibold text-brand-ink">{e.label}</p>
+                <p className="mt-1 text-xs text-slate-600">
+                  รูปถ่ายวัดเรื่องนี้ไม่ได้ เราเลือกสินค้าจากที่คุณบอกว่ากังวล
+                </p>
+                <div className="scrollbar-none mt-2.5 flex snap-x gap-3 overflow-x-auto pb-2">
+                  {list.map((p) => (
+                    <MiniProductCard key={p.slug} product={p} />
+                  ))}
+                </div>
+              </li>
             );
           })}
         </ul>

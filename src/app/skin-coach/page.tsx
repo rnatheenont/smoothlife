@@ -66,11 +66,22 @@ export default function SkinCoachPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ images }),
       });
-      const data = await res.json();
+      // Not every failure is ours to phrase: an oversized body is refused by
+      // the platform with a non-JSON 413 before the route runs.
+      const data = await res.json().catch(() => null);
+      if (!data) {
+        setAnalyzeError(res.status === 413 ? "รูปใหญ่เกินไป ลองถ่ายใหม่หรือใช้จำนวนมุมน้อยลง" : "วิเคราะห์ไม่สำเร็จ กดดูผลอีกครั้งได้เลย");
+        setStep("questions");
+        return;
+      }
       const result = data?.result as SkinCoachMetrics | undefined;
 
       if (data?.error || !result?.skinAge || !result.acne || !result.pores || !result.darkSpots || !result.wrinkles) {
-        setAnalyzeError(data?.message || "วิเคราะห์ไม่สำเร็จ กดดูผลอีกครั้งได้เลย");
+        // Most failures carry a Thai `message`; the hourly limit (429) puts
+        // its Thai text in `error` instead, and that one tells a guest to
+        // sign in to keep going — worth showing rather than a generic line.
+        const limitText = res.status === 429 && typeof data?.error === "string" ? data.error : null;
+        setAnalyzeError(data?.message || limitText || "วิเคราะห์ไม่สำเร็จ กดดูผลอีกครั้งได้เลย");
         setStep("questions");
         return;
       }

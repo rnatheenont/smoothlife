@@ -50,24 +50,41 @@ function sparkle(ctx: CanvasRenderingContext2D, x: number, y: number, size: numb
   ctx.restore();
 }
 
+// Thai is written without spaces between words, so splitting on spaces left
+// each sentence as one unbreakable run that overflowed the card. Intl's word
+// segmenter finds the breaks; browsers without it fall back to spaces.
+const thaiWords =
+  typeof Intl !== "undefined" && "Segmenter" in Intl
+    ? new (Intl as unknown as { Segmenter: new (l: string, o: { granularity: "word" }) => { segment: (t: string) => Iterable<{ segment: string }> } }).Segmenter("th", { granularity: "word" })
+    : null;
+
+function tokens(text: string) {
+  return thaiWords ? Array.from(thaiWords.segment(text), (s) => s.segment) : text.split(/(\s+)/);
+}
+
 function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, maxLines = 2) {
-  const words = text.split(" ");
+  const lines: string[] = [];
   let line = "";
-  let lines: string[] = [];
-  for (const word of words) {
-    const test = line ? line + " " + word : word;
-    if (ctx.measureText(test).width > maxWidth && line) {
-      lines.push(line);
-      line = word;
+  for (const token of tokens(text)) {
+    const test = line + token;
+    if (ctx.measureText(test).width > maxWidth && line.trim()) {
+      lines.push(line.trimEnd());
+      line = token.trimStart();
     } else {
       line = test;
     }
   }
-  if (line) lines.push(line);
-  lines = lines.slice(0, maxLines);
-  const startY = y - ((lines.length - 1) * lineHeight) / 2;
-  lines.forEach((l, i) => ctx.fillText(l, x, startY + i * lineHeight));
-  return lines.length;
+  if (line.trim()) lines.push(line.trimEnd());
+  let shown = lines.slice(0, maxLines);
+  if (lines.length > maxLines) {
+    // Say it was cut rather than stopping mid-thought.
+    let last = shown[maxLines - 1];
+    while (last && ctx.measureText(last + "…").width > maxWidth) last = last.slice(0, -1);
+    shown = [...shown.slice(0, -1), last + "…"];
+  }
+  const startY = y - ((shown.length - 1) * lineHeight) / 2;
+  shown.forEach((l, i) => ctx.fillText(l, x, startY + i * lineHeight));
+  return shown.length;
 }
 
 async function drawSkinCoachCard(canvas: HTMLCanvasElement, metrics: SkinCoachMetrics, photoDataUrl: string, zones: string[]) {
@@ -296,7 +313,7 @@ async function drawSkinCoachCard(canvas: HTMLCanvasElement, metrics: SkinCoachMe
   ctx.fillText("✨ สแกนผิวฟรีที่ Smoothlife.com ✨", cx, cardY + cardH - 62);
   ctx.font = `15px ${FONT}`;
   ctx.fillStyle = BRAND.slate;
-  wrapText(ctx, metrics.disclaimer, cx, cardY + cardH - 28, cardW - 140, 19);
+  wrapText(ctx, metrics.disclaimer, cx, cardY + cardH - 28, cardW - 140, 19, 3);
 }
 
 export default function ShareCard({

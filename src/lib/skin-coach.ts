@@ -12,7 +12,6 @@ export type SkinCoachMetrics = {
   disclaimer: string;
 };
 
-export type ConcernSlug = "acne" | "dark-spots" | "aging";
 
 // ── The scan flow ──────────────────────────────────────────────────────────
 // Front is the only required photo; every other angle is an optional extra,
@@ -56,17 +55,37 @@ export const SKIN_TYPES = [
 ] as const;
 export type SkinTypeKey = (typeof SKIN_TYPES)[number]["key"];
 
-export const MAIN_CONCERNS: { key: ConcernSlug; label: string }[] = [
-  { key: "acne", label: "สิวและรูขุมขน" },
-  { key: "dark-spots", label: "จุดด่างดำ ผิวไม่สม่ำเสมอ" },
-  { key: "aging", label: "ริ้วรอย" },
-];
+export type MetricKey = "acne" | "pores" | "darkSpots" | "wrinkles";
+// Concerns the scan can't measure from a photo still get their own picks.
+export type ExtraKey = "dryness" | "sensitive";
+
+// What a person can say they worry about. Most map onto a scan metric, so
+// the picks sit under that finding; dryness and sensitivity have no metric
+// and get a row of their own.
+export const CONCERNS = [
+  { key: "acne", label: "สิว", metric: "acne" },
+  { key: "acneMarks", label: "รอยสิว รอยดำ", metric: "darkSpots" },
+  { key: "pores", label: "รูขุมขนกว้าง", metric: "pores" },
+  { key: "oiliness", label: "ผิวมัน หน้าเงา", metric: "pores" },
+  { key: "darkSpots", label: "ฝ้า กระ จุดด่างดำ", metric: "darkSpots" },
+  { key: "dullness", label: "ผิวหมองคล้ำ ไม่กระจ่างใส", metric: "darkSpots" },
+  { key: "wrinkles", label: "ริ้วรอย", metric: "wrinkles" },
+  { key: "firmness", label: "ผิวหย่อนคล้อย ไม่กระชับ", metric: "wrinkles" },
+  { key: "dryness", label: "ผิวแห้ง ขาดน้ำ", extra: "dryness" },
+  { key: "sensitive", label: "ผิวแพ้ง่าย แดง ระคายเคือง", extra: "sensitive" },
+] as const satisfies readonly { key: string; label: string; metric?: MetricKey; extra?: ExtraKey }[];
+export type ConcernKey = (typeof CONCERNS)[number]["key"];
+export const MAX_CONCERNS = 3;
 
 export type ScanAnswers = {
   ageRange?: AgeRangeKey;
-  skinType?: SkinTypeKey;
-  mainConcern?: ConcernSlug;
+  skinTypes?: SkinTypeKey[];
+  concerns?: ConcernKey[];
 };
+
+export function concernLabel(key: string) {
+  return CONCERNS.find((c) => c.key === key)?.label ?? null;
+}
 
 /**
  * Reads the estimated skin age against the age range the person gave, in
@@ -148,9 +167,7 @@ export const RESCAN_AFTER_DAYS = 42;
 // opening description (lightly), and only counts where that metric is what
 // the product is mainly about.
 
-export type MetricKey = "acne" | "pores" | "darkSpots" | "wrinkles";
-
-const METRIC_WORDS: Record<MetricKey, string[]> = {
+const METRIC_WORDS: Record<MetricKey | ExtraKey, string[]> = {
   acne: ["สิว", "acne", "blemish", "breakout", "salicylic", "tea tree", "anti-bacterial", "ลดการอักเสบ"],
   pores: ["รูขุมขน", "pore", "ควบคุมความมัน", "ผิวมัน", "oil control", "oil-control", "sebum", "exfoliat", "ผลัดเซลล์", "bha", "pha", "clay"],
   darkSpots: [
@@ -159,8 +176,18 @@ const METRIC_WORDS: Record<MetricKey, string[]> = {
   ],
   wrinkles: [
     "ริ้วรอย", "ชะลอวัย", "ยกกระชับ", "wrinkle", "fine line", "anti-aging", "anti aging", "retinol", "retinal",
-    "peptide", "firming", "lifting", "collagen", "nad+", "ageless",
+    "peptide", "firming", "lifting", "collagen", "nad+", "ageless", "กระชับ",
   ],
+  dryness: ["ผิวแห้ง", "ชุ่มชื้น", "ขาดน้ำ", "hydrat", "moistur", "ceramide", "hyaluron", "เกราะผิว", "barrier", "dry skin"],
+  sensitive: ["แพ้ง่าย", "ระคายเคือง", "ผิวแดง", "sensitive", "soothing", "calming", "cica", "centella", "redness", "hypoallergenic"],
+};
+
+// Words that make a product a poor fit for a skin type the person named —
+// a mattifying oil-control gel for dry skin, a rich balm for oily skin.
+const SKIN_TYPE_MISMATCH: Partial<Record<SkinTypeKey, string[]>> = {
+  dry: ["oil control", "oil-control", "ควบคุมความมัน", "mattif", "ผิวมัน"],
+  sensitive: ["peel", "ผลัดเซลล์", "retinol", "retinal", "aha", "bha"],
+  oily: ["rich cream", "balm", "ผิวแห้งมาก", "very dry"],
 };
 
 // Face-scan results call for face care. Hair, oral, intimate and body products
@@ -168,7 +195,7 @@ const METRIC_WORDS: Record<MetricKey, string[]> = {
 // never the problem.
 const NOT_FACE_CARE = ["hair-care", "oral-care", "personal-care", "body-care"];
 const NOT_FACE_WORDS = [
-  "แชมพู", "shampoo", "ยาสีฟัน", "toothpaste", "body lotion", "โลชั่นทาผิวกาย", "ผมร่วง", "hair",
+  "แชมพู", "shampoo", "ยาสีฟัน", "toothpaste", "body", "ผิวกาย", "โลชั่นทาผิวกาย", "ผมร่วง", "hair",
   // Supplements: the scan reads the skin's surface, so it recommends what goes on it.
   "soft capsules", "softgel", "tablet", "gummy", "อาหารเสริม", "ซอง)", "เม็ด",
 ];
@@ -194,11 +221,13 @@ function hits(text: string, words: string[]) {
   return words.reduce((n, w) => n + (matcher(w)(text) ? 1 : 0), 0);
 }
 
+const SCAN_METRICS: MetricKey[] = ["acne", "pores", "darkSpots", "wrinkles"];
+
 function metricScores(p: Product) {
   const primary = `${p.name} ${p.shortDesc}`.toLowerCase();
   const secondary = `${p.benefits.join(" ")} ${(p.description || "").slice(0, 400)}`.toLowerCase();
-  const out = {} as Record<MetricKey, { primary: number; total: number }>;
-  for (const key of Object.keys(METRIC_WORDS) as MetricKey[]) {
+  const out = {} as Record<MetricKey | ExtraKey, { primary: number; total: number }>;
+  for (const key of Object.keys(METRIC_WORDS) as (MetricKey | ExtraKey)[]) {
     const a = hits(primary, METRIC_WORDS[key]);
     out[key] = { primary: a, total: a * 3 + hits(secondary, METRIC_WORDS[key]) };
   }
@@ -206,25 +235,34 @@ function metricScores(p: Product) {
 }
 
 /**
- * Products for one scan metric, best match first. A product qualifies only
- * when its name or short description names this problem at least as often as
- * any other — so a wrinkle serum that mentions pores in passing stays with
- * wrinkles. Anything the member already bought is left out.
+ * Products for one scan metric (or one concern the scan can't see), best
+ * match first. A product qualifies only when its name or short description
+ * names this problem at least as often as any other scan metric — so a
+ * wrinkle serum that mentions pores in passing stays with wrinkles. Anything
+ * already bought or already shown is left out, and products that clash with
+ * a skin type the person named rank lower.
  */
-export function recommendForMetric(metric: MetricKey, max = 3, alreadyBought?: ReadonlySet<string>): Product[] {
+export function recommendForMetric(
+  metric: MetricKey | ExtraKey,
+  max = 3,
+  exclude?: ReadonlySet<string>,
+  skinTypes: readonly SkinTypeKey[] = []
+): Product[] {
+  const clashWords = skinTypes.flatMap((t) => SKIN_TYPE_MISMATCH[t] ?? []);
   const ranked: { p: Product; score: number }[] = [];
   for (const p of products) {
-    if (!p.inStock || alreadyBought?.has(p.slug) || NOT_FACE_CARE.includes(p.category)) continue;
+    if (!p.inStock || exclude?.has(p.slug) || NOT_FACE_CARE.includes(p.category)) continue;
     if (hits(p.name.toLowerCase(), NOT_FACE_WORDS) > 0) continue;
     const scores = metricScores(p);
     const mine = scores[metric];
     if (mine.primary === 0) continue;
-    const strongestOther = Math.max(
-      ...(Object.keys(scores) as MetricKey[]).filter((k) => k !== metric).map((k) => scores[k].primary)
-    );
-    if (mine.primary < strongestOther) continue;
+    if (SCAN_METRICS.includes(metric as MetricKey)) {
+      const strongestOther = Math.max(...SCAN_METRICS.filter((k) => k !== metric).map((k) => scores[k].primary));
+      if (mine.primary < strongestOther) continue;
+    }
     const popularity = Math.min(3, Math.log10((p.sold ?? 0) + 1)) + (p.badges?.includes("Bestseller") ? 1 : 0);
-    ranked.push({ p, score: mine.total * 2 + popularity });
+    const clash = clashWords.length ? hits(`${p.name} ${p.shortDesc}`.toLowerCase(), clashWords) * 4 : 0;
+    ranked.push({ p, score: mine.total * 2 + popularity - clash });
   }
   ranked.sort((a, b) => b.score - a.score);
   // One product line once: a single and its two-pack are the same advice.
@@ -241,6 +279,6 @@ export function recommendForMetric(metric: MetricKey, max = 3, alreadyBought?: R
 }
 
 /** How many of a metric's usual picks were left out because they were bought before. */
-export function boughtCountForMetric(metric: MetricKey, alreadyBought: ReadonlySet<string>, max = 3): number {
+export function boughtCountForMetric(metric: MetricKey | ExtraKey, alreadyBought: ReadonlySet<string>, max = 3): number {
   return recommendForMetric(metric, max).filter((p) => alreadyBought.has(p.slug)).length;
 }

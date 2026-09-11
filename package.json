@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "predev": "node scripts/copy-mediapipe.js",
     "prebuild": "node scripts/copy-mediapipe.js && node scripts/fetch-products.js",
     "build": "next build",
     "start": "next start",
