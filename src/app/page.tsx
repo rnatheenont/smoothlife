@@ -219,7 +219,7 @@ export default async function HomePage() {
               {/* Most of these photos are packshots on white, so the scrim has to be
                   dark right up to where the title sits — the old 55%-to-5% fade
                   left white text on near-white at the title line. */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 via-50% to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 via-50% to-transparent" />
               <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
                 <span className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-brand-ink">
                   {promo.badge}
@@ -347,7 +347,7 @@ export default async function HomePage() {
                   <span className={`text-base font-extrabold ${plan.popular ? "text-brand-action" : "text-white"}`}>
                     -{plan.discountPct}%
                   </span>
-                  <p className={`text-[10px] leading-tight ${plan.popular ? "text-slate-600" : "text-white/85"}`}>
+                  <p className={`text-[10px] leading-tight ${plan.popular ? "text-slate-600" : "text-white"}`}>
                     {plan.sublabel}
                   </p>
                 </div>
@@ -370,7 +370,7 @@ export default async function HomePage() {
                         </span>
                       )}
                     </p>
-                    <p className={`text-xs ${plan.popular ? "text-slate-600" : "text-white/85"}`}>{plan.sublabel}</p>
+                    <p className={`text-xs ${plan.popular ? "text-slate-600" : "text-white"}`}>{plan.sublabel}</p>
                   </div>
                   <span className={`text-lg font-extrabold ${plan.popular ? "text-brand-action" : "text-white"}`}>
                     -{plan.discountPct}%
