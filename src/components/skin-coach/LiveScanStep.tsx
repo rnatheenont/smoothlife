@@ -2,31 +2,32 @@
 
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { Camera, Check, ImageIcon, Loader2 } from "lucide-react";
+import { Camera, Check, ImageIcon, Loader2, RotateCcw } from "lucide-react";
 import type { FaceLandmarker, NormalizedLandmark } from "@mediapipe/tasks-vision";
 import { resizeForUpload, type ResizedImage } from "@/lib/image-utils";
 import type { AngleKey } from "@/lib/skin-coach";
 import { Button } from "@/components/ui";
 
 // Live camera scan: MediaPipe's face landmarker follows the face in 3D, right
-// on the phone, and the page takes each photo itself once the face is placed
-// — straight on first, then each cheek as the head turns. Nothing leaves the
-// device until the photos go for analysis, same as a picked photo would.
+// on the phone. The outline turns green when the face is placed for the
+// current shot — straight on, then each cheek as the head turns — and only
+// then does the shutter work; the person takes each photo themselves, and can
+// retake any of them before sending. Nothing leaves the device until the
+// photos go for analysis, same as a picked photo would.
 //
 // What's drawn over the face is its outline, brows, eyes and lips in a thin
 // line: enough to show the phone can see the face and where it's looking,
 // without the scanner-grid look the redesign plan steers away from.
 
 type Shots = Partial<Record<AngleKey, ResizedImage>>;
-type Phase = "intro" | "loading" | "front" | "sideA" | "sideB" | "error";
+type Phase = "intro" | "loading" | "front" | "side" | "review" | "error";
 type Connection = { start: number; end: number };
 
 // Tuned for "easy" over "perfect": the analysis copes with a slightly turned
-// or off-centre face far better than a person copes with a scan that won't
-// fire. Anything stricter goes back to the photo picker's single tap.
-const HOLD_MS = 1500; // steady this long before a photo is taken, counted down 3-2-1
-const SETTLE_MS = 1800; // after each step starts: time to read it and get into place
-const GRACE_MS = 250; // a wobble shorter than this doesn't restart the hold
+// or off-centre face far better than a person copes with a shutter that
+// won't unlock.
+const STEADY_MS = 250; // placed this long before the outline goes green
+const GRACE_MS = 300; // a wobble shorter than this doesn't turn it white again
 const FRONT_YAW = 0.12; // how far off straight still counts as straight
 const SIDE_YAW_MIN = 0.12; // turned enough to show a cheek
 const SIDE_YAW_MAX = 0.65; // past this the far side of the face is lost
@@ -101,11 +102,13 @@ function geometry(lm: NormalizedLandmark[], aspect: number) {
   return { width, yaw, roll, cx: (a.x + b.x) / 2, cy: (lm[10].y + lm[152].y) / 2 };
 }
 
-const STEPS: { phase: "front" | "sideA" | "sideB"; title: string; sub: string }[] = [
-  { phase: "front", title: "มองตรงเข้ากล้อง", sub: "ระบบจะถ่ายให้เองเมื่อหน้าอยู่ในตำแหน่ง" },
-  { phase: "sideA", title: "หันหน้าไปด้านข้างช้าๆ", sub: "ให้เห็นแก้มชัด แล้วค้างไว้" },
-  { phase: "sideB", title: "ทีนี้หันไปอีกด้าน", sub: "ช้าๆ แล้วค้างไว้เหมือนเดิม" },
-];
+const SHOT_LABEL: Record<"front" | "cheek" | "cheekRight", string> = {
+  front: "หน้าตรง",
+  cheek: "แก้มซ้าย",
+  cheekRight: "แก้มขวา",
+};
+const SHOT_ORDER = ["front", "cheek", "cheekRight"] as const;
+type ShotKey = (typeof SHOT_ORDER)[number];
 
 export default function LiveScanStep({
   notice,
@@ -123,25 +126,36 @@ export default function LiveScanStep({
   const rafRef = useRef<number | null>(null);
   const phaseRef = useRef<Phase>("intro");
   const shotsRef = useRef<Shots>({});
-  const sideASignRef = useRef(0);
+  // Which way the current side shot must face: 0 either way (the first
+  // cheek), +1 the right cheek, -1 the left cheek.
+  const sideTargetRef = useRef(0);
+  // Set while redoing one photo from the review: after it, back to review.
+  const retakingRef = useRef(false);
   // Once the scan has handed its photos on (or been abandoned), a capture
   // still finishing must not hand them on a second time.
   const finishedRef = useRef(false);
+  // Set while the camera runs: takes the photo for the current step — only
+  // when the face is placed (the outline is green).
+  const shutterRef = useRef<(() => void) | null>(null);
 
   const [phase, setPhase] = useState<Phase>("intro");
+  const [sideTarget, setSideTarget] = useState(0);
+  const [retaking, setRetaking] = useState(false);
   const [hint, setHint] = useState("");
+  const [ready, setReady] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [shots, setShots] = useState<Shots>({});
   const [flash, setFlash] = useState(false);
   const [error, setError] = useState<string | null>(notice ?? null);
-  const [holdPct, setHoldPct] = useState(0);
-  const [faceSeen, setFaceSeen] = useState(false);
-  // Set while the camera runs: takes the photo for the current step now,
-  // whatever the checks say, as long as a face is in view.
-  const shutterRef = useRef<(() => void) | null>(null);
 
   function go(next: Phase) {
     phaseRef.current = next;
     setPhase(next);
+  }
+
+  function aimSide(target: number) {
+    sideTargetRef.current = target;
+    setSideTarget(target);
   }
 
   function stopCamera() {
@@ -153,9 +167,8 @@ export default function LiveScanStep({
   }
 
   // Warm the model up while the intro is being read, so pressing start
-  // mostly waits on the camera rather than a 4 MB download.
+  // mostly waits on the camera rather than a download. Skipped on data saver.
   useEffect(() => {
-    // Skipped on data saver: the model and runtime are several megabytes.
     const saveData = (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
     const idle = saveData ? undefined : window.setTimeout(() => void loadLandmarker().catch(() => {}), 300);
     return () => {
@@ -164,16 +177,17 @@ export default function LiveScanStep({
     };
   }, []);
 
-  function finish(final: Shots) {
+  function finish() {
     if (finishedRef.current) return;
-    stopCamera();
+    const final = shotsRef.current;
     if (!final.front) {
-      // Nothing usable to analyse: say so here rather than handing on nothing.
       setError("ยังไม่ได้รูปหน้าตรง ลองสแกนอีกครั้ง หรือถ่ายรูปเองแทน");
+      stopCamera();
       go("error");
       return;
     }
     finishedRef.current = true;
+    stopCamera();
     onComplete(final);
   }
 
@@ -183,12 +197,28 @@ export default function LiveScanStep({
     onUsePhoto();
   }
 
+  /** Redo one photo from the review screen. */
+  function retake(key: ShotKey) {
+    retakingRef.current = true;
+    setRetaking(true);
+    if (key === "front") {
+      go("front");
+    } else {
+      aimSide(key === "cheekRight" ? 1 : -1);
+      go("side");
+    }
+    void videoRef.current?.play().catch(() => {});
+  }
+
   async function start() {
     go("loading");
     setError(null);
     finishedRef.current = false;
+    retakingRef.current = false;
+    setRetaking(false);
     shotsRef.current = {};
     setShots({});
+    aimSide(0);
     try {
       // The stream is kept the moment it arrives, so if the model then fails
       // to load, stopCamera still has it to switch off.
@@ -228,19 +258,14 @@ export default function LiveScanStep({
     const probeCtx = probe.getContext("2d", { willReadFrequently: true })!;
 
     let lastTime = -1;
-    let holdSince: number | null = null;
+    let goodSince: number | null = null;
     let badSince: number | null = null;
+    let isReady = false;
     let capturing = false;
     let light = 128;
     let lastLightAt = 0;
     let lastHint = "";
-    let lastPct = -1;
-    let lastSeen = false;
     let avg: ReturnType<typeof geometry> | null = null;
-    let latestLm: NormalizedLandmark[] | undefined;
-    // No auto-capture until this time: a moment at the start of each step to
-    // read what it asks and get into place.
-    let settleUntil = performance.now() + SETTLE_MS;
 
     const say = (text: string) => {
       if (text !== lastHint) {
@@ -248,21 +273,14 @@ export default function LiveScanStep({
         setHint(text);
       }
     };
-    const showPct = (pct: number) => {
-      const stepped = Math.round(pct / 10) * 10;
-      if (stepped !== lastPct) {
-        lastPct = stepped;
-        setHoldPct(stepped);
-      }
-    };
-    const showSeen = (seen: boolean) => {
-      if (seen !== lastSeen) {
-        lastSeen = seen;
-        setFaceSeen(seen);
+    const markReady = (value: boolean) => {
+      if (value !== isReady) {
+        isReady = value;
+        setReady(value);
       }
     };
 
-    const draw = (lm: NormalizedLandmark[] | undefined, ready: boolean) => {
+    const draw = (lm: NormalizedLandmark[] | undefined, green: boolean) => {
       if (canvas.width !== video.videoWidth) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -280,7 +298,7 @@ export default function LiveScanStep({
         ctx.setLineDash([]);
         return;
       }
-      ctx.strokeStyle = ready ? "rgba(0,168,123,0.95)" : "rgba(255,255,255,0.8)";
+      ctx.strokeStyle = green ? "rgba(0,168,123,0.95)" : "rgba(255,255,255,0.8)";
       ctx.beginPath();
       for (const { start, end } of contours) {
         const p = lm[start];
@@ -310,6 +328,7 @@ export default function LiveScanStep({
     /** Takes the photo for `key`. False (and a message) if it couldn't. */
     const capture = async (key: AngleKey): Promise<boolean> => {
       capturing = true;
+      setBusy(true);
       setFlash(true);
       window.setTimeout(() => setFlash(false), 180);
       try {
@@ -320,50 +339,55 @@ export default function LiveScanStep({
         setShots(shotsRef.current);
         return true;
       } catch {
-        say("ถ่ายไม่สำเร็จ ลองค้างไว้อีกครั้ง");
+        say("ถ่ายไม่สำเร็จ ลองกดอีกครั้ง");
         return false;
       } finally {
-        holdSince = null;
+        goodSince = null;
         badSince = null;
         avg = null;
-        showPct(0);
-        settleUntil = performance.now() + SETTLE_MS;
+        markReady(false);
         capturing = false;
+        setBusy(false);
       }
     };
 
-    // Straight on first, then whichever way they turn, then the other way.
-    // The cheek is named by the turn: turning to their own left shows the
-    // right cheek. A turn too small to tell which way (a manual shot) takes
-    // whichever cheek is still missing.
-    const takeStep = (phaseNow: Phase, yaw: number) => {
-      const turned = Math.abs(yaw) >= 0.05;
-      const missing: AngleKey = shotsRef.current.cheek ? "cheekRight" : "cheek";
-      const sideKey: AngleKey = turned ? (yaw > 0 ? "cheekRight" : "cheek") : missing;
-      const after = (next: () => void) => (ok: boolean) => {
-        if (ok && !finishedRef.current) next();
-      };
-      if (phaseNow === "front") {
-        void capture("front").then(after(() => go("sideA")));
-      } else if (phaseNow === "sideA") {
-        sideASignRef.current = turned ? Math.sign(yaw) : sideKey === "cheekRight" ? 1 : -1;
-        void capture(sideKey).then(after(() => go("sideB")));
-      } else if (phaseNow === "sideB") {
-        const key = sideKey in shotsRef.current ? missing : sideKey;
-        void capture(key).then(after(() => finish(shotsRef.current)));
+    // What comes after a photo: straight on, then whichever cheek they turn
+    // to first, then the other; a retake goes straight back to the review.
+    const advance = (took: AngleKey) => {
+      if (finishedRef.current) return;
+      if (retakingRef.current) {
+        retakingRef.current = false;
+        setRetaking(false);
+        go("review");
+        return;
+      }
+      if (took === "front") {
+        aimSide(0);
+        go("side");
+        return;
+      }
+      const other: AngleKey = took === "cheek" ? "cheekRight" : "cheek";
+      if (!shotsRef.current[other]) {
+        aimSide(other === "cheekRight" ? 1 : -1);
+        go("side");
+      } else {
+        go("review");
       }
     };
 
     shutterRef.current = () => {
-      if (capturing || !latestLm) return;
-      takeStep(phaseRef.current, avg?.yaw ?? 0);
+      if (capturing || !isReady) return;
+      const phaseNow = phaseRef.current;
+      const key: AngleKey =
+        phaseNow === "front" ? "front" : (avg?.yaw ?? 0) > 0 ? "cheekRight" : "cheek";
+      void capture(key).then((ok) => ok && advance(key));
     };
 
     const tick = () => {
       rafRef.current = requestAnimationFrame(tick);
       const phaseNow = phaseRef.current;
       if (video.readyState < 2 || video.currentTime === lastTime || capturing) return;
-      if (phaseNow !== "front" && phaseNow !== "sideA" && phaseNow !== "sideB") return;
+      if (phaseNow !== "front" && phaseNow !== "side") return;
       lastTime = video.currentTime;
 
       const now = performance.now();
@@ -377,8 +401,6 @@ export default function LiveScanStep({
         go("error");
         return;
       }
-      latestLm = lm;
-      showSeen(Boolean(lm));
 
       if (now - lastLightAt > 400) {
         lastLightAt = now;
@@ -416,56 +438,48 @@ export default function LiveScanStep({
           if (Math.abs(a.cx - 0.5) > MAX_OFFCENTRE || Math.abs(a.cy - 0.5) > MAX_OFFCENTRE + 0.05) problem = "เลื่อนหน้ามาไว้กลางกรอบ";
           else if (Math.abs(a.yaw) > FRONT_YAW) problem = "หันหน้าตรงเข้ากล้อง";
         } else {
+          const target = sideTargetRef.current;
           const turn = Math.abs(a.yaw);
-          const wrongWay = phaseNow === "sideB" && turn >= SIDE_YAW_MIN && Math.sign(a.yaw) === sideASignRef.current;
-          if (wrongWay) problem = "หันไปอีกด้านหนึ่ง";
-          else if (turn < SIDE_YAW_MIN) problem = phaseNow === "sideA" ? "หันหน้าไปด้านข้างอีกนิด" : "ทีนี้หันไปอีกด้าน";
+          const facing = Math.sign(a.yaw);
+          const wantLabel = target > 0 ? "แก้มขวา" : "แก้มซ้าย";
+          if (turn < SIDE_YAW_MIN) problem = target === 0 ? "หันหน้าไปด้านข้างช้าๆ ให้เห็นแก้ม" : `หันให้เห็น${wantLabel}อีกนิด`;
+          else if (target !== 0 && facing !== target) problem = `หันไปอีกด้าน ให้เห็น${wantLabel}`;
           else if (turn > SIDE_YAW_MAX) problem = "หันกลับมานิดหนึ่ง";
         }
       }
 
       if (problem) {
+        goodSince = null;
         badSince ??= now;
-        // Brief misses keep the hold going; a real one resets it.
-        if (now - badSince > GRACE_MS || !lm) {
-          holdSince = null;
-          showPct(0);
+        // Brief misses keep it green; a real one turns it back to white.
+        if (!isReady || now - badSince > GRACE_MS || !lm) {
+          markReady(false);
           draw(lm, false);
           say(problem);
           return;
         }
-      } else {
-        badSince = null;
-      }
-      draw(lm, true);
-      if (now < settleUntil) {
-        // In place already, but give the step its moment before counting.
-        holdSince = null;
-        showPct(0);
-        say("ดีแล้ว เตรียมค้างไว้…");
+        draw(lm, true);
         return;
       }
-      holdSince ??= now;
-      const held = now - holdSince;
-      say(`ค้างไว้ ถ่ายใน ${Math.max(1, Math.ceil((HOLD_MS - held) / 500))}…`);
-      showPct(Math.min(100, (held / HOLD_MS) * 100));
-      if (held < HOLD_MS) return;
-      takeStep(phaseNow, avg!.yaw);
+      badSince = null;
+      goodSince ??= now;
+      const green = now - goodSince >= STEADY_MS;
+      markReady(green);
+      draw(lm, green);
+      say(green ? "พร้อมแล้ว กดปุ่มถ่ายได้เลย" : "ค้างไว้แบบนี้…");
     };
     tick();
   }
 
-  const stepIndex = STEPS.findIndex((s) => s.phase === phase);
-  const current = stepIndex >= 0 ? STEPS[stepIndex] : null;
-  const taken = Object.values(shots).filter(Boolean) as ResizedImage[];
+  const taken = SHOT_ORDER.filter((k) => shots[k]);
 
   if (phase === "intro" || phase === "error") {
     return (
       <section>
         <h2 className="text-lg font-bold text-brand-ink md:text-xl">สแกนสดด้วยกล้องหน้า</h2>
         <p className="mt-1 text-sm text-slate-600">
-          ใช้เวลาไม่ถึงนาที ระบบจะจับตำแหน่งใบหน้าแล้วนับถอยหลังถ่ายให้เอง 3 มุม หน้าตรงและแก้มสองข้าง
-          การจับตำแหน่งทำในเครื่องของคุณ
+          ถ่าย 3 มุม หน้าตรงและแก้มสองข้าง เส้นรอบหน้าจะเป็นสีเขียวเมื่อพร้อม แล้วกดถ่ายเอง ถ่ายใหม่ได้ก่อนส่ง
+          การจับตำแหน่งใบหน้าทำในเครื่องของคุณ
         </p>
         <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-slate-600 marker:text-brand-800/50">
           <li>หันหน้าเข้าหาแสงสว่าง ไม่ย้อนแสง</li>
@@ -489,26 +503,44 @@ export default function LiveScanStep({
     );
   }
 
+  const title =
+    phase === "loading"
+      ? "กำลังเปิดกล้อง…"
+      : phase === "review"
+      ? "ตรวจรูปก่อนส่ง"
+      : phase === "front"
+      ? retaking
+        ? "ถ่ายหน้าตรงใหม่"
+        : "มองตรงเข้ากล้อง"
+      : sideTarget === 0
+      ? "หันหน้าไปด้านข้างช้าๆ"
+      : retaking
+      ? `ถ่าย${sideTarget > 0 ? "แก้มขวา" : "แก้มซ้าย"}ใหม่`
+      : "ทีนี้หันไปอีกด้าน";
+  const sub =
+    phase === "loading"
+      ? "ครั้งแรกอาจใช้เวลาสักครู่"
+      : phase === "review"
+      ? "รูปไหนยังไม่ชัด กดถ่ายใหม่ได้ ถ้าโอเคแล้วกดใช้รูปเหล่านี้"
+      : "รอให้เส้นรอบหน้าเป็นสีเขียว แล้วกดปุ่มกลมเพื่อถ่าย";
+
   return (
     <section>
       <div aria-live="polite">
-        <h2 className="text-lg font-bold text-brand-ink md:text-xl">
-          {phase === "loading" ? "กำลังเปิดกล้อง…" : current?.title}
-        </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          {phase === "loading" ? "ครั้งแรกอาจใช้เวลาสักครู่" : current?.sub}
-        </p>
+        <h2 className="text-lg font-bold text-brand-ink md:text-xl">{title}</h2>
+        <p className="mt-1 text-sm text-slate-600">{sub}</p>
       </div>
 
-      <div className="relative mx-auto mt-4 aspect-[3/4] w-full max-w-sm overflow-hidden rounded-xl2 bg-slate-900">
+      {/* The camera stays mounted through the review so a retake is instant. */}
+      <div
+        className={clsx(
+          "relative mx-auto mt-4 aspect-[3/4] w-full max-w-sm overflow-hidden rounded-xl2 bg-slate-900",
+          phase === "review" && "hidden"
+        )}
+      >
         {/* Mirrored so moving left moves left, as in a mirror. The photos
             themselves are taken from the un-mirrored frame. */}
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          className="absolute inset-0 h-full w-full -scale-x-100 object-cover"
-        />
+        <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full -scale-x-100 object-cover" />
         <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full -scale-x-100 object-cover" />
         <div
           aria-hidden="true"
@@ -520,77 +552,96 @@ export default function LiveScanStep({
           </div>
         )}
         {hint && phase !== "loading" && (
-          <div className="absolute inset-x-3 top-3 overflow-hidden rounded-full bg-black/60 text-center text-sm font-semibold text-white">
-            <p className="px-4 py-2">{hint}</p>
-            {/* Fills while the face is held in place, so the shot never
-                comes as a surprise. */}
-            <span
-              aria-hidden="true"
-              className="absolute bottom-0 left-0 h-0.5 bg-brand-action transition-[width] duration-100"
-              style={{ width: `${holdPct}%` }}
-            />
-          </div>
+          <p
+            className={clsx(
+              "absolute inset-x-3 top-3 rounded-full px-4 py-2 text-center text-sm font-semibold text-white",
+              ready ? "bg-brand-action/90" : "bg-black/60"
+            )}
+          >
+            {hint}
+          </p>
         )}
         {phase !== "loading" && (
           <button
             type="button"
             onClick={() => shutterRef.current?.()}
-            disabled={!faceSeen}
-            aria-label="ถ่ายเลย"
-            className="absolute bottom-4 left-1/2 grid h-16 w-16 -translate-x-1/2 place-items-center rounded-full border-4 border-white/90 bg-white/25 backdrop-blur transition-opacity disabled:opacity-40"
+            disabled={!ready || busy}
+            aria-label={ready ? "ถ่ายรูป" : "ถ่ายรูป (รอเส้นสีเขียวก่อน)"}
+            className={clsx(
+              "absolute bottom-4 left-1/2 grid h-[4.5rem] w-[4.5rem] -translate-x-1/2 place-items-center rounded-full border-4 transition-colors",
+              ready && !busy ? "border-brand-action bg-white/30" : "border-white/60 bg-white/10"
+            )}
           >
-            <span className="h-11 w-11 rounded-full bg-white" />
+            <span className={clsx("h-12 w-12 rounded-full transition-colors", ready && !busy ? "bg-white" : "bg-white/40")} />
           </button>
         )}
       </div>
-      <p className="mx-auto mt-2 max-w-sm text-center text-xs text-slate-600">
-        ระบบถ่ายให้เองเมื่อพร้อม หรือกดปุ่มกลมเพื่อถ่ายเลย
-      </p>
 
-      <ol className="mx-auto mt-4 flex max-w-sm justify-between gap-2" aria-label="มุมที่ถ่าย">
-        {STEPS.map((s, i) => {
-          const done = i < taken.length;
-          return (
-            <li key={s.phase} className="flex flex-1 items-center gap-2">
-              <span
-                className={clsx(
-                  "relative h-11 w-11 shrink-0 overflow-hidden rounded-lg",
-                  done ? "ring-2 ring-brand-action" : "bg-surface-mist",
-                  i === stepIndex && !done && "ring-2 ring-brand-800"
-                )}
-              >
-                {done && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={taken[i].dataUrl} alt="" width={44} height={44} className="h-full w-full object-cover" />
-                )}
-                {done && (
-                  <span className="absolute bottom-0 right-0 grid h-4 w-4 place-items-center rounded-tl bg-brand-action text-white">
-                    <Check size={11} aria-hidden="true" />
+      {phase === "review" ? (
+        <div className="mx-auto mt-4 max-w-sm">
+          <ul className="grid grid-cols-3 gap-3">
+            {SHOT_ORDER.map((key) => {
+              const shot = shots[key];
+              return (
+                <li key={key} className="flex flex-col items-center gap-1.5">
+                  <span className="relative block aspect-[3/4] w-full overflow-hidden rounded-xl bg-surface-mist">
+                    {shot && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={shot.dataUrl} alt={SHOT_LABEL[key]} className="h-full w-full object-cover" />
+                    )}
                   </span>
-                )}
-              </span>
-              <span className={clsx("text-xs", done ? "font-semibold text-brand-800" : "text-slate-600")}>
-                {i === 0 ? "หน้าตรง" : `แก้ม ${i}`}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
+                  <span className="text-xs font-semibold text-brand-ink">{SHOT_LABEL[key]}</span>
+                  <button
+                    type="button"
+                    onClick={() => retake(key)}
+                    className="flex items-center gap-1 rounded-full border border-surface-line px-3 py-1.5 text-xs font-semibold text-brand-800 hover:bg-surface-mist"
+                  >
+                    <RotateCcw size={12} aria-hidden="true" /> {shot ? "ถ่ายใหม่" : "ถ่าย"}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <Button size="lg" fullWidth className="mt-5" onClick={finish} disabled={!shots.front}>
+            ใช้รูปเหล่านี้ ({taken.length} มุม)
+          </Button>
+        </div>
+      ) : (
+        <ol className="mx-auto mt-4 flex max-w-sm justify-between gap-2" aria-label="มุมที่ถ่าย">
+          {SHOT_ORDER.map((key) => {
+            const shot = shots[key];
+            return (
+              <li key={key} className="flex flex-1 items-center gap-2">
+                <span className={clsx("relative h-11 w-11 shrink-0 overflow-hidden rounded-lg", shot ? "ring-2 ring-brand-action" : "bg-surface-mist")}>
+                  {shot && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={shot.dataUrl} alt="" width={44} height={44} className="h-full w-full object-cover" />
+                  )}
+                  {shot && (
+                    <span className="absolute bottom-0 right-0 grid h-4 w-4 place-items-center rounded-tl bg-brand-action text-white">
+                      <Check size={11} aria-hidden="true" />
+                    </span>
+                  )}
+                </span>
+                <span className={clsx("text-xs", shot ? "font-semibold text-brand-800" : "text-slate-600")}>{SHOT_LABEL[key]}</span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
 
-      <div className="mt-4 flex justify-center gap-5 text-sm">
-        {(phase === "sideA" || phase === "sideB") && (
-          <button type="button" onClick={() => finish(shotsRef.current)} className="text-slate-600 hover:text-brand-ink">
-            พอแล้ว ใช้ {taken.length} มุมที่ถ่ายไว้
+      {phase !== "review" && phase !== "loading" && (
+        <div className="mt-4 flex justify-center gap-5 text-sm">
+          {shots.front && (
+            <button type="button" onClick={() => go("review")} className="text-slate-600 hover:text-brand-ink">
+              ดูรูปที่ถ่ายแล้ว ({taken.length} มุม)
+            </button>
+          )}
+          <button type="button" onClick={abandon} className="text-slate-600 hover:text-brand-ink">
+            ถ่ายหรือเลือกรูปเองแทน
           </button>
-        )}
-        <button
-          type="button"
-          onClick={abandon}
-          className="text-slate-600 hover:text-brand-ink"
-        >
-          ถ่ายหรือเลือกรูปเองแทน
-        </button>
-      </div>
+        </div>
+      )}
     </section>
   );
 }
