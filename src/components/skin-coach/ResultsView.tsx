@@ -5,6 +5,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { Info, MessageCircle, RotateCcw } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
+import type { Product } from "@/data/types";
 import { useQuickChat } from "@/lib/quickchat-context";
 import { useAuth } from "@/lib/auth-context";
 import ShareCard from "@/components/skin-coach/ShareCard";
@@ -13,28 +14,53 @@ import ScanHistory, { formatScanDate, gapBetween, useScanHistory } from "@/compo
 import {
   ANGLES,
   ageComparison,
-  boughtCountForConcern,
+  boughtCountForMetric,
   clarityLevel,
-  concernLabel,
-  concernReason,
   confidenceFor,
   overallScore,
-  productsForConcern,
+  recommendForMetric,
   scoreBand,
-  topConcerns,
   type AngleKey,
+  type ConcernSlug,
+  type MetricKey,
   type ScanAnswers,
   type SkinCoachMetrics,
 } from "@/lib/skin-coach";
 import { Button } from "@/components/ui";
 
+const METRIC_ROWS: { key: MetricKey; label: string; topic: string }[] = [
+  { key: "acne", label: "สิว", topic: "สิว" },
+  { key: "pores", label: "รูขุมขน", topic: "รูขุมขน" },
+  { key: "darkSpots", label: "จุดด่างดำและสีผิว", topic: "จุดด่างดำและสีผิว" },
+  { key: "wrinkles", label: "ริ้วรอย", topic: "ริ้วรอย" },
+];
+
+// What the person said they worry about, as the metric it corresponds to.
+const CONCERN_TO_METRIC: Record<ConcernSlug, MetricKey> = { acne: "acne", "dark-spots": "darkSpots", aging: "wrinkles" };
+
 // Four pips and a word, not a bar to a percent: the model's scores are rough
-// reads of a photo, and a level says only as much as they can.
-function MetricRow({ label, score, note }: { label: string; score: number; note: string }) {
+// reads of a photo, and a level says only as much as they can. Products for
+// the metric sit right under it, so each recommendation is read next to the
+// finding it answers.
+function MetricRow({
+  label,
+  score,
+  note,
+  reason,
+  products,
+  skipped,
+}: {
+  label: string;
+  score: number;
+  note: string;
+  reason: string | null;
+  products: Product[];
+  skipped: number;
+}) {
   const level = clarityLevel(score);
   const fill = level.tone === "good" ? "bg-brand-action" : level.tone === "fair" ? "bg-amber-400" : "bg-amber-600";
   return (
-    <li className="py-3.5">
+    <li className="py-4">
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-semibold text-brand-ink">{label}</span>
         <span className="flex items-center gap-2.5">
@@ -54,6 +80,22 @@ function MetricRow({ label, score, note }: { label: string; score: number; note:
         </span>
       </div>
       {note && <p className="mt-1 text-xs text-slate-600">{note}</p>}
+
+      {products.length > 0 && (
+        <div className="mt-3">
+          {reason && <p className="text-xs font-semibold text-brand-ink">{reason}</p>}
+          {skipped > 0 && (
+            <p className="mt-0.5 text-xs text-slate-600">ไม่แสดง {skipped} รายการที่คุณเคยซื้อแล้ว ถ้ายังใช้อยู่ ใช้ต่อได้เลย</p>
+          )}
+          <div className="-mx-5 mt-2 flex snap-x gap-3 overflow-x-auto px-5 pb-1 sm:-mx-7 sm:px-7">
+            {products.map((p) => (
+              <div key={p.slug} className="w-40 shrink-0 snap-start sm:w-44">
+                <ProductCard product={p} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </li>
   );
 }
@@ -106,7 +148,20 @@ export default function ResultsView({
   const band = scoreBand(total);
   const confidence = confidenceFor(angles.length);
   const comparison = ageComparison(metrics.skinAge.years, answers.ageRange);
-  const concerns = topConcerns(metrics, 2, answers.mainConcern);
+  // Products go under the metrics that need care, and under whatever the
+  // person said they worry about. When everything reads well, the weakest
+  // metric still gets a couple of picks for keeping it that way.
+  const preferred = answers.mainConcern ? CONCERN_TO_METRIC[answers.mainConcern] : undefined;
+  const needsCare = METRIC_ROWS.filter((m) => clarityLevel(metrics[m.key].score).tone !== "good").map((m) => m.key);
+  const weakest = [...METRIC_ROWS].sort((a, b) => metrics[b.key].score - metrics[a.key].score)[0].key;
+  const withProducts = new Set<MetricKey>([...needsCare, ...(preferred ? [preferred] : [])]);
+  if (withProducts.size === 0) withProducts.add(weakest);
+
+  function reasonFor(key: MetricKey, topic: string) {
+    if (key === preferred) return `เพราะคุณบอกว่ากังวลเรื่อง${topic}`;
+    const level = clarityLevel(metrics[key].score);
+    return level.tone === "good" ? `ดูแลต่อให้${topic}อยู่ในระดับ "${level.label}"` : `แนะนำเพราะ${topic}อยู่ในระดับ "${level.label}"`;
+  }
   const angleLabels = angles.map((a) => ANGLES.find((x) => x.key === a)?.label ?? a);
   // The scan to compare against: the latest one saved before this result.
   const previous = history.scans.find((s) => s.id !== saved);
@@ -147,7 +202,7 @@ export default function ResultsView({
   }
 
   function askAdvisor() {
-    const info = concerns.map((slug) => concernLabel(slug)?.nameTh).filter(Boolean).join(", ");
+    const info = METRIC_ROWS.filter((m) => withProducts.has(m.key)).map((m) => m.topic).join(", ");
     openWithProfile({
       scan: `อายุผิวประมาณ ${metrics.skinAge.years} ปี, ภาพรวม${band.label}`,
       concern: info || "สุขภาพผิวโดยรวม",
@@ -205,10 +260,20 @@ export default function ResultsView({
         </h2>
         <p className="mt-1 text-sm text-slate-600">{metrics.overallNote}</p>
         <ul className="mt-2 divide-y divide-surface-line">
-          <MetricRow label="สิว" score={metrics.acne.score} note={metrics.acne.note} />
-          <MetricRow label="รูขุมขน" score={metrics.pores.score} note={metrics.pores.note} />
-          <MetricRow label="จุดด่างดำและสีผิว" score={metrics.darkSpots.score} note={metrics.darkSpots.note} />
-          <MetricRow label="ริ้วรอย" score={metrics.wrinkles.score} note={metrics.wrinkles.note} />
+          {METRIC_ROWS.map((m) => {
+            const show = withProducts.has(m.key);
+            return (
+              <MetricRow
+                key={m.key}
+                label={m.label}
+                score={metrics[m.key].score}
+                note={metrics[m.key].note}
+                reason={show ? reasonFor(m.key, m.topic) : null}
+                products={show ? recommendForMetric(m.key, 3, bought) : []}
+                skipped={show ? boughtCountForMetric(m.key, bought) : 0}
+              />
+            );
+          })}
         </ul>
 
         <div className="mt-4 flex flex-wrap gap-2.5">
@@ -265,35 +330,6 @@ export default function ResultsView({
 
       <div className="mt-5">
         <RewardClaim score={total} />
-      </div>
-
-      {/* Why before what: each group opens with the reason it's here, then
-          the products — never a price or a discount leading. */}
-      <div className="mt-8 space-y-8">
-        {concerns.map((slug) => {
-          const info = concernLabel(slug);
-          const items = productsForConcern(slug, 3, bought);
-          const skipped = boughtCountForConcern(slug, bought);
-          if (!info || items.length === 0) return null;
-          return (
-            <section key={slug}>
-              <h2 className="text-lg font-bold text-brand-ink">สำหรับ{info.nameTh}</h2>
-              <p className="mt-1 text-sm text-slate-600">
-                {concernReason(slug, metrics, answers.mainConcern)} {info.description}
-              </p>
-              {skipped > 0 && (
-                <p className="mt-1 text-xs text-slate-600">
-                  ไม่แสดง {skipped} รายการที่คุณเคยซื้อแล้ว ถ้ายังใช้อยู่ ใช้ต่อได้เลย
-                </p>
-              )}
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-                {items.map((p) => (
-                  <ProductCard key={p.slug} product={p} />
-                ))}
-              </div>
-            </section>
-          );
-        })}
       </div>
 
       <button
