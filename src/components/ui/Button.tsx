@@ -18,9 +18,13 @@ type Variant = "primary" | "secondary" | "soft" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg" | "none";
 
 const VARIANT: Record<Variant, string> = {
-  primary: "bg-brand-gradient text-white hover:opacity-90",
+  // Solid action green: 4.94:1 with white text. The gradient it replaces fell
+  // to 2.53:1 at its sky-blue end, so every primary button failed AA. Hover
+  // deepens the colour instead of fading it — fading made the text weaker at
+  // exactly the moment someone was about to press it.
+  primary: "bg-brand-action text-white hover:bg-brand-action-hover",
   secondary:
-    "border border-slate-200 bg-white text-slate-700 hover:border-brand-teal hover:bg-brand-gradient-soft " +
+    "border border-surface-line bg-white text-brand-ink hover:border-brand-action/40 hover:bg-surface-mist " +
     "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-brand-teal dark:hover:bg-slate-800",
   // brand-800, not the brand-600 fill: at 5.63 on white it is the lightest
   // step that carries readable text (see the ladder in tailwind.config.ts).

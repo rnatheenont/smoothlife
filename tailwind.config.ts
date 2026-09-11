@@ -20,7 +20,18 @@ const config: Config = {
           sky: "#00AEEF",
           blue: "#0091E6",
           dark: "#0B3B36",
-          ink: "#0F172A",
+          // Deep green-black. The old slate #0F172A was a cold blue-grey that
+          // belonged to no part of this brand; this sits in the same family as
+          // the mint and still measures 16.4:1 on white.
+          ink: "#10231C",
+
+          // The colour of doing something — every primary button and solid
+          // brand fill. It is the brand mint taken one step deeper, because the
+          // mint itself (#00A87B) is 3.05:1 against white text and the old
+          // mint-to-sky gradient fell to 2.53:1 at its light end: every primary
+          // button on the site failed WCAG AA. #00805F is 4.94:1.
+          action: "#00805F",
+          "action-hover": "#006B50",
 
           // Numeric ladder derived from #00A87B (the emerald above sits at
           // 600), merged into the same key so both naming styles coexist.
@@ -43,7 +54,16 @@ const config: Config = {
         surface: {
           soft: "#F4FAF8",
           muted: "#EEF3F2",
+          // The well behind product photos and the band behind sections — one
+          // quiet mint-grey so packshots and campaign banners sit on the same
+          // ground instead of each bringing its own background.
+          mist: "#EEF5F1",
+          // Hairline borders, tinted into the ink's family.
+          line: "#DCE7E1",
         },
+        // Discounts and price cuts only — nothing else on the site is red, so
+        // a red number always means money off. 4.66:1 on white.
+        sale: "#D63A30",
 
         // Warm neutral ladder (structure borrowed from the reference system;
         // values are ours). Useful for section backgrounds that shouldn't read
@@ -73,8 +93,15 @@ const config: Config = {
         sans: ["var(--font-noto-thai)", "Noto Sans Thai", "sans-serif"],
       },
       backgroundImage: {
-        "brand-gradient": "linear-gradient(90deg, #00A87B 0%, #00B39B 45%, #00AEEF 100%)",
-        "brand-gradient-soft": "linear-gradient(135deg, #E6FBF5 0%, #E6F6FE 100%)",
+        // Spent in one place only. The mint-to-sky gradient used to fill 210
+        // buttons, badges, chips and bars — and when everything shimmers,
+        // nothing stands out. These two names are kept because 330 call sites
+        // use them, but they now paint flat: brand-gradient is the action
+        // green, brand-gradient-soft the mist tint. The real gradient lives on
+        // as brand-signature, for the membership card and the wordmark.
+        "brand-gradient": "linear-gradient(#00805F, #00805F)",
+        "brand-gradient-soft": "linear-gradient(#EEF5F1, #EEF5F1)",
+        "brand-signature": "linear-gradient(90deg, #00A87B 0%, #00B39B 45%, #00AEEF 100%)",
         "brand-radial": "radial-gradient(120% 120% at 100% 0%, #E6F6FE 0%, #F4FAF8 60%)",
       },
       // Type ladder. All names are new — the site keeps using Tailwind's
@@ -106,8 +133,12 @@ const config: Config = {
       // untouched — they are used in 70+ files and changing them would restyle
       // the live shop silently.
       boxShadow: {
-        card: "0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -8px rgba(15, 23, 42, 0.08)",
-        cardHover: "0 4px 8px rgba(0, 168, 123, 0.06), 0 24px 48px -12px rgba(0, 168, 123, 0.18)",
+        // Near-flat: a hairline and a breath of shadow. The old card shadow was
+        // a 32px soft blur under every panel on the site, so every card
+        // floated at the same height and none of them was more important than
+        // another. Lift is now something hover and raised elements earn.
+        card: "0 0 0 1px rgba(16, 35, 28, 0.07), 0 1px 2px rgba(16, 35, 28, 0.04)",
+        cardHover: "0 0 0 1px rgba(16, 35, 28, 0.09), 0 10px 28px -10px rgba(16, 35, 28, 0.18)",
         "layer-xs":
           "0 3px 3px -1.5px rgba(15,23,42,0.04), 0 1px 1px -0.5px rgba(15,23,42,0.08), 0 0 0 1px rgba(15,23,42,0.04)",
         "layer-sm":
