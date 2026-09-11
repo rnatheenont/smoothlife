@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Repeat, PercentCircle } from "lucide-react";
+import { ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Repeat, PercentCircle } from "lucide-react";
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
 import { categories, concerns, concernImage } from "@/data/categories";
@@ -93,42 +93,40 @@ export default async function HomePage() {
         {/* Mobile: plain white, no tint — desktop keeps the old short top
             banner + two floating blobs since its section is much taller
             (headline column) and reads fine with the wash. */}
-        <div className="pointer-events-none hidden md:block absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-brand-teal/10 via-brand-sky/5 to-transparent" />
-        <div className="pointer-events-none hidden md:block absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/10 blur-3xl animate-floatSlow" />
-        <div className="pointer-events-none hidden md:block absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-brand-sky/10 blur-3xl animate-floatSlow" />
+        {/* No wash, no drifting blobs, no glow behind the carousel: the
+            campaign banners are already the loudest thing on the page, and
+            decoration moving on its own competed with them for attention. */}
 
         <div className="container-page relative pt-2 pb-6 md:py-24 grid md:grid-cols-[0.65fr_1.35fr] gap-8 md:gap-12 items-center">
           <StaggerReveal className="hidden md:block order-3 md:order-1">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-emerald shadow-card mb-5 border border-slate-100">
-              <Sparkles size={13} /> แนะนำน้อง Smoothie ผู้ช่วยคนใหม่
-            </span>
-            <h1 className="text-4xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold !leading-[1.35] tracking-tight text-brand-ink">
+            {/* One colour for the whole headline. Picking out a single phrase
+                in the brand gradient is the most recognisable tell of a
+                generated page, and the wordmark above already carries it. */}
+            <h1 className="text-4xl font-extrabold !leading-[1.3] text-brand-ink md:text-3xl lg:text-4xl xl:text-[3.25rem]">
               สุขภาพดี ผิวสวย <br />
-              <span className="brand-text-gradient">ครบทุก Lifestyle</span> <span className="whitespace-nowrap">ที่เดียว</span>
+              ครบทุก Lifestyle <span className="whitespace-nowrap">ที่เดียว</span>
             </h1>
-            <p className="mt-5 text-slate-500 max-w-md leading-relaxed">
-              ค้นหาสินค้าง่าย ซื้อเร็ว เข้าสู่ระบบด้วย OTP หรือ LINE พร้อมรับคะแนนสะสมทุกการช้อป
-              ของแท้ 100% มีอย. จัดส่งฟรีทั่วไทย
+            <p className="mt-5 max-w-md leading-relaxed text-slate-600">
+              ของแท้ 100% มี อย. ทุกชิ้น ส่งฟรีทั่วไทย และสะสมคะแนนทุกการสั่งซื้อ
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button
                 href="/shop"
                 size="none"
-                className="group gap-1.5 px-7 py-3.5 text-sm shadow-cardHover hover:-translate-y-0.5 hover:shadow-xl"
+                className="group gap-1.5 px-7 py-3.5 text-sm"
               >
                 เริ่มช้อปเลย
                 <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
               </Button>
               <Link
                 href="/advisor"
-                className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-7 py-3.5 text-sm hover:border-brand-teal hover:-translate-y-0.5 transition"
+                className="rounded-full border border-surface-line bg-white px-7 py-3.5 text-sm font-semibold text-brand-ink transition-colors hover:border-brand-action/40 hover:bg-surface-mist"
               >
                 น้อง Smoothie แนะนำ
               </Link>
             </div>
           </StaggerReveal>
           <div className="relative order-1 md:order-2">
-            <div className="pointer-events-none hidden md:block absolute -inset-6 rounded-[2rem] bg-brand-gradient opacity-30 blur-2xl" />
             <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
           </div>
 
@@ -144,10 +142,10 @@ export default async function HomePage() {
                 href={`/shop/${c.slug}`}
                 className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
               >
-                <span className="relative h-[72px] w-[72px] rounded-full overflow-hidden bg-surface-soft border border-slate-100 shadow-card">
+                <span className="relative h-[72px] w-[72px] overflow-hidden rounded-full border border-surface-line bg-surface-mist">
                   <Image src={c.image} alt={c.name} fill className="object-cover" />
                 </span>
-                <span className="text-xs font-medium text-slate-600 text-center line-clamp-1">{c.nameTh}</span>
+                <span className="line-clamp-1 text-center text-xs font-medium text-brand-ink">{c.nameTh}</span>
               </Link>
             ))}
           </StaggerReveal>
@@ -164,8 +162,8 @@ export default async function HomePage() {
               { icon: Award, label: "สะสมคะแนนทุกออเดอร์" },
               { icon: MessageCircle, label: "ปรึกษาผู้เชี่ยวชาญฟรี" },
             ].map((f) => (
-              <div key={f.label} className="flex items-center gap-2 text-slate-600 shrink-0">
-                <f.icon size={18} className="text-brand-emerald shrink-0" />
+              <div key={f.label} className="flex shrink-0 items-center gap-2 text-brand-ink">
+                <f.icon size={18} className="shrink-0 text-brand-emerald" aria-hidden="true" />
                 <span className="whitespace-nowrap">{f.label}</span>
               </div>
             ))}
@@ -184,10 +182,10 @@ export default async function HomePage() {
         <StaggerGrid className="container-page grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-6">
           {categories.map((c) => (
             <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col items-center gap-3">
-              <div className="relative h-16 w-16 md:h-28 md:w-28 rounded-full overflow-hidden bg-white shadow-card group-hover:shadow-cardHover group-hover:-translate-y-1 transition duration-300">
+              <div className="relative h-16 w-16 overflow-hidden rounded-full border border-surface-line bg-surface-mist transition-colors group-hover:border-brand-action/40 md:h-28 md:w-28">
                 <Image src={c.image} alt={c.name} fill className="object-cover" />
               </div>
-              <span className="text-xs md:text-base text-center font-medium text-slate-600 group-hover:text-brand-emerald">
+              <span className="text-center text-xs font-medium text-brand-ink group-hover:text-brand-800 md:text-base">
                 {c.nameTh}
               </span>
             </Link>
@@ -199,13 +197,10 @@ export default async function HomePage() {
           slot the mobile-only "today's deals" slider used to occupy);
           Categories now leads instead, so this follows it. */}
       <section className="bg-surface-soft py-8 md:py-20">
-        {/* Thai title hidden on mobile so the cards sit close to the top;
-            the English label stays, centered, as a small standalone eyebrow
-            instead of the full left-aligned heading block. */}
-        <p className="md:hidden text-center text-[11px] font-bold uppercase tracking-[0.2em] text-brand-emerald mb-6">
-          New, Best Sellers and Promotions
-        </p>
-        <ScrollReveal className="container-page hidden md:block">
+        {/* The same Thai heading on every screen. Mobile used to get an
+            English caps eyebrow in its place — shouting in the one language
+            the page is not written in. */}
+        <ScrollReveal className="container-page">
           <SectionHeading title="โปรโมชั่นและดีลเด็ด" subtitle="New, Best Sellers and Promotions" href="/promotions" />
         </ScrollReveal>
         <StaggerGrid className="container-page grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4" stagger={0.1}>
@@ -213,7 +208,7 @@ export default async function HomePage() {
             <Link
               key={promo.slug}
               href={`/promotions#${promo.slug}`}
-              className="relative rounded-xl2 overflow-hidden aspect-[4/3] group shadow-card"
+              className="group relative aspect-[4/3] overflow-hidden rounded-xl2"
             >
               <Image
                 src={promotionImage(promo, products, usedPromoSlugs)}
@@ -223,7 +218,7 @@ export default async function HomePage() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
               <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
-                <span className="text-[10px] font-bold uppercase bg-white/20 backdrop-blur px-2 py-0.5 rounded-full">
+                <span className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-brand-ink">
                   {promo.badge}
                 </span>
                 <h3 className="font-bold text-sm md:text-base mt-1">{promo.title}</h3>
@@ -245,13 +240,20 @@ export default async function HomePage() {
         </ScrollReveal>
         <StaggerGrid className="container-page grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
           {concerns.map((c) => (
-            <Link key={c.slug} href={`/concern/${c.slug}`} className="group rounded-xl2 bg-white overflow-hidden shadow-card">
-              <div className="relative aspect-square">
-                <Image src={concernImage(c.slug)} alt={c.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+            <Link key={c.slug} href={`/concern/${c.slug}`} className="group">
+              {/* A packshot sitting on the mist well, contained rather than
+                  cropped — every tile now reads as the same kind of object,
+                  instead of product photos next to full-bleed campaign art. */}
+              <div className="relative aspect-square overflow-hidden rounded-xl2 bg-surface-mist transition-colors group-hover:bg-brand-100">
+                <Image
+                  src={concernImage(c.slug)}
+                  alt=""
+                  fill
+                  sizes="(max-width:768px) 50vw, 16vw"
+                  className="object-contain p-5 mix-blend-multiply"
+                />
               </div>
-              <div className="p-2.5">
-                <p className="text-xs font-semibold text-brand-ink line-clamp-2">{c.nameTh}</p>
-              </div>
+              <p className="mt-2 line-clamp-2 text-sm font-semibold text-brand-ink group-hover:text-brand-800">{c.nameTh}</p>
             </Link>
           ))}
         </StaggerGrid>
@@ -296,15 +298,16 @@ export default async function HomePage() {
           above have already built trust, rather than pitching it early. */}
       <section className="container-page py-8 md:py-20">
         <ScaleReveal className="relative overflow-hidden rounded-xl2 bg-brand-gradient p-8 md:p-12 text-white">
-          <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-white/10 animate-floatSlow" />
-          <div className="pointer-events-none absolute right-24 bottom-0 h-24 w-24 rounded-full bg-white/10 animate-floatSlow" />
+          {/* The one bold block on the page, deep green end to end. The two
+              circles drifting across it on their own were decoration moving
+              for no one's benefit. */}
           <div className="relative grid md:grid-cols-[1.1fr,1fr] gap-8 items-center">
             <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur px-3 py-1 text-xs font-semibold mb-4">
+              <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
                 <Repeat size={13} /> สมัครสมาชิกรายรอบ ไม่ต้องสั่งซ้ำ
               </span>
-              <h2 className="text-2xl md:text-4xl font-extrabold tracking-tight leading-tight">
-                เลือกรอบส่งของคุณเอง <br className="hidden md:block" />
+              <h2 className="text-2xl font-extrabold leading-tight md:text-4xl">
+                เลือกรอบส่ง<span className="whitespace-nowrap">ของคุณเอง</span> <br className="hidden md:block" />
                 ยิ่งนานยิ่งประหยัด
               </h2>
               <p className="mt-3 text-white/85 max-w-md">
@@ -313,7 +316,7 @@ export default async function HomePage() {
               </p>
               <Link
                 href="/subscription"
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-white text-brand-emerald font-bold px-6 py-3 text-sm shadow-card hover:shadow-cardHover hover:-translate-y-0.5 transition"
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-brand-action transition-colors hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-action"
               >
                 <PercentCircle size={16} /> ดูแผนสมัครสมาชิก
               </Link>
@@ -329,7 +332,7 @@ export default async function HomePage() {
                 <div
                   key={plan.months}
                   className={`relative flex flex-col items-center gap-0.5 rounded-xl2 px-2 py-3 text-center backdrop-blur transition ${
-                    plan.popular ? "bg-white text-brand-ink shadow-cardHover scale-[1.03]" : "bg-white/15 text-white"
+                    plan.popular ? "bg-white text-brand-ink" : "bg-white/15 text-white"
                   }`}
                 >
                   {plan.popular && (
@@ -338,7 +341,7 @@ export default async function HomePage() {
                     </span>
                   )}
                   <p className="font-bold text-xs mt-1.5">{plan.months} เดือน</p>
-                  <span className={`text-base font-extrabold ${plan.popular ? "text-brand-emerald" : "text-white"}`}>
+                  <span className={`text-base font-extrabold ${plan.popular ? "text-brand-action" : "text-white"}`}>
                     -{plan.discountPct}%
                   </span>
                   <p className={`text-[10px] leading-tight ${plan.popular ? "text-slate-500" : "text-white/70"}`}>
@@ -352,7 +355,7 @@ export default async function HomePage() {
                 <div
                   key={plan.months}
                   className={`flex items-center justify-between rounded-xl2 px-4 py-3 backdrop-blur transition ${
-                    plan.popular ? "bg-white text-brand-ink shadow-cardHover scale-[1.03]" : "bg-white/15 text-white"
+                    plan.popular ? "bg-white text-brand-ink" : "bg-white/15 text-white"
                   }`}
                 >
                   <div>
@@ -366,7 +369,7 @@ export default async function HomePage() {
                     </p>
                     <p className={`text-xs ${plan.popular ? "text-slate-500" : "text-white/70"}`}>{plan.sublabel}</p>
                   </div>
-                  <span className={`text-lg font-extrabold ${plan.popular ? "text-brand-emerald" : "text-white"}`}>
+                  <span className={`text-lg font-extrabold ${plan.popular ? "text-brand-action" : "text-white"}`}>
                     -{plan.discountPct}%
                   </span>
                 </div>
@@ -424,7 +427,7 @@ export default async function HomePage() {
                 />
               </div>
               <div className="p-4">
-                <span className="text-[10px] font-bold uppercase text-brand-emerald bg-brand-gradient-soft px-2 py-0.5 rounded-full">
+                <span className="rounded-full bg-surface-mist px-2 py-0.5 text-[11px] font-semibold text-brand-800">
                   {articleCategoryLabel[a.category] || a.category}
                 </span>
                 <h3 className="font-bold text-sm text-brand-ink mt-2 line-clamp-2">{a.title}</h3>

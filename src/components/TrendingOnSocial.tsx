@@ -1,5 +1,7 @@
 "use client";
 
+import SectionHeading from "@/components/SectionHeading";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -239,7 +241,11 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
 
   return (
     <section className="bg-surface-soft py-6 md:py-20 overflow-hidden">
-      <h2 className="text-center font-extrabold text-2xl md:text-3xl text-brand-ink mb-8">กระแสฮอตบนโซเชียล</h2>
+      {/* Same heading as every other section — left-aligned, one weight —
+          so the page reads as one voice rather than a stack of templates. */}
+      <div className="container-page">
+        <SectionHeading title="กระแสฮอตบนโซเชียล" />
+      </div>
       <div
         ref={scrollerRef}
         onScroll={updateProgress}
