@@ -25,12 +25,6 @@ function ForgotPasswordContent() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    // Shopify emails the code; its callback lands on the set-new-password
-    // form once the inbox is confirmed.
-    if (SHOPIFY_EMAIL_LOGIN) {
-      window.location.href = shopifyAuthStartPath({ intent: "reset", hint: email.trim() });
-      return;
-    }
     setBusy(true);
     setError(null);
     setMessage(null);
@@ -67,14 +61,20 @@ function ForgotPasswordContent() {
         <h1 className="text-xl font-bold text-brand-ink mb-1">ลืมรหัสผ่าน?</h1>
         <p className="text-sm text-slate-500 mt-1 mb-5">
           {SHOPIFY_EMAIL_LOGIN
-            ? "กรอกอีเมลที่ใช้สมัคร แล้วยืนยันด้วยรหัสที่ส่งไปทางอีเมล จากนั้นตั้งรหัสผ่านใหม่ได้ทันที"
+            ? "ยืนยันอีเมลที่ใช้สมัครด้วยรหัสที่ส่งไปทางอีเมล จากนั้นตั้งรหัสผ่านใหม่ได้ทันที"
             : "กรอกอีเมลที่ใช้สมัคร เราจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ไปให้"}
         </p>
         {returnError && RETURN_ERRORS[returnError] && (
           <p className="mb-4 rounded-lg bg-amber-50 px-3.5 py-2.5 text-left text-xs text-amber-800">{RETURN_ERRORS[returnError]}</p>
         )}
 
-        {!message ? (
+        {SHOPIFY_EMAIL_LOGIN ? (
+          // Shopify asks for the address and emails the code on its own page;
+          // asking here first would only make people type it twice.
+          <Button size="lg" onClick={() => (window.location.href = shopifyAuthStartPath({ intent: "reset" }))}>
+            ยืนยันอีเมลเพื่อตั้งรหัสผ่านใหม่
+          </Button>
+        ) : !message ? (
           <form onSubmit={submit} className="flex flex-col gap-3 text-left">
             <input
               required
@@ -87,7 +87,7 @@ function ForgotPasswordContent() {
             {error && <p className="text-xs text-rose-700">{error}</p>}
             <Button type="submit" size="lg" disabled={busy}>
               {busy && <Loader2 size={15} className="animate-spin" />}
-              {SHOPIFY_EMAIL_LOGIN ? "รับรหัสยืนยันทางอีเมล" : "ส่งลิงก์ตั้งรหัสผ่านใหม่"}
+              ส่งลิงก์ตั้งรหัสผ่านใหม่
             </Button>
           </form>
         ) : (

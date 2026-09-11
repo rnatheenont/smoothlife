@@ -228,12 +228,6 @@ function EmailLinkCard() {
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
-    // Shopify emails the code on its own page and comes back here with the
-    // new address attached to this account.
-    if (SHOPIFY_EMAIL_LOGIN) {
-      window.location.href = shopifyAuthStartPath({ intent: "link", hint: email.trim(), returnTo: "/account/profile" });
-      return;
-    }
     setError("");
     setDevCode("");
     setSending(true);
@@ -307,11 +301,29 @@ function EmailLinkCard() {
       <h2 className="text-sm font-bold text-brand-ink mb-1">{isChanging ? "เปลี่ยนอีเมล" : "เพิ่มและยืนยันอีเมล"}</h2>
       <p className="text-xs text-slate-500 mb-4">
         {isChanging
-          ? `อีเมลปัจจุบัน: ${user.email} — กรอกอีเมลใหม่แล้วยืนยันด้วยรหัสที่ส่งไปที่อีเมลนั้น`
+          ? `อีเมลปัจจุบัน: ${user.email} — ${SHOPIFY_EMAIL_LOGIN ? "กรอกอีเมลใหม่ในหน้าถัดไป" : "กรอกอีเมลใหม่"}แล้วยืนยันด้วยรหัสที่ส่งไปที่อีเมลนั้น`
           : "บัญชีนี้ยังไม่มีอีเมล เพิ่มไว้เพื่อใช้เข้าสู่ระบบได้อีกทาง และรับการแจ้งเตือนคำสั่งซื้อ"}
       </p>
 
-      {!sent ? (
+      {SHOPIFY_EMAIL_LOGIN ? (
+        // The new address is typed once, on Shopify's page, which emails the
+        // code and comes back here with it attached to this account.
+        <div className="flex flex-col gap-3">
+          {error && <p className="text-xs text-rose-700">{error}</p>}
+          <Button
+            onClick={() =>
+              (window.location.href = shopifyAuthStartPath({ intent: "link", returnTo: "/account/profile" }))
+            }
+          >
+            {isChanging ? "เปลี่ยนอีเมล" : "เพิ่มอีเมล"}
+          </Button>
+          {isChanging && (
+            <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-500">
+              ยกเลิก
+            </button>
+          )}
+        </div>
+      ) : !sent ? (
         <form onSubmit={sendCode} className="flex flex-col gap-3">
           <input
             required
@@ -324,7 +336,7 @@ function EmailLinkCard() {
           {error && <p className="text-xs text-rose-700">{error}</p>}
           <Button type="submit" disabled={sending}>
             {sending && <Loader2 size={14} className="animate-spin" />}
-            {sending ? "กำลังส่งรหัส…" : SHOPIFY_EMAIL_LOGIN ? "รับรหัสทางอีเมล" : "ส่งรหัสยืนยัน"}
+            {sending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
           </Button>
           {isChanging && (
             <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-500">

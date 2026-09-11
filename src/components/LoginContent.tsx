@@ -206,12 +206,6 @@ export default function LoginContent() {
   async function handleSendEmailOtp(e: React.FormEvent) {
     e.preventDefault();
     if (!emailOtpAddress.trim()) return;
-    // Shopify emails the code on its own login page and sends the customer
-    // back signed in — nothing for this form to verify.
-    if (SHOPIFY_EMAIL_LOGIN) {
-      window.location.href = shopifyAuthStartPath({ intent: "login", returnTo, hint: emailOtpAddress.trim() });
-      return;
-    }
     setEmailOtpError("");
     setEmailOtpDevCode("");
     setEmailOtpSending(true);
@@ -390,7 +384,14 @@ export default function LoginContent() {
 
           <div className="flex items-center justify-center gap-3.5">
             <button
-              onClick={() => setView("email-otp")}
+              // With Shopify sending the code, the email is typed once — on
+              // Shopify's page — so this goes straight there instead of
+              // opening a form that asks for the same address first.
+              onClick={() =>
+                SHOPIFY_EMAIL_LOGIN
+                  ? (window.location.href = shopifyAuthStartPath({ intent: "login", returnTo }))
+                  : setView("email-otp")
+              }
               aria-label="อีเมล OTP"
               title="อีเมล OTP"
               className="relative grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-surface-soft hover:border-brand-teal/30 hover:text-brand-800 transition-colors"
@@ -655,15 +656,10 @@ export default function LoginContent() {
                   className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
                 />
               </div>
-              {SHOPIFY_EMAIL_LOGIN && (
-                <p className="text-xs text-slate-600">
-                  รหัสยืนยันจะส่งจากระบบสมาชิกของร้านบน Shopify กรอกรหัสในหน้าถัดไปแล้วระบบจะพากลับมาที่นี่
-                </p>
-              )}
               <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
               {emailOtpError && <p className="text-xs text-rose-700">{emailOtpError}</p>}
               <Button type="submit" size="lg" loading={emailOtpSending} disabled={!agreedTerms}>
-                {emailOtpSending ? "กำลังส่งรหัส…" : SHOPIFY_EMAIL_LOGIN ? "รับรหัสทางอีเมล" : "ส่งรหัสยืนยัน"}
+                {emailOtpSending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
               </Button>
             </form>
           ) : (
