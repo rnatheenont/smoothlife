@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { Users, Search, Link2, Unlink, Loader2, ShoppingBag, AlertTriangle, Check, ExternalLink, ShieldCheck, Merge, Stethoscope } from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
+import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
 
 // Attaching a returning customer's purchase history to their login.
 //
@@ -76,6 +77,20 @@ export default function AdminCustomersPage() {
   const [health, setHealth] = useState<Health | null>(null);
   const [checking, setChecking] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  // The selected member's saved Skin Coach scans, for context when helping them.
+  const [scans, setScans] = useState<AdminSkinScan[] | null>(null);
+  useEffect(() => {
+    setScans(null);
+    if (!selected) return;
+    let cancelled = false;
+    fetch(`/api/admin/customers/skin-scans?userId=${selected}`)
+      .then((r) => r.json())
+      .then((d) => !cancelled && setScans(d.ok ? d.scans : []))
+      .catch(() => !cancelled && setScans([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [selected]);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState("");
   const [done, setDone] = useState("");
@@ -468,6 +483,19 @@ export default function AdminCustomersPage() {
             </div>
           </Card>
         </div>
+      )}
+
+      {selected && (
+        <Card className="p-4 max-w-2xl">
+          <h2 className="text-sm font-bold text-brand-ink mb-2">ผลสแกนผิว (Skin Coach)</h2>
+          {scans === null ? (
+            <p className="flex items-center gap-1.5 text-xs text-slate-500">
+              <Loader2 size={12} className="animate-spin" /> กำลังโหลด…
+            </p>
+          ) : (
+            <SkinScanSummary scans={scans} />
+          )}
+        </Card>
       )}
 
       {account && (

@@ -1,5 +1,6 @@
 "use client";
 
+import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList, ImagePlus, Languages } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
@@ -32,6 +33,7 @@ type Customer = {
   spend12mo: number | null;
   points: number | null;
   subscriptions: { id: string; product_name: string; status: string; plan_months: number; next_charge_date: string | null }[];
+  skinScans?: AdminSkinScan[];
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -935,6 +937,10 @@ export default function AdminInboxPage() {
                     </p>
                   ))
                 )}
+              </div>
+              <div>
+                <p className="mb-1 font-semibold text-slate-500">ผลสแกนผิว</p>
+                <SkinScanSummary scans={customer.skinScans ?? []} compact />
               </div>
             </div>
           )}

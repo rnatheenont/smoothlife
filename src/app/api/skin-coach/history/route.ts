@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
-import { AGE_RANGES, ANGLES, MAIN_CONCERNS, SKIN_TYPES, confidenceFor } from "@/lib/skin-coach";
+import {
+  AGE_RANGES,
+  ANGLES,
+  MAIN_CONCERNS,
+  SCAN_BONUS_EVERY_DAYS,
+  SCAN_BONUS_MIN_ANGLES,
+  SCAN_BONUS_POINTS,
+  SKIN_TYPES,
+  confidenceFor,
+} from "@/lib/skin-coach";
 
 // Skin Coach history — numbers only, never photos (the consent page promises
 // that), written only when the member presses "บันทึกผล", deletable any time.
@@ -82,7 +91,31 @@ export async function POST(req: NextRequest) {
       metrics,
     }),
   });
-  return NextResponse.json({ ok: true, scan: row });
+  // The fuller-scan thank-you: three or more angles, once per cycle. The
+  // angle list is what the page sent, so the cycle limit is what keeps this
+  // from being farmed by saving the same result repeatedly.
+  let bonusPoints = 0;
+  if (angles.length >= SCAN_BONUS_MIN_ANGLES) {
+    const since = new Date(Date.now() - SCAN_BONUS_EVERY_DAYS * 86_400_000).toISOString();
+    const recent = await supabaseRest<{ id: string }[]>(
+      `points_ledger?user_id=eq.${uid}&reason=eq.skin_scan_bonus&created_at=gte.${since}&select=id&limit=1`
+    );
+    if (recent.length === 0) {
+      await supabaseRest("points_ledger", {
+        method: "POST",
+        returning: false,
+        body: JSON.stringify({
+          user_id: uid,
+          delta: SCAN_BONUS_POINTS,
+          reason: "skin_scan_bonus",
+          metadata: { scanId: row.id, angles: angles.length },
+        }),
+      });
+      bonusPoints = SCAN_BONUS_POINTS;
+    }
+  }
+
+  return NextResponse.json({ ok: true, scan: row, bonusPoints });
 }
 
 export async function DELETE(req: NextRequest) {

@@ -45,7 +45,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     // lookups and running them in sequence added most of a second to the only
     // screen staff keep open all day — the customer is not more identified for
     // having been fetched slowly.
-    const [[user], [loyalty], [points], [email], subscriptions] = await Promise.all([
+    const [[user], [loyalty], [points], [email], subscriptions, skinScans] = await Promise.all([
       supabaseRest<{ id: string; display_name: string | null; phone: string | null }[]>(
         `users?id=eq.${uid}&select=id,display_name,phone&limit=1`
       ).catch(() => []),
@@ -66,6 +66,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       >(
         `real_subscriptions?user_id=eq.${uid}&select=id,product_name,status,plan_months,next_charge_date&order=created_at.desc&limit=5`
       ).catch(() => []),
+      // Saved Skin Coach scans: what their skin looked like to the scan, so a
+      // "what should I use" question can be answered with it in view.
+      supabaseRest<unknown[]>(
+        `skin_scans?user_id=eq.${uid}&order=scanned_at.desc&limit=4&select=id,scanned_at,angles,skin_age,age_range,skin_type,main_concern,metrics`
+      ).catch(() => []),
     ]);
 
     customer = {
@@ -76,6 +81,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       spend12mo: loyalty?.rolling_12mo_spend ?? null,
       points: points?.balance ?? null,
       subscriptions,
+      skinScans,
     };
   }
 

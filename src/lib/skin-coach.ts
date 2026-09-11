@@ -166,12 +166,30 @@ export function discountForScore(score: number): { percentage: number; label: st
   return { percentage: 0.15, label: "15%" };
 }
 
-export function productsForConcern(slug: ConcernSlug, max = 3): Product[] {
+export function productsForConcern(slug: ConcernSlug, max = 3, alreadyBought?: ReadonlySet<string>): Product[] {
   const rank = (p: Product) =>
     (p.badges?.includes("Bestseller") ? 2 : 0) + (p.inStock ? 1 : 0) + p.rating / 5;
 
   return products
-    .filter((p) => p.concerns.includes(slug) && p.inStock)
+    // Something they've already bought isn't a recommendation — they know it,
+    // and leading with it reads as selling rather than advising.
+    .filter((p) => p.concerns.includes(slug) && p.inStock && !alreadyBought?.has(p.slug))
     .sort((a, b) => rank(b) - rank(a))
     .slice(0, max);
 }
+
+/** How many of a concern's usual picks were left out because they were bought before. */
+export function boughtCountForConcern(slug: ConcernSlug, alreadyBought: ReadonlySet<string>, max = 3): number {
+  return productsForConcern(slug, max).filter((p) => alreadyBought.has(p.slug)).length;
+}
+
+// ── Phase 2: coming back ───────────────────────────────────────────────────
+// A small thank-you for the fuller scan, not a points farm: only when a
+// member saves a scan with at least three angles, and at most once per
+// rescan cycle. Enforced server-side in /api/skin-coach/history.
+export const SCAN_BONUS_POINTS = 10;
+export const SCAN_BONUS_MIN_ANGLES = 3;
+export const SCAN_BONUS_EVERY_DAYS = 28;
+
+// When a saved scan earns a "time to check again" nudge.
+export const RESCAN_AFTER_DAYS = 42;

@@ -7,6 +7,7 @@ import { awardBirthdayRewards } from "@/lib/birthday-cron";
 import { expirePoints } from "@/lib/points-expiry-cron";
 import { expireStaleReservations } from "@/lib/stock-reservation";
 import { purgeExpiredRateLimitHits } from "@/lib/rate-limit";
+import { remindSkinRescans } from "@/lib/skin-rescan-cron";
 
 const RENEWAL_NOTICE_DAYS = 3;
 
@@ -205,6 +206,7 @@ export async function GET(req: NextRequest) {
   const birthdayRewards = await awardBirthdayRewards();
   const pointsExpiry = await expirePoints();
   const reservationsExpired = await expireStaleReservations();
+  const skinRescans = await remindSkinRescans();
 
   return NextResponse.json({
     ok: true,
@@ -218,5 +220,6 @@ export async function GET(req: NextRequest) {
     birthdayRewards,
     pointsExpiry,
     reservationsExpired,
+    skinRescans,
   });
 }

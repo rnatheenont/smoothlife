@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import clsx from "clsx";
 import { Check, Plus, X } from "lucide-react";
 import type { ResizedImage } from "@/lib/image-utils";
-import { ANGLES, confidenceFor, type AngleKey } from "@/lib/skin-coach";
+import { ANGLES, SCAN_BONUS_MIN_ANGLES, SCAN_BONUS_POINTS, confidenceFor, type AngleKey } from "@/lib/skin-coach";
 import { Button } from "@/components/ui";
 import { usePhotoPicker } from "./PhotoPicker";
 
@@ -73,6 +73,9 @@ export default function AnglesStep({
       <div className="mt-5">
         <AccuracyMeter count={count} />
       </div>
+      <p className="mt-2 text-xs text-slate-600">
+        สมาชิกที่ถ่ายครบ {SCAN_BONUS_MIN_ANGLES} มุมและกดบันทึกผล รับ +{SCAN_BONUS_POINTS} คะแนน (เดือนละครั้ง)
+      </p>
 
       <ul className="mt-4 divide-y divide-surface-line rounded-xl2 border border-surface-line">
         {extras.map((angle) => {

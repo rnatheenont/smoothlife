@@ -33,6 +33,7 @@ const reasonLabel: Record<string, string> = {
   legacy_verify_bonus: "โบนัสสมาชิกเดิม",
   review_reward: "รีวิวสินค้า",
   skin_coach_points: "รางวัล Skin Coach",
+  skin_scan_bonus: "โบนัสสแกนผิวครบ 3 มุม",
   monthly_attendance_reward: "เช็กอินครบทุกวันของเดือน",
   challenge_bonus: "โบนัส 7-Day Challenge",
   birthday_bonus: "โบนัสวันเกิด",

@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import { Info, MessageCircle, RotateCcw } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import { useQuickChat } from "@/lib/quickchat-context";
+import { useAuth } from "@/lib/auth-context";
 import ShareCard from "@/components/skin-coach/ShareCard";
 import RewardClaim from "@/components/skin-coach/RewardClaim";
 import ScanHistory, { formatScanDate, gapBetween, useScanHistory } from "@/components/skin-coach/ScanHistory";
 import {
   ANGLES,
   ageComparison,
+  boughtCountForConcern,
   clarityLevel,
   concernLabel,
   concernReason,
@@ -71,7 +73,32 @@ export default function ResultsView({
 }) {
   const { openWithProfile } = useQuickChat();
   const history = useScanHistory();
+  const { refreshUser } = useAuth();
   const [saved, setSaved] = useState<string | null>(null);
+  const [bonus, setBonus] = useState(0);
+  // Product handles from this member's past orders, so recommendations skip
+  // what they already have. Empty for guests or if orders can't be read.
+  const [bought, setBought] = useState<ReadonlySet<string>>(new Set());
+
+  useEffect(() => {
+    if (!history.signedIn) return;
+    let cancelled = false;
+    fetch("/api/account/orders", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data: { orders?: { cancelledAt?: string | null; items?: { slug: string | null }[] }[] }) => {
+        if (cancelled) return;
+        const slugs = (data.orders ?? [])
+          .filter((o) => !o.cancelledAt)
+          .flatMap((o) => o.items ?? [])
+          .map((i) => i.slug)
+          .filter((s): s is string => Boolean(s));
+        setBought(new Set(slugs));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [history.signedIn]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -109,6 +136,8 @@ export default function ResultsView({
         return;
       }
       setSaved(data.scan.id);
+      setBonus(data.bonusPoints ?? 0);
+      if (data.bonusPoints) refreshUser();
       history.setScans((prev) => [data.scan, ...prev]);
     } catch {
       setSaveError("บันทึกไม่สำเร็จ ลองอีกครั้ง");
@@ -207,7 +236,9 @@ export default function ResultsView({
             เพื่อบันทึกผลนี้ แล้วสแกนซ้ำใน 4–6 สัปดาห์เพื่อดูว่าผิวเปลี่ยนไปอย่างไร
           </p>
         ) : saved ? (
-          <p className="mt-1 text-sm text-brand-800">บันทึกแล้ว สแกนอีกครั้งใน 4–6 สัปดาห์เพื่อเทียบผล</p>
+          <p className="mt-1 text-sm text-brand-800">
+            บันทึกแล้ว{bonus > 0 && ` · ได้รับ +${bonus} คะแนนจากการสแกนครบ ${angles.length} มุม`} เราจะเตือนให้สแกนอีกครั้งใน 6 สัปดาห์
+          </p>
         ) : (
           <>
             <p className="mt-1 text-sm text-slate-600">
@@ -241,7 +272,8 @@ export default function ResultsView({
       <div className="mt-8 space-y-8">
         {concerns.map((slug) => {
           const info = concernLabel(slug);
-          const items = productsForConcern(slug, 3);
+          const items = productsForConcern(slug, 3, bought);
+          const skipped = boughtCountForConcern(slug, bought);
           if (!info || items.length === 0) return null;
           return (
             <section key={slug}>
@@ -249,6 +281,11 @@ export default function ResultsView({
               <p className="mt-1 text-sm text-slate-600">
                 {concernReason(slug, metrics, answers.mainConcern)} {info.description}
               </p>
+              {skipped > 0 && (
+                <p className="mt-1 text-xs text-slate-600">
+                  ไม่แสดง {skipped} รายการที่คุณเคยซื้อแล้ว ถ้ายังใช้อยู่ ใช้ต่อได้เลย
+                </p>
+              )}
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
                 {items.map((p) => (
                   <ProductCard key={p.slug} product={p} />
