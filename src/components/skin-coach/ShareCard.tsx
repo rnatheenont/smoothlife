@@ -71,6 +71,19 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
 }
 
 async function drawSkinCoachCard(canvas: HTMLCanvasElement, metrics: SkinCoachMetrics, photoDataUrl: string, zones: string[]) {
+  // The site's own typeface, not the machine default. next/font registers it
+  // under a hashed family name, so it is read back from the page rather than
+  // spelled out here — spelling it "Noto Sans Thai" would miss the
+  // self-hosted copy and fall back to whatever the phone happens to have.
+  const FONT = (typeof document !== "undefined" && getComputedStyle(document.body).fontFamily) || '"Noto Sans Thai", sans-serif';
+  // Canvas never asks for a font on its own: text drawn before the face is
+  // loaded silently renders in the fallback and stays that way in the saved
+  // image. Waiting for every weight used below costs nothing once cached.
+  if (typeof document !== "undefined" && document.fonts) {
+    await Promise.all(
+      ["400", "600", "700", "800"].map((w) => document.fonts.load(`${w} 24px ${FONT}`, "กขค Abc 123").catch(() => []))
+    );
+  }
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   const W = 1080;
@@ -131,7 +144,7 @@ async function drawSkinCoachCard(canvas: HTMLCanvasElement, metrics: SkinCoachMe
   // Top badge pill.
   ctx.textAlign = "center";
   const badgeText = "✨ SMOOTHIE SKIN REPORT";
-  ctx.font = "700 22px sans-serif";
+  ctx.font = `700 22px ${FONT}`;
   const badgeW = ctx.measureText(badgeText).width + 56;
   ctx.save();
   ctx.globalAlpha = 0.92;
@@ -145,9 +158,9 @@ async function drawSkinCoachCard(canvas: HTMLCanvasElement, metrics: SkinCoachMe
   // Wordmark inside the card.
   let y = cardY + 66;
   ctx.fillStyle = BRAND.ink;
-  ctx.font = "800 32px sans-serif";
+  ctx.font = `800 32px ${FONT}`;
   ctx.fillText("Smooth Life", W / 2, y);
-  ctx.font = "600 18px sans-serif";
+  ctx.font = `600 18px ${FONT}`;
   ctx.fillStyle = BRAND.slate;
   ctx.fillText("Skin Coach by Smoothie", W / 2, y + 26);
 
@@ -199,15 +212,15 @@ async function drawSkinCoachCard(canvas: HTMLCanvasElement, metrics: SkinCoachMe
   ctx.fill();
   ctx.restore();
   ctx.fillStyle = band.hex;
-  ctx.font = "800 26px sans-serif";
+  ctx.font = `800 26px ${FONT}`;
   ctx.fillText(String(total), bx, by + 4);
-  ctx.font = "600 12px sans-serif";
+  ctx.font = `600 12px ${FONT}`;
   ctx.fillStyle = BRAND.slate;
   ctx.fillText("/100", bx, by + 22);
 
   // Skin age headline.
   y = cy + r + 92;
-  ctx.font = "600 22px sans-serif";
+  ctx.font = `600 22px ${FONT}`;
   ctx.fillStyle = BRAND.slate;
   ctx.fillText("อายุผิวโดยประมาณ", cx, y);
 
@@ -219,12 +232,12 @@ async function drawSkinCoachCard(canvas: HTMLCanvasElement, metrics: SkinCoachMe
   numGrad.addColorStop(0, BRAND.emerald);
   numGrad.addColorStop(1, BRAND.blue);
   ctx.fillStyle = numGrad;
-  ctx.font = "800 96px sans-serif";
+  ctx.font = `800 96px ${FONT}`;
   ctx.fillText(`${metrics.skinAge.years} ปี`, cx, y);
   ctx.restore();
 
   y += 42;
-  ctx.font = "italic 20px sans-serif";
+  ctx.font = `italic 20px ${FONT}`;
   ctx.fillStyle = BRAND.emerald;
   const noteLines = wrapText(ctx, metrics.skinAge.note, cx, y, cardW - 160, 26);
   y += (noteLines - 1) * 13;
@@ -232,7 +245,7 @@ async function drawSkinCoachCard(canvas: HTMLCanvasElement, metrics: SkinCoachMe
   // Zones-scanned chip row.
   if (zones.length > 0) {
     y += 44;
-    ctx.font = "600 16px sans-serif";
+    ctx.font = `600 16px ${FONT}`;
     const chipText = zones.join("  •  ");
     ctx.fillStyle = BRAND.slate;
     wrapText(ctx, `สแกน: ${chipText}`, cx, y, cardW - 140, 22);
@@ -251,15 +264,15 @@ async function drawSkinCoachCard(canvas: HTMLCanvasElement, metrics: SkinCoachMe
   metricRows.forEach(([label, m]) => {
     const clarity = Math.max(0, Math.min(100, 100 - m.score));
     ctx.textAlign = "left";
-    ctx.font = "700 19px sans-serif";
+    ctx.font = `700 19px ${FONT}`;
     ctx.fillStyle = BRAND.emerald;
     ctx.fillText("●", barX, by2);
     ctx.fillStyle = BRAND.ink;
-    ctx.font = "600 19px sans-serif";
+    ctx.font = `600 19px ${FONT}`;
     ctx.fillText(label, barX + 20, by2);
     ctx.textAlign = "right";
     ctx.fillStyle = BRAND.emerald;
-    ctx.font = "700 19px sans-serif";
+    ctx.font = `700 19px ${FONT}`;
     ctx.fillText(`${clarity}/100`, barX + barW, by2);
 
     const trackY = by2 + 14;
@@ -278,10 +291,10 @@ async function drawSkinCoachCard(canvas: HTMLCanvasElement, metrics: SkinCoachMe
 
   // Footer CTA + disclaimer.
   ctx.textAlign = "center";
-  ctx.font = "800 26px sans-serif";
+  ctx.font = `800 26px ${FONT}`;
   ctx.fillStyle = BRAND.ink;
   ctx.fillText("✨ สแกนผิวฟรีที่ Smoothlife.com ✨", cx, cardY + cardH - 62);
-  ctx.font = "15px sans-serif";
+  ctx.font = `15px ${FONT}`;
   ctx.fillStyle = BRAND.slate;
   wrapText(ctx, metrics.disclaimer, cx, cardY + cardH - 28, cardW - 140, 19);
 }
