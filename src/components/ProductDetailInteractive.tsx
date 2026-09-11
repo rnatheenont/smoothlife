@@ -309,14 +309,19 @@ export default function ProductDetailInteractive({
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         <div>
-          <div
-            className="relative aspect-square rounded-xl2 overflow-hidden bg-surface-soft select-none touch-pan-y cursor-zoom-in"
+          {/* A button, not a div with a click handler, so the zoom is
+              reachable from a keyboard and announced. The photo sits
+              contained on the mist well like every card that led here. */}
+          <button
+            type="button"
+            aria-label="ขยายรูปสินค้า"
+            className="relative block aspect-square w-full cursor-zoom-in select-none overflow-hidden rounded-xl2 bg-surface-mist touch-pan-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
             onTouchStart={onImageTouchStart}
             onTouchEnd={onImageTouchEnd}
             onClick={() => setZoomOpen(true)}
           >
-            <Image src={activeImage} alt={product.name} fill className="object-cover" priority />
-            <span className="absolute top-3 right-3 grid h-9 w-9 place-items-center rounded-full bg-white/80 backdrop-blur text-brand-ink shadow-sm">
+            <Image src={activeImage} alt={product.name} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-contain p-4 mix-blend-multiply" priority />
+            <span aria-hidden="true" className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-brand-ink ring-1 ring-surface-line">
               <Expand size={16} />
             </span>
             {images.length > 1 && (
@@ -331,18 +336,20 @@ export default function ProductDetailInteractive({
                 ))}
               </div>
             )}
-          </div>
+          </button>
           {images.length > 1 && (
             <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-none">
               {images.map((img, i) => (
                 <button
                   key={img}
                   onClick={() => setActiveIndex(i)}
-                  className={`relative h-16 w-16 shrink-0 rounded-lg overflow-hidden border-2 ${
-                    i === activeIndex ? "border-brand-teal" : "border-transparent"
+                  aria-label={`ดูรูปที่ ${i + 1}`}
+                  aria-current={i === activeIndex}
+                  className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-surface-mist ${
+                    i === activeIndex ? "border-brand-action" : "border-transparent hover:border-surface-line"
                   }`}
                 >
-                  <Image src={img} alt="" fill className="object-cover" />
+                  <Image src={img} alt="" fill sizes="64px" className="object-contain p-1 mix-blend-multiply" />
                 </button>
               ))}
             </div>
@@ -360,17 +367,26 @@ export default function ProductDetailInteractive({
               </span>
             </button>
           )}
-          <div className="flex items-baseline gap-3 mt-4">
-            <span className="text-3xl font-bold text-brand-ink">{formatTHB(selectedVariant.price)}</span>
+          <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="text-3xl font-bold tabular-nums text-brand-ink">{formatTHB(selectedVariant.price)}</span>
             {selectedVariant.compareAtPrice ? (
-              <span className="text-lg text-slate-500 line-through">{formatTHB(selectedVariant.compareAtPrice)}</span>
+              <>
+                <span className="text-lg tabular-nums text-slate-500 line-through">
+                  {formatTHB(selectedVariant.compareAtPrice)}
+                </span>
+                {/* The same red chip the card showed, so the discount that
+                    drew them in is still there when they arrive. */}
+                <span className="rounded-full bg-sale px-2 py-0.5 text-xs font-bold text-white">
+                  -{Math.round(100 - (selectedVariant.price / selectedVariant.compareAtPrice) * 100)}%
+                </span>
+              </>
             ) : null}
           </div>
           <p className="text-sm text-slate-600 mt-4">{product.shortDesc}</p>
           {typeof selectedVariant.quantity === "number" &&
             selectedVariant.quantity > 0 &&
             selectedVariant.quantity <= 10 && (
-              <p className="text-xs font-semibold text-amber-600 mt-2">เหลือเพียง {selectedVariant.quantity} ชิ้นในสต็อก</p>
+              <p className="mt-2 text-xs font-semibold text-amber-700">เหลือเพียง {selectedVariant.quantity} ชิ้นในสต็อก</p>
             )}
 
           {hasSizeChoice ? (
@@ -387,9 +403,9 @@ export default function ProductDetailInteractive({
                     disabled={!v.inStock}
                     className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                       selectedVariant.variantId === v.variantId
-                        ? "border-brand-emerald bg-brand-gradient-soft text-brand-ink"
+                        ? "border-brand-action bg-surface-mist font-semibold text-brand-ink"
                         : v.inStock
-                        ? "border-slate-200 text-slate-600 hover:border-brand-teal"
+                        ? "border-surface-line text-slate-600 hover:border-brand-action/40"
                         : "border-slate-100 text-slate-300 line-through cursor-not-allowed"
                     }`}
                   >
@@ -417,7 +433,7 @@ export default function ProductDetailInteractive({
                   onClick={() => setPurchaseMode("subscribe")}
                   className={`relative flex items-center justify-center gap-1.5 rounded-full py-2 transition ${
                     purchaseMode === "subscribe"
-                      ? "bg-brand-gradient text-white shadow-cardHover scale-[1.02]"
+                      ? "bg-brand-action text-white"
                       : "text-brand-800/70 hover:text-brand-800"
                   }`}
                 >
@@ -573,13 +589,17 @@ export default function ProductDetailInteractive({
 
       {/* Tabs */}
       <div className="mt-12">
-        <div className="flex gap-1 overflow-x-auto scrollbar-none border-b border-slate-100">
+        <div role="tablist" className="flex gap-1 overflow-x-auto border-b border-surface-line scrollbar-none">
           {tabs.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                tab === t.id ? "border-brand-emerald text-brand-800" : "border-transparent text-slate-500"
+              role="tab"
+              aria-selected={tab === t.id}
+              className={`shrink-0 border-b-2 px-4 py-3 text-sm transition-colors ${
+                tab === t.id
+                  ? "border-brand-action font-semibold text-brand-ink"
+                  : "border-transparent font-medium text-slate-500 hover:text-brand-ink"
               }`}
             >
               {t.label}
