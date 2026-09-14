@@ -22,6 +22,10 @@ import crypto from "crypto";
 import { products } from "../src/data/products";
 
 const OUT = path.join(__dirname, "..", "src", "data", "skin-product-classes.json");
+// Opus on purpose: in a side-by-side on tricky products Sonnet filed an
+// acne/oil-control sunscreen under dark spots. Normal runs only send new or
+// changed products, so the cost is small; --all re-reads the whole catalogue
+// and is the expensive one.
 const MODEL = "claude-opus-5";
 const BATCH = 20;
 const CONCURRENCY = 4;

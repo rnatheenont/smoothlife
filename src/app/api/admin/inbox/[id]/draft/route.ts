@@ -60,6 +60,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 600,
+        // A short draft for staff to edit; little reasoning needed, and
+        // thinking tokens are billed as output.
+        output_config: { effort: "low" },
         system: SYSTEM,
         messages: [{ role: "user", content: `บทสนทนาที่ผ่านมา:\n\n${transcript}\n\nร่างคำตอบถัดไปให้ทีมงาน` }],
       }),

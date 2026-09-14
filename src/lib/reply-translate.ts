@@ -1,4 +1,6 @@
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
+// Translation is a job the small model does well at a fraction of the price;
+// same setting as /api/translate.
+const MODEL = process.env.ANTHROPIC_TRANSLATE_MODEL || "claude-haiku-4-5-20251001";
 
 // Staff answer in Thai. A customer who wrote in English, Chinese or Japanese
 // should not have to paste that into a translator to read their own support
