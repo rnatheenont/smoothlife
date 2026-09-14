@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
-import { getCustomerOrderDetail, shopifyAdminConfigured } from "@/lib/shopify-admin";
+import { getCustomerOrderDetail, shopifyAdminConfigured, storeLabel, type StoreKey } from "@/lib/shopify-admin";
+import { otherStoreLinks } from "@/lib/store-links";
 import { buildTracking } from "@/lib/tracking";
 import { trackingForOrders } from "@/lib/shipment-sync";
 
@@ -16,18 +17,28 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ ok: false, error: "not configured" }, { status: 503 });
   }
 
-  const [row] = await supabaseRest<{ shopify_customer_id: string | null }[]>(
-    `users?id=eq.${uid}&select=shopify_customer_id`
-  );
-  if (!row?.shopify_customer_id) {
+  // ?store=smoothe|dentiste for an order placed in one of the other stores.
+  const storeParam = req.nextUrl.searchParams.get("store");
+  const store: StoreKey = storeParam === "smoothe" || storeParam === "dentiste" ? storeParam : "smoothlife";
+
+  let customerId: string | null = null;
+  if (store === "smoothlife") {
+    const [row] = await supabaseRest<{ shopify_customer_id: string | null }[]>(
+      `users?id=eq.${uid}&select=shopify_customer_id`
+    );
+    customerId = row?.shopify_customer_id ?? null;
+  } else {
+    customerId = (await otherStoreLinks(uid)).find((l) => l.store === store)?.shopifyCustomerId ?? null;
+  }
+  if (!customerId) {
     return NextResponse.json({ ok: false, linked: false, error: "บัญชียังไม่ได้เชื่อมกับประวัติการสั่งซื้อ" }, { status: 404 });
   }
 
-  const order = await getCustomerOrderDetail(row.shopify_customer_id, params.id);
+  const order = await getCustomerOrderDetail(customerId, params.id, store);
   if (!order) {
     return NextResponse.json({ ok: false, error: "ไม่พบคำสั่งซื้อนี้" }, { status: 404 });
   }
 
   const feed = await trackingForOrders([order]);
-  return NextResponse.json({ ok: true, order, tracking: buildTracking(order, feed) });
+  return NextResponse.json({ ok: true, order: { ...order, storeLabel: storeLabel(store) }, tracking: buildTracking(order, feed) });
 }

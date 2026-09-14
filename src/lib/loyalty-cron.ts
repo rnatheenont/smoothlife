@@ -2,6 +2,21 @@ import { supabaseRest } from "@/lib/supabase-server";
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { TierName, TIER_RANK, qualifiedTier } from "@/lib/loyalty-shared";
 import { maybeAwardMigrationBonus } from "@/lib/migration-bonus";
+import { otherStoreLinks, otherStoreOrders } from "@/lib/store-links";
+
+/** Paid orders and spend in the rolling window, across Smooth Life and any linked other store. */
+async function rollingSpend(userId: string, smoothLifeOrders: Awaited<ReturnType<typeof getCustomerOrders>>) {
+  const links = await otherStoreLinks(userId).catch(() => []);
+  const others = links.length ? await otherStoreOrders(links, 250) : [];
+  const cutoff = Date.now() - ROLLING_WINDOW_DAYS * 86_400_000;
+  const recentPaid = [...(smoothLifeOrders ?? []), ...others.flatMap((o) => o.orders)].filter(
+    (o) => o.financialStatus === "PAID" && new Date(o.createdAt).getTime() >= cutoff
+  );
+  return {
+    spend: recentPaid.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0),
+    orderCount: recentPaid.length,
+  };
+}
 
 // Populates user_loyalty — a real "how much has this customer spent"
 // record, independent of the redeemable points balance (which drains on
@@ -57,12 +72,7 @@ export async function recalculateLoyaltyTiers(): Promise<{
 
   for (const candidate of batch) {
     const orders = await getCustomerOrders(candidate.shopify_customer_id, 250);
-    const cutoff = Date.now() - ROLLING_WINDOW_DAYS * 86_400_000;
-    const recentPaid = (orders ?? []).filter(
-      (o) => o.financialStatus === "PAID" && new Date(o.createdAt).getTime() >= cutoff
-    );
-    const spend = recentPaid.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
-    const orderCount = recentPaid.length;
+    const { spend, orderCount } = await rollingSpend(candidate.id, orders);
 
     const existing = loyaltyByUser.get(candidate.id);
     const currentTier: TierName = existing?.current_tier ?? "Bronze";
@@ -139,12 +149,7 @@ export async function recalculateLoyaltyForUser(userId: string): Promise<UserLoy
     if (!user?.shopify_customer_id) return null;
 
     const orders = await getCustomerOrders(user.shopify_customer_id, 250);
-    const cutoff = Date.now() - ROLLING_WINDOW_DAYS * 86_400_000;
-    const recentPaid = (orders ?? []).filter(
-      (o) => o.financialStatus === "PAID" && new Date(o.createdAt).getTime() >= cutoff
-    );
-    const spend = recentPaid.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
-    const orderCount = recentPaid.length;
+    const { spend, orderCount } = await rollingSpend(userId, orders);
 
     const [existing] = await supabaseRest<LoyaltyRow[]>(
       `user_loyalty?user_id=eq.${userId}&select=user_id,current_tier,tier_downgrade_grace_until,last_reviewed_at`

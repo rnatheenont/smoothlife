@@ -58,6 +58,15 @@ export async function POST(req: NextRequest) {
     }
   );
   const row = result[0];
+  if (row?.user_id) {
+    // The code just proved this address belongs to them — an account that
+    // registered with a password and never verified it is verified now, which
+    // is what lets it be matched to orders in the group's other stores.
+    await supabaseRest(
+      `auth_identities?user_id=eq.${row.user_id}&provider=eq.email&provider_uid=eq.${encodeURIComponent(normalizedEmail)}&verified_at=is.null`,
+      { method: "PATCH", returning: false, body: JSON.stringify({ verified_at: new Date().toISOString() }) }
+    ).catch(() => {});
+  }
   if (!row?.user_id) {
     return NextResponse.json({ ok: false, error: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง" }, { status: 500 });
   }

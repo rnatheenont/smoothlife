@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { linkOrCreateShopifyCustomer } from "@/lib/link-shopify-customer";
+import { linkOtherStores } from "@/lib/store-links";
+import { recalculateLoyaltyForUser } from "@/lib/loyalty-cron";
 import { maybeAwardMigrationBonus } from "@/lib/migration-bonus";
 
 const GENDERS = new Set(["male", "female", "other"]);
@@ -106,6 +108,10 @@ export async function PATCH(req: NextRequest) {
       currentDisplayName: current.display_name,
       currentPhone: current.phone,
     });
+    // Smooth E / Dentiste too — a profile completed after a LINE sign-in is
+    // often the first time the account has contact details to match on.
+    const other = await linkOtherStores(uid, { force: true });
+    if (other.added) void recalculateLoyaltyForUser(uid).catch(() => {});
   }
 
   await maybeAwardMigrationBonus(uid);

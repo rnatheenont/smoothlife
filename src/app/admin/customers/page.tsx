@@ -23,6 +23,8 @@ type Account = {
   shopify_customer_id: string | null;
   created_at: string;
   identities: Identity[];
+  /** Links to Smooth E / Dentiste customer records. */
+  storeLinks?: { store: string; shopifyCustomerId: string | null }[];
 };
 type Candidate = {
   id: string;
@@ -35,6 +37,9 @@ type Candidate = {
   createdAt: string;
   lastOrderAt: string | null;
   address: string | null;
+  store: "smoothlife" | "smoothe" | "dentiste";
+  storeLabel: string;
+  adminHandle: string;
 };
 
 type HealthAccount = { id: string; name: string | null; phone: string | null; contact: string | null; shopify?: string };
@@ -48,6 +53,8 @@ type Health = {
   empty: HealthAccount[];
   duplicates: { phone: string; accounts: HealthAccount[] }[];
 };
+
+const STORE_NAME: Record<string, string> = { smoothlife: "Smooth Life", smoothe: "Smooth E", dentiste: "Dentiste" };
 
 const PROVIDER_LABEL: Record<string, string> = {
   email: "อีเมล",
@@ -73,7 +80,7 @@ export default function AdminCustomersPage() {
   const [accounts, setAccounts] = useState<Account[] | null>(null);
   const [shopify, setShopify] = useState<Candidate[]>([]);
   /** Pairs the server can prove belong together — see lib/account-match.ts. */
-  const [proven, setProven] = useState<{ userId: string; shopifyCustomerId: string; reason: string }[]>([]);
+  const [proven, setProven] = useState<{ userId: string; store: string; shopifyCustomerId: string; reason: string }[]>([]);
   const [health, setHealth] = useState<Health | null>(null);
   const [checking, setChecking] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -122,7 +129,7 @@ export default function AdminCustomersPage() {
     }
   }
 
-  async function link(shopifyCustomerId: string | null, auto = false) {
+  async function link(shopifyCustomerId: string | null, auto = false, store: Candidate["store"] = "smoothlife") {
     if (!selected) return;
     setBusy(shopifyCustomerId || "unlink");
     setError("");
@@ -136,6 +143,7 @@ export default function AdminCustomersPage() {
           unlink: shopifyCustomerId === null,
           note,
           auto,
+          store,
         }),
       });
       const json = await res.json();
@@ -144,7 +152,12 @@ export default function AdminCustomersPage() {
         return;
       }
       setAccounts((list) =>
-        (list || []).map((a) => (a.id === selected ? { ...a, shopify_customer_id: json.shopifyCustomerId } : a))
+        (list || []).map((a) => {
+          if (a.id !== selected) return a;
+          if (store === "smoothlife") return { ...a, shopify_customer_id: json.shopifyCustomerId };
+          const rest = (a.storeLinks || []).filter((l) => l.store !== store);
+          return { ...a, storeLinks: json.shopifyCustomerId ? [...rest, { store, shopifyCustomerId: json.shopifyCustomerId }] : rest };
+        })
       );
       setDone(shopifyCustomerId ? "ผูกบัญชีเรียบร้อย — ลูกค้ารีเฟรชหน้าคำสั่งซื้อจะเห็นทันที" : "ปลดการผูกเรียบร้อย");
       setNote("");
@@ -209,8 +222,12 @@ export default function AdminCustomersPage() {
   }
 
   const account = accounts?.find((a) => a.id === selected) || null;
-  const provenFor = (shopifyCustomerId: string) =>
-    proven.find((p) => p.userId === selected && p.shopifyCustomerId === shopifyCustomerId) || null;
+  const provenFor = (c: Candidate) =>
+    proven.find((p) => p.userId === selected && p.store === c.store && p.shopifyCustomerId === c.id) || null;
+  const linkedTo = (c: Candidate) =>
+    c.store === "smoothlife"
+      ? account?.shopify_customer_id === c.id
+      : Boolean(account?.storeLinks?.some((l) => l.store === c.store && l.shopifyCustomerId === c.id));
 
   return (
     <div className="space-y-5">
@@ -357,6 +374,15 @@ export default function AdminCustomersPage() {
                       <Badge tone="warning">ยังไม่ผูก</Badge>
                     )}
                   </div>
+                  {(a.storeLinks || []).length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {(a.storeLinks || []).map((l) => (
+                        <Badge key={l.store} tone="info">
+                          {STORE_NAME[l.store] || l.store} #{shortId(l.shopifyCustomerId)}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
                     {a.phone && <span>{a.phone}</span>}
                     {a.identities.map((i) => (
@@ -404,22 +430,37 @@ export default function AdminCustomersPage() {
           <Card className="p-4">
             <h2 className="text-sm font-bold text-brand-ink mb-1">ใบลูกค้าใน Shopify ({shopify.length})</h2>
             <p className="text-[11px] text-slate-400 mb-3">
-              เลือกใบที่มีประวัติการซื้อ — ดูจากจำนวนออเดอร์ ที่อยู่ และเบอร์ว่าตรงกับลูกค้าจริงไหม
+              ค้นจากทุกร้านที่เชื่อมไว้ (Smooth Life, Smooth E, Dentiste) — เลือกใบที่มีประวัติการซื้อ ดูจากจำนวนออเดอร์
+              ที่อยู่ และเบอร์ว่าตรงกับลูกค้าจริงไหม บัญชีหนึ่งผูกได้ร้านละหนึ่งใบ
             </p>
             {shopify.length === 0 && <p className="text-xs text-slate-400">ไม่พบใบลูกค้าใน Shopify</p>}
             <div className="space-y-2">
               {shopify.map((c) => {
-                const linkedHere = account?.shopify_customer_id === c.id;
+                const linkedHere = linkedTo(c);
                 return (
                   <div
-                    key={c.id}
+                    key={`${c.store}-${c.id}`}
                     className={clsx(
                       "rounded-xl2 border px-3 py-2.5",
                       linkedHere ? "border-emerald-300 bg-emerald-50" : "border-slate-200"
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold text-brand-ink truncate">{c.displayName || c.email || "—"}</span>
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span
+                          className={clsx(
+                            "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                            c.store === "smoothlife"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : c.store === "smoothe"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-sky-100 text-sky-800"
+                          )}
+                        >
+                          {c.storeLabel}
+                        </span>
+                        <span className="text-sm font-semibold text-brand-ink truncate">{c.displayName || c.email || "—"}</span>
+                      </span>
                       <span className="flex items-center gap-1 text-[11px] font-semibold text-brand-800 shrink-0">
                         <ShoppingBag size={12} />
                         {c.numberOfOrders} ออเดอร์ · ฿{Number(c.amountSpent).toLocaleString("th-TH")}
@@ -434,10 +475,10 @@ export default function AdminCustomersPage() {
                           a record that clearly has orders means "older than
                           that", not "never bought" — and reading it as the
                           latter is how the wrong record gets picked. */}
-                      {provenFor(c.id) && (
+                      {provenFor(c) && (
                         <div className="flex items-start gap-1 text-emerald-700">
                           <ShieldCheck size={11} className="mt-0.5 shrink-0" />
-                          <span>{provenFor(c.id)?.reason} — ผูกได้เลยโดยไม่ต้องกรอกเหตุผล</span>
+                          <span>{provenFor(c)?.reason} — ผูกได้เลยโดยไม่ต้องกรอกเหตุผล</span>
                         </div>
                       )}
                       <div>
@@ -453,8 +494,8 @@ export default function AdminCustomersPage() {
                     <div className="mt-2 flex items-center gap-2">
                       {linkedHere ? (
                         <Badge tone="success">ผูกกับบัญชีนี้อยู่</Badge>
-                      ) : provenFor(c.id) ? (
-                        <Button size="sm" disabled={!selected || busy !== ""} onClick={() => link(c.id, true)}>
+                      ) : provenFor(c) ? (
+                        <Button size="sm" disabled={!selected || busy !== ""} onClick={() => link(c.id, true, c.store)}>
                           {busy === c.id ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
                           ผูกอัตโนมัติ
                         </Button>
@@ -462,14 +503,14 @@ export default function AdminCustomersPage() {
                         <Button
                           size="sm"
                           disabled={!selected || busy !== "" || note.trim().length < 3}
-                          onClick={() => link(c.id)}
+                          onClick={() => link(c.id, false, c.store)}
                         >
                           {busy === c.id ? <Loader2 size={13} className="animate-spin" /> : <Link2 size={13} />}
                           ผูกกับบัญชีนี้
                         </Button>
                       )}
                       <a
-                        href={`https://admin.shopify.com/store/smoothlifethailand/customers/${shortId(c.id)}`}
+                        href={`https://admin.shopify.com/store/${c.adminHandle}/customers/${shortId(c.id)}`}
                         target="_blank"
                         rel="noreferrer"
                         className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-brand-800"
@@ -521,6 +562,16 @@ export default function AdminCustomersPage() {
               ปลดการผูกบัญชีนี้
             </button>
           )}
+          {(account.storeLinks || []).map((l) => (
+            <button
+              key={l.store}
+              onClick={() => link(null, false, l.store as Candidate["store"])}
+              disabled={busy !== "" || note.trim().length < 3}
+              className="mt-2 flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700 disabled:opacity-40"
+            >
+              <Unlink size={12} /> ปลดการผูกกับ {STORE_NAME[l.store] || l.store}
+            </button>
+          ))}
         </Card>
       )}
     </div>

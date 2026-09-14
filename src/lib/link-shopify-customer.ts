@@ -9,6 +9,7 @@
 // fields to split from reliably.
 import { supabaseRest } from "@/lib/supabase-server";
 import { recalculateLoyaltyForUser } from "@/lib/loyalty-cron";
+import { linkOtherStores } from "@/lib/store-links";
 import {
   createShopifyCustomer,
   findShopifyCustomerByEmail,
@@ -197,6 +198,20 @@ export async function linkOrCreateShopifyCustomer(
  * swapping one empty record for another would be churn.
  */
 export async function ensureShopifyLink(
+  uid: string,
+  opts: Parameters<typeof ensureSmoothLifeLink>[1]
+): Promise<LinkShopifyResult> {
+  // Smooth E and Dentiste are looked up alongside, read only; see store-links.ts.
+  const [result, other] = await Promise.all([
+    ensureSmoothLifeLink(uid, opts),
+    linkOtherStores(uid, { force: true }),
+  ]);
+  // Spend from another store counts toward the tier from the moment it is linked.
+  if (other.added) void recalculateLoyaltyForUser(uid).catch(() => {});
+  return result;
+}
+
+async function ensureSmoothLifeLink(
   uid: string,
   opts: {
     email?: string | null;

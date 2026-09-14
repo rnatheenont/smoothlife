@@ -15,7 +15,7 @@ import ShipmentTracker from "@/components/ShipmentTracker";
 import { Button } from "@/components/ui";
 
 
-type OrderWithTracking = ShopifyOrderSummary & { tracking?: ReturnType<typeof buildTracking> };
+type OrderWithTracking = ShopifyOrderSummary & { storeLabel?: string; tracking?: ReturnType<typeof buildTracking> };
 
 function OrdersContent() {
   const { addItem } = useCart();
@@ -156,19 +156,25 @@ function OrdersContent() {
           const refunded = Number(o.refunded) > 0;
           const stalled = stalledOrder(o);
           return (
-            <div key={o.id} className="rounded-xl2 border border-slate-100 p-5 shadow-card">
+            <div key={`${o.store}-${o.id}`} className="rounded-xl2 border border-slate-100 p-5 shadow-card">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   {/* The whole header links through — the order number is what
                       people reach for, and a separate "details" link would be
                       one more thing to aim at on a phone. */}
                   <Link
-                    href={`/account/orders/${orderIdFromGid(o.id)}`}
+                    href={`/account/orders/${orderIdFromGid(o.id)}${o.store && o.store !== "smoothlife" ? `?store=${o.store}` : ""}`}
                     className="group inline-flex items-center gap-1 rounded-s focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
                   >
                     <span className="text-sm font-bold text-brand-ink group-hover:text-brand-800">{o.name}</span>
                     <ChevronRight size={14} className="text-slate-300 transition-transform group-hover:translate-x-0.5" />
                   </Link>
+                  {/* Orders from the group's other stores say where they were placed. */}
+                  {o.store && o.store !== "smoothlife" && o.storeLabel && (
+                    <span className="ml-2 rounded-full bg-surface-mist px-2 py-0.5 align-middle text-[11px] font-semibold text-brand-800">
+                      สั่งที่ร้าน {o.storeLabel}
+                    </span>
+                  )}
                   {/* Labelled and spelled out. "29/8/2569" next to a parcel
                       that shipped on 1 Sep invites the reading that one of the
                       two dates is wrong, when they are simply the order date

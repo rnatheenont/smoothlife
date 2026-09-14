@@ -13,6 +13,7 @@ import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { contentForTranscript } from "@/lib/chat-markers";
 import { systemPrompt, orderHistorySummary, type CartLine, type ViewingProduct } from "@/lib/chat-prompt";
 import { CHAT_TOOLS, runChatTool } from "@/lib/chat-product-search";
+import { otherStoreLinks, otherStoreOrders } from "@/lib/store-links";
 import { deliveryStatusForPrompt } from "@/lib/delivery-status";
 import { signedAttachmentUrl } from "@/lib/chat-attachments";
 
@@ -309,13 +310,21 @@ export async function POST(req: NextRequest) {
       const [row] = await supabaseRest<{ shopify_customer_id: string | null }[]>(
         `users?id=eq.${uid}&select=shopify_customer_id`
       );
-      if (row?.shopify_customer_id) {
+      // Orders placed on smooth-e.com or dentiste-oralcare.com too, labelled
+      // with their store, for accounts linked there.
+      const links = await otherStoreLinks(uid);
+      const others = links.length ? await otherStoreOrders(links, 5) : [];
+      if (row?.shopify_customer_id || links.length > 0) {
         hasShopifyLink = true;
-        const orders = await getCustomerOrders(row.shopify_customer_id);
-        orderHistory = orderHistorySummary(orders);
+        const orders = row?.shopify_customer_id ? await getCustomerOrders(row.shopify_customer_id) : [];
+        const all = [...(orders ?? []), ...others.flatMap((o) => o.orders)].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        orderHistory = orderHistorySummary(all);
         // Dates and thresholds worked out in code — see delivery-status.ts.
         // The model is given conclusions to repeat, not raw timestamps to
-        // reason about, because "9 days ago" is not a judgement call.
+        // reason about, because "9 days ago" is not a judgement call. Smooth
+        // Life's shipping timings only, so only its orders.
         deliveryStatus = deliveryStatusForPrompt(orders);
       }
     } catch (err) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Loader2, Package } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import OrderDetailView from "@/components/account/OrderDetailView";
@@ -13,10 +13,11 @@ import type { buildTracking } from "@/lib/tracking";
 // where the parcel, the address it's going to and what was actually charged
 // live — the three things someone opens an order to check.
 
-type Payload = { order: ShopifyOrderDetail; tracking: ReturnType<typeof buildTracking> };
+type Payload = { order: ShopifyOrderDetail & { storeLabel?: string }; tracking: ReturnType<typeof buildTracking> };
 
 function OrderDetailContent() {
   const params = useParams<{ id: string }>();
+  const store = useSearchParams().get("store");
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -24,7 +25,7 @@ function OrderDetailContent() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/account/orders/${params.id}`);
+      const res = await fetch(`/api/account/orders/${params.id}${store ? `?store=${encodeURIComponent(store)}` : ""}`);
       const json = await res.json();
       if (!json.ok) {
         setError(json.error || "ไม่พบคำสั่งซื้อนี้");
@@ -36,7 +37,7 @@ function OrderDetailContent() {
     } finally {
       setLoading(false);
     }
-  }, [params.id]);
+  }, [params.id, store]);
 
   useEffect(() => {
     load();
@@ -62,7 +63,16 @@ function OrderDetailContent() {
     );
   }
 
-  return <OrderDetailView order={data.order} tracking={data.tracking} />;
+  return (
+    <>
+      {data.order.store !== "smoothlife" && data.order.storeLabel && (
+        <p className="mb-3 inline-block rounded-full bg-surface-mist px-3 py-1 text-xs font-semibold text-brand-800">
+          สั่งที่ร้าน {data.order.storeLabel}
+        </p>
+      )}
+      <OrderDetailView order={data.order} tracking={data.tracking} />
+    </>
+  );
 }
 
 export default function OrderDetailPage() {

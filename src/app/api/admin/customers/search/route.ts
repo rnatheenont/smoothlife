@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseRest, supabaseConfigured, pgValue } from "@/lib/supabase-server";
-import { searchShopifyCustomers, shopifyAdminConfigured } from "@/lib/shopify-admin";
+import {
+  configuredOtherStores,
+  searchShopifyCustomers,
+  shopifyAdminConfigured,
+  storeAdminHandle,
+  storeLabel,
+  type StoreKey,
+} from "@/lib/shopify-admin";
 import { provenMatch } from "@/lib/account-match";
 
 // Support search: one term, both sides of the join.
@@ -64,22 +71,43 @@ export async function GET(req: NextRequest) {
   const ids = new Set<string>([...identities.map((i) => i.user_id), ...byName.map((u) => u.id)]);
   let accounts: UserRow[] = [];
   let allIdentities: IdentityRow[] = [];
+  let storeLinks: { user_id: string; store: string; shopify_customer_id: string | null }[] = [];
   if (ids.size > 0) {
     const list = [...ids].map((id) => `"${id}"`).join(",");
-    [accounts, allIdentities] = await Promise.all([
+    [accounts, allIdentities, storeLinks] = await Promise.all([
       supabaseRest<UserRow[]>(
         `users?select=id,display_name,phone,shopify_customer_id,created_at&id=in.(${encodeURIComponent(list)})&limit=25`
       ).catch(() => []),
       supabaseRest<IdentityRow[]>(
         `auth_identities?select=user_id,provider,provider_uid,verified_at&user_id=in.(${encodeURIComponent(list)})`
       ).catch(() => []),
+      supabaseRest<{ user_id: string; store: string; shopify_customer_id: string | null }[]>(
+        `store_customer_links?select=user_id,store,shopify_customer_id&shopify_customer_id=not.is.null&user_id=in.(${encodeURIComponent(list)})`
+      ).catch(() => []),
     ]);
   }
 
-  const shopify = shopifyAdminConfigured() ? await searchShopifyCustomers(term) : [];
+  // Every store the site can read: Smooth Life, and Smooth E / Dentiste once
+  // their credentials are set. Each record says which store it is in.
+  const stores: StoreKey[] = [...(shopifyAdminConfigured() ? (["smoothlife"] as const) : []), ...configuredOtherStores()];
+  const shopify = (
+    await Promise.all(
+      stores.map(async (store) =>
+        (await searchShopifyCustomers(term, 10, store)).map((c) => ({
+          ...c,
+          store,
+          storeLabel: storeLabel(store),
+          adminHandle: storeAdminHandle(store),
+        }))
+      )
+    )
+  ).flat();
 
   const withIdentities = accounts.map((a) => ({
     ...a,
+    storeLinks: storeLinks
+      .filter((l) => l.user_id === a.id)
+      .map((l) => ({ store: l.store, shopifyCustomerId: l.shopify_customer_id })),
     identities: allIdentities
       .filter((i) => i.user_id === a.id)
       .map((i) => ({ provider: i.provider, uid: i.provider_uid, verified: Boolean(i.verified_at) })),
@@ -91,8 +119,8 @@ export async function GET(req: NextRequest) {
   // match nobody has to take their word for.
   const proven = withIdentities.flatMap((a) =>
     shopify
-      .map((c) => ({ userId: a.id, shopifyCustomerId: c.id, reason: provenMatch(a.identities, c) }))
-      .filter((m): m is { userId: string; shopifyCustomerId: string; reason: string } => Boolean(m.reason))
+      .map((c) => ({ userId: a.id, store: c.store, shopifyCustomerId: c.id, reason: provenMatch(a.identities, c) }))
+      .filter((m): m is { userId: string; store: StoreKey; shopifyCustomerId: string; reason: string } => Boolean(m.reason))
   );
 
   return NextResponse.json({ ok: true, accounts: withIdentities, shopify, proven });

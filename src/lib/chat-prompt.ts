@@ -57,7 +57,8 @@ export function orderHistorySummary(orders: Awaited<ReturnType<typeof getCustome
     .map((o) => {
       const items = o.items.map((i) => `${i.title} x${i.quantity}`).join(", ");
       const tracking = o.trackingNumbers.length ? ` | tracking: ${o.trackingNumbers.join(", ")}` : "";
-      return `- ${o.name} (${new Date(o.createdAt).toLocaleDateString("th-TH")}): ${items} — ฿${o.total} ${o.currency} — payment: ${o.financialStatus || "unknown"}, fulfillment: ${o.fulfillmentStatus || "unknown"}${tracking}`;
+      const where = o.store && o.store !== "smoothlife" ? `[ordered at ${o.store === "smoothe" ? "Smooth E (smooth-e.com)" : "Dentiste (dentiste-oralcare.com)"}] ` : "";
+      return `- ${where}${o.name} (${new Date(o.createdAt).toLocaleDateString("th-TH")}): ${items} — ฿${o.total} ${o.currency} — payment: ${o.financialStatus || "unknown"}, fulfillment: ${o.fulfillmentStatus || "unknown"}${tracking}`;
     })
     .join("\n");
 }

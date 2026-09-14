@@ -3,7 +3,7 @@ import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseRest, supabaseConfigured, pgValue } from "@/lib/supabase-server";
 import { provenMatch } from "@/lib/account-match";
 import { recalculateLoyaltyForUser } from "@/lib/loyalty-cron";
-import { searchShopifyCustomers } from "@/lib/shopify-admin";
+import { searchShopifyCustomers, storeLabel, type StoreKey } from "@/lib/shopify-admin";
 
 // Point a site account at a Shopify customer, or cut it loose.
 //
@@ -31,6 +31,9 @@ export async function POST(req: NextRequest) {
   const unlink = body?.unlink === true;
   const shopifyCustomerId = typeof body?.shopifyCustomerId === "string" ? body.shopifyCustomerId : "";
   const auto = body?.auto === true;
+  // Which store's customer record: Smooth Life (users.shopify_customer_id) or
+  // one of the read-only other stores (store_customer_links).
+  const store: StoreKey = body?.store === "smoothe" || body?.store === "dentiste" ? body.store : "smoothlife";
 
   if (!/^[0-9a-f-]{36}$/i.test(userId)) {
     return NextResponse.json({ ok: false, error: "ไม่พบบัญชีผู้ใช้" }, { status: 400 });
@@ -47,7 +50,7 @@ export async function POST(req: NextRequest) {
       `auth_identities?user_id=eq.${pgValue(userId)}&select=provider,provider_uid,verified_at`
     ).catch(() => []);
     const numericId = shopifyCustomerId.split("/").pop() || "";
-    const [candidate] = await searchShopifyCustomers(`id:${numericId}`, 1);
+    const [candidate] = await searchShopifyCustomers(`id:${numericId}`, 1, store);
     const proof =
       candidate &&
       provenMatch(
@@ -65,6 +68,51 @@ export async function POST(req: NextRequest) {
 
   if (reason.length < 3) {
     return NextResponse.json({ ok: false, error: "กรุณาระบุเหตุผลสั้นๆ ว่ายืนยันตัวตนลูกค้าจากอะไร" }, { status: 400 });
+  }
+
+  if (store !== "smoothlife") {
+    const [exists] = await supabaseRest<{ id: string }[]>(`users?id=eq.${pgValue(userId)}&select=id&limit=1`);
+    if (!exists) return NextResponse.json({ ok: false, error: "ไม่พบบัญชีผู้ใช้" }, { status: 404 });
+    const [currentLink] = await supabaseRest<{ shopify_customer_id: string | null }[]>(
+      `store_customer_links?user_id=eq.${pgValue(userId)}&store=eq.${store}&select=shopify_customer_id&limit=1`
+    ).catch(() => []);
+    if (!unlink) {
+      const clash = await supabaseRest<{ user_id: string }[]>(
+        `store_customer_links?store=eq.${store}&shopify_customer_id=eq.${pgValue(shopifyCustomerId)}&user_id=neq.${pgValue(userId)}&select=user_id&limit=1`
+      ).catch(() => []);
+      if (clash.length > 0) {
+        return NextResponse.json(
+          { ok: false, error: `ใบ ${storeLabel(store)} นี้ถูกผูกกับอีกบัญชีอยู่แล้ว (${clash[0].user_id}) — ต้องปลดจากบัญชีนั้นก่อน` },
+          { status: 409 }
+        );
+      }
+    }
+    const now = new Date().toISOString();
+    await supabaseRest("store_customer_links?on_conflict=user_id,store", {
+      method: "POST",
+      headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+      returning: false,
+      body: JSON.stringify({
+        user_id: userId,
+        store,
+        shopify_customer_id: unlink ? null : shopifyCustomerId,
+        // An unlink by staff stays unlinked: automatic matching skips it.
+        matched_by: unlink ? "staff-unlinked" : "staff",
+        linked_at: unlink ? null : now,
+        checked_at: now,
+      }),
+    });
+    if (!unlink) void recalculateLoyaltyForUser(userId).catch(() => {});
+    await supabaseRest("admin_audit_log", {
+      method: "POST",
+      returning: false,
+      body: JSON.stringify({
+        action: unlink ? "account.unlink-store" : "account.link-store",
+        target: userId,
+        detail: { store, from: currentLink?.shopify_customer_id ?? null, to: unlink ? null : shopifyCustomerId, note: reason, auto },
+      }),
+    }).catch((err) => console.error("[admin/customers/link] audit write failed", err));
+    return NextResponse.json({ ok: true, store, shopifyCustomerId: unlink ? null : shopifyCustomerId });
   }
 
   const [current] = await supabaseRest<{ id: string; shopify_customer_id: string | null }[]>(
@@ -108,5 +156,5 @@ export async function POST(req: NextRequest) {
     }),
   }).catch((err) => console.error("[admin/customers/link] audit write failed", err));
 
-  return NextResponse.json({ ok: true, shopifyCustomerId: unlink ? null : shopifyCustomerId });
+  return NextResponse.json({ ok: true, store, shopifyCustomerId: unlink ? null : shopifyCustomerId });
 }

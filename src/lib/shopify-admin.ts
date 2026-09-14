@@ -7,6 +7,51 @@ const SHOP = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
 const CLIENT_ID = process.env.SHOPIFY_ADMIN_CLIENT_ID;
 const CLIENT_SECRET = process.env.SHOPIFY_ADMIN_CLIENT_SECRET;
 const API_VERSION = process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-10";
+
+// The group's stores. Smooth Life is the one this site sells through; Smooth E
+// and Dentiste are read only — so a customer who bought on smooth-e.com or
+// dentiste-oralcare.com sees those orders and has that spend count here too.
+// Each needs its own app credentials, set in Vercel.
+export type StoreKey = "smoothlife" | "smoothe" | "dentiste";
+export const OTHER_STORES = ["smoothe", "dentiste"] as const;
+export type OtherStoreKey = (typeof OTHER_STORES)[number];
+
+type StoreConfig = { domain?: string; clientId?: string; clientSecret?: string; label: string; adminHandle: string };
+const STORES: Record<StoreKey, StoreConfig> = {
+  smoothlife: { domain: SHOP, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET, label: "Smooth Life", adminHandle: "smoothlifethailand" },
+  smoothe: {
+    domain: process.env.SHOPIFY_SMOOTHE_STORE_DOMAIN || "smooth-e-thailand.myshopify.com",
+    clientId: process.env.SHOPIFY_SMOOTHE_CLIENT_ID,
+    clientSecret: process.env.SHOPIFY_SMOOTHE_CLIENT_SECRET,
+    label: "Smooth E",
+    adminHandle: "smooth-e-thailand",
+  },
+  dentiste: {
+    domain: process.env.SHOPIFY_DENTISTE_STORE_DOMAIN || "dentiste-thailand.myshopify.com",
+    clientId: process.env.SHOPIFY_DENTISTE_CLIENT_ID,
+    clientSecret: process.env.SHOPIFY_DENTISTE_CLIENT_SECRET,
+    label: "Dentiste",
+    adminHandle: "dentiste-thailand",
+  },
+};
+
+export function storeConfigured(store: StoreKey) {
+  const c = STORES[store];
+  return Boolean(c.domain && c.clientId && c.clientSecret);
+}
+
+export function storeLabel(store: StoreKey) {
+  return STORES[store].label;
+}
+
+export function storeAdminHandle(store: StoreKey) {
+  return STORES[store].adminHandle;
+}
+
+/** The other stores whose credentials are set. */
+export function configuredOtherStores(): OtherStoreKey[] {
+  return OTHER_STORES.filter((s) => storeConfigured(s));
+}
 // The live smoothlife.com storefront itself (Shopify's own theme), not this
 // Next.js app's own origin — used to build fallback links to Shopify pages/
 // products/collections this app doesn't have its own route for. Same
@@ -17,22 +62,24 @@ export function shopifyAdminConfigured() {
   return Boolean(SHOP && CLIENT_ID && CLIENT_SECRET);
 }
 
-let cachedToken: { token: string; expiresAt: number } | null = null;
+const cachedTokens = new Map<StoreKey, { token: string; expiresAt: number }>();
 
-async function getAdminAccessToken(): Promise<string> {
-  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
-    return cachedToken.token;
+async function getAdminAccessToken(store: StoreKey = "smoothlife"): Promise<string> {
+  const cached = cachedTokens.get(store);
+  if (cached && cached.expiresAt > Date.now() + 60_000) {
+    return cached.token;
   }
-  const res = await fetch(`https://${SHOP}/admin/oauth/access_token`, {
+  const cfg = STORES[store];
+  const res = await fetch(`https://${cfg.domain}/admin/oauth/access_token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
     body: new URLSearchParams({
       grant_type: "client_credentials",
-      client_id: CLIENT_ID!,
-      client_secret: CLIENT_SECRET!,
+      client_id: cfg.clientId!,
+      client_secret: cfg.clientSecret!,
     }),
   });
-  if (!res.ok) throw new Error(`Shopify OAuth token exchange failed: ${res.status}`);
+  if (!res.ok) throw new Error(`Shopify OAuth token exchange failed (${store}): ${res.status}`);
   const data = await res.json();
   // Capped at ten minutes rather than the 24 hours Shopify offers.
   //
@@ -43,19 +90,19 @@ async function getAdminAccessToken(): Promise<string> {
   // installation had been given. Re-fetching costs one request per instance
   // per ten minutes.
   const lifetime = Math.min((data.expires_in || 3600) * 1000, 10 * 60 * 1000);
-  cachedToken = { token: data.access_token, expiresAt: Date.now() + lifetime };
-  return cachedToken.token;
+  cachedTokens.set(store, { token: data.access_token, expiresAt: Date.now() + lifetime });
+  return data.access_token;
 }
 
-async function adminGraphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
-  const token = await getAdminAccessToken();
-  const res = await fetch(`https://${SHOP}/admin/api/${API_VERSION}/graphql.json`, {
+async function adminGraphql<T>(query: string, variables?: Record<string, unknown>, store: StoreKey = "smoothlife"): Promise<T> {
+  const token = await getAdminAccessToken(store);
+  const res = await fetch(`https://${STORES[store].domain}/admin/api/${API_VERSION}/graphql.json`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": token },
     body: JSON.stringify({ query, variables }),
   });
   const json = await res.json();
-  if (json.errors) throw new Error(`Shopify Admin GraphQL error: ${JSON.stringify(json.errors)}`);
+  if (json.errors) throw new Error(`Shopify Admin GraphQL error (${store}): ${JSON.stringify(json.errors)}`);
   return json.data as T;
 }
 
@@ -86,8 +133,8 @@ const CUSTOMER_FIELDS = `id firstName lastName phone defaultAddress { address1 a
 // null on no match OR on any API error (e.g. the custom app's token doesn't
 // have the read_customers scope) — this is a best-effort enhancement, never
 // something that should block registration/login.
-export async function findShopifyCustomerByEmail(email: string): Promise<ShopifyCustomerMatch | null> {
-  if (!shopifyAdminConfigured()) return null;
+export async function findShopifyCustomerByEmail(email: string, store: StoreKey = "smoothlife"): Promise<ShopifyCustomerMatch | null> {
+  if (!storeConfigured(store)) return null;
   try {
     const data = await adminGraphql<{
       customers: { edges: { node: ShopifyCustomerMatch }[] };
@@ -97,7 +144,8 @@ export async function findShopifyCustomerByEmail(email: string): Promise<Shopify
           edges { node { ${CUSTOMER_FIELDS} } }
         }
       }`,
-      { query: `email:${JSON.stringify(email)}` }
+      { query: `email:${JSON.stringify(email)}` },
+      store
     );
     const node = data.customers.edges[0]?.node;
     return node || null;
@@ -109,8 +157,8 @@ export async function findShopifyCustomerByEmail(email: string): Promise<Shopify
 
 // Same idea as findShopifyCustomerByEmail but keyed on phone — used by the
 // phone-OTP signup path, which has no email to match on.
-export async function findShopifyCustomerByPhone(phone: string): Promise<ShopifyCustomerMatch | null> {
-  if (!shopifyAdminConfigured()) return null;
+export async function findShopifyCustomerByPhone(phone: string, store: StoreKey = "smoothlife"): Promise<ShopifyCustomerMatch | null> {
+  if (!storeConfigured(store)) return null;
   try {
     const data = await adminGraphql<{
       customers: { edges: { node: ShopifyCustomerMatch }[] };
@@ -120,7 +168,8 @@ export async function findShopifyCustomerByPhone(phone: string): Promise<Shopify
           edges { node { ${CUSTOMER_FIELDS} } }
         }
       }`,
-      { query: `phone:${JSON.stringify(phone)}` }
+      { query: `phone:${JSON.stringify(phone)}` },
+      store
     );
     const node = data.customers.edges[0]?.node;
     return node || null;
@@ -204,9 +253,10 @@ export async function ordersByCustomerId(
  * tell someone they have four orders while only being allowed to show one.
  */
 export async function getCustomerTotals(
-  shopifyCustomerId: string
+  shopifyCustomerId: string,
+  store: StoreKey = "smoothlife"
 ): Promise<{ orders: number; spend: number; currency: string } | null> {
-  if (!shopifyAdminConfigured()) return null;
+  if (!storeConfigured(store)) return null;
   const gid = shopifyCustomerId.startsWith("gid://")
     ? shopifyCustomerId
     : `gid://shopify/Customer/${shopifyCustomerId}`;
@@ -217,7 +267,8 @@ export async function getCustomerTotals(
       `query CustomerTotals($id: ID!) {
         customer(id: $id) { numberOfOrders amountSpent { amount currencyCode } }
       }`,
-      { id: gid }
+      { id: gid },
+      store
     );
     if (!data.customer) return null;
     return {
@@ -241,16 +292,18 @@ export async function getCustomerTotals(
  * hiccup must never be read as "this customer never bought anything".
  */
 export async function getCustomerLinkState(
-  shopifyCustomerId: string
+  shopifyCustomerId: string,
+  store: StoreKey = "smoothlife"
 ): Promise<{ exists: boolean; orders: number } | null> {
-  if (!shopifyAdminConfigured()) return null;
+  if (!storeConfigured(store)) return null;
   const gid = shopifyCustomerId.startsWith("gid://")
     ? shopifyCustomerId
     : `gid://shopify/Customer/${shopifyCustomerId}`;
   try {
     const data = await adminGraphql<{ customer: { numberOfOrders: string } | null }>(
       `query CustomerLinkState($id: ID!) { customer(id: $id) { numberOfOrders } }`,
-      { id: gid }
+      { id: gid },
+      store
     );
     if (!data.customer) return { exists: false, orders: 0 };
     const n = Number(data.customer.numberOfOrders);
@@ -329,8 +382,8 @@ export type ShopifyCustomerCandidate = {
  * history in it" — and opening each one in Shopify to find out is the manual
  * work this screen exists to remove.
  */
-export async function searchShopifyCustomers(term: string, limit = 10): Promise<ShopifyCustomerCandidate[]> {
-  if (!shopifyAdminConfigured() || !term.trim()) return [];
+export async function searchShopifyCustomers(term: string, limit = 10, store: StoreKey = "smoothlife"): Promise<ShopifyCustomerCandidate[]> {
+  if (!storeConfigured(store) || !term.trim()) return [];
   try {
     const data = await adminGraphql<{
       customers: {
@@ -366,7 +419,8 @@ export async function searchShopifyCustomers(term: string, limit = 10): Promise<
           }
         }
       }`,
-      { query: term.trim(), limit }
+      { query: term.trim(), limit },
+      store
     );
     return data.customers.edges.map(({ node }) => ({
       id: node.id,
@@ -575,6 +629,8 @@ export type ShopifyShipment = {
 
 export type ShopifyOrderSummary = {
   id: string;
+  /** Which of the group's stores the order was placed in. */
+  store: StoreKey;
   name: string;
   createdAt: string;
   financialStatus: string | null;
@@ -597,8 +653,8 @@ export type ShopifyOrderSummary = {
 // customer, used by the chat assistant to answer "where's my order"-style
 // questions honestly instead of guessing. Returns null on no match, missing
 // scope, or any API error — best-effort, never blocks the chat response.
-export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): Promise<ShopifyOrderSummary[] | null> {
-  if (!shopifyAdminConfigured()) return null;
+export async function getCustomerOrders(shopifyCustomerId: string, limit = 5, store: StoreKey = "smoothlife"): Promise<ShopifyOrderSummary[] | null> {
+  if (!storeConfigured(store)) return null;
   const gid = shopifyCustomerId.startsWith("gid://")
     ? shopifyCustomerId
     : `gid://shopify/Customer/${shopifyCustomerId}`;
@@ -664,11 +720,13 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
           }
         }
       }`,
-      { id: gid, limit }
+      { id: gid, limit },
+      store
     );
     const edges = data.customer?.orders.edges || [];
     return edges.map(({ node }) => ({
       id: node.id,
+      store,
       name: node.name,
       createdAt: node.createdAt,
       financialStatus: node.displayFinancialStatus,
@@ -711,6 +769,7 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5): P
 
 export type ShopifyOrderDetail = {
   id: string;
+  store: StoreKey;
   name: string;
   createdAt: string;
   financialStatus: string | null;
@@ -750,9 +809,10 @@ export type ShopifyOrderDetail = {
  */
 export async function getCustomerOrderDetail(
   shopifyCustomerId: string,
-  orderId: string
+  orderId: string,
+  store: StoreKey = "smoothlife"
 ): Promise<ShopifyOrderDetail | null> {
-  if (!shopifyAdminConfigured()) return null;
+  if (!storeConfigured(store)) return null;
   if (!/^\d{1,20}$/.test(orderId)) return null;
 
   const viewerGid = shopifyCustomerId.startsWith("gid://")
@@ -832,7 +892,8 @@ export async function getCustomerOrderDetail(
           }
         }
       }`,
-      { id: `gid://shopify/Order/${orderId}` }
+      { id: `gid://shopify/Order/${orderId}` },
+      store
     );
 
     const o = data.order;
@@ -842,6 +903,7 @@ export async function getCustomerOrderDetail(
 
     return {
       id: o.id,
+      store,
       name: o.name,
       createdAt: o.createdAt,
       financialStatus: o.displayFinancialStatus,
