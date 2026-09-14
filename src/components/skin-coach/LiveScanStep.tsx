@@ -15,11 +15,12 @@ import { Button } from "@/components/ui";
 // retake any of them before sending. Nothing leaves the device until the
 // photos go for analysis, same as a picked photo would.
 //
-// What's drawn over the face is a sparse geometric wireframe (owner's call):
-// sixteen key points — forehead, temples, eye corners, nose, cheeks, mouth
-// corners, jaw and chin — joined into triangles with straight lines, a dot on
-// each point. The points are smoothed across frames so the frame holds still,
-// and "ready" fades it from white to a soft-glowing mint.
+// What's drawn (owner's references): the camera inside a circle with a
+// glowing ring and the rest dimmed; over the face a fine mesh that follows its
+// shape, and on top a sparse geometric wireframe — sixteen key points
+// (forehead, temples, eye corners, nose, cheeks, mouth corners, jaw, chin)
+// joined into triangles, a dot on each. Points are smoothed across frames so
+// it all holds still, and "ready" fades it from white to a soft-glowing mint.
 
 type Shots = Partial<Record<AngleKey, ResizedImage>>;
 type Phase = "intro" | "loading" | "front" | "side" | "review" | "error";
@@ -32,10 +33,14 @@ const GRACE_MS = 300; // a wobble shorter than this doesn't turn it white again
 const FRONT_YAW = 0.12; // how far off straight still counts as straight
 const SIDE_YAW_MIN = 0.12; // turned enough to show a cheek
 const SIDE_YAW_MAX = 0.65; // past this the far side of the face is lost
-const MIN_WIDTH = 0.2; // cheek-to-cheek, as a share of the frame
-const MAX_WIDTH = 0.85;
+// The circle the face goes in, as shares of the camera box (3:4).
+const CIRCLE_X = 0.5;
+const CIRCLE_Y = 0.45;
+const CIRCLE_R = 0.42; // of the box width
+const MIN_WIDTH = 0.3; // cheek-to-cheek, as a share of the box width
+const MAX_WIDTH = 0.62; // wider and the forehead or chin leaves the circle
 const MAX_ROLL = 14; // degrees of head tilt
-const MAX_OFFCENTRE = 0.2;
+const MAX_OFFCENTRE = 0.12; // face centre from the circle centre, as a share of the box
 const MIN_LIGHT = 45; // average brightness, 0–255
 const MAX_LIGHT = 248;
 const SMOOTH = 0.35; // share of each new reading in the running average
@@ -68,7 +73,8 @@ const WIRE: [number, number][] = [
 ];
 
 // One landmarker per page load, shared by every visit to the step.
-let landmarkerPromise: Promise<FaceLandmarker> | null = null;
+type Mesh = { start: number; end: number }[];
+let landmarkerPromise: Promise<{ landmarker: FaceLandmarker; mesh: Mesh }> | null = null;
 function loadLandmarker() {
   if (!landmarkerPromise) {
     landmarkerPromise = (async () => {
@@ -86,7 +92,7 @@ function loadLandmarker() {
         // Some phones refuse the GPU path; the CPU one is slower but works.
         landmarker = await FaceLandmarker.createFromOptions(fileset, options("CPU"));
       }
-      return landmarker;
+      return { landmarker, mesh: FaceLandmarker.FACE_LANDMARKS_TESSELATION as Mesh };
     })().catch((err) => {
       landmarkerPromise = null;
       throw err;
@@ -252,12 +258,12 @@ export default function LiveScanStep({
           streamRef.current = stream;
           return stream;
         });
-      const [stream, landmarker] = await Promise.all([streamPromise, loadLandmarker()]);
+      const [stream, { landmarker, mesh }] = await Promise.all([streamPromise, loadLandmarker()]);
       const video = videoRef.current!;
       video.srcObject = stream;
       await video.play();
       go("front");
-      run(landmarker);
+      run(landmarker, mesh);
     } catch (err) {
       stopCamera();
       const name = (err as { name?: string })?.name;
@@ -272,7 +278,7 @@ export default function LiveScanStep({
     }
   }
 
-  function run(landmarker: FaceLandmarker) {
+  function run(landmarker: FaceLandmarker, mesh: Mesh) {
     const video = videoRef.current!;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
@@ -305,6 +311,19 @@ export default function LiveScanStep({
     };
 
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+    // The video is cropped to cover its 3:4 box, so a share of the video frame
+    // isn't a share of what's on screen. This maps between the two.
+    const boxMap = () => {
+      const W = video.videoWidth || 1;
+      const H = video.videoHeight || 1;
+      const box = canvas.getBoundingClientRect();
+      const bw = box.width || W;
+      const bh = box.height || H;
+      const scale = Math.max(bw / W, bh / H);
+      return { W, H, bw, bh, scale, ox: (bw - W * scale) / 2, oy: (bh - H * scale) / 2 };
+    };
+
     // Smoothed landmark positions (x, y per point), so the line doesn't shimmer.
     let smooth: Float32Array | null = null;
     // 0 = white, 1 = mint; eased toward the target each frame.
@@ -322,10 +341,10 @@ export default function LiveScanStep({
       const now = performance.now();
       const dt = lastDrawAt ? Math.min(100, now - lastDrawAt) : 16;
       lastDrawAt = now;
-      // Canvas pixels per CSS pixel on screen (the video is cropped to cover
-      // the box), so line widths read the same on every phone.
-      const box = canvas.getBoundingClientRect();
-      const px = box.width ? 1 / Math.max(box.width / W, box.height / H) : W / 360;
+      // Canvas pixels per CSS pixel on screen, so line widths read the same on
+      // every phone.
+      const map = boxMap();
+      const px = 1 / map.scale;
       ctx.clearRect(0, 0, W, H);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
@@ -334,15 +353,7 @@ export default function LiveScanStep({
         smooth = null;
         tone = 0;
         greenSince = null;
-        // Where to put the face, until there is one.
-        ctx.setLineDash([8 * px, 8 * px]);
-        ctx.lineWidth = 1.5 * px;
-        ctx.strokeStyle = "rgba(255,255,255,0.75)";
-        ctx.beginPath();
-        ctx.ellipse(W / 2, H / 2, W * 0.22, H * 0.34, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        return;
+        return; // the circle on screen shows where the face goes
       }
 
       if (!smooth || smooth.length !== lm.length * 2) {
@@ -374,6 +385,27 @@ export default function LiveScanStep({
       const x = (i: number) => pts[i * 2];
       const y = (i: number) => pts[i * 2 + 1];
       const width = (1.5 + 0.9 * swell) * px;
+
+      // Fine mesh over the whole face, kept inside the circle.
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(
+        (CIRCLE_X * map.bw - map.ox) / map.scale,
+        (CIRCLE_Y * map.bh - map.oy) / map.scale,
+        (CIRCLE_R * map.bw) / map.scale,
+        0,
+        Math.PI * 2
+      );
+      ctx.clip();
+      ctx.beginPath();
+      for (const { start, end } of mesh) {
+        ctx.moveTo(x(start), y(start));
+        ctx.lineTo(x(end), y(end));
+      }
+      ctx.lineWidth = 0.6 * px;
+      ctx.strokeStyle = `rgba(${rgb},${0.32 + 0.12 * tone})`;
+      ctx.stroke();
+      ctx.restore();
 
       // A faint dark edge under the lines keeps them readable on light skin.
       ctx.beginPath();
@@ -508,7 +540,7 @@ export default function LiveScanStep({
 
       let problem: string | null = null;
       if (!lm) {
-        problem = "มองไม่เห็นใบหน้า ขยับหน้าเข้ามาในกรอบ";
+        problem = "มองไม่เห็นใบหน้า ขยับหน้าเข้ามาในวงกลม";
         avg = null;
       } else {
         // A running average, so the jitter of a hand-held phone doesn't flip
@@ -524,13 +556,18 @@ export default function LiveScanStep({
             }
           : g;
         const a = avg;
+        // Size and position as they look on screen, against the circle.
+        const m = boxMap();
+        const boxWidth = (a.width * m.W * m.scale) / m.bw;
+        const boxX = (a.cx * m.W * m.scale + m.ox) / m.bw;
+        const boxY = (a.cy * m.H * m.scale + m.oy) / m.bh;
         if (light < MIN_LIGHT) problem = "มืดไป หาที่สว่างขึ้นอีกหน่อย";
         else if (light > MAX_LIGHT) problem = "แสงจ้าไป ขยับออกจากแสงตรงนิดหนึ่ง";
-        else if (a.width < MIN_WIDTH) problem = "ขยับเข้าใกล้กล้องอีกนิด";
-        else if (a.width > MAX_WIDTH) problem = "ถอยออกจากกล้องนิดหนึ่ง";
+        else if (boxWidth < MIN_WIDTH) problem = "ขยับเข้าใกล้กล้องอีกนิด";
+        else if (boxWidth > MAX_WIDTH) problem = "ถอยออกจากกล้องนิดหนึ่ง";
         else if (Math.abs(a.roll) > MAX_ROLL) problem = "ตั้งศีรษะให้ตรง ไม่เอียง";
         else if (phaseNow === "front") {
-          if (Math.abs(a.cx - 0.5) > MAX_OFFCENTRE || Math.abs(a.cy - 0.5) > MAX_OFFCENTRE + 0.05) problem = "เลื่อนหน้ามาไว้กลางกรอบ";
+          if (Math.abs(boxX - CIRCLE_X) > MAX_OFFCENTRE || Math.abs(boxY - CIRCLE_Y) > MAX_OFFCENTRE) problem = "เลื่อนหน้ามาไว้กลางวงกลม";
           else if (Math.abs(a.yaw) > FRONT_YAW) problem = "หันหน้าตรงเข้ากล้อง";
         } else {
           const target = sideTargetRef.current;
@@ -637,6 +674,31 @@ export default function LiveScanStep({
             themselves are taken from the un-mirrored frame. */}
         <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full -scale-x-100 object-cover" />
         <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full -scale-x-100 object-cover" />
+        {/* The circle the face goes in: the rest of the picture dimmed, a
+            glowing ring — white-blue while placing, mint once ready. */}
+        {phase !== "loading" && (
+          <svg viewBox="0 0 300 400" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
+            <path
+              fillRule="evenodd"
+              fill="rgba(2,6,23,0.62)"
+              d={`M0 0H300V400H0Z M${300 * CIRCLE_X - 300 * CIRCLE_R} ${400 * CIRCLE_Y}a${300 * CIRCLE_R} ${300 * CIRCLE_R} 0 1 0 ${600 * CIRCLE_R} 0a${300 * CIRCLE_R} ${300 * CIRCLE_R} 0 1 0 ${-600 * CIRCLE_R} 0Z`}
+            />
+            <circle
+              cx={300 * CIRCLE_X}
+              cy={400 * CIRCLE_Y}
+              r={300 * CIRCLE_R}
+              fill="none"
+              strokeWidth="2.5"
+              className="transition-[stroke,filter] duration-200"
+              stroke={ready ? "#34D399" : "rgba(235,248,255,0.95)"}
+              style={{
+                filter: ready
+                  ? "drop-shadow(0 0 5px rgba(52,211,153,0.9))"
+                  : "drop-shadow(0 0 5px rgba(125,211,252,0.85))",
+              }}
+            />
+          </svg>
+        )}
         <div
           aria-hidden="true"
           className={clsx("pointer-events-none absolute inset-0 bg-white transition-opacity duration-150", flash ? "opacity-70" : "opacity-0")}
@@ -649,8 +711,8 @@ export default function LiveScanStep({
         {hint && phase !== "loading" && (
           <p
             className={clsx(
-              "absolute inset-x-3 top-3 rounded-full px-4 py-2 text-center text-sm font-semibold text-white",
-              ready ? "bg-brand-action/90" : "bg-black/60"
+              "absolute inset-x-4 top-3 text-balance text-center text-[15px] font-semibold tracking-wide [text-shadow:0_1px_4px_rgba(0,0,0,0.7)]",
+              ready ? "text-emerald-300" : "text-white"
             )}
           >
             {hint}
