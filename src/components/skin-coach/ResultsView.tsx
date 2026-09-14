@@ -86,32 +86,46 @@ function MetricRow({ row }: { row: CareRow }) {
   const level = row.severity === null ? null : clarityLevel(row.severity);
   const fill = !level ? "" : level.tone === "good" ? "bg-brand-action" : level.tone === "fair" ? "bg-amber-400" : "bg-amber-600";
   return (
-    <li className="py-4">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-semibold text-brand-ink">{row.label}</span>
-        {level && (
-          <span className="flex items-center gap-2.5">
-            <span className="flex gap-1" aria-hidden="true">
-              {[1, 2, 3, 4].map((n) => (
-                <span key={n} className={clsx("h-2 w-5 rounded-full", n <= level.pips ? fill : "bg-surface-line")} />
-              ))}
-            </span>
+    <li className="py-5">
+      {/* The finding leads; the products under it answer it. */}
+      <div className="rounded-xl bg-surface-soft px-4 py-3.5 ring-1 ring-inset ring-surface-line">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="flex min-w-0 items-center gap-2 text-base font-bold text-brand-ink">
+            <span
+              aria-hidden="true"
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: CONCERN_DEFS[row.concern].color }}
+            />
+            {row.label}
+          </h3>
+          {level && (
             <span
               className={clsx(
-                "w-24 text-right text-sm font-semibold",
-                level.tone === "good" ? "text-brand-800" : level.tone === "fair" ? "text-amber-700" : "text-amber-800"
+                "shrink-0 rounded-full px-2.5 py-1 text-xs font-bold",
+                level.tone === "good"
+                  ? "bg-brand-50 text-brand-800"
+                  : level.tone === "fair"
+                  ? "bg-amber-50 text-amber-800"
+                  : "bg-amber-100 text-amber-900"
               )}
             >
               {level.label}
             </span>
+          )}
+        </div>
+        {level && (
+          <span className="mt-2.5 flex gap-1" aria-hidden="true">
+            {[1, 2, 3, 4].map((n) => (
+              <span key={n} className={clsx("h-1.5 flex-1 rounded-full", n <= level.pips ? fill : "bg-surface-line")} />
+            ))}
           </span>
         )}
+        {row.note && <p className="mt-2 text-[13px] leading-relaxed text-slate-600">{row.note}</p>}
       </div>
-      {row.note && <p className="mt-1 text-xs text-slate-600">{row.note}</p>}
 
       {row.picks.length > 0 && (
         <div className="mt-3">
-          {row.reason && <p className="text-xs font-semibold text-brand-ink">{row.reason}</p>}
+          {row.reason && <p className="text-xs text-slate-600">{row.reason}</p>}
           {row.skipped > 0 && (
             <p className="mt-0.5 text-xs text-slate-600">ไม่แสดง {row.skipped} รายการที่คุณเคยซื้อแล้ว ถ้ายังใช้อยู่ ใช้ต่อได้เลย</p>
           )}
@@ -464,7 +478,7 @@ export default function ResultsView({
             <p className="mt-1 text-sm text-slate-600">{metrics.overallNote}</p>
           </>
         )}
-        <ul className="mt-2 divide-y divide-surface-line">
+        <ul className="mt-1">
           {rows
             .filter((r) => r.severity !== null || r.picks.length > 0)
             .map((r) => (
