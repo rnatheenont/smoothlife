@@ -15,9 +15,10 @@ import { Button } from "@/components/ui";
 // retake any of them before sending. Nothing leaves the device until the
 // photos go for analysis, same as a picked photo would.
 //
-// What's drawn over the face is its outline, brows, eyes and lips in a thin
-// line: enough to show the phone can see the face and where it's looking,
-// without the scanner-grid look the redesign plan steers away from.
+// What's drawn over the face is a scan overlay (owner's call): a faint 3D
+// mesh of the face, a glowing outline, corner brackets, a sweeping scan line
+// and glowing key points — cyan while the face is being placed, brand green
+// once the shutter is ready. The sweep stops for reduced-motion users.
 
 type Shots = Partial<Record<AngleKey, ResizedImage>>;
 type Phase = "intro" | "loading" | "front" | "side" | "review" | "error";
@@ -44,7 +45,8 @@ export function liveScanSupported() {
 }
 
 // One landmarker per page load, shared by every visit to the step.
-let landmarkerPromise: Promise<{ landmarker: FaceLandmarker; contours: Connection[] }> | null = null;
+type Overlay = { contours: Connection[]; mesh: Connection[] };
+let landmarkerPromise: Promise<{ landmarker: FaceLandmarker; overlay: Overlay }> | null = null;
 function loadLandmarker() {
   if (!landmarkerPromise) {
     landmarkerPromise = (async () => {
@@ -62,7 +64,13 @@ function loadLandmarker() {
         // Some phones refuse the GPU path; the CPU one is slower but works.
         landmarker = await FaceLandmarker.createFromOptions(fileset, options("CPU"));
       }
-      return { landmarker, contours: FaceLandmarker.FACE_LANDMARKS_CONTOURS as Connection[] };
+      return {
+        landmarker,
+        overlay: {
+          contours: FaceLandmarker.FACE_LANDMARKS_CONTOURS as Connection[],
+          mesh: FaceLandmarker.FACE_LANDMARKS_TESSELATION as Connection[],
+        },
+      };
     })().catch((err) => {
       landmarkerPromise = null;
       throw err;
@@ -228,12 +236,12 @@ export default function LiveScanStep({
           streamRef.current = stream;
           return stream;
         });
-      const [stream, { landmarker, contours }] = await Promise.all([streamPromise, loadLandmarker()]);
+      const [stream, { landmarker, overlay }] = await Promise.all([streamPromise, loadLandmarker()]);
       const video = videoRef.current!;
       video.srcObject = stream;
       await video.play();
       go("front");
-      run(landmarker, contours);
+      run(landmarker, overlay);
     } catch (err) {
       stopCamera();
       const name = (err as { name?: string })?.name;
@@ -248,7 +256,7 @@ export default function LiveScanStep({
     }
   }
 
-  function run(landmarker: FaceLandmarker, contours: Connection[]) {
+  function run(landmarker: FaceLandmarker, { contours, mesh }: Overlay) {
     const video = videoRef.current!;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
@@ -280,34 +288,133 @@ export default function LiveScanStep({
       }
     };
 
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    // Nose tip, eye corners, mouth corners, chin, forehead, cheekbones.
+    const KEY_POINTS = [1, 33, 133, 362, 263, 61, 291, 152, 10, 234, 454, 168];
+
     const draw = (lm: NormalizedLandmark[] | undefined, green: boolean) => {
       if (canvas.width !== video.videoWidth) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
       }
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.lineWidth = Math.max(1.5, canvas.width / 360);
+      const W = canvas.width;
+      const H = canvas.height;
+      const unit = W / 360;
+      ctx.clearRect(0, 0, W, H);
       ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      const rgb = green ? "0,214,160" : "125,225,255";
+      const now = performance.now();
+
       if (!lm) {
-        // Where to put the face, until there is one.
-        ctx.setLineDash([canvas.width / 60, canvas.width / 60]);
-        ctx.strokeStyle = "rgba(255,255,255,0.75)";
+        // Where to put the face, until there is one: a dashed oval inside
+        // corner brackets, gently breathing.
+        const pulse = reducedMotion ? 0.75 : 0.55 + 0.25 * Math.sin(now / 450);
+        ctx.setLineDash([W / 60, W / 60]);
+        ctx.lineWidth = Math.max(1.5, unit);
+        ctx.strokeStyle = `rgba(255,255,255,${pulse})`;
         ctx.beginPath();
-        ctx.ellipse(canvas.width / 2, canvas.height / 2, canvas.width * 0.22, canvas.height * 0.34, 0, 0, Math.PI * 2);
+        ctx.ellipse(W / 2, H / 2, W * 0.22, H * 0.34, 0, 0, Math.PI * 2);
         ctx.stroke();
         ctx.setLineDash([]);
+        brackets(W * 0.25, H * 0.13, W * 0.75, H * 0.87, `rgba(255,255,255,${pulse})`, unit);
         return;
       }
-      ctx.strokeStyle = green ? "rgba(0,168,123,0.95)" : "rgba(255,255,255,0.8)";
+
+      // Face box, for brackets and the scan sweep.
+      let minX = 1, minY = 1, maxX = 0, maxY = 0;
+      for (const pt of lm) {
+        if (pt.x < minX) minX = pt.x;
+        if (pt.x > maxX) maxX = pt.x;
+        if (pt.y < minY) minY = pt.y;
+        if (pt.y > maxY) maxY = pt.y;
+      }
+      const pad = 0.06;
+      const x0 = (minX - pad) * W, x1 = (maxX + pad) * W;
+      const y0 = (minY - pad) * H, y1 = (maxY + pad * 0.6) * H;
+
+      // 1. Faint 3D mesh.
+      ctx.lineWidth = Math.max(0.6, unit * 0.35);
+      ctx.strokeStyle = `rgba(${rgb},${green ? 0.22 : 0.16})`;
       ctx.beginPath();
-      for (const { start, end } of contours) {
-        const p = lm[start];
-        const q = lm[end];
-        ctx.moveTo(p.x * canvas.width, p.y * canvas.height);
-        ctx.lineTo(q.x * canvas.width, q.y * canvas.height);
+      for (const { start, end } of mesh) {
+        const a = lm[start], b = lm[end];
+        ctx.moveTo(a.x * W, a.y * H);
+        ctx.lineTo(b.x * W, b.y * H);
       }
       ctx.stroke();
+
+      // 2. Glowing outline, brows, eyes, lips.
+      ctx.save();
+      ctx.shadowColor = `rgba(${rgb},0.9)`;
+      ctx.shadowBlur = unit * 6;
+      ctx.lineWidth = Math.max(1.4, unit * 0.9);
+      ctx.strokeStyle = `rgba(${rgb},0.95)`;
+      ctx.beginPath();
+      for (const { start, end } of contours) {
+        const a = lm[start], b = lm[end];
+        ctx.moveTo(a.x * W, a.y * H);
+        ctx.lineTo(b.x * W, b.y * H);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      // 3. Scan line sweeping down the face.
+      if (!reducedMotion) {
+        const t = (now % 2200) / 2200;
+        const y = y0 + (y1 - y0) * t;
+        const band = (y1 - y0) * 0.12;
+        const grad = ctx.createLinearGradient(0, y - band, 0, y);
+        grad.addColorStop(0, `rgba(${rgb},0)`);
+        grad.addColorStop(1, `rgba(${rgb},0.28)`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(x0, y - band, x1 - x0, band);
+        ctx.save();
+        ctx.shadowColor = `rgba(${rgb},1)`;
+        ctx.shadowBlur = unit * 5;
+        ctx.strokeStyle = `rgba(${rgb},0.9)`;
+        ctx.lineWidth = Math.max(1, unit * 0.6);
+        ctx.beginPath();
+        ctx.moveTo(x0, y);
+        ctx.lineTo(x1, y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 4. Glowing key points.
+      ctx.save();
+      ctx.shadowColor = `rgba(${rgb},1)`;
+      ctx.shadowBlur = unit * 4;
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      const r = Math.max(1.6, unit * 1.1) * (reducedMotion ? 1 : 0.85 + 0.15 * Math.sin(now / 300));
+      for (const i of KEY_POINTS) {
+        const pt = lm[i];
+        if (!pt) continue;
+        ctx.beginPath();
+        ctx.arc(pt.x * W, pt.y * H, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // 5. Corner brackets around the face.
+      brackets(x0, y0, x1, y1, `rgba(${rgb},0.95)`, unit);
     };
+
+    function brackets(x0: number, y0: number, x1: number, y1: number, color: string, unit: number) {
+      const len = Math.min(x1 - x0, y1 - y0) * 0.16;
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = unit * 4;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(2, unit * 1.4);
+      ctx.beginPath();
+      ctx.moveTo(x0, y0 + len); ctx.lineTo(x0, y0); ctx.lineTo(x0 + len, y0);
+      ctx.moveTo(x1 - len, y0); ctx.lineTo(x1, y0); ctx.lineTo(x1, y0 + len);
+      ctx.moveTo(x1, y1 - len); ctx.lineTo(x1, y1); ctx.lineTo(x1 - len, y1);
+      ctx.moveTo(x0 + len, y1); ctx.lineTo(x0, y1); ctx.lineTo(x0, y1 - len);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     const grabFrame = async (): Promise<Blob | null> => {
       const frame = document.createElement("canvas");
