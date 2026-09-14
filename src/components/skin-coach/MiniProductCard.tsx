@@ -14,7 +14,7 @@ import { useCart } from "@/lib/cart-context";
  * wishlist heart — right for browsing, too much for three picks tucked under
  * "สิว"; those details are one tap away on the product page.
  */
-export default function MiniProductCard({ product }: { product: Product }) {
+export default function MiniProductCard({ product, typeLabel }: { product: Product; typeLabel?: string }) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
   const discount = product.compareAtPrice ? Math.round(100 - (product.price / product.compareAtPrice) * 100) : 0;
@@ -35,6 +35,11 @@ export default function MiniProductCard({ product }: { product: Product }) {
           {discount > 0 && (
             <span className="absolute left-1.5 top-1.5 rounded-full bg-sale px-1.5 py-0.5 text-[10px] font-bold text-white tabular-nums">
               -{discount}%
+            </span>
+          )}
+          {typeLabel && (
+            <span className="absolute bottom-1.5 left-1.5 max-w-[calc(100%-3rem)] truncate rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold text-brand-800 ring-1 ring-surface-line">
+              {typeLabel}
             </span>
           )}
         </Link>

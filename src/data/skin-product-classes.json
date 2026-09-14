@@ -1,0 +1,10168 @@
+{
+ "1-1-dentiste-original-nighttime-toothpaste-100-g-travel": {
+  "hash": "b8db7f52dffe",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "1-free-1-smooth-e-24k-glow-booster-wrinkle-repaire-supreme-serum-30-ml-free-smoo": {
+  "hash": "365da0c076e3",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "moisture",
+   "radiance"
+  ],
+  "suits": [
+   "dry",
+   "normal"
+  ],
+  "avoid": []
+ },
+ "1-free-1-smooth-e-24k-gold-serum-30-ml-free-smooth-e-24k-glow-booster-4ml": {
+  "hash": "002bd8805f8e",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "radiance"
+  ],
+  "secondary": [
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "1-free-1-smooth-e-anti-melasma-dark-spot-30-ml-free-smooth-e-white-babyface-seru": {
+  "hash": "beb011d64a40",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "spots",
+   "radiance"
+  ],
+  "secondary": [
+   "wrinkles",
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "1-free-1-smooth-e-babyface-acne-5-detoxify-non-ionic-foam-free-acne-hydrogel-plu": {
+  "hash": "53e757dc9988",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "oiliness",
+   "pores",
+   "texture"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "1-free-1-smooth-e-gold-24k-glow-booster-anti-aging-serum-free-smooth-life-astaxa": {
+  "hash": "e06c2a8a6880",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "radiance"
+  ],
+  "secondary": [
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "1-free-1-smooth-e-gold-cream-65-g-free-smooth-e-24k-glow-booster": {
+  "hash": "6db4eb46ff74",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "moisture",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "1-free-2-dentiste-remin-tooth-serum": {
+  "hash": "a9a06d46d593",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "1-free-2-dentiste-sonic-electronic-toothbrush-5-mode-free-extra-fresh-spray-3-ml": {
+  "hash": "7fc38d3c6fd8",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "1-free-2-smooth-e-24k-glow-booster-wrinkle-repaire-supreme-serum-15-ml-free-24-g": {
+  "hash": "545cfeb23265",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "radiance"
+  ],
+  "secondary": [
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "1-free-2-smooth-e-24k-gold-serum-30-ml-free-smooth-e-24k-gold-serum-4-ml": {
+  "hash": "365f5dee9bf1",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "moisture"
+  ],
+  "secondary": [
+   "radiance",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "1-free-2-smooth-e-24k-gold-serum-30-ml-free-smooth-e-24k-gold-serum-4-ml-copy": {
+  "hash": "d206053f3a91",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "radiance"
+  ],
+  "secondary": [
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "1-free-2-smooth-e-sun-asta-spf-50-pa-free-smooth-life-astaxanthin-6mg-7-capsules": {
+  "hash": "0a63b80ef124",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "spots",
+   "wrinkles"
+  ],
+  "secondary": [
+   "acne",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "1-free-3-dentiste-repaire-2in1-70g-free-brush-x2-advanced-care-x1": {
+  "hash": "4d28302b3da9",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "1-smooth-e-double-gold-glow-serum-set": {
+  "hash": "677c65e89716",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "12-month-subscription-lactis-acid-bacteria": {
+  "hash": "21e76c5a2720",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "2-1-dentiste-oral-rinse-700-ml-700": {
+  "hash": "bde6f70d09cd",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "2-dentiste-advanced-care-premium-toothbrush-0-01-15": {
+  "hash": "4057a3fb32a4",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "2-free-6-dentiste-repaire-2in1-70g-free-brush-x2-advanced-care-x1": {
+  "hash": "f3cf1ef291c3",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "2-free-6-dentiste-repaire-2in1-70g-free-brush-x2-advanced-care-x1-copy": {
+  "hash": "03a174e09189",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "2-smooth-e-24k-gold-hydroboost-serum-4ml": {
+  "hash": "4a5fb66f69a0",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "3-dentiste-original-toothpaste-160": {
+  "hash": "9ca632c2d43f",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "3m-acne-dressing18s-bx": {
+  "hash": "db0e5cd6d6d5",
+  "type": "spot_treatment",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "redness",
+   "texture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "3m-futuro-back-support-adjustable-black": {
+  "hash": "574585f84d05",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "3m-futuro-comfort-ankle-support-l-beige": {
+  "hash": "df75efa70d1f",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "3m-futuro-comfort-ankle-support-m-beige": {
+  "hash": "73aecf856adf",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "3m-futuro-comfort-ankle-support-s-beige": {
+  "hash": "cb0a78e18c8b",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "3m-futuro-deluxe-thumb-stabilizer-l-xl-black": {
+  "hash": "a87ccf0efe48",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "3m-nexcare-maxhold-bandage-3s": {
+  "hash": "539a6efd73a2",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "3m-nexcare-tegaderm-6x7-cm-3s-a1": {
+  "hash": "017372da4a73",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "3m-strong-hold-pain-free-1x4yds": {
+  "hash": "dd8d6e260b9e",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "6580-ortho-pro-toothbrush": {
+  "hash": "34a40ca42dac",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "abhaibhubejhr-mangosteen-peel-soap-bar-100-g": {
+  "hash": "16d82ab30c6b",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "abhaibhubejhr-turmeric-soap-bar-100-g": {
+  "hash": "5a1bce515ad3",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "acne-5-clear-makeup-cleansing-water": {
+  "hash": "10431ac6c94e",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "pores",
+   "redness",
+   "spots"
+  ],
+  "suits": [
+   "oily"
+  ],
+  "avoid": []
+ },
+ "acne-aid-foaming-face-wash-oil-control-100-ml": {
+  "hash": "6919baf01df7",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "pores",
+   "texture"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "acne-aid-gel-cleanser-sensitive-skin-100-ml": {
+  "hash": "e8a81f531041",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "oiliness",
+   "pores",
+   "redness"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "acne-aid-gentle-cleanser-100-ml": {
+  "hash": "8d774f9b08ee",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "acne-aid-liquid-cleanser-100-ml": {
+  "hash": "81b6530a3f48",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "moisture"
+  ],
+  "suits": [
+   "oily"
+  ],
+  "avoid": []
+ },
+ "acne-aid-micellar-water-sensitive-skin-235-ml": {
+  "hash": "4c562fbc9628",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "redness",
+   "moisture"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "acne-aid-spot-gel-anti-acne-10-g": {
+  "hash": "f52b8d7ed384",
+  "type": "spot_treatment",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "redness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "advanced-fresh-breath-set": {
+  "hash": "511c3da15b1e",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "albupro-dietary-supplement-product-1x12-sac": {
+  "hash": "c6783cf29cd8",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "allwell-blood-pressure-monitor-bsx532": {
+  "hash": "9aa4eb918cb6",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "allwell-kaiyang-wheelchair": {
+  "hash": "96335822dbad",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "allwell-kaiyang-wheelchair-12": {
+  "hash": "088627ef738e",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ambulance-cotton-ball-0-35-450-g": {
+  "hash": "17c883df5c1f",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ambulance-cotton-ball-1x450g": {
+  "hash": "be041509cc1f",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ambulance-cotton-ball-40-g": {
+  "hash": "56f4246bcb52",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ambulance-cotton-bud-100s": {
+  "hash": "661351e85eba",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ambulance-cotton-pad-50-g": {
+  "hash": "a02b94af03ad",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ambulance-cotton-roll-200-g": {
+  "hash": "7974c0ac89b7",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ammeltz-heatpatch-gold-back-pain-1s": {
+  "hash": "546ba7132369",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ammeltz-heatpatch-gold-period-pain-1s": {
+  "hash": "1a55ec0a51f8",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ammeltz-heatpatch-gold-shoulder-pain-1s": {
+  "hash": "67561307b6c9",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "aromase-5-juniper-scalp-purifying-liquid-shampoo": {
+  "hash": "f00f658559c5",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "aromase-anti-hair-loss-essential-shampoo-400-ml-1": {
+  "hash": "cb2eae5ecf50",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "astaxanthin-6-mg-by-smooth-life": {
+  "hash": "d2c0b7daeba1",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "baby-sebamed-body-lotion": {
+  "hash": "f8a625b79608",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "baby-sebamed-body-lotion-03010342": {
+  "hash": "baadb220ce1c",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "baby-sebamed-diaper-cream": {
+  "hash": "5e761e74b5c2",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "baby-sebamed-gentle-wash-200-ml-03010347": {
+  "hash": "89f40b0bdb6c",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "baby-sebamed-protective-facial-cream-50-ml-03010349": {
+  "hash": "448967366373",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "texture",
+   "wrinkles"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "baby-sebamed-shampoo-150-ml-03040039": {
+  "hash": "814250bee230",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "banner-gold-plus": {
+  "hash": "140d71d925c7",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "banner-hi-b-with-fish-oil": {
+  "hash": "660eae842c1f",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "banner-soy-protein": {
+  "hash": "5b9674b3f8a6",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "bepanthen-daily-control-moisturizing-cream-200": {
+  "hash": "828520e6e2b3",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "bepanthen-ointment-protects-cares": {
+  "hash": "9ac7e29c5145",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "bepanthen-sensicontrol-wash-400-ml": {
+  "hash": "ef7db7816c66",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "bepanthen-sensiderm": {
+  "hash": "5c93767c7a60",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "berocca-elderberry-plus-choline-zinc-sachet-10-ml": {
+  "hash": "efef88afef3f",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "berocca-immu-d-dietary-supplement-15-tab": {
+  "hash": "2ddcdcf67cac",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "best-seller-dentiste-sukkiri-by-dentiste-love-mint-100-sac-box": {
+  "hash": "bc5040f92046",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "bio-oil-60": {
+  "hash": "053a20a3ef0e",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "bio-way-coconut-oil-body-serum-50-ml": {
+  "hash": "4dcb810cf181",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "bio-way-coconut-oil-natural-100-100-100-ml": {
+  "hash": "782f81223448",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "bio-zinc-15-mg-by-smooth-life": {
+  "hash": "e82222df6c36",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "bioderma-sebium-h2o-100-ml": {
+  "hash": "e65d08b05e95",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "oiliness"
+  ],
+  "secondary": [
+   "acne",
+   "pores",
+   "moisture"
+  ],
+  "suits": [
+   "oily",
+   "combination",
+   "sensitive"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "bioderma-sebium-h2o-500-2-100": {
+  "hash": "bfe85423ee5f",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "oiliness"
+  ],
+  "secondary": [
+   "acne",
+   "pores",
+   "moisture"
+  ],
+  "suits": [
+   "oily",
+   "combination",
+   "sensitive"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "bioderma-sebium-sensitive-30-ml": {
+  "hash": "e091bc08e508",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "moisture"
+  ],
+  "secondary": [
+   "acne",
+   "redness",
+   "pores"
+  ],
+  "suits": [
+   "oily",
+   "combination",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "bioderma-sensibio-gel-moussant-200-ml": {
+  "hash": "db0adee9d7bc",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "redness"
+  ],
+  "secondary": [
+   "moisture",
+   "pores"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "bioderma-sensibio-h2o-100": {
+  "hash": "a37e2389a81b",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "redness"
+  ],
+  "secondary": [
+   "moisture"
+  ],
+  "suits": [
+   "sensitive",
+   "dry"
+  ],
+  "avoid": []
+ },
+ "bioderma-sensibio-h2o-500-ml": {
+  "hash": "5f01d5dc1574",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "redness"
+  ],
+  "secondary": [
+   "moisture"
+  ],
+  "suits": [
+   "sensitive",
+   "dry"
+  ],
+  "avoid": []
+ },
+ "blackmores-9-care-gold-60-cap": {
+  "hash": "945906713b0c",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-9-care-gold-60-cap-1": {
+  "hash": "6fb06cc23cdc",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-asta-xanthin-6-mg-plus-30s": {
+  "hash": "33da1dd95bcf",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-bilberry-2500-60s": {
+  "hash": "63ce827762c6",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-bio-c-1000-mg-daily-imu-120s": {
+  "hash": "085b3b4c8bd5",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-bio-c-1000-mg-daily-imu-30s": {
+  "hash": "8d1b95931c9d",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-bio-c-1000-mg-daily-imu-60s": {
+  "hash": "f7a2e7084572",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-bio-c-500-mg-daily-imu-chewable-30s": {
+  "hash": "ec45690e110b",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-bio-c-500-mg-daily-imu-chewable-60s": {
+  "hash": "359d3831dc21",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-bio-c-acerola-plus-1500-mg-40-tab": {
+  "hash": "577abb18f026",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-bio-c-gluta-imu-30s": {
+  "hash": "499be3e2da94",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-bio-calcium-d3-120-tab": {
+  "hash": "b60fa07a5253",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-bio-magnesium-advance-3d-50s": {
+  "hash": "9fd4a63272c3",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-bio-zinc-a-chelate-90s": {
+  "hash": "05e6dc47e84d",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-biotin-h-60s": {
+  "hash": "eb7c5fe07c7f",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-choles-bloc-60s": {
+  "hash": "71927497f530",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-cranberry-15000-c-60s": {
+  "hash": "7e5955f2e486",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-evening-primrose-oil-1000-mg-60s": {
+  "hash": "2aa2e69cd133",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-fish-oil-1000-mg-80s": {
+  "hash": "687ec3faa2e0",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-fish-oil-1000-mg-80s-p-2": {
+  "hash": "75a329127854",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-fish-oil-mini-30-cap": {
+  "hash": "1cf735d5350e",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-fish-oil-mini-60-cap": {
+  "hash": "b70fe8bc88b2",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-grape-seed-forte-1200-mg-30s": {
+  "hash": "a177f6bf0e93",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-koala-multivit-mineral-30-tab": {
+  "hash": "1e472b0886ea",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-lecithin-1200-mg-100s": {
+  "hash": "58b094a246e8",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-lutein-vis-60s": {
+  "hash": "c13458756be2",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-marine-collagen-absolute-30-cap": {
+  "hash": "bc2b65920a8b",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-marine-collagen-absolute-60-cap": {
+  "hash": "150d4aaba225",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-marine-collagen-absolute-60-cap-pack-2": {
+  "hash": "cda5e8acc06d",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-multi-active-30s": {
+  "hash": "c331e40d8f74",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-multi-nutri-50-60tab": {
+  "hash": "00d9e6cdf60a",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-omega-dha-60-caps-60": {
+  "hash": "bc0eeb1ed3b3",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-omega-triple-daily-60-cap": {
+  "hash": "c9039d44e9ef",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blackmores-probiotics-daily-balance-30s": {
+  "hash": "6847fd406e81",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blistex-classic-from-usa": {
+  "hash": "003762349963",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blistex-flip-top-cap-spf-50-lip-balm-quality-from-usa": {
+  "hash": "6382b1fd26a5",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blistex-intensive-moisturizer-cherry-spf15-6-ml": {
+  "hash": "9cf2bc1e5bf9",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blistex-intensive-moisturizer-cherry-spf15-6-ml-copy": {
+  "hash": "1003ce698d15",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blistex-lip-infusions-hydration": {
+  "hash": "5f8eaa061644",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blistex-lip-infusions-restore": {
+  "hash": "65d5d91a8d45",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blistex-mint-quality": {
+  "hash": "fcf125a7a423",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "blistex-simple-and-sensitive-lip-balm": {
+  "hash": "2a6816e53e93",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "bm-bio-c-1000-mg-daily-imu-120s-30s": {
+  "hash": "c03082bced6f",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "botan-1x100": {
+  "hash": "6218b51aa28e",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "botan-1x24": {
+  "hash": "6b5426fc3f50",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "botan-mint-ball": {
+  "hash": "8e9023cb6d3d",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "botan-mint-ball-mixed-berry-1x20": {
+  "hash": "af2029bea447",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "box-dentiste-anticavity-max-fluoride-toothpaste-12g-6-pcs": {
+  "hash": "297caf2a26ea",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "breath-care": {
+  "hash": "865dd6cc4c6f",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "buy-1-get-1-dentiste-premium-whitening-50-g": {
+  "hash": "b8d2cc7c543a",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "buy-1-get-1-original-nighttime-toothpaste-100-g-free-ergonomic-toothbrush": {
+  "hash": "9fd466a6407c",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "buy-1-get-1-smooth-e-babyface-foam-180-ml-free-smooth-e-mineral-spray-100-ml": {
+  "hash": "fa3eeea282d5",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "radiance"
+  ],
+  "suits": [
+   "sensitive",
+   "dry"
+  ],
+  "avoid": []
+ },
+ "buy-1-get-1-smooth-life-res-v-grape": {
+  "hash": "56974acbd6cf",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "buy-1-get-3-dentiste-enamel-fresh-breath-solution-set": {
+  "hash": "bbbc6b53550b",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "buy-1-get-3-dentiste-enamel-sensitive-solution-set": {
+  "hash": "736d46f6dca9",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "buy-1-get-3-dentiste-enamel-whitening-solution-duo": {
+  "hash": "d8a04152c56d",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "buy1-free-2-smooth-e-gold-24k-glow-booster-anti-aging-serum": {
+  "hash": "3ad6cd4e6102",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "radiance"
+  ],
+  "secondary": [
+   "firmness",
+   "moisture",
+   "spots"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "cal-os-chew-tab-bott-1x30-tab": {
+  "hash": "4eafa75b11d7",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "cami-nebulizer-miko": {
+  "hash": "6b9fcddda088",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "centrum-active-dietary-supplement": {
+  "hash": "f95db3240378",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "centrum-silver-dietary": {
+  "hash": "09d1099499b3",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "cerave-blemish-control-cleanser-236": {
+  "hash": "45b920aa7857",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "pores",
+   "texture",
+   "spots"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": []
+ },
+ "cerave-blemish-control-gel-40": {
+  "hash": "23452547ecc8",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "texture",
+   "pores",
+   "moisture"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": []
+ },
+ "cerave-eye-repair-cream-14ml": {
+  "hash": "140ee0a01f42",
+  "type": "eye_care",
+  "face": true,
+  "primary": [
+   "darkCircles",
+   "eyeBags"
+  ],
+  "secondary": [
+   "moisture",
+   "radiance",
+   "wrinkles"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cerave-facial-moisturizing-pm-lotion-50-ml": {
+  "hash": "18d3dd755b4d",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "texture",
+   "radiance"
+  ],
+  "suits": [
+   "normal",
+   "oily"
+  ],
+  "avoid": []
+ },
+ "cerave-foaming-cleanser": {
+  "hash": "4fc8936478de",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "oiliness"
+  ],
+  "secondary": [
+   "acne",
+   "pores",
+   "spots"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "cerave-hydrating-cleanser": {
+  "hash": "ddd94d980aa6",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cerave-micellar-water-295ml": {
+  "hash": "fefcaf55e40a",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "redness"
+  ],
+  "secondary": [
+   "moisture"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cerave-moisturising-cream-16oz": {
+  "hash": "aec9d0e734c3",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "texture"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cerave-moisturising-lotion-3-oz": {
+  "hash": "9cd1ab429c8d",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "texture"
+  ],
+  "suits": [
+   "dry"
+  ],
+  "avoid": []
+ },
+ "cerave-moisturising-lotion-473ml": {
+  "hash": "dc8340f6f092",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "texture"
+  ],
+  "suits": [
+   "dry"
+  ],
+  "avoid": []
+ },
+ "cerave-moisturizing-cream-50": {
+  "hash": "632882385697",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "texture"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cerave-resurfacing-retinol-serum-30-ml": {
+  "hash": "e5346b179def",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "spots",
+   "texture"
+  ],
+  "secondary": [
+   "pores",
+   "acne",
+   "wrinkles"
+  ],
+  "suits": [],
+  "avoid": [
+   "sensitive"
+  ]
+ },
+ "cerave-sa-smoothing-cleanser-236m": {
+  "hash": "42dfc79fce11",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "texture"
+  ],
+  "secondary": [
+   "oiliness",
+   "pores",
+   "acne"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "cerave-sa-smoothing-cleanser-8-oz": {
+  "hash": "38c54f1cb206",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "texture"
+  ],
+  "secondary": [
+   "oiliness",
+   "pores",
+   "acne"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "cerave-skin-renewing-vitamin-serum-30-ml": {
+  "hash": "11928d685ed0",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "radiance",
+   "spots"
+  ],
+  "secondary": [
+   "wrinkles",
+   "texture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "cetaphil-baby-moisturising-bath-wash-230-ml": {
+  "hash": "b921f4cb2b24",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cetaphil-daily-defense-cream-spf50-50-g": {
+  "hash": "663e8b565c1a",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "moisture",
+   "radiance",
+   "redness"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cetaphil-gentle-skin-cleanser-1-liter": {
+  "hash": "84223c2d7417",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "normal",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cetaphil-moisturising-cream-453-g": {
+  "hash": "f948311eea19",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "texture"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cetaphil-moisturising-lotion-118-ml-new": {
+  "hash": "4871912c702b",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "texture"
+  ],
+  "suits": [
+   "dry",
+   "normal",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cetaphil-oily-skin-cleanser-125-ml-1-125": {
+  "hash": "aa80129bc224",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "acne"
+  ],
+  "secondary": [
+   "pores"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "cetaphil-pro-ad-derma-skin-restoring-body-wash-295": {
+  "hash": "b7206bb96e55",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cetaphil-pro-ad-derma-skin-restoring-moisturizer-295": {
+  "hash": "654bcbbabcc1",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cetaphil-sun-spf-50-light-gel-50-ml": {
+  "hash": "986dd6a79a73",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "moisture",
+   "redness"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "cold-hot-pack-1pc-bx": {
+  "hash": "b8e4cb70b1ec",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "cold-hot-pack-baby-pack": {
+  "hash": "56eaca1cb3d8",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "cream-91-e-91-e-8-3-g": {
+  "hash": "10087ca2aa43",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "crv-foaming-cleanser-3-oz": {
+  "hash": "3a54a5dac01c",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "oiliness"
+  ],
+  "secondary": [
+   "acne",
+   "pores"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "crv-hydrating-cleanser-3-oz": {
+  "hash": "90e943b992b8",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "deal-duo-dentiste-hygienic-breath-spray-15-ml-dentiste-sukkiri-love-mint-20-tab": {
+  "hash": "b4f93c99fe8b",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "deal-duo-dentiste-hygienic-breath-spray-15-ml-dentiste-sukkiri-love-mint-20-tab-14967": {
+  "hash": "0225b8e32dce",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "deal-duo-smooth-e-anti-hair-loss-thickening-serum-20-ml-free-smooth-e-acne-hydro": {
+  "hash": "88728a26fc99",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "deal-duo-smooth-e-anti-hair-loss-thickening-set-free-smooth-e-acne-hydrogel-7-g": {
+  "hash": "6221d0874f4e",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "deal-duo-smooth-e-clinical-dose-serum-30g-free-smooth-e-mineral-spray-100-ml": {
+  "hash": "d719ad00b301",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "spots",
+   "radiance"
+  ],
+  "secondary": [
+   "wrinkles",
+   "moisture",
+   "acne"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "deal-duo-smooth-e-dark-spot-clear-vitamin-c-plus-serum-30-ml-free-smooth-e-acne": {
+  "hash": "2cd7a73f5695",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "spots",
+   "radiance"
+  ],
+  "secondary": [
+   "wrinkles",
+   "moisture",
+   "acne"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "deal-duo-smooth-e-hair-repair-hydration-set": {
+  "hash": "5e9a1f24114f",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "deal-duo-smooth-e-serum-smooth-e-sun-asta": {
+  "hash": "9e5aabac0c81",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "spots"
+  ],
+  "secondary": [
+   "acne",
+   "pores",
+   "oiliness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "deep-sleep-essentials-set": {
+  "hash": "18d33118605f",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-6580-gum-and-tooth-brush": {
+  "hash": "56ec8494abf6",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-advanced-care-premium-toothbrush-0-01-15": {
+  "hash": "d0064b43aa29",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-andrographis-paniculata-mouth-spray": {
+  "hash": "5ee848559800",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-anti-bacteria-set": {
+  "hash": "8d525e8db71d",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-anti-bacteria-toothbrushjapan": {
+  "hash": "c7032dc5365e",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-anticavity-max-100g-free-dentiste-anti-bacteria-japan-toothbrush": {
+  "hash": "59419b813d37",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-anticavity-max-100g-free-dentiste-anti-bacteria-japan-toothbrush-random": {
+  "hash": "9cd20a23dee7",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-anticavity-max-fluoride-toothpaste": {
+  "hash": "bf0dec13b2d9",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-blister-pack-good-morning-good-night-toothbrush-pastel-gritter": {
+  "hash": "09d6aad6dd3e",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-day-time-night-time-toothbrush": {
+  "hash": "26310175149c",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-daytime-premium-white-set": {
+  "hash": "eb031de3504f",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-deluxe-tongue-cleaner-germany": {
+  "hash": "111c990abba6",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-dental-black-ptfe-floss-tape-with-fluoride-30m": {
+  "hash": "51bcf61ac1d1",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-dental-floss": {
+  "hash": "cb95eb858c51",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-dental-floss-50m-free-10m": {
+  "hash": "1d8470e1ba2e",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-dental-floss-pick-40": {
+  "hash": "b421f06e0c41",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-duo-white-set": {
+  "hash": "cbe0afc2ecb3",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-ergo-travel-set-random": {
+  "hash": "5c9292dc4053",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-germanys-worlds-best-toothbrush": {
+  "hash": "11e823d92ab4",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-hygienic-breath-spray": {
+  "hash": "632d0138c8db",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-kids-gums-teeth-ultra-soft-toothbrush": {
+  "hash": "eace4e418846",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-kids-toothpaste-strawberry-flavor": {
+  "hash": "4ae858ba9d3f",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-max-fresh-breath": {
+  "hash": "745044f4bf2d",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-max-wide-floss-tape": {
+  "hash": "8bac024eee8b",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-mild-nighttime-toothpaste-100-g": {
+  "hash": "1b4d21f7ff50",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-miracles-oil-pulling-7-14": {
+  "hash": "174301a410df",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-mirror-pick": {
+  "hash": "c296870d094b",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-mirror-pick-85111": {
+  "hash": "6bb5d80efb79",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-mouth-spray-extra-fresh-3-ml": {
+  "hash": "92f431c00eb5",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-my-brush": {
+  "hash": "2a3b41662a17",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-my-brush-casa-limited-edition": {
+  "hash": "6f649c1e785c",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-nano-repair-sensicare-set": {
+  "hash": "f699040646e1",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-nighttime-premium-white-set": {
+  "hash": "4dc9aa780ced",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-one-night-stay-1": {
+  "hash": "a0e0ddb9b1be",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-oral-health-deep-detox-treatment-set": {
+  "hash": "15696c449b82",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-oral-rinse-700ml-anticavity-max-fluoride-100g": {
+  "hash": "993a94196bbc",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-original-toothpaste-tube": {
+  "hash": "0b84d8c2cb0a",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-plaque-test-tablets-10s": {
+  "hash": "62c57fef0a29",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-plus-white-tongue-cleaner": {
+  "hash": "bb42a1b17e7c",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-premium-care-100-gm-no-1-in-turkiye-and-made-in-turkiye": {
+  "hash": "d67f41a86e84",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-premium-care-toothpaste-tube": {
+  "hash": "ffb5484a3440",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-premium-enamel-expert": {
+  "hash": "a63d5f85bf83",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-premium-kids-set-2-6-strawberry-60g": {
+  "hash": "eb2f76fcc090",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-premium-kids-set-6-12-mixed-fruit-60g": {
+  "hash": "ef2a9e5219a0",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-premium-natural-white-super-dose": {
+  "hash": "9ca11d32333b",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-premium-refreshing-floss-italy-40-m": {
+  "hash": "c1dd8d6b121a",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-premium-white-toothpaste": {
+  "hash": "a7d15ec69d66",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-pro-max-fluoride-1500-ppm-toothpaste": {
+  "hash": "e4a0cb047fb4",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-repaire-rex3-70g": {
+  "hash": "b337a4668dab",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-replaceable-toothbrush-head": {
+  "hash": "7a295595459f",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-sonic-electronic-toothbrush-5-mode": {
+  "hash": "8f23461d6279",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-sukkiri-by-dentiste-love-mint-20s-100": {
+  "hash": "0c0de38a8246",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-tongue-brush": {
+  "hash": "4e613c103086",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-toothbrush-germany-denture-1": {
+  "hash": "f74829d5ae06",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-travel-pack-foldable-original-20g": {
+  "hash": "e3b2ce4005c6",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-travel-pack-whitening-foldable-premium-white": {
+  "hash": "4e28ae097dbe",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-ultra-sensitive": {
+  "hash": "ed42e4280bb4",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste-vvip-toothbrush": {
+  "hash": "4fa9af3226bb",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dentiste100-natural-toothpaste-tube": {
+  "hash": "cc678ed4f4d2",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dettol-antibacteria-surface-cleanser-500-ml": {
+  "hash": "c600264594d2",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dettol-disinfectant-spray-crisp-breeze-225-ml": {
+  "hash": "b36340fe1687",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dettol-disinfectant-spray-lavender-225-ml": {
+  "hash": "d14ac1e5047c",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dettol-hygiene-multi-use-cotton-breeze-500-ml": {
+  "hash": "85d13429ddec",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dettol-sensitive-wet-wipes-10s": {
+  "hash": "d34cd7b75c55",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dettol-sensitive-wet-wipes-50s": {
+  "hash": "1402c505b793",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dettol-wet-wipe-10s-1x5": {
+  "hash": "d8ea95046b0f",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dettol-wet-wipe-50s": {
+  "hash": "bb27a78cdf2c",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dr-master-hair-vital-serum-30-ml": {
+  "hash": "c6d4b6744919",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dr-master-new-hair-conditioner-200-ml": {
+  "hash": "50c4775d86b9",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dr-master-new-hair-shampoo-200-ml": {
+  "hash": "4f1be5b48a59",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dr-master-nutri-h-30s": {
+  "hash": "106824e8e7a7",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dt-hand-sanitizer-200-ml": {
+  "hash": "bf3b6e86c048",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "duo-deal-mooth-e-anti-hair-loss-hair-thickening-serum-spray-free-smooth-e-everyd": {
+  "hash": "be0bf159cf6c",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "duo-deal-smooth-e-sun-zero-feel-protection-30-g-smooth-e-serum-13-g": {
+  "hash": "54d49559b265",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "wrinkles",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-airy-10s-1x12": {
+  "hash": "13e738a0c44e",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-airy-2s": {
+  "hash": "d52c9d118ad7",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-chocolate-3s": {
+  "hash": "dbf6f032a2fd",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-comfort-12x3s": {
+  "hash": "49a939e3f818",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-fetherlite-12x12s": {
+  "hash": "5196f3b6f4cc",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-fetherlite-ultima-3x12": {
+  "hash": "5759f99f1d1c",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-kingtex-49-3-1": {
+  "hash": "e50cabe86b59",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-love-1x12": {
+  "hash": "e063207da876",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-performa-3s-1x12": {
+  "hash": "030bff8643fe",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-play-100-ml": {
+  "hash": "321e52a32bdb",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-play-massage-gel-200-ml": {
+  "hash": "6cb16d37730e",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-play-straw-50-ml": {
+  "hash": "f454cd684a2d",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-play-strawberry-100-ml": {
+  "hash": "a658691feaa1",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "durex-play-warm-100-ml": {
+  "hash": "94d8098e88f3",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dyna-form-prevention-mattress-jupiter-15-cm": {
+  "hash": "187dc6e668fe",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dyna-form-prevention-mattress-mercury-15-cm": {
+  "hash": "0a84f060332f",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "dyna-tek-foam-cushion": {
+  "hash": "b60792a63008",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "electric-sonic-toothbrush-with-plaque-test": {
+  "hash": "86e40248ce19",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "enigma-overbed-table-ent-1002c": {
+  "hash": "8479d2752ae1",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ensure-chocolate-850-g": {
+  "hash": "fe87ef19cb7c",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ensure-gold-wheat-1110-g": {
+  "hash": "dab7bb00d029",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ensure-vanila-800-g": {
+  "hash": "51282a8fe2b3",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ensure-vanilla-380-g-new": {
+  "hash": "e02f712bbb3b",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ensure-wheat-380-g": {
+  "hash": "585de5cf3b87",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ensure-wheat-800-g": {
+  "hash": "7c386d9d3222",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ergonomic-toothbrush-twin-pack-random-color": {
+  "hash": "006579a00c54",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "euc-omega-ato-calming-face-cream-50-ml-paclk-2": {
+  "hash": "7fcc3086cb0a",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture",
+   "redness"
+  ],
+  "secondary": [],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "euc-omega-ato-calming-face-cream-50ml": {
+  "hash": "31104e15ca4d",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture",
+   "redness"
+  ],
+  "secondary": [],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-anti-dandruff-shampoo": {
+  "hash": "2557e7a6fe1c",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-aquaphor-soothing-balm-80-ml": {
+  "hash": "f917c4578adb",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-aquaphor-sos-lip-care-10-ml": {
+  "hash": "6bd82cb680d5",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-baby-wash-shampoo-400-ml": {
+  "hash": "95bbe446c75d",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-facial-cleanser-400-ml": {
+  "hash": "e2dfc957c0fa",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "redness"
+  ],
+  "secondary": [
+   "moisture"
+  ],
+  "suits": [
+   "sensitive",
+   "dry"
+  ],
+  "avoid": []
+ },
+ "eucerin-hya-3x-filler-day-bright-spf30-50ml": {
+  "hash": "89da26eea5d1",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture",
+   "spots"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-hya-3x-filler-night-cream-50ml": {
+  "hash": "6d7f025acc0d",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-hyaluron-3x-eye": {
+  "hash": "e121786db42c",
+  "type": "eye_care",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-hyaluron-3x-filler-day-bright-cream-spf-30": {
+  "hash": "8b8dddcf71ce",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture",
+   "spots"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-hyaluron-3x-filler-night-cream-20-ml": {
+  "hash": "7feb29d5c0b4",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-hyaluron-filler-elasti-day-cream-50-ml": {
+  "hash": "4245a7fff6eb",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "spots",
+   "radiance",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-hyaluron-filler-elasti-night-cream-50-ml": {
+  "hash": "61f421c14b53",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "spots"
+  ],
+  "secondary": [
+   "firmness",
+   "moisture",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-hyaluron-filler-elasticity-eye-cream-spf-20": {
+  "hash": "e1df9f5978a5",
+  "type": "eye_care",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-hyaluron-filler-epicelline-serum-30-ml": {
+  "hash": "53b1160d7e62",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "texture",
+   "firmness",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-hyaluron-radiance-lift-filler-3d-serum": {
+  "hash": "364cd371b5a2",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "spots"
+  ],
+  "secondary": [
+   "firmness",
+   "radiance",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-hyaluron-radiance-lift-filler-essence-100-ml": {
+  "hash": "72a026f20422",
+  "type": "toner",
+  "face": true,
+  "primary": [
+   "moisture",
+   "wrinkles"
+  ],
+  "secondary": [
+   "radiance",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-omega-ato-calming-balm-200-ml": {
+  "hash": "c4399e153737",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture",
+   "redness"
+  ],
+  "secondary": [],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-omega-ato-calming-bath-shower-oil-400-ml": {
+  "hash": "e921eec4c802",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-omega-bath-shower-oil-400-ml": {
+  "hash": "b78a2bbde476",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-ph5-dry-sensitive-skin-hydro-cream-200-ml": {
+  "hash": "67bfba97571f",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-ph5-dry-sensitive-skin-lotion-250-ml": {
+  "hash": "efa5cbe6e794",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-ph5-dry-sensitive-skin-lotion-400-ml": {
+  "hash": "e05c52200a37",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-ph5-dry-sensitive-skin-lotion-400-ml-1": {
+  "hash": "2291525eb185",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-ph5-mild-shampoo-250-ml": {
+  "hash": "3b496e16c0df",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-ph5-sensitive-skin-washlotion-400-ml": {
+  "hash": "f612625301d0",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "dry",
+   "sensitive",
+   "normal"
+  ],
+  "avoid": []
+ },
+ "eucerin-ph5-very-dry-sensitive-skin-shower-oil-400-ml": {
+  "hash": "336781dcd513",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-pro-acne-a-i-mat-fluid-50-ml": {
+  "hash": "34dc4da030d8",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "pores"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "eucerin-pro-acne-cleansing-gel-200-ml": {
+  "hash": "fb43896ed44f",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "pores"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": []
+ },
+ "eucerin-pro-acne-gentle-cleansing-foam-150-g": {
+  "hash": "65bcca534ca1",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne",
+   "pores"
+  ],
+  "secondary": [
+   "oiliness",
+   "moisture"
+  ],
+  "suits": [
+   "sensitive",
+   "oily"
+  ],
+  "avoid": []
+ },
+ "eucerin-pro-acne-solution-3x-treatment-gel-to-foam": {
+  "hash": "61f08a11ab9e",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "pores"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": []
+ },
+ "eucerin-pro-acne-toner-200-ml": {
+  "hash": "ef757e98c3ec",
+  "type": "toner",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "pores",
+   "texture"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "eucerin-spotless-brightenine-booster-serum-30-ml": {
+  "hash": "d4a3b8c0de57",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-spotless-brightenine-day-fluid-spf30-50-ml": {
+  "hash": "064222710286",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-spotless-brightenine-gentle-cleansingfoam-150g": {
+  "hash": "08537ea565a7",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "radiance"
+  ],
+  "secondary": [
+   "spots",
+   "oiliness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-spotless-brightenine-night-fluid-50-ml": {
+  "hash": "01260a979b2e",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "texture",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-spotless-brightenine-spot-corrector-5-ml": {
+  "hash": "8601d7f34f6f",
+  "type": "spot_treatment",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-spotless-brightening-dark-eye-circle-corrector-15-ml": {
+  "hash": "4fa99eb5fc07",
+  "type": "eye_care",
+  "face": true,
+  "primary": [
+   "darkCircles"
+  ],
+  "secondary": [
+   "moisture",
+   "eyeBags"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-spotless-brightening-exfoliating-cleansing-gel-200-ml": {
+  "hash": "3e94880189de",
+  "type": "exfoliant",
+  "face": true,
+  "primary": [
+   "radiance",
+   "spots"
+  ],
+  "secondary": [
+   "texture",
+   "pores"
+  ],
+  "suits": [],
+  "avoid": [
+   "sensitive"
+  ]
+ },
+ "eucerin-spotless-brightening-exfoliating-cleansing-gel-400-ml": {
+  "hash": "8f3c8fd18ba5",
+  "type": "exfoliant",
+  "face": true,
+  "primary": [
+   "radiance",
+   "spots"
+  ],
+  "secondary": [
+   "texture",
+   "pores"
+  ],
+  "suits": [],
+  "avoid": [
+   "sensitive"
+  ]
+ },
+ "eucerin-spotless-brightening-skin-tone-perfecting-body-lotion-250-ml": {
+  "hash": "b3b0438b556b",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-sun-anti-age-spf50-50-ml": {
+  "hash": "9fd6a09537fb",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "spots"
+  ],
+  "secondary": [
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-sun-cream-50-50-ml": {
+  "hash": "852b7f4870fd",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "moisture",
+   "redness"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-sun-dry-touch-50-ml": {
+  "hash": "bda8adbcafaf",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "acne"
+  ],
+  "secondary": [
+   "spots",
+   "pores"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "eucerin-sun-dry-touch-acne-oil-control-spf50": {
+  "hash": "c8f155f85ff5",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "acne"
+  ],
+  "secondary": [
+   "spots",
+   "pores"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "eucerin-sun-dry-touch-cc-control-spf-50-pa-50-ml": {
+  "hash": "2129661a8e62",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "acne"
+  ],
+  "secondary": [
+   "spots",
+   "redness",
+   "pores"
+  ],
+  "suits": [
+   "oily",
+   "combination",
+   "sensitive"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "eucerin-sun-kids-spray-50-200-ml": {
+  "hash": "f0a76524ad87",
+  "type": "sunscreen",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-sun-spotless-bright-serum-spf50-pa-50ml": {
+  "hash": "2ce7bba2fb1b",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "wrinkles"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-sun-spotless-cc-cream-spf50-pa-50ml": {
+  "hash": "8b57d00eeb61",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-sun-ultra-100-uv-80-ml-spf-100": {
+  "hash": "bd2289e518b8",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "redness"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-sunbodydry-spf50-200-ml": {
+  "hash": "582d48c12676",
+  "type": "sunscreen",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-thinning-hair-shampoo-250-ml": {
+  "hash": "f174d4d4d056",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "eucerin-ul-aquaporin-nourishing-gel-cream-50-ml": {
+  "hash": "0cc81256f101",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "texture"
+  ],
+  "suits": [
+   "oily",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-ultrasenitive-repair-cream-50-ml": {
+  "hash": "d12247c08379",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "redness",
+   "moisture"
+  ],
+  "secondary": [
+   "texture",
+   "spots"
+  ],
+  "suits": [
+   "sensitive",
+   "dry"
+  ],
+  "avoid": []
+ },
+ "eucerin-ultrasenitive-repair-gel-50-ml": {
+  "hash": "157b6fd266dd",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "redness",
+   "moisture"
+  ],
+  "secondary": [
+   "texture",
+   "radiance"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-ultrasensitive-aquaporin-cream-50-ml": {
+  "hash": "d2ec2e9e4eed",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "texture",
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-ultrasensitive-q10x-set-day-night": {
+  "hash": "90102bffd173",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "moisture",
+   "radiance"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-urea-repair-plus-5-urea-lotion-400-ml": {
+  "hash": "753b839bb874",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "dry"
+  ],
+  "avoid": []
+ },
+ "eucerin-us-hyaluron-cleansing-gel-200ml": {
+  "hash": "b6d5f917cbfd",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness"
+  ],
+  "suits": [
+   "sensitive",
+   "dry"
+  ],
+  "avoid": []
+ },
+ "eucerin-us-hyaluron-micellar-water-200ml": {
+  "hash": "f740628c072c",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-us-hyaluron-toner-200ml": {
+  "hash": "190843d69a51",
+  "type": "toner",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "pores"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-us-q10x-day-50-ml": {
+  "hash": "f4e7d9f17cc1",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "moisture",
+   "redness",
+   "radiance"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "eucerin-us-q10x-night-50-ml": {
+  "hash": "2a084eae7637",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "moisture",
+   "redness",
+   "radiance"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "exclusive-set-smooth-life-hair-loss-rescue-set": {
+  "hash": "5cf4d23a46de",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "exeter-cold-hot-gel-pack-1-pcs": {
+  "hash": "779a4d32e003",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "exeter-cold-hot-gel-pack-120g": {
+  "hash": "c11b44105a45",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "exeter-thermo-pad-30x45cm": {
+  "hash": "1811473eb20b",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "exeter-thermopad-extra-40x60cm": {
+  "hash": "192acfb07b8a",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ext-7-day-pill-xl-clear": {
+  "hash": "9aee4f65b925",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ext-ear-pluge-soft-foam": {
+  "hash": "365781e9423d",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ext-pill-splitter-blue": {
+  "hash": "1af56d5e10c3",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "extra-strong-mint-toothpaste": {
+  "hash": "f0a2ae97031c",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "flowflex-sars-cov-2-atk-nasal-saliva": {
+  "hash": "3a8b6385e23e",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "fresh-spray-exclusive-set-x-lisa": {
+  "hash": "567c279edcdf",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-ankle-l-new": {
+  "hash": "7e4ae08e37e5",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-ankle-m-new": {
+  "hash": "4552aa5b6898",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-ankle-s-new": {
+  "hash": "7db2a8ce177d",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-back-supportl-xlnew": {
+  "hash": "b676351d144c",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-back-supports-mnew": {
+  "hash": "b022c4878085",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-bs-ankle-adj": {
+  "hash": "1e4094d54599",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-bs-knee-adj": {
+  "hash": "0475bed748a9",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-bs-wrist-adj": {
+  "hash": "47f12174d7ea",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-bs-wrist-adj-1": {
+  "hash": "9b1708c866b7",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-knee-adjust-new": {
+  "hash": "8ddf67e1b9a0",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-knee-l-new": {
+  "hash": "a88649a3e66a",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-knee-m-new": {
+  "hash": "c9edd72377d8",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-knee-s-new": {
+  "hash": "c6982ad1fad9",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-knee-xl": {
+  "hash": "dc44566ad65d",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-posture-corrector-adjustable": {
+  "hash": "8736921337a8",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-rever-splint-wrist-new": {
+  "hash": "5e4a25339a55",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-sport-adjust-knee-strap": {
+  "hash": "fd3560c16830",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-stabilis-knee-l-new": {
+  "hash": "b4f4db37885d",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-stabilis-knee-m-new": {
+  "hash": "02a55ad6bd31",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-stabilis-knee-s-new": {
+  "hash": "16c144c069ce",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-tennis-elbow-new": {
+  "hash": "67f459dd3600",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-therapeutic-arch-support": {
+  "hash": "dfc22701f47e",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-thumb-s-m": {
+  "hash": "07019c3c2ee6",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-wrist-adjust-new": {
+  "hash": "00eb038d43de",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ftr-wrist-around-new": {
+  "hash": "ef4977420046",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "glucerna-plus-800-g": {
+  "hash": "9dc5a2d313d9",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "glucerna-sr-triple-care-800": {
+  "hash": "cc080e41cf7d",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "glucerna-tripple-care-380-g": {
+  "hash": "f8c30088aea8",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "glucolin-400-g": {
+  "hash": "5f900b9b70a9",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "hemomin-gummy-jelly-dha-vit-c-and-fiber-strawberry": {
+  "hash": "f16ee1b2b057",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "hi-care-clean-care-organic-100-wet-wipes": {
+  "hash": "7647d427f7ac",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "hsn-plus-zinc-by-smooth-life": {
+  "hash": "b1944e739161",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "hygienic-breath-spray-pack-2": {
+  "hash": "617f286d467a",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "hygienic-breath-spray-pack-3": {
+  "hash": "c13ab03ccb34",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "i-kids-honey-cola-pops-1x10s": {
+  "hash": "c4bc39473115",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "i-kids-honey-elderberry-pops-1x10s": {
+  "hash": "18c905027073",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "imumate-elderberry-plus-lysine-50-ml": {
+  "hash": "06cf3968b0ec",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "inter-multi-effer-20s": {
+  "hash": "a0728c267ef5",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "interpharma-magnesium-plus-b-complex-20-tab": {
+  "hash": "4b5878aea45e",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "janeke-mac-fux-superbrush-maculata": {
+  "hash": "3e6d8c0bc4d7",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "janeke-mac-tse-superbrush-maculata": {
+  "hash": "65c9187fea64",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "janeke-premium-gold-superbrush": {
+  "hash": "12e82864cb44",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "janeke-premium-silver-superbrush": {
+  "hash": "c55ef0d21286",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "janeke-small-superbrush": {
+  "hash": "9f4fd823cc3a",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "janeke-superbrush": {
+  "hash": "62a70b872d74",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "k-care-electric-bed-gs-828": {
+  "hash": "47df6d87e209",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "k-care-electric-bed-ks-888": {
+  "hash": "c77f5c399dda",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "k-y-jelly-42-g": {
+  "hash": "03933f628096",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "k-y-jelly-82-g": {
+  "hash": "496f11137dcc",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "karisma-aqua-wipes-20s": {
+  "hash": "f6eff13e56bc",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "karisma-cotton-ball-40-g": {
+  "hash": "525f1695c158",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "karisma-cotton-compressed-pads-100-s": {
+  "hash": "8330a630abe7",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "karisma-cotton-pads-50-g": {
+  "hash": "1f8b866cac38",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "karisma-cotton-stick-6-inches-size-l": {
+  "hash": "f8f3e3d1120a",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "karisma-cotton-stick-6-inches-size-m": {
+  "hash": "25fa63927b59",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "karisma-cotton-stick-6-inches-size-s": {
+  "hash": "3a382fca21f7",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "karisma-king-size-cotton-pads-100-g": {
+  "hash": "a77e2559a534",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "klean-and-kare-normal-kare-200-ml": {
+  "hash": "63902d62518e",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "klean-kare-anti-acne-gel": {
+  "hash": "4a77ed10c916",
+  "type": "spot_treatment",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "oiliness",
+   "redness",
+   "spots"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": []
+ },
+ "klean-kare-nasal-adaptor": {
+  "hash": "3c453f008451",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "klean-kare-normal-kare-500ml": {
+  "hash": "c632ff3492ce",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "kool-fever-refreshing-mint-6-p": {
+  "hash": "265275e61d79",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "koolfever-baby-1x6s": {
+  "hash": "227c81e4784e",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "koolfever-cooling-eye-mask": {
+  "hash": "6acc61eb0f0d",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "koolfever-extra-cool1x6-s": {
+  "hash": "941029cc2882",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "koolfever-new-adults1x6s": {
+  "hash": "efee6c6b0226",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "koolfever-new-children1x6s": {
+  "hash": "0c33b202f63d",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "la-roche-posay-antheios-xl-ultra-light-fluid-spf50": {
+  "hash": "044db94c264d",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "redness",
+   "wrinkles"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-anthelios-dermo-pediatrics-baby-lotion-spf50": {
+  "hash": "a6f24f98c43f",
+  "type": "sunscreen",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-anthelios-face-mist-spray-75-ml": {
+  "hash": "50cfac236b28",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "redness",
+   "wrinkles"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-anthelios-uvmune400-oil-control-gel-cream": {
+  "hash": "cc31cc6de594",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots",
+   "oiliness"
+  ],
+  "secondary": [
+   "acne",
+   "wrinkles",
+   "pores"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "la-roche-posay-anthelios-xl-dry-touch-spf50-50": {
+  "hash": "98c6c7797a9b",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots",
+   "oiliness"
+  ],
+  "secondary": [
+   "acne",
+   "wrinkles",
+   "redness"
+  ],
+  "suits": [
+   "oily",
+   "combination",
+   "sensitive"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "la-roche-posay-cicaplast-baume-b5-40ml": {
+  "hash": "78ffb08ddfe8",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "redness",
+   "moisture"
+  ],
+  "secondary": [
+   "texture"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-cicaplast-mains-50ml": {
+  "hash": "b12130972dd9",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "la-roche-posay-eau-thermal-300ml": {
+  "hash": "a4acc61c1b87",
+  "type": "toner",
+  "face": true,
+  "primary": [
+   "redness"
+  ],
+  "secondary": [
+   "moisture"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-effaclar-a-i-15ml": {
+  "hash": "94d41c46d5ae",
+  "type": "spot_treatment",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "spots",
+   "oiliness"
+  ],
+  "suits": [
+   "oily"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-effaclar-duo-m-40-ml": {
+  "hash": "aae459fdbff1",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "oiliness",
+   "spots",
+   "pores"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-effaclar-duo-spf30-40ml": {
+  "hash": "9cf932ff0977",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "spots",
+   "oiliness",
+   "texture"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-effaclar-foaming-gel-400ml": {
+  "hash": "b1918dd31b5d",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "acne"
+  ],
+  "secondary": [
+   "pores",
+   "redness"
+  ],
+  "suits": [
+   "oily",
+   "sensitive"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "la-roche-posay-effaclar-foaming-gel-50ml": {
+  "hash": "60f1a30f0414",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "acne"
+  ],
+  "secondary": [
+   "pores",
+   "redness"
+  ],
+  "suits": [
+   "oily",
+   "sensitive"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "la-roche-posay-effaclar-k-40-ml": {
+  "hash": "c0beb2b15dde",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "acne"
+  ],
+  "secondary": [
+   "texture",
+   "pores",
+   "moisture"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "la-roche-posay-effaclar-mat-40ml": {
+  "hash": "ce493a53790d",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "pores"
+  ],
+  "secondary": [
+   "acne",
+   "moisture"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "la-roche-posay-effaclar-micellar-water-ultra-400ml": {
+  "hash": "1b570c06ba72",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "pores",
+   "redness"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-effaclar-micro-peeling-gel": {
+  "hash": "4bde9f3fb3a5",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "spots",
+   "texture",
+   "pores"
+  ],
+  "suits": [
+   "oily"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "la-roche-posay-effaclar-purifying-foaming-gel-200ml": {
+  "hash": "83c7ace21e98",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "acne"
+  ],
+  "secondary": [
+   "pores",
+   "redness"
+  ],
+  "suits": [
+   "oily",
+   "sensitive"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "la-roche-posay-effaclar-serum-3-30-ml": {
+  "hash": "70a6a594443a",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "texture",
+   "pores",
+   "spots"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "sensitive"
+  ]
+ },
+ "la-roche-posay-hyalu-b5-serum-5-30-ml": {
+  "hash": "a94a23d7cc00",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "moisture",
+   "wrinkles"
+  ],
+  "secondary": [
+   "firmness",
+   "redness",
+   "texture"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-lipikar-gel-lavant-400ml-cleanser": {
+  "hash": "c698d73b1571",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "la-roche-posay-mela-b3-serum-melasyl-30-ml": {
+  "hash": "5b240a9ebd36",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "texture",
+   "wrinkles"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "la-roche-posay-redermic-c-eye-anti-aging-15ml": {
+  "hash": "c14b42b8fb13",
+  "type": "eye_care",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "moisture",
+   "firmness"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-retinol-b3-serum-30-ml": {
+  "hash": "4f40880d30bc",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "firmness",
+   "spots",
+   "texture"
+  ],
+  "suits": [],
+  "avoid": [
+   "sensitive"
+  ]
+ },
+ "la-roche-posay-toleriane-dermo-cleanser-200-ml": {
+  "hash": "315f2959febe",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "redness",
+   "moisture"
+  ],
+  "secondary": [],
+  "suits": [
+   "sensitive",
+   "dry"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-toleriane-foaming-cleanser-125-ml": {
+  "hash": "434e20cfb5c8",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "redness"
+  ],
+  "secondary": [
+   "moisture"
+  ],
+  "suits": [
+   "sensitive",
+   "dry"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-toleriane-micellar-reactive-skin-400-ml": {
+  "hash": "1125f40f3497",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "redness"
+  ],
+  "secondary": [
+   "moisture"
+  ],
+  "suits": [
+   "sensitive",
+   "dry"
+  ],
+  "avoid": []
+ },
+ "la-roche-posay-toleriane-micellar-water-sensitive-skin-400ml": {
+  "hash": "d107988ff916",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "redness"
+  ],
+  "secondary": [
+   "moisture"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "lactis-premium-advanced-probiotic-postbiotic": {
+  "hash": "8e07ecc7c6d9",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "lactis-premium-advanced-probiotic-postbiotic-7": {
+  "hash": "21b47c2de4b0",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "lamoon-l-lysine-plus-amino-complex": {
+  "hash": "3c8fe3d435ac",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "lamoon-prolacto-plus-gos": {
+  "hash": "4229fc0eee15",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "lamoon-vita-immushi": {
+  "hash": "8c7981e573a8",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "laroche-posay-50-50ml": {
+  "hash": "aa7d0249c672",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "redness"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "limited-dentiste-la-dolce-vita-set-flavor-edition-toothpaste-50g-lavender-sea-sa": {
+  "hash": "52cbe6880d48",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "liquiplast-10-g": {
+  "hash": "cc96e9ad4cd3",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "magnesium-vitamin-b6-taurine-vitamin-c-potassium-20s": {
+  "hash": "9fd9330d9657",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mamarine-booster-bio-c-acerola-cherry-120-ml": {
+  "hash": "2244909a2cb8",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mamarine-fort-120-ml": {
+  "hash": "b44811b0dcfb",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mamarine-original-omega-3-l-glutamine-120-ml": {
+  "hash": "b554cfb0c37f",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "maro-17-black-plus-collagen-shot": {
+  "hash": "22c6b7c281fd",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "maro-17-black-plus-essence": {
+  "hash": "9ac9c10b018e",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "maro-17-black-plus-shampoo": {
+  "hash": "afba88c0a462",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "maro-3d-volume-up-shampoo": {
+  "hash": "dd41ff20e600",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "maro-3d-volume-up-shampoo-cool": {
+  "hash": "672d5808ea30",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "maro-black-hair-set": {
+  "hash": "5d7277e92c03",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "maro-body-face-cleansing-soap": {
+  "hash": "083619583ac1",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "maro-body-face-cleansing-soap-cool": {
+  "hash": "23e7be6b9275",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "oiliness"
+  ],
+  "secondary": [
+   "pores"
+  ],
+  "suits": [
+   "oily"
+  ],
+  "avoid": [
+   "dry",
+   "sensitive"
+  ]
+ },
+ "maro-complete-set-17-black-plus-350-ml-collagen": {
+  "hash": "5129716724ad",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "maro-deo-scalp-shampoo-cool": {
+  "hash": "e5065983c16f",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "max-kids-toothpaste-mixed-fruit-flavor": {
+  "hash": "2d23b0df54f8",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mcl-mt-200-thermometer": {
+  "hash": "93408387a660",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mcl-mt-650-thermometer": {
+  "hash": "03352efcf186",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "me-care-immune-plus": {
+  "hash": "d17547869656",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-nat-c-1000-mg-1000-15": {
+  "hash": "8a51c9ed05a7",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-pure-relax-sleep-duo-set": {
+  "hash": "da1a00fd4e94",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-calcium-d-1-20": {
+  "hash": "c5921df8e6f0",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-d-toxi-30": {
+  "hash": "27f53d09e262",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-eugica-herbal-mouth-spray": {
+  "hash": "faac0568faf2",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-evening-primrose-oil-1000-mg-30s": {
+  "hash": "9431a2268076",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-fish-oil-1000-mg-set-200s-30-s": {
+  "hash": "dc663c7b3977",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-flexigen-10-g-15-sac-15": {
+  "hash": "c14051122113",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-grape-seed-extract-20-mg-20s": {
+  "hash": "2ed664dd5356",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-ii-care-3x10s": {
+  "hash": "e6c0c1b29e2b",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-lecithin-1200-mg-30s": {
+  "hash": "81a6fc5ac4f5",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-lecithin-1200-mg-set-200-30s": {
+  "hash": "940551628f8c",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-maxx-omega3-20s": {
+  "hash": "34bc0c1c806e",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-nat-c-yummyz-25-s": {
+  "hash": "b68433a2bbca",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-nat-mag-350-mg-30s": {
+  "hash": "c8ad3cb9a5e2",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mega-we-care-pynocare-white-520-mg-set-3x20s": {
+  "hash": "67d54888ab66",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "micropore-1x10yds": {
+  "hash": "5e2856194ea8",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mid-year-sale-max-wide-floss-tape": {
+  "hash": "8bac024eee8b",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mid-year-sale-smooth-life-smooth-bio-c-1000-mg-chewable-candy": {
+  "hash": "c876c468386f",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mosquitoes-guard-spray-100-ml": {
+  "hash": "c9dbcf1e0979",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mouth-spray-extra-fresh-probiotic": {
+  "hash": "28962544c47f",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mouth-spray-extra-fresh-probiotic-copy": {
+  "hash": "cbb1c3f20f7a",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "mouth-spray-zinc-pyridinium": {
+  "hash": "753e3ff62716",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "neoplast-clear-1x10s": {
+  "hash": "a4f6c9470c48",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "neoplast-s-1x10s": {
+  "hash": "1e51d2f2113b",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "neoplast-strip-100pc": {
+  "hash": "5ad0aff77f99",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "neoplast-tan-1x10sac": {
+  "hash": "5d32074056f3",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "neotape-2x6x10": {
+  "hash": "bbc252785c08",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-small-superbrush-blue": {
+  "hash": "9e5bb1383dd4",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-small-superbrush-blue-pastel": {
+  "hash": "6e317c33863e",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-small-superbrush-deep-blue": {
+  "hash": "9347852407fb",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-small-superbrush-green": {
+  "hash": "d74ec16d1b59",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-small-superbrush-green-1": {
+  "hash": "397e3da66305",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-small-superbrush-lillac-fucsia": {
+  "hash": "4ab5779a3145",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-small-superbrush-pink": {
+  "hash": "85f1abb08dd1",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-small-superbrush-pink-pastel": {
+  "hash": "a66e630521ef",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-superbrush-blue": {
+  "hash": "77acac80dd43",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-superbrush-light-blue": {
+  "hash": "1d26311de396",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-superbrush-lillac": {
+  "hash": "94503d12c2b6",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-superbrush-lillac-fucsia": {
+  "hash": "462ed3e1fc1d",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-superbrush-orange": {
+  "hash": "40e8fbef212c",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-superbrush-pink": {
+  "hash": "fbb84555afa8",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-janeke-superbrush-purple": {
+  "hash": "5b042aca0b1d",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-lexs-by-smoothe-lactic-acid-bacteria": {
+  "hash": "177a3881bdc2",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "new-smooth-e-nad-cream-30-ml": {
+  "hash": "c2baaa10f046",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "moisture",
+   "texture",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "new-smooth-e-nad-cream-serum-30-ml-rejuvenad": {
+  "hash": "0057cd755969",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "radiance",
+   "texture",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "new-smooth-e-nad-serum-30-ml": {
+  "hash": "237ba09d0726",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "spots",
+   "pores",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "new-smooth-e-sun-zero-feel-protection-30-g": {
+  "hash": "5003443e20dc",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "wrinkles",
+   "firmness",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "new-smooth-e-sun-zero-feel-protection-30-g-smooth-e-white-babyface-spot-clear-80": {
+  "hash": "7c4dd3408afc",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "acne",
+   "wrinkles"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "new-smooth-e-therapy-essence-oil-60-ml": {
+  "hash": "b4e3650fa71e",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "spots",
+   "wrinkles"
+  ],
+  "secondary": [
+   "moisture",
+   "texture"
+  ],
+  "suits": [
+   "dry"
+  ],
+  "avoid": [
+   "oily"
+  ]
+ },
+ "newpharvit-100s-tablets": {
+  "hash": "e4f9a7c0531c",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "newphavit-plus-100-tab": {
+  "hash": "2586b8cb7563",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nexcare-coban-tan-1x5yds": {
+  "hash": "ae126781d1ba",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nexcare-coban-tan-2x5yds": {
+  "hash": "6731cd05dd44",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nexcare-coban-tan-3x5yds": {
+  "hash": "8cd0a0a708f3",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nizzy-spray-10-ml": {
+  "hash": "23546263d620",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nol-acerola-cherry-30-tab": {
+  "hash": "3c81e61a7ad1",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-acai-berry-30-60-capsule": {
+  "hash": "fbfda0c7e7d9",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-acai-berry-45-ml": {
+  "hash": "949f1343fe11",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-active-c-plus-45-ml": {
+  "hash": "ef2ffd7c6475",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-avocado-vegan-60-solfgel": {
+  "hash": "2223fac5d0c0",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-b-complex-gaba-plus-60": {
+  "hash": "0915fb8b71b0",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-collagen-100-000-mg-104-g": {
+  "hash": "0b737bde0c34",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-curcumin-ginger-45-ml": {
+  "hash": "49c422af0a45",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-fiber-green-45-ml": {
+  "hash": "bb9f82dee3ce",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-kale-spirulina-30-capsule": {
+  "hash": "83213522f250",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-magnesium-aa-chelate-calcium-plus-60": {
+  "hash": "8f0a53f2b87c",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-manuka-honey-45-ml": {
+  "hash": "14cad9c13bc7",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-mushroom-45-ml": {
+  "hash": "4afc34f91b45",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-plant-protein-plus": {
+  "hash": "37b00d3ef582",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-probiotic-10s": {
+  "hash": "052163ec32e6",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-whey-protein-plus-7": {
+  "hash": "1db6ba3ea38d",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nola-zinc-aa-chelate-biotin-plus-60": {
+  "hash": "c538c1d71b4b",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nutroplex-oligo": {
+  "hash": "8f7a9902e101",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nw-calcium-milk-dha-60s": {
+  "hash": "418f9cb3ab1c",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nw-kids-gummies-c-zinc-60s": {
+  "hash": "24c9cb86fedd",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nw-kids-gummies-multi-60s": {
+  "hash": "ff225c261511",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "nw-omega-3-vita-gummies-trio-60s": {
+  "hash": "f4f627e07f2e",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "only-20-set-vip-zone-early-bird-set-tutoryim-fan-meet": {
+  "hash": "76a7e5d8c3b2",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "spots",
+   "acne"
+  ],
+  "secondary": [
+   "wrinkles",
+   "radiance",
+   "oiliness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "opti-free-puremoist-300-ml": {
+  "hash": "c10376ec99ec",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "opti-free-puremoist-90-ml-90": {
+  "hash": "ee2010243b2f",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "opti-free-replenish-420-ml": {
+  "hash": "fa6ed5621c7d",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "opti-free-rewetting-drops-10": {
+  "hash": "39d2f95c9966",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "oral-care-fresh-breath-set": {
+  "hash": "06213831c586",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "oral-rinse": {
+  "hash": "ae1b3f9da376",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "oral-rinse-copy": {
+  "hash": "d7b26e731acb",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "oral-rinse-zinc-cpc-fresh-breath-copy": {
+  "hash": "8c94afb359dc",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "oraquick-hiv-self-test": {
+  "hash": "7325fcb5ca66",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "original-toothpaste-160-g-free-ergonomic-toothbrush-fgor002068": {
+  "hash": "9b0fe16f9cc6",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "original-toothpaste-pump": {
+  "hash": "6235fd74b518",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "oso-cal-calcium-l-threonate-750-30s-new": {
+  "hash": "d5f50107b529",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-dentiste-oral-rinse-700-ml": {
+  "hash": "629db6e105a6",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-dettol-disinfectant-spray-lavender-225-ml": {
+  "hash": "2ce4609dc4ab",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-dettol-disinfectant-spray-lavender-450-ml": {
+  "hash": "1e5538a83278",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-dettol-disinfectant-surface-spray-crisp-breeze-225-ml": {
+  "hash": "18a5b08ba999",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-dettol-sensitive-wet-wipes-10": {
+  "hash": "7758d387578c",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-dettol-sensitive-wet-wipes-50": {
+  "hash": "65697aadda67",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-dettol-wet-wipe-10": {
+  "hash": "e740586e8cd2",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-dettol-wet-wipe-50": {
+  "hash": "1211078b4ad6",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-durex-airy-1-10": {
+  "hash": "977b44bc3a13",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-durex-airy-2-pieces": {
+  "hash": "a8213f1974a5",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-durex-kingtex-49-3": {
+  "hash": "d78829f79784",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-durex-kingtex-condoms-kingtex-12": {
+  "hash": "b5451dffe760",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-klean-and-kare-normal-kare-200-ml": {
+  "hash": "807b982594ce",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-klean-kare-normal-kare-500-ml": {
+  "hash": "7533202dda30",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12-opti-free-puremoist-300-ml": {
+  "hash": "c3e015862161",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12dettol-antibacteria-surface-cleanser-500-ml": {
+  "hash": "0ce335381db7",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-12dettol-hygiene-multi-use-cotton-breeze-500-ml": {
+  "hash": "7c5f099fa113",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-blistex-classic-from-usa": {
+  "hash": "b09e831d1cf1",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-blistex-flip-top-cap-spf-50-lip": {
+  "hash": "287d709378fd",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-blistex-simple-and-sensitive-lip-balm": {
+  "hash": "41e8ba0d1428",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-ceo-b-complex-plus-lutein-zeaxanthin-by": {
+  "hash": "62b460ad3d6d",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-dentiste-original-toothpaste-100g-free-50g": {
+  "hash": "a3d31dcf6794",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-free-1-anticavity-max-fluoride-toothpaste-100": {
+  "hash": "960cd057e5c0",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-i-kids-honey-cola-pops-1x10s": {
+  "hash": "1d52b6362f30",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-i-kids-honey-elderberry-pops-1x10s": {
+  "hash": "dcb25672f622",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-karisma-cotton-pads-50-g": {
+  "hash": "9ef82c7c6aad",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-lactis-premium-advanced-probiotic-postbiotic": {
+  "hash": "63360e9054dd",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-maro-3d-volume-up-shampoo-460-ml": {
+  "hash": "cb22e644bcf2",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-probac7-30s": {
+  "hash": "ddd984a453a8",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-smooth-e-24k-gold-hydroboost-serum": {
+  "hash": "b3af83e78cb6",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "moisture",
+   "wrinkles"
+  ],
+  "secondary": [
+   "firmness",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-smooth-e-dark-spot-clear-vitamin-c": {
+  "hash": "295ad2dbbc1e",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "spots",
+   "radiance"
+  ],
+  "secondary": [
+   "wrinkles",
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-2-smooth-life-telolife": {
+  "hash": "063074ca00b3",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-24-dettol-sensitive-wet-wipes-10": {
+  "hash": "84b2983549de",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-3-blistex-classic-from-usa": {
+  "hash": "0481da57a315",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-3-blistex-flip-top-cap-spf-50-lip": {
+  "hash": "f9223217eafc",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-3-blistex-simple-and-sensitive-lip-balm": {
+  "hash": "ff96393fd484",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-3-pcs-dentiste-italy-toothbrush": {
+  "hash": "0c268fa4c34b",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-3-smooth-e-retinol-plus-deep-wrinkle-repair": {
+  "hash": "e0a2f5a5519f",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "texture",
+   "firmness",
+   "spots"
+  ],
+  "suits": [],
+  "avoid": [
+   "sensitive"
+  ]
+ },
+ "pack-3-smooth-life-astaxanthin-plus-co-q10-5": {
+  "hash": "192d40e5ee74",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-3-smooth-life-telolife": {
+  "hash": "a8af4e58c7aa",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-dentiste-oral-rinse-450-ml-copy": {
+  "hash": "19853392cb5e",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-dentiste-oral-rinse-450-ml-copy-1": {
+  "hash": "d8bc0b6a9be8",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-klean-and-kare-normal-kare-200-ml": {
+  "hash": "ad976627ce01",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-klean-kare-normal-kare-500-ml-copy": {
+  "hash": "4a7d2d24fe58",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-opti-free-puremoist-300-ml": {
+  "hash": "2a535a2a6d7d",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-opti-free-replenish-420-ml": {
+  "hash": "459205f69fd2",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-sensiplus-contact-lens-care-solution-500ml": {
+  "hash": "bb7a3d1f3c61",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-smooth-e-babyface-hydration-foam-140-ml": {
+  "hash": "9eb5898e2753",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "texture",
+   "wrinkles",
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "pack-6-smooth-e-babyface-hydration-foam-180-ml-copy": {
+  "hash": "86067cfcf5c0",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "texture",
+   "wrinkles",
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "pack-6-smooth-e-babyface-hydration-foam-40-ml-copy": {
+  "hash": "2e693156d532",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "texture",
+   "wrinkles",
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "pack-6-smooth-e-cream-40-g-copy": {
+  "hash": "24a41a5b7abd",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture",
+   "wrinkles"
+  ],
+  "secondary": [
+   "spots",
+   "texture",
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "pack-6-smooth-e-deep-sleep-pillow-spray": {
+  "hash": "efcea4050059",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-smooth-e-serum-in-pad-hydrate-illuminate-glow-101-ml": {
+  "hash": "9551079a255e",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "moisture",
+   "radiance"
+  ],
+  "secondary": [
+   "texture",
+   "spots"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-smooth-e-white-babyface-spot-clear-180-ml": {
+  "hash": "7a9ae3ef960b",
+  "type": "exfoliant",
+  "face": true,
+  "primary": [
+   "radiance",
+   "spots"
+  ],
+  "secondary": [
+   "texture",
+   "pores"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-smooth-e-white-babyface-spot-clear-180-ml-copy": {
+  "hash": "2b3b48f033fc",
+  "type": "exfoliant",
+  "face": true,
+  "primary": [
+   "radiance",
+   "spots"
+  ],
+  "secondary": [
+   "texture",
+   "pores"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-smooth-e-white-babyface-spot-clear-40-ml": {
+  "hash": "35761240bb08",
+  "type": "exfoliant",
+  "face": true,
+  "primary": [
+   "radiance",
+   "spots"
+  ],
+  "secondary": [
+   "texture",
+   "pores"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-smooth-e-white-skin-therapie-body-lotion-200-ml-copy": {
+  "hash": "cf6c986d08cb",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-sukkiri-by-dentiste-love-mint-50tab": {
+  "hash": "9a12d466a471",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-6-sukkiri-by-dentiste-love-mint-50tab-copy": {
+  "hash": "a294f4555687",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack-set-dentiste-mix-toothpaste-tube-100-g-4": {
+  "hash": "68efe7b728a7",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pack2-smooth-life-smooth-sleep": {
+  "hash": "e3d470053ebe",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmer-s-coconut-hydrate-hand-cream": {
+  "hash": "d270a5036579",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-1-3-no-1-best-selling-usa": {
+  "hash": "1a77aa6fbdab",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-3-5-no-1-best-selling-usa": {
+  "hash": "4e707ffe2e96",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-4-6": {
+  "hash": "9be70e078477",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-7-9": {
+  "hash": "40268d9ab84e",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-c-section-care-set": {
+  "hash": "eefb0d02e562",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-coconut-hydrate-daily-body-lotion": {
+  "hash": "52ad57be5731",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-daily-essential-body-oil": {
+  "hash": "663240eb460f",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-fade-milk-body-lotion-skin-therapy-oil-60ml-white-skin-therapie": {
+  "hash": "004a719cd1e9",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-firming-body-lotion": {
+  "hash": "c9b19529823f",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-massage-lotion-for-stretch-marks": {
+  "hash": "f5e48fe00683",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-massage-lotion-for-stretch-marks-free-bust-firming": {
+  "hash": "20d68d024dd6",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-massage-oil-for-stretch-marks": {
+  "hash": "803cc115ca0c",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-raw-shea-nourish-daily-body-lotion": {
+  "hash": "fbe5d522fc0c",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-raw-shea-nourish-hand-cream": {
+  "hash": "429ed154c409",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-scar-serum": {
+  "hash": "ef96aed8242c",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-skin-anti-dark-spot-success-fade-milk-lotion": {
+  "hash": "df781574dfc3",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-skin-success-anti-dark-spot": {
+  "hash": "583916c4c2ff",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "texture",
+   "wrinkles"
+  ],
+  "suits": [],
+  "avoid": [
+   "sensitive"
+  ]
+ },
+ "palmers-skin-success-anti-dark-spot-fade-cream": {
+  "hash": "8adc1c627894",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "texture",
+   "wrinkles"
+  ],
+  "suits": [],
+  "avoid": [
+   "sensitive"
+  ]
+ },
+ "palmers-skin-therapy-oil": {
+  "hash": "701654f81994",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "palmers-tummy-butter": {
+  "hash": "ea063d06f115",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ph5-lip-active-4-8-g": {
+  "hash": "d5ed02cc25f2",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "phecare-pregnancy-test-midstream-test": {
+  "hash": "2e9b25b48d1a",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "phecare-strip": {
+  "hash": "5eac1dd402c4",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "physiogel-daily-moisture-therapy-dermo-cleanser": {
+  "hash": "5157aa92299e",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive",
+   "normal"
+  ],
+  "avoid": []
+ },
+ "physiogel-daily-moisture-therapy-dermo-cleanser-1": {
+  "hash": "e12d93782afa",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive",
+   "normal"
+  ],
+  "avoid": []
+ },
+ "physiogel-soothing-care-a-i-cream": {
+  "hash": "830695fc1fd0",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "redness",
+   "moisture"
+  ],
+  "secondary": [
+   "texture"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "physiogel-soothing-care-a-i-lotion": {
+  "hash": "e45ee5b5599e",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "positif-alpha-lipo-acid-coq10": {
+  "hash": "04569540adce",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "positif-collagen-tablet": {
+  "hash": "c361dcdab3f3",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "positif-lycopene-15-soft-capsules": {
+  "hash": "70d827df97c3",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "pre-order-fierceskin-box-set-a-1-500-thb": {
+  "hash": "9e46eb798ad5",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "acne",
+   "pores"
+  ],
+  "secondary": [
+   "texture",
+   "spots",
+   "oiliness"
+  ],
+  "suits": [],
+  "avoid": [
+   "sensitive"
+  ]
+ },
+ "pre-order-smoothe-babyface-acne-5-detoxify-non-ionic-foam": {
+  "hash": "f041a576bdd9",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne",
+   "pores"
+  ],
+  "secondary": [
+   "oiliness",
+   "texture",
+   "radiance"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "pre-order-smoothe-micellar-serum-acne-cleansing-water": {
+  "hash": "032dd0025412",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "oiliness",
+   "redness",
+   "texture"
+  ],
+  "suits": [
+   "oily"
+  ],
+  "avoid": []
+ },
+ "prebo-cap-60s": {
+  "hash": "a836bb663ca8",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "premium-antioxidant-dental-repair-duo-set": {
+  "hash": "d66d27fc313f",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "probac7": {
+  "hash": "ba6c83b4a6db",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "procare-bright-set": {
+  "hash": "a387694a30f9",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "propolis-mouth-spray-copy-1": {
+  "hash": "6da20ac59a26",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "purple-advance-premium-set": {
+  "hash": "76f7c01b460a",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "purple-special-set": {
+  "hash": "af645c9611b7",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "purple-toothpaste": {
+  "hash": "263dff994d91",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "purple-vvip-set": {
+  "hash": "9dc0ec99231c",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "random-photocard-tutoryim-set-smooth-e": {
+  "hash": "4866921be338",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "acne",
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture",
+   "texture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "remin-fluoride-toothpaste": {
+  "hash": "098012418dce",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "revit-collagen-2x-type-i-type-ii-by-smooth-life": {
+  "hash": "a3d0ab629d2e",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sanita-natural-cool-24-5cm": {
+  "hash": "57c82c33de42",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sanita-natural-cool-29cm": {
+  "hash": "273b9198c418",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sanita-soft-fit-relax-night-29cm": {
+  "hash": "d3cc1575dac2",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sanita-soft-slim-wing-24-5cm": {
+  "hash": "a48739796fc7",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sebamed-cleansing-bar": {
+  "hash": "24b98a36495d",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sebamed-cleansing-shower-oil": {
+  "hash": "bf36a2e4fd9a",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sebamed-gentle-facial-cleanser-for-normal-to-dry-skin": {
+  "hash": "57f6917952cf",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "texture"
+  ],
+  "suits": [
+   "dry",
+   "normal",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "sebamed-gentle-facial-cleanser-for-oily-and-combination-skin": {
+  "hash": "653d7b299c16",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "acne"
+  ],
+  "secondary": [
+   "pores",
+   "redness"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": [
+   "dry"
+  ]
+ },
+ "sebamed-liquid-face-and-body-wash": {
+  "hash": "fcb14c858ea3",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "texture",
+   "redness"
+  ],
+  "suits": [
+   "normal"
+  ],
+  "avoid": []
+ },
+ "sebamed-moisurizing-body-lotion": {
+  "hash": "977bb6a3dfad",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "normal"
+  ],
+  "avoid": []
+ },
+ "sebamed-nourishing-body-milk": {
+  "hash": "6563638d0544",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [
+   "dry"
+  ],
+  "avoid": []
+ },
+ "sensiplus-100-ml": {
+  "hash": "fb21907ec133",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "set-ling-love-at-first-sight": {
+  "hash": "45a5bf4d02fa",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "wrinkles"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "set-orm-you-are-mine": {
+  "hash": "ae8cad7ea792",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "sme-gluta-b3-cellular-bright-30-g": {
+  "hash": "f05f160ee730",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "spots",
+   "radiance"
+  ],
+  "secondary": [
+   "texture",
+   "pores"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "sme-pha-aha-acne-spot-and-pore-smooth-30-g": {
+  "hash": "a300dd3d204f",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "acne",
+   "pores"
+  ],
+  "secondary": [
+   "oiliness",
+   "texture",
+   "spots"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": []
+ },
+ "sme-retinal-plus-deep-wrinkle-repair-30-g": {
+  "hash": "cdd117debe67",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "firmness",
+   "texture",
+   "spots"
+  ],
+  "suits": [],
+  "avoid": [
+   "sensitive"
+  ]
+ },
+ "smooth-bio-c-1000-mg-chewable-candy": {
+  "hash": "8287138666be",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-24k-gold-advanced-recovery": {
+  "hash": "6481341198e3",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "firmness",
+   "radiance",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-24k-gold-hydroboost-serum": {
+  "hash": "bf89f4304d87",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "firmness",
+   "moisture",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-24k-gold-mild-brightening-cleansing-gel": {
+  "hash": "c4573c40ee94",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "moisture",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-acne-5-detox-moisture-extra-sensitive-cleansing-gel": {
+  "hash": "0f76cb55e95d",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "pores",
+   "oiliness",
+   "texture"
+  ],
+  "suits": [
+   "oily",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-acne-5-pore-clear-whitening-toner": {
+  "hash": "225644538f26",
+  "type": "toner",
+  "face": true,
+  "primary": [
+   "acne",
+   "pores"
+  ],
+  "secondary": [
+   "radiance",
+   "spots",
+   "oiliness"
+  ],
+  "suits": [
+   "oily",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-acne-5-rapid-action-plus": {
+  "hash": "58e752b9c20e",
+  "type": "spot_treatment",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "redness",
+   "pores",
+   "spots"
+  ],
+  "suits": [
+   "sensitive",
+   "oily"
+  ],
+  "avoid": []
+ },
+ "smooth-e-acne-5-whitening-set": {
+  "hash": "eef087f755b1",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "spots",
+   "pores",
+   "radiance"
+  ],
+  "suits": [
+   "oily"
+  ],
+  "avoid": []
+ },
+ "smooth-e-acne-pro-oil-control-liquid-cleanser-150ml": {
+  "hash": "20bd9d8f6e80",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "pores",
+   "texture"
+  ],
+  "suits": [
+   "oily",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-acne-recovery-set": {
+  "hash": "17fcc5d707d7",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "redness",
+   "spots",
+   "oiliness"
+  ],
+  "suits": [
+   "oily",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-acne-solution-cover-concealer": {
+  "hash": "db687ea602fa",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-anti-acne-rapid-mini": {
+  "hash": "619b650f3192",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "acne"
+  ],
+  "secondary": [
+   "spots",
+   "redness",
+   "oiliness"
+  ],
+  "suits": [
+   "oily",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-anti-hair-loss-for-gentlemen-set": {
+  "hash": "16c7a271e785",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-anti-hair-loss-hair-thickening-serum-spray": {
+  "hash": "1401b8c065aa",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-anti-hair-loss-hair-thickening-shampoo": {
+  "hash": "7d600a290f04",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-anti-hair-loss-mini-set": {
+  "hash": "9392c876d774",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-anti-hair-loss-thickening-power-set": {
+  "hash": "1f921db32623",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-anti-melasma-white-baby-face-foam": {
+  "hash": "efeb2ab64795",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-anti-melasma-white-babyface-serum": {
+  "hash": "83f7857b507b",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "wrinkles",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-anti-melasma-white-babyface-serum-plus-spf44": {
+  "hash": "3179afc54abb",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture",
+   "wrinkles"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-aqua-smooth-instant-intensive-whitening-hydrating-facial-care": {
+  "hash": "6c55eca1f7ef",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture",
+   "radiance"
+  ],
+  "secondary": [
+   "redness",
+   "texture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-baby-lip-balm-intensive-lip-moisturizer": {
+  "hash": "ddcdc098ab1c",
+  "type": "lip",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-babyface-foam": {
+  "hash": "2efd2bd0f0f6",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "acne",
+   "wrinkles",
+   "redness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-babyface-foam-1": {
+  "hash": "42876c33138d",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "acne",
+   "wrinkles",
+   "redness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-babyface-hydration-foam": {
+  "hash": "2b6ef6f7af1e",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "wrinkles",
+   "pores",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-babyface-hydration-foam-copy": {
+  "hash": "dca9346eed98",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "texture",
+   "wrinkles",
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-babyface-mild-first-facial-foam-oil-and-acne-control": {
+  "hash": "44f4673c43c5",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "pores"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": []
+ },
+ "smooth-e-babyface-scrub": {
+  "hash": "913a0cc52ec5",
+  "type": "exfoliant",
+  "face": true,
+  "primary": [
+   "texture"
+  ],
+  "secondary": [
+   "acne",
+   "oiliness",
+   "pores"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-babyface-scrub-copy": {
+  "hash": "a4cad2363be3",
+  "type": "exfoliant",
+  "face": true,
+  "primary": [
+   "texture",
+   "radiance"
+  ],
+  "secondary": [
+   "pores",
+   "spots"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-body-serum-sensitive-extra-dry": {
+  "hash": "fecbbc39b114",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-body-serum-sensitive-mark-firm": {
+  "hash": "2e79382d6b21",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-body-serum-sensitive-radiant-glow": {
+  "hash": "5f1f281fd9c5",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-botox-lift-collagen-boost-set": {
+  "hash": "aedacf06c7d6",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "moisture",
+   "radiance"
+  ],
+  "suits": [
+   "dry",
+   "normal"
+  ],
+  "avoid": []
+ },
+ "smooth-e-bright-glow-mini-set": {
+  "hash": "565e618f1714",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "radiance",
+   "wrinkles"
+  ],
+  "secondary": [
+   "spots",
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-bright-glow-mini-set-copy": {
+  "hash": "6db79ef5a748",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "radiance",
+   "wrinkles"
+  ],
+  "secondary": [
+   "spots",
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-complete-hair-rescue-for-men-set": {
+  "hash": "b3f8b7097691",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-cream-40-g-pack2": {
+  "hash": "4455f1a4b12b",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture",
+   "spots"
+  ],
+  "secondary": [
+   "wrinkles",
+   "redness",
+   "texture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-cream-cosme-japan-copy": {
+  "hash": "a3d5d1621511",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture",
+   "wrinkles"
+  ],
+  "secondary": [
+   "spots",
+   "texture",
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-cream-cosme-japan-copy-1": {
+  "hash": "e5c205b7fa69",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture",
+   "wrinkles"
+  ],
+  "secondary": [
+   "spots",
+   "texture",
+   "redness"
+  ],
+  "suits": [
+   "dry",
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-cream-cosme-japan-pack2": {
+  "hash": "0b39f0245b0c",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "moisture",
+   "spots"
+  ],
+  "secondary": [
+   "wrinkles",
+   "redness",
+   "texture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-cream-plus-white": {
+  "hash": "8f922f79db93",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "spots",
+   "radiance"
+  ],
+  "secondary": [
+   "wrinkles",
+   "redness",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-daily-bright-smile-set": {
+  "hash": "6d82cf0e28e3",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "spots",
+   "radiance"
+  ],
+  "secondary": [
+   "wrinkles",
+   "acne"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-deep-sleep-pillow-spray": {
+  "hash": "359be32e5e17",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-double-smooth-skin-set-smooth-e-white-therapie-x-palmers-fade-milk": {
+  "hash": "07bf05079e80",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-everyday-shampoo": {
+  "hash": "1c221edffd07",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-extra-mild-babyface-liquid-facial-cleanser": {
+  "hash": "320a98bc3ff6",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "wrinkles"
+  ],
+  "suits": [
+   "sensitive",
+   "dry"
+  ],
+  "avoid": []
+ },
+ "smooth-e-extra-sensitive-makeup-cleansing-water": {
+  "hash": "17aaabd45f5f",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "redness"
+  ],
+  "secondary": [
+   "acne",
+   "oiliness"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-face-lift-exteral-capsules": {
+  "hash": "7a8001289a57",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "firmness",
+   "wrinkles"
+  ],
+  "secondary": [
+   "spots",
+   "pores",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-for-men-foam": {
+  "hash": "1d163fafb9f8",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "radiance"
+  ],
+  "secondary": [
+   "acne",
+   "spots",
+   "moisture"
+  ],
+  "suits": [
+   "oily"
+  ],
+  "avoid": []
+ },
+ "smooth-e-for-men-foam-copy": {
+  "hash": "c7fec9e7f4b1",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "oiliness",
+   "radiance"
+  ],
+  "secondary": [
+   "acne",
+   "moisture",
+   "spots"
+  ],
+  "suits": [
+   "oily"
+  ],
+  "avoid": []
+ },
+ "smooth-e-gentle-power-hair-set-1": {
+  "hash": "d69ffb870114",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-gentlemen-advance-hair-thickening-anti-hair-loss-shampoo": {
+  "hash": "74a7b94e8305",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-gentlemen-advanced-hair-thickening-anti-hair-loss-serum-spray": {
+  "hash": "f82dba8aa4ee",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-gentlemen-advanced-hair-thickening-anti-hair-loss-serum-spray-pack2": {
+  "hash": "1856eb25e995",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-gentlemen-hydration-serum-double-action": {
+  "hash": "22ff23e6b42d",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "moisture"
+  ],
+  "secondary": [
+   "firmness",
+   "texture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-gold-24k-glow-booster-anti-aging-serum": {
+  "hash": "a299d4eeaf81",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "radiance"
+  ],
+  "secondary": [
+   "firmness",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-gold-24k-glow-booster-anti-aging-serum-copy-1": {
+  "hash": "395ca0bd90a0",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "radiance"
+  ],
+  "secondary": [
+   "firmness",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-gold-24k-glow-booster-anti-aging-serum-pack-2": {
+  "hash": "5b27e5097682",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "radiance",
+   "wrinkles"
+  ],
+  "secondary": [
+   "firmness",
+   "spots"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-gold-24k-glow-booster-anti-aging-serum-pack6": {
+  "hash": "1e7ff8c37cd7",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "radiance"
+  ],
+  "secondary": [
+   "firmness",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-gold-cream": {
+  "hash": "dfce3f22cf9d",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "moisture",
+   "texture"
+  ],
+  "suits": [
+   "dry",
+   "normal"
+  ],
+  "avoid": []
+ },
+ "smooth-e-gold-foam": {
+  "hash": "2bdbf10a7997",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "wrinkles"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-gold-miracle-capsule": {
+  "hash": "98cf8a9f132c",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "radiance",
+   "spots",
+   "texture"
+  ],
+  "suits": [],
+  "avoid": [
+   "sensitive"
+  ]
+ },
+ "smooth-e-gold-perfect-eye-solution": {
+  "hash": "29258fd03482",
+  "type": "eye_care",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "darkCircles"
+  ],
+  "secondary": [
+   "eyeBags",
+   "moisture",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-gold-white-ageless-babyface-cream": {
+  "hash": "7e078819defb",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "spots"
+  ],
+  "secondary": [
+   "firmness",
+   "moisture",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-homme-extra-white-youth-booster": {
+  "hash": "84a1161ade65",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "spots",
+   "wrinkles"
+  ],
+  "secondary": [
+   "firmness",
+   "radiance",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-instant-glow-lift-set": {
+  "hash": "e32c9e5a2886",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "spots",
+   "radiance",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-intensive-1-5-hya-life-filler-serum": {
+  "hash": "381e0be5a152",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "moisture",
+   "wrinkles"
+  ],
+  "secondary": [
+   "texture",
+   "firmness",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-lavender-body-oil-plus-melatonin-sleep": {
+  "hash": "1ec8bc02687a",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-light-silky-body-serum": {
+  "hash": "9445e58ecf2e",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-melatonin-sleep-lotion": {
+  "hash": "7b1e1036a0ee",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-men-s-clear-care-shampoo-set-1": {
+  "hash": "aeebbbc21b12",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-mild-moisturizing-antibacterial-shower-mousse": {
+  "hash": "e8a34d09ecda",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-mineral-facial-spray-smooth-e": {
+  "hash": "5baefcfb7721",
+  "type": "toner",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "redness",
+   "radiance"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-mini-sleep-set": {
+  "hash": "9eb06c4638a9",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-nad-cream-30-ml-rejuvenad-dark-spot": {
+  "hash": "f121ab334683",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "spots"
+  ],
+  "secondary": [
+   "firmness",
+   "radiance",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-nad-cream-30-ml-rejuvenad-retinol-plus": {
+  "hash": "294e5d7e79a7",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "firmness",
+   "texture",
+   "spots"
+  ],
+  "suits": [],
+  "avoid": [
+   "sensitive"
+  ]
+ },
+ "smooth-e-nad-cream-serum-30-ml-dark-spot": {
+  "hash": "212e511d4ded",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "spots"
+  ],
+  "secondary": [
+   "firmness",
+   "radiance",
+   "pores"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-nad-serum-30-ml-rejuvenad-gold-24k": {
+  "hash": "5e06085cad6e",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-nad-serum-30-ml-rejuvenad-smooth-e": {
+  "hash": "a212369d32ce",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture",
+   "texture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-next-age-plasir-lotion": {
+  "hash": "1e63aa6f7c63",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-physical-white-babyface-uv-pollution-shield": {
+  "hash": "dce996be2434",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "oiliness",
+   "wrinkles"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-physical-white-extra-fluid-spf50-pa": {
+  "hash": "0f2ec281f7ec",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "oiliness",
+   "moisture",
+   "wrinkles"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": []
+ },
+ "smooth-e-phyto-first": {
+  "hash": "e0bac7f44a28",
+  "type": "moisturizer",
+  "face": true,
+  "primary": [
+   "redness",
+   "moisture"
+  ],
+  "secondary": [
+   "texture"
+  ],
+  "suits": [
+   "sensitive",
+   "dry"
+  ],
+  "avoid": []
+ },
+ "smooth-e-radiant-glow-therapie-effective-dose-double-serum": {
+  "hash": "719f72801492",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "radiance",
+   "spots"
+  ],
+  "secondary": [
+   "moisture",
+   "wrinkles",
+   "texture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-scar-silicone-gel": {
+  "hash": "6189033a99f1",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-serum-in-pad": {
+  "hash": "cb3bfda37939",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "moisture",
+   "radiance"
+  ],
+  "secondary": [
+   "texture",
+   "spots"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-silicone-scar-smooth-sheet": {
+  "hash": "5cc4dee5836d",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-silky-hair-serum-30ml": {
+  "hash": "ca7829b874fb",
+  "type": "hair",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-skin-liquid-plaster": {
+  "hash": "8b3e3d408f5f",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-skin-liquid-plaster-copy": {
+  "hash": "b292015c3ed6",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-skin-therapie-body-lotion": {
+  "hash": "f9531a251e86",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-sun-asta-acne-oil-control": {
+  "hash": "e7b0c609e582",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "acne",
+   "oiliness"
+  ],
+  "secondary": [
+   "spots",
+   "redness"
+  ],
+  "suits": [
+   "oily",
+   "combination"
+  ],
+  "avoid": []
+ },
+ "smooth-e-sun-asta-plus-vit-c-set": {
+  "hash": "fce9ebe5e5bf",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "acne",
+   "wrinkles"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-sun-asta-white-spot-clear": {
+  "hash": "070d3ba2b12b",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "wrinkles"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-sun-asta-wrinkle-anti-spot": {
+  "hash": "f2fd0f5522fd",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots",
+   "wrinkles"
+  ],
+  "secondary": [
+   "firmness",
+   "radiance"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-sun-body-zero-feel-protection-150g": {
+  "hash": "410733952bd9",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-sun-zero-feel-protection-30-g-smooth-e-white-babyface-spot-clear-80-ml": {
+  "hash": "3b65dd407bc4",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "spots",
+   "wrinkles"
+  ],
+  "secondary": [
+   "radiance",
+   "acne",
+   "texture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-the-best-of-brightening-youth-skin-booster": {
+  "hash": "45269f79f9a2",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "radiance",
+   "wrinkles"
+  ],
+  "secondary": [
+   "spots",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-ultimate-glow-lift-set": {
+  "hash": "592d446785a7",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "wrinkles",
+   "firmness"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-ultra-light-purifying-cleansing-oil": {
+  "hash": "f2a33bf177fb",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "pores",
+   "acne"
+  ],
+  "secondary": [
+   "texture",
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-valentine-backpack-limited-edition-boxset": {
+  "hash": "fba31702fd00",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-white-babyface-cc-cream-spf-50-pa": {
+  "hash": "3ee2c4b30dd7",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture",
+   "redness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-white-babyface-foam-1": {
+  "hash": "5a195f0430fe",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "radiance",
+   "spots"
+  ],
+  "secondary": [
+   "moisture"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-white-babyface-gel": {
+  "hash": "489df3388170",
+  "type": "cleanser",
+  "face": true,
+  "primary": [
+   "radiance",
+   "spots"
+  ],
+  "secondary": [
+   "oiliness",
+   "redness"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-e-white-babyface-spot-clear": {
+  "hash": "4bf86348af26",
+  "type": "exfoliant",
+  "face": true,
+  "primary": [
+   "radiance",
+   "texture"
+  ],
+  "secondary": [
+   "spots",
+   "acne",
+   "pores"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-white-babyface-spot-clear-copy": {
+  "hash": "e9fdbdea7f3e",
+  "type": "exfoliant",
+  "face": true,
+  "primary": [
+   "radiance",
+   "spots"
+  ],
+  "secondary": [
+   "texture",
+   "pores"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-white-firm-body-wash": {
+  "hash": "4218749453cb",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-white-skin-therapie-body-lotion": {
+  "hash": "9cbe73550bbb",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-white-skin-therapie-body-lotion-copy": {
+  "hash": "1998b6df2c1f",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-e-white-smooth-baby-hand-and-nail-balm": {
+  "hash": "5881744ed862",
+  "type": "body",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-leep-by-smooth-life": {
+  "hash": "7a8c264c3d6f",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-ageshield-radiance-set": {
+  "hash": "6e136cc3ab17",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-anti-aging-brightening-set": {
+  "hash": "f0a3c74dcc0e",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-astaxanthin-6-mg-free-smooth-life-sun-day-360": {
+  "hash": "43106b0b39b2",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-astaxanthin-plus-co-q10-5-pack-2": {
+  "hash": "e152a446df15",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-b-complex-plus-lutein-zeaxanthin-copy": {
+  "hash": "72a9943ff19b",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-beauty-renew-set": {
+  "hash": "608517c8ac51",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-chewable-candy-vit-c": {
+  "hash": "f19623a8f069",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-double-protection-sun-set": {
+  "hash": "1f69ca732b05",
+  "type": "set",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "redness",
+   "wrinkles",
+   "radiance"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "smooth-life-gaba-30s-2-packs": {
+  "hash": "275c8b2e1f5d",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-glow-protect-set": {
+  "hash": "cce75e65b69a",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-heart-mind-harmony-set": {
+  "hash": "8b71fc16e143",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-inner-glow-set": {
+  "hash": "2013f72cdfc7",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-mind-beauty-boost-set": {
+  "hash": "b603e4e09133",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-mind-glow-wellness-set": {
+  "hash": "3f555ed8c304",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-omega-double-fish-oil-plus-ubiquinol-pack-2": {
+  "hash": "e3f91059aad3",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-radiant-skin-energy-set": {
+  "hash": "1b61b3a05485",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-stress-relief-and-sleep-suport-set": {
+  "hash": "13b8522dc979",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-sunglow-perfect-set": {
+  "hash": "3aa68199c81d",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-timeless-glow-essentials-set": {
+  "hash": "a4350cd46568",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-life-ultimate-sun-defense-youth-set": {
+  "hash": "44d99f23ecdd",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "smooth-sleep-before-bed-set": {
+  "hash": "096af66dd69c",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sofclens-hh-wound-wash-saline-normal-saline-solution": {
+  "hash": "75342b83953c",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sonic-anticavity-max-set": {
+  "hash": "b7a29c7ac7bb",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sonic-enamel-care-set": {
+  "hash": "b8dfb231e682",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sonic-natural-white-set": {
+  "hash": "8c4f3795e2f0",
+  "type": "set",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sooth-e-micellar-in-pad": {
+  "hash": "12989d8a1c30",
+  "type": "makeup_remover",
+  "face": true,
+  "primary": [
+   "oiliness"
+  ],
+  "secondary": [
+   "radiance",
+   "moisture",
+   "redness"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "sos-kitty-pe-plaster-8s": {
+  "hash": "3aa5648cd124",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-kitty-tp-plaster-6s": {
+  "hash": "f8b323c68e6c",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-nonwoven-tape-4": {
+  "hash": "b0de267e6851",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-blood-pressure-ft-c03-v": {
+  "hash": "048e450f3a75",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-clinical-digital-thermometer-bt-a11cn": {
+  "hash": "c82f4bde59d9",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-clinical-digital-thermometer-bt-a21cn": {
+  "hash": "afd97e41b3ce",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-co-adhesive-bandage-1": {
+  "hash": "665b11c9f265",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-co-adhesive-bandage-3": {
+  "hash": "3baaebd8cef1",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-e-series-eye-pad-2x10sac-box": {
+  "hash": "006bbbfa3474",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-far-infrared-patch-1x12sac": {
+  "hash": "068cef38acf7",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-gauze-dressing-g31x10s": {
+  "hash": "737f293ed62d",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-hydrocolloid-plaster-4s": {
+  "hash": "1ee7708763a0",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-minions-mp01-1x6s": {
+  "hash": "129858cb201d",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-minions-mss01-1x5s": {
+  "hash": "d9aa234dc9c5",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-minions-mst01-1x3s": {
+  "hash": "094c5f26f757",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-non-wovem-paper-tape": {
+  "hash": "9ae76206411e",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-self-adhesive-12x12-cm-1x3s": {
+  "hash": "a3eb29d711ee",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-self-adhesive-s2-5s": {
+  "hash": "c93b6a05840e",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-self-adhesive-s2-x-4-3s-box": {
+  "hash": "0dc948d169ed",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-self-adhesive-s3-4s": {
+  "hash": "7e06dac6f51f",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-waterproof-t-2-x-4-2s-box": {
+  "hash": "6982aaff2b26",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-waterproof-t1-10s": {
+  "hash": "0706c55a511d",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-waterproof-t2-3s": {
+  "hash": "9f63907b7686",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-waterproof-t3-2s": {
+  "hash": "6fe919b344c8",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-waterproof-transparent-t1-b-3x7cm-1x9s": {
+  "hash": "d8210e8e620c",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-waterproof-transparent-t3x3-1x2s": {
+  "hash": "b2f3b4d9a141",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sos-plus-waterproof-transparent-t4-10x25-cm": {
+  "hash": "99459c00153b",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "special-edition-dentiste-my-valentine": {
+  "hash": "967131403d3c",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "special-set-smooth-e-sun-zero-feel-protection-30-g-sun-body-zero-feel-protection": {
+  "hash": "db6c53a450dd",
+  "type": "sunscreen",
+  "face": true,
+  "primary": [
+   "spots"
+  ],
+  "secondary": [
+   "wrinkles",
+   "radiance",
+   "firmness"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "stiegelmeyer-electric-bed-dali-low-entry": {
+  "hash": "086b0941973f",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "subscription-lactis-acid-bacteria": {
+  "hash": "e3eeaf7be501",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "sukkiri-mastic-mint-breath-refreshener": {
+  "hash": "615804b66e45",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "super-sonic-anti-bacteria-set": {
+  "hash": "4e7b74ca5472",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "super-sonic-fresh-set": {
+  "hash": "d58b2de6632d",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "super-sonic-nighttime-set": {
+  "hash": "d80514588a7c",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "supreme-white-glow-set": {
+  "hash": "454e460220dd",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swiss-energy-b-complex": {
+  "hash": "b0ca65977593",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swiss-energy-collagen-hydrolyzed-20s": {
+  "hash": "3b7b58d26fdf",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swiss-energy-l-carnitine-20s": {
+  "hash": "4e565699c9b0",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swiss-energy-magnesium-b-complex-20s": {
+  "hash": "7d32b6f39dde",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swiss-energy-multivitamins-20s": {
+  "hash": "28c74f722048",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swiss-energy-sambucas-immuno-20s": {
+  "hash": "637263faf788",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swiss-energy-visiovit-30s": {
+  "hash": "5c71495a0547",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swiss-gold-multi-vit-and-mineral-lutein-20s": {
+  "hash": "021661a92e95",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swisse-1000-mg-60-tab": {
+  "hash": "c357d077b6dc",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swisse-astaxanthin-gluta-30s": {
+  "hash": "4aa7f65d9dc3",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swisse-calcium-d3-90-tab": {
+  "hash": "b863802b9b83",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swisse-hsn-60": {
+  "hash": "a57f04377312",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swisse-magnesium-150mg-60-tabs": {
+  "hash": "2338a0c7feaf",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swisse-multivitamin-with-folic-acid-30s": {
+  "hash": "de23f360e96f",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swisse-ub-cranberry-30s": {
+  "hash": "a53466c6731f",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "swisse-ultivite-with-b-30-30": {
+  "hash": "49a54b30920f",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "tecnimoem-bath-commode-chair-moem-bath": {
+  "hash": "276c720072eb",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "telolife-free-omega-double-fish-oil-plus-ubiquinol": {
+  "hash": "d55c67605481",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "tiger-balm": {
+  "hash": "4b1ae2652d0e",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "tiger-balm-87287": {
+  "hash": "0821c2323c3b",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "transpore-1-2-5yds": {
+  "hash": "cde7d0a1d923",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "transpore-1-5yds": {
+  "hash": "83f32cf2b473",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "tree-dimention-mask-size-m-5s-white-color": {
+  "hash": "cd52f5733368",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "tree-dimention-mask-size-s-5s-pink-color": {
+  "hash": "f468970b3a83",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ubiquinol-qh-coenzyme-q10-30-mg-krill-oil-by-smooth-life": {
+  "hash": "7eae88af3595",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "uecof-honey-lemon-candy-20s": {
+  "hash": "e56ed4a42685",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "ultra-sonic-sensitive-set": {
+  "hash": "1a97b22dff79",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vantelin-back-support-l": {
+  "hash": "78464e0e3254",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vantelin-back-support-xl": {
+  "hash": "73233adb2971",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vantelin-support-cool-fit-knee-l": {
+  "hash": "842512660019",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vantelin-support-cool-fit-knee-m": {
+  "hash": "ec5efedd9d88",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vantelin-support-knee-l": {
+  "hash": "ecf6abca7f00",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vantelin-support-knee-m": {
+  "hash": "db77ae33e708",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vantelin-support-knee-xl": {
+  "hash": "d2f7c7837862",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vantelin-support-thumb-armor-neon-blue-m-l": {
+  "hash": "1968d72abab0",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vantelin-support-thumb-armor-neon-blue-s-m": {
+  "hash": "cae6c6b358d4",
+  "type": "other",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vichy-mineral-89-50": {
+  "hash": "ab6c5f5b3116",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "radiance",
+   "wrinkles",
+   "texture"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "vichy-mineral-89-booster-serum-75ml": {
+  "hash": "edcf9c748cc2",
+  "type": "serum",
+  "face": true,
+  "primary": [
+   "moisture"
+  ],
+  "secondary": [
+   "radiance",
+   "wrinkles",
+   "redness"
+  ],
+  "suits": [
+   "sensitive"
+  ],
+  "avoid": []
+ },
+ "vichy-mineral-89-eyes-15-ml-89-15": {
+  "hash": "69dd3b78588e",
+  "type": "eye_care",
+  "face": true,
+  "primary": [
+   "darkCircles",
+   "wrinkles"
+  ],
+  "secondary": [
+   "moisture",
+   "eyeBags",
+   "radiance"
+  ],
+  "suits": [],
+  "avoid": []
+ },
+ "vit-c-100-mg": {
+  "hash": "aeda3a72f181",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vitamin-c-1000-mg-20s": {
+  "hash": "2ef11ad688c3",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vt-acerola-cherry-1000-mg": {
+  "hash": "243bc380d1f0",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vt-astaxanthin-4-mg-30s": {
+  "hash": "040711ce34fa",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vt-co-q10-60s": {
+  "hash": "433c0435c0eb",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vt-collagen-tri-10000-mg-orange10s": {
+  "hash": "0099a20c2162",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vt-collagen-tri-10000-mg-straw-10-s": {
+  "hash": "0686ff38aa43",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vt-collagen-tripep-1300-q10-30-s": {
+  "hash": "a1e59c081651",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vt-dt-daily-fiber-7000-mg-10s": {
+  "hash": "d3a23060fb0e",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vt-gluta-complex-800-30-s": {
+  "hash": "a599088a7b76",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vt-gotu-kola-extract-plus-zinc-30s": {
+  "hash": "ffb01ee453b0",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vt-grape-seed-60-mg-30s": {
+  "hash": "8f058e40720a",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vt-l-carnitine-3l-30s": {
+  "hash": "82e9b85195bd",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "vt-zinc-15-mg-45s": {
+  "hash": "3e970e729e45",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "whey-protein-isolate-chocolate-907-2-g": {
+  "hash": "15682a316c39",
+  "type": "supplement",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ },
+ "whitening-purple-toothpaste-pack-3": {
+  "hash": "9a1245b1c388",
+  "type": "oral",
+  "face": false,
+  "primary": [],
+  "secondary": [],
+  "suits": [],
+  "avoid": []
+ }
+}

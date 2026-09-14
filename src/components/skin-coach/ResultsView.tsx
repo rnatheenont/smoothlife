@@ -5,7 +5,6 @@ import Link from "next/link";
 import clsx from "clsx";
 import { Info, MessageCircle, RotateCcw } from "lucide-react";
 import MiniProductCard from "@/components/skin-coach/MiniProductCard";
-import type { Product } from "@/data/types";
 import { useQuickChat } from "@/lib/quickchat-context";
 import { useAuth } from "@/lib/auth-context";
 import ShareCard from "@/components/skin-coach/ShareCard";
@@ -28,98 +27,97 @@ import {
 import {
   ANGLES,
   ageComparison,
-  boughtCountForMetric,
   clarityLevel,
   confidenceFor,
   overallScore,
-  recommendForMetric,
   scoreBand,
   type AngleKey,
   CONCERNS,
   SKIN_TYPES,
-  type ExtraKey,
+  type ConcernKey,
   type MetricKey,
   type ScanAnswers,
   type SkinCoachMetrics,
 } from "@/lib/skin-coach";
+import { PRODUCT_TYPE_LABEL, boughtCountFor, recommendFor, type Pick as RecPick } from "@/lib/skin-recommend";
 import { Button } from "@/components/ui";
 
-// Where a weak score among the twelve sends its product picks: a scan metric
-// row, or a row of its own for what the four metrics don't cover.
-const CONCERN_TO_REC: Partial<Record<ConcernMetric, MetricKey | ExtraKey>> = {
+// What each "เรื่องที่กังวล" choice asks the product picker for.
+const NAMED_TO_CONCERN: Record<ConcernKey, ConcernMetric> = {
   acne: "acne",
+  acneMarks: "spots",
   pores: "pores",
-  oiliness: "pores",
-  texture: "pores",
-  spots: "darkSpots",
-  radiance: "darkSpots",
+  oiliness: "oiliness",
+  darkSpots: "spots",
+  dullness: "radiance",
   wrinkles: "wrinkles",
-  firmness: "wrinkles",
-  moisture: "dryness",
-  redness: "sensitive",
+  firmness: "firmness",
+  dryness: "moisture",
+  sensitive: "redness",
 };
-const EXTRA_LABEL: Record<ExtraKey, string> = { dryness: "ความชุ่มชื้น", sensitive: "ผิวแดง แพ้ง่าย" };
 
-const METRIC_ROWS: { key: MetricKey; label: string; topic: string }[] = [
-  { key: "acne", label: "สิว", topic: "สิว" },
-  { key: "pores", label: "รูขุมขน", topic: "รูขุมขน" },
-  { key: "darkSpots", label: "จุดด่างดำและสีผิว", topic: "จุดด่างดำและสีผิว" },
-  { key: "wrinkles", label: "ริ้วรอย", topic: "ริ้วรอย" },
+// Older results carry only four scores; each still maps to one concern.
+const METRIC_ROWS: { key: MetricKey; concern: ConcernMetric; label: string }[] = [
+  { key: "acne", concern: "acne", label: "สิว" },
+  { key: "pores", concern: "pores", label: "รูขุมขน" },
+  { key: "darkSpots", concern: "spots", label: "จุดด่างดำและสีผิว" },
+  { key: "wrinkles", concern: "wrinkles", label: "ริ้วรอย" },
 ];
 
+// At most this many care rows, so the page stays about the few things that matter most.
+const MAX_ROWS = 5;
+
+type CareRow = {
+  concern: ConcernMetric;
+  label: string;
+  /** Severity 0-100 (higher = worse); null when a photo can't measure it. */
+  severity: number | null;
+  note: string;
+  reason: string | null;
+  picks: RecPick[];
+  skipped: number;
+};
 
 // Four pips and a word, not a bar to a percent: the model's scores are rough
 // reads of a photo, and a level says only as much as they can. Products for
-// the metric sit right under it, so each recommendation is read next to the
+// the concern sit right under it, so each recommendation is read next to the
 // finding it answers.
-function MetricRow({
-  label,
-  score,
-  note,
-  reason,
-  products,
-  skipped,
-}: {
-  label: string;
-  score: number;
-  note: string;
-  reason: string | null;
-  products: Product[];
-  skipped: number;
-}) {
-  const level = clarityLevel(score);
-  const fill = level.tone === "good" ? "bg-brand-action" : level.tone === "fair" ? "bg-amber-400" : "bg-amber-600";
+function MetricRow({ row }: { row: CareRow }) {
+  const level = row.severity === null ? null : clarityLevel(row.severity);
+  const fill = !level ? "" : level.tone === "good" ? "bg-brand-action" : level.tone === "fair" ? "bg-amber-400" : "bg-amber-600";
   return (
     <li className="py-4">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-semibold text-brand-ink">{label}</span>
-        <span className="flex items-center gap-2.5">
-          <span className="flex gap-1" aria-hidden="true">
-            {[1, 2, 3, 4].map((n) => (
-              <span key={n} className={clsx("h-2 w-5 rounded-full", n <= level.pips ? fill : "bg-surface-line")} />
-            ))}
+        <span className="text-sm font-semibold text-brand-ink">{row.label}</span>
+        {level && (
+          <span className="flex items-center gap-2.5">
+            <span className="flex gap-1" aria-hidden="true">
+              {[1, 2, 3, 4].map((n) => (
+                <span key={n} className={clsx("h-2 w-5 rounded-full", n <= level.pips ? fill : "bg-surface-line")} />
+              ))}
+            </span>
+            <span
+              className={clsx(
+                "w-24 text-right text-sm font-semibold",
+                level.tone === "good" ? "text-brand-800" : level.tone === "fair" ? "text-amber-700" : "text-amber-800"
+              )}
+            >
+              {level.label}
+            </span>
           </span>
-          <span
-            className={clsx(
-              "w-20 text-right text-sm font-semibold",
-              level.tone === "good" ? "text-brand-800" : level.tone === "fair" ? "text-amber-700" : "text-amber-800"
-            )}
-          >
-            {level.label}
-          </span>
-        </span>
+        )}
       </div>
-      {note && <p className="mt-1 text-xs text-slate-600">{note}</p>}
+      {row.note && <p className="mt-1 text-xs text-slate-600">{row.note}</p>}
 
-      {products.length > 0 && (
+      {row.picks.length > 0 && (
         <div className="mt-3">
-          {reason && <p className="text-xs font-semibold text-brand-ink">{reason}</p>}
-          {skipped > 0 && (
-            <p className="mt-0.5 text-xs text-slate-600">ไม่แสดง {skipped} รายการที่คุณเคยซื้อแล้ว ถ้ายังใช้อยู่ ใช้ต่อได้เลย</p>
+          {row.reason && <p className="text-xs font-semibold text-brand-ink">{row.reason}</p>}
+          {row.skipped > 0 && (
+            <p className="mt-0.5 text-xs text-slate-600">ไม่แสดง {row.skipped} รายการที่คุณเคยซื้อแล้ว ถ้ายังใช้อยู่ ใช้ต่อได้เลย</p>
           )}
           <div className="scrollbar-none mt-2.5 flex snap-x gap-3 overflow-x-auto pb-2">
-            {products.map((p) => (
-              <MiniProductCard key={p.slug} product={p} />
+            {row.picks.map((r) => (
+              <MiniProductCard key={r.product.slug} product={r.product} typeLabel={PRODUCT_TYPE_LABEL[r.type]} />
             ))}
           </div>
         </div>
@@ -180,59 +178,74 @@ export default function ResultsView({
   const band = scoreBand(total);
   const confidence = confidenceFor(angles.length);
   const comparison = ageComparison(metrics.skinAge.years, answers.ageRange);
-  // Products go under the metrics that need care, and under whatever the
-  // person said they worry about. Concerns a photo can't measure (dryness,
-  // sensitivity) get a row of their own below. When everything reads well
-  // and nothing was named, the weakest metric still gets a few picks.
-  const chosen = (answers.concerns ?? [])
-    .map((k) => CONCERNS.find((c) => c.key === k))
-    .filter((c): c is (typeof CONCERNS)[number] => Boolean(c));
-  const namedByMetric = new Map<MetricKey, string[]>();
-  const extras: { key: ExtraKey; label: string }[] = [];
-  for (const c of chosen) {
-    if ("metric" in c) namedByMetric.set(c.metric, [...(namedByMetric.get(c.metric) ?? []), c.label]);
-    else if ("extra" in c) extras.push({ key: c.extra, label: c.label });
+  const skinTypes = answers.skinTypes ?? [];
+  // The concern each "เรื่องที่กังวล" choice points at, with the words the person picked.
+  const named = new Map<ConcernMetric, string[]>();
+  for (const k of answers.concerns ?? []) {
+    const c = CONCERNS.find((x) => x.key === k);
+    if (!c) continue;
+    const m = NAMED_TO_CONCERN[c.key];
+    named.set(m, [...(named.get(m) ?? []), c.label]);
   }
-  // Weak scores among the twelve add their rows too (a score under 70).
+
+  // Care rows, most important first: what the person named, then scores that
+  // need care, worst first. With every score fine and nothing named, the
+  // weakest one still gets a row. Same result, same rows, same order.
+  type RowSeed = Omit<CareRow, "picks" | "skipped" | "reason"> & { withPicks: boolean };
+  const seeds: RowSeed[] = [];
   if (concerns12) {
-    for (const k of CONCERN_KEYS) {
-      const rec = CONCERN_TO_REC[k];
-      if (!rec || concernScore(concerns12[k].severity) >= 70) continue;
-      if (rec === "dryness" || rec === "sensitive") {
-        if (!extras.some((e) => e.key === rec)) extras.push({ key: rec, label: EXTRA_LABEL[rec] });
-      } else if (!namedByMetric.has(rec)) {
-        namedByMetric.set(rec, []);
-      }
+    const bySeverity = [...CONCERN_KEYS].sort((x, y) => concerns12[y].severity - concerns12[x].severity);
+    const order: ConcernMetric[] = [
+      ...named.keys(),
+      ...bySeverity.filter((k) => concernScore(concerns12[k].severity) < 70 && !named.has(k)),
+    ];
+    if (order.length === 0) order.push(bySeverity[0]);
+    for (const k of order.slice(0, Math.max(MAX_ROWS, named.size))) {
+      seeds.push({ concern: k, label: CONCERN_DEFS[k].label, severity: concerns12[k].severity, note: concerns12[k].note, withPicks: true });
+    }
+  } else {
+    const care = METRIC_ROWS.filter((m) => clarityLevel(metrics[m.key].score).tone !== "good" || named.has(m.concern));
+    const weakest = [...METRIC_ROWS].sort((x, y) => metrics[y.key].score - metrics[x.key].score)[0];
+    for (const m of METRIC_ROWS) {
+      const withPicks = care.includes(m) || (care.length === 0 && named.size === 0 && m === weakest);
+      seeds.push({ concern: m.concern, label: m.label, severity: metrics[m.key].score, note: metrics[m.key].note, withPicks });
+    }
+    for (const [k, labels] of named) {
+      if (METRIC_ROWS.some((m) => m.concern === k)) continue;
+      seeds.push({
+        concern: k,
+        label: labels.join(" / "),
+        severity: null,
+        note: "รูปถ่ายวัดเรื่องนี้ไม่ได้ เราเลือกสินค้าจากที่คุณบอกว่ากังวล",
+        withPicks: true,
+      });
     }
   }
-  const needsCare = METRIC_ROWS.filter((m) => clarityLevel(metrics[m.key].score).tone !== "good").map((m) => m.key);
-  const weakest = [...METRIC_ROWS].sort((a, b) => metrics[b.key].score - metrics[a.key].score)[0].key;
-  const withProducts = new Set<MetricKey>([...needsCare, ...namedByMetric.keys()]);
-  if (withProducts.size === 0 && extras.length === 0) withProducts.add(weakest);
-  const skinTypes = answers.skinTypes ?? [];
 
-  // One product, one finding: rows are filled in page order and a pick
-  // already shown above is skipped below, so no tube appears twice.
-  const picks = new Map<MetricKey | ExtraKey, Product[]>();
+  // One product, one finding: rows fill in page order and a pick already
+  // shown above is skipped below, so no tube appears twice. Products from
+  // past orders are left out.
+  const rows: CareRow[] = [];
   {
     const shown = new Set<string>(bought);
-    const keys: (MetricKey | ExtraKey)[] = [
-      ...METRIC_ROWS.filter((m) => withProducts.has(m.key)).map((m) => m.key),
-      ...extras.map((e) => e.key),
-    ];
-    for (const key of keys) {
-      const list = recommendForMetric(key, 3, shown, skinTypes);
-      list.forEach((p) => shown.add(p.slug));
-      picks.set(key, list);
+    for (const { withPicks, ...s } of seeds) {
+      const picks = withPicks ? recommendFor(s.concern, { max: 3, exclude: shown, skinTypes }) : [];
+      picks.forEach((r) => shown.add(r.product.slug));
+      const level = s.severity === null ? null : clarityLevel(s.severity);
+      const names = named.get(s.concern);
+      const reason = !withPicks
+        ? null
+        : names?.length
+          ? `เพราะคุณบอกว่ากังวลเรื่อง${names.join(" และ ")}`
+          : level
+            ? level.tone === "good"
+              ? `ดูแลต่อให้${s.label}อยู่ในระดับ "${level.label}"`
+              : `แนะนำเพราะ${s.label}อยู่ในระดับ "${level.label}"`
+            : null;
+      rows.push({ ...s, reason, picks, skipped: withPicks ? boughtCountFor(s.concern, bought) : 0 });
     }
   }
 
-  function reasonFor(key: MetricKey, topic: string) {
-    const named = namedByMetric.get(key);
-    if (named && named.length) return `เพราะคุณบอกว่ากังวลเรื่อง${named.join(" และ ")}`;
-    const level = clarityLevel(metrics[key].score);
-    return level.tone === "good" ? `ดูแลต่อให้${topic}อยู่ในระดับ "${level.label}"` : `แนะนำเพราะ${topic}อยู่ในระดับ "${level.label}"`;
-  }
   const angleLabels = angles.map((a) => ANGLES.find((x) => x.key === a)?.label ?? a);
   // The scan to compare against: the latest one saved before this result.
   const previous = history.scans.find((s) => s.id !== saved);
@@ -276,11 +289,13 @@ export default function ResultsView({
   }
 
   function askAdvisor() {
-    const told = [...chosen.map((c) => c.label), ...skinTypes.map((t) => SKIN_TYPES.find((x) => x.key === t)?.label ?? t)];
-    const info = [...METRIC_ROWS.filter((m) => withProducts.has(m.key)).map((m) => m.topic), ...told].join(", ");
+    const topics = [
+      ...rows.filter((r) => r.picks.length > 0 || named.has(r.concern)).map((r) => r.label),
+      ...skinTypes.map((t) => SKIN_TYPES.find((x) => x.key === t)?.label ?? t),
+    ];
     openWithProfile({
       scan: `อายุผิวประมาณ ${metrics.skinAge.years} ปี, ภาพรวม${band.label}`,
-      concern: info || "สุขภาพผิวโดยรวม",
+      concern: Array.from(new Set(topics)).join(", ") || "สุขภาพผิวโดยรวม",
     });
   }
 
@@ -450,38 +465,11 @@ export default function ResultsView({
           </>
         )}
         <ul className="mt-2 divide-y divide-surface-line">
-          {METRIC_ROWS.map((m) => {
-            const show = withProducts.has(m.key);
-            const rowPicks = show ? picks.get(m.key) ?? [] : [];
-            return (
-              <MetricRow
-                key={m.key}
-                label={m.label}
-                score={metrics[m.key].score}
-                note={metrics[m.key].note}
-                reason={show ? reasonFor(m.key, m.topic) : null}
-                products={rowPicks}
-                skipped={show ? boughtCountForMetric(m.key, bought) : 0}
-              />
-            );
-          })}
-          {extras.map((e) => {
-            const list = picks.get(e.key) ?? [];
-            if (list.length === 0) return null;
-            return (
-              <li key={e.key} className="py-4">
-                <p className="text-sm font-semibold text-brand-ink">{e.label}</p>
-                <p className="mt-1 text-xs text-slate-600">
-                  รูปถ่ายวัดเรื่องนี้ไม่ได้ เราเลือกสินค้าจากที่คุณบอกว่ากังวล
-                </p>
-                <div className="scrollbar-none mt-2.5 flex snap-x gap-3 overflow-x-auto pb-2">
-                  {list.map((p) => (
-                    <MiniProductCard key={p.slug} product={p} />
-                  ))}
-                </div>
-              </li>
-            );
-          })}
+          {rows
+            .filter((r) => r.severity !== null || r.picks.length > 0)
+            .map((r) => (
+              <MetricRow key={r.concern} row={r} />
+            ))}
         </ul>
 
         <div className="mt-4 flex flex-wrap gap-2.5">
