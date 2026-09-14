@@ -123,5 +123,13 @@ export async function GET(req: NextRequest) {
       .filter((m): m is { userId: string; store: StoreKey; shopifyCustomerId: string; reason: string } => Boolean(m.reason))
   );
 
-  return NextResponse.json({ ok: true, accounts: withIdentities, shopify, proven });
+  // Which stores this search could actually look in, so "not found" isn't
+  // read as "not a customer anywhere" while a store's keys are missing.
+  const searched = (["smoothlife", "smoothe", "dentiste"] as StoreKey[]).map((store) => ({
+    store,
+    label: storeLabel(store),
+    connected: stores.includes(store),
+  }));
+
+  return NextResponse.json({ ok: true, accounts: withIdentities, shopify, proven, searched });
 }

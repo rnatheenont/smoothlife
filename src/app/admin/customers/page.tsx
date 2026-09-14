@@ -79,6 +79,8 @@ export default function AdminCustomersPage() {
   const [error, setError] = useState("");
   const [accounts, setAccounts] = useState<Account[] | null>(null);
   const [shopify, setShopify] = useState<Candidate[]>([]);
+  /** Stores the last search could look in — see the search API. */
+  const [searched, setSearched] = useState<{ store: string; label: string; connected: boolean }[]>([]);
   /** Pairs the server can prove belong together — see lib/account-match.ts. */
   const [proven, setProven] = useState<{ userId: string; store: string; shopifyCustomerId: string; reason: string }[]>([]);
   const [health, setHealth] = useState<Health | null>(null);
@@ -120,6 +122,7 @@ export default function AdminCustomersPage() {
       }
       setAccounts(json.accounts);
       setShopify(json.shopify);
+      setSearched(json.searched || []);
       setProven(json.proven || []);
       setSelected(json.accounts.length === 1 ? json.accounts[0].id : null);
     } catch {
@@ -433,7 +436,30 @@ export default function AdminCustomersPage() {
               ค้นจากทุกร้านที่เชื่อมไว้ (Smooth Life, Smooth E, Dentiste) — เลือกใบที่มีประวัติการซื้อ ดูจากจำนวนออเดอร์
               ที่อยู่ และเบอร์ว่าตรงกับลูกค้าจริงไหม บัญชีหนึ่งผูกได้ร้านละหนึ่งใบ
             </p>
-            {shopify.length === 0 && <p className="text-xs text-slate-400">ไม่พบใบลูกค้าใน Shopify</p>}
+            {searched.length > 0 && (
+              <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span className="text-slate-500">ค้นใน:</span>
+                {searched.map((s) => (
+                  <span
+                    key={s.store}
+                    className={clsx(
+                      "rounded-full px-2 py-0.5 font-semibold",
+                      s.connected ? "bg-emerald-50 text-emerald-800" : "bg-slate-100 text-slate-500 line-through"
+                    )}
+                    title={s.connected ? "ค้นในร้านนี้แล้ว" : "ยังไม่ได้เชื่อมร้านนี้ (ยังไม่มีคีย์ใน Vercel) จึงไม่ได้ค้น"}
+                  >
+                    {s.label}
+                    {s.connected ? "" : " (ยังไม่เชื่อม)"}
+                  </span>
+                ))}
+              </div>
+            )}
+            {shopify.length === 0 && (
+              <p className="text-xs text-slate-400">
+                ไม่พบใบลูกค้าในร้านที่เชื่อมไว้
+                {searched.some((s) => !s.connected) && " — ร้านที่ขีดฆ่ายังไม่ได้ค้น ลูกค้าอาจอยู่ในร้านนั้น"}
+              </p>
+            )}
             <div className="space-y-2">
               {shopify.map((c) => {
                 const linkedHere = linkedTo(c);
