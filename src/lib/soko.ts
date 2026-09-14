@@ -115,11 +115,15 @@ const CONCURRENCY = 1;
 // takes 20s. The search is what soko has become slow at, and a ceiling under
 // what the server actually takes turns a slow day into a blind one — the 12s
 // this used to be made every single page fail while the site was working.
-const LIST_TIMEOUT_MS = 30_000;
+const LIST_TIMEOUT_MS = 90_000;
+// Raised from 30s on 14/09: at the cron's busy hours the filtered list page
+// passed 30s on every run since 12/09 (measured 22s at a quiet moment), so the
+// ceiling was failing pages soko would have answered. The function now has
+// five minutes, which is what makes a longer wait affordable.
 
 // An order's own page is one record and stays quick. Keeping this well under
 // the list ceiling means a stuck order costs a few seconds, not the run.
-const VIEW_TIMEOUT_MS = 12_000;
+const VIEW_TIMEOUT_MS = 20_000;
 
 const REQUEST_TIMEOUT_MS = LIST_TIMEOUT_MS;
 
@@ -130,7 +134,7 @@ const REQUEST_TIMEOUT_MS = LIST_TIMEOUT_MS;
 // At today's speed this buys exactly one page, which is the newest ten orders
 // — the ones a sync running five times a day is actually for. If soko gets
 // quick again the loop takes more pages on its own, no change needed here.
-const LIST_BUDGET_MS = 26_000;
+const LIST_BUDGET_MS = 150_000;
 
 async function fetchSoko(url: string, init: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
   const abort = new AbortController();

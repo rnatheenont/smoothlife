@@ -22,11 +22,14 @@ export type SyncRunResult = {
   results?: unknown[];
 };
 
+// The function's own limit is 300s; stopping short of it means a run always
+// comes back with a result and a log row instead of being killed mid-write.
+const RUN_BUDGET_MS = 300_000;
+
 export async function runSokoSync(): Promise<SyncRunResult> {
-  // Everything below shares the one minute Vercel allows. The scraper gets 40
-  // seconds of it and hands back whatever it has; the Shopify writes that
-  // follow are quick, and a partial run that reports itself beats a 504 that
-  // reports nothing.
+  // Everything below shares the function's five minutes. The scraper gets most
+  // of it and hands back whatever it has; the Shopify writes follow, and a
+  // partial run that reports itself beats a timeout that reports nothing.
   const started = Date.now();
   if (!supabaseConfigured() || !shopifyAdminConfigured()) {
     return { ok: false, status: 503, error: "not configured" };
@@ -58,7 +61,10 @@ export async function runSokoSync(): Promise<SyncRunResult> {
     // 44s of the minute, up from 38: the store-filtered list page alone takes
     // 20s at soko's current speed, and a budget that cannot fit one page plus
     // a couple of order reads comes back empty every time.
-    rows = await fetchPackedOrders(12, skipRefs, Math.max(5_000, 44_000 - (Date.now() - started)));
+    // 200s of the five minutes (see api/cron/soko-sync): room for a slow list
+    // page or two and the order pages after them, leaving the rest for the
+    // Shopify writes.
+    rows = await fetchPackedOrders(20, skipRefs, Math.max(5_000, RUN_BUDGET_MS - 100_000 - (Date.now() - started)));
   } catch (err) {
     // A scraper's worst failure is the silent one: the login page changes, the
     // run returns nothing, and everyone assumes there was nothing to send.
@@ -97,7 +103,7 @@ export async function runSokoSync(): Promise<SyncRunResult> {
   const results = [];
   let unfinished = 0;
   for (const row of rows) {
-    if (Date.now() - started > 53_000) {
+    if (Date.now() - started > RUN_BUDGET_MS - 20_000) {
       unfinished = rows.length - results.length;
       break;
     }

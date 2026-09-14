@@ -11,7 +11,8 @@ import { runSokoSync } from "@/lib/soko-sync-run";
 // in to /admin; that is the credential to use.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// Same budget as the cron — see api/cron/soko-sync.
+export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {

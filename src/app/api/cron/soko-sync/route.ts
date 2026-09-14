@@ -15,7 +15,10 @@ import { runSokoSync } from "@/lib/soko-sync-run";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// Five minutes, not one: soko's order list now takes 20–40s a page at busy
+// hours, and a one-minute function had room for the page but not the order
+// reads after it, so runs from 12 Sep onwards failed almost every time.
+export const maxDuration = 300;
 
 function authorised(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
