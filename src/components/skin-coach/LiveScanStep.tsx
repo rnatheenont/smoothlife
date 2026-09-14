@@ -17,7 +17,10 @@ import { Button } from "@/components/ui";
 //
 // What's drawn over the face is its outline, brows, eyes and lips in a thin
 // line: enough to show the phone can see the face and where it's looking,
-// without the scanner-grid look the redesign plan steers away from.
+// without the scanner-grid look the redesign plan steers away from. The
+// points are smoothed across frames so the line holds still, the face outline
+// is drawn a little stronger than the features, and "ready" fades the line
+// from white to a soft-glowing mint rather than switching colour.
 
 type Shots = Partial<Record<AngleKey, ResizedImage>>;
 type Phase = "intro" | "loading" | "front" | "side" | "review" | "error";
@@ -44,7 +47,8 @@ export function liveScanSupported() {
 }
 
 // One landmarker per page load, shared by every visit to the step.
-let landmarkerPromise: Promise<{ landmarker: FaceLandmarker; contours: Connection[] }> | null = null;
+type Outline = { oval: Connection[]; features: Connection[] };
+let landmarkerPromise: Promise<{ landmarker: FaceLandmarker; outline: Outline }> | null = null;
 function loadLandmarker() {
   if (!landmarkerPromise) {
     landmarkerPromise = (async () => {
@@ -62,7 +66,19 @@ function loadLandmarker() {
         // Some phones refuse the GPU path; the CPU one is slower but works.
         landmarker = await FaceLandmarker.createFromOptions(fileset, options("CPU"));
       }
-      return { landmarker, contours: FaceLandmarker.FACE_LANDMARKS_CONTOURS as Connection[] };
+      return {
+        landmarker,
+        outline: {
+          oval: FaceLandmarker.FACE_LANDMARKS_FACE_OVAL as Connection[],
+          features: [
+            ...FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
+            ...FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
+            ...FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
+            ...FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
+            ...FaceLandmarker.FACE_LANDMARKS_LIPS,
+          ] as Connection[],
+        },
+      };
     })().catch((err) => {
       landmarkerPromise = null;
       throw err;
@@ -228,12 +244,12 @@ export default function LiveScanStep({
           streamRef.current = stream;
           return stream;
         });
-      const [stream, { landmarker, contours }] = await Promise.all([streamPromise, loadLandmarker()]);
+      const [stream, { landmarker, outline }] = await Promise.all([streamPromise, loadLandmarker()]);
       const video = videoRef.current!;
       video.srcObject = stream;
       await video.play();
       go("front");
-      run(landmarker, contours);
+      run(landmarker, outline);
     } catch (err) {
       stopCamera();
       const name = (err as { name?: string })?.name;
@@ -248,7 +264,7 @@ export default function LiveScanStep({
     }
   }
 
-  function run(landmarker: FaceLandmarker, contours: Connection[]) {
+  function run(landmarker: FaceLandmarker, { oval, features }: Outline) {
     const video = videoRef.current!;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
@@ -280,33 +296,98 @@ export default function LiveScanStep({
       }
     };
 
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    // Smoothed landmark positions (x, y per point), so the line doesn't shimmer.
+    let smooth: Float32Array | null = null;
+    // 0 = white, 1 = mint; eased toward the target each frame.
+    let tone = 0;
+    let lastDrawAt = 0;
+    let greenSince: number | null = null;
+
     const draw = (lm: NormalizedLandmark[] | undefined, green: boolean) => {
       if (canvas.width !== video.videoWidth) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
       }
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.lineWidth = Math.max(1.5, canvas.width / 360);
+      const W = canvas.width;
+      const H = canvas.height;
+      const now = performance.now();
+      const dt = lastDrawAt ? Math.min(100, now - lastDrawAt) : 16;
+      lastDrawAt = now;
+      // Canvas pixels per CSS pixel on screen (the video is cropped to cover
+      // the box), so line widths read the same on every phone.
+      const box = canvas.getBoundingClientRect();
+      const px = box.width ? 1 / Math.max(box.width / W, box.height / H) : W / 360;
+      ctx.clearRect(0, 0, W, H);
       ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
       if (!lm) {
+        smooth = null;
+        tone = 0;
+        greenSince = null;
         // Where to put the face, until there is one.
-        ctx.setLineDash([canvas.width / 60, canvas.width / 60]);
+        ctx.setLineDash([8 * px, 8 * px]);
+        ctx.lineWidth = 1.5 * px;
         ctx.strokeStyle = "rgba(255,255,255,0.75)";
         ctx.beginPath();
-        ctx.ellipse(canvas.width / 2, canvas.height / 2, canvas.width * 0.22, canvas.height * 0.34, 0, 0, Math.PI * 2);
+        ctx.ellipse(W / 2, H / 2, W * 0.22, H * 0.34, 0, 0, Math.PI * 2);
         ctx.stroke();
         ctx.setLineDash([]);
         return;
       }
-      ctx.strokeStyle = green ? "rgba(0,168,123,0.95)" : "rgba(255,255,255,0.8)";
-      ctx.beginPath();
-      for (const { start, end } of contours) {
-        const p = lm[start];
-        const q = lm[end];
-        ctx.moveTo(p.x * canvas.width, p.y * canvas.height);
-        ctx.lineTo(q.x * canvas.width, q.y * canvas.height);
+
+      if (!smooth || smooth.length !== lm.length * 2) {
+        smooth = new Float32Array(lm.length * 2);
+        lm.forEach((p, i) => {
+          smooth![i * 2] = p.x * W;
+          smooth![i * 2 + 1] = p.y * H;
+        });
+      } else {
+        const k = 0.55;
+        for (let i = 0; i < lm.length; i++) {
+          smooth[i * 2] += k * (lm[i].x * W - smooth[i * 2]);
+          smooth[i * 2 + 1] += k * (lm[i].y * H - smooth[i * 2 + 1]);
+        }
       }
-      ctx.stroke();
+      const pts = smooth;
+
+      tone += ((green ? 1 : 0) - tone) * Math.min(1, dt / 160);
+      if (green) greenSince ??= now;
+      else greenSince = null;
+      // A short swell of the line the moment it turns green.
+      const swell =
+        greenSince !== null && !reducedMotion ? Math.max(0, 1 - (now - greenSince) / 380) : 0;
+
+      // White (255,255,255) to mint (52,211,153).
+      const mix = (from: number, to: number) => Math.round(from + (to - from) * tone);
+      const rgb = `${mix(255, 52)},${mix(255, 211)},${mix(255, 153)}`;
+
+      const path = (connections: Connection[]) => {
+        ctx.beginPath();
+        for (const { start, end } of connections) {
+          ctx.moveTo(pts[start * 2], pts[start * 2 + 1]);
+          ctx.lineTo(pts[end * 2], pts[end * 2 + 1]);
+        }
+      };
+      const stroke = (connections: Connection[], width: number, alpha: number) => {
+        // A faint dark edge under the line keeps it readable on light skin.
+        path(connections);
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = (width + 1.5) * px;
+        ctx.strokeStyle = `rgba(0,0,0,${0.18 * alpha})`;
+        ctx.stroke();
+        ctx.save();
+        ctx.shadowColor = `rgba(52,211,153,${0.75 * tone})`;
+        ctx.shadowBlur = 8 * px * tone;
+        ctx.lineWidth = width * px;
+        ctx.strokeStyle = `rgba(${rgb},${alpha})`;
+        ctx.stroke();
+        ctx.restore();
+      };
+
+      stroke(features, 1.2, 0.7 + 0.2 * tone);
+      stroke(oval, 1.9 + 1.2 * swell, 0.9 + 0.1 * tone);
     };
 
     const grabFrame = async (): Promise<Blob | null> => {
