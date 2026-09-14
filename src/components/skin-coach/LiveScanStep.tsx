@@ -15,12 +15,10 @@ import { Button } from "@/components/ui";
 // retake any of them before sending. Nothing leaves the device until the
 // photos go for analysis, same as a picked photo would.
 //
-// What's drawn (owner's references): the camera inside a circle with a
-// glowing ring and the rest dimmed; over the face a fine mesh that follows its
-// shape, and on top a sparse geometric wireframe — sixteen key points
-// (forehead, temples, eye corners, nose, cheeks, mouth corners, jaw, chin)
-// joined into triangles, a dot on each. Points are smoothed across frames so
-// it all holds still, and "ready" fades it from white to a soft-glowing mint.
+// What's drawn (owner's reference): the camera inside a circle with a glowing
+// ring and the rest dimmed, and over the face a fine mesh that follows its
+// shape. Points are smoothed across frames so the mesh holds still, and
+// "ready" fades it from white to a soft-glowing mint.
 
 type Shots = Partial<Record<AngleKey, ResizedImage>>;
 type Phase = "intro" | "loading" | "front" | "side" | "review" | "error";
@@ -28,7 +26,7 @@ type Phase = "intro" | "loading" | "front" | "side" | "review" | "error";
 // Tuned for "easy" over "perfect": the analysis copes with a slightly turned
 // or off-centre face far better than a person copes with a shutter that
 // won't unlock.
-const STEADY_MS = 250; // placed this long before the wireframe goes green
+const STEADY_MS = 250; // placed this long before the mesh goes green
 const GRACE_MS = 300; // a wobble shorter than this doesn't turn it white again
 const FRONT_YAW = 0.12; // how far off straight still counts as straight
 const SIDE_YAW_MIN = 0.12; // turned enough to show a cheek
@@ -48,29 +46,6 @@ const SMOOTH = 0.35; // share of each new reading in the running average
 export function liveScanSupported() {
   return typeof navigator !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
 }
-
-// Wireframe points, by MediaPipe face-mesh index. "R" is the person's right,
-// which is the left of the camera image.
-const P = {
-  top: 10, foreR: 103, foreL: 332, templeR: 127, templeL: 356, eyeR: 33, eyeL: 263,
-  bridge: 168, nose: 1, cheekR: 234, cheekL: 454, mouthR: 61, mouthL: 291, jawR: 172, jawL: 397, chin: 152,
-} as const;
-const WIRE_POINTS = Object.values(P);
-const WIRE: [number, number][] = [
-  // Around the face.
-  [P.top, P.foreR], [P.foreR, P.templeR], [P.templeR, P.cheekR], [P.cheekR, P.jawR], [P.jawR, P.chin],
-  [P.top, P.foreL], [P.foreL, P.templeL], [P.templeL, P.cheekL], [P.cheekL, P.jawL], [P.jawL, P.chin],
-  // Forehead.
-  [P.foreR, P.foreL], [P.top, P.bridge], [P.foreR, P.bridge], [P.foreL, P.bridge],
-  // Across the eyes.
-  [P.templeR, P.eyeR], [P.eyeR, P.bridge], [P.bridge, P.eyeL], [P.eyeL, P.templeL], [P.foreR, P.eyeR], [P.foreL, P.eyeL],
-  // Nose and cheeks.
-  [P.bridge, P.nose], [P.eyeR, P.nose], [P.eyeL, P.nose], [P.eyeR, P.cheekR], [P.eyeL, P.cheekL],
-  [P.cheekR, P.nose], [P.cheekL, P.nose],
-  // Mouth, jaw and chin.
-  [P.nose, P.mouthR], [P.nose, P.mouthL], [P.cheekR, P.mouthR], [P.cheekL, P.mouthL],
-  [P.jawR, P.mouthR], [P.jawL, P.mouthL], [P.mouthR, P.chin], [P.mouthL, P.chin],
-];
 
 // One landmarker per page load, shared by every visit to the step.
 type Mesh = { start: number; end: number }[];
@@ -310,8 +285,6 @@ export default function LiveScanStep({
       }
     };
 
-    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-
     // The video is cropped to cover its 3:4 box, so a share of the video frame
     // isn't a share of what's on screen. This maps between the two.
     const boxMap = () => {
@@ -329,7 +302,6 @@ export default function LiveScanStep({
     // 0 = white, 1 = mint; eased toward the target each frame.
     let tone = 0;
     let lastDrawAt = 0;
-    let greenSince: number | null = null;
 
     const draw = (lm: NormalizedLandmark[] | undefined, green: boolean) => {
       if (canvas.width !== video.videoWidth) {
@@ -352,7 +324,6 @@ export default function LiveScanStep({
       if (!lm) {
         smooth = null;
         tone = 0;
-        greenSince = null;
         return; // the circle on screen shows where the face goes
       }
 
@@ -372,11 +343,6 @@ export default function LiveScanStep({
       const pts = smooth;
 
       tone += ((green ? 1 : 0) - tone) * Math.min(1, dt / 160);
-      if (green) greenSince ??= now;
-      else greenSince = null;
-      // A short swell of the line the moment it turns green.
-      const swell =
-        greenSince !== null && !reducedMotion ? Math.max(0, 1 - (now - greenSince) / 380) : 0;
 
       // White (255,255,255) to mint (52,211,153).
       const mix = (from: number, to: number) => Math.round(from + (to - from) * tone);
@@ -384,7 +350,6 @@ export default function LiveScanStep({
 
       const x = (i: number) => pts[i * 2];
       const y = (i: number) => pts[i * 2 + 1];
-      const width = (1.5 + 0.9 * swell) * px;
 
       // Fine mesh over the whole face, kept inside the circle.
       ctx.save();
@@ -402,37 +367,11 @@ export default function LiveScanStep({
         ctx.moveTo(x(start), y(start));
         ctx.lineTo(x(end), y(end));
       }
-      ctx.lineWidth = 0.6 * px;
-      ctx.strokeStyle = `rgba(${rgb},${0.32 + 0.12 * tone})`;
+      ctx.lineWidth = 0.7 * px;
+      ctx.strokeStyle = `rgba(${rgb},${0.45 + 0.15 * tone})`;
+      ctx.shadowColor = `rgba(52,211,153,${0.6 * tone})`;
+      ctx.shadowBlur = 6 * px * tone;
       ctx.stroke();
-      ctx.restore();
-
-      // A faint dark edge under the lines keeps them readable on light skin.
-      ctx.beginPath();
-      for (const [i, j] of WIRE) {
-        ctx.moveTo(x(i), y(i));
-        ctx.lineTo(x(j), y(j));
-      }
-      ctx.lineWidth = width + 1.5 * px;
-      ctx.strokeStyle = "rgba(0,0,0,0.14)";
-      ctx.stroke();
-
-      ctx.save();
-      ctx.shadowColor = `rgba(52,211,153,${0.7 * tone})`;
-      ctx.shadowBlur = 8 * px * tone;
-      ctx.lineWidth = width;
-      ctx.strokeStyle = `rgba(${rgb},0.92)`;
-      ctx.stroke();
-
-      // A dot on every point.
-      const r = (2.6 + 0.8 * swell) * px;
-      ctx.fillStyle = `rgb(${rgb})`;
-      ctx.beginPath();
-      for (const i of WIRE_POINTS) {
-        ctx.moveTo(x(i) + r, y(i));
-        ctx.arc(x(i), y(i), r, 0, Math.PI * 2);
-      }
-      ctx.fill();
       ctx.restore();
     };
 
