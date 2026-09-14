@@ -1,5 +1,6 @@
 import { Product } from "@/data/types";
 import { products } from "@/data/products";
+import type { ConcernResults } from "@/lib/skin-analysis";
 
 export type SkinCoachMetrics = {
   faceDetected: boolean;
@@ -8,6 +9,10 @@ export type SkinCoachMetrics = {
   pores: { score: number; note: string };
   darkSpots: { score: number; note: string };
   wrinkles: { score: number; note: string };
+  /** All twelve concerns with per-area severity (see skin-analysis.ts). */
+  concerns?: ConcernResults;
+  /** Everyday care tips for the top concerns. */
+  advice?: string;
   overallNote: string;
   disclaimer: string;
 };

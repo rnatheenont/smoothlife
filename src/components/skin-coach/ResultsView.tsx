@@ -11,6 +11,20 @@ import { useAuth } from "@/lib/auth-context";
 import ShareCard from "@/components/skin-coach/ShareCard";
 import RewardClaim from "@/components/skin-coach/RewardClaim";
 import ScanHistory, { formatScanDate, gapBetween, useScanHistory } from "@/components/skin-coach/ScanHistory";
+import FaceMap from "@/components/skin-coach/FaceMap";
+import ScoreChips from "@/components/skin-coach/ScoreChips";
+import RadarChart from "@/components/skin-coach/RadarChart";
+import SkinProgress from "@/components/skin-coach/SkinProgress";
+import {
+  CONCERN_DEFS,
+  CONCERN_KEYS,
+  ZONE_LABEL,
+  concernScore,
+  healthBand,
+  skinHealth,
+  type ConcernMetric,
+  type ZoneKey,
+} from "@/lib/skin-analysis";
 import {
   ANGLES,
   ageComparison,
@@ -29,6 +43,22 @@ import {
   type SkinCoachMetrics,
 } from "@/lib/skin-coach";
 import { Button } from "@/components/ui";
+
+// Where a weak score among the twelve sends its product picks: a scan metric
+// row, or a row of its own for what the four metrics don't cover.
+const CONCERN_TO_REC: Partial<Record<ConcernMetric, MetricKey | ExtraKey>> = {
+  acne: "acne",
+  pores: "pores",
+  oiliness: "pores",
+  texture: "pores",
+  spots: "darkSpots",
+  radiance: "darkSpots",
+  wrinkles: "wrinkles",
+  firmness: "wrinkles",
+  moisture: "dryness",
+  redness: "sensitive",
+};
+const EXTRA_LABEL: Record<ExtraKey, string> = { dryness: "ความชุ่มชื้น", sensitive: "ผิวแดง แพ้ง่าย" };
 
 const METRIC_ROWS: { key: MetricKey; label: string; topic: string }[] = [
   { key: "acne", label: "สิว", topic: "สิว" },
@@ -141,8 +171,12 @@ export default function ResultsView({
   }, [history.signedIn]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [focus, setFocus] = useState<ConcernMetric | "all">("all");
+  const [keepPhoto, setKeepPhoto] = useState(false);
 
-  const total = overallScore(metrics);
+  const concerns12 = metrics.concerns ?? null;
+  const health = concerns12 ? skinHealth(concerns12) : null;
+  const total = health ?? overallScore(metrics);
   const band = scoreBand(total);
   const confidence = confidenceFor(angles.length);
   const comparison = ageComparison(metrics.skinAge.years, answers.ageRange);
@@ -158,6 +192,18 @@ export default function ResultsView({
   for (const c of chosen) {
     if ("metric" in c) namedByMetric.set(c.metric, [...(namedByMetric.get(c.metric) ?? []), c.label]);
     else if ("extra" in c) extras.push({ key: c.extra, label: c.label });
+  }
+  // Weak scores among the twelve add their rows too (a score under 70).
+  if (concerns12) {
+    for (const k of CONCERN_KEYS) {
+      const rec = CONCERN_TO_REC[k];
+      if (!rec || concernScore(concerns12[k].severity) >= 70) continue;
+      if (rec === "dryness" || rec === "sensitive") {
+        if (!extras.some((e) => e.key === rec)) extras.push({ key: rec, label: EXTRA_LABEL[rec] });
+      } else if (!namedByMetric.has(rec)) {
+        namedByMetric.set(rec, []);
+      }
+    }
   }
   const needsCare = METRIC_ROWS.filter((m) => clarityLevel(metrics[m.key].score).tone !== "good").map((m) => m.key);
   const weakest = [...METRIC_ROWS].sort((a, b) => metrics[b.key].score - metrics[a.key].score)[0].key;
@@ -183,7 +229,7 @@ export default function ResultsView({
 
   function reasonFor(key: MetricKey, topic: string) {
     const named = namedByMetric.get(key);
-    if (named) return `เพราะคุณบอกว่ากังวลเรื่อง${named.join(" และ ")}`;
+    if (named && named.length) return `เพราะคุณบอกว่ากังวลเรื่อง${named.join(" และ ")}`;
     const level = clarityLevel(metrics[key].score);
     return level.tone === "good" ? `ดูแลต่อให้${topic}อยู่ในระดับ "${level.label}"` : `แนะนำเพราะ${topic}อยู่ในระดับ "${level.label}"`;
   }
@@ -208,6 +254,9 @@ export default function ResultsView({
           },
           angles,
           ...answers,
+          concerns12,
+          photoConsent: keepPhoto && Boolean(photo),
+          photo: keepPhoto ? photo : undefined,
         }),
       });
       const data = await res.json();
@@ -237,8 +286,113 @@ export default function ResultsView({
 
   return (
     <div>
-      {/* The headline is the skin age — the one number people come back to
-          compare — in large type, with what it's based on right beside it. */}
+      {concerns12 && photo && health !== null ? (
+        <>
+          {/* The map is the headline: the person's own face, shaded where
+              each concern shows, with a ring per concern to switch it. */}
+          <section className="rounded-xl2 border border-surface-line p-4 sm:p-6">
+            <h2 className="text-base font-bold text-brand-ink">แผนที่ผิวของคุณ</h2>
+            <p className="mt-0.5 text-xs text-slate-600">แตะคะแนนแต่ละด้านเพื่อดูว่าเห็นตรงบริเวณไหน</p>
+            <div className="mx-auto mt-3 max-w-sm">
+              <FaceMap photo={photo} concerns={concerns12} selected={focus} />
+            </div>
+            <div className="mt-3">
+              <ScoreChips concerns={concerns12} health={health} selected={focus} onSelect={setFocus} />
+            </div>
+            <div className="mt-3 rounded-xl bg-surface-mist p-4">
+              {focus === "all" ? (
+                <>
+                  <p className="text-sm font-semibold text-brand-ink">
+                    ภาพรวม {health} คะแนน · <span style={{ color: healthBand(health).color }}>{healthBand(health).label}</span>
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">{metrics.overallNote}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold text-brand-ink">
+                    {CONCERN_DEFS[focus].label} {concernScore(concerns12[focus].severity)} คะแนน ·{" "}
+                    {clarityLevel(concerns12[focus].severity).label}
+                  </p>
+                  {concerns12[focus].note && <p className="mt-1 text-sm text-slate-600">{concerns12[focus].note}</p>}
+                  <p className="mt-2 flex flex-wrap gap-1.5">
+                    {(Object.entries(concerns12[focus].zones) as [ZoneKey, number][]).map(([zone, sev]) => (
+                      <span key={zone} className="rounded-full bg-white px-2.5 py-1 text-xs text-slate-700">
+                        {ZONE_LABEL[zone]}
+                        {zone.endsWith("Left") ? " (ซ้ายภาพ)" : zone.endsWith("Right") ? " (ขวาภาพ)" : ""}{" "}
+                        <span className="font-semibold tabular-nums">{concernScore(sev)}</span>
+                      </span>
+                    ))}
+                  </p>
+                </>
+              )}
+            </div>
+          </section>
+
+          <section className="mt-5 rounded-xl2 border border-surface-line p-5 sm:p-7">
+            <h2 className="text-base font-bold text-brand-ink">รายงานผิว (Skin Report)</h2>
+            <div className="mt-3 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-sm text-slate-600">คะแนนสุขภาพผิว</p>
+                <p className="text-6xl font-extrabold leading-none text-brand-ink tabular-nums">
+                  {health}
+                  <span className="ml-1 text-xl font-bold text-slate-500">/100</span>
+                </p>
+                <p className="mt-1 text-sm font-semibold" style={{ color: healthBand(health).color }}>
+                  {healthBand(health).label}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-slate-600">อายุผิว</p>
+                <p className="text-4xl font-extrabold leading-none text-brand-ink tabular-nums">
+                  {metrics.skinAge.years}
+                  <span className="ml-1 text-base font-bold">ปี</span>
+                </p>
+              </div>
+            </div>
+            {/* Where the score sits on the scale. */}
+            <div className="relative mt-4 h-2.5 rounded-full bg-gradient-to-r from-rose-400 via-amber-300 to-emerald-500" aria-hidden="true">
+              <span
+                className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white bg-brand-ink shadow"
+                style={{ left: `${health}%` }}
+              />
+            </div>
+            <div className="mt-1 flex justify-between text-[11px] text-slate-500" aria-hidden="true">
+              <span>0</span>
+              <span>50</span>
+              <span>100</span>
+            </div>
+            {comparison && <p className="mt-3 text-sm font-semibold text-brand-800">{comparison}</p>}
+            <p className="mt-1 text-sm text-slate-600">{metrics.skinAge.note}</p>
+            {metrics.advice && (
+              <p className="mt-4 rounded-xl bg-surface-mist p-4 text-sm text-slate-700">
+                <span className="font-semibold text-brand-ink">คำแนะนำการดูแล: </span>
+                {metrics.advice}
+              </p>
+            )}
+            <div className="mt-5">
+              <RadarChart concerns={concerns12} previous={history.scans.find((x) => x.id !== saved && x.concerns)?.concerns ?? null} />
+              {history.scans.some((x) => x.id !== saved && x.concerns) && (
+                <p className="text-center text-[11px] text-slate-500">เส้นประ = ผลที่บันทึกครั้งก่อน</p>
+              )}
+            </div>
+            <p className="mt-4 text-xs text-slate-600">
+              ความละเอียดของผล: <span className="font-semibold text-brand-ink">{confidence.label}</span> · จาก {angleLabels.join(", ")}
+            </p>
+            {previous && (
+              <p className="mt-2 rounded-xl bg-surface-soft px-4 py-3 text-sm text-slate-600">
+                ครั้งก่อน ({formatScanDate(previous.scanned_at)})
+                {previous.skin_health !== null && ` ภาพรวม ${previous.skin_health}`} อายุผิว {previous.skin_age} ปี →{" "}
+                <span className="font-semibold text-brand-ink">
+                  ครั้งนี้ ภาพรวม {health} อายุผิว {metrics.skinAge.years} ปี
+                </span>{" "}
+                ห่างกัน {gapBetween(previous.scanned_at, new Date().toISOString())}
+              </p>
+            )}
+          </section>
+        </>
+      ) : (
+      // Without the twelve-concern result (or a photo), the headline is the
+      // skin age, in large type, with what it's based on beside it.
       <section className="rounded-xl2 border border-surface-line p-5 sm:p-7">
         <div className="flex items-start gap-4 sm:gap-6">
           {photo && (
@@ -279,12 +433,22 @@ export default function ResultsView({
           </div>
         )}
       </section>
+      )}
 
       <section className="mt-5 rounded-xl2 border border-surface-line p-5 sm:p-7">
-        <h2 className="text-base font-bold text-brand-ink">
-          ภาพรวม: <span className="text-brand-800">{band.label}</span>
-        </h2>
-        <p className="mt-1 text-sm text-slate-600">{metrics.overallNote}</p>
+        {concerns12 ? (
+          <>
+            <h2 className="text-base font-bold text-brand-ink">สิ่งที่ควรดูแลและสินค้าแนะนำ</h2>
+            <p className="mt-1 text-sm text-slate-600">คัดสินค้าให้ตรงกับด้านที่คะแนนต่ำ และเรื่องที่คุณบอกว่ากังวล</p>
+          </>
+        ) : (
+          <>
+            <h2 className="text-base font-bold text-brand-ink">
+              ภาพรวม: <span className="text-brand-800">{band.label}</span>
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">{metrics.overallNote}</p>
+          </>
+        )}
         <ul className="mt-2 divide-y divide-surface-line">
           {METRIC_ROWS.map((m) => {
             const show = withProducts.has(m.key);
@@ -351,13 +515,39 @@ export default function ResultsView({
         ) : (
           <>
             <p className="mt-1 text-sm text-slate-600">
-              เก็บเฉพาะตัวเลขผลสแกนไว้ในบัญชี ไม่เก็บรูป ลบได้ทุกเมื่อ
+              เก็บตัวเลขผลสแกนไว้ในบัญชี ลบได้ทุกเมื่อ
             </p>
+            {photo && (
+              // A separate, unticked-by-default consent: keeping the face
+              // photo is what before/after needs, and nothing else does.
+              <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-xl border border-surface-line p-3">
+                <input
+                  type="checkbox"
+                  checked={keepPhoto}
+                  onChange={(e) => setKeepPhoto(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-brand-emerald"
+                />
+                <span className="text-sm text-slate-700">
+                  เก็บรูปหน้าตรงไว้เทียบก่อน-หลัง
+                  <span className="block text-xs text-slate-600">
+                    ไม่บังคับ เก็บในที่ส่วนตัว เห็นเฉพาะคุณ ทีมงานไม่เห็นรูป และลบรูปได้ทุกเมื่อ
+                  </span>
+                </span>
+              </label>
+            )}
             {saveError && <p className="mt-2 text-sm text-rose-700">{saveError}</p>}
             <Button className="mt-3" onClick={save} loading={saving}>
               บันทึกผลนี้
             </Button>
           </>
+        )}
+        {history.scans.length > 0 && (
+          <div className="mt-5 border-t border-surface-line pt-4">
+            <SkinProgress
+              scans={history.scans}
+              onPhotosRemoved={() => history.setScans((prev) => prev.map((x) => ({ ...x, photo_url: null })))}
+            />
+          </div>
         )}
         {history.scans.length > 0 && (
           <div className="mt-4 border-t border-surface-line pt-2">

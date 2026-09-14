@@ -11,9 +11,13 @@ import {
   SKIN_TYPES,
   confidenceFor,
 } from "@/lib/skin-coach";
+import { CONCERN_KEYS, normaliseConcern, skinHealth, type ConcernResults } from "@/lib/skin-analysis";
+import { MAX_PHOTO_BYTES, removeScanPhotos, signScanPhotos, uploadScanPhoto } from "@/lib/skin-scan-photos";
 
-// Skin Coach history — numbers only, never photos (the consent page promises
-// that), written only when the member presses "บันทึกผล", deletable any time.
+// Skin Coach history, written only when the member presses "บันทึกผล" and
+// deletable any time. Numbers always; the front photo only when they also
+// tick the separate before/after consent at save — stored privately, shown
+// back only to them through expiring links, removed with the scan.
 
 export type SkinScanRow = {
   id: string;
@@ -25,7 +29,20 @@ export type SkinScanRow = {
   skin_type: string | null;
   main_concern: string | null;
   metrics: { acne: number; pores: number; darkSpots: number; wrinkles: number };
+  concerns: ConcernResults | null;
+  skin_health: number | null;
+  /** Signed, short-lived; null when no photo was kept. Never the storage path. */
+  photo_url: string | null;
 };
+
+type StoredRow = Omit<SkinScanRow, "photo_url"> & { photo_path: string | null };
+
+const SELECT = "id,scanned_at,angles,confidence,skin_age,age_range,skin_type,main_concern,metrics,concerns,skin_health,photo_path";
+
+async function withPhotoUrls(rows: StoredRow[]): Promise<SkinScanRow[]> {
+  const signed = await signScanPhotos(rows.map((r) => r.photo_path).filter((p): p is string => Boolean(p)));
+  return rows.map(({ photo_path, ...rest }) => ({ ...rest, photo_url: photo_path ? signed[photo_path] ?? null : null }));
+}
 
 const HISTORY_LIMIT = 12;
 
@@ -56,11 +73,10 @@ function someOf(value: unknown, allowed: readonly string[], max = 5): string | n
 export async function GET(req: NextRequest) {
   const uid = uidFrom(req);
   if (!uid || !supabaseConfigured()) return unauthorized();
-  const scans = await supabaseRest<SkinScanRow[]>(
-    `skin_scans?user_id=eq.${uid}&order=scanned_at.desc&limit=${HISTORY_LIMIT}` +
-      `&select=id,scanned_at,angles,confidence,skin_age,age_range,skin_type,main_concern,metrics`
+  const rows = await supabaseRest<StoredRow[]>(
+    `skin_scans?user_id=eq.${uid}&order=scanned_at.desc&limit=${HISTORY_LIMIT}&select=${SELECT}`
   );
-  return NextResponse.json({ ok: true, scans });
+  return NextResponse.json({ ok: true, scans: await withPhotoUrls(rows) });
 }
 
 export async function POST(req: NextRequest) {
@@ -85,12 +101,36 @@ export async function POST(req: NextRequest) {
     : [];
   if (!angles.includes("front")) angles.unshift("front");
 
+  // The twelve concerns, re-checked here rather than trusted as sent.
+  let concerns: ConcernResults | null = null;
+  if (body?.concerns12 && typeof body.concerns12 === "object") {
+    const parsed = {} as ConcernResults;
+    let complete = true;
+    for (const key of CONCERN_KEYS) {
+      const c = normaliseConcern(key, body.concerns12[key]);
+      if (!c) {
+        complete = false;
+        break;
+      }
+      parsed[key] = { ...c, note: "" }; // notes stay on the device; the numbers are what's compared
+    }
+    if (complete) concerns = parsed;
+  }
+
+  // The photo: only with its own consent, only a JPEG, only a sensible size.
+  let photoBytes: Uint8Array | null = null;
+  if (body?.photoConsent === true && typeof body?.photo === "string") {
+    const b64 = body.photo.replace(/^data:image\/jpeg;base64,/, "");
+    const bytes = Uint8Array.from(Buffer.from(b64, "base64"));
+    const isJpeg = bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+    if (isJpeg && bytes.length <= MAX_PHOTO_BYTES) photoBytes = bytes;
+  }
+
   // A double tap, or "save" pressed again on the same result, returns the
   // row already saved rather than a second identical one (and no second bonus).
   const since = new Date(Date.now() - 10 * 60_000).toISOString();
-  const [recent] = await supabaseRest<SkinScanRow[]>(
-    `skin_scans?user_id=eq.${uid}&scanned_at=gte.${since}&skin_age=eq.${skinAge}&order=scanned_at.desc&limit=1` +
-      `&select=id,scanned_at,angles,confidence,skin_age,age_range,skin_type,main_concern,metrics`
+  const [recent] = await supabaseRest<StoredRow[]>(
+    `skin_scans?user_id=eq.${uid}&scanned_at=gte.${since}&skin_age=eq.${skinAge}&order=scanned_at.desc&limit=1&select=${SELECT}`
   );
   if (
     recent &&
@@ -99,10 +139,21 @@ export async function POST(req: NextRequest) {
     recent.metrics.darkSpots === metrics.darkSpots &&
     recent.metrics.wrinkles === metrics.wrinkles
   ) {
-    return NextResponse.json({ ok: true, scan: recent, bonusPoints: 0, duplicate: true });
+    const [scan] = await withPhotoUrls([recent]);
+    return NextResponse.json({ ok: true, scan, bonusPoints: 0, duplicate: true });
   }
 
-  const [row] = await supabaseRest<SkinScanRow[]>("skin_scans", {
+  let photoPath: string | null = null;
+  if (photoBytes) {
+    try {
+      photoPath = await uploadScanPhoto(uid, photoBytes);
+    } catch (err) {
+      // The numbers still save; the comparison photo is the optional part.
+      console.error("[skin-coach history] photo upload", err);
+    }
+  }
+
+  const [stored] = await supabaseRest<StoredRow[]>(`skin_scans?select=${SELECT}`, {
     method: "POST",
     body: JSON.stringify({
       user_id: uid,
@@ -113,8 +164,13 @@ export async function POST(req: NextRequest) {
       skin_type: someOf(body?.skinTypes, SKIN_TYPES.map((t) => t.key)),
       main_concern: someOf(body?.concerns, CONCERNS.map((c) => c.key)),
       metrics,
+      concerns,
+      skin_health: concerns ? skinHealth(concerns) : null,
+      photo_path: photoPath,
+      photo_consent_at: photoPath ? new Date().toISOString() : null,
     }),
   });
+  const [row] = await withPhotoUrls([stored]);
   // The fuller-scan thank-you: three or more angles, once per cycle. The
   // angle list is what the page sent, so the cycle limit is what keeps this
   // from being farmed by saving the same result repeatedly.
@@ -150,11 +206,21 @@ export async function DELETE(req: NextRequest) {
   if (!all && !(id && /^[0-9a-f-]{36}$/i.test(id))) {
     return NextResponse.json({ ok: false, error: "คำขอไม่ถูกต้อง" }, { status: 400 });
   }
+  const photosOnly = req.nextUrl.searchParams.get("photos") === "1";
   // Scoped to the signed-in member either way — an id from someone else's
   // history matches nothing.
-  await supabaseRest(`skin_scans?user_id=eq.${uid}${all ? "" : `&id=eq.${id}`}`, {
-    method: "DELETE",
-    returning: false,
-  });
+  const scope = `skin_scans?user_id=eq.${uid}${all ? "" : `&id=eq.${id}`}`;
+  const withPhotos = await supabaseRest<{ photo_path: string | null }[]>(`${scope}&photo_path=not.is.null&select=photo_path`);
+  await removeScanPhotos(withPhotos.map((r) => r.photo_path!).filter(Boolean));
+  if (photosOnly) {
+    // Withdraw the before/after consent: photos go, the numbers stay.
+    await supabaseRest(`${scope}&photo_path=not.is.null`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({ photo_path: null, photo_consent_at: null }),
+    });
+  } else {
+    await supabaseRest(scope, { method: "DELETE", returning: false });
+  }
   return NextResponse.json({ ok: true });
 }
