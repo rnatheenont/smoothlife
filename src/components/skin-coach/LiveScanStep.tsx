@@ -15,21 +15,19 @@ import { Button } from "@/components/ui";
 // retake any of them before sending. Nothing leaves the device until the
 // photos go for analysis, same as a picked photo would.
 //
-// What's drawn over the face is its outline, brows, eyes and lips in a thin
-// line: enough to show the phone can see the face and where it's looking,
-// without the scanner-grid look the redesign plan steers away from. The
-// points are smoothed across frames so the line holds still, the face outline
-// is drawn a little stronger than the features, and "ready" fades the line
-// from white to a soft-glowing mint rather than switching colour.
+// What's drawn over the face is a sparse geometric wireframe (owner's call):
+// sixteen key points — forehead, temples, eye corners, nose, cheeks, mouth
+// corners, jaw and chin — joined into triangles with straight lines, a dot on
+// each point. The points are smoothed across frames so the frame holds still,
+// and "ready" fades it from white to a soft-glowing mint.
 
 type Shots = Partial<Record<AngleKey, ResizedImage>>;
 type Phase = "intro" | "loading" | "front" | "side" | "review" | "error";
-type Connection = { start: number; end: number };
 
 // Tuned for "easy" over "perfect": the analysis copes with a slightly turned
 // or off-centre face far better than a person copes with a shutter that
 // won't unlock.
-const STEADY_MS = 250; // placed this long before the outline goes green
+const STEADY_MS = 250; // placed this long before the wireframe goes green
 const GRACE_MS = 300; // a wobble shorter than this doesn't turn it white again
 const FRONT_YAW = 0.12; // how far off straight still counts as straight
 const SIDE_YAW_MIN = 0.12; // turned enough to show a cheek
@@ -46,9 +44,31 @@ export function liveScanSupported() {
   return typeof navigator !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
 }
 
+// Wireframe points, by MediaPipe face-mesh index. "R" is the person's right,
+// which is the left of the camera image.
+const P = {
+  top: 10, foreR: 103, foreL: 332, templeR: 127, templeL: 356, eyeR: 33, eyeL: 263,
+  bridge: 168, nose: 1, cheekR: 234, cheekL: 454, mouthR: 61, mouthL: 291, jawR: 172, jawL: 397, chin: 152,
+} as const;
+const WIRE_POINTS = Object.values(P);
+const WIRE: [number, number][] = [
+  // Around the face.
+  [P.top, P.foreR], [P.foreR, P.templeR], [P.templeR, P.cheekR], [P.cheekR, P.jawR], [P.jawR, P.chin],
+  [P.top, P.foreL], [P.foreL, P.templeL], [P.templeL, P.cheekL], [P.cheekL, P.jawL], [P.jawL, P.chin],
+  // Forehead.
+  [P.foreR, P.foreL], [P.top, P.bridge], [P.foreR, P.bridge], [P.foreL, P.bridge],
+  // Across the eyes.
+  [P.templeR, P.eyeR], [P.eyeR, P.bridge], [P.bridge, P.eyeL], [P.eyeL, P.templeL], [P.foreR, P.eyeR], [P.foreL, P.eyeL],
+  // Nose and cheeks.
+  [P.bridge, P.nose], [P.eyeR, P.nose], [P.eyeL, P.nose], [P.eyeR, P.cheekR], [P.eyeL, P.cheekL],
+  [P.cheekR, P.nose], [P.cheekL, P.nose],
+  // Mouth, jaw and chin.
+  [P.nose, P.mouthR], [P.nose, P.mouthL], [P.cheekR, P.mouthR], [P.cheekL, P.mouthL],
+  [P.jawR, P.mouthR], [P.jawL, P.mouthL], [P.mouthR, P.chin], [P.mouthL, P.chin],
+];
+
 // One landmarker per page load, shared by every visit to the step.
-type Outline = { oval: Connection[]; features: Connection[] };
-let landmarkerPromise: Promise<{ landmarker: FaceLandmarker; outline: Outline }> | null = null;
+let landmarkerPromise: Promise<FaceLandmarker> | null = null;
 function loadLandmarker() {
   if (!landmarkerPromise) {
     landmarkerPromise = (async () => {
@@ -66,19 +86,7 @@ function loadLandmarker() {
         // Some phones refuse the GPU path; the CPU one is slower but works.
         landmarker = await FaceLandmarker.createFromOptions(fileset, options("CPU"));
       }
-      return {
-        landmarker,
-        outline: {
-          oval: FaceLandmarker.FACE_LANDMARKS_FACE_OVAL as Connection[],
-          features: [
-            ...FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
-            ...FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
-            ...FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
-            ...FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
-            ...FaceLandmarker.FACE_LANDMARKS_LIPS,
-          ] as Connection[],
-        },
-      };
+      return landmarker;
     })().catch((err) => {
       landmarkerPromise = null;
       throw err;
@@ -244,12 +252,12 @@ export default function LiveScanStep({
           streamRef.current = stream;
           return stream;
         });
-      const [stream, { landmarker, outline }] = await Promise.all([streamPromise, loadLandmarker()]);
+      const [stream, landmarker] = await Promise.all([streamPromise, loadLandmarker()]);
       const video = videoRef.current!;
       video.srcObject = stream;
       await video.play();
       go("front");
-      run(landmarker, outline);
+      run(landmarker);
     } catch (err) {
       stopCamera();
       const name = (err as { name?: string })?.name;
@@ -264,7 +272,7 @@ export default function LiveScanStep({
     }
   }
 
-  function run(landmarker: FaceLandmarker, { oval, features }: Outline) {
+  function run(landmarker: FaceLandmarker) {
     const video = videoRef.current!;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
@@ -363,31 +371,37 @@ export default function LiveScanStep({
       const mix = (from: number, to: number) => Math.round(from + (to - from) * tone);
       const rgb = `${mix(255, 52)},${mix(255, 211)},${mix(255, 153)}`;
 
-      const path = (connections: Connection[]) => {
-        ctx.beginPath();
-        for (const { start, end } of connections) {
-          ctx.moveTo(pts[start * 2], pts[start * 2 + 1]);
-          ctx.lineTo(pts[end * 2], pts[end * 2 + 1]);
-        }
-      };
-      const stroke = (connections: Connection[], width: number, alpha: number) => {
-        // A faint dark edge under the line keeps it readable on light skin.
-        path(connections);
-        ctx.shadowBlur = 0;
-        ctx.lineWidth = (width + 1.5) * px;
-        ctx.strokeStyle = `rgba(0,0,0,${0.18 * alpha})`;
-        ctx.stroke();
-        ctx.save();
-        ctx.shadowColor = `rgba(52,211,153,${0.75 * tone})`;
-        ctx.shadowBlur = 8 * px * tone;
-        ctx.lineWidth = width * px;
-        ctx.strokeStyle = `rgba(${rgb},${alpha})`;
-        ctx.stroke();
-        ctx.restore();
-      };
+      const x = (i: number) => pts[i * 2];
+      const y = (i: number) => pts[i * 2 + 1];
+      const width = (1.5 + 0.9 * swell) * px;
 
-      stroke(features, 1.2, 0.7 + 0.2 * tone);
-      stroke(oval, 1.9 + 1.2 * swell, 0.9 + 0.1 * tone);
+      // A faint dark edge under the lines keeps them readable on light skin.
+      ctx.beginPath();
+      for (const [i, j] of WIRE) {
+        ctx.moveTo(x(i), y(i));
+        ctx.lineTo(x(j), y(j));
+      }
+      ctx.lineWidth = width + 1.5 * px;
+      ctx.strokeStyle = "rgba(0,0,0,0.14)";
+      ctx.stroke();
+
+      ctx.save();
+      ctx.shadowColor = `rgba(52,211,153,${0.7 * tone})`;
+      ctx.shadowBlur = 8 * px * tone;
+      ctx.lineWidth = width;
+      ctx.strokeStyle = `rgba(${rgb},0.92)`;
+      ctx.stroke();
+
+      // A dot on every point.
+      const r = (2.6 + 0.8 * swell) * px;
+      ctx.fillStyle = `rgb(${rgb})`;
+      ctx.beginPath();
+      for (const i of WIRE_POINTS) {
+        ctx.moveTo(x(i) + r, y(i));
+        ctx.arc(x(i), y(i), r, 0, Math.PI * 2);
+      }
+      ctx.fill();
+      ctx.restore();
     };
 
     const grabFrame = async (): Promise<Blob | null> => {
