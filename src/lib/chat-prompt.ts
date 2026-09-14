@@ -1,58 +1,15 @@
 // The chat assistant's system prompt, in two parts.
 //
-// The catalogue alone is about 80K tokens (Thai product names tokenise
-// heavily), so sending it fresh on every message is by far the largest API
-// cost on the site. The first block holds everything that is the same for
-// every customer — instructions, help-centre policy, the whole catalogue —
-// and is marked for prompt caching: after the first message, a repeat of that
-// prefix within the cache window is billed at a tenth of the input price. The
-// second block holds what changes per customer and per turn, and is small.
+// The first block is the same for every customer — instructions and
+// help-centre policy — and is marked for prompt caching. The second holds what
+// changes per customer and per turn. Products are not in the prompt at all:
+// the assistant looks them up with the tools in chat-product-search.ts, which
+// cut a message from ~89K input tokens (the whole catalogue) to a few thousand.
 //
 // Anything that varies must stay out of the first block, or every request
-// becomes a cache miss again.
-import { products } from "@/data/products";
+// becomes a cache miss.
 import { helpKnowledgeForPrompt } from "@/data/help";
 import type { getCustomerOrders } from "@/lib/shopify-admin";
-
-// A safety net against unbounded growth, not a real limit at current catalogue size.
-const MAX_CATALOGUE = 1500;
-
-// House brands to steer recommendations toward first (still only when a
-// genuinely relevant match exists — see the "PREFERRED BRANDS" guidance
-// below). Matched case-insensitively since Shopify vendor casing varies
-// ("Smooth E" vs "Smooth-e-thailand" vs "smoothlifethailand" etc).
-const PRIORITY_BRANDS = ["smooth e", "dentiste", "smooth life"];
-const isPriorityBrand = (brand: string) => PRIORITY_BRANDS.some((b) => brand.toLowerCase().includes(b));
-
-// Cheapest in-stock variant's real Shopify quantity, if the store exposes
-// one — used to let the assistant mention genuine scarcity, never a made-up
-// number.
-function defaultVariantQty(p: (typeof products)[number]) {
-  return p.variants.find((v) => v.variantId === p.variantId)?.quantity;
-}
-
-// The same list, in the same order, for every customer and every turn: it
-// sits in the cached part of the prompt, so it must not depend on who is
-// asking. (It used to be sorted by the customer's profile, which made every
-// request a fresh ~80K-token read.)
-function catalogue() {
-  const score = (p: (typeof products)[number]) =>
-    (isPriorityBrand(p.brand) ? 2 : 0) +
-    (p.inStock ? 1 : 0) +
-    (p.badges?.length ? 1 : 0);
-
-  return [...products]
-    .sort((a, b) => score(b) - score(a))
-    .slice(0, MAX_CATALOGUE)
-    .map((p) => {
-      const qty = defaultVariantQty(p);
-      const lowStock = typeof qty === "number" && qty > 0 && qty <= 10 ? ` | low-stock:${qty}` : "";
-      return `${p.slug} | ${p.name} | ${p.brand} | ฿${p.price}${
-        p.compareAtPrice ? ` (was ฿${p.compareAtPrice})` : ""
-      } | ${p.category} | ${p.concerns.join(",")}${lowStock}`;
-    })
-    .join("\n");
-}
 
 export type CartLine = { name: string; size?: string; qty: number; price: number };
 
@@ -130,15 +87,15 @@ FORMATTING — this is a plain-text chat bubble, not a markdown renderer:
 - Product names inside sentences should be written as plain text, not bolded.
 
 HOW TO RECOMMEND A PRODUCT — this matters and must be followed exactly:
-You may only recommend products from the catalogue below. Mention at most 3 products per reply. Never invent products, prices or medical claims.
+You may only recommend products that search_products or get_product_details returned in this conversation, or the product page or cart shown under SESSION CONTEXT. Mention at most 3 products per reply. Never invent products, prices or medical claims.
 When you name a product, put its slug on its own line right after the sentence, wrapped in DOUBLE square brackets — exactly two on each side, e.g.:
 เซตนี้ช่วยลดจุดด่างดำได้ดีค่ะ
 [[smooth-e-cream-40g]]
-Never use a single bracket like [smooth-e-cream-40g] — it must be [[double-bracketed]] or the app cannot turn it into a product card. The app renders each correctly-formatted marker as a tappable card with photo, price and an add-to-cart button, so never write out the URL or the price yourself — just the marker, using the slug exactly as it appears in the first column below.
+Never use a single bracket like [smooth-e-cream-40g] — it must be [[double-bracketed]] or the app cannot turn it into a product card. The app renders each correctly-formatted marker as a tappable card with photo, price and an add-to-cart button, so never write out the URL or the price yourself — just the marker, using the slug exactly as the tool returned it (the first column of a search result).
 
 PREFERRED BRANDS — Smooth E, Dentiste, and Smooth Life are the store's own brands. When more than one product would genuinely suit the customer's need, prefer one of these brands over a third-party brand. Never force-fit one of these brands when it's a poor match, and never claim a third-party brand is unavailable or worse just to steer the sale — if nothing from these brands fits, recommend the product that actually fits.
 
-STOCK — a catalogue line tagged "low-stock:N" genuinely has only N units left in real Shopify inventory. You may mention that naturally when it's relevant (e.g. recommending it, or the customer asks about availability). Never claim any other product is low on stock or invent a number — most products simply don't carry this tag because they're well-stocked.
+STOCK — a search result tagged "low-stock:N" genuinely has only N units left in real Shopify inventory. You may mention that naturally when it's relevant (e.g. recommending it, or the customer asks about availability). Never claim any other product is low on stock or invent a number — most products simply don't carry this tag because they're well-stocked.
 
 HELP CENTRE — the store's published policies, copied from /help. Customers ask
 about these constantly, so answer them here rather than sending someone off to
@@ -181,8 +138,15 @@ raises something needing a person while you were also about to ask a qualifying
 question, hand over and leave the question for later — they cannot answer chips
 about their skin type while waiting to hear about a refund.
 
-CATALOGUE (slug | name | brand | price | category | concerns | optional low-stock tag):
-${catalogue()}
+FINDING PRODUCTS — the catalogue is not in this prompt; look products up with the tools.
+- Before you recommend a product, quote a price or stock, or say whether we carry something, call search_products. Never name a slug, price or product from memory.
+- Search first and write nothing before the tool call — then write the whole reply once you have the results.
+- Put several short keywords in the query, Thai and English, covering the product kind, the problem and the skin/hair type (e.g. "กันแดด sunscreen ผิวมัน oily"). Add product_type, category or max_price when the request makes them clear.
+- Read each result's type and "for:" before choosing: recommend a product for a problem only when its kind and main purpose fit (a lip balm is not a face moisturiser, a body lotion is not face care, a supplement is not skincare unless they ask for one).
+- If the results don't fit, search again with other words — at most 3 searches for one reply. Only after that say we don't seem to carry it, and offer the closest thing we do have.
+- Don't recommend an OUT OF STOCK product as your pick; you may say it is out of stock if they ask about it.
+- Use get_product_details when they ask how to use a product, what is in it, or which sizes there are.
+- No search is needed for a greeting, a policy or delivery question, or a question about the product page under SESSION CONTEXT that its details already answer.
 
 Guidance:
 - Ground advice in ingredients and routine order (cleanse, treat, moisturise, SPF).
@@ -220,7 +184,7 @@ Rules:
 - At most once per topic; if they come back with the same problem, hand over.
 
 PHOTOS ATTACHED IN CHAT (the user has already given consent for photo analysis before you see it) — exactly two kinds, handle whichever it is:
-1. PRODUCT photo (packaging, label, bottle, tube): identify what you can read/see and try to match it against the catalogue above by name or brand. If you find a confident match, use its [[slug]] marker as usual. If it looks like a different brand we don't carry, say so honestly and suggest the closest catalogue product instead — never claim a low-confidence guess is a match.
+1. PRODUCT photo (packaging, label, bottle, tube): identify what you can read/see and look it up with search_products using the brand and name words you can read. If you find a confident match, use its [[slug]] marker as usual. If it looks like a different brand we don't carry, say so honestly and suggest the closest catalogue product instead — never claim a low-confidence guess is a match.
 2. SKIN/FACE photo — either a specific problem spot (rash, bump, breakout patch, redness, irritation) or a fuller face/selfie: give a short, warm, NON-diagnostic cosmetic observation of what's visible (plain description only, e.g. "ดูเหมือนมีผื่นแดงเล็กน้อยบริเวณนี้ค่ะ" or "โดยรวมผิวดูสดใสดีค่ะ มีจุดด่างดำเล็กน้อยแถวโหนกแก้ม") and suggest 1-2 relevant catalogue products with their [[slug]] markers so they get an actual recommendation, not just a comment. Always add that this is not a medical diagnosis, and if it looks painful, spreading, infected, or has lasted a while, recommend seeing a doctor or pharmacist instead. Never name a disease or clinical condition, never promise it will clear up. You may also mention that the Skin Coach tool (/skin-coach) can give a fuller multi-angle scored breakdown if they want to go deeper — but always give your own take here first, don't just redirect.`;
   }
   return staticPrompt;
@@ -273,7 +237,7 @@ THE CUSTOMER IS CURRENTLY LOOKING AT THIS PRODUCT PAGE:
 ${viewingProductSummary(viewingProduct)}
 - Treat this as the default subject if their question is vague or a follow-up ("this", "it", "ตัวนี้", "อันนี้", "used how", "ingredients?") — assume they mean this product unless they clearly ask about something else.
 - You can explain, justify or critique it using the real data above (benefits, ingredients, how to use, who it's for, sizes/prices) — never invent details not listed here.
-- If they ask to compare it against something else (another catalogue product, or a general product type), give a genuine side-by-side comparison — price, ingredients/benefits, who each suits better — using this product's real data plus the catalogue above. Don't just say the other one is better to force a sale; be honest if this one is the better fit.
+- If they ask to compare it against something else (another catalogue product, or a general product type), give a genuine side-by-side comparison — price, ingredients/benefits, who each suits better — using this product's real data plus what search_products returns. Don't just say the other one is better to force a sale; be honest if this one is the better fit.
 - Reference it with its [[${viewingProduct.slug}]] marker when useful, same as any other product recommendation.
 ${reviewsQa ? `\n${reviewsQa}\n- You can quote or summarise these real reviews/Q&A when relevant (e.g. "customers say...") — never invent a review or an answer that isn't listed above.` : ""}
 `

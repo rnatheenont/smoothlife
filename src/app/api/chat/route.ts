@@ -12,6 +12,7 @@ import {
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { contentForTranscript } from "@/lib/chat-markers";
 import { systemPrompt, orderHistorySummary, type CartLine, type ViewingProduct } from "@/lib/chat-prompt";
+import { CHAT_TOOLS, runChatTool } from "@/lib/chat-product-search";
 import { deliveryStatusForPrompt } from "@/lib/delivery-status";
 import { signedAttachmentUrl } from "@/lib/chat-attachments";
 
@@ -19,6 +20,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
+
+// Rounds of model ↔ product search per reply; the last one must answer.
+const MAX_TOOL_ROUNDS = 4;
 
 type ReviewRow = { author_name: string; rating: number; title: string | null; body: string };
 type QuestionRow = { question: string; answer: string | null };
@@ -382,21 +386,43 @@ export async function POST(req: NextRequest) {
     async start(controller) {
       let fullText = "";
       try {
-        const anthropicStream = client.messages.stream({
-          model: MODEL,
-          max_tokens: 1600,
-          // Short product-advice replies don't need deep reasoning — low
-          // effort is the documented setting for latency-sensitive chat,
-          // and cuts the adaptive-thinking time Sonnet 5 spends by default.
-          output_config: { effort: "low" },
-          system,
-          messages: anthropicMessages,
-        });
-        anthropicStream.on("text", (delta) => {
-          fullText += delta;
-          controller.enqueue(encoder.encode(delta));
-        });
-        await anthropicStream.finalMessage();
+        // Product lookups happen through tools: the model searches, we run
+        // the search here and hand back the results, and it continues. Text
+        // streams to the customer as it arrives in every round. The last
+        // allowed round turns tools off so a reply always comes back.
+        let convo: Anthropic.MessageParam[] = anthropicMessages;
+        for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+          const lastRound = round === MAX_TOOL_ROUNDS - 1;
+          const anthropicStream = client.messages.stream({
+            model: MODEL,
+            max_tokens: 1600,
+            // Short product-advice replies don't need deep reasoning — low
+            // effort is the documented setting for latency-sensitive chat,
+            // and cuts the adaptive-thinking time Sonnet 5 spends by default.
+            output_config: { effort: "low" },
+            system,
+            tools: CHAT_TOOLS,
+            ...(lastRound ? { tool_choice: { type: "none" as const } } : {}),
+            messages: convo,
+          });
+          let roundStarted = false;
+          anthropicStream.on("text", (delta) => {
+            // Keep a round's text apart from what an earlier round already said.
+            if (!roundStarted && fullText && !/\s$/.test(fullText)) {
+              fullText += "\n\n";
+              controller.enqueue(encoder.encode("\n\n"));
+            }
+            roundStarted = true;
+            fullText += delta;
+            controller.enqueue(encoder.encode(delta));
+          });
+          const final = await anthropicStream.finalMessage();
+          if (final.stop_reason !== "tool_use") break;
+          const results: Anthropic.ToolResultBlockParam[] = final.content
+            .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
+            .map((b) => ({ type: "tool_result", tool_use_id: b.id, content: runChatTool(b.name, b.input) }));
+          convo = [...convo, { role: "assistant", content: final.content }, { role: "user", content: results }];
+        }
         controller.close();
         // Drop a trailing [[SUGGEST: ...]] — those chips are optional
         // follow-ups, worth nothing once the turn is over, and not worth
