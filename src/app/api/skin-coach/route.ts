@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiRateLimit } from "@/lib/ai-rate-limit";
+import { logAiUsage } from "@/lib/ai-usage";
 import { CONCERN_KEYS, normaliseConcern, type ConcernResults } from "@/lib/skin-analysis";
 
 export const runtime = "nodejs";
@@ -168,6 +169,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const startedAt = Date.now();
   try {
     const res = await fetch(API_URL, {
       method: "POST",
@@ -222,7 +224,18 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
+    // Measured cost of this scan; see lib/ai-usage.ts.
+    const usage = (outcome: string) =>
+      logAiUsage({
+        feature: "skin-coach",
+        model: typeof data?.model === "string" ? data.model : MODEL,
+        outcome,
+        usage: data?.usage,
+        photos: images.length,
+        durationMs: Date.now() - startedAt,
+      });
     if (data?.stop_reason === "refusal") {
+      await usage("refused");
       return NextResponse.json(
         { error: "refused", message: "ระบบวิเคราะห์รูปนี้ไม่ได้ ลองถ่ายใหม่ให้เห็นผิวหน้าชัดๆ" },
         { status: 200 }
@@ -239,12 +252,14 @@ export async function POST(req: NextRequest) {
 
     const parsed = extractJson(text);
     if (!parsed || !normalise(parsed)) {
+      await usage(data?.stop_reason === "max_tokens" ? "max_tokens" : "parse_error");
       return NextResponse.json(
         { error: "parse_error", message: "ขออภัยครับ ผลวิเคราะห์ไม่สมบูรณ์ กรุณาลองใหม่อีกครั้ง" },
         { status: 200 }
       );
     }
 
+    await usage(data?.stop_reason === "max_tokens" ? "ok_max_tokens" : "ok");
     return NextResponse.json({ result: normalise(parsed) });
   } catch (e: any) {
     console.error("[skin-coach] threw " + String(e));
