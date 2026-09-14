@@ -367,10 +367,11 @@ export default function LiveScanStep({
         ctx.moveTo(x(start), y(start));
         ctx.lineTo(x(end), y(end));
       }
-      ctx.lineWidth = 0.7 * px;
-      ctx.strokeStyle = `rgba(${rgb},${0.45 + 0.15 * tone})`;
-      ctx.shadowColor = `rgba(52,211,153,${0.6 * tone})`;
-      ctx.shadowBlur = 6 * px * tone;
+      // Hairline: the mesh should read as a fine net over the skin, not cover it.
+      ctx.lineWidth = 0.35 * px;
+      ctx.strokeStyle = `rgba(${rgb},${0.5 + 0.15 * tone})`;
+      ctx.shadowColor = `rgba(52,211,153,${0.35 * tone})`;
+      ctx.shadowBlur = 2 * px * tone;
       ctx.stroke();
       ctx.restore();
     };
