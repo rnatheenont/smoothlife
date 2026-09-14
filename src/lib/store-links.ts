@@ -14,6 +14,7 @@
 import { supabaseRest, pgValue } from "@/lib/supabase-server";
 import {
   configuredOtherStores,
+  reachableOtherStores,
   findShopifyCustomerByEmail,
   findShopifyCustomerByPhone,
   getCustomerOrders,
@@ -66,7 +67,7 @@ export async function otherStoreLinks(uid: string): Promise<StoreLink[]> {
  * Never throws.
  */
 export async function linkOtherStores(uid: string, { force = false } = {}): Promise<{ links: StoreLink[]; added: boolean }> {
-  const stores = configuredOtherStores();
+  const stores = await reachableOtherStores();
   if (stores.length === 0) return { links: [], added: false };
   try {
     const rows = await supabaseRest<LinkRow[]>(

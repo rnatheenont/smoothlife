@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseRest, supabaseConfigured, pgValue } from "@/lib/supabase-server";
 import {
-  configuredOtherStores,
+  reachableOtherStores,
   searchShopifyCustomers,
   shopifyAdminConfigured,
   storeAdminHandle,
@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
 
   // Every store the site can read: Smooth Life, and Smooth E / Dentiste once
   // their credentials are set. Each record says which store it is in.
-  const stores: StoreKey[] = [...(shopifyAdminConfigured() ? (["smoothlife"] as const) : []), ...configuredOtherStores()];
+  const stores: StoreKey[] = [...(shopifyAdminConfigured() ? (["smoothlife"] as const) : []), ...(await reachableOtherStores())];
   const shopify = (
     await Promise.all(
       stores.map(async (store) =>

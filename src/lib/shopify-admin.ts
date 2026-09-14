@@ -11,7 +11,11 @@ const API_VERSION = process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-10";
 // The group's stores. Smooth Life is the one this site sells through; Smooth E
 // and Dentiste are read only — so a customer who bought on smooth-e.com or
 // dentiste-oralcare.com sees those orders and has that spend count here too.
-// Each needs its own app credentials, set in Vercel.
+// By default they use the same "Smoothlife Web" app as Smooth Life — installed
+// on each store, one set of keys works for all of them. A store's own keys, if
+// set in Vercel, take precedence. A store only counts as connected once it
+// actually hands out a token (see storeReachable), so a store the app isn't
+// installed on is simply skipped.
 export type StoreKey = "smoothlife" | "smoothe" | "dentiste";
 export const OTHER_STORES = ["smoothe", "dentiste"] as const;
 export type OtherStoreKey = (typeof OTHER_STORES)[number];
@@ -21,15 +25,15 @@ const STORES: Record<StoreKey, StoreConfig> = {
   smoothlife: { domain: SHOP, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET, label: "Smooth Life", adminHandle: "smoothlifethailand" },
   smoothe: {
     domain: process.env.SHOPIFY_SMOOTHE_STORE_DOMAIN || "smooth-e-thailand.myshopify.com",
-    clientId: process.env.SHOPIFY_SMOOTHE_CLIENT_ID,
-    clientSecret: process.env.SHOPIFY_SMOOTHE_CLIENT_SECRET,
+    clientId: process.env.SHOPIFY_SMOOTHE_CLIENT_ID || CLIENT_ID,
+    clientSecret: process.env.SHOPIFY_SMOOTHE_CLIENT_SECRET || CLIENT_SECRET,
     label: "Smooth E",
     adminHandle: "smooth-e-thailand",
   },
   dentiste: {
     domain: process.env.SHOPIFY_DENTISTE_STORE_DOMAIN || "dentiste-thailand.myshopify.com",
-    clientId: process.env.SHOPIFY_DENTISTE_CLIENT_ID,
-    clientSecret: process.env.SHOPIFY_DENTISTE_CLIENT_SECRET,
+    clientId: process.env.SHOPIFY_DENTISTE_CLIENT_ID || CLIENT_ID,
+    clientSecret: process.env.SHOPIFY_DENTISTE_CLIENT_SECRET || CLIENT_SECRET,
     label: "Dentiste",
     adminHandle: "dentiste-thailand",
   },
@@ -51,6 +55,32 @@ export function storeAdminHandle(store: StoreKey) {
 /** The other stores whose credentials are set. */
 export function configuredOtherStores(): OtherStoreKey[] {
   return OTHER_STORES.filter((s) => storeConfigured(s));
+}
+
+// Whether a store answered with a token recently. Checked before looking a
+// customer up there: a store the app isn't installed on would otherwise turn
+// every lookup into "no such customer" and be remembered as a miss.
+const reachability = new Map<StoreKey, { ok: boolean; at: number }>();
+
+export async function storeReachable(store: StoreKey): Promise<boolean> {
+  if (!storeConfigured(store)) return false;
+  const known = reachability.get(store);
+  if (known && Date.now() - known.at < (known.ok ? 10 : 5) * 60_000) return known.ok;
+  try {
+    await getAdminAccessToken(store);
+    reachability.set(store, { ok: true, at: Date.now() });
+    return true;
+  } catch (err) {
+    if (known?.ok !== false) console.warn(`[shopify-admin] ${store} not reachable — app not installed there?`, String(err));
+    reachability.set(store, { ok: false, at: Date.now() });
+    return false;
+  }
+}
+
+/** The other stores that are set up and currently hand out a token. */
+export async function reachableOtherStores(): Promise<OtherStoreKey[]> {
+  const ok = await Promise.all(OTHER_STORES.map((s) => storeReachable(s)));
+  return OTHER_STORES.filter((_, i) => ok[i]);
 }
 // The live smoothlife.com storefront itself (Shopify's own theme), not this
 // Next.js app's own origin — used to build fallback links to Shopify pages/

@@ -446,7 +446,7 @@ export default function AdminCustomersPage() {
                       "rounded-full px-2 py-0.5 font-semibold",
                       s.connected ? "bg-emerald-50 text-emerald-800" : "bg-slate-100 text-slate-500 line-through"
                     )}
-                    title={s.connected ? "ค้นในร้านนี้แล้ว" : "ยังไม่ได้เชื่อมร้านนี้ (ยังไม่มีคีย์ใน Vercel) จึงไม่ได้ค้น"}
+                    title={s.connected ? "ค้นในร้านนี้แล้ว" : "ยังเชื่อมร้านนี้ไม่ได้ (แอป Smoothlife Web ยังไม่ได้ติดตั้งในร้านนี้) จึงไม่ได้ค้น"}
                   >
                     {s.label}
                     {s.connected ? "" : " (ยังไม่เชื่อม)"}
