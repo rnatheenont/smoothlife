@@ -21,7 +21,7 @@ export function gapBetween(fromIso: string, toIso: string) {
 }
 
 /** The signed-in member's saved scans, newest first. Empty for guests. */
-export function useScanHistory() {
+export function useScanHistory({ all = false }: { all?: boolean } = {}) {
   const { user } = useAuth();
   const signedIn = Boolean(user?.real);
   const [scans, setScans] = useState<SkinScanRow[]>([]);
@@ -34,13 +34,13 @@ export function useScanHistory() {
       return;
     }
     try {
-      const res = await fetch("/api/skin-coach/history", { cache: "no-store" });
+      const res = await fetch(`/api/skin-coach/history${all ? "?all=1" : ""}`, { cache: "no-store" });
       const data = await res.json();
       if (data.ok) setScans(data.scans);
     } finally {
       setLoaded(true);
     }
-  }, [signedIn]);
+  }, [signedIn, all]);
 
   useEffect(() => {
     reload();

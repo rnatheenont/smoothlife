@@ -70,11 +70,30 @@ function someOf(value: unknown, allowed: readonly string[], max = 5): string | n
   return keys.length ? keys.join(",") : null;
 }
 
+// The account page's full history — enough to scroll back through a year of
+// monthly scans. The Skin Coach page itself only needs the recent ones.
+const ACCOUNT_HISTORY_LIMIT = 60;
+
 export async function GET(req: NextRequest) {
   const uid = uidFrom(req);
   if (!uid || !supabaseConfigured()) return unauthorized();
+
+  // One scan and the one saved before it, for its own page in the account.
+  const id = req.nextUrl.searchParams.get("id");
+  if (id !== null) {
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ ok: false, error: "คำขอไม่ถูกต้อง" }, { status: 400 });
+    const [row] = await supabaseRest<StoredRow[]>(`skin_scans?user_id=eq.${uid}&id=eq.${id}&limit=1&select=${SELECT}`);
+    if (!row) return NextResponse.json({ ok: false, error: "ไม่พบผลสแกนนี้" }, { status: 404 });
+    const before = await supabaseRest<StoredRow[]>(
+      `skin_scans?user_id=eq.${uid}&scanned_at=lt.${encodeURIComponent(row.scanned_at)}&order=scanned_at.desc&limit=1&select=${SELECT}`
+    );
+    const [scan, previous] = await withPhotoUrls([row, ...before]);
+    return NextResponse.json({ ok: true, scan, previous: previous ?? null });
+  }
+
+  const limit = req.nextUrl.searchParams.get("all") === "1" ? ACCOUNT_HISTORY_LIMIT : HISTORY_LIMIT;
   const rows = await supabaseRest<StoredRow[]>(
-    `skin_scans?user_id=eq.${uid}&order=scanned_at.desc&limit=${HISTORY_LIMIT}&select=${SELECT}`
+    `skin_scans?user_id=eq.${uid}&order=scanned_at.desc&limit=${limit}&select=${SELECT}`
   );
   return NextResponse.json({ ok: true, scans: await withPhotoUrls(rows) });
 }

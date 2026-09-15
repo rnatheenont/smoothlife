@@ -228,7 +228,16 @@ export default function FaceMap({
     <div className={className}>
       <div ref={boxRef} className="relative select-none overflow-hidden rounded-xl2 bg-slate-900">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img ref={imgRef} src={photo} alt="รูปหน้าตรงที่ใช้สแกน" className="block h-auto w-full" draggable={false} />
+        <img
+          ref={imgRef}
+          src={photo}
+          // Saved photos come from storage on another origin; without this the
+          // browser won't let the face tracker read their pixels.
+          crossOrigin="anonymous"
+          alt="รูปหน้าตรงที่ใช้สแกน"
+          className="block h-auto w-full"
+          draggable={false}
+        />
         {/* The glow, shown right of the divider: "overlay" tints the skin
             with the colour while keeping its texture, and a faint "screen"
             copy adds the sheen, so it reads as light on the skin rather

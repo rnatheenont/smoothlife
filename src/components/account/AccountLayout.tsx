@@ -18,6 +18,7 @@ import {
   Repeat,
   Users,
   MessageSquareText,
+  ScanFace,
   type LucideIcon,
 } from "lucide-react";
 import AccountGate from "@/components/AccountGate";
@@ -52,6 +53,9 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/account/wishlist", label: "รายการโปรด", icon: Heart },
       { href: "/account/reviews", label: "รีวิวของฉัน", icon: MessageSquareText },
     ],
+  },
+  {
+    items: [{ href: "/account/skin-scans", label: "ผลสแกนผิว", icon: ScanFace }],
   },
   {
     items: [{ href: "/account/referral", label: "แนะนำเพื่อน", icon: Users }],
