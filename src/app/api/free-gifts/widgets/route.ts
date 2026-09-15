@@ -21,12 +21,18 @@ const DEFAULTS: WidgetRow[] = [
 // widget on/off state must always be live.
 export const dynamic = "force-dynamic";
 
+// Every storefront page load asks for this, but the admin flips these toggles
+// rarely — so let Vercel's edge answer for a minute at a time. An admin change
+// reaches shoppers within about a minute instead of on the very next request.
+const CACHE_HEADERS = { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" };
+
 export async function GET() {
   if (!supabaseConfigured()) return NextResponse.json({ widgets: DEFAULTS });
   try {
     const rows = await supabaseRest<WidgetRow[]>("free_gift_widgets?select=key,label_th,enabled,config&order=key.asc");
-    return NextResponse.json({ widgets: rows.length ? rows : DEFAULTS });
+    return NextResponse.json({ widgets: rows.length ? rows : DEFAULTS }, { headers: CACHE_HEADERS });
   } catch (err) {
+    // Not cached, so the next request tries the database again.
     console.error("[free-gifts/widgets] fetch failed", err);
     return NextResponse.json({ widgets: DEFAULTS });
   }
