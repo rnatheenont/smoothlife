@@ -115,11 +115,19 @@ const CONCURRENCY = 1;
 // takes 20s. The search is what soko has become slow at, and a ceiling under
 // what the server actually takes turns a slow day into a blind one — the 12s
 // this used to be made every single page fail while the site was working.
-const LIST_TIMEOUT_MS = 90_000;
-// Raised from 30s on 14/09: at the cron's busy hours the filtered list page
-// passed 30s on every run since 12/09 (measured 22s at a quiet moment), so the
-// ceiling was failing pages soko would have answered. The function now has
-// five minutes, which is what makes a longer wait affordable.
+const LIST_TIMEOUT_MS = 45_000;
+// 45s: the store filter answers in about 4s, but the free-text search kept as
+// a fallback took 32s when measured on 15/09, and a ceiling under that would
+// make the fallback useless on exactly the day it is needed.
+
+// Which grid filter narrows the list to our store.
+//
+// "store" is soko's own store column filter: measured 15/09 it returned the
+// same rows as the free-text search in 3.7–4.2s a page, against 22–40s+ for
+// the search — the search is what timed out on nearly every run from 12/09.
+// The search stays as a fallback in case soko changes the store filter.
+type ListFilter = "store" | "search";
+const filterParam = (f: ListFilter) => (f === "store" ? "Merchantorders[store]" : "Merchantorders[search_txt]");
 
 // An order's own page is one record and stays quick. Keeping this well under
 // the list ceiling means a stuck order costs a few seconds, not the run.
@@ -131,10 +139,9 @@ const REQUEST_TIMEOUT_MS = LIST_TIMEOUT_MS;
 // pages, which are the only place a tracking number actually appears — five
 // perfectly-read list pages and no time left to open an order is a wasted run.
 //
-// At today's speed this buys exactly one page, which is the newest ten orders
-// — the ones a sync running five times a day is actually for. If soko gets
-// quick again the loop takes more pages on its own, no change needed here.
-const LIST_BUDGET_MS = 150_000;
+// With the store filter a page takes about 4s, so all five pages fit in a few
+// seconds; 90s leaves room for the slow search fallback to read a page or two.
+const LIST_BUDGET_MS = 90_000;
 
 async function fetchSoko(url: string, init: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
   const abort = new AbortController();
@@ -410,6 +417,8 @@ export async function fetchPackedOrders(
   // run picks up; stopping late used to cost the whole run.
   const attempts: PageAttempt[] = [];
   let lastPageMs = 0;
+  let filter: ListFilter = "store";
+  let retried = false;
   for (let page = 1; page <= LIST_PAGES; page++) {
     const spent = Date.now() - startedAt;
     // Room for another page like the last one, not merely room to start one.
@@ -421,15 +430,10 @@ export async function fetchPackedOrders(
       break;
     }
 
-    // No m_id. It was carried from the browser's own request and is the one
-    // condition soko has become unable to answer quickly: measured today, the
-    // list with the store search alone takes 20s and returns all eleven of our
-    // rows, while the same query with m_id on it does not come back at all
-    // inside 30s. The search is what does the filtering; m_id only made the
-    // query expensive enough to fail.
+    // No m_id: with it the query did not come back at all inside 30s (09/09).
     const params = new URLSearchParams({
       r: "order/index",
-      "Merchantorders[search_txt]": STORE,
+      [filterParam(filter)]: STORE,
       Merchantorders_page: String(page),
     });
 
@@ -439,7 +443,7 @@ export async function fetchPackedOrders(
       const listRes = await fetchSoko(`${BASE}?${params}`, { headers: { Cookie: jar } }, LIST_TIMEOUT_MS);
       list = await listRes.text();
       lastPageMs = Date.now() - at;
-      attempts.push({ page, ms: lastPageMs, status: listRes.status, bytes: list.length, outcome: "ok" });
+      attempts.push({ page, ms: lastPageMs, status: listRes.status, bytes: list.length, outcome: "ok", detail: filter });
     } catch (err) {
       // A page that times out costs its ten rows, not the run — but what went
       // wrong is kept, because five of these is not a quiet warehouse.
@@ -448,10 +452,18 @@ export async function fetchPackedOrders(
         page,
         ms: Date.now() - at,
         outcome: aborted ? "timeout" : "error",
-        detail: aborted
-          ? `เกิน ${LIST_TIMEOUT_MS / 1000} วินาที`
-          : String((err as Error)?.message ?? err).slice(0, 120),
+        detail: `${filter}: ${
+          aborted ? `เกิน ${LIST_TIMEOUT_MS / 1000} วินาที` : String((err as Error)?.message ?? err).slice(0, 120)
+        }`,
       });
+      // One more try at the same page: a single slow answer should not cost
+      // the run. On page 1 the retry uses the other filter, in case it is the
+      // filter itself that soko has stopped answering.
+      if (!retried) {
+        retried = true;
+        if (page === 1) filter = filter === "store" ? "search" : "store";
+        page--;
+      }
       continue;
     }
 
@@ -467,15 +479,25 @@ export async function fetchPackedOrders(
     let rowsOnPage = 0;
     for (const row of list.split(/<tr[\s>]/i)) {
       if (!row.includes(STORE)) continue;
-      rowsOnPage++;
       const href = row.match(/href="([^"]*r=order(?:%2F|\/)view[^"]*)"/i);
       if (!href) continue;
+      rowsOnPage++;
       // Only used to skip work, so a wrong guess costs one extra request
       // rather than a missed parcel — the View page stays the authority.
       const ref = row.match(/#\d{3,}[A-Za-z_]*/);
       candidates.push({ ref: ref ? ref[0] : null, href: decode(href[1]) });
     }
-    if (rowsOnPage === 0) break;
+    if (rowsOnPage === 0) {
+      // The store filter answering with none of our orders on page 1 means it
+      // no longer filters the way it did — try the search once before
+      // concluding the warehouse has nothing.
+      if (page === 1 && filter === "store") {
+        filter = "search";
+        page--;
+        continue;
+      }
+      break;
+    }
   }
 
   // Recorded before anything can throw: "logged in fine, found nothing" and
