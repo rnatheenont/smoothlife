@@ -50,6 +50,8 @@ export type Product = {
   badges?: ("Bestseller" | "New" | "Sale" | "BOGO" | "Bundle")[];
   shortDesc: string;
   description?: string;
+  /** The Shopify description's own paragraphs, in order — shown in full on the product page. */
+  about?: string[];
   benefits: string[];
   howToUse: string;
   ingredients: string;

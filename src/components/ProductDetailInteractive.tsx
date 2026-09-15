@@ -611,15 +611,32 @@ export default function ProductDetailInteractive({
           {tab === "benefits" && (
             <div className="grid md:grid-cols-2 gap-8">
               <div>
-                <h3 className="font-bold text-brand-ink mb-3">คุณประโยชน์</h3>
-                <ul className="space-y-2">
-                  {product.benefits.map((b) => (
-                    <li key={b} className="flex items-start gap-2 text-sm text-slate-600">
-                      <CheckCircle2 size={16} className="text-brand-emerald mt-0.5 shrink-0" /> {b}
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-sm text-slate-600 mt-4">{product.shortDesc}</p>
+                {product.about && product.about.length > 0 && (
+                  <div className="mb-6 space-y-3">
+                    <h3 className="font-bold text-brand-ink">รายละเอียดสินค้า</h3>
+                    {product.about.map((para, i) => (
+                      <p key={i} className="text-sm leading-relaxed text-slate-600">
+                        {para}
+                      </p>
+                    ))}
+                  </div>
+                )}
+                {product.benefits.length > 0 && (
+                  <>
+                    <h3 className="font-bold text-brand-ink mb-3">คุณประโยชน์</h3>
+                    <ul className="space-y-2">
+                      {product.benefits.map((b) => (
+                        <li key={b} className="flex items-start gap-2 text-sm text-slate-600">
+                          <CheckCircle2 size={16} className="text-brand-emerald mt-0.5 shrink-0" /> {b}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                {/* Only when there's no fuller text above and it isn't just a repeat of a benefit. */}
+                {!product.about?.length && product.shortDesc && !product.benefits.includes(product.shortDesc) && (
+                  <p className="text-sm text-slate-600 mt-4">{product.shortDesc}</p>
+                )}
               </div>
               <div>
                 <h3 className="font-bold text-brand-ink mb-3">ส่วนผสมสำคัญ</h3>

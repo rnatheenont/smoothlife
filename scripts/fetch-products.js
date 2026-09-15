@@ -250,7 +250,7 @@ function sections(lines) {
  * heading/list structure at all. */
 
 const HEADING_FIELD_RULES = [
-  ["whoFor", ["suitable for", "เหมาะสำหรับ", "เหมาะกับ"]],
+  ["whoFor", ["suitable for", "who is it for", "who is this for", "who it's for", "who should use", "เหมาะสำหรับ", "เหมาะกับ"]],
   ["ingredients", ["ingredient", "product detail", "ส่วนผสม", "ส่วนประกอบ", "รายละเอียดสินค้า"]],
   ["howToUse", ["how to use", "direction", "วิธีใช้", "วิธีการใช้"]],
   ["benefits", ["propert", "key feature", "benefit", "highlight", "คุณสมบัติ", "จุดเด่น", "ประโยชน์"]],
@@ -310,8 +310,11 @@ function structuralSections(html) {
     if (b.type === "list") {
       out[field || "benefits"].push(...b.items);
     } else if (b.type === "para") {
-      if (field === "whoFor" || field === "howToUse") out[field].push(b.text);
-      else if (!field) out.prose.push(b.text);
+      // Prose under a "Properties"/"Benefits" heading is the product's actual
+      // description (the bullets under "Key Features" are the benefits), so it
+      // belongs with the other prose rather than being dropped.
+      if (field === "whoFor" || field === "howToUse" || field === "ingredients") out[field].push(b.text);
+      else out.prose.push(b.text);
     }
   }
   return out;
@@ -567,6 +570,9 @@ function toProduct(p, usedSlugs) {
     // number line, which isn't a section heading but also isn't a benefit.
     shortDesc: clip(struct.prose[0] || (isStructured ? struct.benefits[0] : prose[0]) || lines[0] || "", 130),
     description: (struct.prose.length ? struct.prose : isStructured ? struct.benefits.slice(0, 4) : prose).join(" "),
+    // The description's own paragraphs, kept apart so the product page can show
+    // them in full. Empty when Shopify's description is only bullet lists.
+    about: isStructured ? struct.prose : [],
     benefits: struct.benefits.length
       ? struct.benefits.slice(0, 12)
       : prose.length > 2
@@ -603,6 +609,7 @@ function serialise(list) {
     if (p.badges.length) f.push(`badges:[${p.badges.map((b) => `"${b}"`).join(",")}]`);
     f.push(`shortDesc:"${esc(p.shortDesc)}"`);
     if (p.description) f.push(`description:"${esc(p.description)}"`);
+    if (p.about && p.about.length) f.push(`about:[${p.about.map((a) => `"${esc(a)}"`).join(",")}]`);
     f.push(`benefits:[${p.benefits.map((b) => `"${esc(b)}"`).join(",")}]`);
     f.push(`howToUse:"${esc(p.howToUse)}"`);
     f.push(`ingredients:"${esc(p.ingredients)}"`);
