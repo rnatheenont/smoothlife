@@ -47,10 +47,16 @@ export async function runSokoSync(): Promise<SyncRunResult> {
   let skipRefs = new Set<string>();
   try {
     const since = new Date(Date.now() - 30 * 24 * 3600_000).toISOString();
-    const done = await supabaseRest<{ order_ref: string | null }[]>(
-      `tracking_sync_log?select=order_ref&received_at=gte.${since}&or=(action.eq.already-set,applied.is.true)`
+    const done = await supabaseRest<{ order_ref: string | null; action: string; reason: string | null }[]>(
+      `tracking_sync_log?select=order_ref,action,reason&received_at=gte.${since}&or=(action.eq.already-set,applied.is.true,action.eq.not-eligible)`
     );
-    skipRefs = new Set(done.map((d) => d.order_ref).filter((r): r is string => Boolean(r)));
+    // Not-eligible only when it can never change: a follow-up box (_F) that
+    // the settings say not to write, or a cancelled order. An unpaid order is
+    // not skipped — it may be paid by the next run. Re-reading the permanent
+    // ones every run used up the order-page allowance before newer orders.
+    const permanent = (d: { action: string; reason: string | null }) =>
+      d.action !== "not-eligible" || /_F|ยกเลิก/.test(d.reason ?? "");
+    skipRefs = new Set(done.filter(permanent).map((d) => d.order_ref).filter((r): r is string => Boolean(r)));
   } catch (err) {
     // Worst case we re-read a few View pages we did not have to.
     console.error("[soko-sync] could not load already-synced refs", err);
@@ -64,7 +70,7 @@ export async function runSokoSync(): Promise<SyncRunResult> {
     // 200s of the five minutes (see api/cron/soko-sync): room for a slow list
     // page or two and the order pages after them, leaving the rest for the
     // Shopify writes.
-    rows = await fetchPackedOrders(20, skipRefs, Math.max(5_000, RUN_BUDGET_MS - 100_000 - (Date.now() - started)));
+    rows = await fetchPackedOrders(40, skipRefs, Math.max(5_000, RUN_BUDGET_MS - 100_000 - (Date.now() - started)));
   } catch (err) {
     // A scraper's worst failure is the silent one: the login page changes, the
     // run returns nothing, and everyone assumes there was nothing to send.
