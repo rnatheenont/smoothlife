@@ -30,8 +30,16 @@
 //      — a keypair was generated and our public half uploaded, but every call
 //      still fails (HTTP 401). Thirteen envelope variations were tried and
 //      ruled out; see encryptThenSignXml for what the evidence actually says.
-//      The open question is where this merchant's public key is meant to be
-//      registered, which needs 2C2P support.
+//      2C2P support (2026-09-15) confirmed the Recurring Payment Maintenance
+//      API is enabled, that the portal's "Server-to-server API - Public key"
+//      field IS the right place for our key, and to use their JWE-tab key —
+//      so the 401 is not a key-location problem. Their reply pointed to an
+//      attached guide for the request format; compare against that next.
+//   3. Renewing a finished term with the stored card: support says send
+//      `customerToken` in the Payment Token request (redirect integration),
+//      no CVV needed — but only once non-3DS is enabled on the account
+//      (not yet; request via thsales@2c2p.com). Until then nothing may
+//      charge a stored card unattended.
 import { createHmac } from "crypto";
 
 const MERCHANT_ID = process.env.TWOC2P_MERCHANT_ID;
@@ -301,6 +309,11 @@ export type PaymentCallback = {
   respCode: string;
   respDesc: string;
   recurringUniqueID?: string;
+  // The stored-card token from `tokenize: true` — 2C2P confirmed (support
+  // reply, 2026-09-15) that on API v4.3 it comes back as `customerToken`,
+  // not cardToken/storeCardUniqueID. Empty string when no card was stored.
+  customerToken?: string;
+  customerTokenExpiry?: string | null;
 };
 
 // Verifies and decodes the JWT-wrapped body 2C2P posts to backendReturnUrl

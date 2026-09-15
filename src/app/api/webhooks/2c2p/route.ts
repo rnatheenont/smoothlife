@@ -72,13 +72,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "invalid signature" }, { status: 200 });
   }
 
-  // 2C2P's docs never state which response field carries the card token
-  // created by `tokenize: true` (they variously call it cardToken and
-  // storeCardUniqueID), and guessing wrong in code that later charges a card
-  // unattended is not acceptable — so learn the real name from a real
-  // transaction. Keys only, never values: the token itself does not belong in
-  // a log. Remove once the field is known and stored properly.
-  console.log("[webhooks/2c2p] callback fields:", Object.keys(callback).sort().join(","));
+  // Whether this callback carried a stored-card token — presence only, the
+  // token itself never goes in a log.
+  const customerToken = callback.customerToken?.trim() || null;
+  console.log("[webhooks/2c2p] customerToken:", customerToken ? "present" : "absent");
 
   const success = callback.respCode === "0000";
 
@@ -183,6 +180,10 @@ export async function POST(req: NextRequest) {
       // cancelRecurringPlan) — not present on every callback per 2C2P's
       // docs, so only overwrite when this one actually carries it.
       ...(callback.recurringUniqueID ? { recurring_unique_id: callback.recurringUniqueID } : {}),
+      // Kept for renewing the next term without the customer re-entering the
+      // card. Nothing charges with it yet: an unattended charge needs non-3DS,
+      // which 2C2P has not enabled on this account.
+      ...(customerToken ? { customer_token: customerToken, customer_token_expiry: callback.customerTokenExpiry ?? null } : {}),
       updated_at: new Date().toISOString(),
     }),
   });
