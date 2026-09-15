@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
@@ -51,5 +52,7 @@ export async function POST(req: NextRequest) {
       question: String(question).trim(),
     }),
   });
+  // The product page is cached; a fresh load should include this question.
+  revalidateTag(`product:${slug}`);
   return NextResponse.json({ ok: true, question: created });
 }

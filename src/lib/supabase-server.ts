@@ -76,3 +76,26 @@ export async function supabaseRest<T>(
   const text = await res.text();
   return (text ? JSON.parse(text) : null) as T;
 }
+
+/**
+ * A read that Next.js may cache — for public data that pages render, where a
+ * short staleness window is fine and every write path calls revalidateTag()
+ * on the same tags. Unlike supabaseRest this does not force the page dynamic,
+ * so the page itself can be served from the edge cache.
+ */
+export async function supabaseRestCached<T>(path: string, opts: { revalidate: number; tags: string[] }): Promise<T> {
+  if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+    throw new Error("Supabase not configured — set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
+  }
+  const res = await fetchWithRetry(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+    next: { revalidate: opts.revalidate, tags: opts.tags },
+  });
+  if (!res.ok) throw new Error(`Supabase REST ${res.status}: ${await res.text()}`);
+  return (await res.json()) as T;
+}
+
+/** Cache tags for a product page's live parts (reviews, questions, subscribe option). */
+export function productPageTags(slug: string) {
+  return [`product:${slug}`, "product-pages"];
+}

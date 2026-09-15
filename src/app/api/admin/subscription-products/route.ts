@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
@@ -114,6 +115,8 @@ export async function PATCH(req: NextRequest) {
         productSlugs.map((slug: string) => ({ product_slug: slug, [field]: value, updated_at: new Date().toISOString() }))
       ),
     });
+    // Product pages are cached and show the subscribe option — refresh them all.
+    revalidateTag("product-pages");
     return NextResponse.json({ ok: true, updated: productSlugs.length });
   }
 
@@ -146,5 +149,6 @@ export async function PATCH(req: NextRequest) {
     });
   }
 
+  revalidateTag(`product:${productSlug}`);
   return NextResponse.json({ ok: true, subscribable: next.subscribable, bundleEligible: next.bundle_eligible });
 }

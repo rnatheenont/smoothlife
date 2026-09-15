@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { getProductBySlug, getRelatedProducts, products } from "@/data/products";
+import { getProductBySlug, getRelatedProducts } from "@/data/products";
 import { categories } from "@/data/categories";
-import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
+import { supabaseRestCached, supabaseConfigured, productPageTags } from "@/lib/supabase-server";
 import { subscriptionBillingConfigured } from "@/lib/2c2p";
 import type { ReviewRow } from "@/app/api/reviews/route";
 import type { QuestionRow } from "@/app/api/product-questions/route";
@@ -14,8 +14,17 @@ import TrackRecentlyViewed from "@/components/TrackRecentlyViewed";
 import RecentlyViewedSection from "@/components/RecentlyViewedSection";
 import { productJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 
+// Pages render on first visit and are then served from the edge cache,
+// refreshed at most every five minutes — and at once when a review is
+// approved, a question is posted or the subscribe option changes, since those
+// routes revalidate this page's tags. Nothing is prerendered at build time:
+// 900-odd pages would add Supabase reads to every deploy for pages most people
+// never open. The catalogue itself is baked into the build, so a redeploy
+// already refreshes prices and stock.
+export const revalidate = 300;
+
 export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
+  return [];
 }
 
 export function generateMetadata({ params }: { params: { slug: string } }) {
@@ -32,8 +41,9 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
 async function getReviews(slug: string): Promise<ReviewRow[]> {
   if (!supabaseConfigured()) return [];
   try {
-    return await supabaseRest<ReviewRow[]>(
-      `product_reviews?product_slug=eq.${encodeURIComponent(slug)}&status=eq.approved&select=id,product_slug,author_name,rating,title,body,review_type,status,created_at&order=created_at.desc`
+    return await supabaseRestCached<ReviewRow[]>(
+      `product_reviews?product_slug=eq.${encodeURIComponent(slug)}&status=eq.approved&select=id,product_slug,author_name,rating,title,body,review_type,status,created_at&order=created_at.desc`,
+      { revalidate, tags: productPageTags(slug) }
     );
   } catch {
     return [];
@@ -43,8 +53,9 @@ async function getReviews(slug: string): Promise<ReviewRow[]> {
 async function getQuestions(slug: string): Promise<QuestionRow[]> {
   if (!supabaseConfigured()) return [];
   try {
-    return await supabaseRest<QuestionRow[]>(
-      `product_questions?product_slug=eq.${encodeURIComponent(slug)}&select=id,product_slug,author_name,question,answer,answered_at,created_at&order=created_at.desc`
+    return await supabaseRestCached<QuestionRow[]>(
+      `product_questions?product_slug=eq.${encodeURIComponent(slug)}&select=id,product_slug,author_name,question,answer,answered_at,created_at&order=created_at.desc`,
+      { revalidate, tags: productPageTags(slug) }
     );
   } catch {
     return [];
@@ -57,8 +68,9 @@ async function getQuestions(slug: string): Promise<QuestionRow[]> {
 async function getSubscribable(slug: string): Promise<boolean> {
   if (!supabaseConfigured()) return false;
   try {
-    const [row] = await supabaseRest<{ subscribable: boolean }[]>(
-      `product_subscription_settings?product_slug=eq.${encodeURIComponent(slug)}&select=subscribable`
+    const [row] = await supabaseRestCached<{ subscribable: boolean }[]>(
+      `product_subscription_settings?product_slug=eq.${encodeURIComponent(slug)}&select=subscribable`,
+      { revalidate, tags: productPageTags(slug) }
     );
     return row ? row.subscribable : false;
   } catch {

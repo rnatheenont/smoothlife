@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
@@ -39,6 +40,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     returning: false,
     body: JSON.stringify({ status: "approved", approved_at: new Date().toISOString() }),
   });
+  // The product page is cached; show the newly approved review there now.
+  revalidateTag(`product:${review.product_slug}`);
 
   const points = review.points_awarded ?? 0;
   if (points > 0) {
