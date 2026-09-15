@@ -282,7 +282,12 @@ export async function probeOrderStatuses(orderHref: string, timeoutMs = 20_000) 
   };
 }
 
-export async function probeOrderList(pick: string[] = ["none", "mid", "txt"], timeoutMs = 25_000) {
+export async function probeOrderList(
+  pick: string[] = ["none", "mid", "txt"],
+  timeoutMs = 25_000,
+  /** Extra list queries by their raw grid parameters (keys must be Merchantorders*). */
+  custom: Record<string, string>[] = []
+) {
   if (!sokoConfigured()) throw new SokoError("ยังไม่ได้ตั้งค่า SOKO_USERNAME / SOKO_PASSWORD");
   const loginAt = Date.now();
   const jar = await login();
@@ -302,7 +307,9 @@ export async function probeOrderList(pick: string[] = ["none", "mid", "txt"], ti
   // the last one's "25 seconds" is mostly time spent waiting for the first.
   const results = [];
   for (const name of pick) {
-    const params = catalogue[name];
+    const params = name.startsWith("custom")
+      ? { r: "order/index", ...custom[Number(name.slice(6)) || 0] }
+      : catalogue[name];
     if (!params) {
       results.push({ name, error: "ไม่รู้จักแบบนี้" });
       continue;
@@ -336,6 +343,17 @@ export async function probeOrderList(pick: string[] = ["none", "mid", "txt"], ti
           .slice(0, 3)
           .map((h) => decode(h.replace(/^href="/i, "").replace(/"$/, ""))),
         loginForm: /LoginForm\[password\]/.test(html),
+        // Row order and store mix, as soko's own view ids — no customer data.
+        rowIds: html
+          .split(/<tr[\s>]/i)
+          .map((r) => {
+            const id = r.match(/r=order(?:%2F|\/)view(?:&amp;|&)id=(\d+)/i);
+            return id ? `${id[1]}${r.includes(STORE) ? "*" : ""}` : null;
+          })
+          .filter(Boolean),
+        // The grid's filter and sort controls, so the fast queries can be found.
+        inputs: [...new Set((html.match(/name="(Merchantorders[^"]*)"/g) || []).map((m) => m.slice(6, -1)))].slice(0, 40),
+        sortLinks: [...new Set((html.match(/Merchantorders_sort=[^&"]+/g) || []))].slice(0, 20),
       });
     } catch (err) {
       results.push({
