@@ -10,7 +10,8 @@ export default function RecentlyViewedSection({ excludeSlug }: { excludeSlug?: s
   const viewed = slugs
     .filter((s) => s !== excludeSlug)
     .map((s) => getProductBySlug(s))
-    .filter((p): p is NonNullable<typeof p> => Boolean(p))
+    // A sold-out product here is a dead end — it can't be added to the cart.
+    .filter((p): p is NonNullable<typeof p> => Boolean(p?.inStock))
     .slice(0, 4);
 
   if (viewed.length === 0) return null;
