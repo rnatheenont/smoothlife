@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomBytes } from "crypto";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { emailConfigured, sendEmail, resetLinkEmailHtml } from "@/lib/email";
+import { emailSendLimited } from "@/lib/rate-limit";
 
 const TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const RESEND_COOLDOWN_MS = 60 * 1000;
@@ -32,6 +33,9 @@ export async function POST(req: NextRequest) {
   );
   if (recent[0] && Date.now() - new Date(recent[0].created_at).getTime() < RESEND_COOLDOWN_MS) {
     return NextResponse.json({ ok: false, error: "กรุณารอสักครู่ก่อนขอลิงก์ใหม่อีกครั้ง" }, { status: 429 });
+  }
+  if (await emailSendLimited(req)) {
+    return NextResponse.json({ ok: false, error: "มีการขอลิงก์จากเครือข่ายนี้บ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่" }, { status: 429 });
   }
 
   const identities = await supabaseRest<{ user_id: string }[]>(

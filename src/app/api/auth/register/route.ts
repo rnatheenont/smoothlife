@@ -11,6 +11,7 @@ import { attributeReferralSignup } from "@/lib/referral-signup";
 import { maybeAwardMigrationBonus } from "@/lib/migration-bonus";
 import { shopifyEmailAuthConfigured } from "@/lib/shopify-customer-auth";
 import { shopifyAuthStartPath } from "@/lib/shopify-email-login";
+import { emailSendLimited } from "@/lib/rate-limit";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CODE_TTL_MS = 10 * 60 * 1000;
@@ -39,6 +40,12 @@ export async function POST(req: NextRequest) {
   }
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedPhone = phone.trim();
+
+  // Registration creates an account and can send a verification email, so it
+  // shares the per-IP email allowance.
+  if (await emailSendLimited(req)) {
+    return NextResponse.json({ ok: false, error: "มีการสมัครจากเครือข่ายนี้บ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่" }, { status: 429 });
+  }
 
   // Email already registered — rather than a hard dead-end, offer to update
   // that account's name/phone/password, but only once verified as the real

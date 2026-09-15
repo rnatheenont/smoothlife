@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomInt } from "crypto";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { emailConfigured, sendEmail, otpEmailHtml } from "@/lib/email";
+import { emailSendLimited } from "@/lib/rate-limit";
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
@@ -29,6 +30,9 @@ export async function POST(req: NextRequest) {
   );
   if (recent[0] && Date.now() - new Date(recent[0].created_at).getTime() < RESEND_COOLDOWN_MS) {
     return NextResponse.json({ ok: false, error: "กรุณารอสักครู่ก่อนขอรหัสใหม่อีกครั้ง" }, { status: 429 });
+  }
+  if (await emailSendLimited(req)) {
+    return NextResponse.json({ ok: false, error: "มีการขอรหัสจากเครือข่ายนี้บ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่" }, { status: 429 });
   }
 
   const code = String(randomInt(100000, 1000000));

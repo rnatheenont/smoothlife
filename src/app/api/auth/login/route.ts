@@ -4,9 +4,10 @@ import { verifyPassword } from "@/lib/password";
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { getUserLoyalty } from "@/lib/user-tier";
 import { ensureShopifyLink } from "@/lib/link-shopify-customer";
-import { isRateLimited, clientIp } from "@/lib/rate-limit";
+import { isRateLimitedShared, clientIp } from "@/lib/rate-limit";
 
 const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_MAX_PER_IP = 30;
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
@@ -19,11 +20,15 @@ export async function POST(req: NextRequest) {
   }
   const normalizedEmail = String(email).trim().toLowerCase();
 
-  // Keyed by IP+email together — blocks both someone hammering one
-  // account from anywhere, and one attacker spraying many accounts from
-  // the same place — without locking out other users of that email who
-  // happen to share an IP (e.g. same office/NAT).
-  if (isRateLimited(`login:${clientIp(req)}:${normalizedEmail}`, LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS)) {
+  // Two shared (cross-instance) windows. IP+email stops guessing one
+  // account's password without locking out that email's owner on another
+  // network; the looser per-IP window stops one source spraying many
+  // accounts. The old per-instance limiter multiplied by every warm lambda.
+  const ip = clientIp(req);
+  if (
+    (await isRateLimitedShared(`login:${ip}:${normalizedEmail}`, LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS)) ||
+    (await isRateLimitedShared(`login-ip:${ip}`, LOGIN_MAX_PER_IP, LOGIN_WINDOW_MS))
+  ) {
     return NextResponse.json(
       { ok: false, error: "ลองเข้าสู่ระบบผิดหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่ค่ะ" },
       { status: 429 }

@@ -82,6 +82,18 @@ export async function purgeExpiredRateLimitHits(olderThanMs = 24 * 60 * 60 * 100
   }
 }
 
+/**
+ * Per-IP ceiling for endpoints that send an email (OTP codes, reset links,
+ * registration). Each already has a per-address cooldown; this stops one
+ * source from walking through many addresses — an inbox-bombing run that
+ * would also spend the email provider's quota.
+ */
+export const EMAIL_SEND_MAX_PER_IP_PER_HOUR = 10;
+
+export function emailSendLimited(req: Request): Promise<boolean> {
+  return isRateLimitedShared(`email-send:${clientIp(req)}`, EMAIL_SEND_MAX_PER_IP_PER_HOUR, 60 * 60 * 1000);
+}
+
 export function clientIp(req: Request): string {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 }
