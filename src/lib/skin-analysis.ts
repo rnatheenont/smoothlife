@@ -66,9 +66,82 @@ export type ConcernResult = {
 };
 export type ConcernResults = Record<ConcernMetric, ConcernResult>;
 
-/** What's shown on a chip: 0-100, higher is better. */
+/**
+ * What's shown on a chip: 0-100, higher is better, in steps of 5.
+ *
+ * Steps of 5 because that is as fine as a photo can be read: two photos taken
+ * seconds apart differ in light and angle by more than "71 vs 74", and
+ * printing that difference made the same face look like it had changed.
+ */
 export function concernScore(severity: number) {
-  return Math.max(0, Math.min(100, Math.round(100 - severity)));
+  return Math.max(0, Math.min(100, Math.round((100 - severity) / 5) * 5));
+}
+
+// ── Level scoring ──────────────────────────────────────────────────────────
+// The analysis rates each concern in each face area as a level, 0–4, against
+// written anchors, instead of picking a number from 0–100. A free number
+// invited made-up precision — the same photo sent twice came back 23 one time
+// and 41 the next — while "none / slight / some / clear / marked" is a call
+// the model makes the same way again. Levels become severities here, in code,
+// so the mapping never drifts.
+
+/** Severity for each level: the middle of the band the old 0–100 anchors used. */
+export const LEVEL_SEVERITY = [5, 20, 38, 58, 82] as const;
+export const LEVEL_LABEL = ["ไม่พบ", "เล็กน้อย", "ปานกลาง", "ชัดเจน", "มาก"] as const;
+
+const round5 = (n: number) => Math.round(n / 5) * 5;
+
+/** A severity read back as its level word ("เล็กน้อย", …) — for older numbers too. */
+export function levelLabel(severity: number) {
+  const i = severity <= 12 ? 0 : severity <= 28 ? 1 : severity <= 47 ? 2 : severity <= 69 ? 3 : 4;
+  return LEVEL_LABEL[i];
+}
+
+/**
+ * One concern from area levels. The overall severity leans on the worst area
+ * (a breakout on the chin is a breakout even if the forehead is clear) but
+ * counts how widespread it is too. Null when no area was rated.
+ */
+export function concernFromLevels(key: ConcernMetric, raw: unknown): ConcernResult | null {
+  const r = raw as { note?: unknown; zones?: Record<string, unknown>; level?: unknown } | null;
+  const level = (v: unknown) => {
+    const n = typeof v === "number" ? v : typeof v === "string" ? parseFloat(v) : NaN;
+    return Number.isFinite(n) ? Math.round(Math.min(4, Math.max(0, n))) : null;
+  };
+  const fallback = level(r?.level);
+  const zones: Partial<Record<ZoneKey, number>> = {};
+  const severities: number[] = [];
+  for (const z of CONCERN_DEFS[key].zones) {
+    const l = level(r?.zones?.[z]) ?? fallback;
+    if (l === null) continue;
+    zones[z] = LEVEL_SEVERITY[l];
+    severities.push(LEVEL_SEVERITY[l]);
+  }
+  if (severities.length === 0) return null;
+  for (const z of CONCERN_DEFS[key].zones) zones[z] ??= Math.min(...severities);
+  const max = Math.max(...severities);
+  const mean = severities.reduce((a, b) => a + b, 0) / severities.length;
+  return {
+    severity: round5(0.6 * max + 0.4 * mean),
+    note: typeof r?.note === "string" ? r.note.slice(0, 200) : "",
+    zones,
+  };
+}
+
+/** Skin-age bands the analysis picks from, with where in the band it sits. */
+const AGE_BANDS: [number, number][] = [
+  [18, 24],
+  [25, 30],
+  [31, 38],
+  [39, 48],
+  [49, 60],
+];
+export function skinAgeFromBand(band: unknown, position: unknown): number | null {
+  const b = typeof band === "number" ? band : parseFloat(String(band));
+  if (!Number.isFinite(b)) return null;
+  const [lo, hi] = AGE_BANDS[Math.round(Math.min(4, Math.max(0, b)))];
+  const at = position === "low" ? 0.2 : position === "high" ? 0.8 : 0.5;
+  return Math.round(lo + (hi - lo) * at);
 }
 
 /** One overall number: the mean of the twelve scores. */

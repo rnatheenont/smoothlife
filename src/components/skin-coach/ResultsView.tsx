@@ -20,6 +20,7 @@ import {
   ZONE_LABEL,
   concernScore,
   healthBand,
+  levelLabel,
   skinHealth,
   type ConcernMetric,
   type ZoneKey,
@@ -137,6 +138,25 @@ function MetricRow({ row }: { row: CareRow }) {
         </div>
       )}
     </li>
+  );
+}
+
+// Two photos taken a minute apart can read differently when the light
+// changes, so the page says when this photo's conditions may have moved the
+// result, and how to take the next one so the two can be compared.
+function PhotoQualityNote({ issues }: { issues?: string[] }) {
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      {issues && issues.length > 0 && (
+        <p className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-xs text-amber-900">
+          <span className="font-semibold">สภาพรูปครั้งนี้: {issues.join(" · ")}</span> ผลบางด้านอาจคลาดเคลื่อน
+          ลองสแกนใหม่ในที่แสงสว่างสม่ำเสมอ
+        </p>
+      )}
+      <p className="text-xs text-slate-500">
+        เพื่อเทียบผลแต่ละครั้งให้แม่น: สแกนที่เดิม แสงเดิม ช่วงเวลาใกล้เคียงกัน หน้าสด ไม่ใช้ฟิลเตอร์
+      </p>
+    </div>
   );
 }
 
@@ -348,7 +368,7 @@ export default function ResultsView({
                       <span key={zone} className="rounded-full bg-white px-2.5 py-1 text-xs text-slate-700">
                         {ZONE_LABEL[zone]}
                         {zone.endsWith("Left") ? " (ซ้ายภาพ)" : zone.endsWith("Right") ? " (ขวาภาพ)" : ""}{" "}
-                        <span className="font-semibold tabular-nums">{concernScore(sev)}</span>
+                        <span className="font-semibold">{levelLabel(sev)}</span>
                       </span>
                     ))}
                   </p>
@@ -407,6 +427,7 @@ export default function ResultsView({
             <p className="mt-4 text-xs text-slate-600">
               ความละเอียดของผล: <span className="font-semibold text-brand-ink">{confidence.label}</span> · จาก {angleLabels.join(", ")}
             </p>
+            <PhotoQualityNote issues={metrics.photoIssues} />
             {previous && (
               <p className="mt-2 rounded-xl bg-surface-soft px-4 py-3 text-sm text-slate-600">
                 ครั้งก่อน ({formatScanDate(previous.scanned_at)})
@@ -449,6 +470,7 @@ export default function ResultsView({
           ความละเอียดของผล: <span className="font-semibold text-brand-ink">{confidence.label}</span> · จาก{" "}
           {angleLabels.join(", ")}
         </p>
+        <PhotoQualityNote issues={metrics.photoIssues} />
 
         {previous && (
           <div className="mt-4 rounded-xl bg-surface-mist px-4 py-3 text-sm">

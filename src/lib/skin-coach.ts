@@ -11,6 +11,8 @@ export type SkinCoachMetrics = {
   concerns?: ConcernResults;
   /** Everyday care tips for the top concerns. */
   advice?: string;
+  /** What about the photo may have moved the result ("แสงน้อย", …); empty when fine. */
+  photoIssues?: string[];
   overallNote: string;
   disclaimer: string;
 };

@@ -39,7 +39,15 @@ const MIN_WIDTH = 0.3; // cheek-to-cheek, as a share of the box width
 const MAX_WIDTH = 0.62; // wider and the forehead or chin leaves the circle
 const MAX_ROLL = 14; // degrees of head tilt
 const MAX_OFFCENTRE = 0.12; // face centre from the circle centre, as a share of the box
-const MIN_LIGHT = 45; // average brightness, 0–255
+// Brightness of the face itself (0–255), not the whole frame: a bright face
+// against a dark room read as "too dark" before, and a dim face against a
+// window read as fine — and dim photos are the ones that score differently
+// from one shot to the next.
+const MIN_LIGHT = 60;
+// One side of the face this much darker than the other (as a share of the
+// brighter side) gets a tip to face the light. Advice only — it never stops
+// the shutter.
+const UNEVEN_LIGHT = 0.35;
 const MAX_LIGHT = 248;
 const SMOOTH = 0.35; // share of each new reading in the running average
 
@@ -258,8 +266,8 @@ export default function LiveScanStep({
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
     const probe = document.createElement("canvas");
-    probe.width = 32;
-    probe.height = 24;
+    probe.width = 64;
+    probe.height = 48;
     const probeCtx = probe.getContext("2d", { willReadFrequently: true })!;
 
     let lastTime = -1;
@@ -268,6 +276,7 @@ export default function LiveScanStep({
     let isReady = false;
     let capturing = false;
     let light = 128;
+    let uneven = false;
     let lastLightAt = 0;
     let lastHint = "";
     let avg: ReturnType<typeof geometry> | null = null;
@@ -471,11 +480,38 @@ export default function LiveScanStep({
 
       if (now - lastLightAt > 400) {
         lastLightAt = now;
-        probeCtx.drawImage(video, 0, 0, probe.width, probe.height);
-        const px = probeCtx.getImageData(0, 0, probe.width, probe.height).data;
-        let sum = 0;
-        for (let i = 0; i < px.length; i += 4) sum += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
-        light = sum / (px.length / 4);
+        const PW = probe.width;
+        const PH = probe.height;
+        probeCtx.drawImage(video, 0, 0, PW, PH);
+        const px = probeCtx.getImageData(0, 0, PW, PH).data;
+        const luma = (i: number) => 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+        // The face box from its sides, forehead and chin; the whole frame
+        // when there is no face yet.
+        const box = lm
+          ? {
+              x0: Math.floor(Math.min(lm[234].x, lm[454].x) * PW),
+              x1: Math.ceil(Math.max(lm[234].x, lm[454].x) * PW),
+              y0: Math.floor(lm[10].y * PH),
+              y1: Math.ceil(lm[152].y * PH),
+            }
+          : { x0: 0, x1: PW, y0: 0, y1: PH };
+        const x0 = Math.max(0, box.x0), x1 = Math.min(PW, box.x1);
+        const y0 = Math.max(0, box.y0), y1 = Math.min(PH, box.y1);
+        const mid = (x0 + x1) / 2;
+        let sum = 0, n = 0, left = 0, nl = 0, right = 0, nr = 0;
+        for (let y = y0; y < y1; y++) {
+          for (let x = x0; x < x1; x++) {
+            const v = luma((y * PW + x) * 4);
+            sum += v;
+            n++;
+            if (x < mid) (left += v), nl++;
+            else (right += v), nr++;
+          }
+        }
+        if (n > 0) light = sum / n;
+        const l = nl ? left / nl : 0;
+        const r = nr ? right / nr : 0;
+        uneven = Boolean(lm) && Math.max(l, r) > 0 && Math.abs(l - r) / Math.max(l, r) > UNEVEN_LIGHT;
       }
 
       let problem: string | null = null;
@@ -538,7 +574,13 @@ export default function LiveScanStep({
       const green = now - goodSince >= STEADY_MS;
       markReady(green);
       draw(lm, green);
-      say(green ? "พร้อมแล้ว กดปุ่มถ่ายได้เลย" : "ค้างไว้แบบนี้…");
+      say(
+        green
+          ? uneven
+            ? "พร้อมแล้ว กดถ่ายได้ · แสงสองข้างหน้าไม่เท่ากัน หันเข้าหาแสงจะแม่นขึ้น"
+            : "พร้อมแล้ว กดปุ่มถ่ายได้เลย"
+          : "ค้างไว้แบบนี้…"
+      );
     };
     tick();
   }
@@ -557,6 +599,7 @@ export default function LiveScanStep({
           <li>หันหน้าเข้าหาแสงสว่าง ไม่ย้อนแสง</li>
           <li>ถอดแว่น เปิดหน้าผาก</li>
           <li>ถือโทรศัพท์ระดับสายตา ห่างประมาณหนึ่งช่วงแขน</li>
+          <li>หน้าสด ไม่ใช้ฟิลเตอร์ และสแกนที่เดิม แสงเดิมทุกครั้ง เพื่อเทียบผลได้แม่น</li>
         </ul>
         {error && (
           <p role="alert" className="mt-4 rounded-lg bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">

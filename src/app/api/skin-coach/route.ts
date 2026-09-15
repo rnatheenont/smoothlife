@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiRateLimit } from "@/lib/ai-rate-limit";
 import { logAiUsage } from "@/lib/ai-usage";
-import { CONCERN_KEYS, normaliseConcern, type ConcernResults } from "@/lib/skin-analysis";
+import { CONCERN_KEYS, concernFromLevels, skinAgeFromBand, type ConcernResults } from "@/lib/skin-analysis";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,52 +13,59 @@ const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 const API_URL = "https://api.anthropic.com/v1/messages";
 
 // Scoring is anchored to what can be seen, concern by concern and area by
-// area, and the model has to write down what it sees before it scores.
-// Without anchors it answered most faces with the same mid-range numbers.
-const SYSTEM_PROMPT = `You are a cosmetic skin-appearance analyser for a Thai beauty retailer's website. You are given 1-6 photos of the same person's face, each labelled with what it shows (front, left/right cheek, forehead, under-eye, chin, or a spot they are concerned about). The FIRST photo is the front view. Assess 12 visible surface concerns, each overall and per face area, plus an estimated visible "skin age".
+// area, and the model writes down what it sees before it rates anything.
+//
+// Each area gets a LEVEL (0–4), not a free number: asked for "exact numbers",
+// the same face photographed seconds apart came back with very different
+// scores, because the model cannot tell 23 from 31 and was told to pick one
+// anyway. Levels are turned into scores in code (lib/skin-analysis).
+const SYSTEM_PROMPT = `You are a cosmetic skin-appearance analyser for a Thai beauty retailer's website. You are given 1-6 photos of the same person's face, each labelled with what it shows (front, left/right cheek, forehead, under-eye, chin, or a spot they are concerned about). The FIRST photo is the front view. Rate 12 visible surface concerns in each face area, estimate the visible "skin age", and report the photo's quality.
 
 FACE AREAS (always as they appear in the FRONT photo — "Left"/"Right" mean the left/right side of that IMAGE, not the person's own left/right):
 forehead · nose · cheekLeft · cheekRight · underEyeLeft · underEyeRight · chin
 
-CONCERNS — "severity" 0-100, higher = more visible issue. Rate the areas listed for each concern:
-- acne (active blemishes, bumps, red breakout marks) — forehead, nose, cheekLeft, cheekRight, chin. 0-10 none · 11-25 one to three small spots · 26-45 several in one area · 46-65 many or across areas · 66-100 widespread/inflamed-looking
-- spots (dark spots, patches, post-blemish marks) — forehead, nose, cheekLeft, cheekRight, chin. 0-10 even · 11-25 one or two faint marks · 26-45 several marks · 46-65 noticeable patches · 66-100 extensive
-- wrinkles (fine lines/wrinkles) — forehead, underEyeLeft, underEyeRight. 0-10 none · 11-25 faint when expressive · 26-45 fine lines at rest · 46-65 lines in several places · 66-100 deep lines
-- texture (roughness, unevenness of surface) — forehead, nose, cheekLeft, cheekRight, chin. 0-10 smooth · 26-45 some visible roughness · 66-100 very uneven
-- pores (visible enlarged pores) — forehead, nose, cheekLeft, cheekRight. 0-10 not visible · 11-30 faint on nose · 31-50 nose and inner cheeks · 51-70 across cheeks · 71-100 prominent
-- darkCircles (darkness under the eyes) — underEyeLeft, underEyeRight. 0-10 none · 26-45 noticeable shadow · 66-100 very dark
-- eyeBags (puffiness under the eyes) — underEyeLeft, underEyeRight. 0-10 flat · 26-45 some puffiness · 66-100 pronounced bags
-- redness (visible redness, flushing, irritation) — forehead, nose, cheekLeft, cheekRight, chin. 0-10 none · 26-45 mild patches · 66-100 widespread
-- oiliness (shine/greasiness) — forehead, nose, chin. 0-10 matte · 26-45 some shine in T-zone · 66-100 very shiny
-- moisture: severity = DRYNESS (flaking, tight dull dryness) — forehead, cheekLeft, cheekRight. 0-10 well hydrated · 26-45 somewhat dry · 66-100 very dry
-- radiance: severity = DULLNESS (lack of glow, grey/sallow tone) — forehead, cheekLeft, cheekRight. 0-10 glowing · 26-45 somewhat dull · 66-100 very dull
-- firmness: severity = SAGGING (loss of contour, jowls, nasolabial depth) — cheekLeft, cheekRight, chin. 0-10 firm · 26-45 some softening · 66-100 marked sagging
+CONCERNS — rate each listed area with a LEVEL 0-4 using these anchors (what is visible IN THAT AREA):
+- acne (active blemishes, bumps, red breakout marks) — forehead, nose, cheekLeft, cheekRight, chin. 0 none · 1 one to three small spots · 2 several · 3 many · 4 widespread or inflamed-looking
+- spots (dark spots, patches, post-blemish marks) — forehead, nose, cheekLeft, cheekRight, chin. 0 even tone · 1 one or two faint marks · 2 several marks · 3 noticeable patches · 4 extensive
+- wrinkles (fine lines/wrinkles) — forehead, underEyeLeft, underEyeRight. 0 none · 1 faint, only when expressive · 2 fine lines at rest · 3 clear lines · 4 deep lines
+- texture (roughness, unevenness of surface) — forehead, nose, cheekLeft, cheekRight, chin. 0 smooth · 1 slight unevenness · 2 some visible roughness · 3 clearly rough or bumpy · 4 very uneven
+- pores (visible enlarged pores) — forehead, nose, cheekLeft, cheekRight. 0 not visible · 1 faint · 2 visible at normal distance · 3 enlarged, clearly visible · 4 prominent across the area
+- darkCircles (darkness under the eyes) — underEyeLeft, underEyeRight. 0 none · 1 faint shadow · 2 noticeable shadow · 3 dark · 4 very dark
+- eyeBags (puffiness under the eyes) — underEyeLeft, underEyeRight. 0 flat · 1 slight puffiness · 2 some puffiness · 3 clear bags · 4 pronounced bags
+- redness (visible redness, flushing, irritation) — forehead, nose, cheekLeft, cheekRight, chin. 0 none · 1 faint flush · 2 mild patches · 3 clear redness · 4 widespread
+- oiliness (shine/greasiness of the skin itself) — forehead, nose, chin. 0 matte · 1 slight sheen · 2 some shine · 3 shiny · 4 very shiny
+- moisture — rate DRYNESS — forehead, cheekLeft, cheekRight. 0 well hydrated · 1 slightly dry · 2 somewhat dry or tight-looking · 3 dry with flaking · 4 very dry
+- radiance — rate DULLNESS — forehead, cheekLeft, cheekRight. 0 glowing · 1 slightly dull · 2 somewhat dull · 3 dull or sallow · 4 very dull or grey
+- firmness — rate SAGGING — cheekLeft, cheekRight, chin. 0 firm · 1 slight softening · 2 some softening · 3 clear sagging · 4 marked sagging
 
-HOW TO SCORE — in this order:
-1. Write "evidence": short concrete observations of what is visible in THESE photos, by area. If lighting, blur, makeup or a filter hides something, say so.
-2. Score each concern and each of its areas from the evidence using the anchors. Areas differ — do not copy one number to every area. Different faces should almost never get identical scores; use exact numbers (23, 41, 67), not round defaults.
-3. Skin age (visible surface only): very smooth, no lines at rest, even tone → 18-24; faint under-eye lines → 25-30; fine lines at rest around eyes/forehead → 31-38; lines in several areas, softer contour → 39-48; deeper lines → 49+. A specific number from the evidence.
+HOW TO RATE — in this order:
+1. Write "evidence": short concrete observations of what is visible in THESE photos, by area.
+2. Rate every listed area of every concern with a level from the anchors. Rate each area on its own.
+3. Be consistent: the same face in similar photos must get the same levels. When an area sits between two levels, choose the LOWER one unless the higher is clearly visible. Judge the skin, not the light: glare from a lamp or flash is not oiliness, a shadow from overhead light is not dark circles, a colour cast from the camera is not redness or dullness.
+4. Skin age (visible surface only) — pick a band: 0 very smooth, no lines at rest, even tone (18-24) · 1 faint under-eye lines (25-30) · 2 fine lines at rest around eyes/forehead (31-38) · 3 lines in several areas, softer contour (39-48) · 4 deeper lines (49+). Then where in the band: "low", "mid" or "high".
+5. Photo quality: lighting "good", "dim", "harsh" (strong glare or hard shadows) or "uneven" (one side much brighter); "sharp" false if blurry; "filterOrMakeup" true if a beauty filter, smoothing or visible makeup hides the skin.
 
 STRICT RULES:
 - Cosmetic reference only, NOT a medical or dermatological diagnosis. No disease names, no "condition", no treatment claims.
 - Skin age describes the SKIN SURFACE only — never a claim about real age, health or ethnicity.
 - Only comment on what is visible. Never mention race, ethnicity, gender, health, or anything but visible surface skin.
-- If no photo clearly shows a face, or lighting/angle makes assessment impossible, say so honestly instead of guessing.
+- If no photo clearly shows a face, set faceDetected false instead of guessing.
 - Do NOT name, suggest or hint at any product, brand or ingredient.
 - Output ONLY valid JSON, nothing outside it, exactly this shape:
 {
   "evidence": string (<=100 words, English),
   "faceDetected": boolean,
-  "skinAge": { "years": number, "note": string (<=15 words, Thai, warm/playful) },
+  "photoQuality": { "lighting": "good" | "dim" | "harsh" | "uneven", "sharp": boolean, "filterOrMakeup": boolean },
+  "skinAge": { "band": 0-4, "position": "low" | "mid" | "high", "note": string (<=15 words, Thai, warm/playful) },
   "concerns": {
-    "<concern>": { "severity": number, "note": string (<=15 words, Thai, says where/what was seen), "zones": { "<area>": number, ...only that concern's areas } },
+    "<concern>": { "note": string (<=15 words, Thai, says where/what was seen), "zones": { "<area>": 0-4, ...only that concern's areas } },
     ...all 12: acne, spots, wrinkles, texture, pores, darkCircles, eyeBags, redness, oiliness, moisture, radiance, firmness
   },
   "overallNote": string (<=25 words, Thai, warm and encouraging, no product mentions),
   "advice": string (<=45 words, Thai, 2-3 practical everyday care tips for the top concerns, no product or brand names),
   "disclaimer": "ผลนี้เป็นการประเมินเบื้องต้นเพื่อความสวยงามจากภาพถ่ายเท่านั้น ไม่ใช่การวินิจฉัยทางการแพทย์ หากมีความกังวลด้านผิวหนัง ควรปรึกษาแพทย์ผิวหนัง"
 }
-If faceDetected is false, still return the shape with every severity and skinAge.years set to 0 and notes explaining the photo(s) could not be assessed.`;
+If faceDetected is false, still return the shape with every level 0 and notes explaining the photo(s) could not be assessed.`;
 
 function extractJson(text: string): any | null {
   const cleaned = text.trim().replace(/^```(json)?/i, "").replace(/```$/, "").trim();
@@ -81,8 +88,8 @@ const DISCLAIMER =
   "ผลนี้เป็นการประเมินเบื้องต้นเพื่อความสวยงามจากภาพถ่ายเท่านั้น ไม่ใช่การวินิจฉัยทางการแพทย์ หากมีความกังวลด้านผิวหนัง ควรปรึกษาแพทย์ผิวหนัง";
 
 /**
- * Makes the model's JSON safe for the page: all twelve concerns present and
- * clamped, areas limited to each concern's own, notes as strings, the
+ * Makes the model's JSON safe for the page: all twelve concerns present, area
+ * levels turned into scores, skin age from its band, notes as strings, the
  * disclaimer always there. The four fields older screens read (acne, pores,
  * darkSpots, wrinkles) are filled from the concerns so nothing downstream
  * changes. "evidence" — the model's working — is dropped. Only an explicit
@@ -92,26 +99,38 @@ function normalise(raw: any) {
   const str = (v: unknown, fallback = "") => (typeof v === "string" ? v.slice(0, 300) : fallback);
   const concerns = {} as ConcernResults;
   for (const key of CONCERN_KEYS) {
-    const c = normaliseConcern(key, raw?.concerns?.[key]);
+    const c = concernFromLevels(key, raw?.concerns?.[key]);
     if (!c) return null;
     concerns[key] = c;
   }
-  const yearsRaw = typeof raw?.skinAge?.years === "number" ? raw.skinAge.years : parseFloat(raw?.skinAge?.years);
-  if (!Number.isFinite(yearsRaw)) return null;
-  const years = Math.round(Math.min(100, Math.max(0, yearsRaw)));
+  const faceDetected = raw?.faceDetected !== false;
+  const years = faceDetected ? skinAgeFromBand(raw?.skinAge?.band, raw?.skinAge?.position) : 0;
+  if (years === null) return null;
   const legacy = (k: keyof ConcernResults) => ({ score: concerns[k].severity, note: concerns[k].note });
   return {
-    faceDetected: raw?.faceDetected !== false && years > 0,
+    faceDetected: faceDetected && years > 0,
     skinAge: { years, note: str(raw?.skinAge?.note) },
     acne: legacy("acne"),
     pores: legacy("pores"),
     darkSpots: legacy("spots"),
     wrinkles: legacy("wrinkles"),
     concerns,
+    photoIssues: photoIssues(raw?.photoQuality),
     overallNote: str(raw?.overallNote),
     advice: str(raw?.advice),
     disclaimer: str(raw?.disclaimer, DISCLAIMER) || DISCLAIMER,
   };
+}
+
+/** What about the photo may have moved the result, in words for the page. */
+function photoIssues(q: any): string[] {
+  const issues: string[] = [];
+  if (q?.lighting === "dim") issues.push("แสงน้อย");
+  else if (q?.lighting === "harsh") issues.push("แสงจ้าหรือมีเงาแข็ง");
+  else if (q?.lighting === "uneven") issues.push("แสงสองข้างหน้าไม่เท่ากัน");
+  if (q?.sharp === false) issues.push("รูปไม่ค่อยชัด");
+  if (q?.filterOrMakeup === true) issues.push("มีฟิลเตอร์หรือเครื่องสำอางบังผิว");
+  return issues;
 }
 
 type ImageInput = { base64: string; mediaType: "image/jpeg" | "image/png"; zone?: string };
