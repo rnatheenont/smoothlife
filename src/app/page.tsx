@@ -11,6 +11,7 @@ import { subscriptionPlans } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
 import { heroBanners } from "@/data/heroBanners";
 import { getLiveHeroBanners } from "@/lib/shopify-admin";
+import { getStorefrontHeroBanners } from "@/lib/storefront-banners";
 import HeroCarousel from "@/components/HeroCarousel";
 import DealOfTheDayCard from "@/components/DealOfTheDayCard";
 import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
@@ -25,10 +26,10 @@ import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 import { Button } from "@/components/ui";
 
 export const metadata = { alternates: { canonical: "/" } };
-// Re-pulls the live smoothlife.com banner slideshow at most once an hour —
+// Re-pulls the live smoothlife.com banner slideshow at most every 30 minutes —
 // so an edit made there through the Shopify theme customizer shows up here
 // automatically, without a code change or redeploy on this side.
-export const revalidate = 3600;
+export const revalidate = 1800;
 
 const articleCategoryLabel: Record<string, string> = {
   guide: "คู่มือ",
@@ -39,7 +40,9 @@ const articleCategoryLabel: Record<string, string> = {
 };
 
 export default async function HomePage() {
-  const liveHeroBanners = await getLiveHeroBanners();
+  // The slides the team publishes on www.smoothlife.com, read off that page;
+  // the theme-file route is the backup, the static list the last resort.
+  const liveHeroBanners = (await getStorefrontHeroBanners()) ?? (await getLiveHeroBanners());
   const bestSellers = products.filter((p) => p.inStock && p.badges?.includes("Bestseller")).slice(0, 8);
   const newArrivals = products
     .filter((p) => p.inStock && p.badges?.includes("New"))
