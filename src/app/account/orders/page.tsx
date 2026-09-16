@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Package, Loader2, Truck, RefreshCw, ChevronRight } from "lucide-react";
@@ -8,7 +8,16 @@ import { useCart } from "@/lib/cart-context";
 import { getProductBySlug } from "@/data/products";
 import AccountLayout from "@/components/account/AccountLayout";
 import { formatTHB } from "@/lib/format";
-import { orderStateBadge, stillShipping, stalledOrder, financialText, orderIdFromGid } from "@/lib/order-status";
+import {
+  orderStateBadge,
+  stillShipping,
+  stalledOrder,
+  financialText,
+  orderIdFromGid,
+  orderStage,
+  ORDER_STAGE_LABEL,
+  type OrderStage,
+} from "@/lib/order-status";
 import type { ShopifyOrderSummary } from "@/lib/shopify-admin";
 import type { buildTracking } from "@/lib/tracking";
 import ShipmentTracker from "@/components/ShipmentTracker";
@@ -28,6 +37,22 @@ function OrdersContent() {
   const [error, setError] = useState(false);
   const [linking, setLinking] = useState(false);
   const [linkAttempted, setLinkAttempted] = useState(false);
+  // Which pile of orders to show. Arrives from the account page's counters
+  // (?stage=to_ship) and the tabs below take over from there. Read off
+  // location rather than useSearchParams so this page needs no Suspense
+  // boundary to stay statically renderable.
+  const [stage, setStage] = useState<OrderStage | "all">("all");
+  useEffect(() => {
+    const value = new URLSearchParams(window.location.search).get("stage");
+    if (value && value in ORDER_STAGE_LABEL) setStage(value as OrderStage);
+  }, []);
+
+  const stageCounts = useMemo(() => {
+    const counts = { to_pay: 0, to_ship: 0, to_receive: 0, completed: 0, refunded: 0, cancelled: 0 } as Record<OrderStage, number>;
+    for (const o of orders) counts[orderStage(o)] += 1;
+    return counts;
+  }, [orders]);
+  const shown = stage === "all" ? orders : orders.filter((o) => orderStage(o) === stage);
 
   function loadOrders() {
     return fetch("/api/account/orders")
@@ -149,8 +174,38 @@ function OrdersContent() {
           แต่ยอดสะสมด้านบนนับรวมไว้ครบแล้ว หากต้องการรายละเอียดคำสั่งซื้อเก่า ติดต่อทีมงานได้เลยค่ะ
         </p>
       )}
+      {/* Marketplace-style tabs: one scrolling row, the active one underlined
+          rather than filled, so six states fit a phone without wrapping. */}
+      {orders.length > 0 && (
+        <div className="scrollbar-none -mx-4 mb-5 flex gap-1 overflow-x-auto border-b border-surface-line px-4">
+          {([["all", "ทั้งหมด", orders.length]] as [OrderStage | "all", string, number][])
+            .concat((Object.keys(ORDER_STAGE_LABEL) as OrderStage[]).map((k) => [k, ORDER_STAGE_LABEL[k], stageCounts[k]]))
+            .map(([key, label, count]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setStage(key)}
+                aria-current={stage === key ? "true" : undefined}
+                className={`shrink-0 whitespace-nowrap border-b-2 px-3 pb-2.5 pt-1 text-sm transition-colors ${
+                  stage === key
+                    ? "border-brand-action font-bold text-brand-ink"
+                    : "border-transparent font-medium text-slate-500 hover:text-brand-ink"
+                }`}
+              >
+                {label}
+                {count > 0 && <span className="ml-1 text-xs text-slate-400">({count})</span>}
+              </button>
+            ))}
+        </div>
+      )}
+
       <div className="flex flex-col gap-4">
-        {orders.map((o) => {
+        {shown.length === 0 && orders.length > 0 && (
+          <p className="rounded-xl2 border border-slate-100 px-4 py-8 text-center text-sm text-slate-500 shadow-card">
+            ไม่มีคำสั่งซื้อในสถานะนี้
+          </p>
+        )}
+        {shown.map((o) => {
           const badge = orderStateBadge(o);
           const shipping = stillShipping(o);
           const refunded = Number(o.refunded) > 0;

@@ -137,3 +137,43 @@ export function stalledOrder(order: {
   const age = Date.now() - new Date(order.createdAt).getTime();
   return Number.isFinite(age) && age > STALLED_AFTER_DAYS * 86_400_000;
 }
+
+/**
+ * The buying stage a customer thinks in, the way every Thai marketplace lists
+ * them: waiting to pay, waiting to be packed, on its way, done, refunded,
+ * cancelled. One classifier so the account overview's counters and the orders
+ * page's filter tabs can never disagree about which pile an order is in.
+ */
+export type OrderStage = "to_pay" | "to_ship" | "to_receive" | "completed" | "refunded" | "cancelled";
+
+export const ORDER_STAGE_LABEL: Record<OrderStage, string> = {
+  to_pay: "ที่ต้องชำระ",
+  to_ship: "ที่ต้องจัดส่ง",
+  to_receive: "ที่ต้องได้รับ",
+  completed: "สำเร็จ",
+  refunded: "คืนเงิน/คืนสินค้า",
+  cancelled: "ยกเลิกแล้ว",
+};
+
+const UNPAID_STATUSES = ["PENDING", "UNPAID", "PARTIALLY_PAID", "AUTHORIZED", "EXPIRED"];
+
+export function orderStage(order: {
+  financialStatus: string | null;
+  fulfillmentStatus: string | null;
+  cancelledAt?: string | null;
+  refunded?: string | number | null;
+  // Courier steps, when the page has them: a delivery scan is the only proof
+  // an order actually arrived.
+  tracking?: { shipments: { steps: { key: string; state: string }[] }[] } | null;
+}): OrderStage {
+  if (order.cancelledAt || order.financialStatus === "VOIDED") return "cancelled";
+  if (order.financialStatus === "REFUNDED" || Number(order.refunded ?? 0) > 0) return "refunded";
+  if (UNPAID_STATUSES.includes(order.financialStatus || "")) return "to_pay";
+  if ((order.fulfillmentStatus || "UNFULFILLED") !== "FULFILLED") return "to_ship";
+
+  const shipments = order.tracking?.shipments ?? [];
+  const arrived =
+    shipments.length > 0 &&
+    shipments.every((s) => s.steps.some((step) => step.key === "delivered" && step.state !== "todo"));
+  return arrived ? "completed" : "to_receive";
+}

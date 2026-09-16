@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronRight,
+  CheckCircle2,
   CreditCard,
   Crown,
   Gift,
@@ -17,17 +18,19 @@ import {
   Receipt,
   Repeat,
   ScanFace,
-  Star,
   Ticket,
+  RotateCcw,
   Truck,
   User,
   Users,
+  XCircle,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import RewardsOverviewCard from "@/components/account/RewardsOverviewCard";
 import { coupons } from "@/data/coupons";
 import SkinScanSummaryCard from "@/components/account/SkinScanSummaryCard";
+import { orderStage, type OrderStage } from "@/lib/order-status";
 
 // The account overview, laid out the way Thai shoppers already read a
 // marketplace account page: who you are at the top, then the four order
@@ -35,41 +38,21 @@ import SkinScanSummaryCard from "@/components/account/SkinScanSummaryCard";
 // services this shop actually has, then settings. Everything here links to a
 // page that already existed — this screen is navigation, not new features.
 
-type Step = { key: string; state: "done" | "current" | "todo" };
-type Shipment = { steps: Step[] };
 type OrderRow = {
-  id: string;
   financialStatus: string | null;
   fulfillmentStatus: string | null;
   cancelledAt: string | null;
+  refunded?: string | null;
   items: { slug: string | null }[];
-  tracking?: { shipments: Shipment[] };
+  tracking?: { shipments: { steps: { key: string; state: string }[] }[] };
 };
 
-type Counts = { toPay: number; toShip: number; toReceive: number; toReview: number };
+type Counts = Record<OrderStage, number>;
 
-const UNPAID = ["PENDING", "UNPAID", "PARTIALLY_PAID", "AUTHORIZED"];
-
-function delivered(order: OrderRow): boolean {
-  const shipments = order.tracking?.shipments ?? [];
-  if (shipments.length === 0) return false;
-  return shipments.every((s) => s.steps.some((st) => st.key === "delivered" && st.state !== "todo"));
-}
-
-function countOrders(orders: OrderRow[], reviewedSlugs: Set<string>): Counts {
-  const live = orders.filter((o) => !o.cancelledAt);
-  const toPay = live.filter((o) => UNPAID.includes(o.financialStatus || "")).length;
-  const toShip = live.filter(
-    (o) => !UNPAID.includes(o.financialStatus || "") && (o.fulfillmentStatus || "UNFULFILLED") !== "FULFILLED"
-  ).length;
-  const toReceive = live.filter((o) => o.fulfillmentStatus === "FULFILLED" && !delivered(o)).length;
-  // Something you have in your hands and haven't rated yet.
-  const waiting = new Set<string>();
-  for (const o of live) {
-    if (!delivered(o)) continue;
-    for (const item of o.items) if (item.slug && !reviewedSlugs.has(item.slug)) waiting.add(item.slug);
-  }
-  return { toPay, toShip, toReceive, toReview: waiting.size };
+function countOrders(orders: OrderRow[]): Counts {
+  const counts: Counts = { to_pay: 0, to_ship: 0, to_receive: 0, completed: 0, refunded: 0, cancelled: 0 };
+  for (const o of orders) counts[orderStage(o)] += 1;
+  return counts;
 }
 
 function Tile({ icon: Icon, label, href, count }: { icon: LucideIcon; label: string; href: string; count: number | null }) {
@@ -122,17 +105,11 @@ export default function AccountOverview() {
     let alive = true;
     (async () => {
       try {
-        const [ordersRes, reviewsRes] = await Promise.all([
-          fetch("/api/account/orders").then((r) => r.json()),
-          fetch("/api/account/reviews").then((r) => r.json()).catch(() => ({ reviews: [] })),
-        ]);
+        const ordersRes = await fetch("/api/account/orders").then((r) => r.json());
         if (!alive) return;
-        const reviewed = new Set<string>(
-          (reviewsRes?.reviews ?? []).map((r: { product_slug: string }) => r.product_slug)
-        );
-        setCounts(countOrders(Array.isArray(ordersRes?.orders) ? ordersRes.orders : [], reviewed));
+        setCounts(countOrders(Array.isArray(ordersRes?.orders) ? ordersRes.orders : []));
       } catch {
-        if (alive) setCounts({ toPay: 0, toShip: 0, toReceive: 0, toReview: 0 });
+        if (alive) setCounts({ to_pay: 0, to_ship: 0, to_receive: 0, completed: 0, refunded: 0, cancelled: 0 });
       }
     })();
     return () => {
@@ -164,11 +141,15 @@ export default function AccountOverview() {
               ดูประวัติการซื้อ <ChevronRight size={14} />
             </Link>
           </div>
-          <div className="grid grid-cols-4 gap-1 px-2 py-4">
-            <Tile icon={CreditCard} label="ที่ต้องชำระ" href="/account/orders" count={c?.toPay ?? null} />
-            <Tile icon={Package} label="ที่ต้องจัดส่ง" href="/account/orders" count={c?.toShip ?? null} />
-            <Tile icon={Truck} label="ที่ต้องได้รับ" href="/account/orders" count={c?.toReceive ?? null} />
-            <Tile icon={Star} label="ให้คะแนน" href="/account/reviews" count={c?.toReview ?? null} />
+          {/* Every stage an order can be in, each opening the orders page
+              already filtered to that stage. */}
+          <div className="grid grid-cols-3 gap-1 px-2 py-4 sm:grid-cols-6">
+            <Tile icon={CreditCard} label="ที่ต้องชำระ" href="/account/orders?stage=to_pay" count={c?.to_pay ?? null} />
+            <Tile icon={Package} label="ที่ต้องจัดส่ง" href="/account/orders?stage=to_ship" count={c?.to_ship ?? null} />
+            <Tile icon={Truck} label="ที่ต้องได้รับ" href="/account/orders?stage=to_receive" count={c?.to_receive ?? null} />
+            <Tile icon={CheckCircle2} label="สำเร็จ" href="/account/orders?stage=completed" count={c?.completed ?? null} />
+            <Tile icon={RotateCcw} label="คืนเงิน/คืนสินค้า" href="/account/orders?stage=refunded" count={c?.refunded ?? null} />
+            <Tile icon={XCircle} label="ยกเลิกแล้ว" href="/account/orders?stage=cancelled" count={c?.cancelled ?? null} />
           </div>
         </div>
 
