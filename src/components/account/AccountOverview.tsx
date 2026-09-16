@@ -27,6 +27,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import RewardsOverviewCard from "@/components/account/RewardsOverviewCard";
 import { coupons } from "@/data/coupons";
+import SkinScanSummaryCard from "@/components/account/SkinScanSummaryCard";
 
 // The account overview, laid out the way Thai shoppers already read a
 // marketplace account page: who you are at the top, then the four order
@@ -183,12 +184,21 @@ export default function AccountOverview() {
           </div>
         </div>
 
-        {/* Services — the things you do on this site that aren't buying. */}
+        {/* Skin — the scans already saved and the two ways to add another,
+            so nothing about skin sits in a second place further down. */}
+        <div>
+          <h2 className="mb-3 text-sm font-bold text-brand-ink">ผิวของฉัน</h2>
+          <SkinScanSummaryCard />
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <ServiceTile icon={ScanFace} label="สแกนผิวใหม่" href="/skin-coach" />
+            <ServiceTile icon={MessageCircle} label="ปรึกษา AI" href="/ai-assistant" />
+          </div>
+        </div>
+
+        {/* Everything else you can do from an account */}
         <div>
           <h2 className="mb-3 text-sm font-bold text-brand-ink">บริการของเรา</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <ServiceTile icon={ScanFace} label="สแกนผิว" href="/skin-coach" />
-            <ServiceTile icon={MessageCircle} label="ปรึกษา AI" href="/ai-assistant" />
             <ServiceTile icon={Repeat} label="สมัครรายเดือน" href="/account/subscriptions" />
             <ServiceTile icon={Heart} label="รายการโปรด" href="/account/wishlist" />
           </div>
