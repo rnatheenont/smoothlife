@@ -14,7 +14,7 @@ export default function SkinScanSummaryCard() {
   const latest = scans[0];
   if (!latest) {
     return (
-      <Link href="/skin-coach" className="rounded-xl2 border border-slate-100 shadow-card p-5 flex items-center gap-3 group">
+      <Link href="/skin-coach" className="rounded-xl2 border border-slate-100 bg-white shadow-card p-5 flex items-center gap-3 group">
         <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">
           <ScanFace size={18} />
         </div>
@@ -30,7 +30,7 @@ export default function SkinScanSummaryCard() {
   const band = healthBand(score);
   const care = careAreas(latest, 2);
   return (
-    <Link href="/account/skin-scans" className="rounded-xl2 border border-slate-100 shadow-card p-5 flex items-center gap-4 group">
+    <Link href="/account/skin-scans" className="rounded-xl2 border border-slate-100 bg-white shadow-card p-5 flex items-center gap-4 group">
       <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-surface-mist">
         {latest.photo_url ? (
           // eslint-disable-next-line @next/next/no-img-element

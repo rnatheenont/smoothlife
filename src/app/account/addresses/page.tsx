@@ -173,7 +173,7 @@ function AddressesContent() {
             </div>
           )}
           {addresses.map((a) => (
-            <div key={a.id} className="rounded-xl2 border border-slate-100 shadow-card p-4">
+            <div key={a.id} className="rounded-xl2 border border-slate-100 bg-white shadow-card p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2.5">
                   <MapPin size={16} className="text-brand-emerald mt-0.5 shrink-0" />

@@ -73,7 +73,7 @@ function ReviewsContent() {
             const product = getProductBySlug(r.product_slug);
             const status = STATUS_LABELS[r.status] ?? { label: r.status, className: "bg-slate-100 text-slate-500" };
             return (
-              <div key={r.id} className="rounded-xl2 border border-slate-100 p-4 shadow-card">
+              <div key={r.id} className="rounded-xl2 border border-slate-100 bg-white p-4 shadow-card">
                 <div className="flex items-start gap-3">
                   {product && (
                     <Link href={`/product/${product.slug}`} className="relative h-14 w-14 shrink-0 rounded-lg overflow-hidden bg-surface-soft">

@@ -93,7 +93,10 @@ function AccountShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="container-page py-6 md:py-10 max-w-6xl mx-auto">
+    // A tinted page behind white cards: on plain white the cards' only edge
+    // was a hairline border, so they read as sections of one flat page.
+    <div className="min-h-[70vh] bg-surface-soft">
+      <div className="container-page py-6 md:py-10 max-w-6xl mx-auto">
       <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-8">
         {/* Desktop sidebar */}
         <aside className="hidden lg:block">
@@ -165,6 +168,7 @@ function AccountShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="min-w-0">{children}</div>
+        </div>
       </div>
     </div>
   );

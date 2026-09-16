@@ -201,7 +201,7 @@ function OrdersContent() {
 
       <div className="flex flex-col gap-4">
         {shown.length === 0 && orders.length > 0 && (
-          <p className="rounded-xl2 border border-slate-100 px-4 py-8 text-center text-sm text-slate-500 shadow-card">
+          <p className="rounded-xl2 border border-slate-100 bg-white px-4 py-8 text-center text-sm text-slate-500 shadow-card">
             ไม่มีคำสั่งซื้อในสถานะนี้
           </p>
         )}
@@ -211,7 +211,7 @@ function OrdersContent() {
           const refunded = Number(o.refunded) > 0;
           const stalled = stalledOrder(o);
           return (
-            <div key={`${o.store}-${o.id}`} className="rounded-xl2 border border-slate-100 p-5 shadow-card">
+            <div key={`${o.store}-${o.id}`} className="rounded-xl2 border border-slate-100 bg-white p-5 shadow-card">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   {/* The whole header links through — the order number is what

@@ -79,7 +79,7 @@ function ReferralContent() {
           ต้องมีคำสั่งซื้อสำเร็จอย่างน้อย 1 ครั้งในช่วง 3 เดือนล่าสุด จึงจะแชร์ลิงก์แนะนำเพื่อนได้ค่ะ
         </div>
       ) : (
-        <div className="rounded-xl2 border border-slate-100 p-5 shadow-card mb-8">
+        <div className="rounded-xl2 border border-slate-100 bg-white p-5 shadow-card mb-8">
           <p className="text-xs text-slate-500 mb-2">ลิงก์แนะนำเพื่อนของคุณ</p>
           <div className="flex items-center gap-2">
             <input
@@ -108,7 +108,7 @@ function ReferralContent() {
           {referrals.map((r) => {
             const status = STATUS_LABELS[r.status] ?? { label: r.status, className: "bg-slate-100 text-slate-500" };
             return (
-              <div key={r.id} className="rounded-xl2 border border-slate-100 p-3.5 shadow-card flex items-center justify-between gap-3">
+              <div key={r.id} className="rounded-xl2 border border-slate-100 bg-white p-3.5 shadow-card flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs text-slate-500">{new Date(r.created_at).toLocaleDateString("th-TH")}</p>
                   {r.order_amount != null && (

@@ -66,7 +66,7 @@ function LeaderboardContent() {
       </h1>
       <p className="text-sm text-slate-500 mb-6">จัดอันดับจากคะแนนสะสมทั้งหมด — Top 15</p>
 
-      <div className="rounded-xl2 border border-slate-100 shadow-card overflow-hidden">
+      <div className="rounded-xl2 border border-slate-100 bg-white shadow-card overflow-hidden">
         {data.entries.map((e) => (
           <div
             key={e.userId}
