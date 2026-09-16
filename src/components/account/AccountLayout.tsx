@@ -140,8 +140,10 @@ function AccountShell({ children }: { children: ReactNode }) {
 
         {/* Mobile: horizontal scroll tab bar — grouped items stay adjacent,
             with a thin divider between clusters so the grouping still reads
-            even without room for group labels in a single scroll row. */}
-        <nav className="lg:hidden -mx-4 px-4 mb-5 flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+            even without room for group labels in a single scroll row. The
+            overview page is itself the menu on a phone, so the chips would
+            only repeat what is already on screen. */}
+        <nav className={`${pathname === "/account" ? "hidden" : "lg:hidden"} -mx-4 px-4 mb-5 flex items-center gap-2 overflow-x-auto scrollbar-none pb-1`}>
           {NAV_GROUPS.map((group, i) => (
             <div key={group.label ?? `group-${i}`} className="flex shrink-0 items-center gap-2">
               {i > 0 && <span className="h-5 w-px shrink-0 bg-slate-200" />}
