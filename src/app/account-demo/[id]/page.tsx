@@ -32,8 +32,7 @@ export default function DemoOrderPage({ params }: { params: { id: string } }) {
   const reachedIndex = order.reached ? STEPS.findIndex((s) => s.key === order.reached) : -1;
 
   return (
-    <div className="min-h-screen bg-surface-soft">
-      <div className="container-page mx-auto max-w-2xl py-6 md:py-10">
+    <div className="container-page mx-auto max-w-2xl py-6 md:py-10">
       <p className="mb-5 rounded-xl2 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
         <strong>ตัวอย่างการแสดงผล</strong> — ข้อมูลสมมติ ปุ่มในหน้านี้กดได้แต่ยังไม่ทำงานจริง
       </p>
@@ -183,7 +182,6 @@ export default function DemoOrderPage({ params }: { params: { id: string } }) {
             </button>
           )}
         </div>
-      </div>
       </div>
     </div>
   );

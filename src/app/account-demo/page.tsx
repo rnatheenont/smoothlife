@@ -33,8 +33,7 @@ export default function AccountDemoPage() {
   const progress = Math.round((DEMO.spend / DEMO.nextAt) * 100);
 
   return (
-    <div className="min-h-screen bg-surface-soft">
-      <div className="container-page mx-auto max-w-3xl py-6 md:py-10">
+    <div className="container-page mx-auto max-w-3xl py-6 md:py-10">
       <p className="mb-5 rounded-xl2 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
         <strong>ตัวอย่างการแสดงผล</strong> — ข้อมูลในหน้านี้เป็นข้อมูลสมมติทั้งหมด ไม่ใช่บัญชีจริงของใคร
         ใช้ดูว่าหน้าบัญชีจะหน้าตาแบบไหนเมื่อลูกค้ามีคำสั่งซื้อและแต้มจริง
@@ -162,7 +161,6 @@ export default function AccountDemoPage() {
             </div>
           </Link>
         ))}
-      </div>
       </div>
     </div>
   );

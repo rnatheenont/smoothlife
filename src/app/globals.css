@@ -12,7 +12,10 @@ html {
 
 body {
   color: #0f172a;
-  background: #ffffff;
+  /* The mint surface tone, site-wide: white cards need something to sit on,
+     and on a white page their only edge was a hairline border. Anything that
+     must stay white (cards, the header, product photos) sets its own bg. */
+  background: #f4faf8;
 }
 
 /* Taps register immediately instead of waiting ~300ms to rule out a
