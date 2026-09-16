@@ -95,7 +95,7 @@ export default function RewardsOverviewCard() {
   const ladderPercent = Math.min(100, Math.round((spend / topThreshold) * 100));
 
   return (
-    <div className="rounded-2xl overflow-hidden shadow-cardHover">
+    <div className="rounded-2xl overflow-hidden shadow-cardHover lg:grid lg:grid-cols-2">
       {/* Card face — read like a real membership card: what it is, who it
           belongs to, and the two facts staff would ask for (tier and member
           number). The old face also carried a "Lv.1" badge, which said the

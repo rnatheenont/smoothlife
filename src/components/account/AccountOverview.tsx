@@ -121,20 +121,22 @@ export default function AccountOverview() {
   const c = counts;
 
   return (
-    // Phones read it as one column, top to bottom. From lg the card and its
-    // strip sit in their own narrow column beside everything you actually
-    // came to tap, instead of a single 700px-wide ribbon of stacked blocks.
-    <div className="space-y-5 lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start lg:gap-6 lg:space-y-0">
+    // Phones read it as one column, top to bottom — unchanged. From lg the
+    // page becomes a two-column dashboard: the membership card and the order
+    // states each span the width, then benefits beside skin and services
+    // beside settings, so nothing sits in a narrow 340px strip next to the
+    // sidebar. Only lg: classes differ; the phone layout is untouched.
+    <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
       {/* Who you are — the membership card carries name, tier and points, so
           nothing here repeats it; the strip underneath only adds what the card
           has no room for. */}
-      <div className="lg:sticky lg:top-24">
+      <div className="lg:col-span-2">
         <RewardsOverviewCard />
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-5 lg:contents">
         {/* Orders */}
-        <div className="rounded-xl2 border border-surface-line bg-white shadow-card">
+        <div className="rounded-xl2 border border-surface-line bg-white shadow-card lg:col-span-2">
           <div className="flex items-center justify-between border-b border-surface-line px-4 py-3">
             <h2 className="text-sm font-bold text-brand-ink">การซื้อของฉัน</h2>
             <Link href="/account/orders" className="flex items-center gap-0.5 text-xs font-semibold text-brand-800">
@@ -157,7 +159,7 @@ export default function AccountOverview() {
             points here, coupons in the header and referrals three rows down. */}
         <div>
           <h2 className="mb-3 text-sm font-bold text-brand-ink">สิทธิประโยชน์ของฉัน</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
             <ServiceTile icon={Ticket} label="แลกแต้ม" href="/account/points" />
             <ServiceTile icon={Gift} label={`คูปองส่วนลด ${coupons.length}`} href="/cart" />
             <ServiceTile icon={Users} label="ชวนเพื่อน รับ ฿100" href="/account/referral" />
@@ -179,7 +181,7 @@ export default function AccountOverview() {
         {/* Everything else you can do from an account */}
         <div>
           <h2 className="mb-3 text-sm font-bold text-brand-ink">บริการของเรา</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
             <ServiceTile icon={Repeat} label="สมัครรายเดือน" href="/account/subscriptions" />
             <ServiceTile icon={Heart} label="รายการโปรด" href="/account/wishlist" />
           </div>
