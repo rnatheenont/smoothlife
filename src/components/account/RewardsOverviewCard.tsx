@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, CheckCircle2, ChevronRight, Crown, Gift } from "lucide-react";
+import { CheckCircle2, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import clsx from "clsx";
 import { tierBadge, tierCard, tierDisplayName, tierPerks } from "@/lib/tier";
 import { TIER_CRITERIA } from "@/lib/loyalty-shared";
 import type { Tier } from "@/lib/auth-context";
@@ -97,173 +96,99 @@ export default function RewardsOverviewCard() {
 
   return (
     <div className="rounded-2xl overflow-hidden shadow-cardHover">
-      {/* Card face */}
-      <div className="relative p-5 md:p-6 text-white" style={{ background: card.gradient }}>
+      {/* Card face — read like a real membership card: what it is, who it
+          belongs to, and the two facts staff would ask for (tier and member
+          number). The old face also carried a "Lv.1" badge, which said the
+          same thing as the tier name twice and fought it for attention. */}
+      <div className="relative overflow-hidden p-5 md:p-6 text-white" style={{ background: card.gradient }}>
         <div
-          className="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full"
+          className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full"
           style={{ background: card.shine }}
         />
         <div
-          className="pointer-events-none absolute -right-4 top-16 h-20 w-20 rounded-full"
+          className="pointer-events-none absolute -bottom-16 -right-2 h-28 w-28 rounded-full"
           style={{ background: card.shine }}
         />
 
-        <div className="relative flex items-start justify-between mb-6">
-          <div>
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-[0.2em] text-white/70">Smooth Life Membership</p>
-            <p className="text-lg font-extrabold">
+            <p className="mt-0.5 text-lg font-extrabold">
               Smoothlife<span className="opacity-80">.com</span>
             </p>
           </div>
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur">
-            <TierIcon size={20} />
-          </div>
-        </div>
-
-        <div className="relative flex items-center gap-3 mb-5">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/20 backdrop-blur text-lg font-bold overflow-hidden ring-2 ring-white/70">
-            <Avatar src={user.avatar} name={user.name} className="h-12 w-12" />
+          <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] backdrop-blur">
+            <TierIcon size={13} />
+            {tierDisplayName[user.tier].en}
           </span>
-          <div className="min-w-0">
-            <p className="text-xl md:text-2xl font-bold truncate">{user.name}</p>
-            <p className="text-[11px] text-white/70">สมาชิกตั้งแต่ {formatThaiDate(user.createdAt)}</p>
-          </div>
         </div>
 
-        <div className="relative flex items-end justify-between gap-3">
-          <div>
-            <p className="mb-0.5 text-[10px] uppercase tracking-widest text-white/80">เลขสมาชิก</p>
-            <p className="font-mono text-sm tracking-widest">{formatMemberId(user.id)}</p>
+        <div className="relative mt-6 flex items-end justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-white/20 ring-2 ring-white/70 backdrop-blur">
+              <Avatar src={user.avatar} name={user.name} className="h-12 w-12" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-xl font-bold md:text-2xl">{user.name}</p>
+              <p className="mt-0.5 font-mono text-[11px] tracking-[0.18em] text-white/75">{formatMemberId(user.id)}</p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="mb-0.5 text-[10px] uppercase tracking-widest text-white/80">{tierDisplayName[user.tier].en} Member</p>
-            <p className="text-xl font-extrabold">Lv.{badge.level}</p>
-          </div>
+          <p className="shrink-0 text-right text-[11px] leading-tight text-white/75">
+            สมาชิกตั้งแต่
+            <br />
+            <span className="font-semibold text-white/90">{formatThaiDate(user.createdAt)}</span>
+          </p>
         </div>
       </div>
 
       {/* Points + check-in panel — hidden while กิจกรรมและรางวัล is off */}
       {REWARDS_ACTIVITIES_ENABLED && (
-      <div className="bg-white p-5 md:p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-xs text-slate-500 mb-0.5">แต้มสะสมของคุณ</p>
-            <p className="text-2xl font-bold text-brand-ink">
-              {loading ? "…" : pointBalance.toLocaleString()}{" "}
-              <span className="text-sm font-medium text-slate-500">แต้ม</span>
-            </p>
-          </div>
-          <Link href="/account/points" className="flex items-center gap-0.5 text-xs font-semibold text-brand-800">
+      <div className="bg-white p-4 md:p-5">
+        {/* Points and tier progress in one compact block: the balance, one bar,
+            and the single sentence that says what the bar is for. The old
+            version spent half a phone screen on a three-rung ladder diagram to
+            say the same thing. */}
+        <div className="flex items-center justify-between gap-3">
+          <p className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold leading-none text-brand-ink">
+              {loading ? "…" : pointBalance.toLocaleString()}
+            </span>
+            <span className="text-sm text-slate-500">แต้มสะสม</span>
+          </p>
+          <Link href="/account/points" className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-brand-800">
             ดูทั้งหมด <ChevronRight size={12} />
           </Link>
         </div>
 
-        {/* The ladder, not just the next rung.
-            It used to read "อีก ฿3,000 ถึง Silver" over an empty bar: a target
-            with no progress attached and no reason to want it. */}
-        <div className="relative overflow-hidden rounded-xl2 border border-slate-100 bg-white p-4 shadow-card">
-          {/* A wash of the member's own tier colour, so the block belongs to
-              the card above it instead of looking like a generic panel. */}
-          <div
-            className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-[0.13]"
-            style={{ background: card.gradient }}
-          />
-
-          <div className="relative flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                ยอดสะสมระดับสมาชิก
-              </p>
-              <p className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-2xl font-extrabold leading-none text-brand-ink">{formatTHB(spend)}</span>
-                {progress.next && (
-                  <span className="text-xs font-medium text-slate-500">/ {formatTHB(nextThreshold)}</span>
-                )}
-              </p>
-            </div>
-            <span
-              className="flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold text-white shadow-sm"
-              style={{ background: card.gradient }}
-            >
-              <TierIcon size={12} />
-              {tierDisplayName[user.tier].en}
+        <div className="mt-4">
+          <div className="flex items-baseline justify-between gap-2 text-xs">
+            <span className="flex items-center gap-1.5 font-semibold text-brand-ink">
+              <TierIcon size={13} style={{ color: card.accent }} />
+              ระดับ {tierDisplayName[user.tier].en}
+            </span>
+            <span className="tabular-nums text-slate-500">
+              {formatTHB(spend)}
+              {progress.next ? ` / ${formatTHB(nextThreshold)}` : ""}
             </span>
           </div>
 
-          {/* One continuous ladder with the rungs marked, so "where am I" is
-              answered by looking rather than by reading a number. */}
-          <div className="relative mt-4 mb-7">
-            <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-              <div
-                className="relative h-full rounded-full transition-[width] duration-1000 ease-out"
-                style={{ width: `${Math.max(ladderPercent, 2)}%`, background: card.gradient }}
-              >
-                {/* A soft highlight along the fill — the difference between a
-                    progress bar and a coloured rectangle. */}
-                <span className="absolute inset-x-0 top-0 h-1/2 rounded-full bg-white/25" />
-              </div>
-            </div>
-
-            {TIER_CRITERIA.map((t) => {
-              const at = (t.minSpend / topThreshold) * 100;
-              const reached = spend >= t.minSpend;
-              const isCurrent = t.name === user.tier;
-              return (
-                <div
-                  key={t.name}
-                  className={clsx(
-                    "absolute -top-0.5 flex flex-col",
-                    at <= 0 ? "items-start" : at >= 100 ? "items-end -translate-x-full" : "-translate-x-1/2 items-center"
-                  )}
-                  style={{ left: `${Math.min(at, 100)}%` }}
-                >
-                  <span
-                    className={clsx(
-                      "grid place-items-center rounded-full border-2 border-white transition-colors",
-                      isCurrent ? "h-4 w-4 shadow-sm ring-2 ring-white" : "h-3.5 w-3.5",
-                      reached ? "" : "bg-slate-200"
-                    )}
-                    style={reached ? { background: card.gradient } : undefined}
-                  >
-                    {reached && <Check size={8} className="text-white" strokeWidth={4} />}
-                  </span>
-                  <span
-                    className={clsx(
-                      "mt-1.5 whitespace-nowrap text-[10px] tracking-wide",
-                      isCurrent ? "font-bold text-brand-ink" : reached ? "font-semibold text-slate-500" : "text-slate-500"
-                    )}
-                  >
-                    {tierDisplayName[t.name].en}
-                  </span>
-                </div>
-              );
-            })}
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full transition-[width] duration-1000 ease-out"
+              style={{ width: `${Math.max(ladderPercent, 2)}%`, background: card.gradient }}
+            />
           </div>
 
-          {progress.next ? (
-            <div className="relative flex items-start gap-2 rounded-lg bg-brand-gradient-soft px-3 py-2.5">
-              <Gift size={14} className="mt-0.5 shrink-0 text-brand-emerald" />
-              <p className="text-[11px] leading-relaxed text-slate-600">
-                อีก <span className="font-bold text-brand-800">{formatTHB(progress.remaining)}</span> ก็ขึ้นระดับ{" "}
+          <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+            {progress.next ? (
+              <>
+                อีก <span className="font-bold text-brand-800">{formatTHB(progress.remaining)}</span> ขึ้นระดับ{" "}
                 <span className="font-bold text-brand-ink">{tierDisplayName[progress.next as Tier].en}</span>
-                {nextPerk ? (
-                  <>
-                    <br />
-                    <span className="text-slate-500">รับทันที: {nextPerk}</span>
-                  </>
-                ) : null}
-              </p>
-            </div>
-          ) : (
-            <div className="relative flex items-center gap-2 rounded-lg bg-brand-gradient-soft px-3 py-2.5">
-              <Crown size={14} className="shrink-0 text-brand-emerald" />
-              <p className="text-[11px] font-semibold text-brand-ink">
-                คุณอยู่ระดับสูงสุดแล้ว ขอบคุณที่อยู่กับเรานะคะ
-              </p>
-            </div>
-          )}
-          <p className="relative mt-2 text-[10px] text-slate-500">
-            นับยอดซื้อ 12 เดือนล่าสุด · อัปเดตอัตโนมัติหลังคำสั่งซื้อสำเร็จ
+                {nextPerk ? ` · ${nextPerk}` : ""}
+              </>
+            ) : (
+              "คุณอยู่ระดับสูงสุดแล้ว ขอบคุณที่อยู่กับเรานะคะ"
+            )}
           </p>
         </div>
 

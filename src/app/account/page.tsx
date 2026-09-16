@@ -6,7 +6,6 @@ import { ChevronRight, ScanFace, UserCheck, X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import AccountLayout from "@/components/account/AccountLayout";
 import AccountOverview from "@/components/account/AccountOverview";
-import RewardsOverviewCard from "@/components/account/RewardsOverviewCard";
 import { formatScanDate, useScanHistory } from "@/components/skin-coach/ScanHistory";
 import { careAreas, scanScore } from "@/lib/skin-scan-summary";
 import { healthBand } from "@/lib/skin-analysis";
@@ -137,9 +136,6 @@ function AccountDashboard() {
       <ProfileCompletionBanner />
 
       <AccountOverview />
-
-      <h2 className="mb-3 mt-8 text-sm font-bold text-brand-ink">สิทธิสมาชิกของฉัน</h2>
-      <RewardsOverviewCard />
 
       <h2 className="mb-3 mt-8 text-sm font-bold text-brand-ink">ผลสแกนผิวของฉัน</h2>
       <SkinScanSummaryCard />

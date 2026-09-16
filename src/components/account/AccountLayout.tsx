@@ -28,54 +28,51 @@ import { DAILY_CHECKIN_ENABLED, REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature
 type NavItem = { href: string; label: string; icon: LucideIcon };
 type NavGroup = { label?: string; items: NavItem[] };
 
-// Grouped so 11 flat links become "the one you land on" + 3 scannable
-// clusters instead of one long undifferentiated list — profile/address/
-// password (account info), orders/subscriptions/wishlist (buying), and
-// checkin/points/leaderboard (engagement) are each their own kind of task.
+// One group per kind of task, in the order people ask for them: what I
+// bought, what I get for buying, the skin service, then the settings nobody
+// opens twice. Everything a flat list used to bury three rows apart —
+// wishlist next to orders, referrals next to points — now sits together.
 const NAV_GROUPS: NavGroup[] = [
   {
     items: [{ href: "/account", label: "ภาพรวม", icon: LayoutGrid }],
   },
   {
-    label: "บัญชีของฉัน",
+    label: "การซื้อของฉัน",
     items: [
-      { href: "/account/profile", label: "โปรไฟล์", icon: User },
+      { href: "/account/orders", label: "คำสั่งซื้อ", icon: Package },
+      { href: "/account/subscriptions", label: "สมัครรายเดือน", icon: Repeat },
+      { href: "/account/reviews", label: "รีวิวของฉัน", icon: MessageSquareText },
+      { href: "/account/wishlist", label: "รายการโปรด", icon: Heart },
+    ],
+  },
+  {
+    label: "สิทธิประโยชน์",
+    items: [
+      ...(REWARDS_ACTIVITIES_ENABLED
+        ? [
+            { href: "/account/points", label: "คะแนนสะสม", icon: Award },
+            ...(DAILY_CHECKIN_ENABLED
+              ? [{ href: "/account/checkin", label: "เช็กอินรายวัน", icon: CalendarCheck }]
+              : []),
+            { href: "/account/leaderboard", label: "อันดับ", icon: Trophy },
+          ]
+        : []),
+      { href: "/account/referral", label: "แนะนำเพื่อน", icon: Users },
+    ],
+  },
+  {
+    label: "บริการดูแลผิว",
+    items: [{ href: "/account/skin-scans", label: "ผลสแกนผิว", icon: ScanFace }],
+  },
+  {
+    label: "ตั้งค่าบัญชี",
+    items: [
+      { href: "/account/profile", label: "ข้อมูลส่วนตัว", icon: User },
       { href: "/account/addresses", label: "ที่อยู่จัดส่ง", icon: MapPin },
       { href: "/account/tax-addresses", label: "ที่อยู่ใบกำกับภาษี", icon: Receipt },
       { href: "/account/change-password", label: "เปลี่ยนรหัสผ่าน", icon: KeyRound },
     ],
   },
-  {
-    label: "การสั่งซื้อของฉัน",
-    items: [
-      { href: "/account/orders", label: "คำสั่งซื้อ", icon: Package },
-      { href: "/account/subscriptions", label: "การสมัครของฉัน", icon: Repeat },
-      { href: "/account/wishlist", label: "รายการโปรด", icon: Heart },
-      { href: "/account/reviews", label: "รีวิวของฉัน", icon: MessageSquareText },
-    ],
-  },
-  {
-    items: [{ href: "/account/skin-scans", label: "ผลสแกนผิว", icon: ScanFace }],
-  },
-  {
-    items: [{ href: "/account/referral", label: "แนะนำเพื่อน", icon: Users }],
-  },
-  ...(REWARDS_ACTIVITIES_ENABLED
-    ? [
-        {
-          label: "กิจกรรมและรางวัล",
-          items: [
-            // Hidden with the card's check-in panel — a menu entry for a
-            // feature that no longer shows anywhere is just a dead end.
-            ...(DAILY_CHECKIN_ENABLED
-              ? [{ href: "/account/checkin", label: "เช็กอินรายวัน", icon: CalendarCheck }]
-              : []),
-            { href: "/account/points", label: "คะแนนสะสม", icon: Award },
-            { href: "/account/leaderboard", label: "อันดับ", icon: Trophy },
-          ],
-        },
-      ]
-    : []),
 ];
 
 const NAV = NAV_GROUPS.flatMap((g) => g.items);
