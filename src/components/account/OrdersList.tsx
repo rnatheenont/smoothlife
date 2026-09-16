@@ -112,56 +112,6 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
     );
   }
 
-  if (!linked) {
-    return (
-      <div className={embedded ? "" : "max-w-3xl"}>
-        <Heading embedded={embedded} />
-        <div className="rounded-xl2 border border-amber-200 bg-amber-50 p-5 text-sm text-slate-700 leading-relaxed">
-          บัญชีของคุณยังไม่ได้เชื่อมกับระบบคำสั่งซื้อของ Shopify ค่ะ (มักเกิดขึ้นเมื่อสมัครสมาชิกด้วยอีเมล/เบอร์ที่ไม่ตรงกับตอนสั่งซื้อ)
-          <div className="mt-3">
-            <Button size="sm" onClick={handleRetryLink} disabled={linking}>
-              <RefreshCw size={13} className={linking ? "animate-spin" : ""} />
-              {linking ? "กำลังเชื่อมบัญชี…" : "ลองเชื่อมบัญชีอีกครั้ง"}
-            </Button>
-          </div>
-          {linkAttempted && (
-            <p className="mt-3 text-rose-600 font-medium">
-              ไม่พบคำสั่งซื้อที่ตรงกับอีเมล/เบอร์ของบัญชีนี้ค่ะ แปลว่าตอนสั่งซื้อน่าจะใช้อีเมล/เบอร์อื่น ระหว่างนี้ตรวจสอบคำสั่งซื้อได้จาก:
-            </p>
-          )}
-          <ul className="list-disc pl-5 mt-2 space-y-1">
-            <li>อีเมลยืนยันการสั่งซื้อ (order confirmation) ที่ส่งไปตอนกดสั่งซื้อ</li>
-            <li>
-              <Link href="/help/contact" className="text-brand-800 font-semibold">
-                ติดต่อทีมงาน
-              </Link>{" "}
-              เพื่อให้ช่วยเชื่อมบัญชีให้ค่ะ
-            </li>
-          </ul>
-        </div>
-      </div>
-    );
-  }
-
-  if (orders.length === 0) {
-    return (
-      <div className="text-center py-10">
-        <Package size={40} className="mx-auto text-slate-300" />
-        {/* "You have no orders" would be a lie to a customer whose purchases
-            are simply older than what we may list. The totals come from the
-            customer record and are right either way. */}
-        <p className="text-slate-500 mt-4">
-          {totals && totals.orders > 0
-            ? `คุณมีคำสั่งซื้อ ${totals.orders} รายการ ยอดรวม ${formatTHB(totals.spend)} — แต่ทั้งหมดเก่ากว่า 60 วัน จึงยังไม่แสดงที่นี่ ติดต่อทีมงานได้เลยหากต้องการรายละเอียดค่ะ`
-            : "คุณยังไม่มีคำสั่งซื้อ"}
-        </p>
-        <Link href="/shop" className="inline-block mt-4 text-brand-800 font-semibold text-sm">
-          เริ่มช้อปเลย
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div className={embedded ? "" : "max-w-3xl"}>
       <Heading embedded={embedded} />
@@ -182,8 +132,10 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
         </p>
       )}
       {/* Marketplace-style tabs: one scrolling row, the active one underlined
-          rather than filled, so six states fit a phone without wrapping. */}
-      {orders.length > 0 && (
+          rather than filled, so six states fit a phone without wrapping.
+          Shown even with no orders yet, so the page has its real shape from
+          the first visit instead of a lone empty message. */}
+      {(
         <div className="scrollbar-none -mx-4 mb-5 flex gap-1 overflow-x-auto border-b border-surface-line px-4">
           {([["all", "ทั้งหมด", orders.length]] as [OrderStage | "all", string, number][])
             .concat((Object.keys(ORDER_STAGE_LABEL) as OrderStage[]).map((k) => [k, ORDER_STAGE_LABEL[k], stageCounts[k]]))
@@ -211,6 +163,50 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
           <p className="rounded-xl2 border border-slate-100 bg-white px-4 py-8 text-center text-sm text-slate-500 shadow-card">
             ไม่มีคำสั่งซื้อในสถานะนี้
           </p>
+        )}
+        {!linked && (
+          <div className="rounded-xl2 border border-amber-200 bg-amber-50 p-5 text-sm text-slate-700 leading-relaxed">
+            บัญชีของคุณยังไม่ได้เชื่อมกับระบบคำสั่งซื้อของ Shopify ค่ะ (มักเกิดขึ้นเมื่อสมัครสมาชิกด้วยอีเมล/เบอร์ที่ไม่ตรงกับตอนสั่งซื้อ)
+            <div className="mt-3">
+              <Button size="sm" onClick={handleRetryLink} disabled={linking}>
+                <RefreshCw size={13} className={linking ? "animate-spin" : ""} />
+                {linking ? "กำลังเชื่อมบัญชี…" : "ลองเชื่อมบัญชีอีกครั้ง"}
+              </Button>
+            </div>
+            {linkAttempted && (
+              <p className="mt-3 text-rose-600 font-medium">
+                ไม่พบคำสั่งซื้อที่ตรงกับอีเมล/เบอร์ของบัญชีนี้ค่ะ แปลว่าตอนสั่งซื้อน่าจะใช้อีเมล/เบอร์อื่น ระหว่างนี้ตรวจสอบคำสั่งซื้อได้จาก:
+              </p>
+            )}
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>อีเมลยืนยันการสั่งซื้อ (order confirmation) ที่ส่งไปตอนกดสั่งซื้อ</li>
+              <li>
+                <Link href="/help/contact" className="text-brand-800 font-semibold">
+                  ติดต่อทีมงาน
+                </Link>{" "}
+                เพื่อให้ช่วยเชื่อมบัญชีให้ค่ะ
+              </li>
+            </ul>
+          </div>
+        )}
+        {linked && orders.length === 0 && (
+          <div className="rounded-xl2 border border-slate-100 bg-white px-6 py-12 text-center shadow-card">
+            <Package size={40} className="mx-auto text-slate-300" />
+            {/* "You have no orders" would be a lie to a customer whose purchases
+                are simply older than what we may list. The totals come from the
+                customer record and are right either way. */}
+            <p className="mt-4 text-sm text-slate-500">
+              {totals && totals.orders > 0
+                ? `คุณมีคำสั่งซื้อ ${totals.orders} รายการ ยอดรวม ${formatTHB(totals.spend)} — แต่ทั้งหมดเก่ากว่า 60 วัน จึงยังไม่แสดงที่นี่ ติดต่อทีมงานได้เลยหากต้องการรายละเอียดค่ะ`
+                : "ยังไม่มีคำสั่งซื้อ เมื่อสั่งซื้อแล้ว รายการและสถานะพัสดุจะแสดงที่นี่"}
+            </p>
+            <Link
+              href="/shop"
+              className="mt-5 inline-block rounded-full bg-brand-800 px-6 py-2.5 text-sm font-semibold text-white"
+            >
+              เริ่มช้อปเลย
+            </Link>
+          </div>
         )}
         {shown.map((o) => {
           const badge = orderStateBadge(o);
