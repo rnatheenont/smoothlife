@@ -10,8 +10,24 @@ export type ShopSearchParams = {
   q?: string;
   minPrice?: string;
   maxPrice?: string;
+  /** Comma-separated: sale, bogo, bundle, bestseller, new. */
+  promo?: string;
+  /** Minimum star rating, as shown on the cards (4 = "4 ดาวขึ้นไป"). */
+  rating?: string;
+  /** "list" switches the grid to one row per product. */
+  view?: string;
   page?: string;
 };
+
+// Promotion filters, each defined by something already true of a product —
+// no separate campaign list to keep in sync.
+export const PROMO_FILTERS: { key: string; label: string; match: (p: Product) => boolean }[] = [
+  { key: "sale", label: "สินค้าลดราคา", match: (p) => Boolean(p.compareAtPrice && p.compareAtPrice > p.price) },
+  { key: "bogo", label: "ซื้อ 1 แถม 1", match: (p) => Boolean(p.badges?.includes("BOGO")) || /1\s*แถม\s*1|buy\s*1\s*get\s*1/i.test(p.name) },
+  { key: "bundle", label: "เซ็ตสุดคุ้ม", match: (p) => Boolean(p.badges?.includes("Bundle")) },
+  { key: "bestseller", label: "สินค้าขายดี", match: (p) => Boolean(p.badges?.includes("Bestseller")) || p.reviewCount >= 200 },
+  { key: "new", label: "สินค้าใหม่", match: (p) => Boolean(p.badges?.includes("New")) },
+];
 
 export const PAGE_SIZE = 24;
 
@@ -93,6 +109,17 @@ export function filterProducts(params: ShopSearchParams): Product[] {
   }
   if (params.maxPrice) {
     result = result.filter((p) => p.price <= Number(params.maxPrice));
+  }
+  if (params.promo) {
+    // Several promo boxes ticked means "any of these", the way a shopper reads
+    // a list of checkboxes — not "all at once", which would usually be empty.
+    const wanted = params.promo.split(",").filter(Boolean);
+    const matchers = PROMO_FILTERS.filter((f) => wanted.includes(f.key));
+    if (matchers.length) result = result.filter((p) => matchers.some((m) => m.match(p)));
+  }
+  if (params.rating) {
+    const min = Number(params.rating);
+    if (Number.isFinite(min) && min > 0) result = result.filter((p) => p.reviewCount > 0 && p.rating >= min);
   }
 
   switch (params.sort) {
