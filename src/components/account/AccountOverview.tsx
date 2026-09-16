@@ -30,6 +30,7 @@ import { useAuth } from "@/lib/auth-context";
 import RewardsOverviewCard from "@/components/account/RewardsOverviewCard";
 import { coupons } from "@/data/coupons";
 import SkinScanSummaryCard from "@/components/account/SkinScanSummaryCard";
+import OrdersList from "@/components/account/OrdersList";
 import { orderStage, type OrderStage } from "@/lib/order-status";
 
 // The account overview, laid out the way Thai shoppers already read a
@@ -100,8 +101,20 @@ export default function AccountOverview() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [counts, setCounts] = useState<Counts | null>(null);
+  // Desktop shows the full order list instead of the counters; it mounts only
+  // there so a phone never fetches the orders twice for a list it won't show.
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
+    // The counters are phone-only; desktop loads the full list instead.
+    if (window.matchMedia("(min-width: 1024px)").matches) return;
     let alive = true;
     (async () => {
       try {
@@ -136,7 +149,7 @@ export default function AccountOverview() {
 
       <div className="space-y-5 lg:contents">
         {/* Orders */}
-        <div className="rounded-xl2 border border-surface-line bg-white shadow-card lg:col-span-2">
+        <div className="rounded-xl2 border border-surface-line bg-white shadow-card lg:hidden">
           <div className="flex items-center justify-between border-b border-surface-line px-4 py-3">
             <h2 className="text-sm font-bold text-brand-ink">การซื้อของฉัน</h2>
             <Link href="/account/orders" className="flex items-center gap-0.5 text-xs font-semibold text-brand-800">
@@ -155,9 +168,16 @@ export default function AccountOverview() {
           </div>
         </div>
 
+        {/* Desktop: the orders themselves, full width, with the stage tabs. */}
+        {isDesktop && (
+          <div className="lg:col-span-2">
+            <OrdersList embedded />
+          </div>
+        )}
+
         {/* Benefits — everything that saves money in one place, instead of
             points here, coupons in the header and referrals three rows down. */}
-        <div>
+        <div className="lg:hidden">
           <h2 className="mb-3 text-sm font-bold text-brand-ink">สิทธิประโยชน์ของฉัน</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
             <ServiceTile icon={Ticket} label="แลกแต้ม" href="/account/points" />
@@ -169,7 +189,7 @@ export default function AccountOverview() {
 
         {/* Skin — the scans already saved and the two ways to add another,
             so nothing about skin sits in a second place further down. */}
-        <div>
+        <div className="lg:hidden">
           <h2 className="mb-3 text-sm font-bold text-brand-ink">ผิวของฉัน</h2>
           <SkinScanSummaryCard />
           <div className="mt-3 grid grid-cols-2 gap-3">
@@ -179,7 +199,7 @@ export default function AccountOverview() {
         </div>
 
         {/* Everything else you can do from an account */}
-        <div>
+        <div className="lg:hidden">
           <h2 className="mb-3 text-sm font-bold text-brand-ink">บริการของเรา</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
             <ServiceTile icon={Repeat} label="สมัครรายเดือน" href="/account/subscriptions" />
@@ -188,7 +208,7 @@ export default function AccountOverview() {
         </div>
 
         {/* Settings */}
-        <div>
+        <div className="lg:hidden">
           <h2 className="mb-3 text-sm font-bold text-brand-ink">ตั้งค่าบัญชี</h2>
           <div className="divide-y divide-surface-line overflow-hidden rounded-xl2 border border-surface-line bg-white shadow-card">
             <SettingRow icon={User} label="ข้อมูลส่วนตัว" href="/account/profile" value={user.phone || undefined} />
