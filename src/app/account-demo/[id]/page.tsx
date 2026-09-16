@@ -60,33 +60,36 @@ export default function DemoOrderPage({ params }: { params: { id: string } }) {
                 {order.courier.name} · <span className="font-mono text-brand-ink">{order.courier.number}</span>
               </p>
             )}
-            <ol className="flex items-start gap-1">
-              {STEPS.map((step, i) => {
-                const done = i <= reachedIndex;
-                return (
-                  <li key={step.key} className="flex flex-1 flex-col items-center text-center">
-                    <span className="flex w-full items-center">
-                      <span className={`h-0.5 flex-1 ${i === 0 ? "bg-transparent" : done ? "bg-brand-emerald" : "bg-slate-200"}`} />
+            {/* One unbroken track behind the dots: the four cells are equal, so
+                the first and last dots sit at 12.5% and 87.5% and the line runs
+                between them without the gaps a per-cell border leaves. */}
+            <div className="relative">
+              <span className="absolute left-[12.5%] right-[12.5%] top-3 h-0.5 -translate-y-1/2 bg-slate-200" aria-hidden="true" />
+              <span
+                className="absolute left-[12.5%] top-3 h-0.5 -translate-y-1/2 bg-brand-emerald transition-[width]"
+                style={{ width: `${(reachedIndex / (STEPS.length - 1)) * 75}%` }}
+                aria-hidden="true"
+              />
+              <ol className="relative flex">
+                {STEPS.map((step, i) => {
+                  const done = i <= reachedIndex;
+                  return (
+                    <li key={step.key} className="flex flex-1 flex-col items-center text-center">
                       <span
-                        className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${
+                        className={`grid h-6 w-6 place-items-center rounded-full ${
                           done ? "bg-brand-emerald text-white" : "bg-slate-200 text-slate-400"
                         }`}
                       >
                         <Check size={13} strokeWidth={3} />
                       </span>
-                      <span
-                        className={`h-0.5 flex-1 ${
-                          i === STEPS.length - 1 ? "bg-transparent" : i < reachedIndex ? "bg-brand-emerald" : "bg-slate-200"
-                        }`}
-                      />
-                    </span>
-                    <span className={`mt-1.5 text-[10px] leading-tight ${done ? "font-semibold text-brand-ink" : "text-slate-400"}`}>
-                      {step.label}
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
+                      <span className={`mt-1.5 text-[10px] leading-tight ${done ? "font-semibold text-brand-ink" : "text-slate-400"}`}>
+                        {step.label}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
           </div>
         )}
 
