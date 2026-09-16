@@ -102,12 +102,6 @@ function PointsContent() {
     <div className="max-w-2xl">
       <h1 className="text-2xl font-bold text-brand-ink mb-2">คะแนนสะสมและระดับสมาชิก</h1>
       <p className="text-sm text-slate-500 mb-4">Smooth Life Rewards — ยิ่งช้อป ยิ่งได้สิทธิพิเศษมากขึ้น</p>
-      {/* The leaderboard belongs to points, so it is reached from here rather
-          than from a menu entry of its own. */}
-      <div className="mb-4 flex flex-wrap gap-4 text-xs font-semibold text-brand-800">
-        <Link href="/account/leaderboard">อันดับนักสะสมแต้ม</Link>
-        <Link href="/account/referral">แนะนำเพื่อน รับ ฿100</Link>
-      </div>
       {!isReal && (
         <div className="mb-6">
           <DemoBadge text="คะแนนที่แสดงตอนนี้เป็นข้อมูลทดสอบในเบราว์เซอร์นี้เท่านั้น (เข้าสู่ระบบด้วย Email เพื่อใช้บัญชีคะแนนจริงที่บันทึกลงฐานข้อมูล) คะแนนจากคำสั่งซื้อจริงจะเริ่มบันทึกอัตโนมัติเมื่อเชื่อม Shopify webhook ในเฟสถัดไป" />

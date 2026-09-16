@@ -7,48 +7,70 @@ import {
   LayoutGrid,
   User,
   MapPin,
+  Receipt,
   Package,
   Award,
   Heart,
   KeyRound,
   LogOut,
+  CalendarCheck,
+  Trophy,
   Repeat,
+  Users,
   MessageSquareText,
   ScanFace,
   type LucideIcon,
 } from "lucide-react";
 import AccountGate from "@/components/AccountGate";
 import { useAuth } from "@/lib/auth-context";
-import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
+import { DAILY_CHECKIN_ENABLED, REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 type NavGroup = { label?: string; items: NavItem[] };
 
-// The owner's layout: the six things people come here for, then the services
-// that are their own destination. Entries that only repeated another page's
-// job are gone from the menu — the tax-address form lives inside its own row
-// on the overview, referrals under the rewards page, the leaderboard under
-// points — so no item in this list opens something another item already owns.
+// One group per kind of task, in the order people ask for them: what I
+// bought, what I get for buying, the skin service, then the settings nobody
+// opens twice. Everything a flat list used to bury three rows apart —
+// wishlist next to orders, referrals next to points — now sits together.
 const NAV_GROUPS: NavGroup[] = [
   {
+    items: [{ href: "/account", label: "ภาพรวม", icon: LayoutGrid }],
+  },
+  {
+    label: "การซื้อของฉัน",
     items: [
-      { href: "/account", label: "บัญชีของฉัน", icon: LayoutGrid },
-      { href: "/account/orders", label: "คำสั่งซื้อของฉัน", icon: Package },
-      { href: "/account/addresses", label: "ที่อยู่จัดส่ง", icon: MapPin },
-      { href: "/account/profile", label: "ข้อมูลส่วนตัว", icon: User },
-      { href: "/account/change-password", label: "ความปลอดภัย", icon: KeyRound },
-      ...(REWARDS_ACTIVITIES_ENABLED
-        ? [{ href: "/account/points", label: "สิทธิพิเศษ & แต้มสะสม", icon: Award }]
-        : []),
+      { href: "/account/orders", label: "คำสั่งซื้อ", icon: Package },
+      { href: "/account/subscriptions", label: "สมัครรายเดือน", icon: Repeat },
+      { href: "/account/reviews", label: "รีวิวของฉัน", icon: MessageSquareText },
+      { href: "/account/wishlist", label: "รายการโปรด", icon: Heart },
     ],
   },
   {
-    label: "บริการอื่นๆ",
+    label: "สิทธิประโยชน์",
     items: [
-      { href: "/account/wishlist", label: "รายการโปรด", icon: Heart },
-      { href: "/account/skin-scans", label: "ผลสแกนผิว", icon: ScanFace },
-      { href: "/account/reviews", label: "รีวิวของฉัน", icon: MessageSquareText },
-      { href: "/account/subscriptions", label: "สมัครรายเดือน", icon: Repeat },
+      ...(REWARDS_ACTIVITIES_ENABLED
+        ? [
+            { href: "/account/points", label: "คะแนนสะสม", icon: Award },
+            ...(DAILY_CHECKIN_ENABLED
+              ? [{ href: "/account/checkin", label: "เช็กอินรายวัน", icon: CalendarCheck }]
+              : []),
+            { href: "/account/leaderboard", label: "อันดับ", icon: Trophy },
+          ]
+        : []),
+      { href: "/account/referral", label: "แนะนำเพื่อน", icon: Users },
+    ],
+  },
+  {
+    label: "บริการดูแลผิว",
+    items: [{ href: "/account/skin-scans", label: "ผลสแกนผิว", icon: ScanFace }],
+  },
+  {
+    label: "ตั้งค่าบัญชี",
+    items: [
+      { href: "/account/profile", label: "ข้อมูลส่วนตัว", icon: User },
+      { href: "/account/addresses", label: "ที่อยู่จัดส่ง", icon: MapPin },
+      { href: "/account/tax-addresses", label: "ที่อยู่ใบกำกับภาษี", icon: Receipt },
+      { href: "/account/change-password", label: "เปลี่ยนรหัสผ่าน", icon: KeyRound },
     ],
   },
 ];
