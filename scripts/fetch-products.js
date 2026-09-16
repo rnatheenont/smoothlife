@@ -320,6 +320,27 @@ function structuralSections(html) {
   return out;
 }
 
+/* ---------- review score ----------
+ * The store collects reviews through Judge.me, which publishes each product's
+ * average and count as the standard `reviews.rating` / `reviews.rating_count`
+ * metafields. Those are the real numbers customers left on smoothlife.com, so
+ * the cards show them instead of a blank rating. A product nobody has reviewed
+ * has no metafield at all and stays at 0, which the UI reads as "no stars". */
+function reviewScore(metafields) {
+  const byKey = Object.fromEntries((metafields || []).filter(Boolean).map((m) => [m.key, m.value]));
+  let rating = 0;
+  try {
+    // Shopify stores a rating as {"scale_min","scale_max","value"} JSON.
+    const parsed = JSON.parse(byKey.rating || "null");
+    rating = Math.round(Number(parsed?.value || 0) * 10) / 10;
+  } catch {
+    rating = 0;
+  }
+  const reviewCount = Math.max(0, parseInt(byKey.rating_count || "0", 10) || 0);
+  if (!(rating > 0) || !reviewCount) return { rating: 0, reviewCount: 0 };
+  return { rating: Math.min(5, rating), reviewCount };
+}
+
 /* ---------- Storefront API fetch ---------- */
 
 const PRODUCTS_QUERY = `
@@ -336,6 +357,10 @@ const PRODUCTS_QUERY = `
           tags
           descriptionHtml
           publishedAt
+          metafields(identifiers: [{namespace: "reviews", key: "rating"}, {namespace: "reviews", key: "rating_count"}]) {
+            key
+            value
+          }
           images(first: 10) { edges { node { url } } }
           variants(first: 25) {
             edges {
@@ -556,8 +581,7 @@ function toProduct(p, usedSlugs) {
     image: img(0),
     image2: images[1] ? img(1) : "",
     images: images.map((_, i) => img(i)),
-    rating: 0,
-    reviewCount: 0,
+    ...reviewScore(p.metafields),
     badges: badges.slice(0, 3),
     // Full sentences from Shopify's own description — none of these fields
     // get line-clamped in the UI (they render in full on the product detail

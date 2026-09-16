@@ -136,6 +136,13 @@ export default function ProductDetailInteractive({
   const avgRating = reviewsList.length
     ? reviewsList.reduce((sum, r) => sum + r.rating, 0) / reviewsList.length
     : 0;
+  // Two sources of stars. Reviews written here are the ones shown in full
+  // below; product.rating/reviewCount is the store's own overall score
+  // (collected on smoothlife.com through Judge.me) and stands in until this
+  // site has reviews of its own, so a card showing 4.8 doesn't open a product
+  // page with no rating at all.
+  const storeRating = product.reviewCount > 0 ? { value: product.rating, count: product.reviewCount } : null;
+  const headlineRating = reviewsList.length ? { value: avgRating, count: reviewsList.length } : storeRating;
 
   const [questionsList, setQuestionsList] = useState(questions);
   const [showQuestionForm, setShowQuestionForm] = useState(false);
@@ -359,11 +366,11 @@ export default function ProductDetailInteractive({
         <div>
           <span translate="no" className="text-xs font-bold text-brand-800">{product.brand}</span>
           <h1 translate="no" className="text-2xl md:text-3xl font-bold text-brand-ink mt-1">{product.name}</h1>
-          {reviewsList.length > 0 && (
+          {headlineRating && (
             <button onClick={() => setTab("reviews")} className="flex items-center gap-2 mt-2">
-              <StarRating rating={avgRating} />
+              <StarRating rating={headlineRating.value} />
               <span className="text-sm text-slate-500">
-                {avgRating.toFixed(1)} ({reviewsList.length} รีวิว)
+                {headlineRating.value.toFixed(1)} ({headlineRating.count} รีวิว)
               </span>
             </button>
           )}
@@ -746,8 +753,18 @@ export default function ProductDetailInteractive({
                   </form>
                 )}
 
+                {storeRating && (
+                  <p className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                    <StarRating rating={storeRating.value} size={14} />
+                    <span>
+                      <span className="font-semibold text-brand-ink">{storeRating.value.toFixed(1)}</span> จาก{" "}
+                      {storeRating.count.toLocaleString("th-TH")} รีวิวที่ลูกค้าให้ไว้กับร้าน Smoothlife
+                    </span>
+                  </p>
+                )}
+
                 {reviewsList.length === 0 ? (
-                  <p className="text-sm text-slate-500">ยังไม่มีรีวิวสำหรับสินค้านี้ค่ะ เป็นคนแรกที่รีวิวสิ!</p>
+                  <p className="text-sm text-slate-500">ยังไม่มีรีวิวบนเว็บนี้ค่ะ เป็นคนแรกที่รีวิวสิ!</p>
                 ) : (
                   <div className="space-y-5">
                     {reviewsList.map((r) => (
