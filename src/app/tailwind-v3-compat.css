@@ -1,5 +1,13 @@
 /*
-  Tailwind v3's default colour palette, pinned.
+  Tailwind v3 defaults the site was built on, pinned.
+
+  Line heights: v4 gives text-sm/base/lg… a line height *relative* to the
+  font size; v3 gave a fixed rem value. They only differ when the font size is
+  changed underneath the class — which the site does on purpose (inputs forced
+  to 16px on phones so iOS doesn't zoom) — and there v4 made every text-sm
+  search box 3px taller. The v3 values are restored below the palette.
+
+  Colours:
 
   Tailwind v4 redrew its default palette in OKLCH: slate, amber, orange and
   the rest land a few shades off from v3 (review stars turn a deeper yellow,
@@ -250,4 +258,13 @@
   --color-rose-800: #9f1239;
   --color-rose-900: #881337;
   --color-rose-950: #4c0519;
+
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
 }
