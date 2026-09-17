@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { PackageSearch } from "lucide-react";
 import { Button, Card, Field } from "@/components/ui";
 import ShipmentTracker from "@/components/ShipmentTracker";
@@ -92,9 +93,9 @@ export default function TrackPage() {
 
       <p className="mt-5 text-center text-xs text-slate-500">
         มีบัญชีอยู่แล้ว?{" "}
-        <a href="/account/orders" className="font-semibold text-brand-800 underline">
+        <Link href="/account/orders" className="font-semibold text-brand-800 underline">
           ดูคำสั่งซื้อทั้งหมดในบัญชี
-        </a>
+        </Link>
       </p>
     </div>
   );
