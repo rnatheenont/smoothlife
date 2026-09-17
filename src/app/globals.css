@@ -1,8 +1,14 @@
 @import 'tailwindcss';
+/* HeroUI v3 components (https://heroui.com). Must come after tailwindcss. */
+@import '@heroui/styles';
 @import './tailwind-v3-palette.css';
 
 @source '../**/*.{js,ts,jsx,tsx,mdx}';
 
+/* Dark styling only when something puts `.dark` on the page. HeroUI's own
+   `dark:` variant also follows the OS setting; declared after it, this one
+   wins, so a visitor whose phone is in dark mode still gets the light shop
+   the site was designed as. */
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -243,6 +249,44 @@
       transform: scale(1) translateY(0);
     }
   }
+}
+
+/*
+  HeroUI theme, in the site's colours. HeroUI reads these variables for every
+  component (buttons, fields, focus rings…), so its parts come out in the
+  brand green and ink instead of its default blue on grey.
+  Accent is brand-800, not the brand-600 mint: white text needs 4.5:1, and
+  800 is the lightest step that has it.
+*/
+@layer theme {
+  :root {
+    --accent: #05755f;
+    --accent-foreground: #ffffff;
+    --background: #ffffff;
+    --foreground: #0f172a;
+    --danger: #d63a30;
+    --danger-foreground: #ffffff;
+    --border: #e5e7eb;
+    --focus: #05755f;
+  }
+}
+
+/*
+  Names Magic UI components (shadcn registry) style themselves with, mapped
+  onto HeroUI's variables and the brand, so both libraries share one palette.
+*/
+@theme inline {
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-foreground);
+  --color-secondary: var(--surface-secondary);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted-foreground: #64748b;
+  --color-card: var(--surface);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--foreground);
+  --color-input: var(--border);
+  --color-ring: var(--focus);
 }
 
 /*
