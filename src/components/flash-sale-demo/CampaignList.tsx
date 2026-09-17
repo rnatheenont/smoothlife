@@ -15,6 +15,7 @@ const END_REASON = { sold_out: "ขายหมด", time_up: "ครบเว�
 export default function CampaignList({
   items,
   now,
+  loading = false,
   currentId,
   pick,
   startNow,
@@ -23,6 +24,7 @@ export default function CampaignList({
 }: {
   items: ScheduledCampaign[];
   now: number;
+  loading?: boolean;
   currentId?: string;
   pick: (id: string) => void;
   startNow: (id: string) => void;
@@ -45,7 +47,7 @@ export default function CampaignList({
       <p className="mt-1 text-xs text-slate-500">เปิดและปิดการขายอัตโนมัติตามวันเวลา กดที่แคมเปญเพื่อดูตัวเลขและมุมมองลูกค้า</p>
 
       {items.length === 0 ? (
-        <p className="mt-6 text-center text-sm text-slate-500">ยังไม่มีแคมเปญ สร้างแคมเปญแรกได้ด้านล่าง</p>
+        <p className="mt-6 text-center text-sm text-slate-500">{loading ? "กำลังโหลดรายการจากฐานข้อมูล…" : "ยังไม่มีแคมเปญ สร้างแคมเปญแรกได้ด้านล่าง"}</p>
       ) : (
         <ul className="mt-4 flex flex-col gap-2.5">
           {items.map((i) => {
@@ -88,6 +90,9 @@ export default function CampaignList({
                           <Button size="sm" variant="secondary" onPress={() => startNow(i.id)}>
                             <Play size={13} aria-hidden /> เริ่มทันที
                           </Button>
+                          <Button size="sm" variant="ghost" onPress={() => endNow(i.id)}>
+                            ยกเลิก
+                          </Button>
                           <Button size="sm" variant="ghost" isIconOnly aria-label="ลบแคมเปญ" onPress={() => remove(i.id)}>
                             <Trash2 size={15} aria-hidden />
                           </Button>
@@ -106,9 +111,14 @@ export default function CampaignList({
                       </>
                     )}
                     {i.status === "ended" && (
-                      <Chip size="sm" variant="soft" color="default">
-                        จบแล้ว · {i.endReason ? END_REASON[i.endReason] : ""} · ขาย {sold}/{total}
-                      </Chip>
+                      <>
+                        <Chip size="sm" variant="soft" color="default">
+                          {i.campaign ? `จบแล้ว · ${i.endReason ? END_REASON[i.endReason] : ""} · ขาย ${sold}/${total}` : "ยกเลิกก่อนเริ่ม"}
+                        </Chip>
+                        <Button size="sm" variant="ghost" isIconOnly aria-label="ลบแคมเปญ" onPress={() => remove(i.id)}>
+                          <Trash2 size={15} aria-hidden />
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>

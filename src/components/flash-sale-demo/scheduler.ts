@@ -16,6 +16,8 @@ export type ScheduledCampaign = {
   config: CampaignConfig;
   startsAt: number; // epoch ms
   endsAt?: number; // epoch ms
+  /** Set when an admin ended (or cancelled) it by hand — stored in the database. */
+  endedManuallyAt?: number;
   status: ItemStatus;
   campaign?: CampaignState;
   endReason?: "sold_out" | "time_up" | "manual";
@@ -31,35 +33,39 @@ export type SchedulerState = {
 
 export const nowMs = (s: SchedulerState) => s.baseMs + s.clock * 1000;
 
-export function createScheduler(first: { config: CampaignConfig; startsInMinutes: number; durationMinutes?: number }, baseMs = Date.now()): SchedulerState {
-  const s: SchedulerState = { baseMs, clock: 0, items: [], shopifyDown: false, seq: 1 };
-  return addCampaign(s, {
-    config: first.config,
-    startsAt: baseMs + first.startsInMinutes * 60_000,
-    endsAt: first.durationMinutes ? baseMs + (first.startsInMinutes + first.durationMinutes) * 60_000 : undefined,
-  });
+export function createScheduler(baseMs: number): SchedulerState {
+  return { baseMs, clock: 0, items: [], shopifyDown: false, seq: 1 };
 }
 
-export function addCampaign(s: SchedulerState, item: { config: CampaignConfig; startsAt: number; endsAt?: number }): SchedulerState {
-  const entry: ScheduledCampaign = { id: `fs${s.seq}`, config: item.config, startsAt: item.startsAt, endsAt: item.endsAt, status: "scheduled" };
-  return runDue({ ...s, seq: s.seq + 1, items: [...s.items, entry].sort((a, b) => a.startsAt - b.startsAt) });
+export type CampaignInput = { id?: string; config: CampaignConfig; startsAt: number; endsAt?: number; endedManuallyAt?: number };
+
+export function addCampaign(s: SchedulerState, item: CampaignInput): SchedulerState {
+  const entry: ScheduledCampaign = {
+    id: item.id ?? `local-${s.seq}`,
+    config: item.config,
+    startsAt: item.startsAt,
+    endsAt: item.endsAt,
+    endedManuallyAt: item.endedManuallyAt,
+    status: "scheduled",
+  };
+  return runDue({ ...s, seq: s.seq + 1, items: [...s.items.filter((i) => i.id !== entry.id), entry].sort((a, b) => a.startsAt - b.startsAt) });
+}
+
+/** Replace the whole list with what the database holds (on page load). */
+export function loadCampaigns(s: SchedulerState, items: CampaignInput[]): SchedulerState {
+  return items.reduce(addCampaign, { ...s, items: [] });
 }
 
 export function removeCampaign(s: SchedulerState, id: string): SchedulerState {
-  return { ...s, items: s.items.filter((i) => i.id !== id || i.status !== "scheduled") };
+  return { ...s, items: s.items.filter((i) => i.id !== id) };
 }
 
 export function startNow(s: SchedulerState, id: string): SchedulerState {
   return runDue({ ...s, items: s.items.map((i) => (i.id === id && i.status === "scheduled" ? { ...i, startsAt: nowMs(s) } : i)) });
 }
 
-export function endNow(s: SchedulerState, id: string): SchedulerState {
-  return {
-    ...s,
-    items: s.items.map((i) =>
-      i.id === id && i.status === "running" && i.campaign ? { ...i, status: "ended", endReason: "manual", campaign: closeCampaign(i.campaign) } : i
-    ),
-  };
+export function endNow(s: SchedulerState, id: string, at = nowMs(s)): SchedulerState {
+  return runDue({ ...s, items: s.items.map((i) => (i.id === id ? { ...i, endedManuallyAt: at } : i)) });
 }
 
 export function updateCampaign(s: SchedulerState, id: string, fn: (c: CampaignState) => CampaignState): SchedulerState {
@@ -72,6 +78,9 @@ function runDue(s: SchedulerState): SchedulerState {
   return {
     ...s,
     items: s.items.map((i) => {
+      if (i.status !== "ended" && i.endedManuallyAt !== undefined) {
+        return { ...i, status: "ended", endReason: "manual", campaign: i.campaign ? closeCampaign(i.campaign) : undefined };
+      }
       if (i.status === "scheduled" && now >= i.startsAt) {
         return { ...i, status: "running", campaign: tickCampaign(createCampaign(i.config, 0), 0) };
       }

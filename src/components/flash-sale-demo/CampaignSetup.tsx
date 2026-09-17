@@ -62,13 +62,16 @@ export default function CampaignSetup({
   groups,
   now,
   onCreate,
+  saving = false,
 }: {
   config: CampaignConfig;
   catalogue: CatalogueItem[];
   groups: ProductGroup[];
   /** Demo clock (epoch ms) — new campaigns default to starting 10 minutes from it. */
   now: number;
-  onCreate: (config: CampaignConfig, startsAt: number, endsAt?: number) => void;
+  onCreate: (config: CampaignConfig, startsAt: number, endsAt?: number) => void | Promise<unknown>;
+  /** Saving to the database; the button waits for it. */
+  saving?: boolean;
 }) {
   const [mode, setMode] = useState<CampaignConfig["mode"]>(config.mode);
   const [query, setQuery] = useState("");
@@ -300,7 +303,8 @@ export default function CampaignSetup({
           <Button
             size="lg"
             fullWidth
-            isDisabled={!canCreate}
+            isDisabled={!canCreate || saving}
+            isPending={saving}
             onPress={() =>
               onCreate(
                 {
@@ -310,13 +314,14 @@ export default function CampaignSetup({
                   stockPerProduct: stock,
                   windowMinutes,
                   maxRequeue,
+                  group: mode === "group" && group ? { kind, key: group.id } : undefined,
                 },
                 startsAt,
                 endsAt
               )
             }
           >
-            เพิ่มเข้ารายการ
+            {saving ? "กำลังบันทึก…" : "เพิ่มเข้ารายการ"}
           </Button>
         </div>
       </div>

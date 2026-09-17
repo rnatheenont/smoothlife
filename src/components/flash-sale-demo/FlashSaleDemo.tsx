@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Alert, Button, Card, Chip, Modal, ProgressBar, Separator, Spinner, Tabs, Toast, toast } from "@heroui/react";
 import {
@@ -37,14 +37,17 @@ import {
   countdown,
   createScheduler,
   endNow,
+  loadCampaigns,
   nowMs,
   removeCampaign,
   startNow,
   thaiDateTime,
   tickScheduler,
   updateCampaign,
+  type CampaignInput,
   type SchedulerState,
 } from "./scheduler";
+import type { FlashSaleCampaignDTO } from "@/lib/flash-sale-campaigns";
 import CampaignSetup, { type CatalogueItem, type ProductGroup } from "./CampaignSetup";
 import CampaignList from "./CampaignList";
 
@@ -52,7 +55,38 @@ export type { DemoProduct };
 
 const SPEEDS = [1, 30, 120] as const;
 const TICK_MS = 250;
-const seedScheduler = (config: CampaignConfig, baseMs: number) => createScheduler({ config, startsInMinutes: 5, durationMinutes: 120 }, baseMs);
+const API = "/api/admin/flash-sale/campaigns";
+
+/** A stored campaign → what the demo runs, with product details from the catalogue. */
+function toInput(c: FlashSaleCampaignDTO, bySlug: Map<string, CatalogueItem>): CampaignInput | null {
+  const products = c.productSlugs
+    .map((slug) => bySlug.get(slug))
+    .filter((p): p is CatalogueItem => Boolean(p))
+    .map(({ slug, name, brand, image, price, compareAtPrice }) => ({ slug, name, brand, image, price, compareAtPrice }));
+  if (products.length === 0) return null;
+  return {
+    id: c.id,
+    startsAt: c.startsAt,
+    endsAt: c.endsAt ?? undefined,
+    endedManuallyAt: c.endedManuallyAt ?? undefined,
+    config: {
+      mode: c.mode,
+      title: c.title,
+      products,
+      stockPerProduct: c.stockPerProduct,
+      windowMinutes: c.windowMinutes,
+      maxRequeue: c.maxRequeue,
+      group: c.groupKind && c.groupKey ? { kind: c.groupKind, key: c.groupKey } : undefined,
+    },
+  };
+}
+
+async function api<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, { ...init, headers: { "Content-Type": "application/json", ...init?.headers } });
+  const data = await res.json().catch(() => ({ ok: false, error: "เชื่อมต่อไม่สำเร็จ" }));
+  if (!res.ok || !data.ok) throw new Error(data.error || "เกิดข้อผิดพลาด ลองใหม่อีกครั้ง");
+  return data as T;
+}
 
 export default function FlashSaleDemo({
   embedded = false,
@@ -69,7 +103,31 @@ export default function FlashSaleDemo({
   catalogue: CatalogueItem[];
   groups: ProductGroup[];
 }) {
-  const [scheduler, setScheduler] = useState<SchedulerState>(() => seedScheduler(initialConfig, baseMs));
+  const [scheduler, setScheduler] = useState<SchedulerState>(() => createScheduler(baseMs));
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const bySlug = useMemo(() => new Map(catalogue.map((p) => [p.slug, p])), [catalogue]);
+
+  // The campaign list lives in the database (flash_sale_campaigns); the sale
+  // simulation on top of it stays in the browser.
+  const load = useCallback(async () => {
+    setLoadState("loading");
+    try {
+      const data = await api<{ campaigns: FlashSaleCampaignDTO[] }>(API, { cache: "no-store" });
+      const inputs = data.campaigns.map((c) => toInput(c, bySlug)).filter((x): x is CampaignInput => x !== null);
+      setScheduler(loadCampaigns(createScheduler(Date.now()), inputs));
+      setLoadState("ready");
+    } catch (err) {
+      setAdminError(err instanceof Error ? err.message : "โหลดรายการแคมเปญไม่สำเร็จ");
+      setLoadState("error");
+    }
+  }, [bySlug]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch of the stored campaign list
+    load();
+  }, [load]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selected, setSelected] = useState(0);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(30);
@@ -92,9 +150,65 @@ export default function FlashSaleDemo({
     scheduler.items.find((i) => i.status === "running") ??
     scheduler.items.find((i) => i.status === "scheduled") ??
     scheduler.items[scheduler.items.length - 1];
-  const preview = useMemo(() => (item ? createCampaign(item.config) : null), [item]);
-  const campaign = item?.campaign ?? preview!;
+  const preview = useMemo(() => createCampaign(item?.config ?? initialConfig), [item, initialConfig]);
+  const campaign = item?.campaign ?? preview;
   const upcoming = item && item.status === "scheduled" ? { at: thaiDateTime(item.startsAt), left: countdown(item.startsAt - now) } : undefined;
+
+  // Each list action is saved first; the demo follows once the database agrees.
+  const runAction = async (fn: () => Promise<void>) => {
+    setAdminError(null);
+    try {
+      await fn();
+    } catch (err) {
+      setAdminError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
+    }
+  };
+  const createStored = (config: CampaignConfig, startsAt: number, endsAt?: number) =>
+    runAction(async () => {
+      setSaving(true);
+      try {
+        const { campaign: saved } = await api<{ campaign: FlashSaleCampaignDTO }>(API, {
+          method: "POST",
+          body: JSON.stringify({
+            title: config.title,
+            mode: config.mode,
+            groupKind: config.group?.kind,
+            groupKey: config.group?.key,
+            productSlugs: config.products.map((p) => p.slug),
+            stockPerProduct: config.stockPerProduct,
+            windowMinutes: config.windowMinutes,
+            maxRequeue: config.maxRequeue,
+            startsAt,
+            endsAt: endsAt ?? null,
+          }),
+        });
+        const input = toInput(saved, bySlug);
+        if (input) {
+          setScheduler((s) => addCampaign(s, input));
+          setSelectedId(saved.id);
+          setSelected(0);
+        }
+      } finally {
+        setSaving(false);
+      }
+    });
+  const startStored = (id: string) =>
+    runAction(async () => {
+      await api(`${API}/${id}`, { method: "PATCH", body: JSON.stringify({ action: "start_now" }) });
+      setScheduler((s) => startNow(s, id));
+    });
+  const endStored = (id: string) =>
+    runAction(async () => {
+      await api(`${API}/${id}`, { method: "PATCH", body: JSON.stringify({ action: "end_now" }) });
+      setScheduler((s) => endNow(s, id));
+    });
+  const removeStored = (id: string) =>
+    runAction(async () => {
+      if (!window.confirm("ลบแคมเปญนี้ออกจากรายการ?")) return;
+      await api(`${API}/${id}`, { method: "DELETE" });
+      setScheduler((s) => removeCampaign(s, id));
+      if (selectedId === id) setSelectedId(null);
+    });
 
   const saleIndex = Math.min(selected, campaign.sales.length - 1);
   const state = campaign.sales[saleIndex];
@@ -138,7 +252,7 @@ export default function FlashSaleDemo({
   };
 
   const reset = () => {
-    setScheduler(seedScheduler(initialConfig, Date.now()));
+    load();
     setSelectedId(null);
     setSelected(0);
     setLoggedIn(false);
@@ -154,7 +268,7 @@ export default function FlashSaleDemo({
         <div className="mb-4">
           <h1 className="text-xl font-bold text-brand-ink">Flash Sale (เดโม)</h1>
           <p className="mt-1 text-sm text-slate-500">
-            ตั้งแคมเปญล่วงหน้าเป็นรายการ ระบบเปิดและปิดการขายเองตามวันเวลาที่ตั้งไว้ ดูมุมมองลูกค้าได้ในแท็บถัดไป
+            ตั้งแคมเปญล่วงหน้าเป็นรายการ (บันทึกในฐานข้อมูล) ระบบเปิดและปิดการขายเองตามวันเวลาที่ตั้งไว้ ดูมุมมองลูกค้าได้ในแท็บถัดไป
           </p>
         </div>
       )}
@@ -164,7 +278,7 @@ export default function FlashSaleDemo({
         <Alert.Content>
           <Alert.Title>Demo · ข้อมูลจำลองทั้งหมด</Alert.Title>
           <Alert.Description>
-            ไม่มีการตัดเงิน ไม่สร้างออเดอร์จริง ลูกค้าคนอื่นในคิวเป็นบอทจำลอง · นาฬิกาเดโมเริ่มจากเวลาปัจจุบันและเดินเร็วขึ้น ×{speed}
+            รายการแคมเปญบันทึกจริง แต่การขายในเดโมเป็นการจำลอง: ไม่ตัดเงิน ไม่สร้างออเดอร์ ลูกค้าในคิวเป็นบอท · นาฬิกาเดโมเริ่มจากเวลาปัจจุบันและเดินเร็วขึ้น ×{speed}
           </Alert.Description>
         </Alert.Content>
       </Alert>
@@ -198,6 +312,11 @@ export default function FlashSaleDemo({
 
         <Tabs.Panel id="customer" className="pt-5">
           <CampaignSwitcher scheduler={scheduler} currentId={item?.id} pick={pick} now={now} />
+          {!item ? (
+            <Card className="p-8 text-center text-sm text-slate-500">
+              {loadState === "loading" ? "กำลังโหลดรายการแคมเปญ…" : "ยังไม่มีแคมเปญ สร้างแคมเปญได้ในแท็บมุมมองแอดมิน"}
+            </Card>
+          ) : (
           <CustomerView
             campaign={campaign}
             saleIndex={saleIndex}
@@ -218,36 +337,55 @@ export default function FlashSaleDemo({
             notice={notice}
             openPay={() => setPayOpen(true)}
           />
+          )}
         </Tabs.Panel>
 
         <Tabs.Panel id="admin" className="pt-5">
           <div className="flex flex-col gap-5">
+            {adminError && (
+              <Alert status="danger">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>{adminError}</Alert.Title>
+                  {loadState === "error" && (
+                    <Alert.Description>
+                      <button type="button" onClick={load} className="font-semibold underline">
+                        ลองโหลดอีกครั้ง
+                      </button>
+                    </Alert.Description>
+                  )}
+                </Alert.Content>
+              </Alert>
+            )}
             <CampaignList
               items={scheduler.items}
               now={now}
+              loading={loadState === "loading"}
               currentId={item?.id}
               pick={pick}
-              startNow={(id) => setScheduler((s) => startNow(s, id))}
-              endNow={(id) => setScheduler((s) => endNow(s, id))}
-              remove={(id) => setScheduler((s) => removeCampaign(s, id))}
+              startNow={startStored}
+              endNow={endStored}
+              remove={removeStored}
             />
             <CampaignSetup
               config={campaign.config}
               catalogue={catalogue}
               groups={groups}
               now={now}
-              onCreate={(config, startsAt, endsAt) => {
-                const before = scheduler.seq;
-                setScheduler((s) => addCampaign(s, { config, startsAt, endsAt }));
-                setSelectedId(`fs${before}`);
-                setSelected(0);
-              }}
+              saving={saving}
+              onCreate={createStored}
             />
             {item?.campaign ? (
               <AdminView campaign={item.campaign} />
             ) : (
               <Card className="p-6 text-center text-sm text-slate-500">
-                {item ? `แคมเปญ "${item.config.title}" จะเปิดขายอัตโนมัติ ${thaiDateTime(item.startsAt)} (อีก ${countdown(item.startsAt - now)}) — ตัวเลขการขายจะแสดงที่นี่เมื่อเริ่มแล้ว` : "ยังไม่มีแคมเปญ"}
+                {!item
+                  ? loadState === "loading"
+                    ? "กำลังโหลด…"
+                    : "ยังไม่มีแคมเปญ"
+                  : item.status === "ended"
+                    ? `แคมเปญ "${item.config.title}" ถูกยกเลิกก่อนเริ่มขาย`
+                    : `แคมเปญ "${item.config.title}" จะเปิดขายอัตโนมัติ ${thaiDateTime(item.startsAt)} (อีก ${countdown(item.startsAt - now)}) — ตัวเลขการขายจะแสดงที่นี่เมื่อเริ่มแล้ว`}
               </Card>
             )}
           </div>
@@ -255,7 +393,7 @@ export default function FlashSaleDemo({
       </Tabs>
 
       <PaymentModal
-        isOpen={payOpen}
+        isOpen={payOpen && Boolean(item)}
         setOpen={setPayOpen}
         entry={you}
         state={state}
@@ -323,7 +461,7 @@ function DemoControls({
           <ServerCrash size={14} aria-hidden /> {shopifyDown ? "Shopify ล่มอยู่ (กดเพื่อกู้)" : "จำลอง Shopify ล่ม"}
         </Button>
         <Button size="sm" variant="ghost" onPress={reset}>
-          <RotateCcw size={14} aria-hidden /> เริ่มใหม่
+          <RotateCcw size={14} aria-hidden /> โหลดใหม่ / เริ่มจำลองใหม่
         </Button>
       </div>
     </Card>

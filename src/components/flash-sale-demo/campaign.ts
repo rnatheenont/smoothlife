@@ -38,6 +38,8 @@ export type CampaignConfig = {
   stockPerProduct: number;
   windowMinutes: number;
   maxRequeue: number;
+  /** Which group a "group" campaign was built from (kept with the campaign in the database). */
+  group?: { kind: "category" | "brand" | "collection"; key: string };
 };
 
 export type CampaignState = {
