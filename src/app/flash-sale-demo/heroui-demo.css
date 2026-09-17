@@ -1,0 +1,20 @@
+/*
+  HeroUI component CSS for the flash-sale demo only. Loaded by this route's
+  layout, so the demo's components don't add to the stylesheet every other
+  page downloads. `@reference` gives the component files access to the site's
+  theme and HeroUI's utilities for their @apply rules without emitting them
+  twice. If a component moves into the real site, move its import to
+  src/app/heroui.css.
+*/
+@reference "../globals.css";
+
+@import "@heroui/styles/components/button.css" layer(components);
+@import "@heroui/styles/components/card.css" layer(components);
+@import "@heroui/styles/components/chip.css" layer(components);
+@import "@heroui/styles/components/progress-bar.css" layer(components);
+@import "@heroui/styles/components/separator.css" layer(components);
+@import "@heroui/styles/components/spinner.css" layer(components);
+@import "@heroui/styles/components/tabs.css" layer(components);
+@import "@heroui/styles/components/alert.css" layer(components);
+@import "@heroui/styles/components/modal.css" layer(components);
+@import "@heroui/styles/components/toast.css" layer(components);
