@@ -61,7 +61,7 @@ const SIZE: Record<Size, string> = {
  * globally without changing how the site looks to anyone clicking.
  */
 const BASE =
-  "inline-flex items-center justify-center rounded-full font-semibold transition " +
+  "items-center justify-center rounded-full font-semibold transition " +
   "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 " +
   "dark:focus-visible:ring-offset-slate-950 " +
   "disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
@@ -95,7 +95,12 @@ const Button = forwardRef<HTMLElement, ButtonProps | LinkProps>(
     ...rest
   } = props;
 
-  const classes = clsx(BASE, VARIANT[variant], SIZE[size], fullWidth && "w-full", className);
+  // inline-flex unless the call site picks its own display (the round icon
+  // buttons pass `grid`). clsx doesn't resolve conflicts, and Tailwind v4
+  // orders `grid` before `inline-flex`, so both at once would silently lose
+  // the caller's choice.
+  const ownDisplay = /(^|\s)(grid|flex|block|inline-grid|inline-block|hidden)(\s|$)/.test(className ?? "");
+  const classes = clsx(!ownDisplay && "inline-flex", BASE, VARIANT[variant], SIZE[size], fullWidth && "w-full", className);
   const content = (
     <>
       {loading && <Loader2 size={size === "sm" ? 13 : 15} className="animate-spin" aria-hidden />}

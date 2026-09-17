@@ -375,15 +375,6 @@
 
   /* Mobile-only app-like feel — desktop (>=768px) is untouched below. */
   @media (max-width: 767px) {
-    /* iOS Safari auto-zooms the page when focusing an input smaller than
-       16px, which reads as janky/web-like rather than app-like. Force 16px
-       regardless of whichever Tailwind text-* size each form happens to use. */
-    input,
-    select,
-    textarea {
-      font-size: 16px !important;
-    }
-
     /* Stops pull-to-refresh / rubber-band scroll from bubbling past the page
        edges — the browser-chrome bounce is what makes a page feel like a
        browser tab instead of an app. */
@@ -398,6 +389,19 @@
     button {
       -webkit-tap-highlight-color: transparent;
     }
+  }
+}
+
+/* iOS Safari auto-zooms the page when focusing an input smaller than 16px,
+   which reads as janky rather than app-like, so phones get 16px whatever
+   text-* size a form uses. Deliberately outside the layers: an `!important`
+   inside a layer beats the utilities' own `!important` (`text-[14px]!` on
+   the header search), which under v3 it did not. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
   }
 }
 
