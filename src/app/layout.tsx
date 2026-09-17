@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import { organizationJsonLd, websiteJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import OldBrowserNotice from "@/components/OldBrowserNotice";
 
 // Noto Sans Thai, self-hosted through next/font so there is no request to
 // Google at page load and no layout shift when it arrives. Loaded as the
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="th" className={notoSansThai.variable}>
       <body className="min-h-screen flex flex-col antialiased font-sans">
+        <OldBrowserNotice />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdScript(organizationJsonLd()) }}
