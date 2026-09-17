@@ -50,6 +50,7 @@ import {
 import type { FlashSaleCampaignDTO } from "@/lib/flash-sale-campaigns";
 import CampaignSetup, { type CatalogueItem, type ProductGroup } from "./CampaignSetup";
 import CampaignList from "./CampaignList";
+import LiveMonitor from "./LiveMonitor";
 
 export type { DemoProduct };
 
@@ -375,8 +376,18 @@ export default function FlashSaleDemo({
               saving={saving}
               onCreate={createStored}
             />
+            {item && /^[0-9a-f-]{36}$/i.test(item.id) && (
+              <LiveMonitor
+                key={item.id}
+                campaignId={item.id}
+                productNames={Object.fromEntries(item.config.products.map((p) => [p.slug, p.name]))}
+              />
+            )}
             {item?.campaign ? (
-              <AdminView campaign={item.campaign} />
+              <>
+                <h3 className="-mb-2 mt-2 text-sm font-semibold text-slate-500">จำลองด้วยบอท (ไม่ใช่ข้อมูลจริง)</h3>
+                <AdminView campaign={item.campaign} />
+              </>
             ) : (
               <Card className="p-6 text-center text-sm text-slate-500">
                 {!item

@@ -53,9 +53,19 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
   const { id } = await props.params;
   if (!UUID.test(id)) return NextResponse.json({ ok: false, error: "ไม่พบแคมเปญ" }, { status: 404 });
-  const rows = await supabaseRest<{ id: string }[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=id`, {
-    method: "DELETE",
-  });
+  let rows: { id: string }[];
+  try {
+    rows = await supabaseRest<{ id: string }[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=id`, {
+      method: "DELETE",
+    });
+  } catch (err) {
+    // flash_sale_queue references the campaign with ON DELETE RESTRICT: once
+    // anyone has queued, its history (and any payments) must stay.
+    if (String(err).includes("23503")) {
+      return NextResponse.json({ ok: false, error: "ลบไม่ได้ เพราะมีลูกค้าเข้าคิวแล้ว ใช้ปิดการขายแทน" }, { status: 409 });
+    }
+    throw err;
+  }
   if (rows.length === 0) {
     return NextResponse.json({ ok: false, error: "ไม่พบแคมเปญ อาจถูกลบไปแล้ว" }, { status: 404 });
   }
