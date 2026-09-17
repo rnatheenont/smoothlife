@@ -105,7 +105,7 @@ function TrackingNumber({ value }: { value: string }) {
           setTimeout(() => setCopied(false), 1800);
         });
       }}
-      className="inline-flex items-center gap-1.5 rounded-full bg-surface-soft px-3 py-1 font-mono text-xs font-semibold text-brand-800 transition hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+      className="inline-flex items-center gap-1.5 rounded-full bg-surface-soft px-3 py-1 font-mono text-xs font-semibold text-brand-800 transition hover:bg-surface-muted focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
     >
       {value}
       {copied ? <Check size={12} /> : <Copy size={12} />}

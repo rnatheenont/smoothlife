@@ -117,7 +117,7 @@ export default function RewardsOverviewCard() {
               Smoothlife<span className="opacity-80">.com</span>
             </p>
           </div>
-          <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] backdrop-blur">
+          <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] backdrop-blur-sm">
             <TierIcon size={13} />
             {tierDisplayName[user.tier].en}
           </span>
@@ -125,7 +125,7 @@ export default function RewardsOverviewCard() {
 
         <div className="relative mt-6 flex items-end justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-white/20 ring-2 ring-white/70 backdrop-blur">
+            <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-white/20 ring-2 ring-white/70 backdrop-blur-sm">
               <Avatar src={user.avatar} name={user.name} className="h-12 w-12" />
             </span>
             <div className="min-w-0">

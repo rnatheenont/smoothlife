@@ -119,7 +119,7 @@ export default async function HomePage() {
         {/* Mobile: plain white, no tint — desktop keeps the old short top
             banner + two floating blobs since its section is much taller
             (headline column) and reads fine with the wash. */}
-        <div className="pointer-events-none hidden md:block absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-brand-teal/10 via-brand-sky/5 to-transparent" />
+        <div className="pointer-events-none hidden md:block absolute inset-x-0 top-0 h-40 bg-linear-to-b from-brand-teal/10 via-brand-sky/5 to-transparent" />
         <div className="pointer-events-none hidden md:block absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/10 blur-3xl animate-floatSlow" />
         <div className="pointer-events-none hidden md:block absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-brand-sky/10 blur-3xl animate-floatSlow" />
 
@@ -128,7 +128,7 @@ export default async function HomePage() {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-800 shadow-card mb-5 border border-slate-100">
               <Sparkles size={13} aria-hidden="true" /> แนะนำน้อง Smoothie ผู้ช่วยคนใหม่
             </span>
-            <h1 className="text-4xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold !leading-[1.35] tracking-tight text-brand-ink">
+            <h1 className="text-4xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-[1.35]! tracking-tight text-brand-ink">
               สุขภาพดี ผิวสวย <br />
               <span className="brand-text-gradient">ครบทุก Lifestyle</span> <span className="whitespace-nowrap">ที่เดียว</span>
             </h1>
@@ -154,7 +154,7 @@ export default async function HomePage() {
             </div>
           </StaggerReveal>
           <div className="relative order-1 md:order-2">
-            <div className="pointer-events-none hidden md:block absolute -inset-6 rounded-[2rem] bg-brand-gradient opacity-30 blur-2xl" />
+            <div className="pointer-events-none hidden md:block absolute -inset-6 rounded-4xl bg-brand-gradient opacity-30 blur-2xl" />
             <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
           </div>
 
@@ -262,7 +262,7 @@ export default async function HomePage() {
             <Link
               key={promo.slug}
               href={`/promotions#${promo.slug}`}
-              className="group relative aspect-[4/3] overflow-hidden rounded-xl2"
+              className="group relative aspect-4/3 overflow-hidden rounded-xl2"
             >
               <Image
                 src={promotionImage(promo, products, usedPromoSlugs)}
@@ -273,7 +273,7 @@ export default async function HomePage() {
               {/* Most of these photos are packshots on white, so the scrim has to be
                   dark right up to where the title sits — the old 55%-to-5% fade
                   left white text on near-white at the title line. */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 via-50% to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/60 via-50% to-transparent" />
               <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
                 <span className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-brand-ink">
                   {promo.badge}
@@ -345,7 +345,7 @@ export default async function HomePage() {
           {/* The one bold block on the page, deep green end to end. The two
               circles drifting across it on their own were decoration moving
               for no one's benefit. */}
-          <div className="relative grid md:grid-cols-[1.1fr,1fr] gap-8 items-center">
+          <div className="relative grid md:grid-cols-[1.1fr_1fr] gap-8 items-center">
             <div>
               <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-black/15 px-3 py-1 text-xs font-semibold">
                 <Repeat size={13} /> สมัครสมาชิกรายรอบ ไม่ต้องสั่งซ้ำ
@@ -360,7 +360,7 @@ export default async function HomePage() {
               </p>
               <Link
                 href="/subscription"
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-brand-800 transition-colors hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-action"
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-brand-800 transition-colors hover:bg-brand-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-action"
               >
                 <PercentCircle size={16} /> ดูแผนสมัครสมาชิก
               </Link>
@@ -463,7 +463,7 @@ export default async function HomePage() {
               href={a.href}
               className="group flex shrink-0 w-[78%] sm:w-auto snap-start flex-col rounded-xl2 bg-white overflow-hidden shadow-card hover:shadow-cardHover transition-shadow"
             >
-              <div className="relative aspect-[16/9] bg-surface-mist">
+              <div className="relative aspect-video bg-surface-mist">
                 {a.image && (
                   <Image
                     src={a.image}

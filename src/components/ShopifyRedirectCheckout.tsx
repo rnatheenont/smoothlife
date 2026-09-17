@@ -178,7 +178,7 @@ export default function ShopifyRedirectCheckout() {
                   type="checkbox"
                   checked={wantsTaxInvoice}
                   onChange={(e) => setWantsTaxInvoice(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-800 focus:ring-brand-emerald"
+                  className="mt-0.5 h-4 w-4 rounded-sm border-slate-300 text-brand-800 focus:ring-brand-emerald"
                 />
                 <span>ต้องการใบกำกับภาษีเต็มรูปสำหรับคำสั่งซื้อนี้</span>
               </label>
@@ -245,7 +245,7 @@ export default function ShopifyRedirectCheckout() {
                 <span className="line-clamp-1 pr-2">
                   {l.name} x{l.qty}
                   {l.isGift && (
-                    <span className="ml-1.5 inline-block align-middle text-[10px] font-semibold text-brand-800 bg-brand-gradient-soft rounded px-1.5 py-0.5">
+                    <span className="ml-1.5 inline-block align-middle text-[10px] font-semibold text-brand-800 bg-brand-gradient-soft rounded-sm px-1.5 py-0.5">
                       ของแถม
                     </span>
                   )}

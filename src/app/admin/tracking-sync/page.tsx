@@ -297,8 +297,8 @@ export default function AdminTrackingSyncPage() {
       ) : !data?.rows.length ? (
         <p className="flex items-start gap-1.5 rounded-xl2 border border-slate-100 p-4 text-body-xs text-slate-500">
           <Info size={13} className="mt-0.5 shrink-0 text-slate-400" />
-          ยังไม่มีข้อมูลเข้ามา — ให้ระบบต้นทางยิง POST มาที่ <code className="rounded bg-surface-soft px-1">/api/webhooks/tracking</code>{" "}
-          พร้อม header <code className="rounded bg-surface-soft px-1">x-tracking-secret</code>
+          ยังไม่มีข้อมูลเข้ามา — ให้ระบบต้นทางยิง POST มาที่ <code className="rounded-sm bg-surface-soft px-1">/api/webhooks/tracking</code>{" "}
+          พร้อม header <code className="rounded-sm bg-surface-soft px-1">x-tracking-secret</code>
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl2 border border-slate-100">

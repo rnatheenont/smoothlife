@@ -21,7 +21,7 @@ export default function SortSelect({ current }: { current: ShopSearchParams }) {
       defaultValue={current.sort || ""}
       onChange={onChange}
       aria-label="เรียงลำดับสินค้า"
-      className="h-10 w-full lg:w-auto rounded-full border border-slate-200 text-sm pl-4 pr-8 outline-none bg-white text-center lg:text-left focus-visible:border-brand-teal focus-visible:ring-2 focus-visible:ring-brand-teal/30"
+      className="h-10 w-full lg:w-auto rounded-full border border-slate-200 text-sm pl-4 pr-8 outline-hidden bg-white text-center lg:text-left focus-visible:border-brand-teal focus-visible:ring-2 focus-visible:ring-brand-teal/30"
     >
       <option value="">แนะนำ</option>
       <option value="bestseller">ขายดีที่สุด</option>

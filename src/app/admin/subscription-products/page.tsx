@@ -194,7 +194,7 @@ export default function AdminSubscriptionProductsPage() {
             value={queryInput}
             onChange={(e) => setQueryInput(e.target.value)}
             placeholder="พิมพ์ชื่อสินค้าหรือยี่ห้อ เพื่อเพิ่มเข้าลิสต์…"
-            className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-9 text-sm outline-none focus:border-brand-teal"
+            className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-9 text-sm outline-hidden focus:border-brand-teal"
           />
           {queryInput && (
             <button
@@ -215,7 +215,7 @@ export default function AdminSubscriptionProductsPage() {
               setPage(1);
               setCategory(e.target.value);
             }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-teal"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
           >
             <option value="">ทุกหมวดหมู่</option>
             {categories.map((c) => (

@@ -122,7 +122,7 @@ export default function PaymentModal({
   const isResult = phase === "success" || phase === "failed" || phase === "unconfirmed";
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 z-120 flex items-center justify-center p-3 sm:p-4">
       <div aria-hidden="true" className="absolute inset-0 bg-black/50" onClick={requestClose} />
 
       <div

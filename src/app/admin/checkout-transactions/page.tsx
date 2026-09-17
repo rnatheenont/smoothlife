@@ -89,7 +89,7 @@ function RefundControls({ tx, onDone }: { tx: Transaction; onDone: () => void })
           onChange={(e) => setAmount(e.target.value)}
           max={tx.amount}
           min={1}
-          className="w-24 rounded border border-slate-200 px-2 py-1"
+          className="w-24 rounded-sm border border-slate-200 px-2 py-1"
         />
       </label>
       {error && <p className="text-rose-500">{error}</p>}
@@ -111,7 +111,7 @@ function RefundControls({ tx, onDone }: { tx: Transaction; onDone: () => void })
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="หมายเหตุ (ถ้ามี)"
-          className="w-full rounded border border-slate-200 px-2 py-1 mb-2"
+          className="w-full rounded-sm border border-slate-200 px-2 py-1 mb-2"
         />
         <button onClick={submitManual} disabled={busy} className="text-slate-600 underline disabled:opacity-60">
           บันทึกว่าคืนเงินแล้ว

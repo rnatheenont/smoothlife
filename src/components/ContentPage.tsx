@@ -28,7 +28,7 @@ export default function ContentPage({
         <p className="text-sm text-slate-600">{intro}</p>
       </div>
       {image && (
-        <div className="relative aspect-[21/9] rounded-xl2 overflow-hidden mb-10">
+        <div className="relative aspect-21/9 rounded-xl2 overflow-hidden mb-10">
           <Image src={image} alt={title} fill className="object-cover" />
         </div>
       )}

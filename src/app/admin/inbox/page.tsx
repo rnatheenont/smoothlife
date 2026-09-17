@@ -834,7 +834,7 @@ export default function AdminInboxPage() {
                 {attachment && (
                   <div className="mb-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-surface-soft p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={attachment.dataUrl} alt="" width={48} height={48} className="h-12 w-12 rounded object-cover" />
+                    <img src={attachment.dataUrl} alt="" width={48} height={48} className="h-12 w-12 rounded-sm object-cover" />
                     <span className="flex-1 text-[11px] text-slate-500">แนบรูปนี้ไปกับข้อความ</span>
                     <button
                       onClick={() => setAttachment(null)}
@@ -884,7 +884,7 @@ export default function AdminInboxPage() {
                     }}
                     rows={2}
                     placeholder="พิมพ์คำตอบ…"
-                    className="min-w-0 flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs outline-none focus:border-brand-teal"
+                    className="min-w-0 flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs outline-hidden focus:border-brand-teal"
                   />
                   <Button
                     size="none"

@@ -31,7 +31,7 @@ export default function CollectionsIndexPage() {
               href={`/collections/${c.handle}`}
               className="group overflow-hidden rounded-xl2 border border-slate-100 shadow-card transition-shadow hover:shadow-cardHover"
             >
-              <div className="relative aspect-[4/3] bg-surface-soft">
+              <div className="relative aspect-4/3 bg-surface-soft">
                 {c.image ? (
                   <Image
                     src={c.image}

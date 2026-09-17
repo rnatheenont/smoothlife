@@ -222,7 +222,7 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
                       one more thing to aim at on a phone. */}
                   <Link
                     href={`/account/orders/${orderIdFromGid(o.id)}${o.store && o.store !== "smoothlife" ? `?store=${o.store}` : ""}`}
-                    className="group inline-flex items-center gap-1 rounded-s focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                    className="group inline-flex items-center gap-1 rounded-s focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
                   >
                     <span className="text-sm font-bold text-brand-ink group-hover:text-brand-800">{o.name}</span>
                     <ChevronRight size={14} className="text-slate-300 transition-transform group-hover:translate-x-0.5" />

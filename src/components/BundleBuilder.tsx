@@ -99,7 +99,7 @@ export default function BundleBuilder({
   }
 
   return (
-    <div className="grid md:grid-cols-[1.4fr,1fr] gap-8 md:gap-10">
+    <div className="grid md:grid-cols-[1.4fr_1fr] gap-8 md:gap-10">
       <div>
         <p className="text-xs font-semibold text-slate-500 mb-3">
           เลือกแล้ว {selected.size}/{BUNDLE_MAX_ITEMS} ชิ้น (เลือกอย่างน้อย {BUNDLE_MIN_ITEMS} ชิ้น)
@@ -155,7 +155,7 @@ export default function BundleBuilder({
                 </div>
                 <div className="p-3">
                   <span translate="no" className="text-[10px] font-semibold text-brand-800">{product.brand}</span>
-                  <p translate="no" className="text-xs font-medium text-brand-ink line-clamp-2 min-h-[2rem]">{product.name}</p>
+                  <p translate="no" className="text-xs font-medium text-brand-ink line-clamp-2 min-h-8">{product.name}</p>
                   <p className="text-sm font-bold text-brand-ink mt-1">{formatTHB(product.price)}</p>
                 </div>
               </button>

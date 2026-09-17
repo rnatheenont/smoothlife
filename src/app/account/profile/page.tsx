@@ -12,7 +12,7 @@ import { Avatar, Button } from "@/components/ui";
 import { SHOPIFY_EMAIL_LOGIN, shopifyAuthStartPath } from "@/lib/shopify-email-login";
 
 const inputClass =
-  "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-teal";
+  "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-hidden focus:border-brand-teal";
 const labelClass = "text-xs font-semibold text-slate-500 mb-1.5 block";
 
 function ProfileContent() {
@@ -103,7 +103,7 @@ function ProfileContent() {
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarBusy}
               aria-label="เปลี่ยนรูปโปรไฟล์"
-              className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-white text-brand-800 border border-slate-200 shadow-sm disabled:opacity-60"
+              className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-white text-brand-800 border border-slate-200 shadow-xs disabled:opacity-60"
             >
               <Camera size={12} />
             </button>

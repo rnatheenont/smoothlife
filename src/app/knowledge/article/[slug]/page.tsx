@@ -138,7 +138,7 @@ function ArticleLayout({
           {excerpt && <p className="mt-3 hidden text-lg leading-relaxed text-slate-600 lg:block">{excerpt}</p>}
           <p className="mt-3 flex items-center gap-3 text-sm text-slate-500 lg:mt-4">{meta}</p>
           {image && (
-            <div className="relative mt-5 aspect-[16/9] overflow-hidden rounded-xl2 bg-surface-mist md:mt-7">
+            <div className="relative mt-5 aspect-video overflow-hidden rounded-xl2 bg-surface-mist md:mt-7">
               <Image src={image} alt="" fill priority sizes="(max-width: 1024px) 100vw, 720px" className="object-cover" />
             </div>
           )}

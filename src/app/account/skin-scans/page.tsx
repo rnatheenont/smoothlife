@@ -93,7 +93,7 @@ function SkinScansContent() {
         </div>
         <Link
           href="/skin-coach"
-          className="flex items-center gap-1.5 rounded-full bg-brand-gradient px-4 py-2.5 text-sm font-semibold text-white shadow-sm"
+          className="flex items-center gap-1.5 rounded-full bg-brand-gradient px-4 py-2.5 text-sm font-semibold text-white shadow-xs"
         >
           <Camera size={15} aria-hidden="true" /> สแกนผิวใหม่
         </Link>

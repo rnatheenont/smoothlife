@@ -9,7 +9,7 @@ import { usePhotoPicker } from "./PhotoPicker";
 // consultant would frame a photo, not a scanner reticle.
 function FaceGuide({ photo }: { photo?: string }) {
   return (
-    <div className="relative mx-auto aspect-[4/5] w-full max-w-[11rem] overflow-hidden sm:max-w-[16rem] rounded-xl2 bg-surface-mist">
+    <div className="relative mx-auto aspect-4/5 w-full max-w-44 overflow-hidden sm:max-w-[16rem] rounded-xl2 bg-surface-mist">
       {photo && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={photo} alt="รูปหน้าตรงที่ถ่ายไว้" className="absolute inset-0 h-full w-full object-cover" />
@@ -56,7 +56,7 @@ export default function FrontStep({
       <h2 className="text-lg font-bold text-brand-ink md:text-xl">ถ่ายรูปหน้าตรง 1 รูป</h2>
       <p className="mt-1 text-sm text-slate-600">รูปเดียวก็สแกนได้ ถ้าอยากให้ละเอียดขึ้น เพิ่มมุมอื่นได้ในขั้นถัดไป</p>
 
-      <div className="mt-5 grid gap-5 sm:grid-cols-[16rem,1fr] sm:items-start">
+      <div className="mt-5 grid gap-5 sm:grid-cols-[16rem_1fr] sm:items-start">
         <FaceGuide photo={photo?.dataUrl} />
         <div>
           <p className="text-sm font-semibold text-brand-ink">ถ่ายให้ได้ผลดีที่สุด</p>

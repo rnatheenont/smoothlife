@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sun, Moon, ShoppingBag } from "lucide-react";
-import config from "../../../../tailwind.config";
 import { Button, Badge, Card, Field, Modal } from "@/components/ui";
 
-// A living style guide: it reads the real tailwind.config, so it cannot drift
+// A living style guide: it reads the brand tokens straight out of the shipped
+// stylesheet (the `@theme static` block in globals.css), so it cannot drift
 // from what the code actually ships. A design system that lives only in a
 // document describes what someone intended a few months ago; this describes
 // what a class name will do right now.
@@ -15,9 +15,66 @@ type Theme = {
   fontSize: Record<string, [string, { lineHeight?: string; letterSpacing?: string }]>;
   borderRadius: Record<string, string>;
   boxShadow: Record<string, string>;
-  spacing: Record<string, string>;
 };
-const theme = (config.theme?.extend ?? {}) as unknown as Theme;
+
+// Only the site's own tokens — Tailwind's defaults are documented upstream.
+const COLOR_GROUPS = ["brand", "surface", "sale", "sand", "grey"];
+const DEFAULT_TEXT = new Set(["xs", "sm", "base", "lg", "xl", "2xl", "3xl", "4xl", "5xl", "6xl", "7xl", "8xl", "9xl"]);
+const DEFAULT_RADIUS = new Set(["sm", "md", "lg", "xl", "2xl", "3xl", "4xl"]);
+const DEFAULT_SHADOW = new Set(["2xs", "xs", "sm", "md", "lg", "xl", "2xl"]);
+
+function readThemeVars(): Map<string, string> {
+  const vars = new Map<string, string>();
+  const walk = (rules: CSSRuleList) => {
+    for (const rule of Array.from(rules)) {
+      if (rule instanceof CSSStyleRule && rule.selectorText.includes(":root")) {
+        for (const name of Array.from(rule.style)) {
+          if (name.startsWith("--")) vars.set(name, rule.style.getPropertyValue(name).trim());
+        }
+      } else if ("cssRules" in rule) {
+        walk((rule as CSSGroupingRule).cssRules);
+      }
+    }
+  };
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      walk(sheet.cssRules);
+    } catch {
+      // cross-origin sheet (fonts) — not ours
+    }
+  }
+  return vars;
+}
+
+function useTheme(): Theme {
+  const [theme, setTheme] = useState<Theme>({ colors: {}, fontSize: {}, borderRadius: {}, boxShadow: {} });
+  useEffect(() => {
+    const vars = readThemeVars();
+    const next: Theme = { colors: {}, fontSize: {}, borderRadius: {}, boxShadow: {} };
+    for (const [name, value] of vars) {
+      const color = name.match(/^--color-([a-z]+)(?:-(.+))?$/);
+      if (color && COLOR_GROUPS.includes(color[1])) {
+        (next.colors[color[1]] ??= {})[color[2] ?? "DEFAULT"] = value;
+      }
+      const text = name.match(/^--text-([a-z0-9-]+?)$/);
+      if (text && !DEFAULT_TEXT.has(text[1]) && !text[1].includes("--")) {
+        next.fontSize[text[1]] = [
+          value,
+          {
+            lineHeight: vars.get(`--text-${text[1]}--line-height`),
+            letterSpacing: vars.get(`--text-${text[1]}--letter-spacing`),
+          },
+        ];
+      }
+      const radius = name.match(/^--radius-(.+)$/);
+      if (radius && !DEFAULT_RADIUS.has(radius[1])) next.borderRadius[radius[1]] = value;
+      const shadow = name.match(/^--shadow-(.+)$/);
+      if (shadow && !DEFAULT_SHADOW.has(shadow[1])) next.boxShadow[shadow[1]] = value;
+    }
+    setTheme(next);
+  }, []);
+  return theme;
+}
 
 /* ---- contrast, computed rather than eyeballed ---- */
 
@@ -55,6 +112,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 }
 
 export default function AdminDesignSystemPage() {
+  const theme = useTheme();
   const colorGroups = Object.entries(theme.colors ?? {});
   const [dark, setDark] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -65,7 +123,7 @@ export default function AdminDesignSystemPage() {
       <div className="mb-6">
         <h1 className="text-xl font-bold text-brand-ink">ระบบดีไซน์</h1>
         <p className="mt-1 text-body-s text-slate-500">
-          อ่านค่าจาก <code className="rounded bg-surface-soft px-1">tailwind.config.ts</code> โดยตรง —
+          อ่านค่าจาก <code className="rounded-sm bg-surface-soft px-1">@theme</code> ใน globals.css ที่เว็บใช้จริง —
           หน้านี้จึงตรงกับของจริงเสมอ ไม่มีทางเพี้ยน
         </p>
       </div>
@@ -152,7 +210,7 @@ export default function AdminDesignSystemPage() {
           <button
             type="button"
             onClick={() => setDark((d) => !d)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-body-xs font-semibold text-slate-600 transition hover:border-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-body-xs font-semibold text-slate-600 transition hover:border-brand-teal focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
           >
             {dark ? <Sun size={13} /> : <Moon size={13} />}
             ดูโหมด{dark ? "สว่าง" : "มืด"}
@@ -247,17 +305,6 @@ export default function AdminDesignSystemPage() {
         </Modal>
       </Section>
 
-      <Section title="ระยะห่าง" hint="ใช้กับ p- m- gap- w- h- ได้ทั้งหมด">
-        <div className="flex flex-col gap-1.5">
-          {Object.entries(theme.spacing ?? {}).map(([name, value]) => (
-            <div key={name} className="flex items-center gap-3">
-              <code className="w-16 shrink-0 text-[11px] text-slate-400">{name}</code>
-              <div className="h-3 rounded-xs bg-brand-400" style={{ width: value }} />
-              <span className="text-[10px] text-slate-400">{value}</span>
-            </div>
-          ))}
-        </div>
-      </Section>
     </div>
   );
 }

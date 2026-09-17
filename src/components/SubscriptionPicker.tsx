@@ -165,7 +165,7 @@ export default function SubscriptionPicker({
               </Link>
               <div className="flex flex-1 flex-col gap-1.5 p-3.5">
                 <span translate="no" className="text-[11px] font-semibold text-brand-800">{product.brand}</span>
-                <h3 translate="no" className="text-sm font-medium text-brand-ink line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
+                <h3 translate="no" className="text-sm font-medium text-brand-ink line-clamp-2 min-h-10">{product.name}</h3>
                 {product.reviewCount > 0 && (
                   <div className="flex items-center gap-1.5">
                     <StarRating rating={product.rating} size={12} />

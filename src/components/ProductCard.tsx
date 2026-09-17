@@ -94,7 +94,7 @@ export default function ProductCard({ product }: { product: Product }) {
         onClick={() => toggle(product.slug)}
         aria-label={isWished ? "เอาออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}
         aria-pressed={isWished}
-        className="absolute right-2.5 top-2.5 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/90 ring-1 ring-surface-line transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+        className="absolute right-2.5 top-2.5 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/90 ring-1 ring-surface-line transition-colors hover:bg-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
       >
         <Heart size={16} className={isWished ? "fill-sale text-sale" : "text-slate-500"} />
       </button>
@@ -133,7 +133,7 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className="flex flex-1 flex-col gap-1.5 p-3 md:p-4">
         <span translate="no" className="truncate text-xs font-medium text-slate-500">{product.brand}</span>
         <Link href={`/product/${product.slug}`}>
-          <h3 translate="no" className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-snug text-brand-ink transition-colors hover:text-brand-800">
+          <h3 translate="no" className="line-clamp-2 min-h-10 text-sm font-medium leading-snug text-brand-ink transition-colors hover:text-brand-800">
             {product.name}
           </h3>
         </Link>

@@ -322,7 +322,7 @@ export default function ProductDetailInteractive({
           <button
             type="button"
             aria-label="ขยายรูปสินค้า"
-            className="relative block aspect-square w-full cursor-zoom-in select-none overflow-hidden rounded-xl2 bg-white touch-pan-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+            className="relative block aspect-square w-full cursor-zoom-in select-none overflow-hidden rounded-xl2 bg-white touch-pan-y focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
             onTouchStart={onImageTouchStart}
             onTouchEnd={onImageTouchEnd}
             onClick={() => setZoomOpen(true)}
@@ -431,7 +431,7 @@ export default function ProductDetailInteractive({
                 <button
                   onClick={() => setPurchaseMode("once")}
                   className={`rounded-full py-2 transition-colors ${
-                    purchaseMode === "once" ? "bg-white shadow-sm text-brand-ink" : "text-slate-500"
+                    purchaseMode === "once" ? "bg-white shadow-xs text-brand-ink" : "text-slate-500"
                   }`}
                 >
                   ซื้อครั้งเดียว
@@ -737,14 +737,14 @@ export default function ProductDetailInteractive({
                       value={reviewTitle}
                       onChange={(e) => setReviewTitle(e.target.value)}
                       placeholder="หัวข้อรีวิว (ไม่บังคับ)"
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-teal"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
                     />
                     <textarea
                       value={reviewBody}
                       onChange={(e) => setReviewBody(e.target.value)}
                       placeholder="เล่าประสบการณ์การใช้สินค้านี้... (ไม่บังคับ แต่รับแต้มเพิ่มถ้าเขียน)"
                       rows={3}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-teal resize-none"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal resize-none"
                     />
                     {reviewError && <p className="text-xs text-rose-700">{reviewError}</p>}
                     <Button type="submit" loading={reviewSubmitting}>
@@ -803,7 +803,7 @@ export default function ProductDetailInteractive({
                       placeholder="อยากรู้อะไรเกี่ยวกับสินค้านี้…"
                       required
                       rows={2}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-teal resize-none"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal resize-none"
                     />
                     {questionError && <p className="text-xs text-rose-700">{questionError}</p>}
                     <Button type="submit" loading={questionSubmitting}>
@@ -880,7 +880,7 @@ export default function ProductDetailInteractive({
       </MobileStickyBar>
 
       {zoomOpen && (
-        <div className="fixed inset-0 z-[110] bg-black/95 flex flex-col">
+        <div className="fixed inset-0 z-110 bg-black/95 flex flex-col">
           <div className="flex items-center justify-between p-4 pt-[calc(1rem+env(safe-area-inset-top))] shrink-0">
             {images.length > 1 ? (
               <span className="text-sm text-white/70">

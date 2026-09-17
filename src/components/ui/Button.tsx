@@ -62,7 +62,7 @@ const SIZE: Record<Size, string> = {
  */
 const BASE =
   "inline-flex items-center justify-center rounded-full font-semibold transition " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 " +
+  "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 " +
   "dark:focus-visible:ring-offset-slate-950 " +
   "disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
 

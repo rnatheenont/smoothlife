@@ -110,7 +110,7 @@ export default function AdminLineRichMenuPage() {
                       ไม่งั้นลูกค้าคนเดียวจะกลายเป็นสองบัญชี
                     </li>
                     <li>
-                      ตั้งค่า <code className="rounded bg-white px-1">LINE_MESSAGING_ACCESS_TOKEN</code> บน Vercel
+                      ตั้งค่า <code className="rounded-sm bg-white px-1">LINE_MESSAGING_ACCESS_TOKEN</code> บน Vercel
                     </li>
                   </ol>
                 </>

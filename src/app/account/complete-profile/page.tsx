@@ -120,7 +120,7 @@ function CompleteProfileContent() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoComplete="name"
-              className="w-full rounded-full bg-surface-soft px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+              className="w-full rounded-full bg-surface-soft px-4 py-3 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
             />
           </div>
           {needsPhone && (
@@ -133,7 +133,7 @@ function CompleteProfileContent() {
                 placeholder="08X-XXX-XXXX"
                 inputMode="numeric"
                 autoComplete="tel"
-                className="w-full rounded-full bg-surface-soft px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                className="w-full rounded-full bg-surface-soft px-4 py-3 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
               />
             </div>
           )}
@@ -147,7 +147,7 @@ function CompleteProfileContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 inputMode="email"
-                className="w-full rounded-full bg-surface-soft px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-teal/40"
+                className="w-full rounded-full bg-surface-soft px-4 py-3 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
               />
             </div>
           )}

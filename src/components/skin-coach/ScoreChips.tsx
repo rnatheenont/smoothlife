@@ -61,7 +61,7 @@ export default function ScoreChips({
               e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
             }}
             className={clsx(
-              "flex w-[4.5rem] shrink-0 snap-start flex-col items-center gap-1 rounded-xl py-1.5 transition-colors",
+              "flex w-18 shrink-0 snap-start flex-col items-center gap-1 rounded-xl py-1.5 transition-colors",
               isOn ? "bg-surface-mist" : "hover:bg-slate-50"
             )}
           >

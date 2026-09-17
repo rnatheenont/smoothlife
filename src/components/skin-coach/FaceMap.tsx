@@ -257,7 +257,7 @@ export default function FaceMap({
 
         {ready && (
           <>
-            <div className="absolute left-3 top-3 rounded-xl bg-white/90 px-3 py-2 shadow-sm backdrop-blur" aria-live="polite">
+            <div className="absolute left-3 top-3 rounded-xl bg-white/90 px-3 py-2 shadow-xs backdrop-blur-sm" aria-live="polite">
               <p className="text-[11px] text-slate-600">{label}</p>
               <p className="text-lg font-bold leading-tight text-brand-ink tabular-nums">
                 {score}

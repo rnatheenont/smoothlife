@@ -152,7 +152,7 @@ export default function SkinProgress({
               { s: after, tag: "ล่าสุด" },
             ].map(({ s, tag }) => (
               <figure key={s.id}>
-                <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-slate-100">
+                <div className="relative aspect-3/4 overflow-hidden rounded-xl bg-slate-100">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={s.photo_url!} alt={`รูป${tag} ${formatScanDate(s.scanned_at)}`} className="h-full w-full object-cover" />
                   <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white">{tag}</span>

@@ -1,56 +1,352 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-html {
-  scroll-behavior: smooth;
-  /* The site is designed light-only. Saying so stops browsers in dark mode
-     from repainting native controls — selects, date pickers, scrollbars —
-     in dark chrome that sits on a white page. */
-  color-scheme: light;
+@source '../**/*.{js,ts,jsx,tsx,mdx}';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Brand tokens (were tailwind.config.ts under v3). `static` emits every one as
+  a CSS variable even when no class uses it yet, so /admin/design can list them
+  straight from the stylesheet.
+
+  The v3 config also had named spacing steps (2xs, xs, s, m, l, xl, 2xl, 3xl).
+  They were never used as classes, and in v4 they would take over
+  max-w-xl / max-w-2xl / max-w-3xl (turning a 42rem column into 3.2rem), so
+  they are gone.
+*/
+@theme static {
+  --color-brand-50: #ebf8f4;
+  --color-brand-100: #d1efe7;
+  --color-brand-200: #9edecd;
+  --color-brand-400: #40be9c;
+  --color-brand-600: #00a87b;
+  --color-brand-800: #05755f;
+  --color-brand-1000: #09514a;
+  --color-brand-emerald: #00a87b;
+  --color-brand-teal: #00b39b;
+  --color-brand-sky: #00aeef;
+  --color-brand-blue: #0091e6;
+  --color-brand-dark: #0b3b36;
+  --color-brand-ink: #0f172a;
+  --color-brand-action: #00a87b;
+  --color-brand-action-hover: #00956d;
+
+  --color-surface-soft: #f4faf8;
+  --color-surface-muted: #eef3f2;
+  --color-surface-mist: #eef5f1;
+  --color-surface-line: #dce7e1;
+
+  --color-sale: #d63a30;
+
+  --color-sand-50: #faf9f7;
+  --color-sand-100: #f7f6f2;
+  --color-sand-200: #ebe7e1;
+  --color-sand-400: #d4cec4;
+  --color-sand-600: #b2a495;
+  --color-sand-800: #89796c;
+  --color-sand-1000: #675a51;
+
+  --color-grey-50: rgba(15, 23, 42, 0.04);
+  --color-grey-100: rgba(15, 23, 42, 0.08);
+  --color-grey-200: #cbd2dc;
+  --color-grey-400: #8d97a8;
+  --color-grey-600: #6b7686;
+  --color-grey-800: #414b5c;
+  --color-grey-1000: #0f172a;
+
+  --font-sans: var(--font-noto-thai), Noto Sans Thai, sans-serif;
+
+  --background-image-brand-gradient: linear-gradient(
+    90deg,
+    #00a87b 0%,
+    #00b39b 45%,
+    #00aeef 100%
+  );
+  --background-image-brand-gradient-soft: linear-gradient(
+    135deg,
+    #e6fbf5 0%,
+    #e6f6fe 100%
+  );
+  --background-image-brand-signature: linear-gradient(
+    90deg,
+    #00a87b 0%,
+    #00b39b 45%,
+    #00aeef 100%
+  );
+  --background-image-brand-radial: radial-gradient(
+    120% 120% at 100% 0%,
+    #e6f6fe 0%,
+    #f4faf8 60%
+  );
+
+  --text-h1: 3.2rem;
+  --text-h1--line-height: 1;
+  --text-h1--letter-spacing: -0.016em;
+  --text-h2: 2.6rem;
+  --text-h2--line-height: 1;
+  --text-h2--letter-spacing: -0.016em;
+  --text-h3: 2rem;
+  --text-h3--line-height: 1;
+  --text-h3--letter-spacing: -0.016em;
+  --text-h4: 1.6rem;
+  --text-h4--line-height: 1.1;
+  --text-h4--letter-spacing: -0.016em;
+  --text-h5: 1.2rem;
+  --text-h5--line-height: 1.1;
+  --text-h6: 1rem;
+  --text-h6--line-height: 1.2;
+  --text-title-l: 1.2rem;
+  --text-title-l--line-height: 1.2;
+  --text-title: 1rem;
+  --text-title--line-height: 1.2;
+  --text-title-s: 0.9rem;
+  --text-title-s--line-height: 1.2;
+  --text-body-xl: 1.4rem;
+  --text-body-xl--line-height: 1.3;
+  --text-body-l: 1.2rem;
+  --text-body-l--line-height: 1.3;
+  --text-body: 1rem;
+  --text-body--line-height: 1.4;
+  --text-body-s: 0.9rem;
+  --text-body-s--line-height: 1.4;
+  --text-body-xs: 0.8rem;
+  --text-body-xs--line-height: 1.4;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1.2;
+  --text-tag: 0.7rem;
+  --text-tag--line-height: 1;
+  --text-tag--letter-spacing: 0.08em;
+
+  --shadow-card:
+    0 0 0 1px rgba(16, 35, 28, 0.07), 0 1px 2px rgba(16, 35, 28, 0.04);
+  --shadow-cardHover:
+    0 0 0 1px rgba(16, 35, 28, 0.09), 0 10px 28px -10px rgba(16, 35, 28, 0.18);
+  --shadow-layer-xs:
+    0 3px 3px -1.5px rgba(15, 23, 42, 0.04),
+    0 1px 1px -0.5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  --shadow-layer-sm:
+    0 6px 6px -3px rgba(15, 23, 42, 0.04),
+    0 3px 3px -1.5px rgba(15, 23, 42, 0.04),
+    0 1px 1px -0.5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  --shadow-layer:
+    0 12px 12px -6px rgba(15, 23, 42, 0.04),
+    0 6px 6px -3px rgba(15, 23, 42, 0.04),
+    0 3px 3px -1.5px rgba(15, 23, 42, 0.04),
+    0 1px 1px -0.5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  --shadow-layer-lg:
+    0 64px 64px -32px rgba(15, 23, 42, 0.04),
+    0 32px 32px -16px rgba(15, 23, 42, 0.04),
+    0 16px 16px -8px rgba(15, 23, 42, 0.04),
+    0 12px 12px -6px rgba(15, 23, 42, 0.04),
+    0 6px 6px -3px rgba(15, 23, 42, 0.04),
+    0 3px 3px -1.5px rgba(15, 23, 42, 0.04),
+    0 1px 1px -0.5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
+
+  --radius-xl2: 1.25rem;
+  --radius-2xs: 0.1rem;
+  --radius-xs: 0.2rem;
+  --radius-s: 0.4rem;
+  --radius-m: 0.8rem;
+  --radius-l: 1.2rem;
+  --radius-circle: 50%;
+
+  --animate-fadeUp: fadeUp 0.4s ease-out both;
+  --animate-pop: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-slideUp: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-marquee: marquee 16s linear infinite;
+  --animate-glowPulse: glowPulse 2s ease-out infinite;
+  --animate-shimmer: shimmer 2.5s linear infinite;
+  --animate-floatSlow: floatSlow 4s ease-in-out infinite;
+  --animate-tabPop: tabPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+
+  @keyframes fadeUp {
+    0% {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes pop {
+    0% {
+      transform: scale(1);
+    }
+    35% {
+      transform: scale(1.45);
+    }
+    60% {
+      transform: scale(0.9);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  @keyframes slideUp {
+    0% {
+      transform: translateY(100%);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+  @keyframes marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes glowPulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(0, 174, 239, 0.45);
+    }
+    50% {
+      box-shadow: 0 0 0 8px rgba(0, 174, 239, 0);
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  @keyframes floatSlow {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+  @keyframes tabPop {
+    0% {
+      transform: scale(1) translateY(0);
+    }
+    30% {
+      transform: scale(0.8) translateY(2px);
+    }
+    55% {
+      transform: scale(1.3) translateY(-4px);
+    }
+    80% {
+      transform: scale(0.95) translateY(0);
+    }
+    100% {
+      transform: scale(1) translateY(0);
+    }
+  }
 }
 
-body {
-  color: #0f172a;
-  background: #ffffff;
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
 }
 
-/* Taps register immediately instead of waiting ~300ms to rule out a
-   double-tap zoom — the difference between a button that responds and one
-   that feels broken on a phone. */
-a,
-button,
-[role="button"],
-input,
-select,
-textarea,
-label,
-summary {
-  touch-action: manipulation;
-}
+/*
+  Element defaults live in the base layer. Tailwind v4 puts utilities in a
+  real cascade layer, and plain CSS outside any layer beats every layer — so
+  left unlayered, `button { touch-action: manipulation }` would silently
+  override `touch-none` on the draggable buttons. Inside `base`, a utility
+  class on the element wins, as it did under v3.
+*/
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* The site is designed light-only. Saying so stops browsers in dark mode
+       from repainting native controls — selects, date pickers, scrollbars —
+       in dark chrome that sits on a white page. */
+    color-scheme: light;
+  }
 
-/* One keyboard focus ring for the whole site. Without it each browser drew
-   its own — a 1px orange hairline in Chrome — which barely shows on the
-   green buttons. :focus-visible only fires for keyboard (and programmatic
-   after keyboard) focus, so taps and clicks never see it. Kept out of the
-   Tailwind layers on purpose so a stray `outline-none` can't remove it,
-   while `focus-visible:outline-none` + a ring still opts out. Text fields
-   are left out: they match :focus-visible on every click and already carry
-   their own focus ring or border. */
-:where(a, button, select, summary, [role="button"], [tabindex], input[type="checkbox"], input[type="radio"]):focus-visible {
-  outline: 2px solid #05755f;
-  outline-offset: 2px;
-}
+  body {
+    color: #0f172a;
+    background: #ffffff;
+  }
 
-/* Headings break evenly instead of leaving one word stranded on the last
-   line; body copy breaks without orphans. Both ignored where unsupported. */
-h1,
-h2,
-h3 {
-  text-wrap: balance;
-}
-p {
-  text-wrap: pretty;
+  /* Taps register immediately instead of waiting ~300ms to rule out a
+     double-tap zoom — the difference between a button that responds and one
+     that feels broken on a phone. */
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  label,
+  summary {
+    touch-action: manipulation;
+  }
+
+  /* One keyboard focus ring for the whole site. Without it each browser drew
+     its own — a 1px orange hairline in Chrome — which barely shows on the
+     green buttons. :focus-visible only fires for keyboard (and programmatic
+     after keyboard) focus, so taps and clicks never see it. Zero specificity
+     in the base layer, so `focus-visible:outline-hidden` + a ring still opts
+     out (as it did under v3). Text fields
+     are left out: they match :focus-visible on every click and already carry
+     their own focus ring or border. */
+  :where(a, button, select, summary, [role="button"], [tabindex], input[type="checkbox"], input[type="radio"]):focus-visible {
+    outline: 2px solid #05755f;
+    outline-offset: 2px;
+  }
+
+  /* Headings break evenly instead of leaving one word stranded on the last
+     line; body copy breaks without orphans. Both ignored where unsupported. */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Mobile-only app-like feel — desktop (>=768px) is untouched below. */
+  @media (max-width: 767px) {
+    /* iOS Safari auto-zooms the page when focusing an input smaller than
+       16px, which reads as janky/web-like rather than app-like. Force 16px
+       regardless of whichever Tailwind text-* size each form happens to use. */
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+
+    /* Stops pull-to-refresh / rubber-band scroll from bubbling past the page
+       edges — the browser-chrome bounce is what makes a page feel like a
+       browser tab instead of an app. */
+    html,
+    body {
+      overscroll-behavior-y: contain;
+    }
+
+    /* Removes the gray flash on tap that browsers show by default; buttons
+       get their own :active styling instead, closer to native tap feedback. */
+    a,
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+  }
 }
 
 /* People who ask their device for less motion get less motion: no smooth
@@ -105,33 +401,6 @@ p {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-/* Mobile-only app-like feel — desktop (>=768px) is untouched below. */
-@media (max-width: 767px) {
-  /* iOS Safari auto-zooms the page when focusing an input smaller than
-     16px, which reads as janky/web-like rather than app-like. Force 16px
-     regardless of whichever Tailwind text-* size each form happens to use. */
-  input,
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-
-  /* Stops pull-to-refresh / rubber-band scroll from bubbling past the page
-     edges — the browser-chrome bounce is what makes a page feel like a
-     browser tab instead of an app. */
-  html,
-  body {
-    overscroll-behavior-y: contain;
-  }
-
-  /* Removes the gray flash on tap that browsers show by default; buttons
-     get their own :active styling instead, closer to native tap feedback. */
-  a,
-  button {
-    -webkit-tap-highlight-color: transparent;
-  }
 }
 
 /* Body of a Shopify blog post (knowledge/article). The markup comes from the

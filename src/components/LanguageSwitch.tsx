@@ -92,7 +92,7 @@ export default function LanguageSwitch({
           aria-expanded={open}
           aria-controls={menuId}
           className={clsx(
-            "flex items-center gap-1.5 rounded-full border bg-surface-soft shadow-sm transition hover:border-brand-teal hover:shadow-card disabled:opacity-70",
+            "flex items-center gap-1.5 rounded-full border bg-surface-soft shadow-xs transition hover:border-brand-teal hover:shadow-card disabled:opacity-70",
             compact ? "h-9 pl-2.5 pr-2 text-xs" : "h-10 pl-3 pr-2.5 text-sm",
             open ? "border-brand-teal shadow-card" : "border-slate-200"
           )}

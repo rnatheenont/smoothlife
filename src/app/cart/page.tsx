@@ -67,7 +67,7 @@ export default function CartPage() {
             <Link href={`/product/${line.slug}`} className="text-sm font-medium text-brand-ink line-clamp-2 hover:text-brand-800">
               {line.name}
               {line.isGift && (
-                <span className="ml-1.5 inline-block align-middle text-[10px] font-semibold text-brand-800 bg-brand-gradient-soft rounded px-1.5 py-0.5">
+                <span className="ml-1.5 inline-block align-middle text-[10px] font-semibold text-brand-800 bg-brand-gradient-soft rounded-sm px-1.5 py-0.5">
                   {t("ของแถม", "Free gift")}
                 </span>
               )}

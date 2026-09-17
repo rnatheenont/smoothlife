@@ -37,7 +37,7 @@ export default function ShopHero({
           </span>
         )}
 
-        <ul className="hidden shrink-0 gap-2 rounded-2xl bg-white/80 p-3 backdrop-blur sm:flex">
+        <ul className="hidden shrink-0 gap-2 rounded-2xl bg-white/80 p-3 backdrop-blur-sm sm:flex">
           {PROMISES.map((p) => (
             <li key={p.title} className="flex w-20 flex-col items-center gap-1 px-1 text-center lg:w-24">
               <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">

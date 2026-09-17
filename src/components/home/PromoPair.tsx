@@ -15,7 +15,7 @@ export default function PromoPair() {
         <p className="mt-1.5 text-sm text-slate-600">ช้อป · สะสมแต้ม · แลกรับสิทธิพิเศษ</p>
         <Link
           href="/loyalty"
-          className="mt-4 inline-flex items-center gap-1 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-brand-1000 shadow-sm"
+          className="mt-4 inline-flex items-center gap-1 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-brand-1000 shadow-xs"
         >
           ดูรายละเอียด <ChevronRight size={15} aria-hidden="true" />
         </Link>
@@ -27,7 +27,7 @@ export default function PromoPair() {
         <p className="mt-1.5 text-sm text-slate-600">ทุกออเดอร์ ไม่มีขั้นต่ำ · ถึงมือใน 1-3 วันทำการ</p>
         <Link
           href="/help/delivery"
-          className="mt-4 inline-flex items-center gap-1 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-brand-1000 shadow-sm"
+          className="mt-4 inline-flex items-center gap-1 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-brand-1000 shadow-xs"
         >
           ดูเงื่อนไข <ChevronRight size={15} aria-hidden="true" />
         </Link>

@@ -103,9 +103,9 @@ export default function Modal({
   const width = { sm: "max-w-sm", md: "max-w-lg", lg: "max-w-2xl" }[size];
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
+    <div className="fixed inset-0 z-100 flex items-end justify-center sm:items-center">
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs"
         onClick={close}
         aria-hidden
       />
@@ -138,7 +138,7 @@ export default function Modal({
               type="button"
               onClick={onClose}
               aria-label="ปิด"
-              className="shrink-0 rounded-full p-1.5 text-slate-500 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 dark:hover:bg-slate-800"
+              className="shrink-0 rounded-full p-1.5 text-slate-500 transition hover:bg-slate-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 dark:hover:bg-slate-800"
             >
               <X size={18} />
             </button>

@@ -649,7 +649,7 @@ export default function LiveScanStep({
       {/* The camera stays mounted through the review so a retake is instant. */}
       <div
         className={clsx(
-          "relative mx-auto mt-4 aspect-[3/4] w-full max-w-sm overflow-hidden rounded-xl2 bg-slate-900",
+          "relative mx-auto mt-4 aspect-3/4 w-full max-w-sm overflow-hidden rounded-xl2 bg-slate-900",
           phase === "review" && "hidden"
         )}
       >
@@ -708,7 +708,7 @@ export default function LiveScanStep({
             disabled={!ready || busy}
             aria-label={ready ? "ถ่ายรูป" : "ถ่ายรูป (รอเส้นสีเขียวก่อน)"}
             className={clsx(
-              "absolute bottom-4 left-1/2 grid h-[4.5rem] w-[4.5rem] -translate-x-1/2 place-items-center rounded-full border-4 transition-colors",
+              "absolute bottom-4 left-1/2 grid h-18 w-18 -translate-x-1/2 place-items-center rounded-full border-4 transition-colors",
               ready && !busy ? "border-brand-action bg-white/30" : "border-white/60 bg-white/10"
             )}
           >
@@ -724,7 +724,7 @@ export default function LiveScanStep({
               const shot = shots[key];
               return (
                 <li key={key} className="flex flex-col items-center gap-1.5">
-                  <span className="relative block aspect-[3/4] w-full overflow-hidden rounded-xl bg-surface-mist">
+                  <span className="relative block aspect-3/4 w-full overflow-hidden rounded-xl bg-surface-mist">
                     {shot && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={shot.dataUrl} alt={SHOT_LABEL[key]} className="h-full w-full object-cover" />

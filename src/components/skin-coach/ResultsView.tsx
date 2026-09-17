@@ -399,9 +399,9 @@ export default function ResultsView({
               </div>
             </div>
             {/* Where the score sits on the scale. */}
-            <div className="relative mt-4 h-2.5 rounded-full bg-gradient-to-r from-rose-400 via-amber-300 to-emerald-500" aria-hidden="true">
+            <div className="relative mt-4 h-2.5 rounded-full bg-linear-to-r from-rose-400 via-amber-300 to-emerald-500" aria-hidden="true">
               <span
-                className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white bg-brand-ink shadow"
+                className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white bg-brand-ink shadow-sm"
                 style={{ left: `${health}%` }}
               />
             </div>

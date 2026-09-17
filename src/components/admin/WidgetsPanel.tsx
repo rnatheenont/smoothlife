@@ -62,7 +62,7 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
         </div>
       );
     case "promotion_card":
-      return <div className="rounded-lg bg-gradient-to-t from-black/60 to-brand-teal/40 h-16 flex items-end p-2"><span className="text-white text-[10px] font-bold">ซื้อครบฟรี</span></div>;
+      return <div className="rounded-lg bg-linear-to-t from-black/60 to-brand-teal/40 h-16 flex items-end p-2"><span className="text-white text-[10px] font-bold">ซื้อครบฟรี</span></div>;
     case "promotion_badge":
       return <span className="inline-block text-[10px] font-bold px-2 py-1 rounded-full bg-brand-teal text-white">ของแถม</span>;
     case "popup":
@@ -167,7 +167,7 @@ export default function WidgetsPanel() {
               className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${w.enabled ? "bg-brand-gradient" : "bg-slate-200"}`}
               aria-label={w.enabled ? "ปิดใช้งาน" : "เปิดใช้งาน"}
             >
-              <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${w.enabled ? "translate-x-[22px]" : "translate-x-0"}`} />
+              <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${w.enabled ? "translate-x-[22px]" : "translate-x-0"}`} />
             </button>
           </div>
           <div className="flex items-center gap-3 mt-2.5">
