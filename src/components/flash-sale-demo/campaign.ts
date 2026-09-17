@@ -6,6 +6,7 @@
 // a customer gets one piece per campaign, not one per product.
 
 import {
+  closeSale,
   confirmPayment,
   createSale,
   joinQueue,
@@ -48,7 +49,8 @@ export type CampaignState = {
 
 export const MAX_GROUP_PRODUCTS = 12;
 
-export function createCampaign(config: CampaignConfig): CampaignState {
+/** `opensIn` 0 = the sale opens the moment the campaign starts (scheduled runs). */
+export function createCampaign(config: CampaignConfig, opensIn = 0): CampaignState {
   const products = config.products.slice(0, MAX_GROUP_PRODUCTS);
   // Keep the whole demo to roughly 70–120 simulated shoppers.
   const botsPerSale = Math.max(12, Math.min(70, Math.round(Math.max(config.stockPerProduct * 2.8, 110 / products.length))));
@@ -63,6 +65,7 @@ export function createCampaign(config: CampaignConfig): CampaignState {
         bots: botsPerSale,
         windowSeconds: config.windowMinutes * 60,
         maxRequeue: config.maxRequeue,
+        opensIn,
         seed: 20260917 + i * 7919,
       }),
       product,
@@ -78,6 +81,10 @@ export function tickCampaign(c: CampaignState, dt: number): CampaignState {
     now: c.now + dt,
     sales: c.sales.map((s) => withProduct(tickSale({ ...s, shopifyDown: c.shopifyDown }, dt), s.product)),
   };
+}
+
+export function closeCampaign(c: CampaignState): CampaignState {
+  return { ...c, sales: c.sales.map((s) => withProduct(closeSale(s), s.product)) };
 }
 
 export function openCampaignNow(c: CampaignState): CampaignState {

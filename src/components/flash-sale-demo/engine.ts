@@ -14,7 +14,7 @@
 
 export type EntryStatus = "waiting" | "reserved" | "paid" | "expired" | "sold_out";
 export type SyncStatus = "pending" | "synced" | "failed";
-export type SaleStatus = "scheduled" | "open" | "sold_out";
+export type SaleStatus = "scheduled" | "open" | "sold_out" | "closed";
 
 export type Entry = {
   id: string;
@@ -38,7 +38,7 @@ export type Entry = {
   willRequeue?: boolean;
 };
 
-export type LogKind = "join" | "reserve" | "pay" | "expire" | "requeue" | "sync" | "sync_failed" | "sold_out" | "open" | "reject";
+export type LogKind = "join" | "reserve" | "pay" | "expire" | "requeue" | "sync" | "sync_failed" | "sold_out" | "open" | "closed" | "reject";
 export type LogEvent = { id: number; at: number; kind: LogKind; text: string; isYou?: boolean };
 
 type Bot = { customerId: string; name: string; joinAt: number };
@@ -139,6 +139,7 @@ export type JoinResult = { ok: true; entry: Entry } | { ok: false; reason: strin
 export function joinQueue(state: SaleState, customerId: string, name: string, isYou = false): JoinResult {
   if (state.sale.status === "scheduled") return { ok: false, reason: "ยังไม่เปิดขาย" };
   if (state.sale.status === "sold_out") return { ok: false, reason: "สินค้าหมดแล้ว" };
+  if (state.sale.status === "closed") return { ok: false, reason: "ปิดการขายแล้ว" };
   if (activeOf(state, customerId)) return { ok: false, reason: "คุณอยู่ในคิวหรือมีสิทธิ์จองอยู่แล้ว" };
   const previous = state.entries.filter((e) => e.customerId === customerId && e.status === "expired").length;
   if (previous > state.sale.maxRequeue) {
@@ -215,12 +216,14 @@ export function tick(state: SaleState, dt: number): SaleState {
     log(s, "open", "เปิดขายแล้ว — เข้าคิวได้");
   }
 
-  if (s.sale.status === "open") {
-    while (s.pendingBots.length && s.pendingBots[0].joinAt <= s.now) {
+  if (s.sale.status === "open" || s.sale.status === "closed") {
+    const isOpen = s.sale.status === "open";
+    while (isOpen && s.pendingBots.length && s.pendingBots[0].joinAt <= s.now) {
       const b = s.pendingBots.shift()!;
       joinQueue(s, b.customerId, b.name);
     }
     s.pendingRequeues = s.pendingRequeues.filter((r) => {
+      if (!isOpen) return false;
       if (r.at > s.now) return true;
       joinQueue(s, r.customerId, r.name);
       return false;
@@ -238,13 +241,13 @@ export function tick(state: SaleState, dt: number): SaleState {
         e.status = "expired";
         s.sale.reserved -= 1;
         log(s, "expire", `${e.isYou ? "คุณ" : e.name} ชำระเงินไม่ทัน — คืนสิทธิ์ให้คิวถัดไป`, e.isYou);
-        if (!e.isYou && e.willRequeue) s.pendingRequeues.push({ customerId: e.customerId, name: e.name, at: s.now + 20 + next(s) * 60 });
+        if (isOpen && !e.isYou && e.willRequeue) s.pendingRequeues.push({ customerId: e.customerId, name: e.name, at: s.now + 20 + next(s) * 60 });
       }
     }
 
-    grantReservations(s);
+    if (isOpen) grantReservations(s);
 
-    if (s.sale.sold >= s.sale.total) {
+    if (isOpen && s.sale.sold >= s.sale.total) {
       s.sale.status = "sold_out";
       for (const e of s.entries) if (e.status === "waiting") e.status = "sold_out";
       s.pendingBots = [];
@@ -283,6 +286,16 @@ export function openNow(state: SaleState): SaleState {
     },
     0
   );
+}
+
+/** Close the sale at its end time: no new queue entries or slots; anyone
+ *  already holding a reservation can still pay until their window ends. */
+export function closeSale(state: SaleState): SaleState {
+  if (state.sale.status !== "open" && state.sale.status !== "scheduled") return state;
+  const s: SaleState = { ...state, sale: { ...state.sale, status: "closed" }, entries: state.entries.map((e) => ({ ...e })), log: [...state.log], pendingBots: [], pendingRequeues: [] };
+  for (const e of s.entries) if (e.status === "waiting") e.status = "sold_out";
+  log(s, "closed", "ถึงเวลาปิดการขาย — ปิดรับคิว คนที่ได้สิทธิ์แล้วยังชำระเงินได้จนหมดเวลา");
+  return s;
 }
 
 /** Mutating helpers need a copy, so React sees a new state. */

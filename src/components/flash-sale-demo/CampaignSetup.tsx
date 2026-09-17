@@ -6,6 +6,7 @@ import { Button, Card } from "@heroui/react";
 import { Check, Search } from "lucide-react";
 import { formatTHB } from "@/lib/format";
 import { MAX_GROUP_PRODUCTS, type CampaignConfig, type DemoProduct } from "./campaign";
+import { fromLocalInput, toLocalInput } from "./scheduler";
 
 export type CatalogueItem = DemoProduct & { category: string; brandSlug: string };
 export type ProductGroup = { id: string; kind: "category" | "brand" | "collection"; label: string; slugs: string[] };
@@ -59,12 +60,15 @@ export default function CampaignSetup({
   config,
   catalogue,
   groups,
+  now,
   onCreate,
 }: {
   config: CampaignConfig;
   catalogue: CatalogueItem[];
   groups: ProductGroup[];
-  onCreate: (config: CampaignConfig) => void;
+  /** Demo clock (epoch ms) — new campaigns default to starting 10 minutes from it. */
+  now: number;
+  onCreate: (config: CampaignConfig, startsAt: number, endsAt?: number) => void;
 }) {
   const [mode, setMode] = useState<CampaignConfig["mode"]>(config.mode);
   const [query, setQuery] = useState("");
@@ -75,6 +79,16 @@ export default function CampaignSetup({
   const [stock, setStock] = useState(config.stockPerProduct);
   const [windowMinutes, setWindowMinutes] = useState(config.windowMinutes);
   const [maxRequeue, setMaxRequeue] = useState(config.maxRequeue);
+  const [startInput, setStartInput] = useState(() => toLocalInput(Math.ceil((now + 10 * 60_000) / 60_000) * 60_000));
+  const [hasEnd, setHasEnd] = useState(true);
+  const [endInput, setEndInput] = useState(() => toLocalInput(Math.ceil((now + 130 * 60_000) / 60_000) * 60_000));
+  const startsAt = startInput ? fromLocalInput(startInput) : NaN;
+  const endsAt = hasEnd && endInput ? fromLocalInput(endInput) : undefined;
+  const timeError = Number.isNaN(startsAt)
+    ? "กรุณาเลือกวันเวลาเริ่มขาย"
+    : endsAt !== undefined && endsAt <= startsAt
+      ? "เวลาปิดการขายต้องหลังเวลาเริ่มขาย"
+      : null;
 
   const bySlug = useMemo(() => new Map(catalogue.map((p) => [p.slug, p])), [catalogue]);
   const matches = useMemo(() => {
@@ -92,14 +106,14 @@ export default function CampaignSetup({
 
   const products = mode === "single" ? (selectedProduct ? [selectedProduct] : []) : groupProducts.slice(0, MAX_GROUP_PRODUCTS);
   const title = mode === "single" ? `Flash Sale · ${selectedProduct?.name ?? ""}` : `Flash Sale ${KIND_LABEL[kind]} ${group?.label ?? ""}`;
-  const canCreate = products.length > 0 && stock >= 1;
+  const canCreate = products.length > 0 && stock >= 1 && !timeError;
 
   return (
     <Card className="p-5 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold text-brand-ink">ตั้งค่าแคมเปญ</h3>
-          <p className="text-sm text-slate-500">เลือกสินค้าที่จะขาย แล้วกดสร้าง เดโมจะเริ่มจำลองใหม่ด้วยค่านี้</p>
+          <h3 className="text-lg font-bold text-brand-ink">สร้างแคมเปญใหม่</h3>
+          <p className="text-sm text-slate-500">เลือกสินค้า ตั้งวันเวลา แล้วเพิ่มเข้ารายการ ระบบจะเปิดและปิดการขายให้เองตามเวลา</p>
         </div>
         <Segmented<CampaignConfig["mode"]>
           label="ประเภทแคมเปญ"
@@ -112,7 +126,7 @@ export default function CampaignSetup({
         />
       </div>
 
-      <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         {mode === "single" ? (
           <div>
             <label htmlFor="fs-search" className="mb-1.5 block text-sm font-semibold text-brand-ink">
@@ -200,6 +214,44 @@ export default function CampaignSetup({
         )}
 
         <div className="flex flex-col gap-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+            <div>
+              <label htmlFor="fs-start" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+                เริ่มขาย
+              </label>
+              <input
+                id="fs-start"
+                type="datetime-local"
+                value={startInput}
+                onChange={(e) => setStartInput(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label htmlFor="fs-end" className="text-sm font-semibold text-brand-ink">
+                  ปิดการขาย
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-slate-600">
+                  <input type="checkbox" checked={!hasEnd} onChange={(e) => setHasEnd(!e.target.checked)} className="accent-brand-800" />
+                  จนกว่าของหมด
+                </label>
+              </div>
+              <input
+                id="fs-end"
+                type="datetime-local"
+                value={endInput}
+                disabled={!hasEnd}
+                onChange={(e) => setEndInput(e.target.value)}
+                className={`${fieldClass} disabled:bg-surface-muted disabled:text-slate-400`}
+              />
+            </div>
+          </div>
+          {timeError && (
+            <p role="alert" className="-mt-2 text-sm text-rose-600">
+              {timeError}
+            </p>
+          )}
           <div>
             <label htmlFor="fs-stock" className="mb-1.5 block text-sm font-semibold text-brand-ink">
               สต็อกต่อสินค้า (ชิ้น)
@@ -243,24 +295,28 @@ export default function CampaignSetup({
           </div>
           <div className="rounded-xl2 bg-surface-soft p-3 text-sm text-slate-600">
             <p className="font-semibold text-brand-ink">{products.length} สินค้า · รวม {products.length * stock} ชิ้น</p>
-            <p className="mt-0.5 text-xs">1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ · ระบบจริงสร้างรายการขาย 1 แถวต่อสินค้า</p>
+            <p className="mt-0.5 text-xs">1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ · เวลาไทย (GMT+7) · ระบบจริงสร้างรายการขาย 1 แถวต่อสินค้า</p>
           </div>
           <Button
             size="lg"
             fullWidth
             isDisabled={!canCreate}
             onPress={() =>
-              onCreate({
-                mode,
-                title,
-                products: products.map(({ slug, name, brand, image, price, compareAtPrice }) => ({ slug, name, brand, image, price, compareAtPrice })),
-                stockPerProduct: stock,
-                windowMinutes,
-                maxRequeue,
-              })
+              onCreate(
+                {
+                  mode,
+                  title,
+                  products: products.map(({ slug, name, brand, image, price, compareAtPrice }) => ({ slug, name, brand, image, price, compareAtPrice })),
+                  stockPerProduct: stock,
+                  windowMinutes,
+                  maxRequeue,
+                },
+                startsAt,
+                endsAt
+              )
             }
           >
-            สร้างแคมเปญ และเริ่มจำลองใหม่
+            เพิ่มเข้ารายการ
           </Button>
         </div>
       </div>

@@ -3,7 +3,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Lock, Gift, SlidersHorizontal, Award, LogOut, CreditCard, MessageSquareText, Repeat, Receipt, Inbox, LayoutDashboard, MessageCircle, Palette, Truck, Users } from "lucide-react";
+import { Lock, Gift, SlidersHorizontal, Award, LogOut, CreditCard, MessageSquareText, Repeat, Receipt, Inbox, LayoutDashboard, MessageCircle, Palette, Truck, Users, Zap } from "lucide-react";
 import { Button } from "@/components/ui";
 
 const NAV = [
@@ -18,6 +18,7 @@ const NAV = [
   { href: "/admin/gift-cards", label: "บัตรของขวัญ", icon: CreditCard },
   { href: "/admin/subscription-products", label: "สินค้าสมัครสมาชิก", icon: Repeat },
   { href: "/admin/checkout-transactions", label: "รายการซื้อ (2C2P)", icon: Receipt },
+  { href: "/admin/flash-sale", label: "Flash Sale (เดโม)", icon: Zap },
   { href: "/admin/line-rich-menu", label: "เมนู LINE OA", icon: MessageCircle },
   { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette },
 ];
@@ -124,10 +125,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <LogOut size={13} /> ออกจากระบบ
           </button>
         </aside>
-        {/* Most admin screens are forms and read better narrow. The inbox is
-            three columns of conversation and suffocates at max-w-3xl, so it
-            opts out rather than every other page opting in. */}
-        <div className={`flex-1 min-w-0 ${pathname?.startsWith("/admin/inbox") ? "" : "max-w-3xl"}`}>
+        {/* Most admin screens are forms and read better narrow. The inbox
+            (three columns of conversation) and the flash-sale monitor
+            (dashboard grids) suffocate at max-w-3xl, so they opt out rather
+            than every other page opting in. */}
+        <div className={`flex-1 min-w-0 ${pathname?.startsWith("/admin/inbox") || pathname?.startsWith("/admin/flash-sale") ? "" : "max-w-3xl"}`}>
           {children}
           <button onClick={logout} className="md:hidden flex items-center gap-2 mt-8 text-xs text-slate-400">
             <LogOut size={13} /> ออกจากระบบ

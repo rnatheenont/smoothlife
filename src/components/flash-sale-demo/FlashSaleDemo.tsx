@@ -26,31 +26,51 @@ import {
   createCampaign,
   joinCampaign,
   leaveCampaign,
-  openCampaignNow,
   payCampaign,
-  tickCampaign,
   yourActive,
   type CampaignConfig,
   type CampaignState,
   type DemoProduct,
 } from "./campaign";
+import {
+  addCampaign,
+  countdown,
+  createScheduler,
+  endNow,
+  nowMs,
+  removeCampaign,
+  startNow,
+  thaiDateTime,
+  tickScheduler,
+  updateCampaign,
+  type SchedulerState,
+} from "./scheduler";
 import CampaignSetup, { type CatalogueItem, type ProductGroup } from "./CampaignSetup";
+import CampaignList from "./CampaignList";
 
 export type { DemoProduct };
 
 const SPEEDS = [1, 30, 120] as const;
 const TICK_MS = 250;
+const seedScheduler = (config: CampaignConfig, baseMs: number) => createScheduler({ config, startsInMinutes: 5, durationMinutes: 120 }, baseMs);
 
 export default function FlashSaleDemo({
+  embedded = false,
+  baseMs,
   initialConfig,
   catalogue,
   groups,
 }: {
+  /** Inside the admin layout, which already provides the page gutter. */
+  embedded?: boolean;
+  /** Server render time, so the first client render shows the same clock. */
+  baseMs: number;
   initialConfig: CampaignConfig;
   catalogue: CatalogueItem[];
   groups: ProductGroup[];
 }) {
-  const [campaign, setCampaign] = useState<CampaignState>(() => createCampaign(initialConfig));
+  const [scheduler, setScheduler] = useState<SchedulerState>(() => seedScheduler(initialConfig, baseMs));
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selected, setSelected] = useState(0);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(30);
   const [running, setRunning] = useState(true);
@@ -60,9 +80,21 @@ export default function FlashSaleDemo({
 
   useEffect(() => {
     if (!running) return;
-    const t = setInterval(() => setCampaign((c) => tickCampaign(c, (TICK_MS / 1000) * speed)), TICK_MS);
+    const t = setInterval(() => setScheduler((s) => tickScheduler(s, (TICK_MS / 1000) * speed)), TICK_MS);
     return () => clearInterval(t);
   }, [running, speed]);
+
+  const now = nowMs(scheduler);
+  // The campaign on screen: the one picked in the list, else whatever is on
+  // sale now, else the next one due.
+  const item =
+    scheduler.items.find((i) => i.id === selectedId) ??
+    scheduler.items.find((i) => i.status === "running") ??
+    scheduler.items.find((i) => i.status === "scheduled") ??
+    scheduler.items[scheduler.items.length - 1];
+  const preview = useMemo(() => (item ? createCampaign(item.config) : null), [item]);
+  const campaign = item?.campaign ?? preview!;
+  const upcoming = item && item.status === "scheduled" ? { at: thaiDateTime(item.startsAt), left: countdown(item.startsAt - now) } : undefined;
 
   const saleIndex = Math.min(selected, campaign.sales.length - 1);
   const state = campaign.sales[saleIndex];
@@ -89,14 +121,25 @@ export default function FlashSaleDemo({
     }
   }, [activeEntry, activeSale]);
 
+  const onCampaign = (fn: (c: CampaignState) => CampaignState) => item && setScheduler((s) => updateCampaign(s, item.id, fn));
+
   const join = () => {
-    const { next, result } = joinCampaign(campaign, saleIndex);
-    setCampaign(next);
+    if (!item?.campaign) return;
+    const { next, result } = joinCampaign(item.campaign, saleIndex);
+    setScheduler((s) => updateCampaign(s, item.id, () => next));
     setNotice("reason" in result ? result.reason : null);
   };
 
-  const restart = (config: CampaignConfig) => {
-    setCampaign(createCampaign(config));
+  const pick = (id: string) => {
+    setSelectedId(id);
+    setSelected(0);
+    setNotice(null);
+    setPayOpen(false);
+  };
+
+  const reset = () => {
+    setScheduler(seedScheduler(initialConfig, Date.now()));
+    setSelectedId(null);
     setSelected(0);
     setLoggedIn(false);
     setNotice(null);
@@ -105,49 +148,56 @@ export default function FlashSaleDemo({
   };
 
   return (
-    <div className="container-page py-6 md:py-10">
+    <div className={embedded ? "" : "container-page py-6 md:py-10"}>
       <Toast.Provider />
+      {embedded && (
+        <div className="mb-4">
+          <h1 className="text-xl font-bold text-brand-ink">Flash Sale (เดโม)</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            ตั้งแคมเปญล่วงหน้าเป็นรายการ ระบบเปิดและปิดการขายเองตามวันเวลาที่ตั้งไว้ ดูมุมมองลูกค้าได้ในแท็บถัดไป
+          </p>
+        </div>
+      )}
 
       <Alert status="warning" className="mb-4">
         <Alert.Indicator />
         <Alert.Content>
           <Alert.Title>Demo · ข้อมูลจำลองทั้งหมด</Alert.Title>
           <Alert.Description>
-            ไม่มีการตัดเงิน ไม่สร้างออเดอร์จริง ลูกค้าคนอื่นในคิวเป็นบอทจำลอง · เวลาในเดโมเร่งให้ดูทันได้ (×{speed})
+            ไม่มีการตัดเงิน ไม่สร้างออเดอร์จริง ลูกค้าคนอื่นในคิวเป็นบอทจำลอง · นาฬิกาเดโมเริ่มจากเวลาปัจจุบันและเดินเร็วขึ้น ×{speed}
           </Alert.Description>
         </Alert.Content>
       </Alert>
 
       <DemoControls
-        state={state}
-        now={campaign.now}
-        shopifyDown={campaign.shopifyDown}
+        nowMs={now}
+        shopifyDown={scheduler.shopifyDown}
         speed={speed}
         setSpeed={setSpeed}
         running={running}
         setRunning={setRunning}
-        reset={() => restart(campaign.config)}
-        toggleShopify={() => setCampaign((c) => ({ ...c, shopifyDown: !c.shopifyDown }))}
-        openNow={() => setCampaign((c) => openCampaignNow(c))}
+        reset={reset}
+        toggleShopify={() => setScheduler((s) => ({ ...s, shopifyDown: !s.shopifyDown }))}
       />
 
-      <Tabs className="mt-5">
+      <Tabs className="mt-5" defaultSelectedKey={embedded ? "admin" : "customer"}>
         {/* Full-width, equal halves: on a phone the two labels otherwise
             overflow the pill and HeroUI adds a scroll arrow. */}
         <Tabs.ListContainer className="w-full">
           <Tabs.List aria-label="มุมมอง" className="w-full">
-            <Tabs.Tab id="customer" className="flex-1 justify-center whitespace-nowrap">
-              มุมมองลูกค้า
-              <Tabs.Indicator />
-            </Tabs.Tab>
             <Tabs.Tab id="admin" className="flex-1 justify-center whitespace-nowrap">
               มุมมองแอดมิน
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="customer" className="flex-1 justify-center whitespace-nowrap">
+              มุมมองลูกค้า
               <Tabs.Indicator />
             </Tabs.Tab>
           </Tabs.List>
         </Tabs.ListContainer>
 
         <Tabs.Panel id="customer" className="pt-5">
+          <CampaignSwitcher scheduler={scheduler} currentId={item?.id} pick={pick} now={now} />
           <CustomerView
             campaign={campaign}
             saleIndex={saleIndex}
@@ -155,6 +205,7 @@ export default function FlashSaleDemo({
               setSelected(i);
               setNotice(null);
             }}
+            upcoming={upcoming}
             blockedBy={blockedBy}
             state={state}
             product={product}
@@ -163,7 +214,7 @@ export default function FlashSaleDemo({
             loggedIn={loggedIn}
             login={() => setLoggedIn(true)}
             join={join}
-            leave={() => setCampaign((c) => leaveCampaign(c, saleIndex))}
+            leave={() => onCampaign((c) => leaveCampaign(c, saleIndex))}
             notice={notice}
             openPay={() => setPayOpen(true)}
           />
@@ -171,8 +222,34 @@ export default function FlashSaleDemo({
 
         <Tabs.Panel id="admin" className="pt-5">
           <div className="flex flex-col gap-5">
-            <CampaignSetup config={campaign.config} catalogue={catalogue} groups={groups} onCreate={restart} />
-            <AdminView campaign={campaign} />
+            <CampaignList
+              items={scheduler.items}
+              now={now}
+              currentId={item?.id}
+              pick={pick}
+              startNow={(id) => setScheduler((s) => startNow(s, id))}
+              endNow={(id) => setScheduler((s) => endNow(s, id))}
+              remove={(id) => setScheduler((s) => removeCampaign(s, id))}
+            />
+            <CampaignSetup
+              config={campaign.config}
+              catalogue={catalogue}
+              groups={groups}
+              now={now}
+              onCreate={(config, startsAt, endsAt) => {
+                const before = scheduler.seq;
+                setScheduler((s) => addCampaign(s, { config, startsAt, endsAt }));
+                setSelectedId(`fs${before}`);
+                setSelected(0);
+              }}
+            />
+            {item?.campaign ? (
+              <AdminView campaign={item.campaign} />
+            ) : (
+              <Card className="p-6 text-center text-sm text-slate-500">
+                {item ? `แคมเปญ "${item.config.title}" จะเปิดขายอัตโนมัติ ${thaiDateTime(item.startsAt)} (อีก ${countdown(item.startsAt - now)}) — ตัวเลขการขายจะแสดงที่นี่เมื่อเริ่มแล้ว` : "ยังไม่มีแคมเปญ"}
+              </Card>
+            )}
           </div>
         </Tabs.Panel>
       </Tabs>
@@ -184,8 +261,9 @@ export default function FlashSaleDemo({
         state={state}
         product={product}
         pay={() => {
-          const { next, reason } = payCampaign(campaign, saleIndex, you!.id);
-          setCampaign(next);
+          if (!item?.campaign || !you) return;
+          const { next, reason } = payCampaign(item.campaign, saleIndex, you.id);
+          setScheduler((s) => updateCampaign(s, item.id, () => next));
           if (reason) setNotice(reason);
         }}
       />
@@ -196,8 +274,7 @@ export default function FlashSaleDemo({
 /* ------------------------------------------------------------------ controls */
 
 function DemoControls({
-  state,
-  now,
+  nowMs: clock,
   shopifyDown,
   speed,
   setSpeed,
@@ -205,10 +282,8 @@ function DemoControls({
   setRunning,
   reset,
   toggleShopify,
-  openNow,
 }: {
-  state: SaleState;
-  now: number;
+  nowMs: number;
   shopifyDown: boolean;
   speed: number;
   setSpeed: (s: (typeof SPEEDS)[number]) => void;
@@ -216,14 +291,15 @@ function DemoControls({
   setRunning: (r: boolean) => void;
   reset: () => void;
   toggleShopify: () => void;
-  openNow: () => void;
 }) {
+  const time = new Date(clock).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Bangkok" });
+  const date = new Date(clock).toLocaleDateString("th-TH", { day: "numeric", month: "short", timeZone: "Asia/Bangkok" });
   return (
     <Card variant="secondary" className="flex flex-col gap-3 p-3 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold text-brand-ink">ตัวควบคุมเดโม</span>
-        <span className="rounded-full bg-white px-2.5 py-1 text-xs tabular-nums text-slate-600 ring-1 ring-surface-line">
-          เวลาในระบบ {mmss(now)}
+        <span className="rounded-full bg-white px-2.5 py-1 text-xs tabular-nums text-slate-600 ring-1 ring-surface-line" suppressHydrationWarning>
+          นาฬิกาเดโม {date} {time}
         </span>
         <div className="flex overflow-hidden rounded-full ring-1 ring-surface-line" role="group" aria-label="ความเร็ว">
           {SPEEDS.map((s) => (
@@ -240,11 +316,6 @@ function DemoControls({
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
-        {state.sale.status === "scheduled" && (
-          <Button size="sm" variant="secondary" onPress={openNow}>
-            <Play size={14} aria-hidden /> เปิดขายทันที
-          </Button>
-        )}
         <Button size="sm" variant="secondary" onPress={() => setRunning(!running)}>
           {running ? <Pause size={14} aria-hidden /> : <Play size={14} aria-hidden />} {running ? "หยุดเวลา" : "เดินเวลาต่อ"}
         </Button>
@@ -256,6 +327,35 @@ function DemoControls({
         </Button>
       </div>
     </Card>
+  );
+}
+
+/** Customer side: which campaign to look at (what a shopper would see on the day). */
+function CampaignSwitcher({ scheduler, currentId, pick, now }: { scheduler: SchedulerState; currentId?: string; pick: (id: string) => void; now: number }) {
+  if (scheduler.items.length < 2) return null;
+  return (
+    <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 scrollbar-none md:mx-0 md:flex-wrap md:px-0" role="group" aria-label="เลือกแคมเปญ">
+      {scheduler.items.map((i) => (
+        <button
+          key={i.id}
+          type="button"
+          onClick={() => pick(i.id)}
+          aria-pressed={i.id === currentId}
+          className={`flex min-h-10 max-w-[260px] shrink-0 items-center gap-2 rounded-full px-3.5 text-xs font-semibold ring-1 ${
+            i.id === currentId ? "bg-brand-800 text-white ring-brand-800" : "bg-white text-slate-600 ring-surface-line hover:bg-surface-mist"
+          }`}
+        >
+          <span
+            className={`h-2 w-2 shrink-0 rounded-full ${i.status === "running" ? "bg-rose-500" : i.status === "scheduled" ? "bg-amber-400" : "bg-slate-300"}`}
+            aria-hidden
+          />
+          <span className="truncate">{i.config.title}</span>
+          <span className={`shrink-0 font-normal ${i.id === currentId ? "text-white/80" : "text-slate-400"}`} suppressHydrationWarning>
+            {i.status === "running" ? "กำลังขาย" : i.status === "scheduled" ? `อีก ${countdown(i.startsAt - now)}` : "จบแล้ว"}
+          </span>
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -291,6 +391,7 @@ function CustomerView({
   campaign,
   saleIndex,
   select,
+  upcoming,
   blockedBy,
   state,
   product,
@@ -306,6 +407,7 @@ function CustomerView({
   campaign: CampaignState;
   saleIndex: number;
   select: (i: number) => void;
+  upcoming?: { at: string; left: string };
   blockedBy: string | null;
   state: SaleState;
   product: DemoProduct;
@@ -339,10 +441,10 @@ function CustomerView({
 
       {campaign.sales.length > 1 && <ProductPicker campaign={campaign} saleIndex={saleIndex} select={select} />}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
         <Card className="overflow-hidden p-0">
-          <div className="grid gap-0 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            <div className="relative aspect-[16/10] bg-white sm:aspect-square lg:aspect-[16/9] xl:aspect-square">
+          <div className="grid gap-0 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+            <div className="relative aspect-[16/10] bg-white sm:aspect-square xl:aspect-[16/9] 2xl:aspect-square">
               <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 40vw" className="object-contain p-6" />
               <Chip color="danger" variant="primary" size="sm" className="absolute left-4 top-4">
                 Flash Sale
@@ -383,8 +485,9 @@ function CustomerView({
           </div>
         </Card>
 
-        <div className="lg:sticky lg:top-40">
+        <div className="xl:sticky xl:top-40">
           <ActionPanel
+            upcoming={upcoming}
             blockedBy={blockedBy}
             state={state}
             you={you}
@@ -416,6 +519,7 @@ function PanelShell({ children, highlight = false }: { children: React.ReactNode
 }
 
 function ActionPanel({
+  upcoming,
   blockedBy,
   state,
   you,
@@ -426,6 +530,7 @@ function ActionPanel({
   leave,
   openPay,
 }: {
+  upcoming?: { at: string; left: string };
   blockedBy: string | null;
   state: SaleState;
   you?: Entry;
@@ -438,6 +543,39 @@ function ActionPanel({
 }) {
   const { sale } = state;
   const status = you?.status;
+  if (upcoming) {
+    return (
+      <PanelShell>
+        <Chip color="warning" variant="soft" size="sm">
+          เร็ว ๆ นี้
+        </Chip>
+        <p className="mt-3 text-sm text-slate-600">เปิดขาย {upcoming.at}</p>
+        <p className="text-4xl font-extrabold tabular-nums text-brand-ink" suppressHydrationWarning>
+          {upcoming.left}
+        </p>
+        <Button fullWidth size="lg" className="mt-5" isDisabled>
+          เข้าคิว
+        </Button>
+        {!loggedIn ? (
+          <Button fullWidth variant="secondary" className="mt-2" onPress={login}>
+            เข้าสู่ระบบไว้ก่อน
+          </Button>
+        ) : (
+          <p className="mt-2 text-center text-xs text-slate-500">เข้าสู่ระบบแล้ว · ถึงเวลาเปิดขาย ปุ่มเข้าคิวจะกดได้ทันที</p>
+        )}
+      </PanelShell>
+    );
+  }
+
+  if (sale.status === "closed" && status !== "reserved" && status !== "paid") {
+    return (
+      <PanelShell>
+        <h3 className="text-xl font-bold text-brand-ink">ปิดการขายแล้ว</h3>
+        <p className="mt-1 text-sm text-slate-600">หมดช่วงเวลาของแคมเปญนี้ ขอบคุณที่ร่วมกิจกรรม ติดตามรอบถัดไปทาง LINE</p>
+      </PanelShell>
+    );
+  }
+
   if (blockedBy && sale.status !== "sold_out") {
     return (
       <PanelShell>
@@ -700,6 +838,7 @@ const LOG_TONE: Record<LogKind, string> = {
   sync_failed: "bg-rose-600",
   sold_out: "bg-brand-ink",
   open: "bg-brand-600",
+  closed: "bg-slate-500",
   reject: "bg-slate-400",
 };
 
@@ -725,7 +864,7 @@ function ProductPicker({ campaign, saleIndex, select }: { campaign: CampaignStat
           {campaign.sales.length} สินค้า · 1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ
         </p>
       </div>
-      <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 scrollbar-none md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 lg:grid-cols-4 xl:grid-cols-6">
+      <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 scrollbar-none md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 xl:grid-cols-4 2xl:grid-cols-6">
         {campaign.sales.map((s, i) => {
           const left = s.sale.total - s.sale.sold;
           const isSelected = i === saleIndex;
@@ -836,7 +975,7 @@ function AdminView({ campaign }: { campaign: CampaignState }) {
               <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
                 <span className="min-w-0 truncate text-brand-ink">{s.product.name}</span>
                 <Chip size="sm" variant="soft" color={s.sale.status === "open" ? "success" : s.sale.status === "sold_out" ? "default" : "warning"}>
-                  {{ scheduled: "ยังไม่เปิด", open: `ขาย ${s.sale.sold}/${s.sale.total}`, sold_out: "ขายหมด" }[s.sale.status]}
+                  {{ scheduled: "ยังไม่เปิด", open: `ขาย ${s.sale.sold}/${s.sale.total}`, sold_out: "ขายหมด", closed: `ปิดแล้ว ${s.sale.sold}/${s.sale.total}` }[s.sale.status]}
                 </Chip>
               </div>
               <StockBar state={s} compact={sales.length > 1} />
@@ -845,7 +984,7 @@ function AdminView({ campaign }: { campaign: CampaignState }) {
         </ul>
       </Card>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Card className="p-5">
           <h3 className="font-bold text-brand-ink">กำลังรอชำระเงิน ({reserved.length})</h3>
           <p className="text-xs text-slate-500">เรียงจากคนที่ใกล้หมดเวลาที่สุด</p>
