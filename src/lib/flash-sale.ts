@@ -15,6 +15,8 @@ export type FlashSaleMe = {
   payment_reference: string | null;
   shopify_order_id: string | null;
   expired_count: number;
+  /** A 2C2P payment page has been opened for this reservation. */
+  payment_pending?: boolean;
 };
 export type FlashSaleStatus = {
   campaign: {
@@ -75,3 +77,18 @@ export function leaveFlashSale(campaignId: string, userId: string) {
 export function createFlashSaleCampaign(payload: Record<string, unknown>) {
   return rpc<string>("fs_create_campaign", { p: payload });
 }
+
+export function startFlashSalePayment(campaignId: string, userId: string) {
+  return rpc<
+    | { ok: true; entry_id: string; product_slug: string; variant_id: string | null; expires_at: string }
+    | { ok: false; error: "no_reservation" | "too_late" }
+  >("fs_start_payment", { p_campaign: campaignId, p_user: userId });
+}
+
+/** Webhook only: entry id when the reservation became paid, null when too late or a repeat. */
+export function confirmFlashSalePayment(entryId: string, reference: string) {
+  return rpc<string | null>("fs_confirm_payment", { p_entry: entryId, p_reference: reference });
+}
+
+/** Marker in payment_transactions.refund_note for a charge that arrived after its reservation was gone. */
+export const LATE_PAYMENT_NOTE = "FLASH_SALE_LATE: เงินเข้าแต่ไม่มีสิทธิ์จองที่ยังใช้ได้ (หมดเวลาหรือชำระซ้ำ) ต้องคืนเงินลูกค้า";

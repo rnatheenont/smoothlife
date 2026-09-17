@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Alert, Card, Chip } from "@heroui/react";
+import { Alert, Button, Card, Chip } from "@heroui/react";
 import { ExternalLink, Radio } from "lucide-react";
 import type { FlashSaleMonitor } from "@/lib/flash-sale";
 
@@ -26,9 +26,29 @@ const PHASE: Record<FlashSaleMonitor["campaign"]["phase"], { label: string; colo
 const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.max(0, s) % 60).padStart(2, "0")}`;
 
 /** Admin: the real queue for one campaign, read from the database every few seconds. */
+type Monitor = FlashSaleMonitor & { refunds: { invoice_no: string; amount: number; refund_note: string }[] };
+
 export default function LiveMonitor({ campaignId, productNames }: { campaignId: string; productNames: Record<string, string> }) {
-  const [data, setData] = useState<FlashSaleMonitor | null>(null);
+  const [data, setData] = useState<Monitor | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [retryResult, setRetryResult] = useState<string | null>(null);
+
+  const retryOrders = async () => {
+    setRetrying(true);
+    setRetryResult(null);
+    try {
+      const res = await fetch(`/api/admin/flash-sale/campaigns/${campaignId}/retry-orders`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || "ลองใหม่ไม่สำเร็จ");
+      setRetryResult(`สร้างออเดอร์สำเร็จ ${json.created} · ยังไม่สำเร็จ ${json.failed}`);
+      await load();
+    } catch (err) {
+      setRetryResult(err instanceof Error ? err.message : "ลองใหม่ไม่สำเร็จ");
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -110,6 +130,31 @@ export default function LiveMonitor({ campaignId, productNames }: { campaignId: 
               <Alert.Indicator />
               <Alert.Content>
                 <Alert.Title>จ่ายเงินแล้ว {data.totals.sync_failed} ราย แต่ยังสร้างออเดอร์ Shopify ไม่สำเร็จ</Alert.Title>
+                <Alert.Description>
+                  <span className="mt-2 flex flex-wrap items-center gap-2">
+                    <Button size="sm" variant="danger" isPending={retrying} onPress={retryOrders}>
+                      สร้างออเดอร์อีกครั้ง
+                    </Button>
+                    {retryResult && <span>{retryResult}</span>}
+                  </span>
+                </Alert.Description>
+              </Alert.Content>
+            </Alert>
+          )}
+
+          {data.refunds.length > 0 && (
+            <Alert status="warning" className="mt-4">
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Title>ต้องคืนเงิน {data.refunds.length} รายการ (เงินเข้าหลังสิทธิ์หมดหรือชำระซ้ำ)</Alert.Title>
+                <Alert.Description>
+                  <span className="mt-1 block">
+                    {data.refunds.map((r) => `${r.invoice_no} ฿${r.amount}`).join(" · ")} — คืนเงินได้ที่หน้า
+                    <Link href="/admin/checkout-transactions" className="mx-1 font-semibold underline">
+                      รายการซื้อ (2C2P)
+                    </Link>
+                  </span>
+                </Alert.Description>
               </Alert.Content>
             </Alert>
           )}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseConfigured } from "@/lib/supabase-server";
+import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { flashSaleMonitor, UUID_RE } from "@/lib/flash-sale";
 
@@ -16,7 +16,14 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   try {
     const monitor = await flashSaleMonitor(id);
     if (!monitor) return NextResponse.json({ ok: false, error: "ไม่พบแคมเปญ" }, { status: 404 });
-    return NextResponse.json({ ok: true, ...monitor }, { headers: { "Cache-Control": "no-store" } });
+    // Charges to refund by hand (late or duplicate) and paid slots still without an order.
+    const refunds = await supabaseRest<{ invoice_no: string; amount: number; refund_note: string }[]>(
+      `payment_transactions?refund_note=like.FLASH_SALE_*&status=eq.success&select=invoice_no,amount,refund_note,flash_sale_queue!inner(campaign_id)&flash_sale_queue.campaign_id=eq.${pgValue(id)}&order=confirmed_at.desc&limit=50`
+    ).catch(() => []);
+    return NextResponse.json(
+      { ok: true, ...monitor, refunds: refunds.map(({ invoice_no, amount, refund_note }) => ({ invoice_no, amount, refund_note })) },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (err) {
     console.error("[admin/flash-sale] monitor failed", err);
     return NextResponse.json({ ok: false, error: "โหลดข้อมูลคิวไม่สำเร็จ" }, { status: 500 });

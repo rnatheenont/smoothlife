@@ -7,10 +7,13 @@ import { Alert, Button, Card, Chip, ProgressBar, Spinner } from "@heroui/react";
 import { AlertTriangle, CheckCircle2, Clock, CreditCard, RotateCcw, Timer, Users } from "lucide-react";
 import { formatTHB } from "@/lib/format";
 import type { FlashSaleStatus } from "@/lib/flash-sale";
+import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
+import PaymentModal from "@/components/PaymentModal";
+import { emptyAddressForm, type AddressFormValue } from "@/components/account/AddressFields";
 
 export type LiveProduct = { slug: string; name: string; brand: string; image: string; price: number; compareAtPrice?: number };
 
-type Status = FlashSaleStatus & { signedIn: boolean };
+type Status = FlashSaleStatus & { signedIn: boolean; refundPending?: boolean };
 
 const POLL_MS = 3000;
 
@@ -43,6 +46,9 @@ export default function FlashSaleLive({ campaignId, title, products }: { campaig
   const [selected, setSelected] = useState(products[0]?.slug ?? "");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [address, setAddress] = useState<AddressFormValue>(emptyAddressForm);
+  const [payment, setPayment] = useState<{ url: string; cartToken: string } | null>(null);
+  const [paying, setPaying] = useState(false);
   const [, setTick] = useState(0);
   const received = useRef({ at: Date.now(), serverOffset: 0 });
 
@@ -97,6 +103,43 @@ export default function FlashSaleLive({ campaignId, title, products }: { campaig
     }
   };
 
+  // Opens 2C2P for the shopper's own reservation; the price and the slot are
+  // decided on the server. Payment happens in a frame over this page, so the
+  // countdown and the queue stay in view.
+  const pay = async () => {
+    const [firstName, ...rest] = address.recipient_name.trim().split(/\s+/);
+    setPaying(true);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/flash-sale/${campaignId}/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shippingAddress: {
+            firstName: firstName || undefined,
+            lastName: rest.length ? rest.join(" ") : undefined,
+            address1: [address.address_line, address.subdistrict].filter(Boolean).join(" "),
+            city: address.district,
+            state: address.province,
+            postalCode: address.postal_code,
+            countryCode: address.country,
+            phone: address.phone,
+          },
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        setNotice(data.error || "เริ่มการชำระเงินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+        return;
+      }
+      setPayment({ url: data.webPaymentUrl, cartToken: data.cartToken });
+    } finally {
+      setPaying(false);
+      refresh();
+    }
+  };
+  const addressReady = Boolean(address.recipient_name && address.phone && address.address_line && address.district && address.postal_code);
+
   if (!product) {
     return <div className="container-page py-16 text-center text-slate-500">ไม่พบสินค้าในแคมเปญนี้</div>;
   }
@@ -128,6 +171,16 @@ export default function FlashSaleLive({ campaignId, title, products }: { campaig
           </p>
         )}
       </div>
+
+      {status?.refundPending && (
+        <Alert status="warning" className="mb-4">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Title>เราได้รับเงินของคุณหลังสิทธิ์จองหมดเวลา</Alert.Title>
+            <Alert.Description>ทีมงานจะคืนเงินเต็มจำนวนไปยังช่องทางที่คุณชำระ ไม่ต้องทำอะไรเพิ่ม หากมีคำถามติดต่อเราทาง LINE</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
 
       {loadError && (
         <Alert status="danger" className="mb-4">
@@ -236,6 +289,20 @@ export default function FlashSaleLive({ campaignId, title, products }: { campaig
                 loginHref={`/account/login?returnTo=${encodeURIComponent(`/flash-sale/${campaignId}`)}`}
                 join={() => act("join")}
                 leave={() => act("leave")}
+                checkout={
+                  <div className="mt-5 flex flex-col gap-3">
+                    <CheckoutAddressPicker value={address} onChange={setAddress} canSave={status.signedIn} />
+                    <Button fullWidth size="lg" isDisabled={!addressReady || paying} isPending={paying} onPress={pay}>
+                      <CreditCard size={18} aria-hidden /> ชำระเงิน {formatTHB(product.price)}
+                    </Button>
+                    {status.me?.payment_pending && (
+                      <p className="text-center text-xs text-slate-500">
+                        เปิดหน้าชำระเงินไปแล้ว ถ้าชำระเสร็จ ระบบจะยืนยันให้ภายในไม่กี่วินาที ถ้ายังไม่ได้ชำระ กดชำระเงินอีกครั้งได้
+                      </p>
+                    )}
+                    <p className="text-center text-xs text-slate-500">บัตรเครดิต/เดบิต หรือ PromptPay QR ผ่าน 2C2P · ส่งฟรีทั่วไทย</p>
+                  </div>
+                }
               />
             )}
           </Card>
@@ -246,6 +313,18 @@ export default function FlashSaleLive({ campaignId, title, products }: { campaig
           )}
         </div>
       </div>
+
+      {payment && (
+        <PaymentModal
+          webPaymentUrl={payment.url}
+          cartToken={payment.cartToken}
+          onClose={() => {
+            setPayment(null);
+            refresh();
+          }}
+          onPaid={refresh}
+        />
+      )}
     </div>
   );
 }
@@ -261,7 +340,9 @@ function Panel({
   loginHref,
   join,
   leave,
+  checkout,
 }: {
+  checkout: React.ReactNode;
   status: Status;
   productName: string;
   productSoldOut: boolean;
@@ -299,10 +380,7 @@ function Panel({
             <ProgressBar.Fill />
           </ProgressBar.Track>
         </ProgressBar>
-        <Button fullWidth size="lg" className="mt-5" isDisabled>
-          <CreditCard size={18} aria-hidden /> ชำระเงิน (เร็ว ๆ นี้)
-        </Button>
-        <p className="mt-2 text-center text-xs text-slate-500">ระบบชำระเงิน 2C2P สำหรับ Flash Sale กำลังเชื่อมต่อ สิทธิ์นี้จะหมดอายุเมื่อครบเวลา</p>
+        {checkout}
       </div>
     );
   }

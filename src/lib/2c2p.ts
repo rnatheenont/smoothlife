@@ -229,7 +229,19 @@ export type OneTimePaymentTokenRequest = {
   backendReturnUrl: string;
   customer: { name?: string; email?: string; mobileNo?: string };
   shippingAddress: { address1: string; city: string; postalCode: string; countryCode: string; state?: string };
+  /**
+   * Last moment the customer may pay (flash-sale reservations). Sent as
+   * `paymentExpiry` "yyyy-MM-dd HH:mm:ss" in Bangkok time — the documented
+   * v4.3 field; the time zone 2C2P reads it in is not confirmed, and Bangkok
+   * is the safe side of that doubt (read as UTC it would only be later, never
+   * already expired).
+   */
+  paymentExpiry?: Date;
 };
+
+function bangkokDateTime(d: Date): string {
+  return new Date(d.getTime() + 7 * 3600_000).toISOString().replace("T", " ").slice(0, 19);
+}
 
 export async function createPaymentToken(req: OneTimePaymentTokenRequest): Promise<PaymentTokenResult> {
   if (!twoC2PConfigured()) throw new Error("2C2P not configured — set TWOC2P_MERCHANT_ID and TWOC2P_SECRET_KEY");
@@ -243,6 +255,7 @@ export async function createPaymentToken(req: OneTimePaymentTokenRequest): Promi
     paymentChannel: req.paymentChannel && req.paymentChannel.length > 0 ? req.paymentChannel : undefined,
     frontendReturnUrl: req.frontendReturnUrl,
     backendReturnUrl: req.backendReturnUrl,
+    paymentExpiry: req.paymentExpiry ? bangkokDateTime(req.paymentExpiry) : undefined,
     uiParams:
       req.customer.name || req.customer.email || req.customer.mobileNo
         ? { userInfo: { name: req.customer.name, email: req.customer.email, mobileNo: req.customer.mobileNo } }
