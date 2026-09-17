@@ -64,17 +64,27 @@ export default function ProductTabs({ tabs }: { tabs: ProductTab[] }) {
           </div>
         </div>
       </ScrollReveal>
-      <div
-        key={current.label}
-        ref={scrollerRef}
-        onScroll={updateProgress}
-        className="flex items-stretch gap-4 md:gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-1 px-4 md:px-[max(1.5rem,calc((100%-1600px)/2))] scroll-pl-4 md:scroll-pl-[max(1.5rem,calc((100%-1600px)/2))]"
-      >
-        {current.products.map((p) => (
-          <div key={p.slug} className="shrink-0 snap-start w-[45vw] sm:w-56 md:w-64">
-            <ProductCard product={p} />
-          </div>
-        ))}
+      {/* Phones: the row bleeds off the right edge, so a half-visible card
+          says "swipe". Tablet and up: the row sits inside the same 1280px
+          column as the heading and the arrows below, showing whole cards
+          only (3 on tablet, 5 on desktop) — the arrows and progress bar carry
+          the "more" cue there instead of a card sliced at the screen edge. */}
+      <div className="md:mx-auto md:max-w-[1280px] md:px-6">
+        <div
+          key={current.label}
+          ref={scrollerRef}
+          onScroll={updateProgress}
+          className="flex items-stretch gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none px-4 pb-1 scroll-pl-4 md:-mx-2 md:-my-2 md:gap-6 md:px-2 md:py-2 md:scroll-pl-2"
+        >
+          {current.products.map((p) => (
+            <div
+              key={p.slug}
+              className="w-[45vw] shrink-0 snap-start sm:w-56 md:w-[calc((100%-3rem)/3)] lg:w-[calc((100%-6rem)/5)]"
+            >
+              <ProductCard product={p} />
+            </div>
+          ))}
+        </div>
       </div>
       <div className="container-page mt-6 flex items-center gap-4">
         <div className="h-[2px] flex-1 overflow-hidden rounded-full bg-surface-muted">

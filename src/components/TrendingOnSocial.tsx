@@ -70,7 +70,10 @@ function ClipCard({
   }
 
   return (
-    <div ref={cardRef} className="w-[220px] shrink-0 snap-center overflow-hidden rounded-2xl bg-white shadow-card">
+    <div
+      ref={cardRef}
+      className="w-[220px] shrink-0 snap-center overflow-hidden rounded-2xl bg-white shadow-card md:w-[calc((100%-3rem)/3)] lg:w-[calc((100%-6rem)/5)]"
+    >
       <div
         role="button"
         tabIndex={0}
@@ -246,10 +249,16 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
       <div className="container-page">
         <SectionHeading title="กระแสฮอตบนโซเชียล" />
       </div>
+      {/* Phones: one clip centred with its neighbours peeking in. Tablet and
+          up: the row sits in the same 1280px column as the heading and the
+          controls, whole clips only (3 on tablet, 5 on desktop), matching
+          the product row above. The -m/p-2 pair keeps card shadows from
+          being clipped by the scroller without moving the alignment. */}
+      <div className="md:mx-auto md:max-w-[1280px] md:px-6">
       <div
         ref={scrollerRef}
         onScroll={updateProgress}
-        className="flex gap-4 overflow-x-auto scrollbar-none snap-x px-[calc((100%-220px)/2)] md:px-[calc((100%-1120px)/2)]"
+        className="flex gap-4 overflow-x-auto scrollbar-none snap-x px-[calc((100%-220px)/2)] md:-mx-2 md:-my-2 md:gap-6 md:px-2 md:py-2"
       >
         {clips.map((clip, i) => (
           <ClipCard
@@ -264,7 +273,8 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
           />
         ))}
       </div>
-      <div className="mt-5 flex items-center gap-4 px-4 md:px-[calc((100%-1120px)/2)]">
+      </div>
+      <div className="mt-5 flex items-center gap-4 px-4 md:mx-auto md:max-w-[1280px] md:px-6">
         <div className="h-[2px] flex-1 overflow-hidden rounded-full bg-slate-200">
           <div
             className="h-full rounded-full bg-brand-emerald transition-[width]"

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { articles } from "@/data/articles";
 import ArticleGrid from "@/components/ArticleGrid";
+import { getStoreArticles, thaiDate } from "@/lib/storefront-articles";
 
 export const metadata = { title: "Beauty Knowledge | Smoothlife.com" };
+export const revalidate = 1800;
 
 const sections = [
   { href: "/knowledge/ingredients", label: "Ingredient Library" },
@@ -11,7 +13,9 @@ const sections = [
   { href: "/knowledge/videos", label: "Video and How-to" },
 ];
 
-export default function KnowledgePage() {
+export default async function KnowledgePage() {
+  // Posts from the Shopify blog, newest first; the static guides stay below.
+  const posts = await getStoreArticles();
   return (
     <div className="container-page py-8 md:py-10">
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">Beauty Knowledge</h1>
@@ -23,6 +27,23 @@ export default function KnowledgePage() {
           </Link>
         ))}
       </div>
+      {posts && posts.length > 0 && (
+        <>
+          <h2 className="font-bold text-brand-ink mb-4">บทความล่าสุด</h2>
+          <div className="mb-10">
+            <ArticleGrid
+              articles={posts.map((p) => ({
+                slug: encodeURIComponent(p.handle),
+                title: p.title,
+                excerpt: p.excerpt,
+                image: p.image,
+                readMins: p.readMins,
+                date: thaiDate(p.publishedAt),
+              }))}
+            />
+          </div>
+        </>
+      )}
       <h2 className="font-bold text-brand-ink mb-4">Expert Guides</h2>
       <ArticleGrid articles={articles} />
     </div>

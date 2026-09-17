@@ -133,3 +133,40 @@ p {
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+/* Body of a Shopify blog post (knowledge/article). The markup comes from the
+   Shopify editor with its own classes and styles stripped, so every element it
+   can produce is given readable defaults here. */
+.article-body {
+  color: #334155;
+  font-size: 1rem;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+.article-body > * + * { margin-top: 1rem; }
+.article-body h1, .article-body h2, .article-body h3, .article-body h4 {
+  color: #0F172A;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-top: 2rem;
+}
+.article-body h1, .article-body h2 { font-size: 1.375rem; }
+.article-body h3 { font-size: 1.175rem; }
+.article-body h4 { font-size: 1.05rem; }
+.article-body strong, .article-body b { color: #0F172A; font-weight: 700; }
+.article-body a { color: #05755f; text-decoration: underline; text-underline-offset: 2px; }
+.article-body ul, .article-body ol { padding-left: 1.4rem; }
+.article-body ul { list-style: disc; }
+.article-body ol { list-style: decimal; }
+.article-body li + li { margin-top: 0.35rem; }
+.article-body img { display: block; height: auto; max-width: 100%; border-radius: 0.75rem; margin-inline: auto; }
+.article-body blockquote { border-left: 3px solid #bfe3d8; padding-left: 1rem; color: #475569; }
+.article-body table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 0.9rem; }
+.article-body th, .article-body td { border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; text-align: left; }
+@media (min-width: 768px) {
+  .article-body { font-size: 1.0625rem; }
+  /* Posts are mostly tall phone-shaped infographics; at full column width one
+     fills several screens, so on larger screens they stop at a readable size. */
+  .article-body img { max-width: min(100%, 560px); }
+  .article-body h1, .article-body h2 { font-size: 1.5rem; }
+}

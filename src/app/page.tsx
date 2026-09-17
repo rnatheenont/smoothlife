@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Repeat, PercentCircle } from "lucide-react";
+import { Sparkles, ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Repeat, PercentCircle, LayoutGrid } from "lucide-react";
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
 import { categories, concerns, concernImage } from "@/data/categories";
@@ -12,6 +12,7 @@ import { formatTHB } from "@/lib/format";
 import { heroBanners } from "@/data/heroBanners";
 import { getLiveHeroBanners } from "@/lib/shopify-admin";
 import { getStorefrontHeroBanners } from "@/lib/storefront-banners";
+import { getStoreArticles, storeArticleHref, thaiDate } from "@/lib/storefront-articles";
 import HeroCarousel from "@/components/HeroCarousel";
 import DealOfTheDayCard from "@/components/DealOfTheDayCard";
 import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
@@ -22,6 +23,7 @@ import StaggerGrid from "@/components/StaggerGrid";
 import ScaleReveal from "@/components/ScaleReveal";
 import BrandMarquee from "@/components/BrandMarquee";
 import ProductTabs from "@/components/ProductTabs";
+import PromoPair from "@/components/home/PromoPair";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 import { Button } from "@/components/ui";
 
@@ -42,7 +44,8 @@ const articleCategoryLabel: Record<string, string> = {
 export default async function HomePage() {
   // The slides the team publishes on www.smoothlife.com, read off that page;
   // the theme-file route is the backup, the static list the last resort.
-  const liveHeroBanners = (await getStorefrontHeroBanners()) ?? (await getLiveHeroBanners());
+  const [storefrontBanners, liveArticles] = await Promise.all([getStorefrontHeroBanners(), getStoreArticles()]);
+  const liveHeroBanners = storefrontBanners ?? (await getLiveHeroBanners());
   const bestSellers = products.filter((p) => p.inStock && p.badges?.includes("Bestseller")).slice(0, 8);
   const newArrivals = products
     .filter((p) => p.inStock && p.badges?.includes("New"))
@@ -58,7 +61,27 @@ export default async function HomePage() {
     .filter((p) => p.inStock && p.badges?.includes("Bundle"))
     .sort((a, b) => discountPct(b) - discountPct(a))
     .slice(0, 8);
-  const featuredArticles = articles.slice(0, 3);
+  // The newest posts from the Shopify blog (see storefront-articles.ts), dated;
+  // the static guides only if that feed can't be read.
+  const featuredArticles = liveArticles
+    ? liveArticles.slice(0, 3).map((a) => ({
+        key: a.handle,
+        href: storeArticleHref(a),
+        title: a.title,
+        excerpt: a.excerpt,
+        image: a.image,
+        readMins: a.readMins,
+        label: thaiDate(a.publishedAt),
+      }))
+    : articles.slice(0, 3).map((a) => ({
+        key: a.slug,
+        href: `/knowledge/article/${a.slug}`,
+        title: a.title,
+        excerpt: a.excerpt,
+        image: a.image as string | null,
+        readMins: a.readMins,
+        label: articleCategoryLabel[a.category] || a.category,
+      }));
   const usedPromoSlugs = new Set<string>();
 
   // Real product-video clips (Firework CDN, provided directly — not scraped).
@@ -135,52 +158,66 @@ export default async function HomePage() {
             <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
           </div>
 
-          {/* Mobile-only quick category grid — a fast-access shortcut into
-              the same real categories the Categories section below lists in
-              full, not a separate/fake taxonomy. Icon-circle grid (real
-              category photos, not illustrations we don't have) instead of
-              text tabs. Sits right under the banner, above the headline. */}
-          <StaggerReveal className="order-2 md:hidden grid grid-cols-3 gap-y-4">
+          {/* Mobile-only quick category row — the same real categories the
+              Categories section below lists in full, as one scrolling row of
+              circles so a sixth category never leaves an orphan on its own
+              line. "ทั้งหมด" closes the row into /shop. */}
+          <StaggerReveal className="order-2 -mx-4 flex gap-4 overflow-x-auto px-4 scrollbar-none md:hidden">
             {categories.map((c) => (
               <Link
                 key={c.slug}
                 href={`/shop/${c.slug}`}
-                className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+                className="flex w-[72px] shrink-0 flex-col items-center gap-1.5 transition-transform active:scale-95"
               >
                 <span className="relative h-[72px] w-[72px] overflow-hidden rounded-full border border-surface-line bg-surface-mist">
                   <Image src={c.image} alt={c.name} fill className="object-cover" />
                 </span>
-                <span className="line-clamp-1 text-center text-xs font-medium text-brand-ink">{c.nameTh}</span>
+                <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight text-brand-ink">{c.nameTh}</span>
               </Link>
             ))}
+            <Link href="/shop" className="flex w-[72px] shrink-0 flex-col items-center gap-1.5 transition-transform active:scale-95">
+              <span className="grid h-[72px] w-[72px] place-items-center rounded-full border border-surface-line bg-surface-mist text-brand-800">
+                <LayoutGrid size={24} aria-hidden="true" />
+              </span>
+              <span className="text-center text-[11px] font-medium text-brand-ink">ทั้งหมด</span>
+            </Link>
           </StaggerReveal>
         </div>
       </section>
 
-      {/* Trust strip — hidden on mobile */}
-      <section className="hidden md:block border-y border-slate-100 bg-white">
+      {/* Trust strip. Phones get it as four tiles under the banner — the
+          promises are the first thing the layout asks for and they were
+          desktop-only before. Copy is the store's real policy: free shipping
+          on every order, returns within 14 days. */}
+      <section className="border-y border-slate-100 bg-white">
         <div className="container-page py-4 md:py-5">
-          <div className="flex md:grid md:grid-cols-4 gap-5 md:gap-4 overflow-x-auto scrollbar-none text-xs md:text-sm">
+          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-4">
             {[
-              { icon: ShieldCheck, label: "ของแท้ 100% มีอย." },
-              { icon: Truck, label: "ส่งฟรีทั่วไทย ทุกออเดอร์" },
-              { icon: Award, label: "สะสมคะแนนทุกออเดอร์" },
-              { icon: MessageCircle, label: "ปรึกษาผู้เชี่ยวชาญฟรี" },
+              { icon: Truck, title: "ส่งฟรีทั่วไทย", sub: "ทุกออเดอร์" },
+              { icon: ShieldCheck, title: "ของแท้ 100%", sub: "มั่นใจทุกชิ้น" },
+              { icon: MessageCircle, title: "ให้คำปรึกษา", sub: "โดยผู้เชี่ยวชาญ" },
+              { icon: Award, title: "คืนสินค้าได้", sub: "ภายใน 14 วัน" },
             ].map((f) => (
-              <div key={f.label} className="flex shrink-0 items-center gap-2 text-brand-ink">
-                <f.icon size={18} className="shrink-0 text-brand-emerald" aria-hidden="true" />
-                <span className="whitespace-nowrap">{f.label}</span>
+              <div
+                key={f.title}
+                className="flex items-center gap-2.5 rounded-xl2 bg-brand-gradient-soft px-3 py-2.5 md:gap-3 md:px-5 md:py-4"
+              >
+                <f.icon size={20} className="shrink-0 text-brand-emerald md:h-6 md:w-6" aria-hidden="true" />
+                <span className="min-w-0">
+                  <span className="block truncate text-xs font-bold text-brand-ink md:text-sm">{f.title}</span>
+                  <span className="block truncate text-[11px] text-slate-500 md:text-xs">{f.sub}</span>
+                </span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Categories — hidden on mobile, where the quick category grid right
-          under the header search bar already shows these same categories;
-          desktop keeps this section since it has no such shortcut. Moved
-          above Promotions so browsing-by-type comes before deals. */}
-      <section className="hidden md:block bg-white py-8 md:py-20">
+      {/* Categories — hidden on mobile, where the quick category row under
+          the banner already shows these same categories. Desktop gets it in
+          the same place in the order (before the products), so both screens
+          read categories → products like the mockup. */}
+      <section className="hidden md:block bg-white md:pb-4 md:pt-14">
         <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
         </ScrollReveal>
@@ -197,6 +234,18 @@ export default async function HomePage() {
           ))}
         </StaggerGrid>
       </section>
+
+      {/* Products — one tabbed section instead of four near-identical
+          stacked carousels (Best Sellers / On Sale / New / Bundles), so
+          browsing all of them costs one tap instead of a long scroll. */}
+      <ProductTabs
+        tabs={[
+          { label: "ขายดี", products: bestSellers },
+          { label: "ลดราคา", products: onSale },
+          { label: "มาใหม่", products: newArrivals },
+          { label: "เซ็ตสุดคุ้ม", products: bundles },
+        ]}
+      />
 
       {/* Promotions — was the first section after Trust strip (filling the
           slot the mobile-only "today's deals" slider used to occupy);
@@ -278,18 +327,6 @@ export default async function HomePage() {
       <section className="container-page">
         <FreeGiftPromoCard />
       </section>
-
-      {/* Products — one tabbed section instead of four near-identical
-          stacked carousels (Best Sellers / On Sale / New / Bundles), so
-          browsing all of them costs one tap instead of a long scroll. */}
-      <ProductTabs
-        tabs={[
-          { label: "ขายดี", products: bestSellers },
-          { label: "ลดราคา", products: onSale },
-          { label: "มาใหม่", products: newArrivals },
-          { label: "เซ็ตสุดคุ้ม", products: bundles },
-        ]}
-      />
 
       {/* Trending on social — moved after the deals/catalog cluster: video
           engagement content works better once someone has already seen
@@ -401,6 +438,8 @@ export default async function HomePage() {
         </ScrollReveal>
       </section>
 
+      <PromoPair />
+
       {/* Wellness / knowledge teaser — kept last: bottom-funnel content for
           people still researching rather than ready to buy or subscribe. */}
       <section className="bg-brand-gradient-soft py-8 md:py-20">
@@ -420,26 +459,30 @@ export default async function HomePage() {
           <div className="shrink-0 w-0 sm:hidden snap-start" aria-hidden />
           {featuredArticles.map((a) => (
             <Link
-              key={a.slug}
-              href={`/knowledge/article/${a.slug}`}
-              className="group shrink-0 w-[78%] sm:w-auto snap-start rounded-xl2 bg-white overflow-hidden shadow-card hover:shadow-cardHover transition-shadow"
+              key={a.key}
+              href={a.href}
+              className="group flex shrink-0 w-[78%] sm:w-auto snap-start flex-col rounded-xl2 bg-white overflow-hidden shadow-card hover:shadow-cardHover transition-shadow"
             >
-              <div className="relative aspect-[16/9]">
-                <Image
-                  src={a.image}
-                  alt={a.title}
-                  fill
-                  sizes="(max-width: 640px) 100vw, 33vw"
-                  className="object-cover transition-transform duration-500"
-                />
+              <div className="relative aspect-[16/9] bg-surface-mist">
+                {a.image && (
+                  <Image
+                    src={a.image}
+                    alt=""
+                    fill
+                    sizes="(max-width: 640px) 100vw, 33vw"
+                    className="object-cover transition-transform duration-500"
+                  />
+                )}
               </div>
-              <div className="p-4">
-                <span className="rounded-full bg-surface-mist px-2 py-0.5 text-[11px] font-semibold text-brand-800">
-                  {articleCategoryLabel[a.category] || a.category}
+              {/* Column with the footer pushed down, so "อ่านต่อ" lines up
+                  across cards whose excerpts wrap to different lengths. */}
+              <div className="flex flex-1 flex-col p-4">
+                <span className="self-start rounded-full bg-surface-mist px-2 py-0.5 text-[11px] font-semibold text-brand-800">
+                  {a.label}
                 </span>
                 <h3 className="font-bold text-sm text-brand-ink mt-2 line-clamp-2">{a.title}</h3>
                 <p className="text-xs text-slate-500 mt-1 line-clamp-2">{a.excerpt}</p>
-                <div className="flex items-center justify-between mt-3">
+                <div className="mt-auto flex items-center justify-between pt-3">
                   <span className="flex items-center gap-1 text-[11px] text-slate-500">
                     <Clock size={11} /> {a.readMins} นาที
                   </span>
