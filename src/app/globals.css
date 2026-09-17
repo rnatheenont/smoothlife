@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './tailwind-v3-palette.css';
 
 @source '../**/*.{js,ts,jsx,tsx,mdx}';
 
@@ -281,6 +282,13 @@
   body {
     color: #0f172a;
     background: #ffffff;
+  }
+
+  /* Tailwind v4 dropped v3's `cursor: pointer` on buttons; the site was built
+     with it, so it stays. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 
   /* Taps register immediately instead of waiting ~300ms to rule out a
