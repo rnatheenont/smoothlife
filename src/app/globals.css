@@ -328,6 +328,15 @@
     background: #ffffff;
   }
 
+  /* Tailwind v4's preflight makes every form field transparent; under v3
+     they kept the browser's white, and fields sitting on tinted cards
+     (order tracking, checkout) were designed that way. */
+  input:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"])),
+  select,
+  textarea {
+    background-color: #fff;
+  }
+
   /* Tailwind v4 dropped v3's `cursor: pointer` on buttons; the site was built
      with it, so it stays. */
   button:not(:disabled),
