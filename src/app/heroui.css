@@ -1,0 +1,20 @@
+/*
+  HeroUI v3 (https://heroui.com), imported piece by piece.
+
+  `@import "@heroui/styles"` pulls in the CSS of every HeroUI component
+  (~40 KB gzipped) on every page, used or not — nearly four times the whole
+  site's own CSS. So only the shared parts load here, and each component's
+  CSS is added below when the site starts using that component:
+
+    @import "@heroui/styles/components/<name>.css" layer(components);
+
+  (<name> as in node_modules/@heroui/styles/dist/components, e.g. button,
+  chip, modal.) Shared/primitive components go before the ones built on them.
+*/
+@import "tw-animate-css";
+@import "@heroui/styles/base" layer(base);
+@import "@heroui/styles/themes/default" layer(theme);
+@import "@heroui/styles/utilities";
+@import "@heroui/styles/variants";
+
+/* Components in use: (none yet) */

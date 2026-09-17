@@ -1,6 +1,6 @@
 @import 'tailwindcss';
-/* HeroUI v3 components (https://heroui.com). Must come after tailwindcss. */
-@import '@heroui/styles';
+/* HeroUI v3 (https://heroui.com) — see heroui.css. Must come after tailwindcss. */
+@import './heroui.css';
 @import './tailwind-v3-palette.css';
 
 @source '../**/*.{js,ts,jsx,tsx,mdx}';
