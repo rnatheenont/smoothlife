@@ -350,7 +350,7 @@ export default async function HomePage() {
               <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-black/15 px-3 py-1 text-xs font-semibold">
                 <Repeat size={13} /> สมัครสมาชิกรายรอบ ไม่ต้องสั่งซ้ำ
               </span>
-              <h2 className="text-2xl font-extrabold leading-tight md:text-4xl">
+              <h2 className="text-2xl font-extrabold leading-tight md:text-4xl md:leading-10">
                 เลือกรอบส่ง<span className="whitespace-nowrap">ของคุณเอง</span> <br className="hidden md:block" />
                 ยิ่งนานยิ่งประหยัด
               </h2>

@@ -46,7 +46,7 @@ export default function LoyaltyPage() {
                     className="rounded-xl px-2 py-2 text-white"
                     style={{ background: tierCard[t.name].gradient }}
                   >
-                    <p className="text-sm md:text-base font-extrabold leading-tight">{tierDisplayName[t.name].th}</p>
+                    <p className="text-sm md:text-base font-extrabold leading-tight md:leading-6">{tierDisplayName[t.name].th}</p>
                     <p className="text-[10px] text-white/80 mt-0.5">{entryLabel(t.minSpend)}</p>
                   </div>
                 </th>

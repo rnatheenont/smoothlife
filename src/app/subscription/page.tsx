@@ -34,7 +34,7 @@ export default function SubscriptionPage() {
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur-sm px-3 py-1 text-xs font-semibold mb-4">
             <Repeat size={13} /> Smoothlife Subscription
           </span>
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight md:leading-none">
             ดูแลตัวเองต่อเนื่อง <br className="hidden md:block" />
             ไม่ต้องสั่งซ้ำ ประหยัดสูงสุด {maxDiscount}%
           </h1>

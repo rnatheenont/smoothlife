@@ -124,7 +124,7 @@ export default function SkinCoachPage() {
           <Image src="/mascot/smoothie-hi.png" alt="" fill sizes="56px" className="object-contain" priority />
         </div>
         <div>
-          <h1 className="text-2xl font-bold leading-tight text-brand-ink md:text-3xl">สแกนผิวกับน้อง Smoothie</h1>
+          <h1 className="text-2xl font-bold leading-tight text-brand-ink md:text-3xl md:leading-9">สแกนผิวกับน้อง Smoothie</h1>
           <p className="mt-0.5 text-sm text-slate-600">ประเมินผิวจากรูปถ่าย เพื่อความสวยงาม ไม่ใช่การวินิจฉัยทางการแพทย์</p>
         </div>
       </header>

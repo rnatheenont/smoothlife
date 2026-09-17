@@ -8,7 +8,7 @@ export default function PromoPair() {
   return (
     <section className="container-page grid gap-3 py-8 md:grid-cols-2 md:gap-5 md:py-12">
       <div className="relative overflow-hidden rounded-xl2 bg-[linear-gradient(115deg,#DFF3EB,#F1FAF6)] p-5 md:p-7">
-        <p className="text-xl font-extrabold leading-tight text-brand-1000 md:text-2xl">
+        <p className="text-xl font-extrabold leading-tight text-brand-1000 md:text-2xl md:leading-8">
           Smoothlife
           <span className="block text-brand-800">Rewards</span>
         </p>
@@ -23,7 +23,7 @@ export default function PromoPair() {
       </div>
 
       <div className="relative overflow-hidden rounded-xl2 bg-[linear-gradient(115deg,#FDEBEF,#FFF6F8)] p-5 md:p-7">
-        <p className="text-xl font-extrabold leading-tight text-brand-1000 md:text-2xl">ส่งฟรีทั่วไทย</p>
+        <p className="text-xl font-extrabold leading-tight text-brand-1000 md:text-2xl md:leading-8">ส่งฟรีทั่วไทย</p>
         <p className="mt-1.5 text-sm text-slate-600">ทุกออเดอร์ ไม่มีขั้นต่ำ · ถึงมือใน 1-3 วันทำการ</p>
         <Link
           href="/help/delivery"
