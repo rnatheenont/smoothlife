@@ -40,6 +40,8 @@ export type CampaignConfig = {
   maxRequeue: number;
   /** Which group a "group" campaign was built from (kept with the campaign in the database). */
   group?: { kind: "category" | "brand" | "collection"; key: string };
+  /** How flash prices were set; each product's resulting price is in products[].price. */
+  pricing?: { mode: "regular" } | { mode: "percent"; percent: number } | { mode: "fixed"; prices: Record<string, number> };
 };
 
 export type CampaignState = {

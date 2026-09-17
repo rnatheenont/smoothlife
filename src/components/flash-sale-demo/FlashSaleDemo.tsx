@@ -63,7 +63,12 @@ function toInput(c: FlashSaleCampaignDTO, bySlug: Map<string, CatalogueItem>): C
   const products = c.productSlugs
     .map((slug) => bySlug.get(slug))
     .filter((p): p is CatalogueItem => Boolean(p))
-    .map(({ slug, name, brand, image, price, compareAtPrice }) => ({ slug, name, brand, image, price, compareAtPrice }));
+    .map(({ slug, name, brand, image, price, compareAtPrice }) => {
+      const sale = c.salePrices?.[slug];
+      return sale === null || sale === undefined
+        ? { slug, name, brand, image, price, compareAtPrice }
+        : { slug, name, brand, image, price: sale, compareAtPrice: Math.max(price, compareAtPrice ?? 0) };
+    });
   if (products.length === 0) return null;
   return {
     id: c.id,
@@ -176,6 +181,7 @@ export default function FlashSaleDemo({
             groupKind: config.group?.kind,
             groupKey: config.group?.key,
             productSlugs: config.products.map((p) => p.slug),
+            pricing: config.pricing ?? { mode: "regular" },
             stockPerProduct: config.stockPerProduct,
             windowMinutes: config.windowMinutes,
             maxRequeue: config.maxRequeue,

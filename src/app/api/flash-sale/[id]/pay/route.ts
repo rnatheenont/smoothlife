@@ -70,7 +70,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
 
   const cartToken = crypto.randomUUID();
   const invoiceNo = `FS${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`.slice(0, 30);
-  const amount = variant.price;
+  // The flash price fixed in the sale row when the campaign was created; the
+  // regular price only for campaigns without one.
+  const amount = started.sale_price !== null && started.sale_price !== undefined ? Number(started.sale_price) : variant.price;
 
   const [transaction] = await supabaseRest<{ id: string }[]>("payment_transactions", {
     method: "POST",

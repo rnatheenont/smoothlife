@@ -4,7 +4,7 @@
 // supabaseRest uses the service role key.
 import { supabaseRest } from "@/lib/supabase-server";
 
-export type FlashSaleProductStatus = { slug: string; total: number; reserved: number; sold: number; waiting: number };
+export type FlashSaleProductStatus = { slug: string; total: number; reserved: number; sold: number; waiting: number; sale_price: number | null };
 export type FlashSaleMe = {
   id: string;
   product_slug: string;
@@ -80,7 +80,7 @@ export function createFlashSaleCampaign(payload: Record<string, unknown>) {
 
 export function startFlashSalePayment(campaignId: string, userId: string) {
   return rpc<
-    | { ok: true; entry_id: string; product_slug: string; variant_id: string | null; expires_at: string }
+    | { ok: true; entry_id: string; product_slug: string; variant_id: string | null; sale_price: number | string | null; expires_at: string }
     | { ok: false; error: "no_reservation" | "too_late" }
   >("fs_start_payment", { p_campaign: campaignId, p_user: userId });
 }

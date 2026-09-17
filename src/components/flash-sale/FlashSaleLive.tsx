@@ -11,7 +11,24 @@ import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
 import PaymentModal from "@/components/PaymentModal";
 import { emptyAddressForm, type AddressFormValue } from "@/components/account/AddressFields";
 
-export type LiveProduct = { slug: string; name: string; brand: string; image: string; price: number; compareAtPrice?: number };
+export type LiveProduct = {
+  slug: string;
+  name: string;
+  brand: string;
+  image: string;
+  /** Regular price. */
+  price: number;
+  compareAtPrice?: number;
+  /** Flash price for this campaign; null = sold at the regular price. */
+  salePrice: number | null;
+};
+
+/** What the shopper pays, and the higher price to show struck through (if any). */
+function priceOf(p: LiveProduct) {
+  const pay = p.salePrice ?? p.price;
+  const was = Math.max(p.salePrice !== null ? p.price : 0, p.compareAtPrice ?? 0);
+  return { pay, was: was > pay ? was : null, percentOff: was > pay ? Math.round((1 - pay / was) * 100) : 0 };
+}
 
 type Status = FlashSaleStatus & { signedIn: boolean; refundPending?: boolean };
 
@@ -217,7 +234,7 @@ export default function FlashSaleLive({ campaignId, title, products }: { campaig
                 <span className="flex flex-1 flex-col gap-1 p-2.5">
                   <span className="line-clamp-2 text-xs font-medium text-brand-ink">{p.name}</span>
                   <span className="mt-auto flex items-baseline justify-between gap-1">
-                    <span className="text-sm font-bold text-sale">{formatTHB(p.price)}</span>
+                    <span className="text-sm font-bold text-sale">{formatTHB(priceOf(p).pay)}</span>
                     {s && <span className="text-[11px] text-slate-500">เหลือ {s.total - s.sold}</span>}
                   </span>
                 </span>
@@ -238,9 +255,14 @@ export default function FlashSaleLive({ campaignId, title, products }: { campaig
                 <p className="text-sm text-slate-500">{product.brand}</p>
                 <h2 className="mt-1 text-xl font-bold leading-snug text-brand-ink">{product.name}</h2>
               </div>
-              <p className="flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold text-sale">{formatTHB(product.price)}</span>
-                {product.compareAtPrice && <span className="text-sm text-slate-400 line-through">{formatTHB(product.compareAtPrice)}</span>}
+              <p className="flex flex-wrap items-baseline gap-2">
+                <span className="text-3xl font-extrabold text-sale">{formatTHB(priceOf(product).pay)}</span>
+                {priceOf(product).was && <span className="text-sm text-slate-400 line-through">{formatTHB(priceOf(product).was!)}</span>}
+                {priceOf(product).percentOff > 0 && (
+                  <Chip color="danger" variant="soft" size="sm">
+                    ลด {priceOf(product).percentOff}%
+                  </Chip>
+                )}
               </p>
               {stock && (
                 <div className="rounded-xl2 bg-surface-soft p-4">
@@ -293,7 +315,7 @@ export default function FlashSaleLive({ campaignId, title, products }: { campaig
                   <div className="mt-5 flex flex-col gap-3">
                     <CheckoutAddressPicker value={address} onChange={setAddress} canSave={status.signedIn} />
                     <Button fullWidth size="lg" isDisabled={!addressReady || paying} isPending={paying} onPress={pay}>
-                      <CreditCard size={18} aria-hidden /> ชำระเงิน {formatTHB(product.price)}
+                      <CreditCard size={18} aria-hidden /> ชำระเงิน {formatTHB(priceOf(product).pay)}
                     </Button>
                     {status.me?.payment_pending && (
                       <p className="text-center text-xs text-slate-500">

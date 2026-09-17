@@ -165,7 +165,7 @@ export default function LiveMonitor({ campaignId, productNames }: { campaignId: 
                 <div className="mb-1 flex items-center justify-between gap-3 text-sm">
                   <span className="min-w-0 truncate text-brand-ink">{name(p.slug)}</span>
                   <span className="shrink-0 text-xs tabular-nums text-slate-500">
-                    ขาย {p.sold}/{p.total} · จอง {p.reserved} · รอ {p.waiting}
+                    {p.sale_price !== null ? `฿${Number(p.sale_price).toLocaleString("th-TH")} · ` : "ราคาปกติ · "}ขาย {p.sold}/{p.total} · จอง {p.reserved} · รอ {p.waiting}
                   </span>
                 </div>
                 <div className="flex h-2 overflow-hidden rounded-full bg-surface-muted" aria-hidden>

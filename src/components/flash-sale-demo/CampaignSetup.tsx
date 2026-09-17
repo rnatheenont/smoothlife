@@ -82,6 +82,9 @@ export default function CampaignSetup({
   const [stock, setStock] = useState(config.stockPerProduct);
   const [windowMinutes, setWindowMinutes] = useState(config.windowMinutes);
   const [maxRequeue, setMaxRequeue] = useState(config.maxRequeue);
+  const [priceMode, setPriceMode] = useState<"regular" | "percent" | "fixed">("percent");
+  const [percent, setPercent] = useState(20);
+  const [fixedPrices, setFixedPrices] = useState<Record<string, string>>({});
   const [startInput, setStartInput] = useState(() => toLocalInput(Math.ceil((now + 10 * 60_000) / 60_000) * 60_000));
   const [hasEnd, setHasEnd] = useState(true);
   const [endInput, setEndInput] = useState(() => toLocalInput(Math.ceil((now + 130 * 60_000) / 60_000) * 60_000));
@@ -109,7 +112,23 @@ export default function CampaignSetup({
 
   const products = mode === "single" ? (selectedProduct ? [selectedProduct] : []) : groupProducts.slice(0, MAX_GROUP_PRODUCTS);
   const title = mode === "single" ? `Flash Sale · ${selectedProduct?.name ?? ""}` : `Flash Sale ${KIND_LABEL[kind]} ${group?.label ?? ""}`;
-  const canCreate = products.length > 0 && stock >= 1 && !timeError;
+  // Flash price per product as it will be charged (the server recomputes and
+  // checks the same rules; this is the preview).
+  const salePriceOf = (p: CatalogueItem): number | null => {
+    if (priceMode === "regular") return null;
+    if (priceMode === "percent") return Math.max(1, Math.round(p.price * (1 - percent / 100)));
+    const v = Number(fixedPrices[p.slug]);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  };
+  const priceError =
+    priceMode === "percent" && (!Number.isFinite(percent) || percent < 1 || percent > 90)
+      ? "ส่วนลดต้องอยู่ระหว่าง 1–90%"
+      : priceMode === "fixed" && products.some((p) => salePriceOf(p) === null)
+        ? "กรอกราคา Flash Sale ให้ครบทุกสินค้า"
+        : priceMode === "fixed" && products.some((p) => (salePriceOf(p) ?? 0) > p.price)
+          ? "ราคา Flash Sale ต้องไม่สูงกว่าราคาปกติ"
+          : null;
+  const canCreate = products.length > 0 && stock >= 1 && !timeError && !priceError;
 
   return (
     <Card className="p-5 md:p-6">
@@ -255,6 +274,71 @@ export default function CampaignSetup({
               {timeError}
             </p>
           )}
+          <fieldset className="rounded-xl2 border border-surface-line p-3">
+            <legend className="px-1 text-sm font-semibold text-brand-ink">ราคา Flash Sale</legend>
+            <Segmented<"regular" | "percent" | "fixed">
+              label="วิธีตั้งราคา"
+              value={priceMode}
+              onChange={setPriceMode}
+              options={[
+                { value: "percent", label: "ลด %" },
+                { value: "fixed", label: "กำหนดเอง" },
+                { value: "regular", label: "ราคาปกติ" },
+              ]}
+            />
+            {priceMode === "percent" && (
+              <div className="mt-3 flex items-center gap-2">
+                <label htmlFor="fs-percent" className="text-sm text-slate-600">
+                  ลด
+                </label>
+                <input
+                  id="fs-percent"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={90}
+                  value={percent}
+                  onChange={(e) => setPercent(Number(e.target.value))}
+                  className={`${fieldClass} w-24`}
+                />
+                <span className="text-sm text-slate-600">% จากราคาปกติ ทุกสินค้า (ปัดเป็นบาท)</span>
+              </div>
+            )}
+            {priceMode !== "regular" && products.length > 0 && (
+              <ul className="mt-3 flex max-h-64 flex-col gap-2 overflow-y-auto">
+                {products.map((p) => {
+                  const sale = salePriceOf(p);
+                  return (
+                    <li key={p.slug} className="flex items-center gap-2 text-sm">
+                      <span className="min-w-0 flex-1 truncate text-slate-700" title={p.name}>
+                        {p.name}
+                      </span>
+                      <span className="shrink-0 text-xs text-slate-400 line-through">{formatTHB(p.price)}</span>
+                      {priceMode === "fixed" ? (
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min={1}
+                          aria-label={`ราคา Flash Sale ${p.name}`}
+                          value={fixedPrices[p.slug] ?? ""}
+                          onChange={(e) => setFixedPrices((m) => ({ ...m, [p.slug]: e.target.value }))}
+                          placeholder="฿"
+                          className={`${fieldClass} min-h-9 w-24 shrink-0`}
+                        />
+                      ) : (
+                        <span className="w-20 shrink-0 text-right font-semibold text-sale">{sale !== null ? formatTHB(sale) : "-"}</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {priceError && (
+              <p role="alert" className="mt-2 text-sm text-rose-600">
+                {priceError}
+              </p>
+            )}
+          </fieldset>
           <div>
             <label htmlFor="fs-stock" className="mb-1.5 block text-sm font-semibold text-brand-ink">
               สต็อกต่อสินค้า (ชิ้น)
@@ -310,11 +394,28 @@ export default function CampaignSetup({
                 {
                   mode,
                   title,
-                  products: products.map(({ slug, name, brand, image, price, compareAtPrice }) => ({ slug, name, brand, image, price, compareAtPrice })),
+                  // Demo shows the flash price, with the regular price struck through.
+                  products: products.map((p) => {
+                    const sale = salePriceOf(p);
+                    return {
+                      slug: p.slug,
+                      name: p.name,
+                      brand: p.brand,
+                      image: p.image,
+                      price: sale ?? p.price,
+                      compareAtPrice: sale !== null ? Math.max(p.price, p.compareAtPrice ?? 0) : p.compareAtPrice,
+                    };
+                  }),
                   stockPerProduct: stock,
                   windowMinutes,
                   maxRequeue,
                   group: mode === "group" && group ? { kind, key: group.id } : undefined,
+                  pricing:
+                    priceMode === "regular"
+                      ? { mode: "regular" }
+                      : priceMode === "percent"
+                        ? { mode: "percent", percent }
+                        : { mode: "fixed", prices: Object.fromEntries(products.map((p) => [p.slug, salePriceOf(p) ?? 0])) },
                 },
                 startsAt,
                 endsAt

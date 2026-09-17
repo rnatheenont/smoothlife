@@ -31,7 +31,11 @@ export async function POST(req: NextRequest) {
     const r = parsed.row;
     const id = await createFlashSaleCampaign({
       ...r,
-      products: r.product_slugs.map((slug) => ({ slug, variant_id: getProductBySlug(slug)?.variantId ?? null })),
+      products: r.product_slugs.map((slug) => ({
+        slug,
+        variant_id: getProductBySlug(slug)?.variantId ?? null,
+        sale_price: parsed.salePrices[slug],
+      })),
     });
     const [row] = await supabaseRest<FlashSaleCampaignRow[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=${CAMPAIGN_COLUMNS}`);
     return NextResponse.json({ ok: true, campaign: rowToCampaign(row) });

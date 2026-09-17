@@ -18,10 +18,12 @@ export type FlashSaleCampaignRow = {
   ends_at: string | null;
   ended_manually_at: string | null;
   created_at: string;
+  /** Embedded from flash_sales (one row per product). */
+  flash_sales?: { product_slug: string; sale_price: number | string | null }[];
 };
 
 export const CAMPAIGN_COLUMNS =
-  "id,title,mode,group_kind,group_key,product_slugs,stock_per_product,reservation_window_minutes,max_requeue_per_customer,starts_at,ends_at,ended_manually_at,created_at";
+  "id,title,mode,group_kind,group_key,product_slugs,stock_per_product,reservation_window_minutes,max_requeue_per_customer,starts_at,ends_at,ended_manually_at,created_at,flash_sales(product_slug,sale_price)";
 
 /** What the admin page receives: times as epoch ms. */
 export type FlashSaleCampaignDTO = {
@@ -37,6 +39,8 @@ export type FlashSaleCampaignDTO = {
   startsAt: number;
   endsAt: number | null;
   endedManuallyAt: number | null;
+  /** Flash price per product slug; null = regular price. */
+  salePrices: Record<string, number | null>;
 };
 
 export function rowToCampaign(r: FlashSaleCampaignRow): FlashSaleCampaignDTO {
@@ -53,13 +57,30 @@ export function rowToCampaign(r: FlashSaleCampaignRow): FlashSaleCampaignDTO {
     startsAt: Date.parse(r.starts_at),
     endsAt: r.ends_at ? Date.parse(r.ends_at) : null,
     endedManuallyAt: r.ended_manually_at ? Date.parse(r.ended_manually_at) : null,
+    salePrices: Object.fromEntries(
+      (r.flash_sales ?? []).map((s) => [s.product_slug, s.sale_price === null ? null : Number(s.sale_price)])
+    ),
   };
 }
+
+/** The price a product sells for outside the flash sale: its default variant's. */
+export function regularPrice(slug: string): number | null {
+  const p = getProductBySlug(slug);
+  if (!p) return null;
+  return p.variants.find((v) => v.variantId === p.variantId)?.price ?? p.price;
+}
+
+export type PricingInput =
+  | { mode: "regular" }
+  | { mode: "percent"; percent: number }
+  | { mode: "fixed"; prices: Record<string, number> };
 
 const MAX_PRODUCTS = 12;
 
 /** Validates a create request; returns the row to insert or a Thai error message. */
-export function parseCampaignInput(body: unknown): { row: Omit<FlashSaleCampaignRow, "id" | "created_at" | "ended_manually_at"> } | { error: string } {
+export function parseCampaignInput(
+  body: unknown
+): { row: Omit<FlashSaleCampaignRow, "id" | "created_at" | "ended_manually_at">; salePrices: Record<string, number | null> } | { error: string } {
   if (!body || typeof body !== "object") return { error: "ข้อมูลไม่ถูกต้อง" };
   const b = body as Record<string, unknown>;
 
@@ -95,7 +116,30 @@ export function parseCampaignInput(body: unknown): { row: Omit<FlashSaleCampaign
   if (Number.isNaN(endsAt)) return { error: "วันเวลาปิดการขายไม่ถูกต้อง" };
   if (endsAt !== null && endsAt <= startsAt) return { error: "เวลาปิดการขายต้องหลังเวลาเริ่มขาย" };
 
+  // Flash price per product, resolved to baht here so the row holds the exact
+  // amount charged. Never above the regular price; whole baht for "% off".
+  const pricing = (b.pricing ?? { mode: "regular" }) as PricingInput;
+  const salePrices: Record<string, number | null> = {};
+  for (const slug of slugs) {
+    const regular = regularPrice(slug)!;
+    if (pricing.mode === "regular") {
+      salePrices[slug] = null;
+    } else if (pricing.mode === "percent") {
+      const pct = Number(pricing.percent);
+      if (!Number.isFinite(pct) || pct < 1 || pct > 90) return { error: "ส่วนลดต้องอยู่ระหว่าง 1–90%" };
+      salePrices[slug] = Math.max(1, Math.round(regular * (1 - pct / 100)));
+    } else if (pricing.mode === "fixed") {
+      const price = Number(pricing.prices?.[slug]);
+      if (!Number.isFinite(price) || price <= 0) return { error: `กรุณากรอกราคา Flash Sale ให้ครบทุกสินค้า (${getProductBySlug(slug)?.name ?? slug})` };
+      if (price > regular) return { error: `ราคา Flash Sale ต้องไม่สูงกว่าราคาปกติ ฿${regular} (${getProductBySlug(slug)?.name ?? slug})` };
+      salePrices[slug] = Math.round(price * 100) / 100;
+    } else {
+      return { error: "รูปแบบราคาไม่ถูกต้อง" };
+    }
+  }
+
   return {
+    salePrices,
     row: {
       title,
       mode,
