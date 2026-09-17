@@ -78,20 +78,30 @@ function next(state: SaleState): number {
 const FIRST = ["พิมพ์", "ณัฐ", "กมล", "ปวีณ", "ศิริ", "ธนา", "อรุณ", "มาลี", "วรร", "สุภา", "จิรา", "ชล", "นภา", "ปิยะ", "รัตน", "อัญ", "เบญ", "ภัท", "ดาว", "ฟ้า"];
 const maskName = (i: number) => `คุณ${FIRST[i % FIRST.length]}***`;
 
-export function createSale(opts?: { total?: number; bots?: number; opensIn?: number }): SaleState {
+export type SaleOptions = {
+  name?: string;
+  total?: number;
+  bots?: number;
+  opensIn?: number;
+  windowSeconds?: number;
+  maxRequeue?: number;
+  seed?: number;
+};
+
+export function createSale(opts?: SaleOptions): SaleState {
   const total = opts?.total ?? 25;
   const botCount = opts?.bots ?? 70;
   const opensAt = opts?.opensIn ?? 300;
   const state: SaleState = {
     now: 0,
     sale: {
-      name: "Smooth E Gold Miracle — Flash Sale 25 ชิ้น",
+      name: opts?.name ?? `Flash Sale ${total} ชิ้น`,
       total,
       reserved: 0,
       sold: 0,
       nextPosition: 0,
-      windowSeconds: 15 * 60,
-      maxRequeue: 3,
+      windowSeconds: opts?.windowSeconds ?? 15 * 60,
+      maxRequeue: opts?.maxRequeue ?? 3,
       status: "scheduled",
       opensAt,
     },
@@ -101,7 +111,7 @@ export function createSale(opts?: { total?: number; bots?: number; opensIn?: num
     pendingRequeues: [],
     shopifyDown: false,
     seq: 1,
-    rand: 20260917,
+    rand: opts?.seed ?? 20260917,
   };
   // A rush in the first minute after opening, then a trickle for ~20 minutes.
   for (let i = 0; i < botCount; i++) {
@@ -167,7 +177,7 @@ function grantReservations(state: SaleState) {
       if (next(state) < 0.62) e.payAt = state.now + 45 + next(state) * 600;
       e.willRequeue = next(state) < 0.55;
     }
-    log(state, "reserve", `${e.isYou ? "คุณ" : e.name} ได้สิทธิ์จอง (ลำดับ ${e.position}) — มีเวลา 15 นาที`, e.isYou);
+    log(state, "reserve", `${e.isYou ? "คุณ" : e.name} ได้สิทธิ์จอง (ลำดับ ${e.position}) — มีเวลา ${Math.round(state.sale.windowSeconds / 60)} นาที`, e.isYou);
   }
 }
 

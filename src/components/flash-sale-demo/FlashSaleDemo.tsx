@@ -20,30 +20,38 @@ import {
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { NumberTicker } from "@/components/magicui/number-ticker";
 import { formatTHB } from "@/lib/format";
+import { available, metrics, mmss, type Entry, type LogKind, type SaleState } from "./engine";
 import {
-  available,
-  confirmPayment,
-  createSale,
-  joinQueue,
-  leaveQueue,
-  metrics,
-  mmss,
-  mutate,
-  openNow,
-  tick,
-  YOU_ID,
-  type Entry,
-  type LogKind,
-  type SaleState,
-} from "./engine";
+  campaignLog,
+  createCampaign,
+  joinCampaign,
+  leaveCampaign,
+  openCampaignNow,
+  payCampaign,
+  tickCampaign,
+  yourActive,
+  type CampaignConfig,
+  type CampaignState,
+  type DemoProduct,
+} from "./campaign";
+import CampaignSetup, { type CatalogueItem, type ProductGroup } from "./CampaignSetup";
 
-export type DemoProduct = { name: string; brand: string; image: string; price: number; compareAtPrice?: number };
+export type { DemoProduct };
 
 const SPEEDS = [1, 30, 120] as const;
 const TICK_MS = 250;
 
-export default function FlashSaleDemo({ product }: { product: DemoProduct }) {
-  const [state, setState] = useState<SaleState>(() => createSale());
+export default function FlashSaleDemo({
+  initialConfig,
+  catalogue,
+  groups,
+}: {
+  initialConfig: CampaignConfig;
+  catalogue: CatalogueItem[];
+  groups: ProductGroup[];
+}) {
+  const [campaign, setCampaign] = useState<CampaignState>(() => createCampaign(initialConfig));
+  const [selected, setSelected] = useState(0);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(30);
   const [running, setRunning] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
@@ -52,37 +60,44 @@ export default function FlashSaleDemo({ product }: { product: DemoProduct }) {
 
   useEffect(() => {
     if (!running) return;
-    const t = setInterval(() => setState((s) => tick(s, (TICK_MS / 1000) * speed)), TICK_MS);
+    const t = setInterval(() => setCampaign((c) => tickCampaign(c, (TICK_MS / 1000) * speed)), TICK_MS);
     return () => clearInterval(t);
   }, [running, speed]);
 
-  // Your latest row (a requeue creates a new row, like the real table).
+  const saleIndex = Math.min(selected, campaign.sales.length - 1);
+  const state = campaign.sales[saleIndex];
+  const product = state.product;
+  const active = yourActive(campaign);
+  const blockedBy = active && active.saleIndex !== saleIndex ? campaign.sales[active.saleIndex].product.name : null;
+
+  // Your latest row for this product (a requeue creates a new row, like the real table).
   const you = useMemo(() => [...state.entries].reverse().find((e) => e.isYou), [state.entries]);
   const expiredCount = state.entries.filter((e) => e.isYou && e.status === "expired").length;
 
   // §11.1 — the LINE push when your turn comes, shown as a toast here.
   const lastReserved = useRef<string | null>(null);
+  const activeEntry = active?.entry;
+  const activeSale = active ? campaign.sales[active.saleIndex] : null;
   useEffect(() => {
-    if (you?.status === "reserved" && lastReserved.current !== you.id) {
-      lastReserved.current = you.id;
-      toast("LINE · Smoothlife: ถึงคิวคุณแล้ว", {
-        description: "คุณมีเวลา 15 นาทีในการชำระเงิน แตะเพื่อไปหน้าชำระเงิน",
+    if (activeEntry?.status === "reserved" && activeSale && lastReserved.current !== activeEntry.id) {
+      lastReserved.current = activeEntry.id;
+      toast(`LINE · Smoothlife: ถึงคิวคุณแล้ว`, {
+        description: `${activeSale.product.name} — คุณมีเวลา ${Math.round(activeSale.sale.windowSeconds / 60)} นาทีในการชำระเงิน`,
         variant: "success",
         timeout: 6000,
       });
     }
-  }, [you]);
+  }, [activeEntry, activeSale]);
 
-  const join = () =>
-    setState((s) =>
-      mutate(s, (m) => {
-        const r = joinQueue(m, YOU_ID, "คุณ", true);
-        setNotice("reason" in r ? r.reason : null);
-      })
-    );
+  const join = () => {
+    const { next, result } = joinCampaign(campaign, saleIndex);
+    setCampaign(next);
+    setNotice("reason" in result ? result.reason : null);
+  };
 
-  const reset = () => {
-    setState(createSale());
+  const restart = (config: CampaignConfig) => {
+    setCampaign(createCampaign(config));
+    setSelected(0);
     setLoggedIn(false);
     setNotice(null);
     setPayOpen(false);
@@ -98,30 +113,34 @@ export default function FlashSaleDemo({ product }: { product: DemoProduct }) {
         <Alert.Content>
           <Alert.Title>Demo · ข้อมูลจำลองทั้งหมด</Alert.Title>
           <Alert.Description>
-            ไม่มีการตัดเงิน ไม่สร้างออเดอร์จริง ลูกค้าคนอื่นในคิวเป็นบอทจำลอง 70 คน · เวลาในเดโมเร่งให้ดูทันได้ (×{speed})
+            ไม่มีการตัดเงิน ไม่สร้างออเดอร์จริง ลูกค้าคนอื่นในคิวเป็นบอทจำลอง · เวลาในเดโมเร่งให้ดูทันได้ (×{speed})
           </Alert.Description>
         </Alert.Content>
       </Alert>
 
       <DemoControls
         state={state}
+        now={campaign.now}
+        shopifyDown={campaign.shopifyDown}
         speed={speed}
         setSpeed={setSpeed}
         running={running}
         setRunning={setRunning}
-        reset={reset}
-        toggleShopify={() => setState((s) => ({ ...s, shopifyDown: !s.shopifyDown }))}
-        openNow={() => setState((s) => openNow(s))}
+        reset={() => restart(campaign.config)}
+        toggleShopify={() => setCampaign((c) => ({ ...c, shopifyDown: !c.shopifyDown }))}
+        openNow={() => setCampaign((c) => openCampaignNow(c))}
       />
 
       <Tabs className="mt-5">
-        <Tabs.ListContainer>
-          <Tabs.List aria-label="มุมมอง">
-            <Tabs.Tab id="customer">
+        {/* Full-width, equal halves: on a phone the two labels otherwise
+            overflow the pill and HeroUI adds a scroll arrow. */}
+        <Tabs.ListContainer className="w-full">
+          <Tabs.List aria-label="มุมมอง" className="w-full">
+            <Tabs.Tab id="customer" className="flex-1 justify-center whitespace-nowrap">
               มุมมองลูกค้า
               <Tabs.Indicator />
             </Tabs.Tab>
-            <Tabs.Tab id="admin">
+            <Tabs.Tab id="admin" className="flex-1 justify-center whitespace-nowrap">
               มุมมองแอดมิน
               <Tabs.Indicator />
             </Tabs.Tab>
@@ -130,6 +149,13 @@ export default function FlashSaleDemo({ product }: { product: DemoProduct }) {
 
         <Tabs.Panel id="customer" className="pt-5">
           <CustomerView
+            campaign={campaign}
+            saleIndex={saleIndex}
+            select={(i) => {
+              setSelected(i);
+              setNotice(null);
+            }}
+            blockedBy={blockedBy}
             state={state}
             product={product}
             you={you}
@@ -137,14 +163,17 @@ export default function FlashSaleDemo({ product }: { product: DemoProduct }) {
             loggedIn={loggedIn}
             login={() => setLoggedIn(true)}
             join={join}
-            leave={() => setState((s) => mutate(s, (m) => leaveQueue(m, YOU_ID)))}
+            leave={() => setCampaign((c) => leaveCampaign(c, saleIndex))}
             notice={notice}
             openPay={() => setPayOpen(true)}
           />
         </Tabs.Panel>
 
         <Tabs.Panel id="admin" className="pt-5">
-          <AdminView state={state} />
+          <div className="flex flex-col gap-5">
+            <CampaignSetup config={campaign.config} catalogue={catalogue} groups={groups} onCreate={restart} />
+            <AdminView campaign={campaign} />
+          </div>
         </Tabs.Panel>
       </Tabs>
 
@@ -154,14 +183,11 @@ export default function FlashSaleDemo({ product }: { product: DemoProduct }) {
         entry={you}
         state={state}
         product={product}
-        pay={() =>
-          setState((s) =>
-            mutate(s, (m) => {
-              const r = confirmPayment(m, you!.id);
-              if (!r.ok) setNotice(r.reason ?? null);
-            })
-          )
-        }
+        pay={() => {
+          const { next, reason } = payCampaign(campaign, saleIndex, you!.id);
+          setCampaign(next);
+          if (reason) setNotice(reason);
+        }}
       />
     </div>
   );
@@ -171,6 +197,8 @@ export default function FlashSaleDemo({ product }: { product: DemoProduct }) {
 
 function DemoControls({
   state,
+  now,
+  shopifyDown,
   speed,
   setSpeed,
   running,
@@ -180,6 +208,8 @@ function DemoControls({
   openNow,
 }: {
   state: SaleState;
+  now: number;
+  shopifyDown: boolean;
   speed: number;
   setSpeed: (s: (typeof SPEEDS)[number]) => void;
   running: boolean;
@@ -193,7 +223,7 @@ function DemoControls({
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold text-brand-ink">ตัวควบคุมเดโม</span>
         <span className="rounded-full bg-white px-2.5 py-1 text-xs tabular-nums text-slate-600 ring-1 ring-surface-line">
-          เวลาในระบบ {mmss(state.now)}
+          เวลาในระบบ {mmss(now)}
         </span>
         <div className="flex overflow-hidden rounded-full ring-1 ring-surface-line" role="group" aria-label="ความเร็ว">
           {SPEEDS.map((s) => (
@@ -218,8 +248,8 @@ function DemoControls({
         <Button size="sm" variant="secondary" onPress={() => setRunning(!running)}>
           {running ? <Pause size={14} aria-hidden /> : <Play size={14} aria-hidden />} {running ? "หยุดเวลา" : "เดินเวลาต่อ"}
         </Button>
-        <Button size="sm" variant={state.shopifyDown ? "danger" : "secondary"} onPress={toggleShopify}>
-          <ServerCrash size={14} aria-hidden /> {state.shopifyDown ? "Shopify ล่มอยู่ (กดเพื่อกู้)" : "จำลอง Shopify ล่ม"}
+        <Button size="sm" variant={shopifyDown ? "danger" : "secondary"} onPress={toggleShopify}>
+          <ServerCrash size={14} aria-hidden /> {shopifyDown ? "Shopify ล่มอยู่ (กดเพื่อกู้)" : "จำลอง Shopify ล่ม"}
         </Button>
         <Button size="sm" variant="ghost" onPress={reset}>
           <RotateCcw size={14} aria-hidden /> เริ่มใหม่
@@ -258,6 +288,10 @@ function StockBar({ state, compact = false }: { state: SaleState; compact?: bool
 }
 
 function CustomerView({
+  campaign,
+  saleIndex,
+  select,
+  blockedBy,
   state,
   product,
   you,
@@ -269,6 +303,10 @@ function CustomerView({
   notice,
   openPay,
 }: {
+  campaign: CampaignState;
+  saleIndex: number;
+  select: (i: number) => void;
+  blockedBy: string | null;
   state: SaleState;
   product: DemoProduct;
   you?: Entry;
@@ -281,6 +319,7 @@ function CustomerView({
   openPay: () => void;
 }) {
   const remaining = state.sale.total - state.sale.sold;
+  const windowMinutes = Math.round(state.sale.windowSeconds / 60);
   const reserved = you?.status === "reserved";
 
   return (
@@ -297,6 +336,8 @@ function CustomerView({
           </button>
         </div>
       )}
+
+      {campaign.sales.length > 1 && <ProductPicker campaign={campaign} saleIndex={saleIndex} select={select} />}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
         <Card className="overflow-hidden p-0">
@@ -329,10 +370,10 @@ function CustomerView({
               </div>
               <ul className="flex flex-col gap-2 text-sm text-slate-600">
                 <li className="flex items-center gap-2">
-                  <Users size={16} className="shrink-0 text-brand-800" aria-hidden /> 1 บัญชีซื้อได้ 1 ชิ้น
+                  <Users size={16} className="shrink-0 text-brand-800" aria-hidden /> 1 บัญชีซื้อได้ 1 ชิ้น{campaign.sales.length > 1 ? "ต่อแคมเปญ" : ""}
                 </li>
                 <li className="flex items-center gap-2">
-                  <Clock size={16} className="shrink-0 text-brand-800" aria-hidden /> ถึงคิวแล้วมีเวลาชำระเงิน 15 นาที
+                  <Clock size={16} className="shrink-0 text-brand-800" aria-hidden /> ถึงคิวแล้วมีเวลาชำระเงิน {windowMinutes} นาที
                 </li>
                 <li className="flex items-center gap-2">
                   <RotateCcw size={16} className="shrink-0 text-brand-800" aria-hidden /> ชำระไม่ทันกลับเข้าคิวได้ {state.sale.maxRequeue} ครั้ง
@@ -344,6 +385,7 @@ function CustomerView({
 
         <div className="lg:sticky lg:top-40">
           <ActionPanel
+            blockedBy={blockedBy}
             state={state}
             you={you}
             expiredCount={expiredCount}
@@ -374,6 +416,7 @@ function PanelShell({ children, highlight = false }: { children: React.ReactNode
 }
 
 function ActionPanel({
+  blockedBy,
   state,
   you,
   expiredCount,
@@ -383,6 +426,7 @@ function ActionPanel({
   leave,
   openPay,
 }: {
+  blockedBy: string | null;
   state: SaleState;
   you?: Entry;
   expiredCount: number;
@@ -394,6 +438,19 @@ function ActionPanel({
 }) {
   const { sale } = state;
   const status = you?.status;
+  if (blockedBy && sale.status !== "sold_out") {
+    return (
+      <PanelShell>
+        <Chip color="default" variant="soft" size="sm">
+          ใช้สิทธิ์ในแคมเปญนี้แล้ว
+        </Chip>
+        <h3 className="mt-3 text-lg font-bold text-brand-ink">คุณเข้าคิวสินค้าอื่นในแคมเปญนี้อยู่</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          {blockedBy} — แคมเปญนี้ 1 บัญชีซื้อได้ 1 ชิ้น ถ้ายังรอคิวอยู่และอยากเปลี่ยนสินค้า ให้ออกจากคิวเดิมก่อน
+        </p>
+      </PanelShell>
+    );
+  }
 
   if (status === "paid") {
     return (
@@ -587,7 +644,7 @@ function PaymentModal({
             <Modal.Body>
               {live && (
                 <p className="mb-3 flex items-center gap-2 rounded-xl2 bg-rose-50 px-3 py-2 text-sm font-semibold text-sale">
-                  <Timer size={16} aria-hidden /> เหลือเวลา {mmss((entry!.expiresAt ?? 0) - state.now)}
+                  <Timer size={16} aria-hidden /> เหลือเวลา {mmss((entry!.expiresAt ?? 0) - state.now)} นาที
                 </p>
               )}
               <div className="flex items-center justify-between rounded-xl2 bg-surface-soft p-3 text-sm">
@@ -657,12 +714,80 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: stri
   );
 }
 
-function AdminView({ state }: { state: SaleState }) {
-  const m = metrics(state);
-  const reserved = state.entries.filter((e) => e.status === "reserved").sort((a, b) => (a.expiresAt ?? 0) - (b.expiresAt ?? 0));
-  const failed = state.entries.filter((e) => e.status === "paid" && e.sync === "failed");
-  const { sale } = state;
-  const statusLabel = { scheduled: "ยังไม่เปิด", open: "เปิดขาย", sold_out: "ขายหมด" }[sale.status];
+/** Customer side: every product in the campaign, with its own stock. */
+function ProductPicker({ campaign, saleIndex, select }: { campaign: CampaignState; saleIndex: number; select: (i: number) => void }) {
+  const active = yourActive(campaign);
+  return (
+    <section className="mb-5" aria-label="เลือกสินค้าในแคมเปญ">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-lg font-bold text-brand-ink">{campaign.config.title}</h2>
+        <p className="text-sm text-slate-500">
+          {campaign.sales.length} สินค้า · 1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ
+        </p>
+      </div>
+      <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 scrollbar-none md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 lg:grid-cols-4 xl:grid-cols-6">
+        {campaign.sales.map((s, i) => {
+          const left = s.sale.total - s.sale.sold;
+          const isSelected = i === saleIndex;
+          const mine = active?.saleIndex === i;
+          return (
+            <button
+              key={s.product.slug}
+              type="button"
+              onClick={() => select(i)}
+              aria-pressed={isSelected}
+              className={`relative flex w-40 shrink-0 snap-start flex-col overflow-hidden rounded-xl2 bg-white text-left ring-1 transition md:w-auto ${
+                isSelected ? "ring-2 ring-brand-800" : "ring-surface-line hover:ring-brand-800/40"
+              }`}
+            >
+              <span className="relative block aspect-square bg-white">
+                <Image src={s.product.image} alt="" fill sizes="160px" className="object-contain p-3" />
+                {s.sale.status === "sold_out" && (
+                  <span className="absolute inset-0 grid place-items-center bg-white/70 text-sm font-bold text-slate-600">หมดแล้ว</span>
+                )}
+                {mine && (
+                  <span className="absolute left-2 top-2 rounded-full bg-brand-800 px-2 py-0.5 text-[10px] font-bold text-white">คิวของคุณ</span>
+                )}
+              </span>
+              <span className="flex flex-1 flex-col gap-1 p-2.5">
+                <span className="line-clamp-2 text-xs font-medium leading-snug text-brand-ink">{s.product.name}</span>
+                <span className="mt-auto flex items-baseline justify-between gap-1">
+                  <span className="text-sm font-bold text-sale">{formatTHB(s.product.price)}</span>
+                  <span className="text-[11px] text-slate-500">
+                    เหลือ {left}/{s.sale.total}
+                  </span>
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function AdminView({ campaign }: { campaign: CampaignState }) {
+  const [focus, setFocus] = useState<number | "all">("all");
+  const sales = focus === "all" ? campaign.sales : [campaign.sales[Math.min(focus, campaign.sales.length - 1)]];
+  const sum = (f: (s: SaleState) => number) => sales.reduce((t, s) => t + f(s), 0);
+  const total = sum((s) => s.sale.total);
+  const reservedCount = sum((s) => s.sale.reserved);
+  const soldCount = sum((s) => s.sale.sold);
+  const waitingCount = sum((s) => metrics(s).waiting);
+  const free = sum((s) => available(s));
+  const now = campaign.sales[0]?.now ?? 0;
+
+  const reserved = sales
+    .flatMap((s) => s.entries.filter((e) => e.status === "reserved").map((e) => ({ e, s })))
+    .sort((a, b) => (a.e.expiresAt ?? 0) - (b.e.expiresAt ?? 0));
+  const failed = campaign.sales.flatMap((s) => s.entries.filter((e) => e.status === "paid" && e.sync === "failed"));
+  const log = focus === "all" ? campaignLog(campaign) : campaignLog({ ...campaign, sales }).slice(0, 40);
+
+  const all = sales.map((s) => ({ s, m: metrics(s) }));
+  const customers = all.reduce((t, x) => t + x.m.customers, 0);
+  const paid = sales.flatMap((s) => s.entries.filter((e) => e.status === "paid"));
+  const avgPay = paid.length ? paid.reduce((t, e) => t + ((e.paidAt ?? 0) - (e.reservedAt ?? 0)), 0) / paid.length : 0;
+  const cfg = campaign.config;
 
   return (
     <div className="flex flex-col gap-5">
@@ -678,21 +803,46 @@ function AdminView({ state }: { state: SaleState }) {
         </Alert>
       )}
 
+      {campaign.sales.length > 1 && (
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 scrollbar-none md:mx-0 md:flex-wrap md:px-0" role="group" aria-label="ดูข้อมูลสินค้า">
+          {[{ key: "all" as const, label: `ทั้งแคมเปญ (${campaign.sales.length})` }, ...campaign.sales.map((s, i) => ({ key: i, label: s.product.name }))].map((o) => (
+            <button
+              key={String(o.key)}
+              type="button"
+              onClick={() => setFocus(o.key)}
+              aria-pressed={focus === o.key}
+              className={`min-h-9 max-w-[220px] shrink-0 truncate rounded-full px-3.5 text-xs font-semibold ring-1 ${
+                focus === o.key ? "bg-brand-800 text-white ring-brand-800" : "bg-white text-slate-600 ring-surface-line hover:bg-surface-mist"
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="รอในคิว" value={m.waiting} tone="text-brand-ink" />
-        <Stat label="กำลังรอชำระเงิน" value={sale.reserved} tone="text-amber-600" />
-        <Stat label={`ขายแล้ว / ${sale.total}`} value={sale.sold} tone="text-brand-800" />
-        <Stat label="สิทธิ์ว่าง" value={available(state)} tone="text-slate-600" />
+        <Stat label="รอในคิว" value={waitingCount} tone="text-brand-ink" />
+        <Stat label="กำลังรอชำระเงิน" value={reservedCount} tone="text-amber-600" />
+        <Stat label={`ขายแล้ว / ${total}`} value={soldCount} tone="text-brand-800" />
+        <Stat label="สิทธิ์ว่าง" value={free} tone="text-slate-600" />
       </div>
 
       <Card className="p-5">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-bold text-brand-ink">{sale.name}</h3>
-          <Chip size="sm" variant="soft" color={sale.status === "open" ? "success" : sale.status === "sold_out" ? "default" : "warning"}>
-            {statusLabel}
-          </Chip>
-        </div>
-        <StockBar state={state} />
+        <h3 className="mb-3 font-bold text-brand-ink">สต็อกแต่ละสินค้า</h3>
+        <ul className="flex flex-col gap-3">
+          {sales.map((s) => (
+            <li key={s.product.slug}>
+              <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
+                <span className="min-w-0 truncate text-brand-ink">{s.product.name}</span>
+                <Chip size="sm" variant="soft" color={s.sale.status === "open" ? "success" : s.sale.status === "sold_out" ? "default" : "warning"}>
+                  {{ scheduled: "ยังไม่เปิด", open: `ขาย ${s.sale.sold}/${s.sale.total}`, sold_out: "ขายหมด" }[s.sale.status]}
+                </Chip>
+              </div>
+              <StockBar state={s} compact={sales.length > 1} />
+            </li>
+          ))}
+        </ul>
       </Card>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
@@ -702,22 +852,22 @@ function AdminView({ state }: { state: SaleState }) {
           {reserved.length === 0 ? (
             <p className="mt-6 text-center text-sm text-slate-500">ยังไม่มีใครกำลังจอง</p>
           ) : (
-            <ul className="mt-3 flex flex-col divide-y divide-surface-line">
-              {reserved.map((e) => {
-                const left = (e.expiresAt ?? 0) - state.now;
+            <ul className="mt-3 flex max-h-[420px] flex-col divide-y divide-surface-line overflow-y-auto pr-1">
+              {reserved.map(({ e, s }) => {
+                const left = (e.expiresAt ?? 0) - now;
                 return (
-                  <li key={e.id} className="flex items-center gap-3 py-2.5">
+                  <li key={`${s.product.slug}-${e.id}`} className="flex items-center gap-3 py-2.5">
                     <span className="w-10 shrink-0 text-xs tabular-nums text-slate-500">#{e.position}</span>
-                    <span className={`min-w-0 flex-1 truncate text-sm ${e.isYou ? "font-bold text-brand-800" : "text-brand-ink"}`}>
-                      {e.isYou ? "คุณ (บัญชีทดลอง)" : e.name}
-                      {e.requeueCount > 0 && <span className="ml-1.5 text-xs text-slate-400">เข้าคิวรอบ {e.requeueCount + 1}</span>}
+                    <span className="min-w-0 flex-1">
+                      <span className={`block truncate text-sm ${e.isYou ? "font-bold text-brand-800" : "text-brand-ink"}`}>
+                        {e.isYou ? "คุณ (บัญชีทดลอง)" : e.name}
+                        {e.requeueCount > 0 && <span className="ml-1.5 text-xs text-slate-400">เข้าคิวรอบ {e.requeueCount + 1}</span>}
+                      </span>
+                      {sales.length > 1 && <span className="block truncate text-[11px] text-slate-400">{s.product.name}</span>}
                     </span>
-                    <div className="hidden w-28 sm:block">
+                    <div className="hidden w-24 sm:block">
                       <div className="h-1.5 overflow-hidden rounded-full bg-surface-muted">
-                        <div
-                          className={`h-full ${left < 180 ? "bg-rose-500" : "bg-amber-400"}`}
-                          style={{ width: `${(left / sale.windowSeconds) * 100}%` }}
-                        />
+                        <div className={`h-full ${left < 180 ? "bg-rose-500" : "bg-amber-400"}`} style={{ width: `${(left / s.sale.windowSeconds) * 100}%` }} />
                       </div>
                     </div>
                     <span className={`w-12 shrink-0 text-right text-sm tabular-nums ${left < 180 ? "font-semibold text-rose-600" : "text-slate-600"}`}>
@@ -733,57 +883,41 @@ function AdminView({ state }: { state: SaleState }) {
         <Card className="p-5">
           <h3 className="font-bold text-brand-ink">เหตุการณ์ล่าสุด</h3>
           <ul className="mt-3 flex max-h-[420px] flex-col gap-2.5 overflow-y-auto pr-1">
-            {state.log.slice(0, 40).map((l) => (
-              <li key={l.id} className="flex gap-2.5 text-sm">
+            {log.map((l) => (
+              <li key={l.key} className="flex gap-2.5 text-sm">
                 <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${LOG_TONE[l.kind]}`} aria-hidden />
                 <span className="w-12 shrink-0 tabular-nums text-xs leading-5 text-slate-400">{mmss(l.at)}</span>
-                <span className={l.isYou ? "font-semibold text-brand-800" : "text-slate-700"}>{l.text}</span>
+                <span className="min-w-0">
+                  <span className={l.isYou ? "font-semibold text-brand-800" : "text-slate-700"}>{l.text}</span>
+                  {campaign.sales.length > 1 && focus === "all" && <span className="block truncate text-[11px] text-slate-400">{l.product}</span>}
+                </span>
               </li>
             ))}
           </ul>
         </Card>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card className="p-5">
-          <h3 className="font-bold text-brand-ink">สรุปผลการขาย</h3>
-          <dl className="mt-3 grid grid-cols-2 gap-3">
-            {[
-              ["ลูกค้าที่เข้าคิว", `${m.customers} คน`],
-              ["อัตราซื้อจริง", `${Math.round(m.conversion * 100)}%`],
-              ["เวลาเฉลี่ยได้สิทธิ์ → จ่าย", m.avgPaySeconds ? `${mmss(m.avgPaySeconds)} นาที` : "-"],
-              ["หมดเวลาไม่จ่าย", `${m.expired} ครั้ง`],
-              ["กลับเข้าคิวใหม่", `${m.requeues} ครั้ง`],
-              ["ออเดอร์ค้างสร้างไม่สำเร็จ", `${m.syncFailed} ราย`],
-            ].map(([k, v]) => (
-              <div key={k} className="rounded-xl2 bg-surface-soft p-3">
-                <dt className="text-xs text-slate-500">{k}</dt>
-                <dd className="mt-0.5 text-lg font-bold tabular-nums text-brand-ink">{v}</dd>
-              </div>
-            ))}
-          </dl>
-        </Card>
-
-        <Card className="p-5">
-          <h3 className="font-bold text-brand-ink">ตั้งค่าการขายรอบนี้</h3>
-          <p className="text-xs text-slate-500">เก็บเป็นข้อมูล 1 แถวต่อรอบ สร้างรอบใหม่ได้โดยไม่ต้องแก้โค้ด</p>
-          <dl className="mt-3 flex flex-col divide-y divide-surface-line text-sm">
-            {[
-              ["จำนวนสต็อก", `${sale.total} ชิ้น`],
-              ["จำกัดต่อบัญชี", "1 ชิ้น"],
-              ["เวลาชำระเงิน", `${sale.windowSeconds / 60} นาที`],
-              ["กลับเข้าคิวได้สูงสุด", `${sale.maxRequeue} ครั้ง`],
-              ["แจ้งเตือนถึงคิว", "LINE OA"],
-              ["ยืนยันการชำระเงิน", "2C2P webhook + ตรวจลายเซ็น"],
-            ].map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-3 py-2">
-                <dt className="text-slate-500">{k}</dt>
-                <dd className="text-right font-medium text-brand-ink">{v}</dd>
-              </div>
-            ))}
-          </dl>
-        </Card>
-      </div>
+      <Card className="p-5">
+        <h3 className="font-bold text-brand-ink">สรุปผลการขาย</h3>
+        <dl className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
+          {[
+            ["ลูกค้าที่เข้าคิว", `${customers} คน`],
+            ["อัตราซื้อจริง", customers ? `${Math.round((soldCount / customers) * 100)}%` : "-"],
+            ["เวลาเฉลี่ยได้สิทธิ์ → จ่าย", avgPay ? `${mmss(avgPay)} นาที` : "-"],
+            ["หมดเวลาไม่จ่าย", `${all.reduce((t, x) => t + x.m.expired, 0)} ครั้ง`],
+            ["กลับเข้าคิวใหม่", `${all.reduce((t, x) => t + x.m.requeues, 0)} ครั้ง`],
+            ["ออเดอร์ค้างสร้างไม่สำเร็จ", `${all.reduce((t, x) => t + x.m.syncFailed, 0)} ราย`],
+          ].map(([k, v]) => (
+            <div key={k} className="rounded-xl2 bg-surface-soft p-3">
+              <dt className="text-xs text-slate-500">{k}</dt>
+              <dd className="mt-0.5 text-lg font-bold tabular-nums text-brand-ink">{v}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-3 text-xs text-slate-500">
+          แคมเปญ: {cfg.mode === "single" ? "สินค้าชิ้นเดียว" : "กลุ่มสินค้า"} · สต็อก {cfg.stockPerProduct} ชิ้น/สินค้า · ชำระภายใน {cfg.windowMinutes} นาที · กลับเข้าคิวได้ {cfg.maxRequeue} ครั้ง
+        </p>
+      </Card>
     </div>
   );
 }
