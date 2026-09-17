@@ -10,7 +10,8 @@ import { getVariantAvailability } from "@/lib/shopify-admin";
 // static inStock/quantity with the real-time truth from
 // getVariantAvailability() — the same live check already used at
 // checkout time for stock reservation.
-export async function GET(_req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const product = getProductBySlug(params.slug);
   if (!product) return NextResponse.json({ ok: false, error: "not found" }, { status: 404 });
 

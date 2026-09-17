@@ -23,7 +23,8 @@ type SubscriptionRow = {
 //
 // Renewal is the mirror image: something has to *start* the next term's plan
 // for subscriptions that reach the boundary without this flag set.
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!uid || !supabaseConfigured()) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบก่อนค่ะ" }, { status: 401 });

@@ -8,7 +8,8 @@ import type { SubscriptionRow } from "../route";
 // "unsubscribe" here means "stop nudging me", which is genuinely real and
 // immediate. Re-enabling ("subscribe" again) resumes reminders for future
 // renewal dates.
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!uid || !supabaseConfigured()) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบก่อนค่ะ" }, { status: 401 });

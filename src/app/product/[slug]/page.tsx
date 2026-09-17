@@ -27,7 +27,8 @@ export function generateStaticParams() {
   return [];
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const product = getProductBySlug(params.slug);
   return {
     title: product ? `${product.name} | Smoothlife.com` : "Product | Smoothlife.com",
@@ -78,7 +79,8 @@ async function getSubscribable(slug: string): Promise<boolean> {
   }
 }
 
-export default async function ProductPage({ params }: { params: { slug: string } }) {
+export default async function ProductPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const product = getProductBySlug(params.slug);
   if (!product) notFound();
 

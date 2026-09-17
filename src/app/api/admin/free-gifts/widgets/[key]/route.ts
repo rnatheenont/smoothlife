@@ -3,7 +3,8 @@ import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { WidgetRow } from "@/app/api/free-gifts/widgets/route";
 
-export async function PATCH(req: NextRequest, { params }: { params: { key: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ key: string }> }) {
+  const params = await props.params;
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
   }

@@ -9,12 +9,14 @@ export function generateStaticParams() {
   return subscriptionSets.map((s) => ({ slug: s.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const set = subscriptionSets.find((s) => s.slug === params.slug);
   return { title: set ? `${set.name} | Smoothlife.com` : "Subscription | Smoothlife.com" };
 }
 
-export default function SubscriptionSetPage({ params }: { params: { slug: string } }) {
+export default async function SubscriptionSetPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const set = subscriptionSets.find((s) => s.slug === params.slug);
   if (!set) notFound();
   const products = subscriptionSetProducts(set);

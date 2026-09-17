@@ -53,6 +53,6 @@ export async function POST(req: NextRequest) {
     }),
   });
   // The product page is cached; a fresh load should include this question.
-  revalidateTag(`product:${slug}`);
+  revalidateTag(`product:${slug}`, { expire: 0 });
   return NextResponse.json({ ok: true, question: created });
 }

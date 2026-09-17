@@ -28,7 +28,8 @@ export function generateStaticParams() {
   return categories.map((c) => ({ category: c.slug }));
 }
 
-export function generateMetadata({ params }: { params: { category: string } }) {
+export async function generateMetadata(props: { params: Promise<{ category: string }> }) {
+  const params = await props.params;
   const c = categories.find((c) => c.slug === params.category);
   return {
     title: c ? `${c.nameTh} | Smoothlife.com` : "Shop | Smoothlife.com",
@@ -37,13 +38,14 @@ export function generateMetadata({ params }: { params: { category: string } }) {
   };
 }
 
-export default function CategoryPage({
-  params,
-  searchParams,
-}: {
-  params: { category: string };
-  searchParams: { sort?: string; brand?: string; concern?: string };
-}) {
+export default async function CategoryPage(
+  props: {
+    params: Promise<{ category: string }>;
+    searchParams: Promise<{ sort?: string; brand?: string; concern?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const categoryInfo = categories.find((c) => c.slug === params.category);
   if (!categoryInfo) notFound();
 

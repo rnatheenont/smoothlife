@@ -9,12 +9,14 @@ export function generateStaticParams() {
   return concerns.map((c) => ({ slug: c.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const c = concerns.find((c) => c.slug === params.slug);
   return { title: c ? `${c.nameTh} | Smoothlife.com` : "Concern | Smoothlife.com" };
 }
 
-export default function ConcernDetailPage({ params }: { params: { slug: string } }) {
+export default async function ConcernDetailPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const concern = concerns.find((c) => c.slug === params.slug);
   if (!concern) notFound();
 

@@ -14,7 +14,8 @@ export function generateStaticParams() {
   return articles.map((a) => ({ slug: a.slug }));
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const a = getArticleBySlug(params.slug);
   if (a) return { title: `${a.title} | Smoothlife.com` };
   const post = await getStoreArticle(params.slug);
@@ -29,7 +30,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function ArticlePage({ params }: { params: { slug: string } }) {
+export default async function ArticlePage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const guide = getArticleBySlug(params.slug);
   const post = guide ? null : await getStoreArticle(params.slug);
   if (!guide && !post) notFound();

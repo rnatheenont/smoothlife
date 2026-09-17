@@ -22,7 +22,8 @@ type ShipmentHistoryRow = {
 // Charge + shipment ledgers for one subscription — written by the 2C2P
 // webhook on every cycle but never surfaced anywhere until now (account
 // page only ever showed current status, not history).
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!uid || !supabaseConfigured()) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบก่อนค่ะ" }, { status: 401 });

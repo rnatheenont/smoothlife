@@ -116,7 +116,7 @@ export async function PATCH(req: NextRequest) {
       ),
     });
     // Product pages are cached and show the subscribe option — refresh them all.
-    revalidateTag("product-pages");
+    revalidateTag("product-pages", { expire: 0 });
     return NextResponse.json({ ok: true, updated: productSlugs.length });
   }
 
@@ -149,6 +149,6 @@ export async function PATCH(req: NextRequest) {
     });
   }
 
-  revalidateTag(`product:${productSlug}`);
+  revalidateTag(`product:${productSlug}`, { expire: 0 });
   return NextResponse.json({ ok: true, subscribable: next.subscribable, bundleEligible: next.bundle_eligible });
 }

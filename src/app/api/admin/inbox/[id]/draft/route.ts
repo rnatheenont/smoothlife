@@ -24,7 +24,8 @@ const SYSTEM = `คุณเป็นผู้ช่วยของทีมง�
 - ถ้าเป็นเรื่องที่ต้องตรวจสอบก่อน ให้ร่างว่าจะตรวจสอบและติดต่อกลับ
 - ตอบกลับมาเป็นข้อความคำตอบล้วน ๆ ไม่ต้องมีคำนำหรือคำอธิบายว่านี่คือร่าง`;
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
   }

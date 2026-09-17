@@ -15,7 +15,8 @@ import { generateDiscountCode } from "@/lib/referral";
 // on the homepage — an unknown code, an ineligible referrer, or any lookup
 // failure just falls through to a plain homepage visit rather than showing
 // an error, since this URL is meant to be shared casually in chat apps.
-export async function GET(req: NextRequest, { params }: { params: { code: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ code: string }> }) {
+  const params = await props.params;
   const home = () => NextResponse.redirect(new URL("/", req.url));
   const code = params.code?.trim().toUpperCase();
   if (!code || !supabaseConfigured()) return home();

@@ -168,7 +168,7 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
   // clip a few hundred ms later. Suppress the observer for the duration
   // of any programmatic scroll so only genuine user scrolling can steer it.
   const suppressObserverRef = useRef(false);
-  const suppressTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const suppressTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Single source of truth for "which card plays" — both the auto-advance
   // on video end and the prev/next buttons go through this, so they can

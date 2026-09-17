@@ -10,7 +10,8 @@ import { trackingForOrders } from "@/lib/shipment-sync";
 // Shopify. Ownership is enforced inside getCustomerOrderDetail, which needs
 // the viewer's Shopify customer id and returns null for anyone else's order.
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!uid) return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
   if (!supabaseConfigured() || !shopifyAdminConfigured()) {

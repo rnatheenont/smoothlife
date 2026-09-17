@@ -14,7 +14,8 @@ export function generateStaticParams() {
   return collections.map((c) => ({ handle: c.handle }));
 }
 
-export function generateMetadata({ params }: { params: { handle: string } }) {
+export async function generateMetadata(props: { params: Promise<{ handle: string }> }) {
+  const params = await props.params;
   const c = getCollectionByHandle(params.handle);
   if (!c) return { title: "ไม่พบคอลเลกชัน | Smoothlife.com" };
   return {
@@ -24,7 +25,8 @@ export function generateMetadata({ params }: { params: { handle: string } }) {
   };
 }
 
-export default function CollectionPage({ params }: { params: { handle: string } }) {
+export default async function CollectionPage(props: { params: Promise<{ handle: string }> }) {
+  const params = await props.params;
   const collection = getCollectionByHandle(params.handle);
   if (!collection) notFound();
 

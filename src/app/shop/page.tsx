@@ -32,7 +32,8 @@ function filterCounts(): FilterCounts {
   return { category, brand };
 }
 
-export default function ShopPage({ searchParams }: { searchParams: ShopSearchParams }) {
+export default async function ShopPage(props: { searchParams: Promise<ShopSearchParams> }) {
+  const searchParams = await props.searchParams;
   const allItems = filterProducts(searchParams);
   const totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
   const page = Math.min(Math.max(1, Number(searchParams.page) || 1), totalPages);

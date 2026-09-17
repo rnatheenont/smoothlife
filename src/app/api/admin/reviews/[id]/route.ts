@@ -11,7 +11,8 @@ function unauthorized() {
 // Approve credits the review's pre-computed points_awarded to the ledger —
 // this is the only place review points actually get credited, matching the
 // "แต้มเข้าหลัง approve เท่านั้น" rule. Reject leaves the ledger untouched.
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) return unauthorized();
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
@@ -41,7 +42,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     body: JSON.stringify({ status: "approved", approved_at: new Date().toISOString() }),
   });
   // The product page is cached; show the newly approved review there now.
-  revalidateTag(`product:${review.product_slug}`);
+  revalidateTag(`product:${review.product_slug}`, { expire: 0 });
 
   const points = review.points_awarded ?? 0;
   if (points > 0) {

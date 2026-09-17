@@ -1,4 +1,5 @@
-"use client";
+"use client";;
+import { use } from "react";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -20,7 +21,8 @@ const STEPS = [
   { key: "delivered", label: "ส่งถึงแล้ว" },
 ] as const;
 
-export default function DemoOrderPage({ params }: { params: { id: string } }) {
+export default function DemoOrderPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const order = DEMO_ORDERS.find((o) => o.id === params.id);
   if (!order) notFound();
 
