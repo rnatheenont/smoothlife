@@ -9,6 +9,7 @@ import {
   Clock,
   CreditCard,
   Lock,
+  FlaskConical,
   Pause,
   Play,
   Plus,
@@ -359,10 +360,10 @@ export default function FlashSaleDemo({
         <div className="mb-4">
           <h1 className="text-xl font-bold text-brand-ink">Flash Sale</h1>
           <p className="mt-1 text-sm text-slate-500">
-            ตั้งแคมเปญล่วงหน้าเป็นรายการ (บันทึกในฐานข้อมูล) ระบบเปิดและปิดการขายเองตามวันเวลาที่ตั้งไว้ ดูมุมมองลูกค้าได้ในแท็บถัดไป
+            ตั้งแคมเปญล่วงหน้าเป็นรายการ (บันทึกในฐานข้อมูล) ระบบเปิดและปิดการขายเองตามวันเวลาที่ตั้งไว้
           </p>
           <ol className="mt-3 flex flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500">
-            {["เลือกแคมเปญจากรายการ หรือกดสร้างใหม่", "ตั้งสินค้า ราคา วันเวลา แล้วบันทึก", "ถึงเวลาระบบเปิดขายเอง — ดูคิวจริงที่การ์ดด้านขวา"].map((step, i) => (
+            {["เลือกแคมเปญจากรายการ หรือกดสร้างใหม่", "ตั้งสินค้า ราคา วันเวลา แล้วบันทึก", "ถึงเวลาระบบเปิดขายเอง — ดูคิวจริงของแคมเปญที่เลือกด้านขวา"].map((step, i) => (
               <li key={step} className="flex items-center gap-1.5 rounded-full bg-surface-soft px-2.5 py-1">
                 <span className="grid size-4 place-items-center rounded-full bg-brand-800 text-[10px] font-bold text-white">{i + 1}</span>
                 {step}
@@ -372,110 +373,47 @@ export default function FlashSaleDemo({
         </div>
       )}
 
-      <Alert status="warning" className="mb-4">
-        <Alert.Indicator />
-        <Alert.Content>
-          <Alert.Title>Demo · ข้อมูลจำลองทั้งหมด</Alert.Title>
-          <Alert.Description>
-            รายการแคมเปญบันทึกจริง แต่การขายในเดโมเป็นการจำลอง: ไม่ตัดเงิน ไม่สร้างออเดอร์ ลูกค้าในคิวเป็นบอท · นาฬิกาเดโมเริ่มจากเวลาปัจจุบันและเดินเร็วขึ้น ×{speed}
-          </Alert.Description>
-        </Alert.Content>
-      </Alert>
-
-      <DemoControls
-        nowMs={now}
-        shopifyDown={scheduler.shopifyDown}
-        speed={speed}
-        setSpeed={setSpeed}
-        running={running}
-        setRunning={setRunning}
-        reset={reset}
-        toggleShopify={() => setScheduler((s) => ({ ...s, shopifyDown: !s.shopifyDown }))}
-      />
-
-      <Tabs className="mt-5" defaultSelectedKey={embedded ? "admin" : "customer"}>
-        {/* Full-width, equal halves: on a phone the two labels otherwise
-            overflow the pill and HeroUI adds a scroll arrow. */}
-        <Tabs.ListContainer className="w-full">
-          <Tabs.List aria-label="มุมมอง" className="w-full">
-            <Tabs.Tab id="admin" className="flex-1 justify-center whitespace-nowrap">
-              มุมมองแอดมิน
-              <Tabs.Indicator />
-            </Tabs.Tab>
-            <Tabs.Tab id="customer" className="flex-1 justify-center whitespace-nowrap">
-              มุมมองลูกค้า
-              <Tabs.Indicator />
-            </Tabs.Tab>
-          </Tabs.List>
-        </Tabs.ListContainer>
-
-        <Tabs.Panel id="customer" className="pt-5">
-          <CampaignSwitcher scheduler={scheduler} currentId={item?.id} pick={pick} now={now} />
-          {!item ? (
-            <Card className="p-8 text-center text-sm text-slate-500">
-              {loadState === "loading" ? "กำลังโหลดรายการแคมเปญ…" : "ยังไม่มีแคมเปญ สร้างแคมเปญได้ในแท็บมุมมองแอดมิน"}
-            </Card>
-          ) : (
-          <CustomerView
-            campaign={campaign}
-            saleIndex={saleIndex}
-            select={(i) => {
-              setSelected(i);
-              setNotice(null);
-            }}
-            upcoming={upcoming}
-            blockedBy={blockedBy}
-            state={state}
-            product={product}
-            you={you}
-            expiredCount={expiredCount}
-            loggedIn={loggedIn}
-            login={() => setLoggedIn(true)}
-            join={join}
-            leave={() => onCampaign((c) => leaveCampaign(c, saleIndex))}
-            notice={notice}
-            openPay={() => setPayOpen(true)}
-          />
-          )}
-        </Tabs.Panel>
-
-        <Tabs.Panel id="admin" className="pt-5">
-          <div className="flex flex-col gap-5">
-            {adminError && (
-              <Alert status="danger">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>{adminError}</Alert.Title>
-                  {loadState === "error" && (
-                    <Alert.Description>
-                      <button type="button" onClick={load} className="font-semibold underline">
-                        ลองโหลดอีกครั้ง
-                      </button>
-                    </Alert.Description>
-                  )}
-                </Alert.Content>
-              </Alert>
+      {adminError && (
+        <Alert status="danger" className="mb-4">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Title>{adminError}</Alert.Title>
+            {loadState === "error" && (
+              <Alert.Description>
+                <button type="button" onClick={load} className="font-semibold underline">
+                  ลองโหลดอีกครั้ง
+                </button>
+              </Alert.Description>
             )}
-            <CampaignList
-              items={scheduler.items}
-              now={now}
-              loading={loadState === "loading"}
-              currentId={item?.id}
-              editingId={editingId}
-              pick={pick}
-              startNow={startStored}
-              endNow={endStored}
-              edit={(id) => {
-                setEditingId(id);
-                requestAnimationFrame(() => document.getElementById("fs-setup")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-              }}
-              newCampaign={newCampaign}
-              remove={removeStored}
-            />
-            <div className="grid gap-5 2xl:grid-cols-2 2xl:items-start">
-            <div id="fs-setup" className="scroll-mt-24">
-              <CampaignSetup
-                key={editingId ?? "new"}
+          </Alert.Content>
+        </Alert>
+      )}
+
+      {/* The real work, in the order it happens: what is scheduled, what you
+          are setting up, and what the queue is doing right now. The bot
+          simulation used to sit on top of all three. */}
+      <div className="flex flex-col gap-5">
+        <CampaignList
+          items={scheduler.items}
+          now={now}
+          loading={loadState === "loading"}
+          currentId={item?.id}
+          editingId={editingId}
+          pick={pick}
+          startNow={startStored}
+          endNow={endStored}
+          edit={(id) => {
+            setEditingId(id);
+            requestAnimationFrame(() => document.getElementById("fs-setup")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+          }}
+          newCampaign={newCampaign}
+          remove={removeStored}
+        />
+
+        <div className="grid gap-5 2xl:grid-cols-2 2xl:items-start">
+          <div id="fs-setup" className="scroll-mt-24">
+            <CampaignSetup
+              key={editingId ?? "new"}
               config={editingItem?.config ?? campaign.config}
               catalogue={catalogue}
               groups={groups}
@@ -483,38 +421,117 @@ export default function FlashSaleDemo({
               saving={saving}
               editing={editingCampaign}
               onCancelEdit={() => setEditingId(null)}
-                onCreate={editingId ? updateStored(editingId) : createStored}
-              />
-            </div>
-            <div className="flex flex-col gap-5">
-            {item && /^[0-9a-f-]{36}$/i.test(item.id) && (
-              <LiveMonitor
-                key={item.id}
-                campaignId={item.id}
-                productNames={Object.fromEntries(item.config.products.map((p) => [p.slug, p.name]))}
-              />
-            )}
-            {item?.campaign ? (
-              <>
-                <h3 className="-mb-2 mt-2 text-sm font-semibold text-slate-500">จำลองด้วยบอท (ไม่ใช่ข้อมูลจริง)</h3>
-                <AdminView campaign={item.campaign} />
-              </>
-            ) : (
-              <Card className="p-6 text-center text-sm text-slate-500">
-                {!item
-                  ? loadState === "loading"
-                    ? "กำลังโหลด…"
-                    : "ยังไม่มีแคมเปญ"
-                  : item.status === "ended"
-                    ? `แคมเปญ "${item.config.title}" ถูกยกเลิกก่อนเริ่มขาย`
-                    : `แคมเปญ "${item.config.title}" จะเปิดขายอัตโนมัติ ${thaiDateTime(item.startsAt)} (อีก ${countdown(item.startsAt - now)}) — ตัวเลขการขายจะแสดงที่นี่เมื่อเริ่มแล้ว`}
-              </Card>
-            )}
-            </div>
-            </div>
+              onCreate={editingId ? updateStored(editingId) : createStored}
+            />
           </div>
-        </Tabs.Panel>
-      </Tabs>
+
+          {item && /^[0-9a-f-]{36}$/i.test(item.id) ? (
+            <LiveMonitor
+              key={item.id}
+              campaignId={item.id}
+              productNames={Object.fromEntries(item.config.products.map((p) => [p.slug, p.name]))}
+            />
+          ) : (
+            <Card className="p-6 text-center text-sm text-slate-500">
+              {loadState === "loading" ? "กำลังโหลด…" : "เลือกแคมเปญจากรายการด้านบน เพื่อดูคิวจริงของแคมเปญนั้น"}
+            </Card>
+          )}
+        </div>
+      </div>
+
+      {/* Everything below is the walk-through: a simulated sale with bots, on
+          a clock that can run fast. Folded away by default so the console
+          opens on the real numbers. */}
+      <details className="group mt-6 overflow-hidden rounded-xl2 bg-white ring-1 ring-surface-line">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-semibold text-brand-ink marker:content-none">
+          <span className="flex items-center gap-2">
+            <FlaskConical size={16} className="text-brand-800" aria-hidden /> ทดลองเสมือนจริง (บอท · ไม่ใช่ข้อมูลจริง)
+          </span>
+          <span className="text-lg text-slate-400 transition group-open:rotate-45" aria-hidden>
+            +
+          </span>
+        </summary>
+
+        <div className="flex flex-col gap-4 border-t border-surface-line p-4">
+          <p className="text-xs text-slate-500">
+            รายการแคมเปญด้านบนบันทึกจริง แต่การขายในส่วนนี้เป็นการจำลอง: ไม่ตัดเงิน ไม่สร้างออเดอร์ ลูกค้าในคิวเป็นบอท · นาฬิกาจำลองเริ่มจากเวลาปัจจุบันและเดินเร็วขึ้น ×{speed}
+          </p>
+
+          <DemoControls
+            nowMs={now}
+            shopifyDown={scheduler.shopifyDown}
+            speed={speed}
+            setSpeed={setSpeed}
+            running={running}
+            setRunning={setRunning}
+            reset={reset}
+            toggleShopify={() => setScheduler((s) => ({ ...s, shopifyDown: !s.shopifyDown }))}
+          />
+
+          <Tabs defaultSelectedKey="customer">
+            {/* Full-width, equal halves: on a phone the two labels otherwise
+                overflow the pill and HeroUI adds a scroll arrow. */}
+            <Tabs.ListContainer className="w-full">
+              <Tabs.List aria-label="มุมมองจำลอง" className="w-full">
+                <Tabs.Tab id="customer" className="flex-1 justify-center whitespace-nowrap">
+                  หน้าลูกค้า
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+                <Tabs.Tab id="admin" className="flex-1 justify-center whitespace-nowrap">
+                  ตัวเลขฝั่งแอดมิน
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+              </Tabs.List>
+            </Tabs.ListContainer>
+
+            <Tabs.Panel id="customer" className="pt-5">
+              <CampaignSwitcher scheduler={scheduler} currentId={item?.id} pick={pick} now={now} />
+              {!item ? (
+                <Card className="p-8 text-center text-sm text-slate-500">
+                  {loadState === "loading" ? "กำลังโหลดรายการแคมเปญ…" : "ยังไม่มีแคมเปญ สร้างแคมเปญได้ที่ฟอร์มด้านบน"}
+                </Card>
+              ) : (
+                <CustomerView
+                  campaign={campaign}
+                  saleIndex={saleIndex}
+                  select={(i) => {
+                    setSelected(i);
+                    setNotice(null);
+                  }}
+                  upcoming={upcoming}
+                  blockedBy={blockedBy}
+                  state={state}
+                  product={product}
+                  you={you}
+                  expiredCount={expiredCount}
+                  loggedIn={loggedIn}
+                  login={() => setLoggedIn(true)}
+                  join={join}
+                  leave={() => onCampaign((c) => leaveCampaign(c, saleIndex))}
+                  notice={notice}
+                  openPay={() => setPayOpen(true)}
+                />
+              )}
+            </Tabs.Panel>
+
+            <Tabs.Panel id="admin" className="pt-5">
+              {item?.campaign ? (
+                <AdminView campaign={item.campaign} />
+              ) : (
+                <Card className="p-6 text-center text-sm text-slate-500">
+                  {!item
+                    ? loadState === "loading"
+                      ? "กำลังโหลด…"
+                      : "ยังไม่มีแคมเปญ"
+                    : item.status === "ended"
+                      ? `แคมเปญ "${item.config.title}" ถูกยกเลิกก่อนเริ่มขาย`
+                      : `แคมเปญ "${item.config.title}" จะเปิดขายอัตโนมัติ ${thaiDateTime(item.startsAt)} (อีก ${countdown(item.startsAt - now)}) — ตัวเลขจำลองจะแสดงเมื่อเริ่มแล้ว`}
+                </Card>
+              )}
+            </Tabs.Panel>
+          </Tabs>
+        </div>
+      </details>
 
       <PaymentModal
         isOpen={payOpen && Boolean(item)}
