@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Repeat, Search, PackagePlus, Loader2, Plus, X, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { Repeat, Search, PackagePlus, Package, Loader2, Plus, X, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { categories } from "@/data/categories";
 import { useAdminAction } from "@/components/admin/header-action";
+import SubscriptionSets from "@/components/admin/SubscriptionSets";
+import { products } from "@/data/products";
 
 type ProductRow = {
   slug: string;
@@ -18,6 +20,8 @@ type ProductRow = {
 };
 
 type Field = "subscribable" | "bundleEligible";
+/** The third tab is not a per-product switch but a list of sets of its own. */
+type Tab = Field | "sets";
 
 // The catalogue is ~900 products and the actual job is "turn on the handful we
 // want to sell as a subscription". Paging through all of it to find them was
@@ -30,7 +34,7 @@ type Field = "subscribable" | "bundleEligible";
 //
 // One tab per setting, too. Two switch columns meant reading every row twice
 // and travelling to the far right of the table for both answers.
-const TABS: { key: Field; label: string; icon: typeof Repeat; blurb: string }[] = [
+const TABS: { key: Tab; label: string; icon: typeof Repeat; blurb: string }[] = [
   {
     key: "subscribable",
     label: "สมัครรับประจำ",
@@ -42,6 +46,12 @@ const TABS: { key: Field; label: string; icon: typeof Repeat; blurb: string }[] 
     label: "จัดชุดเอง",
     icon: PackagePlus,
     blurb: "ลูกค้าหยิบสินค้านี้ใส่ชุดสมาชิกที่จัดเองได้",
+  },
+  {
+    key: "sets",
+    label: "ชุดที่จัดไว้แล้ว",
+    icon: Package,
+    blurb: "ชุดสำเร็จรูปที่ทีมจัดและตั้งราคาไว้ ลูกค้ากดสมัครได้ทันที",
   },
 ];
 
@@ -66,7 +76,7 @@ function ProductLine({ row }: { row: ProductRow }) {
 }
 
 export default function AdminSubscriptionProductsPage() {
-  const [tab, setTab] = useState<Field>("subscribable");
+  const [tab, setTab] = useState<Tab>("subscribable");
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
@@ -81,6 +91,14 @@ export default function AdminSubscriptionProductsPage() {
 
   const searching = query.length > 0;
   const active = TABS.find((t) => t.key === tab)!;
+  const productTab: Field = tab === "sets" ? "subscribable" : tab;
+
+  // The set builder searches the whole catalogue in the browser; it only needs
+  // what a row shows, so the heavy fields stay out of the payload.
+  const catalogue = useMemo(
+    () => products.map((p) => ({ slug: p.slug, name: p.name, brand: p.brand, image: p.image, price: p.price, inStock: p.inStock })),
+    []
+  );
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -95,7 +113,7 @@ export default function AdminSubscriptionProductsPage() {
     try {
       // Searching looks across the whole catalogue — that is the point of
       // searching. Not searching shows only what is already on for this tab.
-      const status = searching ? "all" : tab === "subscribable" ? "subscribable-on" : "bundle-on";
+      const status = searching ? "all" : productTab === "subscribable" ? "subscribable-on" : "bundle-on";
       const params = new URLSearchParams({ page: String(page), status });
       if (query) params.set("q", query);
       if (category) params.set("category", category);
@@ -110,7 +128,7 @@ export default function AdminSubscriptionProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [query, category, page, tab, searching]);
+  }, [query, category, page, productTab, searching]);
 
   useEffect(() => {
     load();
@@ -135,7 +153,7 @@ export default function AdminSubscriptionProductsPage() {
       // Removing something while looking at the "what's on" list should take it
       // out of that list. Leaving a switched-off row sitting in a list defined
       // as "things that are on" is how a screen stops being believable.
-      if (!searching && !value && field === tab) {
+      if (!searching && !value && field === productTab) {
         setRows((prev) => prev.filter((r) => r.slug !== slug));
         setTotal((t) => Math.max(0, t - 1));
         return;
@@ -146,7 +164,7 @@ export default function AdminSubscriptionProductsPage() {
     }
   }
 
-  const onCount = tab === "subscribable" ? counts.subscribableOn : counts.bundleOn;
+  const onCount = productTab === "subscribable" ? counts.subscribableOn : counts.bundleOn;
 
   useAdminAction({
     label: "รีเฟรชรายการ",
@@ -183,11 +201,9 @@ export default function AdminSubscriptionProductsPage() {
             >
               <Icon size={14} />
               {t.label}
-              <span
-                className={`rounded-full px-1.5 text-[11px] ${tab === t.key ? "bg-white/25" : "bg-white text-slate-400"}`}
-              >
-                {n}
-              </span>
+              {n !== null && (
+                <span className={`rounded-full px-1.5 text-[11px] ${tab === t.key ? "bg-white/25" : "bg-white text-slate-400"}`}>{n}</span>
+              )}
             </button>
           );
         })}
@@ -195,6 +211,10 @@ export default function AdminSubscriptionProductsPage() {
 
       <p className="mb-3 text-xs text-slate-400">{active.blurb}</p>
 
+      {tab === "sets" ? (
+        <SubscriptionSets catalogue={catalogue} />
+      ) : (
+        <>
       <div className="mb-4 flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -262,9 +282,9 @@ export default function AdminSubscriptionProductsPage() {
       ) : (
         <div className="flex flex-col gap-1.5">
           {rows.map((r) => {
-            const on = tab === "subscribable" ? r.subscribable : r.bundleEligible;
-            const other = tab === "subscribable" ? r.bundleEligible : r.subscribable;
-            const otherLabel = tab === "subscribable" ? "จัดชุดเอง" : "สมัครรับประจำ";
+            const on = productTab === "subscribable" ? r.subscribable : r.bundleEligible;
+            const other = productTab === "subscribable" ? r.bundleEligible : r.subscribable;
+            const otherLabel = productTab === "subscribable" ? "จัดชุดเอง" : "สมัครรับประจำ";
             return (
               <div key={r.slug} className="flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-2.5">
                 <ProductLine row={r} />
@@ -279,7 +299,7 @@ export default function AdminSubscriptionProductsPage() {
 
                 <button
                   type="button"
-                  onClick={() => toggle(r.slug, tab, !on)}
+                  onClick={() => toggle(r.slug, productTab, !on)}
                   disabled={busySlug === r.slug}
                   className={`flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
                     on
@@ -325,6 +345,8 @@ export default function AdminSubscriptionProductsPage() {
             </button>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
