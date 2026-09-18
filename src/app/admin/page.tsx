@@ -12,6 +12,7 @@ import {
   Repeat,
   Receipt,
   ArrowRight,
+  BookOpen,
   Loader2,
   HelpCircle,
   RefreshCw,
@@ -38,6 +39,7 @@ type Stats = {
   flashScheduled: number | null;
   flashOrdersFailed: number | null;
   refundsPending: number | null;
+  kbDrafts: number | null;
 };
 
 const EMPTY: Stats = {
@@ -51,6 +53,7 @@ const EMPTY: Stats = {
   flashScheduled: null,
   flashOrdersFailed: null,
   refundsPending: null,
+  kbDrafts: null,
 };
 
 export default function AdminHomePage() {
@@ -112,6 +115,13 @@ export default function AdminHomePage() {
       value: stats.refundsPending,
       unit: "รายการ",
     },
+    {
+      href: "/admin/knowledge-base",
+      icon: BookOpen,
+      label: "ความรู้ AI รออนุมัติ",
+      value: stats.kbDrafts,
+      unit: "บทความ",
+    },
   ];
 
   const today = [
@@ -132,6 +142,7 @@ export default function AdminHomePage() {
     { href: "/admin/subscription-products", icon: Repeat, label: "สินค้าสมัครสมาชิก", desc: "เลือกสินค้าที่สมัครรับประจำได้" },
     { href: "/admin/checkout-transactions", icon: Receipt, label: "รายการซื้อ (2C2P)", desc: "ตรวจการชำระเงินและคืนเงิน" },
     { href: "/admin/flash-sale", icon: Zap, label: "Flash Sale", desc: "ตั้งแคมเปญ คิวจริง และหน้าขายแบบพิเศษ" },
+    { href: "/admin/knowledge-base", icon: BookOpen, label: "ฐานความรู้ AI", desc: "คำตอบที่อนุมัติแล้วให้ AI ใช้ตอบลูกค้า" },
     { href: "/admin/tracking-sync", icon: Truck, label: "ซิงก์เลขพัสดุ", desc: "ดึงเลขพัสดุจาก soko เข้า Shopify" },
     { href: "/admin/customers", icon: Users, label: "ลูกค้า & ผูกบัญชี", desc: "ค้นหาลูกค้าและผูกบัญชี LINE" },
   ];
@@ -144,7 +155,7 @@ export default function AdminHomePage() {
       </div>
 
       <h2 className="mb-2 text-xs font-semibold text-slate-400">ต้องดำเนินการ</h2>
-      <div className="mb-6 grid gap-2 sm:grid-cols-3 xl:grid-cols-5">
+      <div className="mb-6 grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
         {needsAttention.map((c) => {
           const Icon = c.icon;
           const urgent = (c.value ?? 0) > 0;

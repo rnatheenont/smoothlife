@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
     flashScheduled,
     flashOrdersFailed,
     refundsPending,
+    kbDrafts,
   ] = await Promise.all([
     countRows("conversations?status=eq.waiting_human&select=id&limit=100"),
     countRows("product_reviews?status=eq.pending&select=id&limit=100"),
@@ -61,6 +62,8 @@ export async function GET(req: NextRequest) {
     countRows("flash_sale_queue?status=eq.paid&shopify_sync_status=eq.failed&select=id&limit=100"),
     // Charges flagged for a refund (late or duplicate flash-sale payments).
     countRows("payment_transactions?refund_note=like.FLASH_SALE_*&refunded_at=is.null&select=id&limit=100"),
+    // Answers promoted from chat wait as drafts until a person publishes them.
+    countRows("kb_articles?status=eq.draft&select=id&limit=100"),
   ]);
 
   return NextResponse.json({
@@ -76,6 +79,7 @@ export async function GET(req: NextRequest) {
       flashScheduled,
       flashOrdersFailed,
       refundsPending,
+      kbDrafts,
     },
   });
 }

@@ -2,7 +2,7 @@
 
 import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList, ImagePlus, Languages } from "lucide-react";
+import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList, ImagePlus, Languages, BookOpen, Check } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 import { Button } from "@/components/ui";
 import { splitMarker } from "@/lib/chat-markers";
@@ -227,6 +227,10 @@ export default function AdminInboxPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
   const [translating, setTranslating] = useState<string | null>(null);
+  // Answers already promoted into the knowledge base in this session, so the
+  // button says so instead of quietly making a second draft of the same thing.
+  const [promoting, setPromoting] = useState<string | null>(null);
+  const [promoted, setPromoted] = useState<string[]>([]);
   const [drafting, setDrafting] = useState(false);
   const [canned, setCanned] = useState<Canned[]>([]);
   const [showCanned, setShowCanned] = useState(false);
@@ -234,6 +238,35 @@ export default function AdminInboxPage() {
   const [subject, setSubject] = useState<string | null>(null);
   const [filingCase, setFilingCase] = useState(false);
   const [error, setError] = useState("");
+  /**
+   * Turn one reply into a draft article: the answer, plus the customer message
+   * it answered, which is how the question gets phrased in a real thread.
+   */
+  const promoteToKb = async (message: Message) => {
+    const index = messages.findIndex((m) => m.id === message.id);
+    const question = [...messages.slice(0, index)].reverse().find((m) => m.sender_type === "customer")?.content ?? "";
+    setPromoting(message.id);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/kb/promote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: splitMarker(question).text,
+          answer: splitMarker(message.delivered_content || message.content).text,
+          conversationId: selectedId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "บันทึกเข้าฐานความรู้ไม่สำเร็จ");
+      setPromoted((ids) => [...ids, message.id]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "บันทึกเข้าฐานความรู้ไม่สำเร็จ");
+    } finally {
+      setPromoting(null);
+    }
+  };
+
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const loadList = useCallback(async (silent = false) => {
@@ -759,6 +792,30 @@ export default function AdminInboxPage() {
                               <span className="mt-1.5 block border-t border-white/25 pt-1.5 text-[11px] opacity-90">
                                 <span className="font-semibold">ส่งให้ลูกค้าเป็น:</span> {m.delivered_content}
                               </span>
+                            )}
+                            {/* A real question with an answer a person already
+                                approved is the best thing the knowledge base
+                                can be fed — one tap files it as a draft. */}
+                            {!fromCustomer && !m.is_draft && m.content.trim().length > 20 && (
+                              <button
+                                onClick={() => promoteToKb(m)}
+                                disabled={promoting === m.id || promoted.includes(m.id)}
+                                title="เก็บคำตอบนี้ไว้ให้ AI ใช้ตอบครั้งหน้า (บันทึกเป็นฉบับร่าง)"
+                                className={`mt-1.5 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                  m.sender_type === "staff"
+                                    ? "bg-white/20 text-white hover:bg-white/30"
+                                    : "border border-slate-200 bg-white text-slate-500 hover:bg-surface-soft"
+                                } disabled:opacity-60`}
+                              >
+                                {promoting === m.id ? (
+                                  <Loader2 size={10} className="animate-spin" />
+                                ) : promoted.includes(m.id) ? (
+                                  <Check size={10} />
+                                ) : (
+                                  <BookOpen size={10} />
+                                )}
+                                {promoted.includes(m.id) ? "เก็บเป็นฉบับร่างแล้ว" : "เพิ่มเข้าฐานความรู้"}
+                              </button>
                             )}
                           </div>
                           )}
