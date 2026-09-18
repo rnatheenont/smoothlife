@@ -42,7 +42,11 @@ export default function FormDrawer({ open, title, onClose, children }: { open: b
         role="dialog"
         aria-modal={open}
         aria-label={title}
-        className={`absolute inset-y-0 right-0 flex w-full max-w-[min(760px,100vw)] flex-col bg-surface-soft shadow-xl transition-transform duration-200 ${
+        // Width comes from the panel's own box (the fixed overlay is exactly
+        // the viewport), not from 100vw — vw counts the scrollbar's column, so
+        // on a window barely wider than the panel the right edge fell outside
+        // the visible area and took the form's prices with it.
+        className={`absolute inset-y-0 right-0 flex w-full max-w-[760px] flex-col bg-surface-soft shadow-xl transition-transform duration-200 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
