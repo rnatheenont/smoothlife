@@ -312,7 +312,7 @@ export default function CampaignSetup({
           </div>
         )}
 
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           <div>
             <label htmlFor="fs-title" className="mb-1.5 block text-sm font-semibold text-brand-ink">
               ชื่อแคมเปญ
@@ -366,7 +366,7 @@ export default function CampaignSetup({
               {timeError}
             </p>
           )}
-          <fieldset className="rounded-xl2 border border-surface-line p-3">
+          <fieldset className="min-w-0 rounded-xl2 border border-surface-line p-3">
             <legend className="px-1 text-sm font-semibold text-brand-ink">ราคา Flash Sale</legend>
             <Segmented<"regular" | "percent" | "fixed">
               label="วิธีตั้งราคา"
@@ -442,7 +442,7 @@ export default function CampaignSetup({
           </fieldset>
 
           {pageKind === "special" && (
-            <fieldset className="flex flex-col gap-3 rounded-xl2 border border-surface-line p-3">
+            <fieldset className="flex min-w-0 flex-col gap-3 rounded-xl2 border border-surface-line p-3">
               <legend className="px-1 text-sm font-semibold text-brand-ink">หน้าขายแบบพิเศษ</legend>
               <p className="text-xs text-slate-500">
                 หน้าขายจะเป็นแบบจองบัตรคอนเสิร์ต: แบนเนอร์เต็มจอ นับถอยหลังตัวใหญ่ แล้วค่อยเข้าคิว — ใช้กับคอลเลกชันพิเศษอย่าง KENG x NAMPING
