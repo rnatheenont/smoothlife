@@ -70,6 +70,12 @@ const NAV_GROUPS = [
 ];
 
 const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+// How much width a screen actually has content for: a dashboard fills the
+// window, a wide data table needs the room, and a list of rows or a form reads
+// better in a column than stretched across a 27" monitor.
+const FULL_WIDTH = ["/admin/inbox", "/admin/flash-sale"];
+const WIDE_TABLE = ["/admin/checkout-transactions", "/admin/customers"];
+
 const groupOf = (href: string) => NAV_GROUPS.find((g) => g.items.some((i) => i.href === href))?.label ?? "";
 
 /** "/admin" prefixes every route, and "/admin/free-gifts" prefixes the widgets
@@ -179,7 +185,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     ? [{ label: "ผลการค้นหา", items: ALL_ITEMS.filter((i) => i.label.toLowerCase().includes(query)) }]
     : NAV_GROUPS;
 
-  const wideContent = current?.href === "/admin/inbox" || current?.href === "/admin/flash-sale";
+  const contentWidth = FULL_WIDTH.includes(current?.href ?? "")
+    ? ""
+    : WIDE_TABLE.includes(current?.href ?? "")
+      ? "mx-auto w-full max-w-[1400px]"
+      : "mx-auto w-full max-w-[1100px]";
 
   return (
     <AdminActionProvider>
@@ -298,10 +308,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               the rest are lists and forms, which stop being readable past
               ~1400px. */}
           <main className="min-w-0 flex-1 px-4 py-5 md:px-8 md:py-7">
-            {/* A list or a form that stops at 1400px sat against the left
-                edge of a 1800px window, with the rest of the workspace empty
-                beside it — centred, the page reads as the page. */}
-            <div className={wideContent ? "" : "mx-auto w-full max-w-[1400px]"}>
+            <div className={contentWidth}>
               {/* Where you are, and what this page is for — the page's own
                   title and content follow underneath. */}
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3 md:mb-5">

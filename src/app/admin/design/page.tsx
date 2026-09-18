@@ -126,7 +126,7 @@ export default function AdminDesignSystemPage() {
   });
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <div className="mb-6">
         <h1 className="text-xl font-bold text-brand-ink">ระบบดีไซน์</h1>
         <p className="mt-1 text-body-s text-slate-500">

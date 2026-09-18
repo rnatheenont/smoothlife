@@ -163,7 +163,7 @@ export default function AdminTrackingSyncPage() {
   });
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <div className="mb-4 flex items-center justify-between gap-3">
         <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
           <Truck size={20} className="text-brand-600" /> ซิงก์เลขพัสดุ
