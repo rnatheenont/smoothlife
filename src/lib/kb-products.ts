@@ -148,10 +148,19 @@ export async function lastProductSyncAt(): Promise<string | null> {
 export async function backfillEmbeddings(budgetMs = 60_000): Promise<{ indexed: number; remaining: number }> {
   if (!process.env.VOYAGE_API_KEY) return { indexed: 0, remaining: 0 };
 
-  const pending = await supabaseRest<{ article_id: string }[]>(
-    "kb_chunks?embedding=is.null&select=article_id&limit=2000"
-  ).catch((): { article_id: string }[] => []);
-  const ids = [...new Set(pending.map((c) => c.article_id))];
+  // The team's own articles first, always. They are the ones customers
+  // paraphrase ("ส่งของถึงมือกี่วัน" for "ใช้เวลาจัดส่งกี่วัน"), they are a
+  // few dozen chunks rather than two thousand, and on a rate-limited account
+  // that difference is the difference between minutes and weeks. Product
+  // articles are found by their name without a vector, and follow behind.
+  const pending = await supabaseRest<{ article_id: string; kb_articles: { source: string } }[]>(
+    "kb_chunks?embedding=is.null&select=article_id,kb_articles!inner(source)&kb_articles.status=eq.published&limit=3000"
+  ).catch((): { article_id: string; kb_articles: { source: string } }[] => []);
+
+  const curatedFirst = [...pending].sort(
+    (a, b) => Number(a.kb_articles?.source === "shopify_sync") - Number(b.kb_articles?.source === "shopify_sync")
+  );
+  const ids = [...new Set(curatedFirst.map((c) => c.article_id))];
   if (ids.length === 0) return { indexed: 0, remaining: 0 };
 
   const started = Date.now();
