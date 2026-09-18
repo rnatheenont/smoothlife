@@ -22,7 +22,7 @@ export default function CategoryCircles({ current }: { current: ShopSearchParams
   }
 
   const items: { slug: string | null; label: string; image: string | null }[] = [
-    { slug: null, label: "ทั้งหมด", image: null },
+    { slug: null, label: "ทั้งหมด", image: "/categories/all.png" },
     ...categories.map((c) => ({ slug: c.slug as string, label: c.nameTh, image: c.image })),
   ];
 

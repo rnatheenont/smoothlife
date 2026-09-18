@@ -46,7 +46,7 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
       <ShopHero
         title={activeCategory ? activeCategory.nameTh : "สินค้าทั้งหมด"}
         subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
-        image={activeCategory?.image}
+        image={activeCategory?.image ?? "/categories/shop-banner.png"}
       />
 
       <CategoryCircles current={searchParams} />

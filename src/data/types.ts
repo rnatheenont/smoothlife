@@ -2,9 +2,12 @@ export type Category =
   | "skincare"
   | "oral-care"
   | "hair-care"
-  | "personal-care"
   | "wellness"
-  | "body-care";
+  | "body-care"
+  | "dermo-cosmetics"
+  | "womens-health"
+  | "health-devices"
+  | "mother-baby";
 
 export type Concern =
   | "acne"

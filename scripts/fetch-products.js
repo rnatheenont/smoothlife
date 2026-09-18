@@ -137,12 +137,20 @@ function esc(s) {
 
 /* ---------- classification (same heuristics as before, run over live tags/title) ---------- */
 
+// Order is priority: the first rule that matches wins, so the specific
+// shelves (a knee brace, a baby wash, a thermometer) are read before the
+// broad ones — otherwise they all fell through to the "skincare" fallback,
+// which is how condoms, plasters and blood-pressure monitors ended up filed
+// as face care.
 const CATEGORY_RULES = [
+  ["health-devices", ["เครื่องวัด", "วัดความดัน", "ปรอทวัดไข้", "ที่วัดไข้", "พยุงข้อ", "พยุงเข่า", "พยุงหลัง", "ผ้าพันแผล", "พลาสเตอร์ยา", "เจลลดไข้", "thermometer", "blood pressure", "nebulizer", "support", "brace", "bandage", "plaster", "dressing", "futuro", "nexcare", "syringe", "wheelchair", "walker"]],
+  ["mother-baby", ["สำหรับเด็ก", "เด็กทารก", "ทารก", "เบบี้", "ผ้าอ้อม", "ขวดนม", "จุกนม", "คุณแม่", "ตั้งครรภ์", "หลังคลอด", "baby", "kids", "infant", "diaper", "maternity", "pregnan", "stretch mark"]],
+  ["womens-health", ["ผ้าอนามัย", "จุดซ่อนเร้น", "อนามัยสตรี", "ประจำเดือน", "วัยทอง", "ถุงยางอนามัย", "เจลหล่อลื่น", "feminine", "intimate", "sanitary napkin", "menstrual", "menopause", "condom", "durex", "lubricant", "evening primrose", "อีฟนิ่งพริมโรส"]],
   ["oral-care", ["ยาสีฟัน", "แปรงสีฟัน", "ช่องปาก", "น้ำยาบ้วนปาก", "toothpaste", "toothbrush", "mouthwash", "dentiste", "oral"]],
   ["hair-care", ["แชมพู", "ครีมนวด", "เส้นผม", "หนังศีรษะ", "ผมร่วง", "shampoo", "conditioner", "hair", "scalp"]],
   ["wellness", ["วิตามิน", "อาหารเสริม", "คอลลาเจน", "โพรไบโอ", "supplement", "vitamin", "collagen", "probiotic", "gummy", "wellness"]],
-  ["body-care", ["ครีมทาผิวกาย", "โลชั่น", "ผิวกาย", "สบู่", "อาบน้ำ", "body", "lotion", "shower", "soap", "hand cream", "deodorant"]],
-  ["personal-care", ["ผ้าอนามัย", "จุดซ่อนเร้น", "แผ่นแปะ", "เจลล้างมือ", "feminine", "intimate", "sanitiz", "wipes", "tissue"]],
+  ["body-care", ["ครีมทาผิวกาย", "โลชั่น", "ผิวกาย", "สบู่", "อาบน้ำ", "body", "lotion", "shower", "soap", "hand cream", "deodorant", "แผ่นแปะ", "เจลล้างมือ", "ทิชชู่", "sanitiz", "wipes", "tissue"]],
+  ["dermo-cosmetics", ["เวชสำอาง", "eucerin", "la roche", "laroche", "cerave", "cetaphil", "bioderma", "sebamed", "physiogel", "avene", "avène", "vichy", "dermo"]],
   ["skincare", ["เซรั่ม", "ครีม", "กันแดด", "โฟม", "คลีนซิ่ง", "มาส์ก", "โทนเนอร์", "serum", "cream", "sunscreen", "cleanser", "toner", "mask", "essence", "moisturi", "spf", "facial", "skin"]],
 ];
 
@@ -155,16 +163,16 @@ const CONCERN_RULES = [
   ["sleep-stress", ["นอนหลับ", "ผ่อนคลาย", "ความเครียด", "melatonin", "sleep", "relax", "stress", "magnesium"]],
 ];
 
-// Which categories each concern can honestly apply to. Kept in step with
-// CONCERN_CATEGORIES in src/data/categories.ts, which applies the same rule at
-// runtime so a stale catalogue cannot show a toothbrush for dark spots either.
+// Which categories each concern can honestly apply to, so keyword matching
+// cannot file whitening toothpaste under dark spots (same word, different
+// problem) or put oral care on the skin-concern pages.
 const CONCERN_CATEGORIES = {
-  acne: ["skincare", "body-care", "wellness"],
-  dryness: ["skincare", "body-care", "wellness"],
-  "dark-spots": ["skincare", "body-care", "wellness"],
-  aging: ["skincare", "body-care", "wellness"],
+  acne: ["skincare", "body-care", "wellness", "dermo-cosmetics"],
+  dryness: ["skincare", "body-care", "wellness", "dermo-cosmetics"],
+  "dark-spots": ["skincare", "body-care", "wellness", "dermo-cosmetics"],
+  aging: ["skincare", "body-care", "wellness", "dermo-cosmetics"],
   "hair-scalp": ["hair-care", "wellness"],
-  "sleep-stress": ["wellness", "personal-care"],
+  "sleep-stress": ["wellness"],
 };
 
 // Shopify's vendor field is typed by whoever created the product, so the same

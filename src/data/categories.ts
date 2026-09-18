@@ -1,42 +1,64 @@
 import { CategoryInfo, Concern, ConcernInfo } from "./types";
 
+// The shelves a shopper picks from, in the order they appear on /shop.
+// Specific shelves (เวชสำอาง, อุปกรณ์สุขภาพ, แม่และเด็ก) were split out of
+// skincare — without them a knee brace, a baby wash and a blood-pressure
+// monitor all sat under face care, which is where the keyword fallback put
+// anything it could not place.
 export const categories: CategoryInfo[] = [
   {
     slug: "skincare",
     name: "Skincare",
     nameTh: "สกินแคร์",
-    image: "/categories/skincare-acne5.jpg",
-  },
-  {
-    slug: "oral-care",
-    name: "Oral Care",
-    nameTh: "ดูแลช่องปาก",
-    image: "/categories/oral-care-dentiste.jpg",
+    image: "/categories/skincare.png",
   },
   {
     slug: "hair-care",
     name: "Hair Care",
     nameTh: "ดูแลเส้นผม",
-    image: "/categories/hair-care-smoothe.jpg",
+    image: "/categories/hair-care.png",
   },
   {
-    slug: "personal-care",
-    name: "Personal Care",
-    nameTh: "ดูแลส่วนบุคคล",
-    image: "https://www.smoothlife.com/cdn/shop/files/03020321.jpg?width=800",
-  },
-  {
-    slug: "wellness",
-    name: "Wellness & Supplements",
-    nameTh: "วิตามินและอาหารเสริม",
-    image: "https://www.smoothlife.com/cdn/shop/collections/Screenshot_2025-09-25_095352-removebg-preview_1.png?width=800",
+    slug: "oral-care",
+    name: "Oral Care",
+    nameTh: "ดูแลช่องปาก",
+    image: "/categories/oral-care.png",
   },
   {
     slug: "body-care",
     name: "Body Care",
     nameTh: "ดูแลผิวกาย",
-    image:
-      "https://www.smoothlife.com/cdn/shop/collections/dcb36a4c1ed80a8f262719e7b24d0023_e8ec4344-5233-49e6-aa98-177ffa0a05b7.jpg?v=1760415029&width=800",
+    image: "/categories/body-care.png",
+  },
+  {
+    slug: "wellness",
+    name: "Wellness & Supplements",
+    nameTh: "วิตามินและอาหารเสริม",
+    image: "/categories/wellness.png",
+  },
+  {
+    slug: "womens-health",
+    name: "Women's Health",
+    nameTh: "สุขภาพผู้หญิง",
+    image: "/categories/womens-health.png",
+  },
+  {
+    slug: "dermo-cosmetics",
+    name: "Dermo-cosmetics",
+    nameTh: "เวชสำอาง",
+    image: "/categories/dermo-cosmetics.png",
+  },
+  {
+    slug: "health-devices",
+    name: "Health Devices",
+    nameTh: "อุปกรณ์สุขภาพ",
+    image: "/categories/health-devices.png",
+  },
+  {
+    slug: "mother-baby",
+    name: "Mother & Baby",
+    nameTh: "สินค้าแม่และเด็ก",
+    image: "/categories/mother-baby.png",
   },
 ];
 

@@ -40,7 +40,6 @@ const POOL: Question[] = [
   { topic: "wellness", th: "วิตามินตัวไหนควรกินคู่กัน กินพร้อมกันได้ไหม", en: "Which vitamins can I take together?" },
   { topic: "wellness", th: "อาหารเสริมควรกินก่อนหรือหลังอาหาร", en: "Before or after meals — when do I take supplements?" },
   { topic: "body-care", th: "ผิวกายแห้งคัน ควรทาอะไร", en: "Dry, itchy body skin — what should I use?" },
-  { topic: "personal-care", th: "เลือกของใช้ส่วนตัวยังไงให้เหมาะกับผิวบอบบาง", en: "Choosing personal care for sensitive skin?" },
 
   // — general: always eligible, so there is something to ask on a first visit —
   { topic: "general", th: "มีโปรโมชั่นอะไรน่าสนใจตอนนี้บ้าง", en: "What promotions are running right now?" },
