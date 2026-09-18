@@ -298,7 +298,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               the rest are lists and forms, which stop being readable past
               ~1400px. */}
           <main className="min-w-0 flex-1 px-4 py-5 md:px-8 md:py-7">
-            <div className={wideContent ? "" : "max-w-[1400px]"}>
+            {/* A list or a form that stops at 1400px sat against the left
+                edge of a 1800px window, with the rest of the workspace empty
+                beside it — centred, the page reads as the page. */}
+            <div className={wideContent ? "" : "mx-auto w-full max-w-[1400px]"}>
               {/* Where you are, and what this page is for — the page's own
                   title and content follow underneath. */}
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3 md:mb-5">
