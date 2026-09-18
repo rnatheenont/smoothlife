@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 // The parts that make a "special" campaign look like a ticket drop rather than
 // a plain flash sale: the full-bleed key visual, the big countdown, and the
@@ -128,11 +129,51 @@ const baht = (n: number) => `฿${n.toLocaleString("th-TH")}`;
  * from tablet up they wrap, centred, since the whole row fits.
  */
 export function SetPicker({ items, value, onChange }: { items: PickerItem[]; value: string; onChange: (slug: string) => void }) {
+  const row = useRef<HTMLUListElement>(null);
+  // Which card the swipe has landed on, for the dots under the row.
+  const [inView, setInView] = useState(0);
+
+  useEffect(() => {
+    const el = row.current;
+    if (!el) return;
+    const read = () => {
+      const cards = Array.from(el.children) as HTMLElement[];
+      if (cards.length === 0) return;
+      // The row snaps to a card's leading edge, so the dot follows the card
+      // sitting at the start of the viewport, not the one nearest its middle.
+      const end = el.scrollWidth - el.clientWidth;
+      if (end - el.scrollLeft < 4) {
+        // The row cannot scroll past its end, so the last cards share that
+        // position — say it is the last one rather than leaving a dot dead.
+        setInView(cards.length - 1);
+        return;
+      }
+      const edge = el.scrollLeft + cards[0].offsetLeft;
+      let nearest = 0;
+      cards.forEach((card, i) => {
+        if (Math.abs(card.offsetLeft - edge) < Math.abs(cards[nearest].offsetLeft - edge)) nearest = i;
+      });
+      setInView(nearest);
+    };
+    read();
+    el.addEventListener("scroll", read, { passive: true });
+    return () => el.removeEventListener("scroll", read);
+  }, [items.length]);
+
+  const goTo = (i: number) => {
+    const el = row.current;
+    const card = el?.children[i] as HTMLElement | undefined;
+    const first = el?.children[0] as HTMLElement | undefined;
+    // scrollIntoView fights the scroll-snap; moving the row itself lands exactly.
+    if (el && card && first) el.scrollTo({ left: card.offsetLeft - first.offsetLeft, behavior: "smooth" });
+  };
+
   if (items.length < 2) return null;
   return (
     <section className="mt-6">
       <h2 className="text-center text-sm font-semibold text-slate-600">เลือกเซ็ตที่ต้องการ</h2>
       <ul
+        ref={row}
         // A horizontal scroller clips vertically too, so the selected card's
         // ring and its badge need room inside the scroller, not outside it.
         className="-mx-4 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 py-2 scrollbar-none sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0"
@@ -154,7 +195,7 @@ export function SetPicker({ items, value, onChange }: { items: PickerItem[]; val
                 }`}
               >
                 <span className="relative block aspect-square bg-[linear-gradient(160deg,#f7f1ff,#ffffff)]">
-                  <Image src={item.image} alt="" fill sizes="176px" className="object-contain p-2" />
+                  <Image src={item.image} alt="" fill sizes="176px" className="rounded-xl object-contain p-2" />
                   {item.soldOut && (
                     <span className="absolute inset-0 grid place-items-center bg-white/75 text-sm font-bold text-slate-600">หมดแล้ว</span>
                   )}
@@ -177,6 +218,26 @@ export function SetPicker({ items, value, onChange }: { items: PickerItem[]; val
           );
         })}
       </ul>
+
+      {/* Where the swipe is, and a way to jump — the row is only scrollable on a phone. */}
+      <div className="-mt-1 flex justify-center sm:hidden">
+        {items.map((item, i) => (
+          <button
+            key={item.slug}
+            type="button"
+            onClick={() => goTo(i)}
+            aria-label={`ไปที่ ${item.name}`}
+            aria-current={i === inView}
+            // The dot is small; the button around it stays thumb-sized.
+            className="grid h-9 w-6 place-items-center"
+          >
+            <span
+              className={`h-1.5 rounded-full bg-[var(--fs-accent)] transition-all ${i === inView ? "w-5" : "w-1.5 opacity-30"}`}
+              aria-hidden
+            />
+          </button>
+        ))}
+      </div>
     </section>
   );
 }

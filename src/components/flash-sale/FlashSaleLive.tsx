@@ -240,7 +240,7 @@ export default function FlashSaleLive({
             }`}
           >
             <span className="relative block aspect-square">
-              <Image src={p.image} alt="" fill sizes="160px" className="object-contain p-3" />
+              <Image src={p.image} alt="" fill sizes="160px" className="rounded-xl object-contain p-3" />
               {s && s.sold >= s.total && (
                 <span className="absolute inset-0 grid place-items-center bg-white/70 text-sm font-bold text-slate-600">หมดแล้ว</span>
               )}
@@ -367,7 +367,7 @@ export default function FlashSaleLive({
   const stickyBar = status && (
     <MobileStickyBar hideWhenVisible={panelRef}>
       <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-surface-soft">
-        <Image src={product.image} alt="" fill sizes="44px" className="object-contain p-1" />
+        <Image src={product.image} alt="" fill sizes="44px" className="rounded-lg object-contain p-1" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-xs text-slate-500">{shortName(product.name)}</span>
@@ -453,7 +453,7 @@ export default function FlashSaleLive({
 
           <div className="mt-6 grid gap-6 rounded-3xl bg-white p-4 shadow-card ring-1 ring-black/5 md:grid-cols-2 md:gap-10 md:p-8 lg:items-center">
             <div className="relative aspect-square overflow-hidden rounded-2xl bg-[linear-gradient(160deg,#f7f1ff,#ffffff)]">
-              <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 45vw" className="object-contain p-6" priority />
+              <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 45vw" className="rounded-2xl object-contain p-4 md:p-6" priority />
             </div>
             <div className="flex flex-col gap-4">
               <div className="text-center md:text-left">
