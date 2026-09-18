@@ -51,6 +51,7 @@ import {
 } from "./scheduler";
 import type { FlashSaleCampaignDTO } from "@/lib/flash-sale-campaigns";
 import CampaignSetup, { type CatalogueItem, type EditingCampaign, type ProductGroup } from "./CampaignSetup";
+import FormDrawer from "./FormDrawer";
 import { useAdminAction } from "@/components/admin/header-action";
 import CampaignList from "./CampaignList";
 import LiveMonitor from "./LiveMonitor";
@@ -129,6 +130,8 @@ export default function FlashSaleDemo({
   // from the stored values (prices, title) rather than the simulated ones.
   const [stored, setStored] = useState<Record<string, FlashSaleCampaignDTO>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
+  // The form lives in a panel over the console; the list keeps its place.
+  const [formOpen, setFormOpen] = useState(false);
   const bySlug = useMemo(() => new Map(catalogue.map((p) => [p.slug, p])), [catalogue]);
 
   // The campaign list lives in the database (flash_sale_campaigns); the sale
@@ -188,7 +191,7 @@ export default function FlashSaleDemo({
   };
   const newCampaign = useCallback(() => {
     setEditingId(null);
-    requestAnimationFrame(() => document.getElementById("fs-setup")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    setFormOpen(true);
   }, []);
   // The console's primary action lives in the admin header (top right).
   useAdminAction(embedded ? { label: "สร้างแคมเปญใหม่", icon: <Plus size={15} aria-hidden />, onClick: newCampaign } : null);
@@ -242,6 +245,7 @@ export default function FlashSaleDemo({
           setStored((m) => ({ ...m, [saved.id]: saved }));
           setSelectedId(saved.id);
           setSelected(0);
+          setFormOpen(false);
         }
       } finally {
         setSaving(false);
@@ -279,6 +283,7 @@ export default function FlashSaleDemo({
         if (input) setScheduler((s) => addCampaign(s, input));
         setStored((m) => ({ ...m, [saved.id]: saved }));
         setEditingId(null);
+        setFormOpen(false);
       } finally {
         setSaving(false);
       }
@@ -363,7 +368,7 @@ export default function FlashSaleDemo({
             ตั้งแคมเปญล่วงหน้าเป็นรายการ (บันทึกในฐานข้อมูล) ระบบเปิดและปิดการขายเองตามวันเวลาที่ตั้งไว้
           </p>
           <ol className="mt-3 flex flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500">
-            {["เลือกแคมเปญจากรายการ หรือกดสร้างใหม่", "ตั้งสินค้า ราคา วันเวลา แล้วบันทึก", "ถึงเวลาระบบเปิดขายเอง — ดูคิวจริงของแคมเปญที่เลือกด้านขวา"].map((step, i) => (
+            {["กดสร้างแคมเปญใหม่ — ฟอร์มจะเปิดจากทางขวา", "ตั้งสินค้า ราคา วันเวลา แล้วบันทึก", "กดที่แคมเปญในรายการ เพื่อกางคิวจริงของแคมเปญนั้น"].map((step, i) => (
               <li key={step} className="flex items-center gap-1.5 rounded-full bg-surface-soft px-2.5 py-1">
                 <span className="grid size-4 place-items-center rounded-full bg-brand-800 text-[10px] font-bold text-white">{i + 1}</span>
                 {step}
@@ -389,55 +394,50 @@ export default function FlashSaleDemo({
         </Alert>
       )}
 
-      {/* The real work, in the order it happens: what is scheduled, what you
-          are setting up, and what the queue is doing right now. The bot
-          simulation used to sit on top of all three. */}
-      <div className="flex flex-col gap-5">
-        <CampaignList
-          items={scheduler.items}
-          now={now}
-          loading={loadState === "loading"}
-          currentId={item?.id}
-          editingId={editingId}
-          pick={pick}
-          startNow={startStored}
-          endNow={endStored}
-          edit={(id) => {
-            setEditingId(id);
-            requestAnimationFrame(() => document.getElementById("fs-setup")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-          }}
-          newCampaign={newCampaign}
-          remove={removeStored}
-        />
-
-        <div className="grid gap-5 2xl:grid-cols-2 2xl:items-start">
-          <div id="fs-setup" className="scroll-mt-24">
-            <CampaignSetup
-              key={editingId ?? "new"}
-              config={editingItem?.config ?? campaign.config}
-              catalogue={catalogue}
-              groups={groups}
-              now={now}
-              saving={saving}
-              editing={editingCampaign}
-              onCancelEdit={() => setEditingId(null)}
-              onCreate={editingId ? updateStored(editingId) : createStored}
-            />
-          </div>
-
-          {item && /^[0-9a-f-]{36}$/i.test(item.id) ? (
+      {/* The console is the list: each campaign opens its own live queue, and
+          the form arrives in a panel over it rather than pushing it down. */}
+      <CampaignList
+        items={scheduler.items}
+        now={now}
+        loading={loadState === "loading"}
+        currentId={item?.id}
+        editingId={editingId}
+        expandedId={item?.id}
+        pick={pick}
+        startNow={startStored}
+        endNow={endStored}
+        edit={(id) => {
+          setEditingId(id);
+          setFormOpen(true);
+        }}
+        newCampaign={newCampaign}
+        remove={removeStored}
+        details={(entry) =>
+          /^[0-9a-f-]{36}$/i.test(entry.id) ? (
             <LiveMonitor
-              key={item.id}
-              campaignId={item.id}
-              productNames={Object.fromEntries(item.config.products.map((p) => [p.slug, p.name]))}
+              key={entry.id}
+              campaignId={entry.id}
+              productNames={Object.fromEntries(entry.config.products.map((p) => [p.slug, p.name]))}
             />
           ) : (
-            <Card className="p-6 text-center text-sm text-slate-500">
-              {loadState === "loading" ? "กำลังโหลด…" : "เลือกแคมเปญจากรายการด้านบน เพื่อดูคิวจริงของแคมเปญนั้น"}
-            </Card>
-          )}
-        </div>
-      </div>
+            <Card className="p-5 text-center text-sm text-slate-500">แคมเปญนี้ยังไม่ได้บันทึกในฐานข้อมูล</Card>
+          )
+        }
+      />
+
+      <FormDrawer open={formOpen} title={editingId ? "แก้ไขแคมเปญ" : "สร้างแคมเปญใหม่"} onClose={() => setFormOpen(false)}>
+        <CampaignSetup
+          key={editingId ?? "new"}
+          config={editingItem?.config ?? campaign.config}
+          catalogue={catalogue}
+          groups={groups}
+          now={now}
+          saving={saving}
+          editing={editingCampaign}
+          onCancelEdit={() => setFormOpen(false)}
+          onCreate={editingId ? updateStored(editingId) : createStored}
+        />
+      </FormDrawer>
 
       {/* Everything below is the walk-through: a simulated sale with bots, on
           a clock that can run fast. Folded away by default so the console

@@ -191,7 +191,7 @@ export default function CampaignSetup({
     <Card className="@container p-5 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold text-brand-ink">{editing ? "2 · แก้ไขแคมเปญ" : "2 · สร้างแคมเปญใหม่"}</h3>
+          <h3 className="sr-only">{editing ? "แก้ไขแคมเปญ" : "สร้างแคมเปญใหม่"}</h3>
           <p className="text-sm text-slate-500">
             {editing
               ? locked

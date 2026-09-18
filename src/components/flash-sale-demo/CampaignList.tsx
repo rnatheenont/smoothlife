@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { Button, Card, Chip } from "@heroui/react";
-import { CalendarClock, Pencil, Play, Plus, Square, Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
+import { CalendarClock, ChevronDown, Pencil, Play, Plus, Square, Trash2 } from "lucide-react";
 import { countdown, thaiDateTime, type ScheduledCampaign } from "./scheduler";
 
 const END_REASON = { sold_out: "ขายหมด", time_up: "ครบเวลา", manual: "ปิดเอง" } as const;
@@ -24,6 +25,8 @@ export default function CampaignList({
   edit,
   newCampaign,
   remove,
+  expandedId,
+  details,
 }: {
   items: ScheduledCampaign[];
   now: number;
@@ -35,9 +38,13 @@ export default function CampaignList({
   startNow: (id: string) => void;
   endNow: (id: string) => void;
   edit: (id: string) => void;
-  /** Leave edit mode and start a blank campaign in the form below. */
+  /** Open the form for a brand-new campaign. */
   newCampaign: () => void;
   remove: (id: string) => void;
+  /** The campaign whose live queue is open underneath it. */
+  expandedId?: string | null;
+  /** That campaign's live queue, rendered inside its row. */
+  details?: (item: ScheduledCampaign) => ReactNode;
 }) {
   const running = items.filter((i) => i.status === "running").length;
   const scheduled = items.filter((i) => i.status === "scheduled").length;
@@ -46,7 +53,7 @@ export default function CampaignList({
     <Card className="p-5 md:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="flex items-center gap-2 text-lg font-bold text-brand-ink">
-          <CalendarClock size={20} className="text-brand-800" aria-hidden /> 1 · รายการแคมเปญ
+          <CalendarClock size={20} className="text-brand-800" aria-hidden /> รายการแคมเปญ
         </h3>
         <div className="flex items-center gap-3">
           <p className="text-sm text-slate-500">
@@ -57,7 +64,7 @@ export default function CampaignList({
           </Button>
         </div>
       </div>
-      <p className="mt-1 text-xs text-slate-500">เปิดและปิดการขายอัตโนมัติตามวันเวลา กดที่แคมเปญเพื่อดูตัวเลขและมุมมองลูกค้า</p>
+      <p className="mt-1 text-xs text-slate-500">เปิดและปิดการขายอัตโนมัติตามวันเวลา กดที่แคมเปญเพื่อกางคิวจริงของแคมเปญนั้น</p>
 
       {items.length === 0 ? (
         <p className="mt-6 text-center text-sm text-slate-500">{loading ? "กำลังโหลดรายการจากฐานข้อมูล…" : "ยังไม่มีแคมเปญ สร้างแคมเปญแรกได้ด้านล่าง"}</p>
@@ -74,7 +81,17 @@ export default function CampaignList({
                 className={`rounded-xl2 ring-1 transition ${isCurrent ? "bg-brand-50/60 ring-brand-800" : "bg-white ring-surface-line"}`}
               >
                 <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
-                  <button type="button" onClick={() => pick(i.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left" aria-pressed={isCurrent}>
+                  <button
+                    type="button"
+                    onClick={() => pick(i.id)}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    aria-expanded={i.id === expandedId}
+                  >
+                    <ChevronDown
+                      size={16}
+                      aria-hidden
+                      className={`shrink-0 text-slate-400 transition-transform ${i.id === expandedId ? "rotate-180" : ""}`}
+                    />
                     <span className="flex shrink-0 -space-x-3">
                       {i.config.products.slice(0, 3).map((p) => (
                         <span key={p.slug} className="relative h-11 w-11 overflow-hidden rounded-lg bg-white ring-2 ring-white">
@@ -150,6 +167,8 @@ export default function CampaignList({
                     )}
                   </div>
                 </div>
+
+                {i.id === expandedId && details && <div className="border-t border-surface-line p-3">{details(i)}</div>}
               </li>
             );
           })}

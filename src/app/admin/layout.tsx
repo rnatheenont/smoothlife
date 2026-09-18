@@ -73,8 +73,8 @@ const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 // How much width a screen actually has content for: a dashboard fills the
 // window, a wide data table needs the room, and a list of rows or a form reads
 // better in a column than stretched across a 27" monitor.
-const FULL_WIDTH = ["/admin/inbox", "/admin/flash-sale"];
-const WIDE_TABLE = ["/admin/checkout-transactions", "/admin/customers"];
+const FULL_WIDTH = ["/admin/inbox"];
+const WIDE_TABLE = ["/admin/checkout-transactions", "/admin/customers", "/admin/flash-sale"];
 
 const groupOf = (href: string) => NAV_GROUPS.find((g) => g.items.some((i) => i.href === href))?.label ?? "";
 

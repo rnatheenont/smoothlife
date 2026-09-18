@@ -80,7 +80,7 @@ export default function LiveMonitor({ campaignId, productNames }: { campaignId: 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="flex items-center gap-2 text-lg font-bold text-brand-ink">
-            <Radio size={18} className="text-sale" aria-hidden /> 3 · คิวจริงจากฐานข้อมูล
+            <Radio size={18} className="text-sale" aria-hidden /> คิวจริงจากฐานข้อมูล
           </h3>
           <p className="text-xs text-slate-500">ลูกค้าจริงที่เข้าคิวในหน้าขาย อัปเดตทุก 5 วินาที</p>
         </div>
