@@ -133,7 +133,9 @@ export function SetPicker({ items, value, onChange }: { items: PickerItem[]; val
     <section className="mt-6">
       <h2 className="text-center text-sm font-semibold text-slate-600">เลือกเซ็ตที่ต้องการ</h2>
       <ul
-        className="-mx-4 mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scrollbar-none sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0"
+        // A horizontal scroller clips vertically too, so the selected card's
+        // ring and its badge need room inside the scroller, not outside it.
+        className="-mx-4 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 py-2 scrollbar-none sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0"
         role="radiogroup"
         aria-label="เลือกเซ็ตที่ต้องการ"
       >
