@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured } from "@/lib/supabase-server";
 import { notifyQueue } from "@/lib/flash-sale-notify";
 
-// Every minute during a sale: tell whoever's turn just came, and nudge whoever
-// is about to lose their slot. A reservation window is measured in minutes, so
-// a minute is the resolution that matters; outside a sale the queries match
-// nothing and the run costs two index lookups.
+// Tell whoever's turn just came, and nudge whoever is about to lose their slot.
+//
+// Driven by pg_cron (public.fs_notify_tick, every 30 seconds), not by a Vercel
+// cron: fs_sweep is what grants the slots, it already runs on that clock in the
+// database, and the reminder should follow one tick behind the work rather than
+// on a separate schedule. The database also checks whether anyone is waiting to
+// be told before waking this route, so outside a sale it is never called.
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 

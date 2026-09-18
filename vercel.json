@@ -35,10 +35,6 @@
     {
       "path": "/api/cron/kb-sync-products",
       "schedule": "30 4 * * *"
-    },
-    {
-      "path": "/api/cron/flash-sale-notify",
-      "schedule": "* * * * *"
     }
   ]
 }
