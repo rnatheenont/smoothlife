@@ -24,6 +24,7 @@ import {
   Store,
   Truck,
   Users,
+  UserCog,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui";
@@ -67,6 +68,11 @@ const NAV_GROUPS = [
       { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText },
       { href: "/admin/line-rich-menu", label: "เมนู LINE OA", icon: MessageCircle },
       { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette },
+      // Visible to everyone in the nav, same as every other item — the page
+      // itself is what actually turns away anyone who isn't the owner (see
+      // /api/admin/users). Hiding the link too would need knowing the
+      // visitor's role before the page has even loaded.
+      { href: "/admin/users", label: "ผู้ใช้ & สิทธิ์", icon: UserCog },
     ],
   },
 ];
@@ -90,6 +96,8 @@ function isActive(href: string, pathname: string | null) {
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const [me, setMe] = useState<{ display_name: string; role_key: string } | null>(null);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [navQuery, setNavQuery] = useState("");
@@ -119,6 +127,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   async function checkAuth() {
     const res = await fetch("/api/admin/me");
     setAuthed(res.ok);
+    if (res.ok) {
+      // A legacy shared-password session has no personal account to name —
+      // `user` comes back null, and the header simply shows no name.
+      const data = await res.json().catch(() => null);
+      setMe(data?.user ?? null);
+    }
   }
 
   useEffect(() => {
@@ -128,10 +142,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   async function submitLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoginError("");
+    // A filled-in email switches this to a personal-account login; left
+    // blank, it's the original shared password — see /api/admin/login.
+    const body = email.trim() ? { email: email.trim(), password } : { password };
     const res = await fetch("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (!data.ok) {
@@ -140,11 +157,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     }
     setPassword("");
     setAuthed(true);
+    checkAuth();
   }
 
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
     setAuthed(false);
+    setMe(null);
   }
 
   if (authed === null) {
@@ -160,16 +179,23 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <Lock size={20} className="text-brand-emerald" />
           </div>
           <h1 className="text-lg font-bold text-brand-ink">ระบบจัดการหลังบ้าน</h1>
-          <p className="text-xs text-slate-400 mt-1">หน้านี้สำหรับทีมงานเท่านั้น กรอกรหัสผ่านเพื่อเข้าใช้งาน</p>
+          <p className="text-xs text-slate-400 mt-1">หน้านี้สำหรับทีมงานเท่านั้น เข้าด้วยบัญชีส่วนตัวหรือรหัสผ่านรวม</p>
         </div>
         <form onSubmit={submitLogin} className="space-y-3">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="อีเมล (เว้นว่างถ้าใช้รหัสผ่านรวม)"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-hidden focus:border-brand-teal"
+            autoFocus
+          />
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="รหัสผ่านแอดมิน"
+            placeholder={email.trim() ? "รหัสผ่านของคุณ" : "รหัสผ่านแอดมิน (รวม)"}
             className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-hidden focus:border-brand-teal"
-            autoFocus
           />
           {loginError && <p className="text-xs text-rose-500">{loginError}</p>}
           <Button fullWidth type="submit">
@@ -228,6 +254,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <Search size={13} /> ไปที่หน้า…
               <kbd className="rounded border border-surface-line px-1 py-0.5 text-[10px]">⌘K</kbd>
             </button>
+            {/* A legacy shared-password session has no display_name — nothing
+                renders here rather than a placeholder like "แอดมิน". */}
+            {me && <p className="hidden text-xs font-semibold text-slate-500 md:block">{me.display_name}</p>}
             <Link
               href="/"
               className="hidden size-9 place-items-center rounded-xl text-slate-500 hover:bg-surface-soft hover:text-brand-ink sm:grid"

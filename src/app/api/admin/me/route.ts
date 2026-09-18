@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
+import { getAdminSession, verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
+import { pgValue, supabaseRest } from "@/lib/supabase-server";
 
 export async function GET(req: NextRequest) {
-  if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
+  const token = req.cookies.get(ADMIN_COOKIE)?.value;
+  if (!verifyAdminToken(token)) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
-  return NextResponse.json({ ok: true });
+  const session = getAdminSession(token);
+  // A legacy shared-password session has no admin_users row to describe —
+  // the panel just shows nothing where a name would go, not an error.
+  if (!session) return NextResponse.json({ ok: true, user: null });
+
+  const [user] = await supabaseRest<{ id: string; display_name: string; email: string; role_key: string }[]>(
+    `admin_users?id=eq.${pgValue(session.userId)}&select=id,display_name,email,role_key&limit=1`
+  ).catch((): { id: string; display_name: string; email: string; role_key: string }[] => []);
+  return NextResponse.json({ ok: true, user: user ?? null });
 }
