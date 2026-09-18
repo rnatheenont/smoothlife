@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookOpen, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { BookOpen, Loader2, MessageSquare, Pencil, Plus, Trash2 } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { CATEGORY_TH, STATUS_TH, type KbArticle, type KbCategory, type KbStatus } from "@/lib/kb";
@@ -23,6 +25,7 @@ const thaiDate = (iso: string) =>
   new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", timeZone: "Asia/Bangkok" });
 
 export default function AdminKnowledgeBasePage() {
+  const params = useSearchParams();
   const [articles, setArticles] = useState<KbArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +57,16 @@ export default function AdminKnowledgeBasePage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Arriving from the AI log with a question nobody could answer: the drawer
+  // opens with that question as the title, waiting for the answer.
+  const prefill = params.get("new");
+  useEffect(() => {
+    if (!prefill) return;
+    setForm({ ...EMPTY, title: prefill.slice(0, 200) });
+    setEditingId(null);
+    setOpen(true);
+  }, [prefill]);
 
   const startCreate = useCallback(() => {
     setEditingId(null);
@@ -144,6 +157,12 @@ export default function AdminKnowledgeBasePage() {
         <p className="mt-1 text-sm text-slate-500">
           น้อง Smoothie ตอบลูกค้าได้เฉพาะจากบทความที่ <strong>เผยแพร่แล้ว</strong> ในหน้านี้เท่านั้น — เรื่องไหนไม่มีในนี้ ระบบจะส่งต่อให้ทีมงานตอบ ไม่เดาคำตอบเอง
         </p>
+        <Link
+          href="/admin/knowledge-base/log"
+          className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-800 hover:underline"
+        >
+          <MessageSquare size={14} /> ดู log คำตอบของ AI
+        </Link>
         {!embeddings && (
           <p className="mt-2 rounded-xl2 bg-surface-soft px-3 py-2 text-xs text-slate-500">
             ตอนนี้ค้นหาด้วยการจับคู่ข้อความ · ถ้าเพิ่มค่า <code className="rounded-sm bg-white px-1">VOYAGE_API_KEY</code> ใน Vercel ระบบจะเปลี่ยนไปค้นแบบเข้าใจความหมาย (ฝังเวกเตอร์) ให้เองโดยไม่ต้องแก้อะไรเพิ่ม
