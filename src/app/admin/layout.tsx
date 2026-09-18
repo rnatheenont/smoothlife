@@ -3,31 +3,81 @@
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Lock, Gift, SlidersHorizontal, Award, LogOut, CreditCard, MessageSquareText, Repeat, Receipt, Inbox, LayoutDashboard, MessageCircle, Palette, Truck, Users, Zap } from "lucide-react";
+import {
+  Lock,
+  Gift,
+  SlidersHorizontal,
+  Award,
+  LogOut,
+  CreditCard,
+  MessageSquareText,
+  Repeat,
+  Receipt,
+  Inbox,
+  LayoutDashboard,
+  MessageCircle,
+  Palette,
+  Search,
+  Store,
+  Truck,
+  Users,
+  Zap,
+} from "lucide-react";
 import { Button } from "@/components/ui";
 
-const NAV = [
-  { href: "/admin", label: "ภาพรวม", icon: LayoutDashboard },
-  { href: "/admin/tracking-sync", label: "ซิงก์เลขพัสดุ", icon: Truck },
-  { href: "/admin/inbox", label: "กล่องข้อความ", icon: Inbox },
-  { href: "/admin/customers", label: "ลูกค้า & ผูกบัญชี", icon: Users },
-  { href: "/admin/free-gifts", label: "โปรโมชั่น", icon: Gift },
-  { href: "/admin/free-gifts/widgets", label: "Widgets", icon: SlidersHorizontal },
-  { href: "/admin/points", label: "คะแนน", icon: Award },
-  { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText },
-  { href: "/admin/gift-cards", label: "บัตรของขวัญ", icon: CreditCard },
-  { href: "/admin/subscription-products", label: "สินค้าสมัครสมาชิก", icon: Repeat },
-  { href: "/admin/checkout-transactions", label: "รายการซื้อ (2C2P)", icon: Receipt },
-  { href: "/admin/flash-sale", label: "Flash Sale (เดโม)", icon: Zap },
-  { href: "/admin/line-rich-menu", label: "เมนู LINE OA", icon: MessageCircle },
-  { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette },
+// Grouped the way the work is grouped — orders, then selling, then the
+// content and the system settings — so fourteen entries read as four short
+// lists instead of one long one.
+const NAV_GROUPS = [
+  {
+    label: "",
+    items: [{ href: "/admin", label: "ภาพรวม", icon: LayoutDashboard }],
+  },
+  {
+    label: "ออเดอร์ & ลูกค้า",
+    items: [
+      { href: "/admin/inbox", label: "กล่องข้อความ", icon: Inbox },
+      { href: "/admin/tracking-sync", label: "ซิงก์เลขพัสดุ", icon: Truck },
+      { href: "/admin/customers", label: "ลูกค้า & ผูกบัญชี", icon: Users },
+      { href: "/admin/checkout-transactions", label: "รายการซื้อ (2C2P)", icon: Receipt },
+    ],
+  },
+  {
+    label: "การขาย & โปรโมชั่น",
+    items: [
+      { href: "/admin/flash-sale", label: "Flash Sale", icon: Zap },
+      { href: "/admin/free-gifts", label: "โปรโมชั่น", icon: Gift },
+      { href: "/admin/free-gifts/widgets", label: "Widgets", icon: SlidersHorizontal },
+      { href: "/admin/gift-cards", label: "บัตรของขวัญ", icon: CreditCard },
+      { href: "/admin/subscription-products", label: "สินค้าสมัครสมาชิก", icon: Repeat },
+      { href: "/admin/points", label: "คะแนน", icon: Award },
+    ],
+  },
+  {
+    label: "เนื้อหา & ระบบ",
+    items: [
+      { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText },
+      { href: "/admin/line-rich-menu", label: "เมนู LINE OA", icon: MessageCircle },
+      { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette },
+    ],
+  },
 ];
+
+const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+
+/** "/admin" prefixes every route, and "/admin/free-gifts" prefixes the widgets
+ *  route — an exact match is the only correct test for both. */
+function isActive(href: string, pathname: string | null) {
+  if (href === "/admin" || href === "/admin/free-gifts") return pathname === href;
+  return pathname === href || Boolean(pathname?.startsWith(`${href}/`));
+}
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [navQuery, setNavQuery] = useState("");
 
   async function checkAuth() {
     const res = await fetch("/api/admin/me");
@@ -92,54 +142,87 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // The inbox and the flash-sale console are dashboards: on a big screen they
-  // have columns to fill, so they get the full window instead of the
-  // storefront's reading width.
-  const wide = pathname?.startsWith("/admin/inbox") || pathname?.startsWith("/admin/flash-sale");
+  const current = ALL_ITEMS.find((item) => isActive(item.href, pathname));
+  const query = navQuery.trim().toLowerCase();
+  const groups = query
+    ? [{ label: "ผลการค้นหา", items: ALL_ITEMS.filter((i) => i.label.toLowerCase().includes(query)) }]
+    : NAV_GROUPS;
 
   return (
-    <div className={`py-8 md:py-10 ${wide ? "mx-auto w-full max-w-[1800px] px-4 md:px-8" : "container-page"}`}>
-      <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-        <aside className="md:w-52 shrink-0">
-          <div className="flex md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
-            {NAV.map((item) => {
-              const active =
-                pathname === item.href ||
-                // "/admin" is a prefix of every admin route, and
-                // "/admin/free-gifts" is a prefix of the widgets route — an
-                // exact match is the only correct test for both.
-                (item.href !== "/admin" && item.href !== "/admin/free-gifts" && pathname?.startsWith(item.href));
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-2 shrink-0 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
-                    active ? "bg-brand-gradient-soft text-brand-800" : "text-slate-500 hover:bg-surface-soft"
-                  }`}
-                >
-                  <Icon size={16} /> {item.label}
-                </Link>
-              );
-            })}
+    <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-6 px-4 py-6 md:px-6 lg:flex-row lg:gap-8 lg:py-8">
+      <aside className="lg:w-60 lg:shrink-0">
+        {/* The menu stays put while a long page scrolls, and scrolls on its
+            own if it ever outgrows the window. */}
+        <div className="lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-1">
+          <p className="hidden text-xs font-semibold uppercase tracking-wide text-slate-400 lg:block">หลังบ้าน</p>
+          <div className="relative mt-3 hidden lg:block">
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
+            <input
+              type="search"
+              value={navQuery}
+              onChange={(e) => setNavQuery(e.target.value)}
+              placeholder="ค้นหาเมนู"
+              aria-label="ค้นหาเมนู"
+              className="min-h-9 w-full rounded-xl border border-surface-line bg-white pl-8 pr-3 text-sm text-brand-ink focus:border-brand-800 focus:outline-none"
+            />
           </div>
-          <button
-            onClick={logout}
-            className="hidden md:flex items-center gap-2 mt-6 text-xs text-slate-400 hover:text-slate-600"
-          >
-            <LogOut size={13} /> ออกจากระบบ
-          </button>
-        </aside>
-        {/* Most admin screens are forms and read better narrow. The inbox
-            (three columns of conversation) and the flash-sale monitor
-            (dashboard grids) suffocate at max-w-3xl, so they opt out rather
-            than every other page opting in. */}
-        <div className={`flex-1 min-w-0 ${wide ? "" : "max-w-3xl"}`}>
-          {children}
-          <button onClick={logout} className="md:hidden flex items-center gap-2 mt-8 text-xs text-slate-400">
-            <LogOut size={13} /> ออกจากระบบ
-          </button>
+
+          {/* On a phone the menu is one scrollable row of the same links. */}
+          <nav className="mt-0 flex gap-1.5 overflow-x-auto pb-2 lg:mt-4 lg:flex-col lg:gap-0 lg:overflow-visible lg:pb-0">
+            {groups.map((group) => (
+              <div key={group.label} className="contents lg:mb-4 lg:block">
+                {group.label && (
+                  <p className="mb-1.5 hidden px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 lg:block">{group.label}</p>
+                )}
+                <div className="contents lg:flex lg:flex-col lg:gap-0.5">
+                  {group.items.map((item) => {
+                    const active = isActive(item.href, pathname);
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        aria-current={active ? "page" : undefined}
+                        className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                          active ? "bg-brand-gradient-soft text-brand-800" : "text-slate-500 hover:bg-surface-soft hover:text-brand-ink"
+                        }`}
+                      >
+                        <Icon size={16} className="shrink-0" /> {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            {groups[0].items.length === 0 && <p className="px-3 py-2 text-sm text-slate-400">ไม่พบเมนูที่ค้นหา</p>}
+          </nav>
+
+          <div className="mt-6 hidden flex-col gap-1 border-t border-surface-line pt-4 lg:flex">
+            <Link href="/" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-slate-400 hover:bg-surface-soft hover:text-slate-600">
+              <Store size={13} /> ดูหน้าร้าน
+            </Link>
+            <button
+              onClick={logout}
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-left text-xs text-slate-400 hover:bg-surface-soft hover:text-slate-600"
+            >
+              <LogOut size={13} /> ออกจากระบบ
+            </button>
+          </div>
         </div>
+      </aside>
+
+      {/* Dashboards (the inbox, the flash-sale console) use every pixel; the
+          rest are lists and forms, which stop being readable past ~1400px. */}
+      <div className={`min-w-0 flex-1 ${current?.href === "/admin/inbox" || current?.href === "/admin/flash-sale" ? "" : "max-w-[1400px]"} [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-brand-ink`}>
+        {current && (
+          <p className="mb-3 hidden items-center gap-1.5 text-xs text-slate-400 lg:flex">
+            หลังบ้าน <span aria-hidden>/</span> <span className="font-semibold text-slate-500">{current.label}</span>
+          </p>
+        )}
+        {children}
+        <button onClick={logout} className="mt-8 flex items-center gap-2 text-xs text-slate-400 lg:hidden">
+          <LogOut size={13} /> ออกจากระบบ
+        </button>
       </div>
     </div>
   );
