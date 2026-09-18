@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { helpFaqs, helpTopics } from "@/data/help";
+import { featureArticles } from "@/data/kb-features";
 import { KB_COLUMNS, reindexArticle, type KbArticle, type KbCategory } from "@/lib/kb";
 
-// Seeding the knowledge base from the help centre the site already publishes.
+// Seeding the knowledge base from what the site already publishes — the help
+// centre, plus how its own features work (skin scan, shop by concern).
 // That content is written by the team and live on the storefront, so it starts
 // published — unlike an answer promoted from a chat, which a person approves
 // first. Runs are idempotent: an article whose title is already there is left
@@ -40,6 +42,9 @@ export async function POST(req: NextRequest) {
       source_ref: "/help",
       content: faq.a,
     })),
+    // The help centre explains the shop; these explain the site. Same footing:
+    // written by the team, already on screen, so they start published too.
+    ...featureArticles,
   ];
 
   const existing = await supabaseRest<{ title: string }[]>("kb_articles?select=title&limit=1000");

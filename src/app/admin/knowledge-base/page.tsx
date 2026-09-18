@@ -195,7 +195,7 @@ export default function AdminKnowledgeBasePage() {
   };
 
   const [seeding, setSeeding] = useState(false);
-  const seedFromHelp = async () => {
+  const seedStarters = async () => {
     setSeeding(true);
     setError(null);
     try {
@@ -203,7 +203,7 @@ export default function AdminKnowledgeBasePage() {
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || "นำเข้าไม่สำเร็จ");
       await load();
-      setError(data.created > 0 ? null : "ศูนย์ช่วยเหลืออยู่ในฐานความรู้ครบแล้ว");
+      setError(data.created > 0 ? null : "บทความตั้งต้นอยู่ในฐานความรู้ครบแล้ว");
     } catch (err) {
       setError(err instanceof Error ? err.message : "นำเข้าไม่สำเร็จ");
     } finally {
@@ -332,11 +332,12 @@ export default function AdminKnowledgeBasePage() {
         </button>
         <button
           type="button"
-          onClick={seedFromHelp}
+          onClick={seedStarters}
           disabled={seeding}
+          title="นำศูนย์ช่วยเหลือ และวิธีใช้งานสแกนผิว/ช้อปตามปัญหาผิว เข้าฐานความรู้ (บทความที่มีอยู่แล้วจะไม่ถูกเขียนทับ)"
           className="min-h-11 rounded-full px-4 text-sm font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
         >
-          {seeding ? "กำลังนำเข้า…" : "นำเข้าจากศูนย์ช่วยเหลือ"}
+          {seeding ? "กำลังนำเข้า…" : "นำเข้าบทความตั้งต้น"}
         </button>
         <div className="inline-flex rounded-full bg-surface-muted p-1">
           {(["all", "published", "draft", "needs_review", "archived", "review_due"] as const).map((s) => (
