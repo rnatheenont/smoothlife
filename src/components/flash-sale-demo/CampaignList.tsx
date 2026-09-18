@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Button, Card, Chip } from "@heroui/react";
-import { CalendarClock, Play, Square, Trash2 } from "lucide-react";
+import { CalendarClock, Pencil, Play, Square, Trash2 } from "lucide-react";
 import { countdown, thaiDateTime, type ScheduledCampaign } from "./scheduler";
 
 const END_REASON = { sold_out: "ขายหมด", time_up: "ครบเวลา", manual: "ปิดเอง" } as const;
@@ -17,18 +17,23 @@ export default function CampaignList({
   now,
   loading = false,
   currentId,
+  editingId,
   pick,
   startNow,
   endNow,
+  edit,
   remove,
 }: {
   items: ScheduledCampaign[];
   now: number;
   loading?: boolean;
   currentId?: string;
+  /** The campaign the form below is editing, if any. */
+  editingId?: string | null;
   pick: (id: string) => void;
   startNow: (id: string) => void;
   endNow: (id: string) => void;
+  edit: (id: string) => void;
   remove: (id: string) => void;
 }) {
   const running = items.filter((i) => i.status === "running").length;
@@ -87,7 +92,15 @@ export default function CampaignList({
                     </span>
                   </button>
 
-                  <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
+                  <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 sm:justify-end">
+                    <Button
+                      size="sm"
+                      variant={i.id === editingId ? "secondary" : "ghost"}
+                      onPress={() => edit(i.id)}
+                      aria-pressed={i.id === editingId}
+                    >
+                      <Pencil size={13} aria-hidden /> แก้ไข
+                    </Button>
                     {i.status === "scheduled" && (
                       <>
                         <Chip size="sm" variant="soft" color="warning">

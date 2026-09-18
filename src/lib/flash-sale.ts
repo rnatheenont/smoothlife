@@ -78,6 +78,11 @@ export function createFlashSaleCampaign(payload: Record<string, unknown>) {
   return rpc<string>("fs_create_campaign", { p: payload });
 }
 
+/** Edit a stored campaign; the function decides how much of it may still change. */
+export function updateFlashSaleCampaign(payload: Record<string, unknown>) {
+  return rpc<{ ok: true; scope: "full" | "limited" } | { ok: false; error: "not_found" | "bad_end" }>("fs_update_campaign", { p: payload });
+}
+
 export function startFlashSalePayment(campaignId: string, userId: string) {
   return rpc<
     | { ok: true; entry_id: string; product_slug: string; variant_id: string | null; sale_price: number | string | null; expires_at: string }

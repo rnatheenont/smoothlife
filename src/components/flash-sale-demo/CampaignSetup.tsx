@@ -22,21 +22,24 @@ function Segmented<T extends string>({
   options,
   onChange,
   label,
+  disabled = false,
 }: {
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
   label: string;
+  disabled?: boolean;
 }) {
   return (
-    <div className="inline-flex rounded-full bg-surface-muted p-1" role="group" aria-label={label}>
+    <div className={`inline-flex rounded-full bg-surface-muted p-1 ${disabled ? "opacity-60" : ""}`} role="group" aria-label={label}>
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
+          disabled={disabled}
           onClick={() => onChange(o.value)}
           aria-pressed={value === o.value}
-          className={`min-h-9 rounded-full px-4 text-sm font-semibold transition ${
+          className={`min-h-9 rounded-full px-4 text-sm font-semibold transition disabled:cursor-not-allowed ${
             value === o.value ? "bg-white text-brand-ink shadow-card" : "text-slate-600 hover:text-brand-ink"
           }`}
         >
@@ -50,11 +53,26 @@ function Segmented<T extends string>({
 const fieldBase = "min-h-11 rounded-xl2 border border-surface-line bg-white px-3 text-sm text-brand-ink focus:border-brand-800 focus:outline-none";
 const fieldClass = `${fieldBase} w-full`;
 
+/** A stored campaign being edited, and how much of it may still change. */
+export type EditingCampaign = {
+  id: string;
+  title: string;
+  startsAt: number;
+  endsAt?: number;
+  salePrices: Record<string, number | null>;
+  /** "limited": it has opened (or someone has queued) — only the page, the
+   *  title and the closing time may still move. */
+  scope: "full" | "limited";
+};
+
 /**
  * Admin side of the demo: pick what the flash sale sells — one product, or a
  * whole group (category, brand or Shopify collection) — and the per-sale
  * settings, then restart the simulation with it. In the real system this is
  * the form that inserts `flash_sale` rows (plan §0), one per product.
+ *
+ * The same form edits a stored campaign: the caller passes `editing` and
+ * remounts it (key={id}) so every field starts from what is stored.
  */
 export default function CampaignSetup({
   config,
@@ -63,6 +81,8 @@ export default function CampaignSetup({
   now,
   onCreate,
   saving = false,
+  editing,
+  onCancelEdit,
 }: {
   config: CampaignConfig;
   catalogue: CatalogueItem[];
@@ -72,13 +92,18 @@ export default function CampaignSetup({
   onCreate: (config: CampaignConfig, startsAt: number, endsAt?: number) => void | Promise<unknown>;
   /** Saving to the database; the button waits for it. */
   saving?: boolean;
+  editing?: EditingCampaign;
+  onCancelEdit?: () => void;
 }) {
+  const locked = editing?.scope === "limited";
   const [mode, setMode] = useState<CampaignConfig["mode"]>(config.mode);
   const [query, setQuery] = useState("");
   const [productSlug, setProductSlug] = useState(config.products[0]?.slug ?? catalogue[0]?.slug);
-  const [kind, setKind] = useState<ProductGroup["kind"]>("brand");
+  const [kind, setKind] = useState<ProductGroup["kind"]>(config.group?.kind ?? "brand");
   const kindGroups = useMemo(() => groups.filter((g) => g.kind === kind), [groups, kind]);
-  const [groupId, setGroupId] = useState<string>(() => groups.find((g) => g.kind === "brand")?.id ?? groups[0]?.id ?? "");
+  const [groupId, setGroupId] = useState<string>(
+    () => config.group?.key ?? groups.find((g) => g.kind === (config.group?.kind ?? "brand"))?.id ?? groups[0]?.id ?? ""
+  );
   const [stock, setStock] = useState(config.stockPerProduct);
   const [windowMinutes, setWindowMinutes] = useState(config.windowMinutes);
   const [maxRequeue, setMaxRequeue] = useState(config.maxRequeue);
@@ -89,12 +114,19 @@ export default function CampaignSetup({
   const [heroAlign, setHeroAlign] = useState<"top" | "center" | "bottom">(config.presentation?.heroAlign ?? "top");
   const [accent, setAccent] = useState(config.presentation?.accent ?? SPECIAL_ACCENT_DEFAULT);
   const [faq, setFaq] = useState<{ q: string; a: string }[]>(config.presentation?.faq ?? []);
-  const [priceMode, setPriceMode] = useState<"regular" | "percent" | "fixed">("percent");
+  // An edited campaign keeps the exact prices it was saved with, so they come
+  // back as "กำหนดเอง" whatever they were set with the first time.
+  const storedPrices = editing?.salePrices ?? {};
+  const hasStoredPrice = Object.values(storedPrices).some((v) => v !== null && v !== undefined);
+  const [priceMode, setPriceMode] = useState<"regular" | "percent" | "fixed">(editing ? (hasStoredPrice ? "fixed" : "regular") : "percent");
   const [percent, setPercent] = useState(20);
-  const [fixedPrices, setFixedPrices] = useState<Record<string, string>>({});
-  const [startInput, setStartInput] = useState(() => toLocalInput(Math.ceil((now + 10 * 60_000) / 60_000) * 60_000));
-  const [hasEnd, setHasEnd] = useState(true);
-  const [endInput, setEndInput] = useState(() => toLocalInput(Math.ceil((now + 130 * 60_000) / 60_000) * 60_000));
+  const [fixedPrices, setFixedPrices] = useState<Record<string, string>>(() =>
+    Object.fromEntries(Object.entries(storedPrices).filter(([, v]) => v !== null && v !== undefined).map(([slug, v]) => [slug, String(v)]))
+  );
+  const [titleInput, setTitleInput] = useState(editing?.title ?? "");
+  const [startInput, setStartInput] = useState(() => toLocalInput(editing?.startsAt ?? Math.ceil((now + 10 * 60_000) / 60_000) * 60_000));
+  const [hasEnd, setHasEnd] = useState(editing ? editing.endsAt !== undefined : true);
+  const [endInput, setEndInput] = useState(() => toLocalInput(editing?.endsAt ?? Math.ceil((now + 130 * 60_000) / 60_000) * 60_000));
   const startsAt = startInput ? fromLocalInput(startInput) : NaN;
   const endsAt = hasEnd && endInput ? fromLocalInput(endInput) : undefined;
   const timeError = Number.isNaN(startsAt)
@@ -118,7 +150,8 @@ export default function CampaignSetup({
   const selectedProduct = productSlug ? bySlug.get(productSlug) : undefined;
 
   const products = mode === "single" ? (selectedProduct ? [selectedProduct] : []) : groupProducts.slice(0, MAX_GROUP_PRODUCTS);
-  const title = mode === "single" ? `Flash Sale · ${selectedProduct?.name ?? ""}` : `Flash Sale ${KIND_LABEL[kind]} ${group?.label ?? ""}`;
+  const autoTitle = mode === "single" ? `Flash Sale · ${selectedProduct?.name ?? ""}` : `Flash Sale ${KIND_LABEL[kind]} ${group?.label ?? ""}`;
+  const title = titleInput.trim() || autoTitle;
   // Flash price per product as it will be charged (the server recomputes and
   // checks the same rules; this is the preview).
   const salePriceOf = (p: CatalogueItem): number | null => {
@@ -158,13 +191,20 @@ export default function CampaignSetup({
     <Card className="p-5 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold text-brand-ink">สร้างแคมเปญใหม่</h3>
-          <p className="text-sm text-slate-500">เลือกสินค้า ตั้งวันเวลา แล้วเพิ่มเข้ารายการ ระบบจะเปิดและปิดการขายให้เองตามเวลา</p>
+          <h3 className="text-lg font-bold text-brand-ink">{editing ? "แก้ไขแคมเปญ" : "สร้างแคมเปญใหม่"}</h3>
+          <p className="text-sm text-slate-500">
+            {editing
+              ? locked
+                ? "แคมเปญนี้เริ่มขายแล้ว แก้ได้เฉพาะชื่อ เวลาปิดการขาย และหน้าตาหน้าขาย"
+                : "ยังไม่ถึงเวลาเริ่มขาย แก้ไขได้ทุกอย่าง"
+              : "เลือกสินค้า ตั้งวันเวลา แล้วเพิ่มเข้ารายการ ระบบจะเปิดและปิดการขายให้เองตามเวลา"}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Segmented<CampaignConfig["mode"]>
             label="ประเภทแคมเปญ"
             value={mode}
+            disabled={locked}
             onChange={setMode}
             options={[
               { value: "single", label: "สินค้าชิ้นเดียว" },
@@ -208,6 +248,7 @@ export default function CampaignSetup({
                     <button
                       type="button"
                       onClick={() => setProductSlug(p.slug)}
+                      disabled={locked}
                       aria-pressed={isSel}
                       className={`flex w-full items-center gap-3 rounded-xl2 p-2 text-left ring-1 transition ${
                         isSel ? "bg-brand-50 ring-brand-800" : "ring-transparent hover:bg-surface-mist"
@@ -236,6 +277,7 @@ export default function CampaignSetup({
             <Segmented<ProductGroup["kind"]>
               label="ชนิดกลุ่ม"
               value={kind}
+              disabled={locked}
               onChange={(k) => {
                 setKind(k);
                 setGroupId(groups.find((g) => g.kind === k)?.id ?? "");
@@ -249,7 +291,7 @@ export default function CampaignSetup({
             <label htmlFor="fs-group" className="mb-1.5 mt-4 block text-sm font-semibold text-brand-ink">
               {KIND_LABEL[kind]}
             </label>
-            <select id="fs-group" value={group?.id ?? ""} onChange={(e) => setGroupId(e.target.value)} className={fieldClass}>
+            <select id="fs-group" value={group?.id ?? ""} disabled={locked} onChange={(e) => setGroupId(e.target.value)} className={fieldClass}>
               {kindGroups.map((g) => (
                 <option key={g.id} value={g.id}>
                   {g.label} ({g.slugs.length} สินค้า)
@@ -271,6 +313,20 @@ export default function CampaignSetup({
         )}
 
         <div className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="fs-title" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+              ชื่อแคมเปญ
+            </label>
+            <input
+              id="fs-title"
+              type="text"
+              value={titleInput}
+              onChange={(e) => setTitleInput(e.target.value)}
+              placeholder={autoTitle}
+              className={fieldClass}
+            />
+            <p className="mt-1 text-xs text-slate-500">เว้นว่างไว้ระบบจะตั้งชื่อให้จากสินค้าที่เลือก</p>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             <div>
               <label htmlFor="fs-start" className="mb-1.5 block text-sm font-semibold text-brand-ink">
@@ -280,6 +336,7 @@ export default function CampaignSetup({
                 id="fs-start"
                 type="datetime-local"
                 value={startInput}
+                disabled={locked}
                 onChange={(e) => setStartInput(e.target.value)}
                 className={fieldClass}
               />
@@ -314,6 +371,7 @@ export default function CampaignSetup({
             <Segmented<"regular" | "percent" | "fixed">
               label="วิธีตั้งราคา"
               value={priceMode}
+              disabled={locked}
               onChange={setPriceMode}
               options={[
                 { value: "percent", label: "ลด %" },
@@ -334,6 +392,7 @@ export default function CampaignSetup({
                     min={1}
                     max={90}
                     value={percent}
+                    disabled={locked}
                     onChange={(e) => setPercent(Number(e.target.value))}
                     className={`${fieldBase} w-24 pr-7 text-right tabular-nums`}
                   />
@@ -361,6 +420,7 @@ export default function CampaignSetup({
                             min={1}
                             aria-label={`ราคา Flash Sale ${p.name}`}
                             value={fixedPrices[p.slug] ?? ""}
+                            disabled={locked}
                             onChange={(e) => setFixedPrices((m) => ({ ...m, [p.slug]: e.target.value }))}
                             placeholder="0"
                             className={`${fieldBase} min-h-9 w-24 pl-6 text-right tabular-nums`}
@@ -518,6 +578,7 @@ export default function CampaignSetup({
               id="fs-stock"
               type="number"
               inputMode="numeric"
+              disabled={locked}
               min={1}
               max={200}
               value={stock}
@@ -530,7 +591,7 @@ export default function CampaignSetup({
               <label htmlFor="fs-window" className="mb-1.5 block text-sm font-semibold text-brand-ink">
                 เวลาชำระเงิน
               </label>
-              <select id="fs-window" value={windowMinutes} onChange={(e) => setWindowMinutes(Number(e.target.value))} className={fieldClass}>
+              <select id="fs-window" disabled={locked} value={windowMinutes} onChange={(e) => setWindowMinutes(Number(e.target.value))} className={fieldClass}>
                 {[5, 10, 15, 30].map((m) => (
                   <option key={m} value={m}>
                     {m} นาที
@@ -542,7 +603,7 @@ export default function CampaignSetup({
               <label htmlFor="fs-requeue" className="mb-1.5 block text-sm font-semibold text-brand-ink">
                 กลับเข้าคิวได้
               </label>
-              <select id="fs-requeue" value={maxRequeue} onChange={(e) => setMaxRequeue(Number(e.target.value))} className={fieldClass}>
+              <select id="fs-requeue" disabled={locked} value={maxRequeue} onChange={(e) => setMaxRequeue(Number(e.target.value))} className={fieldClass}>
                 {[0, 1, 2, 3, 5].map((n) => (
                   <option key={n} value={n}>
                     {n === 0 ? "ไม่ได้" : `${n} ครั้ง`}
@@ -555,12 +616,18 @@ export default function CampaignSetup({
             <p className="font-semibold text-brand-ink">{products.length} สินค้า · รวม {products.length * stock} ชิ้น</p>
             <p className="mt-0.5 text-xs">1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ · เวลาไทย (GMT+7) · ระบบจริงสร้างรายการขาย 1 แถวต่อสินค้า</p>
           </div>
-          <Button
-            size="lg"
-            fullWidth
-            isDisabled={!canCreate || saving}
-            isPending={saving}
-            onPress={() =>
+          <div className="flex gap-2">
+            {editing && (
+              <Button size="lg" variant="ghost" isDisabled={saving} onPress={onCancelEdit}>
+                ยกเลิก
+              </Button>
+            )}
+            <Button
+              size="lg"
+              fullWidth
+              isDisabled={!canCreate || saving}
+              isPending={saving}
+              onPress={() =>
               onCreate(
                 {
                   mode,
@@ -590,13 +657,14 @@ export default function CampaignSetup({
                         ? { mode: "percent", percent }
                         : { mode: "fixed", prices: Object.fromEntries(products.map((p) => [p.slug, salePriceOf(p) ?? 0])) },
                 },
-                startsAt,
-                endsAt
-              )
-            }
-          >
-            {saving ? "กำลังบันทึก…" : "เพิ่มเข้ารายการ"}
-          </Button>
+                  startsAt,
+                  endsAt
+                )
+              }
+            >
+              {saving ? "กำลังบันทึก…" : editing ? "บันทึกการแก้ไข" : "เพิ่มเข้ารายการ"}
+            </Button>
+          </div>
         </div>
       </div>
     </Card>

@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { CAMPAIGN_COLUMNS, rowToCampaign, type FlashSaleCampaignRow } from "@/lib/flash-sale-campaigns";
+import { CAMPAIGN_COLUMNS, parseCampaignInput, rowToCampaign, type FlashSaleCampaignRow } from "@/lib/flash-sale-campaigns";
+import { updateFlashSaleCampaign } from "@/lib/flash-sale";
+import { getProductBySlug } from "@/data/products";
 
 // Admin: act on one campaign.
+//   PATCH { action: "update", ...campaign }
+//                                 — edit it; how much may change depends on
+//                                   whether it has opened (fs_update_campaign)
 //   PATCH { action: "start_now" } — move starts_at to now (not once it has ended)
 //   PATCH { action: "end_now" }   — stamp ended_manually_at (a campaign ended
 //                                   before its start is simply cancelled)
@@ -24,6 +29,31 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   if (!UUID.test(id)) return NextResponse.json({ ok: false, error: "ไม่พบแคมเปญ" }, { status: 404 });
   const body = await req.json().catch(() => null);
   const now = new Date().toISOString();
+
+  if (body?.action === "update") {
+    const parsed = parseCampaignInput(body);
+    if ("error" in parsed) return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
+    const r = parsed.row;
+    const result = await updateFlashSaleCampaign({
+      ...r,
+      id,
+      products: r.product_slugs.map((slug) => ({
+        slug,
+        variant_id: getProductBySlug(slug)?.variantId ?? null,
+        sale_price: parsed.salePrices[slug],
+      })),
+    });
+    // strict: false — narrow the union by the key that only the failure has.
+    if ("error" in result) {
+      const missing = result.error === "not_found";
+      return NextResponse.json(
+        { ok: false, error: missing ? "ไม่พบแคมเปญ" : "เวลาปิดการขายต้องหลังเวลาเริ่มขาย" },
+        { status: missing ? 404 : 400 }
+      );
+    }
+    const [row] = await supabaseRest<FlashSaleCampaignRow[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=${CAMPAIGN_COLUMNS}`);
+    return NextResponse.json({ ok: true, campaign: rowToCampaign(row), scope: result.scope });
+  }
 
   let filter: string;
   let patch: Record<string, string>;

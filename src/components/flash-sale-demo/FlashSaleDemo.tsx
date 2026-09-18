@@ -48,7 +48,7 @@ import {
   type SchedulerState,
 } from "./scheduler";
 import type { FlashSaleCampaignDTO } from "@/lib/flash-sale-campaigns";
-import CampaignSetup, { type CatalogueItem, type ProductGroup } from "./CampaignSetup";
+import CampaignSetup, { type CatalogueItem, type EditingCampaign, type ProductGroup } from "./CampaignSetup";
 import CampaignList from "./CampaignList";
 import LiveMonitor from "./LiveMonitor";
 
@@ -122,6 +122,10 @@ export default function FlashSaleDemo({
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   const [adminError, setAdminError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // What the database holds for each campaign, so the edit form can start
+  // from the stored values (prices, title) rather than the simulated ones.
+  const [stored, setStored] = useState<Record<string, FlashSaleCampaignDTO>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
   const bySlug = useMemo(() => new Map(catalogue.map((p) => [p.slug, p])), [catalogue]);
 
   // The campaign list lives in the database (flash_sale_campaigns); the sale
@@ -132,6 +136,7 @@ export default function FlashSaleDemo({
       const data = await api<{ campaigns: FlashSaleCampaignDTO[] }>(API, { cache: "no-store" });
       const inputs = data.campaigns.map((c) => toInput(c, bySlug)).filter((x): x is CampaignInput => x !== null);
       setScheduler(loadCampaigns(createScheduler(Date.now()), inputs));
+      setStored(Object.fromEntries(data.campaigns.map((c) => [c.id, c])));
       setLoadState("ready");
     } catch (err) {
       setAdminError(err instanceof Error ? err.message : "โหลดรายการแคมเปญไม่สำเร็จ");
@@ -178,6 +183,22 @@ export default function FlashSaleDemo({
       setAdminError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
     }
   };
+  const editingItem = editingId ? scheduler.items.find((i) => i.id === editingId) : undefined;
+  const editingRow = editingId ? stored[editingId] : undefined;
+  const editingCampaign: EditingCampaign | undefined =
+    editingItem && editingRow
+      ? {
+          id: editingItem.id,
+          title: editingRow.title,
+          startsAt: editingItem.startsAt,
+          endsAt: editingItem.endsAt,
+          salePrices: editingRow.salePrices ?? {},
+          // Once it has opened (or been ended by hand) the stock and the
+          // prices are what people queued for — the server enforces this too.
+          scope: editingItem.status === "scheduled" ? "full" : "limited",
+        }
+      : undefined;
+
   const createStored = (config: CampaignConfig, startsAt: number, endsAt?: number) =>
     runAction(async () => {
       setSaving(true);
@@ -208,6 +229,7 @@ export default function FlashSaleDemo({
         const input = toInput(saved, bySlug);
         if (input) {
           setScheduler((s) => addCampaign(s, input));
+          setStored((m) => ({ ...m, [saved.id]: saved }));
           setSelectedId(saved.id);
           setSelected(0);
         }
@@ -215,6 +237,43 @@ export default function FlashSaleDemo({
         setSaving(false);
       }
     });
+  const updateStored = (id: string) => (config: CampaignConfig, startsAt: number, endsAt?: number) =>
+    runAction(async () => {
+      setSaving(true);
+      try {
+        const { campaign: saved } = await api<{ campaign: FlashSaleCampaignDTO }>(`${API}/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            action: "update",
+            title: config.title,
+            mode: config.mode,
+            kind: config.kind ?? "regular",
+            heroImage: config.presentation?.heroImage ?? null,
+            heroHeadline: config.presentation?.heroHeadline ?? null,
+            heroNote: config.presentation?.heroNote ?? null,
+            heroAlign: config.presentation?.heroAlign ?? "top",
+            accent: config.presentation?.accent ?? null,
+            faq: config.presentation?.faq ?? [],
+            groupKind: config.group?.kind,
+            groupKey: config.group?.key,
+            productSlugs: config.products.map((p) => p.slug),
+            pricing: config.pricing ?? { mode: "regular" },
+            stockPerProduct: config.stockPerProduct,
+            windowMinutes: config.windowMinutes,
+            maxRequeue: config.maxRequeue,
+            startsAt,
+            endsAt: endsAt ?? null,
+          }),
+        });
+        const input = toInput(saved, bySlug);
+        if (input) setScheduler((s) => addCampaign(s, input));
+        setStored((m) => ({ ...m, [saved.id]: saved }));
+        setEditingId(null);
+      } finally {
+        setSaving(false);
+      }
+    });
+
   const startStored = (id: string) =>
     runAction(async () => {
       await api(`${API}/${id}`, { method: "PATCH", body: JSON.stringify({ action: "start_now" }) });
@@ -385,19 +444,29 @@ export default function FlashSaleDemo({
               now={now}
               loading={loadState === "loading"}
               currentId={item?.id}
+              editingId={editingId}
               pick={pick}
               startNow={startStored}
               endNow={endStored}
+              edit={(id) => {
+                setEditingId(id);
+                requestAnimationFrame(() => document.getElementById("fs-setup")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+              }}
               remove={removeStored}
             />
-            <CampaignSetup
-              config={campaign.config}
+            <div id="fs-setup" className="scroll-mt-24">
+              <CampaignSetup
+                key={editingId ?? "new"}
+              config={editingItem?.config ?? campaign.config}
               catalogue={catalogue}
               groups={groups}
               now={now}
               saving={saving}
-              onCreate={createStored}
-            />
+              editing={editingCampaign}
+              onCancelEdit={() => setEditingId(null)}
+                onCreate={editingId ? updateStored(editingId) : createStored}
+              />
+            </div>
             {item && /^[0-9a-f-]{36}$/i.test(item.id) && (
               <LiveMonitor
                 key={item.id}
