@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Button, Card } from "@heroui/react";
 import { Check, Search } from "lucide-react";
 import { formatTHB } from "@/lib/format";
-import { MAX_GROUP_PRODUCTS, type CampaignConfig, type DemoProduct } from "./campaign";
+import { MAX_GROUP_PRODUCTS, SPECIAL_ACCENT_DEFAULT, type CampaignConfig, type DemoProduct } from "./campaign";
 import { fromLocalInput, toLocalInput } from "./scheduler";
 
 export type CatalogueItem = DemoProduct & { category: string; brandSlug: string };
@@ -47,8 +47,8 @@ function Segmented<T extends string>({
   );
 }
 
-const fieldClass =
-  "min-h-11 w-full rounded-xl2 border border-surface-line bg-white px-3 text-sm text-brand-ink focus:border-brand-800 focus:outline-none";
+const fieldBase = "min-h-11 rounded-xl2 border border-surface-line bg-white px-3 text-sm text-brand-ink focus:border-brand-800 focus:outline-none";
+const fieldClass = `${fieldBase} w-full`;
 
 /**
  * Admin side of the demo: pick what the flash sale sells — one product, or a
@@ -82,6 +82,12 @@ export default function CampaignSetup({
   const [stock, setStock] = useState(config.stockPerProduct);
   const [windowMinutes, setWindowMinutes] = useState(config.windowMinutes);
   const [maxRequeue, setMaxRequeue] = useState(config.maxRequeue);
+  const [pageKind, setPageKind] = useState<"regular" | "special">(config.kind ?? "regular");
+  const [heroImage, setHeroImage] = useState(config.presentation?.heroImage ?? "");
+  const [heroHeadline, setHeroHeadline] = useState(config.presentation?.heroHeadline ?? "");
+  const [heroNote, setHeroNote] = useState(config.presentation?.heroNote ?? "");
+  const [accent, setAccent] = useState(config.presentation?.accent ?? SPECIAL_ACCENT_DEFAULT);
+  const [faq, setFaq] = useState<{ q: string; a: string }[]>(config.presentation?.faq ?? []);
   const [priceMode, setPriceMode] = useState<"regular" | "percent" | "fixed">("percent");
   const [percent, setPercent] = useState(20);
   const [fixedPrices, setFixedPrices] = useState<Record<string, string>>({});
@@ -128,7 +134,23 @@ export default function CampaignSetup({
         : priceMode === "fixed" && products.some((p) => (salePriceOf(p) ?? 0) > p.price)
           ? "ราคา Flash Sale ต้องไม่สูงกว่าราคาปกติ"
           : null;
-  const canCreate = products.length > 0 && stock >= 1 && !timeError && !priceError;
+  // A banner has to come from our own site or Shopify's CDN (the server checks
+  // the same thing — src/lib/flash-sale-campaigns.ts).
+  const heroError =
+    pageKind === "special" && heroImage.trim() && !/^\/|^https:\/\/(cdn\.shopify\.com|(www\.)?smoothlife\.com)\//.test(heroImage.trim())
+      ? "แบนเนอร์ต้องเป็นลิงก์ https จาก cdn.shopify.com หรือ smoothlife.com"
+      : null;
+  const canCreate = products.length > 0 && stock >= 1 && !timeError && !priceError && !heroError;
+  const presentation =
+    pageKind === "special"
+      ? {
+          heroImage: heroImage.trim() || undefined,
+          heroHeadline: heroHeadline.trim() || undefined,
+          heroNote: heroNote.trim() || undefined,
+          accent,
+          faq: faq.filter((f) => f.q.trim() && f.a.trim()),
+        }
+      : undefined;
 
   return (
     <Card className="p-5 md:p-6">
@@ -137,15 +159,26 @@ export default function CampaignSetup({
           <h3 className="text-lg font-bold text-brand-ink">สร้างแคมเปญใหม่</h3>
           <p className="text-sm text-slate-500">เลือกสินค้า ตั้งวันเวลา แล้วเพิ่มเข้ารายการ ระบบจะเปิดและปิดการขายให้เองตามเวลา</p>
         </div>
-        <Segmented<CampaignConfig["mode"]>
-          label="ประเภทแคมเปญ"
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: "single", label: "สินค้าชิ้นเดียว" },
-            { value: "group", label: "กลุ่มสินค้า" },
-          ]}
-        />
+        <div className="flex flex-wrap gap-2">
+          <Segmented<CampaignConfig["mode"]>
+            label="ประเภทแคมเปญ"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: "single", label: "สินค้าชิ้นเดียว" },
+              { value: "group", label: "กลุ่มสินค้า" },
+            ]}
+          />
+          <Segmented<"regular" | "special">
+            label="หน้าขาย"
+            value={pageKind}
+            onChange={setPageKind}
+            options={[
+              { value: "regular", label: "แคมเปญธรรมดา" },
+              { value: "special", label: "แคมเปญพิเศษ" },
+            ]}
+          />
+        </div>
       </div>
 
       <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
@@ -287,21 +320,24 @@ export default function CampaignSetup({
               ]}
             />
             {priceMode === "percent" && (
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <label htmlFor="fs-percent" className="text-sm text-slate-600">
                   ลด
                 </label>
-                <input
-                  id="fs-percent"
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={90}
-                  value={percent}
-                  onChange={(e) => setPercent(Number(e.target.value))}
-                  className={`${fieldClass} w-24`}
-                />
-                <span className="text-sm text-slate-600">% จากราคาปกติ ทุกสินค้า (ปัดเป็นบาท)</span>
+                <span className="relative">
+                  <input
+                    id="fs-percent"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={90}
+                    value={percent}
+                    onChange={(e) => setPercent(Number(e.target.value))}
+                    className={`${fieldBase} w-24 pr-7 text-right tabular-nums`}
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">%</span>
+                </span>
+                <span className="text-sm text-slate-600">จากราคาปกติ ทุกสินค้า (ปัดเป็นบาท)</span>
               </div>
             )}
             {priceMode !== "regular" && products.length > 0 && (
@@ -315,16 +351,19 @@ export default function CampaignSetup({
                       </span>
                       <span className="shrink-0 text-xs text-slate-400 line-through">{formatTHB(p.price)}</span>
                       {priceMode === "fixed" ? (
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          min={1}
-                          aria-label={`ราคา Flash Sale ${p.name}`}
-                          value={fixedPrices[p.slug] ?? ""}
-                          onChange={(e) => setFixedPrices((m) => ({ ...m, [p.slug]: e.target.value }))}
-                          placeholder="฿"
-                          className={`${fieldClass} min-h-9 w-24 shrink-0`}
-                        />
+                        <span className="relative shrink-0">
+                          <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-500">฿</span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min={1}
+                            aria-label={`ราคา Flash Sale ${p.name}`}
+                            value={fixedPrices[p.slug] ?? ""}
+                            onChange={(e) => setFixedPrices((m) => ({ ...m, [p.slug]: e.target.value }))}
+                            placeholder="0"
+                            className={`${fieldBase} min-h-9 w-24 pl-6 text-right tabular-nums`}
+                          />
+                        </span>
                       ) : (
                         <span className="w-20 shrink-0 text-right font-semibold text-sale">{sale !== null ? formatTHB(sale) : "-"}</span>
                       )}
@@ -339,6 +378,122 @@ export default function CampaignSetup({
               </p>
             )}
           </fieldset>
+
+          {pageKind === "special" && (
+            <fieldset className="flex flex-col gap-3 rounded-xl2 border border-surface-line p-3">
+              <legend className="px-1 text-sm font-semibold text-brand-ink">หน้าขายแบบพิเศษ</legend>
+              <p className="text-xs text-slate-500">
+                หน้าขายจะเป็นแบบจองบัตรคอนเสิร์ต: แบนเนอร์เต็มจอ นับถอยหลังตัวใหญ่ แล้วค่อยเข้าคิว — ใช้กับคอลเลกชันพิเศษอย่าง KENG x NAMPING
+              </p>
+              <div>
+                <label htmlFor="fs-hero" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+                  ลิงก์รูปแบนเนอร์ (แนวนอน 1440×480)
+                </label>
+                <input
+                  id="fs-hero"
+                  type="url"
+                  value={heroImage}
+                  onChange={(e) => setHeroImage(e.target.value)}
+                  placeholder="https://cdn.shopify.com/…/keng-namping.jpg"
+                  className={fieldClass}
+                />
+                {heroError ? (
+                  <p role="alert" className="mt-1 text-xs text-rose-600">
+                    {heroError}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-slate-500">อัปโหลดไฟล์ไว้ใน Shopify → Content → Files แล้ววางลิงก์ที่นี่ ถ้าเว้นว่างจะใช้รูปสินค้าแทน</p>
+                )}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="fs-headline" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+                    พาดหัวบนแบนเนอร์
+                  </label>
+                  <input
+                    id="fs-headline"
+                    type="text"
+                    value={heroHeadline}
+                    onChange={(e) => setHeroHeadline(e.target.value)}
+                    placeholder="KENG NAMPING"
+                    className={fieldClass}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="fs-accent" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+                    สีหลักของหน้า
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="fs-accent"
+                      type="color"
+                      value={accent}
+                      onChange={(e) => setAccent(e.target.value)}
+                      className="h-11 w-14 shrink-0 cursor-pointer rounded-xl2 border border-surface-line bg-white p-1"
+                    />
+                    <input
+                      type="text"
+                      aria-label="รหัสสีหลัก"
+                      value={accent}
+                      onChange={(e) => setAccent(e.target.value)}
+                      className={`${fieldBase} w-28 uppercase`}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="fs-note" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+                  ข้อความใต้พาดหัว
+                </label>
+                <input
+                  id="fs-note"
+                  type="text"
+                  value={heroNote}
+                  onChange={(e) => setHeroNote(e.target.value)}
+                  placeholder="Exclusive Online · 07.09.2026"
+                  className={fieldClass}
+                />
+              </div>
+              <div>
+                <p className="mb-1.5 text-sm font-semibold text-brand-ink">คำถามที่พบบ่อย (Q&amp;A)</p>
+                <ul className="flex flex-col gap-2">
+                  {faq.map((row, i) => (
+                    <li key={i} className="flex flex-col gap-1.5 rounded-xl2 bg-surface-soft p-2.5">
+                      <input
+                        type="text"
+                        aria-label={`คำถามข้อ ${i + 1}`}
+                        value={row.q}
+                        onChange={(e) => setFaq((list) => list.map((f, j) => (i === j ? { ...f, q: e.target.value } : f)))}
+                        placeholder="คำถาม"
+                        className={`${fieldBase} min-h-9 w-full font-semibold`}
+                      />
+                      <textarea
+                        aria-label={`คำตอบข้อ ${i + 1}`}
+                        value={row.a}
+                        rows={2}
+                        onChange={(e) => setFaq((list) => list.map((f, j) => (i === j ? { ...f, a: e.target.value } : f)))}
+                        placeholder="คำตอบ"
+                        className={`${fieldClass} py-2`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFaq((list) => list.filter((_, j) => j !== i))}
+                        className="self-end text-xs font-semibold text-rose-600 hover:underline"
+                      >
+                        ลบข้อนี้
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {faq.length < 20 && (
+                  <Button size="sm" variant="ghost" className="mt-2" onPress={() => setFaq((list) => [...list, { q: "", a: "" }])}>
+                    + เพิ่มคำถาม
+                  </Button>
+                )}
+              </div>
+            </fieldset>
+          )}
+
           <div>
             <label htmlFor="fs-stock" className="mb-1.5 block text-sm font-semibold text-brand-ink">
               สต็อกต่อสินค้า (ชิ้น)
@@ -393,6 +548,8 @@ export default function CampaignSetup({
               onCreate(
                 {
                   mode,
+                  kind: pageKind,
+                  presentation,
                   title,
                   // Demo shows the flash price, with the regular price struck through.
                   products: products.map((p) => {

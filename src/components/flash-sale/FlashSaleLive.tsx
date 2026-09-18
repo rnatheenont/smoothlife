@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Alert, Button, Card, Chip, ProgressBar, Spinner } from "@heroui/react";
@@ -10,6 +10,7 @@ import type { FlashSaleStatus } from "@/lib/flash-sale";
 import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
 import PaymentModal from "@/components/PaymentModal";
 import { emptyAddressForm, type AddressFormValue } from "@/components/account/AddressFields";
+import { Countdown, Faq, SpecialHero, type CampaignTheme } from "./special";
 
 export type LiveProduct = {
   slug: string;
@@ -57,7 +58,18 @@ const thaiDateTime = (iso: string) =>
  * database every few seconds; the countdowns in between run on the offset
  * from the server's clock, so a wrong clock on the phone changes nothing.
  */
-export default function FlashSaleLive({ campaignId, title, products }: { campaignId: string; title: string; products: LiveProduct[] }) {
+export default function FlashSaleLive({
+  campaignId,
+  title,
+  products,
+  theme,
+}: {
+  campaignId: string;
+  title: string;
+  products: LiveProduct[];
+  /** How the campaign is dressed: the plain page, or the branded drop page. */
+  theme: CampaignTheme;
+}) {
   const [status, setStatus] = useState<Status | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState(products[0]?.slug ?? "");
@@ -167,15 +179,220 @@ export default function FlashSaleLive({ campaignId, title, products }: { campaig
   const windowSeconds = (status?.campaign.window_minutes ?? 15) * 60;
   const remaining = stock ? stock.total - stock.sold : null;
 
+  const startsMs = status ? Date.parse(status.campaign.starts_at) : 0;
+  const endsMs = status?.campaign.ends_at ? Date.parse(status.campaign.ends_at) : null;
+  // What the big countdown counts down to: the opening, then the close.
+  const countdown =
+    status?.campaign.phase === "scheduled"
+      ? { label: "เปิดขายในอีก", ms: startsMs - serverNow }
+      : status?.campaign.phase === "open" && endsMs
+        ? { label: "ปิดการขายในอีก", ms: endsMs - serverNow }
+        : null;
+  const price = priceOf(product);
+
+  const paymentTimer = reserved && (
+    <div className="sticky top-[132px] z-30 -mx-4 mb-4 flex items-center justify-between gap-3 bg-sale px-4 py-2.5 text-white md:top-[150px] md:mx-0 md:rounded-xl2">
+      <span className="flex items-center gap-2 text-sm font-semibold">
+        <Timer size={16} aria-hidden /> ชำระเงินภายใน <span className="text-base tabular-nums">{mmss(secondsLeft)}</span>
+      </span>
+    </div>
+  );
+
+  const alerts = (
+    <>
+      {status?.refundPending && (
+        <Alert status="warning" className="mb-4">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Title>เราได้รับเงินของคุณหลังสิทธิ์จองหมดเวลา</Alert.Title>
+            <Alert.Description>ทีมงานจะคืนเงินเต็มจำนวนไปยังช่องทางที่คุณชำระ ไม่ต้องทำอะไรเพิ่ม หากมีคำถามติดต่อเราทาง LINE</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
+      {loadError && (
+        <Alert status="danger" className="mb-4">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Title>{loadError}</Alert.Title>
+            <Alert.Description>ระบบจะลองโหลดใหม่อัตโนมัติ</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      )}
+    </>
+  );
+
+  const picker = products.length > 1 && (
+    <div className="-mx-4 mb-5 flex snap-x gap-3 overflow-x-auto px-4 pb-1 scrollbar-none md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0 lg:grid-cols-6">
+      {products.map((p) => {
+        const s = status?.products.find((x) => x.slug === p.slug);
+        const isShown = p.slug === product.slug;
+        return (
+          <button
+            key={p.slug}
+            type="button"
+            onClick={() => setSelected(p.slug)}
+            disabled={Boolean(mySlug) && p.slug !== mySlug}
+            aria-pressed={isShown}
+            className={`relative flex w-40 shrink-0 snap-start flex-col overflow-hidden rounded-xl2 bg-white text-left ring-1 transition disabled:opacity-50 md:w-auto ${
+              isShown ? "ring-2 ring-brand-800" : "ring-surface-line hover:ring-brand-800/40"
+            }`}
+          >
+            <span className="relative block aspect-square">
+              <Image src={p.image} alt="" fill sizes="160px" className="object-contain p-3" />
+              {s && s.sold >= s.total && (
+                <span className="absolute inset-0 grid place-items-center bg-white/70 text-sm font-bold text-slate-600">หมดแล้ว</span>
+              )}
+            </span>
+            <span className="flex flex-1 flex-col gap-1 p-2.5">
+              <span className="line-clamp-2 text-xs font-medium text-brand-ink">{p.name}</span>
+              <span className="mt-auto flex items-baseline justify-between gap-1">
+                <span className="text-sm font-bold text-sale">{formatTHB(priceOf(p).pay)}</span>
+                {s && <span className="text-[11px] text-slate-500">เหลือ {s.total - s.sold}</span>}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const stockBlock = stock && (
+    <div className="rounded-xl2 bg-surface-soft p-4">
+      <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
+        <span className="whitespace-nowrap font-semibold text-brand-ink">จำนวนจำกัด {stock.total} ชิ้น</span>
+        <span className="whitespace-nowrap text-slate-600">
+          เหลือ <strong className="text-lg text-sale">{remaining}</strong> ชิ้น
+        </span>
+      </p>
+      <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-surface-muted" aria-hidden>
+        <div className="bg-brand-800 transition-[width] duration-500" style={{ width: `${(stock.sold / stock.total) * 100}%` }} />
+        <div className="bg-amber-400 transition-[width] duration-500" style={{ width: `${(stock.reserved / stock.total) * 100}%` }} />
+      </div>
+      <p className="mt-2 text-xs text-slate-600">
+        ขายแล้ว {stock.sold} · กำลังรอชำระ {stock.reserved} · รอคิว {stock.waiting} คน
+      </p>
+    </div>
+  );
+
+  const checkout = (
+    <div className="mt-5 flex flex-col gap-3">
+      <CheckoutAddressPicker value={address} onChange={setAddress} canSave={Boolean(status?.signedIn)} />
+      <Button fullWidth size="lg" isDisabled={!addressReady || paying} isPending={paying} onPress={pay}>
+        <CreditCard size={18} aria-hidden /> ชำระเงิน {formatTHB(price.pay)}
+      </Button>
+      {status?.me?.payment_pending && (
+        <p className="text-center text-xs text-slate-500">
+          เปิดหน้าชำระเงินไปแล้ว ถ้าชำระเสร็จ ระบบจะยืนยันให้ภายในไม่กี่วินาที ถ้ายังไม่ได้ชำระ กดชำระเงินอีกครั้งได้
+        </p>
+      )}
+      <p className="text-center text-xs text-slate-500">บัตรเครดิต/เดบิต หรือ PromptPay QR ผ่าน 2C2P · ส่งฟรีทั่วไทย</p>
+    </div>
+  );
+
+  const panelBody = !status ? (
+    <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500">
+      <Spinner size="sm" /> กำลังโหลด
+    </div>
+  ) : (
+    <Panel
+      status={status}
+      productName={product.name}
+      productSoldOut={Boolean(stock && stock.sold >= stock.total)}
+      secondsLeft={secondsLeft}
+      windowSeconds={windowSeconds}
+      serverNow={serverNow}
+      busy={busy}
+      loginHref={`/account/login?returnTo=${encodeURIComponent(`/flash-sale/${campaignId}`)}`}
+      join={() => act("join")}
+      leave={() => act("leave")}
+      checkout={checkout}
+      hideOpeningTime={theme.kind === "special"}
+    />
+  );
+
+  const noticeBox = notice && (
+    <p role="alert" className="mt-3 rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+      {notice}
+    </p>
+  );
+
+  const paymentModal = payment && (
+    <PaymentModal
+      webPaymentUrl={payment.url}
+      cartToken={payment.cartToken}
+      onClose={() => {
+        setPayment(null);
+        refresh();
+      }}
+      onPaid={refresh}
+    />
+  );
+
+  const priceRow = (
+    <p className="flex flex-wrap items-baseline gap-2">
+      <span className="text-3xl font-extrabold text-sale">{formatTHB(price.pay)}</span>
+      {price.was && <span className="text-sm text-slate-400 line-through">{formatTHB(price.was)}</span>}
+      {price.percentOff > 0 && (
+        <Chip color="danger" variant="soft" size="sm">
+          ลด {price.percentOff}%
+        </Chip>
+      )}
+    </p>
+  );
+
+  // A special campaign: the key visual first, then the countdown, then one
+  // ticket-like card that carries the product, the price and the queue.
+  if (theme.kind === "special") {
+    return (
+      <div
+        className="bg-[linear-gradient(180deg,#fdfbff_0%,#f4ebff_38%,#ffffff_100%)] pb-16"
+        style={{ "--fs-accent": theme.accent } as CSSProperties}
+      >
+        <SpecialHero image={theme.heroImage} headline={theme.heroHeadline || title} note={theme.heroNote} />
+
+        <div className="mx-auto w-full max-w-6xl px-4">
+          {paymentTimer}
+          <div className="pt-6 md:pt-10">
+            {countdown ? (
+              <Countdown label={countdown.label} ms={countdown.ms} />
+            ) : (
+              <p className="text-center text-lg font-bold text-[var(--fs-accent)]">
+                {status?.campaign.phase === "ended" ? "ปิดการขายแล้ว" : "เปิดขายแล้ว — เข้าคิวได้เลย"}
+              </p>
+            )}
+          </div>
+
+          <div className="mt-6">{alerts}</div>
+          {products.length > 1 && <div className="mt-6">{picker}</div>}
+
+          <div className="mt-6 grid gap-6 rounded-3xl bg-white p-4 shadow-card ring-1 ring-black/5 md:grid-cols-2 md:gap-10 md:p-8 lg:items-center">
+            <div className="relative aspect-square overflow-hidden rounded-2xl bg-[linear-gradient(160deg,#f7f1ff,#ffffff)]">
+              <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 45vw" className="object-contain p-6" priority />
+            </div>
+            <div className="flex flex-col gap-4">
+              <div className="text-center md:text-left">
+                <p className="text-sm text-slate-500">{product.brand}</p>
+                <h2 className="mt-1 text-2xl font-extrabold leading-snug text-[#003529] md:text-3xl">{product.name}</h2>
+              </div>
+              <div className="flex justify-center md:justify-start">{priceRow}</div>
+              {stockBlock}
+              <div>{panelBody}</div>
+              {noticeBox}
+              <p className="text-center text-xs text-slate-500 md:text-left">1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ · ถึงคิวแล้วมีเวลาชำระเงิน {status?.campaign.window_minutes ?? 15} นาที</p>
+            </div>
+          </div>
+
+          <Faq items={theme.faq} />
+        </div>
+
+        {paymentModal}
+      </div>
+    );
+  }
+
   return (
     <div className="container-page py-6 md:py-10">
-      {reserved && (
-        <div className="sticky top-[132px] z-30 -mx-4 mb-4 flex items-center justify-between gap-3 bg-sale px-4 py-2.5 text-white md:top-[150px] md:mx-0 md:rounded-xl2">
-          <span className="flex items-center gap-2 text-sm font-semibold">
-            <Timer size={16} aria-hidden /> ชำระเงินภายใน <span className="text-base tabular-nums">{mmss(secondsLeft)}</span>
-          </span>
-        </div>
-      )}
+      {paymentTimer}
 
       <div className="mb-5">
         <Chip color="danger" variant="primary" size="sm">
@@ -189,60 +406,8 @@ export default function FlashSaleLive({ campaignId, title, products }: { campaig
         )}
       </div>
 
-      {status?.refundPending && (
-        <Alert status="warning" className="mb-4">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>เราได้รับเงินของคุณหลังสิทธิ์จองหมดเวลา</Alert.Title>
-            <Alert.Description>ทีมงานจะคืนเงินเต็มจำนวนไปยังช่องทางที่คุณชำระ ไม่ต้องทำอะไรเพิ่ม หากมีคำถามติดต่อเราทาง LINE</Alert.Description>
-          </Alert.Content>
-        </Alert>
-      )}
-
-      {loadError && (
-        <Alert status="danger" className="mb-4">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>{loadError}</Alert.Title>
-            <Alert.Description>ระบบจะลองโหลดใหม่อัตโนมัติ</Alert.Description>
-          </Alert.Content>
-        </Alert>
-      )}
-
-      {products.length > 1 && (
-        <div className="-mx-4 mb-5 flex snap-x gap-3 overflow-x-auto px-4 pb-1 scrollbar-none md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0 lg:grid-cols-6">
-          {products.map((p) => {
-            const s = status?.products.find((x) => x.slug === p.slug);
-            const isShown = p.slug === product.slug;
-            return (
-              <button
-                key={p.slug}
-                type="button"
-                onClick={() => setSelected(p.slug)}
-                disabled={Boolean(mySlug) && p.slug !== mySlug}
-                aria-pressed={isShown}
-                className={`relative flex w-40 shrink-0 snap-start flex-col overflow-hidden rounded-xl2 bg-white text-left ring-1 transition disabled:opacity-50 md:w-auto ${
-                  isShown ? "ring-2 ring-brand-800" : "ring-surface-line hover:ring-brand-800/40"
-                }`}
-              >
-                <span className="relative block aspect-square">
-                  <Image src={p.image} alt="" fill sizes="160px" className="object-contain p-3" />
-                  {s && s.sold >= s.total && (
-                    <span className="absolute inset-0 grid place-items-center bg-white/70 text-sm font-bold text-slate-600">หมดแล้ว</span>
-                  )}
-                </span>
-                <span className="flex flex-1 flex-col gap-1 p-2.5">
-                  <span className="line-clamp-2 text-xs font-medium text-brand-ink">{p.name}</span>
-                  <span className="mt-auto flex items-baseline justify-between gap-1">
-                    <span className="text-sm font-bold text-sale">{formatTHB(priceOf(p).pay)}</span>
-                    {s && <span className="text-[11px] text-slate-500">เหลือ {s.total - s.sold}</span>}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {alerts}
+      {picker}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
         <Card className="overflow-hidden p-0">
@@ -255,32 +420,8 @@ export default function FlashSaleLive({ campaignId, title, products }: { campaig
                 <p className="text-sm text-slate-500">{product.brand}</p>
                 <h2 className="mt-1 text-xl font-bold leading-snug text-brand-ink">{product.name}</h2>
               </div>
-              <p className="flex flex-wrap items-baseline gap-2">
-                <span className="text-3xl font-extrabold text-sale">{formatTHB(priceOf(product).pay)}</span>
-                {priceOf(product).was && <span className="text-sm text-slate-400 line-through">{formatTHB(priceOf(product).was!)}</span>}
-                {priceOf(product).percentOff > 0 && (
-                  <Chip color="danger" variant="soft" size="sm">
-                    ลด {priceOf(product).percentOff}%
-                  </Chip>
-                )}
-              </p>
-              {stock && (
-                <div className="rounded-xl2 bg-surface-soft p-4">
-                  <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
-                    <span className="whitespace-nowrap font-semibold text-brand-ink">จำนวนจำกัด {stock.total} ชิ้น</span>
-                    <span className="whitespace-nowrap text-slate-600">
-                      เหลือ <strong className="text-lg text-sale">{remaining}</strong> ชิ้น
-                    </span>
-                  </p>
-                  <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-surface-muted" aria-hidden>
-                    <div className="bg-brand-800 transition-[width] duration-500" style={{ width: `${(stock.sold / stock.total) * 100}%` }} />
-                    <div className="bg-amber-400 transition-[width] duration-500" style={{ width: `${(stock.reserved / stock.total) * 100}%` }} />
-                  </div>
-                  <p className="mt-2 text-xs text-slate-600">
-                    ขายแล้ว {stock.sold} · กำลังรอชำระ {stock.reserved} · รอคิว {stock.waiting} คน
-                  </p>
-                </div>
-              )}
+              {priceRow}
+              {stockBlock}
               <ul className="flex flex-col gap-2 text-sm text-slate-600">
                 <li className="flex items-center gap-2">
                   <Users size={16} className="shrink-0 text-brand-800" aria-hidden /> 1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ
@@ -294,59 +435,12 @@ export default function FlashSaleLive({ campaignId, title, products }: { campaig
         </Card>
 
         <div className="lg:sticky lg:top-40">
-          <Card className="p-5 md:p-6">
-            {!status ? (
-              <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500">
-                <Spinner size="sm" /> กำลังโหลด
-              </div>
-            ) : (
-              <Panel
-                status={status}
-                productName={product.name}
-                productSoldOut={Boolean(stock && stock.sold >= stock.total)}
-                secondsLeft={secondsLeft}
-                windowSeconds={windowSeconds}
-                serverNow={serverNow}
-                busy={busy}
-                loginHref={`/account/login?returnTo=${encodeURIComponent(`/flash-sale/${campaignId}`)}`}
-                join={() => act("join")}
-                leave={() => act("leave")}
-                checkout={
-                  <div className="mt-5 flex flex-col gap-3">
-                    <CheckoutAddressPicker value={address} onChange={setAddress} canSave={status.signedIn} />
-                    <Button fullWidth size="lg" isDisabled={!addressReady || paying} isPending={paying} onPress={pay}>
-                      <CreditCard size={18} aria-hidden /> ชำระเงิน {formatTHB(priceOf(product).pay)}
-                    </Button>
-                    {status.me?.payment_pending && (
-                      <p className="text-center text-xs text-slate-500">
-                        เปิดหน้าชำระเงินไปแล้ว ถ้าชำระเสร็จ ระบบจะยืนยันให้ภายในไม่กี่วินาที ถ้ายังไม่ได้ชำระ กดชำระเงินอีกครั้งได้
-                      </p>
-                    )}
-                    <p className="text-center text-xs text-slate-500">บัตรเครดิต/เดบิต หรือ PromptPay QR ผ่าน 2C2P · ส่งฟรีทั่วไทย</p>
-                  </div>
-                }
-              />
-            )}
-          </Card>
-          {notice && (
-            <p role="alert" className="mt-3 rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {notice}
-            </p>
-          )}
+          <Card className="p-5 md:p-6">{panelBody}</Card>
+          {noticeBox}
         </div>
       </div>
 
-      {payment && (
-        <PaymentModal
-          webPaymentUrl={payment.url}
-          cartToken={payment.cartToken}
-          onClose={() => {
-            setPayment(null);
-            refresh();
-          }}
-          onPaid={refresh}
-        />
-      )}
+      {paymentModal}
     </div>
   );
 }
@@ -363,8 +457,11 @@ function Panel({
   join,
   leave,
   checkout,
+  hideOpeningTime = false,
 }: {
   checkout: React.ReactNode;
+  /** The special page already counts down to the opening in its own header. */
+  hideOpeningTime?: boolean;
   status: Status;
   productName: string;
   productSoldOut: boolean;
@@ -427,10 +524,14 @@ function Panel({
   if (campaign.phase === "scheduled") {
     return (
       <div>
-        <p className="text-sm text-slate-600">เปิดขาย {thaiDateTime(campaign.starts_at)}</p>
-        <p className="text-4xl font-extrabold tabular-nums text-brand-ink" suppressHydrationWarning>
-          {untilLabel(Date.parse(campaign.starts_at) - serverNow)}
-        </p>
+        {!hideOpeningTime && (
+          <>
+            <p className="text-sm text-slate-600">เปิดขาย {thaiDateTime(campaign.starts_at)}</p>
+            <p className="text-4xl font-extrabold tabular-nums text-brand-ink" suppressHydrationWarning>
+              {untilLabel(Date.parse(campaign.starts_at) - serverNow)}
+            </p>
+          </>
+        )}
         <Button fullWidth size="lg" className="mt-5" isDisabled>
           เข้าคิว
         </Button>

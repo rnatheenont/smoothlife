@@ -70,7 +70,14 @@ export default function CampaignList({
                       ))}
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-brand-ink">{i.config.title}</span>
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate text-sm font-semibold text-brand-ink">{i.config.title}</span>
+                        {i.config.kind === "special" && (
+                          <Chip size="sm" variant="soft" color="accent">
+                            พิเศษ
+                          </Chip>
+                        )}
+                      </span>
                       <span className="block text-xs text-slate-500" suppressHydrationWarning>
                         {thaiDateTime(i.startsAt)} → {i.endsAt ? thaiDateTime(i.endsAt) : "จนกว่าของหมด"}
                       </span>

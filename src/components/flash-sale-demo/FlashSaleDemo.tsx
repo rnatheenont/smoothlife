@@ -77,6 +77,14 @@ function toInput(c: FlashSaleCampaignDTO, bySlug: Map<string, CatalogueItem>): C
     endedManuallyAt: c.endedManuallyAt ?? undefined,
     config: {
       mode: c.mode,
+      kind: c.kind,
+      presentation: {
+        heroImage: c.presentation.heroImage ?? undefined,
+        heroHeadline: c.presentation.heroHeadline ?? undefined,
+        heroNote: c.presentation.heroNote ?? undefined,
+        accent: c.presentation.accent ?? undefined,
+        faq: c.presentation.faq,
+      },
       title: c.title,
       products,
       stockPerProduct: c.stockPerProduct,
@@ -178,6 +186,12 @@ export default function FlashSaleDemo({
           body: JSON.stringify({
             title: config.title,
             mode: config.mode,
+            kind: config.kind ?? "regular",
+            heroImage: config.presentation?.heroImage ?? null,
+            heroHeadline: config.presentation?.heroHeadline ?? null,
+            heroNote: config.presentation?.heroNote ?? null,
+            accent: config.presentation?.accent ?? null,
+            faq: config.presentation?.faq ?? [],
             groupKind: config.group?.kind,
             groupKey: config.group?.key,
             productSlugs: config.products.map((p) => p.slug),

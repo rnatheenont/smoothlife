@@ -30,7 +30,19 @@ export type DemoProduct = {
   compareAtPrice?: number;
 };
 
+/** The look of a "special" campaign's sale page (see CampaignKind in lib/flash-sale-campaigns). */
+export type CampaignPresentation = {
+  heroImage?: string;
+  heroHeadline?: string;
+  heroNote?: string;
+  accent?: string;
+  faq?: { q: string; a: string }[];
+};
+
 export type CampaignConfig = {
+  /** "special" gets the branded drop page; "regular" the plain flash-sale page. */
+  kind?: "regular" | "special";
+  presentation?: CampaignPresentation;
   /** "single" = one product; "group" = every product in the chosen group. */
   mode: "single" | "group";
   title: string;
@@ -52,6 +64,9 @@ export type CampaignState = {
 };
 
 export const MAX_GROUP_PRODUCTS = 12;
+
+/** The purple of the KENG x NAMPING key visual — the default accent for a special campaign. */
+export const SPECIAL_ACCENT_DEFAULT = "#952ede";
 
 /** `opensIn` 0 = the sale opens the moment the campaign starts (scheduled runs). */
 export function createCampaign(config: CampaignConfig, opensIn = 0): CampaignState {

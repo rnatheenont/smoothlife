@@ -4,10 +4,30 @@
 // later caller agree on what a valid campaign is.
 import { getProductBySlug } from "@/data/products";
 
+/** Which sale page the campaign gets: the plain one, or the branded drop page. */
+export type CampaignKind = "regular" | "special";
+
+/** The look of a "special" campaign's sale page — banner, colour and Q&A. */
+export type CampaignPresentation = {
+  heroImage: string | null;
+  heroHeadline: string | null;
+  heroNote: string | null;
+  accent: string | null;
+  faq: { q: string; a: string }[];
+};
+
+export const DEFAULT_ACCENT = "#952ede";
+
 export type FlashSaleCampaignRow = {
   id: string;
   title: string;
   mode: "single" | "group";
+  kind: CampaignKind;
+  hero_image_url: string | null;
+  hero_headline: string | null;
+  hero_note: string | null;
+  accent_color: string | null;
+  faq: { q: string; a: string }[];
   group_kind: "category" | "brand" | "collection" | null;
   group_key: string | null;
   product_slugs: string[];
@@ -23,13 +43,15 @@ export type FlashSaleCampaignRow = {
 };
 
 export const CAMPAIGN_COLUMNS =
-  "id,title,mode,group_kind,group_key,product_slugs,stock_per_product,reservation_window_minutes,max_requeue_per_customer,starts_at,ends_at,ended_manually_at,created_at,flash_sales(product_slug,sale_price)";
+  "id,title,mode,kind,hero_image_url,hero_headline,hero_note,accent_color,faq,group_kind,group_key,product_slugs,stock_per_product,reservation_window_minutes,max_requeue_per_customer,starts_at,ends_at,ended_manually_at,created_at,flash_sales(product_slug,sale_price)";
 
 /** What the admin page receives: times as epoch ms. */
 export type FlashSaleCampaignDTO = {
   id: string;
   title: string;
   mode: "single" | "group";
+  kind: CampaignKind;
+  presentation: CampaignPresentation;
   groupKind: FlashSaleCampaignRow["group_kind"];
   groupKey: string | null;
   productSlugs: string[];
@@ -48,6 +70,14 @@ export function rowToCampaign(r: FlashSaleCampaignRow): FlashSaleCampaignDTO {
     id: r.id,
     title: r.title,
     mode: r.mode,
+    kind: r.kind === "special" ? "special" : "regular",
+    presentation: {
+      heroImage: r.hero_image_url,
+      heroHeadline: r.hero_headline,
+      heroNote: r.hero_note,
+      accent: r.accent_color,
+      faq: Array.isArray(r.faq) ? r.faq : [],
+    },
     groupKind: r.group_kind,
     groupKey: r.group_key,
     productSlugs: r.product_slugs,
@@ -77,6 +107,47 @@ export type PricingInput =
 
 const MAX_PRODUCTS = 12;
 
+/** A banner has to come from our own storefront or Shopify's CDN — it is rendered on the sale page. */
+const IMAGE_HOSTS = ["cdn.shopify.com", "www.smoothlife.com", "smoothlife.com"];
+
+function parseHeroImage(value: unknown): string | null | { error: string } {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value !== "string" || value.length > 1000) return { error: "ลิงก์รูปแบนเนอร์ไม่ถูกต้อง" };
+  // Files shipped with the site are allowed as-is.
+  if (value.startsWith("/")) return value;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return { error: "ลิงก์รูปแบนเนอร์ไม่ถูกต้อง" };
+  }
+  if (url.protocol !== "https:" || !IMAGE_HOSTS.includes(url.hostname)) {
+    return { error: `รูปแบนเนอร์ต้องเป็นลิงก์ https จาก ${IMAGE_HOSTS.join(" หรือ ")}` };
+  }
+  return url.toString();
+}
+
+/** The "special" campaign's page dressing; ignored for regular campaigns. */
+function parsePresentation(b: Record<string, unknown>): Pick<FlashSaleCampaignRow, "hero_image_url" | "hero_headline" | "hero_note" | "accent_color" | "faq"> | { error: string } {
+  const text = (v: unknown, max: number) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
+  const hero = parseHeroImage(b.heroImage);
+  if (hero !== null && typeof hero === "object") return hero;
+
+  const accent = text(b.accent, 7);
+  if (accent && !/^#[0-9a-fA-F]{6}$/.test(accent)) return { error: "สีหลักต้องเป็นรหัสสีแบบ #RRGGBB" };
+
+  const rawFaq = Array.isArray(b.faq) ? b.faq : [];
+  if (rawFaq.length > 20) return { error: "คำถามที่พบบ่อยใส่ได้ไม่เกิน 20 ข้อ" };
+  const faq = rawFaq
+    .map((item) => {
+      const row = (item ?? {}) as Record<string, unknown>;
+      return { q: text(row.q, 200) ?? "", a: text(row.a, 1000) ?? "" };
+    })
+    .filter((row) => row.q && row.a);
+
+  return { hero_image_url: hero as string | null, hero_headline: text(b.heroHeadline, 120), hero_note: text(b.heroNote, 300), accent_color: accent, faq };
+}
+
 /** Validates a create request; returns the row to insert or a Thai error message. */
 export function parseCampaignInput(
   body: unknown
@@ -89,6 +160,9 @@ export function parseCampaignInput(
 
   const mode = b.mode;
   if (mode !== "single" && mode !== "group") return { error: "ประเภทแคมเปญไม่ถูกต้อง" };
+  const kind: CampaignKind = b.kind === "special" ? "special" : "regular";
+  const presentation = parsePresentation(b);
+  if ("error" in presentation) return { error: presentation.error };
   const groupKind = mode === "group" ? b.groupKind : null;
   const groupKey = mode === "group" && typeof b.groupKey === "string" ? b.groupKey.slice(0, 200) : null;
   if (mode === "group" && (!["category", "brand", "collection"].includes(String(groupKind)) || !groupKey)) {
@@ -143,6 +217,9 @@ export function parseCampaignInput(
     row: {
       title,
       mode,
+      kind,
+      // A regular campaign keeps the plain page, so its dressing is not stored.
+      ...(kind === "special" ? presentation : { hero_image_url: null, hero_headline: null, hero_note: null, accent_color: null, faq: [] }),
       group_kind: groupKind as FlashSaleCampaignRow["group_kind"],
       group_key: groupKey,
       product_slugs: slugs,
