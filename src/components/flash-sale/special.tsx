@@ -123,27 +123,31 @@ export type PickerItem = {
 const baht = (n: number) => `฿${n.toLocaleString("th-TH")}`;
 
 /**
- * Which set of the drop to buy. Centred and wrapping rather than a scrolling
- * row: a drop has a handful of sets, and on a phone a row that runs off the
- * edge hides half of them.
+ * Which set of the drop to buy. A phone gets one swipeable row so the sets
+ * cost a single screen-height between the countdown and the queue button;
+ * from tablet up they wrap, centred, since the whole row fits.
  */
 export function SetPicker({ items, value, onChange }: { items: PickerItem[]; value: string; onChange: (slug: string) => void }) {
   if (items.length < 2) return null;
   return (
     <section className="mt-6">
       <h2 className="text-center text-sm font-semibold text-slate-600">เลือกเซ็ตที่ต้องการ</h2>
-      <ul className="mt-3 flex flex-wrap justify-center gap-3" role="radiogroup" aria-label="เลือกเซ็ตที่ต้องการ">
+      <ul
+        className="-mx-4 mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scrollbar-none sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0"
+        role="radiogroup"
+        aria-label="เลือกเซ็ตที่ต้องการ"
+      >
         {items.map((item) => {
           const isOn = item.slug === value;
           return (
-            <li key={item.slug}>
+            <li key={item.slug} className="shrink-0 snap-start">
               <button
                 type="button"
                 role="radio"
                 aria-checked={isOn}
                 disabled={item.disabled}
                 onClick={() => onChange(item.slug)}
-                className={`flex h-full w-36 flex-col overflow-hidden rounded-2xl bg-white text-left transition disabled:opacity-50 sm:w-44 ${
+                className={`flex h-full w-[8.5rem] flex-col overflow-hidden rounded-2xl bg-white text-left transition disabled:opacity-50 sm:w-44 ${
                   isOn ? "ring-2 ring-[var(--fs-accent)]" : "ring-1 ring-surface-line hover:ring-[var(--fs-accent)]/50"
                 }`}
               >
