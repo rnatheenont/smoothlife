@@ -138,3 +138,32 @@ export async function lastProductSyncAt(): Promise<string | null> {
   );
   return row?.updated_at ?? null;
 }
+
+/**
+ * Articles whose chunks have no embedding yet — everything written before an
+ * embedding provider was configured. Reindexing rewrites them with one, so the
+ * search quietly upgrades itself instead of waiting for someone to press a
+ * button in an admin screen they may never open.
+ */
+export async function backfillEmbeddings(budgetMs = 60_000): Promise<{ indexed: number; remaining: number }> {
+  if (!process.env.VOYAGE_API_KEY) return { indexed: 0, remaining: 0 };
+
+  const pending = await supabaseRest<{ article_id: string }[]>(
+    "kb_chunks?embedding=is.null&select=article_id&limit=2000"
+  ).catch((): { article_id: string }[] => []);
+  const ids = [...new Set(pending.map((c) => c.article_id))];
+  if (ids.length === 0) return { indexed: 0, remaining: 0 };
+
+  const started = Date.now();
+  let indexed = 0;
+  for (const id of ids) {
+    if (Date.now() - started > budgetMs) break;
+    const [article] = await supabaseRest<Pick<KbArticle, "id" | "title" | "content">[]>(
+      `kb_articles?id=eq.${pgValue(id)}&select=id,title,content`
+    );
+    if (!article) continue;
+    await reindexArticle(article);
+    indexed += 1;
+  }
+  return { indexed, remaining: Math.max(0, ids.length - indexed) };
+}

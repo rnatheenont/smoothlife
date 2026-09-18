@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
+import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { reindexArticle, type KbArticle } from "@/lib/kb";
 
@@ -22,15 +22,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "ยังไม่ได้ตั้งค่า VOYAGE_API_KEY — ตอนนี้ค้นหาด้วยการจับคู่ข้อความอยู่แล้ว ไม่ต้องสร้าง embedding" }, { status: 400 });
   }
 
-  const body = (await req.json().catch(() => null)) as { offset?: number } | null;
-  const offset = Number.isInteger(body?.offset) && (body?.offset ?? 0) >= 0 ? (body!.offset as number) : 0;
+  // Only what is missing: an article whose chunks already carry embeddings
+  // does not need paying for again.
+  const pending = await supabaseRest<{ article_id: string }[]>("kb_chunks?embedding=is.null&select=article_id&limit=5000");
+  const ids = [...new Set(pending.map((c) => c.article_id))];
+  if (ids.length === 0) return NextResponse.json({ ok: true, indexed: 0, total: 0, nextOffset: null });
 
-  const [{ count } = { count: 0 }] = await supabaseRest<{ count: number }[]>("kb_articles?select=count");
-  const articles = await supabaseRest<Pick<KbArticle, "id" | "title" | "content">[]>(
-    `kb_articles?select=id,title,content&order=created_at.asc&limit=${BATCH}&offset=${offset}`
-  );
-  for (const article of articles) await reindexArticle(article);
+  const slice = ids.slice(0, BATCH);
+  for (const id of slice) {
+    const [article] = await supabaseRest<Pick<KbArticle, "id" | "title" | "content">[]>(
+      `kb_articles?id=eq.${pgValue(id)}&select=id,title,content`
+    );
+    if (article) await reindexArticle(article);
+  }
 
-  const done = offset + BATCH >= Number(count);
-  return NextResponse.json({ ok: true, indexed: articles.length, total: Number(count), nextOffset: done ? null : offset + BATCH });
+  // The caller asks again until nothing is left; each round re-reads what is
+  // still missing, so finishing is not a matter of counting offsets right.
+  return NextResponse.json({ ok: true, indexed: slice.length, total: ids.length, nextOffset: ids.length > slice.length ? 0 : null });
 }

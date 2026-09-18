@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured } from "@/lib/supabase-server";
-import { syncProductArticles } from "@/lib/kb-products";
+import { backfillEmbeddings, syncProductArticles } from "@/lib/kb-products";
 
-// Daily: keep the assistant's product knowledge in step with the catalogue.
+// Daily knowledge-base maintenance: keep the product articles in step with
+// the catalogue, and give an embedding to anything still without one (every
+// article written before an embedding provider was configured).
 // It runs after the catalogue refresh (vercel.json), so a build that brought
 // new product text is in the knowledge base the same morning. Runs are cheap
 // when nothing changed — only articles whose text differs are rewritten.
@@ -29,7 +31,9 @@ export async function GET(req: NextRequest) {
       totals.total = slice.total;
       offset = slice.nextOffset;
     }
-    return NextResponse.json({ ok: true, ...totals, finished: offset === null, resumeFrom: offset });
+    // Whatever time is left goes to articles that still have no embedding.
+    const backfill = await backfillEmbeddings(Math.max(10_000, 240_000 - (Date.now() - started)));
+    return NextResponse.json({ ok: true, ...totals, finished: offset === null, resumeFrom: offset, backfill });
   } catch (err) {
     console.error("[cron] kb product sync failed", err);
     return NextResponse.json({ ok: false, error: "sync failed" }, { status: 500 });

@@ -184,9 +184,9 @@ export default function AdminKnowledgeBasePage() {
         if (!res.ok || !data.ok) throw new Error(data.error || "สร้าง embedding ไม่สำเร็จ");
         done += data.indexed;
         offset = data.nextOffset;
-        setSyncNote(`กำลังสร้าง embedding… ${done}/${data.total} บทความ`);
+        setSyncNote(`กำลังสร้าง embedding… ทำแล้ว ${done} · เหลือ ${Math.max(0, data.total - data.indexed)} บทความ`);
       }
-      setSyncNote(`สร้าง embedding ครบแล้ว ${done} บทความ`);
+      setSyncNote(done > 0 ? `สร้าง embedding ครบแล้ว ${done} บทความ` : "ทุกบทความมี embedding อยู่แล้ว");
     } catch (err) {
       setError(err instanceof Error ? err.message : "สร้าง embedding ไม่สำเร็จ");
     } finally {
@@ -315,10 +315,10 @@ export default function AdminKnowledgeBasePage() {
             type="button"
             onClick={reindexAll}
             disabled={indexing}
-            title="สร้าง embedding ใหม่ให้ทุกบทความ (ใช้ครั้งเดียวหลังเพิ่ม VOYAGE_API_KEY)"
+            title="สร้าง embedding ให้บทความที่ยังไม่มี (หลังเพิ่ม VOYAGE_API_KEY)"
             className="min-h-11 rounded-full px-4 text-sm font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
           >
-            {indexing ? "กำลังสร้าง embedding…" : "สร้าง embedding ใหม่ทั้งหมด"}
+            {indexing ? "กำลังสร้าง embedding…" : "สร้าง embedding ที่ยังขาด"}
           </button>
         )}
         <button
