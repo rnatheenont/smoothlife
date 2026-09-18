@@ -10,10 +10,15 @@ import {
 } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
 import { subscriptionBillingConfigured } from "@/lib/2c2p";
+import { getSellableSets } from "@/lib/subscription-sets";
 import SubscriptionPicker from "@/components/SubscriptionPicker";
 import SubscriptionTermsInfo from "@/components/SubscriptionTermsInfo";
 
 export const metadata = { title: "Subscription สมัครสมาชิกรายรอบ | Smoothlife.com" };
+
+// The curated sets are read per request: a set whose stock ran out has to stop
+// being offered the same day, not at the next build.
+export const dynamic = "force-dynamic";
 
 const perks = [
   { icon: Truck, label: "ส่งฟรีทุกรอบ" },
@@ -21,9 +26,12 @@ const perks = [
   { icon: ShieldCheck, label: "ของแท้ 100% มีอย." },
 ];
 
-export default function SubscriptionPage() {
+export default async function SubscriptionPage() {
   const maxDiscount = Math.max(...subscriptionPlans.map((p) => p.discountPct));
   const billingEnabled = subscriptionBillingConfigured();
+  // Sets the shop assembled in the admin console — only the ones that can be
+  // sold right now (see getSellableSets).
+  const curatedSets = await getSellableSets();
 
   return (
     <div>
@@ -60,7 +68,53 @@ export default function SubscriptionPage() {
       <section className="container-page py-10 md:py-14">
         <h2 className="text-xl md:text-2xl font-extrabold text-brand-ink mb-1">เลือกชุดสมัครสมาชิก</h2>
         <p className="text-sm text-slate-500 mb-6">ชุดสินค้าที่ทีมคัดมาให้ครบ ไม่ต้องเลือกเอง ใช้ต่อเนื่องได้จริง</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-5">
+          {curatedSets.map((set) => {
+            const cheapestPlan = subscriptionPlans[0];
+            const perCyclePrice = Math.round(set.summary.bundle * (1 - cheapestPlan.discountPct / 100));
+            const images = set.summary.items.map((i) => i.image).filter((src): src is string => Boolean(src));
+            return (
+              <Link
+                key={set.id}
+                href={`/subscription/set/${set.id}`}
+                className="group flex flex-col overflow-hidden rounded-xl2 border border-slate-100 bg-white shadow-card transition-shadow hover:shadow-cardHover"
+              >
+                <div className="relative grid aspect-4/3 grid-cols-3 gap-px bg-surface-soft p-px">
+                  {images.slice(0, 3).map((src, i) => (
+                    <div key={`${set.id}-${i}`} className="relative bg-white">
+                      <Image src={src} alt="" fill className="object-cover" sizes="200px" />
+                    </div>
+                  ))}
+                  {set.summary.savingPercent > 0 && (
+                    <span className="absolute left-2 top-2 rounded-full bg-sale px-2 py-0.5 text-[11px] font-bold text-white">
+                      ประหยัด {set.summary.savingPercent}%
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-1 flex-col gap-1.5 p-4">
+                  <h3 className="font-bold text-brand-ink">{set.name}</h3>
+                  <p className="line-clamp-2 flex-1 text-xs text-slate-500">
+                    {set.description || `${set.summary.items.length} รายการในชุด · ส่งทุก ${set.interval_days} วัน`}
+                  </p>
+                  <div className="mt-1 flex items-end justify-between">
+                    <div>
+                      <span className="text-[11px] text-slate-500">เริ่มต้น/รอบ</span>
+                      <p className="flex items-baseline gap-1.5">
+                        <span className="text-lg font-extrabold text-brand-800">{formatTHB(perCyclePrice)}</span>
+                        {set.summary.saving > 0 && (
+                          <span className="text-xs text-slate-400 line-through">{formatTHB(set.summary.separately)}</span>
+                        )}
+                      </p>
+                    </div>
+                    <span className="flex items-center gap-0.5 text-xs font-semibold text-brand-800">
+                      ดูรายละเอียด <ChevronRight size={13} />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+
           {subscriptionSets.map((set) => {
             const items = subscriptionSetProducts(set);
             const total = items.reduce((sum, p) => sum + p.price, 0);

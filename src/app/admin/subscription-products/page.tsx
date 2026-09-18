@@ -96,7 +96,16 @@ export default function AdminSubscriptionProductsPage() {
   // The set builder searches the whole catalogue in the browser; it only needs
   // what a row shows, so the heavy fields stay out of the payload.
   const catalogue = useMemo(
-    () => products.map((p) => ({ slug: p.slug, name: p.name, brand: p.brand, image: p.image, price: p.price, inStock: p.inStock })),
+    () =>
+      products.map((p) => ({
+        slug: p.slug,
+        name: p.name,
+        brand: p.brand,
+        image: p.image,
+        price: p.price,
+        inStock: p.inStock,
+        category: p.category,
+      })),
     []
   );
 

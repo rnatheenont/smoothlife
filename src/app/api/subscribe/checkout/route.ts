@@ -11,6 +11,7 @@ import {
   BUNDLE_DISCOUNT_PCT,
 } from "@/data/subscriptions";
 import { subscriptionBillingConfigured, createRecurringPaymentToken } from "@/lib/2c2p";
+import { getSetById } from "@/lib/subscription-sets";
 
 export async function POST(req: NextRequest) {
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ ok: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
 
-  const { productSlug, variantId, setSlug, bundleItems, months, shippingAddress, consentRecurringCharge } = body;
+  const { productSlug, variantId, setSlug, curatedSetId, bundleItems, months, shippingAddress, consentRecurringCharge } = body;
   const plan = subscriptionPlans.find((p) => p.months === months);
   if (!plan) return NextResponse.json({ ok: false, error: "ระยะเวลาสมัครไม่ถูกต้อง" }, { status: 400 });
 
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
   // real_subscriptions row (see migration real_subscriptions_support_sets).
   let subscriptionType: "single_product" | "set" | "custom_bundle";
   let displayName: string;
+  let curatedSet: Awaited<ReturnType<typeof getSetById>> = null;
   let items: { slug: string; variantId: string; price: number }[];
 
   if (Array.isArray(bundleItems) && bundleItems.length > 0) {
@@ -76,6 +78,34 @@ export async function POST(req: NextRequest) {
     subscriptionType = "custom_bundle";
     displayName = `ชุดที่คุณจัดเอง (${resolved.length} ชิ้น)`;
     items = resolved;
+  } else if (curatedSetId) {
+    // A set the shop assembled in the admin console. Its price is whatever an
+    // admin set — never recomputed from the parts — and it may carry more than
+    // one of an item.
+    const set = await getSetById(String(curatedSetId));
+    if (!set) return NextResponse.json({ ok: false, error: "ไม่พบชุดสินค้านี้" }, { status: 404 });
+    // Checked here and not only in the page: a set whose stock ran out while
+    // the customer was reading must not be sold. A bundle is a promise about
+    // its contents, so one missing item stops the whole thing.
+    if (!set.summary.sellable) {
+      const missing = set.summary.outOfStock.map((i) => i.name).join(", ");
+      return NextResponse.json(
+        { ok: false, error: missing ? `ชุดนี้ยังสมัครไม่ได้ เพราะ ${missing} หมดสต็อก` : "ชุดนี้ยังไม่เปิดขาย" },
+        { status: 409 }
+      );
+    }
+
+    subscriptionType = "set";
+    displayName = set.name;
+    curatedSet = set;
+    // One line per piece: Shopify deducts stock per line when the renewal
+    // order is created, so two of an item has to be two lines.
+    items = set.summary.items.flatMap((item) => {
+      const product = products.find((p) => p.slug === item.product_slug)!;
+      const variantId = item.product_variant_id ?? product.variantId;
+      const price = product.variants.find((v) => v.variantId === variantId)?.price ?? product.price;
+      return Array.from({ length: item.quantity }, () => ({ slug: product.slug, variantId, price }));
+    });
   } else if (setSlug) {
     const set = subscriptionSets.find((s) => s.slug === setSlug);
     if (!set) return NextResponse.json({ ok: false, error: "ไม่พบชุดสินค้านี้" }, { status: 404 });
@@ -112,7 +142,9 @@ export async function POST(req: NextRequest) {
   // API, which this merchant account currently answers with HTTP 401.
   // Renewing into the next term therefore has to start a *new* plan rather
   // than letting an open-ended one roll on.
-  const totalPerCycle = items.reduce((sum, it) => sum + it.price, 0);
+  // What one cycle costs before the term discount. A curated set is priced by
+  // the shop; everything else is the sum of what is in it.
+  const totalPerCycle = curatedSet ? Number(curatedSet.bundle_price) : items.reduce((sum, it) => sum + it.price, 0);
   // Bundle discount stacks with (applies before) the term discount — e.g.
   // 10% off the real picked total, then another 5-20% off that for the
   // chosen term (see BUNDLE_DISCOUNT_PCT in data/subscriptions.ts).
@@ -146,6 +178,35 @@ export async function POST(req: NextRequest) {
       contact_phone: user?.phone ?? null,
     }),
   });
+
+  // What they subscribed to, frozen today. If the shop later swaps an item
+  // out of this set, or re-prices it, this subscriber keeps receiving what
+  // they signed up for (the plan, §4.3).
+  if (curatedSet) {
+    await supabaseRest("subscription_set_snapshots", {
+      method: "POST",
+      returning: false,
+      body: JSON.stringify({
+        subscription_id: subscription.id,
+        set_id: curatedSet.id,
+        user_id: uid,
+        name: curatedSet.name,
+        bundle_price: Number(curatedSet.bundle_price),
+        interval_days: curatedSet.interval_days,
+        items: curatedSet.summary.items.map((i) => ({
+          product_slug: i.product_slug,
+          variant_id: i.product_variant_id,
+          quantity: i.quantity,
+          unit_price: i.unitPrice,
+          name: i.name,
+        })),
+      }),
+    }).catch((err) => {
+      // The subscription is real either way; a missing snapshot must not stop
+      // the customer from subscribing, but it has to be visible.
+      console.error("[subscribe] snapshot failed", err);
+    });
+  }
 
   await supabaseRest("real_subscription_charges", {
     method: "POST",

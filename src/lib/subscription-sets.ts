@@ -143,3 +143,23 @@ export async function writeItems(setId: string, items: SubscriptionSetItem[]) {
     body: JSON.stringify(items.map((i) => ({ ...i, set_id: setId }))),
   });
 }
+
+/** Active sets that can actually be sold today (everything in them in stock). */
+export async function getSellableSets(): Promise<(SubscriptionSet & { summary: ReturnType<typeof setSummary> })[]> {
+  try {
+    const sets = await supabaseRest<SubscriptionSet[]>(`subscription_sets?status=eq.active&select=${SET_COLUMNS}&order=created_at.desc&limit=50`);
+    return sets.map((set) => ({ ...set, summary: setSummary(set) })).filter((set) => set.summary.sellable);
+  } catch {
+    // The storefront must not fall over because this table is unreachable.
+    return [];
+  }
+}
+
+export async function getSetById(id: string): Promise<(SubscriptionSet & { summary: ReturnType<typeof setSummary> }) | null> {
+  try {
+    const [set] = await supabaseRest<SubscriptionSet[]>(`subscription_sets?id=eq.${id}&select=${SET_COLUMNS}`);
+    return set ? { ...set, summary: setSummary(set) } : null;
+  } catch {
+    return null;
+  }
+}

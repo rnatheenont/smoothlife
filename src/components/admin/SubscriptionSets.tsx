@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, Loader2, Minus, Package, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { AlertTriangle, Loader2, Minus, Package, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
+import { categories } from "@/data/categories";
 import { INTERVALS, STATUS_TH, type SubscriptionSetStatus } from "@/lib/subscription-sets";
 import { formatTHB } from "@/lib/format";
 
@@ -47,7 +48,7 @@ type SetRow = {
   };
 };
 
-type Catalogue = { slug: string; name: string; brand: string; image: string; price: number; inStock: boolean };
+type Catalogue = { slug: string; name: string; brand: string; image: string; price: number; inStock: boolean; category: string };
 
 const STATUS_TONE: Record<SubscriptionSetStatus, string> = {
   active: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -70,6 +71,11 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
   const [form, setForm] = useState(EMPTY);
   const [items, setItems] = useState<Item[]>([]);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  // Products the shop has already marked as "จัดชุดเอง" — the intended
+  // ingredients for a set, and a far better starting list than the first
+  // alphabetical slice of 900 products.
+  const [suggested, setSuggested] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -91,13 +97,35 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
     load();
   }, [load]);
 
+  useEffect(() => {
+    fetch("/api/admin/subscription-sets/candidates")
+      .then((r) => r.json())
+      .then((d) => d.ok && setSuggested(d.slugs))
+      .catch(() => {});
+  }, []);
+
   const bySlug = useMemo(() => new Map(catalogue.map((p) => [p.slug, p])), [catalogue]);
 
+  const chosen = useMemo(() => new Set(items.map((i) => i.product_slug)), [items]);
+
+  // Typing searches everything; an empty box offers what the shop already
+  // treats as set material. Either way the list respects the category filter
+  // and never offers something already in the set.
   const matches = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return [];
-    return catalogue.filter((p) => `${p.name} ${p.brand}`.toLowerCase().includes(q)).slice(0, 8);
-  }, [catalogue, search]);
+    const pool = q
+      ? catalogue.filter((p) => `${p.name} ${p.brand} ${p.category}`.toLowerCase().includes(q))
+      : catalogue.filter((p) => suggested.includes(p.slug));
+    return pool
+      .filter((p) => !chosen.has(p.slug))
+      .filter((p) => !categoryFilter || p.category === categoryFilter)
+      .slice(0, 14);
+  }, [catalogue, search, suggested, chosen, categoryFilter]);
+
+  const addItem = (slug: string) => {
+    setItems((list) => (list.some((i) => i.product_slug === slug) ? list : [...list, { product_slug: slug, product_variant_id: null, quantity: 1 }]));
+    setSearch("");
+  };
 
   // What the chosen products cost bought separately — the number the set's
   // price has to beat, shown as it is typed.
@@ -313,25 +341,65 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="ค้นหาสินค้าเพื่อเพิ่มเข้าชุด"
+                onKeyDown={(e) => {
+                  // Type a couple of letters, press Enter, it is in the set.
+                  if (e.key === "Enter" && matches[0]) {
+                    e.preventDefault();
+                    addItem(matches[0].slug);
+                  }
+                }}
+                placeholder="พิมพ์ชื่อสินค้า ยี่ห้อ หรือหมวด แล้วกด Enter"
                 aria-label="ค้นหาสินค้า"
-                className={`${field} pl-9`}
+                className={`${field} pl-9 pr-9`}
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  aria-label="ล้างคำค้นหา"
+                  className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-slate-400 hover:text-brand-ink"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
 
+            {/* Narrowing by category is faster than describing the product in
+                words, and the shop thinks in these categories already. */}
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {[{ slug: "", nameTh: "ทุกหมวด" }, ...categories].map((c) => (
+                <button
+                  key={c.slug || "all"}
+                  type="button"
+                  onClick={() => setCategoryFilter(c.slug)}
+                  aria-pressed={categoryFilter === c.slug}
+                  className={`min-h-8 rounded-full px-3 text-xs font-semibold transition ${
+                    categoryFilter === c.slug ? "bg-brand-800 text-white" : "bg-surface-soft text-slate-600 hover:text-brand-ink"
+                  }`}
+                >
+                  {c.nameTh}
+                </button>
+              ))}
+            </div>
+
+            <p className="mt-2 text-[11px] text-slate-400">
+              {search.trim()
+                ? `พบ ${matches.length} รายการ`
+                : suggested.length > 0
+                  ? "สินค้าที่ตั้งไว้ว่า “จัดชุดเอง” ได้ — หรือพิมพ์ค้นหาทั้งแคตตาล็อก"
+                  : "พิมพ์เพื่อค้นหาสินค้าจากแคตตาล็อก"}
+            </p>
+
             {matches.length > 0 && (
-              <ul className="mt-2 flex flex-col gap-1">
+              <ul className="mt-2 flex max-h-72 flex-col gap-1 overflow-y-auto">
                 {matches.map((p) => {
-                  const already = items.some((i) => i.product_slug === p.slug);
+                  const already = chosen.has(p.slug);
                   return (
                     <li key={p.slug}>
                       <button
                         type="button"
                         disabled={already}
-                        onClick={() => {
-                          setItems((list) => [...list, { product_slug: p.slug, product_variant_id: null, quantity: 1 }]);
-                          setSearch("");
-                        }}
+                        onClick={() => addItem(p.slug)}
                         className="flex w-full items-center gap-2.5 rounded-xl2 p-2 text-left hover:bg-surface-soft disabled:opacity-40"
                       >
                         <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">

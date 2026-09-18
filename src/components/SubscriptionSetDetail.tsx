@@ -13,16 +13,31 @@ import { useAuth } from "@/lib/auth-context";
 import { subscribeBuyNow } from "@/lib/subscribe-checkout";
 import { Button } from "@/components/ui";
 
+/**
+ * A set assembled in the admin console rather than written into the catalogue
+ * data: its price is the one an admin set (fixed, so a sale on one item cannot
+ * move it), and a line can carry a quantity.
+ */
+export type CuratedSet = {
+  id: string;
+  bundlePrice: number;
+  separately: number;
+  savingPercent: number;
+  quantities: Record<string, number>;
+};
+
 export default function SubscriptionSetDetail({
   set,
   products,
   plans,
   subscriptionBillingEnabled = false,
+  curated,
 }: {
   set: SubscriptionSet;
   products: Product[];
   plans: SubscriptionPlan[];
   subscriptionBillingEnabled?: boolean;
+  curated?: CuratedSet;
 }) {
   const popular = plans.find((p) => p.popular) ?? plans[0];
   const [selectedMonths, setSelectedMonths] = useState(popular.months);
@@ -30,8 +45,11 @@ export default function SubscriptionSetDetail({
   const { user } = useAuth();
   const router = useRouter();
 
-  const totalPerCycle = products.reduce((sum, p) => sum + p.price, 0);
-  const pricePerCycle = Math.round(totalPerCycle * (1 - plan.discountPct / 100));
+  // A curated set is priced by the shop; the catalogue sum is only what it is
+  // compared against.
+  const totalPerCycle = curated ? curated.separately : products.reduce((sum, p) => sum + p.price, 0);
+  const basePerCycle = curated ? curated.bundlePrice : totalPerCycle;
+  const pricePerCycle = Math.round(basePerCycle * (1 - plan.discountPct / 100));
 
   const [subscribeSubmitting, setSubscribeSubmitting] = useState(false);
   const [subscribeError, setSubscribeError] = useState("");
@@ -46,7 +64,9 @@ export default function SubscriptionSetDetail({
     setSubscribeSubmitting(true);
     try {
       const checkoutUrl = await subscribeBuyNow(
-        products.map((p) => ({ merchandiseId: p.variantId, quantity: plan.months })),
+        // A curated set may hold more than one of an item, and every cycle of
+        // the term is bought up front on this fallback path.
+        products.map((p) => ({ merchandiseId: p.variantId, quantity: plan.months * (curated?.quantities[p.slug] ?? 1) })),
         plan.code,
         user?.email,
         user?.phone
@@ -65,7 +85,9 @@ export default function SubscriptionSetDetail({
   // default shipping address, same as the single-product flow.
   async function handleRealSubscribe() {
     if (!user) {
-      router.push(`/account/login?returnTo=${encodeURIComponent(`/subscription/${set.slug}`)}`);
+      router.push(
+        `/account/login?returnTo=${encodeURIComponent(curated ? `/subscription/set/${curated.id}` : `/subscription/${set.slug}`)}`
+      );
       return;
     }
     if (!agreedRecurringCharge) return;
@@ -83,7 +105,7 @@ export default function SubscriptionSetDetail({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          setSlug: set.slug,
+          ...(curated ? { curatedSetId: curated.id } : { setSlug: set.slug }),
           months: plan.months,
           shippingAddress: {
             address1: defaultAddress.address_line,
@@ -123,8 +145,15 @@ export default function SubscriptionSetDetail({
               <div className="relative aspect-square rounded-xl2 overflow-hidden bg-surface-soft border border-slate-100">
                 <Image src={p.image} alt={p.name} fill sizes="200px" className="object-cover transition-transform duration-500" />
               </div>
-              <p translate="no" className="text-xs text-slate-600 line-clamp-2">{p.name}</p>
-              <p className="text-xs font-bold text-brand-ink">{formatTHB(p.price)}</p>
+              <p translate="no" className="line-clamp-2 text-xs text-slate-600">{p.name}</p>
+              <p className="flex items-baseline gap-1.5 text-xs font-bold text-brand-ink">
+                {formatTHB(p.price * (curated?.quantities[p.slug] ?? 1))}
+                {(curated?.quantities[p.slug] ?? 1) > 1 && (
+                  <span className="rounded-full bg-surface-soft px-1.5 text-[11px] font-semibold text-slate-500">
+                    ×{curated?.quantities[p.slug]}
+                  </span>
+                )}
+              </p>
             </Link>
           ))}
         </div>
