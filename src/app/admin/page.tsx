@@ -40,6 +40,7 @@ type Stats = {
   flashOrdersFailed: number | null;
   refundsPending: number | null;
   kbDrafts: number | null;
+  kbReviewDue: number | null;
 };
 
 const EMPTY: Stats = {
@@ -54,6 +55,7 @@ const EMPTY: Stats = {
   flashOrdersFailed: null,
   refundsPending: null,
   kbDrafts: null,
+  kbReviewDue: null,
 };
 
 export default function AdminHomePage() {
@@ -122,6 +124,13 @@ export default function AdminHomePage() {
       value: stats.kbDrafts,
       unit: "บทความ",
     },
+    {
+      href: "/admin/knowledge-base",
+      icon: BookOpen,
+      label: "ความรู้ถึงรอบรีวิว",
+      value: stats.kbReviewDue,
+      unit: "บทความ",
+    },
   ];
 
   const today = [
@@ -155,7 +164,7 @@ export default function AdminHomePage() {
       </div>
 
       <h2 className="mb-2 text-xs font-semibold text-slate-400">ต้องดำเนินการ</h2>
-      <div className="mb-6 grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-6 grid gap-2 sm:grid-cols-3 xl:grid-cols-4">
         {needsAttention.map((c) => {
           const Icon = c.icon;
           const urgent = (c.value ?? 0) > 0;

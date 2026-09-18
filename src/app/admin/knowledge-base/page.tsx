@@ -7,6 +7,7 @@ import { BookOpen, Loader2, MessageSquare, Pencil, Plus, Trash2 } from "lucide-r
 import { useAdminAction } from "@/components/admin/header-action";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { CATEGORY_TH, STATUS_TH, type KbArticle, type KbCategory, type KbStatus } from "@/lib/kb";
+import { isReviewDue, reviewLabel } from "@/lib/kb-review";
 
 // Admin → ฐานความรู้ AI. The articles the chat assistant is allowed to answer
 // from: it quotes these and nothing else, so what is published here is exactly
@@ -31,7 +32,8 @@ export default function AdminKnowledgeBasePage() {
   const [error, setError] = useState<string | null>(null);
   const [embeddings, setEmbeddings] = useState(false);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<KbStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<KbStatus | "all" | "review_due">("all");
+  const [confirming, setConfirming] = useState<string | null>(null);
   const [source, setSource] = useState<"curated" | "shopify_sync" | "all">("curated");
   const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
   const [truncated, setTruncated] = useState(false);
@@ -163,6 +165,35 @@ export default function AdminKnowledgeBasePage() {
     }
   };
 
+  const [indexing, setIndexing] = useState(false);
+  // Only needed once, when an embedding provider is added after the fact.
+  const reindexAll = async () => {
+    setIndexing(true);
+    setSyncNote(null);
+    setError(null);
+    try {
+      let offset: number | null = 0;
+      let done = 0;
+      while (offset !== null) {
+        const res = await fetch("/api/admin/kb/reindex", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ offset }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || "สร้าง embedding ไม่สำเร็จ");
+        done += data.indexed;
+        offset = data.nextOffset;
+        setSyncNote(`กำลังสร้าง embedding… ${done}/${data.total} บทความ`);
+      }
+      setSyncNote(`สร้าง embedding ครบแล้ว ${done} บทความ`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "สร้าง embedding ไม่สำเร็จ");
+    } finally {
+      setIndexing(false);
+    }
+  };
+
   const [seeding, setSeeding] = useState(false);
   const seedFromHelp = async () => {
     setSeeding(true);
@@ -190,10 +221,27 @@ export default function AdminKnowledgeBasePage() {
     const q = query.trim().toLowerCase();
     return articles.filter(
       (a) =>
-        (statusFilter === "all" || a.status === statusFilter) &&
+        (statusFilter === "all" || (statusFilter === "review_due" ? isReviewDue(a) : a.status === statusFilter)) &&
         (!q || `${a.title} ${a.content} ${a.product_tags.join(" ")}`.toLowerCase().includes(q))
     );
   }, [articles, query, statusFilter]);
+
+  const reviewDueCount = useMemo(() => articles.filter((a) => isReviewDue(a)).length, [articles]);
+
+  /** Read it, still agree with it: the date moves, the text does not. */
+  const confirmReviewed = async (a: KbArticle) => {
+    setConfirming(a.id);
+    try {
+      const res = await fetch(`/api/admin/kb/articles/${a.id}/reviewed`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "ยืนยันไม่สำเร็จ");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ยืนยันไม่สำเร็จ");
+    } finally {
+      setConfirming(null);
+    }
+  };
 
   const counts = useMemo(
     () => articles.reduce<Record<string, number>>((acc, a) => ({ ...acc, [a.status]: (acc[a.status] ?? 0) + 1 }), {}),
@@ -262,6 +310,17 @@ export default function AdminKnowledgeBasePage() {
           aria-label="ค้นหาบทความ"
           className={`${fieldClass} max-w-xs`}
         />
+        {embeddings && (
+          <button
+            type="button"
+            onClick={reindexAll}
+            disabled={indexing}
+            title="สร้าง embedding ใหม่ให้ทุกบทความ (ใช้ครั้งเดียวหลังเพิ่ม VOYAGE_API_KEY)"
+            className="min-h-11 rounded-full px-4 text-sm font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
+          >
+            {indexing ? "กำลังสร้าง embedding…" : "สร้าง embedding ใหม่ทั้งหมด"}
+          </button>
+        )}
         <button
           type="button"
           onClick={syncProducts}
@@ -280,7 +339,7 @@ export default function AdminKnowledgeBasePage() {
           {seeding ? "กำลังนำเข้า…" : "นำเข้าจากศูนย์ช่วยเหลือ"}
         </button>
         <div className="inline-flex rounded-full bg-surface-muted p-1">
-          {(["all", "published", "draft", "needs_review", "archived"] as const).map((s) => (
+          {(["all", "published", "draft", "needs_review", "archived", "review_due"] as const).map((s) => (
             <button
               key={s}
               type="button"
@@ -290,7 +349,7 @@ export default function AdminKnowledgeBasePage() {
                 statusFilter === s ? "bg-white text-brand-ink shadow-card" : "text-slate-600 hover:text-brand-ink"
               }`}
             >
-              {s === "all" ? `ทั้งหมด ${articles.length}` : `${STATUS_TH[s]} ${counts[s] ?? 0}`}
+              {s === "all" ? `ทั้งหมด ${articles.length}` : s === "review_due" ? `ถึงรอบรีวิว ${reviewDueCount}` : `${STATUS_TH[s]} ${counts[s] ?? 0}`}
             </button>
           ))}
         </div>
@@ -322,6 +381,12 @@ export default function AdminKnowledgeBasePage() {
                     <span className="rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-slate-500">{CATEGORY_TH[a.category]}</span>
                   </p>
                   <p className="mt-1 line-clamp-2 text-sm text-slate-500">{a.content}</p>
+                  {reviewLabel(a) && (
+                    <p className={`mt-1.5 text-[11px] font-semibold ${isReviewDue(a) ? "text-amber-700" : "text-slate-400"}`}>
+                      {reviewLabel(a)}
+                      {a.last_reviewed_at ? ` · ตรวจล่าสุด ${thaiDate(a.last_reviewed_at)}` : ""}
+                    </p>
+                  )}
                   <p className="mt-1.5 text-[11px] text-slate-400">
                     แก้ไขล่าสุด {thaiDate(a.updated_at)}
                     {a.product_tags.length > 0 && ` · สินค้า: ${a.product_tags.join(", ")}`}
@@ -329,6 +394,16 @@ export default function AdminKnowledgeBasePage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
+                  {isReviewDue(a) && (
+                    <button
+                      type="button"
+                      onClick={() => confirmReviewed(a)}
+                      disabled={confirming === a.id}
+                      className="min-h-9 rounded-full px-3 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 disabled:opacity-60"
+                    >
+                      {confirming === a.id ? "กำลังบันทึก…" : "ยังถูกต้องอยู่"}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => startEdit(a)}

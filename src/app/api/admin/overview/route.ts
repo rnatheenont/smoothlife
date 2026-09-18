@@ -11,6 +11,16 @@ import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 // so a table with thousands of rows costs the same as an empty one. Each is
 // independent: one failing table must not blank the whole page.
 
+/** A count the database works out for us (an rpc returning a number). */
+async function countValue(path: string): Promise<number | null> {
+  try {
+    const value = await supabaseRest<number>(path, { method: "POST", body: "{}" });
+    return typeof value === "number" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 async function countRows(path: string): Promise<number | null> {
   try {
     const rows = await supabaseRest<{ id: string }[]>(path);
@@ -46,6 +56,7 @@ export async function GET(req: NextRequest) {
     flashOrdersFailed,
     refundsPending,
     kbDrafts,
+    kbReviewDue,
   ] = await Promise.all([
     countRows("conversations?status=eq.waiting_human&select=id&limit=100"),
     countRows("product_reviews?status=eq.pending&select=id&limit=100"),
@@ -64,6 +75,10 @@ export async function GET(req: NextRequest) {
     countRows("payment_transactions?refund_note=like.FLASH_SALE_*&refunded_at=is.null&select=id&limit=100"),
     // Answers promoted from chat wait as drafts until a person publishes them.
     countRows("kb_articles?status=eq.draft&select=id&limit=100"),
+    // Published articles a person wrote that are past their review date. The
+    // intervals differ per category, so this one is counted in the database
+    // (kb_review_due_count, which mirrors lib/kb-review.ts).
+    countValue("rpc/kb_review_due_count"),
   ]);
 
   return NextResponse.json({
@@ -80,6 +95,7 @@ export async function GET(req: NextRequest) {
       flashOrdersFailed,
       refundsPending,
       kbDrafts,
+      kbReviewDue,
     },
   });
 }
