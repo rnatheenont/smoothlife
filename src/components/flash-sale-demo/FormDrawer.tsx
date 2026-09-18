@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 /**
@@ -9,6 +10,12 @@ import { X } from "lucide-react";
  * away from what you were looking at.
  */
 export default function FormDrawer({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: ReactNode }) {
+  // Rendered on <body>: "fixed" is relative to the nearest ancestor with a
+  // transform, filter or backdrop-filter, and inside the console's columns the
+  // panel was being laid out against one of those instead of the window.
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  useEffect(() => setHost(document.body), []);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -22,7 +29,9 @@ export default function FormDrawer({ open, title, onClose, children }: { open: b
     };
   }, [open, onClose]);
 
-  return (
+  if (!host) return null;
+
+  return createPortal(
     <div className={`fixed inset-0 z-100 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
       <div
         className={`absolute inset-0 bg-black/30 transition-opacity ${open ? "opacity-100" : "opacity-0"}`}
@@ -48,8 +57,9 @@ export default function FormDrawer({ open, title, onClose, children }: { open: b
             <X size={18} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4">{open && children}</div>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">{open && children}</div>
       </div>
-    </div>
+    </div>,
+    host
   );
 }

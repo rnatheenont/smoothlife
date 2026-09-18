@@ -169,3 +169,35 @@ export async function searchKb(query: string, limit = 6, tags?: string[]): Promi
   });
   return (rows ?? []).map((r) => ({ ...r, score: Number(r.score) }));
 }
+
+/**
+ * What the assistant answered and which approved articles it used. Kept so a
+ * claim in a transcript can be traced back to the article a person published
+ * — and so the team can see what customers ask that the base cannot answer.
+ */
+export async function logAiAnswer(entry: {
+  uid?: string;
+  question: string;
+  answer: string;
+  articleIds: string[];
+  channel?: string;
+  escalated?: boolean;
+}) {
+  try {
+    await supabaseRest("ai_conversation_log", {
+      method: "POST",
+      returning: false,
+      body: JSON.stringify({
+        customer_id: entry.uid ?? null,
+        channel: entry.channel ?? "web_chat",
+        question: entry.question.slice(0, 2000),
+        ai_answer: entry.answer.slice(0, 8000),
+        matched_article_ids: [...new Set(entry.articleIds)],
+        was_escalated: entry.escalated ?? false,
+      }),
+    });
+  } catch (err) {
+    // Logging must never cost the customer their answer.
+    console.error("[kb] logging the answer failed", err);
+  }
+}

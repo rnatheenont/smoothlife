@@ -13,6 +13,8 @@ import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { contentForTranscript } from "@/lib/chat-markers";
 import { systemPrompt, orderHistorySummary, type CartLine, type ViewingProduct } from "@/lib/chat-prompt";
 import { CHAT_TOOLS, runChatTool } from "@/lib/chat-product-search";
+import { KB_TOOL, runKbTool } from "@/lib/chat-kb-tool";
+import { logAiAnswer } from "@/lib/kb";
 import { otherStoreLinks, otherStoreOrders } from "@/lib/store-links";
 import { deliveryStatusForPrompt } from "@/lib/delivery-status";
 import { signedAttachmentUrl } from "@/lib/chat-attachments";
@@ -391,9 +393,18 @@ export async function POST(req: NextRequest) {
     Boolean(uid)
   );
 
+  // What the customer just asked, for the AI answer log.
+  const lastUserText = [...messages]
+    .reverse()
+    .find((m: { role?: string; content?: unknown }) => m?.role === "user" && typeof m?.content === "string")?.content as string | undefined;
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       let fullText = "";
+      // Which approved articles this answer leant on, for the AI log: an
+      // answer about a policy has to be traceable to the article it came from.
+      const kbMatches: string[] = [];
+      let kbAsked = false;
       try {
         // Product lookups happen through tools: the model searches, we run
         // the search here and hand back the results, and it continues. Text
@@ -410,7 +421,7 @@ export async function POST(req: NextRequest) {
             // and cuts the adaptive-thinking time Sonnet 5 spends by default.
             output_config: { effort: "low" },
             system,
-            tools: CHAT_TOOLS,
+            tools: [...CHAT_TOOLS, KB_TOOL],
             ...(lastRound ? { tool_choice: { type: "none" as const } } : {}),
             messages: convo,
           });
@@ -427,9 +438,21 @@ export async function POST(req: NextRequest) {
           });
           const final = await anthropicStream.finalMessage();
           if (final.stop_reason !== "tool_use") break;
-          const results: Anthropic.ToolResultBlockParam[] = final.content
-            .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
-            .map((b) => ({ type: "tool_result", tool_use_id: b.id, content: runChatTool(b.name, b.input) }));
+          // The knowledge base is a database read, so this round waits; the
+          // catalogue tools answer from memory.
+          const results: Anthropic.ToolResultBlockParam[] = await Promise.all(
+            final.content
+              .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
+              .map(async (b) => {
+                if (b.name !== KB_TOOL.name) {
+                  return { type: "tool_result" as const, tool_use_id: b.id, content: runChatTool(b.name, b.input) };
+                }
+                const result = await runKbTool(b.input);
+                kbMatches.push(...result.matches.map((m) => m.article_id));
+                kbAsked = true;
+                return { type: "tool_result" as const, tool_use_id: b.id, content: result.text };
+              })
+          );
           convo = [...convo, { role: "assistant", content: final.content }, { role: "user", content: results }];
         }
         controller.close();
@@ -450,6 +473,9 @@ export async function POST(req: NextRequest) {
           await recordAiMessage("web", uid, toSave);
         }
         await persistMessage({ uid, sessionKey, role: "assistant", content: toSave, viewingSlug: viewingProduct?.slug });
+        if (kbAsked && lastUserText) {
+          await logAiAnswer({ uid, question: lastUserText, answer: toSave, articleIds: kbMatches, escalated: kbMatches.length === 0 });
+        }
       } catch (err) {
         console.error("[anthropic] stream error model=" + MODEL, err);
         const msg =
