@@ -348,10 +348,18 @@ export default function FlashSaleDemo({
       <Toast.Provider />
       {embedded && (
         <div className="mb-4">
-          <h1 className="text-xl font-bold text-brand-ink">Flash Sale (เดโม)</h1>
+          <h1 className="text-xl font-bold text-brand-ink">Flash Sale</h1>
           <p className="mt-1 text-sm text-slate-500">
             ตั้งแคมเปญล่วงหน้าเป็นรายการ (บันทึกในฐานข้อมูล) ระบบเปิดและปิดการขายเองตามวันเวลาที่ตั้งไว้ ดูมุมมองลูกค้าได้ในแท็บถัดไป
           </p>
+          <ol className="mt-3 flex flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500">
+            {["เลือกแคมเปญจากรายการ หรือกดสร้างใหม่", "ตั้งสินค้า ราคา วันเวลา แล้วบันทึก", "ถึงเวลาระบบเปิดขายเอง — ดูคิวจริงที่การ์ดด้านขวา"].map((step, i) => (
+              <li key={step} className="flex items-center gap-1.5 rounded-full bg-surface-soft px-2.5 py-1">
+                <span className="grid size-4 place-items-center rounded-full bg-brand-800 text-[10px] font-bold text-white">{i + 1}</span>
+                {step}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 
@@ -452,8 +460,13 @@ export default function FlashSaleDemo({
                 setEditingId(id);
                 requestAnimationFrame(() => document.getElementById("fs-setup")?.scrollIntoView({ behavior: "smooth", block: "start" }));
               }}
+              newCampaign={() => {
+                setEditingId(null);
+                requestAnimationFrame(() => document.getElementById("fs-setup")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+              }}
               remove={removeStored}
             />
+            <div className="grid gap-5 2xl:grid-cols-2 2xl:items-start">
             <div id="fs-setup" className="scroll-mt-24">
               <CampaignSetup
                 key={editingId ?? "new"}
@@ -467,6 +480,7 @@ export default function FlashSaleDemo({
                 onCreate={editingId ? updateStored(editingId) : createStored}
               />
             </div>
+            <div className="flex flex-col gap-5">
             {item && /^[0-9a-f-]{36}$/i.test(item.id) && (
               <LiveMonitor
                 key={item.id}
@@ -490,6 +504,8 @@ export default function FlashSaleDemo({
                     : `แคมเปญ "${item.config.title}" จะเปิดขายอัตโนมัติ ${thaiDateTime(item.startsAt)} (อีก ${countdown(item.startsAt - now)}) — ตัวเลขการขายจะแสดงที่นี่เมื่อเริ่มแล้ว`}
               </Card>
             )}
+            </div>
+            </div>
           </div>
         </Tabs.Panel>
       </Tabs>

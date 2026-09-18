@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Button, Card, Chip } from "@heroui/react";
-import { CalendarClock, Pencil, Play, Square, Trash2 } from "lucide-react";
+import { CalendarClock, Pencil, Play, Plus, Square, Trash2 } from "lucide-react";
 import { countdown, thaiDateTime, type ScheduledCampaign } from "./scheduler";
 
 const END_REASON = { sold_out: "ขายหมด", time_up: "ครบเวลา", manual: "ปิดเอง" } as const;
@@ -22,6 +22,7 @@ export default function CampaignList({
   startNow,
   endNow,
   edit,
+  newCampaign,
   remove,
 }: {
   items: ScheduledCampaign[];
@@ -34,6 +35,8 @@ export default function CampaignList({
   startNow: (id: string) => void;
   endNow: (id: string) => void;
   edit: (id: string) => void;
+  /** Leave edit mode and start a blank campaign in the form below. */
+  newCampaign: () => void;
   remove: (id: string) => void;
 }) {
   const running = items.filter((i) => i.status === "running").length;
@@ -43,11 +46,16 @@ export default function CampaignList({
     <Card className="p-5 md:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="flex items-center gap-2 text-lg font-bold text-brand-ink">
-          <CalendarClock size={20} className="text-brand-800" aria-hidden /> รายการแคมเปญ
+          <CalendarClock size={20} className="text-brand-800" aria-hidden /> 1 · รายการแคมเปญ
         </h3>
-        <p className="text-sm text-slate-500">
-          กำลังขาย {running} · รอเริ่ม {scheduled} · ทั้งหมด {items.length}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-slate-500">
+            กำลังขาย {running} · รอเริ่ม {scheduled} · ทั้งหมด {items.length}
+          </p>
+          <Button size="sm" onPress={newCampaign}>
+            <Plus size={14} aria-hidden /> สร้างแคมเปญใหม่
+          </Button>
+        </div>
       </div>
       <p className="mt-1 text-xs text-slate-500">เปิดและปิดการขายอัตโนมัติตามวันเวลา กดที่แคมเปญเพื่อดูตัวเลขและมุมมองลูกค้า</p>
 

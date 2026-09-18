@@ -188,10 +188,10 @@ export default function CampaignSetup({
       : undefined;
 
   return (
-    <Card className="p-5 md:p-6">
+    <Card className="@container p-5 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold text-brand-ink">{editing ? "แก้ไขแคมเปญ" : "สร้างแคมเปญใหม่"}</h3>
+          <h3 className="text-lg font-bold text-brand-ink">{editing ? "2 · แก้ไขแคมเปญ" : "2 · สร้างแคมเปญใหม่"}</h3>
           <p className="text-sm text-slate-500">
             {editing
               ? locked
@@ -223,7 +223,7 @@ export default function CampaignSetup({
         </div>
       </div>
 
-      <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="mt-5 grid gap-6 @3xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         {mode === "single" ? (
           <div>
             <label htmlFor="fs-search" className="mb-1.5 block text-sm font-semibold text-brand-ink">
@@ -327,7 +327,7 @@ export default function CampaignSetup({
             />
             <p className="mt-1 text-xs text-slate-500">เว้นว่างไว้ระบบจะตั้งชื่อให้จากสินค้าที่เลือก</p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+          <div className="grid gap-3 @sm:grid-cols-2">
             <div>
               <label htmlFor="fs-start" className="mb-1.5 block text-sm font-semibold text-brand-ink">
                 เริ่มขาย

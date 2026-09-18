@@ -92,8 +92,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  // The inbox and the flash-sale console are dashboards: on a big screen they
+  // have columns to fill, so they get the full window instead of the
+  // storefront's reading width.
+  const wide = pathname?.startsWith("/admin/inbox") || pathname?.startsWith("/admin/flash-sale");
+
   return (
-    <div className="container-page py-8 md:py-10">
+    <div className={`py-8 md:py-10 ${wide ? "mx-auto w-full max-w-[1800px] px-4 md:px-8" : "container-page"}`}>
       <div className="flex flex-col md:flex-row gap-6 md:gap-8">
         <aside className="md:w-52 shrink-0">
           <div className="flex md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
@@ -129,7 +134,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             (three columns of conversation) and the flash-sale monitor
             (dashboard grids) suffocate at max-w-3xl, so they opt out rather
             than every other page opting in. */}
-        <div className={`flex-1 min-w-0 ${pathname?.startsWith("/admin/inbox") || pathname?.startsWith("/admin/flash-sale") ? "" : "max-w-3xl"}`}>
+        <div className={`flex-1 min-w-0 ${wide ? "" : "max-w-3xl"}`}>
           {children}
           <button onClick={logout} className="md:hidden flex items-center gap-2 mt-8 text-xs text-slate-400">
             <LogOut size={13} /> ออกจากระบบ

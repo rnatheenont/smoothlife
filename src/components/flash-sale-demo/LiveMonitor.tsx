@@ -76,11 +76,11 @@ export default function LiveMonitor({ campaignId, productNames }: { campaignId: 
   );
 
   return (
-    <Card className="p-5 md:p-6">
+    <Card className="@container p-5 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="flex items-center gap-2 text-lg font-bold text-brand-ink">
-            <Radio size={18} className="text-sale" aria-hidden /> คิวจริงจากฐานข้อมูล
+            <Radio size={18} className="text-sale" aria-hidden /> 3 · คิวจริงจากฐานข้อมูล
           </h3>
           <p className="text-xs text-slate-500">ลูกค้าจริงที่เข้าคิวในหน้าขาย อัปเดตทุก 5 วินาที</p>
         </div>
@@ -111,7 +111,7 @@ export default function LiveMonitor({ campaignId, productNames }: { campaignId: 
 
       {data && totals && (
         <>
-          <dl className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <dl className="mt-4 grid grid-cols-2 gap-3 @2xl:grid-cols-4">
             {[
               ["รอในคิว", totals.waiting],
               ["กำลังรอชำระเงิน", totals.reserved],
@@ -176,7 +176,7 @@ export default function LiveMonitor({ campaignId, productNames }: { campaignId: 
             ))}
           </ul>
 
-          <div className="mt-5 grid gap-5 xl:grid-cols-2">
+          <div className="mt-5 grid gap-5 @3xl:grid-cols-2">
             <div>
               <h4 className="text-sm font-bold text-brand-ink">กำลังรอชำระเงิน ({data.reserved.length})</h4>
               {data.reserved.length === 0 ? (
