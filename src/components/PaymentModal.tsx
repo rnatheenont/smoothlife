@@ -61,6 +61,8 @@ export default function PaymentModal({
   onClose,
   onPaid,
   summary,
+  previewPhase,
+  previewData,
 }: {
   webPaymentUrl: string;
   cartToken: string;
@@ -69,11 +71,19 @@ export default function PaymentModal({
   /** Confirmed paid by our own backend, not by the redirect. */
   onPaid: () => void;
   summary?: OrderSummary;
+  /**
+   * Preview only (admin → ระบบดีไซน์): opens on a given phase and never polls,
+   * so every screen here can be looked at without a real payment. Nothing in
+   * the shop passes it.
+   */
+  previewPhase?: Phase;
+  /** Preview only: the values a real payment would have supplied. */
+  previewData?: { orderId?: string; amount?: number; failureReason?: string };
 }) {
-  const [phase, setPhase] = useState<Phase>("paying");
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [amount, setAmount] = useState<number | null>(null);
-  const [failureReason, setFailureReason] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>(previewPhase ?? "paying");
+  const [orderId, setOrderId] = useState<string | null>(previewData?.orderId ?? null);
+  const [amount, setAmount] = useState<number | null>(previewData?.amount ?? null);
+  const [failureReason, setFailureReason] = useState<string | null>(previewData?.failureReason ?? null);
   const [showStuckHint, setShowStuckHint] = useState(false);
   // 2C2P's page is cross-origin, so the only thing we can know about it is
   // that it finished loading — enough to stop showing a white rectangle.
@@ -104,7 +114,7 @@ export default function PaymentModal({
   }, [cartToken]);
 
   useEffect(() => {
-    if (phase !== "verifying") return;
+    if (previewPhase || phase !== "verifying") return;
     let cancelled = false;
     const startedAt = Date.now();
 
@@ -140,14 +150,15 @@ export default function PaymentModal({
     return () => {
       cancelled = true;
     };
-  }, [phase, cartToken]);
+  }, [phase, cartToken, previewPhase]);
 
   useEffect(() => {
+    if (previewPhase) return;
     if (phase === "success" && !paidNotified.current) {
       paidNotified.current = true;
       onPaid();
     }
-  }, [phase, onPaid]);
+  }, [phase, onPaid, previewPhase]);
 
   function requestClose() {
     if (phase === "paying" || phase === "verifying") {

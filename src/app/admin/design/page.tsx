@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sun, Moon, ShoppingBag } from "lucide-react";
+import { Sun, Moon, ShoppingBag, CreditCard } from "lucide-react";
 import { Button, Badge, Card, Field, Modal } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
+import Link from "next/link";
 
 // A living style guide: it reads the brand tokens straight out of the shipped
 // stylesheet (the `@theme static` block in globals.css), so it cannot drift
@@ -133,6 +134,14 @@ export default function AdminDesignSystemPage() {
           อ่านค่าจาก <code className="rounded-sm bg-surface-soft px-1">@theme</code> ใน globals.css ที่เว็บใช้จริง —
           หน้านี้จึงตรงกับของจริงเสมอ ไม่มีทางเพี้ยน
         </p>
+        {/* The payment screens cannot be shown inline here: they are a modal
+            over the page, and one of them is the whole screen on a phone. */}
+        <Link
+          href="/admin/design/payment"
+          className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-800 hover:underline"
+        >
+          <CreditCard size={15} /> ดูตัวอย่างหน้าชำระเงินทุกสถานะ
+        </Link>
       </div>
 
       <Section
