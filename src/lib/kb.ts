@@ -114,18 +114,22 @@ export function chunk(content: string, target = 700): string[] {
 const EMBED_BATCH = 48;
 const EMBED_CHARS = 6000;
 
-/** 429 on that account means "too fast", not "too much" — so wait and retry. */
-async function voyage(texts: string[], key: string, attempt = 0): Promise<number[][] | null> {
+/**
+ * 429 on a free account means "too fast", not "too much". Indexing can wait
+ * out the minute; a customer waiting on a reply cannot, so the search path
+ * asks for no retries and falls back to text matching instead.
+ */
+async function voyage(texts: string[], key: string, retries: number, attempt = 0): Promise<number[][] | null> {
   const res = await fetch("https://api.voyageai.com/v1/embeddings", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({ model: process.env.VOYAGE_MODEL || "voyage-3", input: texts, output_dimension: 1024 }),
   });
 
-  if (res.status === 429 && attempt < 3) {
+  if (res.status === 429 && attempt < retries) {
     // The free tier is 3 requests a minute; anything shorter just fails again.
     await new Promise((resolve) => setTimeout(resolve, 21_000));
-    return voyage(texts, key, attempt + 1);
+    return voyage(texts, key, retries, attempt + 1);
   }
   if (!res.ok) {
     console.error("[kb] embedding failed", res.status, (await res.text().catch(() => "")).slice(0, 300));
@@ -147,7 +151,7 @@ async function voyage(texts: string[], key: string, attempt = 0): Promise<number
  * bites on a free account is requests per minute, so one request carrying
  * forty chunks is forty times cheaper than forty requests carrying one.
  */
-export async function embed(texts: string[]): Promise<number[][] | null> {
+export async function embed(texts: string[], { retries = 3 }: { retries?: number } = {}): Promise<number[][] | null> {
   const key = process.env.VOYAGE_API_KEY;
   if (!key || texts.length === 0) return null;
 
@@ -168,7 +172,7 @@ export async function embed(texts: string[]): Promise<number[][] | null> {
   try {
     const out: number[][] = [];
     for (const batch of groups) {
-      const vectors = await voyage(batch, key);
+      const vectors = await voyage(batch, key, retries);
       if (!vectors) return null;
       out.push(...vectors);
     }
@@ -234,7 +238,9 @@ export type KbMatch = { article_id: string; chunk_id: string; title: string; cat
 
 /** Top matches for a customer's question, published articles only. */
 export async function searchKb(query: string, limit = 6, tags?: string[]): Promise<KbMatch[]> {
-  const [vector] = (await embed([query])) ?? [];
+  // No waiting on a rate limit with a customer mid-question: if the embedding
+  // does not come back at once, the search runs on text instead.
+  const [vector] = (await embed([query], { retries: 0 })) ?? [];
   const rows = await supabaseRest<KbMatch[]>("rpc/kb_search", {
     method: "POST",
     body: JSON.stringify({
