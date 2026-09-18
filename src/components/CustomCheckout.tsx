@@ -229,6 +229,9 @@ export default function CustomCheckout() {
           webPaymentUrl={payment.url}
           cartToken={payment.cartToken}
           onClose={() => setPayment(null)}
+          // What is being paid for, so the payment frame is not the only thing
+          // on screen — and so the success screen can list it back.
+          summary={{ total, items: lines.map((l) => ({ name: l.name, quantity: l.qty })) }}
           // Only fires once our own backend confirms the charge, so emptying
           // the cart here can't strand a customer whose payment actually failed.
           onPaid={clear}

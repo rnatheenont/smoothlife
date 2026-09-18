@@ -326,6 +326,7 @@ export default function FlashSaleLive({
         setPayment(null);
         refresh();
       }}
+      summary={{ total: price.pay, items: [{ name: product.name, quantity: 1 }] }}
       onPaid={refresh}
     />
   );
