@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { Users, Search, Link2, Unlink, Loader2, ShoppingBag, AlertTriangle, Check, ExternalLink, ShieldCheck, Merge, Stethoscope } from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
+import { useAdminAction } from "@/components/admin/header-action";
 
 // Attaching a returning customer's purchase history to their login.
 //
@@ -103,6 +104,16 @@ export default function AdminCustomersPage() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState("");
   const [done, setDone] = useState("");
+
+  useAdminAction({
+    label: "ค้นหาลูกค้า",
+    icon: <Search size={15} aria-hidden />,
+    onClick: () => {
+      const el = document.getElementById("customer-search") as HTMLInputElement | null;
+      el?.focus();
+      el?.select();
+    },
+  });
 
   async function search(e?: React.FormEvent) {
     e?.preventDefault();
@@ -245,6 +256,7 @@ export default function AdminCustomersPage() {
 
       <form onSubmit={search} className="flex gap-2 max-w-xl">
         <input
+          id="customer-search"
           value={term}
           onChange={(e) => setTerm(e.target.value)}
           placeholder="อีเมล / เบอร์โทร / ชื่อลูกค้า"

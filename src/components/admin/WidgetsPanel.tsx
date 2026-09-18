@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, Sliders, Eye } from "lucide-react";
+import { ChevronDown, Sliders, Eye, RefreshCw } from "lucide-react";
+import { useAdminAction } from "@/components/admin/header-action";
 
 type WidgetRow = { key: string; label_th: string; enabled: boolean; config: Record<string, unknown> };
 
@@ -97,6 +98,9 @@ export default function WidgetsPanel() {
     const data = await res.json();
     if (data.ok) setWidgets(data.widgets);
   }
+
+  // The widgets are read from the database; someone else may have changed them.
+  useAdminAction({ label: "รีเฟรชวิดเจ็ต", icon: <RefreshCw size={15} aria-hidden />, onClick: () => load() });
 
   useEffect(() => {
     load();

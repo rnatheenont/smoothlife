@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { Repeat, Search, PackagePlus, Loader2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Repeat, Search, PackagePlus, Loader2, Plus, X, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { categories } from "@/data/categories";
+import { useAdminAction } from "@/components/admin/header-action";
 
 type ProductRow = {
   slug: string;
@@ -146,6 +147,13 @@ export default function AdminSubscriptionProductsPage() {
   }
 
   const onCount = tab === "subscribable" ? counts.subscribableOn : counts.bundleOn;
+
+  useAdminAction({
+    label: "รีเฟรชรายการ",
+    icon: <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden />,
+    onClick: () => load(),
+    disabled: loading,
+  });
 
   return (
     <div>

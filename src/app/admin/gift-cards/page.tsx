@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CreditCard, Check, Copy } from "lucide-react";
+import { CreditCard, Check, Copy, Plus } from "lucide-react";
 import { Button } from "@/components/ui";
+import { useAdminAction } from "@/components/admin/header-action";
 
 type GiftCardSummary = {
   id: string;
@@ -47,6 +48,20 @@ export default function AdminGiftCardsPage() {
   useEffect(() => {
     loadHistory();
   }, []);
+
+  // The form keeps the last card on screen (its code has to be copied), so
+  // starting the next one means clearing it.
+  useAdminAction({
+    label: "ออกบัตรใหม่",
+    icon: <Plus size={15} aria-hidden />,
+    onClick: () => {
+      setForm(EMPTY_FORM);
+      setIssued(null);
+      setError("");
+      document.getElementById("gift-card-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    },
+    disabled: submitting,
+  });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -102,7 +117,7 @@ export default function AdminGiftCardsPage() {
       </div>
 
       <div className="rounded-xl2 border border-slate-100 p-4 shadow-card mb-8">
-        <form onSubmit={submit} className="space-y-3">
+        <form id="gift-card-form" onSubmit={submit} className="space-y-3">
           <div>
             <label className="block text-[11px] text-slate-400 mb-1">อีเมลลูกค้า</label>
             <input

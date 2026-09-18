@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Sun, Moon, ShoppingBag } from "lucide-react";
 import { Button, Badge, Card, Field, Modal } from "@/components/ui";
+import { useAdminAction } from "@/components/admin/header-action";
 
 // A living style guide: it reads the brand tokens straight out of the shipped
 // stylesheet (the `@theme static` block in globals.css), so it cannot drift
@@ -117,6 +118,12 @@ export default function AdminDesignSystemPage() {
   const [dark, setDark] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [demoEmail, setDemoEmail] = useState("");
+
+  useAdminAction({
+    label: dark ? "ดูโหมดสว่าง" : "ดูโหมดมืด",
+    icon: dark ? <Sun size={15} aria-hidden /> : <Moon size={15} aria-hidden />,
+    onClick: () => setDark((d) => !d),
+  });
 
   return (
     <div className="max-w-4xl">

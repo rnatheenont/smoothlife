@@ -8,6 +8,7 @@ import { Button } from "@/components/ui";
 import { splitMarker } from "@/lib/chat-markers";
 import { isTranscriptDump } from "@/lib/inbox-transcript";
 import { resizeForUpload, type ResizedImage } from "@/lib/image-utils";
+import { useAdminAction } from "@/components/admin/header-action";
 
 // Unified inbox (plan §7.2): conversation list, thread, customer panel.
 // Only the web channel exists so far — LINE and Facebook adapters write into
@@ -250,6 +251,13 @@ export default function AdminInboxPage() {
   useEffect(() => {
     loadList();
   }, [loadList]);
+
+  useAdminAction({
+    label: "รีเฟรชกล่องข้อความ",
+    icon: <RefreshCw size={15} className={loadingList ? "animate-spin" : ""} aria-hidden />,
+    onClick: () => loadList(),
+    disabled: loadingList,
+  });
 
   useEffect(() => {
     fetch("/api/admin/canned-responses")
