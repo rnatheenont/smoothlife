@@ -11,6 +11,7 @@ import {
   Lock,
   Pause,
   Play,
+  Plus,
   RotateCcw,
   ServerCrash,
   ShieldCheck,
@@ -49,6 +50,7 @@ import {
 } from "./scheduler";
 import type { FlashSaleCampaignDTO } from "@/lib/flash-sale-campaigns";
 import CampaignSetup, { type CatalogueItem, type EditingCampaign, type ProductGroup } from "./CampaignSetup";
+import { useAdminAction } from "@/components/admin/header-action";
 import CampaignList from "./CampaignList";
 import LiveMonitor from "./LiveMonitor";
 
@@ -183,6 +185,13 @@ export default function FlashSaleDemo({
       setAdminError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
     }
   };
+  const newCampaign = useCallback(() => {
+    setEditingId(null);
+    requestAnimationFrame(() => document.getElementById("fs-setup")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }, []);
+  // The console's primary action lives in the admin header (top right).
+  useAdminAction(embedded ? { label: "สร้างแคมเปญใหม่", icon: <Plus size={15} aria-hidden />, onClick: newCampaign } : null);
+
   const editingItem = editingId ? scheduler.items.find((i) => i.id === editingId) : undefined;
   const editingRow = editingId ? stored[editingId] : undefined;
   const editingCampaign: EditingCampaign | undefined =
@@ -460,10 +469,7 @@ export default function FlashSaleDemo({
                 setEditingId(id);
                 requestAnimationFrame(() => document.getElementById("fs-setup")?.scrollIntoView({ behavior: "smooth", block: "start" }));
               }}
-              newCampaign={() => {
-                setEditingId(null);
-                requestAnimationFrame(() => document.getElementById("fs-setup")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-              }}
+              newCampaign={newCampaign}
               remove={removeStored}
             />
             <div className="grid gap-5 2xl:grid-cols-2 2xl:items-start">

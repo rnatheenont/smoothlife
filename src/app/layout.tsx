@@ -2,8 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import SiteChrome from "@/components/SiteChrome";
 import { organizationJsonLd, websiteJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -69,10 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteJsonLd()) }} />
         <Providers>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <div className="h-[60px] lg:hidden" aria-hidden />
+          <SiteChrome>{children}</SiteChrome>
         </Providers>
         <Analytics />
         <SpeedInsights />
