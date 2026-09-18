@@ -149,7 +149,43 @@ function esc(s) {
 // the word "วิตามิน"; it is a supplement because it is sold in capsules,
 // tablets, softgels or millilitres of extract, and those words are what the
 // wellness rule now reads.
+// Order is the classification: the first rule that matches wins, so the
+// narrow kinds have to come before the broad ones. "ครีม" and "skin" appear
+// in half the catalogue, which is why skincare sits near the end.
+//
+// The lists are long on purpose. Half the catalogue used to match no rule at
+// all and was swept into skincare by the fallback — which is how the
+// skincare page came to be led by sticking plasters, condoms, an ATK test
+// kit and a box of sanitary pads. Splitting those out by shelf rather than
+// into one "personal care" drawer is what the category row on /shop reads:
+// a thermometer, a baby wash and a box of pads are three different errands.
 const CATEGORY_RULES = [
+  [
+    // Devices and first aid. Read before everything else because a knee
+    // brace mentions no product kind at all, and its vendor (Futuro, 3M)
+    // sells nothing else.
+    "health-devices",
+    ["เทอร์โมมิเตอร์", "วัดไข้", "วัดความดัน", "ชุดตรวจ", "ผ้าพยุง", "พยุงข้อ", "พยุงเข่า", "พยุงหลัง", "ประคบ",
+     "ปฐมพยาบาล", "พลาสเตอร์", "ปิดแผล", "ผ้าพันแผล", "คอนแทคเลนส์", "ลดไข้",
+     "thermometer", "blood pressure", "test kit", "self test", "contact lens", "support", "splint", "brace",
+     "bandage", "dressing", "gauze", "plaster", "heatpatch", "cold hot", "nebulizer", "syringe", "wheelchair",
+     "koolfever", "futuro", "vantelin", "nexcare", "opti-free", "sos plus", "3m ", "flowflex", "neoplast",
+     "neotape", "ambulance", "exeter", "dr.frei", "allwell"],
+  ],
+  [
+    // Anything bought for a baby, a child or a pregnancy, kept together
+    // rather than scattered across shampoo, body care and supplements —
+    // which is how a parent shops for it.
+    "mother-baby",
+    ["สำหรับเด็ก", "เด็กทารก", "ทารก", "เบบี้", "ผ้าอ้อม", "ขวดนม", "จุกนม", "คุณแม่", "ตั้งครรภ์", "หลังคลอด",
+     "baby", "kids", "infant", "diaper", "maternity", "pregnan", "stretch mark", "i-kids", "lamoon", "mamarine"],
+  ],
+  [
+    "womens-health",
+    ["ผ้าอนามัย", "จุดซ่อนเร้น", "อนามัยสตรี", "ประจำเดือน", "วัยทอง", "ถุงยาง", "เจลหล่อลื่น",
+     "feminine", "intimate", "sanitary napkin", "menstrual", "menopause", "condom", "lubricant",
+     "durex", "sanita"],
+  ],
   [
     "oral-care",
     ["ยาสีฟัน", "แปรงสีฟัน", "ช่องปาก", "น้ำยาบ้วนปาก", "ไหมขัดฟัน", "ลมหายใจ", "กลิ่นปาก", "ฟันปลอม", "ขูดลิ้น",
@@ -162,26 +198,25 @@ const CATEGORY_RULES = [
      "shampoo", "conditioner", "hair", "scalp", "dandruff", "superbrush", "janeke", "comb", "aromase"],
   ],
   [
-    // First aid, hygiene and the devices that go with them. These are not
-    // skin care by any reading, and before this rule existed every one of
-    // them was filed as if it were.
+    // What is left of first aid and hygiene once the devices, the pads and
+    // the baby aisle have their own shelves: wipes, hand gel, balms.
     "personal-care",
-    ["ผ้าอนามัย", "จุดซ่อนเร้น", "แผ่นแปะ", "เจลล้างมือ", "ทิชชู่", "ผ้าเช็ด", "พลาสเตอร์", "ปิดแผล", "ปฐมพยาบาล",
-     "ถุงยาง", "เทอร์โมมิเตอร์", "วัดไข้", "วัดความดัน", "ชุดตรวจ", "คอนแทคเลนส์", "ผ้าพยุง", "ประคบ", "ลดไข้",
-     "ยาหม่อง", "ปวดเมื่อย", "สูดดม", "ยาดม",
-     "feminine", "intimate", "sanitiz", "wipes", "tissue", "plaster", "bandage", "dressing", "gauze", "condom",
-     "durex", "thermometer", "blood pressure", "test kit", "self test", "contact lens", "support", "splint",
-     "brace", "heatpatch", "cold hot", "balm", "inhaler", "nebulizer",
-     // Brands that sell one kind of thing and nothing else, so the vendor
-     // (already part of the haystack) classifies the product on its own.
-     "koolfever", "futuro", "vantelin", "nexcare", "opti-free", "sos plus", "3m ", "flowflex", "sanita",
-     "klean&kare", "klean and kare", "hi-care", "exeter", "neoplast", "neotape", "ambulance", "tiger balm",
-     "ammeltz", "botan", "sensiplus", "karisma"],
+    ["แผ่นแปะ", "เจลล้างมือ", "ทิชชู่", "ผ้าเช็ด", "ยาหม่อง", "ปวดเมื่อย", "สูดดม", "ยาดม",
+     "sanitiz", "wipes", "tissue", "balm", "inhaler",
+     "klean&kare", "klean and kare", "hi-care", "tiger balm", "ammeltz", "botan", "sensiplus", "karisma"],
   ],
   [
     "body-care",
     ["ครีมทาผิวกาย", "โลชั่น", "ผิวกาย", "สบู่", "อาบน้ำ", "ครีมทามือ", "ระงับกลิ่นกาย", "กันแดดผิวกาย",
      "body", "lotion", "shower", "soap", "hand cream", "deodorant", "roll on", "roll-on"],
+  ],
+  [
+    // Pharmacy skincare brands. Read after the product-kind rules above, so
+    // a Eucerin body lotion is still body care and only what those rules do
+    // not claim — the face range — lands here.
+    "dermo-cosmetics",
+    ["เวชสำอาง", "eucerin", "la roche", "laroche", "cerave", "cetaphil", "bioderma", "sebamed", "physiogel",
+     "avene", "avène", "vichy", "bepanthen", "dermo"],
   ],
   [
     "skincare",
@@ -205,8 +240,8 @@ const CATEGORY_RULES = [
      // Same idea as the single-kind brands below: these vendors sell nothing
      // but supplements, whatever an individual label happens to say.
      "blackmores", "mega we care", "megawecare", "nola ", "vistra", "swisse", "centrum", "berocca",
-     "interpharma", "probac", "mamarine", "nutroplex", "glucerna", "glucolin", "ensure", "hemomin",
-     "imumate", "i-kids", "albupro", "oso-cal", "dr.frei", "lamoon", "allwell"],
+     "interpharma", "probac", "nutroplex", "glucerna", "glucolin", "ensure", "hemomin",
+     "imumate", "albupro", "oso-cal"],
   ],
 ];
 
@@ -223,10 +258,10 @@ const CONCERN_RULES = [
 // CONCERN_CATEGORIES in src/data/categories.ts, which applies the same rule at
 // runtime so a stale catalogue cannot show a toothbrush for dark spots either.
 const CONCERN_CATEGORIES = {
-  acne: ["skincare", "body-care", "wellness"],
-  dryness: ["skincare", "body-care", "wellness"],
-  "dark-spots": ["skincare", "body-care", "wellness"],
-  aging: ["skincare", "body-care", "wellness"],
+  acne: ["skincare", "body-care", "wellness", "dermo-cosmetics"],
+  dryness: ["skincare", "body-care", "wellness", "dermo-cosmetics"],
+  "dark-spots": ["skincare", "body-care", "wellness", "dermo-cosmetics"],
+  aging: ["skincare", "body-care", "wellness", "dermo-cosmetics"],
   "hair-scalp": ["hair-care", "wellness"],
   // Wellness only: "relax" and "night" are on a sanitary pad as readily as
   // on a sleep supplement, and personal-care let it through.

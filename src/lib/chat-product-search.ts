@@ -233,7 +233,8 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
         query: { type: "string", description: "Keywords, Thai and English, space-separated." },
         category: {
           type: "string",
-          enum: ["skincare", "oral-care", "hair-care", "personal-care", "wellness", "body-care"],
+          enum: ["skincare", "oral-care", "hair-care", "personal-care", "wellness", "body-care",
+            "dermo-cosmetics", "womens-health", "health-devices", "mother-baby"],
           description: "Optional: only this store category.",
         },
         product_type: {
