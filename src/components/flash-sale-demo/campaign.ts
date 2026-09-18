@@ -35,6 +35,8 @@ export type CampaignPresentation = {
   heroImage?: string;
   heroHeadline?: string;
   heroNote?: string;
+  /** Where the headline sits on the artwork: top, middle or bottom. */
+  heroAlign?: "top" | "center" | "bottom";
   accent?: string;
   faq?: { q: string; a: string }[];
 };

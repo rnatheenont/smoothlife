@@ -8,13 +8,30 @@ import Image from "next/image";
 // queue, the stock and the payment rules are the same for both kinds
 // (see src/lib/flash-sale-campaigns.ts).
 
+export type HeroAlign = "top" | "center" | "bottom";
+
 export type CampaignTheme = {
   kind: "regular" | "special";
   heroImage: string | null;
   heroHeadline: string | null;
   heroNote: string | null;
+  /** Where the headline sits on the artwork, so it never lands on a face. */
+  heroAlign: HeroAlign;
   accent: string;
   faq: { q: string; a: string }[];
+};
+
+// Vertical placement in a column layout is justify-content, not items-*.
+const HERO_POSITION: Record<HeroAlign, string> = {
+  top: "justify-start pt-8 md:pt-14",
+  center: "justify-center py-10",
+  bottom: "justify-end pb-8 md:pb-14",
+};
+
+const HERO_SCRIM: Record<HeroAlign, string> = {
+  top: "inset-x-0 top-0 h-2/5 bg-gradient-to-b from-black/55 to-transparent",
+  center: "inset-0 bg-[radial-gradient(60%_50%_at_50%_50%,rgba(0,0,0,0.55),transparent)]",
+  bottom: "inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/55 to-transparent",
 };
 
 /**
@@ -22,7 +39,17 @@ export type CampaignTheme = {
  * file. The headline sits on the image, so it is kept short and given a shadow
  * rather than a scrim: the artwork is the point of the page.
  */
-export function SpecialHero({ image, headline, note }: { image: string | null; headline: string; note: string | null }) {
+export function SpecialHero({
+  image,
+  headline,
+  note,
+  align = "top",
+}: {
+  image: string | null;
+  headline: string;
+  note: string | null;
+  align?: HeroAlign;
+}) {
   return (
     <header className="relative isolate overflow-hidden bg-[#01010c] [clip-path:ellipse(140%_100%_at_50%_0%)]">
       <div className="relative mx-auto aspect-[4/3] w-full max-w-[1440px] sm:aspect-[21/9] lg:aspect-[3/1]">
@@ -31,12 +58,12 @@ export function SpecialHero({ image, headline, note }: { image: string | null; h
         ) : (
           <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_50%_120%,var(--fs-accent),#01010c_65%)]" aria-hidden />
         )}
-        <div className="absolute inset-x-0 top-0 h-2/5 bg-gradient-to-b from-black/55 to-transparent" aria-hidden />
-        <div className="absolute inset-x-0 top-0 flex flex-col items-center gap-2 px-6 pt-8 text-center md:pt-14">
+        <div className={`absolute ${HERO_SCRIM[align]}`} aria-hidden />
+        <div className={`absolute inset-0 flex flex-col items-center px-6 text-center ${HERO_POSITION[align]}`}>
           <h1 className="text-2xl font-extrabold uppercase tracking-[0.18em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] sm:text-4xl lg:text-5xl">
             {headline}
           </h1>
-          {note && <p className="text-xs text-white/85 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] sm:text-sm">{note}</p>}
+          {note && <p className="mt-2 text-xs text-white/85 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] sm:text-sm">{note}</p>}
         </div>
       </div>
     </header>
@@ -77,6 +104,73 @@ export function Countdown({ label, ms }: { label: string; ms: number }) {
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+export type PickerItem = {
+  slug: string;
+  /** What tells this set apart from the others (the shared prefix is dropped). */
+  name: string;
+  image: string;
+  pay: number;
+  was: number | null;
+  remaining: number | null;
+  soldOut: boolean;
+  disabled: boolean;
+};
+
+const baht = (n: number) => `฿${n.toLocaleString("th-TH")}`;
+
+/**
+ * Which set of the drop to buy. Centred and wrapping rather than a scrolling
+ * row: a drop has a handful of sets, and on a phone a row that runs off the
+ * edge hides half of them.
+ */
+export function SetPicker({ items, value, onChange }: { items: PickerItem[]; value: string; onChange: (slug: string) => void }) {
+  if (items.length < 2) return null;
+  return (
+    <section className="mt-6">
+      <h2 className="text-center text-sm font-semibold text-slate-600">เลือกเซ็ตที่ต้องการ</h2>
+      <ul className="mt-3 flex flex-wrap justify-center gap-3" role="radiogroup" aria-label="เลือกเซ็ตที่ต้องการ">
+        {items.map((item) => {
+          const isOn = item.slug === value;
+          return (
+            <li key={item.slug}>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={isOn}
+                disabled={item.disabled}
+                onClick={() => onChange(item.slug)}
+                className={`flex h-full w-36 flex-col overflow-hidden rounded-2xl bg-white text-left transition disabled:opacity-50 sm:w-44 ${
+                  isOn ? "ring-2 ring-[var(--fs-accent)]" : "ring-1 ring-surface-line hover:ring-[var(--fs-accent)]/50"
+                }`}
+              >
+                <span className="relative block aspect-square bg-[linear-gradient(160deg,#f7f1ff,#ffffff)]">
+                  <Image src={item.image} alt="" fill sizes="176px" className="object-contain p-2" />
+                  {item.soldOut && (
+                    <span className="absolute inset-0 grid place-items-center bg-white/75 text-sm font-bold text-slate-600">หมดแล้ว</span>
+                  )}
+                  {isOn && !item.soldOut && (
+                    <span className="absolute right-2 top-2 rounded-full bg-[var(--fs-accent)] px-2 py-0.5 text-[11px] font-semibold text-white">
+                      เลือกอยู่
+                    </span>
+                  )}
+                </span>
+                <span className="flex flex-1 flex-col gap-1 p-3">
+                  <span className="line-clamp-2 text-xs font-medium text-brand-ink">{item.name}</span>
+                  <span className="mt-auto flex flex-wrap items-baseline gap-x-1.5">
+                    <span className="text-sm font-bold text-sale">{baht(item.pay)}</span>
+                    {item.was && <span className="text-[11px] text-slate-400 line-through">{baht(item.was)}</span>}
+                  </span>
+                  {item.remaining !== null && <span className="text-[11px] text-slate-500">เหลือ {item.remaining} ชิ้น</span>}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }

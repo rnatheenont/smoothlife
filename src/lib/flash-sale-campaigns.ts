@@ -8,10 +8,13 @@ import { getProductBySlug } from "@/data/products";
 export type CampaignKind = "regular" | "special";
 
 /** The look of a "special" campaign's sale page — banner, colour and Q&A. */
+export type HeroAlign = "top" | "center" | "bottom";
+
 export type CampaignPresentation = {
   heroImage: string | null;
   heroHeadline: string | null;
   heroNote: string | null;
+  heroAlign: HeroAlign;
   accent: string | null;
   faq: { q: string; a: string }[];
 };
@@ -26,6 +29,7 @@ export type FlashSaleCampaignRow = {
   hero_image_url: string | null;
   hero_headline: string | null;
   hero_note: string | null;
+  hero_align: HeroAlign;
   accent_color: string | null;
   faq: { q: string; a: string }[];
   group_kind: "category" | "brand" | "collection" | null;
@@ -43,7 +47,7 @@ export type FlashSaleCampaignRow = {
 };
 
 export const CAMPAIGN_COLUMNS =
-  "id,title,mode,kind,hero_image_url,hero_headline,hero_note,accent_color,faq,group_kind,group_key,product_slugs,stock_per_product,reservation_window_minutes,max_requeue_per_customer,starts_at,ends_at,ended_manually_at,created_at,flash_sales(product_slug,sale_price)";
+  "id,title,mode,kind,hero_image_url,hero_headline,hero_note,hero_align,accent_color,faq,group_kind,group_key,product_slugs,stock_per_product,reservation_window_minutes,max_requeue_per_customer,starts_at,ends_at,ended_manually_at,created_at,flash_sales(product_slug,sale_price)";
 
 /** What the admin page receives: times as epoch ms. */
 export type FlashSaleCampaignDTO = {
@@ -75,6 +79,7 @@ export function rowToCampaign(r: FlashSaleCampaignRow): FlashSaleCampaignDTO {
       heroImage: r.hero_image_url,
       heroHeadline: r.hero_headline,
       heroNote: r.hero_note,
+      heroAlign: r.hero_align === "center" || r.hero_align === "bottom" ? r.hero_align : "top",
       accent: r.accent_color,
       faq: Array.isArray(r.faq) ? r.faq : [],
     },
@@ -128,7 +133,7 @@ function parseHeroImage(value: unknown): string | null | { error: string } {
 }
 
 /** The "special" campaign's page dressing; ignored for regular campaigns. */
-function parsePresentation(b: Record<string, unknown>): Pick<FlashSaleCampaignRow, "hero_image_url" | "hero_headline" | "hero_note" | "accent_color" | "faq"> | { error: string } {
+function parsePresentation(b: Record<string, unknown>): Pick<FlashSaleCampaignRow, "hero_image_url" | "hero_headline" | "hero_note" | "hero_align" | "accent_color" | "faq"> | { error: string } {
   const text = (v: unknown, max: number) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
   const hero = parseHeroImage(b.heroImage);
   if (hero !== null && typeof hero === "object") return hero;
@@ -145,7 +150,16 @@ function parsePresentation(b: Record<string, unknown>): Pick<FlashSaleCampaignRo
     })
     .filter((row) => row.q && row.a);
 
-  return { hero_image_url: hero as string | null, hero_headline: text(b.heroHeadline, 120), hero_note: text(b.heroNote, 300), accent_color: accent, faq };
+  const heroAlign: HeroAlign = b.heroAlign === "center" || b.heroAlign === "bottom" ? b.heroAlign : "top";
+
+  return {
+    hero_image_url: hero as string | null,
+    hero_headline: text(b.heroHeadline, 120),
+    hero_note: text(b.heroNote, 300),
+    hero_align: heroAlign,
+    accent_color: accent,
+    faq,
+  };
 }
 
 /** Validates a create request; returns the row to insert or a Thai error message. */
@@ -219,7 +233,9 @@ export function parseCampaignInput(
       mode,
       kind,
       // A regular campaign keeps the plain page, so its dressing is not stored.
-      ...(kind === "special" ? presentation : { hero_image_url: null, hero_headline: null, hero_note: null, accent_color: null, faq: [] }),
+      ...(kind === "special"
+        ? presentation
+        : { hero_image_url: null, hero_headline: null, hero_note: null, hero_align: "top" as const, accent_color: null, faq: [] }),
       group_kind: groupKind as FlashSaleCampaignRow["group_kind"],
       group_key: groupKey,
       product_slugs: slugs,

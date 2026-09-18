@@ -10,7 +10,7 @@ import type { FlashSaleStatus } from "@/lib/flash-sale";
 import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
 import PaymentModal from "@/components/PaymentModal";
 import { emptyAddressForm, type AddressFormValue } from "@/components/account/AddressFields";
-import { Countdown, Faq, SpecialHero, type CampaignTheme } from "./special";
+import { Countdown, Faq, SetPicker, SpecialHero, type CampaignTheme, type PickerItem } from "./special";
 
 export type LiveProduct = {
   slug: string;
@@ -328,6 +328,35 @@ export default function FlashSaleLive({
     />
   );
 
+  // Sets in one drop share a long prefix ("Pre-order [Special Set] Dentiste'
+  // The Iconic Smile - "), which is all a card has room for. Drop what every
+  // name has in common so the cards say what actually differs.
+  const sharedPrefix = products.reduce((prefix, p) => {
+    let i = 0;
+    while (i < prefix.length && i < p.name.length && prefix[i] === p.name[i]) i++;
+    return prefix.slice(0, i);
+  }, products[0]?.name ?? "");
+  const shortName = (name: string) => {
+    const rest = name.slice(sharedPrefix.length).replace(/^[\s\-–—·|]+/, "");
+    return sharedPrefix.length >= 12 && rest.length >= 3 ? rest : name;
+  };
+
+  // The same products, described for the special page's own picker.
+  const pickerItems: PickerItem[] = products.map((p) => {
+    const s = status?.products.find((x) => x.slug === p.slug);
+    const { pay, was } = priceOf(p);
+    return {
+      slug: p.slug,
+      name: shortName(p.name),
+      image: p.image,
+      pay,
+      was,
+      remaining: s ? s.total - s.sold : null,
+      soldOut: Boolean(s && s.sold >= s.total),
+      disabled: Boolean(mySlug) && p.slug !== mySlug,
+    };
+  });
+
   const priceRow = (
     <p className="flex flex-wrap items-baseline gap-2">
       <span className="text-3xl font-extrabold text-sale">{formatTHB(price.pay)}</span>
@@ -348,7 +377,7 @@ export default function FlashSaleLive({
         className="bg-[linear-gradient(180deg,#fdfbff_0%,#f4ebff_38%,#ffffff_100%)] pb-16"
         style={{ "--fs-accent": theme.accent } as CSSProperties}
       >
-        <SpecialHero image={theme.heroImage} headline={theme.heroHeadline || title} note={theme.heroNote} />
+        <SpecialHero image={theme.heroImage} headline={theme.heroHeadline || title} note={theme.heroNote} align={theme.heroAlign} />
 
         <div className="mx-auto w-full max-w-6xl px-4">
           {paymentTimer}
@@ -363,7 +392,7 @@ export default function FlashSaleLive({
           </div>
 
           <div className="mt-6">{alerts}</div>
-          {products.length > 1 && <div className="mt-6">{picker}</div>}
+          <SetPicker items={pickerItems} value={product.slug} onChange={setSelected} />
 
           <div className="mt-6 grid gap-6 rounded-3xl bg-white p-4 shadow-card ring-1 ring-black/5 md:grid-cols-2 md:gap-10 md:p-8 lg:items-center">
             <div className="relative aspect-square overflow-hidden rounded-2xl bg-[linear-gradient(160deg,#f7f1ff,#ffffff)]">

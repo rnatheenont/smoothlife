@@ -19,6 +19,7 @@ type Row = {
   hero_image_url: string | null;
   hero_headline: string | null;
   hero_note: string | null;
+  hero_align: "top" | "center" | "bottom";
   accent_color: string | null;
   faq: { q: string; a: string }[];
   flash_sales: { product_slug: string; sale_price: number | string | null }[];
@@ -26,7 +27,7 @@ type Row = {
 
 async function getCampaign(id: string): Promise<Row | null> {
   if (!UUID_RE.test(id) || !supabaseConfigured()) return null;
-  const rows = await supabaseRest<Row[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=id,title,product_slugs,kind,hero_image_url,hero_headline,hero_note,accent_color,faq,flash_sales(product_slug,sale_price)`);
+  const rows = await supabaseRest<Row[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=id,title,product_slugs,kind,hero_image_url,hero_headline,hero_note,hero_align,accent_color,faq,flash_sales(product_slug,sale_price)`);
   return rows[0] ?? null;
 }
 
@@ -59,6 +60,7 @@ export default async function FlashSalePage(props: { params: Promise<{ id: strin
     heroImage: campaign.hero_image_url,
     heroHeadline: campaign.hero_headline,
     heroNote: campaign.hero_note,
+    heroAlign: campaign.hero_align ?? "top",
     accent: campaign.accent_color ?? DEFAULT_ACCENT,
     faq: Array.isArray(campaign.faq) ? campaign.faq : [],
   };

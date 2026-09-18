@@ -86,6 +86,7 @@ export default function CampaignSetup({
   const [heroImage, setHeroImage] = useState(config.presentation?.heroImage ?? "");
   const [heroHeadline, setHeroHeadline] = useState(config.presentation?.heroHeadline ?? "");
   const [heroNote, setHeroNote] = useState(config.presentation?.heroNote ?? "");
+  const [heroAlign, setHeroAlign] = useState<"top" | "center" | "bottom">(config.presentation?.heroAlign ?? "top");
   const [accent, setAccent] = useState(config.presentation?.accent ?? SPECIAL_ACCENT_DEFAULT);
   const [faq, setFaq] = useState<{ q: string; a: string }[]>(config.presentation?.faq ?? []);
   const [priceMode, setPriceMode] = useState<"regular" | "percent" | "fixed">("percent");
@@ -147,6 +148,7 @@ export default function CampaignSetup({
           heroImage: heroImage.trim() || undefined,
           heroHeadline: heroHeadline.trim() || undefined,
           heroNote: heroNote.trim() || undefined,
+          heroAlign,
           accent,
           faq: faq.filter((f) => f.q.trim() && f.a.trim()),
         }
@@ -440,6 +442,20 @@ export default function CampaignSetup({
                     />
                   </div>
                 </div>
+              </div>
+              <div>
+                <p className="mb-1.5 text-sm font-semibold text-brand-ink">ตำแหน่งข้อความบนแบนเนอร์</p>
+                <Segmented<"top" | "center" | "bottom">
+                  label="ตำแหน่งข้อความบนแบนเนอร์"
+                  value={heroAlign}
+                  onChange={setHeroAlign}
+                  options={[
+                    { value: "top", label: "บน" },
+                    { value: "center", label: "กลาง" },
+                    { value: "bottom", label: "ล่าง" },
+                  ]}
+                />
+                <p className="mt-1 text-xs text-slate-500">เลือกให้ข้อความไม่ทับหน้าแบบหรือตัวสินค้าในรูป</p>
               </div>
               <div>
                 <label htmlFor="fs-note" className="mb-1.5 block text-sm font-semibold text-brand-ink">
