@@ -10,7 +10,7 @@
 // sync costs almost nothing once it has caught up.
 import { products } from "@/data/products";
 import { pgValue, supabaseRest } from "@/lib/supabase-server";
-import { KB_COLUMNS, reindexArticle, type KbArticle } from "@/lib/kb";
+import { KB_COLUMNS, reindexArticle, reindexArticles, type KbArticle } from "@/lib/kb";
 
 const REF_PREFIX = "product:";
 
@@ -156,14 +156,17 @@ export async function backfillEmbeddings(budgetMs = 60_000): Promise<{ indexed: 
 
   const started = Date.now();
   let indexed = 0;
-  for (const id of ids) {
+  // Twenty at a time: one embedding request per round, which is what the
+  // provider's per-minute limit actually counts.
+  for (let i = 0; i < ids.length; i += 20) {
     if (Date.now() - started > budgetMs) break;
-    const [article] = await supabaseRest<Pick<KbArticle, "id" | "title" | "content">[]>(
-      `kb_articles?id=eq.${pgValue(id)}&select=id,title,content`
+    const slice = ids.slice(i, i + 20);
+    const articles = await supabaseRest<Pick<KbArticle, "id" | "title" | "content">[]>(
+      `kb_articles?id=in.(${slice.map(pgValue).join(",")})&select=id,title,content`
     );
-    if (!article) continue;
-    await reindexArticle(article);
-    indexed += 1;
+    const result = await reindexArticles(articles);
+    if (!result.embedded) break; // rate-limited or down; tomorrow's run continues
+    indexed += articles.length;
   }
   return { indexed, remaining: Math.max(0, ids.length - indexed) };
 }

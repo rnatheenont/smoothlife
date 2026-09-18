@@ -108,25 +108,71 @@ export function chunk(content: string, target = 700): string[] {
   return chunks.length > 0 ? chunks.slice(0, 40) : [content.slice(0, target)];
 }
 
+/** One request per this many texts, and per this much text. Voyage accepts
+ *  more, but an account without a payment method is held to 10K tokens a
+ *  minute — fewer, fuller requests are what fits through that. */
+const EMBED_BATCH = 48;
+const EMBED_CHARS = 6000;
+
+/** 429 on that account means "too fast", not "too much" — so wait and retry. */
+async function voyage(texts: string[], key: string, attempt = 0): Promise<number[][] | null> {
+  const res = await fetch("https://api.voyageai.com/v1/embeddings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({ model: process.env.VOYAGE_MODEL || "voyage-3", input: texts, output_dimension: 1024 }),
+  });
+
+  if (res.status === 429 && attempt < 3) {
+    // The free tier is 3 requests a minute; anything shorter just fails again.
+    await new Promise((resolve) => setTimeout(resolve, 21_000));
+    return voyage(texts, key, attempt + 1);
+  }
+  if (!res.ok) {
+    console.error("[kb] embedding failed", res.status, (await res.text().catch(() => "")).slice(0, 300));
+    return null;
+  }
+
+  const data = (await res.json()) as { data: { embedding: number[]; index: number }[] };
+  // The API may return them out of order; index is what says which is which.
+  const ordered = new Array<number[]>(texts.length);
+  for (const item of data.data) ordered[item.index ?? 0] = item.embedding;
+  return ordered.every(Boolean) ? ordered : null;
+}
+
 /**
  * Voyage is Anthropic's recommended embedding provider; with no key the
  * chunks are stored without embeddings and searched as text instead.
+ *
+ * Texts go up in as few requests as the rate limit allows: the limit that
+ * bites on a free account is requests per minute, so one request carrying
+ * forty chunks is forty times cheaper than forty requests carrying one.
  */
 export async function embed(texts: string[]): Promise<number[][] | null> {
   const key = process.env.VOYAGE_API_KEY;
   if (!key || texts.length === 0) return null;
-  try {
-    const res = await fetch("https://api.voyageai.com/v1/embeddings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model: process.env.VOYAGE_MODEL || "voyage-3", input: texts, output_dimension: 1024 }),
-    });
-    if (!res.ok) {
-      console.error("[kb] embedding failed", res.status, await res.text().catch(() => ""));
-      return null;
+
+  const groups: string[][] = [];
+  let group: string[] = [];
+  let chars = 0;
+  for (const text of texts) {
+    if (group.length > 0 && (group.length >= EMBED_BATCH || chars + text.length > EMBED_CHARS)) {
+      groups.push(group);
+      group = [];
+      chars = 0;
     }
-    const data = (await res.json()) as { data: { embedding: number[] }[] };
-    return data.data.map((d) => d.embedding);
+    group.push(text);
+    chars += text.length;
+  }
+  if (group.length > 0) groups.push(group);
+
+  try {
+    const out: number[][] = [];
+    for (const batch of groups) {
+      const vectors = await voyage(batch, key);
+      if (!vectors) return null;
+      out.push(...vectors);
+    }
+    return out;
   } catch (err) {
     console.error("[kb] embedding request failed", err);
     return null;
@@ -151,6 +197,37 @@ export async function reindexArticle(article: Pick<KbArticle, "id" | "title" | "
     ),
   });
   return { chunks: pieces.length, embedded: Boolean(vectors) };
+}
+
+/**
+ * Reindex a batch of articles with as few embedding requests as possible:
+ * every chunk of every article goes up together, then each article's chunks
+ * are written back.
+ */
+export async function reindexArticles(articles: Pick<KbArticle, "id" | "title" | "content">[]) {
+  const pieces = articles.map((a) => ({ id: a.id, chunks: chunk(`${a.title}\n\n${a.content}`) }));
+  const flat = pieces.flatMap((p) => p.chunks);
+  const vectors = await embed(flat);
+
+  let cursor = 0;
+  for (const piece of pieces) {
+    const slice = vectors ? vectors.slice(cursor, cursor + piece.chunks.length) : null;
+    cursor += piece.chunks.length;
+    await supabaseRest(`kb_chunks?article_id=eq.${pgValue(piece.id)}`, { method: "DELETE", returning: false });
+    await supabaseRest("kb_chunks", {
+      method: "POST",
+      returning: false,
+      body: JSON.stringify(
+        piece.chunks.map((text, i) => ({
+          article_id: piece.id,
+          chunk_index: i,
+          chunk_text: text,
+          embedding: slice ? JSON.stringify(slice[i]) : null,
+        }))
+      ),
+    });
+  }
+  return { articles: pieces.length, chunks: flat.length, embedded: Boolean(vectors) };
 }
 
 export type KbMatch = { article_id: string; chunk_id: string; title: string; category: KbCategory; chunk_text: string; score: number };
