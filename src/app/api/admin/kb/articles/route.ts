@@ -15,9 +15,31 @@ function unauthorized() {
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) return unauthorized();
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
-  const articles = await supabaseRest<KbArticle[]>(`kb_articles?select=${KB_COLUMNS}&order=updated_at.desc&limit=500`);
+
+  // Once the catalogue is synced the product articles outnumber everything a
+  // person wrote by a hundred to one, so the screen opens on what the team
+  // maintains and asks for the product ones by name.
+  const source = req.nextUrl.searchParams.get("source") ?? "curated";
+  const filter =
+    source === "shopify_sync"
+      ? "&source=eq.shopify_sync"
+      : source === "all"
+        ? ""
+        : "&source=in.(manual,chat_promoted)";
+
+  const articles = await supabaseRest<KbArticle[]>(`kb_articles?select=${KB_COLUMNS}${filter}&order=updated_at.desc&limit=300`);
+  const bySource = await supabaseRest<{ source: string }[]>("kb_articles?select=source&limit=5000").catch((): { source: string }[] => []);
+  const sourceCounts = bySource.reduce<Record<string, number>>((acc, a) => ({ ...acc, [a.source]: (acc[a.source] ?? 0) + 1 }), {});
   const counts = articles.reduce<Record<string, number>>((acc, a) => ({ ...acc, [a.status]: (acc[a.status] ?? 0) + 1 }), {});
-  return NextResponse.json({ ok: true, articles, counts, embeddings: Boolean(process.env.VOYAGE_API_KEY) });
+
+  return NextResponse.json({
+    ok: true,
+    articles,
+    counts,
+    sourceCounts,
+    truncated: articles.length === 300,
+    embeddings: Boolean(process.env.VOYAGE_API_KEY),
+  });
 }
 
 export async function POST(req: NextRequest) {

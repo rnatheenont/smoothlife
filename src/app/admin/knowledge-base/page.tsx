@@ -32,6 +32,9 @@ export default function AdminKnowledgeBasePage() {
   const [embeddings, setEmbeddings] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<KbStatus | "all">("all");
+  const [source, setSource] = useState<"curated" | "shopify_sync" | "all">("curated");
+  const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
+  const [truncated, setTruncated] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -41,10 +44,12 @@ export default function AdminKnowledgeBasePage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/kb/articles", { cache: "no-store" });
+      const res = await fetch(`/api/admin/kb/articles?source=${source}`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || "โหลดฐานความรู้ไม่สำเร็จ");
       setArticles(data.articles);
+      setSourceCounts(data.sourceCounts ?? {});
+      setTruncated(Boolean(data.truncated));
       setEmbeddings(data.embeddings);
       setError(null);
     } catch (err) {
@@ -52,7 +57,7 @@ export default function AdminKnowledgeBasePage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [source]);
 
   useEffect(() => {
     load();
@@ -108,6 +113,56 @@ export default function AdminKnowledgeBasePage() {
     }
   };
 
+  const [syncing, setSyncing] = useState(false);
+  const [syncNote, setSyncNote] = useState<string | null>(null);
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/kb/sync-products")
+      .then((r) => r.json())
+      .then((d) => d.ok && setLastSyncAt(d.lastSyncAt))
+      .catch(() => {});
+  }, []);
+
+  // The catalogue is rebuilt from Shopify when a product changes, and a cron
+  // pulls it in every morning — this is the "now" button.
+  const syncProducts = async () => {
+    setSyncing(true);
+    setSyncNote(null);
+    setError(null);
+    try {
+      // The catalogue is walked in slices; keep asking for the next one.
+      const totals = { created: 0, updated: 0, unchanged: 0, archived: 0 };
+      let offset: number | null = 0;
+      let lastAt: string | null = null;
+      while (offset !== null) {
+        const res = await fetch("/api/admin/kb/sync-products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ offset }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || "ซิงก์ไม่สำเร็จ");
+        totals.created += data.created;
+        totals.updated += data.updated;
+        totals.unchanged += data.unchanged;
+        totals.archived += data.archived;
+        lastAt = data.lastSyncAt;
+        offset = data.nextOffset;
+        setSyncNote(`กำลังซิงก์… เพิ่มใหม่ ${totals.created} · อัปเดต ${totals.updated} · เหมือนเดิม ${totals.unchanged}`);
+      }
+      setSyncNote(
+        `เพิ่มใหม่ ${totals.created} · อัปเดต ${totals.updated} · เหมือนเดิม ${totals.unchanged}${totals.archived ? ` · เก็บเข้าคลัง ${totals.archived}` : ""}`
+      );
+      setLastSyncAt(lastAt);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ซิงก์ไม่สำเร็จ");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const [seeding, setSeeding] = useState(false);
   const seedFromHelp = async () => {
     setSeeding(true);
@@ -157,6 +212,9 @@ export default function AdminKnowledgeBasePage() {
         <p className="mt-1 text-sm text-slate-500">
           น้อง Smoothie ตอบลูกค้าได้เฉพาะจากบทความที่ <strong>เผยแพร่แล้ว</strong> ในหน้านี้เท่านั้น — เรื่องไหนไม่มีในนี้ ระบบจะส่งต่อให้ทีมงานตอบ ไม่เดาคำตอบเอง
         </p>
+        {lastSyncAt && (
+          <p className="mt-2 text-xs text-slate-400">ซิงก์ข้อมูลสินค้าล่าสุด {thaiDate(lastSyncAt)} · ระบบซิงก์ให้เองทุกเช้า</p>
+        )}
         <Link
           href="/admin/knowledge-base/log"
           className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-800 hover:underline"
@@ -171,6 +229,29 @@ export default function AdminKnowledgeBasePage() {
       </div>
 
       {error && <p className="mb-4 rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
+      {syncNote && <p className="mb-4 rounded-xl2 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">ซิงก์สินค้าเรียบร้อย — {syncNote}</p>}
+
+      <div className="mb-3 inline-flex rounded-full bg-surface-muted p-1">
+        {(
+          [
+            ["curated", `ทีมเขียนเอง ${(sourceCounts.manual ?? 0) + (sourceCounts.chat_promoted ?? 0)}`],
+            ["shopify_sync", `จากสินค้า ${sourceCounts.shopify_sync ?? 0}`],
+            ["all", "ทั้งหมด"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setSource(value)}
+            aria-pressed={source === value}
+            className={`min-h-9 rounded-full px-4 text-sm font-semibold transition ${
+              source === value ? "bg-white text-brand-ink shadow-card" : "text-slate-600 hover:text-brand-ink"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <input
@@ -181,6 +262,15 @@ export default function AdminKnowledgeBasePage() {
           aria-label="ค้นหาบทความ"
           className={`${fieldClass} max-w-xs`}
         />
+        <button
+          type="button"
+          onClick={syncProducts}
+          disabled={syncing}
+          title="ดึงคำอธิบาย ส่วนผสม วิธีใช้ และราคา จากแคตตาล็อกสินค้าเข้าฐานความรู้"
+          className="min-h-11 rounded-full px-4 text-sm font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
+        >
+          {syncing ? "กำลังซิงก์สินค้า…" : "ซิงก์ข้อมูลสินค้า"}
+        </button>
         <button
           type="button"
           onClick={seedFromHelp}
@@ -206,6 +296,9 @@ export default function AdminKnowledgeBasePage() {
         </div>
       </div>
 
+      {truncated && !loading && (
+        <p className="mb-3 text-xs text-slate-400">แสดง 300 รายการล่าสุด — ใช้ช่องค้นหาเพื่อหาบทความที่ต้องการ</p>
+      )}
       {loading ? (
         <p className="py-10 text-center text-sm text-slate-400">
           <Loader2 size={18} className="mx-auto animate-spin" />

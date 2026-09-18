@@ -31,6 +31,10 @@
     {
       "path": "/api/cron/purge-chat-attachments",
       "schedule": "30 1 * * *"
+    },
+    {
+      "path": "/api/cron/kb-sync-products",
+      "schedule": "30 4 * * *"
     }
   ]
 }
