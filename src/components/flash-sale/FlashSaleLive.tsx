@@ -8,6 +8,7 @@ import { AlertTriangle, CheckCircle2, Clock, CreditCard, RotateCcw, Timer, Users
 import { formatTHB } from "@/lib/format";
 import type { FlashSaleStatus } from "@/lib/flash-sale";
 import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
+import MobileStickyBar from "@/components/MobileStickyBar";
 import PaymentModal from "@/components/PaymentModal";
 import { emptyAddressForm, type AddressFormValue } from "@/components/account/AddressFields";
 import { Countdown, Faq, SetPicker, SpecialHero, type CampaignTheme, type PickerItem } from "./special";
@@ -80,6 +81,7 @@ export default function FlashSaleLive({
   const [paying, setPaying] = useState(false);
   const [, setTick] = useState(0);
   const received = useRef({ at: Date.now(), serverOffset: 0 });
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -357,6 +359,61 @@ export default function FlashSaleLive({
     };
   });
 
+  // On a phone the queue button is below the artwork, the countdown and the
+  // set picker — so once it scrolls away it comes back as a bar above the tab
+  // bar, the same pattern as a product page's "เพิ่มลงตะกร้า".
+  const showPanel = () => panelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  const soldOut = Boolean(stock && stock.sold >= stock.total);
+  const stickyBar = status && (
+    <MobileStickyBar hideWhenVisible={panelRef}>
+      <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-surface-soft">
+        <Image src={product.image} alt="" fill sizes="44px" className="object-contain p-1" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-xs text-slate-500">{shortName(product.name)}</span>
+        {me?.status === "reserved" ? (
+          <span className="block text-sm font-bold tabular-nums text-sale">เหลือเวลาชำระ {mmss(secondsLeft)}</span>
+        ) : me?.status === "waiting" ? (
+          <span className="block text-sm font-bold text-brand-ink">คิวของคุณ #{me.position}</span>
+        ) : (
+          <span className="block text-sm font-bold text-brand-ink">{formatTHB(price.pay)}</span>
+        )}
+      </span>
+      {me?.status === "paid" ? (
+        <Chip color="success" variant="soft" size="sm">
+          ชำระเงินสำเร็จ
+        </Chip>
+      ) : me?.status === "reserved" ? (
+        <Button size="sm" className="shrink-0" onPress={showPanel}>
+          <CreditCard size={15} aria-hidden /> ชำระเงิน
+        </Button>
+      ) : me?.status === "waiting" ? (
+        <Button size="sm" variant="secondary" className="shrink-0" onPress={showPanel}>
+          ดูคิวของฉัน
+        </Button>
+      ) : status.campaign.phase === "ended" || soldOut ? (
+        <Chip color="default" variant="soft" size="sm">
+          {soldOut ? "สินค้าหมด" : "ปิดการขายแล้ว"}
+        </Chip>
+      ) : status.campaign.phase === "scheduled" ? (
+        <Button size="sm" className="shrink-0" isDisabled>
+          <Clock size={15} aria-hidden /> ยังไม่เปิดขาย
+        </Button>
+      ) : status.signedIn ? (
+        <Button size="sm" className="shrink-0" isDisabled={busy} isPending={busy} onPress={() => act("join")}>
+          เข้าคิว
+        </Button>
+      ) : (
+        <Link
+          href={`/account/login?returnTo=${encodeURIComponent(`/flash-sale/${campaignId}`)}`}
+          className="flex min-h-9 shrink-0 items-center rounded-full bg-brand-800 px-4 text-sm font-semibold text-white"
+        >
+          เข้าสู่ระบบ
+        </Link>
+      )}
+    </MobileStickyBar>
+  );
+
   const priceRow = (
     <p className="flex flex-wrap items-baseline gap-2">
       <span className="text-3xl font-extrabold text-sale">{formatTHB(price.pay)}</span>
@@ -405,7 +462,7 @@ export default function FlashSaleLive({
               </div>
               <div className="flex justify-center md:justify-start">{priceRow}</div>
               {stockBlock}
-              <div>{panelBody}</div>
+              <div ref={panelRef}>{panelBody}</div>
               {noticeBox}
               <p className="text-center text-xs text-slate-500 md:text-left">1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ · ถึงคิวแล้วมีเวลาชำระเงิน {status?.campaign.window_minutes ?? 15} นาที</p>
             </div>
@@ -414,6 +471,7 @@ export default function FlashSaleLive({
           <Faq items={theme.faq} />
         </div>
 
+        {stickyBar}
         {paymentModal}
       </div>
     );
@@ -464,11 +522,14 @@ export default function FlashSaleLive({
         </Card>
 
         <div className="lg:sticky lg:top-40">
-          <Card className="p-5 md:p-6">{panelBody}</Card>
+          <Card ref={panelRef} className="p-5 md:p-6">
+            {panelBody}
+          </Card>
           {noticeBox}
         </div>
       </div>
 
+      {stickyBar}
       {paymentModal}
     </div>
   );
