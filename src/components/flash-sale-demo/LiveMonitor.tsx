@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Alert, Button, Card, Chip } from "@heroui/react";
 import { ExternalLink, Radio } from "lucide-react";
 import type { FlashSaleMonitor } from "@/lib/flash-sale";
-
-const POLL_MS = 5000;
+import type { Monitor } from "./use-monitors";
 
 const STATUS_TH: Record<string, string> = {
   waiting: "เข้าคิว",
@@ -25,12 +24,22 @@ const PHASE: Record<FlashSaleMonitor["campaign"]["phase"], { label: string; colo
 
 const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.max(0, s) % 60).padStart(2, "0")}`;
 
-/** Admin: the real queue for one campaign, read from the database every few seconds. */
-type Monitor = FlashSaleMonitor & { refunds: { invoice_no: string; amount: number; refund_note: string }[] };
+/** Admin: the real queue for one campaign, polled with every other open one. */
 
-export default function LiveMonitor({ campaignId, productNames }: { campaignId: string; productNames: Record<string, string> }) {
-  const [data, setData] = useState<Monitor | null>(null);
-  const [error, setError] = useState<string | null>(null);
+export default function LiveMonitor({
+  campaignId,
+  productNames,
+  data,
+  error,
+  reload,
+}: {
+  campaignId: string;
+  productNames: Record<string, string>;
+  /** Polled for every open campaign at once by the console (see useMonitors). */
+  data: Monitor | null;
+  error: string | null;
+  reload: () => void;
+}) {
   const [retrying, setRetrying] = useState(false);
   const [retryResult, setRetryResult] = useState<string | null>(null);
 
@@ -42,32 +51,13 @@ export default function LiveMonitor({ campaignId, productNames }: { campaignId: 
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || "ลองใหม่ไม่สำเร็จ");
       setRetryResult(`สร้างออเดอร์สำเร็จ ${json.created} · ยังไม่สำเร็จ ${json.failed}`);
-      await load();
+      reload();
     } catch (err) {
       setRetryResult(err instanceof Error ? err.message : "ลองใหม่ไม่สำเร็จ");
     } finally {
       setRetrying(false);
     }
   };
-
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/admin/flash-sale/campaigns/${campaignId}/monitor`, { cache: "no-store" });
-      const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.error || "โหลดข้อมูลคิวไม่สำเร็จ");
-      setData(json);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "โหลดข้อมูลคิวไม่สำเร็จ");
-    }
-  }, [campaignId]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- first load, then polling
-    load();
-    const t = setInterval(() => document.visibilityState === "visible" && load(), POLL_MS);
-    return () => clearInterval(t);
-  }, [load]);
 
   const name = (slug: string) => productNames[slug] ?? slug;
   const totals = data?.products.reduce(

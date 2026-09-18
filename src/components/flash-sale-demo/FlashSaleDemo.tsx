@@ -52,6 +52,7 @@ import {
 import type { FlashSaleCampaignDTO } from "@/lib/flash-sale-campaigns";
 import CampaignSetup, { type CatalogueItem, type EditingCampaign, type ProductGroup } from "./CampaignSetup";
 import FormDrawer from "./FormDrawer";
+import { useMonitors } from "./use-monitors";
 import { useAdminAction } from "@/components/admin/header-action";
 import CampaignList from "./CampaignList";
 import LiveMonitor from "./LiveMonitor";
@@ -192,6 +193,9 @@ export default function FlashSaleDemo({
       setAdminError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
     }
   };
+  // One poll per cycle for every campaign whose queue is open.
+  const { monitors, error: monitorError, reload: reloadMonitors } = useMonitors(expanded.filter((id) => /^[0-9a-f-]{36}$/i.test(id)));
+
   const newCampaign = useCallback(() => {
     setEditingId(null);
     setFormOpen(true);
@@ -425,6 +429,9 @@ export default function FlashSaleDemo({
               key={entry.id}
               campaignId={entry.id}
               productNames={Object.fromEntries(entry.config.products.map((p) => [p.slug, p.name]))}
+              data={monitors[entry.id] ?? null}
+              error={monitorError}
+              reload={reloadMonitors}
             />
           ) : (
             <Card className="p-5 text-center text-sm text-slate-500">แคมเปญนี้ยังไม่ได้บันทึกในฐานข้อมูล</Card>
