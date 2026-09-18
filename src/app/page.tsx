@@ -5,7 +5,7 @@ import { products } from "@/data/products";
 import { Product } from "@/data/types";
 import { categories, concerns, concernImage } from "@/data/categories";
 import { brands } from "@/data/brands";
-import { promotions, promotionImage } from "@/data/promotions";
+import { promotions } from "@/data/promotions";
 import { articles } from "@/data/articles";
 import { subscriptionPlans } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
@@ -82,7 +82,6 @@ export default async function HomePage() {
         readMins: a.readMins,
         label: articleCategoryLabel[a.category] || a.category,
       }));
-  const usedPromoSlugs = new Set<string>();
 
   // Real product-video clips (Firework CDN, provided directly — not scraped).
   // (A second clip, untitled/Thai-named, was pulled — its Firework CDN
@@ -265,17 +264,18 @@ export default async function HomePage() {
               className="group relative aspect-4/3 overflow-hidden rounded-xl2"
             >
               <Image
-                src={promotionImage(promo, products, usedPromoSlugs)}
+                src={promo.image}
                 alt={promo.title}
                 fill
                 className="object-cover transition-transform duration-500"
               />
-              {/* Most of these photos are packshots on white, so the scrim has to be
-                  dark right up to where the title sits — the old 55%-to-5% fade
-                  left white text on near-white at the title line. */}
-              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/60 via-50% to-transparent" />
+              {/* The banners are shot with the caption's space left clear, and that
+                  space is already a deep teal — so the scrim only has to lift
+                  contrast, not manufacture it. Tinted to the photographs' own
+                  colour rather than black, which greyed them. */}
+              <div className="absolute inset-0 bg-linear-to-t from-[#0d3436]/75 via-[#0d3436]/20 via-45% to-transparent" />
               <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
-                <span className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-brand-ink">
+                <span className="rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold text-brand-800">
                   {promo.badge}
                 </span>
                 <h3 className="mt-1 text-sm font-bold [text-shadow:0_1px_2px_rgb(0_0_0/0.45)] md:text-base">{promo.title}</h3>
