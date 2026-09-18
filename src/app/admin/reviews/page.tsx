@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageSquareText, Star, Check, X } from "lucide-react";
+import { MessageSquareText, Star, Check, X, RefreshCw } from "lucide-react";
+import { useAdminAction } from "@/components/admin/header-action";
 
 type PendingReview = {
   id: string;
@@ -58,6 +59,8 @@ export default function AdminReviewsPage() {
       setBusyId(null);
     }
   }
+
+  useAdminAction({ label: "รีเฟรชรายการรีวิว", icon: <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden />, onClick: load, disabled: loading });
 
   return (
     <div>

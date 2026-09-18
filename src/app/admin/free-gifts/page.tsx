@@ -18,6 +18,7 @@ import {
 import { FreeGiftPromo, FreeGiftTier } from "@/data/free-gifts";
 import { getProductBySlug } from "@/data/products";
 import ProductPicker from "@/components/admin/ProductPicker";
+import { useAdminAction } from "@/components/admin/header-action";
 
 type AdminPromo = FreeGiftPromo & { id: string };
 
@@ -106,6 +107,8 @@ export default function AdminFreeGiftsPage() {
   useEffect(() => {
     loadList();
   }, []);
+
+  useAdminAction({ label: "สร้างโปรโมชั่นใหม่", icon: <Plus size={15} aria-hidden />, onClick: () => openCreateForm() });
 
   function openCreateForm() {
     setEditingId(null);

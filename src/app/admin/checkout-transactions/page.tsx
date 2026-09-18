@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CreditCard, Undo2, Loader2 } from "lucide-react";
+import { CreditCard, Undo2, Loader2, RefreshCw } from "lucide-react";
 import { formatTHB } from "@/lib/format";
+import { useAdminAction } from "@/components/admin/header-action";
 
 type Transaction = {
   id: string;
@@ -79,6 +80,7 @@ function RefundControls({ tx, onDone }: { tx: Transaction; onDone: () => void })
     );
   }
 
+
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-slate-100 bg-surface-soft p-3 text-xs w-64">
       <label className="flex items-center gap-2">
@@ -139,6 +141,13 @@ export default function AdminCheckoutTransactionsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  useAdminAction({
+    label: "รีเฟรชรายการซื้อ",
+    icon: <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden />,
+    onClick: load,
+    disabled: loading,
+  });
 
   return (
     <div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Inbox,
@@ -14,7 +14,12 @@ import {
   ArrowRight,
   Loader2,
   HelpCircle,
+  RefreshCw,
+  Truck,
+  Users,
+  Zap,
 } from "lucide-react";
+import { useAdminAction } from "@/components/admin/header-action";
 
 // Admin home. It used to redirect straight into the promotions screen, which
 // meant the answer to "what needs me today?" was: open all seven pages and
@@ -29,6 +34,10 @@ type Stats = {
   activeSubs: number | null;
   subscribableOn: number | null;
   openQuestions: number | null;
+  flashRunning: number | null;
+  flashScheduled: number | null;
+  flashOrdersFailed: number | null;
+  refundsPending: number | null;
 };
 
 const EMPTY: Stats = {
@@ -38,19 +47,30 @@ const EMPTY: Stats = {
   activeSubs: null,
   subscribableOn: null,
   openQuestions: null,
+  flashRunning: null,
+  flashScheduled: null,
+  flashOrdersFailed: null,
+  refundsPending: null,
 };
 
 export default function AdminHomePage() {
   const [stats, setStats] = useState<Stats>(EMPTY);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch("/api/admin/overview")
+  const load = useCallback(() => {
+    setLoading(true);
+    fetch("/api/admin/overview", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => d.ok && setStats({ ...EMPTY, ...d.stats }))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useAdminAction({ label: "รีเฟรชตัวเลข", icon: <RefreshCw size={15} aria-hidden />, onClick: load, disabled: loading });
 
   // Anything past this is "a lot" — the exact number changes nothing about
   // what the reader does next.
@@ -78,10 +98,26 @@ export default function AdminHomePage() {
       value: stats.openQuestions,
       unit: "คำถาม",
     },
+    {
+      href: "/admin/flash-sale",
+      icon: Zap,
+      label: "Flash Sale · จ่ายแล้วแต่ไม่มีออเดอร์",
+      value: stats.flashOrdersFailed,
+      unit: "ราย",
+    },
+    {
+      href: "/admin/checkout-transactions",
+      icon: Receipt,
+      label: "รอคืนเงิน (Flash Sale)",
+      value: stats.refundsPending,
+      unit: "รายการ",
+    },
   ];
 
   const today = [
     { icon: Receipt, label: "ชำระเงินสำเร็จวันนี้", value: stats.paidToday, unit: "รายการ", href: "/admin/checkout-transactions" },
+    { icon: Zap, label: "Flash Sale กำลังขาย", value: stats.flashRunning, unit: "แคมเปญ", href: "/admin/flash-sale" },
+    { icon: Zap, label: "Flash Sale รอเริ่ม", value: stats.flashScheduled, unit: "แคมเปญ", href: "/admin/flash-sale" },
     { icon: Repeat, label: "สมาชิกที่ยังใช้งานอยู่", value: stats.activeSubs, unit: "ราย", href: "/admin/subscription-products" },
     { icon: Repeat, label: "สินค้าที่เปิดสมัครสมาชิก", value: stats.subscribableOn, unit: "รายการ", href: "/admin/subscription-products" },
   ];
@@ -95,6 +131,9 @@ export default function AdminHomePage() {
     { href: "/admin/gift-cards", icon: CreditCard, label: "บัตรของขวัญ", desc: "ออกและตรวจสอบบัตรของขวัญ" },
     { href: "/admin/subscription-products", icon: Repeat, label: "สินค้าสมัครสมาชิก", desc: "เลือกสินค้าที่สมัครรับประจำได้" },
     { href: "/admin/checkout-transactions", icon: Receipt, label: "รายการซื้อ (2C2P)", desc: "ตรวจการชำระเงินและคืนเงิน" },
+    { href: "/admin/flash-sale", icon: Zap, label: "Flash Sale", desc: "ตั้งแคมเปญ คิวจริง และหน้าขายแบบพิเศษ" },
+    { href: "/admin/tracking-sync", icon: Truck, label: "ซิงก์เลขพัสดุ", desc: "ดึงเลขพัสดุจาก soko เข้า Shopify" },
+    { href: "/admin/customers", icon: Users, label: "ลูกค้า & ผูกบัญชี", desc: "ค้นหาลูกค้าและผูกบัญชี LINE" },
   ];
 
   return (
@@ -105,7 +144,7 @@ export default function AdminHomePage() {
       </div>
 
       <h2 className="mb-2 text-xs font-semibold text-slate-400">ต้องดำเนินการ</h2>
-      <div className="mb-6 grid gap-2 sm:grid-cols-3">
+      <div className="mb-6 grid gap-2 sm:grid-cols-3 xl:grid-cols-5">
         {needsAttention.map((c) => {
           const Icon = c.icon;
           const urgent = (c.value ?? 0) > 0;
@@ -132,7 +171,7 @@ export default function AdminHomePage() {
       </div>
 
       <h2 className="mb-2 text-xs font-semibold text-slate-400">สถานะร้าน</h2>
-      <div className="mb-6 grid gap-2 sm:grid-cols-3">
+      <div className="mb-6 grid gap-2 sm:grid-cols-3 xl:grid-cols-5">
         {today.map((c) => {
           const Icon = c.icon;
           return (

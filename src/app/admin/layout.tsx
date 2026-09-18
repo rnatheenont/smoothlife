@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { AdminActionButton, AdminActionProvider } from "@/components/admin/header-action";
+import CommandPalette from "@/components/admin/command-palette";
 
 const NAV_COLLAPSED_KEY = "admin-nav-collapsed";
 
@@ -69,6 +70,7 @@ const NAV_GROUPS = [
 ];
 
 const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+const groupOf = (href: string) => NAV_GROUPS.find((g) => g.items.some((i) => i.href === href))?.label ?? "";
 
 /** "/admin" prefixes every route, and "/admin/free-gifts" prefixes the widgets
  *  route — an exact match is the only correct test for both. */
@@ -86,6 +88,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   // The team works on this all day; whether the menu is folded is their choice
   // to make once, not on every visit.
   const [collapsed, setCollapsed] = useState(false);
+  // Clicking the header's "ไปที่หน้า…" remounts the palette open; ⌘K toggles it
+  // from anywhere.
+  const [paletteTick, setPaletteTick] = useState(0);
 
   useEffect(() => {
     try {
@@ -203,6 +208,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </p>
           )}
           <div className="ms-auto flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPaletteTick((n) => n + 1)}
+              className="hidden items-center gap-2 rounded-xl border border-surface-line px-2.5 py-1.5 text-xs text-slate-400 hover:text-brand-ink md:flex"
+            >
+              <Search size={13} /> ไปที่หน้า…
+              <kbd className="rounded border border-surface-line px-1 py-0.5 text-[10px]">⌘K</kbd>
+            </button>
             <Link
               href="/"
               className="hidden size-9 place-items-center rounded-xl text-slate-500 hover:bg-surface-soft hover:text-brand-ink sm:grid"
@@ -221,6 +234,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
+        <CommandPalette key={paletteTick} items={ALL_ITEMS.map((i) => ({ ...i, group: groupOf(i.href) }))} openOnMount={paletteTick > 0} />
 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
           <aside

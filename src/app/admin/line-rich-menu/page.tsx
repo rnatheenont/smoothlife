@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Loader2, Upload, CheckCircle2, AlertTriangle } from "lucide-react";
+import { MessageCircle, Loader2, Upload, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
+import { useAdminAction } from "@/components/admin/header-action";
 
 // Installs the LINE Rich Menu (plan §6). Deliberately shows the button layout
 // even when the account isn't connected yet — the layout is the part worth
@@ -62,6 +63,8 @@ export default function AdminLineRichMenuPage() {
   }
 
   const live = Boolean(status?.defaultRichMenuId);
+
+  useAdminAction({ label: "รีเฟรชสถานะเมนู", icon: <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden />, onClick: load, disabled: loading });
 
   return (
     <div>

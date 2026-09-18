@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { Truck, RefreshCw, ShieldCheck, AlertTriangle, Info, Play, Loader2, ExternalLink } from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 import type { TrackingSyncRow } from "@/app/api/admin/tracking-sync/route";
+import { useAdminAction } from "@/components/admin/header-action";
 
 // The dry-run report. The number that matters is "conflict": every one is
 // either a tracking number keyed onto the wrong order by hand, or a mapping
@@ -153,6 +154,13 @@ export default function AdminTrackingSyncPage() {
       load();
     }
   }
+
+  useAdminAction({
+    label: running ? "กำลังดึง…" : "ดึงจาก soko เดี๋ยวนี้",
+    icon: running ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Play size={15} aria-hidden />,
+    onClick: runNow,
+    disabled: running || loading,
+  });
 
   return (
     <div className="max-w-4xl">

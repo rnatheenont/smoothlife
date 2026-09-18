@@ -32,17 +32,50 @@ export async function GET(req: NextRequest) {
 
   // `limit` caps each read: the home screen only needs to say "9+" once a
   // queue is long, and nobody acts differently on 40 versus 400 waiting chats.
-  const [waitingChats, pendingReviews, paidToday, activeSubs, subscribableOn, openQuestions] = await Promise.all([
+  const now = new Date().toISOString();
+
+  const [
+    waitingChats,
+    pendingReviews,
+    paidToday,
+    activeSubs,
+    subscribableOn,
+    openQuestions,
+    flashRunning,
+    flashScheduled,
+    flashOrdersFailed,
+    refundsPending,
+  ] = await Promise.all([
     countRows("conversations?status=eq.waiting_human&select=id&limit=100"),
     countRows("product_reviews?status=eq.pending&select=id&limit=100"),
     countRows(`payment_transactions?status=eq.success&confirmed_at=gte.${since}&select=id&limit=100`),
     countRows("real_subscriptions?status=eq.active&select=id&limit=100"),
     countRows("product_subscription_settings?subscribable=eq.true&select=product_slug&limit=1000"),
     countRows("product_questions?answer=is.null&select=id&limit=100"),
+    // Selling right now: started, not ended by hand, not past its end time.
+    countRows(
+      `flash_sale_campaigns?starts_at=lte.${now}&ended_manually_at=is.null&or=(ends_at.is.null,ends_at.gt.${now})&select=id&limit=100`
+    ),
+    countRows(`flash_sale_campaigns?starts_at=gt.${now}&ended_manually_at=is.null&select=id&limit=100`),
+    // Paid, but the Shopify order never got created — someone has to retry it.
+    countRows("flash_sale_queue?status=eq.paid&shopify_sync_status=eq.failed&select=id&limit=100"),
+    // Charges flagged for a refund (late or duplicate flash-sale payments).
+    countRows("payment_transactions?refund_note=like.FLASH_SALE_*&refunded_at=is.null&select=id&limit=100"),
   ]);
 
   return NextResponse.json({
     ok: true,
-    stats: { waitingChats, pendingReviews, paidToday, activeSubs, subscribableOn, openQuestions },
+    stats: {
+      waitingChats,
+      pendingReviews,
+      paidToday,
+      activeSubs,
+      subscribableOn,
+      openQuestions,
+      flashRunning,
+      flashScheduled,
+      flashOrdersFailed,
+      refundsPending,
+    },
   });
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Award, Plus, X, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui";
+import { useAdminAction } from "@/components/admin/header-action";
 
 type Tier = {
   id: string;
@@ -81,6 +82,8 @@ export default function AdminPointsPage() {
   useEffect(() => {
     loadTiers();
   }, []);
+
+  useAdminAction({ label: "เพิ่มระดับคะแนน", icon: <Plus size={15} aria-hidden />, onClick: () => openCreateTier() });
 
   function openCreateTier() {
     setEditingTierId(null);

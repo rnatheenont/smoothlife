@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui";
 
 // The primary action of an admin page ("สร้างแคมเปญใหม่", "เพิ่ม…") belongs in
@@ -27,16 +27,26 @@ export function AdminActionProvider({ children }: { children: ReactNode }) {
  */
 export function useAdminAction(action: AdminAction | null) {
   const { setAction } = useContext(Ctx);
-  const { label, onClick, disabled } = action ?? {};
+  const { label, disabled } = action ?? {};
   const icon = action?.icon;
-  const run = useCallback(() => onClick?.(), [onClick]);
+  // The page hands in a fresh closure (and a fresh icon element) on every
+  // render; registering those directly would re-register forever. Only the
+  // label and the disabled flag decide when the button changes — the click
+  // always runs the newest handler.
+  const latest = useRef(action?.onClick);
+  useEffect(() => {
+    latest.current = action?.onClick;
+  });
 
   useEffect(() => {
-    if (!label) return;
-    setAction({ label, icon, onClick: run, disabled });
+    if (!label) {
+      setAction(null);
+      return;
+    }
+    setAction({ label, icon, onClick: () => latest.current?.(), disabled });
     return () => setAction(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- icon is a node; the label and the handler identify the action
-  }, [label, disabled, run, setAction]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- icon is a node, and the handler is read from the ref
+  }, [label, disabled, setAction]);
 }
 
 /** Rendered by the admin shell, in its header. */
