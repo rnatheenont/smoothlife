@@ -37,7 +37,7 @@ export type AdminUserListItem = {
 
 export async function GET(req: NextRequest) {
   const auth = await requireOwner(req);
-  if (!auth.ok) return auth.res;
+  if (auth.res) return auth.res;
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
   const [users, roles] = await Promise.all([
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
 // of who has actually logged in with it.
 export async function POST(req: NextRequest) {
   const auth = await requireOwner(req);
-  if (!auth.ok) return auth.res;
+  if (auth.res) return auth.res;
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;

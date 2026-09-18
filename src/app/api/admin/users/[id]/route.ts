@@ -10,14 +10,18 @@ import { UUID_RE } from "@/lib/flash-sale";
 // isn't routed through the general permission system.
 async function requireOwner(
   req: NextRequest
-): Promise<{ ok: true; session: { userId: string; role: string } | null } | { ok: false; res: NextResponse }> {
+): Promise<{ res: NextResponse; session: null } | { res: null; session: { userId: string; role: string } | null }> {
   const result = await checkOwnerSession(req.cookies.get(ADMIN_COOKIE)?.value);
-  if (!result.ok) {
+  // `"reason" in result`, not `!result.ok` — see checkOwnerSession's doc
+  // comment for why this codebase avoids narrowing a `{ok:true}|{ok:false}`
+  // union on the boolean field itself (tsconfig has strictNullChecks off,
+  // under which that pattern silently fails to narrow).
+  if ("reason" in result) {
     const status = result.reason === "unauthenticated" ? 401 : 403;
     const error = result.reason === "unauthenticated" ? "กรุณาเข้าสู่ระบบแอดมิน" : "เฉพาะเจ้าของระบบเท่านั้นที่จัดการผู้ใช้ได้";
-    return { ok: false, res: NextResponse.json({ ok: false, error }, { status }) };
+    return { res: NextResponse.json({ ok: false, error }, { status }), session: null };
   }
-  return { ok: true, session: result.session };
+  return { res: null, session: result.session };
 }
 
 // PATCH body is one of:
@@ -26,7 +30,7 @@ async function requireOwner(
 //   { reset_password: true } — issue a new temporary password, returned once
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const auth = await requireOwner(req);
-  if (!auth.ok) return auth.res;
+  if (auth.res) return auth.res;
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
   const { id } = await props.params;
   if (!UUID_RE.test(id)) return NextResponse.json({ ok: false, error: "ไม่พบผู้ใช้นี้" }, { status: 404 });
