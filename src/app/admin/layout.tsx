@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BookOpen,
   Lock,
   Gift,
   SlidersHorizontal,
@@ -62,6 +63,7 @@ const NAV_GROUPS = [
   {
     label: "เนื้อหา & ระบบ",
     items: [
+      { href: "/admin/knowledge-base", label: "ฐานความรู้ AI", icon: BookOpen },
       { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText },
       { href: "/admin/line-rich-menu", label: "เมนู LINE OA", icon: MessageCircle },
       { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette },
