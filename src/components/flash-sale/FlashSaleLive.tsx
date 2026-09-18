@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import Image from "next/image";
 import Link from "next/link";
 import { Alert, Button, Card, Chip, ProgressBar, Spinner } from "@heroui/react";
-import { AlertTriangle, CheckCircle2, Clock, CreditCard, RotateCcw, Timer, Users } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, CreditCard, MessageCircle, RotateCcw, Timer, Users } from "lucide-react";
 import { formatTHB } from "@/lib/format";
 import type { FlashSaleStatus } from "@/lib/flash-sale";
 import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
@@ -32,7 +32,7 @@ function priceOf(p: LiveProduct) {
   return { pay, was: was > pay ? was : null, percentOff: was > pay ? Math.round((1 - pay / was) * 100) : 0 };
 }
 
-type Status = FlashSaleStatus & { signedIn: boolean; refundPending?: boolean };
+type Status = FlashSaleStatus & { signedIn: boolean; refundPending?: boolean; lineNotify?: boolean; lineLinked?: boolean };
 
 const POLL_MS = 3000;
 
@@ -604,6 +604,25 @@ function Panel({
           <p className="text-2xl font-bold tabular-nums text-brand-ink">{me.ahead ?? 0}</p>
         </div>
         <p className="mt-4 text-sm text-slate-600">หน้านี้อัปเดตเองทุกไม่กี่วินาที ถึงคิวเมื่อไหร่จะเปลี่ยนเป็นหน้าชำระเงินทันที</p>
+        {/* The reservation starts counting the moment it is granted, whether
+            or not this page is still open — so say whether we can reach them. */}
+        {status.lineNotify &&
+          (status.lineLinked ? (
+            <p className="mt-2 flex items-start gap-1.5 rounded-xl2 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              <MessageCircle size={15} className="mt-0.5 shrink-0" aria-hidden /> ปิดหน้านี้ไปทำอย่างอื่นได้ เราจะส่ง LINE บอกทันทีที่ถึงคิวคุณ
+            </p>
+          ) : (
+            <p className="mt-2 flex items-start gap-1.5 rounded-xl2 bg-surface-soft px-3 py-2 text-sm text-slate-600">
+              <MessageCircle size={15} className="mt-0.5 shrink-0" aria-hidden />
+              <span>
+                อยากให้เตือนตอนถึงคิวไหม{" "}
+                <Link href="/account" className="font-semibold text-brand-800 underline">
+                  ผูกบัญชี LINE
+                </Link>{" "}
+                แล้วเราจะส่งข้อความหาคุณ
+              </span>
+            </p>
+          ))}
         <Button variant="ghost" fullWidth className="mt-3" isDisabled={busy} onPress={leave}>
           ออกจากคิว
         </Button>

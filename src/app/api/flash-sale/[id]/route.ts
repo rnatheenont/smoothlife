@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { flashSaleStatus, UUID_RE } from "@/lib/flash-sale";
+import { linePushConfigured } from "@/lib/line-push";
 
 // The sale page polls this: campaign phase, each product's stock and, for a
 // signed-in shopper, their own place in line. Reading it also settles overdue
@@ -25,7 +26,20 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       ).catch(() => []);
       refundPending = flagged.length > 0;
     }
-    return NextResponse.json({ ok: true, signedIn: Boolean(userId), refundPending, ...status }, { headers: { "Cache-Control": "no-store" } });
+    // Whether we can reach this shopper when their turn comes — the page says
+    // so while they wait, and offers to link LINE when we cannot.
+    let lineLinked = false;
+    if (userId && linePushConfigured()) {
+      const [identity] = await supabaseRest<{ provider_uid: string }[]>(
+        `auth_identities?user_id=eq.${pgValue(userId)}&provider=eq.line&select=provider_uid&limit=1`
+      ).catch((): { provider_uid: string }[] => []);
+      lineLinked = Boolean(identity);
+    }
+
+    return NextResponse.json(
+      { ok: true, signedIn: Boolean(userId), refundPending, lineNotify: linePushConfigured(), lineLinked, ...status },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (err) {
     console.error("[flash-sale] status failed", err);
     return NextResponse.json({ ok: false, error: "โหลดข้อมูลไม่สำเร็จ" }, { status: 500 });
