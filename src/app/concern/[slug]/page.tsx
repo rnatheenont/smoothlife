@@ -25,7 +25,9 @@ export default async function ConcernDetailPage(props: { params: Promise<{ slug:
   return (
     <div className="container-page py-8 md:py-10">
       <div className="relative rounded-xl2 overflow-hidden h-48 md:h-64 mb-8">
-        <Image src={concernImage(concern.slug)} alt={concern.name} fill className="object-cover" />
+        {/* The photos are square portraits and this banner is a wide strip, so a
+            centred crop lands on a chin. Pulled up to keep the face in frame. */}
+        <Image src={concernImage(concern.slug)} alt={concern.name} fill className="object-cover object-[50%_35%]" />
         <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent" />
         <div className="absolute bottom-0 p-6 text-white max-w-xl">
           <h1 className="text-2xl md:text-3xl font-bold">{concern.nameTh}</h1>
