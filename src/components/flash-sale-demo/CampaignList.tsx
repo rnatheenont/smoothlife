@@ -25,7 +25,9 @@ export default function CampaignList({
   edit,
   newCampaign,
   remove,
-  expandedId,
+  expandedIds = [],
+  collapseAll,
+  expandAll,
   details,
 }: {
   items: ScheduledCampaign[];
@@ -41,8 +43,10 @@ export default function CampaignList({
   /** Open the form for a brand-new campaign. */
   newCampaign: () => void;
   remove: (id: string) => void;
-  /** The campaign whose live queue is open underneath it. */
-  expandedId?: string | null;
+  /** Campaigns whose live queue is open underneath them — any number at once. */
+  expandedIds?: string[];
+  collapseAll?: () => void;
+  expandAll?: () => void;
   /** That campaign's live queue, rendered inside its row. */
   details?: (item: ScheduledCampaign) => ReactNode;
 }) {
@@ -59,6 +63,15 @@ export default function CampaignList({
           <p className="text-sm text-slate-500">
             กำลังขาย {running} · รอเริ่ม {scheduled} · ทั้งหมด {items.length}
           </p>
+          {items.length > 1 && (
+            <button
+              type="button"
+              onClick={() => (expandedIds.length > 0 ? collapseAll?.() : expandAll?.())}
+              className="text-xs font-semibold text-brand-800 hover:underline"
+            >
+              {expandedIds.length > 0 ? "ปิดคิวทั้งหมด" : "กางคิวทั้งหมด"}
+            </button>
+          )}
           <Button size="sm" onPress={newCampaign}>
             <Plus size={14} aria-hidden /> สร้างแคมเปญใหม่
           </Button>
@@ -85,12 +98,12 @@ export default function CampaignList({
                     type="button"
                     onClick={() => pick(i.id)}
                     className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                    aria-expanded={i.id === expandedId}
+                    aria-expanded={expandedIds.includes(i.id)}
                   >
                     <ChevronDown
                       size={16}
                       aria-hidden
-                      className={`shrink-0 text-slate-400 transition-transform ${i.id === expandedId ? "rotate-180" : ""}`}
+                      className={`shrink-0 text-slate-400 transition-transform ${expandedIds.includes(i.id) ? "rotate-180" : ""}`}
                     />
                     <span className="flex shrink-0 -space-x-3">
                       {i.config.products.slice(0, 3).map((p) => (
@@ -168,7 +181,7 @@ export default function CampaignList({
                   </div>
                 </div>
 
-                {i.id === expandedId && details && <div className="border-t border-surface-line p-3">{details(i)}</div>}
+                {expandedIds.includes(i.id) && details && <div className="border-t border-surface-line p-3">{details(i)}</div>}
               </li>
             );
           })}

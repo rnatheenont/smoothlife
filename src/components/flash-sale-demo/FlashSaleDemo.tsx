@@ -132,6 +132,9 @@ export default function FlashSaleDemo({
   const [editingId, setEditingId] = useState<string | null>(null);
   // The form lives in a panel over the console; the list keeps its place.
   const [formOpen, setFormOpen] = useState(false);
+  // Any number of campaigns can have their live queue open — comparing two
+  // running sales is the normal case on a launch day.
+  const [expanded, setExpanded] = useState<string[]>([]);
   const bySlug = useMemo(() => new Map(catalogue.map((p) => [p.slug, p])), [catalogue]);
 
   // The campaign list lives in the database (flash_sale_campaigns); the sale
@@ -245,6 +248,7 @@ export default function FlashSaleDemo({
           setStored((m) => ({ ...m, [saved.id]: saved }));
           setSelectedId(saved.id);
           setSelected(0);
+          setExpanded((ids) => (ids.includes(saved.id) ? ids : [...ids, saved.id]));
           setFormOpen(false);
         }
       } finally {
@@ -346,6 +350,7 @@ export default function FlashSaleDemo({
     setSelected(0);
     setNotice(null);
     setPayOpen(false);
+    setExpanded((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
   };
 
   const reset = () => {
@@ -402,7 +407,9 @@ export default function FlashSaleDemo({
         loading={loadState === "loading"}
         currentId={item?.id}
         editingId={editingId}
-        expandedId={item?.id}
+        expandedIds={expanded}
+        collapseAll={() => setExpanded([])}
+        expandAll={() => setExpanded(scheduler.items.map((i) => i.id))}
         pick={pick}
         startNow={startStored}
         endNow={endStored}
