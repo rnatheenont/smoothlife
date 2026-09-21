@@ -504,11 +504,12 @@ export default function AdminSeoPage() {
                   <ImageIcon size={12} aria-hidden="true" />
                   ตัวอย่างตอนแชร์ลิงก์ (LINE / Facebook) {ogImage ? "(รูปที่ตั้งเอง)" : "(รูปอัตโนมัติ)"}
                 </p>
-                {/* Capped at the width a share card actually gets in a chat
-                    window. Left to fill the editor pane, the 1.91:1 box grew
-                    as tall as the pane is wide — a preview several times the
-                    size of the thing it is previewing. */}
-                <div className="max-w-sm overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">
+                {/* 320px — the width a share card actually gets in a phone
+                    chat, which is where these links are opened. Left to fill
+                    the editor pane, the 1.91:1 box grew as tall as the pane
+                    is wide: a preview several times the size of the thing it
+                    was previewing. */}
+                <div className="max-w-xs overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">
                   <div className="relative aspect-[1.91/1] bg-surface-mist">
                     {previewImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
