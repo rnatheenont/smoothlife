@@ -21,6 +21,11 @@ export type SeoArticleItem = {
   fromShopify: boolean;
   /** Shopify already carries a hand-written search listing for this post. */
   written: boolean;
+  /** Where a change to this page's listing has to be made. A Shopify post is
+   *  canonicalised to www.smoothlife.com (see the article route), so Google
+   *  reads the Shopify page's own title — an override typed here would show
+   *  in the browser tab and nowhere else. */
+  editableHere: boolean;
   context: string;
 };
 
@@ -35,6 +40,7 @@ export async function GET() {
     autoDescription: a.excerpt ?? null,
     fromShopify: false,
     written: false,
+    editableHere: true,
     context: `บทความความรู้: ${a.title}\nเกริ่นนำ: ${a.excerpt ?? ""}`,
   }));
 
@@ -51,6 +57,7 @@ export async function GET() {
     autoDescription: p.seoDescription ?? p.excerpt ?? null,
     fromShopify: true,
     written: Boolean(p.seoTitle || p.seoDescription),
+    editableHere: false,
     context: `บทความบล็อกจาก Shopify: ${p.title}\nเกริ่นนำ: ${(p.excerpt ?? "").slice(0, 600)}`,
   }));
 

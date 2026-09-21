@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles, ExternalLink, Check, Image as ImageIcon } from "lucide-react";
+import { Sparkles, ExternalLink, Check, Image as ImageIcon, AlertTriangle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui";
@@ -38,6 +38,9 @@ type Item = {
    *  progress bar answers is whether a page has a hand-written listing at
    *  all, not whether it was typed into this particular screen. */
   written?: boolean;
+  /** False when this page is canonicalised elsewhere, so what is typed here
+   *  never reaches Google. Only the Shopify blog posts are like that. */
+  editableHere?: boolean;
   image?: string | null;
   href: string;
   autoTitle: string;
@@ -486,6 +489,19 @@ export default function AdminSeoPage() {
                   {thinking ? "กำลังคิด…" : "ให้ AI ช่วยคิด"}
                 </Button>
               </div>
+
+              {/* Saying so here is the whole point: without it this screen
+                  invites someone to write a title that Google will never
+                  read, and nothing on the page would ever tell them. */}
+              {selected.editableHere === false && (
+                <div className="mx-5 mt-4 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
+                  <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+                  <span>
+                    บทความนี้อยู่บน Shopify และหน้านี้ชี้ canonical กลับไปที่ smoothlife.com — Google จะอ่านหัวข้อจากฝั่ง
+                    Shopify ไม่ใช่ที่นี่ ถ้าจะแก้ให้มีผลกับผลค้นหา ต้องไปแก้ในช่อง SEO ของบทความนั้นใน Shopify
+                  </span>
+                </div>
+              )}
 
               {/* Fields on the left, previews on the right — the two things
                   you look at while typing, so neither should be a scroll
