@@ -13,8 +13,11 @@ import { subscriptionBillingConfigured } from "@/lib/2c2p";
 import { getSellableSets } from "@/lib/subscription-sets";
 import SubscriptionPicker from "@/components/SubscriptionPicker";
 import SubscriptionTermsInfo from "@/components/SubscriptionTermsInfo";
+import { pageMetadata } from "@/lib/site-pages";
 
-export const metadata = { title: "Subscription สมัครสมาชิกรายรอบ | Smoothlife.com" };
+export function generateMetadata() {
+  return pageMetadata("subscription");
+}
 
 // The curated sets are read per request: a set whose stock ran out has to stop
 // being offered the same day, not at the next build.

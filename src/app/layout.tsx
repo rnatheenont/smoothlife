@@ -5,6 +5,9 @@ import Providers from "@/components/Providers";
 import SiteChrome from "@/components/SiteChrome";
 import { organizationJsonLd, websiteJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site-url";
+// Shared with /lib/site-pages so the home page and the tab title can never
+// drift apart — the page there overrides this one only when the team edits it.
+import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site-pages";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import OldBrowserNotice from "@/components/OldBrowserNotice";
@@ -19,9 +22,6 @@ const notoSansThai = Noto_Sans_Thai({
   display: "swap",
 });
 
-const SITE_TITLE = "Smoothlife.com — สุขภาพและความงามครบวงจร";
-const SITE_DESCRIPTION =
-  "Smoothlife.com ศูนย์รวมสินค้าและบริการเพื่อสุขภาพและความงาม ช้อปง่าย ครบจบทุก lifestyle ที่เดียว";
 
 // /logo.webp is a wide logo lockup (440×68), not a proper social-share
 // banner — LINE/Facebook previews will show it small/cropped rather than a

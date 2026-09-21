@@ -4,14 +4,13 @@ import { articles } from "@/data/articles";
 import ArticleGrid from "@/components/ArticleGrid";
 import { breadcrumbJsonLd, faqPageJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { categoryLabel, excerptOf, getPublicQuestions } from "@/lib/kb-public";
+import { pageMetadata } from "@/lib/site-pages";
 
 export const revalidate = 900;
 
-export const metadata = {
-  title: "คำถามที่พบบ่อย | Smoothlife.com",
-  description: "คำถามที่ลูกค้าถามเข้ามาจริง พร้อมคำตอบจากทีมงาน Smoothlife.com",
-  alternates: { canonical: "/knowledge/questions" },
-};
+export function generateMetadata() {
+  return pageMetadata("knowledge-questions");
+}
 
 export default async function QuestionsPage() {
   const guides = articles.filter((a) => a.category === "qa");

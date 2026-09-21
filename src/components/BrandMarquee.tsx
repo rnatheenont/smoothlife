@@ -26,7 +26,7 @@ function MarqueeRow({ brands, reverse }: { brands: Brand[]; reverse?: boolean })
         {track.map((b, i) => (
           <Link
             key={`${b.slug}-${i}`}
-            href={`/shop?brand=${b.slug}`}
+            href={`/brands/${b.slug}`}
             className="shrink-0 grid place-items-center h-16 w-28 md:h-20 md:w-36 rounded-xl border border-slate-100 bg-white hover:border-brand-teal hover:shadow-card transition overflow-hidden"
           >
             {b.image ? (

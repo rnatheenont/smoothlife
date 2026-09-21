@@ -5,6 +5,7 @@ import { getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
 import {
   DESCRIPTION_MAX,
   SEO_COLUMNS,
+  SEO_PAGE_TYPES,
   TITLE_MAX,
   seoTag,
   type SeoOverride,
@@ -15,7 +16,9 @@ import {
 // gate in proxy.ts has already decided whether this caller may be here.
 export const dynamic = "force-dynamic";
 
-const TYPES: SeoPageType[] = ["product", "category", "concern", "campaign", "article", "collection"];
+// Derived rather than listed again: a new kind of page added to
+// SEO_PAGE_TYPES is immediately saveable, instead of silently failing here.
+const TYPES: SeoPageType[] = SEO_PAGE_TYPES.map((t) => t.key);
 
 function isType(v: unknown): v is SeoPageType {
   return typeof v === "string" && TYPES.includes(v as SeoPageType);

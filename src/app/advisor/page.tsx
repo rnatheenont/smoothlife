@@ -2,8 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Camera, ChevronRight, Sparkles } from "lucide-react";
 import AdvisorQuiz from "@/components/AdvisorQuiz";
+import { pageMetadata } from "@/lib/site-pages";
 
-export const metadata = { title: "น้อง Smoothie | Smoothlife.com" };
+export function generateMetadata() {
+  return pageMetadata("advisor");
+}
 
 export default function AdvisorPage() {
   return (

@@ -4,8 +4,11 @@ import Faq from "@/components/Faq";
 import { helpFaqs, helpTopics } from "@/data/help";
 import { helpIcon } from "./icons";
 import { breadcrumbJsonLd, faqPageJsonLd, jsonLdScript } from "@/lib/json-ld";
+import { pageMetadata } from "@/lib/site-pages";
 
-export const metadata = { title: "ศูนย์ช่วยเหลือ | Smoothlife.com" };
+export function generateMetadata() {
+  return pageMetadata("help");
+}
 
 const topics = [
   ...helpTopics.map((t) => ({ href: t.href, label: t.label, icon: helpIcon(t.sections[0].icon) })),

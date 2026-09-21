@@ -457,3 +457,16 @@ export function isHouseBrand(slug: string) {
 
 // Every other brand, in the same order they already appear in `brands`.
 export const otherBrands: Brand[] = brands.filter((b) => !isHouseBrand(b.slug));
+
+/** The brand behind a /brands/<slug> URL, or undefined if nobody sells it. */
+export function getBrand(slug: string): Brand | undefined {
+  return brands.find((b) => b.slug === slug);
+}
+
+/** Every catalogue item whose Shopify vendor belongs to this brand —
+ *  matched through the same alias list the shop filter uses, so a brand hub
+ *  and `/shop?brand=<slug>` can never disagree about what the brand sells. */
+export function brandProducts(brand: Pick<Brand, "name" | "vendorAliases">) {
+  const slugAliases = brandSlugAliases(brand);
+  return products.filter((p) => slugAliases.includes(slugifyVendor(p.brand)));
+}

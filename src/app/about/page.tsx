@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { Heart, ShieldCheck, Users, Leaf } from "lucide-react";
 import ContentPage from "@/components/ContentPage";
+import { pageMetadata } from "@/lib/site-pages";
 
-export const metadata = { title: "Why Smooth Life | Smoothlife.com" };
+export function generateMetadata() {
+  return pageMetadata("about");
+}
 
 export default function AboutPage() {
   return (

@@ -2,12 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { collections } from "@/data/collections";
 import Breadcrumb from "@/components/Breadcrumb";
+import { pageMetadata } from "@/lib/site-pages";
 
-export const metadata = {
-  title: "คอลเลกชันทั้งหมด | Smoothlife.com",
-  description: "รวมทุกคอลเลกชันและโปรโมชันจาก Smoothlife.com",
-  alternates: { canonical: "/collections" },
-};
+export function generateMetadata() {
+  return pageMetadata("collections");
+}
 
 // Index of the real Shopify collections. Sorted biggest-first because the
 // merchandising ones worth browsing (bundles, clearance, brand pages) carry far

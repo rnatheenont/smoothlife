@@ -7,7 +7,15 @@ import { pgValue, supabaseConfigured, supabaseRestCached } from "@/lib/supabase-
 // is nowhere in it for a person to put a better title that survives the next
 // deploy. A row here overrides the generated one; no row means the generated
 // one stands, which is the case for almost every page and has to stay cheap.
-export type SeoPageType = "product" | "category" | "concern" | "campaign" | "article" | "collection";
+export type SeoPageType =
+  | "product"
+  | "category"
+  | "concern"
+  | "campaign"
+  | "article"
+  | "collection"
+  | "brand"
+  | "page";
 
 export type SeoOverride = {
   id: string;
@@ -41,6 +49,8 @@ export const SEO_PAGE_TYPES: { key: SeoPageType; label: string }[] = [
   { key: "campaign", label: "แคมเปญ" },
   { key: "article", label: "บทความ" },
   { key: "collection", label: "คอลเลกชัน" },
+  { key: "brand", label: "แบรนด์" },
+  { key: "page", label: "หน้าหลัก" },
 ];
 
 /** Google truncates around here; past it the tail is written for nobody. */

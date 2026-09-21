@@ -1,7 +1,10 @@
 import { MapPin, Phone, Clock } from "lucide-react";
 import { stores } from "@/data/stores";
+import { pageMetadata } from "@/lib/site-pages";
 
-export const metadata = { title: "สาขาและติดต่อเรา | Smoothlife.com" };
+export function generateMetadata() {
+  return pageMetadata("stores");
+}
 
 export default function StoresPage() {
   return (

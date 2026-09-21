@@ -9,6 +9,9 @@ import { useAdminAction } from "@/components/admin/header-action";
 import { categories, concerns } from "@/data/categories";
 import { products } from "@/data/products";
 import { collections } from "@/data/collections";
+import { brands } from "@/data/brands";
+import { brandFacts, brandSeoDefaults } from "@/lib/brand-seo";
+import { SITE_PAGES } from "@/lib/site-pages";
 import {
   DESCRIPTION_MAX,
   SEO_ANGLES,
@@ -71,6 +74,38 @@ function itemsFor(type: SeoPageType): Item[] {
       autoTitle: `${c.title} | Smoothlife.com`,
       autoDescription: c.description?.slice(0, 160) || `ช้อป ${c.title} ที่ Smoothlife.com`,
       context: `คอลเลกชัน: ${c.title}\nคำอธิบายที่มีอยู่: ${(c.description || "(ไม่มี)").slice(0, 1200)}`,
+    }));
+  }
+  if (type === "brand") {
+    return brands.map((b) => {
+      const facts = brandFacts(b.slug);
+      const auto = facts ? brandSeoDefaults(facts) : { title: `${b.name} | Smoothlife.com`, description: b.tagline };
+      return {
+        key: b.slug,
+        label: b.name,
+        sub: `${b.productCount} สินค้า`,
+        image: b.image,
+        href: `/brands/${b.slug}`,
+        autoTitle: auto.title,
+        autoDescription: auto.description,
+        context:
+          `หน้ารวมแบรนด์: ${b.name}\nคำอธิบายแบรนด์: ${b.tagline}\n` +
+          `จำนวนสินค้าที่ขายอยู่: ${facts?.items.length ?? b.productCount} รายการ\n` +
+          `หมวดสินค้าของแบรนด์นี้: ${facts?.categoryNames.join(", ") || "-"}\n` +
+          `รีวิวรวม: ${facts?.reviews ?? 0} รายการ`,
+      };
+    });
+  }
+  if (type === "page") {
+    return SITE_PAGES.map((p) => ({
+      key: p.key,
+      label: p.label,
+      sub: p.path,
+      image: null,
+      href: p.path,
+      autoTitle: p.title,
+      autoDescription: p.description,
+      context: `หน้าหลักของเว็บ: ${p.label} (${p.path})\nคำอธิบายปัจจุบัน: ${p.description}`,
     }));
   }
   // Articles are fetched, not imported: the blog posts live in Shopify and

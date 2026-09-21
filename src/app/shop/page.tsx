@@ -10,10 +10,13 @@ import ShopHero from "@/components/shop/ShopHero";
 import CategoryCircles from "@/components/shop/CategoryCircles";
 import ViewToggle from "@/components/shop/ViewToggle";
 import ProductRow from "@/components/shop/ProductRow";
+import { pageMetadata } from "@/lib/site-pages";
 
 // Every ?brand=/?page=/?sort= filter combination renders this same route —
 // without a canonical they'd all index as separate near-duplicate pages.
-export const metadata = { title: "Shop ทั้งหมด | Smoothlife.com", alternates: { canonical: "/shop" } };
+export function generateMetadata() {
+  return pageMetadata("shop");
+}
 
 // How many buyable products sit behind each category and brand, counted once
 // from the catalogue rather than per request: the numbers beside a filter say

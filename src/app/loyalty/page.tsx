@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { tierDisplayName, tierCard } from "@/lib/tier";
 import { TIER_CRITERIA } from "@/lib/loyalty-shared";
+import { pageMetadata } from "@/lib/site-pages";
 
-export const metadata = { title: "สิทธิสมาชิก | Smoothlife.com" };
+export function generateMetadata() {
+  return pageMetadata("loyalty");
+}
 
 // Real perks only — every row here is something the system actually grants
 // today, not the full aspirational tier-benefits table from the loyalty

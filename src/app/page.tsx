@@ -27,8 +27,11 @@ import ProductTabs from "@/components/ProductTabs";
 import PromoPair from "@/components/home/PromoPair";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 import { Button } from "@/components/ui";
+import { pageMetadata } from "@/lib/site-pages";
 
-export const metadata = { alternates: { canonical: "/" } };
+export function generateMetadata() {
+  return pageMetadata("home");
+}
 // Re-pulls the live smoothlife.com banner slideshow at most every 30 minutes —
 // so an edit made there through the Shopify theme customizer shows up here
 // automatically, without a code change or redeploy on this side.

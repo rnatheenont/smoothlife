@@ -124,3 +124,21 @@ export function faqPageJsonLd(items: { question: string; answer: string }[]) {
     })),
   };
 }
+
+/**
+ * A brand hub page, told to Google as the brand it collects.
+ *
+ * `url` is the hub itself rather than the brand's own website: this page is
+ * where the brand is sold here, and claiming to be the brand's homepage would
+ * be a different — and wrong — statement.
+ */
+export function brandJsonLd(brand: { slug: string; name: string; tagline: string; image?: string }) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Brand",
+    name: brand.name,
+    description: brand.tagline,
+    url: `${SITE_URL}/brands/${brand.slug}`,
+    ...(brand.image ? { logo: brand.image } : {}),
+  };
+}

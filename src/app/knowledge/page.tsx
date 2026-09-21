@@ -2,8 +2,11 @@ import Link from "next/link";
 import { articles } from "@/data/articles";
 import ArticleGrid from "@/components/ArticleGrid";
 import { getStoreArticles, thaiDate } from "@/lib/storefront-articles";
+import { pageMetadata } from "@/lib/site-pages";
 
-export const metadata = { title: "Beauty Knowledge | Smoothlife.com" };
+export function generateMetadata() {
+  return pageMetadata("knowledge");
+}
 export const revalidate = 1800;
 
 const sections = [

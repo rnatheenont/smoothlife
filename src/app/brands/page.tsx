@@ -1,8 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { houseBrands, otherBrands } from "@/data/brands";
+import { pageMetadata } from "@/lib/site-pages";
 
-export const metadata = { title: "แบรนด์ทั้งหมด | Smoothlife.com" };
+export function generateMetadata() {
+  return pageMetadata("brands");
+}
 
 export default function BrandsPage() {
   return (
@@ -17,7 +20,7 @@ export default function BrandsPage() {
             {houseBrands.map((b) => (
               <Link
                 key={b.slug}
-                href={`/shop?brand=${b.slug}`}
+                href={`/brands/${b.slug}`}
                 className="relative rounded-xl2 border-2 border-brand-emerald/30 bg-brand-gradient-soft p-6 shadow-card hover:border-brand-emerald hover:shadow-cardHover transition"
               >
                 <span className="absolute right-4 top-4 rounded-full bg-brand-gradient text-white text-[10px] font-bold px-2 py-0.5">
@@ -42,7 +45,7 @@ export default function BrandsPage() {
         {otherBrands.map((b) => (
           <Link
             key={b.slug}
-            href={`/shop?brand=${b.slug}`}
+            href={`/brands/${b.slug}`}
             className="rounded-xl2 border border-slate-100 p-5 shadow-card hover:border-brand-teal transition-colors"
           >
             {b.image && (

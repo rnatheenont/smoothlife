@@ -2,8 +2,11 @@ import Image from "next/image";
 import { promotions } from "@/data/promotions";
 import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
+import { pageMetadata } from "@/lib/site-pages";
 
-export const metadata = { title: "โปรโมชั่นและดีลเด็ด | Smoothlife.com" };
+export function generateMetadata() {
+  return pageMetadata("promotions");
+}
 
 export default function PromotionsPage() {
   return (

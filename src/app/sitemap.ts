@@ -54,7 +54,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push({ url: `${SITE_URL}/knowledge/article/${a.slug}`, lastModified: now });
   }
   for (const b of brands) {
-    entries.push({ url: `${SITE_URL}/brands#${b.slug}`, lastModified: now });
+    entries.push({ url: `${SITE_URL}/brands/${b.slug}`, lastModified: now });
   }
   // Questions someone chose to publish. Read from the database rather than
   // the build, so publishing one does not need a deploy to be findable.

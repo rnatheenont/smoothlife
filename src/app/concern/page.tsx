@@ -1,8 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { concerns, concernImage } from "@/data/categories";
+import { pageMetadata } from "@/lib/site-pages";
 
-export const metadata = { title: "Shop by Concern | Smoothlife.com" };
+export function generateMetadata() {
+  return pageMetadata("concern");
+}
 
 export default function ConcernHubPage() {
   return (
