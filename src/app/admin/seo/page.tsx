@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles, ExternalLink } from "lucide-react";
+import { Sparkles, ExternalLink, Check } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
@@ -9,6 +10,7 @@ import { categories, concerns } from "@/data/categories";
 import { products } from "@/data/products";
 import {
   DESCRIPTION_MAX,
+  SEO_ANGLES,
   SEO_PAGE_TYPES,
   TITLE_MAX,
   type SeoOverride,
@@ -27,6 +29,7 @@ type Item = {
   key: string;
   label: string;
   sub?: string;
+  image?: string | null;
   href: string;
   autoTitle: string;
   autoDescription?: string;
@@ -39,6 +42,7 @@ function itemsFor(type: SeoPageType): Item[] {
       key: c.slug,
       label: c.nameTh,
       sub: c.name,
+      image: c.image,
       href: `/shop/${c.slug}`,
       autoTitle: `${c.nameTh} | Smoothlife.com`,
       autoDescription: `ช้อปสินค้าหมวด ${c.nameTh} คุณภาพดี ราคาคุ้มค่า ที่ Smoothlife.com`,
@@ -50,6 +54,7 @@ function itemsFor(type: SeoPageType): Item[] {
       key: c.slug,
       label: c.nameTh,
       sub: c.name,
+      image: c.image,
       href: `/concern/${c.slug}`,
       autoTitle: `${c.nameTh} | Smoothlife.com`,
       autoDescription: c.description,
@@ -61,6 +66,7 @@ function itemsFor(type: SeoPageType): Item[] {
       key: p.slug,
       label: p.name,
       sub: p.brand,
+      image: p.image,
       href: `/product/${p.slug}`,
       autoTitle: `${p.name} | Smoothlife.com`,
       autoDescription: p.shortDesc || undefined,
@@ -79,6 +85,8 @@ export default function AdminSeoPage() {
   const [selected, setSelected] = useState<Item | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [keywords, setKeywords] = useState("");
+  const [angles, setAngles] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<SeoSuggestion[]>([]);
   const [thinking, setThinking] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -115,6 +123,8 @@ export default function AdminSeoPage() {
     setSelected(item);
     setTitle(row?.meta_title ?? "");
     setDescription(row?.meta_description ?? "");
+    setKeywords((row?.keywords ?? []).join(", "));
+    setAngles([]);
     setSuggestions(row?.ai_suggestions ?? []);
     setNote("");
   }
@@ -127,7 +137,13 @@ export default function AdminSeoPage() {
       const res = await fetch("/api/admin/seo/suggest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ page_type: tab, page_key: selected.key, context: selected.context }),
+        body: JSON.stringify({
+          page_type: tab,
+          page_key: selected.key,
+          context: selected.context,
+          keywords: keywords.split(",").map((k) => k.trim()).filter(Boolean),
+          angles,
+        }),
       });
       const data = await res.json().catch(() => null);
       if (!data?.ok) {
@@ -153,6 +169,7 @@ export default function AdminSeoPage() {
           page_key: selected.key,
           meta_title: title,
           meta_description: description,
+          keywords: keywords.split(",").map((k) => k.trim()).filter(Boolean),
         }),
       });
       const data = await res.json().catch(() => null);
@@ -169,8 +186,13 @@ export default function AdminSeoPage() {
 
   const edited = (item: Item) => {
     const row = overrides[`${tab}:${item.key}`];
-    return Boolean(row?.meta_title || row?.meta_description);
+    return Boolean(row?.meta_title || row?.meta_description || (row?.keywords?.length ?? 0) > 0);
   };
+  // Progress across the whole tab, not the filtered list — the question is
+  // how much of the catalogue has been written, and a search box should not
+  // flatter the answer.
+  const doneCount = items.filter(edited).length;
+  const donePercent = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
 
   return (
     <div>
@@ -200,6 +222,17 @@ export default function AdminSeoPage() {
         ))}
       </div>
 
+      {tab !== "campaign" && (
+        <div className="mt-5 flex items-center gap-3">
+          <div className="h-2 w-40 overflow-hidden rounded-full bg-surface-muted">
+            <div className="h-full rounded-full bg-brand-gradient" style={{ width: `${donePercent}%` }} />
+          </div>
+          <span className="text-xs text-slate-500">
+            ตั้งค่าแล้ว {doneCount.toLocaleString("th-TH")} จาก {items.length.toLocaleString("th-TH")} ({donePercent}%)
+          </span>
+        </div>
+      )}
+
       {tab === "campaign" ? (
         <p className="mt-6 rounded-xl2 bg-surface-soft p-5 text-sm text-slate-500">
           หน้าแคมเปญ Flash Sale ถูกตั้งค่าไม่ให้ Google เก็บไว้ในผลค้นหา (เพราะปิดการขายแล้วจะกลายเป็นหน้าว่าง)
@@ -225,11 +258,24 @@ export default function AdminSeoPage() {
                       (selected?.key === item.key ? "bg-brand-gradient-soft text-brand-ink" : "hover:bg-surface-soft")
                     }
                   >
+                    <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-surface-mist ring-1 ring-surface-line">
+                      {item.image && (
+                        <Image src={item.image} alt="" fill sizes="36px" className="object-cover" />
+                      )}
+                    </span>
                     <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                    {edited(item) && (
-                      <span className="shrink-0 rounded-full bg-brand-800 px-2 py-0.5 text-[10px] font-bold text-white">
-                        แก้แล้ว
+                    {edited(item) ? (
+                      <span
+                        title="ตั้งค่า SEO แล้ว"
+                        className="grid size-5 shrink-0 place-items-center rounded-full bg-brand-800 text-white"
+                      >
+                        <Check size={12} aria-hidden="true" />
                       </span>
+                    ) : (
+                      <span
+                        title="ยังใช้ค่าอัตโนมัติ"
+                        className="size-5 shrink-0 rounded-full ring-1 ring-inset ring-surface-line"
+                      />
                     )}
                   </button>
                 </li>
@@ -295,6 +341,54 @@ export default function AdminSeoPage() {
               >
                 {description.length}/{DESCRIPTION_MAX} ตัวอักษร
               </p>
+
+              <label htmlFor="seo-keywords" className="mt-3 block text-sm font-semibold text-brand-ink">
+                คำค้นหาที่อยากให้ติด
+              </label>
+              <input
+                id="seo-keywords"
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                placeholder="คั่นด้วยจุลภาค เช่น บิลเบอร์รี่ บำรุงสายตา, อาหารเสริมสายตา"
+                className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                ใช้เป็นโจทย์ให้ AI เขียน และเป็นบันทึกว่าหน้านี้ตั้งใจจับคำไหน
+              </p>
+
+              {/* The angle is an editorial decision, not a tone setting: the
+                  same product yields a different title depending on whether
+                  the shopper is looking for the brand or for the problem. */}
+              <fieldset className="mt-4 min-w-0">
+                <legend className="text-sm font-semibold text-brand-ink">อยากให้ AI เน้นด้านไหน</legend>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {SEO_ANGLES.map((a) => {
+                    const on = angles.includes(a.key);
+                    return (
+                      <label
+                        key={a.key}
+                        className={
+                          "cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition-colors " +
+                          (on
+                            ? "bg-brand-gradient-soft text-brand-800 ring-brand-action/40"
+                            : "text-slate-600 ring-surface-line hover:bg-surface-soft")
+                        }
+                      >
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={on}
+                          onChange={() =>
+                            setAngles((prev) => (on ? prev.filter((k) => k !== a.key) : [...prev, a.key]))
+                          }
+                        />
+                        {a.label}
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 text-xs text-slate-400">ไม่เลือก = ให้ AI ตัดสินใจเอง</p>
+              </fieldset>
 
               {suggestions.length > 0 && (
                 <div className="mt-5">

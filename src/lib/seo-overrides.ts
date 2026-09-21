@@ -15,11 +15,24 @@ export type SeoOverride = {
   page_key: string;
   meta_title: string | null;
   meta_description: string | null;
+  keywords: string[];
   ai_suggestions: SeoSuggestion[] | null;
   updated_at: string;
 };
 
 export type SeoSuggestion = { title: string; description: string };
+
+/** What an admin can ask the assistant to lead with. Each is a real editorial
+ *  choice about the same page, not a tone setting — "ปัญหาที่แก้" and
+ *  "ส่วนผสมและจุดเด่น" produce genuinely different titles. */
+export const SEO_ANGLES: { key: string; label: string; instruction: string }[] = [
+  { key: "brand", label: "ชื่อแบรนด์", instruction: "ใส่ชื่อแบรนด์ไว้ต้น title เพราะคนค้นหาด้วยชื่อแบรนด์" },
+  { key: "problem", label: "ปัญหาที่ช่วยดูแล", instruction: "เน้นปัญหาที่สินค้านี้ช่วยดูแล ใช้คำที่คนไทยเรียกปัญหานั้นจริง ๆ" },
+  { key: "ingredient", label: "ส่วนผสม/จุดเด่น", instruction: "เน้นส่วนผสมหรือเทคโนโลยีเด่นที่ระบุไว้ในข้อมูล" },
+  { key: "price", label: "ราคา/ความคุ้ม", instruction: "พูดถึงราคาหรือความคุ้มค่า โดยไม่ต้องสัญญาส่วนลดที่ไม่มีข้อมูล" },
+  { key: "authentic", label: "ของแท้/น่าเชื่อถือ", instruction: "เน้นว่าเป็นของแท้จากผู้จัดจำหน่ายโดยตรง" },
+  { key: "howto", label: "วิธีใช้/ใครเหมาะ", instruction: "บอกว่าเหมาะกับใครและใช้อย่างไร" },
+];
 
 export const SEO_PAGE_TYPES: { key: SeoPageType; label: string }[] = [
   { key: "product", label: "สินค้า" },
@@ -32,7 +45,7 @@ export const SEO_PAGE_TYPES: { key: SeoPageType; label: string }[] = [
 export const TITLE_MAX = 60;
 export const DESCRIPTION_MAX = 155;
 
-export const SEO_COLUMNS = "id,page_type,page_key,meta_title,meta_description,ai_suggestions,updated_at";
+export const SEO_COLUMNS = "id,page_type,page_key,meta_title,meta_description,keywords,ai_suggestions,updated_at";
 
 export function seoTag(pageType: SeoPageType, pageKey: string) {
   return `seo:${pageType}:${pageKey}`;

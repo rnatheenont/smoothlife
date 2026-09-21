@@ -55,12 +55,25 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "ข้อความยาวเกินไป" }, { status: 400 });
   }
 
+  const keywords = Array.isArray(body?.keywords)
+    ? [
+        ...new Set(
+          body.keywords
+            .filter((k: unknown): k is string => typeof k === "string")
+            .map((k: string) => k.trim())
+            .filter(Boolean)
+            .map((k: string) => k.slice(0, 80))
+        ),
+      ].slice(0, 20)
+    : [];
+
   const session = getAdminSession(req.cookies.get(ADMIN_COOKIE)?.value);
   const row = {
     page_type: pageType,
     page_key: pageKey,
     meta_title: title || null,
     meta_description: description || null,
+    keywords,
     updated_by: session?.userId ?? null,
     updated_at: new Date().toISOString(),
   };

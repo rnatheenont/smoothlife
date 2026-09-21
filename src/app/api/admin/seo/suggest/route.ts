@@ -3,6 +3,7 @@ import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server
 import { logAiUsage } from "@/lib/ai-usage";
 import {
   DESCRIPTION_MAX,
+  SEO_ANGLES,
   TITLE_MAX,
   type SeoPageType,
   type SeoSuggestion,
@@ -68,6 +69,12 @@ export async function POST(req: NextRequest) {
   const pageType = body?.page_type as SeoPageType | undefined;
   const pageKey = typeof body?.page_key === "string" ? body.page_key.trim() : "";
   const context = typeof body?.context === "string" ? body.context.slice(0, 4000) : "";
+  const keywords = Array.isArray(body?.keywords)
+    ? body.keywords.filter((k: unknown): k is string => typeof k === "string").slice(0, 20)
+    : [];
+  const angles = Array.isArray(body?.angles)
+    ? SEO_ANGLES.filter((a) => body.angles.includes(a.key))
+    : [];
   if (!pageType || !pageKey || !context) {
     return NextResponse.json({ ok: false, error: "ข้อมูลไม่ครบ" }, { status: 400 });
   }
@@ -83,7 +90,22 @@ export async function POST(req: NextRequest) {
         max_tokens: 1200,
         output_config: { effort: "low" },
         system: SYSTEM,
-        messages: [{ role: "user", content: context }],
+        messages: [
+          {
+            role: "user",
+            content: [
+              context,
+              keywords.length > 0
+                ? `\nคำค้นหาที่ต้องการให้ติด (ใส่ให้เป็นธรรมชาติ ไม่ต้องยัดทุกคำ): ${keywords.join(", ")}`
+                : "",
+              angles.length > 0
+                ? `\nสิ่งที่ทีมงานอยากให้เน้น:\n${angles.map((a) => `- ${a.instruction}`).join("\n")}`
+                : "",
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          },
+        ],
       }),
     });
   } catch (err) {
