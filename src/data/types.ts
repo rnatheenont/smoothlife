@@ -58,6 +58,12 @@ export type Product = {
   whoFor: string;
   inStock: boolean;
   size?: string;
+  /** The title the team typed into Shopify's "Search engine listing" for this
+   *  product, when they did. Undefined means Shopify shows the product title,
+   *  and so do we. */
+  seoTitle?: string;
+  /** The meta description set in Shopify, when one is set. */
+  seoDescription?: string;
   /** Every purchasable variant (size/option) this product has, always at least one entry — the same one described by the top-level variantId/price/size fields. */
   variants: ProductVariant[];
 };
@@ -97,6 +103,11 @@ export type Article = {
   image: string;
   sources: string[];
   readMins: number;
+  /** ISO date. Optional on purpose — a made-up date is worse than none for
+   *  content search engines weigh on freshness; only set this to when the
+   *  article was actually written or last genuinely reviewed. */
+  publishedAt?: string;
+  updatedAt?: string;
 };
 
 /** A real Shopify collection, mirrored at build time by scripts/fetch-products.js. */

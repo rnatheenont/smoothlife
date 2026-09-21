@@ -33,6 +33,11 @@ type Item = {
   key: string;
   label: string;
   sub?: string;
+  /** A search listing already written somewhere else — Shopify's own SEO
+   *  fields for this product or post. Counts as written: the question the
+   *  progress bar answers is whether a page has a hand-written listing at
+   *  all, not whether it was typed into this particular screen. */
+  written?: boolean;
   image?: string | null;
   href: string;
   autoTitle: string;
@@ -115,13 +120,18 @@ function itemsFor(type: SeoPageType): Item[] {
     return products.slice(0, 1200).map((p) => ({
       key: p.slug,
       label: p.name,
-      sub: p.brand,
+      // Whether this product's search listing was written by someone or left
+      // to the template is the first thing worth knowing about it, so it goes
+      // where the eye already is rather than inside the editor.
+      sub: p.seoTitle ? `${p.brand} · ตั้ง SEO ไว้ใน Shopify แล้ว` : p.brand,
+      written: Boolean(p.seoTitle || p.seoDescription),
       image: p.image,
       href: `/product/${p.slug}`,
-      autoTitle: `${p.name} | Smoothlife.com`,
-      autoDescription: p.shortDesc || undefined,
+      autoTitle: p.seoTitle || `${p.name} | Smoothlife.com`,
+      autoDescription: p.seoDescription || p.shortDesc || undefined,
       context:
         `สินค้า: ${p.name}\nแบรนด์: ${p.brand}\nหมวดหมู่: ${p.category}\nราคา: ${p.price} บาท\n` +
+        `SEO ที่ตั้งไว้ใน Shopify: ${p.seoTitle ? `${p.seoTitle} / ${p.seoDescription || "(ไม่มีคำอธิบาย)"}` : "(ยังไม่ได้ตั้ง)"}\n` +
         `คำอธิบายที่มีอยู่: ${(p.description || p.shortDesc || "(ไม่มี)").slice(0, 1200)}`,
     }));
   }
@@ -250,10 +260,14 @@ export default function AdminSeoPage() {
     }
   }
 
-  const edited = (item: Item) => {
+  /** Written on this screen — the only kind we can edit back. */
+  const overridden = (item: Item) => {
     const row = overrides[`${tab}:${item.key}`];
     return Boolean(row?.meta_title || row?.meta_description || (row?.keywords?.length ?? 0) > 0);
   };
+
+  /** Written anywhere: here, or in Shopify's own search-listing fields. */
+  const edited = (item: Item) => overridden(item) || Boolean(item.written);
 
   // Working through 900 products means coming back to where you left off,
   // so "ยังไม่ตั้ง" is the list that matters most and gets its own filter
@@ -361,11 +375,25 @@ export default function AdminSeoPage() {
                         <Image src={item.image} alt="" fill sizes="36px" className="object-cover" />
                       )}
                     </span>
-                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                    {edited(item) ? (
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{item.label}</span>
+                      {item.sub && <span className="block truncate text-[11px] text-slate-400">{item.sub}</span>}
+                    </span>
+                    {/* Three states, not two: written here, written in
+                        Shopify, or written nowhere. The middle one is the
+                        common case for products and is worth telling apart —
+                        it is the listing you would go to Shopify to change. */}
+                    {overridden(item) ? (
                       <span
-                        title="ตั้งค่า SEO แล้ว"
+                        title="ตั้งค่า SEO ในหน้านี้แล้ว"
                         className="grid size-5 shrink-0 place-items-center rounded-full bg-brand-800 text-white"
+                      >
+                        <Check size={12} aria-hidden="true" />
+                      </span>
+                    ) : item.written ? (
+                      <span
+                        title="ใช้ค่า SEO ที่ตั้งไว้ใน Shopify"
+                        className="grid size-5 shrink-0 place-items-center rounded-full text-brand-800 ring-1 ring-inset ring-brand-800/40"
                       >
                         <Check size={12} aria-hidden="true" />
                       </span>

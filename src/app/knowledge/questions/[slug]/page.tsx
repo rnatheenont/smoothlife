@@ -10,6 +10,7 @@ import {
   getPublicQuestions,
   taggedProducts,
 } from "@/lib/kb-public";
+import { thaiDate } from "@/lib/storefront-articles";
 
 // One question, one page — the answer the team wrote, and the products it is
 // about. Refreshed on a quarter-hour; the knowledge base changes when someone
@@ -48,7 +49,9 @@ export default async function PublicQuestionPage(props: { params: Promise<{ slug
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: jsonLdScript(faqPageJsonLd([{ question: question.title, answer: question.content }])),
+          __html: jsonLdScript(
+            faqPageJsonLd([{ question: question.title, answer: question.content, dateModified: question.updated_at }])
+          ),
         }}
       />
       <script
@@ -79,6 +82,9 @@ export default async function PublicQuestionPage(props: { params: Promise<{ slug
         <h1 className="mt-2 text-2xl font-extrabold leading-snug text-brand-ink md:text-4xl md:leading-tight">
           {question.title}
         </h1>
+        <p className="mt-2 text-xs text-slate-400">
+          อัปเดตล่าสุด <time dateTime={question.updated_at}>{thaiDate(question.updated_at)}</time>
+        </p>
         <div className="article-body mt-6">
           {paragraphs.map((p, i) => (
             <p key={i} className="whitespace-pre-line">

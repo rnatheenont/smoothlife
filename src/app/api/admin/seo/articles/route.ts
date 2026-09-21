@@ -19,6 +19,8 @@ export type SeoArticleItem = {
   autoTitle: string;
   autoDescription: string | null;
   fromShopify: boolean;
+  /** Shopify already carries a hand-written search listing for this post. */
+  written: boolean;
   context: string;
 };
 
@@ -32,6 +34,7 @@ export async function GET() {
     autoTitle: `${a.title} | Smoothlife.com`,
     autoDescription: a.excerpt ?? null,
     fromShopify: false,
+    written: false,
     context: `บทความความรู้: ${a.title}\nเกริ่นนำ: ${a.excerpt ?? ""}`,
   }));
 
@@ -47,6 +50,7 @@ export async function GET() {
     autoTitle: p.seoTitle ? `${p.seoTitle} | Smoothlife.com` : `${p.title} | Smoothlife.com`,
     autoDescription: p.seoDescription ?? p.excerpt ?? null,
     fromShopify: true,
+    written: Boolean(p.seoTitle || p.seoDescription),
     context: `บทความบล็อกจาก Shopify: ${p.title}\nเกริ่นนำ: ${(p.excerpt ?? "").slice(0, 600)}`,
   }));
 

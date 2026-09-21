@@ -357,6 +357,7 @@ const PRODUCTS_QUERY = `
           tags
           descriptionHtml
           publishedAt
+          seo { title description }
           metafields(identifiers: [{namespace: "reviews", key: "rating"}, {namespace: "reviews", key: "rating_count"}]) {
             key
             value
@@ -607,6 +608,11 @@ function toProduct(p, usedSlugs) {
     whoFor: struct.whoFor.length ? struct.whoFor.join(" ") : sec.whoFor,
     inStock: variant.inStock,
     size: variant.size,
+    // What the team already typed into Shopify's "Search engine listing" box
+    // for this product. Null when nobody has, which is the common case — and
+    // the difference between the two is exactly what /admin/seo needs to show.
+    seoTitle: decodeEntities(String(p.seo?.title || "").trim()),
+    seoDescription: decodeEntities(String(p.seo?.description || "").trim()),
     variants: allVariants,
   };
 }
@@ -640,6 +646,8 @@ function serialise(list) {
     f.push(`whoFor:"${esc(p.whoFor)}"`);
     f.push(`inStock:${p.inStock}`);
     if (p.size) f.push(`size:"${esc(p.size)}"`);
+    if (p.seoTitle) f.push(`seoTitle:"${esc(p.seoTitle)}"`);
+    if (p.seoDescription) f.push(`seoDescription:"${esc(p.seoDescription)}"`);
     const variantRows = p.variants.map((v) => {
       const vf = [];
       vf.push(`variantId:"${esc(v.variantId)}"`);

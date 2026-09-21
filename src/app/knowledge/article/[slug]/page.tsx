@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { articles, getArticleBySlug } from "@/data/articles";
 import { getStoreArticle, getStoreArticles, storeArticleHref, thaiDate, type StoreArticle } from "@/lib/storefront-articles";
 import { BookOpen, ChevronLeft, ChevronRight, Clock, MessageCircle } from "lucide-react";
-import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
+import { articleJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { withSeoOverride } from "@/lib/seo-overrides";
 
 // Shopify blog posts come and go without a deploy, so any slug may be one;
@@ -51,7 +51,30 @@ export default async function ArticlePage(props: { params: Promise<{ slug: strin
 
   if (guide) {
     return (
-      <ArticleLayout title={guide.title} meta={<span>{guide.readMins} นาทีในการอ่าน</span>} image={guide.image} others={others}>
+      <ArticleLayout
+        title={guide.title}
+        meta={
+          <>
+            <span>{guide.readMins} นาทีในการอ่าน</span>
+            {/* Only rendered once a real date exists — see Article.publishedAt
+                in data/types.ts for why this stays hidden rather than
+                showing a made-up one. */}
+            {guide.updatedAt && (
+              <span>
+                อัปเดตล่าสุด <time dateTime={guide.updatedAt}>{thaiDate(guide.updatedAt)}</time>
+              </span>
+            )}
+          </>
+        }
+        image={guide.image}
+        others={others}
+      >
+        {(guide.publishedAt || guide.updatedAt) && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: jsonLdScript(articleJsonLd(guide)) }}
+          />
+        )}
         <div className="article-body">
           {guide.body.map((p, i) => (
             <p key={i}>{p}</p>

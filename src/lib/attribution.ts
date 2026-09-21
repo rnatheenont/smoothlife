@@ -10,9 +10,27 @@ export type AttributionChannel =
   | "tiktok"
   | "line"
   | "google"
+  | "ai_search"
   | "referral"
   | "direct"
   | "other";
+
+// Hosts a click FROM an AI answer (ChatGPT, Perplexity, Copilot, Gemini,
+// Claude, You.com) arrives with — a distinct channel from "google" because a
+// citation an AI chose to surface is a different kind of visit than an
+// organic search result someone clicked themselves. Undercounts on purpose
+// rather than guesses: several of these apps (especially their mobile
+// clients) strip the referrer entirely before opening a link, so this can
+// only ever prove a floor, never the true total.
+const AI_SEARCH_HOSTS = [
+  "chatgpt.com",
+  "chat.openai.com",
+  "perplexity.ai",
+  "copilot.microsoft.com",
+  "gemini.google.com",
+  "claude.ai",
+  "you.com",
+];
 
 export type AttributionPayload = {
   channel: AttributionChannel;
@@ -42,6 +60,9 @@ function resolveChannel(utmSource: string | null, referrerHost: string | null): 
   if (source.includes("instagram") || source === "ig") return "instagram";
   if (source.includes("tiktok")) return "tiktok";
   if (source.includes("line")) return "line";
+  if (["chatgpt", "openai", "perplexity", "copilot", "gemini", "claude"].some((s) => source.includes(s))) {
+    return "ai_search";
+  }
   if (source.includes("google")) return "google";
 
   const host = referrerHost ?? "";
@@ -49,6 +70,9 @@ function resolveChannel(utmSource: string | null, referrerHost: string | null): 
   if (host.includes("instagram.com")) return "instagram";
   if (host.includes("tiktok.com")) return "tiktok";
   if (host.includes("line.me") || host.includes("liff.line.me")) return "line";
+  // Checked before the generic google.* rule below — gemini.google.com must
+  // not fall into plain "google", the two mean different things here.
+  if (AI_SEARCH_HOSTS.some((h) => host.includes(h))) return "ai_search";
   if (host.includes("google.")) return "google";
 
   if (!referrerHost) return "direct";

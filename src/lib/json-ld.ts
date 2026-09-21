@@ -106,6 +106,38 @@ export function breadcrumbJsonLd(items: { label: string; href?: string }[]) {
 }
 
 /**
+ * A guide/blog page, marked up so a crawler (or a model) can tell when it
+ * was written and whether it has been kept current — without a date, two
+ * otherwise-identical answers are indistinguishable on the one signal that
+ * tells a reader (or a model) which one to trust more.
+ *
+ * `datePublished`/`dateModified` are only included when the caller actually
+ * has them — see the comment on `Article.publishedAt` in data/types.ts for
+ * why an invented date is worse than an absent one here.
+ */
+export function articleJsonLd(article: {
+  slug: string;
+  title: string;
+  excerpt: string;
+  image: string;
+  sources: string[];
+  publishedAt?: string;
+  updatedAt?: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: article.title,
+    description: article.excerpt,
+    image: article.image,
+    url: `${SITE_URL}/knowledge/article/${article.slug}`,
+    ...(article.publishedAt ? { datePublished: article.publishedAt } : {}),
+    ...(article.updatedAt ? { dateModified: article.updatedAt } : {}),
+    ...(article.sources.length ? { citation: article.sources } : {}),
+  };
+}
+
+/**
  * A page that answers questions, marked up so Google can show the answers
  * directly — the "People also ask" style result.
  *
@@ -113,7 +145,7 @@ export function breadcrumbJsonLd(items: { label: string; href?: string }[]) {
  * match what a visitor reads, and Google drops (or penalises) a FAQPage whose
  * answers are not visible where it says they are.
  */
-export function faqPageJsonLd(items: { question: string; answer: string }[]) {
+export function faqPageJsonLd(items: { question: string; answer: string; dateModified?: string }[]) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -121,6 +153,10 @@ export function faqPageJsonLd(items: { question: string; answer: string }[]) {
       "@type": "Question",
       name: item.question,
       acceptedAnswer: { "@type": "Answer", text: item.answer },
+      // A page that visibly says when it was last checked reads as
+      // maintained rather than abandoned — to a search crawler and to a
+      // model deciding which of several similar answers to trust.
+      ...(item.dateModified ? { dateModified: item.dateModified } : {}),
     })),
   };
 }

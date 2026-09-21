@@ -31,15 +31,27 @@ export function generateStaticParams() {
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
   const product = getProductBySlug(params.slug);
-  // A title written in /admin/seo wins; otherwise the generated one stands.
+  // Three sources, most deliberate first: a title written in /admin/seo wins;
+  // then whatever the team already typed into Shopify's search-engine listing
+  // for this product — 904 of the 944 have one, and they were written by
+  // someone who knows the product; only then the generated fallback.
   const meta = await withSeoOverride("product", params.slug, {
-    title: product ? `${product.name} | Smoothlife.com` : "Product | Smoothlife.com",
-    description: product?.shortDesc || undefined,
+    title: product?.seoTitle || (product ? `${product.name} | Smoothlife.com` : "Product | Smoothlife.com"),
+    description: product?.seoDescription || product?.shortDesc || undefined,
   });
   return {
     title: meta.title,
     description: meta.description,
     alternates: { canonical: `/product/${params.slug}` },
+    // Shared to LINE or Facebook, a product link previewed as the site's
+    // front page — same wordmark, same blurb, for all 944 of them.
+    openGraph: {
+      title: meta.title,
+      description: meta.description,
+      url: `/product/${params.slug}`,
+      type: "website",
+      ...(product?.image ? { images: [{ url: product.image }] } : {}),
+    },
   };
 }
 
