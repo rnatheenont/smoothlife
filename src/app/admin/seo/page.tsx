@@ -491,7 +491,7 @@ export default function AdminSeoPage() {
                   you look at while typing, so neither should be a scroll
                   away from the other. Stacked below 1280px with the previews
                   first, which is the only order that fits a narrow pane. */}
-              <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 xl:grid-cols-[minmax(0,1fr)_520px]">
                 <div className="min-w-0 xl:order-2">
                   {/* What Google will actually show. The boxes below are abstract
                   until you can see the result they produce — and the line
@@ -522,12 +522,12 @@ export default function AdminSeoPage() {
                       <ImageIcon size={12} aria-hidden="true" />
                       ตัวอย่างตอนแชร์ลิงก์ (LINE / Facebook) {ogImage ? "(รูปที่ตั้งเอง)" : "(รูปอัตโนมัติ)"}
                     </p>
-                    {/* 320px — the width a share card actually gets in a phone
-                    chat, which is where these links are opened. Left to fill
-                    the editor pane, the 1.91:1 box grew as tall as the pane
-                    is wide: a preview several times the size of the thing it
-                    was previewing. */}
-                    <div className="max-w-xs overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">
+                    {/* Fills its column — 520px, about what a share card gets
+                        in a desktop feed. The cap that used to be here was
+                        fighting the old full-width layout, where the 1.91:1
+                        box grew as tall as the pane is wide; in a column of
+                        its own, the column is the cap. */}
+                    <div className="overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">
                       <div className="relative aspect-[1.91/1] bg-surface-mist">
                         {previewImage ? (
                           // eslint-disable-next-line @next/next/no-img-element
