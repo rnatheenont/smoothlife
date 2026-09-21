@@ -10,9 +10,15 @@ import Footer from "@/components/Footer";
 // promo bar, menu, footer and mobile tab-bar spacer stop wrapping it.
 // (StorefrontWidgets in Providers already keeps the chat bubble and the tab
 // bar off /admin for the same reason.)
+//
+// /chat is bare for a different reason: it is a full-height app screen whose
+// input sits on the bottom edge. A promo bar above it and a footer below
+// would leave the conversation a letterbox in the middle of the page.
+const BARE = ["/admin", "/chat"];
+
 export default function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  if (pathname?.startsWith("/admin")) return <>{children}</>;
+  if (BARE.some((p) => pathname?.startsWith(p))) return <>{children}</>;
 
   return (
     <>

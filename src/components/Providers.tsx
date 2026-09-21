@@ -20,7 +20,9 @@ import GiftFloatingButton from "@/components/GiftFloatingButton";
 // promos.
 function StorefrontWidgets() {
   const pathname = usePathname();
-  if (pathname?.startsWith("/admin")) return null;
+  // /chat is the same conversation at full size — the corner bubble on top of
+  // it would be a second door into the room you are already standing in.
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/chat")) return null;
   return (
     <>
       <QuickChat />
