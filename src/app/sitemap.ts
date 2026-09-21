@@ -4,6 +4,7 @@ import { categories, concerns } from "@/data/categories";
 import { collections } from "@/data/collections";
 import { articles } from "@/data/articles";
 import { brands } from "@/data/brands";
+import { getPublicQuestions } from "@/lib/kb-public";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.smoothlife.com";
 
@@ -30,7 +31,7 @@ const STATIC_ROUTES = [
   "/stores",
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const entries: MetadataRoute.Sitemap = STATIC_ROUTES.map((path) => ({
     url: `${SITE_URL}${path}`,
@@ -54,6 +55,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }
   for (const b of brands) {
     entries.push({ url: `${SITE_URL}/brands#${b.slug}`, lastModified: now });
+  }
+  // Questions someone chose to publish. Read from the database rather than
+  // the build, so publishing one does not need a deploy to be findable.
+  for (const q of await getPublicQuestions()) {
+    entries.push({
+      url: `${SITE_URL}/knowledge/questions/${encodeURIComponent(q.public_slug)}`,
+      lastModified: new Date(q.updated_at),
+    });
   }
 
   return entries;

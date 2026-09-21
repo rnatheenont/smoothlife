@@ -7,13 +7,14 @@ import { BookOpen, Loader2, MessageSquare, Pencil, Plus, Trash2 } from "lucide-r
 import { useAdminAction } from "@/components/admin/header-action";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { CATEGORY_TH, STATUS_TH, type KbArticle, type KbCategory, type KbStatus } from "@/lib/kb";
+import { slugifyThai } from "@/lib/kb-public";
 import { isReviewDue, reviewLabel } from "@/lib/kb-review";
 
 // Admin → ฐานความรู้ AI. The articles the chat assistant is allowed to answer
 // from: it quotes these and nothing else, so what is published here is exactly
 // what a customer can be told (see the ai-knowledge-base plan, §B.5).
 
-const EMPTY = { title: "", content: "", category: "faq" as KbCategory, status: "draft" as KbStatus, tags: "" };
+const EMPTY = { title: "", content: "", category: "faq" as KbCategory, status: "draft" as KbStatus, tags: "", publicSlug: "" };
 
 const STATUS_TONE: Record<KbStatus, string> = {
   published: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -85,7 +86,7 @@ export default function AdminKnowledgeBasePage() {
 
   const startEdit = (a: KbArticle) => {
     setEditingId(a.id);
-    setForm({ title: a.title, content: a.content, category: a.category, status: a.status, tags: a.product_tags.join(", ") });
+    setForm({ title: a.title, content: a.content, category: a.category, status: a.status, tags: a.product_tags.join(", "), publicSlug: a.public_slug ?? "" });
     setOpen(true);
   };
 
@@ -102,6 +103,7 @@ export default function AdminKnowledgeBasePage() {
           category: form.category,
           status: form.status,
           product_tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+          public_slug: form.publicSlug.trim(),
         }),
       });
       const data = await res.json();
@@ -506,6 +508,53 @@ export default function AdminKnowledgeBasePage() {
               className={fieldClass}
             />
             <p className="mt-1 text-xs text-slate-500">เว้นว่าง = ใช้ตอบได้ทุกคำถาม</p>
+          </div>
+
+          {/* Publishing to the assistant and publishing to the web are two
+              decisions. Most of these articles are written about customers
+              ("ถ้าลูกค้า…") because the assistant is the reader; on a public
+              page the reader is the customer, and that wording reads wrong.
+              So this is off unless someone types a slug, and the warning
+              below fires on exactly the phrasing that gives it away. */}
+          <div>
+            <label htmlFor="kb-public-slug" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+              แสดงเป็นหน้าเว็บสาธารณะ (ไม่บังคับ)
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="kb-public-slug"
+                value={form.publicSlug}
+                onChange={(e) => setForm((f) => ({ ...f, publicSlug: e.target.value }))}
+                placeholder="เว้นว่าง = ไม่แสดงเป็นหน้าเว็บ"
+                className={fieldClass}
+                disabled={form.status !== "published"}
+              />
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, publicSlug: slugifyThai(f.title) }))}
+                disabled={form.status !== "published" || !form.title.trim()}
+                className="min-h-12 shrink-0 rounded-full px-4 text-sm font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-50"
+              >
+                สร้างจากหัวข้อ
+              </button>
+            </div>
+            {form.status !== "published" ? (
+              <p className="mt-1 text-xs text-slate-500">ต้องเผยแพร่บทความก่อนจึงจะทำเป็นหน้าเว็บได้</p>
+            ) : form.publicSlug.trim() ? (
+              <>
+                <p className="mt-1 text-xs text-slate-500">
+                  จะเปิดได้ที่ /knowledge/questions/{form.publicSlug.trim()}
+                </p>
+                {/\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32/.test(form.content) && (
+                  <p className="mt-1 text-xs text-amber-600">
+                    เนื้อหามีคำว่า &ldquo;ลูกค้า&rdquo; — บทความนี้อาจเขียนไว้สั่งงาน AI ไม่ได้เขียนคุยกับลูกค้าโดยตรง
+                    ตรวจสำนวนก่อนเผยแพร่เป็นหน้าเว็บ
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="mt-1 text-xs text-slate-500">เว้นว่าง = ใช้ตอบในแชทอย่างเดียว ไม่ขึ้นหน้าเว็บ</p>
+            )}
           </div>
 
           <div className="flex gap-2">

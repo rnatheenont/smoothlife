@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { KB_COLUMNS, parseArticleInput, reindexArticle, type KbArticle } from "@/lib/kb";
@@ -26,6 +27,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   });
   if (!article) return NextResponse.json({ ok: false, error: "ไม่พบบทความ" }, { status: 404 });
   await reindexArticle(article);
+  // The public question pages read through a tagged cache; an edit should
+  // reach them now rather than at the top of the next quarter hour.
+  revalidateTag("kb-public", { expire: 0 });
+  if (article.public_slug) revalidateTag(`kb-public:${article.public_slug}`, { expire: 0 });
   return NextResponse.json({ ok: true, article });
 }
 

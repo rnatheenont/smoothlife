@@ -24,12 +24,16 @@ export type KbArticle = {
   last_reviewed_at: string | null;
   reviewed_by: string | null;
   source_ref: string | null;
+  /** Set only when someone has chosen to publish this as a public page at
+   *  /knowledge/questions/<slug>. Null means the article is for the assistant
+   *  to quote, not for a reader to land on — see the column comment. */
+  public_slug: string | null;
   created_at: string;
   updated_at: string;
 };
 
 export const KB_COLUMNS =
-  "id,source,category,title,content,product_tags,status,last_reviewed_at,reviewed_by,source_ref,created_at,updated_at";
+  "id,source,category,title,content,product_tags,status,last_reviewed_at,reviewed_by,source_ref,public_slug,created_at,updated_at";
 
 export const CATEGORY_TH: Record<KbCategory, string> = {
   faq: "คำถามที่พบบ่อย",
@@ -72,6 +76,14 @@ export function parseArticleInput(body: unknown): { row: Partial<KbArticle> } | 
     ? [...new Set(b.product_tags.filter((t): t is string => typeof t === "string" && t.trim().length > 0).map((t) => t.trim().slice(0, 120)))].slice(0, 30)
     : [];
 
+  // A public page is its own decision, separate from publishing: an article
+  // the assistant may quote is often written about customers rather than to
+  // them, and only a person can judge whether the wording reads right on a
+  // page a stranger lands on. Blank clears the page; an unpublished article
+  // never has one, whatever is typed here.
+  const rawSlug = typeof b.public_slug === "string" ? b.public_slug.trim() : "";
+  const publicSlug = status === "published" && rawSlug ? rawSlug.slice(0, 120) : null;
+
   return {
     row: {
       title,
@@ -79,6 +91,7 @@ export function parseArticleInput(body: unknown): { row: Partial<KbArticle> } | 
       category,
       status,
       product_tags: tags,
+      public_slug: publicSlug,
       // Publishing is the moment a person vouched for it.
       ...(status === "published" ? { last_reviewed_at: new Date().toISOString(), reviewed_by: "admin" } : {}),
     },
