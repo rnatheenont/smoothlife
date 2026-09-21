@@ -397,7 +397,7 @@ export default function AdminSeoPage() {
                         that does not need counting — and so a row can be
                         named out loud ("อันที่ 412") when two products have
                         nearly the same title. */}
-                    <span className="w-8 shrink-0 text-right text-xs tabular-nums text-slate-400">
+                    <span className="w-9 shrink-0 pr-2 text-right text-xs tabular-nums text-slate-400">
                       {(i + 1).toLocaleString("th-TH")}
                     </span>
                     <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-surface-mist ring-1 ring-surface-line">
