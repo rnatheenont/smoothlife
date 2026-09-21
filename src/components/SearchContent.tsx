@@ -30,6 +30,32 @@ export default function SearchContent() {
     return () => clearTimeout(timer);
   }, [input, router]);
 
+  // What people search for is the only demand signal this shop owns (see
+  // search_queries). Logged well after the URL is updated — the 300ms debounce
+  // above is for keeping the address bar in step, and recording at that speed
+  // would fill the table with the prefixes of every word anyone typed.
+  // One row per query someone actually stopped on, and never the same one
+  // twice in a row.
+  const lastLogged = useRef("");
+  useEffect(() => {
+    const trimmed = input.trim();
+    if (trimmed.length < 2 || trimmed === lastLogged.current) return;
+    const timer = setTimeout(() => {
+      lastLogged.current = trimmed;
+      const found = matchedProducts.length + matchedConcerns.length + matchedArticles.length;
+      fetch("/api/search/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: trimmed, results: found }),
+        keepalive: true,
+      }).catch(() => {
+        // Nothing to tell the shopper: their search already worked.
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input]);
+
   const q = input.toLowerCase().trim();
 
   const matchedProducts = q

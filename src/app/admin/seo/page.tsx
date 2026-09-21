@@ -92,6 +92,7 @@ export default function AdminSeoPage() {
   const [thinking, setThinking] = useState(false);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
+  const [searches, setSearches] = useState<{ normalized: string; searches: number; zero_result_searches: number }[]>([]);
 
   useAdminAction({
     label: "เปิดหน้าจริง",
@@ -110,6 +111,10 @@ export default function AdminSeoPage() {
   }
   useEffect(() => {
     load();
+    fetch("/api/admin/seo/searches?days=90")
+      .then((r) => r.json())
+      .then((d) => setSearches(d?.searches ?? []))
+      .catch(() => setSearches([]));
   }, []);
 
   const items = useMemo(() => itemsFor(tab), [tab]);
@@ -435,6 +440,41 @@ export default function AdminSeoPage() {
                 </div>
                 <p className="mt-1.5 text-xs text-slate-400">ไม่เลือก = ให้ AI ตัดสินใจเอง</p>
               </fieldset>
+
+              {/* No keyword tool is connected, and a made-up volume number is
+                  worse than none. These are the shop's own visitors — fewer
+                  people than a search engine sees, but every one of them was
+                  already here meaning to buy. A query that found nothing is
+                  the most useful row on the list. */}
+              {searches.length > 0 && (
+                <div className="mt-5">
+                  <p className="text-xs font-semibold text-slate-400">คนค้นอะไรในเว็บ (90 วันล่าสุด) — แตะเพื่อใส่เป็นคำค้นหา</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {searches.slice(0, 12).map((row) => (
+                      <button
+                        key={row.normalized}
+                        type="button"
+                        onClick={() =>
+                          setKeywords((prev) => (prev.trim() ? `${prev.replace(/,\s*$/, "")}, ${row.normalized}` : row.normalized))
+                        }
+                        title={
+                          row.zero_result_searches > 0
+                            ? `ค้น ${row.searches} ครั้ง · ไม่เจอผลลัพธ์ ${row.zero_result_searches} ครั้ง`
+                            : `ค้น ${row.searches} ครั้ง`
+                        }
+                        className={
+                          "rounded-full px-2.5 py-1 text-xs ring-1 transition-colors hover:bg-surface-soft " +
+                          (row.zero_result_searches > 0
+                            ? "text-amber-700 ring-amber-200"
+                            : "text-slate-600 ring-surface-line")
+                        }
+                      >
+                        {row.normalized} <span className="text-slate-400">{row.searches}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {suggestions.length > 0 && (
                 <div className="mt-5">
