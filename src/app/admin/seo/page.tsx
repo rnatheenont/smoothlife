@@ -155,7 +155,9 @@ export default function AdminSeoPage() {
   const [thinking, setThinking] = useState(false);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
-  const [searches, setSearches] = useState<{ normalized: string; searches: number; zero_result_searches: number }[]>([]);
+  const [searches, setSearches] = useState<{ normalized: string; searches: number; zero_result_searches: number }[]>(
+    [],
+  );
   const [articleItems, setArticleItems] = useState<Item[] | null>(null);
 
   useAdminAction({
@@ -191,10 +193,7 @@ export default function AdminSeoPage() {
       .catch(() => setArticleItems([]));
   }, [tab, articleItems]);
 
-  const items = useMemo(
-    () => (tab === "article" ? articleItems ?? [] : itemsFor(tab)),
-    [tab, articleItems]
-  );
+  const items = useMemo(() => (tab === "article" ? (articleItems ?? []) : itemsFor(tab)), [tab, articleItems]);
   const q = query.trim().toLowerCase();
 
   function open(item: Item) {
@@ -221,7 +220,10 @@ export default function AdminSeoPage() {
           page_type: tab,
           page_key: selected.key,
           context: selected.context,
-          keywords: keywords.split(",").map((k) => k.trim()).filter(Boolean),
+          keywords: keywords
+            .split(",")
+            .map((k) => k.trim())
+            .filter(Boolean),
           angles,
         }),
       });
@@ -250,7 +252,10 @@ export default function AdminSeoPage() {
           meta_title: title,
           meta_description: description,
           og_image: ogImage,
-          keywords: keywords.split(",").map((k) => k.trim()).filter(Boolean),
+          keywords: keywords
+            .split(",")
+            .map((k) => k.trim())
+            .filter(Boolean),
         }),
       });
       const data = await res.json().catch(() => null);
@@ -271,9 +276,12 @@ export default function AdminSeoPage() {
   const tabCounts = useMemo(
     () =>
       Object.fromEntries(
-        SEO_PAGE_TYPES.map((t) => [t.key, t.key === "article" ? articleItems?.length ?? null : itemsFor(t.key).length])
+        SEO_PAGE_TYPES.map((t) => [
+          t.key,
+          t.key === "article" ? (articleItems?.length ?? null) : itemsFor(t.key).length,
+        ]),
       ) as Record<SeoPageType, number | null>,
-    [articleItems]
+    [articleItems],
   );
 
   /** Written on this screen — the only kind we can edit back. */
@@ -291,7 +299,7 @@ export default function AdminSeoPage() {
   const matching = items.filter(
     (i) =>
       (!q || `${i.label} ${i.sub ?? ""}`.toLowerCase().includes(q)) &&
-      (filter === "all" || (filter === "done" ? edited(i) : !edited(i)))
+      (filter === "all" || (filter === "done" ? edited(i) : !edited(i))),
   );
   // Every match, not the first 200: the list is the worklist, and a cap on
   // it meant the only way to reach product 600 was to already know its name.
@@ -360,7 +368,11 @@ export default function AdminSeoPage() {
           การตั้งหัวข้อ SEO ให้แคมเปญจึงยังไม่มีผล จนกว่าจะทำหน้า landing ถาวรแยกต่างหาก
         </p>
       ) : (
-        <div className="mt-6 grid min-h-0 gap-5 lg:h-[calc(100vh-15rem)] lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+        // 21rem is what actually sits above this on screen — breadcrumb,
+        // heading, the tab row and the progress bar. The old 15rem was a
+        // guess from before the tabs carried counts, and it pushed the
+        // editor's bottom edge (and the Save button on it) past the fold.
+        <div className="mt-6 grid min-h-0 gap-5 lg:h-[calc(100dvh-21rem)] lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
           <div className="flex min-h-0 min-w-0 flex-col">
             <input
               value={query}
@@ -409,9 +421,7 @@ export default function AdminSeoPage() {
                       {(i + 1).toLocaleString("th-TH")}
                     </span>
                     <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-surface-mist ring-1 ring-surface-line">
-                      {item.image && (
-                        <Image src={item.image} alt="" fill sizes="36px" className="object-cover" />
-                      )}
+                      {item.image && <Image src={item.image} alt="" fill sizes="36px" className="object-cover" />}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate">{item.label}</span>
@@ -459,8 +469,8 @@ export default function AdminSeoPage() {
           </div>
 
           {selected ? (
-            <div className="min-h-0 min-w-0 overflow-y-auto rounded-xl2 bg-white p-5 ring-1 ring-surface-line">
-              <div className="flex items-start justify-between gap-3">
+            <div className="flex min-h-0 min-w-0 flex-col rounded-xl2 bg-white ring-1 ring-surface-line">
+              <div className="flex items-start justify-between gap-3 border-b border-surface-line p-5 pb-4">
                 <div className="min-w-0">
                   <h2 className="truncate font-bold text-brand-ink">{selected.label}</h2>
                   <Link
@@ -477,238 +487,261 @@ export default function AdminSeoPage() {
                 </Button>
               </div>
 
-              {/* What Google will actually show. The boxes below are abstract
+              {/* Fields on the left, previews on the right — the two things
+                  you look at while typing, so neither should be a scroll
+                  away from the other. Stacked below 1280px with the previews
+                  first, which is the only order that fits a narrow pane. */}
+              <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="min-w-0 xl:order-2">
+                  {/* What Google will actually show. The boxes below are abstract
                   until you can see the result they produce — and the line
                   that gets truncated is obvious here and nowhere else. */}
-              <div className="mt-4 rounded-xl2 bg-surface-soft p-4">
-                <p className="mb-2 text-[11px] font-semibold text-slate-400">
-                  ตัวอย่างที่จะแสดงใน Google {title || description ? "(ค่าที่ตั้งเอง)" : "(ค่าอัตโนมัติ)"}
-                </p>
-                <div className="rounded-lg bg-white p-3">
-                  <p className="truncate text-xs text-slate-500">smoothlife.com{selected.href}</p>
-                  <p className="mt-0.5 line-clamp-1 text-[17px] leading-snug text-[#1a0dab]">
-                    {title || selected.autoTitle}
-                  </p>
-                  <p className="mt-0.5 line-clamp-2 text-[13px] leading-relaxed text-slate-600">
-                    {description || selected.autoDescription || "— ยังไม่มีคำอธิบาย Google จะหยิบข้อความจากหน้าเว็บมาแสดงเอง —"}
-                  </p>
-                </div>
-              </div>
+                  <div className="mt-4 rounded-xl2 bg-surface-soft p-4">
+                    <p className="mb-2 text-[11px] font-semibold text-slate-400">
+                      ตัวอย่างที่จะแสดงใน Google {title || description ? "(ค่าที่ตั้งเอง)" : "(ค่าอัตโนมัติ)"}
+                    </p>
+                    <div className="rounded-lg bg-white p-3">
+                      <p className="truncate text-xs text-slate-500">smoothlife.com{selected.href}</p>
+                      <p className="mt-0.5 line-clamp-1 text-[17px] leading-snug text-[#1a0dab]">
+                        {title || selected.autoTitle}
+                      </p>
+                      <p className="mt-0.5 line-clamp-2 text-[13px] leading-relaxed text-slate-600">
+                        {description ||
+                          selected.autoDescription ||
+                          "— ยังไม่มีคำอธิบาย Google จะหยิบข้อความจากหน้าเว็บมาแสดงเอง —"}
+                      </p>
+                    </div>
+                  </div>
 
-              {/* Two previews because they are two different results. Google
+                  {/* Two previews because they are two different results. Google
                   shows a line of text; LINE and Facebook show a picture first
                   and the words second — and the picture is the part nobody
                   can see until the link is already shared. */}
-              <div className="mt-3 rounded-xl2 bg-surface-soft p-4">
-                <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
-                  <ImageIcon size={12} aria-hidden="true" />
-                  ตัวอย่างตอนแชร์ลิงก์ (LINE / Facebook) {ogImage ? "(รูปที่ตั้งเอง)" : "(รูปอัตโนมัติ)"}
-                </p>
-                {/* 320px — the width a share card actually gets in a phone
+                  <div className="mt-3 rounded-xl2 bg-surface-soft p-4">
+                    <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
+                      <ImageIcon size={12} aria-hidden="true" />
+                      ตัวอย่างตอนแชร์ลิงก์ (LINE / Facebook) {ogImage ? "(รูปที่ตั้งเอง)" : "(รูปอัตโนมัติ)"}
+                    </p>
+                    {/* 320px — the width a share card actually gets in a phone
                     chat, which is where these links are opened. Left to fill
                     the editor pane, the 1.91:1 box grew as tall as the pane
                     is wide: a preview several times the size of the thing it
                     was previewing. */}
-                <div className="max-w-xs overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">
-                  <div className="relative aspect-[1.91/1] bg-surface-mist">
-                    {previewImage ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={previewImage} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <span className="absolute inset-0 grid place-items-center text-xs text-slate-400">
-                        หน้านี้ยังไม่มีรูป — จะใช้โลโก้เว็บแทน
-                      </span>
+                    <div className="max-w-xs overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">
+                      <div className="relative aspect-[1.91/1] bg-surface-mist">
+                        {previewImage ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={previewImage} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="absolute inset-0 grid place-items-center text-xs text-slate-400">
+                            หน้านี้ยังไม่มีรูป — จะใช้โลโก้เว็บแทน
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <p className="truncate text-[11px] uppercase text-slate-400">smoothlife.com</p>
+                        <p className="mt-0.5 line-clamp-2 text-sm font-semibold text-brand-ink">
+                          {title || selected.autoTitle}
+                        </p>
+                        <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">
+                          {description || selected.autoDescription || "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="min-w-0 xl:order-1">
+                  {/* The counter rides on the label rather than taking a line of
+                  its own under every field — six fields, six saved lines. */}
+                  <div className="flex items-baseline justify-between gap-2">
+                    <label htmlFor="seo-title" className="text-sm font-semibold text-brand-ink">
+                      หัวข้อ (title)
+                    </label>
+                    <span className={"text-xs " + (title.length > TITLE_MAX ? "text-amber-600" : "text-slate-400")}>
+                      {title.length}/{TITLE_MAX}
+                    </span>
+                  </div>
+                  <input
+                    id="seo-title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="เว้นว่าง = ใช้ค่าอัตโนมัติ"
+                    className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
+                  />
+
+                  <div className="mt-3 flex items-baseline justify-between gap-2">
+                    <label htmlFor="seo-desc" className="text-sm font-semibold text-brand-ink">
+                      คำอธิบาย (description)
+                    </label>
+                    <span
+                      className={
+                        "text-xs " + (description.length > DESCRIPTION_MAX ? "text-amber-600" : "text-slate-400")
+                      }
+                    >
+                      {description.length}/{DESCRIPTION_MAX}
+                    </span>
+                  </div>
+                  <textarea
+                    id="seo-desc"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                    placeholder="เว้นว่าง = ใช้ค่าอัตโนมัติ"
+                    className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
+                  />
+                  <label htmlFor="seo-keywords" className="mt-3 block text-sm font-semibold text-brand-ink">
+                    คำค้นหาที่อยากให้ติด
+                  </label>
+                  <input
+                    id="seo-keywords"
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
+                    placeholder="คั่นด้วยจุลภาค เช่น บิลเบอร์รี่ บำรุงสายตา, อาหารเสริมสายตา"
+                    className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
+                  />
+                  <p className="mt-1 text-xs text-slate-400">
+                    ใช้เป็นโจทย์ให้ AI เขียน และเป็นบันทึกว่าหน้านี้ตั้งใจจับคำไหน
+                  </p>
+
+                  <label htmlFor="seo-og" className="mt-3 block text-sm font-semibold text-brand-ink">
+                    รูปตอนแชร์ลิงก์ (thumbnail)
+                  </label>
+                  <div className="mt-1.5 flex gap-2">
+                    <input
+                      id="seo-og"
+                      value={ogImage}
+                      onChange={(e) => setOgImage(e.target.value)}
+                      placeholder="เว้นว่าง = ใช้รูปของหน้านั้น"
+                      className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
+                    />
+                    {selected.image && selected.image !== ogImage && (
+                      <button
+                        type="button"
+                        onClick={() => setOgImage(selected.image as string)}
+                        className="shrink-0 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-brand-800 hover:bg-surface-soft"
+                      >
+                        ใช้รูปนี้
+                      </button>
+                    )}
+                    {ogImage && (
+                      <button
+                        type="button"
+                        onClick={() => setOgImage("")}
+                        className="shrink-0 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-500 hover:bg-surface-soft"
+                      >
+                        ล้าง
+                      </button>
                     )}
                   </div>
-                  <div className="p-3">
-                    <p className="truncate text-[11px] uppercase text-slate-400">smoothlife.com</p>
-                    <p className="mt-0.5 line-clamp-2 text-sm font-semibold text-brand-ink">
-                      {title || selected.autoTitle}
-                    </p>
-                    <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">
-                      {description || selected.autoDescription || "—"}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                  <p className="mt-1 text-xs text-slate-400">
+                    ต้องเป็นลิงก์เต็มขึ้นต้นด้วย https:// — สัดส่วนที่ LINE และ Facebook ครอบคือ 1.91:1 (แนะนำ 1200×630
+                    px) รูปสินค้าเป็นสี่เหลี่ยมจัตุรัส เวลาแชร์จะโดนครอบบน-ล่าง
+                  </p>
 
-              <label htmlFor="seo-title" className="mt-4 block text-sm font-semibold text-brand-ink">
-                หัวข้อ (title)
-              </label>
-              <input
-                id="seo-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="เว้นว่าง = ใช้ค่าอัตโนมัติ"
-                className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
-              />
-              <p className={"mt-1 text-xs " + (title.length > TITLE_MAX ? "text-amber-600" : "text-slate-400")}>
-                {title.length}/{TITLE_MAX} ตัวอักษร
-              </p>
-
-              <label htmlFor="seo-desc" className="mt-3 block text-sm font-semibold text-brand-ink">
-                คำอธิบาย (description)
-              </label>
-              <textarea
-                id="seo-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                placeholder="เว้นว่าง = ใช้ค่าอัตโนมัติ"
-                className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
-              />
-              <p
-                className={
-                  "mt-1 text-xs " + (description.length > DESCRIPTION_MAX ? "text-amber-600" : "text-slate-400")
-                }
-              >
-                {description.length}/{DESCRIPTION_MAX} ตัวอักษร
-              </p>
-
-              <label htmlFor="seo-keywords" className="mt-3 block text-sm font-semibold text-brand-ink">
-                คำค้นหาที่อยากให้ติด
-              </label>
-              <input
-                id="seo-keywords"
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-                placeholder="คั่นด้วยจุลภาค เช่น บิลเบอร์รี่ บำรุงสายตา, อาหารเสริมสายตา"
-                className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
-              />
-              <p className="mt-1 text-xs text-slate-400">
-                ใช้เป็นโจทย์ให้ AI เขียน และเป็นบันทึกว่าหน้านี้ตั้งใจจับคำไหน
-              </p>
-
-              <label htmlFor="seo-og" className="mt-3 block text-sm font-semibold text-brand-ink">
-                รูปตอนแชร์ลิงก์ (thumbnail)
-              </label>
-              <div className="mt-1.5 flex gap-2">
-                <input
-                  id="seo-og"
-                  value={ogImage}
-                  onChange={(e) => setOgImage(e.target.value)}
-                  placeholder="เว้นว่าง = ใช้รูปของหน้านั้น"
-                  className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
-                />
-                {selected.image && selected.image !== ogImage && (
-                  <button
-                    type="button"
-                    onClick={() => setOgImage(selected.image as string)}
-                    className="shrink-0 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-brand-800 hover:bg-surface-soft"
-                  >
-                    ใช้รูปนี้
-                  </button>
-                )}
-                {ogImage && (
-                  <button
-                    type="button"
-                    onClick={() => setOgImage("")}
-                    className="shrink-0 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-500 hover:bg-surface-soft"
-                  >
-                    ล้าง
-                  </button>
-                )}
-              </div>
-              <p className="mt-1 text-xs text-slate-400">
-                ต้องเป็นลิงก์เต็มขึ้นต้นด้วย https:// — สัดส่วนที่ LINE และ Facebook ครอบคือ 1.91:1 (แนะนำ 1200×630 px)
-                รูปสินค้าเป็นสี่เหลี่ยมจัตุรัส เวลาแชร์จะโดนครอบบน-ล่าง
-              </p>
-
-              {/* The angle is an editorial decision, not a tone setting: the
+                  {/* The angle is an editorial decision, not a tone setting: the
                   same product yields a different title depending on whether
                   the shopper is looking for the brand or for the problem. */}
-              <fieldset className="mt-4 min-w-0">
-                <legend className="text-sm font-semibold text-brand-ink">อยากให้ AI เน้นด้านไหน</legend>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {SEO_ANGLES.map((a) => {
-                    const on = angles.includes(a.key);
-                    return (
-                      <label
-                        key={a.key}
-                        className={
-                          "cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition-colors " +
-                          (on
-                            ? "bg-brand-gradient-soft text-brand-800 ring-brand-action/40"
-                            : "text-slate-600 ring-surface-line hover:bg-surface-soft")
-                        }
-                      >
-                        <input
-                          type="checkbox"
-                          className="sr-only"
-                          checked={on}
-                          onChange={() =>
-                            setAngles((prev) => (on ? prev.filter((k) => k !== a.key) : [...prev, a.key]))
-                          }
-                        />
-                        {a.label}
-                      </label>
-                    );
-                  })}
-                </div>
-                <p className="mt-1.5 text-xs text-slate-400">ไม่เลือก = ให้ AI ตัดสินใจเอง</p>
-              </fieldset>
+                  <fieldset className="mt-4 min-w-0">
+                    <legend className="text-sm font-semibold text-brand-ink">อยากให้ AI เน้นด้านไหน</legend>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {SEO_ANGLES.map((a) => {
+                        const on = angles.includes(a.key);
+                        return (
+                          <label
+                            key={a.key}
+                            className={
+                              "cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition-colors " +
+                              (on
+                                ? "bg-brand-gradient-soft text-brand-800 ring-brand-action/40"
+                                : "text-slate-600 ring-surface-line hover:bg-surface-soft")
+                            }
+                          >
+                            <input
+                              type="checkbox"
+                              className="sr-only"
+                              checked={on}
+                              onChange={() =>
+                                setAngles((prev) => (on ? prev.filter((k) => k !== a.key) : [...prev, a.key]))
+                              }
+                            />
+                            {a.label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-1.5 text-xs text-slate-400">ไม่เลือก = ให้ AI ตัดสินใจเอง</p>
+                  </fieldset>
 
-              {/* No keyword tool is connected, and a made-up volume number is
+                  {/* No keyword tool is connected, and a made-up volume number is
                   worse than none. These are the shop's own visitors — fewer
                   people than a search engine sees, but every one of them was
                   already here meaning to buy. A query that found nothing is
                   the most useful row on the list. */}
-              {searches.length > 0 && (
-                <div className="mt-5">
-                  <p className="text-xs font-semibold text-slate-400">คนค้นอะไรในเว็บ (90 วันล่าสุด) — แตะเพื่อใส่เป็นคำค้นหา</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {searches.slice(0, 12).map((row) => (
-                      <button
-                        key={row.normalized}
-                        type="button"
-                        onClick={() =>
-                          setKeywords((prev) => (prev.trim() ? `${prev.replace(/,\s*$/, "")}, ${row.normalized}` : row.normalized))
-                        }
-                        title={
-                          row.zero_result_searches > 0
-                            ? `ค้น ${row.searches} ครั้ง · ไม่เจอผลลัพธ์ ${row.zero_result_searches} ครั้ง`
-                            : `ค้น ${row.searches} ครั้ง`
-                        }
-                        className={
-                          "rounded-full px-2.5 py-1 text-xs ring-1 transition-colors hover:bg-surface-soft " +
-                          (row.zero_result_searches > 0
-                            ? "text-amber-700 ring-amber-200"
-                            : "text-slate-600 ring-surface-line")
-                        }
-                      >
-                        {row.normalized} <span className="text-slate-400">{row.searches}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+                  {searches.length > 0 && (
+                    <div className="mt-5">
+                      <p className="text-xs font-semibold text-slate-400">
+                        คนค้นอะไรในเว็บ (90 วันล่าสุด) — แตะเพื่อใส่เป็นคำค้นหา
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {searches.slice(0, 12).map((row) => (
+                          <button
+                            key={row.normalized}
+                            type="button"
+                            onClick={() =>
+                              setKeywords((prev) =>
+                                prev.trim() ? `${prev.replace(/,\s*$/, "")}, ${row.normalized}` : row.normalized,
+                              )
+                            }
+                            title={
+                              row.zero_result_searches > 0
+                                ? `ค้น ${row.searches} ครั้ง · ไม่เจอผลลัพธ์ ${row.zero_result_searches} ครั้ง`
+                                : `ค้น ${row.searches} ครั้ง`
+                            }
+                            className={
+                              "rounded-full px-2.5 py-1 text-xs ring-1 transition-colors hover:bg-surface-soft " +
+                              (row.zero_result_searches > 0
+                                ? "text-amber-700 ring-amber-200"
+                                : "text-slate-600 ring-surface-line")
+                            }
+                          >
+                            {row.normalized} <span className="text-slate-400">{row.searches}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-              {suggestions.length > 0 && (
-                <div className="mt-5">
-                  <p className="text-xs font-semibold text-slate-400">
-                    AI แนะนำ — ตรวจก่อนใช้เสมอ โดยเฉพาะข้อความที่อ้างสรรพคุณ
-                  </p>
-                  <ul className="mt-2 space-y-2">
-                    {suggestions.map((s, i) => (
-                      <li key={i}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setTitle(s.title);
-                            setDescription(s.description);
-                          }}
-                          className="w-full rounded-lg border border-surface-line p-3 text-left hover:border-brand-action/40 hover:bg-surface-soft"
-                        >
-                          <span className="block text-sm font-semibold text-brand-ink">{s.title}</span>
-                          <span className="mt-0.5 block text-xs text-slate-500">{s.description}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  {suggestions.length > 0 && (
+                    <div className="mt-5">
+                      <p className="text-xs font-semibold text-slate-400">
+                        AI แนะนำ — ตรวจก่อนใช้เสมอ โดยเฉพาะข้อความที่อ้างสรรพคุณ
+                      </p>
+                      <ul className="mt-2 space-y-2">
+                        {suggestions.map((s, i) => (
+                          <li key={i}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTitle(s.title);
+                                setDescription(s.description);
+                              }}
+                              className="w-full rounded-lg border border-surface-line p-3 text-left hover:border-brand-action/40 hover:bg-surface-soft"
+                            >
+                              <span className="block text-sm font-semibold text-brand-ink">{s.title}</span>
+                              <span className="mt-0.5 block text-xs text-slate-500">{s.description}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
 
-              <div className="mt-5 flex items-center gap-3">
+              {/* Pinned, not scrolled to: with the previews and six fields
+                  above it, Save used to sit below the fold on every page. */}
+              <div className="flex items-center gap-3 border-t border-surface-line p-5 py-3">
                 <Button type="button" onClick={save} disabled={saving}>
                   {saving ? "กำลังบันทึก…" : "บันทึก"}
                 </Button>
