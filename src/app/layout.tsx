@@ -45,6 +45,13 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: ["/logo.webp"],
   },
+  // Search Console proves ownership by finding a token it gave you in the
+  // page head. It lives in an environment variable rather than here so
+  // claiming the site — or re-claiming it after someone leaves the team — is
+  // a deploy, not a code change and a review.
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
+    : {}),
 };
 
 // viewport-fit=cover lets iOS report real env(safe-area-inset-*) values
