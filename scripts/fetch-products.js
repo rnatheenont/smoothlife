@@ -137,13 +137,77 @@ function esc(s) {
 
 /* ---------- classification (same heuristics as before, run over live tags/title) ---------- */
 
+// Order is the classification: the first rule that matches wins, so the
+// narrow kinds have to come before the broad ones. "ครีม" and "skin" appear
+// in half the catalogue, which is why skincare sits last.
+//
+// The lists are long on purpose. Half the catalogue used to match no rule at
+// all and was swept into skincare by the fallback — which is how the
+// skincare page came to be led by sticking plasters, condoms, an ATK test
+// kit and a box of sanitary pads, and how "ผิวแห้ง" came to hold 486
+// products. A supplement is not skincare because its label happens to omit
+// the word "วิตามิน"; it is a supplement because it is sold in capsules,
+// tablets, softgels or millilitres of extract, and those words are what the
+// wellness rule now reads.
 const CATEGORY_RULES = [
-  ["oral-care", ["ยาสีฟัน", "แปรงสีฟัน", "ช่องปาก", "น้ำยาบ้วนปาก", "toothpaste", "toothbrush", "mouthwash", "dentiste", "oral"]],
-  ["hair-care", ["แชมพู", "ครีมนวด", "เส้นผม", "หนังศีรษะ", "ผมร่วง", "shampoo", "conditioner", "hair", "scalp"]],
-  ["wellness", ["วิตามิน", "อาหารเสริม", "คอลลาเจน", "โพรไบโอ", "supplement", "vitamin", "collagen", "probiotic", "gummy", "wellness"]],
-  ["body-care", ["ครีมทาผิวกาย", "โลชั่น", "ผิวกาย", "สบู่", "อาบน้ำ", "body", "lotion", "shower", "soap", "hand cream", "deodorant"]],
-  ["personal-care", ["ผ้าอนามัย", "จุดซ่อนเร้น", "แผ่นแปะ", "เจลล้างมือ", "feminine", "intimate", "sanitiz", "wipes", "tissue"]],
-  ["skincare", ["เซรั่ม", "ครีม", "กันแดด", "โฟม", "คลีนซิ่ง", "มาส์ก", "โทนเนอร์", "serum", "cream", "sunscreen", "cleanser", "toner", "mask", "essence", "moisturi", "spf", "facial", "skin"]],
+  [
+    "oral-care",
+    ["ยาสีฟัน", "แปรงสีฟัน", "ช่องปาก", "น้ำยาบ้วนปาก", "ไหมขัดฟัน", "ลมหายใจ", "กลิ่นปาก", "ฟันปลอม", "ขูดลิ้น",
+     "toothpaste", "toothbrush", "mouthwash", "mouth spray", "oral rinse", "oral care", "dentiste", "floss", "denture",
+     "tongue", "breath", "sukkiri", "plaque"],
+  ],
+  [
+    "hair-care",
+    ["แชมพู", "ครีมนวด", "เส้นผม", "หนังศีรษะ", "ผมร่วง", "ผมขาว", "รังแค", "หวี", "แปรงผม", "ย้อมผม",
+     "shampoo", "conditioner", "hair", "scalp", "dandruff", "superbrush", "janeke", "comb", "aromase"],
+  ],
+  [
+    // First aid, hygiene and the devices that go with them. These are not
+    // skin care by any reading, and before this rule existed every one of
+    // them was filed as if it were.
+    "personal-care",
+    ["ผ้าอนามัย", "จุดซ่อนเร้น", "แผ่นแปะ", "เจลล้างมือ", "ทิชชู่", "ผ้าเช็ด", "พลาสเตอร์", "ปิดแผล", "ปฐมพยาบาล",
+     "ถุงยาง", "เทอร์โมมิเตอร์", "วัดไข้", "วัดความดัน", "ชุดตรวจ", "คอนแทคเลนส์", "ผ้าพยุง", "ประคบ", "ลดไข้",
+     "ยาหม่อง", "ปวดเมื่อย", "สูดดม", "ยาดม",
+     "feminine", "intimate", "sanitiz", "wipes", "tissue", "plaster", "bandage", "dressing", "gauze", "condom",
+     "durex", "thermometer", "blood pressure", "test kit", "self test", "contact lens", "support", "splint",
+     "brace", "heatpatch", "cold hot", "balm", "inhaler", "nebulizer",
+     // Brands that sell one kind of thing and nothing else, so the vendor
+     // (already part of the haystack) classifies the product on its own.
+     "koolfever", "futuro", "vantelin", "nexcare", "opti-free", "sos plus", "3m ", "flowflex", "sanita",
+     "klean&kare", "klean and kare", "hi-care", "exeter", "neoplast", "neotape", "ambulance", "tiger balm",
+     "ammeltz", "botan", "sensiplus", "karisma"],
+  ],
+  [
+    "body-care",
+    ["ครีมทาผิวกาย", "โลชั่น", "ผิวกาย", "สบู่", "อาบน้ำ", "ครีมทามือ", "ระงับกลิ่นกาย", "กันแดดผิวกาย",
+     "body", "lotion", "shower", "soap", "hand cream", "deodorant", "roll on", "roll-on"],
+  ],
+  [
+    "skincare",
+    ["เซรั่ม", "ครีม", "กันแดด", "โฟม", "คลีนซิ่ง", "มาส์ก", "โทนเนอร์", "ล้างหน้า", "บำรุงผิวหน้า", "แต้มสิว",
+     "serum", "cream", "sunscreen", "cleanser", "toner", "mask", "essence", "moisturi", "spf", "facial", "skin",
+     "ampoule", "micellar", "foam"],
+  ],
+  [
+    // Everything that is taken rather than applied — read off the dose form
+    // and the ingredient, which are stated even when the word "อาหารเสริม"
+    // is not. Checked after skincare on purpose: vitamin C, collagen and
+    // glutathione are as common on a serum label as on a capsule, and the
+    // serum says "เซรั่ม" on the front.
+    "wellness",
+    ["วิตามิน", "อาหารเสริม", "เสริมอาหาร", "คอลลาเจน", "โพรไบโอ", "โปรไบโอ", "แคลเซียม", "ธาตุเหล็ก", "น้ำมันปลา",
+     "ขมิ้น", "กระชาย", "เวย์โปรตีน", "แคปซูล", "เม็ดเคี้ยว", "ชนิดเม็ด", "ชนิดน้ำ", "บำรุงสายตา", "ภูมิคุ้มกัน",
+     "supplement", "vitamin", "collagen", "probiotic", "prebiotic", "gummy", "wellness", "capsule", "softgel",
+     "tablet", "tabs", "astaxanthin", "glutathione", "gluta ", "bilberry", "lutein", "omega", "fish oil",
+     "calcium", "magnesium", "zinc", "biotin", "lysine", "elderberry", "acerola", "whey", "protein", "curcumin",
+     "ubiquinol", "coenzyme", "evening primrose", "multivit", "nat c", "bio c", "immu", "telolife", "lactis",
+     // Same idea as the single-kind brands below: these vendors sell nothing
+     // but supplements, whatever an individual label happens to say.
+     "blackmores", "mega we care", "megawecare", "nola ", "vistra", "swisse", "centrum", "berocca",
+     "interpharma", "probac", "mamarine", "nutroplex", "glucerna", "glucolin", "ensure", "hemomin",
+     "imumate", "i-kids", "albupro", "oso-cal", "dr.frei", "lamoon", "allwell"],
+  ],
 ];
 
 const CONCERN_RULES = [
@@ -164,7 +228,9 @@ const CONCERN_CATEGORIES = {
   "dark-spots": ["skincare", "body-care", "wellness"],
   aging: ["skincare", "body-care", "wellness"],
   "hair-scalp": ["hair-care", "wellness"],
-  "sleep-stress": ["wellness", "personal-care"],
+  // Wellness only: "relax" and "night" are on a sanitary pad as readily as
+  // on a sleep supplement, and personal-care let it through.
+  "sleep-stress": ["wellness"],
 };
 
 // Shopify's vendor field is typed by whoever created the product, so the same
@@ -524,16 +590,34 @@ function toProduct(p, usedSlugs) {
   const img = (i) => images[i].url + (images[i].url.includes("?") ? "&" : "?") + "width=700";
 
   const tags = (p.tags || []).join(" ");
+  // Two haystacks, in order of how much they can be trusted. A product's own
+  // title and type are written to describe it; its tags are whatever the
+  // person uploading it reached for, and the shop's are loose enough that
+  // sticking plasters and a thermometer arrived tagged for oral care. Tags
+  // are still read — they are often the only clue a gift set gives — but
+  // only when the name itself says nothing.
+  const named = `${p.title} ${p.productType}`.toLowerCase();
   const hay = `${p.title} ${p.productType} ${tags} ${p.vendor}`.toLowerCase();
 
-  const category = matchRules(CATEGORY_RULES, hay, ["skincare"])[0];
-  const softFallback =
-    category === "skincare" || category === "body-care" ? ["dryness"] : [];
+  const categoryHits = matchRules(CATEGORY_RULES, named, []).length
+    ? matchRules(CATEGORY_RULES, named, [])
+    : matchRules(CATEGORY_RULES, hay, []);
+  // Gift sets and campaign bundles name their theme, not their contents, so
+  // some products genuinely match nothing. They land in skincare because
+  // that is what most of them are — but an unclassified product gets no
+  // concern, which is the half of the old behaviour that did the damage:
+  // "dryness" was handed to everything that fell through, condoms and ATK
+  // kits included, and the concern page grew to 486 products.
+  const category = categoryHits[0] || "skincare";
   // A concern only applies where it makes sense for the category. Keyword
   // matching alone tagged whitening toothpaste as "dark-spots" (the word is
   // the same, the problem is not) and put oral-care products on the skin
   // concern pages, the chat's recommendations and the home-page tiles.
-  const concerns = matchRules(CONCERN_RULES, hay, softFallback)
+  // No fallback concern. Skincare products used to be handed "dryness" when
+  // they named no concern of their own, which is how an anti-acne spot gel
+  // came to lead the ผิวแห้ง page. A product belongs on a concern page
+  // because it says it treats that concern, or it does not belong there.
+  const concerns = matchRules(CONCERN_RULES, hay, [])
     .filter((c) => (CONCERN_CATEGORIES[c] || []).includes(category))
     .slice(0, 3);
 

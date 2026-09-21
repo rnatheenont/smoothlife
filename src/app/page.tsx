@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Sparkles, ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Repeat, PercentCircle, LayoutGrid } from "lucide-react";
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
-import { categories, concerns, concernImage } from "@/data/categories";
+import { categories, categoryImage, concerns, concernImage } from "@/data/categories";
 import { brands } from "@/data/brands";
 import { promotions } from "@/data/promotions";
 import { articles } from "@/data/articles";
@@ -175,7 +175,7 @@ export default async function HomePage() {
                 className="flex w-[76px] shrink-0 flex-col items-center gap-1.5 transition-transform active:scale-95"
               >
                 <span className="relative h-[76px] w-[76px] overflow-hidden rounded-xl2 bg-surface-mist ring-1 ring-surface-line">
-                  <Image src={c.image} alt="" fill sizes="76px" className="object-cover" />
+                  <Image src={categoryImage(c.slug)} alt="" fill sizes="76px" className="object-cover" />
                 </span>
                 <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight text-brand-ink">{c.nameTh}</span>
               </Link>
@@ -256,7 +256,7 @@ export default async function HomePage() {
             <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col gap-2.5">
               <div className="relative aspect-square overflow-hidden rounded-xl2 bg-surface-mist ring-1 ring-surface-line transition-all duration-300 group-hover:ring-brand-action/40 group-hover:shadow-card">
                 <Image
-                  src={c.image}
+                  src={categoryImage(c.slug)}
                   alt=""
                   fill
                   sizes="(max-width:768px) 33vw, 16vw"

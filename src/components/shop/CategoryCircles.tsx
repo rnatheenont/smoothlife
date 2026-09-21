@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import clsx from "clsx";
 import { LayoutGrid } from "lucide-react";
-import { categories } from "@/data/categories";
+import { categories, categoryImage } from "@/data/categories";
 import type { ShopSearchParams } from "@/lib/filter-products";
 
 // The category row a shopper scans first: one circle per real category, the
@@ -23,7 +23,7 @@ export default function CategoryCircles({ current }: { current: ShopSearchParams
 
   const items: { slug: string | null; label: string; image: string | null }[] = [
     { slug: null, label: "ทั้งหมด", image: null },
-    ...categories.map((c) => ({ slug: c.slug as string, label: c.nameTh, image: c.image })),
+    ...categories.map((c) => ({ slug: c.slug as string, label: c.nameTh, image: categoryImage(c.slug) })),
   ];
 
   return (

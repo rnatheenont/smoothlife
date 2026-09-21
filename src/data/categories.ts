@@ -1,4 +1,5 @@
-import { CategoryInfo, Concern, ConcernInfo } from "./types";
+import { products } from "./products";
+import { Category, CategoryInfo, Concern, ConcernInfo } from "./types";
 
 export const categories: CategoryInfo[] = [
   {
@@ -20,23 +21,26 @@ export const categories: CategoryInfo[] = [
     image: "/categories/hair-care-smoothe.jpg",
   },
   {
+    // No curated shot yet — categoryImage() takes the best-reviewed thing in
+    // it instead, which is at least always something the category sells.
     slug: "personal-care",
     name: "Personal Care",
     nameTh: "ดูแลส่วนบุคคล",
-    image: "https://www.smoothlife.com/cdn/shop/files/03020321.jpg?width=800",
+    image: "",
   },
   {
     slug: "wellness",
     name: "Wellness & Supplements",
     nameTh: "วิตามินและอาหารเสริม",
-    image: "https://www.smoothlife.com/cdn/shop/collections/Screenshot_2025-09-25_095352-removebg-preview_1.png?width=800",
+    // Was a screenshot of the Smooth Life wordmark with its background
+    // rubbed out — a logo where every other tile in the row has a product.
+    image: "",
   },
   {
     slug: "body-care",
     name: "Body Care",
     nameTh: "ดูแลผิวกาย",
-    image:
-      "https://www.smoothlife.com/cdn/shop/collections/dcb36a4c1ed80a8f262719e7b24d0023_e8ec4344-5233-49e6-aa98-177ffa0a05b7.jpg?v=1760415029&width=800",
+    image: "",
   },
 ];
 
@@ -98,4 +102,22 @@ export const concerns: ConcernInfo[] = [
 // So each concern owns one photograph, and that is the whole lookup.
 export function concernImage(slug: Concern): string {
   return concerns.find((c) => c.slug === slug)?.image || "";
+}
+
+/**
+ * The picture that stands for a category.
+ *
+ * A curated shot wins where one exists (three of the six have one in
+ * /public/categories). The rest take the photo of the best-reviewed thing
+ * currently in stock in that category — computed rather than pasted in, so
+ * the tile cannot end up showing a product the shop stopped carrying, and so
+ * it follows the catalogue when a product is reclassified.
+ */
+export function categoryImage(slug: Category): string {
+  const declared = categories.find((c) => c.slug === slug)?.image;
+  if (declared) return declared;
+  const best = products
+    .filter((p) => p.category === slug && p.inStock && p.image)
+    .sort((a, b) => b.reviewCount - a.reviewCount)[0];
+  return best?.image || "";
 }

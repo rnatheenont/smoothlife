@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
-import { categories, concerns } from "@/data/categories";
+import { categories, categoryImage, concerns } from "@/data/categories";
 import { products } from "@/data/products";
 import { collections } from "@/data/collections";
 import { brands } from "@/data/brands";
@@ -51,7 +51,7 @@ function itemsFor(type: SeoPageType): Item[] {
       key: c.slug,
       label: c.nameTh,
       sub: c.name,
-      image: c.image,
+      image: categoryImage(c.slug),
       href: `/shop/${c.slug}`,
       autoTitle: `${c.nameTh} | Smoothlife.com`,
       autoDescription: `ช้อปสินค้าหมวด ${c.nameTh} คุณภาพดี ราคาคุ้มค่า ที่ Smoothlife.com`,
@@ -504,7 +504,11 @@ export default function AdminSeoPage() {
                   <ImageIcon size={12} aria-hidden="true" />
                   ตัวอย่างตอนแชร์ลิงก์ (LINE / Facebook) {ogImage ? "(รูปที่ตั้งเอง)" : "(รูปอัตโนมัติ)"}
                 </p>
-                <div className="overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">
+                {/* Capped at the width a share card actually gets in a chat
+                    window. Left to fill the editor pane, the 1.91:1 box grew
+                    as tall as the pane is wide — a preview several times the
+                    size of the thing it is previewing. */}
+                <div className="max-w-sm overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">
                   <div className="relative aspect-[1.91/1] bg-surface-mist">
                     {previewImage ? (
                       // eslint-disable-next-line @next/next/no-img-element

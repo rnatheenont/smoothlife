@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { filterProducts } from "@/lib/filter-products";
-import { categories } from "@/data/categories";
+import { categories, categoryImage } from "@/data/categories";
 import ProductCard from "@/components/ProductCard";
 import ShopFilters from "@/components/ShopFilters";
 import CategoryChips from "@/components/CategoryChips";
@@ -36,7 +36,7 @@ export async function generateMetadata(props: { params: Promise<{ category: stri
   const meta = await withSeoOverride("category", params.category, {
     title: c ? `${c.nameTh} | Smoothlife.com` : "Shop | Smoothlife.com",
     description: c ? `ช้อปสินค้าหมวด ${c.nameTh} คุณภาพดี ราคาคุ้มค่า ที่ Smoothlife.com` : undefined,
-    image: c?.image,
+    image: c ? categoryImage(c.slug) : undefined,
   });
   return {
     title: meta.title,

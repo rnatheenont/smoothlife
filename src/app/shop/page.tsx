@@ -1,4 +1,4 @@
-import { categories } from "@/data/categories";
+import { categories, categoryImage } from "@/data/categories";
 import { products } from "@/data/products";
 import { brands, brandSlugAliases, slugifyVendor } from "@/data/brands";
 import { filterProducts, PAGE_SIZE, ShopSearchParams } from "@/lib/filter-products";
@@ -49,7 +49,7 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
       <ShopHero
         title={activeCategory ? activeCategory.nameTh : "สินค้าทั้งหมด"}
         subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
-        image={activeCategory?.image}
+        image={activeCategory ? categoryImage(activeCategory.slug) : undefined}
       />
 
       <CategoryCircles current={searchParams} />
