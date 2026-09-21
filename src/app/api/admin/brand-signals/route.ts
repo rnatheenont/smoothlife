@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
-import { syncOwnReviews, syncGoogleTrends, getTrendTargets, type BrandSignalInput } from "@/lib/brand-signals";
+import { syncOwnReviews, syncCustomerVoice, syncGoogleTrends, getTrendTargets, type BrandSignalInput } from "@/lib/brand-signals";
 
 // Phase 1 only (see social-listening-seo-opportunity-plan.md): our own
 // reviews + Google Trends. No paid social-listening tool wired in yet.
@@ -41,8 +41,9 @@ export async function POST(req: NextRequest) {
 
   // Reviews are one query and belong to the first request of a run, not to
   // every slice of it.
-  const [reviews, trendsResult] = await Promise.allSettled([
+  const [reviews, voice, trendsResult] = await Promise.allSettled([
     offset === 0 ? syncOwnReviews() : Promise.resolve({ synced: 0 }),
+    offset === 0 ? syncCustomerVoice() : Promise.resolve({ messages: 0, escalations: 0 }),
     syncGoogleTrends(slice),
   ]);
 
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     ownReviews: reviews.status === "fulfilled" ? reviews.value : { error: String(reviews.reason) },
+    customerVoice: voice.status === "fulfilled" ? voice.value : { error: String(voice.reason) },
     googleTrends: trendsResult.status === "fulfilled" ? trendsResult.value : { error: String(trendsResult.reason) },
     offset,
     nextOffset,

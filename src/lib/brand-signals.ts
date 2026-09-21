@@ -9,7 +9,7 @@ import { supabaseRest } from "@/lib/supabase-server";
 import { categories, concerns } from "@/data/categories";
 import { articles } from "@/data/articles";
 
-export type BrandSignalSource = "own_reviews" | "gsc" | "google_trends" | "social_listening_tool";
+export type BrandSignalSource = "own_reviews" | "own_chat" | "gsc" | "google_trends" | "social_listening_tool";
 export type BrandSignalType = "review" | "mention" | "search_query" | "trend_point";
 export type Sentiment = "positive" | "negative" | "neutral";
 
@@ -75,6 +75,69 @@ export async function syncOwnReviews(): Promise<{ synced: number }> {
   }));
   await recordSignals(signals);
   return { synced: signals.length };
+}
+
+// ---------------------------------------------------------------------
+// What customers actually said
+//
+// The question this system exists to answer is "what does the market say
+// about us", and Trends cannot answer it: it counts how many people looked,
+// never what they said. The words themselves are not on Facebook or TikTok
+// as far as this code can reach — those platforms closed keyword search to
+// everyone but their paid partners — but there is a corpus nobody has read:
+// the messages customers typed into this shop's own chat, and the moments the
+// assistant had to hand one to a person.
+//
+// It is the smallest honest version of social listening: fewer people than a
+// listening tool sees, but every one of them was talking to this brand, in
+// their own words, unprompted.
+
+type ChatRow = { id: string; content: string; viewing_product_slug: string | null; created_at: string };
+type EscalationRow = { id: string; transcript: string | null; status: string | null; created_at: string };
+
+/** Customer-authored chat only. The assistant's own replies are this shop
+ *  talking to itself, and counting them as voice of the customer would let
+ *  the brand's own words become evidence about the brand. */
+export async function syncCustomerVoice(): Promise<{ messages: number; escalations: number }> {
+  const messages = await supabaseRest<ChatRow[]>(
+    "chat_messages?role=eq.user&from_staff=is.false&select=id,content,viewing_product_slug,created_at" +
+      "&order=created_at.desc&limit=1000"
+  ).catch((): ChatRow[] => []);
+
+  const messageSignals: BrandSignalInput[] = messages
+    .filter((m) => (m.content ?? "").trim().length > 1)
+    .map((m) => ({
+      source: "own_chat",
+      signal_type: "mention",
+      keyword: m.viewing_product_slug ?? undefined,
+      content: m.content.slice(0, 2000),
+      occurred_at: m.created_at,
+      dedupe_key: m.id,
+    }));
+  await recordSignals(messageSignals);
+
+  // A handover is the clearest negative signal this shop collects: the
+  // moment its own assistant could not answer someone.
+  // Selected by name, not with *: the row also holds the phone number or
+  // email the customer left to be contacted on, and that has no business
+  // being copied into an analysis table.
+  const escalations = await supabaseRest<EscalationRow[]>(
+    "chat_escalations?select=id,transcript,status,created_at&order=created_at.desc&limit=500"
+  ).catch((): EscalationRow[] => []);
+
+  const escalationSignals: BrandSignalInput[] = escalations.map((e) => ({
+    source: "own_chat",
+    signal_type: "mention",
+    sentiment: "negative",
+    // The tail of the transcript is the part that failed — the earlier turns
+    // are usually the assistant answering fine.
+    content: (e.transcript ?? "").slice(-1500) || "(ส่งต่อให้ทีมงานโดยไม่มีบทสนทนา)",
+    occurred_at: e.created_at,
+    dedupe_key: `escalation:${e.id}`,
+  }));
+  await recordSignals(escalationSignals);
+
+  return { messages: messageSignals.length, escalations: escalationSignals.length };
 }
 
 // ---------------------------------------------------------------------

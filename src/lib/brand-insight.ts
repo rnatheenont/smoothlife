@@ -13,7 +13,13 @@ const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 
 const SYSTEM = `คุณเป็นนักวิเคราะห์ข้อมูลลูกค้าให้ร้านสุขภาพและความงาม Smoothlife.com
 
-หน้าที่: อ่าน "สัญญาณ" ที่เก็บมาได้จริงในช่วงเวลาหนึ่ง แล้วสรุปให้ทีมงานเอาไปตัดสินใจ
+หน้าที่: อ่าน "สัญญาณ" ที่เก็บมาได้จริงในช่วงเวลาหนึ่ง แล้วสรุปว่า "ตลาดพูดถึงแบรนด์/เว็บเรายังไงบ้าง" ให้ทีมงานเอาไปตัดสินใจ
+
+สิ่งที่ต้องดึงออกมาให้ได้จากข้อความที่ลูกค้าพิมพ์จริง:
+- คนถามเรื่องอะไรซ้ำ ๆ (แปลว่าเว็บยังตอบไม่ชัดตรงไหน)
+- ความลังเลหรือข้อกังวลก่อนตัดสินใจซื้อ เช่น กลัวของปลอม กังวลราคา ไม่แน่ใจว่าเหมาะกับตัวเอง
+- สินค้าหรือหัวข้อที่ถูกพูดถึงบ่อยที่สุด
+- เรื่องที่ทำให้ต้องส่งต่อให้คน แปลว่าระบบตอบเองไม่ได้
 
 กติกาที่ห้ามละเมิด:
 - ใช้เฉพาะข้อมูลที่ให้มาเท่านั้น ห้ามเติมข้อมูลจากความรู้ทั่วไปหรือเดาแทน
@@ -51,6 +57,7 @@ function asStringArray(value: unknown): string[] {
  *  tool is wired in its rows land in the same table and arrive here too. */
 function describe(signals: SignalRow[]) {
   const reviews = signals.filter((s) => s.signal_type === "review");
+  const mentions = signals.filter((s) => s.signal_type === "mention");
   const trends = signals.filter((s) => s.signal_type === "trend_point");
 
   const trendByKeyword = new Map<string, number[]>();
@@ -64,6 +71,15 @@ function describe(signals: SignalRow[]) {
   if (reviews.length === 0) lines.push("- ไม่มีรีวิวในช่วงนี้");
   for (const r of reviews.slice(0, 200)) {
     lines.push(`- [${r.sentiment ?? "?"}] ${r.keyword ?? ""}: ${(r.content ?? "(ไม่มีข้อความ)").slice(0, 300)}`);
+  }
+
+  // The part that answers "what does the market say about us" — everything
+  // else in this prompt counts people, this quotes them.
+  lines.push("", `ข้อความที่ลูกค้าพิมพ์หาเราเอง (${mentions.length} ข้อความ — แชทบนเว็บ และเคสที่ต้องส่งต่อให้ทีมงาน):`);
+  if (mentions.length === 0) lines.push("- ไม่มีข้อความในช่วงนี้");
+  for (const m of mentions.slice(0, 250)) {
+    const tag = m.sentiment === "negative" ? "ส่งต่อให้ทีมงาน" : "แชท";
+    lines.push(`- [${tag}]${m.keyword ? ` (ดูสินค้า ${m.keyword})` : ""} ${(m.content ?? "").replace(/\s+/g, " ").slice(0, 400)}`);
   }
 
   lines.push("", `ความสนใจการค้นหา Google Trends ประเทศไทย (ค่าเฉลี่ย 0-100 ต่อคำ):`);
