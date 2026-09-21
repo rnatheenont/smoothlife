@@ -15,7 +15,7 @@ import {
 // gate in proxy.ts has already decided whether this caller may be here.
 export const dynamic = "force-dynamic";
 
-const TYPES: SeoPageType[] = ["product", "category", "concern", "campaign"];
+const TYPES: SeoPageType[] = ["product", "category", "concern", "campaign", "article", "collection"];
 
 function isType(v: unknown): v is SeoPageType {
   return typeof v === "string" && TYPES.includes(v as SeoPageType);

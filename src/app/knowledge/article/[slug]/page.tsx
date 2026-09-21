@@ -6,6 +6,7 @@ import { articles, getArticleBySlug } from "@/data/articles";
 import { getStoreArticle, getStoreArticles, storeArticleHref, thaiDate, type StoreArticle } from "@/lib/storefront-articles";
 import { BookOpen, ChevronLeft, ChevronRight, Clock, MessageCircle } from "lucide-react";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
+import { withSeoOverride } from "@/lib/seo-overrides";
 
 // Shopify blog posts come and go without a deploy, so any slug may be one;
 // pages rebuild from the feed at most every 30 minutes.
@@ -18,14 +19,21 @@ export function generateStaticParams() {
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
   const a = getArticleBySlug(params.slug);
-  if (a) return { title: `${a.title} | Smoothlife.com` };
+  if (a) {
+    const meta = await withSeoOverride("article", a.slug, {
+      title: `${a.title} | Smoothlife.com`,
+      description: a.excerpt,
+    });
+    return meta;
+  }
   const post = await getStoreArticle(params.slug);
   if (!post) return { title: "Article | Smoothlife.com" };
   return {
     title: `${post.title} | Smoothlife.com`,
     description: post.excerpt,
     // The post lives on www.smoothlife.com first; pointing search engines there
-    // keeps this copy from competing with it.
+    // keeps this copy from competing with it, so it gets no override here —
+    // an admin editing this page's title would just be ignored by Google.
     alternates: { canonical: post.sourceUrl },
     openGraph: post.image ? { images: [post.image] } : undefined,
   };

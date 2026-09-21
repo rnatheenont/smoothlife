@@ -26,6 +26,7 @@ import {
   Users,
   UserCog,
   Zap,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui";
@@ -79,6 +80,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText, permission: "reviews.manage" },
       { href: "/admin/line-rich-menu", label: "เมนู LINE OA", icon: MessageCircle, permission: "line_rich_menu.manage" },
       { href: "/admin/seo", label: "SEO", icon: Search, permission: "seo.manage" },
+      { href: "/admin/brand-insights", label: "สัญญาณแบรนด์", icon: TrendingUp, permission: "brand_signals.view" },
       { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette, permission: null },
       // Only the owner may open it, so only the owner is shown it. The page
       // still refuses anyone else on its own (see /api/admin/users) — this

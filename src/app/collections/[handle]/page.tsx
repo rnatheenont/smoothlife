@@ -5,6 +5,7 @@ import ProductCard from "@/components/ProductCard";
 import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
+import { withSeoOverride } from "@/lib/seo-overrides";
 
 // One page per real Shopify collection. These are the merchandising groups the
 // marketing team actually maintains (clearance-sale, buy-1-get-1-free-deal,
@@ -19,9 +20,12 @@ export async function generateMetadata(props: { params: Promise<{ handle: string
   const params = await props.params;
   const c = getCollectionByHandle(params.handle);
   if (!c) return { title: "ไม่พบคอลเลกชัน | Smoothlife.com" };
-  return {
+  const meta = await withSeoOverride("collection", c.handle, {
     title: `${c.title} | Smoothlife.com`,
     description: c.description?.slice(0, 160) || `ช้อป ${c.title} ที่ Smoothlife.com`,
+  });
+  return {
+    ...meta,
     alternates: { canonical: `/collections/${c.handle}` },
   };
 }

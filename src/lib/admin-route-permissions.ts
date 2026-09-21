@@ -93,6 +93,13 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   { prefix: "/api/admin/subscription-products", permission: "subscription_products.manage" },
   { prefix: "/api/admin/line-rich-menu", permission: "line_rich_menu.manage" },
   { prefix: "/api/admin/tracking-sync", permission: "tracking_sync.manage" },
+  // Reading past signals is part of planning content; only marketing (and
+  // owner/admin via '*') can trigger a sync, since it calls an external API
+  // on every keyword and could be run into the ground if anyone could fire it.
+  { prefix: "/api/admin/brand-insights", permission: "brand_signals.view", methods: READ },
+  { prefix: "/api/admin/brand-insights", permission: "brand_signals.manage" },
+  { prefix: "/api/admin/brand-signals", permission: "brand_signals.view", methods: READ },
+  { prefix: "/api/admin/brand-signals", permission: "brand_signals.manage" },
 
   // Wiring the shop up to Shopify's webhooks — setup, not daily work.
   { prefix: "/api/admin/register-catalogue-webhooks", permission: "system.setup" },

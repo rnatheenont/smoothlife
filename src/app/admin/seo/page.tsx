@@ -8,6 +8,8 @@ import { Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { categories, concerns } from "@/data/categories";
 import { products } from "@/data/products";
+import { articles } from "@/data/articles";
+import { collections } from "@/data/collections";
 import {
   DESCRIPTION_MAX,
   SEO_ANGLES,
@@ -59,6 +61,29 @@ function itemsFor(type: SeoPageType): Item[] {
       autoTitle: `${c.nameTh} | Smoothlife.com`,
       autoDescription: c.description,
       context: `หน้ารวมสินค้าสำหรับปัญหา: ${c.nameTh}\nคำอธิบายหมวด: ${c.description}`,
+    }));
+  }
+  if (type === "collection") {
+    return collections.map((c) => ({
+      key: c.handle,
+      label: c.title,
+      image: c.image,
+      href: `/collections/${c.handle}`,
+      autoTitle: `${c.title} | Smoothlife.com`,
+      autoDescription: c.description?.slice(0, 160) || `ช้อป ${c.title} ที่ Smoothlife.com`,
+      context: `คอลเลกชัน: ${c.title}\nคำอธิบายที่มีอยู่: ${(c.description || "(ไม่มี)").slice(0, 1200)}`,
+    }));
+  }
+  if (type === "article") {
+    return articles.map((a) => ({
+      key: a.slug,
+      label: a.title,
+      sub: a.category,
+      image: a.image,
+      href: `/knowledge/article/${a.slug}`,
+      autoTitle: `${a.title} | Smoothlife.com`,
+      autoDescription: a.excerpt,
+      context: `บทความ: ${a.title}\nหมวด: ${a.category}\nสรุป: ${a.excerpt}`,
     }));
   }
   if (type === "product") {
