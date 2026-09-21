@@ -13,7 +13,7 @@ import BackButton from "@/components/BackButton";
 import TrackRecentlyViewed from "@/components/TrackRecentlyViewed";
 import RecentlyViewedSection from "@/components/RecentlyViewedSection";
 import { productJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
-import { withSeoOverride } from "@/lib/seo-overrides";
+import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 
 // Pages render on first visit and are then served from the edge cache,
 // refreshed at most every five minutes — and at once when a review is
@@ -38,6 +38,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   const meta = await withSeoOverride("product", params.slug, {
     title: product?.seoTitle || (product ? `${product.name} | Smoothlife.com` : "Product | Smoothlife.com"),
     description: product?.seoDescription || product?.shortDesc || undefined,
+    image: product?.image,
   });
   return {
     title: meta.title,
@@ -50,7 +51,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       description: meta.description,
       url: `/product/${params.slug}`,
       type: "website",
-      ...(product?.image ? { images: [{ url: product.image }] } : {}),
+      ...ogImages(meta.image),
     },
   };
 }

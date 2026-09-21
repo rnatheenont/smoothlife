@@ -7,7 +7,7 @@ import { groupBrandProducts } from "@/lib/brand-groups";
 import { formatTHB } from "@/lib/format";
 import { brandFacts, brandSeoDefaults } from "@/lib/brand-seo";
 import { brandJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
-import { withSeoOverride } from "@/lib/seo-overrides";
+import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import ProductCard from "@/components/ProductCard";
 import StarRating from "@/components/StarRating";
 
@@ -32,7 +32,10 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   const facts = brandFacts(params.slug);
   if (!facts) return { title: "ไม่พบแบรนด์ | Smoothlife.com" };
 
-  const meta = await withSeoOverride("brand", params.slug, brandSeoDefaults(facts));
+  const meta = await withSeoOverride("brand", params.slug, {
+    ...brandSeoDefaults(facts),
+    image: facts.brand.image,
+  });
   return {
     title: meta.title,
     description: meta.description,
@@ -46,7 +49,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       title: meta.title,
       description: meta.description,
       url: `/brands/${params.slug}`,
-      ...(facts.brand.image ? { images: [{ url: facts.brand.image }] } : {}),
+      ...ogImages(meta.image),
     },
   };
 }

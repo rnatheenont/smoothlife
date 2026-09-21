@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles, ExternalLink, Check } from "lucide-react";
+import { Sparkles, ExternalLink, Check, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui";
@@ -147,6 +147,9 @@ export default function AdminSeoPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [keywords, setKeywords] = useState("");
+  // The picture a shared link shows. Empty means the page's own default —
+  // its product photo, brand logo or category shot.
+  const [ogImage, setOgImage] = useState("");
   const [angles, setAngles] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<SeoSuggestion[]>([]);
   const [thinking, setThinking] = useState(false);
@@ -200,6 +203,7 @@ export default function AdminSeoPage() {
     setTitle(row?.meta_title ?? "");
     setDescription(row?.meta_description ?? "");
     setKeywords((row?.keywords ?? []).join(", "));
+    setOgImage(row?.og_image ?? "");
     setAngles([]);
     setSuggestions(row?.ai_suggestions ?? []);
     setNote("");
@@ -245,6 +249,7 @@ export default function AdminSeoPage() {
           page_key: selected.key,
           meta_title: title,
           meta_description: description,
+          og_image: ogImage,
           keywords: keywords.split(",").map((k) => k.trim()).filter(Boolean),
         }),
       });
@@ -292,6 +297,9 @@ export default function AdminSeoPage() {
   // it meant the only way to reach product 600 was to already know its name.
   // The rows are cheap (one lazy thumbnail each) and the pane scrolls.
   const shown = matching;
+  // The typed URL wins; otherwise the page's own picture is what a share
+  // would really show today, which is the thing worth previewing.
+  const previewImage = ogImage.trim() || selected?.image || "";
   // Progress across the whole tab, not the filtered list — the question is
   // how much of the catalogue has been written, and a search box should not
   // flatter the answer.
@@ -487,6 +495,38 @@ export default function AdminSeoPage() {
                 </div>
               </div>
 
+              {/* Two previews because they are two different results. Google
+                  shows a line of text; LINE and Facebook show a picture first
+                  and the words second — and the picture is the part nobody
+                  can see until the link is already shared. */}
+              <div className="mt-3 rounded-xl2 bg-surface-soft p-4">
+                <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
+                  <ImageIcon size={12} aria-hidden="true" />
+                  ตัวอย่างตอนแชร์ลิงก์ (LINE / Facebook) {ogImage ? "(รูปที่ตั้งเอง)" : "(รูปอัตโนมัติ)"}
+                </p>
+                <div className="overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">
+                  <div className="relative aspect-[1.91/1] bg-surface-mist">
+                    {previewImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={previewImage} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="absolute inset-0 grid place-items-center text-xs text-slate-400">
+                        หน้านี้ยังไม่มีรูป — จะใช้โลโก้เว็บแทน
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <p className="truncate text-[11px] uppercase text-slate-400">smoothlife.com</p>
+                    <p className="mt-0.5 line-clamp-2 text-sm font-semibold text-brand-ink">
+                      {title || selected.autoTitle}
+                    </p>
+                    <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">
+                      {description || selected.autoDescription || "—"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <label htmlFor="seo-title" className="mt-4 block text-sm font-semibold text-brand-ink">
                 หัวข้อ (title)
               </label>
@@ -532,6 +572,41 @@ export default function AdminSeoPage() {
               />
               <p className="mt-1 text-xs text-slate-400">
                 ใช้เป็นโจทย์ให้ AI เขียน และเป็นบันทึกว่าหน้านี้ตั้งใจจับคำไหน
+              </p>
+
+              <label htmlFor="seo-og" className="mt-3 block text-sm font-semibold text-brand-ink">
+                รูปตอนแชร์ลิงก์ (thumbnail)
+              </label>
+              <div className="mt-1.5 flex gap-2">
+                <input
+                  id="seo-og"
+                  value={ogImage}
+                  onChange={(e) => setOgImage(e.target.value)}
+                  placeholder="เว้นว่าง = ใช้รูปของหน้านั้น"
+                  className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
+                />
+                {selected.image && selected.image !== ogImage && (
+                  <button
+                    type="button"
+                    onClick={() => setOgImage(selected.image as string)}
+                    className="shrink-0 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-brand-800 hover:bg-surface-soft"
+                  >
+                    ใช้รูปนี้
+                  </button>
+                )}
+                {ogImage && (
+                  <button
+                    type="button"
+                    onClick={() => setOgImage("")}
+                    className="shrink-0 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-500 hover:bg-surface-soft"
+                  >
+                    ล้าง
+                  </button>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-slate-400">
+                ต้องเป็นลิงก์เต็มขึ้นต้นด้วย https:// — สัดส่วนที่ LINE และ Facebook ครอบคือ 1.91:1 (แนะนำ 1200×630 px)
+                รูปสินค้าเป็นสี่เหลี่ยมจัตุรัส เวลาแชร์จะโดนครอบบน-ล่าง
               </p>
 
               {/* The angle is an editorial decision, not a tone setting: the

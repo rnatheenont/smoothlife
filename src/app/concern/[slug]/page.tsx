@@ -5,7 +5,7 @@ import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { sortSoldOutLast } from "@/lib/filter-products";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
-import { withSeoOverride } from "@/lib/seo-overrides";
+import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 
 export function generateStaticParams() {
   return concerns.map((c) => ({ slug: c.slug }));
@@ -17,8 +17,19 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   const meta = await withSeoOverride("concern", params.slug, {
     title: c ? `${c.nameTh} | Smoothlife.com` : "Concern | Smoothlife.com",
     description: c?.description,
+    image: c ? concernImage(c.slug) : undefined,
   });
-  return { title: meta.title, description: meta.description, alternates: { canonical: `/concern/${params.slug}` } };
+  return {
+    title: meta.title,
+    description: meta.description,
+    alternates: { canonical: `/concern/${params.slug}` },
+    openGraph: {
+      title: meta.title,
+      description: meta.description,
+      url: `/concern/${params.slug}`,
+      ...ogImages(meta.image),
+    },
+  };
 }
 
 export default async function ConcernDetailPage(props: { params: Promise<{ slug: string }> }) {

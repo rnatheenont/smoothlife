@@ -11,7 +11,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";
 import { notFound } from "next/navigation";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
-import { withSeoOverride } from "@/lib/seo-overrides";
+import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 
 const ADVISOR_ENTRY: Record<string, { href: string; title: string; subtitle: string }> = {
   "oral-care": {
@@ -36,11 +36,18 @@ export async function generateMetadata(props: { params: Promise<{ category: stri
   const meta = await withSeoOverride("category", params.category, {
     title: c ? `${c.nameTh} | Smoothlife.com` : "Shop | Smoothlife.com",
     description: c ? `ช้อปสินค้าหมวด ${c.nameTh} คุณภาพดี ราคาคุ้มค่า ที่ Smoothlife.com` : undefined,
+    image: c?.image,
   });
   return {
     title: meta.title,
     description: meta.description,
     alternates: { canonical: `/shop/${params.category}` },
+    openGraph: {
+      title: meta.title,
+      description: meta.description,
+      url: `/shop/${params.category}`,
+      ...ogImages(meta.image),
+    },
   };
 }
 

@@ -23,6 +23,8 @@ export type SeoOverride = {
   page_key: string;
   meta_title: string | null;
   meta_description: string | null;
+  /** Absolute https URL of the picture a shared link shows. */
+  og_image: string | null;
   keywords: string[];
   ai_suggestions: SeoSuggestion[] | null;
   updated_at: string;
@@ -57,7 +59,8 @@ export const SEO_PAGE_TYPES: { key: SeoPageType; label: string }[] = [
 export const TITLE_MAX = 60;
 export const DESCRIPTION_MAX = 155;
 
-export const SEO_COLUMNS = "id,page_type,page_key,meta_title,meta_description,keywords,ai_suggestions,updated_at";
+export const SEO_COLUMNS =
+  "id,page_type,page_key,meta_title,meta_description,og_image,keywords,ai_suggestions,updated_at";
 
 export function seoTag(pageType: SeoPageType, pageKey: string) {
   return `seo:${pageType}:${pageKey}`;
@@ -74,12 +77,12 @@ export function seoTag(pageType: SeoPageType, pageKey: string) {
 export async function getSeoOverride(
   pageType: SeoPageType,
   pageKey: string
-): Promise<{ title: string | null; description: string | null } | null> {
+): Promise<{ title: string | null; description: string | null; image: string | null } | null> {
   if (!supabaseConfigured()) return null;
   try {
     const rows = await supabaseRestCached<SeoOverride[]>(
       `seo_overrides?page_type=eq.${pgValue(pageType)}&page_key=eq.${pgValue(pageKey)}` +
-        `&select=meta_title,meta_description&limit=1`,
+        `&select=meta_title,meta_description,og_image&limit=1`,
       { revalidate: 3600, tags: [seoTag(pageType, pageKey), "seo-overrides"] }
     );
     const row = rows[0];
@@ -87,6 +90,7 @@ export async function getSeoOverride(
     return {
       title: row.meta_title?.trim() || null,
       description: row.meta_description?.trim() || null,
+      image: row.og_image?.trim() || null,
     };
   } catch {
     return null;
@@ -98,11 +102,20 @@ export async function getSeoOverride(
 export async function withSeoOverride(
   pageType: SeoPageType,
   pageKey: string,
-  generated: { title: string; description?: string }
+  generated: { title: string; description?: string; image?: string }
 ) {
   const override = await getSeoOverride(pageType, pageKey);
   return {
     title: override?.title ?? generated.title,
     description: override?.description ?? generated.description,
+    image: override?.image ?? generated.image,
   };
+}
+
+/** The `openGraph.images` value for a page, or nothing when neither the
+ *  override nor the page itself has a picture — an empty array would tell
+ *  LINE and Facebook there is no image at all, which is worse than letting
+ *  the site-wide default in the root layout stand. */
+export function ogImages(url: string | undefined) {
+  return url ? { images: [{ url }] } : {};
 }

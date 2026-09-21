@@ -58,6 +58,32 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "ข้อความยาวเกินไป" }, { status: 400 });
   }
 
+  // The picture a shared link shows. Accepted only as an absolute https URL
+  // — the value is handed to LINE and Facebook to fetch, so an http one gets
+  // blocked as mixed content and a relative one resolves against their
+  // domain, not ours. Both fail silently in the preview, which is the one
+  // place nobody thinks to check.
+  const rawImage = typeof body?.og_image === "string" ? body.og_image.trim() : "";
+  let ogImage: string | null = null;
+  if (rawImage) {
+    let parsed: URL | null = null;
+    try {
+      parsed = new URL(rawImage);
+    } catch {
+      parsed = null;
+    }
+    if (!parsed || parsed.protocol !== "https:") {
+      return NextResponse.json(
+        { ok: false, error: "ลิงก์รูปต้องเป็น URL แบบเต็มที่ขึ้นต้นด้วย https://" },
+        { status: 400 }
+      );
+    }
+    if (rawImage.length > 1000) {
+      return NextResponse.json({ ok: false, error: "ลิงก์รูปยาวเกินไป" }, { status: 400 });
+    }
+    ogImage = rawImage;
+  }
+
   const keywords = Array.isArray(body?.keywords)
     ? [
         ...new Set(
@@ -76,6 +102,7 @@ export async function PUT(req: NextRequest) {
     page_key: pageKey,
     meta_title: title || null,
     meta_description: description || null,
+    og_image: ogImage,
     keywords,
     updated_by: session?.userId ?? null,
     updated_at: new Date().toISOString(),
