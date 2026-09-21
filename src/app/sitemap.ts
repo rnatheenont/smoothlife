@@ -3,7 +3,7 @@ import { products } from "@/data/products";
 import { categories, concerns } from "@/data/categories";
 import { collections } from "@/data/collections";
 import { articles } from "@/data/articles";
-import { brands } from "@/data/brands";
+import { brandProducts, brands } from "@/data/brands";
 import { getPublicQuestions } from "@/lib/kb-public";
 
 import { SITE_URL } from "@/lib/site-url";
@@ -54,6 +54,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push({ url: `${SITE_URL}/knowledge/article/${a.slug}`, lastModified: now });
   }
   for (const b of brands) {
+    // A brand whose whole range is out of stock renders an empty page and
+    // asks not to be indexed — listing it here would ask for the opposite.
+    if (!brandProducts(b).some((p) => p.inStock)) continue;
     entries.push({ url: `${SITE_URL}/brands/${b.slug}`, lastModified: now });
   }
   // Questions someone chose to publish. Read from the database rather than
