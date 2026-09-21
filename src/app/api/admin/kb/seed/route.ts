@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
+import { revalidateTag } from "next/cache";
+import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { helpFaqs, helpTopics } from "@/data/help";
 import { featureArticles } from "@/data/kb-features";
@@ -47,24 +48,56 @@ export async function POST(req: NextRequest) {
     ...featureArticles,
   ];
 
-  const existing = await supabaseRest<{ title: string }[]>("kb_articles?select=title&limit=1000");
-  const known = new Set(existing.map((a) => a.title));
-  const fresh = drafts.filter((d) => !known.has(d.title));
-  if (fresh.length === 0) return NextResponse.json({ ok: true, created: 0, skipped: drafts.length });
+  const existing = await supabaseRest<{ id: string; title: string; content: string }[]>(
+    "kb_articles?select=id,title,content&limit=1000"
+  );
+  const byTitle = new Map(existing.map((a) => [a.title, a]));
+  const fresh = drafts.filter((d) => !byTitle.has(d.title));
 
-  const created = await supabaseRest<KbArticle[]>(`kb_articles?select=${KB_COLUMNS}`, {
-    method: "POST",
-    body: JSON.stringify(
-      fresh.map((d) => ({
-        ...d,
-        status: "published",
-        source: "manual",
-        last_reviewed_at: new Date().toISOString(),
-        reviewed_by: "admin",
-      }))
-    ),
+  // The seven feature articles are written in this repository, so the code is
+  // their source of truth: re-running the import brings an edited wording
+  // across rather than skipping the article because its title already exists.
+  // Help-centre entries are left alone once imported — those are a starting
+  // point someone is meant to take over, not code-owned text.
+  const stale = featureArticles.filter((d) => {
+    const row = byTitle.get(d.title);
+    return row && row.content !== d.content;
   });
-  for (const article of created) await reindexArticle(article);
 
-  return NextResponse.json({ ok: true, created: created.length, skipped: drafts.length - fresh.length });
+  const created =
+    fresh.length > 0
+      ? await supabaseRest<KbArticle[]>(`kb_articles?select=${KB_COLUMNS}`, {
+          method: "POST",
+          body: JSON.stringify(
+            fresh.map((d) => ({
+              ...d,
+              status: "published",
+              source: "manual",
+              last_reviewed_at: new Date().toISOString(),
+              reviewed_by: "admin",
+            }))
+          ),
+        })
+      : [];
+
+  const updated: KbArticle[] = [];
+  for (const d of stale) {
+    const row = byTitle.get(d.title)!;
+    const [article] = await supabaseRest<KbArticle[]>(`kb_articles?id=eq.${pgValue(row.id)}&select=${KB_COLUMNS}`, {
+      method: "PATCH",
+      body: JSON.stringify({ content: d.content, updated_at: new Date().toISOString() }),
+    });
+    if (article) updated.push(article);
+  }
+
+  for (const article of [...created, ...updated]) await reindexArticle(article);
+  // Public question pages read these through a tagged cache.
+  if (updated.length > 0) revalidateTag("kb-public", { expire: 0 });
+
+  return NextResponse.json({
+    ok: true,
+    created: created.length,
+    updated: updated.length,
+    skipped: drafts.length - fresh.length - updated.length,
+  });
 }
