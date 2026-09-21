@@ -29,8 +29,11 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   const post = await getStoreArticle(params.slug);
   if (!post) return { title: "Article | Smoothlife.com" };
   return {
-    title: `${post.title} | Smoothlife.com`,
-    description: post.excerpt,
+    // If the team already wrote SEO fields for this post in Shopify, that is
+    // the line they meant it to be found by — use it rather than rebuilding
+    // one from the headline.
+    title: post.seoTitle ? `${post.seoTitle} | Smoothlife.com` : `${post.title} | Smoothlife.com`,
+    description: post.seoDescription ?? post.excerpt,
     // The post lives on www.smoothlife.com first; pointing search engines there
     // keeps this copy from competing with it, so it gets no override here —
     // an admin editing this page's title would just be ignored by Google.

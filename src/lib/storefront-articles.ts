@@ -25,6 +25,12 @@ export type StoreArticle = {
   readMins: number;
   /** The same article on www.smoothlife.com (used as the canonical URL). */
   sourceUrl: string;
+  /** What Shopify's own SEO fields say for this post, when the team filled
+   *  them in there. Read from the rendered page rather than the API: the
+   *  Storefront token has no content scope, and the page head is what
+   *  Shopify renders those fields into anyway. */
+  seoTitle: string | null;
+  seoDescription: string | null;
 };
 
 function decodeEntities(s: string): string {
@@ -86,20 +92,36 @@ function excerptOf(summary: string, body: string): string {
 }
 
 // The post's featured image is only on its page (og:image), not in the feed.
-async function featuredImage(url: string): Promise<string | null> {
+/** One fetch of the article's own page, for everything only the rendered
+ *  page knows: its social image, and the SEO title and description the team
+ *  typed into Shopify. */
+async function pageMeta(url: string): Promise<{ image: string | null; seoTitle: string | null; seoDescription: string | null }> {
+  const empty = { image: null, seoTitle: null, seoDescription: null };
   try {
     const res = await fetch(url, FETCH_OPTS);
-    if (!res.ok) return null;
+    if (!res.ok) return empty;
     const page = await res.text();
+
+    let image: string | null = null;
     const m = page.match(/<meta property="og:image" content="([^"]+)"/);
-    if (!m) return null;
-    const u = new URL(decodeEntities(m[1]).replace(/^\/\//, "https://"));
-    u.searchParams.delete("crop");
-    u.searchParams.delete("height");
-    u.searchParams.set("width", "900");
-    return u.toString();
+    if (m) {
+      const u = new URL(decodeEntities(m[1]).replace(/^\/\//, "https://"));
+      u.searchParams.delete("crop");
+      u.searchParams.delete("height");
+      u.searchParams.set("width", "900");
+      image = u.toString();
+    }
+
+    // Shopify appends " – <shop name>" to the page title; the SEO field the
+    // team actually wrote is the part before it.
+    const rawTitle = page.match(/<title>([\s\S]*?)<\/title>/)?.[1];
+    const seoTitle = rawTitle ? decodeEntities(rawTitle).replace(/\s*[–|]\s*Smooth Life\s*$/, "").trim() || null : null;
+    const rawDesc = page.match(/<meta name="description" content="([^"]*)"/)?.[1];
+    const seoDescription = rawDesc ? decodeEntities(rawDesc).trim() || null : null;
+
+    return { image, seoTitle, seoDescription };
   } catch {
-    return null;
+    return empty;
   }
 }
 
@@ -133,9 +155,14 @@ async function getStoreArticlesUnsafe(): Promise<StoreArticle[] | null> {
     .filter((a): a is NonNullable<typeof a> => a !== null && a.title !== "");
 
   if (parsed.length === 0) return null;
-  const images = await Promise.all(parsed.map((a) => featuredImage(a.sourceUrl)));
+  const meta = await Promise.all(parsed.map((a) => pageMeta(a.sourceUrl)));
   return parsed
-    .map((a, i) => ({ ...a, image: images[i] ?? firstBodyImage(a.html) }))
+    .map((a, i) => ({
+      ...a,
+      image: meta[i].image ?? firstBodyImage(a.html),
+      seoTitle: meta[i].seoTitle,
+      seoDescription: meta[i].seoDescription,
+    }))
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 }
 

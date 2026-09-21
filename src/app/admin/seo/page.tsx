@@ -8,7 +8,6 @@ import { Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { categories, concerns } from "@/data/categories";
 import { products } from "@/data/products";
-import { articles } from "@/data/articles";
 import { collections } from "@/data/collections";
 import {
   DESCRIPTION_MAX,
@@ -74,18 +73,9 @@ function itemsFor(type: SeoPageType): Item[] {
       context: `คอลเลกชัน: ${c.title}\nคำอธิบายที่มีอยู่: ${(c.description || "(ไม่มี)").slice(0, 1200)}`,
     }));
   }
-  if (type === "article") {
-    return articles.map((a) => ({
-      key: a.slug,
-      label: a.title,
-      sub: a.category,
-      image: a.image,
-      href: `/knowledge/article/${a.slug}`,
-      autoTitle: `${a.title} | Smoothlife.com`,
-      autoDescription: a.excerpt,
-      context: `บทความ: ${a.title}\nหมวด: ${a.category}\nสรุป: ${a.excerpt}`,
-    }));
-  }
+  // Articles are fetched, not imported: the blog posts live in Shopify and
+  // carry the SEO fields the team already typed there. See the effect below.
+  if (type === "article") return [];
   if (type === "product") {
     return products.slice(0, 1200).map((p) => ({
       key: p.slug,
@@ -118,6 +108,7 @@ export default function AdminSeoPage() {
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
   const [searches, setSearches] = useState<{ normalized: string; searches: number; zero_result_searches: number }[]>([]);
+  const [articleItems, setArticleItems] = useState<Item[] | null>(null);
 
   useAdminAction({
     label: "เปิดหน้าจริง",
@@ -142,7 +133,20 @@ export default function AdminSeoPage() {
       .catch(() => setSearches([]));
   }, []);
 
-  const items = useMemo(() => itemsFor(tab), [tab]);
+  // Loaded once, the first time the tab is opened — it reaches out to
+  // smoothlife.com for the blog feed, which is too slow to repeat on a click.
+  useEffect(() => {
+    if (tab !== "article" || articleItems !== null) return;
+    fetch("/api/admin/seo/articles")
+      .then((r) => r.json())
+      .then((d) => setArticleItems(d?.articles ?? []))
+      .catch(() => setArticleItems([]));
+  }, [tab, articleItems]);
+
+  const items = useMemo(
+    () => (tab === "article" ? articleItems ?? [] : itemsFor(tab)),
+    [tab, articleItems]
+  );
   const q = query.trim().toLowerCase();
 
   function open(item: Item) {
@@ -339,7 +343,12 @@ export default function AdminSeoPage() {
                   </button>
                 </li>
               ))}
-              {shown.length === 0 && <li className="px-3 py-2 text-sm text-slate-400">ไม่พบรายการ</li>}
+              {tab === "article" && articleItems === null && (
+                <li className="px-3 py-2 text-sm text-slate-400">กำลังดึงบทความจาก Shopify…</li>
+              )}
+              {shown.length === 0 && !(tab === "article" && articleItems === null) && (
+                <li className="px-3 py-2 text-sm text-slate-400">ไม่พบรายการ</li>
+              )}
               {matching.length > shown.length && (
                 <li className="px-3 py-2 text-xs text-slate-400">
                   แสดง {shown.length} จาก {matching.length.toLocaleString("th-TH")} รายการ — พิมพ์ค้นหาเพื่อแคบลง
