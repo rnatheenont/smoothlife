@@ -380,7 +380,9 @@ const brandDefs: Omit<Brand, "productCount">[] = [
   {
     slug: "sanita",
     name: "Sanita",
-    tagline: "รองเท้าเพื่อสุขภาพเท้า",
+    // Was "รองเท้าเพื่อสุขภาพเท้า" — a different Sanita. Every product the
+    // shop carries under this vendor is a sanitary pad.
+    tagline: "ผ้าอนามัยกลางวันและกลางคืน",
     image:
       "https://www.smoothlife.com/cdn/shop/collections/682456887_1552787580180409_8221779661978420471_n.jpg?v=1779767455",
   },
@@ -394,7 +396,8 @@ const brandDefs: Omit<Brand, "productCount">[] = [
   {
     slug: "sensiplus",
     name: "Sensiplus",
-    tagline: "ผลิตภัณฑ์สำหรับผิวแพ้ง่าย",
+    // Both products under this vendor are contact lens solution, not skincare.
+    tagline: "น้ำยาดูแลคอนแทคเลนส์",
     image: "https://www.smoothlife.com/cdn/shop/files/KLEAN_KARE_SENSIPLUS_100_ML_3030116_2.jpg?v=1755248804",
   },
   {

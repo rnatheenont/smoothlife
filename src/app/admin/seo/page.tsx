@@ -288,7 +288,10 @@ export default function AdminSeoPage() {
       (!q || `${i.label} ${i.sub ?? ""}`.toLowerCase().includes(q)) &&
       (filter === "all" || (filter === "done" ? edited(i) : !edited(i)))
   );
-  const shown = matching.slice(0, 200);
+  // Every match, not the first 200: the list is the worklist, and a cap on
+  // it meant the only way to reach product 600 was to already know its name.
+  // The rows are cheap (one lazy thumbnail each) and the pane scrolls.
+  const shown = matching;
   // Progress across the whole tab, not the filtered list — the question is
   // how much of the catalogue has been written, and a search box should not
   // flatter the answer.
@@ -432,9 +435,9 @@ export default function AdminSeoPage() {
               {shown.length === 0 && !(tab === "article" && articleItems === null) && (
                 <li className="px-3 py-2 text-sm text-slate-400">ไม่พบรายการ</li>
               )}
-              {matching.length > shown.length && (
-                <li className="px-3 py-2 text-xs text-slate-400">
-                  แสดง {shown.length} จาก {matching.length.toLocaleString("th-TH")} รายการ — พิมพ์ค้นหาเพื่อแคบลง
+              {shown.length > 0 && (
+                <li className="px-3 py-3 text-center text-xs text-slate-400">
+                  ครบ {shown.length.toLocaleString("th-TH")} รายการ
                 </li>
               )}
             </ul>
