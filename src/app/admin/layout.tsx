@@ -100,6 +100,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotNote, setForgotNote] = useState("");
+  const [forgotSending, setForgotSending] = useState(false);
   const [navQuery, setNavQuery] = useState("");
   // The team works on this all day; whether the menu is folded is their choice
   // to make once, not on every visit.
@@ -160,10 +163,42 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     checkAuth();
   }
 
+  // A shared-password session has no account and no inbox, so there is
+  // nothing to send — say that instead of pretending to send an email.
+  async function requestReset() {
+    const to = email.trim();
+    if (!to) {
+      setForgotNote("รหัสผ่านรวมรีเซ็ตทางอีเมลไม่ได้ เพราะไม่ใช่บัญชี แต่เป็นค่า ADMIN_PANEL_SECRET ที่ตั้งไว้ใน Vercel — ดูหรือเปลี่ยนได้ที่ Settings → Environment Variables");
+      return;
+    }
+    setForgotSending(true);
+    setForgotNote("");
+    try {
+      const res = await fetch("/api/admin/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: to }),
+      });
+      const data = await res.json().catch(() => null);
+      setForgotNote(data?.message || data?.error || "ส่งคำขอไม่สำเร็จ กรุณาลองใหม่");
+    } catch {
+      setForgotNote("ส่งคำขอไม่สำเร็จ กรุณาลองใหม่");
+    } finally {
+      setForgotSending(false);
+    }
+  }
+
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
     setAuthed(false);
     setMe(null);
+  }
+
+  // Setting a new password is the one /admin page that has to work while
+  // signed out — the whole reason someone is there is that they cannot sign
+  // in. It renders bare: no gate, no menu.
+  if (pathname?.startsWith("/admin/reset-password")) {
+    return <div className="min-h-screen bg-surface-soft/50">{children}</div>;
   }
 
   if (authed === null) {
@@ -202,6 +237,27 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             เข้าสู่ระบบ
           </Button>
         </form>
+        <div className="mt-4 border-t border-surface-line pt-4">
+          {!forgotOpen ? (
+            <button
+              type="button"
+              onClick={() => setForgotOpen(true)}
+              className="mx-auto block rounded-sm text-xs font-semibold text-brand-800 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+            >
+              ลืมรหัสผ่าน?
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-500">
+                กรอกอีเมลบัญชีแอดมินของคุณด้านบน แล้วกดส่งลิงก์ ลิงก์มีอายุ 15 นาที
+              </p>
+              <Button fullWidth type="button" variant="secondary" onClick={requestReset} disabled={forgotSending}>
+                {forgotSending ? "กำลังส่ง…" : "ส่งลิงก์ตั้งรหัสผ่านใหม่"}
+              </Button>
+              {forgotNote && <p className="text-xs text-slate-500">{forgotNote}</p>}
+            </div>
+          )}
+        </div>
         </div>
       </div>
     );
