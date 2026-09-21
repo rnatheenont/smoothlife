@@ -260,6 +260,17 @@ export default function AdminSeoPage() {
     }
   }
 
+  // How many pages each tab holds, so the size of a job is visible before
+  // opening it. Computed once: itemsFor("product") walks the whole catalogue,
+  // and the article tab only knows its count after the Shopify fetch lands.
+  const tabCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        SEO_PAGE_TYPES.map((t) => [t.key, t.key === "article" ? articleItems?.length ?? null : itemsFor(t.key).length])
+      ) as Record<SeoPageType, number | null>,
+    [articleItems]
+  );
+
   /** Written on this screen — the only kind we can edit back. */
   const overridden = (item: Item) => {
     const row = overrides[`${tab}:${item.key}`];
@@ -291,7 +302,10 @@ export default function AdminSeoPage() {
         หัวข้อและคำอธิบายที่แสดงในผลค้นหา Google — เว้นว่างไว้ ระบบจะใช้ค่าที่สร้างให้อัตโนมัติ
       </p>
 
-      <div className="mt-5 inline-flex rounded-full bg-surface-muted p-1">
+      {/* Scrolls sideways rather than wrapping: eight pills with counts
+          no longer fit a laptop width, and a label broken across two lines
+          ("คอลเลก / ชัน") is harder to read than a row you can swipe. */}
+      <div className="mt-5 flex max-w-full gap-0.5 overflow-x-auto rounded-full bg-surface-muted p-1 scrollbar-none">
         {SEO_PAGE_TYPES.map((t) => (
           <button
             key={t.key}
@@ -302,12 +316,18 @@ export default function AdminSeoPage() {
               setQuery("");
             }}
             className={
-              tab === t.key
-                ? "rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-brand-ink shadow-card"
-                : "rounded-full px-4 py-1.5 text-sm font-medium text-slate-500 hover:text-brand-ink"
+              "shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-sm " +
+              (tab === t.key
+                ? "bg-white font-semibold text-brand-ink shadow-card"
+                : "font-medium text-slate-500 hover:text-brand-ink")
             }
           >
             {t.label}
+            {tabCounts[t.key] !== null && (
+              <span className={tab === t.key ? "ml-1.5 text-xs text-slate-500" : "ml-1.5 text-xs text-slate-400"}>
+                {tabCounts[t.key]?.toLocaleString("th-TH")}
+              </span>
+            )}
           </button>
         ))}
       </div>
