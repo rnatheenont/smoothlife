@@ -1,34 +1,17 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, ReactNode, PointerEvent as ReactPointerEvent, useMemo } from "react";
-import Link from "next/link";
+import { useEffect, useLayoutEffect, useRef, useState, PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Send, Loader2, RotateCcw, User as UserIcon, X, Plus, Check, Camera, ImagePlus, MessageCircleQuestion, Headset, Bot } from "lucide-react";
+import { Send, Loader2, RotateCcw, User as UserIcon, X, Check, Camera, ImagePlus, MessageCircleQuestion, Headset, Bot } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
-import { useCart } from "@/lib/cart-context";
-import { useRecentlyViewed } from "@/lib/recently-viewed-context";
-import { pickSuggestions, interestsFromProducts } from "@/lib/chat-suggestions";
 import { getProductBySlug } from "@/data/products";
-import { formatTHB } from "@/lib/format";
-import { resizeForUpload, resizeForThumbnail, ResizedImage } from "@/lib/image-utils";
-import { rememberChatImage, attachStoredImages, clearChatImages, PHOTO_MARKER } from "@/lib/chat-image-store";
-import { splitMarker, markerIndex, MARKER_OPENERS } from "@/lib/chat-markers";
-import { helpChatTopics as HELP_TOPICS } from "@/data/help";
-import { hasStoredConsent, grantConsent } from "@/components/skin-coach/ConsentGate";
+import { PHOTO_MARKER } from "@/lib/chat-image-store";
+import { useChatSession } from "@/lib/use-chat-session";
+import { renderMessageContent } from "@/components/chat/ChatMessageContent";
 import { Avatar, Button } from "@/components/ui";
-
-type Msg = {
-  role: "user" | "assistant";
-  content: string;
-  image?: string;
-  /** A person answered this one, not Smoothie. See from_staff in the API. */
-  fromStaff?: boolean;
-  /** Server timestamp, present on anything replayed from history. */
-  createdAt?: string;
-};
 
 // Rotates through the launcher badge so a first-time visitor sees both of
 // its jobs (product help + skin advice) without the badge ever growing a
@@ -45,305 +28,59 @@ const CHAT_BADGE_PHRASES: [string, string][] = [
 const CHAT_BADGE_INTERVAL_MS = 11000;
 const CHAT_BADGE_FADE_MS = 175;
 
-// Matches the [[slug]] markers the model is told to use, but also tolerates
-// a stray single-bracket [slug] (models occasionally drop a bracket) and
-// bare /product/slug links, so a product card still renders instead of
-// leaking raw marker text into the chat bubble.
-const MARKER = /\[\[([a-z0-9-]+)\]\]|\[([a-z0-9]+(?:-[a-z0-9]+)+)\]|\/product\/([a-z0-9-]+)/gi;
-
-// Lightweight markdown-bold support (**text**) so an occasional ** from the
-// model renders as bold instead of showing the literal asterisks — the chat
-// bubble is plain whitespace-pre-wrap text, not a markdown renderer.
-const BOLD = /\*\*(.+?)\*\*/g;
-
-// Staff paste links — a Kerry depot on Google Maps, a tracking page — and the
-// bubble is plain text, so they arrived as something to copy by hand off a
-// phone screen. Trailing punctuation is left out of the link: a URL at the end
-// of a Thai sentence usually has a full stop or a bracket after it.
-const URL_RE = /https?:\/\/[^\s<]+[^\s<.,:;"')\]}]/g;
-
-function renderLinks(text: string, keyPrefix: string): ReactNode[] {
-  const parts: ReactNode[] = [];
-  let last = 0;
-  let m: RegExpExecArray | null;
-  let k = 0;
-  URL_RE.lastIndex = 0;
-  while ((m = URL_RE.exec(text))) {
-    if (m.index > last) parts.push(text.slice(last, m.index));
-    parts.push(
-      <a
-        key={`${keyPrefix}u${k++}`}
-        href={m[0]}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="break-all underline underline-offset-2 hover:opacity-80"
-      >
-        {m[0]}
-      </a>
-    );
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) parts.push(text.slice(last));
-  return parts;
-}
-
-function renderInline(text: string, keyPrefix: string): ReactNode[] {
-  const parts: ReactNode[] = [];
-  let last = 0;
-  let bm: RegExpExecArray | null;
-  BOLD.lastIndex = 0;
-  let k = 0;
-  while ((bm = BOLD.exec(text))) {
-    if (bm.index > last) parts.push(...renderLinks(text.slice(last, bm.index), `${keyPrefix}${k}`));
-    parts.push(<strong key={`${keyPrefix}b${k++}`}>{bm[1]}</strong>);
-    last = bm.index + bm[0].length;
-  }
-  if (last < text.length) parts.push(...renderLinks(text.slice(last), `${keyPrefix}t`));
-  return parts;
-}
-
-function ProductChip({ slug }: { slug: string }) {
-  const product = getProductBySlug(slug);
-  const { addItem } = useCart();
-  const { t } = useLang();
-  const [added, setAdded] = useState(false);
-  if (!product) return null;
-
-  return (
-    <div className="my-2 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2 shadow-xs">
-      <Link href={`/product/${product.slug}`} className="shrink-0 relative h-14 w-14 block">
-        <Image
-          src={product.image}
-          alt={product.name}
-          fill
-          className="rounded-lg object-cover bg-surface-soft"
-        />
-      </Link>
-      <div className="min-w-0 flex-1">
-        <Link
-          href={`/product/${product.slug}`}
-          translate="no"
-          className="block text-[12px] font-semibold leading-snug text-brand-ink line-clamp-2 hover:text-brand-800"
-        >
-          {product.name}
-        </Link>
-        <div className="mt-0.5 flex items-baseline gap-1.5">
-          <span className="text-[12px] font-bold text-brand-800">{formatTHB(product.price)}</span>
-          {product.compareAtPrice ? (
-            <span className="text-[10px] text-slate-500 line-through">{formatTHB(product.compareAtPrice)}</span>
-          ) : null}
-        </div>
-      </div>
-      <button
-        onClick={() => {
-          addItem(product.slug, 1);
-          setAdded(true);
-        }}
-        aria-label={t("เพิ่มลงตะกร้า", "Add to cart")}
-        className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-white transition-colors ${
-          added ? "bg-slate-300" : "bg-brand-gradient"
-        }`}
-      >
-        {added ? <Check size={15} /> : <Plus size={15} />}
-      </button>
-    </div>
-  );
-}
-
-// Breaks a plain-text segment into paragraph/list blocks so a long reply
-// reads as scannable chunks instead of one dense wall of text — consecutive
-// "- " lines become a real bulleted list (dot marker, own line), everything
-// else stays grouped into paragraphs separated by blank lines.
-function renderTextBlock(text: string, keyPrefix: string): ReactNode[] {
-  const lines = text.split("\n");
-  const blocks: ReactNode[] = [];
-  let i = 0;
-  let blockKey = 0;
-  while (i < lines.length) {
-    if (lines[i].trim() === "") {
-      i++;
-      continue;
-    }
-    if (lines[i].trimStart().startsWith("- ")) {
-      const items: string[] = [];
-      while (i < lines.length && lines[i].trimStart().startsWith("- ")) {
-        items.push(lines[i].trimStart().slice(2));
-        i++;
-      }
-      blocks.push(
-        <ul key={`${keyPrefix}ul${blockKey}`} className="my-1.5 flex flex-col gap-1.5">
-          {items.map((it, idx) => (
-            <li key={idx} className="flex gap-2">
-              <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-brand-emerald" />
-              <span>{renderInline(it, `${keyPrefix}uli${blockKey}-${idx}`)}</span>
-            </li>
-          ))}
-        </ul>
-      );
-      blockKey++;
-    } else {
-      const paraLines: string[] = [];
-      while (i < lines.length && lines[i].trim() !== "" && !lines[i].trimStart().startsWith("- ")) {
-        paraLines.push(lines[i]);
-        i++;
-      }
-      blocks.push(
-        <p key={`${keyPrefix}p${blockKey}`} className="my-1.5 first:mt-0 last:mb-0">
-          {renderInline(paraLines.join("\n"), `${keyPrefix}p${blockKey}`)}
-        </p>
-      );
-      blockKey++;
-    }
-  }
-  return blocks;
-}
-
-// Server history is whatever was persisted, and rows written before the server
-// learned to strip [[ASK: ...]] still carry it — so clean the marker off for
-// display, and hand back the last reply's options so reopening the panel
-// restores the tappable answers instead of leaving dead bracket text.
-// The unread badge counts replies — from the AI or from staff — that arrived
-// after the customer last had the panel open. The marker is a timestamp kept
-// on the device, so it survives reloads; it used to be a count held in memory
-// that started from zero on every page, which made a customer with any
-// history at all see "9+" on arrival.
-const CHAT_SEEN_KEY = "sl_chat_seen_at";
-
-function readChatSeen(): string | null {
-  try {
-    return localStorage.getItem(CHAT_SEEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function markChatSeen(latestAt: string | null | undefined) {
-  try {
-    localStorage.setItem(CHAT_SEEN_KEY, latestAt || new Date().toISOString());
-  } catch {}
-}
-
-function countUnread(
-  messages: { role: string; created_at?: string }[],
-  latestAt: string | null | undefined
-): number {
-  const seen = readChatSeen();
-  if (!seen) {
-    // First time this device has checked: the history so far is not news.
-    if (latestAt) markChatSeen(latestAt);
-    return 0;
-  }
-  const seenAt = Date.parse(seen);
-  return messages.filter(
-    (m) => m.role === "assistant" && m.created_at && Date.parse(m.created_at) > seenAt
-  ).length;
-}
-
-function hydrateHistory(
-  raw: (Msg & { from_staff?: boolean; created_at?: string; attachmentUrl?: string | null })[]
-): { messages: Msg[]; ask: string[] } {
-  let ask: string[] = [];
-  const messages = raw.map((m, i) => {
-    // The API sends the column name; the component uses its own casing.
-    const withSender: Msg = {
-      ...m,
-      fromStaff: m.fromStaff ?? m.from_staff ?? false,
-      createdAt: m.createdAt ?? m.created_at,
-      // A photo staff attached. The customer's own photos are kept in the
-      // browser (see chat-image-store) and attached separately below.
-      image: m.image ?? m.attachmentUrl ?? undefined,
-    };
-    if (m.role !== "assistant") return withSender;
-    const { text, kind, options } = splitMarker(m.content);
-    if (kind === "ask" && i === raw.length - 1) ask = options;
-    return { ...withSender, content: text || m.content };
-  });
-  return { messages: attachStoredImages(messages), ask };
-}
-
-function renderContent(text: string) {
-  const out: ReactNode[] = [];
-  let last = 0;
-  let m: RegExpExecArray | null;
-  MARKER.lastIndex = 0;
-  let key = 0;
-  while ((m = MARKER.exec(text))) {
-    // ProductChip already carries its own top/bottom margin, so any blank
-    // lines the model left right next to a marker would double up the gap —
-    // trim newline runs at both ends of each text segment, not just one.
-    const before = text.slice(last, m.index).replace(/^\n+|\n+$/g, "");
-    if (before) out.push(...renderTextBlock(before, `t${key++}-`));
-    out.push(<ProductChip key={`p${key++}`} slug={m[1] || m[2] || m[3]} />);
-    last = m.index + m[0].length;
-  }
-  const tail = text.slice(last).replace(/^\n+/, "");
-  if (tail) out.push(...renderTextBlock(tail, `t${key++}-`));
-  return out;
-}
-
 export default function QuickChat() {
   const { lang, t } = useLang();
   const { user } = useAuth();
-  const { open, setOpen, profile, stickyBarVisible } = useQuickChat();
-  const { lines: cartLines } = useCart();
-  const { slugs: recentSlugs } = useRecentlyViewed();
+  const { open, setOpen, stickyBarVisible } = useQuickChat();
   const pathname = usePathname();
   const viewingSlug = pathname?.match(/^\/product\/([a-z0-9-]+)/i)?.[1];
   const viewingProduct = viewingSlug ? getProductBySlug(viewingSlug) : undefined;
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [pendingImage, setPendingImage] = useState<ResizedImage | null>(null);
-  const [awaitingConsentImage, setAwaitingConsentImage] = useState<ResizedImage | null>(null);
-  const [imageConsent, setImageConsent] = useState(false);
-  const [imageError, setImageError] = useState<string | null>(null);
-  const [followups, setFollowups] = useState<string[]>([]);
-  // Tappable answer options for a qualifying question Smoothie asks before
-  // recommending (see [[ASK: ...]] in route.ts) — distinct from `followups`
-  // (optional extra suggestions, deliberately shown only every other turn)
-  // since these are the actual pending question's answers and must always
-  // show up, whichever turn they land on.
-  const [askOptions, setAskOptions] = useState<string[]>([]);
-  const [historyLoaded, setHistoryLoaded] = useState(false);
-  const [restoringHistory, setRestoringHistory] = useState(false);
+
+  const {
+    messages,
+    input,
+    setInput,
+    loading,
+    send,
+    reset,
+    restoringHistory,
+    historyLoaded,
+    unread,
+    suggestions,
+    hasProfile,
+    pendingImage,
+    setPendingImage,
+    awaitingConsentImage,
+    setAwaitingConsentImage,
+    imageError,
+    handleImagePick,
+    confirmImageConsent,
+    followups,
+    setFollowups,
+    askOptions,
+    setAskOptions,
+    setHelpOpen: setSessionHelpOpen,
+    closeOffer,
+    setCloseOffer,
+    caseLooksSettled,
+    humanHandling,
+    escalating,
+    escalateMsg,
+    setEscalateMsg,
+    escalate,
+    resolveCase,
+    resolvingCase,
+    backToAi,
+    backToAiBusy,
+    helpOpen,
+    openHelpTopics,
+    noteOpen,
+    setNoteOpen,
+    note,
+    setNote,
+  } = useChatSession({ active: open, viewingProduct });
+
   const scrolledOnceRef = useRef(false);
-  // Thumbnail of the photo being sent, held from pick until send.
-  const thumbRef = useRef<string | null>(null);
-  const [escalating, setEscalating] = useState(false);
-  /** Stops a second automatic handoff in the same thread. */
-  const handedOff = useRef(false);
-  const [escalateMsg, setEscalateMsg] = useState<string | null>(null);
-  // Leaving a message is a compose step, not a one-tap send: the team needs
-  // to know what the customer actually wants, and a bare transcript makes
-  // them guess it from a conversation they weren't part of.
-  const [humanHandling, setHumanHandling] = useState(false);
-  /** A case already queued and waiting — survives a reload, unlike handedOff. */
-  const [caseQueued, setCaseQueued] = useState(false);
-  /** The help chips are showing, so offer the way to a person alongside them. */
-  const [helpOpen, setHelpOpen] = useState(false);
-  /**
-   * Timestamp of the newest message the server had last time we looked.
-   *
-   * The panel used to adopt the server copy only when it was longer than the
-   * local one, which quietly stopped working at the forty-message cap: both
-   * sides sat at forty and a staff reply could never get in. Time only moves
-   * forward, and a message the customer has just sent is not on the server
-   * yet, so this both notices new replies and keeps the send race safe.
-   */
-  const latestAtRef = useRef<string | null>(null);
-  // Storing a photo on our server is a different promise from showing it to
-  // the model, so it needs its own answer. Someone who agreed to "sent to the
-  // AI, never stored" has not agreed to this.
-  const [storageConsent, setStorageConsent] = useState(false);
-  useEffect(() => {
-    try {
-      setStorageConsent(localStorage.getItem("sl_chat_storage_consent") === "1");
-    } catch {}
-  }, []);
-  const [unread, setUnread] = useState(0);
-  const [backToAiBusy, setBackToAiBusy] = useState(false);
-  const [noteOpen, setNoteOpen] = useState(false);
-  const [note, setNote] = useState("");
   const [badgeIndex, setBadgeIndex] = useState(0);
   const [badgeFading, setBadgeFading] = useState(false);
   // The badge is wider than the round launcher icon, so it must extend
@@ -447,276 +184,15 @@ export default function QuickChat() {
     if (!open) setDragPos({ x: 0, y: 0 });
     setOpen(!open);
   }
-  // Only surface follow-up suggestion chips every other assistant reply so
-  // they help re-engage the chat without showing up after literally every
-  // message, which reads as spammy/annoying.
-  const assistantTurnCount = useRef(0);
 
   useEffect(() => {
-    setImageConsent(hasStoredConsent());
-  }, []);
-
-  // A stable per-device id for guests so their chat history/rate-limit
-  // tracking can be restored without requiring login — never sent for
-  // logged-in users, who are identified by their real session instead.
-  function getAnonId() {
-    try {
-      let id = localStorage.getItem("sl_chat_anon_id");
-      if (!id) {
-        id = crypto.randomUUID();
-        localStorage.setItem("sl_chat_anon_id", id);
-      }
-      return id;
-    } catch {
-      return undefined;
-    }
-  }
-
-  // Restore recent conversation once, the first time the panel is opened —
-  // lets the customer pick up where they left off after closing the tab.
-  useEffect(() => {
-    if (!open || historyLoaded) return;
-    setHistoryLoaded(true);
-    setRestoringHistory(true);
-    const anonId = user ? undefined : getAnonId();
-    const qs = anonId ? `?anonId=${encodeURIComponent(anonId)}` : "";
-    fetch(`/api/chat${qs}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data?.messages) && data.messages.length) {
-          const { messages, ask } = hydrateHistory(data.messages);
-          setMessages(messages);
-          setAskOptions(ask);
-          latestAtRef.current = data.latestAt ?? null;
-          markChatSeen(data.latestAt);
-        }
-        setHumanHandling(Boolean(data?.humanHandling));
-        setCaseQueued(Boolean(data?.caseQueued));
-      })
-      .catch((err) => console.error("[QuickChat] history restore failed", err))
-      .finally(() => setRestoringHistory(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  // Polls for replies. Staff answer from the inbox, and those replies land in
-  // the same history this panel reads — without polling the customer only sees
-  // them by reloading the page, which is exactly when they have given up.
-  //
-  // Also runs while the panel is closed, more slowly: that is the case the
-  // unread badge exists for.
-  useEffect(() => {
-    let cancelled = false;
-    async function poll() {
-      if (document.hidden) return;
-      try {
-        const anonId = user ? undefined : getAnonId();
-        const qs = anonId ? `?anonId=${encodeURIComponent(anonId)}` : "";
-        const data = await fetch(`/api/chat${qs}`).then((r) => r.json());
-        if (cancelled || !Array.isArray(data?.messages)) return;
-        setHumanHandling(Boolean(data.humanHandling));
-        setCaseQueued(Boolean(data.caseQueued));
-        if (open) {
-          // Only ever grows the thread. The server copy is written a moment
-          // after the message is shown, so a poll landing in that gap used to
-          // replace the list with a shorter one and the customer watched their
-          // own message vanish. Never overwrite a reply still streaming in
-          // either.
-          if (!loading) {
-            const moved = data.latestAt && data.latestAt !== latestAtRef.current;
-            if (moved) {
-              latestAtRef.current = data.latestAt;
-              setMessages(hydrateHistory(data.messages).messages);
-            }
-            markChatSeen(data.latestAt);
-            setUnread(0);
-          }
-        } else {
-          setUnread(countUnread(data.messages, data.latestAt));
-        }
-      } catch {
-        // A failed poll is not worth telling the customer about; the next one
-        // is a few seconds away.
-      }
-    }
-    const every = open ? 5000 : 30000;
-    const id = window.setInterval(poll, every);
-    // Check straight away for anyone who has chatted before, so a reply that
-    // came while they were gone shows on arrival rather than 30 s later.
-    // Everyone else has nothing to be told about yet.
-    if (!open && (user || readChatSeen())) void poll();
-    document.addEventListener("visibilitychange", poll);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-      document.removeEventListener("visibilitychange", poll);
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, loading, user]);
-
-  // Opening the panel is the customer reading what arrived.
-  useEffect(() => {
-    if (open) {
-      setUnread(0);
-      markChatSeen(latestAtRef.current);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  const [resolvingCase, setResolvingCase] = useState(false);
-
-  /**
-   * Smoothie answered something simple in full and offered to close it.
-   *
-   * Left as an offer rather than done silently: she is right often enough to
-   * ask, and wrong often enough that closing without the customer saying so
-   * would file "still waiting for my parcel" as solved. Whichever button they
-   * press is a real answer — the other path hands it straight to a person.
-   */
-  const [closeOffer, setCloseOffer] = useState(false);
-
-  // Offered when the conversation has gone quiet after a staff reply — not the
-  // instant one lands. Staff had just asked for an order number and the panel
-  // was already offering "this is sorted" underneath it, which is a strange
-  // thing to be asked while someone is waiting for you to answer them.
-  const lastMessage = messages[messages.length - 1];
-  const caseLooksSettled =
-    humanHandling &&
-    Boolean(lastMessage?.fromStaff) &&
-    Boolean(lastMessage?.createdAt) &&
-    Date.now() - new Date(lastMessage!.createdAt!).getTime() > 10 * 60 * 1000;
-
-  async function resolveCase() {
-    setResolvingCase(true);
-    try {
-      await fetch("/api/chat/resolve-case", { method: "POST" });
-      setHumanHandling(false);
-      setCaseQueued(false);
-      handedOff.current = false;
-      setMessages((m) => [
-        ...m,
-        {
-          role: "assistant",
-          content: t(
-            "ดีใจที่ช่วยได้นะคะ ปิดเรื่องนี้ให้แล้วค่ะ — มีอะไรอีกทักมาได้เลยนะคะ 😊",
-            "Glad that helped — this one's closed. Message us any time."
-          ),
-        },
-      ]);
-    } finally {
-      setResolvingCase(false);
-    }
-  }
-
-  async function backToAi() {
-    setBackToAiBusy(true);
-    try {
-      const res = await fetch("/api/chat/back-to-ai", { method: "POST" });
-      const data = await res.json();
-      if (data.ok) {
-        setHumanHandling(false);
-        setEscalateMsg(
-          t(
-            "กลับมาคุยกับน้อง Smoothie แล้วค่ะ ถามต่อได้เลย — เรื่องที่ฝากไว้ทีมงานยังดูให้อยู่นะคะ",
-            "You're back with Smoothie — ask away. The team is still on your earlier request."
-          )
-        );
-      }
-    } catch {
-      /* leave the panel as it was */
-    } finally {
-      setBackToAiBusy(false);
-    }
-  }
-
-  // Tapping "ศูนย์ช่วยเหลือ" used to close the panel and navigate to /help,
-  // which abandons the conversation to go and read a page. Offer the same
-  // subjects as chips instead: each one sends the customer's question into
-  // this thread, so the answer arrives here — and a subject Smoothie cannot
-  // settle takes the same route to a person that a typed question does.
-  function openHelpTopics() {
-    setNoteOpen(false);
-    setFollowups([]);
-    setMessages((m) => [
-      ...m,
-      {
-        role: "assistant",
-        content: t(
-          "ยินดีช่วยค่ะ อยากทราบเรื่องไหนดีคะ — หรือพิมพ์คำถามมาได้เลย ถ้าเรื่องไหนฉันตอบไม่ได้ จะส่งต่อให้แอดมินนะคะ",
-          "Happy to help — which would you like to know about? Or just type your question; anything I can't settle I'll pass to our team."
-        ),
-      },
-    ]);
-    setAskOptions(HELP_TOPICS);
-    setHelpOpen(true);
-  }
-
-  async function escalate(customerNote: string) {
-    if (!user) {
-      setEscalateMsg(t("กรุณาเข้าสู่ระบบก่อน เพื่อให้ทีมงานติดต่อกลับได้ค่ะ", "Please sign in first so our team can contact you back."));
-      return;
-    }
-    setEscalating(true);
-    setEscalateMsg(null);
-    try {
-      const transcript = messages.map((m) => `${m.role === "user" ? "ลูกค้า" : "Smoothie"}: ${m.content}`).join("\n");
-      const res = await fetch("/api/chat/escalate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript, note: customerNote }),
-      });
-      const data = await res.json();
-      if (!data.ok) {
-        handedOff.current = false;
-        setEscalateMsg(data.error || t("ส่งไม่สำเร็จ กรุณาลองใหม่ค่ะ", "Couldn't send — please try again."));
-      } else {
-        setNoteOpen(false);
-        setNote("");
-        setEscalateMsg(
-          data.contactValue
-            ? t(
-                `ส่งถึงทีมงานแล้วค่ะ ทีมงานจะติดต่อกลับที่ ${data.contactValue} ภายใน 1 วันทำการค่ะ — ระหว่างรอ ถามน้อง Smoothie เรื่องอื่นต่อได้เลยนะคะ`,
-                `Sent to our team — they'll reach you at ${data.contactValue} within 1 business day. Meanwhile, keep asking Smoothie anything else.`
-              )
-            : t("ส่งถึงทีมงานแล้วค่ะ แต่ยังไม่มีช่องทางติดต่อกลับในโปรไฟล์ — กรุณาเพิ่มเบอร์โทรหรืออีเมลในบัญชีค่ะ", "Sent to our team, but no contact method is on file — please add a phone or email to your account.")
-        );
-      }
-    } catch {
-      // Smoothie has already told them it is on its way, so a silent failure
-      // here leaves someone waiting for a reply nobody will write.
-      handedOff.current = false;
-      setEscalateMsg(
-        t(
-          "ส่งถึงทีมงานไม่สำเร็จ กรุณากด \"ฝากข้อความ\" ด้านล่างอีกครั้งค่ะ",
-          "Couldn't reach our team — please use \"Leave a message\" below to try again."
-        )
-      );
-    } finally {
-      setEscalating(false);
-    }
-  }
-
-  const hasProfile = Object.keys(profile || {}).length > 0;
-
-  // Bumped on each open so the starter questions move on rather than
-  // presenting the same four a customer has already declined. Kept in state
-  // rather than derived from the clock so the server and client agree during
-  // hydration.
-  const [suggestionSeed, setSuggestionSeed] = useState(0);
-  useEffect(() => {
-    if (open) setSuggestionSeed((n) => n + 1);
-  }, [open]);
-
-  const suggestions = useMemo(() => {
-    // What they've been looking at, nearest first: the product page they're on
-    // now, then the cart, then recently viewed.
-    const seen = [
-      viewingProduct,
-      ...cartLines.map((l) => getProductBySlug(l.slug)),
-      ...recentSlugs.map((slug) => getProductBySlug(slug)),
-    ].filter((p): p is NonNullable<typeof p> => Boolean(p));
-    const { categories, concerns } = interestsFromProducts(seen);
-    return pickSuggestions({ lang, categories, concerns, seed: suggestionSeed });
-  }, [lang, viewingProduct, cartLines, recentSlugs, suggestionSeed]);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, setOpen]);
 
   // The first scroll after opening (which lands on a just-restored history)
   // should jump straight to the latest message — animating a smooth scroll
@@ -730,10 +206,10 @@ export default function QuickChat() {
       return;
     }
     // `historyLoaded` only flips to true (together with `restoringHistory`)
-    // inside the restore effect below — on the very first render right
-    // after `open` becomes true, both are still at their pre-fetch values,
-    // so `restoringHistory` alone doesn't catch this pass. Without the
-    // `!historyLoaded` check here too, this effect fires once on the
+    // inside the session hook's restore effect — on the very first render
+    // right after `open` becomes true, both are still at their pre-fetch
+    // values, so `restoringHistory` alone doesn't catch this pass. Without
+    // the `!historyLoaded` check here too, this effect fires once on the
     // still-empty container, "using up" the instant jump — leaving the
     // real restored history to animate in with a smooth scroll instead.
     if (!historyLoaded || restoringHistory) return;
@@ -741,236 +217,6 @@ export default function QuickChat() {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior });
     scrolledOnceRef.current = true;
   }, [messages, loading, open, restoringHistory, historyLoaded]);
-
-  async function handleImagePick(file: File) {
-    setImageError(null);
-    try {
-      // Two sizes: the big one goes to the model and is never stored, the
-      // ~160px one is what gets kept on the device for the history.
-      const [resized, thumb] = await Promise.all([resizeForUpload(file), resizeForThumbnail(file)]);
-      thumbRef.current = thumb.dataUrl;
-      // Consent given for the AI path does not carry over to the staff path,
-      // where the photo is stored on our server — so ask again the first time.
-      const needsAsking = humanHandling ? !storageConsent : !imageConsent;
-      if (!needsAsking) {
-        setPendingImage(resized);
-      } else {
-        setAwaitingConsentImage(resized);
-      }
-    } catch {
-      setImageError(t("ไม่สามารถอ่านรูปนี้ได้ กรุณาลองใหม่อีกครั้ง", "Couldn't read that photo, please try again."));
-    }
-  }
-
-  function confirmImageConsent() {
-    grantConsent();
-    setImageConsent(true);
-    // Answering the staff-storage question also records that separate consent.
-    if (humanHandling) {
-      setStorageConsent(true);
-      try {
-        localStorage.setItem("sl_chat_storage_consent", "1");
-      } catch {}
-    }
-    if (awaitingConsentImage) setPendingImage(awaitingConsentImage);
-    setAwaitingConsentImage(null);
-  }
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, setOpen]);
-
-  async function send(text: string, image?: ResizedImage | null) {
-    const clean = text.trim();
-    if ((!clean && !image) || loading) return;
-    // The offer belongs to the turn that made it; a new question replaces it.
-    setCloseOffer(false);
-
-    // A photo sent while staff are handling the case goes to them, not to the
-    // model — uploaded so they can actually see it, which is the whole reason
-    // the second consent exists. The AI is not asked to answer it.
-    if (image && humanHandling) {
-      const body = new FormData();
-      const blob = await (await fetch(image.dataUrl)).blob();
-      body.append("image", new File([blob], "photo.jpg", { type: "image/jpeg" }));
-      body.append("caption", clean);
-      setMessages((m) => [...m, { role: "user", content: clean || "(ส่งรูป)", image: image.dataUrl }]);
-      if (thumbRef.current) {
-        rememberChatImage(clean || "(ส่งรูป)", thumbRef.current);
-        thumbRef.current = null;
-      }
-      setInput("");
-      setPendingImage(null);
-      try {
-        const res = await fetch("/api/chat/attachment", { method: "POST", body });
-        const data = await res.json();
-        if (!data.ok) setImageError(data.error || t("ส่งรูปไม่สำเร็จ", "Couldn't send the photo"));
-      } catch {
-        setImageError(t("ส่งรูปไม่สำเร็จ", "Couldn't send the photo"));
-      }
-      return;
-    }
-
-    // A photo with no caption needs *something* for the model to answer, but
-    // only when the model is answering. Putting words in a customer's mouth to
-    // a member of staff is worse than an empty caption — they never asked what
-    // the product was.
-    const fallbackText = humanHandling
-      ? lang === "en"
-        ? "(photo)"
-        : "(ส่งรูป)"
-      : lang === "en"
-        ? "What product is this? Do you carry it?"
-        : "รูปนี้คือสินค้าอะไรครับ มีขายไหม";
-    const userMsg: Msg = { role: "user", content: clean || fallbackText, image: image?.dataUrl };
-    // Filed against the message text, which is what the server history gives
-    // us back later — see chat-image-store.ts for why this stays on-device.
-    if (image && thumbRef.current) {
-      rememberChatImage(userMsg.content, thumbRef.current);
-      thumbRef.current = null;
-    }
-    const next: Msg[] = [...messages, userMsg];
-    setMessages(next);
-    setInput("");
-    setPendingImage(null);
-    setFollowups([]);
-    setAskOptions([]);
-    setLoading(true);
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: next.map(({ role, content }) => ({ role, content })),
-          profile,
-          lang,
-          anonId: user ? undefined : getAnonId(),
-          cart: cartLines.map((l) => ({ name: l.name, size: l.size, qty: l.qty, price: l.price })),
-          viewingProduct: viewingProduct
-            ? {
-                slug: viewingProduct.slug,
-                name: viewingProduct.name,
-                brand: viewingProduct.brand,
-                price: viewingProduct.price,
-                compareAtPrice: viewingProduct.compareAtPrice,
-                category: viewingProduct.category,
-                concerns: viewingProduct.concerns,
-                benefits: viewingProduct.benefits,
-                howToUse: viewingProduct.howToUse,
-                ingredients: viewingProduct.ingredients,
-                whoFor: viewingProduct.whoFor,
-                sizes: viewingProduct.variants.map((v) => ({ size: v.size, price: v.price })),
-              }
-            : undefined,
-          image: image ? { base64: image.base64, mediaType: image.mediaType } : undefined,
-        }),
-      });
-      if (!res.body) throw new Error("no response body");
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-
-      // Network chunks arrive in bursts (a handful of tokens at a time),
-      // which reads as jumpy if painted directly. Decouple painting from
-      // network timing: accumulate the full text as it arrives, and reveal
-      // it to the UI a few characters at a time on a steady clock instead —
-      // a smooth, constant-speed typewriter regardless of chunk burstiness.
-      let full = "";
-      let shown = 0;
-      let netDone = false;
-      const CHARS_PER_TICK = 3;
-      const TICK_MS = 16;
-      // The model may tack on a trailing "[[SUGGEST: ...]]" or "[[ASK: ...]]"
-      // marker (see route.ts) that must never flash on screen as raw bracket
-      // text — the two are mutually exclusive per reply (SUGGEST for
-      // optional follow-ups, ASK for a qualifying question's answer
-      // options). The instant either literal opener shows up anywhere in
-      // the accumulated text, freeze the reveal boundary right before it
-      // and never advance past it — everything from there on is the marker
-      // (it's always last), regardless of how much more streams in after.
-      const MAX_OPENER_LEN = Math.max(...MARKER_OPENERS.map((m) => m.length));
-      const markerOpenIndex = () => markerIndex(full);
-      function visibleTarget() {
-        const idx = markerOpenIndex();
-        if (idx !== -1) return idx;
-        if (netDone) return full.length;
-        // marker hasn't started (or hasn't fully arrived) yet — hold back a
-        // small safety margin in case an opener is split across chunks
-        return Math.max(0, full.length - MAX_OPENER_LEN);
-      }
-
-      async function readNetwork() {
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          full += decoder.decode(value, { stream: true });
-        }
-        netDone = true;
-      }
-
-      async function revealLoop() {
-        while (shown < visibleTarget() || !netDone) {
-          const target = visibleTarget();
-          if (shown < target) {
-            shown = Math.min(target, shown + CHARS_PER_TICK);
-            setMessages([...next, { role: "assistant", content: full.slice(0, shown) }]);
-          }
-          await new Promise((r) => setTimeout(r, TICK_MS));
-        }
-      }
-
-      await Promise.all([readNetwork(), revealLoop()]);
-
-      const cutIdx = markerOpenIndex();
-      const finalText = cutIdx !== -1 ? full.slice(0, cutIdx).trimEnd() : full;
-      setMessages([...next, { role: "assistant", content: finalText || "…" }]);
-
-      assistantTurnCount.current += 1;
-      const { kind, options: parsed, reason } = splitMarker(full);
-      const isAsk = kind === "ask";
-
-      // Smoothie decided this needs a person. She has already said so in the
-      // reply above, so file it rather than asking the customer to press a
-      // button confirming what she just told them. Once per conversation: the
-      // guard is here because a second ticket for the same thread is noise in
-      // the inbox, not extra help.
-      // handedOff only lives as long as the component; caseQueued comes from
-      // the server, so a reload cannot turn one unanswered request into two.
-      if (kind === "handoff" && !humanHandling && !caseQueued && !handedOff.current) {
-        handedOff.current = true;
-        void escalate(reason || t("ลูกค้าต้องการคุยกับแอดมิน", "Customer asked for a person"));
-      }
-      // Never offered while a person is on the thread: closing is theirs to
-      // judge then, and two sources of "this is finished" is one too many.
-      setCloseOffer(kind === "close" && !humanHandling && !caseQueued);
-      if (isAsk) {
-        // The AI's actual pending question — always show it, whichever turn.
-        setAskOptions(parsed);
-        setFollowups([]);
-      } else {
-        setAskOptions([]);
-        // odd turns only (1st, 3rd, 5th assistant reply...) — every other one
-        setFollowups(parsed.length && assistantTurnCount.current % 2 === 1 ? parsed : []);
-      }
-    } catch {
-      setMessages([
-        ...next,
-        {
-          role: "assistant",
-          content:
-            lang === "en"
-              ? "Sorry, I couldn't connect. Please try again."
-              : "ขออภัยค่ะ เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -1116,17 +362,7 @@ export default function QuickChat() {
               )}
               {messages.length > 0 && (
                 <button
-                  onClick={() => {
-                    setMessages([]);
-                    setFollowups([]);
-                    setAskOptions([]);
-                    setEscalateMsg(null);
-                    assistantTurnCount.current = 0;
-                    // Resetting the chat clears the photos with it — leaving
-                    // someone's face in storage after they asked to start
-                    // over would be the wrong default.
-                    clearChatImages();
-                  }}
+                  onClick={reset}
                   aria-label={t("เริ่มใหม่", "Reset")}
                   className="grid h-7 w-7 place-items-center rounded-full text-white/60 hover:text-white hover:bg-white/10"
                 >
@@ -1262,7 +498,7 @@ export default function QuickChat() {
                         {t("แนบรูปไว้ตรงนี้ (รูปไม่ได้อยู่ในเครื่องนี้)", "Photo was attached here (not on this device)")}
                       </span>
                     )}
-                    {m.role === "assistant" ? renderContent(displayContent) : displayContent}
+                    {m.role === "assistant" ? renderMessageContent(displayContent) : displayContent}
                   </div>
                 </div>
               );
@@ -1286,7 +522,7 @@ export default function QuickChat() {
                   <button
                     key={s}
                     onClick={() => {
-                      setHelpOpen(false);
+                      setSessionHelpOpen(false);
                       send(s);
                     }}
                     className="rounded-full bg-brand-gradient px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-xs hover:opacity-90 transition-opacity"
@@ -1340,7 +576,7 @@ export default function QuickChat() {
                 {helpOpen && (
                   <button
                     onClick={() => {
-                      setHelpOpen(false);
+                      setSessionHelpOpen(false);
                       setAskOptions([]);
                       setNoteOpen(true);
                     }}

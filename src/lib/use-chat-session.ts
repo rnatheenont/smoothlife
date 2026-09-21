@@ -682,6 +682,7 @@ export function useChatSession({ active, viewingProduct }: ChatSessionOptions) {
     send,
     reset,
     restoringHistory,
+    historyLoaded,
     unread,
     suggestions,
     hasProfile,
@@ -699,6 +700,7 @@ export function useChatSession({ active, viewingProduct }: ChatSessionOptions) {
     askOptions,
     setAskOptions,
     closeOffer,
+    setCloseOffer,
     caseLooksSettled,
     // human handoff
     humanHandling,

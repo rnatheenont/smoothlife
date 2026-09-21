@@ -383,7 +383,7 @@ export default function AdminSeoPage() {
               ))}
             </div>
             <ul className="mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
-              {shown.map((item) => (
+              {shown.map((item, i) => (
                 <li key={item.key}>
                   <button
                     type="button"
@@ -393,6 +393,13 @@ export default function AdminSeoPage() {
                       (selected?.key === item.key ? "bg-brand-gradient-soft text-brand-ink" : "hover:bg-surface-soft")
                     }
                   >
+                    {/* Position in the list, so "ทำถึงไหนแล้ว" has an answer
+                        that does not need counting — and so a row can be
+                        named out loud ("อันที่ 412") when two products have
+                        nearly the same title. */}
+                    <span className="w-8 shrink-0 text-right text-xs tabular-nums text-slate-400">
+                      {(i + 1).toLocaleString("th-TH")}
+                    </span>
                     <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-surface-mist ring-1 ring-surface-line">
                       {item.image && (
                         <Image src={item.image} alt="" fill sizes="36px" className="object-cover" />
