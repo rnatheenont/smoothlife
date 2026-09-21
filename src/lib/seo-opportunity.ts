@@ -1,5 +1,6 @@
 import { pgValue, supabaseRest } from "@/lib/supabase-server";
 import { getTrendTargets, type TrendTarget } from "@/lib/brand-signals";
+import { products } from "@/data/products";
 
 // "Which keyword should we work on next" — scored from the data this shop
 // actually has, and explicit about the data it does not.
@@ -23,6 +24,8 @@ import { getTrendTargets, type TrendTarget } from "@/lib/brand-signals";
 
 export type OpportunityRow = {
   keyword: string;
+  /** How many products a visitor would actually find on that page. */
+  sellable_products: number;
   page_type: string | null;
   page_slug: string | null;
   search_volume_estimate: number | null;
@@ -51,6 +54,29 @@ function competitionFor(target: TrendTarget): "low" | "medium" | "high" {
 
 const COMPETITION_WEIGHT = { low: 1, medium: 0.6, high: 0.25 } as const;
 
+/**
+ * How many in-stock products the page behind a keyword actually has.
+ *
+ * Demand for a phrase says nothing about whether this shop can answer it.
+ * "ดูแลส่วนบุคคล" scored 43% on Trends alone while its page held three
+ * sellable items — three antiseptic wipes — and sending people searching that
+ * phrase to that page would have been a wasted click for them and a bounce
+ * for us. A page with nothing on it is not an opportunity.
+ */
+function sellableFor(target: TrendTarget): number {
+  if (!target.pageSlug) return 0;
+  if (target.pageType === "category") {
+    return products.filter((p) => p.category === target.pageSlug && p.inStock).length;
+  }
+  if (target.pageType === "concern") {
+    return products.filter((p) => p.concerns.includes(target.pageSlug as never) && p.inStock).length;
+  }
+  return 0;
+}
+
+/** Below this, a shopper arriving from search finds an almost empty page. */
+const THIN_PAGE = 10;
+
 type TrendAverage = { keyword: string; avg_volume: number; points: number };
 type SiteSearch = { normalized: string; searches: number; zero_result_searches: number };
 
@@ -59,8 +85,12 @@ function actionFor(row: {
   siteSearches: number;
   zeroResults: number;
   hasPage: boolean;
+  sellable: number;
   competition: "low" | "medium" | "high";
 }): string {
+  if (row.hasPage && row.sellable < THIN_PAGE) {
+    return `หน้านี้มีสินค้าพร้อมขายแค่ ${row.sellable} ชิ้น — เติมสินค้าก่อน ยังไม่ควรดึงคนเข้ามา`;
+  }
   if (row.zeroResults > 0) {
     return "คนค้นคำนี้ในเว็บแล้วไม่เจอสินค้า — เช็กว่าของขาด หรือชื่อสินค้าไม่ตรงกับคำที่คนเรียก";
   }
@@ -119,14 +149,19 @@ export async function computeOpportunities(days = 90): Promise<OpportunityRow[]>
     const demand = Math.max(trendDemand, searchDemand);
 
     const hasPage = Boolean(target.pageSlug);
+    const sellable = sellableFor(target);
+    // A page that cannot answer the search is worth a fraction of one that
+    // can, however many people are searching.
+    const depth = !hasPage || sellable >= THIN_PAGE ? 1 : Math.max(0.1, sellable / THIN_PAGE);
     // Nothing to lose: a phrase with demand and no page of ours is the
     // clearest kind of opportunity there is.
     const noPageBonus = hasPage ? 1 : 1.25;
 
-    const percent = Math.round(Math.min(100, demand * COMPETITION_WEIGHT[competition] * noPageBonus));
+    const percent = Math.round(Math.min(100, demand * COMPETITION_WEIGHT[competition] * noPageBonus * depth));
 
     return {
       keyword: target.keyword,
+      sellable_products: sellable,
       page_type: target.pageType,
       page_slug: target.pageSlug,
       search_volume_estimate: trend ? Math.round(trend.avg_volume * 10) / 10 : null,
@@ -140,6 +175,7 @@ export async function computeOpportunities(days = 90): Promise<OpportunityRow[]>
         siteSearches: search?.searches ?? 0,
         zeroResults: search?.zero_result_searches ?? 0,
         hasPage,
+        sellable,
         competition,
       }),
       factors: {
@@ -148,6 +184,8 @@ export async function computeOpportunities(days = 90): Promise<OpportunityRow[]>
         site_searches: search?.searches ?? 0,
         competition_weight: COMPETITION_WEIGHT[competition],
         no_page_bonus: noPageBonus,
+        sellable_products: sellable,
+        thin_page_factor: depth,
         note:
           "competition_level เป็นการประเมินจากรูปแบบของคำ ไม่ใช่การวัดหน้าผลค้นหาจริง — ต้องต่อ Search Console ก่อนถึงจะรู้อันดับจริง",
       },
