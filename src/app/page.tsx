@@ -1,4 +1,5 @@
 import Link from "next/link";
+import clsx from "clsx";
 import Image from "next/image";
 import { Sparkles, ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Repeat, PercentCircle, LayoutGrid } from "lucide-react";
 import { products } from "@/data/products";
@@ -158,24 +159,26 @@ export default async function HomePage() {
           </div>
 
           {/* Mobile-only quick category row — the same real categories the
-              Categories section below lists in full, as one scrolling row of
-              circles so a sixth category never leaves an orphan on its own
-              line. "ทั้งหมด" closes the row into /shop. */}
+              Categories section below lists in full, as one scrolling row so
+              a sixth category never leaves an orphan on its own line.
+              "ทั้งหมด" closes the row into /shop. Same square tiles as the
+              desktop section, for the same reason: the artwork is packshots,
+              and a circle cuts the ends off every one of them. */}
           <StaggerReveal className="order-2 -mx-4 flex gap-4 overflow-x-auto px-4 scrollbar-none md:hidden">
             {categories.map((c) => (
               <Link
                 key={c.slug}
                 href={`/shop/${c.slug}`}
-                className="flex w-[72px] shrink-0 flex-col items-center gap-1.5 transition-transform active:scale-95"
+                className="flex w-[76px] shrink-0 flex-col items-center gap-1.5 transition-transform active:scale-95"
               >
-                <span className="relative h-[72px] w-[72px] overflow-hidden rounded-full border border-surface-line bg-surface-mist">
-                  <Image src={c.image} alt={c.name} fill className="object-cover" />
+                <span className="relative h-[76px] w-[76px] overflow-hidden rounded-xl2 bg-surface-mist ring-1 ring-surface-line">
+                  <Image src={c.image} alt="" fill sizes="76px" className="object-cover" />
                 </span>
                 <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight text-brand-ink">{c.nameTh}</span>
               </Link>
             ))}
-            <Link href="/shop" className="flex w-[72px] shrink-0 flex-col items-center gap-1.5 transition-transform active:scale-95">
-              <span className="grid h-[72px] w-[72px] place-items-center rounded-full border border-surface-line bg-surface-mist text-brand-800">
+            <Link href="/shop" className="flex w-[76px] shrink-0 flex-col items-center gap-1.5 transition-transform active:scale-95">
+              <span className="grid h-[76px] w-[76px] place-items-center rounded-xl2 bg-surface-mist text-brand-800 ring-1 ring-surface-line">
                 <LayoutGrid size={24} aria-hidden="true" />
               </span>
               <span className="text-center text-[11px] font-medium text-brand-ink">ทั้งหมด</span>
@@ -184,31 +187,51 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Trust strip. Phones get it as four tiles under the banner — the
-          promises are the first thing the layout asks for and they were
-          desktop-only before. Copy is the store's real policy: free shipping
-          on every order, returns within 14 days. */}
-      <section className="border-y border-slate-100 bg-white">
-        <div className="container-page py-4 md:py-5">
-          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-4">
+      {/* Trust strip. Four promises, and each one is now a link to the page
+          that explains it — a shopper who reads "คืนสินค้าได้" and wants the
+          conditions had nowhere to go from here.
+
+          No tinted pills: four identical filled boxes made the row read as
+          decoration, and the fill was doing no work that a hairline between
+          columns doesn't do better. The sub-line carries the condition that
+          actually answers the doubt ("ไม่มียอดขั้นต่ำ") rather than restating
+          the title ("ทุกออเดอร์"). */}
+      <section className="border-y border-surface-line bg-white">
+        <div className="container-page">
+          <ul className="grid grid-cols-2 md:grid-cols-4">
             {[
-              { icon: Truck, title: "ส่งฟรีทั่วไทย", sub: "ทุกออเดอร์" },
-              { icon: ShieldCheck, title: "ของแท้ 100%", sub: "มั่นใจทุกชิ้น" },
-              { icon: MessageCircle, title: "ให้คำปรึกษา", sub: "โดยผู้เชี่ยวชาญ" },
-              { icon: Award, title: "คืนสินค้าได้", sub: "ภายใน 14 วัน" },
-            ].map((f) => (
-              <div
+              { icon: Truck, title: "ส่งฟรีทั่วไทย", sub: "ไม่มียอดขั้นต่ำ", href: "/help/delivery" },
+              { icon: ShieldCheck, title: "ของแท้ 100%", sub: "นำเข้าตรง มี อย.", href: "/about" },
+              { icon: MessageCircle, title: "ให้คำปรึกษาฟรี", sub: "ตอบโดยผู้เชี่ยวชาญ", href: "/help/contact" },
+              { icon: Award, title: "คืนสินค้าได้", sub: "ภายใน 14 วัน", href: "/help/delivery" },
+            ].map((f, i) => (
+              <li
                 key={f.title}
-                className="flex items-center gap-2.5 rounded-xl2 bg-brand-gradient-soft px-3 py-2.5 md:gap-3 md:px-5 md:py-4"
+                className={clsx(
+                  "border-surface-line",
+                  // Hairlines between columns only, so the row reads as one
+                  // band: every tile gets a left rule except the first in its
+                  // row, and the two-column layout needs a rule under the top
+                  // pair as well.
+                  i % 2 === 1 && "border-l md:border-l",
+                  i % 2 === 0 && "md:border-l",
+                  i === 0 && "md:border-l-0",
+                  i < 2 && "border-b md:border-b-0"
+                )}
               >
-                <f.icon size={20} className="shrink-0 text-brand-emerald md:h-6 md:w-6" aria-hidden="true" />
-                <span className="min-w-0">
-                  <span className="block truncate text-xs font-bold text-brand-ink md:text-sm">{f.title}</span>
-                  <span className="block truncate text-[11px] text-slate-500 md:text-xs">{f.sub}</span>
-                </span>
-              </div>
+                <Link
+                  href={f.href}
+                  className="flex h-full items-center gap-3 px-3 py-4 transition-colors hover:bg-surface-mist focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-teal md:justify-center md:gap-3.5 md:px-5 md:py-5"
+                >
+                  <f.icon size={22} strokeWidth={1.75} className="shrink-0 text-brand-emerald" aria-hidden="true" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-bold text-brand-ink md:text-sm">{f.title}</span>
+                    <span className="block truncate text-[11px] text-slate-500 md:text-xs">{f.sub}</span>
+                  </span>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
@@ -220,13 +243,24 @@ export default async function HomePage() {
         <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
         </ScrollReveal>
-        <StaggerGrid className="container-page grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-6">
+        {/* Square tiles rather than the small circles this used to be. The
+            artwork is packshots — groups of bottles and boxes, wide and flat
+            — and a circle crops the sides off every one of them, which is why
+            the row read as six pale smudges. A tile gives the packshot its
+            own shape and about four times the area at the same row height. */}
+        <StaggerGrid className="container-page grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-5">
           {categories.map((c) => (
-            <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col items-center gap-3">
-              <div className="relative h-16 w-16 overflow-hidden rounded-full border border-surface-line bg-surface-mist transition-colors group-hover:border-brand-action/40 md:h-28 md:w-28">
-                <Image src={c.image} alt={c.name} fill className="object-cover" />
+            <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col gap-2.5">
+              <div className="relative aspect-square overflow-hidden rounded-xl2 bg-surface-mist ring-1 ring-surface-line transition-all duration-300 group-hover:ring-brand-action/40 group-hover:shadow-card">
+                <Image
+                  src={c.image}
+                  alt=""
+                  fill
+                  sizes="(max-width:768px) 33vw, 16vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+                />
               </div>
-              <span className="text-center text-xs font-medium text-brand-ink group-hover:text-brand-800 md:text-base">
+              <span className="text-center text-xs font-semibold text-brand-ink transition-colors group-hover:text-brand-800 md:text-sm">
                 {c.nameTh}
               </span>
             </Link>
