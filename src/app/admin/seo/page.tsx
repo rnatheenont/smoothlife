@@ -82,6 +82,7 @@ export default function AdminSeoPage() {
   const [tab, setTab] = useState<SeoPageType>("product");
   const [overrides, setOverrides] = useState<Record<string, SeoOverride>>({});
   const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "done" | "todo">("all");
   const [selected, setSelected] = useState<Item | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -113,10 +114,6 @@ export default function AdminSeoPage() {
 
   const items = useMemo(() => itemsFor(tab), [tab]);
   const q = query.trim().toLowerCase();
-  const shown = useMemo(
-    () => (q ? items.filter((i) => `${i.label} ${i.sub ?? ""}`.toLowerCase().includes(q)) : items).slice(0, 60),
-    [items, q]
-  );
 
   function open(item: Item) {
     const row = overrides[`${tab}:${item.key}`];
@@ -188,6 +185,16 @@ export default function AdminSeoPage() {
     const row = overrides[`${tab}:${item.key}`];
     return Boolean(row?.meta_title || row?.meta_description || (row?.keywords?.length ?? 0) > 0);
   };
+
+  // Working through 900 products means coming back to where you left off,
+  // so "ยังไม่ตั้ง" is the list that matters most and gets its own filter
+  // rather than being something to scroll past.
+  const matching = items.filter(
+    (i) =>
+      (!q || `${i.label} ${i.sub ?? ""}`.toLowerCase().includes(q)) &&
+      (filter === "all" || (filter === "done" ? edited(i) : !edited(i)))
+  );
+  const shown = matching.slice(0, 200);
   // Progress across the whole tab, not the filtered list — the question is
   // how much of the catalogue has been written, and a search box should not
   // flatter the answer.
@@ -239,15 +246,37 @@ export default function AdminSeoPage() {
           การตั้งหัวข้อ SEO ให้แคมเปญจึงยังไม่มีผล จนกว่าจะทำหน้า landing ถาวรแยกต่างหาก
         </p>
       ) : (
-        <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-          <div className="min-w-0">
+        <div className="mt-6 grid min-h-0 gap-5 lg:h-[calc(100vh-15rem)] lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+          <div className="flex min-h-0 min-w-0 flex-col">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="ค้นหา…"
+              placeholder="ค้นหาชื่อสินค้าหรือแบรนด์…"
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
             />
-            <ul className="mt-3 max-h-[60vh] space-y-1 overflow-y-auto pr-1">
+            <div className="mt-2 inline-flex rounded-full bg-surface-muted p-1 text-xs">
+              {(
+                [
+                  ["all", `ทั้งหมด ${items.length.toLocaleString("th-TH")}`],
+                  ["todo", `ยังไม่ตั้ง ${(items.length - doneCount).toLocaleString("th-TH")}`],
+                  ["done", `ตั้งแล้ว ${doneCount.toLocaleString("th-TH")}`],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFilter(key)}
+                  className={
+                    filter === key
+                      ? "flex-1 rounded-full bg-white px-3 py-1.5 font-semibold text-brand-ink shadow-card"
+                      : "flex-1 rounded-full px-3 py-1.5 font-medium text-slate-500 hover:text-brand-ink"
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <ul className="mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
               {shown.map((item) => (
                 <li key={item.key}>
                   <button
@@ -281,11 +310,16 @@ export default function AdminSeoPage() {
                 </li>
               ))}
               {shown.length === 0 && <li className="px-3 py-2 text-sm text-slate-400">ไม่พบรายการ</li>}
+              {matching.length > shown.length && (
+                <li className="px-3 py-2 text-xs text-slate-400">
+                  แสดง {shown.length} จาก {matching.length.toLocaleString("th-TH")} รายการ — พิมพ์ค้นหาเพื่อแคบลง
+                </li>
+              )}
             </ul>
           </div>
 
           {selected ? (
-            <div className="min-w-0 rounded-xl2 bg-white p-5 ring-1 ring-surface-line">
+            <div className="min-h-0 min-w-0 overflow-y-auto rounded-xl2 bg-white p-5 ring-1 ring-surface-line">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h2 className="truncate font-bold text-brand-ink">{selected.label}</h2>
@@ -303,10 +337,22 @@ export default function AdminSeoPage() {
                 </Button>
               </div>
 
-              <div className="mt-4 rounded-lg bg-surface-soft p-3">
-                <p className="text-[11px] font-semibold text-slate-400">ค่าอัตโนมัติที่ใช้อยู่ตอนนี้</p>
-                <p className="mt-1 text-sm text-brand-ink">{selected.autoTitle}</p>
-                <p className="text-xs text-slate-500">{selected.autoDescription || "— ไม่มีคำอธิบาย —"}</p>
+              {/* What Google will actually show. The boxes below are abstract
+                  until you can see the result they produce — and the line
+                  that gets truncated is obvious here and nowhere else. */}
+              <div className="mt-4 rounded-xl2 bg-surface-soft p-4">
+                <p className="mb-2 text-[11px] font-semibold text-slate-400">
+                  ตัวอย่างที่จะแสดงใน Google {title || description ? "(ค่าที่ตั้งเอง)" : "(ค่าอัตโนมัติ)"}
+                </p>
+                <div className="rounded-lg bg-white p-3">
+                  <p className="truncate text-xs text-slate-500">smoothlife.com{selected.href}</p>
+                  <p className="mt-0.5 line-clamp-1 text-[17px] leading-snug text-[#1a0dab]">
+                    {title || selected.autoTitle}
+                  </p>
+                  <p className="mt-0.5 line-clamp-2 text-[13px] leading-relaxed text-slate-600">
+                    {description || selected.autoDescription || "— ยังไม่มีคำอธิบาย Google จะหยิบข้อความจากหน้าเว็บมาแสดงเอง —"}
+                  </p>
+                </div>
               </div>
 
               <label htmlFor="seo-title" className="mt-4 block text-sm font-semibold text-brand-ink">
