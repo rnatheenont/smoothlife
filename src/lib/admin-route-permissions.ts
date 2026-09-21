@@ -66,6 +66,9 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   { prefix: "/api/admin/kb/seed", permission: "kb.publish" },
   { prefix: "/api/admin/kb/sync-products", permission: "kb.publish" },
 
+  // Page titles and descriptions, and the assistant that drafts them.
+  { prefix: "/api/admin/seo", permission: "seo.manage" },
+
   { prefix: "/api/admin/inbox", permission: "inbox.manage" },
   { prefix: "/api/admin/canned-responses", permission: "inbox.manage" },
   { prefix: "/api/admin/customers", permission: "customers.manage" },

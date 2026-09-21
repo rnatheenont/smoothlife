@@ -5,6 +5,7 @@ import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { sortSoldOutLast } from "@/lib/filter-products";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
+import { withSeoOverride } from "@/lib/seo-overrides";
 
 export function generateStaticParams() {
   return concerns.map((c) => ({ slug: c.slug }));
@@ -13,7 +14,11 @@ export function generateStaticParams() {
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
   const c = concerns.find((c) => c.slug === params.slug);
-  return { title: c ? `${c.nameTh} | Smoothlife.com` : "Concern | Smoothlife.com" };
+  const meta = await withSeoOverride("concern", params.slug, {
+    title: c ? `${c.nameTh} | Smoothlife.com` : "Concern | Smoothlife.com",
+    description: c?.description,
+  });
+  return { title: meta.title, description: meta.description, alternates: { canonical: `/concern/${params.slug}` } };
 }
 
 export default async function ConcernDetailPage(props: { params: Promise<{ slug: string }> }) {
