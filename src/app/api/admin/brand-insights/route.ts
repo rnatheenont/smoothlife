@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { buildBrandInsight } from "@/lib/brand-insight";
 import { computeOpportunities, type OpportunityRow } from "@/lib/seo-opportunity";
+import { getProductBreakdown } from "@/lib/brand-signals";
 
 // The dashboard's data, and the two jobs that produce it. Both jobs are
 // manual for now: they cost an AI call and a few dozen Trends requests, and
@@ -24,7 +25,7 @@ type InsightRow = {
 export async function GET() {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
-  const [insights, opportunities, sentiment] = await Promise.all([
+  const [insights, opportunities, sentiment, breakdown] = await Promise.all([
     supabaseRest<InsightRow[]>("brand_insights?select=*&order=created_at.desc&limit=5").catch((): InsightRow[] => []),
     supabaseRest<OpportunityRow[]>(
       "seo_opportunity_scores?select=*&order=opportunity_percent.desc&limit=60"
@@ -32,6 +33,7 @@ export async function GET() {
     supabaseRest<{ sentiment: string | null }[]>(
       "brand_signals?signal_type=eq.review&select=sentiment&limit=2000"
     ).catch((): { sentiment: string | null }[] => []),
+    getProductBreakdown().catch(() => []),
   ]);
 
   const counts = { positive: 0, neutral: 0, negative: 0 };
@@ -41,7 +43,7 @@ export async function GET() {
     else if (row.sentiment === "neutral") counts.neutral += 1;
   }
 
-  return NextResponse.json({ ok: true, insights, opportunities, sentiment: counts });
+  return NextResponse.json({ ok: true, insights, opportunities, sentiment: counts, breakdown });
 }
 
 export async function POST(req: NextRequest) {

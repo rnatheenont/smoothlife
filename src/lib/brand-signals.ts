@@ -5,7 +5,7 @@
 // phases (sentiment rollups, SEO opportunity scoring) can read one place
 // regardless of where a signal came from.
 import googleTrends from "google-trends-api";
-import { supabaseRest } from "@/lib/supabase-server";
+import { pgValue, supabaseRest } from "@/lib/supabase-server";
 import { categories, concerns } from "@/data/categories";
 import { articles } from "@/data/articles";
 
@@ -109,7 +109,13 @@ export async function syncOwnReviews(): Promise<{ synced: number }> {
 // their own words, unprompted.
 
 type ChatRow = { id: string; content: string; viewing_product_slug: string | null; created_at: string };
-type EscalationRow = { id: string; transcript: string | null; status: string | null; created_at: string };
+type EscalationRow = {
+  id: string;
+  transcript: string | null;
+  status: string | null;
+  product_slug: string | null;
+  created_at: string;
+};
 
 /** Customer-authored chat only. The assistant's own replies are this shop
  *  talking to itself, and counting them as voice of the customer would let
@@ -138,13 +144,18 @@ export async function syncCustomerVoice(): Promise<{ messages: number; escalatio
   // email the customer left to be contacted on, and that has no business
   // being copied into an analysis table.
   const escalations = await supabaseRest<EscalationRow[]>(
-    "chat_escalations?select=id,transcript,status,created_at&order=created_at.desc&limit=500"
+    "chat_escalations?select=id,transcript,status,product_slug,created_at&order=created_at.desc&limit=500"
   ).catch((): EscalationRow[] => []);
 
   const escalationSignals: BrandSignalInput[] = escalations.map((e) => ({
     source: "own_chat",
     signal_type: "mention",
     sentiment: "negative",
+    // Which product this handover was about, when the customer had one open
+    // — without it, the strongest negative signal this shop collects was
+    // invisible to any per-product breakdown, only readable one transcript
+    // at a time.
+    keyword: e.product_slug ?? undefined,
     // The tail of the transcript is the part that failed — the earlier turns
     // are usually the assistant answering fine.
     content: (e.transcript ?? "").slice(-1500) || "(ส่งต่อให้ทีมงานโดยไม่มีบทสนทนา)",
@@ -264,4 +275,56 @@ export async function syncGoogleTrends(targets: TrendTarget[] = getTrendTargets(
     await sleep(REQUEST_GAP_MS);
   }
   return { synced: total, failed };
+}
+
+// ---------------------------------------------------------------------
+// Which product this is actually about
+//
+// The AI summary above reads every signal as prose and only names a product
+// if it happens to notice one repeated — real, but not something a person
+// can rely on to catch every case. This counts instead: a plain group-by on
+// the one structured field every review and tagged mention already carries,
+// so "which product has a problem" is a number to scan, not a hope that the
+// model mentioned it.
+
+export type ProductSignalBreakdown = {
+  keyword: string;
+  negative: number;
+  positive: number;
+  neutral: number;
+  /** Tagged to a product, but the source (a plain chat message) carries no
+   *  sentiment of its own — counted as attention, not read as a complaint. */
+  unclassified: number;
+  total: number;
+};
+
+export async function getProductBreakdown(days = 30): Promise<ProductSignalBreakdown[]> {
+  const since = new Date(Date.now() - days * 86_400_000);
+  const rows = await supabaseRest<{ keyword: string | null; sentiment: string | null }[]>(
+    `brand_signals?keyword=not.is.null&occurred_at=gt.${pgValue(since.toISOString())}` +
+      "&select=keyword,sentiment&limit=5000"
+  ).catch((): { keyword: string | null; sentiment: string | null }[] => []);
+
+  const byKeyword = new Map<string, ProductSignalBreakdown>();
+  for (const row of rows) {
+    if (!row.keyword) continue;
+    const entry = byKeyword.get(row.keyword) ?? {
+      keyword: row.keyword,
+      negative: 0,
+      positive: 0,
+      neutral: 0,
+      unclassified: 0,
+      total: 0,
+    };
+    entry.total += 1;
+    if (row.sentiment === "negative") entry.negative += 1;
+    else if (row.sentiment === "positive") entry.positive += 1;
+    else if (row.sentiment === "neutral") entry.neutral += 1;
+    else entry.unclassified += 1;
+    byKeyword.set(row.keyword, entry);
+  }
+
+  // Worst first — the question this answers is "what do I fix next", not
+  // "what gets talked about most".
+  return [...byKeyword.values()].sort((a, b) => b.negative - a.negative || b.total - a.total);
 }

@@ -36,6 +36,14 @@ export async function POST(req: NextRequest) {
   const contactMethod = user?.phone ? "phone" : emailIdentity ? "email" : null;
   const contactValue = user?.phone || emailIdentity?.provider_uid || null;
 
+  // Whatever product this session last looked at while chatting — the
+  // closest thing to "which product this handover is about" without asking
+  // the customer to categorize their own complaint.
+  const [lastViewed] = await supabaseRest<{ viewing_product_slug: string | null }[]>(
+    `chat_messages?session_key=eq.${uid}&viewing_product_slug=not.is.null` +
+      `&select=viewing_product_slug&order=created_at.desc&limit=1`
+  ).catch((): { viewing_product_slug: string | null }[] => []);
+
   const [created] = await supabaseRest<{ id: string }[]>("chat_escalations", {
     method: "POST",
     body: JSON.stringify({
@@ -43,6 +51,7 @@ export async function POST(req: NextRequest) {
       session_key: uid,
       contact_method: contactMethod,
       contact_value: contactValue,
+      product_slug: lastViewed?.viewing_product_slug ?? null,
       // The note is kept at the top of the stored transcript too, so the
       // durable record reads the same way as the inbox does.
       transcript: [note && `ข้อความจากลูกค้า: ${note}`, transcript]

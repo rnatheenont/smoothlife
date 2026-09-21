@@ -33,6 +33,28 @@ export type StoreArticle = {
   seoDescription: string | null;
 };
 
+// Shopify's page titles come through with named entities as well as numeric
+// ones — a post whose title contains an en dash arrived as "&ndash;" and was
+// rendered that way, literally, in the browser tab.
+const NAMED_ENTITIES: Record<string, string> = {
+  ndash: "–",
+  mdash: "—",
+  hellip: "…",
+  lsquo: "\u2018",
+  rsquo: "\u2019",
+  ldquo: "\u201c",
+  rdquo: "\u201d",
+  laquo: "«",
+  raquo: "»",
+  times: "×",
+  middot: "·",
+  bull: "•",
+  reg: "®",
+  copy: "©",
+  trade: "™",
+  deg: "°",
+};
+
 function decodeEntities(s: string): string {
   return s
     .replace(/&lt;/g, "<")
@@ -41,6 +63,8 @@ function decodeEntities(s: string): string {
     .replace(/&#39;|&#x27;/g, "'")
     .replace(/&nbsp;/g, " ")
     .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&([a-z]+);/gi, (whole, name: string) => NAMED_ENTITIES[name.toLowerCase()] ?? whole)
     .replace(/&amp;/g, "&");
 }
 
@@ -115,7 +139,13 @@ async function pageMeta(url: string): Promise<{ image: string | null; seoTitle: 
     // Shopify appends " – <shop name>" to the page title; the SEO field the
     // team actually wrote is the part before it.
     const rawTitle = page.match(/<title>([\s\S]*?)<\/title>/)?.[1];
-    const seoTitle = rawTitle ? decodeEntities(rawTitle).replace(/\s*[–|]\s*Smooth Life\s*$/, "").trim() || null : null;
+    // Shopify appends the shop name to every page title; the part the team
+    // typed is what comes before it.
+    const seoTitle = rawTitle
+      ? decodeEntities(rawTitle)
+          .replace(/\s*[–—|-]\s*Smooth\s*Life\s*$/i, "")
+          .trim() || null
+      : null;
     const rawDesc = page.match(/<meta name="description" content="([^"]*)"/)?.[1];
     const seoDescription = rawDesc ? decodeEntities(rawDesc).trim() || null : null;
 

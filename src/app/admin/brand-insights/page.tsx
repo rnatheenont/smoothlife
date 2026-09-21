@@ -22,6 +22,15 @@ type Insight = {
   created_at: string;
 };
 
+type ProductBreakdown = {
+  keyword: string;
+  negative: number;
+  positive: number;
+  neutral: number;
+  unclassified: number;
+  total: number;
+};
+
 type Opportunity = {
   keyword: string;
   page_type: string | null;
@@ -39,6 +48,7 @@ const COMPETITION_TH = { low: "แข่งไม่ยาก", medium: "ปา�
 export default function BrandInsightsPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [breakdown, setBreakdown] = useState<ProductBreakdown[]>([]);
   const [sentiment, setSentiment] = useState({ positive: 0, neutral: 0, negative: 0 });
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
@@ -48,6 +58,7 @@ export default function BrandInsightsPage() {
     const data = await res.json().catch(() => null);
     setInsights(data?.insights ?? []);
     setOpportunities(data?.opportunities ?? []);
+    setBreakdown(data?.breakdown ?? []);
     setSentiment(data?.sentiment ?? { positive: 0, neutral: 0, negative: 0 });
   }, []);
 
@@ -195,7 +206,58 @@ export default function BrandInsightsPage() {
         )}
       </section>
 
-      {/* 3 — where the next afternoon goes */}
+      {/* 3 — counted, not narrated: which product this is actually about */}
+      <section className="mt-8">
+        <h2 className="text-sm font-bold text-brand-ink">ปัญหาแยกตามสินค้า</h2>
+        <p className="mt-1 text-xs text-slate-500">
+          นับจากรีวิวและแชทที่ระบุสินค้าไว้ชัดเจนเท่านั้น (30 วันล่าสุด) — เรียงจากลบมากไปน้อย ใช้หาว่าควรแก้ตัวไหนก่อน
+          ไม่ใช่ให้ AI เดา
+        </p>
+        {breakdown.length === 0 ? (
+          <p className="mt-2 rounded-xl2 bg-surface-soft p-5 text-sm text-slate-500">
+            ยังไม่มีสัญญาณที่ระบุสินค้าไว้ในช่วงนี้
+          </p>
+        ) : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead>
+                <tr className="border-b border-surface-line text-left text-xs text-slate-400">
+                  <th className="pb-2 font-medium">สินค้า</th>
+                  <th className="pb-2 font-medium">ลบ</th>
+                  <th className="pb-2 font-medium">บวก</th>
+                  <th className="pb-2 font-medium">กลาง</th>
+                  <th className="pb-2 font-medium">พูดถึง (ไม่ระบุความรู้สึก)</th>
+                  <th className="pb-2 font-medium">รวม</th>
+                </tr>
+              </thead>
+              <tbody>
+                {breakdown.slice(0, 30).map((row) => (
+                  <tr key={row.keyword} className="border-b border-surface-line/60">
+                    <td className="py-2.5 pr-3 font-medium text-brand-ink">
+                      <Link
+                        href={`/product/${row.keyword}`}
+                        target="_blank"
+                        className="inline-flex items-center gap-1 hover:text-brand-800"
+                      >
+                        {row.keyword} <ArrowUpRight size={12} aria-hidden="true" />
+                      </Link>
+                    </td>
+                    <td className={"py-2.5 pr-3 tabular-nums " + (row.negative > 0 ? "font-semibold text-rose-600" : "text-slate-400")}>
+                      {row.negative}
+                    </td>
+                    <td className="py-2.5 pr-3 tabular-nums text-slate-500">{row.positive}</td>
+                    <td className="py-2.5 pr-3 tabular-nums text-slate-500">{row.neutral}</td>
+                    <td className="py-2.5 pr-3 tabular-nums text-slate-500">{row.unclassified}</td>
+                    <td className="py-2.5 tabular-nums text-slate-500">{row.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* 4 — where the next afternoon goes */}
       <section className="mt-8">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-bold text-brand-ink">โอกาส SEO</h2>
