@@ -31,6 +31,15 @@ async function loadPermissions(): Promise<Map<string, Set<string>>> {
   return byRole;
 }
 
+/** Every permission a role holds — `["*"]` for the unrestricted roles. Used
+ *  by /api/admin/me so the panel can hide menu items the person cannot open.
+ *  Hiding is courtesy, not protection: the gate in proxy.ts is what actually
+ *  refuses the request. */
+export async function permissionsForRole(role: string): Promise<string[]> {
+  const byRole = await loadPermissions();
+  return [...(byRole.get(role) ?? new Set<string>())];
+}
+
 /** Call after editing role_permissions from the admin UI so the change is
  *  visible immediately instead of waiting out the cache window. */
 export function invalidatePermissionCache() {

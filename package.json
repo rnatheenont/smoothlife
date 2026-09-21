@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "predev": "node scripts/copy-mediapipe.js",
-    "prebuild": "node scripts/copy-mediapipe.js && node scripts/fetch-products.js",
+    "prebuild": "node scripts/check-admin-permissions.mjs && node scripts/copy-mediapipe.js && node scripts/fetch-products.js",
     "build": "next build",
     "start": "next start",
     "lint": "eslint ."

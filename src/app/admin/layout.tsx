@@ -26,6 +26,7 @@ import {
   Users,
   UserCog,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { AdminActionButton, AdminActionProvider } from "@/components/admin/header-action";
@@ -36,43 +37,52 @@ const NAV_COLLAPSED_KEY = "admin-nav-collapsed";
 // Grouped the way the work is grouped — orders, then selling, then the
 // content and the system settings — so fourteen entries read as four short
 // lists instead of one long one.
-const NAV_GROUPS = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  /** The permission needed to open it; null when every role may. */
+  permission?: string | null;
+  /** The accounts screen, which only the owner may open. */
+  ownerOnly?: boolean;
+};
+
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "",
-    items: [{ href: "/admin", label: "ภาพรวม", icon: LayoutDashboard }],
+    items: [{ href: "/admin", label: "ภาพรวม", icon: LayoutDashboard, permission: null }],
   },
   {
     label: "ออเดอร์ & ลูกค้า",
     items: [
-      { href: "/admin/inbox", label: "กล่องข้อความ", icon: Inbox },
-      { href: "/admin/tracking-sync", label: "ซิงก์เลขพัสดุ", icon: Truck },
-      { href: "/admin/customers", label: "ลูกค้า & ผูกบัญชี", icon: Users },
-      { href: "/admin/checkout-transactions", label: "รายการซื้อ (2C2P)", icon: Receipt },
+      { href: "/admin/inbox", label: "กล่องข้อความ", icon: Inbox, permission: "inbox.manage" },
+      { href: "/admin/tracking-sync", label: "ซิงก์เลขพัสดุ", icon: Truck, permission: "tracking_sync.manage" },
+      { href: "/admin/customers", label: "ลูกค้า & ผูกบัญชี", icon: Users, permission: "customers.manage" },
+      { href: "/admin/checkout-transactions", label: "รายการซื้อ (2C2P)", icon: Receipt, permission: "checkout.view" },
     ],
   },
   {
     label: "การขาย & โปรโมชั่น",
     items: [
-      { href: "/admin/flash-sale", label: "Flash Sale", icon: Zap },
-      { href: "/admin/free-gifts", label: "โปรโมชั่น", icon: Gift },
-      { href: "/admin/free-gifts/widgets", label: "Widgets", icon: SlidersHorizontal },
-      { href: "/admin/gift-cards", label: "บัตรของขวัญ", icon: CreditCard },
-      { href: "/admin/subscription-products", label: "สินค้าสมัครสมาชิก", icon: Repeat },
-      { href: "/admin/points", label: "คะแนน", icon: Award },
+      { href: "/admin/flash-sale", label: "Flash Sale", icon: Zap, permission: "flash_sale.view" },
+      { href: "/admin/free-gifts", label: "โปรโมชั่น", icon: Gift, permission: "free_gifts.manage" },
+      { href: "/admin/free-gifts/widgets", label: "Widgets", icon: SlidersHorizontal, permission: "free_gifts.manage" },
+      { href: "/admin/gift-cards", label: "บัตรของขวัญ", icon: CreditCard, permission: "gift_cards.manage" },
+      { href: "/admin/subscription-products", label: "สินค้าสมัครสมาชิก", icon: Repeat, permission: "subscription_products.manage" },
+      { href: "/admin/points", label: "คะแนน", icon: Award, permission: "points.view" },
     ],
   },
   {
     label: "เนื้อหา & ระบบ",
     items: [
-      { href: "/admin/knowledge-base", label: "ฐานความรู้ AI", icon: BookOpen },
-      { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText },
-      { href: "/admin/line-rich-menu", label: "เมนู LINE OA", icon: MessageCircle },
-      { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette },
-      // Visible to everyone in the nav, same as every other item — the page
-      // itself is what actually turns away anyone who isn't the owner (see
-      // /api/admin/users). Hiding the link too would need knowing the
-      // visitor's role before the page has even loaded.
-      { href: "/admin/users", label: "ผู้ใช้ & สิทธิ์", icon: UserCog },
+      { href: "/admin/knowledge-base", label: "ฐานความรู้ AI", icon: BookOpen, permission: "kb.draft" },
+      { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText, permission: "reviews.manage" },
+      { href: "/admin/line-rich-menu", label: "เมนู LINE OA", icon: MessageCircle, permission: "line_rich_menu.manage" },
+      { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette, permission: null },
+      // Only the owner may open it, so only the owner is shown it. The page
+      // still refuses anyone else on its own (see /api/admin/users) — this
+      // just stops the other roles walking into a wall.
+      { href: "/admin/users", label: "ผู้ใช้ & สิทธิ์", icon: UserCog, ownerOnly: true },
     ],
   },
 ];
@@ -97,6 +107,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [me, setMe] = useState<{ display_name: string; role_key: string } | null>(null);
+  // What this role may do, from /api/admin/me. ["*"] until it answers, so the
+  // menu does not flicker from empty to full on every load.
+  const [permissions, setPermissions] = useState<string[]>(["*"]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -135,6 +148,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       // `user` comes back null, and the header simply shows no name.
       const data = await res.json().catch(() => null);
       setMe(data?.user ?? null);
+      setPermissions(Array.isArray(data?.permissions) ? data.permissions : []);
     }
   }
 
@@ -263,11 +277,21 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  // Courtesy, not protection: the request is refused by the gate in proxy.ts
+  // whatever the menu shows. This only spares people the walk to a locked
+  // door — an item with no permission of its own is for everyone.
+  const allowed = (item: { permission?: string | null; ownerOnly?: boolean }) => {
+    if (item.ownerOnly) return !me || me.role_key === "owner";
+    if (!item.permission) return true;
+    return permissions.includes("*") || permissions.includes(item.permission);
+  };
+  const visibleItems = ALL_ITEMS.filter(allowed);
+
   const current = ALL_ITEMS.find((item) => isActive(item.href, pathname));
   const query = navQuery.trim().toLowerCase();
   const groups = query
-    ? [{ label: "ผลการค้นหา", items: ALL_ITEMS.filter((i) => i.label.toLowerCase().includes(query)) }]
-    : NAV_GROUPS;
+    ? [{ label: "ผลการค้นหา", items: visibleItems.filter((i) => i.label.toLowerCase().includes(query)) }]
+    : NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter(allowed) })).filter((g) => g.items.length > 0);
 
   const contentWidth = FULL_WIDTH.includes(current?.href ?? "")
     ? ""
@@ -331,7 +355,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
-        <CommandPalette key={paletteTick} items={ALL_ITEMS.map((i) => ({ ...i, group: groupOf(i.href) }))} openOnMount={paletteTick > 0} />
+        <CommandPalette key={paletteTick} items={visibleItems.map((i) => ({ ...i, group: groupOf(i.href) }))} openOnMount={paletteTick > 0} />
 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
           <aside
