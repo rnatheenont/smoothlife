@@ -4,6 +4,7 @@ import { concerns, concernImage } from "@/data/categories";
 import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { sortSoldOutLast } from "@/lib/filter-products";
+import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 
 export function generateStaticParams() {
   return concerns.map((c) => ({ slug: c.slug }));
@@ -22,8 +23,15 @@ export default async function ConcernDetailPage(props: { params: Promise<{ slug:
 
   const items = sortSoldOutLast(products.filter((p) => p.concerns.includes(concern.slug)));
 
+  const breadcrumbItems = [
+    { label: "หน้าแรก", href: "/" },
+    { label: "ปัญหาผิวที่กังวล", href: "/concern" },
+    { label: concern.nameTh },
+  ];
+
   return (
     <div className="container-page py-8 md:py-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd(breadcrumbItems)) }} />
       <div className="relative rounded-xl2 overflow-hidden h-48 md:h-64 mb-8">
         {/* The photos are square portraits and this banner is a wide strip, so a
             centred crop lands on a chin. Pulled up to keep the face in frame. */}

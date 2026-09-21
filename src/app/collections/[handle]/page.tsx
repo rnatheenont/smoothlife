@@ -4,6 +4,7 @@ import { collections, getCollectionByHandle, getCollectionProducts } from "@/dat
 import ProductCard from "@/components/ProductCard";
 import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";
+import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 
 // One page per real Shopify collection. These are the merchandising groups the
 // marketing team actually maintains (clearance-sale, buy-1-get-1-free-deal,
@@ -32,16 +33,17 @@ export default async function CollectionPage(props: { params: Promise<{ handle: 
 
   const items = getCollectionProducts(collection);
 
+  const breadcrumbItems = [
+    { label: "หน้าแรก", href: "/" },
+    { label: "คอลเลกชัน", href: "/collections" },
+    { label: collection.title },
+  ];
+
   return (
     <div className="container-page py-6 md:py-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd(breadcrumbItems)) }} />
       <BackButton fallbackHref="/collections" />
-      <Breadcrumb
-        items={[
-          { label: "หน้าแรก", href: "/" },
-          { label: "คอลเลกชัน", href: "/collections" },
-          { label: collection.title },
-        ]}
-      />
+      <Breadcrumb items={breadcrumbItems} />
 
       <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center">
         {collection.image && (

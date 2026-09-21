@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { articles, getArticleBySlug } from "@/data/articles";
 import { getStoreArticle, getStoreArticles, storeArticleHref, thaiDate, type StoreArticle } from "@/lib/storefront-articles";
 import { BookOpen, ChevronLeft, ChevronRight, Clock, MessageCircle } from "lucide-react";
+import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 
 // Shopify blog posts come and go without a deploy, so any slug may be one;
 // pages rebuild from the feed at most every 30 minutes.
@@ -98,8 +99,17 @@ function ArticleLayout({
   others: StoreArticle[];
   children: ReactNode;
 }) {
+  // Mirrors the visible trail below — Google wants the markup to describe
+  // what the reader can actually see.
+  const breadcrumbItems = [
+    { label: "หน้าแรก", href: "/" },
+    { label: "ความรู้เรื่องผิวและสุขภาพ", href: "/knowledge" },
+    { label: title },
+  ];
+
   return (
     <div className="container-page py-6 md:py-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd(breadcrumbItems)) }} />
       <nav aria-label="breadcrumb" className="text-sm">
         <Link
           href="/knowledge"

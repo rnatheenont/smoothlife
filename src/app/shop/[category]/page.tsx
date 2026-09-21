@@ -10,6 +10,7 @@ import SortSelect from "@/components/SortSelect";
 import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";
 import { notFound } from "next/navigation";
+import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 
 const ADVISOR_ENTRY: Record<string, { href: string; title: string; subtitle: string }> = {
   "oral-care": {
@@ -52,11 +53,14 @@ export default async function CategoryPage(
   const current = { ...searchParams, category: params.category };
   const items = filterProducts(current);
 
+  const breadcrumbItems = [{ label: "หน้าแรก", href: "/" }, { label: "ช้อป", href: "/shop" }, { label: categoryInfo.nameTh }];
+
   return (
     <div className="container-page pt-3 pb-8 md:py-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd(breadcrumbItems)) }} />
       <div className="flex items-center gap-3 mb-4">
         <BackButton fallbackHref="/shop" />
-        <Breadcrumb items={[{ label: "หน้าแรก", href: "/" }, { label: "ช้อป", href: "/shop" }, { label: categoryInfo.nameTh }]} />
+        <Breadcrumb items={breadcrumbItems} />
       </div>
       <CategoryChips current={current} />
       <div className="mb-6 flex items-end justify-between gap-3">

@@ -3,6 +3,7 @@ import { MessageCircle, ChevronRight } from "lucide-react";
 import Faq from "@/components/Faq";
 import { helpFaqs, helpTopics } from "@/data/help";
 import { helpIcon } from "./icons";
+import { breadcrumbJsonLd, faqPageJsonLd, jsonLdScript } from "@/lib/json-ld";
 
 export const metadata = { title: "ศูนย์ช่วยเหลือ | Smoothlife.com" };
 
@@ -16,6 +17,19 @@ const faqs = helpFaqs;
 export default function HelpPage() {
   return (
     <div className="container-page py-8 md:py-10">
+      {/* The questions below are answered on this page, in full, where the
+          markup says they are — which is the condition for Google showing
+          them as an answer rather than ignoring the markup. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(faqPageJsonLd(faqs.map((f) => ({ question: f.q, answer: f.a })))) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdScript(breadcrumbJsonLd([{ label: "หน้าแรก", href: "/" }, { label: "ศูนย์ช่วยเหลือ" }])),
+        }}
+      />
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">ศูนย์ช่วยเหลือ</h1>
       <p className="text-sm text-slate-500 mb-8">เรามีคำตอบให้ทุกคำถามของคุณ</p>
 

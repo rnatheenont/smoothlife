@@ -104,3 +104,23 @@ export function breadcrumbJsonLd(items: { label: string; href?: string }[]) {
     })),
   };
 }
+
+/**
+ * A page that answers questions, marked up so Google can show the answers
+ * directly — the "People also ask" style result.
+ *
+ * Only for questions genuinely answered on the page itself: the markup has to
+ * match what a visitor reads, and Google drops (or penalises) a FAQPage whose
+ * answers are not visible where it says they are.
+ */
+export function faqPageJsonLd(items: { question: string; answer: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  };
+}
