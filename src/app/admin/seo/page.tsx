@@ -155,9 +155,7 @@ export default function AdminSeoPage() {
   const [thinking, setThinking] = useState(false);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
-  const [searches, setSearches] = useState<{ normalized: string; searches: number; zero_result_searches: number }[]>(
-    [],
-  );
+  const [searches, setSearches] = useState<{ normalized: string; searches: number; zero_result_searches: number }[]>([]);
   const [articleItems, setArticleItems] = useState<Item[] | null>(null);
 
   useAdminAction({
@@ -193,7 +191,10 @@ export default function AdminSeoPage() {
       .catch(() => setArticleItems([]));
   }, [tab, articleItems]);
 
-  const items = useMemo(() => (tab === "article" ? (articleItems ?? []) : itemsFor(tab)), [tab, articleItems]);
+  const items = useMemo(
+    () => (tab === "article" ? articleItems ?? [] : itemsFor(tab)),
+    [tab, articleItems]
+  );
   const q = query.trim().toLowerCase();
 
   function open(item: Item) {
@@ -220,10 +221,7 @@ export default function AdminSeoPage() {
           page_type: tab,
           page_key: selected.key,
           context: selected.context,
-          keywords: keywords
-            .split(",")
-            .map((k) => k.trim())
-            .filter(Boolean),
+          keywords: keywords.split(",").map((k) => k.trim()).filter(Boolean),
           angles,
         }),
       });
@@ -252,10 +250,7 @@ export default function AdminSeoPage() {
           meta_title: title,
           meta_description: description,
           og_image: ogImage,
-          keywords: keywords
-            .split(",")
-            .map((k) => k.trim())
-            .filter(Boolean),
+          keywords: keywords.split(",").map((k) => k.trim()).filter(Boolean),
         }),
       });
       const data = await res.json().catch(() => null);
@@ -276,12 +271,9 @@ export default function AdminSeoPage() {
   const tabCounts = useMemo(
     () =>
       Object.fromEntries(
-        SEO_PAGE_TYPES.map((t) => [
-          t.key,
-          t.key === "article" ? (articleItems?.length ?? null) : itemsFor(t.key).length,
-        ]),
+        SEO_PAGE_TYPES.map((t) => [t.key, t.key === "article" ? articleItems?.length ?? null : itemsFor(t.key).length])
       ) as Record<SeoPageType, number | null>,
-    [articleItems],
+    [articleItems]
   );
 
   /** Written on this screen — the only kind we can edit back. */
@@ -299,7 +291,7 @@ export default function AdminSeoPage() {
   const matching = items.filter(
     (i) =>
       (!q || `${i.label} ${i.sub ?? ""}`.toLowerCase().includes(q)) &&
-      (filter === "all" || (filter === "done" ? edited(i) : !edited(i))),
+      (filter === "all" || (filter === "done" ? edited(i) : !edited(i)))
   );
   // Every match, not the first 200: the list is the worklist, and a cap on
   // it meant the only way to reach product 600 was to already know its name.
@@ -417,7 +409,9 @@ export default function AdminSeoPage() {
                       {(i + 1).toLocaleString("th-TH")}
                     </span>
                     <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-surface-mist ring-1 ring-surface-line">
-                      {item.image && <Image src={item.image} alt="" fill sizes="36px" className="object-cover" />}
+                      {item.image && (
+                        <Image src={item.image} alt="" fill sizes="36px" className="object-cover" />
+                      )}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate">{item.label}</span>
@@ -483,68 +477,57 @@ export default function AdminSeoPage() {
                 </Button>
               </div>
 
-              {/* Both previews on one row: the same title and description
-                  produce both results, and seeing them side by side is what
-                  shows that a line which fits Google's single line gets
-                  wrapped to two in a chat card. The search result takes the
-                  space that is left; the share card is a fixed 320px because
-                  that is what it gets in a phone chat. They stack below
-                  1280px, where side by side would squeeze both. */}
-              <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
-                {/* What Google will actually show. The boxes below are abstract
+              {/* What Google will actually show. The boxes below are abstract
                   until you can see the result they produce — and the line
                   that gets truncated is obvious here and nowhere else. */}
-                <div className="rounded-xl2 bg-surface-soft p-4">
-                  <p className="mb-2 text-[11px] font-semibold text-slate-400">
-                    ตัวอย่างที่จะแสดงใน Google {title || description ? "(ค่าที่ตั้งเอง)" : "(ค่าอัตโนมัติ)"}
+              <div className="mt-4 rounded-xl2 bg-surface-soft p-4">
+                <p className="mb-2 text-[11px] font-semibold text-slate-400">
+                  ตัวอย่างที่จะแสดงใน Google {title || description ? "(ค่าที่ตั้งเอง)" : "(ค่าอัตโนมัติ)"}
+                </p>
+                <div className="rounded-lg bg-white p-3">
+                  <p className="truncate text-xs text-slate-500">smoothlife.com{selected.href}</p>
+                  <p className="mt-0.5 line-clamp-1 text-[17px] leading-snug text-[#1a0dab]">
+                    {title || selected.autoTitle}
                   </p>
-                  <div className="rounded-lg bg-white p-3">
-                    <p className="truncate text-xs text-slate-500">smoothlife.com{selected.href}</p>
-                    <p className="mt-0.5 line-clamp-1 text-[17px] leading-snug text-[#1a0dab]">
-                      {title || selected.autoTitle}
-                    </p>
-                    <p className="mt-0.5 line-clamp-2 text-[13px] leading-relaxed text-slate-600">
-                      {description ||
-                        selected.autoDescription ||
-                        "— ยังไม่มีคำอธิบาย Google จะหยิบข้อความจากหน้าเว็บมาแสดงเอง —"}
-                    </p>
-                  </div>
+                  <p className="mt-0.5 line-clamp-2 text-[13px] leading-relaxed text-slate-600">
+                    {description || selected.autoDescription || "— ยังไม่มีคำอธิบาย Google จะหยิบข้อความจากหน้าเว็บมาแสดงเอง —"}
+                  </p>
                 </div>
+              </div>
 
-                {/* Two previews because they are two different results. Google
+              {/* Two previews because they are two different results. Google
                   shows a line of text; LINE and Facebook show a picture first
                   and the words second — and the picture is the part nobody
                   can see until the link is already shared. */}
-                <div className="rounded-xl2 bg-surface-soft p-4">
-                  <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
-                    <ImageIcon size={12} aria-hidden="true" />
-                    ตัวอย่างตอนแชร์ลิงก์ (LINE / Facebook) {ogImage ? "(รูปที่ตั้งเอง)" : "(รูปอัตโนมัติ)"}
-                  </p>
-                  {/* 320px — the width a share card actually gets in a phone
+              <div className="mt-3 rounded-xl2 bg-surface-soft p-4">
+                <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
+                  <ImageIcon size={12} aria-hidden="true" />
+                  ตัวอย่างตอนแชร์ลิงก์ (LINE / Facebook) {ogImage ? "(รูปที่ตั้งเอง)" : "(รูปอัตโนมัติ)"}
+                </p>
+                {/* 320px — the width a share card actually gets in a phone
                     chat, which is where these links are opened. Left to fill
                     the editor pane, the 1.91:1 box grew as tall as the pane
                     is wide: a preview several times the size of the thing it
                     was previewing. */}
-                  <div className="max-w-xs overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">
-                    <div className="relative aspect-[1.91/1] bg-surface-mist">
-                      {previewImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={previewImage} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="absolute inset-0 grid place-items-center text-xs text-slate-400">
-                          หน้านี้ยังไม่มีรูป — จะใช้โลโก้เว็บแทน
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-3">
-                      <p className="truncate text-[11px] uppercase text-slate-400">smoothlife.com</p>
-                      <p className="mt-0.5 line-clamp-2 text-sm font-semibold text-brand-ink">
-                        {title || selected.autoTitle}
-                      </p>
-                      <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">
-                        {description || selected.autoDescription || "—"}
-                      </p>
-                    </div>
+                <div className="max-w-xs overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">
+                  <div className="relative aspect-[1.91/1] bg-surface-mist">
+                    {previewImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={previewImage} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="absolute inset-0 grid place-items-center text-xs text-slate-400">
+                        หน้านี้ยังไม่มีรูป — จะใช้โลโก้เว็บแทน
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <p className="truncate text-[11px] uppercase text-slate-400">smoothlife.com</p>
+                    <p className="mt-0.5 line-clamp-2 text-sm font-semibold text-brand-ink">
+                      {title || selected.autoTitle}
+                    </p>
+                    <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">
+                      {description || selected.autoDescription || "—"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -672,18 +655,14 @@ export default function AdminSeoPage() {
                   the most useful row on the list. */}
               {searches.length > 0 && (
                 <div className="mt-5">
-                  <p className="text-xs font-semibold text-slate-400">
-                    คนค้นอะไรในเว็บ (90 วันล่าสุด) — แตะเพื่อใส่เป็นคำค้นหา
-                  </p>
+                  <p className="text-xs font-semibold text-slate-400">คนค้นอะไรในเว็บ (90 วันล่าสุด) — แตะเพื่อใส่เป็นคำค้นหา</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {searches.slice(0, 12).map((row) => (
                       <button
                         key={row.normalized}
                         type="button"
                         onClick={() =>
-                          setKeywords((prev) =>
-                            prev.trim() ? `${prev.replace(/,\s*$/, "")}, ${row.normalized}` : row.normalized,
-                          )
+                          setKeywords((prev) => (prev.trim() ? `${prev.replace(/,\s*$/, "")}, ${row.normalized}` : row.normalized))
                         }
                         title={
                           row.zero_result_searches > 0
