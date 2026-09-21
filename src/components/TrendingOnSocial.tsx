@@ -14,11 +14,22 @@ export type SocialClip = {
   product?: Product;
 };
 
-// The clip's own frame IS the visual — a video element shows its first
-// frame as a de facto poster once metadata loads, no separate poster
-// image needed (these are real vertical Firework CDN clips, not stock
-// photos). Only the active (in-view) card actually plays; the rest sit
-// paused on frame 1 as their "cover".
+/** A media fragment asking the browser to land on a frame a tenth of a
+ *  second in, rather than on nothing. Left off a URL that already has one. */
+function posterFrameSrc(url: string) {
+  return url.includes("#t=") ? url : `${url}#t=0.1`;
+}
+
+// Only the active (in-view) card plays; the rest sit on a cover frame.
+//
+// That cover used to be the video's own first frame, on the assumption that
+// `preload="metadata"` paints one. It does not, reliably — most browsers
+// fetch the header and stop, and the row rendered as five black rectangles
+// with a play button floating in each. Two fixes, because the clips differ:
+// a clip tied to a product uses that product's packshot as its poster (the
+// same picture as the row below it, so the card reads as one thing), and
+// every clip's source carries a `#t=0.1` fragment, which asks the browser
+// to seek to a real frame and paint it.
 function ClipCard({
   clip,
   active,
@@ -86,7 +97,8 @@ function ClipCard({
       >
         <video
           ref={videoRef}
-          src={clip.video}
+          src={posterFrameSrc(clip.video)}
+          poster={clip.product?.image}
           className="h-full w-full object-cover"
           playsInline
           muted={muted}
