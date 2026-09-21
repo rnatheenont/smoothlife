@@ -10,7 +10,7 @@
 
 const TOKEN = process.env.LINE_MESSAGING_ACCESS_TOKEN?.trim();
 const LIFF_ID = process.env.NEXT_PUBLIC_LIFF_ID;
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://www.smoothlife.com";
+import { SITE_URL as SITE } from "@/lib/site-url";
 
 export function linePushConfigured() {
   return Boolean(TOKEN);

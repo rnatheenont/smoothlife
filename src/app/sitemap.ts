@@ -6,7 +6,7 @@ import { articles } from "@/data/articles";
 import { brands } from "@/data/brands";
 import { getPublicQuestions } from "@/lib/kb-public";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.smoothlife.com";
+import { SITE_URL } from "@/lib/site-url";
 
 const STATIC_ROUTES = [
   "",

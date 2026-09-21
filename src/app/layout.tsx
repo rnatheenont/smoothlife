@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import SiteChrome from "@/components/SiteChrome";
 import { organizationJsonLd, websiteJsonLd, jsonLdScript } from "@/lib/json-ld";
+import { SITE_URL } from "@/lib/site-url";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import OldBrowserNotice from "@/components/OldBrowserNotice";
@@ -28,7 +29,7 @@ const SITE_DESCRIPTION =
 // has *some* preview image instead of none), but a dedicated OG banner
 // would look meaningfully better here.
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.smoothlife.com"),
+  metadataBase: new URL(SITE_URL),
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
   openGraph: {

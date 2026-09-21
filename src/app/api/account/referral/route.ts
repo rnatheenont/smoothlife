@@ -5,7 +5,7 @@ import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { generateReferralCode } from "@/lib/referral";
 import { REFERRER_ACTIVE_MONTHS } from "@/lib/referral-shared";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.smoothlife.com";
+import { SITE_URL } from "@/lib/site-url";
 
 export type ReferralHistoryRow = {
   id: string;

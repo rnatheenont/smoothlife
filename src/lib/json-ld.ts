@@ -1,7 +1,7 @@
 import type { Product } from "@/data/types";
 import type { ReviewRow } from "@/app/api/reviews/route";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.smoothlife.com";
+import { SITE_URL } from "@/lib/site-url";
 
 // Escapes "</" so a product name/review body containing it can never break
 // out of the <script> tag it's embedded in.

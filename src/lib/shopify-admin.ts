@@ -3,6 +3,8 @@
 // the Storefront token, which is public-safe) — see SHOPIFY_ADMIN_CLIENT_ID
 // / SHOPIFY_ADMIN_CLIENT_SECRET in .env.example. Never import from a "use
 // client" component.
+import { SHOPIFY_STOREFRONT_ORIGIN } from "@/lib/site-url";
+
 const SHOP = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
 const CLIENT_ID = process.env.SHOPIFY_ADMIN_CLIENT_ID;
 const CLIENT_SECRET = process.env.SHOPIFY_ADMIN_CLIENT_SECRET;
@@ -84,9 +86,11 @@ export async function reachableOtherStores(): Promise<OtherStoreKey[]> {
 }
 // The live smoothlife.com storefront itself (Shopify's own theme), not this
 // Next.js app's own origin — used to build fallback links to Shopify pages/
-// products/collections this app doesn't have its own route for. Same
-// constant convention as src/lib/json-ld.ts.
-const STOREFRONT_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || "https://www.smoothlife.com";
+// products/collections this app doesn't have its own route for. It reads its
+// own variable now: it used to share NEXT_PUBLIC_SITE_URL, so pointing the
+// app at its own origin would have quietly aimed these links at routes that
+// do not exist here.
+const STOREFRONT_ORIGIN = SHOPIFY_STOREFRONT_ORIGIN;
 
 export function shopifyAdminConfigured() {
   return Boolean(SHOP && CLIENT_ID && CLIENT_SECRET);
