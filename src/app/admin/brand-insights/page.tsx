@@ -59,20 +59,42 @@ export default function BrandInsightsPage() {
     setBusy(job);
     setNote("");
     try {
-      const url = job === "sync" ? "/api/admin/brand-signals" : `/api/admin/brand-insights?job=${job}`;
-      const res = await fetch(url, { method: "POST" });
+      if (job === "sync") {
+        // Trends is fetched a few keywords at a time (see the route): keep
+        // asking for the next slice until it says there is none, so the
+        // person presses once and the whole list gets done.
+        let offset: number | null = 0;
+        let reviews = 0;
+        let points = 0;
+        const failed: string[] = [];
+        while (offset !== null) {
+          const res = await fetch(`/api/admin/brand-signals?offset=${offset}`, { method: "POST" });
+          const data = await res.json().catch(() => null);
+          if (!data?.ok) {
+            setNote(data?.error || "ซิงก์ไม่สำเร็จ");
+            return;
+          }
+          reviews += data.ownReviews?.synced ?? 0;
+          points += data.googleTrends?.synced ?? 0;
+          failed.push(...(data.googleTrends?.failed ?? []));
+          setNote(`กำลังซิงก์… ${Math.min(data.offset + 5, data.total)}/${data.total} คำ`);
+          offset = data.nextOffset;
+        }
+        setNote(
+          `ซิงก์แล้ว — รีวิว ${reviews} รายการ, Google Trends ${points} จุด` +
+            (failed.length > 0 ? ` · ดึงไม่สำเร็จ ${failed.length} คำ: ${failed.join(", ")}` : "")
+        );
+        await load();
+        return;
+      }
+
+      const res = await fetch(`/api/admin/brand-insights?job=${job}`, { method: "POST" });
       const data = await res.json().catch(() => null);
       if (!data?.ok) {
         setNote(data?.error || "ทำงานไม่สำเร็จ");
         return;
       }
-      setNote(
-        job === "sync"
-          ? `ซิงก์แล้ว — รีวิว ${data.ownReviews?.synced ?? 0} รายการ, Google Trends ${data.googleTrends?.synced ?? 0} จุด`
-          : job === "score"
-            ? `คำนวณโอกาสแล้ว ${data.scored} คำ`
-            : "สรุปข้อมูลใหม่แล้ว"
-      );
+      setNote(job === "score" ? `คำนวณโอกาสแล้ว ${data.scored} คำ` : "สรุปข้อมูลใหม่แล้ว");
       await load();
     } finally {
       setBusy("");
