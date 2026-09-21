@@ -7,6 +7,7 @@ import { reserveStock, releaseStock } from "@/lib/stock-reservation";
 import { isRateLimitedShared, clientIp } from "@/lib/rate-limit";
 import { coupons, evaluateCoupon, CartLine } from "@/data/coupons";
 import { getUserLoyalty } from "@/lib/user-tier";
+import { ATTRIBUTION_COOKIE, attributionColumns } from "@/lib/attribution";
 
 // Free shipping nationwide, no minimum — the site's actual policy (see
 // FREE_SHIPPING_THRESHOLD = 0 in lib/use-order-totals.ts, not imported
@@ -167,6 +168,7 @@ export async function POST(req: NextRequest) {
       line_items: discountedLines.map((l) => ({ variantId: l.variantId, quantity: l.quantity, price: l.price })),
       discount_code: appliedCode,
       discount_amount: discount,
+      ...attributionColumns(req.cookies.get(ATTRIBUTION_COOKIE)?.value),
     }),
   });
 

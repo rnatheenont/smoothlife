@@ -30,10 +30,26 @@ export type BrandSignalInput = {
  *  schedule without piling up duplicate rows for the same review/trend point. */
 export async function recordSignals(signals: BrandSignalInput[]): Promise<void> {
   if (signals.length === 0) return;
+  // Every row is spelled out with the same keys, nulls included. PostgREST
+  // refuses a batch whose objects differ in shape ("All object keys must
+  // match"), and JSON.stringify drops an undefined field entirely — so one
+  // chat message that happened to be sent from a product page and one that
+  // was not made two different shapes, and the whole batch was rejected.
+  const rows = signals.map((s) => ({
+    source: s.source,
+    signal_type: s.signal_type,
+    sentiment: s.sentiment ?? null,
+    keyword: s.keyword ?? null,
+    content: s.content ?? null,
+    volume: s.volume ?? null,
+    occurred_at: s.occurred_at ?? null,
+    raw: s.raw ?? null,
+    dedupe_key: s.dedupe_key,
+  }));
   await supabaseRest("brand_signals?on_conflict=source,dedupe_key", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify(signals),
+    body: JSON.stringify(rows),
   });
 }
 

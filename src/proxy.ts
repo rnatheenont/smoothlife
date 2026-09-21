@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 import { checkAdminPermission } from "@/lib/admin-permissions";
 import { isPublicAdminRoute, ruleFor } from "@/lib/admin-route-permissions";
+import { ATTRIBUTION_COOKIE, attributionCookieOptions, buildAttribution } from "@/lib/attribution";
 
 function deny(status: 401 | 403, error: string) {
   return NextResponse.json({ ok: false, error }, { status });
@@ -59,6 +60,20 @@ export async function proxy(req: NextRequest) {
   if (req.headers.get("host")?.endsWith(".vercel.app")) {
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
+
+  // First-touch attribution: only a real page view can be someone's first
+  // touch, and only ever set once — an admin/API call has no "referrer" a
+  // shopper saw, and overwriting it on a later visit would credit the wrong
+  // channel for a sale that happened weeks after the first click.
+  if (
+    req.method === "GET" &&
+    !req.nextUrl.pathname.startsWith("/api/") &&
+    !req.cookies.get(ATTRIBUTION_COOKIE)
+  ) {
+    const attribution = buildAttribution(req.nextUrl, req.headers.get("referer"));
+    res.cookies.set(ATTRIBUTION_COOKIE, JSON.stringify(attribution), attributionCookieOptions());
+  }
+
   return res;
 }
 

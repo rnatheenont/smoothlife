@@ -5,6 +5,7 @@ import { isRateLimitedShared } from "@/lib/rate-limit";
 import { createPaymentToken, twoC2PConfigured } from "@/lib/2c2p";
 import { getProductBySlug } from "@/data/products";
 import { startFlashSalePayment, UUID_RE } from "@/lib/flash-sale";
+import { ATTRIBUTION_COOKIE, attributionColumns } from "@/lib/attribution";
 
 // Opens a 2C2P payment for the shopper's own live reservation (plan §5, §11.2).
 // The price comes from the catalogue, never the request; the reservation is
@@ -88,6 +89,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       line_items: [{ variantId: variant.variantId, quantity: 1, price: amount }],
       discount_amount: 0,
       flash_sale_entry_id: started.entry_id,
+      ...attributionColumns(req.cookies.get(ATTRIBUTION_COOKIE)?.value),
     }),
   });
 
