@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Timer,
   Users,
+  Zap,
 } from "lucide-react";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { NumberTicker } from "@/components/magicui/number-ticker";
@@ -54,6 +55,7 @@ import CampaignSetup, { type CatalogueItem, type EditingCampaign, type ProductGr
 import FormDrawer from "./FormDrawer";
 import { useMonitors } from "./use-monitors";
 import { useAdminAction } from "@/components/admin/header-action";
+import { PageHeader } from "@/components/admin/layout-kit";
 import CampaignList from "./CampaignList";
 import LiveMonitor from "./LiveMonitor";
 
@@ -182,7 +184,10 @@ export default function FlashSaleDemo({
     scheduler.items[scheduler.items.length - 1];
   const preview = useMemo(() => createCampaign(item?.config ?? initialConfig), [item, initialConfig]);
   const campaign = item?.campaign ?? preview;
-  const upcoming = item && item.status === "scheduled" ? { at: thaiDateTime(item.startsAt), left: countdown(item.startsAt - now) } : undefined;
+  const upcoming =
+    item && item.status === "scheduled"
+      ? { at: thaiDateTime(item.startsAt), left: countdown(item.startsAt - now) }
+      : undefined;
 
   // Each list action is saved first; the demo follows once the database agrees.
   const runAction = async (fn: () => Promise<void>) => {
@@ -194,14 +199,20 @@ export default function FlashSaleDemo({
     }
   };
   // One poll per cycle for every campaign whose queue is open.
-  const { monitors, error: monitorError, reload: reloadMonitors } = useMonitors(expanded.filter((id) => /^[0-9a-f-]{36}$/i.test(id)));
+  const {
+    monitors,
+    error: monitorError,
+    reload: reloadMonitors,
+  } = useMonitors(expanded.filter((id) => /^[0-9a-f-]{36}$/i.test(id)));
 
   const newCampaign = useCallback(() => {
     setEditingId(null);
     setFormOpen(true);
   }, []);
   // The console's primary action lives in the admin header (top right).
-  useAdminAction(embedded ? { label: "สร้างแคมเปญใหม่", icon: <Plus size={15} aria-hidden />, onClick: newCampaign } : null);
+  useAdminAction(
+    embedded ? { label: "สร้างแคมเปญใหม่", icon: <Plus size={15} aria-hidden />, onClick: newCampaign } : null,
+  );
 
   const editingItem = editingId ? scheduler.items.find((i) => i.id === editingId) : undefined;
   const editingRow = editingId ? stored[editingId] : undefined;
@@ -340,7 +351,8 @@ export default function FlashSaleDemo({
     }
   }, [activeEntry, activeSale]);
 
-  const onCampaign = (fn: (c: CampaignState) => CampaignState) => item && setScheduler((s) => updateCampaign(s, item.id, fn));
+  const onCampaign = (fn: (c: CampaignState) => CampaignState) =>
+    item && setScheduler((s) => updateCampaign(s, item.id, fn));
 
   const join = () => {
     if (!item?.campaign) return;
@@ -372,14 +384,23 @@ export default function FlashSaleDemo({
       <Toast.Provider />
       {embedded && (
         <div className="mb-4">
-          <h1 className="text-xl font-bold text-brand-ink">Flash Sale</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            ตั้งแคมเปญล่วงหน้าเป็นรายการ (บันทึกในฐานข้อมูล) ระบบเปิดและปิดการขายเองตามวันเวลาที่ตั้งไว้
-          </p>
+          {/* The same header as every other admin screen when it is one —
+              on the storefront this component renders without it. */}
+          <PageHeader
+            icon={<Zap size={20} className="text-brand-emerald" />}
+            title="Flash Sale"
+            subtitle="ตั้งแคมเปญล่วงหน้าเป็นรายการ (บันทึกในฐานข้อมูล) ระบบเปิดและปิดการขายเองตามวันเวลาที่ตั้งไว้"
+          />
           <ol className="mt-3 flex flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500">
-            {["กดสร้างแคมเปญใหม่ — ฟอร์มจะเปิดจากทางขวา", "ตั้งสินค้า ราคา วันเวลา แล้วบันทึก", "กดที่แคมเปญในรายการ เพื่อกางคิวจริงของแคมเปญนั้น"].map((step, i) => (
+            {[
+              "กดสร้างแคมเปญใหม่ — ฟอร์มจะเปิดจากทางขวา",
+              "ตั้งสินค้า ราคา วันเวลา แล้วบันทึก",
+              "กดที่แคมเปญในรายการ เพื่อกางคิวจริงของแคมเปญนั้น",
+            ].map((step, i) => (
               <li key={step} className="flex items-center gap-1.5 rounded-full bg-surface-soft px-2.5 py-1">
-                <span className="grid size-4 place-items-center rounded-full bg-brand-800 text-[10px] font-bold text-white">{i + 1}</span>
+                <span className="grid size-4 place-items-center rounded-full bg-brand-800 text-[10px] font-bold text-white">
+                  {i + 1}
+                </span>
                 {step}
               </li>
             ))}
@@ -439,7 +460,11 @@ export default function FlashSaleDemo({
         }
       />
 
-      <FormDrawer open={formOpen} title={editingId ? "แก้ไขแคมเปญ" : "สร้างแคมเปญใหม่"} onClose={() => setFormOpen(false)}>
+      <FormDrawer
+        open={formOpen}
+        title={editingId ? "แก้ไขแคมเปญ" : "สร้างแคมเปญใหม่"}
+        onClose={() => setFormOpen(false)}
+      >
         <CampaignSetup
           key={editingId ?? "new"}
           config={editingItem?.config ?? campaign.config}
@@ -468,7 +493,8 @@ export default function FlashSaleDemo({
 
         <div className="flex flex-col gap-4 border-t border-surface-line p-4">
           <p className="text-xs text-slate-500">
-            รายการแคมเปญด้านบนบันทึกจริง แต่การขายในส่วนนี้เป็นการจำลอง: ไม่ตัดเงิน ไม่สร้างออเดอร์ ลูกค้าในคิวเป็นบอท · นาฬิกาจำลองเริ่มจากเวลาปัจจุบันและเดินเร็วขึ้น ×{speed}
+            รายการแคมเปญด้านบนบันทึกจริง แต่การขายในส่วนนี้เป็นการจำลอง: ไม่ตัดเงิน ไม่สร้างออเดอร์ ลูกค้าในคิวเป็นบอท ·
+            นาฬิกาจำลองเริ่มจากเวลาปัจจุบันและเดินเร็วขึ้น ×{speed}
           </p>
 
           <DemoControls
@@ -585,13 +611,25 @@ function DemoControls({
   reset: () => void;
   toggleShopify: () => void;
 }) {
-  const time = new Date(clock).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Bangkok" });
-  const date = new Date(clock).toLocaleDateString("th-TH", { day: "numeric", month: "short", timeZone: "Asia/Bangkok" });
+  const time = new Date(clock).toLocaleTimeString("th-TH", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZone: "Asia/Bangkok",
+  });
+  const date = new Date(clock).toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "short",
+    timeZone: "Asia/Bangkok",
+  });
   return (
     <Card variant="secondary" className="flex flex-col gap-3 p-3 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold text-brand-ink">ตัวควบคุมเดโม</span>
-        <span className="rounded-full bg-white px-2.5 py-1 text-xs tabular-nums text-slate-600 ring-1 ring-surface-line" suppressHydrationWarning>
+        <span
+          className="rounded-full bg-white px-2.5 py-1 text-xs tabular-nums text-slate-600 ring-1 ring-surface-line"
+          suppressHydrationWarning
+        >
           นาฬิกาเดโม {date} {time}
         </span>
         <div className="flex overflow-hidden rounded-full ring-1 ring-surface-line" role="group" aria-label="ความเร็ว">
@@ -610,7 +648,8 @@ function DemoControls({
       </div>
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant="secondary" onPress={() => setRunning(!running)}>
-          {running ? <Pause size={14} aria-hidden /> : <Play size={14} aria-hidden />} {running ? "หยุดเวลา" : "เดินเวลาต่อ"}
+          {running ? <Pause size={14} aria-hidden /> : <Play size={14} aria-hidden />}{" "}
+          {running ? "หยุดเวลา" : "เดินเวลาต่อ"}
         </Button>
         <Button size="sm" variant={shopifyDown ? "danger" : "secondary"} onPress={toggleShopify}>
           <ServerCrash size={14} aria-hidden /> {shopifyDown ? "Shopify ล่มอยู่ (กดเพื่อกู้)" : "จำลอง Shopify ล่ม"}
@@ -624,10 +663,24 @@ function DemoControls({
 }
 
 /** Customer side: which campaign to look at (what a shopper would see on the day). */
-function CampaignSwitcher({ scheduler, currentId, pick, now }: { scheduler: SchedulerState; currentId?: string; pick: (id: string) => void; now: number }) {
+function CampaignSwitcher({
+  scheduler,
+  currentId,
+  pick,
+  now,
+}: {
+  scheduler: SchedulerState;
+  currentId?: string;
+  pick: (id: string) => void;
+  now: number;
+}) {
   if (scheduler.items.length < 2) return null;
   return (
-    <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 scrollbar-none md:mx-0 md:flex-wrap md:px-0" role="group" aria-label="เลือกแคมเปญ">
+    <div
+      className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 scrollbar-none md:mx-0 md:flex-wrap md:px-0"
+      role="group"
+      aria-label="เลือกแคมเปญ"
+    >
       {scheduler.items.map((i) => (
         <button
           key={i.id}
@@ -635,7 +688,9 @@ function CampaignSwitcher({ scheduler, currentId, pick, now }: { scheduler: Sche
           onClick={() => pick(i.id)}
           aria-pressed={i.id === currentId}
           className={`flex min-h-10 max-w-[260px] shrink-0 items-center gap-2 rounded-full px-3.5 text-xs font-semibold ring-1 ${
-            i.id === currentId ? "bg-brand-800 text-white ring-brand-800" : "bg-white text-slate-600 ring-surface-line hover:bg-surface-mist"
+            i.id === currentId
+              ? "bg-brand-800 text-white ring-brand-800"
+              : "bg-white text-slate-600 ring-surface-line hover:bg-surface-mist"
           }`}
         >
           <span
@@ -643,8 +698,15 @@ function CampaignSwitcher({ scheduler, currentId, pick, now }: { scheduler: Sche
             aria-hidden
           />
           <span className="truncate">{i.config.title}</span>
-          <span className={`shrink-0 font-normal ${i.id === currentId ? "text-white/80" : "text-slate-400"}`} suppressHydrationWarning>
-            {i.status === "running" ? "กำลังขาย" : i.status === "scheduled" ? `อีก ${countdown(i.startsAt - now)}` : "จบแล้ว"}
+          <span
+            className={`shrink-0 font-normal ${i.id === currentId ? "text-white/80" : "text-slate-400"}`}
+            suppressHydrationWarning
+          >
+            {i.status === "running"
+              ? "กำลังขาย"
+              : i.status === "scheduled"
+                ? `อีก ${countdown(i.startsAt - now)}`
+                : "จบแล้ว"}
           </span>
         </button>
       ))}
@@ -726,7 +788,11 @@ function CustomerView({
             <Timer size={16} aria-hidden /> ชำระเงินภายใน
             <span className="text-base tabular-nums">{mmss((you!.expiresAt ?? 0) - state.now)}</span>
           </span>
-          <button type="button" onClick={openPay} className="min-h-9 rounded-full bg-white px-4 text-sm font-bold text-sale">
+          <button
+            type="button"
+            onClick={openPay}
+            className="min-h-9 rounded-full bg-white px-4 text-sm font-bold text-sale"
+          >
             ชำระเงิน
           </button>
         </div>
@@ -738,7 +804,13 @@ function CustomerView({
         <Card className="overflow-hidden p-0">
           <div className="grid gap-0 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             <div className="relative aspect-[16/10] bg-white sm:aspect-square xl:aspect-[16/9] 2xl:aspect-square">
-              <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 40vw" className="object-contain p-6" />
+              <Image
+                src={product.image}
+                alt={product.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 40vw"
+                className="object-contain p-6"
+              />
               <Chip color="danger" variant="primary" size="sm" className="absolute left-4 top-4">
                 Flash Sale
               </Chip>
@@ -750,11 +822,15 @@ function CustomerView({
               </div>
               <p className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-sale">{formatTHB(product.price)}</span>
-                {product.compareAtPrice && <span className="text-sm text-slate-400 line-through">{formatTHB(product.compareAtPrice)}</span>}
+                {product.compareAtPrice && (
+                  <span className="text-sm text-slate-400 line-through">{formatTHB(product.compareAtPrice)}</span>
+                )}
               </p>
               <div className="rounded-xl2 bg-surface-soft p-4">
                 <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
-                  <span className="whitespace-nowrap font-semibold text-brand-ink">จำนวนจำกัด {state.sale.total} ชิ้น</span>
+                  <span className="whitespace-nowrap font-semibold text-brand-ink">
+                    จำนวนจำกัด {state.sale.total} ชิ้น
+                  </span>
                   <span className="whitespace-nowrap text-slate-600">
                     เหลือ <strong className="text-lg text-sale">{remaining}</strong> ชิ้น
                   </span>
@@ -765,13 +841,16 @@ function CustomerView({
               </div>
               <ul className="flex flex-col gap-2 text-sm text-slate-600">
                 <li className="flex items-center gap-2">
-                  <Users size={16} className="shrink-0 text-brand-800" aria-hidden /> 1 บัญชีซื้อได้ 1 ชิ้น{campaign.sales.length > 1 ? "ต่อแคมเปญ" : ""}
+                  <Users size={16} className="shrink-0 text-brand-800" aria-hidden /> 1 บัญชีซื้อได้ 1 ชิ้น
+                  {campaign.sales.length > 1 ? "ต่อแคมเปญ" : ""}
                 </li>
                 <li className="flex items-center gap-2">
-                  <Clock size={16} className="shrink-0 text-brand-800" aria-hidden /> ถึงคิวแล้วมีเวลาชำระเงิน {windowMinutes} นาที
+                  <Clock size={16} className="shrink-0 text-brand-800" aria-hidden /> ถึงคิวแล้วมีเวลาชำระเงิน{" "}
+                  {windowMinutes} นาที
                 </li>
                 <li className="flex items-center gap-2">
-                  <RotateCcw size={16} className="shrink-0 text-brand-800" aria-hidden /> ชำระไม่ทันกลับเข้าคิวได้ {state.sale.maxRequeue} ครั้ง
+                  <RotateCcw size={16} className="shrink-0 text-brand-800" aria-hidden /> ชำระไม่ทันกลับเข้าคิวได้{" "}
+                  {state.sale.maxRequeue} ครั้ง
                 </li>
               </ul>
             </div>
@@ -854,7 +933,9 @@ function ActionPanel({
             เข้าสู่ระบบไว้ก่อน
           </Button>
         ) : (
-          <p className="mt-2 text-center text-xs text-slate-500">เข้าสู่ระบบแล้ว · ถึงเวลาเปิดขาย ปุ่มเข้าคิวจะกดได้ทันที</p>
+          <p className="mt-2 text-center text-xs text-slate-500">
+            เข้าสู่ระบบแล้ว · ถึงเวลาเปิดขาย ปุ่มเข้าคิวจะกดได้ทันที
+          </p>
         )}
       </PanelShell>
     );
@@ -864,7 +945,9 @@ function ActionPanel({
     return (
       <PanelShell>
         <h3 className="text-xl font-bold text-brand-ink">ปิดการขายแล้ว</h3>
-        <p className="mt-1 text-sm text-slate-600">หมดช่วงเวลาของแคมเปญนี้ ขอบคุณที่ร่วมกิจกรรม ติดตามรอบถัดไปทาง LINE</p>
+        <p className="mt-1 text-sm text-slate-600">
+          หมดช่วงเวลาของแคมเปญนี้ ขอบคุณที่ร่วมกิจกรรม ติดตามรอบถัดไปทาง LINE
+        </p>
       </PanelShell>
     );
   }
@@ -978,7 +1061,9 @@ function ActionPanel({
     return (
       <PanelShell>
         <h3 className="text-xl font-bold text-brand-ink">สินค้าหมดแล้ว</h3>
-        <p className="mt-1 text-sm text-slate-600">ขายครบ {sale.total} ชิ้นแล้ว ขอบคุณที่ร่วมกิจกรรม ติดตาม Flash Sale รอบถัดไปทาง LINE</p>
+        <p className="mt-1 text-sm text-slate-600">
+          ขายครบ {sale.total} ชิ้นแล้ว ขอบคุณที่ร่วมกิจกรรม ติดตาม Flash Sale รอบถัดไปทาง LINE
+        </p>
       </PanelShell>
     );
   }
@@ -995,7 +1080,9 @@ function ActionPanel({
           <RotateCcw size={18} aria-hidden /> กลับเข้าคิวใหม่
         </Button>
         <p className="mt-2 text-center text-xs text-slate-500">
-          {canRequeue ? `กลับเข้าคิวได้อีก ${left} ครั้ง (ต่อท้ายคิว)` : `ใช้สิทธิ์กลับเข้าคิวครบ ${sale.maxRequeue} ครั้งแล้ว`}
+          {canRequeue
+            ? `กลับเข้าคิวได้อีก ${left} ครั้ง (ต่อท้ายคิว)`
+            : `ใช้สิทธิ์กลับเข้าคิวครบ ${sale.maxRequeue} ครั้งแล้ว`}
         </p>
       </PanelShell>
     );
@@ -1025,7 +1112,8 @@ function ActionPanel({
       </Chip>
       <h3 className="mt-3 text-xl font-bold text-brand-ink">เข้าคิวเพื่อรับสิทธิ์ซื้อ</h3>
       <p className="mt-1 text-sm text-slate-600">
-        มีคนรออยู่ {state.entries.filter((e) => e.status === "waiting").length} คน · ว่างตอนนี้ {available(state)} สิทธิ์
+        มีคนรออยู่ {state.entries.filter((e) => e.status === "waiting").length} คน · ว่างตอนนี้ {available(state)}{" "}
+        สิทธิ์
       </p>
       {loggedIn ? (
         <Button fullWidth size="lg" className="mt-5" onPress={join}>
@@ -1093,7 +1181,14 @@ function PaymentModal({
                     key={m.id}
                     className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl2 px-3 ring-1 ${method === m.id ? "bg-brand-50 ring-brand-800" : "ring-surface-line"}`}
                   >
-                    <input type="radio" name="method" value={m.id} checked={method === m.id} onChange={() => setMethod(m.id)} className="accent-brand-800" />
+                    <input
+                      type="radio"
+                      name="method"
+                      value={m.id}
+                      checked={method === m.id}
+                      onChange={() => setMethod(m.id)}
+                      className="accent-brand-800"
+                    />
                     <span className="text-sm text-brand-ink">{m.label}</span>
                   </label>
                 ))}
@@ -1102,7 +1197,11 @@ function PaymentModal({
                 <ShieldCheck size={14} className="mt-0.5 shrink-0 text-brand-800" aria-hidden />
                 ระบบจริงยืนยันการชำระเงินจาก webhook ของ 2C2P ที่ตรวจลายเซ็นแล้วเท่านั้น ไม่เชื่อหน้าที่ redirect กลับมา
               </p>
-              {paid && <p className="mt-3 rounded-xl2 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-800">ชำระเงินสำเร็จแล้ว</p>}
+              {paid && (
+                <p className="mt-3 rounded-xl2 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-800">
+                  ชำระเงินสำเร็จแล้ว
+                </p>
+              )}
             </Modal.Body>
             <Modal.Footer>
               <Button variant="secondary" slot="close">
@@ -1147,15 +1246,21 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: stri
 }
 
 /** Customer side: every product in the campaign, with its own stock. */
-function ProductPicker({ campaign, saleIndex, select }: { campaign: CampaignState; saleIndex: number; select: (i: number) => void }) {
+function ProductPicker({
+  campaign,
+  saleIndex,
+  select,
+}: {
+  campaign: CampaignState;
+  saleIndex: number;
+  select: (i: number) => void;
+}) {
   const active = yourActive(campaign);
   return (
     <section className="mb-5" aria-label="เลือกสินค้าในแคมเปญ">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-lg font-bold text-brand-ink">{campaign.config.title}</h2>
-        <p className="text-sm text-slate-500">
-          {campaign.sales.length} สินค้า · 1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ
-        </p>
+        <p className="text-sm text-slate-500">{campaign.sales.length} สินค้า · 1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ</p>
       </div>
       <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 scrollbar-none md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 xl:grid-cols-4 2xl:grid-cols-6">
         {campaign.sales.map((s, i) => {
@@ -1175,10 +1280,14 @@ function ProductPicker({ campaign, saleIndex, select }: { campaign: CampaignStat
               <span className="relative block aspect-square bg-white">
                 <Image src={s.product.image} alt="" fill sizes="160px" className="object-contain p-3" />
                 {s.sale.status === "sold_out" && (
-                  <span className="absolute inset-0 grid place-items-center bg-white/70 text-sm font-bold text-slate-600">หมดแล้ว</span>
+                  <span className="absolute inset-0 grid place-items-center bg-white/70 text-sm font-bold text-slate-600">
+                    หมดแล้ว
+                  </span>
                 )}
                 {mine && (
-                  <span className="absolute left-2 top-2 rounded-full bg-brand-800 px-2 py-0.5 text-[10px] font-bold text-white">คิวของคุณ</span>
+                  <span className="absolute left-2 top-2 rounded-full bg-brand-800 px-2 py-0.5 text-[10px] font-bold text-white">
+                    คิวของคุณ
+                  </span>
                 )}
               </span>
               <span className="flex flex-1 flex-col gap-1 p-2.5">
@@ -1229,22 +1338,32 @@ function AdminView({ campaign }: { campaign: CampaignState }) {
           <Alert.Content>
             <Alert.Title>มีลูกค้าจ่ายเงินแล้ว {failed.length} ราย แต่ยังสร้างออเดอร์ Shopify ไม่สำเร็จ</Alert.Title>
             <Alert.Description>
-              ระบบลองใหม่อัตโนมัติทุก 30 วินาที และแจ้งเตือนทีมทาง LINE แล้ว ({failed.map((e) => e.paymentRef).join(", ")})
+              ระบบลองใหม่อัตโนมัติทุก 30 วินาที และแจ้งเตือนทีมทาง LINE แล้ว (
+              {failed.map((e) => e.paymentRef).join(", ")})
             </Alert.Description>
           </Alert.Content>
         </Alert>
       )}
 
       {campaign.sales.length > 1 && (
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 scrollbar-none md:mx-0 md:flex-wrap md:px-0" role="group" aria-label="ดูข้อมูลสินค้า">
-          {[{ key: "all" as const, label: `ทั้งแคมเปญ (${campaign.sales.length})` }, ...campaign.sales.map((s, i) => ({ key: i, label: s.product.name }))].map((o) => (
+        <div
+          className="-mx-4 flex gap-2 overflow-x-auto px-4 scrollbar-none md:mx-0 md:flex-wrap md:px-0"
+          role="group"
+          aria-label="ดูข้อมูลสินค้า"
+        >
+          {[
+            { key: "all" as const, label: `ทั้งแคมเปญ (${campaign.sales.length})` },
+            ...campaign.sales.map((s, i) => ({ key: i, label: s.product.name })),
+          ].map((o) => (
             <button
               key={String(o.key)}
               type="button"
               onClick={() => setFocus(o.key)}
               aria-pressed={focus === o.key}
               className={`min-h-9 max-w-[220px] shrink-0 truncate rounded-full px-3.5 text-xs font-semibold ring-1 ${
-                focus === o.key ? "bg-brand-800 text-white ring-brand-800" : "bg-white text-slate-600 ring-surface-line hover:bg-surface-mist"
+                focus === o.key
+                  ? "bg-brand-800 text-white ring-brand-800"
+                  : "bg-white text-slate-600 ring-surface-line hover:bg-surface-mist"
               }`}
             >
               {o.label}
@@ -1267,8 +1386,19 @@ function AdminView({ campaign }: { campaign: CampaignState }) {
             <li key={s.product.slug}>
               <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
                 <span className="min-w-0 truncate text-brand-ink">{s.product.name}</span>
-                <Chip size="sm" variant="soft" color={s.sale.status === "open" ? "success" : s.sale.status === "sold_out" ? "default" : "warning"}>
-                  {{ scheduled: "ยังไม่เปิด", open: `ขาย ${s.sale.sold}/${s.sale.total}`, sold_out: "ขายหมด", closed: `ปิดแล้ว ${s.sale.sold}/${s.sale.total}` }[s.sale.status]}
+                <Chip
+                  size="sm"
+                  variant="soft"
+                  color={s.sale.status === "open" ? "success" : s.sale.status === "sold_out" ? "default" : "warning"}
+                >
+                  {
+                    {
+                      scheduled: "ยังไม่เปิด",
+                      open: `ขาย ${s.sale.sold}/${s.sale.total}`,
+                      sold_out: "ขายหมด",
+                      closed: `ปิดแล้ว ${s.sale.sold}/${s.sale.total}`,
+                    }[s.sale.status]
+                  }
                 </Chip>
               </div>
               <StockBar state={s} compact={sales.length > 1} />
@@ -1291,18 +1421,29 @@ function AdminView({ campaign }: { campaign: CampaignState }) {
                   <li key={`${s.product.slug}-${e.id}`} className="flex items-center gap-3 py-2.5">
                     <span className="w-10 shrink-0 text-xs tabular-nums text-slate-500">#{e.position}</span>
                     <span className="min-w-0 flex-1">
-                      <span className={`block truncate text-sm ${e.isYou ? "font-bold text-brand-800" : "text-brand-ink"}`}>
+                      <span
+                        className={`block truncate text-sm ${e.isYou ? "font-bold text-brand-800" : "text-brand-ink"}`}
+                      >
                         {e.isYou ? "คุณ (บัญชีทดลอง)" : e.name}
-                        {e.requeueCount > 0 && <span className="ml-1.5 text-xs text-slate-400">เข้าคิวรอบ {e.requeueCount + 1}</span>}
+                        {e.requeueCount > 0 && (
+                          <span className="ml-1.5 text-xs text-slate-400">เข้าคิวรอบ {e.requeueCount + 1}</span>
+                        )}
                       </span>
-                      {sales.length > 1 && <span className="block truncate text-[11px] text-slate-400">{s.product.name}</span>}
+                      {sales.length > 1 && (
+                        <span className="block truncate text-[11px] text-slate-400">{s.product.name}</span>
+                      )}
                     </span>
                     <div className="hidden w-24 sm:block">
                       <div className="h-1.5 overflow-hidden rounded-full bg-surface-muted">
-                        <div className={`h-full ${left < 180 ? "bg-rose-500" : "bg-amber-400"}`} style={{ width: `${(left / s.sale.windowSeconds) * 100}%` }} />
+                        <div
+                          className={`h-full ${left < 180 ? "bg-rose-500" : "bg-amber-400"}`}
+                          style={{ width: `${(left / s.sale.windowSeconds) * 100}%` }}
+                        />
                       </div>
                     </div>
-                    <span className={`w-12 shrink-0 text-right text-sm tabular-nums ${left < 180 ? "font-semibold text-rose-600" : "text-slate-600"}`}>
+                    <span
+                      className={`w-12 shrink-0 text-right text-sm tabular-nums ${left < 180 ? "font-semibold text-rose-600" : "text-slate-600"}`}
+                    >
                       {mmss(left)}
                     </span>
                   </li>
@@ -1321,7 +1462,9 @@ function AdminView({ campaign }: { campaign: CampaignState }) {
                 <span className="w-12 shrink-0 tabular-nums text-xs leading-5 text-slate-400">{mmss(l.at)}</span>
                 <span className="min-w-0">
                   <span className={l.isYou ? "font-semibold text-brand-800" : "text-slate-700"}>{l.text}</span>
-                  {campaign.sales.length > 1 && focus === "all" && <span className="block truncate text-[11px] text-slate-400">{l.product}</span>}
+                  {campaign.sales.length > 1 && focus === "all" && (
+                    <span className="block truncate text-[11px] text-slate-400">{l.product}</span>
+                  )}
                 </span>
               </li>
             ))}
@@ -1347,7 +1490,8 @@ function AdminView({ campaign }: { campaign: CampaignState }) {
           ))}
         </dl>
         <p className="mt-3 text-xs text-slate-500">
-          แคมเปญ: {cfg.mode === "single" ? "สินค้าชิ้นเดียว" : "กลุ่มสินค้า"} · สต็อก {cfg.stockPerProduct} ชิ้น/สินค้า · ชำระภายใน {cfg.windowMinutes} นาที · กลับเข้าคิวได้ {cfg.maxRequeue} ครั้ง
+          แคมเปญ: {cfg.mode === "single" ? "สินค้าชิ้นเดียว" : "กลุ่มสินค้า"} · สต็อก {cfg.stockPerProduct} ชิ้น/สินค้า
+          · ชำระภายใน {cfg.windowMinutes} นาที · กลับเข้าคิวได้ {cfg.maxRequeue} ครั้ง
         </p>
       </Card>
     </div>
