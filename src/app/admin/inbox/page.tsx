@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -21,6 +22,7 @@ import {
   BookOpen,
   Check,
   Inbox,
+  ChevronLeft,
 } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 import { Button } from "@/components/ui";
@@ -615,8 +617,16 @@ export default function AdminInboxPage() {
           Thai product names and wrapped to three lines, while the thread in
           the middle had room to set a reply in 150-character lines. */}
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)_minmax(0,300px)]">
-        {/* list */}
-        <div className="min-h-0 overflow-y-auto rounded-xl2 border border-slate-100 bg-white">
+        {/* Three panes side by side is a desktop idea. On a phone they became
+            three 200px boxes stacked down a 1,900px page, each with its own
+            scrollbar — so below lg this behaves like every chat app: the list,
+            and then the thread once you pick one, with a way back. */}
+        <div
+          className={clsx(
+            "min-h-0 overflow-y-auto rounded-xl2 border border-slate-100 bg-white",
+            selectedId && "hidden lg:block",
+          )}
+        >
           {loadingList ? (
             <p className="p-4 text-xs text-slate-400">กำลังโหลด…</p>
           ) : visible.length === 0 ? (
@@ -680,12 +690,25 @@ export default function AdminInboxPage() {
         </div>
 
         {/* thread */}
-        <div className="flex min-h-0 flex-col rounded-xl2 border border-slate-100 bg-white">
+        <div
+          className={clsx(
+            "flex min-h-0 flex-col rounded-xl2 border border-slate-100 bg-white",
+            !selectedId && "hidden lg:flex",
+          )}
+        >
           {!selected ? (
             <p className="grid flex-1 place-items-center text-xs text-slate-400">เลือกบทสนทนาทางซ้าย</p>
           ) : (
             <>
               <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-2.5">
+                {/* The way back, which a phone has no other way to offer. */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(null)}
+                  className="-ml-1 flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-brand-800 hover:bg-surface-soft lg:hidden"
+                >
+                  <ChevronLeft size={14} /> รายการ
+                </button>
                 <span className="text-xs font-semibold text-slate-500">
                   {STATUS_LABEL[selected.status] ?? selected.status} · {selected.channel}
                 </span>
@@ -1020,7 +1043,12 @@ export default function AdminInboxPage() {
         </div>
 
         {/* customer panel */}
-        <div className="min-h-0 overflow-y-auto rounded-xl2 border border-slate-100 bg-white p-3">
+        <div
+          className={clsx(
+            "min-h-0 overflow-y-auto rounded-xl2 border border-slate-100 bg-white p-3",
+            !selectedId && "hidden lg:block",
+          )}
+        >
           {!selected ? (
             <p className="text-xs text-slate-400">—</p>
           ) : !customer ? (
