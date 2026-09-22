@@ -14,6 +14,8 @@ import {
   PlugZap,
   KeyRound,
   Boxes,
+  Bot,
+  UserRound,
 } from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 import type { TrackingSyncRow } from "@/app/api/admin/tracking-sync/route";
@@ -82,6 +84,18 @@ const ACTION: Record<string, { label: string; tone: "success" | "neutral" | "dan
   "run-empty": { label: "รันแล้ว ไม่มีของใหม่", tone: "neutral" },
   "run-failed": { label: "รันไม่สำเร็จ", tone: "danger" },
 };
+
+/**
+ * "The robot ran" rather than "a parcel happened".
+ *
+ * These carry no order and no tracking number, and they outnumbered the
+ * parcels — 39 of 164 rows — so the log read as a list of cron ticks with
+ * shipments scattered through it. What they are evidence of (a scraper that
+ * has gone quiet, or one that keeps timing out) is what the connection tile
+ * at the top of the page reports, so they stay out of the log until asked
+ * for by their own chip.
+ */
+const RUN_ROW = new Set(["run-empty", "run-failed"]);
 
 /**
  * The chips filter by what the sync *decided*, and a "fill" decision can have
@@ -158,15 +172,31 @@ function HealthTile({
  * has since overruled it, which is the question the column actually answers.
  */
 function WhoTag({ row }: { row: TrackingSyncRow }) {
+  // Nearly every row is the schedule, so the column used to be the same six
+  // words repeated down the page. An icon says it at a glance and leaves the
+  // eye free for the rows that differ.
   if (row.resolution)
     return (
-      <span className="text-[11px] font-semibold text-brand-800">
-        คน · {row.resolution === "overwritten" ? "เขียนทับ" : "เก็บเลขเดิม"}
+      <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold text-brand-800">
+        <UserRound size={12} aria-hidden /> คน{row.resolution === "overwritten" ? "เขียนทับ" : "เก็บเลขเดิม"}
       </span>
     );
-  if (row.triggered_by === "admin") return <span className="text-[11px] text-slate-600">คนกดซิงก์</span>;
-  if (row.triggered_by === "cron") return <span className="text-[11px] text-slate-400">บอท (ตามเวลา)</span>;
-  return <span className="text-[11px] text-slate-300">—</span>;
+  if (row.triggered_by === "admin")
+    return (
+      <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] text-slate-600">
+        <UserRound size={12} aria-hidden /> คนกดซิงก์
+      </span>
+    );
+  if (row.triggered_by === "cron")
+    return (
+      <span
+        className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] text-slate-400"
+        title="รันอัตโนมัติตามเวลาที่ตั้งไว้"
+      >
+        <Bot size={12} aria-hidden /> บอท
+      </span>
+    );
+  return <span className="text-[12px] text-slate-300">—</span>;
 }
 
 function ResultTag({ row }: { row: TrackingSyncRow }) {
@@ -182,11 +212,13 @@ function ResultTag({ row }: { row: TrackingSyncRow }) {
       : row.error
         ? { label: "เขียนไม่สำเร็จ", tone: "danger" as const }
         : row.applied
-          ? { label: "เขียนลง Shopify แล้ว", tone: "success" as const }
+          ? { label: "เขียนแล้ว", tone: "success" as const }
           : meta;
   return (
     <>
-      <Badge tone={outcome.tone}>{outcome.label}</Badge>
+      <Badge tone={outcome.tone} className="whitespace-nowrap">
+        {outcome.label}
+      </Badge>
       {row.action === "conflict" && (row.seen_count ?? 1) > 1 && (
         <span
           className="mt-1 block text-[10px] text-slate-400"
@@ -208,10 +240,12 @@ function Reason({ row }: { row: TrackingSyncRow }) {
           ใน Shopify: {row.existing_numbers.join(", ")}
         </span>
       ) : null}
-      {/* Stored since the first version and never shown: a write Shopify
-          refused was logged with the reason it was *attempted*, so the row
-          read exactly like one that had worked. */}
-      {row.error && <span className="mt-0.5 block text-[11px] text-rose-600">{row.error}</span>}
+      {/* Shown only when it says something the reason does not. A failed run
+          stores the same sentence in both columns, so printing both put every
+          one of those rows on the page twice. */}
+      {row.error && row.error.trim() !== (row.reason ?? "").trim() && (
+        <span className="mt-0.5 block text-[11px] text-rose-600">{row.error}</span>
+      )}
     </>
   );
 }
@@ -400,9 +434,11 @@ export default function AdminTrackingSyncPage() {
 
   const openConflicts = useMemo(() => visible.filter((r) => r.action === "conflict" && !r.resolved_at), [visible]);
 
+  const parcels = useMemo(() => visible.filter((r) => !RUN_ROW.has(r.action)), [visible]);
+
   const grouped = useMemo(
-    () => groupParcels(filter ? visible.filter((r) => r.action === filter) : visible),
-    [visible, filter],
+    () => groupParcels(filter ? visible.filter((r) => r.action === filter) : parcels),
+    [visible, parcels, filter],
   );
 
   const failing = (data?.connection.consecutiveFailures ?? 0) >= 2;
@@ -555,7 +591,7 @@ export default function AdminTrackingSyncPage() {
               tiles that could only be read, and picking one out of the log
               meant scrolling past the rest. */}
           <div className="-mx-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-1 py-0.5">
-            <FilterChip active={!filter} count={visible.length} label="ทั้งหมด" onClick={() => setFilter(null)} />
+            <FilterChip active={!filter} count={parcels.length} label="พัสดุทั้งหมด" onClick={() => setFilter(null)} />
             {Object.keys(ACTION)
               .filter((key) => chipCounts[key])
               .map((key) => (
@@ -601,16 +637,20 @@ export default function AdminTrackingSyncPage() {
                 phone, and the sideways scroll it needed hid the columns that
                 say what happened — so below md each row becomes a card. */}
             <div className="hidden max-h-[calc(100dvh-24rem)] overflow-y-auto md:block">
-              <table className="w-full text-left text-[12px]">
-                <thead className="sticky top-0 z-10 bg-surface-soft text-[11px] text-slate-500">
-                  <tr>
-                    <th className="w-28 px-3 py-2 font-semibold">เวลา</th>
-                    <th className="w-44 px-3 py-2 font-semibold">ออเดอร์</th>
-                    <th className="w-40 px-3 py-2 font-semibold">เลขที่ส่งมา</th>
-                    <th className="w-28 px-3 py-2 font-semibold">ใครใส่</th>
-                    <th className="w-32 px-3 py-2 font-semibold">ผล</th>
-                    <th className="px-3 py-2 font-semibold">รายละเอียด</th>
-                    <th className="w-52 px-3 py-2 font-semibold">จัดการ</th>
+              {/* Sizes and rhythm are the whole readability of this table: one
+                  height per row, 13px for the things read as words and 12px
+                  mono for the numbers, and a hover tint so the eye can hold a
+                  row across seven columns of a 27" screen. */}
+              <table className="w-full text-left text-[13px]">
+                <thead className="sticky top-0 z-10 bg-surface-soft text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                  <tr className="border-b border-slate-200">
+                    <th className="w-[7.5rem] px-3 py-2.5">เวลา</th>
+                    <th className="w-44 px-3 py-2.5">ออเดอร์</th>
+                    <th className="w-40 px-3 py-2.5">เลขที่ส่งมา</th>
+                    <th className="w-[6.5rem] px-3 py-2.5">ใครใส่</th>
+                    <th className="w-[8.5rem] px-3 py-2.5">ผล</th>
+                    <th className="px-3 py-2.5">รายละเอียด</th>
+                    <th className="w-52 px-3 py-2.5 text-right">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -618,7 +658,7 @@ export default function AdminTrackingSyncPage() {
                     <tr
                       key={r.id}
                       className={clsx(
-                        "align-top",
+                        "align-middle transition-colors hover:bg-brand-50/40",
                         // A set's boxes are tied together by a rule down the
                         // left and by naming the order only once, so two lines
                         // read as one order going out in two boxes rather than
@@ -630,22 +670,22 @@ export default function AdminTrackingSyncPage() {
                           : "border-t border-slate-100",
                       )}
                     >
-                      <td className="whitespace-nowrap px-3 py-2 text-slate-400">
+                      <td className="whitespace-nowrap px-3 py-2.5 text-[12px] text-slate-400">
                         {firstOfSet ? fmt(r.received_at) : ""}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-2.5">
                         {firstOfSet ? (
                           <>
-                            <span className="font-medium text-brand-ink">{r.resolved_order_name || r.order_ref}</span>
-                            {!r.resolved_order_name && <span className="ml-1 text-[10px] text-slate-400">(ไม่พบ)</span>}
+                            <span className="font-semibold text-brand-ink">{r.resolved_order_name || r.order_ref}</span>
+                            {!r.resolved_order_name && <span className="ml-1 text-[11px] text-slate-400">(ไม่พบ)</span>}
                             {boxes > 1 && (
-                              <span className="ml-1.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-800">
+                              <span className="ml-1.5 whitespace-nowrap rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-800">
                                 {boxes} กล่อง
                               </span>
                             )}
                           </>
                         ) : (
-                          <span className="text-[10px] text-slate-400">↳ กล่อง {box}</span>
+                          <span className="text-[12px] text-slate-400">↳ กล่อง {box}</span>
                         )}
                         {/* The warehouse's own ref, shown only inside a set —
                             it is the only thing that tells the boxes apart. */}
@@ -653,23 +693,25 @@ export default function AdminTrackingSyncPage() {
                           <span className="mt-0.5 block font-mono text-[10px] text-slate-400">{r.order_ref}</span>
                         )}
                       </td>
-                      <td className="px-3 py-2 font-mono text-[11px] text-slate-600">{r.tracking_number}</td>
-                      <td className="whitespace-nowrap px-3 py-2">
+                      <td className="px-3 py-2.5 font-mono text-[12px] text-slate-700">{r.tracking_number}</td>
+                      <td className="px-3 py-2.5">
                         <WhoTag row={r} />
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-2.5">
                         <ResultTag row={r} />
                       </td>
                       {/* Capped rather than stretched: on a 27" monitor the
                           reason ran the full width of the screen, which is
                           twice as long a line as anyone reads comfortably. */}
-                      <td className="px-3 py-2 text-slate-500">
+                      <td className="px-3 py-2.5 text-[12px] leading-relaxed text-slate-500">
                         <span className="block max-w-[56ch]">
                           <Reason row={r} />
                         </span>
                       </td>
-                      <td className="px-3 py-2">
-                        <RowActions row={r} shopDomain={data.shopDomain} resolving={resolving} onResolve={resolve} />
+                      <td className="px-3 py-2.5">
+                        <span className="flex flex-wrap items-center justify-end gap-1.5">
+                          <RowActions row={r} shopDomain={data.shopDomain} resolving={resolving} onResolve={resolve} />
+                        </span>
                       </td>
                     </tr>
                   ))}
