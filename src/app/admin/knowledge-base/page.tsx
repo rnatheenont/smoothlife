@@ -427,7 +427,12 @@ export default function AdminKnowledgeBasePage() {
           </button>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        /* Two to a row once there is genuinely room for two. Each card is a
+           title, two lines of the answer and its buttons — at 1536px and up
+           a single column is half a screen of white space beside a list
+           people scroll a lot. Editing happens in the drawer, so a narrower
+           card costs nothing. */
+        <ul className="grid items-start gap-2 2xl:grid-cols-2">
           {shown.map((a) => (
             <li key={a.id} className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
               <div className="flex flex-wrap items-start justify-between gap-3">
