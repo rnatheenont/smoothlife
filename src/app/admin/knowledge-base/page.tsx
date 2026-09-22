@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { BookOpen, Loader2, MessageSquare, Pencil, Plus, Trash2 } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { Card } from "@/components/ui";
-import { FilterChip, PageHeader } from "@/components/admin/layout-kit";
+import { FilterChip, PageHeader, adminTable } from "@/components/admin/layout-kit";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { CATEGORY_TH, STATUS_TH, type KbArticle, type KbCategory, type KbStatus } from "@/lib/kb";
 import { slugifyThai } from "@/lib/kb-public";
@@ -471,68 +471,155 @@ export default function AdminKnowledgeBasePage() {
                a single column sets that answer in 180-character lines with
                half a screen of white space beside it. Editing happens in the
                drawer, so the narrower card costs nothing. */
-            <ul className="grid items-start gap-2 xl:grid-cols-2">
-              {shown.map((a) => (
-                <li key={a.id} className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-brand-ink">{a.title}</span>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${STATUS_TONE[a.status]}`}
-                        >
-                          {STATUS_TH[a.status]}
-                        </span>
-                        <span className="rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-slate-500">
-                          {CATEGORY_TH[a.category]}
-                        </span>
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-sm text-slate-500">{a.content}</p>
-                      {reviewLabel(a) && (
-                        <p
-                          className={`mt-1.5 text-[11px] font-semibold ${isReviewDue(a) ? "text-amber-700" : "text-slate-400"}`}
-                        >
-                          {reviewLabel(a)}
-                          {a.last_reviewed_at ? ` · ตรวจล่าสุด ${thaiDate(a.last_reviewed_at)}` : ""}
+            <>
+              {/* A table on a desktop: the questions asked of this list are
+                  comparisons — which category, which status, what has not
+                  been touched in months — and cards made each of those a
+                  hunt across a grid. Below md the same row is a card, since
+                  five columns do not fit a phone. */}
+              <div className="hidden md:block">
+                <table className={adminTable.table}>
+                  <thead className={adminTable.thead}>
+                    <tr>
+                      <th>หัวข้อ</th>
+                      <th className="w-40">ประเภท</th>
+                      <th className="w-40">สถานะ</th>
+                      <th className="w-48">แก้ไขล่าสุด</th>
+                      <th className="w-64 text-right">จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shown.map((a) => (
+                      <tr key={a.id} className={adminTable.row}>
+                        <td className={adminTable.cell}>
+                          <p className="font-semibold text-brand-ink">{a.title}</p>
+                          <p className="mt-0.5 line-clamp-1 max-w-[70ch] text-[12px] text-slate-500">{a.content}</p>
+                        </td>
+                        <td className={adminTable.cell}>
+                          <span className="rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-slate-500">
+                            {CATEGORY_TH[a.category]}
+                          </span>
+                        </td>
+                        <td className={adminTable.cell}>
+                          <span
+                            className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${STATUS_TONE[a.status]}`}
+                          >
+                            {STATUS_TH[a.status]}
+                          </span>
+                          {reviewLabel(a) && (
+                            <span
+                              className={`mt-1 block text-[11px] font-semibold ${isReviewDue(a) ? "text-amber-700" : "text-slate-400"}`}
+                            >
+                              {reviewLabel(a)}
+                            </span>
+                          )}
+                        </td>
+                        <td className={adminTable.cell}>
+                          <span className="block text-[12px] text-slate-500">{thaiDate(a.updated_at)}</span>
+                          {(a.product_tags.length > 0 || a.source === "chat_promoted") && (
+                            <span className="mt-0.5 block truncate text-[11px] text-slate-400">
+                              {a.product_tags.length > 0 ? `สินค้า: ${a.product_tags.join(", ")}` : "มาจากคำตอบในแชท"}
+                            </span>
+                          )}
+                        </td>
+                        <td className={adminTable.cell}>
+                          <span className="flex flex-wrap items-center justify-end gap-1">
+                            {isReviewDue(a) && (
+                              <button
+                                type="button"
+                                onClick={() => confirmReviewed(a)}
+                                disabled={confirming === a.id}
+                                className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 disabled:opacity-60"
+                              >
+                                {confirming === a.id ? "กำลังบันทึก…" : "ยังถูกต้องอยู่"}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => startEdit(a)}
+                              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold text-brand-800 hover:bg-surface-soft"
+                            >
+                              <Pencil size={13} /> แก้ไข
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => remove(a)}
+                              aria-label={`ลบ ${a.title}`}
+                              className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <ul className="flex flex-col gap-2 md:hidden">
+                {shown.map((a) => (
+                  <li key={a.id} className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-brand-ink">{a.title}</span>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${STATUS_TONE[a.status]}`}
+                          >
+                            {STATUS_TH[a.status]}
+                          </span>
+                          <span className="rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-slate-500">
+                            {CATEGORY_TH[a.category]}
+                          </span>
                         </p>
-                      )}
-                      <p className="mt-1.5 text-[11px] text-slate-400">
-                        แก้ไขล่าสุด {thaiDate(a.updated_at)}
-                        {a.product_tags.length > 0 && ` · สินค้า: ${a.product_tags.join(", ")}`}
-                        {a.source === "chat_promoted" && " · มาจากคำตอบในแชท"}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      {isReviewDue(a) && (
+                        <p className="mt-1 line-clamp-2 text-sm text-slate-500">{a.content}</p>
+                        {reviewLabel(a) && (
+                          <p
+                            className={`mt-1.5 text-[11px] font-semibold ${isReviewDue(a) ? "text-amber-700" : "text-slate-400"}`}
+                          >
+                            {reviewLabel(a)}
+                            {a.last_reviewed_at ? ` · ตรวจล่าสุด ${thaiDate(a.last_reviewed_at)}` : ""}
+                          </p>
+                        )}
+                        <p className="mt-1.5 text-[11px] text-slate-400">
+                          แก้ไขล่าสุด {thaiDate(a.updated_at)}
+                          {a.product_tags.length > 0 && ` · สินค้า: ${a.product_tags.join(", ")}`}
+                          {a.source === "chat_promoted" && " · มาจากคำตอบในแชท"}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {isReviewDue(a) && (
+                          <button
+                            type="button"
+                            onClick={() => confirmReviewed(a)}
+                            disabled={confirming === a.id}
+                            className="min-h-9 rounded-full px-3 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 disabled:opacity-60"
+                          >
+                            {confirming === a.id ? "กำลังบันทึก…" : "ยังถูกต้องอยู่"}
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => confirmReviewed(a)}
-                          disabled={confirming === a.id}
-                          className="min-h-9 rounded-full px-3 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 disabled:opacity-60"
+                          onClick={() => startEdit(a)}
+                          className="flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-brand-800 hover:bg-surface-soft"
                         >
-                          {confirming === a.id ? "กำลังบันทึก…" : "ยังถูกต้องอยู่"}
+                          <Pencil size={14} /> แก้ไข
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => startEdit(a)}
-                        className="flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-brand-800 hover:bg-surface-soft"
-                      >
-                        <Pencil size={14} /> แก้ไข
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => remove(a)}
-                        aria-label={`ลบ ${a.title}`}
-                        className="grid size-9 place-items-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => remove(a)}
+                          aria-label={`ลบ ${a.title}`}
+                          className="grid size-9 place-items-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </div>
       </Card>
