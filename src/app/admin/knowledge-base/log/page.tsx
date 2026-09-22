@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, Check, Loader2, MessageSquare, PencilLine, Plus, RefreshCw } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
+import { PageHeader } from "@/components/admin/layout-kit";
 import type { AiLogRow } from "@/app/api/admin/kb/logs/route";
 
 // Admin → ฐานความรู้ AI → Log. Every answer the assistant gave from the
@@ -14,7 +15,13 @@ import type { AiLogRow } from "@/app/api/admin/kb/logs/route";
 const CHANNEL_TH: Record<string, string> = { web_chat: "เว็บแชท", line: "LINE", facebook: "Facebook" };
 
 const stamp = (iso: string) =>
-  new Date(iso).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" });
+  new Date(iso).toLocaleString("th-TH", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Bangkok",
+  });
 
 export default function AdminAiLogPage() {
   const [rows, setRows] = useState<AiLogRow[]>([]);
@@ -82,22 +89,24 @@ export default function AdminAiLogPage() {
   });
 
   return (
-    <div>
-      <div className="mb-5">
-        <Link href="/admin/knowledge-base" className="mb-2 inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-brand-ink">
+    <div className="flex flex-col gap-4">
+      <div>
+        <Link
+          href="/admin/knowledge-base"
+          className="mb-2 inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-brand-ink"
+        >
           <ArrowLeft size={13} /> กลับไปฐานความรู้
         </Link>
-        <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
-          <MessageSquare size={22} className="text-brand-emerald" /> Log คำตอบ AI
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          คำตอบที่น้อง Smoothie ตอบจากฐานความรู้ พร้อมบทความที่ใช้อ้างอิง — คำถามที่ยังไม่มีความรู้รองรับคือรายการที่ควรเขียนบทความเพิ่ม
-        </p>
+        <PageHeader
+          icon={<MessageSquare size={20} className="text-brand-emerald" />}
+          title="Log คำตอบ AI"
+          subtitle="คำตอบที่น้อง Smoothie ตอบจากฐานความรู้ พร้อมบทความที่ใช้อ้างอิง — คำถามที่ยังไม่มีความรู้รองรับคือรายการที่ควรเขียนบทความเพิ่ม"
+        />
       </div>
 
-      {error && <p className="mb-4 rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
+      {error && <p className="rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
 
-      <div className="mb-4 inline-flex rounded-full bg-surface-muted p-1">
+      <div className="inline-flex self-start rounded-full bg-surface-muted p-1">
         {(["all", "answered", "unanswered"] as const).map((f) => (
           <button
             key={f}
@@ -129,15 +138,24 @@ export default function AdminAiLogPage() {
           {rows.map((r) => {
             const unanswered = r.matched_article_ids.length === 0;
             return (
-              <li key={r.id} className={`rounded-xl2 bg-white p-4 ring-1 ${unanswered ? "ring-amber-200" : "ring-surface-line"}`}>
+              <li
+                key={r.id}
+                className={`rounded-xl2 bg-white p-4 ring-1 ${unanswered ? "ring-amber-200" : "ring-surface-line"}`}
+              >
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
                   <span>{stamp(r.created_at)}</span>
                   <span>· {CHANNEL_TH[r.channel] ?? r.channel}</span>
-                  {unanswered && <span className="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">ยังไม่มีความรู้รองรับ</span>}
+                  {unanswered && (
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">
+                      ยังไม่มีความรู้รองรับ
+                    </span>
+                  )}
                 </div>
 
                 <p className="mt-2 text-sm font-semibold text-brand-ink">{r.question}</p>
-                {r.ai_answer && <p className="mt-1.5 line-clamp-4 whitespace-pre-wrap text-sm text-slate-600">{r.ai_answer}</p>}
+                {r.ai_answer && (
+                  <p className="mt-1.5 line-clamp-4 whitespace-pre-wrap text-sm text-slate-600">{r.ai_answer}</p>
+                )}
 
                 {(r.staff_correction || corrected.includes(r.id)) && (
                   <p className="mt-2 rounded-xl2 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
@@ -200,7 +218,9 @@ export default function AdminAiLogPage() {
                         {savingCorrection ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                         บันทึกคำแก้เป็นความรู้ใหม่
                       </button>
-                      <span className="text-[11px] text-slate-500">บันทึกเป็นฉบับร่างในฐานความรู้ ต้องกดเผยแพร่ก่อน AI จึงจะใช้ตอบ</span>
+                      <span className="text-[11px] text-slate-500">
+                        บันทึกเป็นฉบับร่างในฐานความรู้ ต้องกดเผยแพร่ก่อน AI จึงจะใช้ตอบ
+                      </span>
                     </div>
                   </div>
                 )}

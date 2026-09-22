@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Award, Plus, X, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
+import { PageHeader } from "@/components/admin/layout-kit";
 
 type Tier = {
   id: string;
@@ -26,8 +27,20 @@ type LedgerEntry = {
   created_at: string;
 };
 
-type TierFormState = { labelTh: string; labelEn: string; pointsCost: string; discountType: "percent" | "amount"; discountValue: string };
-const EMPTY_TIER_FORM: TierFormState = { labelTh: "", labelEn: "", pointsCost: "", discountType: "percent", discountValue: "" };
+type TierFormState = {
+  labelTh: string;
+  labelEn: string;
+  pointsCost: string;
+  discountType: "percent" | "amount";
+  discountValue: string;
+};
+const EMPTY_TIER_FORM: TierFormState = {
+  labelTh: "",
+  labelEn: "",
+  pointsCost: "",
+  discountType: "percent",
+  discountValue: "",
+};
 
 const REASON_LABELS: Record<string, string> = {
   order_paid: "ได้รับจากคำสั่งซื้อ",
@@ -217,157 +230,185 @@ export default function AdminPointsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-brand-ink flex items-center gap-2">
-          <Award size={22} className="text-brand-emerald" /> จัดการคะแนน
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">ตั้งค่ารายการแลกแต้ม และค้นหา/ปรับแต้มสะสมของลูกค้ารายคน</p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        icon={<Award size={20} className="text-brand-emerald" />}
+        title="จัดการคะแนน"
+        subtitle="ตั้งค่ารายการแลกแต้ม และค้นหา/ปรับแต้มสะสมของลูกค้ารายคน"
+      />
 
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-brand-ink">รายการแลกแต้ม</h2>
-          <Button size="none" className="gap-1 px-3 py-1.5 text-xs" onClick={openCreateTier}>
-            <Plus size={13} /> เพิ่มรายการ
-          </Button>
-        </div>
-        {tiers.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6">ยังไม่มีรายการแลกแต้ม</p>
-        ) : (
-          <div className="space-y-2.5">
-            {tiers.map((t) => (
-              <div key={t.id} className="rounded-xl2 border border-slate-100 p-3.5 shadow-card flex items-center gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-brand-ink">{t.label_th}</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    {t.points_cost.toLocaleString()} แต้ม → {t.discount_type === "percent" ? `ลด ${t.discount_value}%` : `ลด ฿${t.discount_value.toLocaleString()}`}
+      {/* Two jobs, and only one of them is daily. Adjusting a customer's
+          points is the reason anyone opens this page, so it takes the wide
+          column; the redemption tiers — set once, changed rarely — sit beside
+          it rather than above it, where they pushed the search box off the
+          first screen. `order` rather than moved markup, so the tiers keep
+          their place in the source. */}
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)]">
+        <section className="order-2 min-w-0">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-brand-ink">รายการแลกแต้ม</h2>
+            <Button size="none" className="gap-1 px-3 py-1.5 text-xs" onClick={openCreateTier}>
+              <Plus size={13} /> เพิ่มรายการ
+            </Button>
+          </div>
+          {tiers.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-6">ยังไม่มีรายการแลกแต้ม</p>
+          ) : (
+            <div className="space-y-2.5">
+              {tiers.map((t) => (
+                <div
+                  key={t.id}
+                  className="rounded-xl2 border border-slate-100 p-3.5 shadow-card flex items-center gap-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-brand-ink">{t.label_th}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {t.points_cost.toLocaleString()} แต้ม →{" "}
+                      {t.discount_type === "percent"
+                        ? `ลด ${t.discount_value}%`
+                        : `ลด ฿${t.discount_value.toLocaleString()}`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => toggleTierActive(t)}
+                    disabled={tierBusyId === t.id}
+                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${t.active ? "bg-brand-gradient" : "bg-slate-200"}`}
+                    aria-label={t.active ? "ปิดใช้งาน" : "เปิดใช้งาน"}
+                  >
+                    <span
+                      className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${t.active ? "translate-x-[22px]" : "translate-x-0"}`}
+                    />
+                  </button>
+                  <button
+                    onClick={() => startEditTier(t)}
+                    className="rounded-full border border-slate-200 text-slate-500 text-xs font-semibold px-3 py-1.5 shrink-0"
+                  >
+                    แก้ไข
+                  </button>
+                  <button
+                    onClick={() => deleteTier(t.id)}
+                    disabled={tierBusyId === t.id}
+                    className="rounded-full border border-rose-200 text-rose-500 p-1.5 shrink-0 disabled:opacity-30"
+                    aria-label="ลบ"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="order-1 min-w-0">
+          <h2 className="font-bold text-brand-ink mb-3">ค้นหาลูกค้า / ปรับแต้ม</h2>
+          <form onSubmit={submitSearch} className="flex gap-2 mb-3">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ค้นหาด้วยชื่อ, เบอร์โทร, หรืออีเมล"
+              className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            />
+            <Button size="none" className="gap-1 px-4 text-xs" type="submit" disabled={searching}>
+              <Search size={13} /> ค้นหา
+            </Button>
+          </form>
+
+          {searched && !searching && results.length === 0 && (
+            <p className="text-sm text-slate-400 text-center py-4">ไม่พบลูกค้าที่ตรงกับคำค้นหา</p>
+          )}
+
+          {results.length > 0 && !selected && (
+            <div className="space-y-2 mb-4">
+              {results.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => selectCustomer(c)}
+                  className="w-full flex items-center justify-between rounded-xl2 border border-slate-100 p-3 text-left hover:border-brand-teal transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-brand-ink truncate">{c.displayName || "ไม่ระบุชื่อ"}</p>
+                    <p className="text-[11px] text-slate-400">
+                      {[c.phone, c.email].filter(Boolean).join(" · ") || "-"}
+                    </p>
+                  </div>
+                  <p className="text-sm font-bold text-brand-800 shrink-0 ml-3">{c.balance.toLocaleString()} แต้ม</p>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {selected && (
+            <div className="rounded-xl2 border border-slate-100 p-4 shadow-card">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="text-sm font-bold text-brand-ink">{selected.displayName || "ไม่ระบุชื่อ"}</p>
+                  <p className="text-[11px] text-slate-400">
+                    {[selected.phone, selected.email].filter(Boolean).join(" · ") || "-"}
                   </p>
                 </div>
-                <button
-                  onClick={() => toggleTierActive(t)}
-                  disabled={tierBusyId === t.id}
-                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${t.active ? "bg-brand-gradient" : "bg-slate-200"}`}
-                  aria-label={t.active ? "ปิดใช้งาน" : "เปิดใช้งาน"}
-                >
-                  <span
-                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${t.active ? "translate-x-[22px]" : "translate-x-0"}`}
-                  />
-                </button>
-                <button onClick={() => startEditTier(t)} className="rounded-full border border-slate-200 text-slate-500 text-xs font-semibold px-3 py-1.5 shrink-0">
-                  แก้ไข
-                </button>
-                <button
-                  onClick={() => deleteTier(t.id)}
-                  disabled={tierBusyId === t.id}
-                  className="rounded-full border border-rose-200 text-rose-500 p-1.5 shrink-0 disabled:opacity-30"
-                  aria-label="ลบ"
-                >
-                  <Trash2 size={13} />
+                <button onClick={() => setSelected(null)} aria-label="ปิด">
+                  <X size={16} className="text-slate-400" />
                 </button>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+              <p className="text-2xl font-extrabold brand-text-gradient mb-4">
+                {selected.balance.toLocaleString()} แต้ม
+              </p>
 
-      <section>
-        <h2 className="font-bold text-brand-ink mb-3">ค้นหาลูกค้า / ปรับแต้ม</h2>
-        <form onSubmit={submitSearch} className="flex gap-2 mb-3">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="ค้นหาด้วยชื่อ, เบอร์โทร, หรืออีเมล"
-            className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
-          />
-          <Button size="none" className="gap-1 px-4 text-xs" type="submit" disabled={searching}>
-            <Search size={13} /> ค้นหา
-          </Button>
-        </form>
+              <form onSubmit={submitAdjust} className="flex flex-col sm:flex-row gap-2 mb-4">
+                <input
+                  type="number"
+                  value={adjustDelta}
+                  onChange={(e) => setAdjustDelta(e.target.value)}
+                  placeholder="+/- จำนวนแต้ม"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm sm:w-32"
+                />
+                <input
+                  value={adjustNote}
+                  onChange={(e) => setAdjustNote(e.target.value)}
+                  placeholder="หมายเหตุ (ไม่บังคับ)"
+                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                />
+                <Button size="sm" className="shrink-0" type="submit" disabled={adjusting}>
+                  {adjusting ? "กำลังบันทึก…" : "ปรับแต้ม"}
+                </Button>
+              </form>
+              {adjustError && <p className="text-xs text-rose-500 mb-3">{adjustError}</p>}
 
-        {searched && !searching && results.length === 0 && (
-          <p className="text-sm text-slate-400 text-center py-4">ไม่พบลูกค้าที่ตรงกับคำค้นหา</p>
-        )}
-
-        {results.length > 0 && !selected && (
-          <div className="space-y-2 mb-4">
-            {results.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => selectCustomer(c)}
-                className="w-full flex items-center justify-between rounded-xl2 border border-slate-100 p-3 text-left hover:border-brand-teal transition-colors"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-brand-ink truncate">{c.displayName || "ไม่ระบุชื่อ"}</p>
-                  <p className="text-[11px] text-slate-400">{[c.phone, c.email].filter(Boolean).join(" · ") || "-"}</p>
-                </div>
-                <p className="text-sm font-bold text-brand-800 shrink-0 ml-3">{c.balance.toLocaleString()} แต้ม</p>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {selected && (
-          <div className="rounded-xl2 border border-slate-100 p-4 shadow-card">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <p className="text-sm font-bold text-brand-ink">{selected.displayName || "ไม่ระบุชื่อ"}</p>
-                <p className="text-[11px] text-slate-400">{[selected.phone, selected.email].filter(Boolean).join(" · ") || "-"}</p>
-              </div>
-              <button onClick={() => setSelected(null)} aria-label="ปิด">
-                <X size={16} className="text-slate-400" />
-              </button>
-            </div>
-            <p className="text-2xl font-extrabold brand-text-gradient mb-4">{selected.balance.toLocaleString()} แต้ม</p>
-
-            <form onSubmit={submitAdjust} className="flex flex-col sm:flex-row gap-2 mb-4">
-              <input
-                type="number"
-                value={adjustDelta}
-                onChange={(e) => setAdjustDelta(e.target.value)}
-                placeholder="+/- จำนวนแต้ม"
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm sm:w-32"
-              />
-              <input
-                value={adjustNote}
-                onChange={(e) => setAdjustNote(e.target.value)}
-                placeholder="หมายเหตุ (ไม่บังคับ)"
-                className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              />
-              <Button size="sm" className="shrink-0" type="submit" disabled={adjusting}>
-                {adjusting ? "กำลังบันทึก…" : "ปรับแต้ม"}
-              </Button>
-            </form>
-            {adjustError && <p className="text-xs text-rose-500 mb-3">{adjustError}</p>}
-
-            <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">ประวัติล่าสุด</p>
-            {ledger.length === 0 ? (
-              <p className="text-xs text-slate-400">ยังไม่มีประวัติ</p>
-            ) : (
-              <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                {ledger.map((entry) => (
-                  <div key={entry.id} className="flex items-center justify-between text-xs">
-                    <div className="min-w-0">
-                      <p className="text-slate-600">{describeReason(entry.reason)}</p>
-                      <p className="text-[10px] text-slate-400">{new Date(entry.created_at).toLocaleString("th-TH")}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">ประวัติล่าสุด</p>
+              {ledger.length === 0 ? (
+                <p className="text-xs text-slate-400">ยังไม่มีประวัติ</p>
+              ) : (
+                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                  {ledger.map((entry) => (
+                    <div key={entry.id} className="flex items-center justify-between text-xs">
+                      <div className="min-w-0">
+                        <p className="text-slate-600">{describeReason(entry.reason)}</p>
+                        <p className="text-[10px] text-slate-400">
+                          {new Date(entry.created_at).toLocaleString("th-TH")}
+                        </p>
+                      </div>
+                      <span
+                        className={`font-semibold shrink-0 ml-2 ${entry.delta > 0 ? "text-brand-800" : "text-rose-500"}`}
+                      >
+                        {entry.delta > 0 ? "+" : ""}
+                        {entry.delta.toLocaleString()}
+                      </span>
                     </div>
-                    <span className={`font-semibold shrink-0 ml-2 ${entry.delta > 0 ? "text-brand-800" : "text-rose-500"}`}>
-                      {entry.delta > 0 ? "+" : ""}
-                      {entry.delta.toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </section>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
 
       {showTierForm && (
         <div className="fixed inset-0 z-110 bg-black/40 flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-xl2 bg-white p-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-brand-ink text-lg">{editingTierId ? "แก้ไขรายการแลกแต้ม" : "เพิ่มรายการแลกแต้ม"}</h2>
+              <h2 className="font-bold text-brand-ink text-lg">
+                {editingTierId ? "แก้ไขรายการแลกแต้ม" : "เพิ่มรายการแลกแต้ม"}
+              </h2>
               <button onClick={() => setShowTierForm(false)} aria-label="ปิด">
                 <X size={18} />
               </button>
@@ -409,7 +450,9 @@ export default function AdminPointsPage() {
                   type="button"
                   onClick={() => setTierForm({ ...tierForm, discountType: "percent" })}
                   className={`rounded-lg border-2 py-2 text-xs font-semibold ${
-                    tierForm.discountType === "percent" ? "border-brand-teal bg-brand-gradient-soft text-brand-800" : "border-slate-200 text-slate-500"
+                    tierForm.discountType === "percent"
+                      ? "border-brand-teal bg-brand-gradient-soft text-brand-800"
+                      : "border-slate-200 text-slate-500"
                   }`}
                 >
                   ลดเป็นเปอร์เซ็นต์
@@ -418,7 +461,9 @@ export default function AdminPointsPage() {
                   type="button"
                   onClick={() => setTierForm({ ...tierForm, discountType: "amount" })}
                   className={`rounded-lg border-2 py-2 text-xs font-semibold ${
-                    tierForm.discountType === "amount" ? "border-brand-teal bg-brand-gradient-soft text-brand-800" : "border-slate-200 text-slate-500"
+                    tierForm.discountType === "amount"
+                      ? "border-brand-teal bg-brand-gradient-soft text-brand-800"
+                      : "border-slate-200 text-slate-500"
                   }`}
                 >
                   ลดเป็นจำนวนเงิน

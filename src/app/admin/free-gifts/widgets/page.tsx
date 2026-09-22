@@ -2,18 +2,16 @@
 
 import { SlidersHorizontal } from "lucide-react";
 import WidgetsPanel from "@/components/admin/WidgetsPanel";
+import { PageHeader } from "@/components/admin/layout-kit";
 
 export default function AdminWidgetsPage() {
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-brand-ink flex items-center gap-2">
-          <SlidersHorizontal size={22} className="text-brand-emerald" /> Widgets
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          เปิด/ปิดและปรับแต่งวิดเจ็ตที่แสดงของแถมและโปรโมชั่นบนหน้าร้าน
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        icon={<SlidersHorizontal size={20} className="text-brand-emerald" />}
+        title="Widgets"
+        subtitle="เปิด/ปิดและปรับแต่งวิดเจ็ตที่แสดงของแถมและโปรโมชั่นบนหน้าร้าน"
+      />
       <WidgetsPanel />
     </div>
   );
