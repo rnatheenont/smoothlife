@@ -39,13 +39,14 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const id = typeof body?.id === "string" ? body.id : "";
-  const resolution = body?.resolution === "overwritten" ? "overwritten" : body?.resolution === "ignored" ? "ignored" : "";
+  const resolution =
+    body?.resolution === "overwritten" ? "overwritten" : body?.resolution === "ignored" ? "ignored" : "";
   if (!id || !resolution) {
     return NextResponse.json({ ok: false, error: "ต้องระบุ id และ resolution" }, { status: 400 });
   }
 
   const [row] = await supabaseRest<LogRow[]>(
-    `tracking_sync_log?id=eq.${encodeURIComponent(id)}&select=id,order_ref,tracking_number,courier,resolved_order_name,existing_numbers,action,resolved_at&limit=1`
+    `tracking_sync_log?id=eq.${encodeURIComponent(id)}&select=id,order_ref,tracking_number,courier,resolved_order_name,existing_numbers,action,resolved_at&limit=1`,
   );
   if (!row) return NextResponse.json({ ok: false, error: "ไม่พบรายการนี้" }, { status: 404 });
   if (row.action !== "conflict") {
@@ -66,12 +67,20 @@ export async function POST(req: NextRequest) {
     if (mode === "dry-run") {
       return NextResponse.json(
         { ok: false, error: "ตอนนี้อยู่โหมดทดลอง (dry-run) — ยังเขียนลง Shopify ไม่ได้" },
-        { status: 409 }
+        { status: 409 },
       );
     }
     const order = await getOrderForTrackingSync(row.resolved_order_name || row.order_ref);
     if (!order) {
       error = "ไม่พบออเดอร์นี้ใน Shopify แล้ว";
+    } else if (order.fulfillmentNumbers.length > 1) {
+      // The write replaces the whole set, and which of several numbers is the
+      // wrong one is not something this page knows. Refusing keeps the other
+      // parcels' numbers instead of silently deleting them: #2055 carries
+      // five, added one a month.
+      error =
+        `ออเดอร์นี้มีเลขพัสดุ ${order.fulfillmentNumbers.length} เลข (ส่งหลายรอบ) — ` +
+        "การเขียนทับจะลบเลขที่เหลือทิ้ง กรุณาแก้ใน Shopify เอง";
     } else {
       notified = mode === "write-notify";
       const res = order.fulfillmentId

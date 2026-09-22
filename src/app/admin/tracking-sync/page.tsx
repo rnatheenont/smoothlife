@@ -16,6 +16,7 @@ import {
   Boxes,
   Bot,
   UserRound,
+  PackagePlus,
 } from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 import type { TrackingSyncRow } from "@/app/api/admin/tracking-sync/route";
@@ -98,6 +99,26 @@ const ACTION: Record<string, { label: string; tone: "success" | "neutral" | "dan
 const RUN_ROW = new Set(["run-empty", "run-failed"]);
 
 /**
+ * A parcel sent after the order already shipped.
+ *
+ * soko files it as "#4161_F", and the sync leaves it alone on purpose: the
+ * order is fulfilled and closed in Shopify, so there is nothing left to
+ * fulfil and the only honest write is adding the number to the parcel list
+ * the order already carries. That was being done by hand — #2055 has five
+ * numbers on it, one a month — which is the work this queue replaces.
+ */
+const FOLLOW_UP = /_F|ของส่งตาม/;
+const isFollowUp = (r: TrackingSyncRow) =>
+  r.action === "not-eligible" && FOLLOW_UP.test(`${r.order_ref} ${r.reason ?? ""}`);
+
+/** What a person decided about a row, in that person's words. */
+const RESOLUTION: Record<string, { done: string; by: string }> = {
+  overwritten: { done: "เขียนทับแล้ว", by: "คนเขียนทับ" },
+  ignored: { done: "ไม่ใส่ให้ตามที่สั่ง", by: "คนสั่งไม่ใส่" },
+  attached: { done: "ต่อเลขเข้าออเดอร์แล้ว", by: "คนต่อเลข" },
+};
+
+/**
  * The chips filter by what the sync *decided*, and a "fill" decision can have
  * ended three ways (written, refused, held back by the cap). The chip is
  * named for the decision so it does not claim an outcome its rows may not
@@ -178,7 +199,7 @@ function WhoTag({ row }: { row: TrackingSyncRow }) {
   if (row.resolution)
     return (
       <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold text-brand-800">
-        <UserRound size={12} aria-hidden /> คน{row.resolution === "overwritten" ? "เขียนทับ" : "เก็บเลขเดิม"}
+        <UserRound size={12} aria-hidden /> {RESOLUTION[row.resolution]?.by ?? "คนตัดสิน"}
       </span>
     );
   if (row.triggered_by === "admin")
@@ -256,11 +277,13 @@ function RowActions({
   shopDomain,
   resolving,
   onResolve,
+  onAttach,
 }: {
   row: TrackingSyncRow;
   shopDomain: string | null;
   resolving: string | null;
   onResolve: (row: TrackingSyncRow, resolution: "overwritten" | "ignored") => void;
+  onAttach: (row: TrackingSyncRow, decision: "attach" | "skip") => void;
 }) {
   // A mismatch used to end at its reason: the page named the problem and
   // offered nothing to do about it, so settling one meant opening Shopify and
@@ -285,10 +308,32 @@ function RowActions({
       </span>
     );
 
+  // A follow-up parcel: the number belongs on an order that is already closed,
+  // so the write adds it to that order's list rather than fulfilling anything.
+  if (isFollowUp(row) && !row.resolved_at)
+    return (
+      <span className="flex flex-wrap items-center gap-1.5">
+        <button
+          onClick={() => onAttach(row, "attach")}
+          disabled={resolving === row.id}
+          className="rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-800 hover:bg-brand-100 disabled:opacity-50"
+        >
+          ต่อเลขเข้าออเดอร์
+        </button>
+        <button
+          onClick={() => onAttach(row, "skip")}
+          disabled={resolving === row.id}
+          className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+        >
+          ไม่ต้องใส่
+        </button>
+      </span>
+    );
+
   if (row.resolved_at)
     return (
       <span className="block text-[11px] font-medium text-slate-400">
-        {row.resolution === "overwritten" ? "เขียนทับแล้ว" : "เก็บเลขเดิมไว้"} · {fmt(row.resolved_at)}
+        {RESOLUTION[row.resolution ?? ""]?.done ?? "จัดการแล้ว"} · {fmt(row.resolved_at)}
       </span>
     );
 
@@ -415,6 +460,38 @@ export default function AdminTrackingSyncPage() {
     }
   }
 
+  async function attach(row: TrackingSyncRow, decision: "attach" | "skip") {
+    const order = row.resolved_order_name || row.order_ref;
+    const message =
+      decision === "attach"
+        ? `เพิ่มเลข ${row.tracking_number} เข้าไปในออเดอร์ ${order} (กล่องส่งตาม ${row.order_ref})\n\nเลขเดิมของออเดอร์จะยังอยู่ครบ และไม่มีอีเมลถึงลูกค้า — ต้องแจ้งลูกค้าเอง ยืนยันหรือไม่?`
+        : `ไม่ใส่เลข ${row.tracking_number} ให้ออเดอร์ ${order} และเอาออกจากคิว ยืนยันหรือไม่?`;
+    if (!window.confirm(message)) return;
+
+    setResolving(row.id);
+    setRunResult(null);
+    try {
+      const res = await fetch("/api/admin/tracking-sync/attach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: row.id, decision }),
+      });
+      const r = await res.json();
+      setRunResult(
+        r.ok
+          ? decision === "attach"
+            ? `เพิ่ม ${row.tracking_number} เข้าออเดอร์ ${order} แล้ว (ไม่ได้ส่งอีเมล — แจ้งลูกค้าเองด้วย)`
+            : `เอา ${row.tracking_number} ออกจากคิวแล้ว`
+          : `ไม่สำเร็จ: ${r.error ?? "ไม่ทราบสาเหตุ"}`,
+      );
+    } catch (err) {
+      setRunResult(`ไม่สำเร็จ: ${err}`);
+    } finally {
+      setResolving(null);
+      load();
+    }
+  }
+
   useAdminAction({
     label: running ? "กำลังดึง…" : "ดึงจาก soko เดี๋ยวนี้",
     icon: running ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Play size={15} aria-hidden />,
@@ -435,6 +512,17 @@ export default function AdminTrackingSyncPage() {
   const openConflicts = useMemo(() => visible.filter((r) => r.action === "conflict" && !r.resolved_at), [visible]);
 
   const parcels = useMemo(() => visible.filter((r) => !RUN_ROW.has(r.action)), [visible]);
+
+  // One entry per parcel: runs before 15 Sep logged the same follow-up on
+  // every pass, and six rows for one box is not six decisions.
+  const followUps = useMemo(() => {
+    const seen = new Set<string>();
+    return visible.filter((r) => {
+      if (!isFollowUp(r) || r.resolved_at || seen.has(r.tracking_number)) return false;
+      seen.add(r.tracking_number);
+      return true;
+    });
+  }, [visible]);
 
   const grouped = useMemo(
     () => groupParcels(filter ? visible.filter((r) => r.action === filter) : parcels),
@@ -574,7 +662,60 @@ export default function AdminTrackingSyncPage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-1.5">
-                  <RowActions row={r} shopDomain={data?.shopDomain ?? null} resolving={resolving} onResolve={resolve} />
+                  <RowActions
+                    row={r}
+                    shopDomain={data?.shopDomain ?? null}
+                    resolving={resolving}
+                    onResolve={resolve}
+                    onAttach={attach}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Second queue, deliberately separate from the mismatches. A mismatch
+          is "two systems disagree, somebody has to be right"; a follow-up is
+          "this parcel is real and nobody has told the customer" — the same
+          shape of work, a different question, and mixing them made the
+          mismatches look routine. */}
+      {followUps.length > 0 && (
+        <section className="rounded-xl2 border border-brand-100 bg-brand-50/40 p-4">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <h2 className="flex items-center gap-1.5 text-sm font-bold text-brand-800">
+              <PackagePlus size={15} /> ของส่งตาม {followUps.length} กล่อง
+            </h2>
+            <p className="text-[11px] leading-relaxed text-slate-600">
+              กล่องที่ส่งตามหลังออเดอร์ปิดไปแล้ว — กดต่อเลขเข้าออเดอร์ แล้วเลขนี้จะไปต่อท้ายเลขเดิมที่มีอยู่
+              ไม่มีอีเมลถึงลูกค้า (ต้องแจ้งเอง)
+            </p>
+          </div>
+
+          <ul className="mt-3 grid gap-2 lg:grid-cols-2">
+            {followUps.map((r) => (
+              <li
+                key={r.id}
+                className="flex flex-col gap-3 rounded-l border border-brand-100 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-brand-ink">
+                    {r.resolved_order_name || r.order_ref}
+                    <span className="ml-1.5 font-mono text-[10px] font-medium text-slate-400">{r.order_ref}</span>
+                  </p>
+                  <p className="mt-1 font-mono text-[11px] text-slate-500">
+                    เลขกล่องนี้: <span className="text-brand-800">{r.tracking_number}</span>
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-1.5">
+                  <RowActions
+                    row={r}
+                    shopDomain={data?.shopDomain ?? null}
+                    resolving={resolving}
+                    onResolve={resolve}
+                    onAttach={attach}
+                  />
                 </div>
               </li>
             ))}
@@ -710,7 +851,13 @@ export default function AdminTrackingSyncPage() {
                       </td>
                       <td className="px-3 py-2.5">
                         <span className="flex flex-wrap items-center justify-end gap-1.5">
-                          <RowActions row={r} shopDomain={data.shopDomain} resolving={resolving} onResolve={resolve} />
+                          <RowActions
+                            row={r}
+                            shopDomain={data.shopDomain}
+                            resolving={resolving}
+                            onResolve={resolve}
+                            onAttach={attach}
+                          />
                         </span>
                       </td>
                     </tr>
@@ -752,7 +899,13 @@ export default function AdminTrackingSyncPage() {
                   </p>
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                     <WhoTag row={r} />
-                    <RowActions row={r} shopDomain={data.shopDomain} resolving={resolving} onResolve={resolve} />
+                    <RowActions
+                      row={r}
+                      shopDomain={data.shopDomain}
+                      resolving={resolving}
+                      onResolve={resolve}
+                      onAttach={attach}
+                    />
                   </div>
                 </li>
               ))}

@@ -24,7 +24,13 @@ export type OtherStoreKey = (typeof OTHER_STORES)[number];
 
 type StoreConfig = { domain?: string; clientId?: string; clientSecret?: string; label: string; adminHandle: string };
 const STORES: Record<StoreKey, StoreConfig> = {
-  smoothlife: { domain: SHOP, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET, label: "Smooth Life", adminHandle: "smoothlifethailand" },
+  smoothlife: {
+    domain: SHOP,
+    clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
+    label: "Smooth Life",
+    adminHandle: "smoothlifethailand",
+  },
   smoothe: {
     domain: process.env.SHOPIFY_SMOOTHE_STORE_DOMAIN || "smooth-e-thailand.myshopify.com",
     clientId: process.env.SHOPIFY_SMOOTHE_CLIENT_ID || CLIENT_ID,
@@ -73,7 +79,8 @@ export async function storeReachable(store: StoreKey): Promise<boolean> {
     reachability.set(store, { ok: true, at: Date.now() });
     return true;
   } catch (err) {
-    if (known?.ok !== false) console.warn(`[shopify-admin] ${store} not reachable — app not installed there?`, String(err));
+    if (known?.ok !== false)
+      console.warn(`[shopify-admin] ${store} not reachable — app not installed there?`, String(err));
     reachability.set(store, { ok: false, at: Date.now() });
     return false;
   }
@@ -128,7 +135,11 @@ async function getAdminAccessToken(store: StoreKey = "smoothlife"): Promise<stri
   return data.access_token;
 }
 
-async function adminGraphql<T>(query: string, variables?: Record<string, unknown>, store: StoreKey = "smoothlife"): Promise<T> {
+async function adminGraphql<T>(
+  query: string,
+  variables?: Record<string, unknown>,
+  store: StoreKey = "smoothlife",
+): Promise<T> {
   const token = await getAdminAccessToken(store);
   const res = await fetch(`https://${STORES[store].domain}/admin/api/${API_VERSION}/graphql.json`, {
     method: "POST",
@@ -167,7 +178,10 @@ const CUSTOMER_FIELDS = `id firstName lastName phone defaultAddress { address1 a
 // null on no match OR on any API error (e.g. the custom app's token doesn't
 // have the read_customers scope) — this is a best-effort enhancement, never
 // something that should block registration/login.
-export async function findShopifyCustomerByEmail(email: string, store: StoreKey = "smoothlife"): Promise<ShopifyCustomerMatch | null> {
+export async function findShopifyCustomerByEmail(
+  email: string,
+  store: StoreKey = "smoothlife",
+): Promise<ShopifyCustomerMatch | null> {
   if (!storeConfigured(store)) return null;
   try {
     const data = await adminGraphql<{
@@ -179,7 +193,7 @@ export async function findShopifyCustomerByEmail(email: string, store: StoreKey 
         }
       }`,
       { query: `email:${JSON.stringify(email)}` },
-      store
+      store,
     );
     const node = data.customers.edges[0]?.node;
     return node || null;
@@ -191,7 +205,10 @@ export async function findShopifyCustomerByEmail(email: string, store: StoreKey 
 
 // Same idea as findShopifyCustomerByEmail but keyed on phone — used by the
 // phone-OTP signup path, which has no email to match on.
-export async function findShopifyCustomerByPhone(phone: string, store: StoreKey = "smoothlife"): Promise<ShopifyCustomerMatch | null> {
+export async function findShopifyCustomerByPhone(
+  phone: string,
+  store: StoreKey = "smoothlife",
+): Promise<ShopifyCustomerMatch | null> {
   if (!storeConfigured(store)) return null;
   try {
     const data = await adminGraphql<{
@@ -203,7 +220,7 @@ export async function findShopifyCustomerByPhone(phone: string, store: StoreKey 
         }
       }`,
       { query: `phone:${JSON.stringify(phone)}` },
-      store
+      store,
     );
     const node = data.customers.edges[0]?.node;
     return node || null;
@@ -219,7 +236,7 @@ export async function orderProbe(numericOrderId: string): Promise<{ name: string
   try {
     const data = await adminGraphql<{ order: { name: string; createdAt: string } | null }>(
       `query OrderProbe($id: ID!) { order(id: $id) { name createdAt } }`,
-      { id: `gid://shopify/Order/${numericOrderId}` }
+      { id: `gid://shopify/Order/${numericOrderId}` },
     );
     return data.order;
   } catch (err) {
@@ -255,7 +272,7 @@ export async function grantedScopes(): Promise<{ app: string; apiKey: string; sc
 /** The store's orders filtered to one customer, as opposed to the customer's own connection. */
 export async function ordersByCustomerId(
   numericCustomerId: string,
-  limit = 50
+  limit = 50,
 ): Promise<{ name: string; createdAt: string }[] | null> {
   if (!shopifyAdminConfigured()) return null;
   try {
@@ -270,7 +287,7 @@ export async function ordersByCustomerId(
       // status:any because Shopify's order search hides archived orders by
       // default, and an order that was paid and shipped months ago is exactly
       // the one the store has archived.
-      { query: `customer_id:${numericCustomerId} status:any`, limit }
+      { query: `customer_id:${numericCustomerId} status:any`, limit },
     );
     return data.orders.edges.map((e) => e.node);
   } catch (err) {
@@ -288,7 +305,7 @@ export async function ordersByCustomerId(
  */
 export async function getCustomerTotals(
   shopifyCustomerId: string,
-  store: StoreKey = "smoothlife"
+  store: StoreKey = "smoothlife",
 ): Promise<{ orders: number; spend: number; currency: string } | null> {
   if (!storeConfigured(store)) return null;
   const gid = shopifyCustomerId.startsWith("gid://")
@@ -302,7 +319,7 @@ export async function getCustomerTotals(
         customer(id: $id) { numberOfOrders amountSpent { amount currencyCode } }
       }`,
       { id: gid },
-      store
+      store,
     );
     if (!data.customer) return null;
     return {
@@ -327,7 +344,7 @@ export async function getCustomerTotals(
  */
 export async function getCustomerLinkState(
   shopifyCustomerId: string,
-  store: StoreKey = "smoothlife"
+  store: StoreKey = "smoothlife",
 ): Promise<{ exists: boolean; orders: number } | null> {
   if (!storeConfigured(store)) return null;
   const gid = shopifyCustomerId.startsWith("gid://")
@@ -337,7 +354,7 @@ export async function getCustomerLinkState(
     const data = await adminGraphql<{ customer: { numberOfOrders: string } | null }>(
       `query CustomerLinkState($id: ID!) { customer(id: $id) { numberOfOrders } }`,
       { id: gid },
-      store
+      store,
     );
     if (!data.customer) return { exists: false, orders: 0 };
     const n = Number(data.customer.numberOfOrders);
@@ -358,7 +375,7 @@ export async function getCustomerLinkState(
  * is asked for first rather than second.
  */
 export async function getCustomerShopifyAddress(
-  shopifyCustomerId: string
+  shopifyCustomerId: string,
 ): Promise<{ address: ShopifyAddressLike; source: "default" | "order" } | null> {
   if (!shopifyAdminConfigured()) return null;
   const gid = shopifyCustomerId.startsWith("gid://")
@@ -380,7 +397,7 @@ export async function getCustomerShopifyAddress(
           }
         }
       }`,
-      { id: gid }
+      { id: gid },
     );
     const def = data.customer?.defaultAddress;
     if (def?.address1) return { address: def, source: "default" };
@@ -416,7 +433,11 @@ export type ShopifyCustomerCandidate = {
  * history in it" — and opening each one in Shopify to find out is the manual
  * work this screen exists to remove.
  */
-export async function searchShopifyCustomers(term: string, limit = 10, store: StoreKey = "smoothlife"): Promise<ShopifyCustomerCandidate[]> {
+export async function searchShopifyCustomers(
+  term: string,
+  limit = 10,
+  store: StoreKey = "smoothlife",
+): Promise<ShopifyCustomerCandidate[]> {
   if (!storeConfigured(store) || !term.trim()) return [];
   try {
     const data = await adminGraphql<{
@@ -454,7 +475,7 @@ export async function searchShopifyCustomers(term: string, limit = 10, store: St
         }
       }`,
       { query: term.trim(), limit },
-      store
+      store,
     );
     return data.customers.edges.map(({ node }) => ({
       id: node.id,
@@ -525,7 +546,7 @@ export type LiveHeroBanner = { slug: string; image: string; href: string };
 // actual reason instead of a silent null.
 async function getLiveHeroBannersUnsafe(): Promise<LiveHeroBanner[] | null> {
   const themesData = await adminGraphql<{ themes: { nodes: { id: string; role: string }[] } }>(
-    `query { themes(first: 20) { nodes { id role } } }`
+    `query { themes(first: 20) { nodes { id role } } }`,
   );
   const mainTheme = themesData.themes.nodes.find((t) => t.role === "MAIN");
   if (!mainTheme) return null;
@@ -540,7 +561,7 @@ async function getLiveHeroBannersUnsafe(): Promise<LiveHeroBanner[] | null> {
         }
       }
     }`,
-    { id: mainTheme.id }
+    { id: mainTheme.id },
   );
   const raw = fileData.theme?.files.nodes[0]?.body.content;
   if (!raw) return null;
@@ -564,11 +585,11 @@ async function getLiveHeroBannersUnsafe(): Promise<LiveHeroBanner[] | null> {
   const aliasQuery = slides
     .map(
       (s, i) =>
-        `f${i}: files(first: 1, query: ${JSON.stringify(`filename:${s.filename}`)}) { nodes { ... on MediaImage { image { url } } } }`
+        `f${i}: files(first: 1, query: ${JSON.stringify(`filename:${s.filename}`)}) { nodes { ... on MediaImage { image { url } } } }`,
     )
     .join("\n");
   const filesData = await adminGraphql<Record<string, { nodes: { image?: { url: string } }[] }>>(
-    `query BannerImages { ${aliasQuery} }`
+    `query BannerImages { ${aliasQuery} }`,
   );
 
   const banners: LiveHeroBanner[] = [];
@@ -637,7 +658,7 @@ export async function createShopifyCustomer(opts: {
           ...(opts.firstName ? { firstName: opts.firstName } : {}),
           ...(opts.lastName ? { lastName: opts.lastName } : {}),
         },
-      }
+      },
     );
     if (data.customerCreate.userErrors.length) {
       console.error("[shopify-admin] createShopifyCustomer userErrors", data.customerCreate.userErrors);
@@ -687,7 +708,11 @@ export type ShopifyOrderSummary = {
 // customer, used by the chat assistant to answer "where's my order"-style
 // questions honestly instead of guessing. Returns null on no match, missing
 // scope, or any API error — best-effort, never blocks the chat response.
-export async function getCustomerOrders(shopifyCustomerId: string, limit = 5, store: StoreKey = "smoothlife"): Promise<ShopifyOrderSummary[] | null> {
+export async function getCustomerOrders(
+  shopifyCustomerId: string,
+  limit = 5,
+  store: StoreKey = "smoothlife",
+): Promise<ShopifyOrderSummary[] | null> {
   if (!storeConfigured(store)) return null;
   const gid = shopifyCustomerId.startsWith("gid://")
     ? shopifyCustomerId
@@ -755,7 +780,7 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5, st
         }
       }`,
       { id: gid, limit },
-      store
+      store,
     );
     const edges = data.customer?.orders.edges || [];
     return edges.map(({ node }) => ({
@@ -779,7 +804,9 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5, st
         // its picture — those were the ones showing an empty grey box.
         imageUrl: e.node.image?.url || null,
       })),
-      trackingNumbers: node.fulfillments.flatMap((f) => f.trackingInfo.map((t) => t.number).filter(Boolean) as string[]),
+      trackingNumbers: node.fulfillments.flatMap(
+        (f) => f.trackingInfo.map((t) => t.number).filter(Boolean) as string[],
+      ),
       shipments: node.fulfillments.flatMap((f) =>
         f.trackingInfo
           .filter((t) => t.number)
@@ -792,7 +819,7 @@ export async function getCustomerOrders(shopifyCustomerId: string, limit = 5, st
             shippedAt: f.createdAt,
             deliveredAt: f.deliveredAt,
             estimatedDeliveryAt: f.estimatedDeliveryAt,
-          }))
+          })),
       ),
     }));
   } catch (err) {
@@ -844,7 +871,7 @@ export type ShopifyOrderDetail = {
 export async function getCustomerOrderDetail(
   shopifyCustomerId: string,
   orderId: string,
-  store: StoreKey = "smoothlife"
+  store: StoreKey = "smoothlife",
 ): Promise<ShopifyOrderDetail | null> {
   if (!storeConfigured(store)) return null;
   if (!/^\d{1,20}$/.test(orderId)) return null;
@@ -927,7 +954,7 @@ export async function getCustomerOrderDetail(
         }
       }`,
       { id: `gid://shopify/Order/${orderId}` },
-      store
+      store,
     );
 
     const o = data.order;
@@ -968,7 +995,7 @@ export async function getCustomerOrderDetail(
             shippedAt: f.createdAt,
             deliveredAt: f.deliveredAt,
             estimatedDeliveryAt: f.estimatedDeliveryAt,
-          }))
+          })),
       ),
     };
   } catch (err) {
@@ -989,6 +1016,15 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
   financialStatus: string | null;
   cancelled: boolean;
   fulfillmentId: string | null;
+  /**
+   * The numbers already on that fulfillment.
+   *
+   * fulfillmentTrackingInfoUpdate replaces the whole set rather than adding
+   * to it, so anything that writes one number has to send the others back
+   * with it or they are gone — and a repeat-shipment order like #2055 carries
+   * five, added one a month.
+   */
+  fulfillmentNumbers: string[];
   /** Open fulfillment orders — what fulfillmentCreate needs to ship the order. */
   openFulfillmentOrderIds: string[];
   shipments: ShopifyShipment[];
@@ -1036,7 +1072,7 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
           }
         }
       }`,
-      { q: `name:${name}` }
+      { q: `name:${name}` },
     );
 
     const node = data.orders.edges[0]?.node;
@@ -1052,6 +1088,9 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
       // rather than fulfillmentTrackingInfoUpdate — a distinction the write
       // phase has to make, recorded here so dry-run can already report it.
       fulfillmentId: node.fulfillments[0]?.id ?? null,
+      fulfillmentNumbers: (node.fulfillments[0]?.trackingInfo ?? [])
+        .map((t) => t.number)
+        .filter((n): n is string => Boolean(n)),
       // Asked for separately — see getOpenFulfillmentOrderIds for why.
       openFulfillmentOrderIds: await getOpenFulfillmentOrderIds(node.id),
       shipments: node.fulfillments.flatMap((f) =>
@@ -1064,7 +1103,7 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
             shippedAt: f.createdAt,
             deliveredAt: f.deliveredAt,
             estimatedDeliveryAt: f.estimatedDeliveryAt,
-          }))
+          })),
       ),
     };
   } catch (err) {
@@ -1091,6 +1130,14 @@ export async function getOrderForTrackingSync(orderName: string): Promise<{
 export async function setFulfillmentTracking(opts: {
   fulfillmentId: string;
   number: string;
+  /**
+   * Every number the fulfillment should end up with, this one included.
+   *
+   * Shopify replaces the tracking set with whatever it is sent, so writing
+   * `number` alone onto an order that already carries several deletes the
+   * rest. Callers that are adding a parcel to an order pass the full list.
+   */
+  numbers?: string[];
   company: string;
   notifyCustomer: boolean;
 }): Promise<{ ok: boolean; error?: string }> {
@@ -1110,9 +1157,12 @@ export async function setFulfillmentTracking(opts: {
       }`,
       {
         fulfillmentId: opts.fulfillmentId,
-        info: { number: opts.number, company: opts.company },
+        info:
+          opts.numbers && opts.numbers.length > 1
+            ? { numbers: opts.numbers, company: opts.company }
+            : { number: opts.number, company: opts.company },
         notify: opts.notifyCustomer,
-      }
+      },
     );
 
     const errs = data.fulfillmentTrackingInfoUpdate.userErrors;
@@ -1148,12 +1198,14 @@ export async function getOpenFulfillmentOrderIds(orderId: string): Promise<strin
       `query OpenFulfillmentOrders($id: ID!) {
         order(id: $id) { fulfillmentOrders(first: 10) { edges { node { id status } } } }
       }`,
-      { id: orderId }
+      { id: orderId },
     );
-    return (data.order?.fulfillmentOrders.edges ?? [])
-      // CLOSED means already fulfilled; those are not shippable again.
-      .filter((e) => e.node.status !== "CLOSED" && e.node.status !== "CANCELLED")
-      .map((e) => e.node.id);
+    return (
+      (data.order?.fulfillmentOrders.edges ?? [])
+        // CLOSED means already fulfilled; those are not shippable again.
+        .filter((e) => e.node.status !== "CLOSED" && e.node.status !== "CANCELLED")
+        .map((e) => e.node.id)
+    );
   } catch (err) {
     console.error("[shopify-admin] getOpenFulfillmentOrderIds failed (scope?)", err);
     return [];
@@ -1203,7 +1255,7 @@ export async function createFulfillmentWithTracking(opts: {
           trackingInfo: { number: opts.number, company: opts.company },
           notifyCustomer: opts.notifyCustomer,
         },
-      }
+      },
     );
 
     const errs = data.fulfillmentCreate.userErrors;
@@ -1260,10 +1312,7 @@ export type GuestTrackingOrder = {
  * Returns null for "no such order" and for "contact doesn't match" alike: the
  * caller cannot tell the two apart, and so neither can someone guessing.
  */
-export async function getOrderForGuestTracking(
-  reference: string,
-  contact: string
-): Promise<GuestTrackingOrder | null> {
+export async function getOrderForGuestTracking(reference: string, contact: string): Promise<GuestTrackingOrder | null> {
   if (!shopifyAdminConfigured()) return null;
   const ref = reference.trim().replace(/^#/, "");
   if (!/^[A-Za-z0-9._-]{1,32}$/.test(ref)) return null;
@@ -1307,7 +1356,7 @@ export async function getOrderForGuestTracking(
           }
         }
       }`,
-      { q: query }
+      { q: query },
     );
     return data.orders.edges[0]?.node ?? null;
   }
@@ -1322,7 +1371,7 @@ export async function getOrderForGuestTracking(
     if (!node) {
       const candidate = await lookup(ref);
       const carriesNumber = candidate?.fulfillments.some((f) =>
-        f.trackingInfo.some((t) => t.number?.toLowerCase() === ref.toLowerCase())
+        f.trackingInfo.some((t) => t.number?.toLowerCase() === ref.toLowerCase()),
       );
       node = carriesNumber ? candidate : null;
     }
@@ -1338,8 +1387,7 @@ export async function getOrderForGuestTracking(
     // A Thai number reaches Shopify as 08xxxxxxxx or +66 8xxxxxxxx depending
     // on where it was entered, so compare on the last 9 digits rather than
     // demanding the two strings match.
-    const phoneMatches =
-      digits.length >= 9 && phones.some((p) => p.slice(-9) === digits.slice(-9));
+    const phoneMatches = digits.length >= 9 && phones.some((p) => p.slice(-9) === digits.slice(-9));
     const emailMatches = emails.includes(given);
     if (!phoneMatches && !emailMatches) return null;
 
@@ -1358,7 +1406,7 @@ export async function getOrderForGuestTracking(
             shippedAt: f.createdAt,
             deliveredAt: f.deliveredAt,
             estimatedDeliveryAt: f.estimatedDeliveryAt,
-          }))
+          })),
       ),
     };
   } catch (err) {
@@ -1380,7 +1428,7 @@ export async function getOrderFulfillmentStatus(orderId: string): Promise<{ fulf
       `query OrderFulfillmentStatus($id: ID!) {
         order(id: $id) { displayFulfillmentStatus }
       }`,
-      { id: gid }
+      { id: gid },
     );
     if (!data.order) return null;
     return { fulfilled: data.order.displayFulfillmentStatus === "FULFILLED" };
@@ -1404,12 +1452,12 @@ export async function getOrderFulfillmentStatus(orderId: string): Promise<{ fulf
 // deliveredAt lookup is a follow-up, not implemented here.
 export async function findPaidOrderForProduct(
   shopifyCustomerId: string,
-  productSlug: string
+  productSlug: string,
 ): Promise<{ orderId: string; orderName: string; paidAt: string } | null> {
   const orders = await getCustomerOrders(shopifyCustomerId, 100);
   if (!orders) return null;
   const match = orders.find(
-    (order) => order.financialStatus === "PAID" && order.items.some((item) => item.slug === productSlug)
+    (order) => order.financialStatus === "PAID" && order.items.some((item) => item.slug === productSlug),
   );
   return match ? { orderId: match.id, orderName: match.name, paidAt: match.createdAt } : null;
 }
@@ -1440,7 +1488,7 @@ export async function getVariantAvailability(variantId: string): Promise<Variant
           inventoryPolicy
         }
       }`,
-      { id: variantId }
+      { id: variantId },
     );
     const v = data.productVariant;
     if (!v) return null;
@@ -1464,7 +1512,10 @@ export async function createPercentDiscountCode(opts: {
   usageLimit?: number;
 }): Promise<string> {
   const data = await adminGraphql<{
-    discountCodeBasicCreate: { codeDiscountNode: { id: string } | null; userErrors: { field: string[]; message: string }[] };
+    discountCodeBasicCreate: {
+      codeDiscountNode: { id: string } | null;
+      userErrors: { field: string[]; message: string }[];
+    };
   }>(
     `mutation CreateDiscount($basicCodeDiscount: DiscountCodeBasicInput!) {
       discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
@@ -1485,7 +1536,7 @@ export async function createPercentDiscountCode(opts: {
           items: { all: true },
         },
       },
-    }
+    },
   );
   if (data.discountCodeBasicCreate.userErrors.length) {
     throw new Error(data.discountCodeBasicCreate.userErrors.map((e) => e.message).join(", "));
@@ -1504,7 +1555,10 @@ export async function createAmountDiscountCode(opts: {
   minSubtotal?: number; // THB — enforced by Shopify itself, not just app-side display logic
 }): Promise<string> {
   const data = await adminGraphql<{
-    discountCodeBasicCreate: { codeDiscountNode: { id: string } | null; userErrors: { field: string[]; message: string }[] };
+    discountCodeBasicCreate: {
+      codeDiscountNode: { id: string } | null;
+      userErrors: { field: string[]; message: string }[];
+    };
   }>(
     `mutation CreateDiscount($basicCodeDiscount: DiscountCodeBasicInput!) {
       discountCodeBasicCreate(basicCodeDiscount: $basicCodeDiscount) {
@@ -1528,7 +1582,7 @@ export async function createAmountDiscountCode(opts: {
           items: { all: true },
         },
       },
-    }
+    },
   );
   if (data.discountCodeBasicCreate.userErrors.length) {
     throw new Error(data.discountCodeBasicCreate.userErrors.map((e) => e.message).join(", "));
@@ -1580,7 +1634,7 @@ export async function createBxgyFreeGiftDiscount(opts: {
           items: { products: { productVariantsToAdd: opts.giftVariantIds } },
         },
       },
-    }
+    },
   );
   if (data.discountAutomaticBxgyCreate.userErrors.length) {
     throw new Error(data.discountAutomaticBxgyCreate.userErrors.map((e) => e.message).join(", "));
@@ -1624,7 +1678,7 @@ export async function createSpendThresholdFreeGiftDiscount(opts: {
           items: { products: { productVariantsToAdd: opts.giftVariantIds } },
         },
       },
-    }
+    },
   );
   if (data.discountAutomaticBasicCreate.userErrors.length) {
     throw new Error(data.discountAutomaticBasicCreate.userErrors.map((e) => e.message).join(", "));
@@ -1669,7 +1723,7 @@ export async function issueGiftCard(opts: {
         note: opts.note,
         expiresOn: opts.expiresOn,
       },
-    }
+    },
   );
   if (data.giftCardCreate.userErrors.length) {
     throw new Error(data.giftCardCreate.userErrors.map((e) => e.message).join(", "));
@@ -1699,7 +1753,7 @@ export async function sendGiftCardNotification(giftCardId: string): Promise<void
         userErrors { field message }
       }
     }`,
-    { id: giftCardId }
+    { id: giftCardId },
   );
   if (data.giftCardSendNotificationToCustomer.userErrors.length) {
     throw new Error(data.giftCardSendNotificationToCustomer.userErrors.map((e) => e.message).join(", "));
@@ -1716,7 +1770,11 @@ export type ShopifyGiftCardSummary = {
   note: string | null;
   balance: { amount: string; currencyCode: string };
   initialValue: { amount: string; currencyCode: string };
-  customer: { firstName: string | null; lastName: string | null; defaultEmailAddress: { emailAddress: string } | null } | null;
+  customer: {
+    firstName: string | null;
+    lastName: string | null;
+    defaultEmailAddress: { emailAddress: string } | null;
+  } | null;
 };
 
 // Read-only history for the admin panel — Shopify is the only store of
@@ -1744,7 +1802,7 @@ export async function listGiftCards(limit = 20): Promise<ShopifyGiftCardSummary[
         }
       }
     }`,
-    { first: limit }
+    { first: limit },
   );
   return data.giftCards.edges.map((e) => e.node);
 }
@@ -1823,7 +1881,7 @@ export async function createPaidShopifyOrder(opts: {
         ],
       },
       options: { inventoryBehaviour: "DECREMENT_OBEYING_POLICY", sendReceipt: true, sendFulfillmentReceipt: false },
-    }
+    },
   );
   if (data.orderCreate.userErrors.length) {
     throw new Error(data.orderCreate.userErrors.map((e) => e.message).join(", "));
@@ -1889,7 +1947,7 @@ export async function createFulfillmentOnlyOrder(opts: {
         })),
       },
       options: { inventoryBehaviour: "DECREMENT_OBEYING_POLICY", sendReceipt: false, sendFulfillmentReceipt: false },
-    }
+    },
   );
   if (data.orderCreate.userErrors.length) {
     throw new Error(data.orderCreate.userErrors.map((e) => e.message).join(", "));
@@ -1909,7 +1967,11 @@ export async function createFulfillmentOnlyOrder(opts: {
 // so calling it from here (rather than an external script) guarantees
 // that. Idempotent: skips any topic that's already subscribed to this
 // exact callback URL instead of erroring.
-export type CatalogueWebhookResult = { topic: string; status: "registered" | "already_registered" | "failed"; detail?: string };
+export type CatalogueWebhookResult = {
+  topic: string;
+  status: "registered" | "already_registered" | "failed";
+  detail?: string;
+};
 
 export async function registerCatalogueWebhooks(callbackUrl: string): Promise<CatalogueWebhookResult[]> {
   const topics = ["PRODUCTS_CREATE", "PRODUCTS_UPDATE", "PRODUCTS_DELETE", "INVENTORY_LEVELS_UPDATE"];
@@ -1918,9 +1980,7 @@ export async function registerCatalogueWebhooks(callbackUrl: string): Promise<Ca
     webhookSubscriptions: { edges: { node: { topic: string; callbackUrl: string } }[] };
   }>(`query { webhookSubscriptions(first: 50) { edges { node { topic callbackUrl } } } }`);
   const alreadySubscribed = new Set(
-    existing.webhookSubscriptions.edges
-      .filter((e) => e.node.callbackUrl === callbackUrl)
-      .map((e) => e.node.topic)
+    existing.webhookSubscriptions.edges.filter((e) => e.node.callbackUrl === callbackUrl).map((e) => e.node.topic),
   );
 
   const results: CatalogueWebhookResult[] = [];
@@ -1941,13 +2001,13 @@ export async function registerCatalogueWebhooks(callbackUrl: string): Promise<Ca
           userErrors { field message }
         }
       }`,
-      { topic, uri: callbackUrl }
+      { topic, uri: callbackUrl },
     );
     const { userErrors } = data.webhookSubscriptionCreate;
     results.push(
       userErrors.length > 0
         ? { topic, status: "failed", detail: userErrors.map((e) => e.message).join("; ") }
-        : { topic, status: "registered" }
+        : { topic, status: "registered" },
     );
   }
   return results;
