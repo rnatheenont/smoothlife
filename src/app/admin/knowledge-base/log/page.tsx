@@ -107,7 +107,9 @@ export default function AdminAiLogPage() {
       {error && <p className="rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
 
       {/* bg-white: surface-muted is the canvas colour now. */}
-      <div className="inline-flex self-start rounded-full bg-white p-1 shadow-card">
+      {/* Swipes rather than wraps: at 375px "ตอบจากความรู้" broke across two
+          lines inside its own pill. */}
+      <div className="-mx-1 flex gap-1 self-start overflow-x-auto px-1 sm:mx-0 sm:inline-flex sm:rounded-full sm:bg-white sm:p-1 sm:shadow-card">
         {(["all", "answered", "unanswered"] as const).map((f) => (
           <button
             key={f}
@@ -117,7 +119,7 @@ export default function AdminAiLogPage() {
               setPage(0);
             }}
             aria-pressed={filter === f}
-            className={`min-h-9 rounded-full px-4 text-sm font-semibold transition ${
+            className={`min-h-9 shrink-0 whitespace-nowrap rounded-full bg-white px-4 text-sm font-semibold shadow-card transition sm:bg-transparent sm:shadow-none ${
               filter === f ? "bg-brand-gradient-soft text-brand-800" : "text-slate-600 hover:text-brand-ink"
             }`}
           >
