@@ -134,7 +134,10 @@ export default function AdminAiLogPage() {
           {filter === "unanswered" ? "ไม่มีคำถามที่ตอบไม่ได้ในช่วงนี้" : "ยังไม่มีการตอบจากฐานความรู้"}
         </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        /* Two to a row. Full width on a question-and-answer log means very
+           long lines unless the cards divide it — a column of 200-character
+           lines is harder to read than the 1100px it replaced. */
+        <ul className="grid items-start gap-2 xl:grid-cols-2">
           {rows.map((r) => {
             const unanswered = r.matched_article_ids.length === 0;
             return (

@@ -87,7 +87,7 @@ export default function AdminLineRichMenuPage() {
            what is on it" on the left, and the one thing anyone came here to
            do — upload the image — on the right, where it stays in view
            instead of below the preview. */
-        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)]">
           <div className="flex min-w-0 flex-col gap-4">
             <div
               className={`flex items-start gap-2 rounded-xl2 border p-4 text-sm ${
@@ -134,10 +134,17 @@ export default function AdminLineRichMenuPage() {
               </div>
             </div>
 
+            {/* Given the width, the preview may as well be the shape of the
+                thing it previews: LINE's rich menu image is 2500 × 1686, so
+                the six cells sit in that ratio and what is on screen is the
+                layout that will be on a phone. */}
             <Panel title="ปุ่มในเมนู (3 × 2)" padded>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="mx-auto grid aspect-[2500/1686] w-full max-w-[900px] grid-cols-3 grid-rows-2 gap-1.5">
                 {status?.buttons.map((b) => (
-                  <div key={b.path} className="rounded-l bg-surface-soft px-3 py-5 text-center">
+                  <div
+                    key={b.path}
+                    className="flex flex-col items-center justify-center rounded-l bg-surface-soft px-3 text-center"
+                  >
                     <p className="text-xs font-semibold text-brand-ink">{b.label}</p>
                     <p className="mt-0.5 text-[10px] text-slate-400">{b.path}</p>
                   </div>
