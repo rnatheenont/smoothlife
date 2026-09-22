@@ -61,7 +61,10 @@ export default function HeaderSearch({
           }}
           onFocus={() => query.trim() && setOpen(true)}
           type="text"
+          name="q"
           placeholder={placeholder}
+          aria-label={placeholder}
+          autoComplete="off"
           className={inputClassName}
         />
         <button type="submit" className={buttonClassName} aria-label="ค้นหา">

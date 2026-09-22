@@ -84,6 +84,8 @@ function NewsletterForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="อีเมลของคุณ"
+          aria-label="อีเมลสำหรับรับข่าวสาร"
+          autoComplete="email"
           className="flex-1 min-w-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm outline-hidden focus:border-brand-teal"
         />
         <Button size="none" className="grid h-9 w-9 shrink-0 place-items-center" type="submit" disabled={status === "loading"} aria-label="สมัครรับข่าวสาร">

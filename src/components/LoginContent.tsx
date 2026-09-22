@@ -450,6 +450,7 @@ export default function LoginContent() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="ชื่อ-นามสกุล"
+                        aria-label="ชื่อ-นามสกุล"
                         autoComplete="name"
                         className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
                       />
@@ -464,6 +465,7 @@ export default function LoginContent() {
                         value={regPhone}
                         onChange={(e) => setRegPhone(e.target.value)}
                         placeholder="เบอร์โทรศัพท์ (08X-XXX-XXXX)"
+                        aria-label="เบอร์โทรศัพท์"
                         autoComplete="tel"
                         inputMode="tel"
                         className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
@@ -482,6 +484,7 @@ export default function LoginContent() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="อีเมล"
+                    aria-label="อีเมล"
                     autoComplete={mode === "register" ? "email" : "username"}
                     inputMode="email"
                     className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
@@ -498,6 +501,7 @@ export default function LoginContent() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="รหัสผ่าน"
+                    aria-label="รหัสผ่าน"
                     // Only enforced at register time — an existing user's older,
                     // shorter password must still be able to log in with it.
                     minLength={mode === "register" ? 8 : undefined}
@@ -559,6 +563,7 @@ export default function LoginContent() {
                 value={reclaimCode}
                 onChange={(e) => setReclaimCode(e.target.value)}
                 placeholder="กรอกรหัสยืนยัน 6 หลัก"
+                aria-label="รหัสยืนยัน 6 หลัก"
                 maxLength={6}
                 inputMode="numeric"
                 autoComplete="one-time-code"
@@ -594,6 +599,7 @@ export default function LoginContent() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="08X-XXX-XXXX"
+                aria-label="เบอร์โทรศัพท์"
                 autoComplete="tel"
                 inputMode="tel"
                 className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40 disabled:opacity-50"
@@ -613,6 +619,7 @@ export default function LoginContent() {
                 value={otpInput}
                 onChange={(e) => setOtpInput(e.target.value)}
                 placeholder="กรอกรหัส OTP 6 หลัก"
+                aria-label="รหัส OTP 6 หลัก"
                 maxLength={6}
                 inputMode="numeric"
                 autoComplete="one-time-code"
@@ -651,6 +658,7 @@ export default function LoginContent() {
                   value={emailOtpAddress}
                   onChange={(e) => setEmailOtpAddress(e.target.value)}
                   placeholder="อีเมล"
+                  aria-label="อีเมล"
                   autoComplete="email"
                   inputMode="email"
                   className="w-full rounded-full bg-surface-soft pl-11 pr-4 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
@@ -679,6 +687,7 @@ export default function LoginContent() {
                 value={emailOtpCode}
                 onChange={(e) => setEmailOtpCode(e.target.value)}
                 placeholder="กรอกรหัสยืนยัน 6 หลัก"
+                aria-label="รหัสยืนยัน 6 หลัก"
                 maxLength={6}
                 inputMode="numeric"
                 autoComplete="one-time-code"
