@@ -48,6 +48,7 @@ export default function AdminKnowledgeBasePage() {
   const [embeddings, setEmbeddings] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<KbStatus | "all" | "review_due">("all");
+  const [categoryFilter, setCategoryFilter] = useState<KbCategory | "all">("all");
   const [confirming, setConfirming] = useState<string | null>(null);
   const [source, setSource] = useState<"curated" | "shopify_sync" | "all">("curated");
   const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
@@ -252,9 +253,10 @@ export default function AdminKnowledgeBasePage() {
     return articles.filter(
       (a) =>
         (statusFilter === "all" || (statusFilter === "review_due" ? isReviewDue(a) : a.status === statusFilter)) &&
+        (categoryFilter === "all" || a.category === categoryFilter) &&
         (!q || `${a.title} ${a.content} ${a.product_tags.join(" ")}`.toLowerCase().includes(q)),
     );
-  }, [articles, query, statusFilter]);
+  }, [articles, query, statusFilter, categoryFilter]);
 
   const reviewDueCount = useMemo(() => articles.filter((a) => isReviewDue(a)).length, [articles]);
 
@@ -275,6 +277,13 @@ export default function AdminKnowledgeBasePage() {
 
   const counts = useMemo(
     () => articles.reduce<Record<string, number>>((acc, a) => ({ ...acc, [a.status]: (acc[a.status] ?? 0) + 1 }), {}),
+    [articles],
+  );
+
+  /** Same basis as the status counts: the list the server sent for this source. */
+  const categoryCounts = useMemo(
+    () =>
+      articles.reduce<Record<string, number>>((acc, a) => ({ ...acc, [a.category]: (acc[a.category] ?? 0) + 1 }), {}),
     [articles],
   );
 
@@ -408,6 +417,31 @@ export default function AdminKnowledgeBasePage() {
               />
             ))}
           </div>
+
+          {/* The third axis the page sorts by, on its own line: nine chips
+              and eight more is a strip nobody reaches the end of. Only the
+              categories that have something in them — a knowledge base with
+              no ingredient articles should not offer to filter to none. */}
+          <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-0.5">
+            <span className="mr-0.5 shrink-0 text-[11px] text-slate-400">ประเภท</span>
+            <FilterChip
+              label="ทุกประเภท"
+              count={articles.length}
+              active={categoryFilter === "all"}
+              onClick={() => setCategoryFilter("all")}
+            />
+            {(Object.keys(CATEGORY_TH) as KbCategory[])
+              .filter((c) => (categoryCounts[c] ?? 0) > 0 || categoryFilter === c)
+              .map((c) => (
+                <FilterChip
+                  key={c}
+                  label={CATEGORY_TH[c]}
+                  count={categoryCounts[c] ?? 0}
+                  active={categoryFilter === c}
+                  onClick={() => setCategoryFilter(categoryFilter === c ? "all" : c)}
+                />
+              ))}
+          </div>
         </div>
 
         <div className="p-3">
@@ -421,7 +455,7 @@ export default function AdminKnowledgeBasePage() {
           ) : shown.length === 0 ? (
             <div className="rounded-xl2 border border-dashed border-surface-line p-10 text-center">
               <p className="text-sm text-slate-500">
-                {articles.length === 0 ? "ยังไม่มีความรู้ในระบบ" : "ไม่พบบทความที่ตรงกับที่ค้นหา"}
+                {articles.length === 0 ? "ยังไม่มีความรู้ในระบบ" : "ไม่พบบทความที่ตรงกับตัวกรองนี้"}
               </p>
               <button
                 type="button"
