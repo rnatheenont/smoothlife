@@ -141,7 +141,10 @@ const CHANNEL_LABEL: Record<string, string> = {
 };
 
 function countFor(key: string, counts: Record<string, number>) {
-  if (key === "all") return (counts.waiting_human ?? 0) + (counts.assigned ?? 0) + (counts.ai_handling ?? 0);
+  // "ทั้งหมด" fetches every thread, resolved included (see the API route), so
+  // its badge has to count them all: it read 1 above a list of six.
+  if (key === "all")
+    return (counts.waiting_human ?? 0) + (counts.assigned ?? 0) + (counts.ai_handling ?? 0) + (counts.resolved ?? 0);
   return counts[key] ?? 0;
 }
 
@@ -553,12 +556,6 @@ export default function AdminInboxPage() {
         <span className="ml-auto flex items-center gap-1.5 text-[11px] text-slate-400">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> อัปเดตอัตโนมัติทุก 5 วินาที
         </span>
-        <button
-          onClick={() => loadList()}
-          className="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600"
-        >
-          <RefreshCw size={13} /> รีเฟรช
-        </button>
       </div>
 
       <div className="mb-3 flex flex-wrap gap-1.5">
@@ -614,7 +611,10 @@ export default function AdminInboxPage() {
         })}
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[280px_1fr_260px]">
+      {/* Wider list and customer panel, because both were being asked to hold
+          Thai product names and wrapped to three lines, while the thread in
+          the middle had room to set a reply in 150-character lines. */}
+      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)_minmax(0,300px)]">
         {/* list */}
         <div className="min-h-0 overflow-y-auto rounded-xl2 border border-slate-100">
           {loadingList ? (
@@ -769,7 +769,7 @@ export default function AdminInboxPage() {
                             // it pushed the customer's actual request off the
                             // screen — staff had to scroll up to find out what
                             // the case was even about.
-                            <details className="max-w-[85%] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs">
+                            <details className="max-w-[85%] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs xl:max-w-[68ch]">
                               <summary className="cursor-pointer select-none font-medium text-slate-500">
                                 บทสนทนากับน้อง Smoothie ก่อนหน้านี้
                               </summary>
@@ -777,7 +777,7 @@ export default function AdminInboxPage() {
                             </details>
                           ) : (
                             <div
-                              className={`max-w-[85%] rounded-xl px-3 py-2 text-xs whitespace-pre-wrap ${
+                              className={`max-w-[85%] rounded-xl px-3 py-2 text-xs whitespace-pre-wrap xl:max-w-[68ch] ${
                                 fromCustomer
                                   ? "bg-surface-soft text-slate-700"
                                   : m.sender_type === "staff"
