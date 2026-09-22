@@ -24,6 +24,7 @@ export default function CampaignList({
   endNow,
   edit,
   newCampaign,
+  showCreate = true,
   remove,
   expandedIds = [],
   collapseAll,
@@ -42,6 +43,8 @@ export default function CampaignList({
   edit: (id: string) => void;
   /** Open the form for a brand-new campaign. */
   newCampaign: () => void;
+  /** False when the surrounding console already offers it. */
+  showCreate?: boolean;
   remove: (id: string) => void;
   /** Campaigns whose live queue is open underneath them — any number at once. */
   expandedIds?: string[];
@@ -72,15 +75,24 @@ export default function CampaignList({
               {expandedIds.length > 0 ? "ปิดคิวทั้งหมด" : "กางคิวทั้งหมด"}
             </button>
           )}
-          <Button size="sm" onPress={newCampaign}>
-            <Plus size={14} aria-hidden /> สร้างแคมเปญใหม่
-          </Button>
+          {/* Inside the console this same button is already in the header
+              (see FlashSaleDemo's useAdminAction); on the storefront demo
+              there is no header, so it is the only one there is. */}
+          {showCreate && (
+            <Button size="sm" onPress={newCampaign}>
+              <Plus size={14} aria-hidden /> สร้างแคมเปญใหม่
+            </Button>
+          )}
         </div>
       </div>
-      <p className="mt-1 text-xs text-slate-500">เปิดและปิดการขายอัตโนมัติตามวันเวลา กดที่แคมเปญเพื่อกางคิวจริงของแคมเปญนั้น</p>
+      <p className="mt-1 text-xs text-slate-500">
+        เปิดและปิดการขายอัตโนมัติตามวันเวลา กดที่แคมเปญเพื่อกางคิวจริงของแคมเปญนั้น
+      </p>
 
       {items.length === 0 ? (
-        <p className="mt-6 text-center text-sm text-slate-500">{loading ? "กำลังโหลดรายการจากฐานข้อมูล…" : "ยังไม่มีแคมเปญ สร้างแคมเปญแรกได้ด้านล่าง"}</p>
+        <p className="mt-6 text-center text-sm text-slate-500">
+          {loading ? "กำลังโหลดรายการจากฐานข้อมูล…" : "ยังไม่มีแคมเปญ สร้างแคมเปญแรกได้ด้านล่าง"}
+        </p>
       ) : (
         <ul className="mt-4 flex flex-col gap-2.5">
           {items.map((i) => {
@@ -107,7 +119,10 @@ export default function CampaignList({
                     />
                     <span className="flex shrink-0 -space-x-3">
                       {i.config.products.slice(0, 3).map((p) => (
-                        <span key={p.slug} className="relative h-11 w-11 overflow-hidden rounded-lg bg-white ring-2 ring-white">
+                        <span
+                          key={p.slug}
+                          className="relative h-11 w-11 overflow-hidden rounded-lg bg-white ring-2 ring-white"
+                        >
                           <Image src={p.image} alt="" fill sizes="44px" className="object-contain p-0.5" />
                         </span>
                       ))}
@@ -151,7 +166,13 @@ export default function CampaignList({
                           <Button size="sm" variant="ghost" onPress={() => endNow(i.id)}>
                             ยกเลิก
                           </Button>
-                          <Button size="sm" variant="ghost" isIconOnly aria-label="ลบแคมเปญ" onPress={() => remove(i.id)}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            isIconOnly
+                            aria-label="ลบแคมเปญ"
+                            onPress={() => remove(i.id)}
+                          >
                             <Trash2 size={15} aria-hidden />
                           </Button>
                         </div>
@@ -161,7 +182,9 @@ export default function CampaignList({
                       <>
                         <Chip size="sm" variant="soft" color="danger">
                           กำลังขาย {sold}/{total}
-                          {i.endsAt ? <span suppressHydrationWarning> · ปิดในอีก {countdown(i.endsAt - now)}</span> : null}
+                          {i.endsAt ? (
+                            <span suppressHydrationWarning> · ปิดในอีก {countdown(i.endsAt - now)}</span>
+                          ) : null}
                         </Chip>
                         <Button size="sm" variant="secondary" onPress={() => endNow(i.id)}>
                           <Square size={12} aria-hidden /> ปิดการขาย
@@ -171,7 +194,9 @@ export default function CampaignList({
                     {i.status === "ended" && (
                       <>
                         <Chip size="sm" variant="soft" color="default">
-                          {i.campaign ? `จบแล้ว · ${i.endReason ? END_REASON[i.endReason] : ""} · ขาย ${sold}/${total}` : "ยกเลิกก่อนเริ่ม"}
+                          {i.campaign
+                            ? `จบแล้ว · ${i.endReason ? END_REASON[i.endReason] : ""} · ขาย ${sold}/${total}`
+                            : "ยกเลิกก่อนเริ่ม"}
                         </Chip>
                         <Button size="sm" variant="ghost" isIconOnly aria-label="ลบแคมเปญ" onPress={() => remove(i.id)}>
                           <Trash2 size={15} aria-hidden />
@@ -181,7 +206,9 @@ export default function CampaignList({
                   </div>
                 </div>
 
-                {expandedIds.includes(i.id) && details && <div className="border-t border-surface-line p-3">{details(i)}</div>}
+                {expandedIds.includes(i.id) && details && (
+                  <div className="border-t border-surface-line p-3">{details(i)}</div>
+                )}
               </li>
             );
           })}

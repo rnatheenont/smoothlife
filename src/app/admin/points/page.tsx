@@ -96,7 +96,11 @@ export default function AdminPointsPage() {
     loadTiers();
   }, []);
 
-  useAdminAction({ label: "เพิ่มระดับคะแนน", icon: <Plus size={15} aria-hidden />, onClick: () => openCreateTier() });
+  useAdminAction({
+    label: "เพิ่มรายการแลกแต้ม",
+    icon: <Plus size={15} aria-hidden />,
+    onClick: () => openCreateTier(),
+  });
 
   function openCreateTier() {
     setEditingTierId(null);
@@ -245,16 +249,9 @@ export default function AdminPointsPage() {
           their place in the source. */}
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)]">
         <section className="order-2 min-w-0">
-          <SectionTitle
-            className="mb-3"
-            action={
-              <Button size="none" className="gap-1 px-3 py-1.5 text-xs" onClick={openCreateTier}>
-                <Plus size={13} /> เพิ่มรายการ
-              </Button>
-            }
-          >
-            รายการแลกแต้ม
-          </SectionTitle>
+          {/* Adding a tier is the console header's button — the same action
+              under a second name here was two buttons for one job. */}
+          <SectionTitle className="mb-3">รายการแลกแต้ม</SectionTitle>
           {tiers.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-6">ยังไม่มีรายการแลกแต้ม</p>
           ) : (

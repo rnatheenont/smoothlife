@@ -443,6 +443,7 @@ export default function FlashSaleDemo({
           setFormOpen(true);
         }}
         newCampaign={newCampaign}
+        showCreate={!embedded}
         remove={removeStored}
         details={(entry) =>
           /^[0-9a-f-]{36}$/i.test(entry.id) ? (

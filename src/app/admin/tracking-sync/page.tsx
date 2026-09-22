@@ -545,13 +545,11 @@ export default function AdminTrackingSyncPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* CRON_SECRET is stored on Vercel as a sensitive value, so nobody
+          {/* "ดึงจาก soko เดี๋ยวนี้" lives in the console header (see
+              useAdminAction below) and does not need to be here as well.
+              CRON_SECRET is stored on Vercel as a sensitive value, so nobody
               can read it back — triggering a run by hand meant rotating it and
               redeploying. Staff are already signed in here; that is the key. */}
-          <Button variant="secondary" size="sm" onClick={runNow} disabled={running || loading}>
-            {running ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
-            {running ? "กำลังดึง…" : "ดึงจาก soko เดี๋ยวนี้"}
-          </Button>
           <Button variant="secondary" size="sm" onClick={load} disabled={loading}>
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> รีเฟรช
           </Button>

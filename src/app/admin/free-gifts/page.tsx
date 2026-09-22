@@ -243,16 +243,6 @@ export default function AdminFreeGiftsPage() {
         icon={<Gift size={20} className="text-brand-emerald" />}
         title="ของแถม & โปรโมชั่น"
         subtitle="ตั้งโปร “ซื้อครบแถมฟรี” — ระบบจะเพิ่มของแถมในตะกร้าลูกค้าอัตโนมัติ และผูกกับส่วนลดจริงใน Shopify ให้ทันที"
-        actions={
-          promos.length > 0 && (
-            <button
-              onClick={openCreateForm}
-              className="inline-flex items-center gap-1.5 rounded-full bg-brand-gradient px-4 py-2 text-xs font-semibold text-white"
-            >
-              <Plus size={15} /> สร้างโปรโมชั่นใหม่
-            </button>
-          )
-        }
       />
 
       {promos.length === 0 ? (
