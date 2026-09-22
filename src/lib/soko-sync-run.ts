@@ -28,7 +28,8 @@ const RUN_BUDGET_MS = 300_000;
 
 export async function runSokoSync(
   /** What started this run, recorded on every row it writes. */
-  triggeredBy: "cron" | "admin" = "cron",): Promise<SyncRunResult> {
+  triggeredBy: "cron" | "admin" = "cron",
+): Promise<SyncRunResult> {
   // Everything below shares the function's five minutes. The scraper gets most
   // of it and hands back whatever it has; the Shopify writes follow, and a
   // partial run that reports itself beats a timeout that reports nothing.
@@ -50,7 +51,7 @@ export async function runSokoSync(
   try {
     const since = new Date(Date.now() - 30 * 24 * 3600_000).toISOString();
     const done = await supabaseRest<{ order_ref: string | null; action: string; reason: string | null }[]>(
-      `tracking_sync_log?select=order_ref,action,reason&received_at=gte.${since}&or=(action.eq.already-set,applied.is.true,action.eq.not-eligible)`
+      `tracking_sync_log?select=order_ref,action,reason&received_at=gte.${since}&or=(action.eq.already-set,applied.is.true,action.eq.not-eligible)`,
     );
     // Not-eligible only when it can never change: a follow-up box (_F) that
     // the settings say not to write, or a cancelled order. An unpaid order is
@@ -58,7 +59,12 @@ export async function runSokoSync(
     // ones every run used up the order-page allowance before newer orders.
     const permanent = (d: { action: string; reason: string | null }) =>
       d.action !== "not-eligible" || /_F|ยกเลิก/.test(d.reason ?? "");
-    skipRefs = new Set(done.filter(permanent).map((d) => d.order_ref).filter((r): r is string => Boolean(r)));
+    skipRefs = new Set(
+      done
+        .filter(permanent)
+        .map((d) => d.order_ref)
+        .filter((r): r is string => Boolean(r)),
+    );
   } catch (err) {
     // Worst case we re-read a few View pages we did not have to.
     console.error("[soko-sync] could not load already-synced refs", err);
@@ -91,6 +97,10 @@ export async function runSokoSync(
       candidates: lastDiagnostics?.candidates,
       skipped: lastDiagnostics?.skipped,
       ranOutOfTime: lastDiagnostics?.ranOutOfTime,
+      // Only the pages soko answered: a page that timed out took the ceiling,
+      // not soko's own time, and averaging the ceiling in would flatter or
+      // ruin the figure depending on which way it broke.
+      pageMs: lastDiagnostics?.pageAttempts?.filter((a) => a.outcome === "ok").map((a) => a.ms),
     });
     return {
       ok: true,

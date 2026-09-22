@@ -1,11 +1,7 @@
 import { supabaseRest } from "@/lib/supabase-server";
 import { aftershipConfigured, registerTracking } from "@/lib/aftership";
 import { markRegistered } from "@/lib/shipment-store";
-import {
-  getOrderForTrackingSync,
-  setFulfillmentTracking,
-  createFulfillmentWithTracking,
-} from "@/lib/shopify-admin";
+import { getOrderForTrackingSync, setFulfillmentTracking, createFulfillmentWithTracking } from "@/lib/shopify-admin";
 import { decide, SyncMode, MAX_FILLS_PER_HOUR } from "@/lib/tracking-sync";
 
 // One tracking number, from wherever it came, put through the same decision
@@ -25,7 +21,7 @@ async function countFillsLastHour(): Promise<number> {
   const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   try {
     const rows = await supabaseRest<{ id: string }[]>(
-      `tracking_sync_log?applied=is.true&received_at=gte.${encodeURIComponent(since)}&select=id&limit=${MAX_FILLS_PER_HOUR + 1}`
+      `tracking_sync_log?applied=is.true&received_at=gte.${encodeURIComponent(since)}&select=id&limit=${MAX_FILLS_PER_HOUR + 1}`,
     );
     return rows.length;
   } catch {
@@ -70,7 +66,7 @@ export async function processTrackingUpdate(input: {
       shipments: order.shipments,
     },
     input.trackingNumber,
-    Boolean(input.parcelRef && input.parcelRef !== input.orderRef)
+    Boolean(input.parcelRef && input.parcelRef !== input.orderRef),
   );
 
   let applied = false;
@@ -203,13 +199,33 @@ export async function processTrackingUpdate(input: {
  */
 export async function logSyncHeartbeat(
   source: string,
-  detail: { pagesScanned?: number; candidates?: number; skipped?: number; ranOutOfTime?: boolean }
+  detail: {
+    pagesScanned?: number;
+    candidates?: number;
+    skipped?: number;
+    ranOutOfTime?: boolean;
+    /** How long each list page that answered actually took. */
+    pageMs?: number[];
+  },
 ) {
   const parts = [
     `อ่าน ${detail.pagesScanned ?? "?"} หน้า`,
     `พบ ${detail.candidates ?? "?"} ออเดอร์`,
     `ข้ามที่ทำไปแล้ว ${detail.skipped ?? 0}`,
   ];
+  // Kept because the timings were only ever measurable after soko got slow
+  // enough to fail: a successful run knew how long each page took and threw
+  // the number away, so "when is soko slow" could be answered from the
+  // failures and nothing else. One page's time per run, written down, is what
+  // makes the next slow spell visible while the runs still work.
+  const ok = (detail.pageMs ?? []).filter((ms) => ms > 0);
+  if (ok.length) {
+    const avg = ok.reduce((a, b) => a + b, 0) / ok.length;
+    const secs = (ms: number) => (ms / 1000).toFixed(1);
+    parts.push(
+      ok.length > 1 ? `หน้าละ ${secs(avg)} วิ เฉลี่ย (ช้าสุด ${secs(Math.max(...ok))} วิ)` : `หน้าละ ${secs(avg)} วิ`,
+    );
+  }
   if (detail.ranOutOfTime) parts.push("อ่านไม่ครบ (ใกล้หมดเวลา)");
   await supabaseRest("tracking_sync_log", {
     method: "POST",
@@ -240,7 +256,10 @@ export async function logSyncFailure(source: string, message: string) {
       reason: message.slice(0, 500),
       applied: false,
       notified: false,
-      error: message.slice(0, 500),
+      // Not a copy of the reason. Writing the message into both columns is
+      // what made the admin log print all 31 of these rows twice; "run-failed"
+      // is already what marks the row as a failure.
+      error: null,
     }),
   }).catch(() => {});
 }
