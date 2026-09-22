@@ -70,6 +70,11 @@ export default function BrandInsightsPage() {
   const [breakdown, setBreakdown] = useState<ProductBreakdown[]>([]);
   const [sentiment, setSentiment] = useState({ positive: 0, neutral: 0, negative: 0 });
   const [busy, setBusy] = useState("");
+  // Ten of the thirteen rows are a single mention with no sentiment, which is
+  // not a product problem — it is one person naming a product once. They stay
+  // available, behind a line, so the list reads as what is actually being
+  // talked about.
+  const [showEveryProduct, setShowEveryProduct] = useState(false);
   const [note, setNote] = useState("");
 
   const load = useCallback(async () => {
@@ -138,6 +143,13 @@ export default function BrandInsightsPage() {
   });
 
   const latest = insights[0];
+  // Rows worth a line each: a product somebody said something about. A single
+  // neutral mention is noise at the top of a list sorted by how bad things
+  // are — kept, but folded away. If every row is a single mention there is
+  // nothing to fold, so the list stays whole.
+  const notableProducts = breakdown.filter((r) => r.total > 1 || r.negative > 0 || r.positive > 0);
+  const shownBreakdown = (showEveryProduct || notableProducts.length === 0 ? breakdown : notableProducts).slice(0, 30);
+  const hiddenProducts = Math.min(breakdown.length, 30) - shownBreakdown.length;
   const totalReviews = sentiment.positive + sentiment.neutral + sentiment.negative;
   const pct = (n: number) => (totalReviews > 0 ? Math.round((n / totalReviews) * 100) : 0);
 
@@ -216,8 +228,12 @@ export default function BrandInsightsPage() {
                 {latest.period_start} ถึง {latest.period_end} · อ่านจาก{" "}
                 {latest.signals_considered.toLocaleString("th-TH")} สัญญาณ
               </p>
+              {/* Capped at a readable measure. The column is there to fit
+                  the text, not to set it in 130-character lines. */}
               {latest.summary && (
-                <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-brand-ink">{latest.summary}</p>
+                <p className="mt-2 max-w-[72ch] whitespace-pre-line text-sm leading-relaxed text-brand-ink">
+                  {latest.summary}
+                </p>
               )}
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 <ThemeList
@@ -298,7 +314,7 @@ export default function BrandInsightsPage() {
               </p>
             ) : (
               <ul className="mt-2 divide-y divide-surface-line/60 rounded-xl2 bg-white ring-1 ring-surface-line">
-                {breakdown.slice(0, 30).map((row, i) => (
+                {shownBreakdown.map((row, i) => (
                   <li key={row.keyword} className="flex items-center gap-3 px-4 py-2.5">
                     <span className="w-7 shrink-0 pr-1.5 text-right text-xs tabular-nums text-slate-400">{i + 1}</span>
                     <span className="min-w-0 flex-1">
@@ -338,6 +354,19 @@ export default function BrandInsightsPage() {
                     <span className="w-8 shrink-0 text-right text-sm tabular-nums text-slate-500">{row.total}</span>
                   </li>
                 ))}
+                {hiddenProducts > 0 && (
+                  <li className="px-4 py-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowEveryProduct((v) => !v)}
+                      className="text-xs font-semibold text-brand-800 hover:underline"
+                    >
+                      {showEveryProduct
+                        ? "ย่อรายการที่ถูกพูดถึงครั้งเดียว"
+                        : `อีก ${hiddenProducts} รายการที่ถูกพูดถึงครั้งเดียว — แสดง`}
+                    </button>
+                  </li>
+                )}
               </ul>
             )}
           </section>
