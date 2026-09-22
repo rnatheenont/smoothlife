@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sun, Moon, ShoppingBag, CreditCard } from "lucide-react";
+import { Sun, Moon, ShoppingBag, CreditCard, Palette } from "lucide-react";
 import { Button, Badge, Card, Field, Modal } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
+import { PageHeader } from "@/components/admin/layout-kit";
 import Link from "next/link";
 
 // A living style guide: it reads the brand tokens straight out of the shipped
@@ -100,7 +101,7 @@ function contrastOnWhite(c: string): number | null {
   const rgb = parseColor(c);
   if (!rgb) return null;
   const l = luminance(rgb);
-  return (1.05) / (l + 0.05);
+  return 1.05 / (l + 0.05);
 }
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
@@ -128,21 +129,27 @@ export default function AdminDesignSystemPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-brand-ink">ระบบดีไซน์</h1>
-        <p className="mt-1 text-body-s text-slate-500">
-          อ่านค่าจาก <code className="rounded-sm bg-surface-soft px-1">@theme</code> ใน globals.css ที่เว็บใช้จริง —
-          หน้านี้จึงตรงกับของจริงเสมอ ไม่มีทางเพี้ยน
-        </p>
-        {/* The payment screens cannot be shown inline here: they are a modal
-            over the page, and one of them is the whole screen on a phone. */}
-        <Link
-          href="/admin/design/payment"
-          className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-800 hover:underline"
-        >
-          <CreditCard size={15} /> ดูตัวอย่างหน้าชำระเงินทุกสถานะ
-        </Link>
-      </div>
+      <PageHeader
+        className="mb-6"
+        icon={<Palette size={20} className="text-brand-emerald" />}
+        title="ระบบดีไซน์"
+        subtitle={
+          <>
+            อ่านค่าจาก <code className="rounded-sm bg-surface-soft px-1">@theme</code> ใน globals.css ที่เว็บใช้จริง —
+            หน้านี้จึงตรงกับของจริงเสมอ ไม่มีทางเพี้ยน
+          </>
+        }
+        actions={
+          /* The payment screens cannot be shown inline here: they are a modal
+             over the page, and one of them is the whole screen on a phone. */
+          <Link
+            href="/admin/design/payment"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-brand-800 hover:bg-slate-50"
+          >
+            <CreditCard size={14} /> ตัวอย่างหน้าชำระเงิน
+          </Link>
+        }
+      />
 
       <Section
         title="สี"
@@ -196,10 +203,7 @@ export default function AdminDesignSystemPage() {
         <div className="flex flex-wrap gap-3">
           {Object.entries(theme.borderRadius ?? {}).map(([name, value]) => (
             <div key={name} className="text-center">
-              <div
-                className="h-16 w-16 border border-brand-200 bg-brand-50"
-                style={{ borderRadius: value }}
-              />
+              <div className="h-16 w-16 border border-brand-200 bg-brand-50" style={{ borderRadius: value }} />
               <p className="mt-1 text-[11px] text-slate-500">rounded-{name}</p>
               <p className="text-[10px] text-slate-400">{value}</p>
             </div>
@@ -231,9 +235,7 @@ export default function AdminDesignSystemPage() {
             {dark ? <Sun size={13} /> : <Moon size={13} />}
             ดูโหมด{dark ? "สว่าง" : "มืด"}
           </button>
-          <span className="text-[11px] text-slate-400">
-            สลับเฉพาะกล่องด้านล่าง — ทั้งเว็บยังเป็นโหมดสว่างอยู่
-          </span>
+          <span className="text-[11px] text-slate-400">สลับเฉพาะกล่องด้านล่าง — ทั้งเว็บยังเป็นโหมดสว่างอยู่</span>
         </div>
 
         {/* The `dark` class scopes Tailwind's dark: variants to this subtree
@@ -320,7 +322,6 @@ export default function AdminDesignSystemPage() {
           </p>
         </Modal>
       </Section>
-
     </div>
   );
 }

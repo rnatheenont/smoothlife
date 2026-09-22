@@ -112,12 +112,13 @@ const FULL_WIDTH = [
   "/admin/checkout-transactions",
   "/admin/points",
   "/admin/subscription-products",
+  "/admin/customers",
   "/admin/inbox",
   "/admin/seo",
   "/admin/brand-insights",
   "/admin/tracking-sync",
 ];
-const WIDE_TABLE = ["/admin/customers", "/admin/flash-sale"];
+const WIDE_TABLE = ["/admin/flash-sale"];
 
 const groupOf = (href: string) => NAV_GROUPS.find((g) => g.items.some((i) => i.href === href))?.label ?? "";
 

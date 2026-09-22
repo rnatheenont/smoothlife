@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { PageHeader } from "@/components/admin/layout-kit";
 import { ArrowLeft, CreditCard } from "lucide-react";
 import PaymentModal from "@/components/PaymentModal";
 
@@ -18,8 +19,18 @@ type Demo = {
 };
 
 const DEMOS: Demo[] = [
-  { key: "paying", label: "1 · กำลังชำระเงิน", blurb: "แถบสรุปยอด + หน้าของ 2C2P ในกรอบ (มือถือเต็มจอ)", phase: "paying" },
-  { key: "verifying", label: "2 · กำลังยืนยัน", blurb: "ลูกค้าจ่ายเสร็จ ระบบกำลังรอ webhook ยืนยัน", phase: "verifying" },
+  {
+    key: "paying",
+    label: "1 · กำลังชำระเงิน",
+    blurb: "แถบสรุปยอด + หน้าของ 2C2P ในกรอบ (มือถือเต็มจอ)",
+    phase: "paying",
+  },
+  {
+    key: "verifying",
+    label: "2 · กำลังยืนยัน",
+    blurb: "ลูกค้าจ่ายเสร็จ ระบบกำลังรอ webhook ยืนยัน",
+    phase: "verifying",
+  },
   {
     key: "success",
     label: "3 · สำเร็จ",
@@ -54,17 +65,19 @@ export default function PaymentPreviewPage() {
 
   return (
     <div>
-      <Link href="/admin/design" className="mb-2 inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-brand-ink">
+      <Link
+        href="/admin/design"
+        className="mb-2 inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-brand-ink"
+      >
         <ArrowLeft size={13} /> กลับไประบบดีไซน์
       </Link>
-      <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
-        <CreditCard size={20} className="text-brand-emerald" /> หน้าชำระเงิน (ตัวอย่าง)
-      </h1>
-      <p className="mt-1 text-sm text-slate-500">
-        ทุกสถานะของหน้าชำระเงินจริง เปิดดูได้โดยไม่ต้องจ่ายเงิน — ย่อหน้าต่างเบราว์เซอร์ให้แคบเพื่อดูแบบมือถือ (เต็มจอ)
-      </p>
+      <PageHeader
+        icon={<CreditCard size={20} className="text-brand-emerald" />}
+        title="หน้าชำระเงิน (ตัวอย่าง)"
+        subtitle="ทุกสถานะของหน้าชำระเงินจริง เปิดดูได้โดยไม่ต้องจ่ายเงิน — ย่อหน้าต่างเบราว์เซอร์ให้แคบเพื่อดูแบบมือถือ (เต็มจอ)"
+      />
 
-      <ul className="mt-5 grid gap-2 sm:grid-cols-2">
+      <ul className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {DEMOS.map((demo) => (
           <li key={demo.key}>
             <button

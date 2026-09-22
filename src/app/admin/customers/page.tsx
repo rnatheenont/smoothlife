@@ -2,10 +2,24 @@
 
 import { useEffect, useState } from "react";
 import clsx from "clsx";
-import { Users, Search, Link2, Unlink, Loader2, ShoppingBag, AlertTriangle, Check, ExternalLink, ShieldCheck, Merge, Stethoscope } from "lucide-react";
+import {
+  Users,
+  Search,
+  Link2,
+  Unlink,
+  Loader2,
+  ShoppingBag,
+  AlertTriangle,
+  Check,
+  ExternalLink,
+  ShieldCheck,
+  Merge,
+  Stethoscope,
+} from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
 import { useAdminAction } from "@/components/admin/header-action";
+import { PageHeader } from "@/components/admin/layout-kit";
 
 // Attaching a returning customer's purchase history to their login.
 //
@@ -43,7 +57,13 @@ type Candidate = {
   adminHandle: string;
 };
 
-type HealthAccount = { id: string; name: string | null; phone: string | null; contact: string | null; shopify?: string };
+type HealthAccount = {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  contact: string | null;
+  shopify?: string;
+};
 type Health = {
   checked: number;
   capped: boolean;
@@ -83,7 +103,9 @@ export default function AdminCustomersPage() {
   /** Stores the last search could look in — see the search API. */
   const [searched, setSearched] = useState<{ store: string; label: string; connected: boolean }[]>([]);
   /** Pairs the server can prove belong together — see lib/account-match.ts. */
-  const [proven, setProven] = useState<{ userId: string; store: string; shopifyCustomerId: string; reason: string }[]>([]);
+  const [proven, setProven] = useState<{ userId: string; store: string; shopifyCustomerId: string; reason: string }[]>(
+    [],
+  );
   const [health, setHealth] = useState<Health | null>(null);
   const [checking, setChecking] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -170,8 +192,11 @@ export default function AdminCustomersPage() {
           if (a.id !== selected) return a;
           if (store === "smoothlife") return { ...a, shopify_customer_id: json.shopifyCustomerId };
           const rest = (a.storeLinks || []).filter((l) => l.store !== store);
-          return { ...a, storeLinks: json.shopifyCustomerId ? [...rest, { store, shopifyCustomerId: json.shopifyCustomerId }] : rest };
-        })
+          return {
+            ...a,
+            storeLinks: json.shopifyCustomerId ? [...rest, { store, shopifyCustomerId: json.shopifyCustomerId }] : rest,
+          };
+        }),
       );
       setDone(shopifyCustomerId ? "ผูกบัญชีเรียบร้อย — ลูกค้ารีเฟรชหน้าคำสั่งซื้อจะเห็นทันที" : "ปลดการผูกเรียบร้อย");
       setNote("");
@@ -210,7 +235,7 @@ export default function AdminCustomersPage() {
     if (!selected) return;
     if (
       !confirm(
-        "รวมบัญชีนี้เข้ากับบัญชีที่เลือกไว้? ประวัติ คะแนน และช่องทางล็อกอินทั้งหมดจะย้ายมา และบัญชีที่ถูกรวมจะหายไป — ย้อนกลับไม่ได้"
+        "รวมบัญชีนี้เข้ากับบัญชีที่เลือกไว้? ประวัติ คะแนน และช่องทางล็อกอินทั้งหมดจะย้ายมา และบัญชีที่ถูกรวมจะหายไป — ย้อนกลับไม่ได้",
       )
     )
       return;
@@ -245,14 +270,16 @@ export default function AdminCustomersPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-2">
-        <Users size={20} className="text-brand-emerald" />
-        <h1 className="text-lg font-bold text-brand-ink">ลูกค้า &amp; การผูกบัญชี</h1>
-      </div>
-      <p className="text-xs text-slate-500 -mt-3 max-w-2xl">
-        ใช้เมื่อลูกค้าเคยซื้อด้วยอีเมล/เบอร์เดิม แล้วมาสมัครสมาชิกด้วยอีเมลใหม่ จนออเดอร์เก่าไม่ขึ้นในบัญชี — ค้นหา
-        เลือกบัญชีเว็บ แล้วกดผูกกับใบ Shopify ที่มีประวัติการซื้ออยู่
-      </p>
+      <PageHeader
+        icon={<Users size={20} className="text-brand-emerald" />}
+        title="ลูกค้า & การผูกบัญชี"
+        subtitle={
+          <span className="block max-w-3xl">
+            ใช้เมื่อลูกค้าเคยซื้อด้วยอีเมล/เบอร์เดิม แล้วมาสมัครสมาชิกด้วยอีเมลใหม่ จนออเดอร์เก่าไม่ขึ้นในบัญชี — ค้นหา
+            เลือกบัญชีเว็บ แล้วกดผูกกับใบ Shopify ที่มีประวัติการซื้ออยู่
+          </span>
+        }
+      />
 
       <form onSubmit={search} className="flex gap-2 max-w-xl">
         <input
@@ -287,9 +314,7 @@ export default function AdminCustomersPage() {
             <h2 className="flex items-center gap-1.5 text-sm font-bold text-brand-ink">
               <Stethoscope size={14} className="text-brand-emerald" /> ตรวจสุขภาพการผูกบัญชี
             </h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              หาบัญชีที่มองไม่เห็นออเดอร์ตัวเอง โดยไม่ต้องรอลูกค้าทัก
-            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">หาบัญชีที่มองไม่เห็นออเดอร์ตัวเอง โดยไม่ต้องรอลูกค้าทัก</p>
           </div>
           <Button size="sm" variant="soft" onClick={runHealthCheck} disabled={checking}>
             {checking ? <Loader2 size={13} className="animate-spin" /> : <Stethoscope size={13} />}
@@ -310,8 +335,16 @@ export default function AdminCustomersPage() {
             </div>
 
             {[
-              { rows: health.dangling, title: "ผูกกับใบ Shopify ที่ถูกลบไปแล้ว — นับว่าผูกแล้วแต่ไม่มีอะไรให้ดู", tone: "text-rose-700" },
-              { rows: health.empty, title: "ผูกกับใบที่ไม่มีออเดอร์ — ถ้าลูกค้าเคยซื้อ ประวัติอยู่อีกใบ", tone: "text-amber-700" },
+              {
+                rows: health.dangling,
+                title: "ผูกกับใบ Shopify ที่ถูกลบไปแล้ว — นับว่าผูกแล้วแต่ไม่มีอะไรให้ดู",
+                tone: "text-rose-700",
+              },
+              {
+                rows: health.empty,
+                title: "ผูกกับใบที่ไม่มีออเดอร์ — ถ้าลูกค้าเคยซื้อ ประวัติอยู่อีกใบ",
+                tone: "text-amber-700",
+              },
               { rows: health.unlinked, title: "ยังไม่ได้ผูกกับใบ Shopify", tone: "text-amber-700" },
             ]
               .filter((g) => g.rows.length > 0)
@@ -351,9 +384,7 @@ export default function AdminCustomersPage() {
               </div>
             )}
 
-            {health.capped && (
-              <p className="text-[11px] text-slate-400">แสดงเฉพาะ {health.checked} บัญชีล่าสุด</p>
-            )}
+            {health.capped && <p className="text-[11px] text-slate-400">แสดงเฉพาะ {health.checked} บัญชีล่าสุด</p>}
           </div>
         )}
       </Card>
@@ -376,7 +407,9 @@ export default function AdminCustomersPage() {
                   onClick={() => setSelected(a.id)}
                   className={clsx(
                     "w-full text-left rounded-xl2 border px-3 py-2.5 transition-colors",
-                    selected === a.id ? "border-brand-emerald bg-brand-gradient-soft" : "border-slate-200 hover:bg-slate-50"
+                    selected === a.id
+                      ? "border-brand-emerald bg-brand-gradient-soft"
+                      : "border-slate-200 hover:bg-slate-50",
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -402,7 +435,8 @@ export default function AdminCustomersPage() {
                     {a.phone && <span>{a.phone}</span>}
                     {a.identities.map((i) => (
                       <span key={i.provider + i.uid}>
-                        {PROVIDER_LABEL[i.provider] || i.provider}: {i.uid.length > 30 ? `${i.uid.slice(0, 12)}…` : i.uid}
+                        {PROVIDER_LABEL[i.provider] || i.provider}:{" "}
+                        {i.uid.length > 30 ? `${i.uid.slice(0, 12)}…` : i.uid}
                         {i.provider === "email" && !i.verified && " (ยังไม่ยืนยัน)"}
                       </span>
                     ))}
@@ -430,7 +464,7 @@ export default function AdminCustomersPage() {
                         "mt-2 inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold",
                         note.trim().length < 3 || busy !== ""
                           ? "text-slate-300 pointer-events-none"
-                          : "text-slate-600 hover:bg-white"
+                          : "text-slate-600 hover:bg-white",
                       )}
                     >
                       {busy === a.id ? <Loader2 size={11} className="animate-spin" /> : <Merge size={11} />}
@@ -456,9 +490,13 @@ export default function AdminCustomersPage() {
                     key={s.store}
                     className={clsx(
                       "rounded-full px-2 py-0.5 font-semibold",
-                      s.connected ? "bg-emerald-50 text-emerald-800" : "bg-slate-100 text-slate-500 line-through"
+                      s.connected ? "bg-emerald-50 text-emerald-800" : "bg-slate-100 text-slate-500 line-through",
                     )}
-                    title={s.connected ? "ค้นในร้านนี้แล้ว" : "ยังเชื่อมร้านนี้ไม่ได้ (แอป Smoothlife Web ยังไม่ได้ติดตั้งในร้านนี้) จึงไม่ได้ค้น"}
+                    title={
+                      s.connected
+                        ? "ค้นในร้านนี้แล้ว"
+                        : "ยังเชื่อมร้านนี้ไม่ได้ (แอป Smoothlife Web ยังไม่ได้ติดตั้งในร้านนี้) จึงไม่ได้ค้น"
+                    }
                   >
                     {s.label}
                     {s.connected ? "" : " (ยังไม่เชื่อม)"}
@@ -480,7 +518,7 @@ export default function AdminCustomersPage() {
                     key={`${c.store}-${c.id}`}
                     className={clsx(
                       "rounded-xl2 border px-3 py-2.5",
-                      linkedHere ? "border-emerald-300 bg-emerald-50" : "border-slate-200"
+                      linkedHere ? "border-emerald-300 bg-emerald-50" : "border-slate-200",
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -492,12 +530,14 @@ export default function AdminCustomersPage() {
                               ? "bg-emerald-100 text-emerald-800"
                               : c.store === "smoothe"
                                 ? "bg-amber-100 text-amber-800"
-                                : "bg-sky-100 text-sky-800"
+                                : "bg-sky-100 text-sky-800",
                           )}
                         >
                           {c.storeLabel}
                         </span>
-                        <span className="text-sm font-semibold text-brand-ink truncate">{c.displayName || c.email || "—"}</span>
+                        <span className="text-sm font-semibold text-brand-ink truncate">
+                          {c.displayName || c.email || "—"}
+                        </span>
                       </span>
                       <span className="flex items-center gap-1 text-[11px] font-semibold text-brand-800 shrink-0">
                         <ShoppingBag size={12} />
@@ -582,7 +622,8 @@ export default function AdminCustomersPage() {
           <h2 className="text-sm font-bold text-brand-ink mb-1">ยืนยันตัวตนก่อนผูก</h2>
           <p className="text-[11px] text-slate-500 mb-3">
             การผูกทำให้ลูกค้าเห็นออเดอร์ ที่อยู่ และเบอร์ในใบนั้นทั้งหมด — ผูกผิดใบคือเปิดข้อมูลของคนอื่น
-            บันทึกไว้ว่าตรวจจากอะไร (เช่น &quot;ลูกค้าแจ้งเลขออเดอร์ #4207 และชื่อ-ที่อยู่ตรงกัน&quot;) ทุกครั้งที่กดจะถูกบันทึกใน audit log
+            บันทึกไว้ว่าตรวจจากอะไร (เช่น &quot;ลูกค้าแจ้งเลขออเดอร์ #4207 และชื่อ-ที่อยู่ตรงกัน&quot;)
+            ทุกครั้งที่กดจะถูกบันทึกใน audit log
           </p>
           <input
             value={note}
