@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader } from "@/components/admin/layout-kit";
+import { PageHeader, adminTable } from "@/components/admin/layout-kit";
 
 // What the brand's own signals say, and which keyword is worth the next
 // afternoon.
@@ -161,7 +161,9 @@ export default function BrandInsightsPage() {
   const zeroResults = opportunities.reduce((sum, o) => sum + o.site_searches_without_results, 0);
 
   return (
-    <div>
+    // Full width, but not unbounded: past about 1700px the two columns stop
+    // being columns and become two very long lines.
+    <div className="mx-auto w-full max-w-[1700px]">
       <PageHeader
         icon={<TrendingUp size={20} className="text-brand-emerald" />}
         title="สัญญาณแบรนด์ & โอกาส SEO"
@@ -176,6 +178,8 @@ export default function BrandInsightsPage() {
       )}
 
       {/* The short answer, before any panel: four counts, no scores. */}
+      {/* Two up even on a phone: four short counts stacked one per row is
+          440px of scrolling before the page starts. */}
       <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Stat
           icon={ThumbsUp}
@@ -224,7 +228,13 @@ export default function BrandInsightsPage() {
             </p>
           ) : (
             <div className="mt-2 rounded-xl2 bg-white p-5 ring-1 ring-surface-line">
-              <p className="text-xs text-slate-400">
+              {/* Marked as a model's reading of the signals, not a measured
+                  figure like the four above it — same words, different kind
+                  of claim, and the page should not let them look alike. */}
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400">
+                <span className="inline-flex items-center gap-1 rounded-full bg-brand-gradient-soft px-2 py-0.5 text-[11px] font-semibold text-brand-800">
+                  <Sparkles size={11} aria-hidden="true" /> สรุปโดย AI
+                </span>
                 {latest.period_start} ถึง {latest.period_end} · อ่านจาก{" "}
                 {latest.signals_considered.toLocaleString("th-TH")} สัญญาณ
               </p>
@@ -276,29 +286,33 @@ export default function BrandInsightsPage() {
                 ยังไม่มีรีวิวที่อนุมัติแล้วในระบบ — กด &ldquo;ซิงก์ข้อมูลใหม่&rdquo; หลังจากมีรีวิวเข้ามา
               </p>
             ) : (
-              <div className="mt-2 rounded-xl2 bg-white p-5 ring-1 ring-surface-line">
-                <div className="flex h-3 overflow-hidden rounded-full bg-surface-muted">
+              /* Three numbers do not need three boxes. A bar with its legend
+                 on one line says the same thing in a third of the height,
+                 and the column below it is the part worth scrolling. */
+              <div className="mt-2 rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
+                <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-muted">
                   <div className="bg-emerald-500" style={{ width: `${pct(sentiment.positive)}%` }} />
                   <div className="bg-slate-300" style={{ width: `${pct(sentiment.neutral)}%` }} />
                   <div className="bg-rose-400" style={{ width: `${pct(sentiment.negative)}%` }} />
                 </div>
-                <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <dl className="mt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[12px]">
                   {[
-                    ["บวก", sentiment.positive, "text-emerald-600"],
-                    ["กลาง", sentiment.neutral, "text-slate-500"],
-                    ["ลบ", sentiment.negative, "text-rose-600"],
-                  ].map(([label, n, colour]) => (
-                    <div key={label as string} className="rounded-lg bg-surface-soft py-2">
-                      <dt className="text-[11px] text-slate-500">{label}</dt>
-                      <dd className={"text-base font-bold tabular-nums " + colour}>{n as number}</dd>
+                    ["บวก", sentiment.positive, "bg-emerald-500", "text-emerald-600"],
+                    ["กลาง", sentiment.neutral, "bg-slate-300", "text-slate-500"],
+                    ["ลบ", sentiment.negative, "bg-rose-400", "text-rose-600"],
+                  ].map(([label, n, dot, colour]) => (
+                    <div key={label as string} className="flex items-center gap-1.5">
+                      <span className={"size-2 rounded-full " + dot} aria-hidden="true" />
+                      <dt className="text-slate-500">{label}</dt>
+                      <dd className={"font-bold tabular-nums " + colour}>{n as number}</dd>
                     </div>
                   ))}
+                  {totalReviews < 30 && (
+                    <p className="w-full text-[11px] text-slate-400">
+                      จาก {totalReviews} รีวิว — ยังน้อยเกินกว่าจะถือเป็นภาพรวมของแบรนด์
+                    </p>
+                  )}
                 </dl>
-                {totalReviews < 30 && (
-                  <p className="mt-2 text-xs text-slate-400">
-                    จาก {totalReviews} รีวิว — ยังน้อยเกินกว่าจะถือเป็นภาพรวมของแบรนด์
-                  </p>
-                )}
               </div>
             )}
           </section>
@@ -386,41 +400,98 @@ export default function BrandInsightsPage() {
           </Button>
         </div>
 
-        <p className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
-          <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
-          <span>
-            ตัวเลขนี้คือ &ldquo;ควรลงแรงกับคำไหนก่อน&rdquo; ไม่ใช่ &ldquo;โอกาสติดอันดับ&rdquo; — ยังไม่ได้ต่อ Search
-            Console จึงยังไม่รู้อันดับจริงของเรา และช่อง &ldquo;การแข่งขัน&rdquo; เป็นการประเมินจากรูปแบบของคำ
-            ไม่ใช่การวัดหน้าผลค้นหาจริง
-          </span>
-        </p>
+        {/* True, and worth reading — once. Three lines of standing caveat
+            above the table pushed the first row out of view every visit, so
+            it folds; what it warns about is in the column headers too. */}
+        <details className="group mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <summary className="flex cursor-pointer list-none items-center gap-2 font-medium">
+            <AlertTriangle size={14} className="shrink-0" aria-hidden="true" />
+            ตัวเลขนี้คือ &ldquo;ควรลงแรงกับคำไหนก่อน&rdquo; ไม่ใช่ &ldquo;โอกาสติดอันดับ&rdquo;
+            <span className="ml-auto text-[11px] text-amber-700 group-open:hidden">อ่านเพิ่ม</span>
+          </summary>
+          <p className="mt-1.5 pl-6 leading-relaxed">
+            ยังไม่ได้ต่อ Search Console จึงยังไม่รู้อันดับจริงของเรา และช่อง &ldquo;การแข่งขัน&rdquo;
+            เป็นการประเมินจากรูปแบบของคำ ไม่ใช่การวัดหน้าผลค้นหาจริง
+          </p>
+        </details>
 
         {opportunities.length === 0 ? (
           <p className="mt-2 rounded-xl2 bg-surface-soft p-5 text-sm text-slate-500">
             ยังไม่เคยคำนวณ — ซิงก์ข้อมูลก่อน แล้วกด &ldquo;คำนวณใหม่&rdquo;
           </p>
         ) : (
-          <div className="mt-3 overflow-x-auto rounded-xl2 bg-white ring-1 ring-surface-line">
-            <table className="w-full min-w-[760px] text-sm">
-              <thead>
-                <tr className="border-b border-surface-line text-left text-xs text-slate-400">
-                  <th className="w-10 py-2.5 pl-4 font-medium">#</th>
-                  <th className="py-2.5 pr-3 font-medium">คำค้นหา</th>
-                  <th className="w-40 py-2.5 pr-3 font-medium">โอกาส</th>
-                  <th className="w-20 py-2.5 pr-3 font-medium">Trends</th>
-                  <th className="w-28 py-2.5 pr-3 font-medium">ค้นในเว็บ</th>
-                  <th className="w-24 py-2.5 pr-3 font-medium">การแข่งขัน</th>
-                  <th className="py-2.5 pr-4 font-medium">ควรทำอะไร</th>
-                </tr>
-              </thead>
-              <tbody>
-                {opportunities.map((o, i) => (
-                  <tr
-                    key={o.keyword}
-                    className="border-b border-surface-line/60 last:border-0 hover:bg-surface-soft/60"
-                  >
-                    <td className="py-2.5 pl-4 text-xs tabular-nums text-slate-400">{i + 1}</td>
-                    <td className="py-2.5 pr-3 font-medium text-brand-ink">
+          <>
+            {/* A seven-column table cannot be a seven-column table on a
+                phone, and the sideways scroll it used to need hid the last
+                column — which is the one that says what to do. */}
+            <div className="mt-3 hidden overflow-hidden rounded-xl2 bg-white ring-1 ring-surface-line md:block">
+              <table className={adminTable.table}>
+                <thead className={adminTable.thead}>
+                  <tr>
+                    <th className="w-10">#</th>
+                    <th>คำค้นหา</th>
+                    <th className="w-40">โอกาส</th>
+                    <th className="w-20">Trends</th>
+                    <th className="w-28">ค้นในเว็บ</th>
+                    <th className="w-24">การแข่งขัน</th>
+                    <th className="w-[26rem]">ควรทำอะไร</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {opportunities.map((o, i) => (
+                    <tr key={o.keyword} className={adminTable.row}>
+                      <td className={adminTable.muted}>{i + 1}</td>
+                      <td className="px-3 py-2.5 font-medium text-brand-ink">
+                        {o.page_slug && o.page_type ? (
+                          <Link
+                            href={o.page_type === "concern" ? `/concern/${o.page_slug}` : `/shop/${o.page_slug}`}
+                            target="_blank"
+                            className="inline-flex items-center gap-1 hover:text-brand-800"
+                          >
+                            {o.keyword} <ArrowUpRight size={12} aria-hidden="true" />
+                          </Link>
+                        ) : (
+                          o.keyword
+                        )}
+                      </td>
+                      <td className={adminTable.cell}>
+                        <span className="inline-flex items-center gap-2">
+                          <span className="h-1.5 w-20 overflow-hidden rounded-full bg-surface-muted">
+                            <span
+                              className="block h-full rounded-full bg-brand-gradient"
+                              style={{ width: `${o.opportunity_percent}%` }}
+                            />
+                          </span>
+                          <span className="tabular-nums text-xs font-semibold text-slate-600">
+                            {o.opportunity_percent}%
+                          </span>
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-xs tabular-nums text-slate-500">
+                        {o.search_volume_estimate ?? (
+                          <span title="Google Trends ไม่มีข้อมูลสำหรับคำนี้">ไม่มีข้อมูล</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-xs tabular-nums text-slate-500">
+                        {o.site_searches}
+                        {o.site_searches_without_results > 0 && (
+                          <span className="ml-1 text-amber-700">({o.site_searches_without_results} ไม่เจอ)</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-xs text-slate-500">{COMPETITION_TH[o.competition_level]}</td>
+                      <td className="px-3 py-2.5 text-xs leading-relaxed text-slate-600">{o.recommended_action}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="mt-3 divide-y divide-surface-line/60 rounded-xl2 bg-white ring-1 ring-surface-line md:hidden">
+              {opportunities.map((o, i) => (
+                <li key={o.keyword} className="p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="min-w-0 text-sm font-semibold text-brand-ink">
+                      <span className="mr-1.5 text-xs tabular-nums text-slate-400">{i + 1}</span>
                       {o.page_slug && o.page_type ? (
                         <Link
                           href={o.page_type === "concern" ? `/concern/${o.page_slug}` : `/shop/${o.page_slug}`}
@@ -432,38 +503,29 @@ export default function BrandInsightsPage() {
                       ) : (
                         o.keyword
                       )}
-                    </td>
-                    <td className="py-2.5 pr-3">
-                      <span className="inline-flex items-center gap-2">
-                        <span className="h-1.5 w-20 overflow-hidden rounded-full bg-surface-muted">
-                          <span
-                            className="block h-full rounded-full bg-brand-gradient"
-                            style={{ width: `${o.opportunity_percent}%` }}
-                          />
-                        </span>
-                        <span className="tabular-nums text-xs font-semibold text-slate-600">
-                          {o.opportunity_percent}%
-                        </span>
-                      </span>
-                    </td>
-                    <td className="py-2.5 pr-3 tabular-nums text-xs text-slate-500">
-                      {o.search_volume_estimate ?? (
-                        <span title="Google Trends ไม่มีข้อมูลสำหรับคำนี้">ไม่มีข้อมูล</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 pr-3 tabular-nums text-xs text-slate-500">
-                      {o.site_searches}
-                      {o.site_searches_without_results > 0 && (
-                        <span className="ml-1 text-amber-700">({o.site_searches_without_results} ไม่เจอ)</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 pr-3 text-xs text-slate-500">{COMPETITION_TH[o.competition_level]}</td>
-                    <td className="py-2.5 pr-4 text-xs text-slate-600">{o.recommended_action}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </p>
+                    <span className="shrink-0 tabular-nums text-sm font-bold text-brand-800">
+                      {o.opportunity_percent}%
+                    </span>
+                  </div>
+                  <span className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-surface-muted">
+                    <span
+                      className="block h-full rounded-full bg-brand-gradient"
+                      style={{ width: `${o.opportunity_percent}%` }}
+                    />
+                  </span>
+                  <p className="mt-1.5 text-[11px] text-slate-500">
+                    Trends {o.search_volume_estimate ?? "ไม่มีข้อมูล"} · ค้นในเว็บ {o.site_searches}
+                    {o.site_searches_without_results > 0 && (
+                      <span className="text-amber-700"> ({o.site_searches_without_results} ไม่เจอ)</span>
+                    )}{" "}
+                    · แข่งขัน {COMPETITION_TH[o.competition_level]}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600">{o.recommended_action}</p>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
     </div>
