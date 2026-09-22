@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { UserCog, Plus, Copy, Check, KeyRound, Ban, RotateCcw } from "lucide-react";
 import { Button, Badge, Field, Modal } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
+import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
 
 type Role = { key: string; label: string };
 type AdminUserRow = {
@@ -20,7 +21,12 @@ const EMPTY_FORM = { email: "", display_name: "", role_key: "" };
 
 function formatDate(iso: string | null) {
   if (!iso) return "ยังไม่เคยเข้าระบบ";
-  return new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", timeZone: "Asia/Bangkok" });
+  return new Date(iso).toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: "2-digit",
+    timeZone: "Asia/Bangkok",
+  });
 }
 
 // Shown once, right after a create or a reset — the temporary password is
@@ -39,7 +45,12 @@ function TempPasswordModal({
 }) {
   const [copied, setCopied] = useState(false);
   return (
-    <Modal open={open} onClose={onClose} title="รหัสผ่านชั่วคราว" description={`สำหรับ ${email} — เห็นได้แค่ครั้งนี้ครั้งเดียว`}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="รหัสผ่านชั่วคราว"
+      description={`สำหรับ ${email} — เห็นได้แค่ครั้งนี้ครั้งเดียว`}
+    >
       <div className="flex items-center gap-2 rounded-lg border border-dashed border-brand-teal/40 bg-brand-gradient-soft px-3 py-2.5">
         <code className="min-w-0 flex-1 truncate text-sm font-semibold text-brand-ink">{tempPassword}</code>
         <button
@@ -57,7 +68,8 @@ function TempPasswordModal({
         </button>
       </div>
       <p className="mt-3 text-xs text-slate-500">
-        ส่งรหัสผ่านนี้ให้เจ้าของบัญชีทางช่องทางที่ปลอดภัย (ไม่ใช่แชทสาธารณะ) แนะนำให้เปลี่ยนรหัสผ่านทันทีหลังเข้าใช้งานครั้งแรก
+        ส่งรหัสผ่านนี้ให้เจ้าของบัญชีทางช่องทางที่ปลอดภัย (ไม่ใช่แชทสาธารณะ)
+        แนะนำให้เปลี่ยนรหัสผ่านทันทีหลังเข้าใช้งานครั้งแรก
       </p>
     </Modal>
   );
@@ -160,15 +172,12 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div>
-      <div className="mb-4">
-        <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
-          <UserCog size={20} className="text-brand-emerald" /> ผู้ใช้ &amp; สิทธิ์
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          จัดการว่าใครเข้าระบบหลังบ้านได้บ้าง และแต่ละคนทำอะไรได้บ้าง — เฉพาะเจ้าของระบบเท่านั้นที่เห็นหน้านี้
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        icon={<UserCog size={20} className="text-brand-emerald" />}
+        title="ผู้ใช้ & สิทธิ์"
+        subtitle="จัดการว่าใครเข้าระบบหลังบ้านได้บ้าง และแต่ละคนทำอะไรได้บ้าง — เฉพาะเจ้าของระบบเท่านั้นที่เห็นหน้านี้"
+      />
 
       {loading ? (
         <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด…</p>
@@ -177,74 +186,151 @@ export default function AdminUsersPage() {
           <p className="text-sm text-slate-500">{error}</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-1.5">
-          {users.map((u) => {
-            const isSelf = me?.id === u.id;
-            const roleLabel = roles.find((r) => r.key === u.role_key)?.label ?? u.role_key;
-            return (
-              <div key={u.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 px-3 py-2.5">
-                <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1.5 text-sm font-semibold text-brand-ink">
+        <Panel title="บัญชีทั้งหมด" icon={<UserCog size={15} className="text-brand-600" />}>
+          {/* A table on a screen with room for one, because the questions
+              asked here are comparisons — who has which permission, who has
+              not signed in — and the controls were sitting wherever the name
+              above them happened to end. Below md each account is a card:
+              a select and two buttons do not fit a phone's table row. */}
+          <div className="hidden md:block">
+            <table className={adminTable.table}>
+              <thead className={adminTable.thead}>
+                <tr>
+                  <th>ผู้ใช้</th>
+                  <th className="w-56">สิทธิ์</th>
+                  <th className="w-40">เข้าระบบล่าสุด</th>
+                  <th className="w-72 text-right">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => {
+                  const isSelf = me?.id === u.id;
+                  return (
+                    <tr key={u.id} className={adminTable.row}>
+                      <td className={adminTable.cell}>
+                        <p className="flex flex-wrap items-center gap-1.5 font-semibold text-brand-ink">
+                          {u.display_name}
+                          {isSelf && <Badge tone="brand">คุณ</Badge>}
+                          {u.status === "suspended" && <Badge tone="danger">ระงับการใช้งาน</Badge>}
+                        </p>
+                        <p className="text-[12px] text-slate-400">{u.email}</p>
+                      </td>
+                      <td className={adminTable.cell}>
+                        <select
+                          value={u.role_key}
+                          disabled={isSelf || busyId === u.id}
+                          onChange={(e) => patchUser(u.id, { role_key: e.target.value })}
+                          className="w-full rounded-l border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-brand-ink outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 disabled:opacity-50"
+                          aria-label={`สิทธิ์ของ ${u.display_name}`}
+                        >
+                          {roles.map((r) => (
+                            <option key={r.key} value={r.key}>
+                              {r.label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className={adminTable.muted}>{formatDate(u.last_login_at)}</td>
+                      <td className={adminTable.cell}>
+                        <span className="flex flex-wrap justify-end gap-1.5">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={busyId === u.id}
+                            onClick={() => patchUser(u.id, { reset_password: true })}
+                          >
+                            <KeyRound size={13} /> ตั้งรหัสผ่านใหม่
+                          </Button>
+                          <Button
+                            variant={u.status === "active" ? "danger" : "secondary"}
+                            size="sm"
+                            disabled={isSelf || busyId === u.id}
+                            onClick={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
+                          >
+                            {u.status === "active" ? (
+                              <>
+                                <Ban size={13} /> ระงับ
+                              </>
+                            ) : (
+                              <>
+                                <RotateCcw size={13} /> เปิดใช้งานอีกครั้ง
+                              </>
+                            )}
+                          </Button>
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <ul className="divide-y divide-slate-100 md:hidden">
+            {users.map((u) => {
+              const isSelf = me?.id === u.id;
+              return (
+                <li key={u.id} className="p-3">
+                  <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-brand-ink">
                     {u.display_name}
                     {isSelf && <Badge tone="brand">คุณ</Badge>}
                     {u.status === "suspended" && <Badge tone="danger">ระงับการใช้งาน</Badge>}
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="mt-0.5 text-[11px] text-slate-400">
                     {u.email} · เข้าระบบล่าสุด {formatDate(u.last_login_at)}
                   </p>
-                </div>
-
-                <select
-                  value={u.role_key}
-                  disabled={isSelf || busyId === u.id}
-                  onChange={(e) => patchUser(u.id, { role_key: e.target.value })}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-brand-ink outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 disabled:opacity-50"
-                  aria-label={`สิทธิ์ของ ${u.display_name}`}
-                >
-                  {roles.map((r) => (
-                    <option key={r.key} value={r.key}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-                {isSelf && !roles.some((r) => r.key === u.role_key) && (
-                  // Defensive only: today's seed always has every role_key a
-                  // user could hold, so this never actually renders.
-                  <span className="text-xs text-slate-400">{roleLabel}</span>
-                )}
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={busyId === u.id}
-                  onClick={() => patchUser(u.id, { reset_password: true })}
-                >
-                  <KeyRound size={13} /> ตั้งรหัสผ่านใหม่
-                </Button>
-
-                <Button
-                  variant={u.status === "active" ? "danger" : "secondary"}
-                  size="sm"
-                  disabled={isSelf || busyId === u.id}
-                  onClick={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
-                >
-                  {u.status === "active" ? (
-                    <>
-                      <Ban size={13} /> ระงับ
-                    </>
-                  ) : (
-                    <>
-                      <RotateCcw size={13} /> เปิดใช้งานอีกครั้ง
-                    </>
-                  )}
-                </Button>
-              </div>
-            );
-          })}
-        </div>
+                  <select
+                    value={u.role_key}
+                    disabled={isSelf || busyId === u.id}
+                    onChange={(e) => patchUser(u.id, { role_key: e.target.value })}
+                    className="mt-2 w-full rounded-l border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-brand-ink outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 disabled:opacity-50"
+                    aria-label={`สิทธิ์ของ ${u.display_name}`}
+                  >
+                    {roles.map((r) => (
+                      <option key={r.key} value={r.key}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={busyId === u.id}
+                      onClick={() => patchUser(u.id, { reset_password: true })}
+                    >
+                      <KeyRound size={13} /> ตั้งรหัสผ่านใหม่
+                    </Button>
+                    <Button
+                      variant={u.status === "active" ? "danger" : "secondary"}
+                      size="sm"
+                      disabled={isSelf || busyId === u.id}
+                      onClick={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
+                    >
+                      {u.status === "active" ? (
+                        <>
+                          <Ban size={13} /> ระงับ
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw size={13} /> เปิดใช้งานอีกครั้ง
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </Panel>
       )}
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="เพิ่มผู้ใช้ใหม่" description="ระบบจะออกรหัสผ่านชั่วคราวให้ทันที">
+      <Modal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="เพิ่มผู้ใช้ใหม่"
+        description="ระบบจะออกรหัสผ่านชั่วคราวให้ทันที"
+      >
         <form onSubmit={submitCreate} className="space-y-3">
           <Field
             label="อีเมล"
