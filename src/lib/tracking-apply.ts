@@ -49,11 +49,16 @@ export async function processTrackingUpdate(input: {
   trackingNumber: string;
   courier?: string;
   source?: string;
+  /** What started this run — the schedule, or a person pressing "run now".
+   *  Recorded so the log can say whether a number arrived on its own or
+   *  because someone asked for it. */
+  triggeredBy?: "cron" | "admin";
   /** soko's own reference. Differs from orderRef only for a second box. */
   parcelRef?: string;
 }): Promise<ProcessResult> {
   const courier = input.courier?.trim() || "Kerry Express Thailand";
   const source = input.source?.trim().slice(0, 40) || "webhook";
+  const triggeredBy = input.triggeredBy ?? null;
   const mode = trackingMode();
 
   const order = await getOrderForTrackingSync(input.orderRef);
@@ -123,24 +128,54 @@ export async function processTrackingUpdate(input: {
     }
   }
 
-  await supabaseRest("tracking_sync_log", {
-    method: "POST",
-    returning: false,
-    body: JSON.stringify({
-      source,
-      mode,
-      order_ref: input.parcelRef || input.orderRef,
-      tracking_number: input.trackingNumber,
-      courier,
-      resolved_order_name: order?.name ?? null,
-      action: decision.action,
-      reason: decision.reason,
-      existing_numbers: decision.action === "conflict" ? decision.existing : null,
-      applied,
-      notified,
-      error,
-    }),
-  }).catch((err) => console.error("[tracking-apply] could not log", err));
+  // A conflict is left for a person to judge, which means it is still there
+  // on the next run, and the one after. Appending a row each time turned two
+  // unresolved orders into 84 identical lines in three weeks and buried
+  // everything else on the screen.
+  //
+  // One open conflict is one row now: the first sighting keeps its
+  // timestamp, and a repeat moves last_seen_at and adds one to the counter,
+  // so "still happening, 42 runs later" reads off a single line. The upsert
+  // and the increment happen inside tsl_note_conflict because PostgREST
+  // cannot express "seen_count = seen_count + 1", and because two runs
+  // landing together must not both insert.
+  if (decision.action === "conflict" && order?.name) {
+    await supabaseRest("rpc/tsl_note_conflict", {
+      method: "POST",
+      returning: false,
+      body: JSON.stringify({
+        p_source: source,
+        p_mode: mode,
+        p_order_ref: input.parcelRef || input.orderRef,
+        p_tracking_number: input.trackingNumber,
+        p_courier: courier,
+        p_order_name: order.name,
+        p_reason: decision.reason,
+        p_existing: decision.existing,
+        p_triggered_by: triggeredBy,
+      }),
+    }).catch((err) => console.error("[tracking-apply] could not log the conflict", err));
+  } else {
+    await supabaseRest("tracking_sync_log", {
+      method: "POST",
+      returning: false,
+      body: JSON.stringify({
+        source,
+        mode,
+        order_ref: input.parcelRef || input.orderRef,
+        tracking_number: input.trackingNumber,
+        courier,
+        resolved_order_name: order?.name ?? null,
+        action: decision.action,
+        reason: decision.reason,
+        existing_numbers: null,
+        applied,
+        notified,
+        error,
+        triggered_by: triggeredBy,
+      }),
+    }).catch((err) => console.error("[tracking-apply] could not log", err));
+  }
 
   return {
     order: order?.name ?? null,

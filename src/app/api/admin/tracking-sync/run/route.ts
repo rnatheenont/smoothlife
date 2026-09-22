@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
   }
-  const { status, ...body } = await runSokoSync();
+  // Pressed by a person, so the rows it writes say so.
+  const { status, ...body } = await runSokoSync("admin");
   return NextResponse.json(body, { status });
 }

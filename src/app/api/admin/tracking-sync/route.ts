@@ -22,6 +22,12 @@ export type TrackingSyncRow = {
   applied: boolean;
   resolved_at: string | null;
   resolution: string | null;
+  /** What started the run: "cron" (the schedule) or "admin" (someone pressed
+   *  run now). Null on rows written before the column existed. */
+  triggered_by: string | null;
+  /** For an open conflict: how many runs have reported it, and the latest. */
+  seen_count: number | null;
+  last_seen_at: string | null;
   error: string | null;
   /** Numbers invented while wiring the integration up, not real parcels. */
   is_test: boolean;

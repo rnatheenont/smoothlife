@@ -316,6 +316,7 @@ export default function AdminTrackingSyncPage() {
                 <th className="px-3 py-2 font-semibold">เวลา</th>
                 <th className="px-3 py-2 font-semibold">ออเดอร์</th>
                 <th className="px-3 py-2 font-semibold">เลขที่ส่งมา</th>
+                <th className="px-3 py-2 font-semibold">ใครใส่</th>
                 <th className="px-3 py-2 font-semibold">ผล</th>
                 <th className="px-3 py-2 font-semibold">รายละเอียด</th>
               </tr>
@@ -340,8 +341,34 @@ export default function AdminTrackingSyncPage() {
                       )}
                     </td>
                     <td className="px-3 py-2 font-mono text-[11px] text-slate-600">{r.tracking_number}</td>
+                    {/* Every number in this table was read out of sokochan by
+                        the scraper — nobody types them here. What differs is
+                        who set that reading off, and whether a person has
+                        since overruled it, which is the question the column
+                        actually answers. */}
+                    <td className="whitespace-nowrap px-3 py-2">
+                      {r.resolution ? (
+                        <span className="text-[11px] font-semibold text-brand-800">
+                          คน · {r.resolution === "overwritten" ? "เขียนทับ" : "เก็บเลขเดิม"}
+                        </span>
+                      ) : r.triggered_by === "admin" ? (
+                        <span className="text-[11px] text-slate-600">คนกดซิงก์</span>
+                      ) : r.triggered_by === "cron" ? (
+                        <span className="text-[11px] text-slate-400">บอท (ตามเวลา)</span>
+                      ) : (
+                        <span className="text-[11px] text-slate-300">—</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2">
                       <Badge tone={meta.tone}>{meta.label}</Badge>
+                      {r.action === "conflict" && (r.seen_count ?? 1) > 1 && (
+                        <span
+                          className="mt-1 block text-[10px] text-slate-400"
+                          title={r.last_seen_at ? `ล่าสุด ${fmt(r.last_seen_at)}` : undefined}
+                        >
+                          เจอซ้ำ {r.seen_count} รอบ
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-slate-500">
                       {r.reason}

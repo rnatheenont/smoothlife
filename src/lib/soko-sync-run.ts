@@ -26,7 +26,9 @@ export type SyncRunResult = {
 // comes back with a result and a log row instead of being killed mid-write.
 const RUN_BUDGET_MS = 300_000;
 
-export async function runSokoSync(): Promise<SyncRunResult> {
+export async function runSokoSync(
+  /** What started this run, recorded on every row it writes. */
+  triggeredBy: "cron" | "admin" = "cron",): Promise<SyncRunResult> {
   // Everything below shares the function's five minutes. The scraper gets most
   // of it and hands back whatever it has; the Shopify writes follow, and a
   // partial run that reports itself beats a timeout that reports nothing.
@@ -115,7 +117,7 @@ export async function runSokoSync(): Promise<SyncRunResult> {
     }
     // Sequential on purpose: the hourly cap is counted from rows already
     // written, and firing these in parallel would let a batch race past it.
-    const r = await processTrackingUpdate({ ...row, source: "soko-puller" });
+    const r = await processTrackingUpdate({ ...row, source: "soko-puller", triggeredBy });
     results.push({ orderRef: row.parcelRef, ...r });
   }
 
