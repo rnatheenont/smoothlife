@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { UserCog, Plus, Copy, Check, KeyRound, Ban, RotateCcw } from "lucide-react";
 import { Button, Badge, Field, Modal } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
+import clsx from "clsx";
+import { PageHeader, Panel, adminSelect, adminTable } from "@/components/admin/layout-kit";
 
 type Role = { key: string; label: string };
 type AdminUserRow = {
@@ -220,7 +221,7 @@ export default function AdminUsersPage() {
                           value={u.role_key}
                           disabled={isSelf || busyId === u.id}
                           onChange={(e) => patchUser(u.id, { role_key: e.target.value })}
-                          className="w-full rounded-l border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-brand-ink outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 disabled:opacity-50"
+                          className={clsx(adminSelect, "w-full disabled:opacity-50")}
                           aria-label={`สิทธิ์ของ ${u.display_name}`}
                         >
                           {roles.map((r) => (
@@ -283,7 +284,7 @@ export default function AdminUsersPage() {
                     value={u.role_key}
                     disabled={isSelf || busyId === u.id}
                     onChange={(e) => patchUser(u.id, { role_key: e.target.value })}
-                    className="mt-2 w-full rounded-l border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-brand-ink outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 disabled:opacity-50"
+                    className={clsx(adminSelect, "mt-2 w-full disabled:opacity-50")}
                     aria-label={`สิทธิ์ของ ${u.display_name}`}
                   >
                     {roles.map((r) => (

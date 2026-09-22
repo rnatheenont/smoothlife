@@ -255,6 +255,22 @@ export function Panel({
 }
 
 /**
+ * A dropdown that matches the pills around it.
+ *
+ * The browser's own arrow sits hard against the border and cannot be moved,
+ * so the native one is turned off and drawn as a background chevron with room
+ * on both sides of it. Rounded like the search box and the chips, because on
+ * the same toolbar they are the same kind of thing.
+ */
+export const adminSelect = [
+  "min-h-9 appearance-none rounded-full border border-surface-line bg-white py-1.5 pl-3.5 pr-9",
+  "text-[12px] font-semibold text-brand-ink focus:border-brand-800 focus:outline-none",
+  // A chevron, 12px, 14px in from the right edge.
+  "bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')]",
+  "bg-[length:12px_12px] bg-[position:right_14px_center] bg-no-repeat",
+].join(" ");
+
+/**
  * The table's own look, as class names rather than a component.
  *
  * A generic <DataTable> would have to guess at every column these pages

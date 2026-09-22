@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { categories } from "@/data/categories";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader } from "@/components/admin/layout-kit";
+import { PageHeader, adminSelect } from "@/components/admin/layout-kit";
 import SubscriptionSets from "@/components/admin/SubscriptionSets";
 import { products } from "@/data/products";
 
@@ -266,7 +266,7 @@ export default function AdminSubscriptionProductsPage() {
                   setPage(1);
                   setCategory(e.target.value);
                 }}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
+                className={adminSelect}
               >
                 <option value="">ทุกหมวดหมู่</option>
                 {categories.map((c) => (

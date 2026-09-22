@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { BookOpen, Loader2, MessageSquare, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { Card } from "@/components/ui";
-import { PageHeader, adminTable } from "@/components/admin/layout-kit";
+import { PageHeader, adminSelect, adminTable } from "@/components/admin/layout-kit";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { CATEGORY_TH, STATUS_TH, type KbArticle, type KbCategory, type KbStatus } from "@/lib/kb";
 import { slugifyThai } from "@/lib/kb-public";
@@ -304,9 +304,6 @@ export default function AdminKnowledgeBasePage() {
     query.trim() !== "" && { label: `ค้นหา: ${query.trim()}`, clear: () => setQuery("") },
   ].filter(Boolean) as { label: string; clear: () => void }[];
 
-  const selectClass =
-    "min-h-9 rounded-l border border-surface-line bg-white px-2.5 text-[12px] font-semibold text-brand-ink focus:border-brand-800 focus:outline-none";
-
   const fieldClass =
     "min-h-11 w-full rounded-xl2 border border-surface-line bg-white px-3 text-sm text-brand-ink focus:border-brand-800 focus:outline-none";
 
@@ -419,7 +416,7 @@ export default function AdminKnowledgeBasePage() {
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value as typeof source)}
-                className={selectClass}
+                className={adminSelect}
               >
                 <option value="all">ทั้งหมด</option>
                 <option value="curated">
@@ -434,7 +431,7 @@ export default function AdminKnowledgeBasePage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                className={selectClass}
+                className={adminSelect}
               >
                 <option value="all">ทั้งหมด</option>
                 {(["published", "draft", "needs_review", "archived"] as const).map((st) => (
@@ -452,7 +449,7 @@ export default function AdminKnowledgeBasePage() {
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
-                className={selectClass}
+                className={adminSelect}
               >
                 <option value="all">ทั้งหมด</option>
                 {(Object.keys(CATEGORY_TH) as KbCategory[])

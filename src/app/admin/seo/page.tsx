@@ -309,14 +309,6 @@ export default function AdminSeoPage() {
   // The rows are cheap (one lazy thumbnail each) and the pane scrolls.
   const shown = matching;
 
-  // The editor filled two thirds of the screen with one line of grey text
-  // until something was clicked. Opening the first row is what the person was
-  // about to do anyway; it only ever runs when nothing is open, so it cannot
-  // take over an edit in progress.
-  useEffect(() => {
-    if (!selected && shown.length > 0) open(shown[0]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- open() reads the row for the current tab
-  }, [selected, shown]);
   // The typed URL wins; otherwise the page's own picture is what a share
   // would really show today, which is the thing worth previewing.
   const previewImage = ogImage.trim() || selected?.image || "";
@@ -384,7 +376,7 @@ export default function AdminSeoPage() {
         // heading, the tab row and the progress bar. The old 15rem was a
         // guess from before the tabs carried counts, and it pushed the
         // editor's bottom edge (and the Save button on it) past the fold.
-        <div className="mt-6 grid min-h-0 gap-5 lg:h-[calc(100dvh-21rem)] lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
+        <div className="mt-6 grid min-h-0 gap-5 lg:h-[calc(100dvh-21rem)] lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
           <div className="flex min-h-0 min-w-0 flex-col">
             <input
               value={query}
@@ -436,11 +428,7 @@ export default function AdminSeoPage() {
                       {item.image && <Image src={item.image} alt="" fill sizes="36px" className="object-cover" />}
                     </span>
                     <span className="min-w-0 flex-1">
-                      {/* Two lines rather than one: "(Deal Duo) Dentiste
-                          Extra Fresh 15…" and "(Deal Duo) Dentiste Hygienic
-                          Brea…" are different products that truncated to the
-                          same thing. */}
-                      <span className="block line-clamp-2 leading-snug">{item.label}</span>
+                      <span className="block truncate">{item.label}</span>
                       {item.sub && <span className="block truncate text-[11px] text-slate-400">{item.sub}</span>}
                     </span>
                     {/* Three states, not two: written here, written in
@@ -779,8 +767,8 @@ export default function AdminSeoPage() {
               </div>
             </div>
           ) : (
-            <div className="grid min-h-[200px] place-items-center rounded-xl2 bg-surface-soft px-6 text-center text-sm text-slate-400">
-              {shown.length === 0 ? "ไม่มีรายการในตัวกรองนี้" : "เลือกรายการทางซ้ายเพื่อแก้ไข"}
+            <div className="grid min-h-[200px] place-items-center rounded-xl2 bg-surface-soft text-sm text-slate-400">
+              เลือกรายการทางซ้ายเพื่อแก้ไข
             </div>
           )}
         </div>
