@@ -328,7 +328,7 @@ export default function AdminSeoPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-brand-ink md:text-2xl">SEO</h1>
+      <h1 className="text-xl font-bold text-brand-ink md:text-2xl">SEO หน้าเว็บ</h1>
       <p className="mt-1 text-sm text-slate-500">
         หัวข้อและคำอธิบายที่แสดงในผลค้นหา Google — เว้นว่างไว้ ระบบจะใช้ค่าที่สร้างให้อัตโนมัติ
       </p>

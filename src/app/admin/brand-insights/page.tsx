@@ -166,7 +166,7 @@ export default function BrandInsightsPage() {
     <div className="mx-auto w-full max-w-[1700px]">
       <PageHeader
         icon={<TrendingUp size={20} className="text-brand-emerald" />}
-        title="สัญญาณแบรนด์ & โอกาส SEO"
+        title="เสียงลูกค้า & คำค้นหา"
         subtitle="รวมสิ่งที่วัดได้จริงจากข้อมูลของร้านเอง — รีวิวบนเว็บ, ความสนใจค้นหาใน Google Trends และคำที่คนค้นในเว็บนี้"
       />
 

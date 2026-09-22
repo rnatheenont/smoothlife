@@ -199,7 +199,7 @@ export default function AdminSubscriptionProductsPage() {
       <PageHeader
         className="mb-4"
         icon={<Repeat size={20} className="text-brand-emerald" />}
-        title="สินค้าที่สมัครสมาชิกได้"
+        title="สินค้าสมัครรับประจำ"
         subtitle="เลือกว่าสินค้าไหนให้ลูกค้าสมัครรับประจำได้ และสินค้าไหนเอาไปจัดชุดเองได้"
       />
 

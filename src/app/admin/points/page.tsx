@@ -237,7 +237,7 @@ export default function AdminPointsPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         icon={<Award size={20} className="text-brand-emerald" />}
-        title="จัดการคะแนน"
+        title="แต้มสะสม & ของรางวัล"
         subtitle="ตั้งค่ารายการแลกแต้ม และค้นหา/ปรับแต้มสะสมของลูกค้ารายคน"
       />
 

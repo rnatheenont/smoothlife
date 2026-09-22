@@ -272,7 +272,7 @@ export default function AdminCustomersPage() {
     <div className="space-y-5">
       <PageHeader
         icon={<Users size={20} className="text-brand-emerald" />}
-        title="ลูกค้า & การผูกบัญชี"
+        title="ลูกค้า & บัญชีผู้ใช้"
         subtitle={
           <span className="block max-w-3xl">
             ใช้เมื่อลูกค้าเคยซื้อด้วยอีเมล/เบอร์เดิม แล้วมาสมัครสมาชิกด้วยอีเมลใหม่ จนออเดอร์เก่าไม่ขึ้นในบัญชี — ค้นหา

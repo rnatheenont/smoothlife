@@ -169,26 +169,26 @@ export default function AdminHomePage() {
 
   const sections = [
     { href: "/admin/inbox", icon: Inbox, label: "กล่องข้อความ", desc: "ตอบแชทลูกค้าทุกช่องทางจากที่เดียว" },
-    { href: "/admin/free-gifts", icon: Gift, label: "โปรโมชั่น", desc: "ของแถมและแคมเปญหน้าร้าน" },
+    { href: "/admin/free-gifts", icon: Gift, label: "ของแถม & โปรโมชั่น", desc: "ของแถมและแคมเปญหน้าร้าน" },
     {
       href: "/admin/free-gifts/widgets",
       icon: SlidersHorizontal,
-      label: "Widgets",
-      desc: "เปิด/ปิดกล่องโปรโมชั่นบนหน้าเว็บ",
+      label: "กล่องโปรโมชั่นหน้าเว็บ",
+      desc: "เปิด/ปิดกล่องโปรโมชั่นบนหน้าร้าน",
     },
-    { href: "/admin/points", icon: Award, label: "คะแนน", desc: "ปรับแต้มลูกค้าและตั้งของรางวัล" },
+    { href: "/admin/points", icon: Award, label: "แต้มสะสม & ของรางวัล", desc: "ปรับแต้มลูกค้าและตั้งของรางวัล" },
     { href: "/admin/reviews", icon: MessageSquareText, label: "รีวิวรออนุมัติ", desc: "ตรวจรีวิวก่อนขึ้นหน้าเว็บ" },
     { href: "/admin/gift-cards", icon: CreditCard, label: "บัตรของขวัญ", desc: "ออกและตรวจสอบบัตรของขวัญ" },
     {
       href: "/admin/subscription-products",
       icon: Repeat,
-      label: "สินค้าสมัครสมาชิก",
+      label: "สินค้าสมัครรับประจำ",
       desc: "เลือกสินค้าที่สมัครรับประจำได้",
     },
     {
       href: "/admin/checkout-transactions",
       icon: Receipt,
-      label: "รายการซื้อ (2C2P)",
+      label: "การชำระเงิน & คืนเงิน",
       desc: "ตรวจการชำระเงินและคืนเงิน",
     },
     { href: "/admin/flash-sale", icon: Zap, label: "Flash Sale", desc: "ตั้งแคมเปญ คิวจริง และหน้าขายแบบพิเศษ" },
@@ -198,8 +198,8 @@ export default function AdminHomePage() {
       label: "ฐานความรู้ AI",
       desc: "คำตอบที่อนุมัติแล้วให้ AI ใช้ตอบลูกค้า",
     },
-    { href: "/admin/tracking-sync", icon: Truck, label: "ซิงก์เลขพัสดุ", desc: "ดึงเลขพัสดุจาก soko เข้า Shopify" },
-    { href: "/admin/customers", icon: Users, label: "ลูกค้า & ผูกบัญชี", desc: "ค้นหาลูกค้าและผูกบัญชี LINE" },
+    { href: "/admin/tracking-sync", icon: Truck, label: "เลขพัสดุจากคลัง", desc: "ดึงเลขพัสดุจาก soko เข้า Shopify" },
+    { href: "/admin/customers", icon: Users, label: "ลูกค้า & บัญชีผู้ใช้", desc: "ค้นหาลูกค้าและผูกบัญชี LINE" },
   ];
 
   // Zero is the answer most of these give most days, and seven cards saying

@@ -537,7 +537,7 @@ export default function AdminTrackingSyncPage() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
-            <Truck size={20} className="text-brand-600" /> ซิงก์เลขพัสดุ
+            <Truck size={20} className="text-brand-600" /> เลขพัสดุจากคลัง
           </h1>
           <p className="mt-0.5 text-body-xs text-slate-500">
             อ่านเลขพัสดุจาก soko แล้วเทียบกับออเดอร์ใน Shopify

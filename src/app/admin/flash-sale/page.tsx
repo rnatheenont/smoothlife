@@ -59,12 +59,25 @@ export default function FlashSaleDemoPage() {
   const initialConfig: CampaignConfig = {
     mode: "single",
     title: `Flash Sale · ${p?.name ?? "สินค้า"}`,
-    products: p ? [{ slug: p.slug, name: p.name, brand: p.brand, image: p.image, price: p.price, compareAtPrice: p.compareAtPrice }] : [],
+    products: p
+      ? [
+          {
+            slug: p.slug,
+            name: p.name,
+            brand: p.brand,
+            image: p.image,
+            price: p.price,
+            compareAtPrice: p.compareAtPrice,
+          },
+        ]
+      : [],
     stockPerProduct: 25,
     windowMinutes: 15,
     maxRequeue: 3,
   };
 
   // eslint-disable-next-line react-hooks/purity -- render time seeds the demo clock; the page is rendered per request
-  return <FlashSaleDemo embedded baseMs={Date.now()} initialConfig={initialConfig} catalogue={catalogue} groups={groups} />;
+  return (
+    <FlashSaleDemo embedded baseMs={Date.now()} initialConfig={initialConfig} catalogue={catalogue} groups={groups} />
+  );
 }

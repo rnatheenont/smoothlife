@@ -76,7 +76,7 @@ export default function AdminLineRichMenuPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         icon={<MessageCircle size={20} className="text-brand-emerald" />}
-        title="เมนูใน LINE OA"
+        title="เมนู LINE OA"
         subtitle="แถบปุ่มด้านล่างหน้าแชท LINE — ทุกปุ่มเปิดเว็บผ่าน LIFF โดยล็อกอินให้อัตโนมัติ"
       />
 

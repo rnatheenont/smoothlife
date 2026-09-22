@@ -154,7 +154,7 @@ export default function AdminCheckoutTransactionsPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         icon={<CreditCard size={20} className="text-brand-emerald" />}
-        title="รายการซื้อ (Custom Checkout)"
+        title="การชำระเงิน & คืนเงิน"
         subtitle="รายการชำระเงินครั้งเดียวผ่านหน้าชำระเงินของเว็บไซต์เอง (2C2P) — คืนเงินได้จากที่นี่"
         actions={
           transactions.length > 0 && (

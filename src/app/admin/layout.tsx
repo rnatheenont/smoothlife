@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
+import clsx from "clsx";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
@@ -456,13 +457,24 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
               {/* On a phone the menu is one scrollable row of the same links. */}
               <nav className="flex gap-1.5 overflow-x-auto border-b border-surface-line bg-white px-3 py-2 lg:flex-col lg:gap-0 lg:overflow-visible lg:border-0 lg:p-0">
-                {groups.map((group) => (
-                  <div key={group.label} className="contents lg:mb-3 lg:block">
-                    {/* A rule above each heading, not just space: five groups
-                        of grey labels at the same size read as one list with
-                        words in it. */}
+                {groups.map((group, groupIndex) => (
+                  /* A rule above each group, not just space: five headings in
+                      the same grey at the same size read as one list with
+                      words in it. It belongs on this container — as a
+                      `first:` rule on the heading it never fired, because
+                      every heading is the first child of its own group. */
+                  <div
+                    key={group.label}
+                    className={clsx(
+                      "contents lg:mb-3 lg:block",
+                      groupIndex > 0 &&
+                        group.label &&
+                        !collapsed &&
+                        "lg:mt-3 lg:border-t lg:border-surface-line lg:pt-3",
+                    )}
+                  >
                     {group.label && !collapsed && (
-                      <p className="mb-1.5 mt-3 hidden border-t border-surface-line px-3 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 first:mt-0 first:border-0 first:pt-0 lg:block">
+                      <p className="mb-1.5 hidden px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500 lg:block">
                         {group.label}
                       </p>
                     )}
