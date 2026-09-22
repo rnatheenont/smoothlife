@@ -13,6 +13,7 @@ import BackButton from "@/components/BackButton";
 import TrackRecentlyViewed from "@/components/TrackRecentlyViewed";
 import RecentlyViewedSection from "@/components/RecentlyViewedSection";
 import { productJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
+import { canonicalSlugFor } from "@/lib/product-canonical";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 
 // Pages render on first visit and are then served from the edge cache,
@@ -40,10 +41,14 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     description: product?.seoDescription || product?.shortDesc || undefined,
     image: product?.image,
   });
+  // A pack of twelve points at the single unit; everything else points at
+  // itself. See product-canonical.ts for what counts as a pack and why a
+  // colour family does not.
+  const canonicalSlug = canonicalSlugFor(params.slug);
   return {
     title: meta.title,
     description: meta.description,
-    alternates: { canonical: `/product/${params.slug}` },
+    alternates: { canonical: `/product/${canonicalSlug}` },
     // Shared to LINE or Facebook, a product link previewed as the site's
     // front page — same wordmark, same blurb, for all 944 of them.
     openGraph: {

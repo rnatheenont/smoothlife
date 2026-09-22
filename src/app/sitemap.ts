@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 import { products } from "@/data/products";
+import { canonicalSlugFor } from "@/lib/product-canonical";
 import { categories, concerns } from "@/data/categories";
 import { collections } from "@/data/collections";
 import { articles } from "@/data/articles";
@@ -39,6 +40,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   for (const p of products) {
+    // A pack page canonicalises to the single unit, and asking Google to
+    // crawl a page that points somewhere else is a contradiction — the
+    // sitemap lists the destination only.
+    if (canonicalSlugFor(p.slug) !== p.slug) continue;
     entries.push({ url: `${SITE_URL}/product/${p.slug}`, lastModified: now });
   }
   for (const c of categories) {
