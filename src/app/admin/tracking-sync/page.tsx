@@ -1,16 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
-import { Truck, RefreshCw, ShieldCheck, AlertTriangle, Info, Play, Loader2, ExternalLink } from "lucide-react";
+import {
+  Truck,
+  RefreshCw,
+  ShieldCheck,
+  AlertTriangle,
+  Info,
+  Play,
+  Loader2,
+  ExternalLink,
+  PlugZap,
+  KeyRound,
+  Boxes,
+} from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 import type { TrackingSyncRow } from "@/app/api/admin/tracking-sync/route";
 import { useAdminAction } from "@/components/admin/header-action";
 
-// The dry-run report. The number that matters is "conflict": every one is
-// either a tracking number keyed onto the wrong order by hand, or a mapping
-// bug in the sync. Until that column reads zero for a stretch of normal days,
-// nothing should be allowed to write to Shopify.
+// Three questions, in the order staff ask them: is the integration alive,
+// is there anything for me to decide, and what happened. The page is laid out
+// in that order — health strip, then the mismatches that need a person, then
+// the log — because everything except the middle one is reading material.
 
 /**
  * The order a parcel ref belongs to, with the warehouse's box suffix removed.
@@ -53,15 +65,12 @@ function groupParcels(rows: TrackingSyncRow[]): GroupedRow[] {
     else buckets.set(key, [row]);
   }
 
-  const newest = (list: TrackingSyncRow[]) =>
-    Math.max(...list.map((r) => new Date(r.received_at).getTime()));
+  const newest = (list: TrackingSyncRow[]) => Math.max(...list.map((r) => new Date(r.received_at).getTime()));
 
   return [...buckets.values()]
     .map((list) => [...list].sort((a, b) => +new Date(b.received_at) - +new Date(a.received_at)))
     .sort((a, b) => newest(b) - newest(a))
-    .flatMap((list) =>
-      list.map((row, i) => ({ row, box: i + 1, boxes: list.length, firstOfSet: i === 0 }))
-    );
+    .flatMap((list) => list.map((row, i) => ({ row, box: i + 1, boxes: list.length, firstOfSet: i === 0 })));
 }
 
 const ACTION: Record<string, { label: string; tone: "success" | "neutral" | "danger" | "warning" | "info" }> = {
@@ -101,6 +110,147 @@ function fmt(iso: string) {
   });
 }
 
+/** One line of the health strip: same shape whatever it is reporting. */
+function HealthTile({
+  icon,
+  label,
+  value,
+  tone,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  tone: "ok" | "warn" | "bad" | "info";
+  children?: React.ReactNode;
+}) {
+  const ring = {
+    ok: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950",
+    warn: "text-amber-600 bg-amber-50 dark:bg-amber-950",
+    bad: "text-rose-600 bg-rose-50 dark:bg-rose-950",
+    info: "text-sky-600 bg-sky-50 dark:bg-sky-950",
+  }[tone];
+  return (
+    <Card padded={false} className="flex min-w-0 items-start gap-3 p-4">
+      <span className={clsx("grid size-9 shrink-0 place-items-center rounded-l", ring)}>{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-medium text-slate-500">{label}</p>
+        <p className="mt-0.5 truncate text-sm font-semibold text-brand-ink">{value}</p>
+        {children}
+      </div>
+    </Card>
+  );
+}
+
+/**
+ * Who set this reading off.
+ *
+ * Every number in this log was read out of sokochan by the scraper — nobody
+ * types them here. What differs is who started that run, and whether a person
+ * has since overruled it, which is the question the column actually answers.
+ */
+function WhoTag({ row }: { row: TrackingSyncRow }) {
+  if (row.resolution)
+    return (
+      <span className="text-[11px] font-semibold text-brand-800">
+        คน · {row.resolution === "overwritten" ? "เขียนทับ" : "เก็บเลขเดิม"}
+      </span>
+    );
+  if (row.triggered_by === "admin") return <span className="text-[11px] text-slate-600">คนกดซิงก์</span>;
+  if (row.triggered_by === "cron") return <span className="text-[11px] text-slate-400">บอท (ตามเวลา)</span>;
+  return <span className="text-[11px] text-slate-300">—</span>;
+}
+
+function ResultTag({ row }: { row: TrackingSyncRow }) {
+  const meta = ACTION[row.action] ?? { label: row.action, tone: "neutral" as const };
+  return (
+    <>
+      <Badge tone={meta.tone}>{meta.label}</Badge>
+      {row.action === "conflict" && (row.seen_count ?? 1) > 1 && (
+        <span
+          className="mt-1 block text-[10px] text-slate-400"
+          title={row.last_seen_at ? `ล่าสุด ${fmt(row.last_seen_at)}` : undefined}
+        >
+          เจอซ้ำ {row.seen_count} รอบ
+        </span>
+      )}
+    </>
+  );
+}
+
+function Reason({ row }: { row: TrackingSyncRow }) {
+  return (
+    <>
+      {row.reason}
+      {row.existing_numbers?.length ? (
+        <span className="mt-0.5 block font-mono text-[11px] text-rose-600">
+          ใน Shopify: {row.existing_numbers.join(", ")}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+/** Whatever this row still lets someone do about it. */
+function RowActions({
+  row,
+  shopDomain,
+  resolving,
+  onResolve,
+}: {
+  row: TrackingSyncRow;
+  shopDomain: string | null;
+  resolving: string | null;
+  onResolve: (row: TrackingSyncRow, resolution: "overwritten" | "ignored") => void;
+}) {
+  // A mismatch used to end at its reason: the page named the problem and
+  // offered nothing to do about it, so settling one meant opening Shopify and
+  // keying the number in — the manual step this replaces.
+  if (row.action === "conflict" && !row.resolved_at)
+    return (
+      <span className="flex flex-wrap items-center gap-1.5">
+        <button
+          onClick={() => onResolve(row, "overwritten")}
+          disabled={resolving === row.id}
+          className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+        >
+          ใช้เลขใหม่ทับ
+        </button>
+        <button
+          onClick={() => onResolve(row, "ignored")}
+          disabled={resolving === row.id}
+          className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+        >
+          เก็บเลขเดิมไว้
+        </button>
+      </span>
+    );
+
+  if (row.resolved_at)
+    return (
+      <span className="block text-[11px] font-medium text-slate-400">
+        {row.resolution === "overwritten" ? "เขียนทับแล้ว" : "เก็บเลขเดิมไว้"} · {fmt(row.resolved_at)}
+      </span>
+    );
+
+  // "Not found" is usually a number keyed against the wrong order, so the
+  // useful next step is a search, not a second message saying it is still not
+  // found.
+  if (row.action === "no-order" && shopDomain)
+    return (
+      <a
+        href={`https://admin.shopify.com/store/${shopDomain}/orders?query=${encodeURIComponent(row.order_ref.replace(/^#/, ""))}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+      >
+        ค้นหาใน Shopify <ExternalLink size={10} />
+      </a>
+    );
+
+  return <span className="text-[11px] text-slate-300">—</span>;
+}
+
 export default function AdminTrackingSyncPage() {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,10 +270,10 @@ export default function AdminTrackingSyncPage() {
     load();
   }, [load]);
 
-  const conflicts = data?.counts.conflict ?? 0;
   const dryRun = data?.mode === "dry-run";
 
   const [showTests, setShowTests] = useState(false);
+  const [filter, setFilter] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<string | null>(null);
 
@@ -213,12 +363,37 @@ export default function AdminTrackingSyncPage() {
     disabled: running || loading,
   });
 
+  const visible = useMemo(() => (data?.rows ?? []).filter((r) => showTests || !r.is_test), [data?.rows, showTests]);
+
+  // The chips count what the log actually holds, so a chip can never offer a
+  // filter that turns the table empty.
+  const chipCounts = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const r of visible) acc[r.action] = (acc[r.action] ?? 0) + 1;
+    return acc;
+  }, [visible]);
+
+  const openConflicts = useMemo(() => visible.filter((r) => r.action === "conflict" && !r.resolved_at), [visible]);
+
+  const grouped = useMemo(
+    () => groupParcels(filter ? visible.filter((r) => r.action === filter) : visible),
+    [visible, filter],
+  );
+
+  const failing = (data?.connection.consecutiveFailures ?? 0) >= 2;
+
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
-          <Truck size={20} className="text-brand-600" /> ซิงก์เลขพัสดุ
-        </h1>
+    <div className="flex flex-col gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
+            <Truck size={20} className="text-brand-600" /> ซิงก์เลขพัสดุ
+          </h1>
+          <p className="mt-0.5 text-body-xs text-slate-500">
+            อ่านเลขพัสดุจาก soko แล้วเทียบกับออเดอร์ใน Shopify
+            {data?.connection.lastSuccessAt && ` · ดึงสำเร็จล่าสุด ${fmt(data.connection.lastSuccessAt)}`}
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           {/* CRON_SECRET is stored on Vercel as a sensitive value, so nobody
               can read it back — triggering a run by hand meant rotating it and
@@ -231,175 +406,207 @@ export default function AdminTrackingSyncPage() {
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> รีเฟรช
           </Button>
         </div>
-      </div>
+      </header>
 
       {runResult && (
-        <p className="mb-3 rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-2.5 text-body-xs text-slate-700">
+        <p className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-2.5 text-body-xs text-slate-700">
           {runResult}
         </p>
       )}
 
-      {/* Kept apart from the mode card below on purpose. "Can the scraper get
-          into soko" and "what is it allowed to write" are different questions,
-          and when one sentence answered both, a login that had been failing
-          for an hour read as a note about write mode. */}
-      {data && (
-        <div
-          className={clsx(
-            "mb-3 flex items-start gap-2 rounded-xl2 border p-4 text-sm",
-            data.connection.consecutiveFailures >= 2
-              ? "border-rose-200 bg-rose-50/70"
-              : "border-emerald-200 bg-emerald-50/50",
-          )}
+      {/* Can the scraper get into soko, what is it allowed to write, and with
+          whose credentials — three different questions. They were once one
+          sentence, and a login that had been failing for an hour read as a
+          note about write mode. */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <HealthTile
+          icon={failing ? <AlertTriangle size={17} /> : <PlugZap size={17} />}
+          label="การเชื่อมต่อ soko"
+          tone={failing ? "bad" : "ok"}
+          value={failing ? `ล้มเหลวติดกัน ${data?.connection.consecutiveFailures} รอบ` : "ปกติ"}
         >
-          {data.connection.consecutiveFailures >= 2 ? (
-            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-rose-600" />
-          ) : (
-            <ShieldCheck size={16} className="mt-0.5 shrink-0 text-emerald-600" />
-          )}
-          <div className="min-w-0">
-            <p className="font-semibold text-brand-ink">
-              {data.connection.consecutiveFailures >= 2
-                ? `เชื่อมต่อ soko ไม่ได้ — ล้มเหลวติดกัน ${data.connection.consecutiveFailures} รอบ`
-                : "เชื่อมต่อ soko ได้ปกติ"}
-            </p>
-            <p className="mt-0.5 text-body-xs text-slate-600">
-              ดึงข้อมูลสำเร็จล่าสุด: {data.connection.lastSuccessAt ? fmt(data.connection.lastSuccessAt) : "ยังไม่เคย"}
-              {data.connection.lastFailureAt && ` · ล้มเหลวล่าสุด: ${fmt(data.connection.lastFailureAt)}`}
-            </p>
-            {data.connection.consecutiveFailures >= 2 && data.connection.lastFailureReason && (
-              <p className="mt-1 text-body-xs text-rose-700">{data.connection.lastFailureReason}</p>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+            สำเร็จล่าสุด: {data?.connection.lastSuccessAt ? fmt(data.connection.lastSuccessAt) : "ยังไม่เคย"}
+            {data?.connection.lastFailureAt && (
+              <>
+                <br />
+                ล้มเหลวล่าสุด: {fmt(data.connection.lastFailureAt)}
+              </>
             )}
-          </div>
-        </div>
-      )}
+          </p>
+          {failing && data?.connection.lastFailureReason && (
+            <p className="mt-1 text-[11px] text-rose-700">{data.connection.lastFailureReason}</p>
+          )}
+        </HealthTile>
 
-      <div
-        className={clsx(
-          "mb-4 flex items-start gap-2 rounded-xl2 border p-4 text-sm",
-          dryRun ? "border-sky-200 bg-sky-50/60" : "border-amber-200 bg-amber-50/60",
-        )}
-      >
-        {dryRun ? (
-          <ShieldCheck size={16} className="mt-0.5 shrink-0 text-sky-600" />
-        ) : (
-          <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-        )}
-        <div className="min-w-0">
-          <p className="font-semibold text-brand-ink">โหมดปัจจุบัน: {dryRun ? "ทดลอง (dry run)" : data?.mode}</p>
-          <p className="mt-0.5 text-body-xs text-slate-600">
+        <HealthTile
+          icon={dryRun ? <ShieldCheck size={17} /> : <AlertTriangle size={17} />}
+          label="โหมดการทำงาน"
+          tone={dryRun ? "info" : "warn"}
+          value={dryRun ? "ทดลอง (dry run)" : (data?.mode ?? "—")}
+        >
+          <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
             {dryRun
-              ? "รับข้อมูลเข้ามา ตัดสินใจ และบันทึกไว้เท่านั้น — ยังไม่เขียนอะไรลง Shopify และไม่มีอีเมลถึงลูกค้า"
+              ? "รับข้อมูล ตัดสินใจ และบันทึกไว้เท่านั้น — ยังไม่เขียนลง Shopify และไม่มีอีเมลถึงลูกค้า"
               : "โหมดนี้เขียนลง Shopify จริง"}
           </p>
           {data && !data.configured && (
-            <p className="mt-1 text-body-xs text-rose-600">
-              ยังไม่ได้ตั้ง TRACKING_WEBHOOK_SECRET — endpoint จะปฏิเสธทุกคำขอจนกว่าจะตั้งค่า
+            <p className="mt-1 text-[11px] text-rose-600">
+              ยังไม่ได้ตั้ง TRACKING_WEBHOOK_SECRET — endpoint จะปฏิเสธทุกคำขอ
             </p>
           )}
-          {data && (
-            <p className="mt-1 text-body-xs text-slate-500">
-              เว็บใช้แอป Shopify: <b>{data.app ?? "ไม่ทราบ"}</b>
-              <br />
-              เขียนเลขพัสดุ (write_fulfillments):{" "}
-              {data.canWrite ? <b className="text-brand-800">มี ✅</b> : <b className="text-rose-600">ยังไม่มี ❌</b>}
-              <br />
-              สั่ง fulfill เองได้ (merchant_managed_fulfillment_orders):{" "}
-              {data.canFulfil ? <b className="text-brand-800">มี ✅</b> : <b className="text-rose-600">ยังไม่มี ❌</b>}
+        </HealthTile>
+
+        <HealthTile
+          icon={<KeyRound size={17} />}
+          label="สิทธิ์ใน Shopify"
+          tone={data?.canWrite ? "ok" : "bad"}
+          value={data?.app ?? "ไม่ทราบแอป"}
+        >
+          <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+            เขียนเลขพัสดุ:{" "}
+            {data?.canWrite ? <b className="text-brand-800">มี ✅</b> : <b className="text-rose-600">ยังไม่มี ❌</b>}
+            <br />
+            สั่ง fulfill เองได้:{" "}
+            {data?.canFulfil ? <b className="text-brand-800">มี ✅</b> : <b className="text-rose-600">ยังไม่มี ❌</b>}
+          </p>
+        </HealthTile>
+      </div>
+
+      {/* The only rows on this page that are waiting for a person, lifted out
+          of the log so nobody has to find them in it. Each one is a tracking
+          number keyed onto the wrong order by hand, or a mapping bug. */}
+      {openConflicts.length > 0 && (
+        <section className="rounded-xl2 border border-rose-200 bg-rose-50/50 p-4">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <h2 className="flex items-center gap-1.5 text-sm font-bold text-rose-800">
+              <AlertTriangle size={15} /> ต้องตัดสิน {openConflicts.length} รายการ
+            </h2>
+            {/* This used to say "check them all before turning on real
+                writing" regardless of mode — while the mode was already
+                write-notify and writing. Staff read it as "nothing has been
+                written yet". */}
+            <p className="text-[11px] leading-relaxed text-rose-700">
+              {dryRun
+                ? "ต้องตรวจให้หมดก่อนเปิดโหมดเขียนจริง"
+                : "ระบบข้ามไว้ ไม่ได้เขียนทับของเดิม ส่วนออเดอร์อื่นเขียนตามปกติ"}
             </p>
+          </div>
+
+          <ul className="mt-3 grid gap-2 lg:grid-cols-2">
+            {openConflicts.map((r) => (
+              <li
+                key={r.id}
+                className="flex flex-col gap-3 rounded-l border border-rose-100 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-brand-ink">
+                    {r.resolved_order_name || r.order_ref}
+                    {(r.seen_count ?? 1) > 1 && (
+                      <span className="ml-1.5 text-[10px] font-medium text-slate-400">เจอซ้ำ {r.seen_count} รอบ</span>
+                    )}
+                  </p>
+                  <p className="mt-1 font-mono text-[11px] text-slate-500">
+                    ใน Shopify: <span className="text-rose-600">{r.existing_numbers?.join(", ") || "—"}</span>
+                    <br />
+                    soko ส่งมา: <span className="text-brand-800">{r.tracking_number}</span>
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-1.5">
+                  <RowActions row={r} shopDomain={data?.shopDomain ?? null} resolving={resolving} onResolve={resolve} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <Card padded={false} className="overflow-hidden">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+          <h2 className="mr-1 flex items-center gap-1.5 text-sm font-bold text-brand-ink">
+            <Boxes size={15} className="text-brand-600" /> บันทึกการซิงก์
+          </h2>
+          {/* Counts and filter are the same control: the numbers were five
+              tiles that could only be read, and picking one out of the log
+              meant scrolling past the rest. */}
+          <div className="-mx-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-1 py-0.5">
+            <FilterChip active={!filter} count={visible.length} label="ทั้งหมด" onClick={() => setFilter(null)} />
+            {Object.keys(ACTION)
+              .filter((key) => chipCounts[key])
+              .map((key) => (
+                <FilterChip
+                  key={key}
+                  active={filter === key}
+                  count={chipCounts[key]}
+                  label={ACTION[key].label}
+                  tone={ACTION[key].tone}
+                  onClick={() => setFilter(filter === key ? null : key)}
+                />
+              ))}
+          </div>
+          {data && data.testRowCount > 0 && (
+            <button
+              onClick={() => setShowTests((v) => !v)}
+              className={clsx(
+                "shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors",
+                showTests
+                  ? "border-brand-200 bg-brand-50 text-brand-800"
+                  : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50",
+              )}
+            >
+              {showTests ? "ซ่อน" : "แสดง"}รายการทดสอบ ({data.testRowCount})
+            </button>
           )}
         </div>
-      </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
-        {Object.entries(ACTION).map(([key, meta]) => (
-          <Card key={key} padded={false} className="p-3 text-center">
-            <p className="text-h4 font-bold text-brand-ink">{data?.counts[key] ?? 0}</p>
-            <p className="mt-0.5 text-[11px] text-slate-500">{meta.label}</p>
-          </Card>
-        ))}
-      </div>
-
-      {conflicts > 0 && (
-        <p className="mb-4 flex items-start gap-1.5 rounded-m bg-rose-50 p-3 text-[12px] leading-relaxed text-rose-700">
-          <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-          {/* This used to say "check them all before turning on real writing"
-              regardless of mode — while the mode was already write-notify and
-              writing. Staff read it as "nothing has been written yet". */}
-          <span>
-            มี {conflicts} รายการที่เลขไม่ตรงกัน — แต่ละรายการคือเลขที่คีย์มือผิด หรือการจับคู่ผิดพลาด
-            {dryRun
-              ? " ต้องตรวจให้หมดก่อนเปิดโหมดเขียนจริง"
-              : " ระบบข้ามเฉพาะรายการเหล่านี้ไว้ ไม่ได้เขียนทับของเดิม ส่วนออเดอร์อื่นเขียนตามปกติ — ต้องมีคนตัดสินว่าเลขไหนถูก"}
-          </span>
-        </p>
-      )}
-
-      {data && data.testRowCount > 0 && (
-        <button
-          onClick={() => setShowTests((v) => !v)}
-          className={clsx(
-            "mb-3 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors",
-            showTests
-              ? "border-brand-200 bg-brand-50 text-brand-800"
-              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50",
-          )}
-        >
-          {showTests ? "ซ่อน" : "แสดง"}รายการทดสอบ ({data.testRowCount})
-        </button>
-      )}
-
-      {loading && !data ? (
-        <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด…</p>
-      ) : !data?.rows.length ? (
-        <p className="flex items-start gap-1.5 rounded-xl2 border border-slate-100 p-4 text-body-xs text-slate-500">
-          <Info size={13} className="mt-0.5 shrink-0 text-slate-400" />
-          ยังไม่มีข้อมูลเข้ามา — ให้ระบบต้นทางยิง POST มาที่{" "}
-          <code className="rounded-sm bg-surface-soft px-1">/api/webhooks/tracking</code> พร้อม header{" "}
-          <code className="rounded-sm bg-surface-soft px-1">x-tracking-secret</code>
-        </p>
-      ) : (
-        <div className="overflow-x-auto rounded-xl2 border border-slate-100">
-          <table className="w-full min-w-[640px] text-left text-[12px]">
-            <thead className="bg-surface-soft text-[11px] text-slate-500">
-              <tr>
-                <th className="px-3 py-2 font-semibold">เวลา</th>
-                <th className="px-3 py-2 font-semibold">ออเดอร์</th>
-                <th className="px-3 py-2 font-semibold">เลขที่ส่งมา</th>
-                <th className="px-3 py-2 font-semibold">ใครใส่</th>
-                <th className="px-3 py-2 font-semibold">ผล</th>
-                <th className="px-3 py-2 font-semibold">รายละเอียด</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groupParcels(data.rows.filter((r) => showTests || !r.is_test)).map(
-                ({ row: r, box, boxes, firstOfSet }) => {
-                  const meta = ACTION[r.action] ?? { label: r.action, tone: "neutral" as const };
-                  return (
+        {loading && !data ? (
+          <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด…</p>
+        ) : !data?.rows.length ? (
+          <p className="flex flex-wrap items-start gap-1.5 p-4 text-body-xs text-slate-500">
+            <Info size={13} className="mt-0.5 shrink-0 text-slate-400" />
+            ยังไม่มีข้อมูลเข้ามา — ให้ระบบต้นทางยิง POST มาที่{" "}
+            <code className="rounded-sm bg-surface-soft px-1">/api/webhooks/tracking</code> พร้อม header{" "}
+            <code className="rounded-sm bg-surface-soft px-1">x-tracking-secret</code>
+          </p>
+        ) : !grouped.length ? (
+          <p className="py-10 text-center text-sm text-slate-400">ไม่มีรายการในตัวกรองนี้</p>
+        ) : (
+          <>
+            {/* Two renderings of one list. A six-column table does not fit a
+                phone, and the sideways scroll it needed hid the columns that
+                say what happened — so below md each row becomes a card. */}
+            <div className="hidden max-h-[calc(100dvh-24rem)] overflow-y-auto md:block">
+              <table className="w-full text-left text-[12px]">
+                <thead className="sticky top-0 z-10 bg-surface-soft text-[11px] text-slate-500">
+                  <tr>
+                    <th className="w-28 px-3 py-2 font-semibold">เวลา</th>
+                    <th className="w-44 px-3 py-2 font-semibold">ออเดอร์</th>
+                    <th className="w-40 px-3 py-2 font-semibold">เลขที่ส่งมา</th>
+                    <th className="w-28 px-3 py-2 font-semibold">ใครใส่</th>
+                    <th className="w-32 px-3 py-2 font-semibold">ผล</th>
+                    <th className="px-3 py-2 font-semibold">รายละเอียด</th>
+                    <th className="w-52 px-3 py-2 font-semibold">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grouped.map(({ row: r, box, boxes, firstOfSet }) => (
                     <tr
                       key={r.id}
-                      className={
-                        "align-top " +
+                      className={clsx(
+                        "align-top",
                         // A set's boxes are tied together by a rule down the
                         // left and by naming the order only once, so two lines
                         // read as one order going out in two boxes rather than
                         // two unrelated events.
-                        (boxes > 1
+                        boxes > 1
                           ? firstOfSet
                             ? "border-t border-slate-100 border-l-2 border-l-brand-teal/50"
                             : "border-l-2 border-l-brand-teal/50"
-                          : "border-t border-slate-100")
-                      }
+                          : "border-t border-slate-100",
+                      )}
                     >
                       <td className="whitespace-nowrap px-3 py-2 text-slate-400">
-                        {firstOfSet
-                          ? new Date(r.received_at).toLocaleString("th-TH", {
-                              day: "numeric",
-                              month: "short",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : ""}
+                        {firstOfSet ? fmt(r.received_at) : ""}
                       </td>
                       <td className="px-3 py-2">
                         {firstOfSet ? (
@@ -416,99 +623,107 @@ export default function AdminTrackingSyncPage() {
                           <span className="text-[10px] text-slate-400">↳ กล่อง {box}</span>
                         )}
                         {/* The warehouse's own ref, shown only inside a set —
-                          it is the only thing that tells the boxes apart. */}
+                            it is the only thing that tells the boxes apart. */}
                         {boxes > 1 && (
                           <span className="mt-0.5 block font-mono text-[10px] text-slate-400">{r.order_ref}</span>
                         )}
                       </td>
                       <td className="px-3 py-2 font-mono text-[11px] text-slate-600">{r.tracking_number}</td>
-                      {/* Every number in this table was read out of sokochan by
-                        the scraper — nobody types them here. What differs is
-                        who set that reading off, and whether a person has
-                        since overruled it, which is the question the column
-                        actually answers. */}
                       <td className="whitespace-nowrap px-3 py-2">
-                        {r.resolution ? (
-                          <span className="text-[11px] font-semibold text-brand-800">
-                            คน · {r.resolution === "overwritten" ? "เขียนทับ" : "เก็บเลขเดิม"}
-                          </span>
-                        ) : r.triggered_by === "admin" ? (
-                          <span className="text-[11px] text-slate-600">คนกดซิงก์</span>
-                        ) : r.triggered_by === "cron" ? (
-                          <span className="text-[11px] text-slate-400">บอท (ตามเวลา)</span>
-                        ) : (
-                          <span className="text-[11px] text-slate-300">—</span>
-                        )}
+                        <WhoTag row={r} />
                       </td>
                       <td className="px-3 py-2">
-                        <Badge tone={meta.tone}>{meta.label}</Badge>
-                        {r.action === "conflict" && (r.seen_count ?? 1) > 1 && (
-                          <span
-                            className="mt-1 block text-[10px] text-slate-400"
-                            title={r.last_seen_at ? `ล่าสุด ${fmt(r.last_seen_at)}` : undefined}
-                          >
-                            เจอซ้ำ {r.seen_count} รอบ
-                          </span>
-                        )}
+                        <ResultTag row={r} />
                       </td>
+                      {/* Capped rather than stretched: on a 27" monitor the
+                          reason ran the full width of the screen, which is
+                          twice as long a line as anyone reads comfortably. */}
                       <td className="px-3 py-2 text-slate-500">
-                        {r.reason}
-                        {r.existing_numbers?.length ? (
-                          <span className="mt-0.5 block font-mono text-[11px] text-rose-600">
-                            ใน Shopify: {r.existing_numbers.join(", ")}
-                          </span>
-                        ) : null}
-
-                        {/* A mismatch used to end here: the page named the
-                          problem and offered nothing to do about it, so
-                          settling one meant opening Shopify and keying the
-                          number in — the manual step this replaces. */}
-                        {r.action === "conflict" && !r.resolved_at && (
-                          <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                            <button
-                              onClick={() => resolve(r, "overwritten")}
-                              disabled={resolving === r.id}
-                              className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
-                            >
-                              ใช้เลขใหม่ทับ
-                            </button>
-                            <button
-                              onClick={() => resolve(r, "ignored")}
-                              disabled={resolving === r.id}
-                              className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                            >
-                              เก็บเลขเดิมไว้
-                            </button>
-                          </span>
-                        )}
-                        {r.resolved_at && (
-                          <span className="mt-1 block text-[11px] font-medium text-slate-400">
-                            {r.resolution === "overwritten" ? "เขียนทับแล้ว" : "เก็บเลขเดิมไว้"} · {fmt(r.resolved_at)}
-                          </span>
-                        )}
-
-                        {/* "Not found" is usually a number keyed against the
-                          wrong order, so the useful next step is a search, not
-                          a second message saying it is still not found. */}
-                        {r.action === "no-order" && data.shopDomain && (
-                          <a
-                            href={`https://admin.shopify.com/store/${data.shopDomain}/orders?query=${encodeURIComponent(r.order_ref.replace(/^#/, ""))}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
-                          >
-                            ค้นหาใน Shopify <ExternalLink size={10} />
-                          </a>
-                        )}
+                        <span className="block max-w-[56ch]">
+                          <Reason row={r} />
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <RowActions row={r} shopDomain={data.shopDomain} resolving={resolving} onResolve={resolve} />
                       </td>
                     </tr>
-                  );
-                },
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="divide-y divide-slate-100 md:hidden">
+              {grouped.map(({ row: r, box, boxes, firstOfSet }) => (
+                <li key={r.id} className={clsx("p-3", boxes > 1 && "border-l-2 border-l-brand-teal/50 bg-brand-50/20")}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-brand-ink">
+                        {firstOfSet ? r.resolved_order_name || r.order_ref : `↳ กล่อง ${box}`}
+                        {firstOfSet && !r.resolved_order_name && (
+                          <span className="ml-1 text-[10px] font-normal text-slate-400">(ไม่พบ)</span>
+                        )}
+                        {firstOfSet && boxes > 1 && (
+                          <span className="ml-1.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-800">
+                            {boxes} กล่อง
+                          </span>
+                        )}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[11px] text-slate-500">
+                        {r.tracking_number}
+                        {/* Inside a set, the warehouse's own ref is the only
+                            thing that tells the boxes apart. */}
+                        {boxes > 1 && <span className="ml-1.5 text-[10px] text-slate-400">{r.order_ref}</span>}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <ResultTag row={r} />
+                      <p className="mt-1 text-[10px] text-slate-400">{fmt(r.received_at)}</p>
+                    </div>
+                  </div>
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+                    <Reason row={r} />
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <WhoTag row={r} />
+                    <RowActions row={r} shopDomain={data.shopDomain} resolving={resolving} onResolve={resolve} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </Card>
     </div>
+  );
+}
+
+function FilterChip({
+  label,
+  count,
+  active,
+  tone,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  tone?: "success" | "neutral" | "danger" | "warning" | "info";
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className={clsx(
+        "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors",
+        active
+          ? "border-brand-300 bg-brand-50 text-brand-800"
+          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+      )}
+    >
+      {tone === "danger" && !active && <span className="size-1.5 rounded-full bg-rose-500" aria-hidden />}
+      {label}
+      <span className={clsx("font-bold tabular-nums", active ? "text-brand-800" : "text-slate-400")}>{count}</span>
+    </button>
   );
 }
