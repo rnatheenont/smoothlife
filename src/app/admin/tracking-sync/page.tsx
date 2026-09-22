@@ -12,6 +12,58 @@ import { useAdminAction } from "@/components/admin/header-action";
 // bug in the sync. Until that column reads zero for a stretch of normal days,
 // nothing should be allowed to write to Shopify.
 
+/**
+ * The order a parcel ref belongs to, with the warehouse's box suffix removed.
+ *
+ * soko numbers a second box of the same order by appending to the reference —
+ * "#4157" and "#4157_F", "#4212" and "#4212_" — so the two boxes of one order
+ * arrived in this log as two unrelated lines. They are one shipment going out
+ * in two parcels, and reading them as two orders is how someone concludes a
+ * customer was sent something twice.
+ */
+function baseOrderRef(row: TrackingSyncRow) {
+  const raw = row.resolved_order_name || row.order_ref || "";
+  const base = raw.replace(/^#/, "").split("_")[0].trim().toLowerCase();
+  // A run-level row carries "-" as its ref, which is not an order: left as a
+  // key it collected every such row into one bogus "set of 6 boxes".
+  return /[a-z0-9]/.test(base) ? base : "";
+}
+
+type GroupedRow = { row: TrackingSyncRow; box: number; boxes: number; firstOfSet: boolean };
+
+/**
+ * Reorders the log so every box of one order sits together.
+ *
+ * Grouping adjacent rows was the first attempt and grouped nothing: the
+ * warehouse does not pack an order's boxes in one go, so "#4157" arrived days
+ * before "#4157_F" with a dozen other orders between them. The set has to be
+ * assembled across the whole window.
+ *
+ * Newest-first still holds, at the level that now matters: a set takes the
+ * position of its most recent box, and its earlier boxes follow directly
+ * underneath. Rows with no order at all — a run that found nothing, a run
+ * that failed — are their own group and keep their place in the timeline.
+ */
+function groupParcels(rows: TrackingSyncRow[]): GroupedRow[] {
+  const buckets = new Map<string, TrackingSyncRow[]>();
+  for (const row of rows) {
+    const key = baseOrderRef(row) || `__row:${row.id}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(row);
+    else buckets.set(key, [row]);
+  }
+
+  const newest = (list: TrackingSyncRow[]) =>
+    Math.max(...list.map((r) => new Date(r.received_at).getTime()));
+
+  return [...buckets.values()]
+    .map((list) => [...list].sort((a, b) => +new Date(b.received_at) - +new Date(a.received_at)))
+    .sort((a, b) => newest(b) - newest(a))
+    .flatMap((list) =>
+      list.map((row, i) => ({ row, box: i + 1, boxes: list.length, firstOfSet: i === 0 }))
+    );
+}
+
 const ACTION: Record<string, { label: string; tone: "success" | "neutral" | "danger" | "warning" | "info" }> = {
   fill: { label: "พร้อมเติม", tone: "info" },
   "already-set": { label: "ตรงกันอยู่แล้ว", tone: "success" },
@@ -91,7 +143,7 @@ export default function AdminTrackingSyncPage() {
         setRunResult(
           res.status === 504 || /timed out/i.test(raw)
             ? "หมดเวลา 60 วินาที — soko ตอบช้ากว่าปกติ ลองกดใหม่อีกครั้ง"
-            : `ไม่สำเร็จ (HTTP ${res.status}) — ${raw.slice(0, 120)}`
+            : `ไม่สำเร็จ (HTTP ${res.status}) — ${raw.slice(0, 120)}`,
         );
         return;
       }
@@ -99,17 +151,16 @@ export default function AdminTrackingSyncPage() {
         setRunResult(`ไม่สำเร็จ: ${r.error ?? "ไม่ทราบสาเหตุ"}`);
       } else if (!r.found) {
         const d = r.diagnostics as
-          | { pagesScanned?: number; candidates?: number; skipped?: number; ranOutOfTime?: boolean }
-          | undefined;
+          { pagesScanned?: number; candidates?: number; skipped?: number; ranOutOfTime?: boolean } | undefined;
         setRunResult(
           `ไม่มีรายการใหม่ — อ่าน ${d?.pagesScanned ?? "?"} หน้า พบ ${d?.candidates ?? "?"} ออเดอร์ ` +
             `ข้ามที่ทำไปแล้ว ${d?.skipped ?? 0} รายการ` +
-            (d?.ranOutOfTime ? " (อ่านไม่ครบ เพราะใกล้หมดเวลา — กดอีกครั้งเพื่ออ่านต่อ)" : "")
+            (d?.ranOutOfTime ? " (อ่านไม่ครบ เพราะใกล้หมดเวลา — กดอีกครั้งเพื่ออ่านต่อ)" : ""),
         );
       } else {
         setRunResult(
           `ดึงมา ${r.found} รายการ · เขียนลง Shopify ${r.applied ?? 0} · ต้องตรวจสอบ ${r.conflicts ?? 0}` +
-            (Number(r.unfinished) > 0 ? ` · เหลืออีก ${r.unfinished} รายการ กดอีกครั้งเพื่อทำต่อ` : "")
+            (Number(r.unfinished) > 0 ? ` · เหลืออีก ${r.unfinished} รายการ กดอีกครั้งเพื่อทำต่อ` : ""),
         );
       }
     } catch (err) {
@@ -145,7 +196,7 @@ export default function AdminTrackingSyncPage() {
           ? resolution === "overwritten"
             ? `เขียนทับ ${order} เป็น ${row.tracking_number} แล้ว${r.notified ? " · แจ้งลูกค้าทางอีเมลแล้ว" : ""}`
             : `เก็บเลขเดิมของ ${order} ไว้แล้ว`
-          : `ไม่สำเร็จ: ${r.error ?? "ไม่ทราบสาเหตุ"}`
+          : `ไม่สำเร็จ: ${r.error ?? "ไม่ทราบสาเหตุ"}`,
       );
     } catch (err) {
       setRunResult(`ไม่สำเร็จ: ${err}`);
@@ -198,7 +249,7 @@ export default function AdminTrackingSyncPage() {
             "mb-3 flex items-start gap-2 rounded-xl2 border p-4 text-sm",
             data.connection.consecutiveFailures >= 2
               ? "border-rose-200 bg-rose-50/70"
-              : "border-emerald-200 bg-emerald-50/50"
+              : "border-emerald-200 bg-emerald-50/50",
           )}
         >
           {data.connection.consecutiveFailures >= 2 ? (
@@ -226,7 +277,7 @@ export default function AdminTrackingSyncPage() {
       <div
         className={clsx(
           "mb-4 flex items-start gap-2 rounded-xl2 border p-4 text-sm",
-          dryRun ? "border-sky-200 bg-sky-50/60" : "border-amber-200 bg-amber-50/60"
+          dryRun ? "border-sky-200 bg-sky-50/60" : "border-amber-200 bg-amber-50/60",
         )}
       >
         {dryRun ? (
@@ -235,9 +286,7 @@ export default function AdminTrackingSyncPage() {
           <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
         )}
         <div className="min-w-0">
-          <p className="font-semibold text-brand-ink">
-            โหมดปัจจุบัน: {dryRun ? "ทดลอง (dry run)" : data?.mode}
-          </p>
+          <p className="font-semibold text-brand-ink">โหมดปัจจุบัน: {dryRun ? "ทดลอง (dry run)" : data?.mode}</p>
           <p className="mt-0.5 text-body-xs text-slate-600">
             {dryRun
               ? "รับข้อมูลเข้ามา ตัดสินใจ และบันทึกไว้เท่านั้น — ยังไม่เขียนอะไรลง Shopify และไม่มีอีเมลถึงลูกค้า"
@@ -293,7 +342,7 @@ export default function AdminTrackingSyncPage() {
             "mb-3 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors",
             showTests
               ? "border-brand-200 bg-brand-50 text-brand-800"
-              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50",
           )}
         >
           {showTests ? "ซ่อน" : "แสดง"}รายการทดสอบ ({data.testRowCount})
@@ -305,8 +354,9 @@ export default function AdminTrackingSyncPage() {
       ) : !data?.rows.length ? (
         <p className="flex items-start gap-1.5 rounded-xl2 border border-slate-100 p-4 text-body-xs text-slate-500">
           <Info size={13} className="mt-0.5 shrink-0 text-slate-400" />
-          ยังไม่มีข้อมูลเข้ามา — ให้ระบบต้นทางยิง POST มาที่ <code className="rounded-sm bg-surface-soft px-1">/api/webhooks/tracking</code>{" "}
-          พร้อม header <code className="rounded-sm bg-surface-soft px-1">x-tracking-secret</code>
+          ยังไม่มีข้อมูลเข้ามา — ให้ระบบต้นทางยิง POST มาที่{" "}
+          <code className="rounded-sm bg-surface-soft px-1">/api/webhooks/tracking</code> พร้อม header{" "}
+          <code className="rounded-sm bg-surface-soft px-1">x-tracking-secret</code>
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl2 border border-slate-100">
@@ -322,107 +372,139 @@ export default function AdminTrackingSyncPage() {
               </tr>
             </thead>
             <tbody>
-              {data.rows.filter((r) => showTests || !r.is_test).map((r) => {
-                const meta = ACTION[r.action] ?? { label: r.action, tone: "neutral" as const };
-                return (
-                  <tr key={r.id} className="border-t border-slate-100 align-top">
-                    <td className="whitespace-nowrap px-3 py-2 text-slate-400">
-                      {new Date(r.received_at).toLocaleString("th-TH", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span className="font-medium text-brand-ink">{r.resolved_order_name || r.order_ref}</span>
-                      {!r.resolved_order_name && (
-                        <span className="ml-1 text-[10px] text-slate-400">(ไม่พบ)</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 font-mono text-[11px] text-slate-600">{r.tracking_number}</td>
-                    {/* Every number in this table was read out of sokochan by
+              {groupParcels(data.rows.filter((r) => showTests || !r.is_test)).map(
+                ({ row: r, box, boxes, firstOfSet }) => {
+                  const meta = ACTION[r.action] ?? { label: r.action, tone: "neutral" as const };
+                  return (
+                    <tr
+                      key={r.id}
+                      className={
+                        "align-top " +
+                        // A set's boxes are tied together by a rule down the
+                        // left and by naming the order only once, so two lines
+                        // read as one order going out in two boxes rather than
+                        // two unrelated events.
+                        (boxes > 1
+                          ? firstOfSet
+                            ? "border-t border-slate-100 border-l-2 border-l-brand-teal/50"
+                            : "border-l-2 border-l-brand-teal/50"
+                          : "border-t border-slate-100")
+                      }
+                    >
+                      <td className="whitespace-nowrap px-3 py-2 text-slate-400">
+                        {firstOfSet
+                          ? new Date(r.received_at).toLocaleString("th-TH", {
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : ""}
+                      </td>
+                      <td className="px-3 py-2">
+                        {firstOfSet ? (
+                          <>
+                            <span className="font-medium text-brand-ink">{r.resolved_order_name || r.order_ref}</span>
+                            {!r.resolved_order_name && <span className="ml-1 text-[10px] text-slate-400">(ไม่พบ)</span>}
+                            {boxes > 1 && (
+                              <span className="ml-1.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-800">
+                                {boxes} กล่อง
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-[10px] text-slate-400">↳ กล่อง {box}</span>
+                        )}
+                        {/* The warehouse's own ref, shown only inside a set —
+                          it is the only thing that tells the boxes apart. */}
+                        {boxes > 1 && (
+                          <span className="mt-0.5 block font-mono text-[10px] text-slate-400">{r.order_ref}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 font-mono text-[11px] text-slate-600">{r.tracking_number}</td>
+                      {/* Every number in this table was read out of sokochan by
                         the scraper — nobody types them here. What differs is
                         who set that reading off, and whether a person has
                         since overruled it, which is the question the column
                         actually answers. */}
-                    <td className="whitespace-nowrap px-3 py-2">
-                      {r.resolution ? (
-                        <span className="text-[11px] font-semibold text-brand-800">
-                          คน · {r.resolution === "overwritten" ? "เขียนทับ" : "เก็บเลขเดิม"}
-                        </span>
-                      ) : r.triggered_by === "admin" ? (
-                        <span className="text-[11px] text-slate-600">คนกดซิงก์</span>
-                      ) : r.triggered_by === "cron" ? (
-                        <span className="text-[11px] text-slate-400">บอท (ตามเวลา)</span>
-                      ) : (
-                        <span className="text-[11px] text-slate-300">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <Badge tone={meta.tone}>{meta.label}</Badge>
-                      {r.action === "conflict" && (r.seen_count ?? 1) > 1 && (
-                        <span
-                          className="mt-1 block text-[10px] text-slate-400"
-                          title={r.last_seen_at ? `ล่าสุด ${fmt(r.last_seen_at)}` : undefined}
-                        >
-                          เจอซ้ำ {r.seen_count} รอบ
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-slate-500">
-                      {r.reason}
-                      {r.existing_numbers?.length ? (
-                        <span className="mt-0.5 block font-mono text-[11px] text-rose-600">
-                          ใน Shopify: {r.existing_numbers.join(", ")}
-                        </span>
-                      ) : null}
+                      <td className="whitespace-nowrap px-3 py-2">
+                        {r.resolution ? (
+                          <span className="text-[11px] font-semibold text-brand-800">
+                            คน · {r.resolution === "overwritten" ? "เขียนทับ" : "เก็บเลขเดิม"}
+                          </span>
+                        ) : r.triggered_by === "admin" ? (
+                          <span className="text-[11px] text-slate-600">คนกดซิงก์</span>
+                        ) : r.triggered_by === "cron" ? (
+                          <span className="text-[11px] text-slate-400">บอท (ตามเวลา)</span>
+                        ) : (
+                          <span className="text-[11px] text-slate-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        <Badge tone={meta.tone}>{meta.label}</Badge>
+                        {r.action === "conflict" && (r.seen_count ?? 1) > 1 && (
+                          <span
+                            className="mt-1 block text-[10px] text-slate-400"
+                            title={r.last_seen_at ? `ล่าสุด ${fmt(r.last_seen_at)}` : undefined}
+                          >
+                            เจอซ้ำ {r.seen_count} รอบ
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-slate-500">
+                        {r.reason}
+                        {r.existing_numbers?.length ? (
+                          <span className="mt-0.5 block font-mono text-[11px] text-rose-600">
+                            ใน Shopify: {r.existing_numbers.join(", ")}
+                          </span>
+                        ) : null}
 
-                      {/* A mismatch used to end here: the page named the
+                        {/* A mismatch used to end here: the page named the
                           problem and offered nothing to do about it, so
                           settling one meant opening Shopify and keying the
                           number in — the manual step this replaces. */}
-                      {r.action === "conflict" && !r.resolved_at && (
-                        <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                          <button
-                            onClick={() => resolve(r, "overwritten")}
-                            disabled={resolving === r.id}
-                            className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
-                          >
-                            ใช้เลขใหม่ทับ
-                          </button>
-                          <button
-                            onClick={() => resolve(r, "ignored")}
-                            disabled={resolving === r.id}
-                            className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                          >
-                            เก็บเลขเดิมไว้
-                          </button>
-                        </span>
-                      )}
-                      {r.resolved_at && (
-                        <span className="mt-1 block text-[11px] font-medium text-slate-400">
-                          {r.resolution === "overwritten" ? "เขียนทับแล้ว" : "เก็บเลขเดิมไว้"} · {fmt(r.resolved_at)}
-                        </span>
-                      )}
+                        {r.action === "conflict" && !r.resolved_at && (
+                          <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            <button
+                              onClick={() => resolve(r, "overwritten")}
+                              disabled={resolving === r.id}
+                              className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                            >
+                              ใช้เลขใหม่ทับ
+                            </button>
+                            <button
+                              onClick={() => resolve(r, "ignored")}
+                              disabled={resolving === r.id}
+                              className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                            >
+                              เก็บเลขเดิมไว้
+                            </button>
+                          </span>
+                        )}
+                        {r.resolved_at && (
+                          <span className="mt-1 block text-[11px] font-medium text-slate-400">
+                            {r.resolution === "overwritten" ? "เขียนทับแล้ว" : "เก็บเลขเดิมไว้"} · {fmt(r.resolved_at)}
+                          </span>
+                        )}
 
-                      {/* "Not found" is usually a number keyed against the
+                        {/* "Not found" is usually a number keyed against the
                           wrong order, so the useful next step is a search, not
                           a second message saying it is still not found. */}
-                      {r.action === "no-order" && data.shopDomain && (
-                        <a
-                          href={`https://admin.shopify.com/store/${data.shopDomain}/orders?query=${encodeURIComponent(r.order_ref.replace(/^#/, ""))}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
-                        >
-                          ค้นหาใน Shopify <ExternalLink size={10} />
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+                        {r.action === "no-order" && data.shopDomain && (
+                          <a
+                            href={`https://admin.shopify.com/store/${data.shopDomain}/orders?query=${encodeURIComponent(r.order_ref.replace(/^#/, ""))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                          >
+                            ค้นหาใน Shopify <ExternalLink size={10} />
+                          </a>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                },
+              )}
             </tbody>
           </table>
         </div>
