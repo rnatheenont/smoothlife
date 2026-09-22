@@ -19,8 +19,11 @@ import {
   Truck,
   Users,
   Zap,
+  LayoutDashboard,
+  CheckCircle2,
 } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
+import { PageHeader, StatCard } from "@/components/admin/layout-kit";
 
 // Admin home. It used to redirect straight into the promotions screen, which
 // meant the answer to "what needs me today?" was: open all seven pages and
@@ -75,7 +78,12 @@ export default function AdminHomePage() {
     load();
   }, [load]);
 
-  useAdminAction({ label: "รีเฟรชตัวเลข", icon: <RefreshCw size={15} aria-hidden />, onClick: load, disabled: loading });
+  useAdminAction({
+    label: "รีเฟรชตัวเลข",
+    icon: <RefreshCw size={15} aria-hidden />,
+    onClick: load,
+    disabled: loading,
+  });
 
   // Anything past this is "a lot" — the exact number changes nothing about
   // what the reader does next.
@@ -134,108 +142,164 @@ export default function AdminHomePage() {
   ];
 
   const today = [
-    { icon: Receipt, label: "ชำระเงินสำเร็จวันนี้", value: stats.paidToday, unit: "รายการ", href: "/admin/checkout-transactions" },
+    {
+      icon: Receipt,
+      label: "ชำระเงินสำเร็จวันนี้",
+      value: stats.paidToday,
+      unit: "รายการ",
+      href: "/admin/checkout-transactions",
+    },
     { icon: Zap, label: "Flash Sale กำลังขาย", value: stats.flashRunning, unit: "แคมเปญ", href: "/admin/flash-sale" },
     { icon: Zap, label: "Flash Sale รอเริ่ม", value: stats.flashScheduled, unit: "แคมเปญ", href: "/admin/flash-sale" },
-    { icon: Repeat, label: "สมาชิกที่ยังใช้งานอยู่", value: stats.activeSubs, unit: "ราย", href: "/admin/subscription-products" },
-    { icon: Repeat, label: "สินค้าที่เปิดสมัครสมาชิก", value: stats.subscribableOn, unit: "รายการ", href: "/admin/subscription-products" },
+    {
+      icon: Repeat,
+      label: "สมาชิกที่ยังใช้งานอยู่",
+      value: stats.activeSubs,
+      unit: "ราย",
+      href: "/admin/subscription-products",
+    },
+    {
+      icon: Repeat,
+      label: "สินค้าที่เปิดสมัครสมาชิก",
+      value: stats.subscribableOn,
+      unit: "รายการ",
+      href: "/admin/subscription-products",
+    },
   ];
 
   const sections = [
     { href: "/admin/inbox", icon: Inbox, label: "กล่องข้อความ", desc: "ตอบแชทลูกค้าทุกช่องทางจากที่เดียว" },
     { href: "/admin/free-gifts", icon: Gift, label: "โปรโมชั่น", desc: "ของแถมและแคมเปญหน้าร้าน" },
-    { href: "/admin/free-gifts/widgets", icon: SlidersHorizontal, label: "Widgets", desc: "เปิด/ปิดกล่องโปรโมชั่นบนหน้าเว็บ" },
+    {
+      href: "/admin/free-gifts/widgets",
+      icon: SlidersHorizontal,
+      label: "Widgets",
+      desc: "เปิด/ปิดกล่องโปรโมชั่นบนหน้าเว็บ",
+    },
     { href: "/admin/points", icon: Award, label: "คะแนน", desc: "ปรับแต้มลูกค้าและตั้งของรางวัล" },
     { href: "/admin/reviews", icon: MessageSquareText, label: "รีวิวรออนุมัติ", desc: "ตรวจรีวิวก่อนขึ้นหน้าเว็บ" },
     { href: "/admin/gift-cards", icon: CreditCard, label: "บัตรของขวัญ", desc: "ออกและตรวจสอบบัตรของขวัญ" },
-    { href: "/admin/subscription-products", icon: Repeat, label: "สินค้าสมัครสมาชิก", desc: "เลือกสินค้าที่สมัครรับประจำได้" },
-    { href: "/admin/checkout-transactions", icon: Receipt, label: "รายการซื้อ (2C2P)", desc: "ตรวจการชำระเงินและคืนเงิน" },
+    {
+      href: "/admin/subscription-products",
+      icon: Repeat,
+      label: "สินค้าสมัครสมาชิก",
+      desc: "เลือกสินค้าที่สมัครรับประจำได้",
+    },
+    {
+      href: "/admin/checkout-transactions",
+      icon: Receipt,
+      label: "รายการซื้อ (2C2P)",
+      desc: "ตรวจการชำระเงินและคืนเงิน",
+    },
     { href: "/admin/flash-sale", icon: Zap, label: "Flash Sale", desc: "ตั้งแคมเปญ คิวจริง และหน้าขายแบบพิเศษ" },
-    { href: "/admin/knowledge-base", icon: BookOpen, label: "ฐานความรู้ AI", desc: "คำตอบที่อนุมัติแล้วให้ AI ใช้ตอบลูกค้า" },
+    {
+      href: "/admin/knowledge-base",
+      icon: BookOpen,
+      label: "ฐานความรู้ AI",
+      desc: "คำตอบที่อนุมัติแล้วให้ AI ใช้ตอบลูกค้า",
+    },
     { href: "/admin/tracking-sync", icon: Truck, label: "ซิงก์เลขพัสดุ", desc: "ดึงเลขพัสดุจาก soko เข้า Shopify" },
     { href: "/admin/customers", icon: Users, label: "ลูกค้า & ผูกบัญชี", desc: "ค้นหาลูกค้าและผูกบัญชี LINE" },
   ];
 
+  // Zero is the answer most of these give most days, and seven cards saying
+  // zero is a page that has to be read before it can be dismissed. The ones
+  // with something in them are shown full size; the rest say so in one line.
+  const urgent = needsAttention.filter((c) => (c.value ?? 0) > 0);
+  const clear = needsAttention.filter((c) => c.value === 0);
+
   return (
-    <div>
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-brand-ink">ภาพรวมหลังบ้าน</h1>
-        <p className="mt-1 text-sm text-slate-500">สรุปสิ่งที่ต้องดูวันนี้ แล้วค่อยเข้าไปจัดการในแต่ละหน้า</p>
-      </div>
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        icon={<LayoutDashboard size={20} className="text-brand-600" />}
+        title="ภาพรวมหลังบ้าน"
+        subtitle="สรุปสิ่งที่ต้องดูวันนี้ แล้วค่อยเข้าไปจัดการในแต่ละหน้า"
+      />
 
-      <h2 className="mb-2 text-xs font-semibold text-slate-400">ต้องดำเนินการ</h2>
-      <div className="mb-6 grid gap-2 sm:grid-cols-3 xl:grid-cols-4">
-        {needsAttention.map((c) => {
-          const Icon = c.icon;
-          const urgent = (c.value ?? 0) > 0;
-          return (
-            <Link
+      <section>
+        <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">ต้องดำเนินการ</h2>
+        {loading ? (
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-[76px] animate-pulse rounded-xl2 border border-slate-100 bg-slate-50/60" />
+            ))}
+          </div>
+        ) : urgent.length === 0 ? (
+          <p className="flex items-center gap-2 rounded-xl2 border border-emerald-100 bg-emerald-50/50 p-4 text-sm font-medium text-emerald-800">
+            <CheckCircle2 size={16} className="shrink-0 text-emerald-600" /> ไม่มีอะไรค้าง — ทุกคิวเคลียร์หมดแล้ว
+          </p>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {urgent.map((c) => (
+              <StatCard
+                key={c.label}
+                href={c.href}
+                tone="alert"
+                icon={<c.icon size={13} className="text-amber-600" />}
+                label={c.label}
+                value={show(c.value)}
+                unit={c.unit}
+              />
+            ))}
+          </div>
+        )}
+        {/* The cleared ones, kept visible: "no pending reviews" and "the
+            review count failed to load" are different answers, and a card
+            that disappears cannot tell them apart. */}
+        {clear.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 px-1 text-[11px] text-slate-400">
+            {clear.map((c) => (
+              <Link key={c.label} href={c.href} className="hover:text-slate-600">
+                {c.label} 0
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">สถานะร้าน</h2>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {today.map((c) => (
+            <StatCard
               key={c.label}
               href={c.href}
-              className={`rounded-xl2 border p-4 transition-colors ${
-                urgent ? "border-amber-200 bg-amber-50/60 hover:border-amber-300" : "border-slate-100 hover:border-slate-200"
-              }`}
-            >
-              <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                <Icon size={13} className={urgent ? "text-amber-600" : "text-slate-400"} /> {c.label}
-              </p>
-              <p className="mt-1 flex items-baseline gap-1">
-                <span className={`text-2xl font-bold ${urgent ? "text-amber-700" : "text-slate-300"}`}>
-                  {loading ? <Loader2 size={18} className="animate-spin text-slate-300" /> : show(c.value)}
-                </span>
-                <span className="text-xs text-slate-400">{c.unit}</span>
-              </p>
-            </Link>
-          );
-        })}
-      </div>
+              icon={<c.icon size={13} className="text-slate-400" />}
+              label={c.label}
+              value={loading ? <Loader2 size={18} className="animate-spin text-slate-300" /> : show(c.value)}
+              unit={c.unit}
+            />
+          ))}
+        </div>
+      </section>
 
-      <h2 className="mb-2 text-xs font-semibold text-slate-400">สถานะร้าน</h2>
-      <div className="mb-6 grid gap-2 sm:grid-cols-3 xl:grid-cols-5">
-        {today.map((c) => {
-          const Icon = c.icon;
-          return (
-            <Link
-              key={c.label}
-              href={c.href}
-              className="rounded-xl2 border border-slate-100 p-4 transition-colors hover:border-slate-200"
-            >
-              <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                <Icon size={13} className="text-slate-400" /> {c.label}
-              </p>
-              <p className="mt-1 flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-brand-ink">
-                  {loading ? <Loader2 size={18} className="animate-spin text-slate-300" /> : show(c.value)}
+      <section>
+        <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">ทั้งหมด</h2>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {sections.map((s) => {
+            const Icon = s.icon;
+            return (
+              <Link
+                key={s.href + s.label}
+                href={s.href}
+                className="group flex items-start gap-3 rounded-xl2 border border-slate-100 bg-white p-4 transition-colors hover:border-brand-teal/40"
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-l bg-brand-gradient-soft">
+                  <Icon size={16} className="text-brand-emerald" />
                 </span>
-                <span className="text-xs text-slate-400">{c.unit}</span>
-              </p>
-            </Link>
-          );
-        })}
-      </div>
-
-      <h2 className="mb-2 text-xs font-semibold text-slate-400">ทั้งหมด</h2>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {sections.map((s) => {
-          const Icon = s.icon;
-          return (
-            <Link
-              key={s.href + s.label}
-              href={s.href}
-              className="group flex items-start gap-3 rounded-xl2 border border-slate-100 p-4 transition-colors hover:border-brand-teal/40"
-            >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-gradient-soft">
-                <Icon size={16} className="text-brand-emerald" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-brand-ink">{s.label}</span>
-                <span className="mt-0.5 block text-xs text-slate-400">{s.desc}</span>
-              </span>
-              <ArrowRight size={15} className="mt-1 shrink-0 text-slate-300 transition-colors group-hover:text-brand-emerald" />
-            </Link>
-          );
-        })}
-      </div>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-brand-ink">{s.label}</span>
+                  <span className="mt-0.5 block text-xs text-slate-400">{s.desc}</span>
+                </span>
+                <ArrowRight
+                  size={15}
+                  className="mt-1 shrink-0 text-slate-300 transition-colors group-hover:text-brand-emerald"
+                />
+              </Link>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

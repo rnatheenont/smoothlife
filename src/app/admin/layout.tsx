@@ -69,7 +69,12 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/admin/free-gifts", label: "โปรโมชั่น", icon: Gift, permission: "free_gifts.manage" },
       { href: "/admin/free-gifts/widgets", label: "Widgets", icon: SlidersHorizontal, permission: "free_gifts.manage" },
       { href: "/admin/gift-cards", label: "บัตรของขวัญ", icon: CreditCard, permission: "gift_cards.manage" },
-      { href: "/admin/subscription-products", label: "สินค้าสมัครสมาชิก", icon: Repeat, permission: "subscription_products.manage" },
+      {
+        href: "/admin/subscription-products",
+        label: "สินค้าสมัครสมาชิก",
+        icon: Repeat,
+        permission: "subscription_products.manage",
+      },
       { href: "/admin/points", label: "คะแนน", icon: Award, permission: "points.view" },
     ],
   },
@@ -78,7 +83,12 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin/knowledge-base", label: "ฐานความรู้ AI", icon: BookOpen, permission: "kb.draft" },
       { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText, permission: "reviews.manage" },
-      { href: "/admin/line-rich-menu", label: "เมนู LINE OA", icon: MessageCircle, permission: "line_rich_menu.manage" },
+      {
+        href: "/admin/line-rich-menu",
+        label: "เมนู LINE OA",
+        icon: MessageCircle,
+        permission: "line_rich_menu.manage",
+      },
       { href: "/admin/seo", label: "SEO", icon: Search, permission: "seo.manage" },
       { href: "/admin/brand-insights", label: "สัญญาณแบรนด์", icon: TrendingUp, permission: "brand_signals.view" },
       { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette, permission: null },
@@ -94,7 +104,15 @@ const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 // How much width a screen actually has content for: a dashboard fills the
 // window, a wide data table needs the room, and a list of rows or a form reads
 // better in a column than stretched across a 27" monitor.
-const FULL_WIDTH = ["/admin/inbox", "/admin/seo", "/admin/brand-insights", "/admin/tracking-sync"];
+const FULL_WIDTH = [
+  "/admin",
+  "/admin/reviews",
+  "/admin/gift-cards",
+  "/admin/inbox",
+  "/admin/seo",
+  "/admin/brand-insights",
+  "/admin/tracking-sync",
+];
 const WIDE_TABLE = ["/admin/checkout-transactions", "/admin/customers", "/admin/flash-sale"];
 
 const groupOf = (href: string) => NAV_GROUPS.find((g) => g.items.some((i) => i.href === href))?.label ?? "";
@@ -185,7 +203,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   async function requestReset() {
     const to = email.trim();
     if (!to) {
-      setForgotNote("รหัสผ่านรวมรีเซ็ตทางอีเมลไม่ได้ เพราะไม่ใช่บัญชี แต่เป็นค่า ADMIN_PANEL_SECRET ที่ตั้งไว้ใน Vercel — ดูหรือเปลี่ยนได้ที่ Settings → Environment Variables");
+      setForgotNote(
+        "รหัสผ่านรวมรีเซ็ตทางอีเมลไม่ได้ เพราะไม่ใช่บัญชี แต่เป็นค่า ADMIN_PANEL_SECRET ที่ตั้งไว้ใน Vercel — ดูหรือเปลี่ยนได้ที่ Settings → Environment Variables",
+      );
       return;
     }
     setForgotSending(true);
@@ -226,55 +246,57 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     return (
       <div className="grid min-h-screen place-items-center bg-surface-soft/50 px-4">
         <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-card ring-1 ring-surface-line md:p-8">
-        <div className="flex flex-col items-center text-center mb-6">
-          <div className="grid h-12 w-12 place-items-center rounded-full bg-brand-gradient-soft mb-3">
-            <Lock size={20} className="text-brand-emerald" />
-          </div>
-          <h1 className="text-lg font-bold text-brand-ink">ระบบจัดการหลังบ้าน</h1>
-          <p className="text-xs text-slate-400 mt-1">หน้านี้สำหรับทีมงานเท่านั้น เข้าด้วยบัญชีส่วนตัวหรือรหัสผ่านรวม</p>
-        </div>
-        <form onSubmit={submitLogin} className="space-y-3">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="อีเมล (เว้นว่างถ้าใช้รหัสผ่านรวม)"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-hidden focus:border-brand-teal"
-            autoFocus
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={email.trim() ? "รหัสผ่านของคุณ" : "รหัสผ่านแอดมิน (รวม)"}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-hidden focus:border-brand-teal"
-          />
-          {loginError && <p className="text-xs text-rose-500">{loginError}</p>}
-          <Button fullWidth type="submit">
-            เข้าสู่ระบบ
-          </Button>
-        </form>
-        <div className="mt-4 border-t border-surface-line pt-4">
-          {!forgotOpen ? (
-            <button
-              type="button"
-              onClick={() => setForgotOpen(true)}
-              className="mx-auto block rounded-sm text-xs font-semibold text-brand-800 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
-            >
-              ลืมรหัสผ่าน?
-            </button>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-slate-500">
-                กรอกอีเมลบัญชีแอดมินของคุณด้านบน แล้วกดส่งลิงก์ ลิงก์มีอายุ 15 นาที
-              </p>
-              <Button fullWidth type="button" variant="secondary" onClick={requestReset} disabled={forgotSending}>
-                {forgotSending ? "กำลังส่ง…" : "ส่งลิงก์ตั้งรหัสผ่านใหม่"}
-              </Button>
-              {forgotNote && <p className="text-xs text-slate-500">{forgotNote}</p>}
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-brand-gradient-soft mb-3">
+              <Lock size={20} className="text-brand-emerald" />
             </div>
-          )}
-        </div>
+            <h1 className="text-lg font-bold text-brand-ink">ระบบจัดการหลังบ้าน</h1>
+            <p className="text-xs text-slate-400 mt-1">
+              หน้านี้สำหรับทีมงานเท่านั้น เข้าด้วยบัญชีส่วนตัวหรือรหัสผ่านรวม
+            </p>
+          </div>
+          <form onSubmit={submitLogin} className="space-y-3">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="อีเมล (เว้นว่างถ้าใช้รหัสผ่านรวม)"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-hidden focus:border-brand-teal"
+              autoFocus
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={email.trim() ? "รหัสผ่านของคุณ" : "รหัสผ่านแอดมิน (รวม)"}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-hidden focus:border-brand-teal"
+            />
+            {loginError && <p className="text-xs text-rose-500">{loginError}</p>}
+            <Button fullWidth type="submit">
+              เข้าสู่ระบบ
+            </Button>
+          </form>
+          <div className="mt-4 border-t border-surface-line pt-4">
+            {!forgotOpen ? (
+              <button
+                type="button"
+                onClick={() => setForgotOpen(true)}
+                className="mx-auto block rounded-sm text-xs font-semibold text-brand-800 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+              >
+                ลืมรหัสผ่าน?
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-slate-500">
+                  กรอกอีเมลบัญชีแอดมินของคุณด้านบน แล้วกดส่งลิงก์ ลิงก์มีอายุ 15 นาที
+                </p>
+                <Button fullWidth type="button" variant="secondary" onClick={requestReset} disabled={forgotSending}>
+                  {forgotSending ? "กำลังส่ง…" : "ส่งลิงก์ตั้งรหัสผ่านใหม่"}
+                </Button>
+                {forgotNote && <p className="text-xs text-slate-500">{forgotNote}</p>}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -358,7 +380,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
-        <CommandPalette key={paletteTick} items={visibleItems.map((i) => ({ ...i, group: groupOf(i.href) }))} openOnMount={paletteTick > 0} />
+        <CommandPalette
+          key={paletteTick}
+          items={visibleItems.map((i) => ({ ...i, group: groupOf(i.href) }))}
+          openOnMount={paletteTick > 0}
+        />
 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
           <aside
@@ -369,7 +395,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <div className="lg:sticky lg:top-12 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:p-3 lg:pt-4 md:lg:top-14 md:lg:max-h-[calc(100vh-3.5rem)]">
               {!collapsed && (
                 <div className="relative mb-3 hidden lg:block">
-                  <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
+                  <Search
+                    size={14}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    aria-hidden
+                  />
                   <input
                     type="search"
                     value={navQuery}
@@ -390,7 +420,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                         {group.label}
                       </p>
                     )}
-                    {group.label && collapsed && <div className="mx-3 mb-2 hidden border-t border-surface-line lg:block" />}
+                    {group.label && collapsed && (
+                      <div className="mx-3 mb-2 hidden border-t border-surface-line lg:block" />
+                    )}
                     <div className="contents lg:flex lg:flex-col lg:gap-0.5">
                       {group.items.map((item) => {
                         const active = isActive(item.href, pathname);
@@ -427,7 +459,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                   title and content follow underneath. */}
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3 md:mb-5">
                 <p className="flex items-center gap-1.5 text-xs text-slate-400">
-                  หลังบ้าน <span aria-hidden>/</span> <span className="font-semibold text-slate-500">{current?.label ?? "ภาพรวม"}</span>
+                  หลังบ้าน <span aria-hidden>/</span>{" "}
+                  <span className="font-semibold text-slate-500">{current?.label ?? "ภาพรวม"}</span>
                 </p>
                 <AdminActionButton />
               </div>
