@@ -106,7 +106,8 @@ export default function AdminAiLogPage() {
 
       {error && <p className="rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
 
-      <div className="inline-flex self-start rounded-full bg-surface-muted p-1">
+      {/* bg-white: surface-muted is the canvas colour now. */}
+      <div className="inline-flex self-start rounded-full bg-white p-1 shadow-card">
         {(["all", "answered", "unanswered"] as const).map((f) => (
           <button
             key={f}
@@ -117,7 +118,7 @@ export default function AdminAiLogPage() {
             }}
             aria-pressed={filter === f}
             className={`min-h-9 rounded-full px-4 text-sm font-semibold transition ${
-              filter === f ? "bg-white text-brand-ink shadow-card" : "text-slate-600 hover:text-brand-ink"
+              filter === f ? "bg-brand-gradient-soft text-brand-800" : "text-slate-600 hover:text-brand-ink"
             }`}
           >
             {f === "all" ? "ทั้งหมด" : f === "answered" ? "ตอบจากความรู้" : "ยังไม่มีความรู้รองรับ"}

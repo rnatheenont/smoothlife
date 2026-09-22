@@ -328,7 +328,9 @@ export default function AdminSeoPage() {
       {/* Scrolls sideways rather than wrapping: eight pills with counts
           no longer fit a laptop width, and a label broken across two lines
           ("คอลเลก / ชัน") is harder to read than a row you can swipe. */}
-      <div className="mt-5 flex max-w-full gap-0.5 overflow-x-auto rounded-full bg-surface-muted p-1 scrollbar-none">
+      {/* White, not surface-muted: that is the canvas colour now, so the
+          strip had no edge of its own and the tabs floated on the page. */}
+      <div className="mt-5 flex max-w-full gap-0.5 overflow-x-auto rounded-full bg-white p-1 shadow-card scrollbar-none">
         {SEO_PAGE_TYPES.map((t) => (
           <button
             key={t.key}
@@ -341,7 +343,7 @@ export default function AdminSeoPage() {
             className={
               "shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-sm " +
               (tab === t.key
-                ? "bg-white font-semibold text-brand-ink shadow-card"
+                ? "bg-brand-gradient-soft font-semibold text-brand-800"
                 : "font-medium text-slate-500 hover:text-brand-ink")
             }
           >
@@ -357,7 +359,9 @@ export default function AdminSeoPage() {
 
       {tab !== "campaign" && (
         <div className="mt-5 flex items-center gap-3">
-          <div className="h-2 w-40 overflow-hidden rounded-full bg-surface-muted">
+          {/* The track needs to differ from the page behind it, which is
+              surface-muted now — an empty track was invisible. */}
+          <div className="h-2 w-40 overflow-hidden rounded-full bg-white shadow-card">
             <div className="h-full rounded-full bg-brand-gradient" style={{ width: `${donePercent}%` }} />
           </div>
           <span className="text-xs text-slate-500">
@@ -377,7 +381,11 @@ export default function AdminSeoPage() {
         // guess from before the tabs carried counts, and it pushed the
         // editor's bottom edge (and the Save button on it) past the fold.
         <div className="mt-6 grid min-h-0 gap-5 lg:h-[calc(100dvh-21rem)] lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
-          <div className="flex min-h-0 min-w-0 flex-col">
+          {/* On its own the list sat bare on the page canvas next to a white
+              editor, so the left half of the screen read as unfinished — and
+              more so now the canvas is a shade darker. Same surface on both
+              sides. */}
+          <div className="flex min-h-0 min-w-0 flex-col rounded-xl2 bg-white p-3 shadow-card">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -767,7 +775,7 @@ export default function AdminSeoPage() {
               </div>
             </div>
           ) : (
-            <div className="grid min-h-[200px] place-items-center rounded-xl2 bg-surface-soft text-sm text-slate-400">
+            <div className="grid min-h-[200px] place-items-center rounded-xl2 bg-white text-sm text-slate-400 shadow-card">
               เลือกรายการทางซ้ายเพื่อแก้ไข
             </div>
           )}
