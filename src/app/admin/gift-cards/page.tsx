@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { CreditCard, Check, Copy, Plus } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Badge, Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader, Panel } from "@/components/admin/layout-kit";
+import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
 
 type GiftCardSummary = {
   id: string;
@@ -218,39 +218,85 @@ export default function AdminGiftCardsPage() {
           ) : history.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-6">ยังไม่มีบัตรของขวัญ</p>
           ) : (
-            <div className="grid items-start gap-2 xl:grid-cols-2">
-              {history.map((g) => (
-                <div key={g.id} className="rounded-xl2 border border-slate-100 p-3.5 shadow-card">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-brand-ink font-mono">•••• {g.lastCharacters}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        {[g.customer?.firstName, g.customer?.lastName].filter(Boolean).join(" ") || "ไม่ระบุชื่อ"}
-                        {g.customer?.defaultEmailAddress?.emailAddress
-                          ? ` · ${g.customer.defaultEmailAddress.emailAddress}`
-                          : ""}
-                      </p>
-                      {g.note && <p className="text-[11px] text-slate-400 mt-0.5">หมายเหตุ: {g.note}</p>}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-brand-ink">
-                        {formatTHB(g.balance.amount)}{" "}
-                        <span className="text-[11px] font-normal text-slate-400">
-                          / {formatTHB(g.initialValue.amount)}
+            <>
+              {/* Four short columns, so the balances line up and "which of
+                  these has been spent" is a glance down one of them. The
+                  cards it replaces put the amount wherever the name above it
+                  happened to end. */}
+              <div className="hidden md:block">
+                <table className={adminTable.table}>
+                  <thead className={adminTable.thead}>
+                    <tr>
+                      <th className="w-32">รหัสบัตร</th>
+                      <th>ลูกค้า</th>
+                      <th className="w-40 text-right">คงเหลือ / มูลค่า</th>
+                      <th className="w-32">สถานะ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((g) => (
+                      <tr key={g.id} className={adminTable.row}>
+                        <td className={adminTable.mono}>•••• {g.lastCharacters}</td>
+                        <td className={adminTable.cell}>
+                          <span className="block">
+                            {[g.customer?.firstName, g.customer?.lastName].filter(Boolean).join(" ") || "ไม่ระบุชื่อ"}
+                          </span>
+                          {g.customer?.defaultEmailAddress?.emailAddress && (
+                            <span className="block text-[11px] text-slate-400">
+                              {g.customer.defaultEmailAddress.emailAddress}
+                            </span>
+                          )}
+                          {g.note && <span className="block text-[11px] text-slate-400">หมายเหตุ: {g.note}</span>}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">
+                          <span className="font-semibold text-brand-ink">{formatTHB(g.balance.amount)}</span>
+                          <span className="text-[11px] text-slate-400"> / {formatTHB(g.initialValue.amount)}</span>
+                        </td>
+                        <td className={adminTable.cell}>
+                          <Badge tone={g.enabled ? "brand" : "neutral"}>
+                            {g.enabled ? "ใช้งานได้" : "ปิดใช้งานแล้ว"}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="grid items-start gap-2 md:hidden">
+                {history.map((g) => (
+                  <div key={g.id} className="rounded-xl2 border border-slate-100 p-3.5 shadow-card">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-brand-ink font-mono">•••• {g.lastCharacters}</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {[g.customer?.firstName, g.customer?.lastName].filter(Boolean).join(" ") || "ไม่ระบุชื่อ"}
+                          {g.customer?.defaultEmailAddress?.emailAddress
+                            ? ` · ${g.customer.defaultEmailAddress.emailAddress}`
+                            : ""}
+                        </p>
+                        {g.note && <p className="text-[11px] text-slate-400 mt-0.5">หมายเหตุ: {g.note}</p>}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold text-brand-ink">
+                          {formatTHB(g.balance.amount)}{" "}
+                          <span className="text-[11px] font-normal text-slate-400">
+                            / {formatTHB(g.initialValue.amount)}
+                          </span>
+                        </p>
+                        <span
+                          className={`inline-block text-[10px] font-bold rounded-full px-2 py-0.5 mt-1 ${
+                            g.enabled ? "bg-brand-gradient-soft text-brand-800" : "bg-slate-100 text-slate-400"
+                          }`}
+                        >
+                          {g.enabled ? "ใช้งานได้" : "ปิดใช้งานแล้ว"}
                         </span>
-                      </p>
-                      <span
-                        className={`inline-block text-[10px] font-bold rounded-full px-2 py-0.5 mt-1 ${
-                          g.enabled ? "bg-brand-gradient-soft text-brand-800" : "bg-slate-100 text-slate-400"
-                        }`}
-                      >
-                        {g.enabled ? "ใช้งานได้" : "ปิดใช้งานแล้ว"}
-                      </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </Panel>
       </div>

@@ -17,9 +17,10 @@ import {
 } from "lucide-react";
 import { FreeGiftPromo, FreeGiftTier } from "@/data/free-gifts";
 import { getProductBySlug } from "@/data/products";
+import { Badge } from "@/components/ui";
 import ProductPicker from "@/components/admin/ProductPicker";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader } from "@/components/admin/layout-kit";
+import { PageHeader, adminTable } from "@/components/admin/layout-kit";
 
 type AdminPromo = FreeGiftPromo & { id: string };
 
@@ -259,102 +260,216 @@ export default function AdminFreeGiftsPage() {
       ) : (
         /* Two to a row: each promo is a small card, and one per row left a
            wide screen mostly empty while the tenth promo sat below the fold. */
-        <div className="grid items-start gap-3 xl:grid-cols-2">
-          {promos.map((p) => {
-            const giftProduct = p.kind === "tiered" ? undefined : getProductBySlug(p.giftProductSlug);
-            const KindIcon = p.kind === "spend" ? ShoppingBag : p.kind === "bxgy" ? Layers : TrendingUp;
-            const kindLabel = p.kind === "spend" ? "ซื้อครบยอด" : p.kind === "bxgy" ? "ซื้อครบจำนวน" : "ขั้นบันได";
-            const tierDiscountsLinked = p.kind === "tiered" && (p.tiers ?? []).every((t) => t.shopifyDiscountId);
-            return (
-              <div key={p.id} className="rounded-xl2 border border-slate-100 p-4 shadow-card">
-                <div className="flex items-start gap-3">
-                  <div className="relative h-14 w-14 shrink-0 rounded-xl overflow-hidden bg-surface-soft grid place-items-center">
-                    {giftProduct ? (
-                      <Image
-                        src={giftProduct.image}
-                        alt={giftProduct.name}
-                        fill
-                        sizes="56px"
-                        className="object-cover"
-                      />
-                    ) : p.kind === "tiered" ? (
-                      <TrendingUp size={20} className="text-slate-300" />
-                    ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span
-                        className={`flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-0.5 ${
-                          p.active ? "bg-brand-gradient-soft text-brand-800" : "bg-slate-100 text-slate-400"
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${p.active ? "bg-brand-emerald" : "bg-slate-300"}`}
-                        />
-                        {p.active ? "กำลังใช้งานจริง" : "ร่าง — ยังไม่เปิดใช้งาน"}
-                      </span>
-                      <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                        <KindIcon size={11} /> {kindLabel}
-                      </span>
-                    </div>
-                    <p className="font-bold text-brand-ink mt-1">{p.titleTh}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {p.kind === "tiered" ? (
-                        describeCondition(p)
-                      ) : (
-                        <>
-                          {describeCondition(p)} →{" "}
-                          <span className="font-semibold text-brand-ink">
-                            รับฟรี {giftProduct?.name ?? p.giftProductSlug} x{p.giftQty}
+        <>
+          {/* A table, because the questions are comparisons: which of these
+              is live, which are still drafts, which are actually wired to a
+              Shopify discount. As cards each of those answers sat wherever
+              the title above it happened to end. */}
+          <div className="hidden overflow-hidden rounded-xl2 bg-white shadow-card md:block">
+            <table className={adminTable.table}>
+              <thead className={adminTable.thead}>
+                <tr>
+                  <th>โปรโมชั่น</th>
+                  <th className="w-36">แบบ</th>
+                  <th className="w-52">สถานะ</th>
+                  <th className="w-72 text-right">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {promos.map((p) => {
+                  const giftProduct = p.kind === "tiered" ? undefined : getProductBySlug(p.giftProductSlug);
+                  const KindIcon = p.kind === "spend" ? ShoppingBag : p.kind === "bxgy" ? Layers : TrendingUp;
+                  const kindLabel =
+                    p.kind === "spend" ? "ซื้อครบยอด" : p.kind === "bxgy" ? "ซื้อครบจำนวน" : "ขั้นบันได";
+                  const tierDiscountsLinked = p.kind === "tiered" && (p.tiers ?? []).every((t) => t.shopifyDiscountId);
+                  return (
+                    <tr key={p.id} className={adminTable.row}>
+                      <td className={adminTable.cell}>
+                        <span className="flex items-start gap-3">
+                          <span className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-l bg-surface-soft">
+                            {giftProduct ? (
+                              <Image
+                                src={giftProduct.image}
+                                alt={giftProduct.name}
+                                fill
+                                sizes="44px"
+                                className="object-cover"
+                              />
+                            ) : p.kind === "tiered" ? (
+                              <TrendingUp size={18} className="text-slate-300" />
+                            ) : null}
                           </span>
-                        </>
-                      )}
-                    </p>
-                    {(p.shopifyDiscountId || tierDiscountsLinked) && (
-                      <p className="flex items-center gap-1 text-[10px] text-brand-800 mt-1">
-                        <Check size={11} /> เชื่อมกับส่วนลดจริงใน Shopify แล้ว
+                          <span className="min-w-0">
+                            <span className="block font-semibold text-brand-ink">{p.titleTh}</span>
+                            <span className="mt-0.5 block max-w-[60ch] text-[12px] text-slate-500">
+                              {p.kind === "tiered" ? (
+                                describeCondition(p)
+                              ) : (
+                                <>
+                                  {describeCondition(p)} →{" "}
+                                  <span className="font-semibold text-brand-ink">
+                                    รับฟรี {giftProduct?.name ?? p.giftProductSlug} x{p.giftQty}
+                                  </span>
+                                </>
+                              )}
+                            </span>
+                          </span>
+                        </span>
+                      </td>
+                      <td className={adminTable.cell}>
+                        <span className="flex items-center gap-1 whitespace-nowrap text-[12px] text-slate-500">
+                          <KindIcon size={12} /> {kindLabel}
+                        </span>
+                      </td>
+                      <td className={adminTable.cell}>
+                        <Badge tone={p.active ? "brand" : "neutral"}>
+                          {p.active ? "กำลังใช้งานจริง" : "ร่าง — ยังไม่เปิด"}
+                        </Badge>
+                        {(p.shopifyDiscountId || tierDiscountsLinked) && (
+                          <span className="mt-1 flex items-center gap-1 text-[10px] text-brand-800">
+                            <Check size={11} /> เชื่อมส่วนลดใน Shopify แล้ว
+                          </span>
+                        )}
+                      </td>
+                      <td className={adminTable.cell}>
+                        <span className="flex flex-wrap items-center justify-end gap-1.5">
+                          {p.active ? (
+                            <button
+                              onClick={() => deactivate(p.id)}
+                              disabled={busyId === p.id}
+                              className="flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-500 disabled:opacity-50"
+                            >
+                              <Power size={12} /> ปิดใช้งาน
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => activate(p.id)}
+                              disabled={busyId === p.id}
+                              className="flex items-center gap-1 rounded-full bg-brand-gradient px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
+                            >
+                              <Check size={12} /> {busyId === p.id ? "กำลังเปิด…" : "เปิดใช้งานจริง"}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => startEdit(p)}
+                            className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-500"
+                          >
+                            แก้ไข
+                          </button>
+                          <button
+                            onClick={() => remove(p.id)}
+                            disabled={p.active || busyId === p.id}
+                            title={p.active ? "ปิดใช้งานก่อนถึงจะลบได้" : "ลบโปรโมชั่นนี้"}
+                            className="flex items-center gap-1 rounded-full border border-rose-200 px-2.5 py-1 text-[11px] font-semibold text-rose-500 disabled:opacity-30"
+                          >
+                            <Trash2 size={12} /> ลบ
+                          </button>
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="grid items-start gap-3 md:hidden">
+            {promos.map((p) => {
+              const giftProduct = p.kind === "tiered" ? undefined : getProductBySlug(p.giftProductSlug);
+              const KindIcon = p.kind === "spend" ? ShoppingBag : p.kind === "bxgy" ? Layers : TrendingUp;
+              const kindLabel = p.kind === "spend" ? "ซื้อครบยอด" : p.kind === "bxgy" ? "ซื้อครบจำนวน" : "ขั้นบันได";
+              const tierDiscountsLinked = p.kind === "tiered" && (p.tiers ?? []).every((t) => t.shopifyDiscountId);
+              return (
+                <div key={p.id} className="rounded-xl2 border border-slate-100 p-4 shadow-card">
+                  <div className="flex items-start gap-3">
+                    <div className="relative h-14 w-14 shrink-0 rounded-xl overflow-hidden bg-surface-soft grid place-items-center">
+                      {giftProduct ? (
+                        <Image
+                          src={giftProduct.image}
+                          alt={giftProduct.name}
+                          fill
+                          sizes="56px"
+                          className="object-cover"
+                        />
+                      ) : p.kind === "tiered" ? (
+                        <TrendingUp size={20} className="text-slate-300" />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span
+                          className={`flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-0.5 ${
+                            p.active ? "bg-brand-gradient-soft text-brand-800" : "bg-slate-100 text-slate-400"
+                          }`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${p.active ? "bg-brand-emerald" : "bg-slate-300"}`}
+                          />
+                          {p.active ? "กำลังใช้งานจริง" : "ร่าง — ยังไม่เปิดใช้งาน"}
+                        </span>
+                        <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                          <KindIcon size={11} /> {kindLabel}
+                        </span>
+                      </div>
+                      <p className="font-bold text-brand-ink mt-1">{p.titleTh}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {p.kind === "tiered" ? (
+                          describeCondition(p)
+                        ) : (
+                          <>
+                            {describeCondition(p)} →{" "}
+                            <span className="font-semibold text-brand-ink">
+                              รับฟรี {giftProduct?.name ?? p.giftProductSlug} x{p.giftQty}
+                            </span>
+                          </>
+                        )}
                       </p>
+                      {(p.shopifyDiscountId || tierDiscountsLinked) && (
+                        <p className="flex items-center gap-1 text-[10px] text-brand-800 mt-1">
+                          <Check size={11} /> เชื่อมกับส่วนลดจริงใน Shopify แล้ว
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+                    {!p.active && (
+                      <button
+                        onClick={() => activate(p.id)}
+                        disabled={busyId === p.id}
+                        className="flex items-center gap-1 rounded-full bg-brand-gradient text-white text-xs font-semibold px-3 py-1.5 disabled:opacity-50"
+                      >
+                        <Check size={12} /> {busyId === p.id ? "กำลังเปิดใช้งาน…" : "เปิดใช้งานจริง"}
+                      </button>
                     )}
+                    {p.active && (
+                      <button
+                        onClick={() => deactivate(p.id)}
+                        disabled={busyId === p.id}
+                        className="flex items-center gap-1 rounded-full border border-slate-200 text-slate-500 text-xs font-semibold px-3 py-1.5 disabled:opacity-50"
+                      >
+                        <Power size={12} /> ปิดใช้งาน
+                      </button>
+                    )}
+                    <button
+                      onClick={() => startEdit(p)}
+                      className="rounded-full border border-slate-200 text-slate-500 text-xs font-semibold px-3 py-1.5"
+                    >
+                      แก้ไข
+                    </button>
+                    <button
+                      onClick={() => remove(p.id)}
+                      disabled={p.active || busyId === p.id}
+                      title={p.active ? "ปิดใช้งานก่อนถึงจะลบได้" : "ลบโปรโมชั่นนี้"}
+                      className="flex items-center gap-1 rounded-full border border-rose-200 text-rose-500 text-xs font-semibold px-3 py-1.5 disabled:opacity-30"
+                    >
+                      <Trash2 size={12} /> ลบ
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 mt-3 flex-wrap">
-                  {!p.active && (
-                    <button
-                      onClick={() => activate(p.id)}
-                      disabled={busyId === p.id}
-                      className="flex items-center gap-1 rounded-full bg-brand-gradient text-white text-xs font-semibold px-3 py-1.5 disabled:opacity-50"
-                    >
-                      <Check size={12} /> {busyId === p.id ? "กำลังเปิดใช้งาน…" : "เปิดใช้งานจริง"}
-                    </button>
-                  )}
-                  {p.active && (
-                    <button
-                      onClick={() => deactivate(p.id)}
-                      disabled={busyId === p.id}
-                      className="flex items-center gap-1 rounded-full border border-slate-200 text-slate-500 text-xs font-semibold px-3 py-1.5 disabled:opacity-50"
-                    >
-                      <Power size={12} /> ปิดใช้งาน
-                    </button>
-                  )}
-                  <button
-                    onClick={() => startEdit(p)}
-                    className="rounded-full border border-slate-200 text-slate-500 text-xs font-semibold px-3 py-1.5"
-                  >
-                    แก้ไข
-                  </button>
-                  <button
-                    onClick={() => remove(p.id)}
-                    disabled={p.active || busyId === p.id}
-                    title={p.active ? "ปิดใช้งานก่อนถึงจะลบได้" : "ลบโปรโมชั่นนี้"}
-                    className="flex items-center gap-1 rounded-full border border-rose-200 text-rose-500 text-xs font-semibold px-3 py-1.5 disabled:opacity-30"
-                  >
-                    <Trash2 size={12} /> ลบ
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {showForm && (

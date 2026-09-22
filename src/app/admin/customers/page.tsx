@@ -612,7 +612,121 @@ export default function AdminCustomersPage() {
                 {searched.some((s) => !s.connected) && " — ร้านที่ขีดฆ่ายังไม่ได้ค้น ลูกค้าอาจอยู่ในร้านนั้น"}
               </p>
             )}
-            <div className="space-y-2">
+            {/* Same shape as the accounts beside it: the two lists are read
+                against each other, so they should not be two different
+                things to read. */}
+            <div className="hidden md:block">
+              <table className={adminTable.table}>
+                <thead className={adminTable.thead}>
+                  <tr>
+                    <th>ใบลูกค้า</th>
+                    <th className="w-36 text-right">ประวัติซื้อ</th>
+                    <th className="w-44 text-right">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shopify.map((c) => {
+                    const linkedHere = linkedTo(c);
+                    return (
+                      <tr key={`${c.store}-${c.id}`} className={clsx(adminTable.row, linkedHere && "bg-emerald-50")}>
+                        <td className={adminTable.cell}>
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <span
+                              className={clsx(
+                                "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                                c.store === "smoothlife"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : c.store === "smoothe"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : "bg-sky-100 text-sky-800",
+                              )}
+                            >
+                              {c.storeLabel}
+                            </span>
+                            <span className="truncate font-semibold text-brand-ink">
+                              {c.displayName || c.email || "—"}
+                            </span>
+                          </span>
+                          <span className="mt-0.5 block space-y-0.5 text-[11px] text-slate-500">
+                            {c.email && <span className="block">{c.email}</span>}
+                            {c.phone && <span className="block">{c.phone}</span>}
+                            {c.address && <span className="block truncate">{c.address}</span>}
+                            {/* Shopify only returns orders from the last 60
+                                days without the read_all_orders scope, so a
+                                blank date on a record that clearly has orders
+                                means "older than that", not "never bought" —
+                                and reading it as the latter is how the wrong
+                                record gets picked. */}
+                            {provenFor(c) && (
+                              <span className="flex items-start gap-1 text-emerald-700">
+                                <ShieldCheck size={11} className="mt-0.5 shrink-0" />
+                                <span>{provenFor(c)?.reason} — ผูกได้เลยโดยไม่ต้องกรอกเหตุผล</span>
+                              </span>
+                            )}
+                            <span className="block">
+                              ซื้อล่าสุด{" "}
+                              {c.lastOrderAt
+                                ? fmtDate(c.lastOrderAt)
+                                : Number(c.numberOfOrders) > 0
+                                  ? "เกิน 60 วันที่แล้ว"
+                                  : "—"}{" "}
+                              · สร้าง {fmtDate(c.createdAt)}
+                            </span>
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-right">
+                          <span className="block text-[12px] font-semibold text-brand-800">
+                            {c.numberOfOrders} ออเดอร์
+                          </span>
+                          <span className="block text-[11px] tabular-nums text-slate-500">
+                            ฿{Number(c.amountSpent).toLocaleString("th-TH")}
+                          </span>
+                        </td>
+                        <td className={adminTable.cell}>
+                          <span className="flex flex-col items-end gap-1.5">
+                            {linkedHere ? (
+                              <Badge tone="success">ผูกกับบัญชีนี้อยู่</Badge>
+                            ) : provenFor(c) ? (
+                              <Button
+                                size="sm"
+                                disabled={!selected || busy !== ""}
+                                onClick={() => link(c.id, true, c.store)}
+                              >
+                                {busy === c.id ? (
+                                  <Loader2 size={13} className="animate-spin" />
+                                ) : (
+                                  <ShieldCheck size={13} />
+                                )}
+                                ผูกอัตโนมัติ
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                disabled={!selected || busy !== "" || note.trim().length < 3}
+                                onClick={() => link(c.id, false, c.store)}
+                              >
+                                {busy === c.id ? <Loader2 size={13} className="animate-spin" /> : <Link2 size={13} />}
+                                ผูกกับบัญชีนี้
+                              </Button>
+                            )}
+                            <a
+                              href={`https://admin.shopify.com/store/${c.adminHandle}/customers/${shortId(c.id)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-brand-800"
+                            >
+                              <ExternalLink size={11} /> เปิดใน Shopify
+                            </a>
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-2 md:hidden">
               {shopify.map((c) => {
                 const linkedHere = linkedTo(c);
                 return (
