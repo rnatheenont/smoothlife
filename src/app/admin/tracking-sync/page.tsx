@@ -83,6 +83,14 @@ const ACTION: Record<string, { label: string; tone: "success" | "neutral" | "dan
   "run-failed": { label: "รันไม่สำเร็จ", tone: "danger" },
 };
 
+/**
+ * The chips filter by what the sync *decided*, and a "fill" decision can have
+ * ended three ways (written, refused, held back by the cap). The chip is
+ * named for the decision so it does not claim an outcome its rows may not
+ * share — the badge on each row says which one it was.
+ */
+const CHIP_LABEL: Record<string, string> = { fill: "เติมเลขพัสดุ" };
+
 type Payload = {
   mode: string;
   configured: boolean;
@@ -163,9 +171,22 @@ function WhoTag({ row }: { row: TrackingSyncRow }) {
 
 function ResultTag({ row }: { row: TrackingSyncRow }) {
   const meta = ACTION[row.action] ?? { label: row.action, tone: "neutral" as const };
+  // "fill" is a decision, not an outcome, and one badge covered three of
+  // them: a number written to Shopify, one held back by the hourly cap, and
+  // one Shopify refused. Only the first is a success, so only the first is
+  // green — and in dry-run nothing is written at all, which is why the plain
+  // "พร้อมเติม" stays for a row with neither flag.
+  const outcome =
+    row.action !== "fill"
+      ? meta
+      : row.error
+        ? { label: "เขียนไม่สำเร็จ", tone: "danger" as const }
+        : row.applied
+          ? { label: "เขียนลง Shopify แล้ว", tone: "success" as const }
+          : meta;
   return (
     <>
-      <Badge tone={meta.tone}>{meta.label}</Badge>
+      <Badge tone={outcome.tone}>{outcome.label}</Badge>
       {row.action === "conflict" && (row.seen_count ?? 1) > 1 && (
         <span
           className="mt-1 block text-[10px] text-slate-400"
@@ -187,6 +208,10 @@ function Reason({ row }: { row: TrackingSyncRow }) {
           ใน Shopify: {row.existing_numbers.join(", ")}
         </span>
       ) : null}
+      {/* Stored since the first version and never shown: a write Shopify
+          refused was logged with the reason it was *attempted*, so the row
+          read exactly like one that had worked. */}
+      {row.error && <span className="mt-0.5 block text-[11px] text-rose-600">{row.error}</span>}
     </>
   );
 }
@@ -538,7 +563,7 @@ export default function AdminTrackingSyncPage() {
                   key={key}
                   active={filter === key}
                   count={chipCounts[key]}
-                  label={ACTION[key].label}
+                  label={CHIP_LABEL[key] ?? ACTION[key].label}
                   tone={ACTION[key].tone}
                   onClick={() => setFilter(filter === key ? null : key)}
                 />
