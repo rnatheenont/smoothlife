@@ -259,7 +259,7 @@ export default function AdminPointsPage() {
               {tiers.map((t) => (
                 <div
                   key={t.id}
-                  className="rounded-xl2 border border-slate-100 p-3.5 shadow-card flex items-center gap-3"
+                  className="flex items-center gap-3 rounded-xl2 border border-slate-100 bg-white p-3.5 shadow-card"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold text-brand-ink">{t.label_th}</p>
@@ -324,7 +324,7 @@ export default function AdminPointsPage() {
                 <button
                   key={c.id}
                   onClick={() => selectCustomer(c)}
-                  className="w-full flex items-center justify-between rounded-xl2 border border-slate-100 p-3 text-left hover:border-brand-teal transition-colors"
+                  className="flex w-full items-center justify-between rounded-xl2 border border-slate-100 bg-white p-3 text-left transition-colors hover:border-brand-teal"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-brand-ink truncate">{c.displayName || "ไม่ระบุชื่อ"}</p>
@@ -339,7 +339,7 @@ export default function AdminPointsPage() {
           )}
 
           {selected && (
-            <div className="rounded-xl2 border border-slate-100 p-4 shadow-card">
+            <div className="rounded-xl2 border border-slate-100 bg-white p-4 shadow-card">
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <p className="text-sm font-bold text-brand-ink">{selected.displayName || "ไม่ระบุชื่อ"}</p>

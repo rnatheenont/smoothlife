@@ -276,7 +276,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   // signed out — the whole reason someone is there is that they cannot sign
   // in. It renders bare: no gate, no menu.
   if (pathname?.startsWith("/admin/reset-password")) {
-    return <div className="min-h-screen bg-surface-muted dark:bg-slate-950">{children}</div>;
+    return <div className="admin-canvas min-h-screen bg-[#e4ecea] dark:bg-slate-950">{children}</div>;
   }
 
   if (authed === null) {
@@ -285,7 +285,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   if (authed === false) {
     return (
-      <div className="grid min-h-screen place-items-center bg-surface-muted px-4 dark:bg-slate-950">
+      <div className="admin-canvas grid min-h-screen place-items-center bg-[#e4ecea] px-4 dark:bg-slate-950">
         <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-card ring-1 ring-surface-line md:p-8">
           <div className="flex flex-col items-center text-center mb-6">
             <div className="grid h-12 w-12 place-items-center rounded-full bg-brand-gradient-soft mb-3">
@@ -368,9 +368,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <AdminActionProvider>
       {/* The canvas the cards sit on. surface-soft at half opacity came out
-          at #f9fcfb — white cards on it had no edge at all, and a console is
-          mostly cards. */}
-      <div className="flex min-h-screen flex-col bg-surface-muted dark:bg-slate-950">
+          at #f9fcfb and surface-muted at #eef3f2 — both close enough to white
+          that a card on them had no edge at all, and a console is mostly
+          cards. This is a clear step down from white. */}
+      <div className="admin-canvas flex min-h-screen flex-col bg-[#e4ecea] dark:bg-slate-950">
         {/* The console's own bar: the storefront's header, promo strip and
             footer are not part of this tool (see SiteChrome). */}
         <header className="sticky top-0 z-40 flex h-12 items-center gap-2 border-b border-surface-line bg-white px-3 md:h-14 md:gap-3 md:px-4">

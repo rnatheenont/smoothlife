@@ -312,7 +312,10 @@ export default function AdminSubscriptionProductsPage() {
                 const other = productTab === "subscribable" ? r.bundleEligible : r.subscribable;
                 const otherLabel = productTab === "subscribable" ? "จัดชุดเอง" : "สมัครรับประจำ";
                 return (
-                  <div key={r.slug} className="flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-2.5">
+                  <div
+                    key={r.slug}
+                    className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2.5"
+                  >
                     <ProductLine row={r} />
 
                     {/* Shown rather than hidden behind the other tab: switching tabs

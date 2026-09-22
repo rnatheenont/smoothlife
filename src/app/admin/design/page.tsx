@@ -183,7 +183,7 @@ export default function AdminDesignSystemPage() {
       </Section>
 
       <Section title="ตัวอักษร" hint="ชื่อคลาสใช้ได้เลย เช่น text-h3, text-body-s">
-        <div className="flex flex-col gap-2 rounded-l border border-slate-100 p-4">
+        <div className="flex flex-col gap-2 rounded-l border border-slate-100 bg-white p-4">
           {Object.entries(theme.fontSize ?? {}).map(([name, [size, opts]]) => (
             <div key={name} className="flex items-baseline gap-4 border-b border-slate-50 pb-2 last:border-0">
               <code className="w-24 shrink-0 text-[11px] text-slate-400">text-{name}</code>

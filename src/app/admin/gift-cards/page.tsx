@@ -265,7 +265,7 @@ export default function AdminGiftCardsPage() {
 
               <div className="grid items-start gap-2 md:hidden">
                 {history.map((g) => (
-                  <div key={g.id} className="rounded-xl2 border border-slate-100 p-3.5 shadow-card">
+                  <div key={g.id} className="rounded-xl2 border border-slate-100 bg-white p-3.5 shadow-card">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-brand-ink font-mono">•••• {g.lastCharacters}</p>

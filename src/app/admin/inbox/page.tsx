@@ -616,7 +616,7 @@ export default function AdminInboxPage() {
           the middle had room to set a reply in 150-character lines. */}
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)_minmax(0,300px)]">
         {/* list */}
-        <div className="min-h-0 overflow-y-auto rounded-xl2 border border-slate-100">
+        <div className="min-h-0 overflow-y-auto rounded-xl2 border border-slate-100 bg-white">
           {loadingList ? (
             <p className="p-4 text-xs text-slate-400">กำลังโหลด…</p>
           ) : visible.length === 0 ? (
@@ -680,7 +680,7 @@ export default function AdminInboxPage() {
         </div>
 
         {/* thread */}
-        <div className="flex min-h-0 flex-col rounded-xl2 border border-slate-100">
+        <div className="flex min-h-0 flex-col rounded-xl2 border border-slate-100 bg-white">
           {!selected ? (
             <p className="grid flex-1 place-items-center text-xs text-slate-400">เลือกบทสนทนาทางซ้าย</p>
           ) : (
@@ -906,7 +906,7 @@ export default function AdminInboxPage() {
                   // Grouped and taller: thirteen replies through a 128px window
                   // is a scroll to find anything, and the category is what
                   // staff are actually looking under — "จัดส่ง", "คืนสินค้า".
-                  <div className="mb-2 max-h-64 overflow-y-auto rounded-lg border border-slate-100">
+                  <div className="mb-2 max-h-64 overflow-y-auto rounded-lg border border-slate-100 bg-white">
                     {canned.length === 0 ? (
                       <p className="p-2 text-[11px] text-slate-400">ยังไม่มีคำตอบสำเร็จรูป</p>
                     ) : (
@@ -1020,7 +1020,7 @@ export default function AdminInboxPage() {
         </div>
 
         {/* customer panel */}
-        <div className="min-h-0 overflow-y-auto rounded-xl2 border border-slate-100 p-3">
+        <div className="min-h-0 overflow-y-auto rounded-xl2 border border-slate-100 bg-white p-3">
           {!selected ? (
             <p className="text-xs text-slate-400">—</p>
           ) : !customer ? (

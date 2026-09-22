@@ -380,7 +380,7 @@ export default function AdminFreeGiftsPage() {
               const kindLabel = p.kind === "spend" ? "ซื้อครบยอด" : p.kind === "bxgy" ? "ซื้อครบจำนวน" : "ขั้นบันได";
               const tierDiscountsLinked = p.kind === "tiered" && (p.tiers ?? []).every((t) => t.shopifyDiscountId);
               return (
-                <div key={p.id} className="rounded-xl2 border border-slate-100 p-4 shadow-card">
+                <div key={p.id} className="rounded-xl2 border border-slate-100 bg-white p-4 shadow-card">
                   <div className="flex items-start gap-3">
                     <div className="relative h-14 w-14 shrink-0 rounded-xl overflow-hidden bg-surface-soft grid place-items-center">
                       {giftProduct ? (

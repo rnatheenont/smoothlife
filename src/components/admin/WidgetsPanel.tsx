@@ -38,7 +38,11 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
         <div className="flex items-center gap-1">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center flex-1">
-              <div className={`grid h-7 w-7 place-items-center rounded-full text-[10px] font-bold ${i === 1 ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-400"}`}>{i}</div>
+              <div
+                className={`grid h-7 w-7 place-items-center rounded-full text-[10px] font-bold ${i === 1 ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-400"}`}
+              >
+                {i}
+              </div>
               {i < 3 && <div className="h-0.5 flex-1 bg-slate-200 mx-1" />}
             </div>
           ))}
@@ -56,16 +60,28 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
         <div className="flex justify-between">
           {[1, 2, 3].map((i) => (
             <div key={i} className="text-center">
-              <div className={`grid h-6 w-6 place-items-center rounded-full text-[9px] ${i === 1 ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-400"}`}>{i}</div>
+              <div
+                className={`grid h-6 w-6 place-items-center rounded-full text-[9px] ${i === 1 ? "bg-brand-gradient text-white" : "bg-slate-100 text-slate-400"}`}
+              >
+                {i}
+              </div>
               <p className="text-[8px] text-slate-400 mt-1">฿{i * 500}</p>
             </div>
           ))}
         </div>
       );
     case "promotion_card":
-      return <div className="rounded-lg bg-linear-to-t from-black/60 to-brand-teal/40 h-16 flex items-end p-2"><span className="text-white text-[10px] font-bold">ซื้อครบฟรี</span></div>;
+      return (
+        <div className="rounded-lg bg-linear-to-t from-black/60 to-brand-teal/40 h-16 flex items-end p-2">
+          <span className="text-white text-[10px] font-bold">ซื้อครบฟรี</span>
+        </div>
+      );
     case "promotion_badge":
-      return <span className="inline-block text-[10px] font-bold px-2 py-1 rounded-full bg-brand-teal text-white">ของแถม</span>;
+      return (
+        <span className="inline-block text-[10px] font-bold px-2 py-1 rounded-full bg-brand-teal text-white">
+          ของแถม
+        </span>
+      );
     case "popup":
       return (
         <div className="rounded-lg border border-slate-200 p-3 text-center">
@@ -73,7 +89,11 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
         </div>
       );
     case "congrats_bar":
-      return <div className="rounded-full bg-brand-gradient text-white text-[10px] font-semibold text-center py-2">🎉 ปลดล็อกของแถมแล้ว!</div>;
+      return (
+        <div className="rounded-full bg-brand-gradient text-white text-[10px] font-semibold text-center py-2">
+          🎉 ปลดล็อกของแถมแล้ว!
+        </div>
+      );
     case "floating_button":
       return (
         <div className="grid h-12 w-12 place-items-center rounded-full bg-brand-gradient text-white mx-auto text-lg">
@@ -160,7 +180,7 @@ export default function WidgetsPanel() {
         <p className="rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs px-3 py-2">{toggleError}</p>
       )}
       {widgets.map((w) => (
-        <div key={w.key} className="rounded-xl2 border border-slate-100 p-3.5 shadow-card">
+        <div key={w.key} className="rounded-xl2 border border-slate-100 bg-white p-3.5 shadow-card">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="text-sm font-bold text-brand-ink">{w.label_th}</p>
@@ -171,7 +191,9 @@ export default function WidgetsPanel() {
               className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${w.enabled ? "bg-brand-gradient" : "bg-slate-200"}`}
               aria-label={w.enabled ? "ปิดใช้งาน" : "เปิดใช้งาน"}
             >
-              <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${w.enabled ? "translate-x-[22px]" : "translate-x-0"}`} />
+              <span
+                className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${w.enabled ? "translate-x-[22px]" : "translate-x-0"}`}
+              />
             </button>
           </div>
           <div className="flex items-center gap-3 mt-2.5">
@@ -180,7 +202,10 @@ export default function WidgetsPanel() {
               className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand-800"
             >
               <Sliders size={12} /> ปรับแต่ง
-              <ChevronDown size={12} className={openKey === w.key ? "rotate-180 transition-transform" : "transition-transform"} />
+              <ChevronDown
+                size={12}
+                className={openKey === w.key ? "rotate-180 transition-transform" : "transition-transform"}
+              />
             </button>
             <button
               onClick={() => setPreviewKey(previewKey === w.key ? null : w.key)}
@@ -200,7 +225,9 @@ export default function WidgetsPanel() {
                     <label className="block text-[11px] text-slate-400 mb-1">{CONFIG_LABELS[k] ?? k}</label>
                     <input
                       value={drafts[w.key]?.[k] ?? ""}
-                      onChange={(e) => setDrafts((prev) => ({ ...prev, [w.key]: { ...prev[w.key], [k]: e.target.value } }))}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({ ...prev, [w.key]: { ...prev[w.key], [k]: e.target.value } }))
+                      }
                       className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
                     />
                   </div>
