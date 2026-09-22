@@ -2,9 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Repeat, Search, PackagePlus, Package, Loader2, Plus, X, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import {
+  Repeat,
+  Search,
+  PackagePlus,
+  Package,
+  Loader2,
+  Plus,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+} from "lucide-react";
 import { categories } from "@/data/categories";
 import { useAdminAction } from "@/components/admin/header-action";
+import { PageHeader } from "@/components/admin/layout-kit";
 import SubscriptionSets from "@/components/admin/SubscriptionSets";
 import { products } from "@/data/products";
 
@@ -106,7 +118,7 @@ export default function AdminSubscriptionProductsPage() {
         inStock: p.inStock,
         category: p.category,
       })),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -184,14 +196,12 @@ export default function AdminSubscriptionProductsPage() {
 
   return (
     <div>
-      <div className="mb-4">
-        <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
-          <Repeat size={20} className="text-brand-emerald" /> สินค้าที่สมัครสมาชิกได้
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          เลือกว่าสินค้าไหนให้ลูกค้าสมัครรับประจำได้ และสินค้าไหนเอาไปจัดชุดเองได้
-        </p>
-      </div>
+      <PageHeader
+        className="mb-4"
+        icon={<Repeat size={20} className="text-brand-emerald" />}
+        title="สินค้าที่สมัครสมาชิกได้"
+        subtitle="เลือกว่าสินค้าไหนให้ลูกค้าสมัครรับประจำได้ และสินค้าไหนเอาไปจัดชุดเองได้"
+      />
 
       <div className="mb-4 flex flex-wrap gap-1.5">
         {TABS.map((t) => {
@@ -211,7 +221,11 @@ export default function AdminSubscriptionProductsPage() {
               <Icon size={14} />
               {t.label}
               {n !== null && (
-                <span className={`rounded-full px-1.5 text-[11px] ${tab === t.key ? "bg-white/25" : "bg-white text-slate-400"}`}>{n}</span>
+                <span
+                  className={`rounded-full px-1.5 text-[11px] ${tab === t.key ? "bg-white/25" : "bg-white text-slate-400"}`}
+                >
+                  {n}
+                </span>
               )}
             </button>
           );
@@ -224,137 +238,140 @@ export default function AdminSubscriptionProductsPage() {
         <SubscriptionSets catalogue={catalogue} />
       ) : (
         <>
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row">
-        <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={queryInput}
-            onChange={(e) => setQueryInput(e.target.value)}
-            placeholder="พิมพ์ชื่อสินค้าหรือยี่ห้อ เพื่อเพิ่มเข้าลิสต์…"
-            className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-9 text-sm outline-hidden focus:border-brand-teal"
-          />
-          {queryInput && (
-            <button
-              onClick={() => setQueryInput("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              aria-label="ล้างการค้นหา"
-            >
-              <X size={15} />
-            </button>
-          )}
-        </div>
-        {/* Only useful while browsing search results — filtering a list of five
-            things you already curated is noise. */}
-        {searching && (
-          <select
-            value={category}
-            onChange={(e) => {
-              setPage(1);
-              setCategory(e.target.value);
-            }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
-          >
-            <option value="">ทุกหมวดหมู่</option>
-            {categories.map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {c.nameTh}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
-      {searching ? (
-        <p className="mb-2 text-xs text-slate-500">
-          ผลการค้นหา {total.toLocaleString()} รายการ — กด{" "}
-          <span className="font-semibold text-brand-800">เพิ่ม</span> เพื่อเปิด &ldquo;{active.label}&rdquo;
-        </p>
-      ) : (
-        <p className="mb-2 text-xs text-slate-500">
-          เปิด &ldquo;{active.label}&rdquo; อยู่ {onCount.toLocaleString()} รายการ
-        </p>
-      )}
-
-      {loading ? (
-        <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด…</p>
-      ) : rows.length === 0 ? (
-        <div className="rounded-xl2 border border-dashed border-slate-200 py-10 text-center">
-          {searching ? (
-            <p className="text-sm text-slate-400">ไม่พบสินค้าที่ตรงกับคำค้นหา</p>
-          ) : (
-            <>
-              <p className="text-sm text-slate-500">ยังไม่ได้เปิด &ldquo;{active.label}&rdquo; ให้สินค้าไหนเลย</p>
-              <p className="mt-1 text-xs text-slate-400">พิมพ์ค้นหาด้านบนเพื่อเพิ่มสินค้าเข้าลิสต์</p>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1.5">
-          {rows.map((r) => {
-            const on = productTab === "subscribable" ? r.subscribable : r.bundleEligible;
-            const other = productTab === "subscribable" ? r.bundleEligible : r.subscribable;
-            const otherLabel = productTab === "subscribable" ? "จัดชุดเอง" : "สมัครรับประจำ";
-            return (
-              <div key={r.slug} className="flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-2.5">
-                <ProductLine row={r} />
-
-                {/* Shown rather than hidden behind the other tab: switching tabs
-                    to check would mean losing your place in this list. */}
-                {other && (
-                  <span className="hidden shrink-0 rounded-full bg-surface-soft px-2 py-0.5 text-[10px] text-slate-400 sm:block">
-                    {otherLabel} เปิดอยู่
-                  </span>
-                )}
-
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+            <div className="relative flex-1">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={queryInput}
+                onChange={(e) => setQueryInput(e.target.value)}
+                placeholder="พิมพ์ชื่อสินค้าหรือยี่ห้อ เพื่อเพิ่มเข้าลิสต์…"
+                className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-9 text-sm outline-hidden focus:border-brand-teal"
+              />
+              {queryInput && (
                 <button
-                  type="button"
-                  onClick={() => toggle(r.slug, productTab, !on)}
-                  disabled={busySlug === r.slug}
-                  className={`flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
-                    on
-                      ? "border border-slate-200 text-slate-500 hover:border-rose-200 hover:text-rose-500"
-                      : "bg-brand-gradient text-white"
-                  }`}
+                  onClick={() => setQueryInput("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  aria-label="ล้างการค้นหา"
                 >
-                  {busySlug === r.slug ? (
-                    <Loader2 size={13} className="animate-spin" />
-                  ) : on ? (
-                    <X size={13} />
-                  ) : (
-                    <Plus size={13} />
-                  )}
-                  {on ? "เอาออก" : "เพิ่ม"}
+                  <X size={15} />
+                </button>
+              )}
+            </div>
+            {/* Only useful while browsing search results — filtering a list of five
+            things you already curated is noise. */}
+            {searching && (
+              <select
+                value={category}
+                onChange={(e) => {
+                  setPage(1);
+                  setCategory(e.target.value);
+                }}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
+              >
+                <option value="">ทุกหมวดหมู่</option>
+                {categories.map((c) => (
+                  <option key={c.slug} value={c.slug}>
+                    {c.nameTh}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {searching ? (
+            <p className="mb-2 text-xs text-slate-500">
+              ผลการค้นหา {total.toLocaleString()} รายการ — กด{" "}
+              <span className="font-semibold text-brand-800">เพิ่ม</span> เพื่อเปิด &ldquo;{active.label}&rdquo;
+            </p>
+          ) : (
+            <p className="mb-2 text-xs text-slate-500">
+              เปิด &ldquo;{active.label}&rdquo; อยู่ {onCount.toLocaleString()} รายการ
+            </p>
+          )}
+
+          {loading ? (
+            <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด…</p>
+          ) : rows.length === 0 ? (
+            <div className="rounded-xl2 border border-dashed border-slate-200 py-10 text-center">
+              {searching ? (
+                <p className="text-sm text-slate-400">ไม่พบสินค้าที่ตรงกับคำค้นหา</p>
+              ) : (
+                <>
+                  <p className="text-sm text-slate-500">ยังไม่ได้เปิด &ldquo;{active.label}&rdquo; ให้สินค้าไหนเลย</p>
+                  <p className="mt-1 text-xs text-slate-400">พิมพ์ค้นหาด้านบนเพื่อเพิ่มสินค้าเข้าลิสต์</p>
+                </>
+              )}
+            </div>
+          ) : (
+            /* Two per row on a wide screen: each line is a product and one
+           button, so a single column left two thirds of the page empty and
+           doubled the scrolling through a 200-product catalogue. */
+            <div className="grid gap-1.5 xl:grid-cols-2">
+              {rows.map((r) => {
+                const on = productTab === "subscribable" ? r.subscribable : r.bundleEligible;
+                const other = productTab === "subscribable" ? r.bundleEligible : r.subscribable;
+                const otherLabel = productTab === "subscribable" ? "จัดชุดเอง" : "สมัครรับประจำ";
+                return (
+                  <div key={r.slug} className="flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-2.5">
+                    <ProductLine row={r} />
+
+                    {/* Shown rather than hidden behind the other tab: switching tabs
+                    to check would mean losing your place in this list. */}
+                    {other && (
+                      <span className="hidden shrink-0 rounded-full bg-surface-soft px-2 py-0.5 text-[10px] text-slate-400 sm:block">
+                        {otherLabel} เปิดอยู่
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => toggle(r.slug, productTab, !on)}
+                      disabled={busySlug === r.slug}
+                      className={`flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                        on
+                          ? "border border-slate-200 text-slate-500 hover:border-rose-200 hover:text-rose-500"
+                          : "bg-brand-gradient text-white"
+                      }`}
+                    >
+                      {busySlug === r.slug ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : on ? (
+                        <X size={13} />
+                      ) : (
+                        <Plus size={13} />
+                      )}
+                      {on ? "เอาออก" : "เพิ่ม"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
+              <span>ทั้งหมด {total.toLocaleString()} รายการ</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="grid h-7 w-7 place-items-center rounded-full border border-slate-200 disabled:opacity-40"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span>
+                  หน้า {page} จาก {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="grid h-7 w-7 place-items-center rounded-full border border-slate-200 disabled:opacity-40"
+                >
+                  <ChevronRight size={14} />
                 </button>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
-          <span>ทั้งหมด {total.toLocaleString()} รายการ</span>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="grid h-7 w-7 place-items-center rounded-full border border-slate-200 disabled:opacity-40"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <span>
-              หน้า {page} จาก {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="grid h-7 w-7 place-items-center rounded-full border border-slate-200 disabled:opacity-40"
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
-      )}
+            </div>
+          )}
         </>
       )}
     </div>

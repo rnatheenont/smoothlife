@@ -111,6 +111,7 @@ const FULL_WIDTH = [
   "/admin/users",
   "/admin/checkout-transactions",
   "/admin/points",
+  "/admin/subscription-products",
   "/admin/inbox",
   "/admin/seo",
   "/admin/brand-insights",
