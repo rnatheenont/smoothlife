@@ -19,6 +19,7 @@ import { FreeGiftPromo, FreeGiftTier } from "@/data/free-gifts";
 import { getProductBySlug } from "@/data/products";
 import ProductPicker from "@/components/admin/ProductPicker";
 import { useAdminAction } from "@/components/admin/header-action";
+import { PageHeader } from "@/components/admin/layout-kit";
 
 type AdminPromo = FreeGiftPromo & { id: string };
 
@@ -78,9 +79,7 @@ function describeCondition(p: {
   if (p.kind === "tiered") {
     const tiers = p.tiers ?? [];
     if (tiers.length === 0) return "ยังไม่ได้ตั้งระดับ";
-    return tiers
-      .map((t, i) => `ครบ ฿${Number(t.minSubtotal || 0).toLocaleString()} → ระดับ ${i + 1}`)
-      .join(", ");
+    return tiers.map((t, i) => `ครบ ฿${Number(t.minSubtotal || 0).toLocaleString()} → ระดับ ${i + 1}`).join(", ");
   }
   const count = (p.buyProductSlugs ?? []).length;
   const qty = p.buyQty || "___";
@@ -108,7 +107,11 @@ export default function AdminFreeGiftsPage() {
     loadList();
   }, []);
 
-  useAdminAction({ label: "สร้างโปรโมชั่นใหม่", icon: <Plus size={15} aria-hidden />, onClick: () => openCreateForm() });
+  useAdminAction({
+    label: "สร้างโปรโมชั่นใหม่",
+    icon: <Plus size={15} aria-hidden />,
+    onClick: () => openCreateForm(),
+  });
 
   function openCreateForm() {
     setEditingId(null);
@@ -235,29 +238,38 @@ export default function AdminFreeGiftsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-brand-ink flex items-center gap-2">
-          <Gift size={22} className="text-brand-emerald" /> ของแถม & โปรโมชั่น
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          ตั้งโปร &ldquo;ซื้อครบแถมฟรี&rdquo; — ระบบจะเพิ่มของแถมในตะกร้าลูกค้าอัตโนมัติ และผูกกับส่วนลดจริงใน Shopify ให้ทันที
-        </p>
-      </div>
-
-      <button
-        onClick={openCreateForm}
-        className="w-full mb-6 flex items-center justify-center gap-2 rounded-xl2 border-2 border-dashed border-slate-200 hover:border-brand-teal text-slate-500 hover:text-brand-800 py-4 text-sm font-semibold transition-colors"
-      >
-        <Plus size={17} /> สร้างโปรโมชั่นใหม่
-      </button>
+      <PageHeader
+        className="mb-4"
+        icon={<Gift size={20} className="text-brand-emerald" />}
+        title="ของแถม & โปรโมชั่น"
+        subtitle="ตั้งโปร “ซื้อครบแถมฟรี” — ระบบจะเพิ่มของแถมในตะกร้าลูกค้าอัตโนมัติ และผูกกับส่วนลดจริงใน Shopify ให้ทันที"
+        actions={
+          promos.length > 0 && (
+            <button
+              onClick={openCreateForm}
+              className="inline-flex items-center gap-1.5 rounded-full bg-brand-gradient px-4 py-2 text-xs font-semibold text-white"
+            >
+              <Plus size={15} /> สร้างโปรโมชั่นใหม่
+            </button>
+          )
+        }
+      />
 
       {promos.length === 0 ? (
-        <div className="text-center py-10">
-          <Sparkles size={28} className="mx-auto text-slate-300 mb-2" />
-          <p className="text-sm text-slate-400">ยังไม่มีโปรโมชั่น — กดปุ่มด้านบนเพื่อเริ่มสร้างโปรแรก</p>
-        </div>
+        /* The dashed block is the whole invitation when there is nothing
+           here yet. Once there are promos it would be a full row of empty
+           space above them, so it becomes the header's button instead. */
+        <button
+          onClick={openCreateForm}
+          className="flex w-full flex-col items-center justify-center gap-2 rounded-xl2 border-2 border-dashed border-slate-200 py-12 text-sm font-semibold text-slate-500 transition-colors hover:border-brand-teal hover:text-brand-800"
+        >
+          <Sparkles size={26} className="text-slate-300" />
+          ยังไม่มีโปรโมชั่น — กดเพื่อสร้างโปรแรก
+        </button>
       ) : (
-        <div className="space-y-3">
+        /* Two to a row: each promo is a small card, and one per row left a
+           wide screen mostly empty while the tenth promo sat below the fold. */
+        <div className="grid items-start gap-3 xl:grid-cols-2">
           {promos.map((p) => {
             const giftProduct = p.kind === "tiered" ? undefined : getProductBySlug(p.giftProductSlug);
             const KindIcon = p.kind === "spend" ? ShoppingBag : p.kind === "bxgy" ? Layers : TrendingUp;
@@ -268,7 +280,13 @@ export default function AdminFreeGiftsPage() {
                 <div className="flex items-start gap-3">
                   <div className="relative h-14 w-14 shrink-0 rounded-xl overflow-hidden bg-surface-soft grid place-items-center">
                     {giftProduct ? (
-                      <Image src={giftProduct.image} alt={giftProduct.name} fill sizes="56px" className="object-cover" />
+                      <Image
+                        src={giftProduct.image}
+                        alt={giftProduct.name}
+                        fill
+                        sizes="56px"
+                        className="object-cover"
+                      />
                     ) : p.kind === "tiered" ? (
                       <TrendingUp size={20} className="text-slate-300" />
                     ) : null}
@@ -280,7 +298,9 @@ export default function AdminFreeGiftsPage() {
                           p.active ? "bg-brand-gradient-soft text-brand-800" : "bg-slate-100 text-slate-400"
                         }`}
                       >
-                        <span className={`h-1.5 w-1.5 rounded-full ${p.active ? "bg-brand-emerald" : "bg-slate-300"}`} />
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${p.active ? "bg-brand-emerald" : "bg-slate-300"}`}
+                        />
                         {p.active ? "กำลังใช้งานจริง" : "ร่าง — ยังไม่เปิดใช้งาน"}
                       </span>
                       <span className="flex items-center gap-1 text-[10px] text-slate-400">
@@ -293,7 +313,10 @@ export default function AdminFreeGiftsPage() {
                         describeCondition(p)
                       ) : (
                         <>
-                          {describeCondition(p)} → <span className="font-semibold text-brand-ink">รับฟรี {giftProduct?.name ?? p.giftProductSlug} x{p.giftQty}</span>
+                          {describeCondition(p)} →{" "}
+                          <span className="font-semibold text-brand-ink">
+                            รับฟรี {giftProduct?.name ?? p.giftProductSlug} x{p.giftQty}
+                          </span>
                         </>
                       )}
                     </p>
@@ -348,7 +371,9 @@ export default function AdminFreeGiftsPage() {
         <div className="fixed inset-0 z-110 bg-black/40 flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-xl2 bg-white p-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-brand-ink text-lg">{editingId ? "แก้ไขโปรโมชั่น" : "สร้างโปรโมชั่นใหม่"}</h2>
+              <h2 className="font-bold text-brand-ink text-lg">
+                {editingId ? "แก้ไขโปรโมชั่น" : "สร้างโปรโมชั่นใหม่"}
+              </h2>
               <button onClick={() => setShowForm(false)} aria-label="ปิด">
                 <X size={18} />
               </button>
@@ -427,17 +452,24 @@ export default function AdminFreeGiftsPage() {
                   </div>
                 ) : form.kind === "bxgy" ? (
                   <div className="space-y-2">
-                    <label className="block text-[11px] text-slate-400">สินค้าที่ลูกค้าต้องซื้อ (เลือกได้หลายชิ้น)</label>
+                    <label className="block text-[11px] text-slate-400">
+                      สินค้าที่ลูกค้าต้องซื้อ (เลือกได้หลายชิ้น)
+                    </label>
                     {form.buyProductSlugs.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
                         {form.buyProductSlugs.map((s) => {
                           const p = getProductBySlug(s);
                           return (
-                            <span key={s} className="flex items-center gap-1 rounded-full bg-surface-soft px-2.5 py-1 text-xs">
+                            <span
+                              key={s}
+                              className="flex items-center gap-1 rounded-full bg-surface-soft px-2.5 py-1 text-xs"
+                            >
                               {p?.name ?? s}
                               <button
                                 type="button"
-                                onClick={() => setForm({ ...form, buyProductSlugs: form.buyProductSlugs.filter((x) => x !== s) })}
+                                onClick={() =>
+                                  setForm({ ...form, buyProductSlugs: form.buyProductSlugs.filter((x) => x !== s) })
+                                }
                               >
                                 <X size={11} />
                               </button>
@@ -450,7 +482,9 @@ export default function AdminFreeGiftsPage() {
                       onSelect={(slug) =>
                         setForm((f) => ({
                           ...f,
-                          buyProductSlugs: f.buyProductSlugs.includes(slug) ? f.buyProductSlugs : [...f.buyProductSlugs, slug],
+                          buyProductSlugs: f.buyProductSlugs.includes(slug)
+                            ? f.buyProductSlugs
+                            : [...f.buyProductSlugs, slug],
                         }))
                       }
                     />
@@ -496,7 +530,9 @@ export default function AdminFreeGiftsPage() {
                         />
                         {tier.giftProductSlug ? (
                           <div className="flex items-center gap-2 rounded-lg bg-surface-soft p-1.5">
-                            <span className="text-xs text-brand-ink flex-1">{getProductBySlug(tier.giftProductSlug)?.name ?? tier.giftProductSlug}</span>
+                            <span className="text-xs text-brand-ink flex-1">
+                              {getProductBySlug(tier.giftProductSlug)?.name ?? tier.giftProductSlug}
+                            </span>
                             <button
                               type="button"
                               onClick={() => {
@@ -578,16 +614,17 @@ export default function AdminFreeGiftsPage() {
               )}
 
               {/* preview */}
-              {form.titleTh && (form.kind === "tiered" ? form.tiers.some((t) => t.giftProductSlug) : form.giftProductSlug) && (
-                <div className="rounded-xl bg-brand-gradient-soft p-3">
-                  <p className="text-[10px] font-bold text-brand-800 uppercase mb-1">ตัวอย่างที่ลูกค้าจะเห็น</p>
-                  <p className="text-xs text-brand-ink">
-                    {form.kind === "tiered"
-                      ? describeCondition(form)
-                      : `${describeCondition(form)} → รับฟรี ${getProductBySlug(form.giftProductSlug)?.name} x${form.giftQty || 1}`}
-                  </p>
-                </div>
-              )}
+              {form.titleTh &&
+                (form.kind === "tiered" ? form.tiers.some((t) => t.giftProductSlug) : form.giftProductSlug) && (
+                  <div className="rounded-xl bg-brand-gradient-soft p-3">
+                    <p className="text-[10px] font-bold text-brand-800 uppercase mb-1">ตัวอย่างที่ลูกค้าจะเห็น</p>
+                    <p className="text-xs text-brand-ink">
+                      {form.kind === "tiered"
+                        ? describeCondition(form)
+                        : `${describeCondition(form)} → รับฟรี ${getProductBySlug(form.giftProductSlug)?.name} x${form.giftQty || 1}`}
+                    </p>
+                  </div>
+                )}
 
               {/* advanced (optional) */}
               <div>
@@ -596,13 +633,18 @@ export default function AdminFreeGiftsPage() {
                   onClick={() => setShowAdvanced((v) => !v)}
                   className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-600"
                 >
-                  <ChevronDown size={12} className={showAdvanced ? "rotate-180 transition-transform" : "transition-transform"} />
+                  <ChevronDown
+                    size={12}
+                    className={showAdvanced ? "rotate-180 transition-transform" : "transition-transform"}
+                  />
                   ตั้งค่าขั้นสูง (ไม่จำเป็นต้องกรอก)
                 </button>
                 {showAdvanced && (
                   <div className="mt-2 space-y-2">
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">slug (รหัสอ้างอิงภายใน ไม่กรอก = สร้างให้อัตโนมัติ)</label>
+                      <label className="block text-[11px] text-slate-400 mb-1">
+                        slug (รหัสอ้างอิงภายใน ไม่กรอก = สร้างให้อัตโนมัติ)
+                      </label>
                       <input
                         value={form.slug}
                         onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}
@@ -626,7 +668,10 @@ export default function AdminFreeGiftsPage() {
               {formError && <p className="text-xs text-rose-500">{formError}</p>}
               <button
                 type="submit"
-                disabled={submitting || (form.kind === "tiered" ? !form.tiers.some((t) => t.giftProductSlug) : !form.giftProductSlug)}
+                disabled={
+                  submitting ||
+                  (form.kind === "tiered" ? !form.tiers.some((t) => t.giftProductSlug) : !form.giftProductSlug)
+                }
                 className="w-full rounded-full bg-brand-gradient text-white text-sm font-semibold py-3 disabled:opacity-50"
               >
                 {submitting ? "กำลังบันทึก…" : "บันทึกเป็นร่าง (ยังไม่เปิดใช้งาน)"}

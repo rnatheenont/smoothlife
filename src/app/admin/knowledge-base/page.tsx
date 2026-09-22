@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { BookOpen, Loader2, MessageSquare, Pencil, Plus, Trash2 } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
+import { PageHeader } from "@/components/admin/layout-kit";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { CATEGORY_TH, STATUS_TH, type KbArticle, type KbCategory, type KbStatus } from "@/lib/kb";
 import { slugifyThai } from "@/lib/kb-public";
@@ -14,7 +15,14 @@ import { isReviewDue, reviewLabel } from "@/lib/kb-review";
 // from: it quotes these and nothing else, so what is published here is exactly
 // what a customer can be told (see the ai-knowledge-base plan, §B.5).
 
-const EMPTY = { title: "", content: "", category: "faq" as KbCategory, status: "draft" as KbStatus, tags: "", publicSlug: "" };
+const EMPTY = {
+  title: "",
+  content: "",
+  category: "faq" as KbCategory,
+  status: "draft" as KbStatus,
+  tags: "",
+  publicSlug: "",
+};
 
 const STATUS_TONE: Record<KbStatus, string> = {
   published: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -24,7 +32,12 @@ const STATUS_TONE: Record<KbStatus, string> = {
 };
 
 const thaiDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", timeZone: "Asia/Bangkok" });
+  new Date(iso).toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: "2-digit",
+    timeZone: "Asia/Bangkok",
+  });
 
 export default function AdminKnowledgeBasePage() {
   const params = useSearchParams();
@@ -86,7 +99,14 @@ export default function AdminKnowledgeBasePage() {
 
   const startEdit = (a: KbArticle) => {
     setEditingId(a.id);
-    setForm({ title: a.title, content: a.content, category: a.category, status: a.status, tags: a.product_tags.join(", "), publicSlug: a.public_slug ?? "" });
+    setForm({
+      title: a.title,
+      content: a.content,
+      category: a.category,
+      status: a.status,
+      tags: a.product_tags.join(", "),
+      publicSlug: a.public_slug ?? "",
+    });
     setOpen(true);
   };
 
@@ -102,7 +122,10 @@ export default function AdminKnowledgeBasePage() {
           content: form.content,
           category: form.category,
           status: form.status,
-          product_tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+          product_tags: form.tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
           public_slug: form.publicSlug.trim(),
         }),
       });
@@ -153,10 +176,12 @@ export default function AdminKnowledgeBasePage() {
         totals.archived += data.archived;
         lastAt = data.lastSyncAt;
         offset = data.nextOffset;
-        setSyncNote(`กำลังซิงก์… เพิ่มใหม่ ${totals.created} · อัปเดต ${totals.updated} · เหมือนเดิม ${totals.unchanged}`);
+        setSyncNote(
+          `กำลังซิงก์… เพิ่มใหม่ ${totals.created} · อัปเดต ${totals.updated} · เหมือนเดิม ${totals.unchanged}`,
+        );
       }
       setSyncNote(
-        `เพิ่มใหม่ ${totals.created} · อัปเดต ${totals.updated} · เหมือนเดิม ${totals.unchanged}${totals.archived ? ` · เก็บเข้าคลัง ${totals.archived}` : ""}`
+        `เพิ่มใหม่ ${totals.created} · อัปเดต ${totals.updated} · เหมือนเดิม ${totals.unchanged}${totals.archived ? ` · เก็บเข้าคลัง ${totals.archived}` : ""}`,
       );
       setLastSyncAt(lastAt);
       await load();
@@ -206,9 +231,7 @@ export default function AdminKnowledgeBasePage() {
       if (!res.ok || !data.ok) throw new Error(data.error || "นำเข้าไม่สำเร็จ");
       await load();
       setError(
-        data.created > 0 || data.updated > 0
-          ? null
-          : "บทความตั้งต้นอยู่ในฐานความรู้ครบแล้ว และเนื้อหาตรงกับต้นฉบับ"
+        data.created > 0 || data.updated > 0 ? null : "บทความตั้งต้นอยู่ในฐานความรู้ครบแล้ว และเนื้อหาตรงกับต้นฉบับ",
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "นำเข้าไม่สำเร็จ");
@@ -228,7 +251,7 @@ export default function AdminKnowledgeBasePage() {
     return articles.filter(
       (a) =>
         (statusFilter === "all" || (statusFilter === "review_due" ? isReviewDue(a) : a.status === statusFilter)) &&
-        (!q || `${a.title} ${a.content} ${a.product_tags.join(" ")}`.toLowerCase().includes(q))
+        (!q || `${a.title} ${a.content} ${a.product_tags.join(" ")}`.toLowerCase().includes(q)),
     );
   }, [articles, query, statusFilter]);
 
@@ -251,7 +274,7 @@ export default function AdminKnowledgeBasePage() {
 
   const counts = useMemo(
     () => articles.reduce<Record<string, number>>((acc, a) => ({ ...acc, [a.status]: (acc[a.status] ?? 0) + 1 }), {}),
-    [articles]
+    [articles],
   );
 
   const fieldClass =
@@ -259,31 +282,48 @@ export default function AdminKnowledgeBasePage() {
 
   return (
     <div>
-      <div className="mb-5">
-        <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
-          <BookOpen size={22} className="text-brand-emerald" /> ฐานความรู้ AI
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          น้อง Smoothie ตอบลูกค้าได้เฉพาะจากบทความที่ <strong>เผยแพร่แล้ว</strong> ในหน้านี้เท่านั้น — เรื่องไหนไม่มีในนี้ ระบบจะส่งต่อให้ทีมงานตอบ ไม่เดาคำตอบเอง
+      {/* Five stacked lines of preamble used to stand between the page and
+          its articles. What is true of the whole page belongs in the
+          subtitle, what is a link belongs in the header's actions, and the
+          embeddings note is a setting, so it goes under both. */}
+      <PageHeader
+        className="mb-4"
+        icon={<BookOpen size={20} className="text-brand-emerald" />}
+        title="ฐานความรู้ AI"
+        subtitle={
+          <>
+            น้อง Smoothie ตอบลูกค้าได้เฉพาะจากบทความที่ <strong>เผยแพร่แล้ว</strong> ในหน้านี้เท่านั้น —
+            เรื่องไหนไม่มีในนี้ ระบบจะส่งต่อให้ทีมงานตอบ ไม่เดาคำตอบเอง
+            {lastSyncAt && (
+              <span className="mt-0.5 block text-slate-400">
+                ซิงก์ข้อมูลสินค้าล่าสุด {thaiDate(lastSyncAt)} · ระบบซิงก์ให้เองทุกเช้า
+              </span>
+            )}
+          </>
+        }
+        actions={
+          <Link
+            href="/admin/knowledge-base/log"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-brand-800 hover:bg-slate-50"
+          >
+            <MessageSquare size={14} /> log คำตอบของ AI
+          </Link>
+        }
+      />
+
+      {!embeddings && (
+        <p className="mb-4 rounded-xl2 bg-surface-soft px-3 py-2 text-xs leading-relaxed text-slate-500">
+          ตอนนี้ค้นหาด้วยการจับคู่ข้อความ · ถ้าเพิ่มค่า <code className="rounded-sm bg-white px-1">VOYAGE_API_KEY</code>{" "}
+          ใน Vercel ระบบจะเปลี่ยนไปค้นแบบเข้าใจความหมาย (ฝังเวกเตอร์) ให้เองโดยไม่ต้องแก้อะไรเพิ่ม
         </p>
-        {lastSyncAt && (
-          <p className="mt-2 text-xs text-slate-400">ซิงก์ข้อมูลสินค้าล่าสุด {thaiDate(lastSyncAt)} · ระบบซิงก์ให้เองทุกเช้า</p>
-        )}
-        <Link
-          href="/admin/knowledge-base/log"
-          className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-800 hover:underline"
-        >
-          <MessageSquare size={14} /> ดู log คำตอบของ AI
-        </Link>
-        {!embeddings && (
-          <p className="mt-2 rounded-xl2 bg-surface-soft px-3 py-2 text-xs text-slate-500">
-            ตอนนี้ค้นหาด้วยการจับคู่ข้อความ · ถ้าเพิ่มค่า <code className="rounded-sm bg-white px-1">VOYAGE_API_KEY</code> ใน Vercel ระบบจะเปลี่ยนไปค้นแบบเข้าใจความหมาย (ฝังเวกเตอร์) ให้เองโดยไม่ต้องแก้อะไรเพิ่ม
-          </p>
-        )}
-      </div>
+      )}
 
       {error && <p className="mb-4 rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
-      {syncNote && <p className="mb-4 rounded-xl2 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">ซิงก์สินค้าเรียบร้อย — {syncNote}</p>}
+      {syncNote && (
+        <p className="mb-4 rounded-xl2 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          ซิงก์สินค้าเรียบร้อย — {syncNote}
+        </p>
+      )}
 
       <div className="mb-3 inline-flex rounded-full bg-surface-muted p-1">
         {(
@@ -356,7 +396,11 @@ export default function AdminKnowledgeBasePage() {
                 statusFilter === s ? "bg-white text-brand-ink shadow-card" : "text-slate-600 hover:text-brand-ink"
               }`}
             >
-              {s === "all" ? `ทั้งหมด ${articles.length}` : s === "review_due" ? `ถึงรอบรีวิว ${reviewDueCount}` : `${STATUS_TH[s]} ${counts[s] ?? 0}`}
+              {s === "all"
+                ? `ทั้งหมด ${articles.length}`
+                : s === "review_due"
+                  ? `ถึงรอบรีวิว ${reviewDueCount}`
+                  : `${STATUS_TH[s]} ${counts[s] ?? 0}`}
             </button>
           ))}
         </div>
@@ -371,8 +415,14 @@ export default function AdminKnowledgeBasePage() {
         </p>
       ) : shown.length === 0 ? (
         <div className="rounded-xl2 border border-dashed border-surface-line p-10 text-center">
-          <p className="text-sm text-slate-500">{articles.length === 0 ? "ยังไม่มีความรู้ในระบบ" : "ไม่พบบทความที่ตรงกับที่ค้นหา"}</p>
-          <button type="button" onClick={startCreate} className="mt-3 text-sm font-semibold text-brand-800 hover:underline">
+          <p className="text-sm text-slate-500">
+            {articles.length === 0 ? "ยังไม่มีความรู้ในระบบ" : "ไม่พบบทความที่ตรงกับที่ค้นหา"}
+          </p>
+          <button
+            type="button"
+            onClick={startCreate}
+            className="mt-3 text-sm font-semibold text-brand-800 hover:underline"
+          >
             + เพิ่มความรู้ใหม่
           </button>
         </div>
@@ -384,12 +434,20 @@ export default function AdminKnowledgeBasePage() {
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-brand-ink">{a.title}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${STATUS_TONE[a.status]}`}>{STATUS_TH[a.status]}</span>
-                    <span className="rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-slate-500">{CATEGORY_TH[a.category]}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${STATUS_TONE[a.status]}`}
+                    >
+                      {STATUS_TH[a.status]}
+                    </span>
+                    <span className="rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-slate-500">
+                      {CATEGORY_TH[a.category]}
+                    </span>
                   </p>
                   <p className="mt-1 line-clamp-2 text-sm text-slate-500">{a.content}</p>
                   {reviewLabel(a) && (
-                    <p className={`mt-1.5 text-[11px] font-semibold ${isReviewDue(a) ? "text-amber-700" : "text-slate-400"}`}>
+                    <p
+                      className={`mt-1.5 text-[11px] font-semibold ${isReviewDue(a) ? "text-amber-700" : "text-slate-400"}`}
+                    >
                       {reviewLabel(a)}
                       {a.last_reviewed_at ? ` · ตรวจล่าสุด ${thaiDate(a.last_reviewed_at)}` : ""}
                     </p>
@@ -497,7 +555,9 @@ export default function AdminKnowledgeBasePage() {
               placeholder="เขียนคำตอบแบบที่อยากให้ตอบลูกค้าจริง แยกย่อหน้าเมื่อเปลี่ยนประเด็น"
               className={`${fieldClass} min-h-40 py-2 leading-relaxed`}
             />
-            <p className="mt-1 text-xs text-slate-500">ระบบจะตัดเป็นท่อนตามย่อหน้าเพื่อใช้ค้นหา — แยกย่อหน้าให้ชัดจะค้นแม่นขึ้น</p>
+            <p className="mt-1 text-xs text-slate-500">
+              ระบบจะตัดเป็นท่อนตามย่อหน้าเพื่อใช้ค้นหา — แยกย่อหน้าให้ชัดจะค้นแม่นขึ้น
+            </p>
           </div>
 
           <div>

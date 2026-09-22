@@ -2,9 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { RefreshCw, Sparkles, ArrowUpRight, AlertTriangle, MessageSquare, Target, ThumbsUp, Search } from "lucide-react";
+import {
+  RefreshCw,
+  Sparkles,
+  ArrowUpRight,
+  AlertTriangle,
+  MessageSquare,
+  Target,
+  ThumbsUp,
+  Search,
+  TrendingUp,
+} from "lucide-react";
 import { Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
+import { PageHeader } from "@/components/admin/layout-kit";
 
 // What the brand's own signals say, and which keyword is worth the next
 // afternoon.
@@ -101,7 +112,7 @@ export default function BrandInsightsPage() {
         }
         setNote(
           `ซิงก์แล้ว — รีวิว ${reviews} รายการ, Google Trends ${points} จุด` +
-            (failed.length > 0 ? ` · ดึงไม่สำเร็จ ${failed.length} คำ: ${failed.join(", ")}` : "")
+            (failed.length > 0 ? ` · ดึงไม่สำเร็จ ${failed.length} คำ: ${failed.join(", ")}` : ""),
         );
         await load();
         return;
@@ -126,7 +137,6 @@ export default function BrandInsightsPage() {
     onClick: () => run("sync"),
   });
 
-
   const latest = insights[0];
   const totalReviews = sentiment.positive + sentiment.neutral + sentiment.negative;
   const pct = (n: number) => (totalReviews > 0 ? Math.round((n / totalReviews) * 100) : 0);
@@ -140,14 +150,11 @@ export default function BrandInsightsPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-brand-ink md:text-2xl">สัญญาณแบรนด์ &amp; โอกาส SEO</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            รวมสิ่งที่วัดได้จริงจากข้อมูลของร้านเอง — รีวิวบนเว็บ, ความสนใจค้นหาใน Google Trends และคำที่คนค้นในเว็บนี้
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        icon={<TrendingUp size={20} className="text-brand-emerald" />}
+        title="สัญญาณแบรนด์ & โอกาส SEO"
+        subtitle="รวมสิ่งที่วัดได้จริงจากข้อมูลของร้านเอง — รีวิวบนเว็บ, ความสนใจค้นหาใน Google Trends และคำที่คนค้นในเว็บนี้"
+      />
 
       {note && (
         <p className="mt-3 flex items-start gap-2 rounded-lg bg-brand-gradient-soft px-4 py-2.5 text-sm text-brand-ink">
@@ -318,7 +325,9 @@ export default function BrandInsightsPage() {
                           <span className="bg-slate-300" style={{ width: `${(row.neutral / row.total) * 100}%` }} />
                         </span>
                       ) : (
-                        <span className="mt-0.5 block text-[11px] text-slate-400">พูดถึงเฉย ๆ ยังไม่ระบุความรู้สึก</span>
+                        <span className="mt-0.5 block text-[11px] text-slate-400">
+                          พูดถึงเฉย ๆ ยังไม่ระบุความรู้สึก
+                        </span>
                       )}
                     </span>
                     {row.negative > 0 && (
@@ -351,8 +360,9 @@ export default function BrandInsightsPage() {
         <p className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
           <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
           <span>
-            ตัวเลขนี้คือ &ldquo;ควรลงแรงกับคำไหนก่อน&rdquo; ไม่ใช่ &ldquo;โอกาสติดอันดับ&rdquo; — ยังไม่ได้ต่อ Search Console
-            จึงยังไม่รู้อันดับจริงของเรา และช่อง &ldquo;การแข่งขัน&rdquo; เป็นการประเมินจากรูปแบบของคำ ไม่ใช่การวัดหน้าผลค้นหาจริง
+            ตัวเลขนี้คือ &ldquo;ควรลงแรงกับคำไหนก่อน&rdquo; ไม่ใช่ &ldquo;โอกาสติดอันดับ&rdquo; — ยังไม่ได้ต่อ Search
+            Console จึงยังไม่รู้อันดับจริงของเรา และช่อง &ldquo;การแข่งขัน&rdquo; เป็นการประเมินจากรูปแบบของคำ
+            ไม่ใช่การวัดหน้าผลค้นหาจริง
           </span>
         </p>
 
@@ -376,7 +386,10 @@ export default function BrandInsightsPage() {
               </thead>
               <tbody>
                 {opportunities.map((o, i) => (
-                  <tr key={o.keyword} className="border-b border-surface-line/60 last:border-0 hover:bg-surface-soft/60">
+                  <tr
+                    key={o.keyword}
+                    className="border-b border-surface-line/60 last:border-0 hover:bg-surface-soft/60"
+                  >
                     <td className="py-2.5 pl-4 text-xs tabular-nums text-slate-400">{i + 1}</td>
                     <td className="py-2.5 pr-3 font-medium text-brand-ink">
                       {o.page_slug && o.page_type ? (
@@ -405,7 +418,9 @@ export default function BrandInsightsPage() {
                       </span>
                     </td>
                     <td className="py-2.5 pr-3 tabular-nums text-xs text-slate-500">
-                      {o.search_volume_estimate ?? <span title="Google Trends ไม่มีข้อมูลสำหรับคำนี้">ไม่มีข้อมูล</span>}
+                      {o.search_volume_estimate ?? (
+                        <span title="Google Trends ไม่มีข้อมูลสำหรับคำนี้">ไม่มีข้อมูล</span>
+                      )}
                     </td>
                     <td className="py-2.5 pr-3 tabular-nums text-xs text-slate-500">
                       {o.site_searches}

@@ -2,7 +2,26 @@
 
 import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Loader2, Send, Globe, MessageCircle, Facebook, RefreshCw, CheckCheck, Sparkles, Bot, UserRound, Plus, ExternalLink, ClipboardList, ImagePlus, Languages, BookOpen, Check } from "lucide-react";
+import {
+  Loader2,
+  Send,
+  Globe,
+  MessageCircle,
+  Facebook,
+  RefreshCw,
+  CheckCheck,
+  Sparkles,
+  Bot,
+  UserRound,
+  Plus,
+  ExternalLink,
+  ClipboardList,
+  ImagePlus,
+  Languages,
+  BookOpen,
+  Check,
+  Inbox,
+} from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 import { Button } from "@/components/ui";
 import { splitMarker } from "@/lib/chat-markers";
@@ -33,7 +52,13 @@ type Customer = {
   tier: string | null;
   spend12mo: number | null;
   points: number | null;
-  subscriptions: { id: string; product_name: string; status: string; plan_months: number; next_charge_date: string | null }[];
+  subscriptions: {
+    id: string;
+    product_name: string;
+    status: string;
+    plan_months: number;
+    next_charge_date: string | null;
+  }[];
   skinScans?: AdminSkinScan[];
 };
 
@@ -101,7 +126,7 @@ function withLinks(text: string) {
         className="break-all underline underline-offset-2"
       >
         {m[0]}
-      </a>
+      </a>,
     );
     last = m.index + m[0].length;
   }
@@ -155,7 +180,13 @@ function ProductCardView({ slug, card }: { slug: string; card: ProductCard }) {
       className="my-1.5 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2 no-underline hover:border-brand-200"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={card.image} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-lg bg-surface-soft object-cover" />
+      <img
+        src={card.image}
+        alt=""
+        width={48}
+        height={48}
+        className="h-12 w-12 shrink-0 rounded-lg bg-surface-soft object-cover"
+      />
       <span className="min-w-0 flex-1">
         <span className="line-clamp-2 block text-[12px] font-semibold leading-snug text-brand-ink">{card.name}</span>
         <span className="mt-0.5 flex items-baseline gap-1.5">
@@ -269,17 +300,20 @@ export default function AdminInboxPage() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const loadList = useCallback(async (silent = false) => {
-    if (!silent) setLoadingList(true);
-    try {
-      const res = await fetch(`/api/admin/inbox?status=${filter}`);
-      const data = await res.json();
-      setConversations(data.conversations ?? []);
-      setCounts(data.counts ?? {});
-    } finally {
-      if (!silent) setLoadingList(false);
-    }
-  }, [filter]);
+  const loadList = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoadingList(true);
+      try {
+        const res = await fetch(`/api/admin/inbox?status=${filter}`);
+        const data = await res.json();
+        setConversations(data.conversations ?? []);
+        setCounts(data.counts ?? {});
+      } finally {
+        if (!silent) setLoadingList(false);
+      }
+    },
+    [filter],
+  );
 
   useEffect(() => {
     loadList();
@@ -509,7 +543,13 @@ export default function AdminInboxPage() {
   return (
     <div ref={shellRef} style={shellHeight ? { height: shellHeight } : undefined} className="flex flex-col">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-brand-ink">กล่องข้อความรวม</h1>
+        {/* Not PageHeader: this screen measures its own height and fills it
+            with three panes, so the subtitle every other page carries would
+            come straight out of the conversation list. The title matches
+            theirs; the rest of the header does not, on purpose. */}
+        <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
+          <Inbox size={20} className="text-brand-emerald" /> กล่องข้อความรวม
+        </h1>
         <span className="ml-auto flex items-center gap-1.5 text-[11px] text-slate-400">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> อัปเดตอัตโนมัติทุก 5 วินาที
         </span>
@@ -595,7 +635,9 @@ export default function AdminInboxPage() {
                   <span className="flex items-center gap-1.5">
                     <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[c.status] ?? "bg-slate-300"}`} />
                     <Icon size={12} className="shrink-0 text-slate-400" />
-                    <span className={`truncate text-xs ${c.unread > 0 ? "font-bold text-brand-ink" : "font-semibold text-brand-ink"}`}>
+                    <span
+                      className={`truncate text-xs ${c.unread > 0 ? "font-bold text-brand-ink" : "font-semibold text-brand-ink"}`}
+                    >
                       {c.customerName || c.channel_user_id.slice(0, 12)}
                     </span>
                     {c.unread > 0 && (
@@ -616,9 +658,7 @@ export default function AdminInboxPage() {
                   <span className="flex flex-wrap items-center gap-1">
                     <span
                       className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                        c.origin === "escalation"
-                          ? "bg-amber-50 text-amber-700"
-                          : "bg-slate-100 text-slate-500"
+                        c.origin === "escalation" ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-500"
                       }`}
                     >
                       {c.origin === "escalation" ? "ส่งต่อจาก AI" : "แชทกับ AI"}
@@ -677,9 +717,7 @@ export default function AdminInboxPage() {
                 <button
                   onClick={() => setStatus("resolved")}
                   className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                    quietHint
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                      : "border-slate-200 text-slate-600"
+                    quietHint ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-slate-200 text-slate-600"
                   }`}
                 >
                   <CheckCheck size={12} /> ปิดเคส
@@ -738,86 +776,95 @@ export default function AdminInboxPage() {
                               <p className="mt-2 whitespace-pre-wrap text-slate-500">{m.content}</p>
                             </details>
                           ) : (
-                          <div
-                            className={`max-w-[85%] rounded-xl px-3 py-2 text-xs whitespace-pre-wrap ${
-                              fromCustomer
-                                ? "bg-surface-soft text-slate-700"
-                                : m.sender_type === "staff"
-                                  ? "bg-brand-gradient text-white"
-                                  : "bg-slate-100 text-slate-600"
-                            }`}
-                          >
-                            {m.attachmentUrl && (
-                              <a href={m.attachmentUrl} target="_blank" rel="noopener noreferrer" title="เปิดรูปขนาดเต็ม">
-                                {/* Signed URLs expire, so next/image's optimiser —
+                            <div
+                              className={`max-w-[85%] rounded-xl px-3 py-2 text-xs whitespace-pre-wrap ${
+                                fromCustomer
+                                  ? "bg-surface-soft text-slate-700"
+                                  : m.sender_type === "staff"
+                                    ? "bg-brand-gradient text-white"
+                                    : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {m.attachmentUrl && (
+                                <a
+                                  href={m.attachmentUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="เปิดรูปขนาดเต็ม"
+                                >
+                                  {/* Signed URLs expire, so next/image's optimiser —
                                     which caches by URL — is the wrong tool here. */}
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={m.attachmentUrl}
-                                  alt=""
-                                  className="mb-1.5 max-h-40 rounded-lg border border-slate-200 object-contain"
-                                />
-                              </a>
-                            )}
-                            {/* The AI's replies still carry their trailing
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={m.attachmentUrl}
+                                    alt=""
+                                    className="mb-1.5 max-h-40 rounded-lg border border-slate-200 object-contain"
+                                  />
+                                </a>
+                              )}
+                              {/* The AI's replies still carry their trailing
                                 [[ASK: ...]] marker in storage — the customer's
                                 panel needs it to rebuild the answer buttons.
                                 Staff should just see the question. */}
-                            {renderMessage(splitMarker(m.content).text, productCards)}
-                            {/* Staff should be able to see what went out in
+                              {renderMessage(splitMarker(m.content).text, productCards)}
+                              {/* Staff should be able to see what went out in
                                 their name, not just what they typed. */}
-                            {/* On demand. Most threads are Thai and an agent
+                              {/* On demand. Most threads are Thai and an agent
                                 who reads English does not need this, so
                                 translating every foreign message on open would
                                 spend a model call on work nobody asked for. */}
-                            {m.sender_type === "customer" &&
-                              !m.translation &&
-                              !/[\u0E00-\u0E7F]/.test(m.content) &&
-                              /\p{L}/u.test(m.content) && (
-                                <button
-                                  onClick={() => translate(m.id)}
-                                  disabled={translating === m.id}
-                                  className="mt-1.5 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 hover:bg-surface-soft disabled:opacity-50"
-                                >
-                                  {translating === m.id ? <Loader2 size={10} className="animate-spin" /> : <Languages size={10} />}
-                                  {translating === m.id ? "กำลังแปล…" : "แปลเป็นไทย"}
-                                </button>
+                              {m.sender_type === "customer" &&
+                                !m.translation &&
+                                !/[\u0E00-\u0E7F]/.test(m.content) &&
+                                /\p{L}/u.test(m.content) && (
+                                  <button
+                                    onClick={() => translate(m.id)}
+                                    disabled={translating === m.id}
+                                    className="mt-1.5 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 hover:bg-surface-soft disabled:opacity-50"
+                                  >
+                                    {translating === m.id ? (
+                                      <Loader2 size={10} className="animate-spin" />
+                                    ) : (
+                                      <Languages size={10} />
+                                    )}
+                                    {translating === m.id ? "กำลังแปล…" : "แปลเป็นไทย"}
+                                  </button>
+                                )}
+                              {m.translation && (
+                                <span className="mt-1.5 block border-t border-slate-200 pt-1.5 text-[11px] text-slate-500">
+                                  <span className="font-semibold">แปล:</span> {m.translation}
+                                </span>
                               )}
-                            {m.translation && (
-                              <span className="mt-1.5 block border-t border-slate-200 pt-1.5 text-[11px] text-slate-500">
-                                <span className="font-semibold">แปล:</span> {m.translation}
-                              </span>
-                            )}
-                            {m.delivered_content && (
-                              <span className="mt-1.5 block border-t border-white/25 pt-1.5 text-[11px] opacity-90">
-                                <span className="font-semibold">ส่งให้ลูกค้าเป็น:</span> {m.delivered_content}
-                              </span>
-                            )}
-                            {/* A real question with an answer a person already
+                              {m.delivered_content && (
+                                <span className="mt-1.5 block border-t border-white/25 pt-1.5 text-[11px] opacity-90">
+                                  <span className="font-semibold">ส่งให้ลูกค้าเป็น:</span> {m.delivered_content}
+                                </span>
+                              )}
+                              {/* A real question with an answer a person already
                                 approved is the best thing the knowledge base
                                 can be fed — one tap files it as a draft. */}
-                            {!fromCustomer && !m.is_draft && m.content.trim().length > 20 && (
-                              <button
-                                onClick={() => promoteToKb(m)}
-                                disabled={promoting === m.id || promoted.includes(m.id)}
-                                title="เก็บคำตอบนี้ไว้ให้ AI ใช้ตอบครั้งหน้า (บันทึกเป็นฉบับร่าง)"
-                                className={`mt-1.5 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                  m.sender_type === "staff"
-                                    ? "bg-white/20 text-white hover:bg-white/30"
-                                    : "border border-slate-200 bg-white text-slate-500 hover:bg-surface-soft"
-                                } disabled:opacity-60`}
-                              >
-                                {promoting === m.id ? (
-                                  <Loader2 size={10} className="animate-spin" />
-                                ) : promoted.includes(m.id) ? (
-                                  <Check size={10} />
-                                ) : (
-                                  <BookOpen size={10} />
-                                )}
-                                {promoted.includes(m.id) ? "เก็บเป็นฉบับร่างแล้ว" : "เพิ่มเข้าฐานความรู้"}
-                              </button>
-                            )}
-                          </div>
+                              {!fromCustomer && !m.is_draft && m.content.trim().length > 20 && (
+                                <button
+                                  onClick={() => promoteToKb(m)}
+                                  disabled={promoting === m.id || promoted.includes(m.id)}
+                                  title="เก็บคำตอบนี้ไว้ให้ AI ใช้ตอบครั้งหน้า (บันทึกเป็นฉบับร่าง)"
+                                  className={`mt-1.5 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                    m.sender_type === "staff"
+                                      ? "bg-white/20 text-white hover:bg-white/30"
+                                      : "border border-slate-200 bg-white text-slate-500 hover:bg-surface-soft"
+                                  } disabled:opacity-60`}
+                                >
+                                  {promoting === m.id ? (
+                                    <Loader2 size={10} className="animate-spin" />
+                                  ) : promoted.includes(m.id) ? (
+                                    <Check size={10} />
+                                  ) : (
+                                    <BookOpen size={10} />
+                                  )}
+                                  {promoted.includes(m.id) ? "เก็บเป็นฉบับร่างแล้ว" : "เพิ่มเข้าฐานความรู้"}
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -868,7 +915,7 @@ export default function AdminInboxPage() {
                           const key = c.category || "ทั่วไป";
                           (acc[key] ??= []).push(c);
                           return acc;
-                        }, {})
+                        }, {}),
                       ).map(([category, items]) => (
                         <div key={category}>
                           <p className="sticky top-0 bg-surface-soft px-2 py-1 text-[10px] font-semibold text-slate-500">
@@ -899,7 +946,13 @@ export default function AdminInboxPage() {
                 {attachment && (
                   <div className="mb-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-surface-soft p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={attachment.dataUrl} alt="" width={48} height={48} className="h-12 w-12 rounded-sm object-cover" />
+                    <img
+                      src={attachment.dataUrl}
+                      alt=""
+                      width={48}
+                      height={48}
+                      className="h-12 w-12 rounded-sm object-cover"
+                    />
                     <span className="flex-1 text-[11px] text-slate-500">แนบรูปนี้ไปกับข้อความ</span>
                     <button
                       onClick={() => setAttachment(null)}
