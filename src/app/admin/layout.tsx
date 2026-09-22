@@ -48,49 +48,80 @@ type NavItem = {
   ownerOnly?: boolean;
 };
 
+// Grouped by when the work happens, and named the way the person doing it
+// would say it — not after the system behind it. "รายการซื้อ (2C2P)" named a
+// payment gateway; "Widgets" named a React concept; "สัญญาณแบรนด์" named
+// nothing anyone would search for. The pages did not change, only what the
+// menu calls them.
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "",
     items: [{ href: "/admin", label: "ภาพรวม", icon: LayoutDashboard, permission: null }],
   },
   {
-    label: "ออเดอร์ & ลูกค้า",
+    // Queues: things that arrive on their own and wait for a person.
+    label: "งานประจำวัน",
     items: [
       { href: "/admin/inbox", label: "กล่องข้อความ", icon: Inbox, permission: "inbox.manage" },
-      { href: "/admin/tracking-sync", label: "ซิงก์เลขพัสดุ", icon: Truck, permission: "tracking_sync.manage" },
-      { href: "/admin/customers", label: "ลูกค้า & ผูกบัญชี", icon: Users, permission: "customers.manage" },
-      { href: "/admin/checkout-transactions", label: "รายการซื้อ (2C2P)", icon: Receipt, permission: "checkout.view" },
+      { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText, permission: "reviews.manage" },
+      { href: "/admin/tracking-sync", label: "เลขพัสดุจากคลัง", icon: Truck, permission: "tracking_sync.manage" },
+    ],
+  },
+  {
+    label: "ลูกค้า & การเงิน",
+    items: [
+      { href: "/admin/customers", label: "ลูกค้า & บัญชีผู้ใช้", icon: Users, permission: "customers.manage" },
+      {
+        href: "/admin/checkout-transactions",
+        label: "การชำระเงิน & คืนเงิน",
+        icon: Receipt,
+        permission: "checkout.view",
+      },
+      { href: "/admin/points", label: "แต้มสะสม & ของรางวัล", icon: Award, permission: "points.view" },
+      { href: "/admin/gift-cards", label: "บัตรของขวัญ", icon: CreditCard, permission: "gift_cards.manage" },
     ],
   },
   {
     label: "การขาย & โปรโมชั่น",
     items: [
       { href: "/admin/flash-sale", label: "Flash Sale", icon: Zap, permission: "flash_sale.view" },
-      { href: "/admin/free-gifts", label: "โปรโมชั่น", icon: Gift, permission: "free_gifts.manage" },
-      { href: "/admin/free-gifts/widgets", label: "Widgets", icon: SlidersHorizontal, permission: "free_gifts.manage" },
-      { href: "/admin/gift-cards", label: "บัตรของขวัญ", icon: CreditCard, permission: "gift_cards.manage" },
+      { href: "/admin/free-gifts", label: "ของแถม & โปรโมชั่น", icon: Gift, permission: "free_gifts.manage" },
+      {
+        href: "/admin/free-gifts/widgets",
+        label: "กล่องโปรโมชั่นหน้าเว็บ",
+        icon: SlidersHorizontal,
+        permission: "free_gifts.manage",
+      },
       {
         href: "/admin/subscription-products",
-        label: "สินค้าสมัครสมาชิก",
+        label: "สินค้าสมัครรับประจำ",
         icon: Repeat,
         permission: "subscription_products.manage",
       },
-      { href: "/admin/points", label: "คะแนน", icon: Award, permission: "points.view" },
     ],
   },
   {
-    label: "เนื้อหา & ระบบ",
+    label: "เนื้อหา & การค้นหา",
     items: [
       { href: "/admin/knowledge-base", label: "ฐานความรู้ AI", icon: BookOpen, permission: "kb.draft" },
-      { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText, permission: "reviews.manage" },
+      { href: "/admin/seo", label: "SEO หน้าเว็บ", icon: Search, permission: "seo.manage" },
+      {
+        href: "/admin/brand-insights",
+        label: "เสียงลูกค้า & คำค้นหา",
+        icon: TrendingUp,
+        permission: "brand_signals.view",
+      },
       {
         href: "/admin/line-rich-menu",
         label: "เมนู LINE OA",
         icon: MessageCircle,
         permission: "line_rich_menu.manage",
       },
-      { href: "/admin/seo", label: "SEO", icon: Search, permission: "seo.manage" },
-      { href: "/admin/brand-insights", label: "สัญญาณแบรนด์", icon: TrendingUp, permission: "brand_signals.view" },
+    ],
+  },
+  {
+    label: "ตั้งค่าระบบ",
+    items: [
       { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette, permission: null },
       // Only the owner may open it, so only the owner is shown it. The page
       // still refuses anyone else on its own (see /api/admin/users) — this
@@ -426,9 +457,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               {/* On a phone the menu is one scrollable row of the same links. */}
               <nav className="flex gap-1.5 overflow-x-auto border-b border-surface-line bg-white px-3 py-2 lg:flex-col lg:gap-0 lg:overflow-visible lg:border-0 lg:p-0">
                 {groups.map((group) => (
-                  <div key={group.label} className="contents lg:mb-4 lg:block">
+                  <div key={group.label} className="contents lg:mb-3 lg:block">
+                    {/* A rule above each heading, not just space: five groups
+                        of grey labels at the same size read as one list with
+                        words in it. */}
                     {group.label && !collapsed && (
-                      <p className="mb-1.5 hidden px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 lg:block">
+                      <p className="mb-1.5 mt-3 hidden border-t border-surface-line px-3 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 first:mt-0 first:border-0 first:pt-0 lg:block">
                         {group.label}
                       </p>
                     )}

@@ -641,7 +641,52 @@ export default function AdminTrackingSyncPage() {
             </p>
           </div>
 
-          <ul className="mt-3 grid gap-2 lg:grid-cols-2">
+          {/* Rows of one shape, so the two numbers line up down the page and
+              "is this the same tracking number twice" is a glance rather than
+              a read. Cards below md, where five columns do not fit. */}
+          <div className="mt-3 hidden overflow-hidden rounded-l bg-white md:block">
+            <table className={adminTable.table}>
+              <thead className={adminTable.thead}>
+                <tr>
+                  <th className="w-40">ออเดอร์</th>
+                  <th className="w-56">ใน Shopify</th>
+                  <th className="w-56">soko ส่งมา</th>
+                  <th>เหตุผล</th>
+                  <th className="w-56 text-right">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {openConflicts.map((r) => (
+                  <tr key={r.id} className={adminTable.row}>
+                    <td className={adminTable.cell}>
+                      <span className="font-semibold text-brand-ink">{r.resolved_order_name || r.order_ref}</span>
+                      {(r.seen_count ?? 1) > 1 && (
+                        <span className="mt-0.5 block text-[11px] text-slate-400">เจอซ้ำ {r.seen_count} รอบ</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 font-mono text-[12px] text-rose-600">
+                      {r.existing_numbers?.join(", ") || "—"}
+                    </td>
+                    <td className="px-3 py-2.5 font-mono text-[12px] text-brand-800">{r.tracking_number}</td>
+                    <td className="px-3 py-2.5 text-[12px] leading-relaxed text-slate-500">{r.reason}</td>
+                    <td className={adminTable.cell}>
+                      <span className="flex flex-wrap items-center justify-end gap-1.5">
+                        <RowActions
+                          row={r}
+                          shopDomain={data?.shopDomain ?? null}
+                          resolving={resolving}
+                          onResolve={resolve}
+                          onAttach={attach}
+                        />
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <ul className="mt-3 grid gap-2 md:hidden">
             {openConflicts.map((r) => (
               <li
                 key={r.id}
@@ -692,7 +737,44 @@ export default function AdminTrackingSyncPage() {
             </p>
           </div>
 
-          <ul className="mt-3 grid gap-2 lg:grid-cols-2">
+          <div className="mt-3 hidden overflow-hidden rounded-l bg-white md:block">
+            <table className={adminTable.table}>
+              <thead className={adminTable.thead}>
+                <tr>
+                  <th className="w-40">ออเดอร์</th>
+                  <th className="w-40">อ้างอิงของคลัง</th>
+                  <th className="w-56">เลขกล่องนี้</th>
+                  <th className="w-40">เข้ามาเมื่อ</th>
+                  <th className="w-56 text-right">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {followUps.map((r) => (
+                  <tr key={r.id} className={adminTable.row}>
+                    <td className={adminTable.cell}>
+                      <span className="font-semibold text-brand-ink">{r.resolved_order_name || r.order_ref}</span>
+                    </td>
+                    <td className="px-3 py-2.5 font-mono text-[12px] text-slate-400">{r.order_ref}</td>
+                    <td className="px-3 py-2.5 font-mono text-[12px] text-brand-800">{r.tracking_number}</td>
+                    <td className={adminTable.muted}>{fmt(r.received_at)}</td>
+                    <td className={adminTable.cell}>
+                      <span className="flex flex-wrap items-center justify-end gap-1.5">
+                        <RowActions
+                          row={r}
+                          shopDomain={data?.shopDomain ?? null}
+                          resolving={resolving}
+                          onResolve={resolve}
+                          onAttach={attach}
+                        />
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <ul className="mt-3 grid gap-2 md:hidden">
             {followUps.map((r) => (
               <li
                 key={r.id}

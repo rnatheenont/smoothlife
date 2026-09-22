@@ -19,7 +19,7 @@ import {
 import { Badge, Button, Card } from "@/components/ui";
 import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader, SectionTitle } from "@/components/admin/layout-kit";
+import { PageHeader, SectionTitle, adminTable } from "@/components/admin/layout-kit";
 
 // Attaching a returning customer's purchase history to their login.
 //
@@ -400,7 +400,109 @@ export default function AdminCustomersPage() {
                 ลองค้นด้วยเบอร์โทรหรือชื่อที่ลูกค้าใช้สมัครแทน
               </p>
             )}
-            <div className="space-y-2">
+            {/* A table, not a stack of buttons: choosing between two accounts
+                means comparing them, and the badge that says which is linked
+                used to sit wherever the name above it happened to end. It
+                also drops a piece of invalid HTML — the merge control was a
+                button inside a button, which is why it was a span with
+                role="button". Cards below md. */}
+            <div className="hidden md:block">
+              <table className={adminTable.table}>
+                <thead className={adminTable.thead}>
+                  <tr>
+                    <th>บัญชี</th>
+                    <th className="w-44">การผูก</th>
+                    <th className="w-44 text-right">เลือก</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {accounts.map((a) => (
+                    <tr
+                      key={a.id}
+                      onClick={() => setSelected(a.id)}
+                      aria-selected={selected === a.id}
+                      className={clsx(
+                        adminTable.row,
+                        "cursor-pointer",
+                        selected === a.id && "bg-brand-gradient-soft hover:bg-brand-gradient-soft",
+                      )}
+                    >
+                      <td className={adminTable.cell}>
+                        <span className="block truncate font-semibold text-brand-ink">
+                          {a.display_name || "(ไม่มีชื่อ)"}
+                        </span>
+                        <span className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
+                          {a.phone && <span>{a.phone}</span>}
+                          {a.identities.map((i) => (
+                            <span key={i.provider + i.uid}>
+                              {PROVIDER_LABEL[i.provider] || i.provider}:{" "}
+                              {i.uid.length > 30 ? `${i.uid.slice(0, 12)}…` : i.uid}
+                              {i.provider === "email" && !i.verified && " (ยังไม่ยืนยัน)"}
+                            </span>
+                          ))}
+                          <span>สมัคร {fmtDate(a.created_at)}</span>
+                        </span>
+                      </td>
+                      <td className={adminTable.cell}>
+                        {a.shopify_customer_id ? (
+                          <Badge tone="success">ผูกแล้ว #{shortId(a.shopify_customer_id)}</Badge>
+                        ) : (
+                          <Badge tone="warning">ยังไม่ผูก</Badge>
+                        )}
+                        {(a.storeLinks || []).length > 0 && (
+                          <span className="mt-1 flex flex-wrap gap-1">
+                            {(a.storeLinks || []).map((l) => (
+                              <Badge key={l.store} tone="info">
+                                {STORE_NAME[l.store] || l.store} #{shortId(l.shopifyCustomerId)}
+                              </Badge>
+                            ))}
+                          </span>
+                        )}
+                      </td>
+                      <td className={adminTable.cell}>
+                        <span className="flex flex-wrap items-center justify-end gap-1.5">
+                          {selected === a.id ? (
+                            <span className="text-[11px] font-semibold text-brand-800">เลือกอยู่</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelected(a.id);
+                              }}
+                              className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                            >
+                              เลือกบัญชีนี้
+                            </button>
+                          )}
+                          {/* Two accounts for one person is our doing, not
+                              theirs — the second exists because the first
+                              showed no orders. Joining them is the fix; the
+                              note is required because the losing account is
+                              gone afterwards. */}
+                          {selected && selected !== a.id && (
+                            <button
+                              type="button"
+                              disabled={note.trim().length < 3 || busy !== ""}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void merge(a.id);
+                              }}
+                              className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-white disabled:text-slate-300"
+                            >
+                              {busy === a.id ? <Loader2 size={11} className="animate-spin" /> : <Merge size={11} />}
+                              รวมเข้ากับที่เลือก
+                            </button>
+                          )}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-2 md:hidden">
               {accounts.map((a) => (
                 <button
                   key={a.id}

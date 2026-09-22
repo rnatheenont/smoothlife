@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { BookOpen, Loader2, MessageSquare, Pencil, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Loader2, MessageSquare, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { Card } from "@/components/ui";
-import { FilterChip, PageHeader, adminTable } from "@/components/admin/layout-kit";
+import { PageHeader, adminTable } from "@/components/admin/layout-kit";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { CATEGORY_TH, STATUS_TH, type KbArticle, type KbCategory, type KbStatus } from "@/lib/kb";
 import { slugifyThai } from "@/lib/kb-public";
@@ -287,6 +287,26 @@ export default function AdminKnowledgeBasePage() {
     [articles],
   );
 
+  /** Every filter that is not at its default, with the way to switch it off. */
+  const activeFilters = [
+    source !== "all" && {
+      label: `แหล่งที่มา: ${source === "curated" ? "ทีมเขียนเอง" : "จากสินค้า"}`,
+      clear: () => setSource("all"),
+    },
+    statusFilter !== "all" && {
+      label: `สถานะ: ${statusFilter === "review_due" ? "ถึงรอบรีวิว" : STATUS_TH[statusFilter]}`,
+      clear: () => setStatusFilter("all"),
+    },
+    categoryFilter !== "all" && {
+      label: `ประเภท: ${CATEGORY_TH[categoryFilter]}`,
+      clear: () => setCategoryFilter("all"),
+    },
+    query.trim() !== "" && { label: `ค้นหา: ${query.trim()}`, clear: () => setQuery("") },
+  ].filter(Boolean) as { label: string; clear: () => void }[];
+
+  const selectClass =
+    "min-h-9 rounded-l border border-surface-line bg-white px-2.5 text-[12px] font-semibold text-brand-ink focus:border-brand-800 focus:outline-none";
+
   const fieldClass =
     "min-h-11 w-full rounded-xl2 border border-surface-line bg-white px-3 text-sm text-brand-ink focus:border-brand-800 focus:outline-none";
 
@@ -387,66 +407,106 @@ export default function AdminKnowledgeBasePage() {
             </span>
           </div>
 
-          {/* Both filters as the same kind of control, because they are the
-              same kind of question. Who wrote it, and what state it is in. */}
-          <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-0.5">
-            {(
-              [
-                ["curated", `ทีมเขียนเอง`, (sourceCounts.manual ?? 0) + (sourceCounts.chat_promoted ?? 0)],
-                ["shopify_sync", `จากสินค้า`, sourceCounts.shopify_sync ?? 0],
-                ["all", "ทุกแหล่งที่มา", undefined],
-              ] as const
-            ).map(([value, label, count]) => (
-              <FilterChip
-                key={value}
-                label={label}
-                count={count}
-                active={source === value}
-                onClick={() => setSource(value)}
-              />
-            ))}
-            <span className="mx-1 h-5 w-px shrink-0 bg-surface-line" aria-hidden />
-            {(["all", "published", "draft", "needs_review", "archived", "review_due"] as const).map((st) => (
-              <FilterChip
-                key={st}
-                label={st === "all" ? "ทุกสถานะ" : st === "review_due" ? "ถึงรอบรีวิว" : STATUS_TH[st]}
-                count={st === "all" ? articles.length : st === "review_due" ? reviewDueCount : (counts[st] ?? 0)}
-                dot={st === "review_due" && reviewDueCount > 0 ? "warning" : undefined}
-                active={statusFilter === st}
-                onClick={() => setStatusFilter(st)}
-              />
-            ))}
-          </div>
+          {/* Three axes, three named controls. As chips they were three rows
+              of identical pills where nothing said which row meant what, and
+              the counts came from two different places: "จากสินค้า 941" is
+              everything on the server, "ทุกสถานะ 300" is what it sent us.
+              Counts now sit inside the menu they belong to, and vanish when
+              the list is truncated rather than contradicting the one above. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
+              แหล่งที่มา
+              <select
+                value={source}
+                onChange={(e) => setSource(e.target.value as typeof source)}
+                className={selectClass}
+              >
+                <option value="all">ทั้งหมด</option>
+                <option value="curated">
+                  ทีมเขียนเอง ({(sourceCounts.manual ?? 0) + (sourceCounts.chat_promoted ?? 0)})
+                </option>
+                <option value="shopify_sync">จากสินค้า ({sourceCounts.shopify_sync ?? 0})</option>
+              </select>
+            </label>
 
-          {/* The third axis the page sorts by, on its own line: nine chips
-              and eight more is a strip nobody reaches the end of. Only the
-              categories that have something in them — a knowledge base with
-              no ingredient articles should not offer to filter to none. */}
-          <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-0.5">
-            <span className="mr-0.5 shrink-0 text-[11px] text-slate-400">ประเภท</span>
-            <FilterChip
-              label="ทุกประเภท"
-              count={articles.length}
-              active={categoryFilter === "all"}
-              onClick={() => setCategoryFilter("all")}
-            />
-            {(Object.keys(CATEGORY_TH) as KbCategory[])
-              .filter((c) => (categoryCounts[c] ?? 0) > 0 || categoryFilter === c)
-              .map((c) => (
-                <FilterChip
-                  key={c}
-                  label={CATEGORY_TH[c]}
-                  count={categoryCounts[c] ?? 0}
-                  active={categoryFilter === c}
-                  onClick={() => setCategoryFilter(categoryFilter === c ? "all" : c)}
-                />
-              ))}
+            <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
+              สถานะ
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                className={selectClass}
+              >
+                <option value="all">ทั้งหมด</option>
+                {(["published", "draft", "needs_review", "archived"] as const).map((st) => (
+                  <option key={st} value={st}>
+                    {STATUS_TH[st]}
+                    {truncated ? "" : ` (${counts[st] ?? 0})`}
+                  </option>
+                ))}
+                <option value="review_due">ถึงรอบรีวิว{truncated ? "" : ` (${reviewDueCount})`}</option>
+              </select>
+            </label>
+
+            <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
+              ประเภท
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
+                className={selectClass}
+              >
+                <option value="all">ทั้งหมด</option>
+                {(Object.keys(CATEGORY_TH) as KbCategory[])
+                  .filter((c) => (categoryCounts[c] ?? 0) > 0 || categoryFilter === c)
+                  .map((c) => (
+                    <option key={c} value={c}>
+                      {CATEGORY_TH[c]}
+                      {truncated ? "" : ` (${categoryCounts[c] ?? 0})`}
+                    </option>
+                  ))}
+              </select>
+            </label>
+
+            {/* What is actually on, and one click to take it off. With three
+                menus it is otherwise possible to filter to nothing and not
+                see why. */}
+            {activeFilters.length > 0 && (
+              <span className="flex flex-wrap items-center gap-1.5">
+                {activeFilters.map((f) => (
+                  <button
+                    key={f.label}
+                    type="button"
+                    onClick={f.clear}
+                    className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-800 hover:bg-brand-100"
+                  >
+                    {f.label}
+                    <X size={11} aria-hidden />
+                  </button>
+                ))}
+                {activeFilters.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSource("all");
+                      setStatusFilter("all");
+                      setCategoryFilter("all");
+                      setQuery("");
+                    }}
+                    className="text-[11px] font-semibold text-slate-500 hover:text-brand-800"
+                  >
+                    ล้างทั้งหมด
+                  </button>
+                )}
+              </span>
+            )}
           </div>
         </div>
 
         <div className="p-3">
-          {truncated && !loading && (
-            <p className="mb-2 text-xs text-slate-400">แสดง 300 รายการล่าสุด — ใช้ช่องค้นหาเพื่อหาบทความที่ต้องการ</p>
+          {!loading && (
+            <p className="mb-2 text-xs text-slate-400">
+              แสดง {shown.length.toLocaleString("th-TH")} จาก {articles.length.toLocaleString("th-TH")} บทความ
+              {truncated && " · ระบบโหลดมาล่าสุด 300 รายการ ใช้ช่องค้นหาเพื่อหาที่เหลือ"}
+            </p>
           )}
           {loading ? (
             <p className="py-10 text-center text-sm text-slate-400">
