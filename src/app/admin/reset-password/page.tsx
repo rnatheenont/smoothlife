@@ -106,17 +106,35 @@ function ResetForm() {
 
 export default function AdminResetPasswordPage() {
   return (
-    <div className="grid min-h-screen place-items-center px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-card ring-1 ring-surface-line md:p-8">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 grid h-12 w-12 place-items-center rounded-full bg-brand-gradient-soft">
-            <Lock size={20} className="text-brand-emerald" />
-          </div>
-          <h1 className="text-lg font-bold text-brand-ink">ตั้งรหัสผ่านแอดมินใหม่</h1>
+    // Full screen, split: the form keeps the one width a form should have —
+    // a password field is no easier to fill in at 1200px — and the rest of
+    // the screen says which back office this link belongs to, which is worth
+    // saying on a page reached from an email.
+    <div className="grid min-h-screen lg:grid-cols-2">
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-brand-gradient p-10 text-white lg:flex">
+        <p className="text-lg font-bold">Smoothlife · หลังบ้าน</p>
+        <div className="max-w-md">
+          <p className="text-3xl font-bold leading-snug">ตั้งรหัสผ่านใหม่ แล้วกลับเข้าทำงานต่อ</p>
+          <p className="mt-3 text-sm leading-relaxed text-white/80">
+            ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุเองตามเวลาที่ตั้งไว้ — ถ้าหมดอายุแล้ว ขอลิงก์ใหม่จากหน้าเข้าสู่ระบบได้เลย
+          </p>
         </div>
-        <Suspense fallback={<p className="text-center text-sm text-slate-400">กำลังโหลด…</p>}>
-          <ResetForm />
-        </Suspense>
+        <p className="text-xs text-white/70">{PASSWORD_REQUIREMENT_TH}</p>
+      </div>
+
+      <div className="grid place-items-center px-4 py-10">
+        <div className="w-full max-w-sm">
+          <div className="mb-6 flex flex-col items-center text-center">
+            <div className="mb-3 grid size-12 place-items-center rounded-full bg-brand-gradient-soft">
+              <Lock size={20} className="text-brand-emerald" />
+            </div>
+            <h1 className="text-lg font-bold text-brand-ink">ตั้งรหัสผ่านแอดมินใหม่</h1>
+            <p className="mt-1 text-xs text-slate-500 lg:hidden">Smoothlife · หลังบ้าน</p>
+          </div>
+          <Suspense fallback={<p className="text-center text-sm text-slate-400">กำลังโหลด…</p>}>
+            <ResetForm />
+          </Suspense>
+        </div>
       </div>
     </div>
   );
