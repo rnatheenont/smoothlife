@@ -299,7 +299,7 @@ export default function BrandInsightsPage() {
                  on one line says the same thing in a third of the height,
                  and the column below it is the part worth scrolling. */
               <div className="mt-2 rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
-                <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-muted">
+                <div className="flex h-2.5 overflow-hidden rounded-full bg-slate-200">
                   <div className="bg-emerald-500" style={{ width: `${pct(sentiment.positive)}%` }} />
                   <div className="bg-slate-300" style={{ width: `${pct(sentiment.neutral)}%` }} />
                   <div className="bg-rose-400" style={{ width: `${pct(sentiment.negative)}%` }} />
@@ -356,7 +356,7 @@ export default function BrandInsightsPage() {
                           row says so in words instead. */}
                       {row.negative + row.positive + row.neutral > 0 ? (
                         <span
-                          className="mt-1 flex h-1.5 overflow-hidden rounded-full bg-surface-muted"
+                          className="mt-1 flex h-1.5 overflow-hidden rounded-full bg-slate-200"
                           title={`ลบ ${row.negative} · บวก ${row.positive} · กลาง ${row.neutral} · พูดถึง ${row.unclassified}`}
                         >
                           <span className="bg-rose-400" style={{ width: `${(row.negative / row.total) * 100}%` }} />
@@ -466,7 +466,7 @@ export default function BrandInsightsPage() {
                       </td>
                       <td className={adminTable.cell}>
                         <span className="inline-flex items-center gap-2">
-                          <span className="h-1.5 w-20 overflow-hidden rounded-full bg-surface-muted">
+                          <span className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
                             <span
                               className="block h-full rounded-full bg-brand-gradient"
                               style={{ width: `${o.opportunity_percent}%` }}
@@ -518,7 +518,7 @@ export default function BrandInsightsPage() {
                       {o.opportunity_percent}%
                     </span>
                   </div>
-                  <span className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-surface-muted">
+                  <span className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-slate-200">
                     <span
                       className="block h-full rounded-full bg-brand-gradient"
                       style={{ width: `${o.opportunity_percent}%` }}

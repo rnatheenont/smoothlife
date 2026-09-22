@@ -359,9 +359,11 @@ export default function AdminSeoPage() {
 
       {tab !== "campaign" && (
         <div className="mt-5 flex items-center gap-3">
-          {/* The track needs to differ from the page behind it, which is
-              surface-muted now — an empty track was invisible. */}
-          <div className="h-2 w-40 overflow-hidden rounded-full bg-white shadow-card">
+          {/* A grey the track keeps whatever is behind it: surface-muted
+              matched the canvas and white matched the cards, and both times
+              the unfilled part vanished — leaving 11% looking like a stray
+              green dot. */}
+          <div className="h-2 w-40 overflow-hidden rounded-full bg-slate-200">
             <div className="h-full rounded-full bg-brand-gradient" style={{ width: `${donePercent}%` }} />
           </div>
           <span className="text-xs text-slate-500">
