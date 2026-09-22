@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { BookOpen, Loader2, MessageSquare, Pencil, Plus, Trash2 } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader } from "@/components/admin/layout-kit";
+import { Card } from "@/components/ui";
+import { FilterChip, PageHeader } from "@/components/admin/layout-kit";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { CATEGORY_TH, STATUS_TH, type KbArticle, type KbCategory, type KbStatus } from "@/lib/kb";
 import { slugifyThai } from "@/lib/kb-public";
@@ -325,176 +326,182 @@ export default function AdminKnowledgeBasePage() {
         </p>
       )}
 
-      <div className="mb-3 inline-flex rounded-full bg-surface-muted p-1">
-        {(
-          [
-            ["curated", `ทีมเขียนเอง ${(sourceCounts.manual ?? 0) + (sourceCounts.chat_promoted ?? 0)}`],
-            ["shopify_sync", `จากสินค้า ${sourceCounts.shopify_sync ?? 0}`],
-            ["all", "ทั้งหมด"],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setSource(value)}
-            aria-pressed={source === value}
-            className={`min-h-9 rounded-full px-4 text-sm font-semibold transition ${
-              source === value ? "bg-white text-brand-ink shadow-card" : "text-slate-600 hover:text-brand-ink"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* One panel, and inside it the three questions asked of this screen in
+          the order they are asked: which article, which kind, and the jobs
+          that are run occasionally. They used to share one wrapping row —
+          the search box, three maintenance buttons and six status pills — so
+          a filter and a "sync every product" button sat side by side. */}
+      <Card padded={false} className="overflow-hidden">
+        <div className="flex flex-col gap-2 border-b border-slate-100 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ค้นหาหัวข้อหรือเนื้อหา"
+              aria-label="ค้นหาบทความ"
+              className={`${fieldClass} min-w-[12rem] max-w-sm flex-1`}
+            />
+            {/* Run now and then, not while reading: grouped, quiet, and out
+                of the way of the filters. */}
+            <span className="ml-auto flex flex-wrap items-center gap-1.5">
+              <span className="mr-0.5 text-[11px] text-slate-400">เครื่องมือ</span>
+              <button
+                type="button"
+                onClick={syncProducts}
+                disabled={syncing}
+                title="ดึงคำอธิบาย ส่วนผสม วิธีใช้ และราคา จากแคตตาล็อกสินค้าเข้าฐานความรู้"
+                className="rounded-full px-3 py-1.5 text-xs font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
+              >
+                {syncing ? "กำลังซิงก์สินค้า…" : "ซิงก์ข้อมูลสินค้า"}
+              </button>
+              <button
+                type="button"
+                onClick={seedStarters}
+                disabled={seeding}
+                title="นำศูนย์ช่วยเหลือ และวิธีใช้งานสแกนผิว/ช้อปตามปัญหาผิว เข้าฐานความรู้ — บทความวิธีใช้งานจะอัปเดตตามต้นฉบับในโค้ด ส่วนบทความศูนย์ช่วยเหลือที่นำเข้าแล้วจะไม่ถูกเขียนทับ"
+                className="rounded-full px-3 py-1.5 text-xs font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
+              >
+                {seeding ? "กำลังนำเข้า…" : "นำเข้าบทความตั้งต้น"}
+              </button>
+              {embeddings && (
+                <button
+                  type="button"
+                  onClick={reindexAll}
+                  disabled={indexing}
+                  title="สร้าง embedding ให้บทความที่ยังไม่มี (หลังเพิ่ม VOYAGE_API_KEY)"
+                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
+                >
+                  {indexing ? "กำลังสร้าง embedding…" : "สร้าง embedding ที่ยังขาด"}
+                </button>
+              )}
+            </span>
+          </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="ค้นหาหัวข้อหรือเนื้อหา"
-          aria-label="ค้นหาบทความ"
-          className={`${fieldClass} max-w-xs`}
-        />
-        {embeddings && (
-          <button
-            type="button"
-            onClick={reindexAll}
-            disabled={indexing}
-            title="สร้าง embedding ให้บทความที่ยังไม่มี (หลังเพิ่ม VOYAGE_API_KEY)"
-            className="min-h-11 rounded-full px-4 text-sm font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
-          >
-            {indexing ? "กำลังสร้าง embedding…" : "สร้าง embedding ที่ยังขาด"}
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={syncProducts}
-          disabled={syncing}
-          title="ดึงคำอธิบาย ส่วนผสม วิธีใช้ และราคา จากแคตตาล็อกสินค้าเข้าฐานความรู้"
-          className="min-h-11 rounded-full px-4 text-sm font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
-        >
-          {syncing ? "กำลังซิงก์สินค้า…" : "ซิงก์ข้อมูลสินค้า"}
-        </button>
-        <button
-          type="button"
-          onClick={seedStarters}
-          disabled={seeding}
-          title="นำศูนย์ช่วยเหลือ และวิธีใช้งานสแกนผิว/ช้อปตามปัญหาผิว เข้าฐานความรู้ — บทความวิธีใช้งานจะอัปเดตตามต้นฉบับในโค้ด ส่วนบทความศูนย์ช่วยเหลือที่นำเข้าแล้วจะไม่ถูกเขียนทับ"
-          className="min-h-11 rounded-full px-4 text-sm font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
-        >
-          {seeding ? "กำลังนำเข้า…" : "นำเข้าบทความตั้งต้น"}
-        </button>
-        <div className="inline-flex rounded-full bg-surface-muted p-1">
-          {(["all", "published", "draft", "needs_review", "archived", "review_due"] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setStatusFilter(s)}
-              aria-pressed={statusFilter === s}
-              className={`min-h-9 rounded-full px-3.5 text-sm font-semibold transition ${
-                statusFilter === s ? "bg-white text-brand-ink shadow-card" : "text-slate-600 hover:text-brand-ink"
-              }`}
-            >
-              {s === "all"
-                ? `ทั้งหมด ${articles.length}`
-                : s === "review_due"
-                  ? `ถึงรอบรีวิว ${reviewDueCount}`
-                  : `${STATUS_TH[s]} ${counts[s] ?? 0}`}
-            </button>
-          ))}
+          {/* Both filters as the same kind of control, because they are the
+              same kind of question. Who wrote it, and what state it is in. */}
+          <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-0.5">
+            {(
+              [
+                ["curated", `ทีมเขียนเอง`, (sourceCounts.manual ?? 0) + (sourceCounts.chat_promoted ?? 0)],
+                ["shopify_sync", `จากสินค้า`, sourceCounts.shopify_sync ?? 0],
+                ["all", "ทุกแหล่งที่มา", undefined],
+              ] as const
+            ).map(([value, label, count]) => (
+              <FilterChip
+                key={value}
+                label={label}
+                count={count}
+                active={source === value}
+                onClick={() => setSource(value)}
+              />
+            ))}
+            <span className="mx-1 h-5 w-px shrink-0 bg-surface-line" aria-hidden />
+            {(["all", "published", "draft", "needs_review", "archived", "review_due"] as const).map((st) => (
+              <FilterChip
+                key={st}
+                label={st === "all" ? "ทุกสถานะ" : st === "review_due" ? "ถึงรอบรีวิว" : STATUS_TH[st]}
+                count={st === "all" ? articles.length : st === "review_due" ? reviewDueCount : (counts[st] ?? 0)}
+                dot={st === "review_due" && reviewDueCount > 0 ? "warning" : undefined}
+                active={statusFilter === st}
+                onClick={() => setStatusFilter(st)}
+              />
+            ))}
+          </div>
         </div>
-      </div>
 
-      {truncated && !loading && (
-        <p className="mb-3 text-xs text-slate-400">แสดง 300 รายการล่าสุด — ใช้ช่องค้นหาเพื่อหาบทความที่ต้องการ</p>
-      )}
-      {loading ? (
-        <p className="py-10 text-center text-sm text-slate-400">
-          <Loader2 size={18} className="mx-auto animate-spin" />
-        </p>
-      ) : shown.length === 0 ? (
-        <div className="rounded-xl2 border border-dashed border-surface-line p-10 text-center">
-          <p className="text-sm text-slate-500">
-            {articles.length === 0 ? "ยังไม่มีความรู้ในระบบ" : "ไม่พบบทความที่ตรงกับที่ค้นหา"}
-          </p>
-          <button
-            type="button"
-            onClick={startCreate}
-            className="mt-3 text-sm font-semibold text-brand-800 hover:underline"
-          >
-            + เพิ่มความรู้ใหม่
-          </button>
+        <div className="p-3">
+          {truncated && !loading && (
+            <p className="mb-2 text-xs text-slate-400">แสดง 300 รายการล่าสุด — ใช้ช่องค้นหาเพื่อหาบทความที่ต้องการ</p>
+          )}
+          {loading ? (
+            <p className="py-10 text-center text-sm text-slate-400">
+              <Loader2 size={18} className="mx-auto animate-spin" />
+            </p>
+          ) : shown.length === 0 ? (
+            <div className="rounded-xl2 border border-dashed border-surface-line p-10 text-center">
+              <p className="text-sm text-slate-500">
+                {articles.length === 0 ? "ยังไม่มีความรู้ในระบบ" : "ไม่พบบทความที่ตรงกับที่ค้นหา"}
+              </p>
+              <button
+                type="button"
+                onClick={startCreate}
+                className="mt-3 text-sm font-semibold text-brand-800 hover:underline"
+              >
+                + เพิ่มความรู้ใหม่
+              </button>
+            </div>
+          ) : (
+            /* Two to a row once there is genuinely room for two. Each card is
+               a title, two lines of the answer and its buttons — past 1280px
+               a single column sets that answer in 180-character lines with
+               half a screen of white space beside it. Editing happens in the
+               drawer, so the narrower card costs nothing. */
+            <ul className="grid items-start gap-2 xl:grid-cols-2">
+              {shown.map((a) => (
+                <li key={a.id} className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-2">
+                        <span className="font-semibold text-brand-ink">{a.title}</span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${STATUS_TONE[a.status]}`}
+                        >
+                          {STATUS_TH[a.status]}
+                        </span>
+                        <span className="rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-slate-500">
+                          {CATEGORY_TH[a.category]}
+                        </span>
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-sm text-slate-500">{a.content}</p>
+                      {reviewLabel(a) && (
+                        <p
+                          className={`mt-1.5 text-[11px] font-semibold ${isReviewDue(a) ? "text-amber-700" : "text-slate-400"}`}
+                        >
+                          {reviewLabel(a)}
+                          {a.last_reviewed_at ? ` · ตรวจล่าสุด ${thaiDate(a.last_reviewed_at)}` : ""}
+                        </p>
+                      )}
+                      <p className="mt-1.5 text-[11px] text-slate-400">
+                        แก้ไขล่าสุด {thaiDate(a.updated_at)}
+                        {a.product_tags.length > 0 && ` · สินค้า: ${a.product_tags.join(", ")}`}
+                        {a.source === "chat_promoted" && " · มาจากคำตอบในแชท"}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      {isReviewDue(a) && (
+                        <button
+                          type="button"
+                          onClick={() => confirmReviewed(a)}
+                          disabled={confirming === a.id}
+                          className="min-h-9 rounded-full px-3 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 disabled:opacity-60"
+                        >
+                          {confirming === a.id ? "กำลังบันทึก…" : "ยังถูกต้องอยู่"}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => startEdit(a)}
+                        className="flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-brand-800 hover:bg-surface-soft"
+                      >
+                        <Pencil size={14} /> แก้ไข
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(a)}
+                        aria-label={`ลบ ${a.title}`}
+                        className="grid size-9 place-items-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      ) : (
-        /* Two to a row once there is genuinely room for two. Each card is a
-           title, two lines of the answer and its buttons — at 1536px and up
-           a single column is half a screen of white space beside a list
-           people scroll a lot. Editing happens in the drawer, so a narrower
-           card costs nothing. */
-        <ul className="grid items-start gap-2 2xl:grid-cols-2">
-          {shown.map((a) => (
-            <li key={a.id} className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-brand-ink">{a.title}</span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${STATUS_TONE[a.status]}`}
-                    >
-                      {STATUS_TH[a.status]}
-                    </span>
-                    <span className="rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-slate-500">
-                      {CATEGORY_TH[a.category]}
-                    </span>
-                  </p>
-                  <p className="mt-1 line-clamp-2 text-sm text-slate-500">{a.content}</p>
-                  {reviewLabel(a) && (
-                    <p
-                      className={`mt-1.5 text-[11px] font-semibold ${isReviewDue(a) ? "text-amber-700" : "text-slate-400"}`}
-                    >
-                      {reviewLabel(a)}
-                      {a.last_reviewed_at ? ` · ตรวจล่าสุด ${thaiDate(a.last_reviewed_at)}` : ""}
-                    </p>
-                  )}
-                  <p className="mt-1.5 text-[11px] text-slate-400">
-                    แก้ไขล่าสุด {thaiDate(a.updated_at)}
-                    {a.product_tags.length > 0 && ` · สินค้า: ${a.product_tags.join(", ")}`}
-                    {a.source === "chat_promoted" && " · มาจากคำตอบในแชท"}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  {isReviewDue(a) && (
-                    <button
-                      type="button"
-                      onClick={() => confirmReviewed(a)}
-                      disabled={confirming === a.id}
-                      className="min-h-9 rounded-full px-3 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 disabled:opacity-60"
-                    >
-                      {confirming === a.id ? "กำลังบันทึก…" : "ยังถูกต้องอยู่"}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => startEdit(a)}
-                    className="flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-brand-800 hover:bg-surface-soft"
-                  >
-                    <Pencil size={14} /> แก้ไข
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => remove(a)}
-                    aria-label={`ลบ ${a.title}`}
-                    className="grid size-9 place-items-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      </Card>
 
       <FormDrawer open={open} title={editingId ? "แก้ไขความรู้" : "เพิ่มความรู้ใหม่"} onClose={() => setOpen(false)}>
         <div className="flex flex-col gap-4">
