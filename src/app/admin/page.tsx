@@ -23,7 +23,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader, StatCard } from "@/components/admin/layout-kit";
+import { PageHeader, SectionLabel, StatCard } from "@/components/admin/layout-kit";
 
 // Admin home. It used to redirect straight into the promotions screen, which
 // meant the answer to "what needs me today?" was: open all seven pages and
@@ -217,7 +217,7 @@ export default function AdminHomePage() {
       />
 
       <section>
-        <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">ต้องดำเนินการ</h2>
+        <SectionLabel className="mb-2">ต้องดำเนินการ</SectionLabel>
         {loading ? (
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[0, 1, 2, 3].map((i) => (
@@ -258,7 +258,7 @@ export default function AdminHomePage() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">สถานะร้าน</h2>
+        <SectionLabel className="mb-2">สถานะร้าน</SectionLabel>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {today.map((c) => (
             <StatCard
@@ -274,7 +274,7 @@ export default function AdminHomePage() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">ทั้งหมด</h2>
+        <SectionLabel className="mb-2">ทั้งหมด</SectionLabel>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sections.map((s) => {
             const Icon = s.icon;

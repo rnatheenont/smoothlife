@@ -19,7 +19,7 @@ import {
 import { Badge, Button, Card } from "@/components/ui";
 import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader } from "@/components/admin/layout-kit";
+import { PageHeader, SectionTitle } from "@/components/admin/layout-kit";
 
 // Attaching a returning customer's purchase history to their login.
 //
@@ -392,7 +392,7 @@ export default function AdminCustomersPage() {
       {accounts && (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card className="p-4">
-            <h2 className="text-sm font-bold text-brand-ink mb-1">บัญชีในเว็บ ({accounts.length})</h2>
+            <SectionTitle className="mb-1">บัญชีในเว็บ ({accounts.length})</SectionTitle>
             <p className="text-[11px] text-slate-400 mb-3">เลือกบัญชีที่ลูกค้าใช้ล็อกอินอยู่</p>
             {accounts.length === 0 && (
               <p className="text-xs text-slate-400">
@@ -477,7 +477,7 @@ export default function AdminCustomersPage() {
           </Card>
 
           <Card className="p-4">
-            <h2 className="text-sm font-bold text-brand-ink mb-1">ใบลูกค้าใน Shopify ({shopify.length})</h2>
+            <SectionTitle className="mb-1">ใบลูกค้าใน Shopify ({shopify.length})</SectionTitle>
             <p className="text-[11px] text-slate-400 mb-3">
               ค้นจากทุกร้านที่เชื่อมไว้ (Smooth Life, Smooth E, Dentiste) — เลือกใบที่มีประวัติการซื้อ ดูจากจำนวนออเดอร์
               ที่อยู่ และเบอร์ว่าตรงกับลูกค้าจริงไหม บัญชีหนึ่งผูกได้ร้านละหนึ่งใบ
@@ -606,7 +606,7 @@ export default function AdminCustomersPage() {
 
       {selected && (
         <Card className="p-4 max-w-2xl">
-          <h2 className="text-sm font-bold text-brand-ink mb-2">ผลสแกนผิว (Skin Coach)</h2>
+          <SectionTitle className="mb-2">ผลสแกนผิว (Skin Coach)</SectionTitle>
           {scans === null ? (
             <p className="flex items-center gap-1.5 text-xs text-slate-500">
               <Loader2 size={12} className="animate-spin" /> กำลังโหลด…
@@ -619,7 +619,7 @@ export default function AdminCustomersPage() {
 
       {account && (
         <Card className="p-4 max-w-2xl">
-          <h2 className="text-sm font-bold text-brand-ink mb-1">ยืนยันตัวตนก่อนผูก</h2>
+          <SectionTitle className="mb-1">ยืนยันตัวตนก่อนผูก</SectionTitle>
           <p className="text-[11px] text-slate-500 mb-3">
             การผูกทำให้ลูกค้าเห็นออเดอร์ ที่อยู่ และเบอร์ในใบนั้นทั้งหมด — ผูกผิดใบคือเปิดข้อมูลของคนอื่น
             บันทึกไว้ว่าตรวจจากอะไร (เช่น &quot;ลูกค้าแจ้งเลขออเดอร์ #4207 และชื่อ-ที่อยู่ตรงกัน&quot;)

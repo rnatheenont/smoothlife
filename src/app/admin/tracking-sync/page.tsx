@@ -21,6 +21,7 @@ import {
 import { Badge, Button, Card } from "@/components/ui";
 import type { TrackingSyncRow } from "@/app/api/admin/tracking-sync/route";
 import { useAdminAction } from "@/components/admin/header-action";
+import { adminTable } from "@/components/admin/layout-kit";
 
 // Three questions, in the order staff ask them: is the integration alive,
 // is there anything for me to decide, and what happened. The page is laid out
@@ -782,16 +783,16 @@ export default function AdminTrackingSyncPage() {
                   height per row, 13px for the things read as words and 12px
                   mono for the numbers, and a hover tint so the eye can hold a
                   row across seven columns of a 27" screen. */}
-              <table className="w-full text-left text-[13px]">
-                <thead className="sticky top-0 z-10 bg-surface-soft text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">
-                  <tr className="border-b border-slate-200">
-                    <th className="w-[7.5rem] px-3 py-2.5">เวลา</th>
-                    <th className="w-44 px-3 py-2.5">ออเดอร์</th>
-                    <th className="w-40 px-3 py-2.5">เลขที่ส่งมา</th>
-                    <th className="w-[6.5rem] px-3 py-2.5">ใครใส่</th>
-                    <th className="w-[8.5rem] px-3 py-2.5">ผล</th>
-                    <th className="px-3 py-2.5">รายละเอียด</th>
-                    <th className="w-52 px-3 py-2.5 text-right">จัดการ</th>
+              <table className={adminTable.table}>
+                <thead className={adminTable.thead}>
+                  <tr>
+                    <th className="w-[7.5rem]">เวลา</th>
+                    <th className="w-44">ออเดอร์</th>
+                    <th className="w-40">เลขที่ส่งมา</th>
+                    <th className="w-[6.5rem]">ใครใส่</th>
+                    <th className="w-[8.5rem]">ผล</th>
+                    <th>รายละเอียด</th>
+                    <th className="w-52 text-right">จัดการ</th>
                   </tr>
                 </thead>
                 <tbody>

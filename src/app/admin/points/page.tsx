@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Award, Plus, X, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader } from "@/components/admin/layout-kit";
+import { PageHeader, SectionTitle } from "@/components/admin/layout-kit";
 
 type Tier = {
   id: string;
@@ -245,12 +245,16 @@ export default function AdminPointsPage() {
           their place in the source. */}
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)]">
         <section className="order-2 min-w-0">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-brand-ink">รายการแลกแต้ม</h2>
-            <Button size="none" className="gap-1 px-3 py-1.5 text-xs" onClick={openCreateTier}>
-              <Plus size={13} /> เพิ่มรายการ
-            </Button>
-          </div>
+          <SectionTitle
+            className="mb-3"
+            action={
+              <Button size="none" className="gap-1 px-3 py-1.5 text-xs" onClick={openCreateTier}>
+                <Plus size={13} /> เพิ่มรายการ
+              </Button>
+            }
+          >
+            รายการแลกแต้ม
+          </SectionTitle>
           {tiers.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-6">ยังไม่มีรายการแลกแต้ม</p>
           ) : (
@@ -300,7 +304,7 @@ export default function AdminPointsPage() {
         </section>
 
         <section className="order-1 min-w-0">
-          <h2 className="font-bold text-brand-ink mb-3">ค้นหาลูกค้า / ปรับแต้ม</h2>
+          <SectionTitle className="mb-3">ค้นหาลูกค้า / ปรับแต้ม</SectionTitle>
           <form onSubmit={submitSearch} className="flex gap-2 mb-3">
             <input
               value={query}

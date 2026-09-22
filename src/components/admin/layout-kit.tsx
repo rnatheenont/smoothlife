@@ -177,6 +177,48 @@ export function FilterChip({
   );
 }
 
+/**
+ * The label above a group of cards ("ต้องดำเนินการ", "สถานะร้าน").
+ *
+ * Deliberately quiet and deliberately not the same thing as a panel's title:
+ * this names a group, the other names a box.
+ */
+export function SectionLabel({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <h2 className={clsx("text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400", className)}>
+      {children}
+    </h2>
+  );
+}
+
+/**
+ * A panel's own title, with whatever belongs on its right.
+ *
+ * Was written eleven times across the screens at three different sizes —
+ * text-sm, text-base and text-lg — for the same job.
+ */
+export function SectionTitle({
+  icon,
+  children,
+  action,
+  className,
+}: {
+  icon?: ReactNode;
+  children: ReactNode;
+  action?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={clsx("flex flex-wrap items-center justify-between gap-2", className)}>
+      <h2 className="flex items-center gap-1.5 text-sm font-bold text-brand-ink">
+        {icon}
+        {children}
+      </h2>
+      {action}
+    </div>
+  );
+}
+
 /** A titled panel with an optional toolbar on its own row. */
 export function Panel({
   title,

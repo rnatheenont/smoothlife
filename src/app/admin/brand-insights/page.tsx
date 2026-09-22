@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader, adminTable } from "@/components/admin/layout-kit";
+import { PageHeader, SectionTitle, adminTable } from "@/components/admin/layout-kit";
 
 // What the brand's own signals say, and which keyword is worth the next
 // afternoon.
@@ -215,13 +215,22 @@ export default function BrandInsightsPage() {
         {/* What the AI read out of it — the longest text on the page, so it
             gets the wider column. */}
         <section className="min-w-0">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold text-brand-ink">ประเด็นที่พบ</h2>
-            <Button type="button" variant="secondary" size="sm" onClick={() => run("insight")} disabled={Boolean(busy)}>
-              <Sparkles size={14} aria-hidden="true" />
-              {busy === "insight" ? "กำลังสรุป…" : "ให้ AI สรุปใหม่"}
-            </Button>
-          </div>
+          <SectionTitle
+            action={
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => run("insight")}
+                disabled={Boolean(busy)}
+              >
+                <Sparkles size={14} aria-hidden="true" />
+                {busy === "insight" ? "กำลังสรุป…" : "ให้ AI สรุปใหม่"}
+              </Button>
+            }
+          >
+            ประเด็นที่พบ
+          </SectionTitle>
           {!latest ? (
             <p className="mt-2 rounded-xl2 bg-surface-soft p-5 text-sm text-slate-500">
               ยังไม่เคยสรุป — กด &ldquo;ให้ AI สรุปใหม่&rdquo; เมื่อมีข้อมูลพอแล้ว
@@ -280,7 +289,7 @@ export default function BrandInsightsPage() {
             feel overall, and which product they were talking about. */}
         <div className="min-w-0 space-y-6">
           <section>
-            <h2 className="text-sm font-bold text-brand-ink">ความรู้สึกจากรีวิวบนเว็บ</h2>
+            <SectionTitle>ความรู้สึกจากรีวิวบนเว็บ</SectionTitle>
             {totalReviews === 0 ? (
               <p className="mt-2 rounded-xl2 bg-surface-soft p-5 text-sm text-slate-500">
                 ยังไม่มีรีวิวที่อนุมัติแล้วในระบบ — กด &ldquo;ซิงก์ข้อมูลใหม่&rdquo; หลังจากมีรีวิวเข้ามา
@@ -318,7 +327,7 @@ export default function BrandInsightsPage() {
           </section>
 
           <section>
-            <h2 className="text-sm font-bold text-brand-ink">ปัญหาแยกตามสินค้า</h2>
+            <SectionTitle>ปัญหาแยกตามสินค้า</SectionTitle>
             <p className="mt-1 text-xs text-slate-500">
               นับจากรีวิวและแชทที่ระบุสินค้าไว้ชัดเจน (30 วันล่าสุด) — เรียงจากลบมากไปน้อย ไม่ใช่ให้ AI เดา
             </p>
@@ -390,15 +399,16 @@ export default function BrandInsightsPage() {
       {/* Where the next afternoon goes. Full width: six columns, one of them
           a whole sentence. */}
       <section className="mt-8">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-bold text-brand-ink">
-            โอกาส SEO <span className="font-normal text-slate-400">({opportunities.length})</span>
-          </h2>
-          <Button type="button" variant="secondary" size="sm" onClick={() => run("score")} disabled={Boolean(busy)}>
-            <RefreshCw size={14} aria-hidden="true" />
-            {busy === "score" ? "กำลังคำนวณ…" : "คำนวณใหม่"}
-          </Button>
-        </div>
+        <SectionTitle
+          action={
+            <Button type="button" variant="secondary" size="sm" onClick={() => run("score")} disabled={Boolean(busy)}>
+              <RefreshCw size={14} aria-hidden="true" />
+              {busy === "score" ? "กำลังคำนวณ…" : "คำนวณใหม่"}
+            </Button>
+          }
+        >
+          โอกาส SEO <span className="font-normal text-slate-400">({opportunities.length})</span>
+        </SectionTitle>
 
         {/* True, and worth reading — once. Three lines of standing caveat
             above the table pushed the first row out of view every visit, so
