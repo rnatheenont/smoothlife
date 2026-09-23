@@ -13,6 +13,7 @@ import {
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { contentForTranscript } from "@/lib/chat-markers";
 import { systemPrompt, orderHistorySummary, type CartLine, type ViewingProduct } from "@/lib/chat-prompt";
+import { loyaltySummaryForPrompt } from "@/lib/loyalty-prompt";
 import { CHAT_TOOLS, runChatTool } from "@/lib/chat-product-search";
 import { KB_TOOL, runKbTool } from "@/lib/chat-kb-tool";
 import { logAiAnswer } from "@/lib/kb";
@@ -347,6 +348,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Points and tier, for the customer who asks "กี่แต้มแล้ว" mid-conversation.
+  // Needs only a signed-in account, not a linked Shopify one — the ledger is
+  // ours, unlike the order history above.
+  const loyalty = uid ? await loyaltySummaryForPrompt(uid) : null;
+
   const reviewsQaData = viewingProduct ? await fetchReviewsAndQuestions(viewingProduct.slug) : null;
   const reviewsQa = reviewsSummary(reviewsQaData);
 
@@ -403,7 +409,8 @@ export async function POST(req: NextRequest) {
     deliveryStatus,
     hasShopifyLink,
     caseWaiting,
-    Boolean(uid)
+    Boolean(uid),
+    loyalty
   );
 
   // What the customer just asked, for the AI answer log.

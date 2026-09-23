@@ -201,7 +201,8 @@ export function systemPrompt(
   deliveryStatus: string | null,
   hasShopifyLink: boolean,
   caseWaiting: boolean,
-  signedIn: boolean
+  signedIn: boolean,
+  loyalty: string | null
 ) {
   const profileText =
     profile && Object.keys(profile).length
@@ -262,6 +263,23 @@ CUSTOMER'S ORDER HISTORY: linked to a Shopify account but no recent orders found
 `
     : `
 CUSTOMER'S ORDER HISTORY: not available — their account isn't linked to a Shopify customer record yet (or they aren't logged in). If asked about an order, say you can't look it up here and suggest checking their Shopify confirmation email, or logging in first if they haven't.
+`
+}
+${
+  loyalty
+    ? `
+CUSTOMER'S REAL POINTS AND TIER (live from the loyalty ledger):
+${loyalty}
+- Answer "กี่แต้มแล้ว", "แต้มพอแลกอะไรได้บ้าง", "ตอนนี้ tier อะไร", "อีกเท่าไหร่ถึง Gold" straight from the numbers above. State the balance exactly as given — never round it, never estimate, never add points they might get from an order that hasn't been placed.
+- You cannot redeem for them: redeeming issues a real single-use discount code and only they can do it, on the account page. Point them there (the "แต้ม/บัญชีของฉัน" button in the LINE menu opens the same page).
+- Points from an order they just placed take a short while to appear; if the balance looks lower than they expect, say that rather than disputing it or promising a figure.
+`
+    : signedIn
+      ? `
+CUSTOMER'S POINTS: couldn't be read just now. If they ask, say you can't see the balance at the moment and point them to the account page — never guess a number.
+`
+      : `
+CUSTOMER'S POINTS: not available — they aren't signed in. If they ask about points or tier, explain that you can see it once they sign in, and that points are earned at ฿1 = 1 แต้ม on every order.
 `
 }
 ${
