@@ -48,13 +48,30 @@ async function triggerCatalogueRebuildIfDue(): Promise<{ triggered: boolean; rea
   return { triggered: true };
 }
 
+/**
+ * Two secrets, because this store genuinely has two signers.
+ *
+ * Shopify signs a webhook with whatever created it: one made in Admin >
+ * Settings > Notifications is signed with the store's webhook signing secret
+ * (SHOPIFY_WEBHOOK_SECRET), while one registered through the Admin API is
+ * signed with the **registering app's client secret**
+ * (SHOPIFY_ADMIN_CLIENT_SECRET). The orders and customers topics were created
+ * by hand; the catalogue ones (products/*, inventory_levels/update) come from
+ * registerCatalogueWebhooks running under this app. Checking only the first
+ * secret rejected every catalogue delivery — 600 of them in a day — so stock
+ * and product edits silently stopped reaching the site while orders kept
+ * working, which is what made it look like nothing was wrong.
+ */
 function verifyHmac(rawBody: string, header: string | null): boolean {
-  const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
-  if (!secret || !header) return false;
-  const digest = createHmac("sha256", secret).update(rawBody, "utf8").digest("base64");
-  const a = Buffer.from(digest);
-  const b = Buffer.from(header);
-  return a.length === b.length && timingSafeEqual(a, b);
+  if (!header) return false;
+  const secrets = [process.env.SHOPIFY_WEBHOOK_SECRET, process.env.SHOPIFY_ADMIN_CLIENT_SECRET].filter(
+    (s): s is string => Boolean(s)
+  );
+  const received = Buffer.from(header);
+  return secrets.some((secret) => {
+    const digest = Buffer.from(createHmac("sha256", secret).update(rawBody, "utf8").digest("base64"));
+    return digest.length === received.length && timingSafeEqual(digest, received);
+  });
 }
 
 async function findUserIdByEmail(email: string | null | undefined): Promise<string | null> {
