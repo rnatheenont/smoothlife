@@ -55,18 +55,34 @@ export async function uploadAttachment(opts: {
 }
 
 /**
+ * Long enough for LINE, and no longer than the photo itself lives.
+ *
+ * LINE does not accept an uploaded image: it fetches the URL when the customer
+ * opens the message, which may be days after it was sent, so the few minutes
+ * below would show them a broken photo. The retention window is the honest
+ * ceiling — the file is deleted when the case closes or after 30 days at the
+ * latest, and the link dies with it either way.
+ */
+export const LINE_ATTACHMENT_TTL_SECONDS = ATTACHMENT_RETENTION_DAYS * 24 * 60 * 60;
+
+/**
  * A URL that works for a few minutes and then doesn't.
  *
  * The bucket is private, so this is the only way to see a photo — which means
  * a link copied out of the admin screen stops working rather than becoming a
- * permanent public address for someone's damaged-product photo.
+ * permanent public address for someone's damaged-product photo. Delivery to a
+ * channel that fetches the image itself is the one case that needs longer; it
+ * passes LINE_ATTACHMENT_TTL_SECONDS and nothing else should.
  */
-export async function signedAttachmentUrl(path: string): Promise<string | null> {
+export async function signedAttachmentUrl(
+  path: string,
+  expiresInSeconds: number = SIGNED_URL_TTL_SECONDS
+): Promise<string | null> {
   try {
     const res = await fetch(`${storageBase()}/object/sign/${BUCKET}/${path}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${serviceKey()}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ expiresIn: SIGNED_URL_TTL_SECONDS }),
+      body: JSON.stringify({ expiresIn: expiresInSeconds }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { signedURL?: string };

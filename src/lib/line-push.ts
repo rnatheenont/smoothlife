@@ -38,28 +38,28 @@ export async function pushLineText(lineUserId: string, text: string): Promise<bo
   }
 }
 
+/** One outbound LINE message object (text, image, flex — see line-messages.ts). */
+export type LineMessage = Record<string, unknown>;
+
 /**
  * Answers a webhook event on its reply token.
  *
- * Preferred over pushLineText for anything the customer just said something to
+ * Preferred over a push for anything the customer just said something to
  * trigger: a reply is free, while every push is charged against the OA's
  * monthly quota. The token is single-use and expires about a minute after the
  * event, so a slow answer has to fall back to a push — see the webhook.
  */
-export async function replyLineText(
+export async function replyLineMessages(
   replyToken: string,
-  text: string,
+  messages: LineMessage[],
   quickReplies: string[] = []
 ): Promise<boolean> {
-  if (!TOKEN || !replyToken) return false;
+  if (!TOKEN || !replyToken || !messages.length) return false;
   try {
     const res = await fetch("https://api.line.me/v2/bot/message/reply", {
       method: "POST",
       headers: { "content-type": "application/json", Authorization: `Bearer ${TOKEN}` },
-      body: JSON.stringify({
-        replyToken,
-        messages: [lineTextMessage(text, quickReplies)],
-      }),
+      body: JSON.stringify({ replyToken, messages: withQuickReply(messages, quickReplies) }),
     });
     if (!res.ok) console.error(`[line-reply] ${res.status} ${(await res.text()).slice(0, 300)}`);
     return res.ok;
@@ -69,20 +69,61 @@ export async function replyLineText(
   }
 }
 
+/** Sends up to five messages in one push. Returns false (never throws) when it didn't go. */
+export async function pushLineMessages(lineUserId: string, messages: LineMessage[]): Promise<boolean> {
+  if (!TOKEN || !lineUserId || !messages.length) return false;
+  try {
+    const res = await fetch("https://api.line.me/v2/bot/message/push", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: `Bearer ${TOKEN}` },
+      body: JSON.stringify({ to: lineUserId, messages: messages.slice(0, 5) }),
+    });
+    if (!res.ok) console.error(`[line-push] ${res.status} ${(await res.text()).slice(0, 300)}`);
+    return res.ok;
+  } catch (err) {
+    console.error("[line-push]", err);
+    return false;
+  }
+}
+
+/** Convenience for the common case: one text message on a reply token. */
+export async function replyLineText(
+  replyToken: string,
+  text: string,
+  quickReplies: string[] = []
+): Promise<boolean> {
+  return replyLineMessages(replyToken, [lineTextMessage(text)], quickReplies);
+}
+
+/** One text message, capped at LINE's per-message character limit. */
+export function lineTextMessage(text: string): LineMessage {
+  return { type: "text", text: text.slice(0, 4900) };
+}
+
 /**
- * One text message, with Smoothie's follow-up options as LINE quick replies.
+ * A photo, which LINE fetches from a URL rather than accepting as an upload.
+ *
+ * Both URLs must stay reachable for as long as the customer might scroll back
+ * to the message — LINE loads them on demand, it does not keep a copy.
+ */
+export function lineImageMessage(url: string, previewUrl = url): LineMessage {
+  return { type: "image", originalContentUrl: url, previewImageUrl: previewUrl };
+}
+
+/**
+ * Hangs Smoothie's follow-up options off the last message as quick replies.
  *
  * The web panel draws those options as chips under the bubble; LINE's own
- * equivalent is a quick reply bar, so the same marker drives both instead of
+ * equivalent is the quick reply bar, so the same marker drives both instead of
  * the options being flattened into the message text as a numbered list nobody
- * can tap. LINE caps labels at 20 characters and the bar at 13 items.
+ * can tap. LINE attaches the bar to the final message of a reply and caps it
+ * at 13 items.
  */
-function lineTextMessage(text: string, quickReplies: string[]) {
-  const body = text.slice(0, 4900);
-  if (!quickReplies.length) return { type: "text", text: body };
-  return {
-    type: "text",
-    text: body,
+function withQuickReply(messages: LineMessage[], quickReplies: string[]): LineMessage[] {
+  const capped = messages.slice(0, 5);
+  if (!quickReplies.length) return capped;
+  capped[capped.length - 1] = {
+    ...capped[capped.length - 1],
     quickReply: {
       items: quickReplies.slice(0, 13).map((label) => ({
         type: "action",
@@ -98,6 +139,7 @@ function lineTextMessage(text: string, quickReplies: string[]) {
       })),
     },
   };
+  return capped;
 }
 
 /**

@@ -11,8 +11,15 @@ import {
   appendMessage,
   recordCustomerMessage,
 } from "@/lib/conversations";
-import { lineOpenLink, pushLineText, replyLineText, startLineLoading } from "@/lib/line-push";
-import { getProductBySlug } from "@/data/products";
+import {
+  lineOpenLink,
+  lineTextMessage,
+  pushLineMessages,
+  replyLineMessages,
+  startLineLoading,
+  type LineMessage,
+} from "@/lib/line-push";
+import { productCarousel, productSlugsIn } from "@/lib/line-messages";
 import { SITE_URL } from "@/lib/site-url";
 
 // The LINE Official Account's inbound webhook: customers chat in LINE and
@@ -146,22 +153,16 @@ async function askSmoothie(opts: {
 }
 
 /**
- * Smoothie's answer as a LINE message.
+ * Smoothie's answer as the text half of a LINE reply.
  *
- * Product recommendations arrive as `[[slug]]`, which the website turns into a
- * card. LINE has no card here, so each one becomes the product's name and a
- * link that opens it inside LINE — a bare slug tells a customer nothing.
+ * Every `[[...]]` comes out: product references are carried by the carousel
+ * that follows (see productCarousel), and the rest is plumbing for the web
+ * panel that must never reach a customer as literal bracket text.
  */
 function renderForLine(text: string): string {
   return text
-    .replace(/\[\[([a-z0-9-]+)\]\]/gi, (_match, slug: string) => {
-      const product = getProductBySlug(slug);
-      if (!product) return "";
-      return `\n🛍️ ${product.name}\n${lineOpenLink(`/product/${slug}`)}\n`;
-    })
-    // Anything else in double brackets is plumbing for the web panel and must
-    // never reach a customer as literal text.
     .replace(/\[\[[\s\S]*?\]\]/g, "")
+    .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
@@ -202,10 +203,35 @@ async function escalate(opts: {
   }
 }
 
-/** Delivers on the reply token, falling back to a push if it has expired. */
-async function deliver(lineUserId: string, replyToken: string | undefined, text: string, quickReplies: string[]) {
-  if (replyToken && (await replyLineText(replyToken, text, quickReplies))) return;
-  await pushLineText(lineUserId, text);
+/** Reply token first — it is free — then a push if it has expired. */
+async function send(
+  lineUserId: string,
+  replyToken: string | undefined,
+  messages: LineMessage[],
+  quickReplies: string[]
+): Promise<boolean> {
+  if (replyToken && (await replyLineMessages(replyToken, messages, quickReplies))) return true;
+  return pushLineMessages(lineUserId, messages);
+}
+
+/**
+ * Delivers the answer, and keeps the answer even when the card fails.
+ *
+ * LINE rejects a whole reply if any one message in it is malformed, so a
+ * product carousel it does not like would otherwise take the reply with it and
+ * leave the customer with silence. The text is what they asked for; the cards
+ * are a nicety, and a nicety must not be able to cost them the answer. An
+ * unused reply token survives a rejected request, so the retry still goes out
+ * on it rather than spending a push.
+ */
+async function deliver(
+  lineUserId: string,
+  replyToken: string | undefined,
+  messages: LineMessage[],
+  quickReplies: string[] = []
+) {
+  if (await send(lineUserId, replyToken, messages, quickReplies)) return;
+  if (messages.length > 1) await send(lineUserId, replyToken, messages.slice(0, 1), quickReplies);
 }
 
 async function handleText(event: LineEvent, lineUserId: string, text: string) {
@@ -235,6 +261,8 @@ async function handleText(event: LineEvent, lineUserId: string, text: string) {
 
   const { text: answer, kind, options, reason } = splitMarker(raw);
   let reply = renderForLine(answer) || FALLBACK;
+  // Built from the answer before the brackets were stripped out of it.
+  const carousel = productCarousel(productSlugsIn(answer));
 
   if (kind === "handoff") {
     await escalate({
@@ -251,7 +279,8 @@ async function handleText(event: LineEvent, lineUserId: string, text: string) {
   // The chips the web panel would draw under the bubble become LINE's own
   // quick-reply bar. A closing offer (CLOSE) and a handover carry no options.
   const quickReplies = kind === "ask" || kind === "suggest" ? options : [];
-  await deliver(lineUserId, event.replyToken, reply, quickReplies);
+  const messages = [lineTextMessage(reply), ...(carousel ? [carousel] : [])];
+  await deliver(lineUserId, event.replyToken, messages, quickReplies);
 }
 
 const WELCOME =
@@ -268,7 +297,7 @@ async function handleEvent(event: LineEvent) {
   if (alreadyHandled(event.webhookEventId)) return;
 
   if (event.type === "follow") {
-    await deliver(lineUserId, event.replyToken, WELCOME, []);
+    await deliver(lineUserId, event.replyToken, [lineTextMessage(WELCOME)]);
     return;
   }
   if (event.type !== "message" || !event.message) return;
@@ -286,7 +315,7 @@ async function handleEvent(event: LineEvent) {
     event.message.type === "image"
       ? `ขอบคุณสำหรับรูปค่ะ 📷 ตอนนี้น้อง Smoothie ดูรูปในไลน์ยังไม่ได้ แต่ถ้าอยากให้วิเคราะห์สภาพผิว กดที่ลิงก์นี้เพื่อสแกนผิวได้เลยค่ะ\n${lineOpenLink("/skin-coach")}\n\nหรือพิมพ์เล่าอาการมาได้เลยนะคะ`
       : "พิมพ์คำถามมาได้เลยค่ะ 💬 เช่น “สิวอุดตันใช้อะไรดี” หรือ “ออเดอร์ถึงไหนแล้ว”";
-  await deliver(lineUserId, event.replyToken, nudge, []);
+  await deliver(lineUserId, event.replyToken, [lineTextMessage(nudge)]);
 }
 
 export async function POST(req: NextRequest) {

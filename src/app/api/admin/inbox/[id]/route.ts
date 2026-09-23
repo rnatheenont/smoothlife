@@ -4,12 +4,13 @@ import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { getProductBySlug } from "@/data/products";
 import { translateForCustomer } from "@/lib/reply-translate";
 import { appendMessage, ConversationRow } from "@/lib/conversations";
-import { linePushConfigured, pushLineText } from "@/lib/line-push";
+import { lineImageMessage, lineTextMessage, linePushConfigured, pushLineMessages, type LineMessage } from "@/lib/line-push";
 import {
   signedAttachmentUrl,
   deleteAttachmentsForConversation,
   uploadAttachment,
   MAX_ATTACHMENT_BYTES,
+  LINE_ATTACHMENT_TTL_SECONDS,
 } from "@/lib/chat-attachments";
 
 // One conversation: the whole thread plus the customer context staff would
@@ -188,21 +189,11 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       { status: 501 }
     );
   }
-  if (conversation.channel === "line") {
-    if (!linePushConfigured()) {
-      return NextResponse.json(
-        { ok: false, error: "ยังตอบกลับทาง LINE ไม่ได้ — ยังไม่ได้ตั้งค่า LINE_MESSAGING_ACCESS_TOKEN" },
-        { status: 503 }
-      );
-    }
-    // Text only for now: a LINE image message needs a publicly fetchable URL,
-    // and the attachment bucket is private on purpose.
-    if (imageBase64) {
-      return NextResponse.json(
-        { ok: false, error: "ยังแนบรูปตอบกลับทาง LINE ไม่ได้ — ส่งเป็นข้อความได้ค่ะ" },
-        { status: 501 }
-      );
-    }
+  if (conversation.channel === "line" && !linePushConfigured()) {
+    return NextResponse.json(
+      { ok: false, error: "ยังตอบกลับทาง LINE ไม่ได้ — ยังไม่ได้ตั้งค่า LINE_MESSAGING_ACCESS_TOKEN" },
+      { status: 503 }
+    );
   }
 
   // Uploaded before either row is written, so a storage failure never leaves a
@@ -260,7 +251,23 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   // a reply recorded as sent that never arrived is worse than an error staff
   // can see and act on.
   if (conversation.channel === "line") {
-    const sent = await pushLineText(conversation.channel_user_id, delivered ?? content);
+    const messages: LineMessage[] = [];
+    if (attachmentPath) {
+      // LINE renders the photo from a URL it fetches itself, so the private
+      // bucket has to be opened for exactly this file, for exactly as long as
+      // the file exists (see LINE_ATTACHMENT_TTL_SECONDS).
+      const url = await signedAttachmentUrl(attachmentPath, LINE_ATTACHMENT_TTL_SECONDS);
+      if (!url) {
+        return NextResponse.json(
+          { ok: false, error: "เตรียมลิงก์รูปสำหรับส่งเข้า LINE ไม่สำเร็จ" },
+          { status: 502 }
+        );
+      }
+      messages.push(lineImageMessage(url));
+    }
+    if (content) messages.push(lineTextMessage(delivered ?? content));
+
+    const sent = await pushLineMessages(conversation.channel_user_id, messages);
     if (!sent) {
       return NextResponse.json(
         { ok: false, error: "ส่งข้อความไปยัง LINE ไม่สำเร็จ — ลูกค้าอาจบล็อก OA ไว้ หรือโควตาข้อความของเดือนนี้หมดแล้ว" },
