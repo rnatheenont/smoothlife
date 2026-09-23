@@ -175,6 +175,18 @@ export default function FlashSaleLive({
     return <div className="container-page py-16 text-center text-slate-500">ไม่พบสินค้าในแคมเปญนี้</div>;
   }
 
+  // Everything below reads "not scheduled and not ended" as open. fs_status can
+  // hand back a phase of null for a campaign the queue functions refuse to see
+  // (a demo row), and that used to render as a live sale whose เข้าคิว button
+  // answered "ไม่พบสินค้านี้ในแคมเปญ" forever. Say so instead of inviting the press.
+  if (status && !["scheduled", "open", "ended"].includes(status.campaign.phase)) {
+    return (
+      <div className="container-page py-16 text-center text-slate-500">
+        แคมเปญนี้ยังไม่เปิดใช้งาน กรุณาติดต่อทีมงาน
+      </div>
+    );
+  }
+
   const me = status?.me ?? null;
   const reserved = me?.status === "reserved";
   const secondsLeft = reserved ? (me.seconds_left ?? 0) - elapsed : 0;
