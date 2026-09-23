@@ -7,13 +7,25 @@ import { products } from "@/data/products";
 import { subscriptionPlans } from "@/data/subscriptions";
 import { markReferralDelivered } from "@/lib/referral-cron";
 import { emailConfigured, sendEmail, guestOrderInviteEmailHtml } from "@/lib/email";
+import {
+  notifyOrderPaid,
+  notifyOrderShipped,
+  notifyOrderDelivered,
+  notifyOrderRefunded,
+} from "@/lib/line-order-notify";
 
 // Shopify webhook endpoint — configure in Shopify Admin (or via
 // webhookSubscriptionCreate) to POST here for topics: orders/paid,
 // orders/fulfilled (needed for the referral programme's delivery step —
 // not yet subscribed as of this writing, see loyalty-program-plan.md),
-// orders/cancelled, refunds/create, products/create, products/update,
-// products/delete, inventory_levels/update, customers/delete. Verifies
+// orders/cancelled, refunds/create, fulfillments/update, products/create,
+// products/update, products/delete, inventory_levels/update,
+// customers/delete.
+//
+// Four of those also tell the customer, on LINE, what just happened to their
+// order — paid, shipped, delivered, refunded (see lib/line-order-notify).
+// Those notifications are best-effort by design: they must never be able to
+// stop points being credited or a referral advancing. Verifies
 // the HMAC signature so only Shopify (holding SHOPIFY_WEBHOOK_SECRET)
 // can trigger point changes, rebuilds, or account updates.
 
@@ -139,7 +151,21 @@ async function handleOrdersPaid(order: any, requestUrl: string) {
 
   const subscriptionResult = await handleSubscriptionOrder(order, userId);
   const referralResult = await handleReferralOrderPlaced(userId, order, subtotal);
-  return { credited: points, userId, subscriptionResult, referralResult };
+
+  // Read back rather than adding to a number we had: the balance on the card
+  // is the one the account page will show them when they tap through, and the
+  // ledger is the only thing that knows about expiries and earlier spending.
+  const [balanceRow] = await supabaseRest<{ balance: number }[]>(
+    `points_balance?user_id=eq.${userId}&select=balance&limit=1`
+  ).catch((): { balance: number }[] => []);
+  const lineNotified = await notifyOrderPaid({
+    order,
+    userId,
+    points,
+    balance: balanceRow?.balance ?? null,
+  });
+
+  return { credited: points, userId, subscriptionResult, referralResult, lineNotified };
 }
 
 // A referred friend's FIRST paid order moves their referral row from
@@ -164,9 +190,42 @@ async function handleReferralOrderPlaced(userId: string, order: any, subtotal: n
 // fast-path optimization, not the only way delivery gets detected —
 // advanceOrderPlacedReferrals in @/lib/referral-cron polls for it too.
 async function handleOrdersFulfilled(order: any) {
+  // The tracking number lives on the fulfillment, and the newest one is the
+  // shipment this webhook is about — an order split across two parcels sends
+  // this twice, each with its own number.
+  const fulfillment = (order.fulfillments || []).slice(-1)[0] ?? {};
+  const lineNotified = await notifyOrderShipped({
+    orderId: order.id,
+    orderName: order.name,
+    email: order.email || order.customer?.email,
+    fulfillment,
+    items: fulfillment.line_items ?? order.line_items ?? [],
+  });
+
   const result = await markReferralDelivered(String(order.id));
-  if (!result) return { skipped: "no order_placed referral for this order" };
-  return { referralId: result.referralId, status: "delivered" };
+  if (!result) return { skipped: "no order_placed referral for this order", lineNotified };
+  return { referralId: result.referralId, status: "delivered", lineNotified };
+}
+
+/**
+ * Courier scans, of which only one matters to the customer.
+ *
+ * fulfillments/update fires on every scan — label printed, in transit, out for
+ * delivery — and the one worth interrupting someone's day for is the parcel
+ * actually arriving. Everything else is noise they can see in the tracking
+ * link they already have.
+ */
+async function handleFulfillmentUpdate(fulfillment: any) {
+  if (fulfillment.shipment_status !== "delivered") {
+    return { skipped: `shipment_status=${fulfillment.shipment_status ?? "none"}` };
+  }
+  return {
+    lineNotified: await notifyOrderDelivered({
+      orderId: fulfillment.order_id,
+      orderName: fulfillment.name,
+      email: fulfillment.email,
+    }),
+  };
 }
 
 // Auto-detects and tracks a "Subscribe & Save" purchase (product detail
@@ -293,13 +352,23 @@ async function handleRefundsCreate(refund: any) {
   const original = await supabaseRest<
     { user_id: string; metadata: { pointsPerBaht?: number; multiplier?: number } | null }[]
   >(`points_ledger?shopify_order_id=eq.${encodeURIComponent(String(orderId))}&reason=eq.order_paid&select=user_id,metadata&limit=1`);
-  const row = original[0];
-  if (!row) return { skipped: "no prior order_paid credit for this order", referralVoidResult };
-
   const refundedAmount = (refund.transactions || []).reduce(
     (sum: number, t: any) => sum + (parseFloat(t.amount) || 0),
     0
   );
+
+  const row = original[0];
+  if (!row) {
+    // No points to reverse — a guest order, or one from before the ledger.
+    // The money still moved, and if they were told when they paid they should
+    // be told now: notifyOrderRefunded finds them through that first card.
+    const lineNotified = await notifyOrderRefunded({
+      orderId,
+      amount: refundedAmount,
+      pointsReversed: 0,
+    });
+    return { skipped: "no prior order_paid credit for this order", referralVoidResult, lineNotified };
+  }
   // Reverse at whatever rate the original order was actually credited at —
   // pointsPerBaht for orders credited after the uniform-rate fix, or the
   // legacy tier multiplier (÷100 rate) for older ledger rows, so historical
@@ -308,7 +377,15 @@ async function handleRefundsCreate(refund: any) {
     row.metadata?.pointsPerBaht !== undefined
       ? Math.floor(refundedAmount * row.metadata.pointsPerBaht)
       : Math.floor((refundedAmount * (row.metadata?.multiplier ?? 1)) / 100);
-  if (pointsToReverse <= 0) return { skipped: "refund amount too small to affect points", referralVoidResult };
+  if (pointsToReverse <= 0) {
+    const lineNotified = await notifyOrderRefunded({
+      orderId,
+      userId: row.user_id,
+      amount: refundedAmount,
+      pointsReversed: 0,
+    });
+    return { skipped: "refund amount too small to affect points", referralVoidResult, lineNotified };
+  }
 
   await supabaseRest(`points_ledger?on_conflict=shopify_event_id`, {
     method: "POST",
@@ -322,7 +399,13 @@ async function handleRefundsCreate(refund: any) {
       metadata: { refundedAmount, pointsPerBaht: row.metadata?.pointsPerBaht ?? null },
     }),
   });
-  return { reversed: pointsToReverse, referralVoidResult };
+  const lineNotified = await notifyOrderRefunded({
+    orderId,
+    userId: row.user_id,
+    amount: refundedAmount,
+    pointsReversed: pointsToReverse,
+  });
+  return { reversed: pointsToReverse, referralVoidResult, lineNotified };
 }
 
 // If a Shopify customer is deleted, we release that email/phone so the same
@@ -396,6 +479,9 @@ export async function POST(req: NextRequest) {
         break;
       case "orders/fulfilled":
         result = await handleOrdersFulfilled(payload);
+        break;
+      case "fulfillments/update":
+        result = await handleFulfillmentUpdate(payload);
         break;
       case "orders/cancelled":
         result = await handleOrdersCancelled(payload);

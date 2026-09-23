@@ -1958,9 +1958,12 @@ export async function createFulfillmentOnlyOrder(opts: {
 
 // One-off ops helper (see api/admin/register-catalogue-webhooks) —
 // registers the webhook subscriptions api/webhooks/shopify already knows
-// how to handle (products/create|update|delete, inventory_levels/update)
-// so its debounced catalogue rebuild actually fires instead of relying
-// solely on the daily cron. Must run with the SAME app credentials that
+// how to handle but that nobody created by hand in Shopify Admin:
+// products/create|update|delete and inventory_levels/update, so the
+// debounced catalogue rebuild fires instead of relying solely on the daily
+// cron, plus fulfillments/update, which is the only place Shopify says a
+// parcel was actually delivered — the "จัดส่งสำเร็จ" card on LINE has no
+// other trigger. Must run with the SAME app credentials that
 // SHOPIFY_WEBHOOK_SECRET belongs to, since Shopify signs webhook
 // deliveries with the registering app's own Client Secret — this file
 // already authenticates as that app via SHOPIFY_ADMIN_CLIENT_ID/SECRET,
@@ -1974,7 +1977,13 @@ export type CatalogueWebhookResult = {
 };
 
 export async function registerCatalogueWebhooks(callbackUrl: string): Promise<CatalogueWebhookResult[]> {
-  const topics = ["PRODUCTS_CREATE", "PRODUCTS_UPDATE", "PRODUCTS_DELETE", "INVENTORY_LEVELS_UPDATE"];
+  const topics = [
+    "PRODUCTS_CREATE",
+    "PRODUCTS_UPDATE",
+    "PRODUCTS_DELETE",
+    "INVENTORY_LEVELS_UPDATE",
+    "FULFILLMENTS_UPDATE",
+  ];
 
   const existing = await adminGraphql<{
     webhookSubscriptions: { edges: { node: { topic: string; callbackUrl: string } }[] };
