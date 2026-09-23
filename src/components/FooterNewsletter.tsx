@@ -64,7 +64,12 @@ export default function FooterNewsletter() {
         isInvalid={Boolean(error)}
         fullWidth
       >
-        <Label className="text-sm font-semibold text-brand-ink">
+        {/* `after:content-none` drops HeroUI's required asterisk. isRequired
+            stays, so the field keeps aria-required and the browser still
+            blocks an empty submit — but a lone optional newsletter box in a
+            footer has no second field to be marked apart from, and a red *
+            there reads as a warning rather than as "this one is needed". */}
+        <Label className="text-sm font-semibold text-brand-ink after:content-none">
           รับข่าวโปรโมชั่นและสินค้าใหม่ก่อนใคร
         </Label>
         <Description className="text-xs text-slate-600">ส่งเดือนละครั้ง ยกเลิกได้ทุกเมื่อ</Description>
