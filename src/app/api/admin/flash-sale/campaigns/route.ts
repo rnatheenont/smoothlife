@@ -17,7 +17,7 @@ function unavailable() {
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) return unauthorized();
   if (!supabaseConfigured()) return unavailable();
-  const rows = await supabaseRest<FlashSaleCampaignRow[]>(`flash_sale_campaigns?select=${CAMPAIGN_COLUMNS}&order=starts_at.asc&limit=200`);
+  const rows = await supabaseRest<FlashSaleCampaignRow[]>(`flash_sale_campaigns?select=${CAMPAIGN_COLUMNS}&is_demo=is.false&order=starts_at.asc&limit=200`);
   return NextResponse.json({ ok: true, campaigns: rows.map(rowToCampaign), serverNow: Date.now() });
 }
 
