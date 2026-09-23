@@ -51,6 +51,18 @@ function failureAdvice(reason: string | null): string {
 const STUCK_HINT_AFTER_MS = 20_000;
 const POLL_INTERVAL_MS = 2_000;
 const POLL_TIMEOUT_MS = 90_000;
+// Gentler than the post-return poll: this one runs for as long as someone is
+// on the payment page, which can be the whole reservation window.
+const WATCH_INTERVAL_MS = 3_000;
+
+/**
+ * The status endpoint returns what Shopify stores: a GID
+ * ("gid://shopify/Order/7743402541207"). Nobody is going to read that out over
+ * the phone — show the order number inside it.
+ */
+function orderLabel(id: string): string {
+  return id.split("/").pop() || id;
+}
 
 /** What is being paid for, so the frame is not the only thing on screen. */
 export type OrderSummary = { total: number; items?: { name: string; quantity: number }[] };
@@ -113,6 +125,46 @@ export default function PaymentModal({
     return () => window.removeEventListener("message", onMessage);
   }, [cartToken]);
 
+  // 2C2P does not reliably send the frame back to frontendReturnUrl. A
+  // PromptPay QR paid in a banking app leaves 2C2P's own "payment successful"
+  // page sitting in the frame, and an issuer page opened in a new tab returns
+  // there instead of here — either way no "2c2p:returned" ever arrives and the
+  // modal stays on the payment page after the money has left the customer's
+  // account. So watch our own transaction from the moment this opens rather
+  // than waiting to be told they came back.
+  useEffect(() => {
+    if (previewPhase || phase !== "paying") return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+
+    async function watch() {
+      if (cancelled) return;
+      try {
+        const res = await fetch(`/api/checkout/status?cartToken=${encodeURIComponent(cartToken)}`);
+        const data = await res.json();
+        if (cancelled) return;
+        // Only success cuts the payment short. A decline can still be retried
+        // on 2C2P's page with the same token, and taking the frame away would
+        // end an attempt the customer is still in the middle of.
+        if (data.ok && data.status === "success") {
+          setOrderId(data.orderId ?? null);
+          setAmount(typeof data.amount === "number" ? data.amount : null);
+          setPhase("success");
+          return;
+        }
+      } catch {
+        /* transient — the customer is still on the payment page */
+      }
+      timer = setTimeout(watch, WATCH_INTERVAL_MS);
+    }
+
+    timer = setTimeout(watch, WATCH_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [phase, cartToken, previewPhase]);
+
   useEffect(() => {
     if (previewPhase || phase !== "verifying") return;
     let cancelled = false;
@@ -156,6 +208,8 @@ export default function PaymentModal({
     if (previewPhase) return;
     if (phase === "success" && !paidNotified.current) {
       paidNotified.current = true;
+      // The money arrived while they were being asked whether to abandon it.
+      setConfirmingClose(false);
       onPaid();
     }
   }, [phase, onPaid, previewPhase]);
@@ -272,6 +326,21 @@ export default function PaymentModal({
           </>
         )}
 
+        {isResult && (
+          // The result screens drop the header that held the close button, and
+          // on a phone this card fills the screen, so there is no backdrop left
+          // to tap either. Without this the modal genuinely cannot be dismissed
+          // after a payment goes through.
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="ปิด"
+            className="absolute end-3 top-3 grid size-9 place-items-center rounded-full text-slate-400 hover:bg-surface-soft hover:text-brand-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+          >
+            <X size={18} />
+          </button>
+        )}
+
         {phase === "success" && (
           <div className="p-7 text-center">
             <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-brand-gradient-soft">
@@ -281,7 +350,7 @@ export default function PaymentModal({
             {amount !== null && <p className="mt-1 text-sm text-slate-500">ยอดชำระ {formatTHB(amount)}</p>}
             {orderId && (
               <p className="mt-3 rounded-lg bg-surface-soft px-3 py-2 text-xs text-slate-600">
-                เลขคำสั่งซื้อ <span className="font-semibold text-brand-ink">{orderId}</span>
+                เลขคำสั่งซื้อ <span className="font-semibold text-brand-ink">{orderLabel(orderId)}</span>
               </p>
             )}
             {summary?.items && summary.items.length > 0 && (
