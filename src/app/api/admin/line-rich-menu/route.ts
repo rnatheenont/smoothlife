@@ -6,9 +6,11 @@ import {
   getDefaultRichMenuId,
   installRichMenu,
   deleteRichMenu,
+  removeRichMenus,
   diagnoseToken,
   RICH_MENU_BUTTONS,
 } from "@/lib/line-rich-menu";
+import { richMenuImage } from "@/lib/line-rich-menu-image";
 
 export const runtime = "nodejs";
 
@@ -79,28 +81,44 @@ export async function POST(req: NextRequest) {
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("image");
-  if (!(file instanceof File)) {
+
+  // Two ways in, and the generated one is the default: an admin who has no
+  // designed artwork can still publish a menu whose picture matches the tap
+  // areas, because both come from the same button list.
+  let bytes: ArrayBuffer;
+  let contentType: "image/png" | "image/jpeg";
+
+  if (file instanceof File) {
+    if (file.size > MAX_BYTES) {
+      return NextResponse.json(
+        { ok: false, error: `ไฟล์ใหญ่เกิน 1 MB (ไฟล์นี้ ${(file.size / 1024 / 1024).toFixed(2)} MB)` },
+        { status: 400 }
+      );
+    }
+    contentType = file.type === "image/jpeg" ? "image/jpeg" : "image/png";
+    bytes = await file.arrayBuffer();
+
+    const size = pngSize(new Uint8Array(bytes));
+    if (size && (size.width !== REQUIRED_WIDTH || size.height !== REQUIRED_HEIGHT)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `ขนาดรูปต้องเป็น ${REQUIRED_WIDTH}×${REQUIRED_HEIGHT} px พอดี (ไฟล์นี้ ${size.width}×${size.height})`,
+        },
+        { status: 400 }
+      );
+    }
+  } else if (form?.get("generate") === "1") {
+    bytes = await (await richMenuImage()).arrayBuffer();
+    contentType = "image/png";
+    if (bytes.byteLength > MAX_BYTES) {
+      return NextResponse.json(
+        { ok: false, error: `รูปที่สร้างใหญ่เกิน 1 MB (${(bytes.byteLength / 1024 / 1024).toFixed(2)} MB)` },
+        { status: 500 }
+      );
+    }
+  } else {
     return NextResponse.json({ ok: false, error: "กรุณาแนบไฟล์รูปเมนู" }, { status: 400 });
-  }
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json(
-      { ok: false, error: `ไฟล์ใหญ่เกิน 1 MB (ไฟล์นี้ ${(file.size / 1024 / 1024).toFixed(2)} MB)` },
-      { status: 400 }
-    );
-  }
-
-  const contentType = file.type === "image/jpeg" ? "image/jpeg" : "image/png";
-  const bytes = await file.arrayBuffer();
-
-  const size = pngSize(new Uint8Array(bytes));
-  if (size && (size.width !== REQUIRED_WIDTH || size.height !== REQUIRED_HEIGHT)) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: `ขนาดรูปต้องเป็น ${REQUIRED_WIDTH}×${REQUIRED_HEIGHT} px พอดี (ไฟล์นี้ ${size.width}×${size.height})`,
-      },
-      { status: 400 }
-    );
   }
 
   try {
@@ -117,6 +135,24 @@ export async function POST(req: NextRequest) {
     console.error("[admin/line-rich-menu] install failed", err);
     return NextResponse.json(
       { ok: false, error: err instanceof Error ? err.message : "ติดตั้งเมนูไม่สำเร็จ" },
+      { status: 502 }
+    );
+  }
+}
+
+/** Takes the menu down: off every chat, then deleted from the channel. */
+export async function DELETE(req: NextRequest) {
+  if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) return unauthorized();
+  if (!richMenuConfigured()) {
+    return NextResponse.json({ ok: false, error: "ยังไม่ได้ตั้งค่า LINE Messaging API" }, { status: 503 });
+  }
+  try {
+    await removeRichMenus();
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[admin/line-rich-menu] remove failed", err);
+    return NextResponse.json(
+      { ok: false, error: err instanceof Error ? err.message : "ปิดเมนูไม่สำเร็จ" },
       { status: 502 }
     );
   }
