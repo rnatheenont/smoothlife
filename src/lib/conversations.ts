@@ -215,3 +215,81 @@ export async function recordAiMessage(
     console.error("[conversations] could not record ai message", err);
   }
 }
+
+/**
+ * How long a queued case may sit unanswered before the AI picks it back up.
+ *
+ * 60s, not the 30 first asked for: an agent has to see the notification, open
+ * the case and read the question before they can type, and half a minute is
+ * not enough for that — at 30s nearly every case would bounce back to the bot
+ * before a person could answer at all, which is the opposite of what handover
+ * is for.
+ *
+ * The clock runs from the customer's most recent message, not from the
+ * handover: it measures how long *this* question has gone unanswered, so a
+ * customer who keeps typing while they wait keeps getting a fresh window
+ * rather than being cut off mid-thought.
+ */
+export const HANDOVER_TIMEOUT_MS = 60_000;
+
+/**
+ * Hands a queued case back to the AI when nobody answered it in time, so a
+ * customer is not left watching "ทีมงานกำลังดูข้อความของคุณอยู่" with nothing
+ * arriving.
+ *
+ * Only touches `waiting_human` — a case a person has actually picked up
+ * (`assigned`) is theirs, and yanking it away while they are typing would be
+ * worse than the wait. The case stays open either way: this decides who
+ * answers next, not whether the team still owes them a reply.
+ *
+ * Returns true when it reverted one.
+ */
+export async function revertStaleHandover(
+  channel: ConversationChannel,
+  channelUserId: string
+): Promise<boolean> {
+  if (!supabaseConfigured()) return false;
+  try {
+    const [conversation] = await supabaseRest<ConversationRow[]>(
+      `conversations?channel=eq.${channel}&channel_user_id=eq.${pgValue(channelUserId)}` +
+        `&status=eq.waiting_human&select=*&order=last_message_at.desc&limit=1`
+    );
+    if (!conversation) return false;
+
+    const [[latestCustomer], [latestStaff]] = await Promise.all([
+      supabaseRest<{ created_at: string }[]>(
+        `conversation_messages?conversation_id=eq.${pgValue(conversation.id)}` +
+          `&sender_type=eq.customer&select=created_at&order=created_at.desc&limit=1`
+      ),
+      supabaseRest<{ created_at: string }[]>(
+        `conversation_messages?conversation_id=eq.${pgValue(conversation.id)}` +
+          `&sender_type=eq.staff&select=created_at&order=created_at.desc&limit=1`
+      ),
+    ]);
+
+    if (!latestCustomer) return false;
+    const askedAt = Date.parse(latestCustomer.created_at);
+    if (Number.isNaN(askedAt)) return false;
+    // A staff reply after the question means the team did answer — the case is
+    // theirs and the timer is irrelevant.
+    if (latestStaff && Date.parse(latestStaff.created_at) >= askedAt) return false;
+    if (Date.now() - askedAt < HANDOVER_TIMEOUT_MS) return false;
+
+    await supabaseRest(`conversations?id=eq.${pgValue(conversation.id)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({ status: "ai_handling" }),
+    });
+    // Written into the thread so the person who opens this case later can see
+    // why Smoothie started answering again, and that the customer was waiting.
+    await appendMessage({
+      conversationId: conversation.id,
+      senderType: "ai",
+      content: "— ไม่มีทีมงานตอบภายใน 60 วินาที น้อง Smoothie รับช่วงต่อ —",
+    }).catch(() => {});
+    return true;
+  } catch (err) {
+    console.error("[conversations] stale handover check failed", err);
+    return false;
+  }
+}

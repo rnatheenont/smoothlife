@@ -9,12 +9,14 @@ import {
   recordCustomerMessage,
   recordAiMessage,
   type ConversationChannel,
+  revertStaleHandover,
 } from "@/lib/conversations";
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { contentForTranscript } from "@/lib/chat-markers";
 import { systemPrompt, orderHistorySummary, type CartLine, type ViewingProduct } from "@/lib/chat-prompt";
 import { CHAT_TOOLS, runChatTool } from "@/lib/chat-product-search";
 import { KB_TOOL, runKbTool } from "@/lib/chat-kb-tool";
+import { MEMBER_TOOL, runMemberTool } from "@/lib/chat-member-tool";
 import { logAiAnswer } from "@/lib/kb";
 import { otherStoreLinks, otherStoreOrders } from "@/lib/store-links";
 import { deliveryStatusForPrompt } from "@/lib/delivery-status";
@@ -151,6 +153,10 @@ export async function GET(req: NextRequest) {
   const { sessionKey, uid } = requestIdentity(req, anonId);
   if (!supabaseConfigured()) return Response.json({ messages: [] });
   try {
+    // Before reporting who is answering, give a queued case that nobody
+    // picked up its way back to the AI — the panel polls this, so the
+    // handover times out on its own without a cron the Hobby plan cannot run.
+    if (uid) await revertStaleHandover("web", uid);
     const [rows, handling] = await Promise.all([
       // Newest 40, not oldest. This asked for the first 40 ever written, so
       // once a thread passed forty messages the panel was serving a
@@ -266,6 +272,7 @@ export async function POST(req: NextRequest) {
   // isHumanHandling in lib/conversations. The message is still filed so the
   // person who eventually opens the case sees everything that was said while
   // it sat in the queue.
+  if (channelUserId) await revertStaleHandover(channel, channelUserId);
   const caseWaiting = channelUserId ? await hasWaitingCase(channel, channelUserId) : false;
   const humanHandling = channelUserId ? await isHumanHandling(channel, channelUserId) : false;
   // Anything said while a case is open belongs in the inbox, even the turns
@@ -434,7 +441,7 @@ export async function POST(req: NextRequest) {
             // and cuts the adaptive-thinking time Sonnet 5 spends by default.
             output_config: { effort: "low" },
             system,
-            tools: [...CHAT_TOOLS, KB_TOOL],
+            tools: [...CHAT_TOOLS, KB_TOOL, MEMBER_TOOL],
             ...(lastRound ? { tool_choice: { type: "none" as const } } : {}),
             messages: convo,
           });
@@ -457,6 +464,12 @@ export async function POST(req: NextRequest) {
             final.content
               .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
               .map(async (b) => {
+                // The account lookup takes its customer from the session
+                // cookie, never from the model's arguments — see the security
+                // note in @/lib/chat-member-tool.
+                if (b.name === MEMBER_TOOL.name) {
+                  return { type: "tool_result" as const, tool_use_id: b.id, content: await runMemberTool(uid) };
+                }
                 if (b.name !== KB_TOOL.name) {
                   return { type: "tool_result" as const, tool_use_id: b.id, content: runChatTool(b.name, b.input) };
                 }
