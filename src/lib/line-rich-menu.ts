@@ -118,6 +118,18 @@ export async function installRichMenu(image: { bytes: ArrayBuffer; contentType: 
   return { richMenuId };
 }
 
+/**
+ * Takes the menu off every customer's chat and deletes it.
+ *
+ * Unlinking first is the part that matters: delete a menu that is still the
+ * default and LINE keeps showing the old image until the app reconnects, so
+ * customers tap buttons that no longer exist.
+ */
+export async function removeRichMenus() {
+  await lineFetch(`${API}/user/all/richmenu`, { method: "DELETE" }).catch(() => {});
+  for (const m of await listRichMenus()) await deleteRichMenu(m.richMenuId).catch(() => {});
+}
+
 /** Removes a menu. Used to clear out superseded ones so the list stays honest. */
 export async function deleteRichMenu(richMenuId: string) {
   await lineFetch(`${API}/richmenu/${richMenuId}`, { method: "DELETE" });

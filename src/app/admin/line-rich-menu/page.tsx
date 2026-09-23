@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Loader2, Upload, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
+import { MessageCircle, Loader2, Upload, CheckCircle2, AlertTriangle, RefreshCw, Wand2, Trash2 } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, Panel } from "@/components/admin/layout-kit";
 
@@ -25,6 +25,11 @@ export default function AdminLineRichMenuPage() {
   const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState(false);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [removing, setRemoving] = useState(false);
+  // Bumped after every install so the preview refetches: the URL never
+  // changes, and a cached picture of the previous menu is the one thing here
+  // that could make a wrong install look right.
+  const [previewKey, setPreviewKey] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function load() {
@@ -41,12 +46,16 @@ export default function AdminLineRichMenuPage() {
     load();
   }, []);
 
-  async function install(file: File) {
+  // No file means "use the one the site draws from the button list" — the
+  // common case, since a rich menu otherwise needs someone to cut a
+  // 2500 × 1686 image whose invisible grid matches the tap areas exactly.
+  async function install(file?: File) {
     setInstalling(true);
     setMessage(null);
     try {
       const body = new FormData();
-      body.append("image", file);
+      if (file) body.append("image", file);
+      else body.append("generate", "1");
       const res = await fetch("/api/admin/line-rich-menu", { method: "POST", body });
       const data = await res.json();
       if (!data.ok) {
@@ -54,12 +63,31 @@ export default function AdminLineRichMenuPage() {
         return;
       }
       setMessage({ kind: "ok", text: "ติดตั้งเมนูเรียบร้อย — เปิดแชท LINE OA แล้วจะเห็นเมนูด้านล่าง" });
+      setPreviewKey((k) => k + 1);
       load();
     } catch {
       setMessage({ kind: "error", text: "ติดตั้งเมนูไม่สำเร็จ" });
     } finally {
       setInstalling(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function remove() {
+    if (!confirm("ปิดเมนูและลบออกจาก LINE OA ใช่ไหม? ลูกค้าจะไม่เห็นแถบปุ่มด้านล่างอีก")) return;
+    setRemoving(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/line-rich-menu", { method: "DELETE" });
+      const data = await res.json();
+      setMessage(
+        data.ok ? { kind: "ok", text: "ปิดเมนูแล้ว" } : { kind: "error", text: data.error || "ปิดเมนูไม่สำเร็จ" }
+      );
+      load();
+    } catch {
+      setMessage({ kind: "error", text: "ปิดเมนูไม่สำเร็จ" });
+    } finally {
+      setRemoving(false);
     }
   }
 
@@ -155,27 +183,62 @@ export default function AdminLineRichMenuPage() {
 
           <Panel title="รูปเมนู" padded>
             <p className="mb-2 text-xs leading-relaxed text-slate-500">
-              ต้องเป็น PNG หรือ JPEG ขนาด <b>2500 × 1686 px</b> ไม่เกิน 1 MB — ช่องปุ่มเรียงซ้ายไปขวา บนลงล่าง
-              ตามลำดับด้านบน
+              เว็บวาดรูปให้จากรายการปุ่มด้านซ้าย ช่องในรูปจึงตรงกับพื้นที่ที่กดได้เสมอ แม้ชื่อปุ่มจะถูกแก้ทีหลัง
+            </p>
+
+            {/* eslint-disable-next-line @next/next/no-img-element -- drawn per request, not a static asset next/image can size */}
+            <img
+              key={previewKey}
+              src={`/api/admin/line-rich-menu/image?v=${previewKey}`}
+              alt="ตัวอย่างรูปเมนู 6 ช่อง เรียง 3 คูณ 2 ตามลำดับปุ่ม"
+              width={2500}
+              height={1686}
+              className="mb-3 w-full rounded-l border border-slate-100"
+            />
+
+            <button
+              type="button"
+              onClick={() => install()}
+              disabled={!status?.configured || installing || removing}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-brand-gradient px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {installing ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
+              {live ? "ติดตั้งรูปนี้ใหม่" : "ติดตั้งด้วยรูปนี้"}
+            </button>
+
+            <p className="mb-2 mt-4 text-xs leading-relaxed text-slate-500">
+              หรืออัปโหลดรูปที่ออกแบบเอง — PNG หรือ JPEG ขนาด <b>2500 × 1686 px</b> ไม่เกิน 1 MB ช่องปุ่มเรียงซ้ายไปขวา
+              บนลงล่าง ตามลำดับด้านซ้าย
             </p>
             <input
               ref={fileRef}
               type="file"
               accept="image/png,image/jpeg"
-              disabled={!status?.configured || installing}
+              disabled={!status?.configured || installing || removing}
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) install(f);
               }}
-              className="block w-full text-xs file:mr-3 file:rounded-full file:border-0 file:bg-brand-gradient file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white disabled:opacity-50"
+              className="block w-full text-xs file:mr-3 file:rounded-full file:border-0 file:bg-surface-soft file:px-4 file:py-2 file:text-xs file:font-semibold file:text-brand-ink disabled:opacity-50"
             />
+
+            {live && (
+              <button
+                type="button"
+                onClick={remove}
+                disabled={installing || removing}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-rose-200 px-4 py-2 text-xs font-semibold text-rose-600 disabled:opacity-50"
+              >
+                {removing ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />} ปิดเมนู
+              </button>
+            )}
             {installing && (
               <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
                 <Loader2 size={13} className="animate-spin" /> กำลังติดตั้ง…
               </p>
             )}
             {message && (
-              <p className={`mt-2 text-xs ${message.kind === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
+              <p role="status" className={`mt-2 text-xs ${message.kind === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
                 {message.text}
               </p>
             )}
