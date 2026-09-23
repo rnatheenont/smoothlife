@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { products, getProductBySlug } from "@/data/products";
 import { categories } from "@/data/categories";
 import { brands, brandSlugAliases, slugifyVendor } from "@/data/brands";
@@ -76,8 +78,18 @@ export default function FlashSaleDemoPage() {
     maxRequeue: 3,
   };
 
-  // eslint-disable-next-line react-hooks/purity -- render time seeds the demo clock; the page is rendered per request
   return (
-    <FlashSaleDemo embedded baseMs={Date.now()} initialConfig={initialConfig} catalogue={catalogue} groups={groups} />
+    <div>
+      <div className="mb-4 flex justify-end">
+        <Link
+          href="/admin/flash-sale/create"
+          className="inline-flex items-center gap-1.5 rounded-full bg-brand-gradient px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+        >
+          สร้างแคมเปญจริง <ArrowUpRight size={15} />
+        </Link>
+      </div>
+      {/* eslint-disable-next-line react-hooks/purity -- render time seeds the demo clock; the page is rendered per request */}
+      <FlashSaleDemo embedded baseMs={Date.now()} initialConfig={initialConfig} catalogue={catalogue} groups={groups} />
+    </div>
   );
 }

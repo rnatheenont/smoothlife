@@ -3,6 +3,7 @@
 // the browser. Server-only validation lives here so the create route and any
 // later caller agree on what a valid campaign is.
 import { getProductBySlug } from "@/data/products";
+import { publicStorageHost } from "@/lib/public-uploads";
 
 /** Which sale page the campaign gets: the plain one, or the branded drop page. */
 export type CampaignKind = "regular" | "special";
@@ -112,8 +113,12 @@ export type PricingInput =
 
 const MAX_PRODUCTS = 12;
 
-/** A banner has to come from our own storefront or Shopify's CDN — it is rendered on the sale page. */
-const IMAGE_HOSTS = ["cdn.shopify.com", "www.smoothlife.com", "smoothlife.com"];
+/** A banner has to come from our own storefront, Shopify's CDN, or our own
+ *  public upload bucket (see /api/admin/flash-sale/upload-image) — it is
+ *  rendered on the sale page. */
+const IMAGE_HOSTS = ["cdn.shopify.com", "www.smoothlife.com", "smoothlife.com", publicStorageHost()].filter(
+  (h): h is string => Boolean(h)
+);
 
 function parseHeroImage(value: unknown): string | null | { error: string } {
   if (value === null || value === undefined || value === "") return null;
