@@ -17,4 +17,10 @@
 @import "@heroui/styles/utilities";
 @import "@heroui/styles/variants";
 
-/* Components in use: (none yet) */
+/* Components in use: the site footer's newsletter form (every page). */
+@import "@heroui/styles/components/button.css" layer(components);
+@import "@heroui/styles/components/label.css" layer(components);
+@import "@heroui/styles/components/description.css" layer(components);
+@import "@heroui/styles/components/field-error.css" layer(components);
+@import "@heroui/styles/components/input.css" layer(components);
+@import "@heroui/styles/components/textfield.css" layer(components);
