@@ -127,6 +127,11 @@ export default function CreateFlashSaleCampaignPage() {
         setError(data.error || "บันทึกไม่สำเร็จ");
         return;
       }
+      // refresh before push: the list is a server component, and the client
+      // router serves it from its own cache on a push. Without this the
+      // campaign that was just saved is missing from the list it lands on,
+      // and stays missing until someone reloads the page by hand.
+      router.refresh();
       router.push("/admin/flash-sale");
     } catch {
       setError("บันทึกไม่สำเร็จ กรุณาลองใหม่");
