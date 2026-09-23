@@ -20,6 +20,7 @@ import {
   type LineMessage,
 } from "@/lib/line-push";
 import { productCarousel, productSlugsIn } from "@/lib/line-messages";
+import { fetchLineImage, type LineImage } from "@/lib/line-content";
 import { SITE_URL } from "@/lib/site-url";
 
 // The LINE Official Account's inbound webhook: customers chat in LINE and
@@ -115,6 +116,22 @@ async function recentTurns(sessionKey: string): Promise<{ role: "user" | "assist
   }
 }
 
+/** Whether this customer has sent a photo before — see PHOTO_NOTE. */
+async function hasSentPhoto(sessionKey: string): Promise<boolean> {
+  if (!supabaseConfigured()) return false;
+  try {
+    const rows = await supabaseRest<{ id: string }[]>(
+      `chat_messages?session_key=eq.${encodeURIComponent(sessionKey)}&role=eq.user` +
+        `&content=like.${encodeURIComponent("[[PHOTO]]*")}&select=id&limit=1`
+    );
+    return rows.length > 0;
+  } catch {
+    // Fails towards saying it again: a repeated reassurance is a smaller
+    // mistake than never having given one.
+    return false;
+  }
+}
+
 /**
  * Runs one turn through the website's chat pipeline.
  *
@@ -129,6 +146,7 @@ async function askSmoothie(opts: {
   uid: string | null;
   sessionKey: string;
   text: string;
+  image?: LineImage | null;
 }): Promise<string> {
   const history = await recentTurns(opts.sessionKey);
   const headers: Record<string, string> = { "content-type": "application/json" };
@@ -146,6 +164,7 @@ async function askSmoothie(opts: {
       anonId: `line:${opts.lineUserId}`,
       channel: "line",
       channelUserId: opts.lineUserId,
+      ...(opts.image ? { image: opts.image } : {}),
     }),
   });
   const res = await chatPost(req);
@@ -166,6 +185,9 @@ function renderForLine(text: string): string {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
+
+const PHOTO_NOTE =
+  "\n\n📷 รูปที่ส่งมาจะให้ AI ดูเพื่อตอบคำถามครั้งนี้เท่านั้น ไม่ได้เก็บไว้นะคะ";
 
 const HANDOVER_NOTE =
   "\n\nส่งเรื่องให้ทีมงานแล้วนะคะ 📮 ทีมงานจะตอบกลับในแชทนี้ในเวลาทำการ (จ–ศ 9:00–18:00) ค่ะ";
@@ -234,7 +256,7 @@ async function deliver(
   if (messages.length > 1) await send(lineUserId, replyToken, messages.slice(0, 1), quickReplies);
 }
 
-async function handleText(event: LineEvent, lineUserId: string, text: string) {
+async function handleText(event: LineEvent, lineUserId: string, text: string, image?: LineImage | null) {
   // Staff have the conversation: stay silent. The customer's message is still
   // filed so the person handling it sees everything said while they were away.
   if (await isHumanHandling("line", lineUserId)) {
@@ -252,9 +274,13 @@ async function handleText(event: LineEvent, lineUserId: string, text: string) {
 
   await startLineLoading(lineUserId);
 
+  // Asked before the turn is persisted: this is what makes the note below a
+  // first-photo note rather than one on every photo.
+  const firstPhoto = Boolean(image) && !(await hasSentPhoto(sessionKey));
+
   let raw = "";
   try {
-    raw = await askSmoothie({ lineUserId, uid, sessionKey, text });
+    raw = await askSmoothie({ lineUserId, uid, sessionKey, text, image });
   } catch (err) {
     console.error("[line-webhook] chat pipeline failed", err);
   }
@@ -278,6 +304,12 @@ async function handleText(event: LineEvent, lineUserId: string, text: string) {
 
   // The chips the web panel would draw under the bubble become LINE's own
   // quick-reply bar. A closing offer (CLOSE) and a handover carry no options.
+  // Said once, the first time someone sends a photo, and never again. The
+  // promise it makes is kept by the code rather than by a policy page: the
+  // bytes go to the model for this one answer and are never written down —
+  // the transcript keeps a "[[PHOTO]]" marker, not the picture.
+  if (firstPhoto) reply += PHOTO_NOTE;
+
   const quickReplies = kind === "ask" || kind === "suggest" ? options : [];
   const messages = [lineTextMessage(reply), ...(carousel ? [carousel] : [])];
   await deliver(lineUserId, event.replyToken, messages, quickReplies);
@@ -307,15 +339,44 @@ async function handleEvent(event: LineEvent) {
     return;
   }
 
-  // Anything that isn't text still gets an answer — silence reads as broken.
-  // Photos are not sent to the model here on purpose: skin analysis asks for
-  // consent before a photo is used, and that consent lives in Skin Coach.
+  // A photo is a question too — "ใช้ตัวนี้ยังไง" asked with a picture of the
+  // box, or "ได้ของมาสภาพนี้". It goes to the model with a stand-in sentence
+  // for the words the customer didn't type, and comes back through the same
+  // path as any other turn.
+  if (event.message.type === "image") {
+    // Staff are on this case: file the fact that a photo arrived and leave it
+    // to them. Fetching it would only hand the bytes to a model nobody asked
+    // for an answer from, and the photo itself is not ours to store.
+    if (await isHumanHandling("line", lineUserId)) {
+      await recordCustomerMessage(
+        "line",
+        lineUserId,
+        "(ลูกค้าส่งรูปมาในแชท LINE — เปิดดูได้ที่ LINE OA Manager)",
+        await siteUserFor(lineUserId)
+      );
+      return;
+    }
+
+    const image = await fetchLineImage(event.message.id);
+    if (image) {
+      await handleText(event, lineUserId, "ช่วยดูรูปนี้ให้หน่อยค่ะ", image);
+      return;
+    }
+    // Could not be fetched — say so rather than leaving them waiting on an
+    // answer that is never coming.
+    await deliver(lineUserId, event.replyToken, [
+      lineTextMessage(
+        `ขออภัยค่ะ เปิดรูปนี้ไม่ได้ 😢 ลองส่งใหม่อีกครั้ง หรือพิมพ์เล่าอาการมาได้เลยนะคะ\n\nถ้าอยากให้วิเคราะห์สภาพผิวแบบละเอียด สแกนผิวที่นี่ได้ค่ะ\n${lineOpenLink("/skin-coach")}`
+      ),
+    ]);
+    return;
+  }
+
+  // Anything else that isn't text still gets an answer — silence reads as broken.
   if (await isHumanHandling("line", lineUserId)) return;
-  const nudge =
-    event.message.type === "image"
-      ? `ขอบคุณสำหรับรูปค่ะ 📷 ตอนนี้น้อง Smoothie ดูรูปในไลน์ยังไม่ได้ แต่ถ้าอยากให้วิเคราะห์สภาพผิว กดที่ลิงก์นี้เพื่อสแกนผิวได้เลยค่ะ\n${lineOpenLink("/skin-coach")}\n\nหรือพิมพ์เล่าอาการมาได้เลยนะคะ`
-      : "พิมพ์คำถามมาได้เลยค่ะ 💬 เช่น “สิวอุดตันใช้อะไรดี” หรือ “ออเดอร์ถึงไหนแล้ว”";
-  await deliver(lineUserId, event.replyToken, [lineTextMessage(nudge)]);
+  await deliver(lineUserId, event.replyToken, [
+    lineTextMessage("พิมพ์คำถามมาได้เลยค่ะ 💬 เช่น “สิวอุดตันใช้อะไรดี” หรือ “ออเดอร์ถึงไหนแล้ว”"),
+  ]);
 }
 
 export async function POST(req: NextRequest) {
