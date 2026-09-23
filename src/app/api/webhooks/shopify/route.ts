@@ -348,6 +348,19 @@ export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const hmacHeader = req.headers.get("x-shopify-hmac-sha256");
   if (!verifyHmac(rawBody, hmacHeader)) {
+    // Say who was turned away. A rejected webhook is otherwise a silent 401 in
+    // the access log, and the cause is never the code: it is that the sender
+    // signs with a different secret than SHOPIFY_WEBHOOK_SECRET — a second
+    // store, or webhooks registered by an app whose client secret signs them
+    // instead of the store's webhook signing secret. Shop and topic are the
+    // two facts that tell those apart, and neither is sensitive.
+    console.error(
+      "[webhooks/shopify] rejected: shop=%s topic=%s webhookId=%s hmac=%s",
+      req.headers.get("x-shopify-shop-domain") ?? "-",
+      req.headers.get("x-shopify-topic") ?? "-",
+      req.headers.get("x-shopify-webhook-id") ?? "-",
+      hmacHeader ? "present" : "missing"
+    );
     return NextResponse.json({ error: "invalid signature" }, { status: 401 });
   }
   if (!supabaseConfigured()) {
