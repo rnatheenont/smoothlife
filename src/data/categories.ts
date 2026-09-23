@@ -1,46 +1,75 @@
 import { products } from "./products";
 import { Category, CategoryInfo, Concern, ConcernInfo } from "./types";
 
+// The shelves a shopper picks from, in the order they appear on /shop.
+// เวชสำอาง, อุปกรณ์สุขภาพ and แม่และเด็ก were split out of skincare: the
+// keyword rules had one fallback, so a knee brace, a baby wash and a
+// blood-pressure monitor all sat under face care.
+//
+// Every shelf now carries its own artwork, so categoryImage()'s
+// best-reviewed-product fallback only covers a shelf added without one.
 export const categories: CategoryInfo[] = [
   {
     slug: "skincare",
     name: "Skincare",
     nameTh: "สกินแคร์",
-    image: "/categories/skincare-acne5.jpg",
-  },
-  {
-    slug: "oral-care",
-    name: "Oral Care",
-    nameTh: "ดูแลช่องปาก",
-    image: "/categories/oral-care-dentiste.jpg",
+    image: "/categories/skincare.png",
   },
   {
     slug: "hair-care",
     name: "Hair Care",
     nameTh: "ดูแลเส้นผม",
-    image: "/categories/hair-care-smoothe.jpg",
+    image: "/categories/hair-care.png",
   },
   {
-    // No curated shot yet — categoryImage() takes the best-reviewed thing in
-    // it instead, which is at least always something the category sells.
-    slug: "personal-care",
-    name: "Personal Care",
-    nameTh: "ดูแลส่วนบุคคล",
-    image: "",
-  },
-  {
-    slug: "wellness",
-    name: "Wellness & Supplements",
-    nameTh: "วิตามินและอาหารเสริม",
-    // Was a screenshot of the Smooth Life wordmark with its background
-    // rubbed out — a logo where every other tile in the row has a product.
-    image: "",
+    slug: "oral-care",
+    name: "Oral Care",
+    nameTh: "ดูแลช่องปาก",
+    image: "/categories/oral-care.png",
   },
   {
     slug: "body-care",
     name: "Body Care",
     nameTh: "ดูแลผิวกาย",
+    image: "/categories/body-care.png",
+  },
+  {
+    slug: "wellness",
+    name: "Wellness & Supplements",
+    nameTh: "วิตามินและอาหารเสริม",
+    image: "/categories/wellness.png",
+  },
+  {
+    slug: "womens-health",
+    name: "Women's Health",
+    nameTh: "สุขภาพผู้หญิง",
+    image: "/categories/womens-health.png",
+  },
+  {
+    slug: "dermo-cosmetics",
+    name: "Dermo-cosmetics",
+    nameTh: "เวชสำอาง",
+    image: "/categories/dermo-cosmetics.png",
+  },
+  {
+    slug: "health-devices",
+    name: "Health Devices",
+    nameTh: "อุปกรณ์สุขภาพ",
+    image: "/categories/health-devices.png",
+  },
+  {
+    slug: "personal-care",
+    name: "Personal Care",
+    nameTh: "ดูแลส่วนบุคคล",
+    // No curated shot yet — categoryImage() takes the best-reviewed thing in
+    // it instead, which is at least always something the category sells.
     image: "",
+  },
+  {
+    slug: "mother-baby",
+    name: "Mother & Baby",
+    nameTh: "สินค้าแม่และเด็ก",
+    image: "/categories/mother-baby.png",
   },
 ];
 
