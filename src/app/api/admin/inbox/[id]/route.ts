@@ -4,6 +4,7 @@ import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { getProductBySlug } from "@/data/products";
 import { translateForCustomer } from "@/lib/reply-translate";
 import { appendMessage, ConversationRow } from "@/lib/conversations";
+import { linePushConfigured, pushLineText } from "@/lib/line-push";
 import {
   signedAttachmentUrl,
   deleteAttachmentsForConversation,
@@ -178,14 +179,30 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   );
   if (!conversation) return NextResponse.json({ ok: false, error: "ไม่พบบทสนทนานี้" }, { status: 404 });
 
-  // Web is the only channel with a delivery path today. Refusing outright for
-  // the others is the honest behaviour: a reply stored but never delivered
-  // would show as "sent" to staff while the customer waits forever.
-  if (conversation.channel !== "web") {
+  // Web and LINE have a delivery path; anything else is refused outright,
+  // because a reply stored but never delivered would show as "sent" to staff
+  // while the customer waits forever.
+  if (conversation.channel !== "web" && conversation.channel !== "line") {
     return NextResponse.json(
       { ok: false, error: `ยังส่งข้อความกลับช่องทาง ${conversation.channel} ไม่ได้ (ยังไม่ได้เชื่อมต่อ)` },
       { status: 501 }
     );
+  }
+  if (conversation.channel === "line") {
+    if (!linePushConfigured()) {
+      return NextResponse.json(
+        { ok: false, error: "ยังตอบกลับทาง LINE ไม่ได้ — ยังไม่ได้ตั้งค่า LINE_MESSAGING_ACCESS_TOKEN" },
+        { status: 503 }
+      );
+    }
+    // Text only for now: a LINE image message needs a publicly fetchable URL,
+    // and the attachment bucket is private on purpose.
+    if (imageBase64) {
+      return NextResponse.json(
+        { ok: false, error: "ยังแนบรูปตอบกลับทาง LINE ไม่ได้ — ส่งเป็นข้อความได้ค่ะ" },
+        { status: 501 }
+      );
+    }
   }
 
   // Uploaded before either row is written, so a storage failure never leaves a
@@ -204,6 +221,15 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     }
   }
 
+  // Where this customer's transcript lives in chat_messages. For web that is
+  // the same value as channel_user_id; for LINE it is their site user id when
+  // they have ever signed in, and "line:<userId>" when they have not — the
+  // LINE userId on its own is nobody's session key (see the LINE webhook).
+  const transcriptKey =
+    conversation.channel === "line"
+      ? (conversation.user_id ?? `line:${conversation.channel_user_id}`)
+      : conversation.channel_user_id;
+
   // What the customer will read. Staff answer in Thai; someone who wrote in
   // English or Japanese should not have to translate their own support reply.
   // Only when it differs — a staff member who already answered in their
@@ -217,7 +243,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     // like a Thai speaker and the reply went out untranslated. role='user' is
     // only ever their own words.
     const prior = await supabaseRest<{ content: string }[]>(
-      `chat_messages?session_key=eq.${pgValue(conversation.channel_user_id)}&role=eq.user` +
+      `chat_messages?session_key=eq.${pgValue(transcriptKey)}&role=eq.user` +
         `&select=content&order=created_at.desc&limit=6`
     ).catch((): { content: string }[] => []);
     delivered = await translateForCustomer({
@@ -229,6 +255,20 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     });
   }
 
+  // LINE is delivered before the thread is written, unlike web: a push can be
+  // refused — the customer blocked the OA, or the monthly quota is spent — and
+  // a reply recorded as sent that never arrived is worse than an error staff
+  // can see and act on.
+  if (conversation.channel === "line") {
+    const sent = await pushLineText(conversation.channel_user_id, delivered ?? content);
+    if (!sent) {
+      return NextResponse.json(
+        { ok: false, error: "ส่งข้อความไปยัง LINE ไม่สำเร็จ — ลูกค้าอาจบล็อก OA ไว้ หรือโควตาข้อความของเดือนนี้หมดแล้ว" },
+        { status: 502 }
+      );
+    }
+  }
+
   await appendMessage({
     conversationId: conversation.id,
     senderType: "staff",
@@ -237,15 +277,17 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     deliveredContent: delivered,
   });
 
-  // Delivery for web: the customer's chat widget reads its history out of
-  // chat_messages keyed by session_key, which for a signed-in customer is
-  // their user id — the same value stored as channel_user_id here. Writing the
-  // reply there is what actually puts it on their screen.
+  // For web this IS the delivery: the customer's chat widget reads its history
+  // out of chat_messages keyed by session_key, so writing the reply there is
+  // what puts it on their screen. For LINE the message has already gone out
+  // above, and this keeps the transcript whole — the webhook replays these
+  // rows as the conversation's memory, so without it Smoothie would pick the
+  // thread back up knowing nothing of what staff had just told the customer.
   await supabaseRest("chat_messages", {
     method: "POST",
     returning: false,
     body: JSON.stringify({
-      session_key: conversation.channel_user_id,
+      session_key: transcriptKey,
       user_id: conversation.user_id,
       role: "assistant",
       // Marks it as a person for the customer's panel. The role column only

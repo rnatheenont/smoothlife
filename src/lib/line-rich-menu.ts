@@ -118,6 +118,24 @@ export async function installRichMenu(image: { bytes: ArrayBuffer; contentType: 
   return { richMenuId };
 }
 
+/**
+ * What LINE currently has registered as this channel's webhook endpoint.
+ *
+ * Worth asking rather than assuming: the chat webhook only works once someone
+ * has pasted the URL into the LINE console and switched "Use webhook" on, and
+ * those two are the steps that get forgotten. null means LINE would not say —
+ * an unset endpoint answers 404.
+ */
+export async function getWebhookEndpoint(): Promise<{ endpoint: string; active: boolean } | null> {
+  try {
+    const body = await lineFetch(`${API}/channel/webhook/endpoint`, { method: "GET" });
+    const parsed = JSON.parse(body) as { endpoint?: string; active?: boolean };
+    return { endpoint: parsed.endpoint ?? "", active: Boolean(parsed.active) };
+  } catch {
+    return null;
+  }
+}
+
 /** Removes a menu. Used to clear out superseded ones so the list stays honest. */
 export async function deleteRichMenu(richMenuId: string) {
   await lineFetch(`${API}/richmenu/${richMenuId}`, { method: "DELETE" });

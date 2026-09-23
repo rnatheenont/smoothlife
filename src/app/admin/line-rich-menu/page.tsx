@@ -17,6 +17,7 @@ type Status = {
   reason?: string;
   menus?: { richMenuId: string; name: string }[];
   defaultRichMenuId?: string | null;
+  webhook?: { url: string; secretSet: boolean; registered?: string | null; active?: boolean };
   error?: string;
 };
 
@@ -64,6 +65,11 @@ export default function AdminLineRichMenuPage() {
   }
 
   const live = Boolean(status?.defaultRichMenuId);
+  // "Live" for the chat means all three: our secret, LINE pointed here, and
+  // the switch actually on. Any one missing and customers type into silence.
+  const webhookLive = Boolean(
+    status?.webhook?.secretSet && status.webhook.active && status.webhook.registered === status.webhook.url
+  );
 
   useAdminAction({
     label: "รีเฟรชสถานะเมนู",
@@ -179,6 +185,38 @@ export default function AdminLineRichMenuPage() {
                 {message.text}
               </p>
             )}
+          </Panel>
+
+          {/* The other half of the OA: the menu is what customers tap, this is
+              what answers when they type. Both are set up in the same LINE
+              console, so the status belongs on the same screen. */}
+          <Panel title="แชทกับน้อง Smoothie ในไลน์" padded>
+            <p
+              className={`text-xs font-semibold ${
+                webhookLive ? "text-emerald-600" : status?.webhook?.secretSet ? "text-amber-600" : "text-slate-500"
+              }`}
+            >
+              {webhookLive
+                ? "เปิดใช้งานแล้ว — ลูกค้าพิมพ์คุยในไลน์ได้เลย"
+                : !status?.webhook?.secretSet
+                  ? "ยังไม่ได้ตั้งค่า LINE_MESSAGING_CHANNEL_SECRET"
+                  : status?.webhook?.registered
+                    ? "LINE ชี้เว็บฮุกไปที่อื่นอยู่ หรือยังปิด Use webhook"
+                    : "ยังไม่ได้ใส่ Webhook URL ใน LINE Developers Console"}
+            </p>
+            <p className="mt-2 text-[11px] text-slate-500">Webhook URL — วางใน Messaging API &gt; Webhook URL</p>
+            <code className="mt-1 block break-all rounded-l bg-surface-soft px-2 py-1.5 text-[11px] text-brand-ink">
+              {status?.webhook?.url}
+            </code>
+            {status?.webhook?.registered && status.webhook.registered !== status.webhook.url && (
+              <p className="mt-1 break-all text-[11px] text-amber-600">
+                ตอนนี้ LINE ชี้ไปที่ {status.webhook.registered}
+              </p>
+            )}
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+              อย่าลืมปิด “ข้อความตอบกลับอัตโนมัติ” ใน manager.line.biz &gt; การตั้งค่า &gt; การตอบกลับ
+              ไม่งั้น LINE จะตอบข้อความสำเร็จรูปแทนน้อง Smoothie
+            </p>
           </Panel>
         </div>
       )}

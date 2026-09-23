@@ -8,6 +8,7 @@ import {
   hasOpenCase,
   recordCustomerMessage,
   recordAiMessage,
+  type ConversationChannel,
 } from "@/lib/conversations";
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { contentForTranscript } from "@/lib/chat-markers";
@@ -228,6 +229,17 @@ export async function POST(req: NextRequest) {
 
   const { uid, sessionKey } = requestIdentity(req, anonId);
 
+  // Which inbox thread this turn belongs to. The web panel is no longer the
+  // only way in — the LINE webhook hands this same pipeline a conversation on
+  // the `line` channel, identified by the customer's LINE userId — so the
+  // channel is read off the request instead of being assumed to be "web, the
+  // signed-in customer". Unchanged for the panel, which sends neither field.
+  const channel: ConversationChannel = body?.channel === "line" ? "line" : "web";
+  const channelUserId =
+    channel === "line" && typeof body?.channelUserId === "string" && body.channelUserId
+      ? (body.channelUserId as string)
+      : uid;
+
   const image = body?.image;
   const imageBase64 = typeof image?.base64 === "string" ? image.base64 : "";
   const imageMediaType = image?.mediaType === "image/png" ? "image/png" : "image/jpeg";
@@ -254,14 +266,15 @@ export async function POST(req: NextRequest) {
   // isHumanHandling in lib/conversations. The message is still filed so the
   // person who eventually opens the case sees everything that was said while
   // it sat in the queue.
-  const caseWaiting = uid ? await hasWaitingCase("web", uid) : false;
-  const humanHandling = uid ? await isHumanHandling("web", uid) : false;
+  const caseWaiting = channelUserId ? await hasWaitingCase(channel, channelUserId) : false;
+  const humanHandling = channelUserId ? await isHumanHandling(channel, channelUserId) : false;
   // Anything said while a case is open belongs in the inbox, even the turns
   // the AI is handling. Recording only during waiting/assigned left a hole:
   // the question asked before the customer went back to the bot, then the
   // staff reply after, and nothing between — so staff read an answer to a
   // question that was not on the page.
-  const caseOpen = caseWaiting || humanHandling || (uid ? await hasOpenCase("web", uid) : false);
+  const caseOpen =
+    caseWaiting || humanHandling || (channelUserId ? await hasOpenCase(channel, channelUserId) : false);
 
   // Only the humanHandling branch below returns before the AI path, and with
   // it the persistMessage further down — so only it has to write the
@@ -278,13 +291,13 @@ export async function POST(req: NextRequest) {
     await persistMessage({ uid, sessionKey, role: "user", content, viewingSlug: viewingProduct?.slug });
   }
 
-  if (caseOpen && !humanHandling && typeof lastUserMessage?.content === "string") {
-    await recordCustomerMessage("web", uid as string, lastUserMessage.content);
+  if (caseOpen && !humanHandling && channelUserId && typeof lastUserMessage?.content === "string") {
+    await recordCustomerMessage(channel, channelUserId, lastUserMessage.content, uid);
   }
 
   if (humanHandling) {
-    if (typeof lastUserMessage?.content === "string") {
-      await recordCustomerMessage("web", uid as string, lastUserMessage.content);
+    if (channelUserId && typeof lastUserMessage?.content === "string") {
+      await recordCustomerMessage(channel, channelUserId, lastUserMessage.content, uid);
     }
     return textResponse(
       lang === "en"
@@ -469,8 +482,8 @@ export async function POST(req: NextRequest) {
         const toSave = contentForTranscript(fullText);
         // Same reason as the customer's side above — a thread with only half
         // the exchange in it is worse than no thread.
-        if (caseOpen && uid && toSave.trim()) {
-          await recordAiMessage("web", uid, toSave);
+        if (caseOpen && channelUserId && toSave.trim()) {
+          await recordAiMessage(channel, channelUserId, toSave);
         }
         await persistMessage({ uid, sessionKey, role: "assistant", content: toSave, viewingSlug: viewingProduct?.slug });
         if (kbAsked && lastUserText) {

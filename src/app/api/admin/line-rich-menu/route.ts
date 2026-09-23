@@ -7,8 +7,10 @@ import {
   installRichMenu,
   deleteRichMenu,
   diagnoseToken,
+  getWebhookEndpoint,
   RICH_MENU_BUTTONS,
 } from "@/lib/line-rich-menu";
+import { SITE_URL } from "@/lib/site-url";
 
 export const runtime = "nodejs";
 
@@ -38,11 +40,19 @@ export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) return unauthorized();
 
   const buttons = RICH_MENU_BUTTONS.map((b) => ({ label: b.label, path: b.path }));
+  // The chat webhook is a different switch from the menu — it needs the
+  // channel *secret*, not the access token — so it gets its own line in the
+  // status rather than being implied by a working menu.
+  const webhook = {
+    url: `${SITE_URL}/api/webhooks/line`,
+    secretSet: Boolean(process.env.LINE_MESSAGING_CHANNEL_SECRET?.trim()),
+  };
   if (!richMenuConfigured()) {
     return NextResponse.json({
       ok: true,
       configured: false,
       buttons,
+      webhook,
       // Said plainly rather than as a generic "not configured": this needs an
       // account that does not exist yet, which is a different problem from a
       // missing environment variable.
@@ -52,8 +62,19 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const [menus, defaultId] = await Promise.all([listRichMenus(), getDefaultRichMenuId()]);
-    return NextResponse.json({ ok: true, configured: true, buttons, menus, defaultRichMenuId: defaultId });
+    const [menus, defaultId, endpoint] = await Promise.all([
+      listRichMenus(),
+      getDefaultRichMenuId(),
+      getWebhookEndpoint(),
+    ]);
+    return NextResponse.json({
+      ok: true,
+      configured: true,
+      buttons,
+      menus,
+      defaultRichMenuId: defaultId,
+      webhook: { ...webhook, registered: endpoint?.endpoint ?? null, active: endpoint?.active ?? false },
+    });
   } catch (err) {
     // The raw LINE error is "Authentication failed. Confirm that the access
     // token ... is valid", which is true and useless: the token is valid, it
@@ -63,6 +84,7 @@ export async function GET(req: NextRequest) {
         ok: false,
         configured: true,
         buttons,
+        webhook,
         error: await diagnoseToken(),
         detail: err instanceof Error ? err.message : String(err),
       },
