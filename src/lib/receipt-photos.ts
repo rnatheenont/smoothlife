@@ -5,7 +5,7 @@
 // storage API, opposite promise. The difference from chat photos is how long
 // they live: a receipt is evidence for a prize draw and has to survive until
 // after the last winner confirms (5 Nov), not thirty days from upload.
-import { supabaseRest } from "@/lib/supabase-server";
+import { pgValue, supabaseRest } from "@/lib/supabase-server";
 
 const BUCKET = "receipt-photos";
 /** Long enough to look at one in the review screen, short enough to be useless if copied. */
@@ -114,4 +114,69 @@ export async function entriesForUser(campaignKey: string, userId: string): Promi
     `receipt_campaign_entries?campaign_key=eq.${encodeURIComponent(campaignKey)}&user_id=eq.${userId}` +
       `&select=${ENTRY_COLUMNS}&order=created_at.desc&limit=100`
   ).catch(() => []);
+}
+
+/**
+ * How long a receipt photo is kept after the campaign closes.
+ *
+ * The photo is evidence for as long as there is anything to dispute — a
+ * rejection to appeal, a prize to award, a winner to check. Thirty days past
+ * the last of that is long enough, and keeping a customer's order confirmation
+ * (name, address, what they bought) any longer than it is useful is just a
+ * liability sitting in a bucket.
+ */
+export const RECEIPT_RETENTION_DAYS = 30;
+
+/**
+ * Deletes the photos for receipts older than the retention window, and forgets
+ * the paths with them.
+ *
+ * The row stays: what was decided about a receipt, and the entries it earned,
+ * is the record of who won and has to outlive the picture.
+ */
+export async function purgeExpiredReceiptPhotos(before: Date): Promise<number> {
+  const rows = await supabaseRest<{ id: string; receipt_photo_path: string | null }[]>(
+    `receipt_campaign_entries?receipt_photo_path=not.is.null&created_at=lt.${before.toISOString()}` +
+      `&select=id,receipt_photo_path&limit=500`
+  ).catch(() => []);
+
+  let removed = 0;
+  for (const row of rows) {
+    if (!row.receipt_photo_path) continue;
+    try {
+      await removeReceiptPhoto(row.receipt_photo_path);
+      await supabaseRest(`receipt_campaign_entries?id=eq.${pgValue(row.id)}`, {
+        method: "PATCH",
+        returning: false,
+        body: JSON.stringify({ receipt_photo_path: null }),
+      });
+      removed += 1;
+    } catch (err) {
+      // One unreachable object should not stop the rest of the sweep; the next
+      // run picks it up again.
+      console.error("[receipt-photos] purge failed for", row.id, err);
+    }
+  }
+
+  // The attempt rows carry their own copies of replaced photos.
+  const attempts = await supabaseRest<{ id: string; receipt_photo_path: string | null }[]>(
+    `receipt_campaign_uploads?receipt_photo_path=not.is.null&created_at=lt.${before.toISOString()}` +
+      `&select=id,receipt_photo_path&limit=500`
+  ).catch(() => []);
+  for (const row of attempts) {
+    if (!row.receipt_photo_path) continue;
+    try {
+      await removeReceiptPhoto(row.receipt_photo_path);
+      await supabaseRest(`receipt_campaign_uploads?id=eq.${pgValue(row.id)}`, {
+        method: "PATCH",
+        returning: false,
+        body: JSON.stringify({ receipt_photo_path: null }),
+      });
+      removed += 1;
+    } catch (err) {
+      console.error("[receipt-photos] purge failed for upload", row.id, err);
+    }
+  }
+
+  return removed;
 }

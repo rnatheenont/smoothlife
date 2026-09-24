@@ -9,12 +9,25 @@
 // what the conditions tell them to keep, and what a reviewer compares against.
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, Check, Clock, Loader2, Mail, Upload, X } from "lucide-react";
+import { AlertTriangle, Check, Clock, Gift, Loader2, Mail, Upload, X } from "lucide-react";
 import { formatTHB } from "@/lib/format";
 import { GENERAL_THRESHOLD } from "@/lib/receipt-campaign";
 import { shopifyAuthStartPath } from "@/lib/shopify-email-login";
 
 type AiCheck = { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] };
+
+type Prize = {
+  id: string;
+  prizeType: "vip" | "lucky_fan";
+  rank: number;
+  status: "pending_confirm" | "confirmed" | "forfeited";
+  confirmDeadline: string;
+};
+
+const PRIZE_NAME: Record<Prize["prizeType"], string> = {
+  vip: "รางวัล VIP",
+  lucky_fan: "รางวัล Lucky Fan",
+};
 
 type Order = {
   id: string;
@@ -99,6 +112,8 @@ export default function ReceiptForm({
   const [orders, setOrders] = useState<Order[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [uploads, setUploads] = useState<Upload[]>([]);
+  const [prizes, setPrizes] = useState<Prize[]>([]);
+  const [claiming, setClaiming] = useState<string | null>(null);
   const [approved, setApproved] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -117,6 +132,7 @@ export default function ReceiptForm({
       setOrders(data.orders as Order[]);
       setEntries(data.entries as Entry[]);
       setUploads((data.uploads ?? []) as Upload[]);
+      setPrizes((data.prizes ?? []) as Prize[]);
       setApproved(data.approvedEntries as number);
       setState("ready");
     } catch {
@@ -148,6 +164,27 @@ export default function ReceiptForm({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- derived from the loaded orders
     if (orders.length === 1) setSelected(orders[0].id);
   }, [orders]);
+
+  // Accepting a prize. Giving one up is deliberately not here — a tap that
+  // hands ฿55,000 to the next person should not sit beside "ยืนยันสิทธิ์".
+  async function claim(prize: Prize) {
+    setClaiming(prize.id);
+    try {
+      const res = await fetch("/api/campaigns/dentiste-x-kengnamping/prizes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: prize.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        setNotice(data.error || "ยืนยันสิทธิ์ไม่สำเร็จ ลองใหม่อีกครั้ง");
+        return;
+      }
+      await load();
+    } finally {
+      setClaiming(null);
+    }
+  }
 
   async function send() {
     if (!selected || !file) return;
@@ -249,6 +286,51 @@ export default function ReceiptForm({
   return (
     <div className="flex flex-col gap-8">
       {testBanner}
+
+      {/* The one thing that outranks the form: they won something, and there
+          is a date by which they have to say so. */}
+      {prizes.map((prize) => (
+        <div
+          key={prize.id}
+          className={`rounded-2xl border px-5 py-4 ${
+            prize.status === "confirmed"
+              ? "border-emerald-200 bg-emerald-50"
+              : "border-amber-300 bg-amber-50"
+          }`}
+        >
+          <p className="flex items-center gap-2 text-[16px] font-extrabold text-black">
+            <Gift size={18} aria-hidden />
+            {prize.status === "confirmed"
+              ? `ยืนยันสิทธิ์ ${PRIZE_NAME[prize.prizeType]} แล้ว`
+              : `ยินดีด้วย! คุณได้รับ ${PRIZE_NAME[prize.prizeType]}`}
+          </p>
+          {prize.status === "confirmed" ? (
+            <p className="mt-1.5 text-[14px] leading-relaxed text-emerald-900">
+              ทีมงานจะติดต่อกลับเพื่อนัดรับรางวัล — ใช้เบอร์และอีเมลเดียวกับที่สั่งซื้อไว้
+            </p>
+          ) : (
+            <>
+              <p className="mt-1.5 text-[14px] leading-relaxed text-amber-900">
+                กรุณากดยืนยันสิทธิ์ภายใน {when(prize.confirmDeadline)} — ถ้าไม่ยืนยันภายในกำหนด
+                สิทธิ์จะถูกส่งต่อให้ลำดับสำรอง
+              </p>
+              <button
+                type="button"
+                disabled={claiming === prize.id}
+                onClick={() => claim(prize)}
+                className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-black text-[15px] font-semibold text-white disabled:opacity-50 sm:w-auto sm:px-8"
+              >
+                {claiming === prize.id && <Loader2 size={16} className="animate-spin" />}
+                {claiming === prize.id ? "กำลังยืนยัน…" : "ยืนยันรับรางวัล"}
+              </button>
+              <p className="mt-2 text-[12px] text-amber-900/70">
+                ถ้าไม่ต้องการรับรางวัลนี้ กรุณาแจ้งทีมงานผ่านช่องทางติดต่อของร้าน
+              </p>
+            </>
+          )}
+        </div>
+      ))}
+
       {approved > 0 && (
         <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-[15px] font-bold text-emerald-900">
           คุณมีสิทธิ์ลุ้นรางวัลแล้ว {approved} สิทธิ์

@@ -58,11 +58,13 @@ type Vip = {
 };
 type Fan = { userId: string; customer: string | null; entries: number };
 type Winner = {
+  id: string;
   prizeType: "vip" | "lucky_fan";
   rank: number;
   customer: string | null;
   status: "pending_confirm" | "confirmed" | "forfeited";
-  reserve: boolean;
+  /** Inside the twenty-five that have not been given up — a reserve is not. */
+  holding: boolean;
   confirmDeadline: string;
   drawnAt: string;
 };
@@ -121,6 +123,27 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- first load
     load();
   }, [load]);
+
+  // Confirming a prize for someone who replied, or marking one given up.
+  // Forfeiting is what calls the next reserve up; nobody is renumbered.
+  async function decideWinner(w: Winner, action: "confirm" | "forfeit" | "reset") {
+    if (action === "forfeit" && !window.confirm(`ยืนยันว่าลำดับ ${w.rank} สละสิทธิ์? สิทธิ์จะตกไปที่ลำดับสำรองถัดไป`)) return;
+    setBusy(w.id);
+    try {
+      const res = await fetch(`/api/admin/receipts/winners/${w.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "บันทึกไม่สำเร็จ");
+      await load();
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   // Reads the order's line items again and applies today's rules to them.
   async function recalculate(item: QueueItem) {
@@ -492,17 +515,59 @@ export default function Page() {
                               <th>#</th>
                               <th>ลูกค้า</th>
                               <th>สถานะ</th>
+                              <th>ยืนยันสิทธิ์</th>
                             </tr>
                           </thead>
                           <tbody>
                             {drawn.map((w) => (
-                              <tr key={w.rank} className={adminTable.row}>
+                              <tr key={w.id} className={adminTable.row}>
                                 <td className={adminTable.mono}>
                                   {w.rank}
-                                  {w.reserve && <span className="ml-1 text-[11px] text-slate-400">สำรอง</span>}
+                                  {!w.holding && <span className="ml-1 text-[11px] text-slate-400">สำรอง</span>}
                                 </td>
                                 <td className={adminTable.cell}>{w.customer ?? "—"}</td>
                                 <td className={adminTable.muted}>{WINNER_STATUS[w.status]}</td>
+                                <td className={adminTable.cell}>
+                                  {/* Only the places actually holding a prize
+                                      have anything to confirm; a reserve has
+                                      nothing to give up yet. */}
+                                  {w.holding ? (
+                                    <span className="flex flex-wrap gap-1.5">
+                                      {w.status !== "confirmed" && (
+                                        <button
+                                          type="button"
+                                          disabled={busy === w.id}
+                                          onClick={() => decideWinner(w, "confirm")}
+                                          className="min-h-8 rounded-full bg-brand-800 px-3 text-[12px] font-semibold text-white disabled:opacity-50"
+                                        >
+                                          ยืนยันแล้ว
+                                        </button>
+                                      )}
+                                      {w.status !== "forfeited" && (
+                                        <button
+                                          type="button"
+                                          disabled={busy === w.id}
+                                          onClick={() => decideWinner(w, "forfeit")}
+                                          className="min-h-8 rounded-full border border-rose-200 px-3 text-[12px] font-semibold text-rose-700 disabled:opacity-50"
+                                        >
+                                          สละสิทธิ์
+                                        </button>
+                                      )}
+                                      {w.status !== "pending_confirm" && (
+                                        <button
+                                          type="button"
+                                          disabled={busy === w.id}
+                                          onClick={() => decideWinner(w, "reset")}
+                                          className="min-h-8 rounded-full border border-surface-line px-3 text-[12px] font-semibold text-slate-600 disabled:opacity-50"
+                                        >
+                                          ย้อนกลับ
+                                        </button>
+                                      )}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[12px] text-slate-400">—</span>
+                                  )}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
