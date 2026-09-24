@@ -4,6 +4,7 @@ import { UUID_RE } from "@/lib/flash-sale";
 import { StoreHeader, StoreFooter } from "@/components/campaign/StoreChrome";
 import { SiteShell } from "@/components/SiteChrome";
 import { StorefrontWidgets } from "@/components/Providers";
+import AutoShopifySignIn from "@/components/AutoShopifySignIn";
 
 // Which shop a sale page appears to belong to.
 //
@@ -44,6 +45,11 @@ export default async function FlashSaleCampaignLayout({
   if (await isSpecial((await params).id)) {
     return (
       <div className="flex min-h-dvh flex-col bg-white">
+        {/* The one widget that belongs here. Everything else in that bundle is
+            this site's furniture; this is the opposite — it is what makes
+            someone arriving from a LINE broadcast, already signed in at
+            smoothlife.com, land in the queue instead of at a sign-in button. */}
+        <AutoShopifySignIn />
         <StoreHeader />
         <main className="flex-1">{children}</main>
         <StoreFooter />
