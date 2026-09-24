@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { thProvinceCode, splitRecipientName } from "@/lib/shopify-th-address";
 import Link from "next/link";
 import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle, MapPin, Receipt } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
@@ -33,16 +34,14 @@ function toTaxInvoiceAttributes(addr: TaxAddressRow): { key: string; value: stri
 // subdistrict + district both fold into address2/city rather than being lost.
 function toShopifyDeliveryAddress(addr: AddressRow): CartDeliveryAddressInput | null {
   if (addr.country !== "TH") return null;
-  const [firstName, ...rest] = addr.recipient_name.trim().split(/\s+/);
   return {
     address1: addr.address_line,
     address2: addr.subdistrict ? `ตำบล/แขวง${addr.subdistrict}` : undefined,
     city: addr.district,
-    provinceCode: addr.province,
+    provinceCode: thProvinceCode(addr.province),
     zip: addr.postal_code,
     countryCode: addr.country,
-    firstName: firstName || undefined,
-    lastName: rest.length ? rest.join(" ") : undefined,
+    ...splitRecipientName(addr.recipient_name),
     phone: addr.phone ? toE164Thai(addr.phone) : undefined,
   };
 }

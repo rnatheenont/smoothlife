@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         lastName: addr.lastName,
         address1: addr.address1,
         city: addr.city,
-        provinceCode: addr.state,
+        province: addr.state,
         zip: addr.postalCode,
         countryCode: addr.countryCode,
         phone: addr.phone,
