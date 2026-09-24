@@ -202,9 +202,8 @@ export default function ReceiptForm({ open }: { open: boolean }) {
     );
   }
 
-  // Two columns only when there are two things to show. On an account with
-  // nothing sent yet the form is the whole page, and a file input stretched
-  // across 1024px is a wide empty box, not a form.
+  // Two columns only when there are two things to show. Alone, each takes the
+  // full width; together, half each.
   const twoUp = open && entries.length > 0;
 
   return (
@@ -221,7 +220,7 @@ export default function ReceiptForm({ open }: { open: boolean }) {
           action above the archive. */}
       <div className={`grid gap-8 ${twoUp ? "lg:grid-cols-2 lg:items-start" : ""}`}>
         {open && (
-          <section className={twoUp ? "lg:col-start-2 lg:row-start-1" : "w-full max-w-xl"}>
+          <section className={twoUp ? "lg:col-start-2 lg:row-start-1" : ""}>
             {ai && (
               <div className={`mb-5 rounded-2xl border px-5 py-4 text-[14px] ${AI_TONE[ai.verdict]}`}>
                 <p className="font-bold">
@@ -322,7 +321,7 @@ export default function ReceiptForm({ open }: { open: boolean }) {
           // @container: in a column this card sizes itself against the column,
           // not the window, which is the only measurement that means anything
           // once the page has two of them.
-          <section className={`@container ${twoUp ? "lg:col-start-1 lg:row-start-1" : "w-full max-w-xl"}`}>
+          <section className={`@container ${twoUp ? "lg:col-start-1 lg:row-start-1" : ""}`}>
             <h2 className="text-lg font-bold text-black">ประวัติการส่งใบเสร็จ</h2>
             <ul className="mt-3 flex flex-col gap-3">
               {entries.map((e) => {
