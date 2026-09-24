@@ -106,6 +106,11 @@ export async function GET(req: NextRequest) {
       entries: entries.map((e) => ({
         id: e.id,
         paymentTransactionId: e.payment_transaction_id,
+        // The number the customer knows the order by, not our invoice.
+        orderNumber: orderNumber(e.payment_transactions?.shopify_order_id) ?? e.manual_receipt_no,
+        orderTotal: e.payment_transactions ? Number(e.payment_transactions.amount) : null,
+        dentisteAmount: Number(e.dentiste_net_amount),
+        keychainAmount: Number(e.keychain_amount),
         status: e.status,
         rejectReason: e.reject_reason,
         entries: entriesOf(e),
