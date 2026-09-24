@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
   const test = isTestMode(req.nextUrl.searchParams.get("test"));
-  const [orders, entries, uploads, prizes] = await Promise.all([
+  const [orders, entries, uploads, profile, prizes] = await Promise.all([
     eligibleOrders(uid, test),
     entriesForUser(CAMPAIGN, uid),
     supabaseRest<UploadRow[]>(
@@ -102,6 +102,10 @@ export async function GET(req: NextRequest) {
     ).catch(() => [] as UploadRow[]),
     // Every drawn place for this campaign, not only this customer's: whether
     // they hold a prize depends on who above them gave theirs up.
+    // The account's own name and number, as the first guess at who to call.
+    supabaseRest<{ display_name: string | null; phone: string | null }[]>(
+      `users?id=eq.${pgValue(uid)}&select=display_name,phone&limit=1`
+    ).catch(() => []),
     supabaseRest<WinnerRow[]>(
       `receipt_campaign_winners?campaign_key=eq.${CAMPAIGN}` +
         `&select=id,user_id,prize_type,rank,status,confirm_deadline&order=rank`
@@ -137,6 +141,12 @@ export async function GET(req: NextRequest) {
       ok: true,
       test,
       prizes: myPrizes,
+      // Their last answer wins over the account's: someone who corrected the
+      // name on a previous receipt meant it.
+      profile: {
+        name: entries[0]?.contact_name ?? profile[0]?.display_name ?? "",
+        phone: entries[0]?.contact_phone ?? profile[0]?.phone ?? "",
+      },
       orders: orders.map((tx) => {
         const amounts = amountsFromLineItems(tx.line_items);
         return {
@@ -207,6 +217,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "กรุณาเลือกคำสั่งซื้อ" }, { status: 400 });
   }
 
+  // Who to call about a prize. Asked at the moment they send the receipt
+  // rather than chased in November, when a winner has a deadline to meet.
+  const contactName = String(form?.get("contactName") ?? "").trim().slice(0, 120);
+  const contactPhone = String(form?.get("contactPhone") ?? "").replace(/[^0-9+]/g, "").slice(0, 20);
+  if (contactName.length < 2) {
+    return NextResponse.json({ ok: false, error: "กรุณากรอกชื่อ-นามสกุล" }, { status: 400 });
+  }
+  if (contactPhone.replace(/\D/g, "").length < 9) {
+    return NextResponse.json({ ok: false, error: "กรุณากรอกเบอร์โทรให้ครบถ้วน" }, { status: 400 });
+  }
+
   // The order has to be theirs, paid, inside the window and actually contain
   // Dentiste — checked here rather than trusted from the form.
   const test = isTestMode(req.nextUrl.searchParams.get("test"));
@@ -254,6 +275,8 @@ export async function POST(req: NextRequest) {
   const fields = {
     receipt_photo_path: path,
     ai_check: aiCheck,
+    contact_name: contactName,
+    contact_phone: contactPhone,
     dentiste_net_amount: amounts.dentisteAmount,
     keychain_amount: amounts.keychainAmount,
     computed_entries: computeEntries(amounts),
