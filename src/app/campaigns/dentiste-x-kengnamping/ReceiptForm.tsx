@@ -206,6 +206,24 @@ export default function ReceiptForm({ open }: { open: boolean }) {
   // full width; together, half each.
   const twoUp = open && entries.length > 0;
 
+  const pendingEntries = entries
+    .filter((e) => e.status === "pending_review")
+    .reduce((n, e) => n + e.entries, 0);
+  const totalDentiste = entries.reduce((n, e) => n + e.dentisteAmount, 0);
+
+  // One row per attempt, newest first. A receipt with no upload row behind it
+  // still gets a line: a receipt that vanishes from their own history because
+  // of how we happen to store photos is worse than a row that says little.
+  const rows = [
+    ...uploads.flatMap((u) => {
+      const entry = entries.find((e) => e.id === u.entryId);
+      return entry ? [{ key: u.id, at: u.createdAt, entry, verdict: u.aiVerdict, current: u.current }] : [];
+    }),
+    ...entries
+      .filter((e) => !uploads.some((u) => u.entryId === e.id))
+      .map((e) => ({ key: e.id, at: e.createdAt, entry: e, verdict: null, current: true })),
+  ].sort((a, b) => b.at.localeCompare(a.at));
+
   return (
     <div className="flex flex-col gap-8">
       {testBanner}
@@ -323,92 +341,97 @@ export default function ReceiptForm({ open }: { open: boolean }) {
           // once the page has two of them.
           <section className={`@container ${twoUp ? "lg:col-start-1 lg:row-start-1" : ""}`}>
             <h2 className="text-lg font-bold text-black">ประวัติการส่งใบเสร็จ</h2>
+
+            {/* Where they stand, before the list of how they got there. Someone
+                who has sent five photos wants one number, not five cards to
+                add up. */}
+            <div className="mt-3 rounded-2xl border border-black/10 p-4">
+              <dl className="grid grid-cols-3 gap-4">
+                <div>
+                  <dt className="text-[12px] leading-tight text-black/50">สิทธิ์ที่ได้รับแล้ว</dt>
+                  <dd className="mt-1 text-[26px] font-extrabold leading-none text-black tabular-nums">{approved}</dd>
+                </div>
+                <div>
+                  <dt className="text-[12px] leading-tight text-black/50">สิทธิ์รอยืนยัน</dt>
+                  <dd className="mt-1 text-[26px] font-extrabold leading-none text-black tabular-nums">
+                    {pendingEntries}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[12px] leading-tight text-black/50">ยอดซื้อ DENTISTE&apos; รวม</dt>
+                  <dd className="mt-1 text-[26px] font-extrabold leading-none text-black tabular-nums">
+                    {formatTHB(totalDentiste)}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-4 border-t border-black/10 pt-3 text-[13px] text-black/60">
+                ส่งใบเสร็จแล้ว {entries.length} คำสั่งซื้อ · อัปโหลด {rows.length} ครั้ง
+              </p>
+              {approved === 0 && pendingEntries === 0 && totalDentiste < GENERAL_THRESHOLD && (
+                // Zero with nothing said about it is a support ticket. The
+                // reason is arithmetic we already did.
+                <p className="mt-2 text-[13px] text-black/60">
+                  ยอดซื้อ DENTISTE&apos; รวมยังไม่ถึง {formatTHB(GENERAL_THRESHOLD)} จึงยังไม่ได้รับสิทธิ์ —
+                  ซื้อเพิ่มแล้วส่งใบเสร็จใบใหม่ได้เลย
+                </p>
+              )}
+            </div>
+
+            <h3 className="mt-6 text-[15px] font-bold text-black">การอัปโหลดแต่ละครั้ง</h3>
             <ul className="mt-3 flex flex-col gap-3">
-              {entries.map((e) => {
-                const s = STATUS[e.status];
-                // Every photo sent for this order, newest first. The top one is
-                // what the team is looking at; the rest is what it replaced.
-                const tries = uploads.filter((u) => u.entryId === e.id);
+              {rows.map(({ key, at, entry, verdict, current }) => {
+                // The photo's own result heads the row; the receipt's status is
+                // a fact about the order, so it only belongs on the attempt the
+                // team is actually looking at.
+                const v = verdict
+                  ? AI_SHORT[verdict]
+                  : { label: "ไม่ได้ตรวจอัตโนมัติ", tone: "text-black/50" };
+                const st = STATUS[entry.status];
                 return (
-                  <li key={e.id} className="overflow-hidden rounded-2xl border border-black/10">
-                    <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b px-4 py-3 ${s.tone}`}>
-                      <span className="text-[15px] font-bold">{e.orderNumber ?? "—"}</span>
-                      <span className="flex items-center gap-1.5 text-[13px] font-bold">
-                        <s.Icon size={14} aria-hidden /> {s.label}
-                      </span>
+                  <li key={key} className="overflow-hidden rounded-2xl border border-black/10">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-black/10 bg-black/[0.02] px-4 py-2.5">
+                      <span className={`text-[13px] font-bold ${v.tone}`}>{v.label}</span>
+                      <span className="text-[12px] tabular-nums text-black/50">{whenTime(at)}</span>
                     </div>
 
-                    {/* The number they came for, then the numbers it came from. */}
-                    <div className="flex flex-col gap-4 px-4 py-4 @sm:flex-row @sm:items-start @sm:gap-5">
-                      <div className="flex shrink-0 items-baseline gap-2 @sm:w-24 @sm:flex-col @sm:items-start @sm:gap-1 @sm:self-stretch @sm:border-r @sm:border-black/10 @sm:pr-5">
-                        <span className="text-[32px] font-extrabold leading-none tracking-tight text-black tabular-nums">
-                          {e.entries}
-                        </span>
-                        <span className="text-[13px] leading-tight text-black/55">สิทธิ์</span>
-                        {e.status !== "approved" && (
-                          // Its own line: Thai has no hyphenation, so "(รอยืนยัน)"
-                          // tacked onto the label broke mid-word in the column.
-                          <span className="text-[12px] leading-tight text-black/40">รอยืนยัน</span>
-                        )}
+                    <dl className="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-3 text-[13px] @sm:grid-cols-4">
+                      <div>
+                        <dt className="text-black/50">เลขคำสั่งซื้อ</dt>
+                        <dd className="mt-0.5 font-bold text-black">{entry.orderNumber ?? "—"}</dd>
                       </div>
+                      <div>
+                        <dt className="text-black/50">สถานะ</dt>
+                        <dd className="mt-0.5 font-bold text-black">
+                          {current ? (
+                            <span className="inline-flex items-center gap-1">
+                              <st.Icon size={13} aria-hidden /> {st.label}
+                            </span>
+                          ) : (
+                            <span className="font-medium text-black/45">ถูกแทนที่</span>
+                          )}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-black/50">ยอดซื้อ DENTISTE&apos;</dt>
+                        <dd className="mt-0.5 font-bold text-black tabular-nums">{formatTHB(entry.dentisteAmount)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-black/50">สิทธิ์ที่ได้</dt>
+                        <dd className="mt-0.5 font-bold text-black tabular-nums">{entry.entries} สิทธิ์</dd>
+                      </div>
+                    </dl>
 
-                      <dl className="grid flex-1 grid-cols-2 gap-x-6 gap-y-3 text-[13px] @lg:grid-cols-3">
-                        <div>
-                          <dt className="text-black/50">ยอดซื้อ DENTISTE&apos;</dt>
-                          <dd className="mt-0.5 font-bold text-black tabular-nums">{formatTHB(e.dentisteAmount)}</dd>
-                        </div>
-                        {e.keychainAmount > 0 && (
-                          <div>
-                            <dt className="text-black/50">Keychain</dt>
-                            <dd className="mt-0.5 font-bold text-black tabular-nums">{formatTHB(e.keychainAmount)}</dd>
-                          </div>
-                        )}
-                        <div>
-                          <dt className="text-black/50">ยอดทั้งบิล</dt>
-                          <dd className="mt-0.5 text-black tabular-nums">
-                            {e.orderTotal === null ? "—" : formatTHB(e.orderTotal)}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-black/50">ส่งเมื่อ</dt>
-                          <dd className="mt-0.5 text-black">{when(e.createdAt)}</dd>
-                        </div>
-                      </dl>
-                    </div>
-
-                    {/* Zero entries with nothing said about it is a support
-                        ticket. The reason is arithmetic we already did. */}
-                    {e.status !== "rejected" && e.entries === 0 && e.dentisteAmount < GENERAL_THRESHOLD && (
-                      <p className="border-t border-black/10 px-4 py-2.5 text-[13px] text-black/60">
-                        ยอดซื้อ DENTISTE&apos; ของคำสั่งซื้อนี้ยังไม่ถึง {formatTHB(GENERAL_THRESHOLD)} จึงยังไม่ได้รับสิทธิ์
+                    {!current && (
+                      <p className="border-t border-black/10 px-4 py-2 text-[12px] text-black/45">
+                        ถูกแทนที่ด้วยรูปที่ส่งทีหลัง — ทีมงานจะตรวจเฉพาะรูปล่าสุดของคำสั่งซื้อนี้
                       </p>
                     )}
 
-                    {e.status === "rejected" && e.rejectReason && (
+                    {current && entry.status === "rejected" && entry.rejectReason && (
                       <p className="flex items-start gap-1.5 border-t border-black/10 px-4 py-3 text-[13px] text-rose-800">
                         <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
-                        {e.rejectReason} — เลือกคำสั่งซื้อนี้แล้วแนบรูปใหม่ได้เลย
+                        {entry.rejectReason} — ส่งรูปใหม่สำหรับคำสั่งซื้อนี้ได้เลย
                       </p>
-                    )}
-
-                    {tries.length > 0 && (
-                      <div className="border-t border-black/10 bg-black/[0.02] px-4 py-3">
-                        <p className="text-[12px] font-semibold text-black/50">ส่งรูปแล้ว {tries.length} ครั้ง</p>
-                        <ul className="mt-2 flex flex-col gap-1.5">
-                          {tries.map((u) => {
-                            const v = u.aiVerdict
-                              ? AI_SHORT[u.aiVerdict]
-                              : { label: "ไม่ได้ตรวจอัตโนมัติ", tone: "text-black/50" };
-                            return (
-                              <li key={u.id} className="flex flex-wrap items-baseline gap-x-2 text-[12px]">
-                                <span className="tabular-nums text-black/55">{whenTime(u.createdAt)}</span>
-                                <span className={`font-semibold ${v.tone}`}>{v.label}</span>
-                                {!u.current && <span className="text-black/40">· ถูกแทนที่ด้วยรูปใหม่</span>}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
                     )}
                   </li>
                 );
