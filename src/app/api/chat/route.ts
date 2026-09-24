@@ -475,7 +475,6 @@ export async function POST(req: NextRequest) {
           );
           convo = [...convo, { role: "assistant", content: final.content }, { role: "user", content: results }];
         }
-        controller.close();
         // Drop a trailing [[SUGGEST: ...]] — those chips are optional
         // follow-ups, worth nothing once the turn is over, and not worth
         // keeping in the transcript.
@@ -496,6 +495,13 @@ export async function POST(req: NextRequest) {
         if (kbAsked && lastUserText) {
           await logAiAnswer({ uid, question: lastUserText, answer: toSave, articleIds: kbMatches, escalated: kbMatches.length === 0 });
         }
+        // Closed last, not first. The browser has had every word as it
+        // streamed, so nothing is kept from it by closing a moment later —
+        // but a caller that consumes this response in-process (the LINE
+        // webhook reads it to the end) treats close as "the turn is done",
+        // and closing before the writes above landed had it check for the
+        // answer, find none yet, and file a second copy of it.
+        controller.close();
       } catch (err) {
         console.error("[anthropic] stream error model=" + MODEL, err);
         const msg =
@@ -503,6 +509,20 @@ export async function POST(req: NextRequest) {
             ? "\n\nSorry, I couldn't reach the AI service just now. Please try again."
             : "\n\nขออภัยค่ะ ตอนนี้เชื่อมต่อบริการ AI ไม่ได้ กรุณาลองใหม่อีกครั้ง";
         controller.enqueue(encoder.encode(msg));
+        // Record the apology as the turn's answer. It is what the customer
+        // actually received, and leaving it out is not a harmless omission:
+        // the question above it stays in the transcript with nothing after
+        // it, so every later turn replays it as something still unanswered.
+        // On LINE, where the history is replayed from this table on the
+        // customer's behalf, that turned one new question into "ตอบให้ทีละ
+        // เรื่องนะคะ" followed by three answers to things asked hours ago.
+        await persistMessage({
+          uid,
+          sessionKey,
+          role: "assistant",
+          content: (fullText + msg).trim(),
+          viewingSlug: viewingProduct?.slug,
+        });
         controller.close();
       }
     },

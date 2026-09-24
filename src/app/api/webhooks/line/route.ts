@@ -97,22 +97,86 @@ async function siteUserFor(lineUserId: string): Promise<string | null> {
 }
 
 /**
- * The last few turns, so the conversation has a memory.
+ * How long an unanswered question stays worth answering.
  *
- * Read from chat_messages — the same table the web panel replays on reload —
- * because the pipeline expects the client to bring the history with it. LINE
- * has no client to hold it, so the webhook fetches it on the customer's behalf.
+ * Long enough that a customer firing off three lines in a row still gets all
+ * three taken together, short enough that yesterday's unanswered one is
+ * yesterday's problem.
+ */
+const STALE_QUESTION_MS = 15 * 60_000;
+
+/**
+ * The last few turns, so the conversation has a memory — minus the questions
+ * that fell in a hole.
+ *
+ * Read from chat_messages, the same table the web panel replays on reload,
+ * because the pipeline expects the client to bring the history with it and
+ * LINE has no client to hold it.
+ *
+ * The filtering is the part that matters. When a turn fails — the model times
+ * out, the API is briefly down — the customer's message is already saved and
+ * the answer never is, leaving a question sitting at the end of the transcript
+ * with nothing after it. Replayed as-is, every later turn hands the model a
+ * backlog of things it was apparently asked and never answered, and it
+ * dutifully works through them: a customer who asked one new question got an
+ * answer opening "เยอะเลยนะคะวันนี้ ไล่ตอบให้ทีละเรื่องเลยค่ะ" about three
+ * things they had moved on from hours ago.
+ *
+ * So anything after the last answer is only kept while it is still live.
  */
 async function recentTurns(sessionKey: string): Promise<{ role: "user" | "assistant"; content: string }[]> {
   if (!supabaseConfigured()) return [];
   try {
-    const rows = await supabaseRest<{ role: "user" | "assistant"; content: string }[]>(
-      `chat_messages?session_key=eq.${encodeURIComponent(sessionKey)}&select=role,content&order=created_at.desc&limit=11`
+    const rows = await supabaseRest<{ role: "user" | "assistant"; content: string; created_at: string }[]>(
+      `chat_messages?session_key=eq.${encodeURIComponent(sessionKey)}&select=role,content,created_at` +
+        `&order=created_at.desc&limit=11`
     );
-    return rows.reverse().filter((m) => m.content?.trim());
+    const ordered = rows.reverse().filter((m) => m.content?.trim());
+    const lastAnswer = ordered.map((m) => m.role).lastIndexOf("assistant");
+    const cutoff = Date.now() - STALE_QUESTION_MS;
+    return ordered
+      .filter((m, i) => i <= lastAnswer || new Date(m.created_at).getTime() >= cutoff)
+      .map(({ role, content }) => ({ role, content }));
   } catch (err) {
     console.error("[line-webhook] history fetch failed", err);
     return [];
+  }
+}
+
+/**
+ * Makes sure the transcript records what the customer was actually told.
+ *
+ * The pipeline writes the answer itself — except when it never produced one,
+ * which is exactly the case that digs the hole above: on a model error it
+ * streams an apology to the customer and stores nothing. What LINE delivered
+ * is what the transcript should say was delivered, so if nothing landed for
+ * this turn, the webhook writes it.
+ */
+async function ensureAnswerRecorded(opts: {
+  sessionKey: string;
+  uid: string | null;
+  since: string;
+  reply: string;
+}) {
+  if (!supabaseConfigured() || !opts.reply.trim()) return;
+  try {
+    const existing = await supabaseRest<{ id: string }[]>(
+      `chat_messages?session_key=eq.${encodeURIComponent(opts.sessionKey)}&role=eq.assistant` +
+        `&created_at=gte.${encodeURIComponent(opts.since)}&select=id&limit=1`
+    );
+    if (existing.length) return;
+    await supabaseRest("chat_messages", {
+      method: "POST",
+      returning: false,
+      body: JSON.stringify({
+        user_id: opts.uid,
+        session_key: opts.sessionKey,
+        role: "assistant",
+        content: opts.reply,
+      }),
+    });
+  } catch (err) {
+    console.error("[line-webhook] could not record the answer", err);
   }
 }
 
@@ -278,6 +342,7 @@ async function handleText(event: LineEvent, lineUserId: string, text: string, im
   // first-photo note rather than one on every photo.
   const firstPhoto = Boolean(image) && !(await hasSentPhoto(sessionKey));
 
+  const turnStartedAt = new Date().toISOString();
   let raw = "";
   try {
     raw = await askSmoothie({ lineUserId, uid, sessionKey, text, image });
@@ -313,6 +378,7 @@ async function handleText(event: LineEvent, lineUserId: string, text: string, im
   const quickReplies = kind === "ask" || kind === "suggest" ? options : [];
   const messages = [lineTextMessage(reply), ...(carousel ? [carousel] : [])];
   await deliver(lineUserId, event.replyToken, messages, quickReplies);
+  await ensureAnswerRecorded({ sessionKey, uid, since: turnStartedAt, reply });
 }
 
 const WELCOME =
