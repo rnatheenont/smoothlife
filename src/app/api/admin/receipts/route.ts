@@ -45,6 +45,16 @@ const SELECT =
   "keychain_amount,computed_entries,entries_override,status,reject_reason,reviewed_at,created_at," +
   "users(display_name),payment_transactions(invoice_no,amount,confirmed_at)";
 
+type WinnerRow = {
+  prize_type: "vip" | "lucky_fan";
+  rank: number;
+  user_id: string;
+  status: "pending_confirm" | "confirmed" | "forfeited";
+  confirm_deadline: string;
+  drawn_at: string;
+  users: { display_name: string | null } | null;
+};
+
 const entriesOf = (r: Row) => r.entries_override ?? r.computed_entries;
 
 export async function GET(req: NextRequest) {
@@ -53,9 +63,16 @@ export async function GET(req: NextRequest) {
   }
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
-  const rows = await supabaseRest<Row[]>(
-    `receipt_campaign_entries?campaign_key=eq.${CAMPAIGN}&select=${SELECT}&order=created_at.asc&limit=2000`
-  ).catch(() => [] as Row[]);
+  const [rows, winners] = await Promise.all([
+    supabaseRest<Row[]>(
+      `receipt_campaign_entries?campaign_key=eq.${CAMPAIGN}&select=${SELECT}&order=created_at.asc&limit=2000`
+    ).catch(() => [] as Row[]),
+    supabaseRest<WinnerRow[]>(
+      `receipt_campaign_winners?campaign_key=eq.${CAMPAIGN}` +
+        `&select=prize_type,rank,user_id,status,confirm_deadline,drawn_at,users(display_name)` +
+        `&order=prize_type.asc,rank.asc&limit=200`
+    ).catch(() => [] as WinnerRow[]),
+  ]);
 
   // Oldest first: the queue is worked in the order receipts arrived, which is
   // the same order VIP is decided in if the answer turns out to be "approval".
@@ -120,6 +137,16 @@ export async function GET(req: NextRequest) {
         paidAt: r.payment_transactions?.confirmed_at ?? null,
         approvedAt: r.reviewed_at,
         reserve: i >= VIP_WINNERS,
+      })),
+      // 1..25 win; past that is the reserve list, in the order it is called on.
+      winners: winners.map((w) => ({
+        prizeType: w.prize_type,
+        rank: w.rank,
+        customer: w.users?.display_name ?? null,
+        status: w.status,
+        reserve: w.rank > VIP_WINNERS,
+        confirmDeadline: w.confirm_deadline,
+        drawnAt: w.drawn_at,
       })),
       luckyFan: [...tickets.entries()]
         .map(([userId, t]) => ({ userId, customer: t.name, entries: t.entries }))
