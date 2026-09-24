@@ -52,7 +52,7 @@ type Entry = {
 
 const STATUS: Record<Entry["status"], { label: string; tone: string; Icon: typeof Check }> = {
   pending_review: { label: "รอตรวจสอบ", tone: "bg-amber-50 text-amber-900 border-amber-200", Icon: Clock },
-  approved: { label: "ได้รับสิทธิ์แล้ว", tone: "bg-emerald-50 text-emerald-900 border-emerald-200", Icon: Check },
+  approved: { label: "ใบเสร็จผ่านการตรวจ", tone: "bg-emerald-50 text-emerald-900 border-emerald-200", Icon: Check },
   rejected: { label: "ใบเสร็จถูกตีกลับ", tone: "bg-rose-50 text-rose-900 border-rose-200", Icon: X },
 };
 
@@ -394,7 +394,7 @@ export default function ReceiptForm({ open }: { open: boolean }) {
                       <span className="text-[12px] tabular-nums text-black/50">{whenTime(at)}</span>
                     </div>
 
-                    <dl className="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-3 text-[13px] @sm:grid-cols-4">
+                    <dl className="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-3 text-[13px] @lg:grid-cols-4">
                       <div>
                         <dt className="text-black/50">เลขคำสั่งซื้อ</dt>
                         <dd className="mt-0.5 font-bold text-black">{entry.orderNumber ?? "—"}</dd>
