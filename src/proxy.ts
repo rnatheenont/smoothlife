@@ -60,7 +60,17 @@ async function guardAdminApi(req: NextRequest) {
  * anyone in or take an upload.
  */
 const CAMPAIGN_HOST = "campaign.smoothlife.com";
-const CAMPAIGN_ALLOWED = ["/campaigns", "/api/campaigns", "/api/auth", "/api/account", "/account"];
+// A special flash sale is a campaign too — same chrome, same login, same
+// kind of link going out — so the campaign host serves it as well.
+const CAMPAIGN_ALLOWED = [
+  "/campaigns",
+  "/api/campaigns",
+  "/flash-sale",
+  "/api/flash-sale",
+  "/api/auth",
+  "/api/account",
+  "/account",
+];
 
 function offCampaignHost(req: NextRequest) {
   if (req.headers.get("host") !== CAMPAIGN_HOST) return null;

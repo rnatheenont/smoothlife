@@ -11,6 +11,7 @@ import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
 import MobileStickyBar from "@/components/MobileStickyBar";
 import PaymentModal from "@/components/PaymentModal";
 import { emptyAddressForm, type AddressFormValue } from "@/components/account/AddressFields";
+import { SHOPIFY_EMAIL_LOGIN, shopifyAuthStartPath } from "@/lib/shopify-email-login";
 import { Countdown, Faq, SetPicker, SpecialHero, type CampaignTheme, type PickerItem } from "./special";
 
 export type LiveProduct = {
@@ -303,6 +304,17 @@ export default function FlashSaleLive({
     </div>
   );
 
+  // A special campaign wears the shop's header and footer, so its way in is
+  // the shop's own account — the one they bought with — rather than this
+  // site's page of five sign-in methods. Anyone arriving on that link already
+  // has a smoothlife.com account; being asked to choose is being asked a
+  // question they do not have.
+  const returnTo = `/flash-sale/${campaignId}`;
+  const loginHref =
+    theme.kind === "special" && SHOPIFY_EMAIL_LOGIN
+      ? shopifyAuthStartPath({ intent: "login", returnTo })
+      : `/account/login?returnTo=${encodeURIComponent(returnTo)}`;
+
   const panelBody = !status ? (
     <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500">
       <Spinner size="sm" /> กำลังโหลด
@@ -316,7 +328,7 @@ export default function FlashSaleLive({
       windowSeconds={windowSeconds}
       serverNow={serverNow}
       busy={busy}
-      loginHref={`/account/login?returnTo=${encodeURIComponent(`/flash-sale/${campaignId}`)}`}
+      loginHref={loginHref}
       join={() => act("join")}
       leave={() => act("leave")}
       checkout={checkout}
@@ -417,12 +429,12 @@ export default function FlashSaleLive({
           เข้าคิว
         </Button>
       ) : (
-        <Link
-          href={`/account/login?returnTo=${encodeURIComponent(`/flash-sale/${campaignId}`)}`}
+        <a
+          href={loginHref}
           className="flex min-h-9 shrink-0 items-center rounded-full bg-brand-800 px-4 text-sm font-semibold text-white"
         >
           เข้าสู่ระบบ
-        </Link>
+        </a>
       )}
     </MobileStickyBar>
   );
@@ -658,9 +670,9 @@ function Panel({
           เข้าคิว
         </Button>
         {!signedIn && (
-          <Link href={loginHref} className="mt-3 block text-center text-sm font-semibold text-brand-800 underline">
+          <a href={loginHref} className="mt-3 block text-center text-sm font-semibold text-brand-800 underline">
             เข้าสู่ระบบไว้ก่อน
-          </Link>
+          </a>
         )}
       </div>
     );
@@ -706,12 +718,12 @@ function Panel({
         </Button>
       ) : (
         <>
-          <Link
+          <a
             href={loginHref}
             className="mt-5 flex min-h-12 w-full items-center justify-center rounded-full bg-brand-800 text-base font-semibold text-white hover:bg-brand-1000"
           >
             เข้าสู่ระบบเพื่อเข้าคิว
-          </Link>
+          </a>
           <p className="mt-2 text-center text-xs text-slate-500">ต้องเข้าสู่ระบบ เพื่อจำกัด 1 บัญชี 1 สิทธิ์</p>
         </>
       )}

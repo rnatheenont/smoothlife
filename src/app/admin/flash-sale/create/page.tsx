@@ -285,9 +285,12 @@ export default function CreateFlashSaleCampaignPage() {
         <div className="border-t border-surface-line pt-4">
           <label className="flex items-center gap-2 text-sm font-semibold text-brand-ink">
             <input type="checkbox" checked={useBanner} onChange={(e) => setUseBanner(e.target.checked)} className="size-4 rounded" />
-            ทำหน้าแคมเปญแบบมีแบนเนอร์ของตัวเอง
+            ทำเป็นแคมเปญพิเศษ (มีแบนเนอร์ของตัวเอง)
           </label>
-          <p className="mt-1 text-xs text-slate-500">ไม่เลือก = ใช้หน้าขายแบบเรียบมาตรฐาน ไม่มีแบนเนอร์</p>
+          <p className="mt-1 text-xs text-slate-500">
+            หน้าขายจะใช้ header/footer ของ smoothlife.com และให้เข้าสู่ระบบด้วยบัญชี smoothlife.com —
+            สำหรับลิงก์ที่ส่งออกไปหาลูกค้าที่รู้จักแต่ร้านเดิม · ไม่เลือก = หน้าขายมาตรฐานบนเว็บนี้ ไม่มีแบนเนอร์
+          </p>
 
           {useBanner && (
             <div className="mt-3 space-y-3">
