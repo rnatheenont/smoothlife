@@ -114,6 +114,10 @@ export default function ReceiptForm({
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [claiming, setClaiming] = useState<string | null>(null);
+  const [tab, setTab] = useState<"send" | "history">("send");
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [preview, setPreview] = useState<string | null>(null);
   const [approved, setApproved] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -133,6 +137,10 @@ export default function ReceiptForm({
       setEntries(data.entries as Entry[]);
       setUploads((data.uploads ?? []) as Upload[]);
       setPrizes((data.prizes ?? []) as Prize[]);
+      // Only ever a first guess — never overwrite what they are typing.
+      const profile = (data.profile ?? {}) as { name?: string; phone?: string };
+      setContactName((v) => v || profile.name || "");
+      setContactPhone((v) => v || profile.phone || "");
       setApproved(data.approvedEntries as number);
       setState("ready");
     } catch {
@@ -194,6 +202,8 @@ export default function ReceiptForm({
       const body = new FormData();
       body.set("orderId", selected);
       body.set("photo", file);
+      body.set("contactName", contactName.trim());
+      body.set("contactPhone", contactPhone.trim());
       const q = new URLSearchParams(window.location.search).get("test") === "1" ? "?test=1" : "";
       const res = await fetch(`/api/campaigns/dentiste-x-kengnamping/receipts${q}`, { method: "POST", body });
       const data = await res.json().catch(() => ({}));
@@ -204,6 +214,7 @@ export default function ReceiptForm({
       setAi((data.entry?.aiCheck as AiCheck | null) ?? null);
       setSelected(null);
       setFile(null);
+      setPreview(null);
       if (fileInput.current) fileInput.current.value = "";
       setNotice("ส่งใบเสร็จเรียบร้อย ทีมงานจะตรวจสอบให้เร็วที่สุด");
       await load();
@@ -263,7 +274,7 @@ export default function ReceiptForm({
 
   // Two columns only when there are two things to show. Alone, each takes the
   // full width; together, half each.
-  const twoUp = open && entries.length > 0;
+  const hasHistory = entries.length > 0;
 
   const pendingEntries = entries
     .filter((e) => e.status === "pending_review")
@@ -337,12 +348,34 @@ export default function ReceiptForm({
         </p>
       )}
 
-      {/* What they have already sent on the left, what they are sending now on
-          the right. The form comes first in the source so a phone shows the
-          action above the archive. */}
-      <div className={`grid gap-8 ${twoUp ? "lg:grid-cols-2 lg:items-start" : ""}`}>
-        {open && (
-          <section className={twoUp ? "lg:col-start-2 lg:row-start-1" : ""}>
+      {/* Sending a receipt and looking back at the ones already sent are two
+          different visits. Stacking them made the page long enough that the
+          summary — the part with the answer in it — scrolled off. */}
+      {open && hasHistory && (
+        <div className="flex gap-1 border-b border-black/10" role="tablist">
+          {([
+            ["send", "แนบรูปใบเสร็จ"],
+            ["history", "การอัปโหลดแต่ละครั้ง"],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              onClick={() => setTab(key)}
+              className={`-mb-px min-h-11 border-b-2 px-4 text-[14px] font-semibold transition-colors ${
+                tab === key ? "border-black text-black" : "border-transparent text-black/45 hover:text-black/70"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="grid gap-8">
+        {open && (!hasHistory || tab === "send") && (
+          <section>
             {ai && (
               <div className={`mb-5 rounded-2xl border px-5 py-4 text-[14px] ${AI_TONE[ai.verdict]}`}>
                 <p className="font-bold">
@@ -366,94 +399,200 @@ export default function ReceiptForm({
               </div>
             )}
 
-            <h2 className="text-lg font-bold text-black">แนบรูปใบเสร็จ</h2>
-
-            {orders.length === 0 ? (
-              <div className="mt-3 rounded-2xl border border-black/10 p-5">
-                <p className="text-[14px] font-bold text-black">ยังไม่พบคำสั่งซื้อที่เข้าเงื่อนไข</p>
-                <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
-                  ต้องเป็นคำสั่งซื้อผลิตภัณฑ์ DENTISTE&apos; ที่ชำระเงินสำเร็จบน Smoothlife.com ระหว่าง{" "}
-                  {opensLabel} – {closesLabel}
-                </p>
-                {/* The most common reason for landing here is being early, not
-                    being ineligible — the order row is written when 2C2P
-                    confirms the payment, a little after the customer is done
-                    paying. Saying so beats letting them conclude their purchase
-                    does not count. */}
-                <p className="mt-3 text-[13px] leading-relaxed text-black/55">
-                  เพิ่งชำระเงินไปเมื่อสักครู่? คำสั่งซื้อจะขึ้นที่นี่หลังระบบยืนยันการชำระเงินเสร็จ ลองกดตรวจสอบอีกครั้ง
-                </p>
-                <button
-                  type="button"
-                  disabled={rechecking}
-                  onClick={async () => {
-                    setRechecking(true);
-                    await load();
-                    setRechecking(false);
-                  }}
-                  className="mt-4 flex min-h-11 items-center gap-2 rounded-full border border-black/15 px-5 text-[14px] font-semibold text-black hover:bg-black/5 disabled:opacity-50"
-                >
-                  {rechecking && <Loader2 size={15} className="animate-spin" />}
-                  {rechecking ? "กำลังตรวจสอบ…" : "ตรวจสอบอีกครั้ง"}
-                </button>
-              </div>
-            ) : (
-              <>
-                <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
-                  แคปหน้าจออีเมลยืนยันคำสั่งซื้อที่ได้รับจาก Smoothlife.com ให้เห็น
-                  <b>เลขคำสั่งซื้อ (ORDER #)</b> รายการสินค้า และยอดรวม · JPG, PNG หรือ WEBP ไม่เกิน 8MB
-                  <br />
-                  กรุณาเก็บใบเสร็จตัวจริงไว้เป็นหลักฐานด้วย
-                </p>
-
-                {/* The choice only appears when there is one to make. */}
-                {orders.length === 1 ? (
-                  <p className="mt-4 rounded-xl bg-black/[0.03] px-4 py-3 text-[13px] text-black/70">
-                    สำหรับคำสั่งซื้อ{" "}
-                    <b className="text-black">{orders[0].orderNumber ?? orders[0].invoiceNo}</b> ·{" "}
-                    {when(orders[0].paidAt)} · DENTISTE&apos; {formatTHB(orders[0].dentisteAmount)}
-                  </p>
-                ) : (
-                  <label className="mt-4 block">
-                    <span className="text-[13px] font-semibold text-black/60">คำสั่งซื้อ</span>
-                    <select
-                      value={selected ?? ""}
-                      onChange={(e) => setSelected(e.target.value || null)}
-                      className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 bg-white px-3 text-[14px] text-black"
+            <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+              {/* Left: the one thing they have to do. */}
+              <div>
+                <h2 className="text-lg font-bold text-black">แนบรูปใบเสร็จ</h2>
+                {orders.length === 0 ? (
+                  <div className="mt-3 rounded-2xl border border-black/10 p-5">
+                    <p className="text-[14px] font-bold text-black">ยังไม่พบคำสั่งซื้อที่เข้าเงื่อนไข</p>
+                    <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
+                      ต้องเป็นคำสั่งซื้อผลิตภัณฑ์ DENTISTE&apos; ที่ชำระเงินสำเร็จบน Smoothlife.com ระหว่าง{" "}
+                      {opensLabel} – {closesLabel}
+                    </p>
+                    <p className="mt-3 text-[13px] leading-relaxed text-black/55">
+                      เพิ่งชำระเงินไปเมื่อสักครู่? คำสั่งซื้อจะขึ้นที่นี่หลังระบบยืนยันการชำระเงินเสร็จ ลองกดตรวจสอบอีกครั้ง
+                    </p>
+                    <button
+                      type="button"
+                      disabled={rechecking}
+                      onClick={async () => {
+                        setRechecking(true);
+                        await load();
+                        setRechecking(false);
+                      }}
+                      className="mt-4 flex min-h-11 items-center gap-2 rounded-full border border-black/15 px-5 text-[14px] font-semibold text-black hover:bg-black/5 disabled:opacity-50"
                     >
-                      <option value="">เลือกคำสั่งซื้อ</option>
-                      {orders.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {`${o.orderNumber ?? o.invoiceNo} · ${when(o.paidAt)} · ${formatTHB(o.dentisteAmount)} · ${o.entries} สิทธิ์${o.alreadySent ? " (ส่งแล้ว)" : ""}`}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      {rechecking && <Loader2 size={15} className="animate-spin" />}
+                      {rechecking ? "กำลังตรวจสอบ…" : "ตรวจสอบอีกครั้ง"}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
+                      แคปหน้าจออีเมลยืนยันคำสั่งซื้อที่ได้รับจาก Smoothlife.com ให้เห็น
+                      <b>เลขคำสั่งซื้อ (ORDER #)</b> รายการสินค้า และยอดรวม · JPG, PNG หรือ WEBP ไม่เกิน 8MB
+                    </p>
+                    <label className="mt-4 flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.02] hover:border-black/40">
+                      {preview ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- a blob: URL from the file they just picked
+                        <img src={preview} alt="รูปใบเสร็จที่เลือก" className="h-full w-full object-contain" />
+                      ) : (
+                        <>
+                          <Upload size={26} className="text-black/35" aria-hidden />
+                          <span className="text-[14px] font-semibold text-black/60">เลือกรูปใบเสร็จ</span>
+                          <span className="text-[12px] text-black/40">แตะเพื่อถ่ายรูปหรือเลือกจากคลัง</span>
+                        </>
+                      )}
+                      <input
+                        ref={fileInput}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const picked = e.target.files?.[0] ?? null;
+                          setFile(picked);
+                          setPreview((old) => {
+                            if (old) URL.revokeObjectURL(old);
+                            return picked ? URL.createObjectURL(picked) : null;
+                          });
+                        }}
+                      />
+                    </label>
+                    {file && (
+                      <p className="mt-2 flex items-center justify-between gap-3 text-[13px] text-black/60">
+                        <span className="min-w-0 truncate">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFile(null);
+                            setPreview((old) => {
+                              if (old) URL.revokeObjectURL(old);
+                              return null;
+                            });
+                            if (fileInput.current) fileInput.current.value = "";
+                          }}
+                          className="shrink-0 font-semibold text-black/45 underline"
+                        >
+                          เลือกรูปใหม่
+                        </button>
+                      </p>
+                    )}
+                    <p className="mt-3 text-[12px] leading-relaxed text-black/45">
+                      กรุณาเก็บใบเสร็จตัวจริงไว้เป็นหลักฐานด้วย
+                    </p>
+                  </>
                 )}
+              </div>
 
-                <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-black/25 px-4 py-4 hover:border-black/50">
-                  <Upload size={18} className="shrink-0 text-black/50" aria-hidden />
-                  <span className="min-w-0 truncate text-[14px] text-black/70">{file ? file.name : "เลือกรูปใบเสร็จ"}</span>
-                  <input
-                    ref={fileInput}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  />
-                </label>
+              {/* Right: where they stand, what this receipt is worth, and the
+                  two things only they can tell us. */}
+              {orders.length > 0 && (
+                <div className="flex flex-col gap-4">
+                  <dl className="grid grid-cols-3 gap-4 rounded-2xl border border-black/10 p-4">
+                    <div>
+                      <dt className="text-[12px] leading-tight text-black/50">สิทธิ์ที่ได้รับแล้ว</dt>
+                      <dd className="mt-1 text-[24px] font-extrabold leading-none text-black tabular-nums">{approved}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[12px] leading-tight text-black/50">สิทธิ์รอยืนยัน</dt>
+                      <dd className="mt-1 text-[24px] font-extrabold leading-none text-black tabular-nums">
+                        {pendingEntries}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[12px] leading-tight text-black/50">ยอดซื้อ DENTISTE&apos; รวม</dt>
+                      <dd className="mt-1 text-[24px] font-extrabold leading-none text-black tabular-nums">
+                        {formatTHB(totalDentiste)}
+                      </dd>
+                    </div>
+                  </dl>
 
-                <button
-                  type="button"
-                  disabled={!selected || !file || sending}
-                  onClick={send}
-                  className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-black text-[15px] font-semibold text-white disabled:opacity-40"
-                >
-                  {sending && <Loader2 size={16} className="animate-spin" />}
-                  {sending ? "กำลังส่ง…" : "ส่งใบเสร็จ"}
-                </button>
-              </>
-            )}
+                  {/* Filled in from the order, not from the photo — the photo is
+                      the evidence, the order is the arithmetic. Read-only for
+                      the same reason. */}
+                  <div className="rounded-2xl border border-black/10 p-4">
+                    <p className="text-[13px] font-bold text-black">คำสั่งซื้อที่จะส่ง</p>
+                    {orders.length === 1 ? (
+                      <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 text-[13px]">
+                        <div>
+                          <dt className="text-black/50">เลขคำสั่งซื้อ</dt>
+                          <dd className="mt-0.5 font-bold text-black">{orders[0].orderNumber ?? orders[0].invoiceNo}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-black/50">วันที่ชำระเงิน</dt>
+                          <dd className="mt-0.5 text-black">{when(orders[0].paidAt)}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-black/50">ยอดซื้อ DENTISTE&apos;</dt>
+                          <dd className="mt-0.5 font-bold text-black tabular-nums">
+                            {formatTHB(orders[0].dentisteAmount)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-black/50">สิทธิ์ที่จะได้รับ</dt>
+                          <dd className="mt-0.5 font-bold text-black tabular-nums">{orders[0].entries} สิทธิ์</dd>
+                        </div>
+                      </dl>
+                    ) : (
+                      <label className="mt-3 block">
+                        <span className="text-[12px] font-semibold text-black/55">เลือกคำสั่งซื้อ</span>
+                        <select
+                          value={selected ?? ""}
+                          onChange={(e) => setSelected(e.target.value || null)}
+                          className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 bg-white px-3 text-[14px] text-black"
+                        >
+                          <option value="">เลือกคำสั่งซื้อ</option>
+                          {orders.map((o) => (
+                            <option key={o.id} value={o.id}>
+                              {`${o.orderNumber ?? o.invoiceNo} · ${when(o.paidAt)} · ${formatTHB(o.dentisteAmount)} · ${o.entries} สิทธิ์${o.alreadySent ? " (ส่งแล้ว)" : ""}`}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                  </div>
+
+                  {/* The account belongs to whoever set it up; the prize has to
+                      reach whoever is holding the receipt. */}
+                  <div className="rounded-2xl border border-black/10 p-4">
+                    <p className="text-[13px] font-bold text-black">ผู้รับรางวัล</p>
+                    <p className="mt-1 text-[12px] leading-relaxed text-black/50">
+                      ใช้ติดต่อกลับถ้าคุณได้รับรางวัล — กรอกให้ตรงกับบัตรประชาชน
+                    </p>
+                    <label className="mt-3 block">
+                      <span className="text-[12px] font-semibold text-black/55">ชื่อ-นามสกุล</span>
+                      <input
+                        value={contactName}
+                        onChange={(e) => setContactName(e.target.value)}
+                        placeholder="ชื่อ นามสกุล"
+                        className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black"
+                      />
+                    </label>
+                    <label className="mt-3 block">
+                      <span className="text-[12px] font-semibold text-black/55">เบอร์โทร</span>
+                      <input
+                        value={contactPhone}
+                        onChange={(e) => setContactPhone(e.target.value)}
+                        inputMode="tel"
+                        placeholder="08x-xxx-xxxx"
+                        className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black tabular-nums"
+                      />
+                    </label>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={!selected || !file || sending || contactName.trim().length < 2 || contactPhone.replace(/\D/g, "").length < 9}
+                    onClick={send}
+                    className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-black text-[15px] font-semibold text-white disabled:opacity-40"
+                  >
+                    {sending && <Loader2 size={16} className="animate-spin" />}
+                    {sending ? "กำลังส่ง…" : "ส่งใบเสร็จ"}
+                  </button>
+                </div>
+              )}
+            </div>
 
             {notice && (
               <p role="status" className="mt-3 rounded-xl border border-black/10 px-4 py-3 text-[14px] text-black/80">
@@ -463,11 +602,8 @@ export default function ReceiptForm({
           </section>
         )}
 
-        {entries.length > 0 && (
-          // @container: in a column this card sizes itself against the column,
-          // not the window, which is the only measurement that means anything
-          // once the page has two of them.
-          <section className={`@container ${twoUp ? "lg:col-start-1 lg:row-start-1" : ""}`}>
+        {hasHistory && (!open || tab === "history") && (
+          <section className="@container">
             <h2 className="text-lg font-bold text-black">ประวัติการส่งใบเสร็จ</h2>
 
             {/* Where they stand, before the list of how they got there. Someone
