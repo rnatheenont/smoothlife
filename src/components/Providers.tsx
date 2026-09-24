@@ -13,6 +13,7 @@ import MobileTabBar from "@/components/MobileTabBar";
 import GiftUnlockPopup from "@/components/GiftUnlockPopup";
 import GiftCongratsBar from "@/components/GiftCongratsBar";
 import GiftFloatingButton from "@/components/GiftFloatingButton";
+import AutoShopifySignIn from "@/components/AutoShopifySignIn";
 
 // Storefront-only chrome (chat bubble, gift popups/floating button, mobile
 // tab bar) has no business showing up on the internal /admin tool — it
@@ -25,6 +26,10 @@ function StorefrontWidgets() {
   if (pathname?.startsWith("/admin") || pathname?.startsWith("/chat")) return null;
   return (
     <>
+      {/* Shares the storefront-only rule: /admin has its own sign-in, and
+          sending an admin off to Shopify and back mid-task would be its own
+          kind of rude. */}
+      <AutoShopifySignIn />
       <QuickChat />
       <MobileTabBar />
       <GiftUnlockPopup />

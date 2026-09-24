@@ -20,7 +20,9 @@ export async function GET(req: NextRequest) {
   const intent: ShopifyAuthIntent = intentParam && SHOPIFY_AUTH_INTENTS.includes(intentParam) ? intentParam : "login";
   const returnTo = safeReturnTo(params.get("returnTo"), intent === "link" ? "/account/profile" : "/account");
 
+  const silent = params.get("silent") === "1";
   if (!shopifyEmailAuthConfigured()) {
+    if (silent) return NextResponse.redirect(new URL(returnTo, req.url));
     const url = new URL("/account/login", req.url);
     url.searchParams.set("error", "shopify_not_configured");
     return NextResponse.redirect(url);
@@ -34,12 +36,16 @@ export async function GET(req: NextRequest) {
       returnTo,
       loginHint: params.get("hint"),
       pending: params.get("pending"),
+      // An attempt nobody asked for: made on page load, and it has to leave no
+      // trace when the customer has no Shopify session to borrow.
+      silent: params.get("silent") === "1",
     });
     const res = NextResponse.redirect(url);
     res.cookies.set(SHOPIFY_AUTH_COOKIE, JSON.stringify(transaction), shopifyAuthCookieOptions);
     return res;
   } catch (err) {
     console.error("[shopify auth start]", err);
+    if (silent) return NextResponse.redirect(new URL(returnTo, req.url));
     const url = new URL("/account/login", req.url);
     url.searchParams.set("error", "shopify_error");
     return NextResponse.redirect(url);

@@ -64,6 +64,8 @@ export type ShopifyAuthTransaction = {
   intent: ShopifyAuthIntent;
   returnTo: string;
   pending?: string;
+  /** This round trip must never put a page in front of the customer. */
+  silent?: true;
 };
 
 function base64url(buf: Buffer) {
@@ -76,6 +78,7 @@ export async function buildAuthorizeUrl(opts: {
   returnTo: string;
   loginHint?: string | null;
   pending?: string | null;
+  silent?: boolean;
 }): Promise<{ url: string; transaction: ShopifyAuthTransaction }> {
   const { authorization_endpoint } = await discovery();
   const transaction: ShopifyAuthTransaction = {
@@ -85,6 +88,7 @@ export async function buildAuthorizeUrl(opts: {
     intent: opts.intent,
     returnTo: opts.returnTo,
     ...(opts.pending ? { pending: opts.pending } : {}),
+    ...(opts.silent ? { silent: true as const } : {}),
   };
   const url = new URL(authorization_endpoint);
   url.searchParams.set("scope", "openid email customer-account-api:full");
@@ -94,6 +98,12 @@ export async function buildAuthorizeUrl(opts: {
   url.searchParams.set("state", transaction.state);
   url.searchParams.set("nonce", transaction.nonce);
   url.searchParams.set("locale", "th");
+  // OIDC silent authentication: answer from the session you already have, or
+  // refuse — never show the customer a login form. Shopify does not advertise
+  // prompt support in its discovery document, but it honours this: with no
+  // session it returns error=login_required to the callback without rendering
+  // anything, which is what makes an automatic attempt invisible when it fails.
+  if (opts.silent) url.searchParams.set("prompt", "none");
   if (opts.loginHint) url.searchParams.set("login_hint", opts.loginHint);
   // PKCE is required for public clients and harmless for confidential ones.
   url.searchParams.set("code_challenge", base64url(createHash("sha256").update(transaction.verifier).digest()));

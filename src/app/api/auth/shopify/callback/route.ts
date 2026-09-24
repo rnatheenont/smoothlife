@@ -29,6 +29,20 @@ function failPath(intent: ShopifyAuthTransaction["intent"] | undefined) {
   return "/account/login";
 }
 
+/**
+ * A silent attempt that did not work is not an error the customer should read
+ * about — they never asked for it. It ends where they already were, quietly;
+ * `error=login_required` (no Shopify session to borrow) is the normal case.
+ */
+function silentFail(req: NextRequest, transaction: ShopifyAuthTransaction | null) {
+  const back = transaction?.returnTo && transaction.returnTo.startsWith("/") && !transaction.returnTo.startsWith("//")
+    ? transaction.returnTo
+    : "/";
+  const res = NextResponse.redirect(new URL(back, req.url));
+  res.cookies.delete(SHOPIFY_AUTH_COOKIE);
+  return res;
+}
+
 function redirect(req: NextRequest, path: string, params: Record<string, string> = {}) {
   const url = new URL(path, req.url);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
@@ -63,13 +77,16 @@ export async function GET(req: NextRequest) {
   if (!shopifyEmailAuthConfigured() || !supabaseConfigured()) {
     return redirect(req, failPath(intent), { error: "shopify_not_configured" });
   }
+  const silent = transaction?.silent === true;
   const params = req.nextUrl.searchParams;
-  if (params.get("error")) return redirect(req, failPath(intent), { error: "shopify_denied" });
+  if (params.get("error")) {
+    return silent ? silentFail(req, transaction) : redirect(req, failPath(intent), { error: "shopify_denied" });
+  }
 
   const code = params.get("code");
   const state = params.get("state");
   if (!code || !state || !transaction || !safeEqual(state, transaction.state)) {
-    return redirect(req, failPath(intent), { error: "shopify_state_mismatch" });
+    return silent ? silentFail(req, transaction) : redirect(req, failPath(intent), { error: "shopify_state_mismatch" });
   }
 
   try {
@@ -179,6 +196,6 @@ export async function GET(req: NextRequest) {
     return res;
   } catch (err) {
     console.error("[shopify callback]", err);
-    return redirect(req, failPath(intent), { error: "shopify_error" });
+    return silent ? silentFail(req, transaction) : redirect(req, failPath(intent), { error: "shopify_error" });
   }
 }
