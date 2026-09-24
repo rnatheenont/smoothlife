@@ -247,6 +247,73 @@ export async function orderProbe(numericOrderId: string): Promise<{ name: string
 }
 
 /**
+ * Records a refund against a Shopify order.
+ *
+ * Shopify cannot move the money: the sale on these orders carries the gateway
+ * name "2C2P" as a label, not a connection — the charge was taken on our own
+ * payment page, not through Shopify's checkout. So this is bookkeeping, and it
+ * is only ever called after the money has actually gone back through 2C2P.
+ * Doing it the other way round would leave an order marked refunded and a
+ * customer who never got anything.
+ */
+export async function refundShopifyOrder(opts: {
+  orderId: string;
+  amount: number;
+  currencyCode?: string;
+  note?: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!shopifyAdminConfigured()) return { ok: false, error: "Shopify admin not configured" };
+  try {
+    // The refund has to be attached to the transaction that took the money.
+    const order = await adminGraphql<{
+      order: { transactions: { id: string; kind: string; status: string }[] } | null;
+    }>(`query RefundTx($id: ID!) { order(id: $id) { transactions { id kind status } } }`, { id: opts.orderId });
+
+    const sale = order.order?.transactions.find((t) => t.kind === "SALE" && t.status === "SUCCESS");
+    if (!sale) return { ok: false, error: "ไม่พบรายการชำระเงินของออเดอร์นี้ใน Shopify" };
+
+    const amount = opts.amount.toFixed(2);
+    const currencyCode = opts.currencyCode ?? "THB";
+    const data = await adminGraphql<{
+      refundCreate: { refund: { id: string } | null; userErrors: { field: string[]; message: string }[] };
+    }>(
+      `mutation RefundOrder($input: RefundInput!) {
+        refundCreate(input: $input) {
+          refund { id }
+          userErrors { field message }
+        }
+      }`,
+      {
+        input: {
+          orderId: opts.orderId,
+          note: opts.note?.slice(0, 250),
+          // No notification: the customer has already been told by whoever
+          // actually sent the money back.
+          notify: false,
+          transactions: [
+            {
+              orderId: opts.orderId,
+              parentId: sale.id,
+              gateway: "2C2P",
+              kind: "REFUND",
+              amountSet: { shopMoney: { amount, currencyCode } },
+            },
+          ],
+        },
+      },
+    );
+    if (data.refundCreate.userErrors.length) {
+      return { ok: false, error: data.refundCreate.userErrors.map((e) => e.message).join(", ") };
+    }
+    if (!data.refundCreate.refund) return { ok: false, error: "Shopify ไม่ได้สร้างรายการคืนเงิน" };
+    return { ok: true };
+  } catch (err) {
+    console.error("[shopify-admin] refundShopifyOrder failed", err);
+    return { ok: false, error: err instanceof Error ? err.message : "Shopify refund failed" };
+  }
+}
+
+/**
  * The numbers customers use for their orders, looked up by the ids we store.
  *
  * `payment_transactions.shopify_order_id` holds the GID Shopify hands back when
