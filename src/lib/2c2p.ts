@@ -30,6 +30,15 @@
 //      — a keypair was generated and our public half uploaded, but every call
 //      still fails (HTTP 401). Thirteen envelope variations were tried and
 //      ruled out; see encryptThenSignXml for what the evidence actually says.
+//      SOLVED 2026-09-24 — it was never the envelope. With the response body
+//      finally logged, the 401 turns out to be an IIS error page ("401 -
+//      Unauthorized: Access is denied due to invalid credentials"), served
+//      before ASP.NET runs. The same endpoint, same content type and a
+//      same-shaped token sent from a Thai office IP is read by the
+//      application and answered 400; sent from this app's servers it is 401.
+//      2C2P is refusing by source address, so every envelope variation was
+//      being thrown away unread. The fix is an allow-listed, fixed egress IP
+//      — not a change to any of the code below.
 //      Re-checked 2026-09-24 against 2C2P's refund guide: there is no JSON/
 //      HS256 variant of this call to fall back on — refunds exist only on the
 //      PaymentAction/2.0 endpoint with RSA-OAEP + PS256, which is the path
