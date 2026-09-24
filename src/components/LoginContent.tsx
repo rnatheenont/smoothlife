@@ -376,6 +376,21 @@ export default function LoginContent() {
             <MessageCircle size={18} className="text-white" /> เข้าสู่ระบบด้วย LINE
           </a>
 
+          {/* Shopify sends the code, so this goes straight to their page and
+              a customer already signed in at smoothlife.com comes back signed
+              in here without typing anything. That is a front-door way in, not
+              something to hide behind an icon — the icon row below is for the
+              ones that are genuinely secondary. */}
+          {SHOPIFY_EMAIL_LOGIN && (
+            <Button
+              size="lg"
+              variant="secondary"
+              onClick={() => (window.location.href = shopifyAuthStartPath({ intent: "login", returnTo }))}
+            >
+              <Mail size={18} /> เข้าสู่ระบบด้วยอีเมล
+            </Button>
+          )}
+
           <div className="flex items-center gap-3 mt-1">
             <div className="h-px flex-1 bg-slate-200" />
             <span className="text-xs text-slate-500">หรือ</span>
@@ -383,24 +398,21 @@ export default function LoginContent() {
           </div>
 
           <div className="flex items-center justify-center gap-3.5">
-            <button
-              // With Shopify sending the code, the email is typed once — on
-              // Shopify's page — so this goes straight there instead of
-              // opening a form that asks for the same address first.
-              onClick={() =>
-                SHOPIFY_EMAIL_LOGIN
-                  ? (window.location.href = shopifyAuthStartPath({ intent: "login", returnTo }))
-                  : setView("email-otp")
-              }
-              aria-label="อีเมล OTP"
-              title="อีเมล OTP"
-              className="relative grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-surface-soft hover:border-brand-teal/30 hover:text-brand-800 transition-colors"
-            >
-              <Mail size={22} />
-              <span className="absolute -bottom-1.5 rounded-full bg-brand-emerald px-1.5 py-px text-[9px] font-bold leading-none text-white shadow-xs">
-                OTP
-              </span>
-            </button>
+            {/* Two doors to the same room is how people end up trying both.
+                With the button above present, this one goes. */}
+            {!SHOPIFY_EMAIL_LOGIN && (
+              <button
+                onClick={() => setView("email-otp")}
+                aria-label="อีเมล OTP"
+                title="อีเมล OTP"
+                className="relative grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-surface-soft hover:border-brand-teal/30 hover:text-brand-800 transition-colors"
+              >
+                <Mail size={22} />
+                <span className="absolute -bottom-1.5 rounded-full bg-brand-emerald px-1.5 py-px text-[9px] font-bold leading-none text-white shadow-xs">
+                  OTP
+                </span>
+              </button>
+            )}
             {GOOGLE_CONFIGURED && (
               <button
                 onClick={() => (window.location.href = `/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`)}
@@ -427,7 +439,7 @@ export default function LoginContent() {
             onClick={() => setView("password")}
             className="text-center text-xs text-slate-500 mt-1 hover:text-slate-600"
           >
-            เข้าสู่ระบบด้วยอีเมล
+            {SHOPIFY_EMAIL_LOGIN ? "เข้าสู่ระบบด้วยรหัสผ่าน" : "เข้าสู่ระบบด้วยอีเมล"}
           </button>
         </div>
       )}
