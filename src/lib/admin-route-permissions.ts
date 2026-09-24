@@ -45,6 +45,10 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   // goes.
   // Asking 2C2P what really happened reads like support work; writing their
   // answer back can confirm a payment and create an order, which does not.
+  // Receipt campaign: answering "did my receipt go through" is support work;
+  // approving one hands out a claim on a ฿55,000 prize.
+  { prefix: "/api/admin/receipts", permission: "receipts.view", methods: READ },
+  { prefix: "/api/admin/receipts", permission: "receipts.manage" },
   { prefix: "/api/admin/checkout-transactions/reconcile", permission: "checkout.view", methods: READ },
   { prefix: "/api/admin/checkout-transactions/reconcile", permission: "checkout.refund" },
   { prefix: "/api/admin/checkout-transactions/refund", permission: "checkout.refund" },
