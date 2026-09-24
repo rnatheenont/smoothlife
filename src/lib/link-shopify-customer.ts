@@ -32,6 +32,15 @@ export type LinkShopifyResult = {
   displayName: string | null; // set only if we changed it
   phone: string | null; // set only if we adopted a Shopify phone
   addressSuggestion: AddressSuggestion | null;
+  /**
+   * The account that already owns the Shopify customer this one matched.
+   *
+   * Set only when the match was refused for that reason. It is the same person
+   * signing in a second way far more often than it is two people, so the caller
+   * decides what to do about it — the phone sign-in folds the new account into
+   * this one — rather than leaving them with an account that shows nothing.
+   */
+  takenByUserId: string | null;
 };
 
 function toAddressSuggestion(addr: ShopifyCustomerAddress | null): AddressSuggestion | null {
@@ -81,7 +90,7 @@ export async function linkOrCreateShopifyCustomer(
     replacingEmptyLink?: boolean;
   }
 ): Promise<LinkShopifyResult> {
-  const result: LinkShopifyResult = { shopifyCustomerId: null, displayName: null, phone: null, addressSuggestion: null };
+  const result: LinkShopifyResult = { shopifyCustomerId: null, displayName: null, phone: null, addressSuggestion: null, takenByUserId: null };
 
   // Email first, then the phone — and the phone even when there IS an email.
   //
@@ -119,12 +128,20 @@ export async function linkOrCreateShopifyCustomer(
   // in that case: staff merge the two accounts and the link comes with it.
   let takenByAnotherAccount = false;
   if (match) {
+    // Both spellings of the same id. Older rows hold the bare number
+    // ("9837817299095") where newer ones hold the gid, and asking for only the
+    // gid made this guard answer "nobody owns it" about an account that did —
+    // which is how one Shopify customer came to have two web accounts, each
+    // showing the other's order history.
+    const numeric = match.id.split("/").pop() || match.id;
     const taken = await supabaseRest<{ id: string }[]>(
-      `users?shopify_customer_id=eq.${encodeURIComponent(match.id)}&id=neq.${uid}&select=id&limit=1`
+      `users?or=(shopify_customer_id.eq.${encodeURIComponent(match.id)},shopify_customer_id.eq.${encodeURIComponent(numeric)})` +
+        `&id=neq.${uid}&select=id&limit=1`
     ).catch(() => []);
     if (taken.length > 0) {
-      console.warn("[link-shopify-customer] candidate already linked elsewhere", { uid, candidate: match.id });
+      console.warn("[link-shopify-customer] candidate already linked elsewhere", { uid, candidate: match.id, owner: taken[0].id });
       takenByAnotherAccount = true;
+      result.takenByUserId = taken[0].id;
       match = null;
     }
   }
@@ -230,7 +247,7 @@ async function ensureSmoothLifeLink(
     // null means Shopify did not answer — leave a working link alone rather
     // than re-point on the strength of a failed request.
     if (state === null || (state.exists && state.orders > 0)) {
-      return { shopifyCustomerId: current, displayName: null, phone: null, addressSuggestion: null };
+      return { shopifyCustomerId: current, displayName: null, phone: null, addressSuggestion: null, takenByUserId: null };
     }
   }
 
