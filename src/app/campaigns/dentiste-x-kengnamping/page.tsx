@@ -1,4 +1,5 @@
 import { CalendarDays, Gift, Receipt, Ticket } from "lucide-react";
+import ReceiptForm from "./ReceiptForm";
 
 // DENTISTE'S x KENG NAMPING — the shell. The receipt upload, the entry count
 // and the draw land here next; see the plan for what is still waiting on an
@@ -14,6 +15,8 @@ const OPENS = new Date("2026-09-28T00:00:00+07:00");
 const CLOSES = new Date("2026-10-26T23:59:59+07:00");
 const ANNOUNCED = new Date("2026-11-03T18:00:00+07:00");
 
+export const dynamic = "force-dynamic";
+
 const thaiDate = (d: Date) =>
   d.toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Bangkok" });
 
@@ -24,6 +27,14 @@ const STEPS = [
 ];
 
 export default function Page() {
+  // Rendered per request: the window opens and closes on a clock, not on a
+  // deploy. force-dynamic keeps a build from freezing "not open yet" into the
+  // page on the day it opens.
+  // eslint-disable-next-line react-hooks/purity -- the clock is the point; force-dynamic renders this per request
+  const now = Date.now();
+  const open = now >= OPENS.getTime() && now <= CLOSES.getTime();
+  const closed = now > CLOSES.getTime();
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <p className="text-[13px] font-semibold uppercase tracking-wide text-black/50">DENTISTE&apos;S x KENG NAMPING</p>
@@ -55,12 +66,22 @@ export default function Page() {
         ))}
       </ol>
 
-      <div className="mt-10 rounded-2xl border border-black/10 bg-black/[0.02] p-5">
-        <p className="text-[14px] font-bold text-black">ยังไม่เปิดรับใบเสร็จ</p>
-        <p className="mt-1 text-[14px] leading-relaxed text-black/70">
-          ฟอร์มส่งใบเสร็จจะเปิดวันที่ {thaiDate(OPENS)} และประกาศผลวันที่ {thaiDate(ANNOUNCED)} เวลา 18:00 น.
-          เก็บใบเสร็จตัวจริงไว้เป็นหลักฐานด้วยนะคะ
-        </p>
+      {!open && (
+        <div className="mt-10 rounded-2xl border border-black/10 bg-black/[0.02] p-5">
+          <p className="text-[14px] font-bold text-black">{closed ? "ปิดรับใบเสร็จแล้ว" : "ยังไม่เปิดรับใบเสร็จ"}</p>
+          <p className="mt-1 text-[14px] leading-relaxed text-black/70">
+            {closed
+              ? `หมดเขตส่งใบเสร็จเมื่อ ${thaiDate(CLOSES)} — ประกาศผลวันที่ ${thaiDate(ANNOUNCED)} เวลา 18:00 น.`
+              : `ฟอร์มส่งใบเสร็จจะเปิดวันที่ ${thaiDate(OPENS)} และประกาศผลวันที่ ${thaiDate(ANNOUNCED)} เวลา 18:00 น.`}
+            {" "}เก็บใบเสร็จตัวจริงไว้เป็นหลักฐานด้วยนะคะ
+          </p>
+        </div>
+      )}
+
+      {/* The form is rendered even while the window is shut, so someone who
+          already sent a receipt can still see where it got to. */}
+      <div className="mt-10">
+        <ReceiptForm open={open} />
       </div>
     </div>
   );
