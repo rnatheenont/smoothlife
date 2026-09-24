@@ -30,6 +30,11 @@
 //      — a keypair was generated and our public half uploaded, but every call
 //      still fails (HTTP 401). Thirteen envelope variations were tried and
 //      ruled out; see encryptThenSignXml for what the evidence actually says.
+//      Re-checked 2026-09-24 against 2C2P's refund guide: there is no JSON/
+//      HS256 variant of this call to fall back on — refunds exist only on the
+//      PaymentAction/2.0 endpoint with RSA-OAEP + PS256, which is the path
+//      that 401s. Until the format is settled, refunds are made in the 2C2P
+//      portal and recorded here with the admin's "บันทึกว่าคืนเงินแล้ว" note.
 //      2C2P support (2026-09-15) confirmed the Recurring Payment Maintenance
 //      API is enabled, that the portal's "Server-to-server API - Public key"
 //      field IS the right place for our key, and to use their JWE-tab key —
@@ -519,7 +524,12 @@ export async function refundTransaction(invoiceNo: string, actionAmount: number)
       "2C2P refund not configured — set TWOC2P_MERCHANT_PRIVATE_KEY and TWOC2P_PUBLIC_KEY (see file header for the portal key-exchange steps required first)"
     );
   }
-  const xml = `<PaymentProcessRequest><version>4.3</version><merchantID>${MERCHANT_ID}</merchantID><invoiceNo>${invoiceNo}</invoiceNo><actionAmount>${actionAmount.toFixed(
+  // 4.6 is the version 2C2P's own refund guide documents; 4.3 was carried over
+  // from the recurring-maintenance calls this shares an envelope with. Aligning
+  // it is not a fix for the 401 below — that is refused before any of this XML
+  // is read — but there is no reason to keep sending a version the guide for
+  // this call does not mention.
+  const xml = `<PaymentProcessRequest><version>4.6</version><merchantID>${MERCHANT_ID}</merchantID><invoiceNo>${invoiceNo}</invoiceNo><actionAmount>${actionAmount.toFixed(
     2
   )}</actionAmount><processType>R</processType></PaymentProcessRequest>`;
 
@@ -529,7 +539,13 @@ export async function refundTransaction(invoiceNo: string, actionAmount: number)
     headers: { "Content-Type": "text/plain" },
     body: token,
   });
-  if (!res.ok) throw new Error(`2C2P refund HTTP ${res.status}`);
+  if (!res.ok) {
+    // Whatever they say about the refusal, said out loud. The 401 here has
+    // survived thirteen envelope variations; the next person to look at it
+    // should not have to add a console.log to see the other half of it.
+    const detail = (await res.text().catch(() => "")).slice(0, 300).trim();
+    throw new Error(`2C2P refund HTTP ${res.status}${detail ? ` — ${detail}` : ""}`);
+  }
   const responseToken = await res.text();
   const responseXml = await verifyThenDecryptXml(responseToken);
   const respCode = xmlTag(responseXml, "respCode");
