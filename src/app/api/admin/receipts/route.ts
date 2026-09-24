@@ -3,6 +3,7 @@ import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { signedReceiptUrl } from "@/lib/receipt-photos";
 import { holdsPrize } from "@/lib/receipt-campaign";
+import { orderNamesByGid } from "@/lib/shopify-admin";
 
 // The review queue, the VIP order, and what Lucky Fan has to draw from.
 //
@@ -68,7 +69,6 @@ const entriesOf = (r: Row) => r.entries_override ?? r.computed_entries;
  * reviewer comparing the photo against a number that is not on the photo is
  * being asked to do the one thing this screen exists for, without the means.
  */
-const orderNumber = (gid: string | null | undefined) => (gid ? `#${gid.split("/").pop()}` : null);
 
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
@@ -94,11 +94,17 @@ export async function GET(req: NextRequest) {
 
   // A photo link that expires in five minutes, made only for the queue an
   // admin is about to look at — not for every row ever submitted.
+  // The order numbers, asked for in one go before the rows are built. What we
+  // store is Shopify's internal id; what the receipt in the photo shows is the
+  // order's name, and those are the two numbers a reviewer is comparing.
+  const queuePage = pending.slice(0, 50);
+  const names = await orderNamesByGid(queuePage.map((r) => r.payment_transactions?.shopify_order_id));
+
   const queue = await Promise.all(
-    pending.slice(0, 50).map(async (r) => ({
+    queuePage.map(async (r) => ({
       id: r.id,
       customer: r.users?.display_name ?? null,
-      orderNumber: orderNumber(r.payment_transactions?.shopify_order_id),
+      orderNumber: names.get(r.payment_transactions?.shopify_order_id ?? "") ?? null,
       invoiceNo: r.payment_transactions?.invoice_no ?? r.manual_receipt_no,
       paidAt: r.payment_transactions?.confirmed_at ?? null,
       orderTotal: r.payment_transactions ? Number(r.payment_transactions.amount) : null,
