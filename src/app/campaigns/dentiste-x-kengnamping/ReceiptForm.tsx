@@ -53,7 +53,14 @@ const AI_TONE: Record<AiCheck["verdict"], string> = {
 export default function ReceiptForm({ open }: { open: boolean }) {
   // ?test=1 before the campaign opens: the form works on any paid Dentiste
   // order so the whole path can be walked once before it matters.
+  // From the URL rather than the API answer: a signed-out visitor never reaches
+  // the branch that renders the API's reply, and "am I in test mode" is exactly
+  // the question they have while looking at a form that should not be open yet.
   const [test, setTest] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- window is not available during render
+    setTest(new URLSearchParams(window.location.search).get("test") === "1");
+  }, []);
   const [ai, setAi] = useState<AiCheck | null>(null);
   const [state, setState] = useState<"loading" | "guest" | "ready" | "error">("loading");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -72,7 +79,6 @@ export default function ReceiptForm({ open }: { open: boolean }) {
       if (res.status === 401) return setState("guest");
       const data = await res.json();
       if (!res.ok || !data.ok) return setState("error");
-      setTest(Boolean(data.test));
       setOrders(data.orders as Order[]);
       setEntries(data.entries as Entry[]);
       setApproved(data.approvedEntries as number);
@@ -113,6 +119,13 @@ export default function ReceiptForm({ open }: { open: boolean }) {
     }
   }
 
+  const testBanner = test && (
+    <p className="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-3 text-[13px] text-sky-900">
+      <b>โหมดทดลอง</b> — ฟอร์มเปิดให้ลองใช้ก่อนวันเริ่มจริง และรับคำสั่งซื้อ DENTISTE&apos; ทุกใบไม่จำกัดช่วงเวลา
+      ใบเสร็จที่ส่งในโหมดนี้จะถูกทำเครื่องหมายไว้เพื่อลบทิ้งก่อนเปิดจริง
+    </p>
+  );
+
   if (state === "loading") {
     return (
       <div className="flex justify-center py-10 text-black/40">
@@ -123,7 +136,9 @@ export default function ReceiptForm({ open }: { open: boolean }) {
 
   if (state === "guest") {
     return (
-      <div className="rounded-2xl border border-black/10 p-6 text-center">
+      <div className="flex flex-col gap-6">
+        {testBanner}
+        <div className="rounded-2xl border border-black/10 p-6 text-center">
         <p className="text-[15px] font-bold text-black">เข้าสู่ระบบเพื่อส่งใบเสร็จ</p>
         <p className="mt-1.5 text-[14px] text-black/70">
           ใช้บัญชีเดียวกับที่สั่งซื้อ ระบบจะดึงคำสั่งซื้อที่เข้าเงื่อนไขมาให้เลือกโดยอัตโนมัติ
@@ -137,6 +152,7 @@ export default function ReceiptForm({ open }: { open: boolean }) {
         >
           เข้าสู่ระบบ
         </a>
+        </div>
       </div>
     );
   }
@@ -153,12 +169,7 @@ export default function ReceiptForm({ open }: { open: boolean }) {
 
   return (
     <div className="flex flex-col gap-8">
-      {test && (
-        <p className="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-3 text-[13px] text-sky-900">
-          <b>โหมดทดลอง</b> — ฟอร์มเปิดให้ลองใช้ก่อนวันเริ่มจริง และรับคำสั่งซื้อ DENTISTE&apos; ทุกใบไม่จำกัดช่วงเวลา
-          ใบเสร็จที่ส่งในโหมดนี้จะถูกทำเครื่องหมายไว้เพื่อลบทิ้งก่อนเปิดจริง
-        </p>
-      )}
+      {testBanner}
       {ai && (
         <div className={`rounded-2xl border px-5 py-4 text-[14px] ${AI_TONE[ai.verdict]}`}>
           <p className="font-bold">
