@@ -26,6 +26,7 @@ type QueueItem = {
   entries: number;
   sentAt: string;
   photoUrl: string | null;
+  aiCheck: { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] } | null;
 };
 type Vip = {
   rank: number;
@@ -56,6 +57,12 @@ type Data = {
 
 const when = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+
+const AI_LABEL = {
+  ok: ["ตรงกับคำสั่งซื้อ", "border-emerald-200 bg-emerald-50 text-emerald-800"],
+  unclear: ["อ่านรูปไม่ชัด", "border-amber-200 bg-amber-50 text-amber-800"],
+  mismatch: ["ไม่ตรงกับคำสั่งซื้อ", "border-rose-200 bg-rose-50 text-rose-800"],
+} as const;
 
 const TABS = [
   ["queue", "คิวตรวจ"],
@@ -268,6 +275,22 @@ export default function Page() {
                         <p className="mt-3 text-[13px] text-slate-600">
                           ระบบคำนวณได้ <span className="font-bold text-brand-ink">{item.entries} สิทธิ์</span>
                         </p>
+
+                        {/* What a first glance saw. Never a decision — the
+                            buttons below are still the only thing that is. */}
+                        {item.aiCheck && (
+                          <div className={`mt-3 rounded-l border px-3 py-2 text-[12px] ${AI_LABEL[item.aiCheck.verdict][1]}`}>
+                            <p className="font-bold">AI ตรวจเบื้องต้น · {AI_LABEL[item.aiCheck.verdict][0]}</p>
+                            {item.aiCheck.message && <p className="mt-0.5">{item.aiCheck.message}</p>}
+                            {item.aiCheck.findings.length > 0 && (
+                              <ul className="mt-1 list-inside list-disc opacity-80">
+                                {item.aiCheck.findings.map((f) => (
+                                  <li key={f}>{f}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
 
                         <div className="mt-auto flex gap-2 pt-4">
                           <button

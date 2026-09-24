@@ -1,5 +1,6 @@
 import { CalendarDays, Gift, Receipt, Ticket } from "lucide-react";
 import ReceiptForm from "./ReceiptForm";
+import { isTestMode } from "@/lib/receipt-campaign";
 
 // DENTISTE'S x KENG NAMPING — the shell. The receipt upload, the entry count
 // and the draw land here next; see the plan for what is still waiting on an
@@ -26,13 +27,14 @@ const STEPS = [
   { Icon: Gift, title: "ลุ้นรางวัล", body: "ประกาศผล 3 พ.ย. 2569 เวลา 18:00 น. และยืนยันสิทธิ์ภายใน 5 พ.ย." },
 ];
 
-export default function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ test?: string }> }) {
+  const test = isTestMode((await searchParams).test);
   // Rendered per request: the window opens and closes on a clock, not on a
   // deploy. force-dynamic keeps a build from freezing "not open yet" into the
   // page on the day it opens.
   // eslint-disable-next-line react-hooks/purity -- the clock is the point; force-dynamic renders this per request
   const now = Date.now();
-  const open = now >= OPENS.getTime() && now <= CLOSES.getTime();
+  const open = test || (now >= OPENS.getTime() && now <= CLOSES.getTime());
   const closed = now > CLOSES.getTime();
 
   return (

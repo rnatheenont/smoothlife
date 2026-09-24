@@ -37,13 +37,14 @@ type Row = {
   reject_reason: string | null;
   reviewed_at: string | null;
   created_at: string;
+  ai_check: { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] } | null;
   users: { display_name: string | null } | null;
   payment_transactions: { invoice_no: string; amount: number; confirmed_at: string | null; shopify_order_id: string | null } | null;
 };
 
 const SELECT =
   "id,user_id,payment_transaction_id,manual_receipt_no,receipt_photo_path,dentiste_net_amount," +
-  "keychain_amount,computed_entries,entries_override,status,reject_reason,reviewed_at,created_at," +
+  "keychain_amount,computed_entries,entries_override,status,reject_reason,reviewed_at,created_at,ai_check," +
   "users(display_name),payment_transactions(invoice_no,amount,confirmed_at,shopify_order_id)";
 
 type WinnerRow = {
@@ -106,6 +107,7 @@ export async function GET(req: NextRequest) {
       entries: entriesOf(r),
       sentAt: r.created_at,
       photoUrl: await signedReceiptUrl(r.receipt_photo_path),
+      aiCheck: r.ai_check,
     }))
   );
 

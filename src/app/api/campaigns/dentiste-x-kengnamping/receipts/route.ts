@@ -3,11 +3,14 @@ import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { isRateLimitedShared } from "@/lib/rate-limit";
 import {
+  TEST_MARKER,
   amountsFromLineItems,
   computeEntries,
+  isTestMode,
   withinCampaign,
   type LineItem,
 } from "@/lib/receipt-campaign";
+import { checkReceiptPhoto } from "@/lib/receipt-vision";
 import {
   ENTRY_COLUMNS,
   MAX_RECEIPT_BYTES,
@@ -38,19 +41,24 @@ type TxRow = {
   amount: number;
   confirmed_at: string | null;
   line_items: LineItem[] | null;
+  shopify_order_id: string | null;
 };
+
+const orderNumber = (gid: string | null | undefined) => (gid ? `#${gid.split("/").pop()}` : null);
 
 function unauthorised() {
   return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบก่อนส่งใบเสร็จ" }, { status: 401 });
 }
 
 /** Every paid order of this customer that the campaign would accept. */
-async function eligibleOrders(userId: string): Promise<TxRow[]> {
+async function eligibleOrders(userId: string, anyOrder = false): Promise<TxRow[]> {
   const rows = await supabaseRest<TxRow[]>(
     `payment_transactions?user_id=eq.${pgValue(userId)}&status=eq.success` +
-      `&select=id,invoice_no,amount,confirmed_at,line_items&order=confirmed_at.desc&limit=100`
+      `&select=id,invoice_no,amount,confirmed_at,line_items,shopify_order_id&order=confirmed_at.desc&limit=100`
   ).catch(() => [] as TxRow[]);
-  return rows.filter((tx) => withinCampaign(tx.confirmed_at) && amountsFromLineItems(tx.line_items).dentisteAmount > 0);
+  return rows.filter(
+    (tx) => withinCampaign(tx.confirmed_at, anyOrder) && amountsFromLineItems(tx.line_items).dentisteAmount > 0
+  );
 }
 
 export async function GET(req: NextRequest) {
@@ -58,16 +66,19 @@ export async function GET(req: NextRequest) {
   if (!uid) return unauthorised();
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
-  const [orders, entries] = await Promise.all([eligibleOrders(uid), entriesForUser(CAMPAIGN, uid)]);
+  const test = isTestMode(req.nextUrl.searchParams.get("test"));
+  const [orders, entries] = await Promise.all([eligibleOrders(uid, test), entriesForUser(CAMPAIGN, uid)]);
   const used = new Set(entries.map((e) => e.payment_transaction_id).filter(Boolean));
 
   return NextResponse.json(
     {
       ok: true,
+      test,
       orders: orders.map((tx) => {
         const amounts = amountsFromLineItems(tx.line_items);
         return {
           id: tx.id,
+          orderNumber: orderNumber(tx.shopify_order_id),
           invoiceNo: tx.invoice_no,
           paidAt: tx.confirmed_at,
           total: Number(tx.amount),
@@ -120,7 +131,8 @@ export async function POST(req: NextRequest) {
 
   // The order has to be theirs, paid, inside the window and actually contain
   // Dentiste — checked here rather than trusted from the form.
-  const orders = await eligibleOrders(uid);
+  const test = isTestMode(req.nextUrl.searchParams.get("test"));
+  const orders = await eligibleOrders(uid, test);
   const order = orders.find((o) => o.id === orderId);
   if (!order) {
     return NextResponse.json(
@@ -130,9 +142,27 @@ export async function POST(req: NextRequest) {
   }
 
   const amounts = amountsFromLineItems(order.line_items);
+  const bytes = await photo.arrayBuffer();
+
+  // Read before storing: the customer is still here, and a photo that cannot
+  // be read is worth saying so about now rather than in a rejection later.
+  // Never blocks — a check that fails to run leaves the receipt exactly where
+  // it would have been anyway, in front of a person.
+  const aiCheck = await checkReceiptPhoto({
+    bytes,
+    contentType: photo.type,
+    order: {
+      orderNumber: orderNumber(order.shopify_order_id),
+      invoiceNo: order.invoice_no,
+      total: Number(order.amount),
+      paidAt: order.confirmed_at,
+      items: (order.line_items ?? []).map((li) => `variant ${li.variantId} x${li.quantity}`),
+    },
+  });
+
   const path = await uploadReceiptPhoto({
     userId: uid,
-    bytes: await photo.arrayBuffer(),
+    bytes,
     contentType: photo.type,
   }).catch((err) => {
     console.error("[receipts] upload failed", err);
@@ -145,6 +175,7 @@ export async function POST(req: NextRequest) {
   // what someone re-sending a clearer photo after a rejection is trying to do.
   const fields = {
     receipt_photo_path: path,
+    ai_check: aiCheck,
     dentiste_net_amount: amounts.dentisteAmount,
     keychain_amount: amounts.keychainAmount,
     computed_entries: computeEntries(amounts),
@@ -177,14 +208,20 @@ export async function POST(req: NextRequest) {
     } else {
       const [row] = await supabaseRest<ReceiptEntryRow[]>("receipt_campaign_entries", {
         method: "POST",
-        body: JSON.stringify({ campaign_key: CAMPAIGN, user_id: uid, payment_transaction_id: order.id, ...fields }),
+        body: JSON.stringify({
+          campaign_key: CAMPAIGN,
+          user_id: uid,
+          payment_transaction_id: order.id,
+          ...(test ? { manual_receipt_no: TEST_MARKER } : {}),
+          ...fields,
+        }),
       });
       entryId = row?.id;
     }
 
     return NextResponse.json({
       ok: true,
-      entry: { id: entryId, status: "pending_review", entries: computeEntries(amounts) },
+      entry: { id: entryId, status: "pending_review", entries: computeEntries(amounts), aiCheck },
     });
   } catch (err) {
     // No row means the photo is litter; it holds someone's address.
