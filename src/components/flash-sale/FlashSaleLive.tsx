@@ -615,6 +615,15 @@ function Panel({
           </ProgressBar.Track>
         </ProgressBar>
         {checkout}
+        {/* Changing your mind should not cost the next person fifteen minutes.
+            Without this the only way out of a turn you do not want is to close
+            the tab and let the clock run the stock down. */}
+        <Button variant="ghost" fullWidth className="mt-3" isDisabled={busy} onPress={leave}>
+          ไม่ซื้อแล้ว · ออกจากคิว
+        </Button>
+        <p className="mt-1.5 text-center text-xs text-slate-500">
+          สิทธิ์จะถูกส่งต่อให้คิวถัดไปทันที — เข้าคิวใหม่ได้ถ้าเปลี่ยนใจ
+        </p>
       </div>
     );
   }
