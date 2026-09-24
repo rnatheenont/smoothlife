@@ -92,7 +92,7 @@ const APPLE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_APPLE_SIGNIN_ENABLED);
 // Same pattern for Google Sign-In (Google Cloud OAuth client).
 const GOOGLE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_GOOGLE_SIGNIN_ENABLED);
 
-export default function LoginContent() {
+export default function LoginContent({ hideEmailLogin = false }: { hideEmailLogin?: boolean } = {}) {
   // Phone OTP and LINE are the primary methods (matches the homepage promise
   // "เข้าสู่ระบบด้วย OTP หรือ LINE" and how Thai users expect Shopee/Lazada-style
   // sites to work) — email+password starts one tap further in, not as the
@@ -381,7 +381,7 @@ export default function LoginContent() {
               in here without typing anything. That is a front-door way in, not
               something to hide behind an icon — the icon row below is for the
               ones that are genuinely secondary. */}
-          {SHOPIFY_EMAIL_LOGIN && (
+          {SHOPIFY_EMAIL_LOGIN && !hideEmailLogin && (
             <Button
               size="lg"
               variant="secondary"
@@ -400,7 +400,7 @@ export default function LoginContent() {
           <div className="flex items-center justify-center gap-3.5">
             {/* Two doors to the same room is how people end up trying both.
                 With the button above present, this one goes. */}
-            {!SHOPIFY_EMAIL_LOGIN && (
+            {!SHOPIFY_EMAIL_LOGIN && !hideEmailLogin && (
               <button
                 onClick={() => setView("email-otp")}
                 aria-label="อีเมล OTP"
