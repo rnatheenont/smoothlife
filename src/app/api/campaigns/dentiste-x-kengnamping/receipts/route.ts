@@ -11,6 +11,7 @@ import {
   type LineItem,
 } from "@/lib/receipt-campaign";
 import { checkReceiptPhoto } from "@/lib/receipt-vision";
+import { orderNameByGid, orderNamesByGid } from "@/lib/shopify-admin";
 import {
   ENTRY_COLUMNS,
   MAX_RECEIPT_BYTES,
@@ -44,7 +45,9 @@ type TxRow = {
   shopify_order_id: string | null;
 };
 
-const orderNumber = (gid: string | null | undefined) => (gid ? `#${gid.split("/").pop()}` : null);
+// The number a customer knows an order by is its Shopify *name* ("#4292"),
+// not the id we store to address it with. Looked up rather than derived —
+// deriving it produced "#7743402541207", which matches nothing they hold.
 
 type UploadRow = {
   id: string;
@@ -84,6 +87,13 @@ export async function GET(req: NextRequest) {
     ).catch(() => [] as UploadRow[]),
   ]);
   const used = new Set(entries.map((e) => e.payment_transaction_id).filter(Boolean));
+  // One lookup for every order on the page — the ones they can still send and
+  // the ones they already did.
+  const names = await orderNamesByGid([
+    ...orders.map((tx) => tx.shopify_order_id),
+    ...entries.map((e) => e.payment_transactions?.shopify_order_id),
+  ]);
+  const nameOf = (gid: string | null | undefined) => names.get(gid ?? "") ?? null;
 
   return NextResponse.json(
     {
@@ -93,7 +103,7 @@ export async function GET(req: NextRequest) {
         const amounts = amountsFromLineItems(tx.line_items);
         return {
           id: tx.id,
-          orderNumber: orderNumber(tx.shopify_order_id),
+          orderNumber: nameOf(tx.shopify_order_id),
           invoiceNo: tx.invoice_no,
           paidAt: tx.confirmed_at,
           total: Number(tx.amount),
@@ -107,7 +117,7 @@ export async function GET(req: NextRequest) {
         id: e.id,
         paymentTransactionId: e.payment_transaction_id,
         // The number the customer knows the order by, not our invoice.
-        orderNumber: orderNumber(e.payment_transactions?.shopify_order_id) ?? e.manual_receipt_no,
+        orderNumber: nameOf(e.payment_transactions?.shopify_order_id) ?? e.manual_receipt_no,
         orderTotal: e.payment_transactions ? Number(e.payment_transactions.amount) : null,
         dentisteAmount: Number(e.dentiste_net_amount),
         keychainAmount: Number(e.keychain_amount),
@@ -182,7 +192,7 @@ export async function POST(req: NextRequest) {
     bytes,
     contentType: photo.type,
     order: {
-      orderNumber: orderNumber(order.shopify_order_id),
+      orderNumber: await orderNameByGid(order.shopify_order_id),
       invoiceNo: order.invoice_no,
       total: Number(order.amount),
       paidAt: order.confirmed_at,

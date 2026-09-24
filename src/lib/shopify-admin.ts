@@ -247,6 +247,58 @@ export async function orderProbe(numericOrderId: string): Promise<{ name: string
 }
 
 /**
+ * The numbers customers use for their orders, looked up by the ids we store.
+ *
+ * `payment_transactions.shopify_order_id` holds the GID Shopify hands back when
+ * it creates an order — `gid://shopify/Order/7743402541207`. That number is an
+ * internal handle; it appears on nothing the customer ever sees. What their
+ * confirmation email says, and what a photo of that email shows, is the order's
+ * *name*: `#4292`. Printing the id where the name belongs makes our screen and
+ * their receipt disagree about the same order, which is the one thing a receipt
+ * check must not do.
+ *
+ * Batched, because a review queue asks about many orders at once, and cached
+ * forever, because an order's name is fixed the moment it has one.
+ */
+const orderNameCache = new Map<string, string>();
+
+export async function orderNamesByGid(gids: (string | null | undefined)[]): Promise<Map<string, string>> {
+  const wanted = [...new Set(gids.filter((g): g is string => !!g && g.startsWith("gid://shopify/Order/")))];
+  const missing = wanted.filter((g) => !orderNameCache.has(g));
+  if (missing.length && shopifyAdminConfigured()) {
+    // Shopify caps `nodes` at 250 ids; a page of receipts is nowhere near that,
+    // but chunk anyway so a busy day cannot quietly truncate the answer.
+    for (let i = 0; i < missing.length; i += 200) {
+      const chunk = missing.slice(i, i + 200);
+      try {
+        const data = await adminGraphql<{ nodes: ({ id: string; name: string } | null)[] }>(
+          `query OrderNames($ids: [ID!]!) { nodes(ids: $ids) { ... on Order { id name } } }`,
+          { ids: chunk },
+        );
+        for (const node of data.nodes ?? []) {
+          if (node?.id && node.name) orderNameCache.set(node.id, node.name);
+        }
+      } catch (err) {
+        // A name we cannot fetch is a name we do without — the caller falls
+        // back to the invoice number rather than showing a wrong one.
+        console.error("[shopify-admin] orderNamesByGid failed", err);
+      }
+    }
+  }
+  const out = new Map<string, string>();
+  for (const gid of wanted) {
+    const name = orderNameCache.get(gid);
+    if (name) out.set(gid, name);
+  }
+  return out;
+}
+
+export async function orderNameByGid(gid: string | null | undefined): Promise<string | null> {
+  if (!gid) return null;
+  return (await orderNamesByGid([gid])).get(gid) ?? null;
+}
+
+/**
  * Who this token says we are, and what it says we may read.
  *
  * The app's title and key are here because "the scope is granted but the token
