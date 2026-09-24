@@ -7,12 +7,18 @@
 // without anyone squinting at a picture. The photo is the customer's proof to
 // hold, and the admin's cross-check; the arithmetic comes from the order.
 //
-// Two rules in the campaign document contradict each other, so both are
-// implemented and one switch decides. Condition 2 says "ครบ 690 บาท รับ 1
-// สิทธิ์" (once), the calculation note says "ทุกๆ 690 บาทต่อใบเสร็จ" (every).
-// Until the marketing team says which, FLAT is the default: it is the reading
-// in the conditions customers are shown, and giving fewer entries than promised
-// is the error that gets corrected, not the one that gets argued about.
+// The campaign document contradicted itself on this — condition 2 read "ครบ
+// 690 บาท รับ 1 สิทธิ์" (once), the calculation note read "ทุกๆ 690 บาทต่อ
+// ใบเสร็จ" (every) — and the switch below existed to hold the answer. The
+// marketing team settled it on 24 ก.ย. 2569:
+//
+//   ยอดช็อปทุกๆ 690 บาทต่อใบเสร็จ ได้รับ 1 สิทธิ์
+//   ยอดช้อป Set Keychain 990 บาทต่อใบเสร็จ ได้รับ 3 สิทธิ์
+//   ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้
+//
+// "ต่อใบเสร็จ" is already how this works: entries are computed per order and
+// never summed across them, which is also why nothing here adds up a
+// customer's receipts before dividing.
 import { products } from "@/data/products";
 import { brands, brandSlugAliases, slugifyVendor } from "@/data/brands";
 
@@ -20,9 +26,16 @@ export const GENERAL_THRESHOLD = 690;
 export const KEYCHAIN_PRICE = 990;
 export const KEYCHAIN_ENTRIES = 3;
 
-/** true = "ทุกๆ 690 บาท" (multiplies), false = "ครบ 690 บาท" (once). Q1.2/1.3. */
-export const TIERED = false;
-/** true = keychain entries add to the amount entries. Q1.4. */
+/** true = "ทุกๆ 690 บาท" (multiplies), false = "ครบ 690 บาท" (once). */
+export const TIERED = true;
+/**
+ * true = keychain entries add to the amount entries.
+ *
+ * The two rules are written as two rules, so a receipt earns both: a keychain
+ * set at ฿990 is 3, and anything else Dentiste on the same receipt is counted
+ * separately against the ฿690 step. The keychain amount is kept out of that
+ * step rather than counted twice — see amountsFromLineItems.
+ */
 export const STACKS = true;
 
 /**
