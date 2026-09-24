@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 
 import { SITE_URL } from "@/lib/site-url";
 
-const DISALLOW = ["/account/", "/cart", "/checkout", "/chat", "/api/", "/flash-sale/"];
+const DISALLOW = ["/account/", "/cart", "/checkout", "/chat", "/api/", "/flash-sale/", "/campaigns/"];
 
 // Every AI crawler gets the same access as everyone else (the wildcard rule
 // below already covers them) — these are named explicitly anyway, because a
