@@ -363,10 +363,21 @@ export default function Page() {
                           </div>
                         )}
 
+                        {item.paymentStatus !== "PAID" && (
+                          <p className="mt-3 rounded-l border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+                            อนุมัติไม่ได้จนกว่าคำสั่งซื้อจะเป็น <b>ชำระแล้ว (PAID)</b> ใน Shopify — ตีกลับยังทำได้ตามปกติ
+                          </p>
+                        )}
+
                         <div className="mt-auto flex gap-2 pt-4">
                           <button
                             type="button"
-                            disabled={busy === item.id}
+                            disabled={busy === item.id || item.paymentStatus !== "PAID"}
+                            title={
+                              item.paymentStatus === "PAID"
+                                ? undefined
+                                : "อนุมัติได้เฉพาะคำสั่งซื้อที่ชำระเงินแล้ว (PAID)"
+                            }
                             onClick={() => decide(item, "approve")}
                             className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-800 px-4 text-[13px] font-semibold text-white disabled:opacity-50"
                           >

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { amountsFromLineItems, computeEntries, type LineItem } from "@/lib/receipt-campaign";
+import { orderPaymentByGid } from "@/lib/shopify-admin";
 
 // Approving or rejecting one receipt.
 //
@@ -109,12 +110,54 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     return NextResponse.json({ ok: false, error: "จำนวนสิทธิ์ไม่ถูกต้อง" }, { status: 400 });
   }
 
-  const [entry] = await supabaseRest<{ id: string; computed_entries: number; status: string }[]>(
-    `receipt_campaign_entries?id=eq.${pgValue(id)}&campaign_key=eq.${CAMPAIGN}&select=id,computed_entries,status&limit=1`
+  const [entry] = await supabaseRest<
+    {
+      id: string;
+      computed_entries: number;
+      status: string;
+      payment_transactions: { shopify_order_id: string | null } | null;
+    }[]
+  >(
+    `receipt_campaign_entries?id=eq.${pgValue(id)}&campaign_key=eq.${CAMPAIGN}` +
+      `&select=id,computed_entries,status,payment_transactions(shopify_order_id)&limit=1`
   );
   if (!entry) return NextResponse.json({ ok: false, error: "ไม่พบใบเสร็จรายการนี้" }, { status: 404 });
   if (entry.status !== "pending_review") {
     return NextResponse.json({ ok: false, error: "ใบเสร็จนี้ถูกตรวจไปแล้ว" }, { status: 409 });
+  }
+
+  // Approving is the step that turns a photo into a claim on a ฿55,000 prize,
+  // so it needs the money to still be there — and our own row cannot say that.
+  // payment_transactions.status stays "success" through a refund, a void, and
+  // a pre-order that was never captured. Shopify is asked instead, and an
+  // unanswered question is treated as a no: an approval we could not verify is
+  // the expensive mistake here, while a reviewer waiting five minutes is not.
+  // Rejecting stays open — nothing about the money should stop someone saying
+  // a photo is wrong.
+  if (action === "approve") {
+    const gid = entry.payment_transactions?.shopify_order_id ?? null;
+    if (!gid) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "ใบเสร็จนี้ยังไม่มีคำสั่งซื้อใน Shopify — เงินเข้าแล้วแต่ออเดอร์สร้างไม่สำเร็จ กรุณาแก้ออเดอร์ให้เรียบร้อยก่อนอนุมัติ",
+        },
+        { status: 409 }
+      );
+    }
+    const status = (await orderPaymentByGid([gid])).get(gid)?.financialStatus ?? null;
+    if (status !== "PAID") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: status
+            ? `อนุมัติไม่ได้ — สถานะการชำระเงินของคำสั่งซื้อนี้คือ ${status} ไม่ใช่ PAID`
+            : "อนุมัติไม่ได้ — อ่านสถานะการชำระเงินจาก Shopify ไม่ได้ กรุณาลองใหม่อีกครั้ง",
+        },
+        { status: 409 }
+      );
+    }
   }
 
   const adminId = getAdminSession(token)?.userId ?? null;
