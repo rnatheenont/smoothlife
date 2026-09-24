@@ -43,6 +43,10 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   // Money. Reading a transaction and reversing one are different jobs:
   // support answers "did my payment go through", and that is as far as it
   // goes.
+  // Asking 2C2P what really happened reads like support work; writing their
+  // answer back can confirm a payment and create an order, which does not.
+  { prefix: "/api/admin/checkout-transactions/reconcile", permission: "checkout.view", methods: READ },
+  { prefix: "/api/admin/checkout-transactions/reconcile", permission: "checkout.refund" },
   { prefix: "/api/admin/checkout-transactions/refund", permission: "checkout.refund" },
   { prefix: "/api/admin/checkout-transactions/mark-refunded", permission: "checkout.refund" },
   { prefix: "/api/admin/checkout-transactions", permission: "checkout.view" },
