@@ -129,7 +129,10 @@ export default function ReceiptForm({ open }: { open: boolean }) {
           ใช้บัญชีเดียวกับที่สั่งซื้อ ระบบจะดึงคำสั่งซื้อที่เข้าเงื่อนไขมาให้เลือกโดยอัตโนมัติ
         </p>
         <a
-          href={`/account/login?returnTo=${encodeURIComponent("/campaigns/dentiste-x-kengnamping")}`}
+          // Back to the campaign page, still in whatever mode they were in.
+          href={`/campaigns/dentiste-x-kengnamping/login?returnTo=${encodeURIComponent(
+            `/campaigns/dentiste-x-kengnamping${window.location.search}`
+          )}`}
           className="mt-5 inline-flex min-h-11 items-center rounded-full bg-black px-6 text-[14px] font-semibold text-white hover:opacity-90"
         >
           เข้าสู่ระบบ
