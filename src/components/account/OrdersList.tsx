@@ -20,7 +20,6 @@ import {
 import type { ShopifyOrderSummary } from "@/lib/shopify-admin";
 import type { buildTracking } from "@/lib/tracking";
 import ShipmentTracker from "@/components/ShipmentTracker";
-import PendingPayments from "@/components/account/PendingPayments";
 import { Button } from "@/components/ui";
 
 
@@ -116,9 +115,6 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
   return (
     <div className={embedded ? "" : "max-w-3xl"}>
       <Heading embedded={embedded} />
-      {/* Above the orders, because a customer who paid and got nothing is here
-          about that and not about the list below. */}
-      <PendingPayments />
       {totals && totals.orders > 0 && (
         <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           <span className="text-slate-500">
