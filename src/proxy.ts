@@ -45,12 +45,42 @@ async function guardAdminApi(req: NextRequest) {
   return null;
 }
 
+
+/**
+ * campaign.smoothlife.com shows the campaign, and nothing else.
+ *
+ * It exists so a link handed to customers carries the shop's own domain
+ * instead of a vercel.app address — a page asking people to upload a receipt
+ * has to look like the shop it claims to be. But pointing a branded subdomain
+ * at this project would otherwise put the whole unlaunched site on it, where
+ * campaign.smoothlife.com/shop reads as an announcement nobody has made.
+ *
+ * So everything outside /campaigns goes to the live store. The API paths the
+ * campaign itself calls stay, or the page would be a shell that cannot log
+ * anyone in or take an upload.
+ */
+const CAMPAIGN_HOST = "campaign.smoothlife.com";
+const CAMPAIGN_ALLOWED = ["/campaigns", "/api/campaigns", "/api/auth", "/api/account", "/account"];
+
+function offCampaignHost(req: NextRequest) {
+  if (req.headers.get("host") !== CAMPAIGN_HOST) return null;
+  const { pathname } = req.nextUrl;
+  if (pathname.startsWith("/_next/") || pathname === "/favicon.ico") return null;
+  if (CAMPAIGN_ALLOWED.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return null;
+  // The store, not this site's own home page: someone who lands here by
+  // trimming the URL is looking for the shop.
+  return NextResponse.redirect(new URL(pathname === "/" ? "/" : pathname, "https://www.smoothlife.com"), 307);
+}
+
 // The raw *.vercel.app deployment URL serves the exact same content as
 // www.smoothlife.com — without this, Google could index both and treat
 // them as duplicate sites. robots.txt/sitemap already point at the real
 // domain; this stops the vercel.app one from being indexable at all,
 // regardless of what crawls it directly.
 export async function proxy(req: NextRequest) {
+  const elsewhere = offCampaignHost(req);
+  if (elsewhere) return elsewhere;
+
   if (req.nextUrl.pathname.startsWith("/api/admin/")) {
     const refused = await guardAdminApi(req);
     if (refused) return refused;
