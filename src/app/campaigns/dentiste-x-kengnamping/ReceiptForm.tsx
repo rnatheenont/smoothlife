@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AlertTriangle, Check, Clock, Loader2, Upload, X } from "lucide-react";
 import { formatTHB } from "@/lib/format";
+import { CLOSES_LABEL, OPENS_LABEL } from "@/lib/receipt-campaign";
 
 type AiCheck = { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] };
 
@@ -200,7 +201,7 @@ export default function ReceiptForm({ open }: { open: boolean }) {
           {orders.length === 0 ? (
             <p className="mt-3 rounded-2xl border border-black/10 p-5 text-[14px] leading-relaxed text-black/70">
               ยังไม่พบคำสั่งซื้อที่เข้าเงื่อนไข — ต้องเป็นคำสั่งซื้อผลิตภัณฑ์ DENTISTE&apos; ที่ชำระเงินสำเร็จบน
-              Smoothlife.com ระหว่าง 28 ก.ย. – 26 ต.ค. 2569
+              Smoothlife.com ระหว่าง {OPENS_LABEL} – {CLOSES_LABEL}
             </p>
           ) : (
             <ul className="mt-3 flex flex-col gap-2">

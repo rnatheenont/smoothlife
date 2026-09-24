@@ -1,6 +1,6 @@
 import { CalendarDays, Gift, Receipt, Ticket } from "lucide-react";
 import ReceiptForm from "./ReceiptForm";
-import { isTestMode } from "@/lib/receipt-campaign";
+import { CLOSES_AT, CLOSES_LABEL, OPENS_AT, OPENS_LABEL, isTestMode } from "@/lib/receipt-campaign";
 
 // DENTISTE'S x KENG NAMPING — the shell. The receipt upload, the entry count
 // and the draw land here next; see the plan for what is still waiting on an
@@ -12,8 +12,9 @@ export const metadata = {
   description: "ซื้อผลิตภัณฑ์ DENTISTE' ที่ Smoothlife.com แล้วส่งใบเสร็จเพื่อรับสิทธิ์ลุ้นรางวัล",
 };
 
-const OPENS = new Date("2026-09-28T00:00:00+07:00");
-const CLOSES = new Date("2026-10-26T23:59:59+07:00");
+// Dates come from the rule, not from a second copy of it.
+const OPENS = new Date(OPENS_AT);
+const CLOSES = new Date(CLOSES_AT);
 const ANNOUNCED = new Date("2026-11-03T18:00:00+07:00");
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ const thaiDate = (d: Date) =>
   d.toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Bangkok" });
 
 const STEPS = [
-  { Icon: Receipt, title: "ซื้อผลิตภัณฑ์ DENTISTE'", body: "ที่ Smoothlife.com ระหว่าง 28 ก.ย. – 26 ต.ค. 2569" },
+  { Icon: Receipt, title: "ซื้อผลิตภัณฑ์ DENTISTE'", body: `ที่ Smoothlife.com ระหว่าง ${OPENS_LABEL} – ${CLOSES_LABEL}` },
   { Icon: Ticket, title: "ส่งใบเสร็จ", body: "เลือกคำสั่งซื้อของคุณแล้วแนบรูปใบเสร็จ ระบบคำนวณสิทธิ์ให้ทันที" },
   { Icon: Gift, title: "ลุ้นรางวัล", body: "ประกาศผล 3 พ.ย. 2569 เวลา 18:00 น. และยืนยันสิทธิ์ภายใน 5 พ.ย." },
 ];
