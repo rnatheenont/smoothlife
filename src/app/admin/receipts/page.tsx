@@ -35,11 +35,21 @@ type Vip = {
   reserve: boolean;
 };
 type Fan = { userId: string; customer: string | null; entries: number };
+type Winner = {
+  prizeType: "vip" | "lucky_fan";
+  rank: number;
+  customer: string | null;
+  status: "pending_confirm" | "confirmed" | "forfeited";
+  reserve: boolean;
+  confirmDeadline: string;
+  drawnAt: string;
+};
 type Data = {
   counts: { pending: number; approved: number; rejected: number; entrants: number; tickets: number };
   queue: QueueItem[];
   pendingBeyondQueue: number;
   vip: Vip[];
+  winners: Winner[];
   luckyFan: Fan[];
 };
 
@@ -50,7 +60,15 @@ const TABS = [
   ["queue", "คิวตรวจ"],
   ["vip", "VIP (มาก่อนได้ก่อน)"],
   ["fan", "สิทธิ์ Lucky Fan"],
+  ["draw", "ประกาศผล"],
 ] as const;
+
+const PRIZE_LABEL = { vip: "VIP 25 รางวัล", lucky_fan: "Lucky Fan 25 รางวัล" } as const;
+const WINNER_STATUS = {
+  pending_confirm: "รอยืนยันสิทธิ์",
+  confirmed: "ยืนยันแล้ว",
+  forfeited: "สละสิทธิ์",
+} as const;
 
 export default function Page() {
   const [data, setData] = useState<Data | null>(null);
@@ -102,6 +120,47 @@ export default function Page() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function draw(prizeType: "vip" | "lucky_fan") {
+    const label = PRIZE_LABEL[prizeType];
+    if (prizeType === "lucky_fan") {
+      // A draw cannot be taken back once it has been announced, and the reason
+      // this asks rather than just doing it is that the next screen is what the
+      // shop will publish.
+      if (!window.confirm(`จับสลาก ${label} ตอนนี้?\n\nผลจะถูกบันทึกถาวรและใช้ประกาศจริง จับซ้ำไม่ได้จนกว่าจะล้างผลเดิม`)) return;
+    } else if (!window.confirm(`สรุปผล ${label} ตอนนี้?`)) return;
+
+    setBusy(prizeType);
+    try {
+      const res = await fetch("/api/admin/receipts/draw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prizeType }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "จับสลากไม่สำเร็จ");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "จับสลากไม่สำเร็จ");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function clearDraw(prizeType: "vip" | "lucky_fan") {
+    if (!window.confirm(`ล้างผล ${PRIZE_LABEL[prizeType]} ทิ้ง?\n\nรายชื่อผู้ได้รับรางวัลทั้งหมดจะถูกลบ`)) return;
+    setBusy(prizeType);
+    try {
+      const res = await fetch(`/api/admin/receipts/draw?prizeType=${prizeType}`, { method: "DELETE" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "ล้างผลไม่สำเร็จ");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ล้างผลไม่สำเร็จ");
     } finally {
       setBusy(null);
     }
@@ -273,6 +332,75 @@ export default function Page() {
                 <p className="px-3 pb-3 text-[13px] text-slate-500">ยังไม่มีใบเสร็จที่อนุมัติแล้ว</p>
               )}
             </Panel>
+          )}
+
+          {tab === "draw" && (
+            <div className="flex flex-col gap-4">
+              {(["vip", "lucky_fan"] as const).map((prize) => {
+                const drawn = data.winners.filter((w) => w.prizeType === prize);
+                return (
+                  <Panel key={prize} title={PRIZE_LABEL[prize]}>
+                    <div className="flex flex-wrap items-center gap-2 px-3 pt-3">
+                      {drawn.length === 0 ? (
+                        <button
+                          type="button"
+                          disabled={busy === prize}
+                          onClick={() => draw(prize)}
+                          className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-800 px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+                        >
+                          {busy === prize && <Loader2 size={14} className="animate-spin" />}
+                          {prize === "vip" ? "สรุปผล VIP" : "จับสลาก Lucky Fan"}
+                        </button>
+                      ) : (
+                        <>
+                          <span className="text-[13px] text-slate-600">
+                            ประกาศผลแล้วเมื่อ {when(drawn[0].drawnAt)} · ยืนยันสิทธิ์ภายใน {when(drawn[0].confirmDeadline)}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={busy === prize}
+                            onClick={() => clearDraw(prize)}
+                            className="inline-flex min-h-9 items-center rounded-full border border-rose-200 px-4 text-[13px] font-semibold text-rose-700 disabled:opacity-50"
+                          >
+                            ล้างผล
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <p className="px-3 pb-1 pt-2 text-[12px] text-slate-500">
+                      {prize === "vip"
+                        ? "เรียงตามเวลาซื้อ ไม่มีการสุ่ม — ผลเหมือนเดิมทุกครั้งที่คำนวณ"
+                        : "สุ่มถ่วงน้ำหนักตามจำนวนสิทธิ์ · บันทึกจำนวนตั๋ว ผู้ร่วม และลำดับที่จับได้ไว้ตรวจย้อนหลัง"}
+                    </p>
+                    {drawn.length > 0 && (
+                      <div className={`mt-2 ${adminTable.scroll}`}>
+                        <table className={adminTable.table}>
+                          <thead className={adminTable.thead}>
+                            <tr>
+                              <th>#</th>
+                              <th>ลูกค้า</th>
+                              <th>สถานะ</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {drawn.map((w) => (
+                              <tr key={w.rank} className={adminTable.row}>
+                                <td className={adminTable.mono}>
+                                  {w.rank}
+                                  {w.reserve && <span className="ml-1 text-[11px] text-slate-400">สำรอง</span>}
+                                </td>
+                                <td className={adminTable.cell}>{w.customer ?? "—"}</td>
+                                <td className={adminTable.muted}>{WINNER_STATUS[w.status]}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </Panel>
+                );
+              })}
+            </div>
           )}
 
           {tab === "fan" && (
