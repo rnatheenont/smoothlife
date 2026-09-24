@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AlertTriangle, Check, Clock, Loader2, Mail, Upload, X } from "lucide-react";
 import { formatTHB } from "@/lib/format";
-import { CLOSES_LABEL, OPENS_LABEL } from "@/lib/receipt-campaign";
+import { CLOSES_LABEL, GENERAL_THRESHOLD, OPENS_LABEL } from "@/lib/receipt-campaign";
 import { shopifyAuthStartPath } from "@/lib/shopify-email-login";
 
 type AiCheck = { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] };
@@ -315,40 +315,59 @@ export default function ReceiptForm({ open }: { open: boolean }) {
               // what the team is looking at; the rest is what it replaced.
               const tries = uploads.filter((u) => u.entryId === e.id);
               return (
-                <li key={e.id} className="rounded-2xl border border-black/10">
-                  <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-t-2xl border-b px-4 py-3 ${s.tone}`}>
+                <li key={e.id} className="overflow-hidden rounded-2xl border border-black/10">
+                  <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b px-4 py-3 ${s.tone}`}>
                     <span className="text-[15px] font-bold">{e.orderNumber ?? "—"}</span>
                     <span className="flex items-center gap-1.5 text-[13px] font-bold">
                       <s.Icon size={14} aria-hidden /> {s.label}
                     </span>
                   </div>
 
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 px-4 py-3 text-[13px] sm:grid-cols-4">
-                    <div>
-                      <dt className="text-black/50">ยอดซื้อ DENTISTE&apos;</dt>
-                      <dd className="font-bold text-black">{formatTHB(e.dentisteAmount)}</dd>
+                  {/* The number they came for, then the numbers it came from.
+                      Four equal columns gave "สิทธิ์ที่ได้" the same weight as
+                      the date it was sent, and on a wide screen spread the
+                      whole answer across an arm's length of white. */}
+                  <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-start sm:gap-6">
+                    <div className="flex shrink-0 items-baseline gap-2 sm:w-28 sm:flex-col sm:items-start sm:gap-1 sm:self-stretch sm:border-r sm:border-black/10 sm:pr-6">
+                      <span className="text-[32px] font-extrabold leading-none tracking-tight text-black tabular-nums">
+                        {e.entries}
+                      </span>
+                      <span className="text-[13px] leading-tight text-black/55">
+                        สิทธิ์{e.status === "approved" ? "" : " (รอยืนยัน)"}
+                      </span>
                     </div>
-                    {e.keychainAmount > 0 && (
+
+                    <dl className="grid flex-1 grid-cols-2 gap-x-6 gap-y-3 text-[13px] sm:grid-cols-3">
                       <div>
-                        <dt className="text-black/50">Keychain</dt>
-                        <dd className="font-bold text-black">{formatTHB(e.keychainAmount)}</dd>
+                        <dt className="text-black/50">ยอดซื้อ DENTISTE&apos;</dt>
+                        <dd className="mt-0.5 font-bold text-black tabular-nums">{formatTHB(e.dentisteAmount)}</dd>
                       </div>
-                    )}
-                    <div>
-                      <dt className="text-black/50">ยอดทั้งบิล</dt>
-                      <dd className="text-black">{e.orderTotal === null ? "—" : formatTHB(e.orderTotal)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-black/50">สิทธิ์ที่ได้</dt>
-                      <dd className="font-bold text-black">
-                        {e.status === "approved" ? `${e.entries} สิทธิ์` : `${e.entries} สิทธิ์ (รอยืนยัน)`}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-black/50">ส่งเมื่อ</dt>
-                      <dd className="text-black">{when(e.createdAt)}</dd>
-                    </div>
-                  </dl>
+                      {e.keychainAmount > 0 && (
+                        <div>
+                          <dt className="text-black/50">Keychain</dt>
+                          <dd className="mt-0.5 font-bold text-black tabular-nums">{formatTHB(e.keychainAmount)}</dd>
+                        </div>
+                      )}
+                      <div>
+                        <dt className="text-black/50">ยอดทั้งบิล</dt>
+                        <dd className="mt-0.5 text-black tabular-nums">
+                          {e.orderTotal === null ? "—" : formatTHB(e.orderTotal)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-black/50">ส่งเมื่อ</dt>
+                        <dd className="mt-0.5 text-black">{when(e.createdAt)}</dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  {/* Zero entries with nothing said about it is a support
+                      ticket. The reason is arithmetic we already did. */}
+                  {e.status !== "rejected" && e.entries === 0 && e.dentisteAmount < GENERAL_THRESHOLD && (
+                    <p className="border-t border-black/10 px-4 py-2.5 text-[13px] text-black/60">
+                      ยอดซื้อ DENTISTE&apos; ของคำสั่งซื้อนี้ยังไม่ถึง {formatTHB(GENERAL_THRESHOLD)} จึงยังไม่ได้รับสิทธิ์
+                    </p>
+                  )}
 
                   {e.status === "rejected" && e.rejectReason && (
                     <p className="flex items-start gap-1.5 border-t border-black/10 px-4 py-3 text-[13px] text-rose-800">
@@ -358,18 +377,18 @@ export default function ReceiptForm({ open }: { open: boolean }) {
                   )}
 
                   {tries.length > 0 && (
-                    <div className="border-t border-black/10 px-4 py-3">
+                    <div className="border-t border-black/10 bg-black/[0.02] px-4 py-3">
                       <p className="text-[12px] font-semibold text-black/50">
                         ส่งรูปแล้ว {tries.length} ครั้ง
                       </p>
-                      <ul className="mt-1.5 flex flex-col gap-1">
+                      <ul className="mt-2 flex flex-col gap-1.5">
                         {tries.map((u) => {
                           const v = u.aiVerdict ? AI_SHORT[u.aiVerdict] : { label: "ไม่ได้ตรวจอัตโนมัติ", tone: "text-black/50" };
                           return (
-                            <li key={u.id} className="flex flex-wrap items-baseline gap-x-3 text-[12px]">
-                              <span className="text-black/60">{whenTime(u.createdAt)}</span>
+                            <li key={u.id} className="flex flex-wrap items-baseline gap-x-2 text-[12px]">
+                              <span className="tabular-nums text-black/55">{whenTime(u.createdAt)}</span>
                               <span className={`font-semibold ${v.tone}`}>{v.label}</span>
-                              {!u.current && <span className="text-black/40">ถูกแทนที่ด้วยรูปใหม่</span>}
+                              {!u.current && <span className="text-black/40">· ถูกแทนที่ด้วยรูปใหม่</span>}
                             </li>
                           );
                         })}
