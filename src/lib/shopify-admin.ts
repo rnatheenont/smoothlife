@@ -1961,9 +1961,11 @@ export async function createFulfillmentOnlyOrder(opts: {
 // how to handle but that nobody created by hand in Shopify Admin:
 // products/create|update|delete and inventory_levels/update, so the
 // debounced catalogue rebuild fires instead of relying solely on the daily
-// cron, plus fulfillments/update, which is the only place Shopify says a
-// parcel was actually delivered — the "จัดส่งสำเร็จ" card on LINE has no
-// other trigger. Must run with the SAME app credentials that
+// cron, plus the two order topics behind LINE's shipping cards:
+// orders/fulfilled ("พัสดุออกเดินทางแล้ว", with the tracking number) and
+// fulfillments/update, the only place Shopify says a parcel was actually
+// delivered ("จัดส่งสำเร็จแล้ว"). Neither exists in Admin > Notifications,
+// where orders/paid and refunds/create were created by hand. Must run with the SAME app credentials that
 // SHOPIFY_WEBHOOK_SECRET belongs to, since Shopify signs webhook
 // deliveries with the registering app's own Client Secret — this file
 // already authenticates as that app via SHOPIFY_ADMIN_CLIENT_ID/SECRET,
@@ -1983,6 +1985,10 @@ export async function registerCatalogueWebhooks(callbackUrl: string): Promise<Ca
     "PRODUCTS_DELETE",
     "INVENTORY_LEVELS_UPDATE",
     "FULFILLMENTS_UPDATE",
+    // Not created by hand in Admin > Notifications, unlike orders/paid and
+    // refunds/create — checked, and it is the only order topic missing there,
+    // so registering it here adds a subscription rather than a duplicate.
+    "ORDERS_FULFILLED",
   ];
 
   const existing = await adminGraphql<{
