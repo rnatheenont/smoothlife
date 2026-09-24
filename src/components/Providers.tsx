@@ -19,15 +19,20 @@ import AutoShopifySignIn from "@/components/AutoShopifySignIn";
 // tab bar) has no business showing up on the internal /admin tool — it
 // visually overlaps the admin panel and has nothing to do with managing
 // promos.
-function StorefrontWidgets() {
+const BARE = ["/admin", "/chat", "/campaigns", "/flash-sale"];
+const isUnder = (pathname: string | null, base: string) =>
+  pathname === base || Boolean(pathname?.startsWith(`${base}/`));
+
+export function StorefrontWidgets() {
   const pathname = usePathname();
   // /chat is the same conversation at full size — the corner bubble on top of
   // it would be a second door into the room you are already standing in.
   // /campaigns wears the live store's chrome, not this site's — a chat bubble
   // and a tab bar from an unlaunched site would give that away instantly.
-  if (pathname?.startsWith("/admin") || pathname?.startsWith("/chat") || pathname?.startsWith("/campaigns")) {
-    return null;
-  }
+  // /flash-sale is off by path and back on by campaign row: a regular sale
+  // gets these widgets from its own layout, a special one is wearing the live
+  // shop's chrome and cannot be carrying this site's chat bubble.
+  if (BARE.some((p) => isUnder(pathname, p))) return null;
   return (
     <>
       {/* Shares the storefront-only rule: /admin has its own sign-in, and

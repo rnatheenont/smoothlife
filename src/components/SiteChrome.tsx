@@ -20,12 +20,19 @@ import Footer from "@/components/Footer";
 // this one, so those pages bring the store's own header and footer. Two
 // headers, one of them belonging to a site that has not launched, is exactly
 // the impression a promotion cannot afford to make.
-const BARE = ["/admin", "/chat", "/campaigns"];
+// A flash-sale page is handed out the same way a campaign is — a LINE
+// broadcast, a story, a QR code — and a "special" one is a campaign in all but
+// the table it lives in. Which chrome it wears depends on the campaign row, not
+// on the URL, so the decision moves down to src/app/flash-sale/[id]/layout.tsx
+// where that row can be read. Both branches are here for it to pick from.
+const BARE = ["/admin", "/chat", "/campaigns", "/flash-sale"];
 
-export default function SiteChrome({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
-  if (BARE.some((p) => pathname?.startsWith(p))) return <>{children}</>;
+/** Exactly this path or something under it — never /flash-sale-demo. */
+const isUnder = (pathname: string | null, base: string) =>
+  pathname === base || Boolean(pathname?.startsWith(`${base}/`));
 
+/** This site's own header and footer, for whoever still wants them. */
+export function SiteShell({ children }: { children: ReactNode }) {
   return (
     <>
       <Header />
@@ -34,4 +41,10 @@ export default function SiteChrome({ children }: { children: ReactNode }) {
       <div className="h-[60px] lg:hidden" aria-hidden />
     </>
   );
+}
+
+export default function SiteChrome({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  if (BARE.some((p) => isUnder(pathname, p))) return <>{children}</>;
+  return <SiteShell>{children}</SiteShell>;
 }
