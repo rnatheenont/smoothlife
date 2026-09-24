@@ -170,7 +170,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function logout() {
     setUser(null);
     localStorage.removeItem(SESSION_KEY);
-    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    // The route hands back Shopify's logout URL when this account signed in
+    // through them; going there ends that session too, and Shopify returns the
+    // customer to the home page. Without it they stay signed in at
+    // smoothlife.com and the next visit here signs them back in.
+    fetch("/api/auth/logout", { method: "POST" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.shopifyLogoutUrl) window.location.href = data.shopifyLogoutUrl;
+      })
+      .catch(() => {});
   }
 
   function addPoints(amount: number) {

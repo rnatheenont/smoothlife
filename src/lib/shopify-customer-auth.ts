@@ -24,6 +24,12 @@ const CLIENT_ID = process.env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID;
 const CLIENT_SECRET = process.env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_SECRET;
 
 export const SHOPIFY_AUTH_COOKIE = "sl_shopify_auth";
+/**
+ * The id_token from the last Shopify sign-in, kept only because ending the
+ * Shopify session needs it back: their logout endpoint answers a request
+ * without one with "Invalid id_token." and leaves the session standing.
+ */
+export const SHOPIFY_ID_TOKEN_COOKIE = "sl_shopify_idt";
 
 export const SHOPIFY_AUTH_INTENTS: ShopifyAuthIntent[] = ["login", "link", "reset", "reclaim"];
 
@@ -122,7 +128,7 @@ export async function exchangeCodeForEmail(opts: {
   code: string;
   redirectUri: string;
   transaction: ShopifyAuthTransaction;
-}): Promise<{ email: string; sub: string }> {
+}): Promise<{ email: string; sub: string; idToken: string }> {
   const { token_endpoint, issuer } = await discovery();
   const body = new URLSearchParams({
     grant_type: "authorization_code",
@@ -158,5 +164,31 @@ export async function exchangeCodeForEmail(opts: {
   if (!claims.exp || claims.exp * 1000 < Date.now()) throw new Error("id_token expired");
   if (claims.nonce !== opts.transaction.nonce) throw new Error("id_token nonce mismatch");
   if (!claims.email || claims.email_verified === false) throw new Error("id_token has no verified email");
-  return { email: claims.email.trim().toLowerCase(), sub: claims.sub ?? "" };
+  return { email: claims.email.trim().toLowerCase(), sub: claims.sub ?? "", idToken: data.id_token };
+}
+
+/**
+ * Where to send the browser so Shopify ends its own session too.
+ *
+ * Signing out here cannot reach a cookie on shopify.com, so without this the
+ * customer stays signed in there — and the next silent attempt, or one tap on
+ * the email button, walks them straight back in. Returns null when there is no
+ * id_token to hand back, in which case the local sign-out is all there is.
+ *
+ * `postLogoutRedirectUri` has to match a Logout URI registered on the app
+ * exactly, trailing slash and all.
+ */
+export async function buildLogoutUrl(idToken: string | undefined, postLogoutRedirectUri: string): Promise<string | null> {
+  if (!idToken || !shopifyEmailAuthConfigured()) return null;
+  try {
+    const { end_session_endpoint } = (await discovery()) as Discovery & { end_session_endpoint?: string };
+    if (!end_session_endpoint) return null;
+    const url = new URL(end_session_endpoint);
+    url.searchParams.set("id_token_hint", idToken);
+    url.searchParams.set("post_logout_redirect_uri", postLogoutRedirectUri);
+    return url.toString();
+  } catch (err) {
+    console.error("[shopify logout] could not build logout url", err);
+    return null;
+  }
 }
