@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { Check, Loader2, RefreshCw, X } from "lucide-react";
-import { PageHeader, Panel, SectionTitle, StatCard, adminTable } from "@/components/admin/layout-kit";
+import { PageHeader, Panel, StatCard, adminTable } from "@/components/admin/layout-kit";
 import { formatTHB } from "@/lib/format";
 
 type QueueItem = {
@@ -156,12 +156,11 @@ export default function Page() {
           </div>
 
           {tab === "queue" && (
-            <Panel>
-              <SectionTitle>คิวตรวจ — เก่าสุดก่อน</SectionTitle>
+            <Panel title="คิวตรวจ — เก่าสุดก่อน" padded>
               {data.queue.length === 0 ? (
-                <p className="mt-3 text-[13px] text-slate-500">ไม่มีใบเสร็จรอตรวจ</p>
+                <p className="text-[13px] text-slate-500">ไม่มีใบเสร็จรอตรวจ</p>
               ) : (
-                <ul className="mt-4 flex flex-col gap-4">
+                <ul className="flex flex-col gap-4">
                   {data.queue.map((item) => (
                     <li key={item.id} className="grid gap-4 rounded-xl2 border border-surface-line p-4 md:grid-cols-[minmax(0,260px)_1fr]">
                       {item.photoUrl ? (
@@ -238,9 +237,8 @@ export default function Page() {
           )}
 
           {tab === "vip" && (
-            <Panel>
-              <SectionTitle>ลำดับ VIP</SectionTitle>
-              <p className="mt-1 text-[12px] text-slate-500">
+            <Panel title="ลำดับ VIP">
+              <p className="px-3 pt-3 text-[12px] text-slate-500">
                 เรียงตามเวลาที่ชำระเงิน · 1–25 คือตัวจริง ที่เหลือคือสำรองตามลำดับ · 1 คนมีได้ 1 ที่
                 — ยังรอทีมการตลาดยืนยันว่า &quot;มาก่อนได้ก่อน&quot; นับจากเวลาซื้อหรือเวลาอนุมัติ
               </p>
@@ -271,14 +269,15 @@ export default function Page() {
                   </tbody>
                 </table>
               </div>
-              {data.vip.length === 0 && <p className="mt-3 text-[13px] text-slate-500">ยังไม่มีใบเสร็จที่อนุมัติแล้ว</p>}
+              {data.vip.length === 0 && (
+                <p className="px-3 pb-3 text-[13px] text-slate-500">ยังไม่มีใบเสร็จที่อนุมัติแล้ว</p>
+              )}
             </Panel>
           )}
 
           {tab === "fan" && (
-            <Panel>
-              <SectionTitle>สิทธิ์ Lucky Fan</SectionTitle>
-              <p className="mt-1 text-[12px] text-slate-500">
+            <Panel title="สิทธิ์ Lucky Fan">
+              <p className="px-3 pt-3 text-[12px] text-slate-500">
                 ดูเพื่อความโปร่งใส ไม่ใช่การตัดสิน — ผู้ชนะมาจากการสุ่มถ่วงน้ำหนักตามจำนวนสิทธิ์
               </p>
               <div className={`mt-4 ${adminTable.scroll}`}>
@@ -299,7 +298,9 @@ export default function Page() {
                   </tbody>
                 </table>
               </div>
-              {data.luckyFan.length === 0 && <p className="mt-3 text-[13px] text-slate-500">ยังไม่มีสิทธิ์สะสม</p>}
+              {data.luckyFan.length === 0 && (
+                <p className="px-3 pb-3 text-[13px] text-slate-500">ยังไม่มีสิทธิ์สะสม</p>
+              )}
             </Panel>
           )}
         </>
