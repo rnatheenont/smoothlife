@@ -120,6 +120,13 @@ export default function ReceiptForm({ open }: { open: boolean }) {
     load();
   }, [load]);
 
+  // A picker for one order is not a choice, it is the same card printed twice —
+  // once to select, once in the history right below it. Pick it for them.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- derived from the loaded orders
+    if (orders.length === 1) setSelected(orders[0].id);
+  }, [orders]);
+
   async function send() {
     if (!selected || !file) return;
     setSending(true);
@@ -195,212 +202,214 @@ export default function ReceiptForm({ open }: { open: boolean }) {
     );
   }
 
-  const selectable = orders.filter((o) => !o.alreadySent);
-
   return (
     <div className="flex flex-col gap-8">
       {testBanner}
-      {ai && (
-        <div className={`rounded-2xl border px-5 py-4 text-[14px] ${AI_TONE[ai.verdict]}`}>
-          <p className="font-bold">
-            {ai.verdict === "ok" ? "ตรวจเบื้องต้นแล้ว รูปใช้ได้" : ai.verdict === "unclear" ? "อ่านรูปได้ไม่ชัด" : "รูปไม่ตรงกับคำสั่งซื้อที่เลือก"}
-          </p>
-          {ai.message && <p className="mt-1">{ai.message}</p>}
-          {ai.findings.length > 0 && (
-            <ul className="mt-2 list-inside list-disc text-[13px] opacity-80">
-              {ai.findings.map((f) => (
-                <li key={f}>{f}</li>
-              ))}
-            </ul>
-          )}
-          <p className="mt-2 text-[12px] opacity-70">
-            เป็นการตรวจเบื้องต้นด้วย AI เท่านั้น ทีมงานจะตรวจอีกครั้งเสมอ — ถ้ารูปไม่ชัด ส่งใหม่ได้เลย
-          </p>
-        </div>
-      )}
       {approved > 0 && (
         <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-[15px] font-bold text-emerald-900">
           คุณมีสิทธิ์ลุ้นรางวัลแล้ว {approved} สิทธิ์
         </p>
       )}
 
-      {open ? (
-        <section>
-          <h2 className="text-lg font-bold text-black">เลือกคำสั่งซื้อ</h2>
-          {orders.length === 0 ? (
-            <p className="mt-3 rounded-2xl border border-black/10 p-5 text-[14px] leading-relaxed text-black/70">
-              ยังไม่พบคำสั่งซื้อที่เข้าเงื่อนไข — ต้องเป็นคำสั่งซื้อผลิตภัณฑ์ DENTISTE&apos; ที่ชำระเงินสำเร็จบน
-              Smoothlife.com ระหว่าง {OPENS_LABEL} – {CLOSES_LABEL}
-            </p>
-          ) : (
-            <ul className="mt-3 flex flex-col gap-2">
-              {orders.map((o) => (
-                <li key={o.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelected(o.id)}
-                    className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 text-left transition-colors ${
-                      selected === o.id ? "border-black bg-black/[0.03]" : "border-black/10 hover:border-black/30"
-                    }`}
-                  >
-                    <span>
-                      <span className="block text-[14px] font-bold text-black">{o.orderNumber ?? o.invoiceNo}</span>
-                      <span className="mt-0.5 block text-[13px] text-black/60">
-                        {when(o.paidAt)} · DENTISTE&apos; {formatTHB(o.dentisteAmount)}
-                        {o.keychainAmount > 0 && ` · Keychain ${formatTHB(o.keychainAmount)}`}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-right text-[13px] font-bold text-black">
-                      {o.entries} สิทธิ์
-                      {o.alreadySent && (
-                        // Sending again replaces the photo under review; it
-                        // never adds a second claim on the same order.
-                        <span className="mt-0.5 block text-[11px] font-medium text-black/50">ส่งแล้ว · ส่งรูปใหม่ได้</span>
-                      )}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+      {/* What they have already sent on the left, what they are sending now on
+          the right. The form comes first in the source so a phone shows the
+          action above the archive. */}
+      <div className={`grid gap-8 ${open && entries.length > 0 ? "lg:grid-cols-2 lg:items-start" : ""}`}>
+        {open && (
+          <section className="lg:col-start-2 lg:row-start-1">
+            {ai && (
+              <div className={`mb-5 rounded-2xl border px-5 py-4 text-[14px] ${AI_TONE[ai.verdict]}`}>
+                <p className="font-bold">
+                  {ai.verdict === "ok"
+                    ? "ตรวจเบื้องต้นแล้ว รูปใช้ได้"
+                    : ai.verdict === "unclear"
+                      ? "อ่านรูปได้ไม่ชัด"
+                      : "รูปไม่ตรงกับคำสั่งซื้อที่เลือก"}
+                </p>
+                {ai.message && <p className="mt-1">{ai.message}</p>}
+                {ai.findings.length > 0 && (
+                  <ul className="mt-2 list-inside list-disc text-[13px] opacity-80">
+                    {ai.findings.map((f) => (
+                      <li key={f}>{f}</li>
+                    ))}
+                  </ul>
+                )}
+                <p className="mt-2 text-[12px] opacity-70">
+                  เป็นการตรวจเบื้องต้นด้วย AI เท่านั้น ทีมงานจะตรวจอีกครั้งเสมอ — ถ้ารูปไม่ชัด ส่งใหม่ได้เลย
+                </p>
+              </div>
+            )}
 
-          {orders.length > 0 && (
-            <>
-              <h2 className="mt-8 text-lg font-bold text-black">แนบรูปใบเสร็จ</h2>
-              <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
-                แคปหน้าจออีเมลยืนยันคำสั่งซื้อที่ได้รับจาก Smoothlife.com ให้เห็น
-                <b>เลขคำสั่งซื้อ (ORDER #)</b> รายการสินค้า และยอดรวม · JPG, PNG หรือ WEBP ไม่เกิน 8MB
-                <br />
-                กรุณาเก็บใบเสร็จตัวจริงไว้เป็นหลักฐานด้วย
+            <h2 className="text-lg font-bold text-black">แนบรูปใบเสร็จ</h2>
+
+            {orders.length === 0 ? (
+              <p className="mt-3 rounded-2xl border border-black/10 p-5 text-[14px] leading-relaxed text-black/70">
+                ยังไม่พบคำสั่งซื้อที่เข้าเงื่อนไข — ต้องเป็นคำสั่งซื้อผลิตภัณฑ์ DENTISTE&apos; ที่ชำระเงินสำเร็จบน
+                Smoothlife.com ระหว่าง {OPENS_LABEL} – {CLOSES_LABEL}
               </p>
-              <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-black/25 px-4 py-4 hover:border-black/50">
-                <Upload size={18} className="shrink-0 text-black/50" aria-hidden />
-                <span className="min-w-0 truncate text-[14px] text-black/70">{file ? file.name : "เลือกรูปใบเสร็จ"}</span>
-                <input
-                  ref={fileInput}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                />
-              </label>
+            ) : (
+              <>
+                <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
+                  แคปหน้าจออีเมลยืนยันคำสั่งซื้อที่ได้รับจาก Smoothlife.com ให้เห็น
+                  <b>เลขคำสั่งซื้อ (ORDER #)</b> รายการสินค้า และยอดรวม · JPG, PNG หรือ WEBP ไม่เกิน 8MB
+                  <br />
+                  กรุณาเก็บใบเสร็จตัวจริงไว้เป็นหลักฐานด้วย
+                </p>
 
-              <button
-                type="button"
-                disabled={!selected || !file || sending}
-                onClick={send}
-                className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-black text-[15px] font-semibold text-white disabled:opacity-40"
-              >
-                {sending && <Loader2 size={16} className="animate-spin" />}
-                {sending ? "กำลังส่ง…" : "ส่งใบเสร็จ"}
-              </button>
-            </>
-          )}
+                {/* The choice only appears when there is one to make. */}
+                {orders.length === 1 ? (
+                  <p className="mt-4 rounded-xl bg-black/[0.03] px-4 py-3 text-[13px] text-black/70">
+                    สำหรับคำสั่งซื้อ{" "}
+                    <b className="text-black">{orders[0].orderNumber ?? orders[0].invoiceNo}</b> ·{" "}
+                    {when(orders[0].paidAt)} · DENTISTE&apos; {formatTHB(orders[0].dentisteAmount)}
+                  </p>
+                ) : (
+                  <label className="mt-4 block">
+                    <span className="text-[13px] font-semibold text-black/60">คำสั่งซื้อ</span>
+                    <select
+                      value={selected ?? ""}
+                      onChange={(e) => setSelected(e.target.value || null)}
+                      className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 bg-white px-3 text-[14px] text-black"
+                    >
+                      <option value="">เลือกคำสั่งซื้อ</option>
+                      {orders.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {`${o.orderNumber ?? o.invoiceNo} · ${when(o.paidAt)} · ${formatTHB(o.dentisteAmount)} · ${o.entries} สิทธิ์${o.alreadySent ? " (ส่งแล้ว)" : ""}`}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
 
-          {notice && (
-            <p role="status" className="mt-3 rounded-xl border border-black/10 px-4 py-3 text-[14px] text-black/80">
-              {notice}
-            </p>
-          )}
-        </section>
-      ) : null}
+                <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-black/25 px-4 py-4 hover:border-black/50">
+                  <Upload size={18} className="shrink-0 text-black/50" aria-hidden />
+                  <span className="min-w-0 truncate text-[14px] text-black/70">{file ? file.name : "เลือกรูปใบเสร็จ"}</span>
+                  <input
+                    ref={fileInput}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  />
+                </label>
 
-      {entries.length > 0 && (
-        <section>
-          <h2 className="text-lg font-bold text-black">ประวัติการส่งใบเสร็จ</h2>
-          <ul className="mt-3 flex flex-col gap-3">
-            {entries.map((e) => {
-              const s = STATUS[e.status];
-              // Every photo sent for this order, newest first. The top one is
-              // what the team is looking at; the rest is what it replaced.
-              const tries = uploads.filter((u) => u.entryId === e.id);
-              return (
-                <li key={e.id} className="overflow-hidden rounded-2xl border border-black/10">
-                  <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b px-4 py-3 ${s.tone}`}>
-                    <span className="text-[15px] font-bold">{e.orderNumber ?? "—"}</span>
-                    <span className="flex items-center gap-1.5 text-[13px] font-bold">
-                      <s.Icon size={14} aria-hidden /> {s.label}
-                    </span>
-                  </div>
+                <button
+                  type="button"
+                  disabled={!selected || !file || sending}
+                  onClick={send}
+                  className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-black text-[15px] font-semibold text-white disabled:opacity-40"
+                >
+                  {sending && <Loader2 size={16} className="animate-spin" />}
+                  {sending ? "กำลังส่ง…" : "ส่งใบเสร็จ"}
+                </button>
+              </>
+            )}
 
-                  {/* The number they came for, then the numbers it came from.
-                      Four equal columns gave "สิทธิ์ที่ได้" the same weight as
-                      the date it was sent, and on a wide screen spread the
-                      whole answer across an arm's length of white. */}
-                  <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-start sm:gap-6">
-                    <div className="flex shrink-0 items-baseline gap-2 sm:w-28 sm:flex-col sm:items-start sm:gap-1 sm:self-stretch sm:border-r sm:border-black/10 sm:pr-6">
-                      <span className="text-[32px] font-extrabold leading-none tracking-tight text-black tabular-nums">
-                        {e.entries}
-                      </span>
-                      <span className="text-[13px] leading-tight text-black/55">
-                        สิทธิ์{e.status === "approved" ? "" : " (รอยืนยัน)"}
+            {notice && (
+              <p role="status" className="mt-3 rounded-xl border border-black/10 px-4 py-3 text-[14px] text-black/80">
+                {notice}
+              </p>
+            )}
+          </section>
+        )}
+
+        {entries.length > 0 && (
+          // @container: in a column this card sizes itself against the column,
+          // not the window, which is the only measurement that means anything
+          // once the page has two of them.
+          <section className="@container lg:col-start-1 lg:row-start-1">
+            <h2 className="text-lg font-bold text-black">ประวัติการส่งใบเสร็จ</h2>
+            <ul className="mt-3 flex flex-col gap-3">
+              {entries.map((e) => {
+                const s = STATUS[e.status];
+                // Every photo sent for this order, newest first. The top one is
+                // what the team is looking at; the rest is what it replaced.
+                const tries = uploads.filter((u) => u.entryId === e.id);
+                return (
+                  <li key={e.id} className="overflow-hidden rounded-2xl border border-black/10">
+                    <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b px-4 py-3 ${s.tone}`}>
+                      <span className="text-[15px] font-bold">{e.orderNumber ?? "—"}</span>
+                      <span className="flex items-center gap-1.5 text-[13px] font-bold">
+                        <s.Icon size={14} aria-hidden /> {s.label}
                       </span>
                     </div>
 
-                    <dl className="grid flex-1 grid-cols-2 gap-x-6 gap-y-3 text-[13px] sm:grid-cols-3">
-                      <div>
-                        <dt className="text-black/50">ยอดซื้อ DENTISTE&apos;</dt>
-                        <dd className="mt-0.5 font-bold text-black tabular-nums">{formatTHB(e.dentisteAmount)}</dd>
+                    {/* The number they came for, then the numbers it came from. */}
+                    <div className="flex flex-col gap-4 px-4 py-4 @sm:flex-row @sm:items-start @sm:gap-5">
+                      <div className="flex shrink-0 items-baseline gap-2 @sm:w-24 @sm:flex-col @sm:items-start @sm:gap-1 @sm:self-stretch @sm:border-r @sm:border-black/10 @sm:pr-5">
+                        <span className="text-[32px] font-extrabold leading-none tracking-tight text-black tabular-nums">
+                          {e.entries}
+                        </span>
+                        <span className="text-[13px] leading-tight text-black/55">
+                          สิทธิ์{e.status === "approved" ? "" : " (รอยืนยัน)"}
+                        </span>
                       </div>
-                      {e.keychainAmount > 0 && (
+
+                      <dl className="grid flex-1 grid-cols-2 gap-x-6 gap-y-3 text-[13px] @lg:grid-cols-3">
                         <div>
-                          <dt className="text-black/50">Keychain</dt>
-                          <dd className="mt-0.5 font-bold text-black tabular-nums">{formatTHB(e.keychainAmount)}</dd>
+                          <dt className="text-black/50">ยอดซื้อ DENTISTE&apos;</dt>
+                          <dd className="mt-0.5 font-bold text-black tabular-nums">{formatTHB(e.dentisteAmount)}</dd>
                         </div>
-                      )}
-                      <div>
-                        <dt className="text-black/50">ยอดทั้งบิล</dt>
-                        <dd className="mt-0.5 text-black tabular-nums">
-                          {e.orderTotal === null ? "—" : formatTHB(e.orderTotal)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-black/50">ส่งเมื่อ</dt>
-                        <dd className="mt-0.5 text-black">{when(e.createdAt)}</dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  {/* Zero entries with nothing said about it is a support
-                      ticket. The reason is arithmetic we already did. */}
-                  {e.status !== "rejected" && e.entries === 0 && e.dentisteAmount < GENERAL_THRESHOLD && (
-                    <p className="border-t border-black/10 px-4 py-2.5 text-[13px] text-black/60">
-                      ยอดซื้อ DENTISTE&apos; ของคำสั่งซื้อนี้ยังไม่ถึง {formatTHB(GENERAL_THRESHOLD)} จึงยังไม่ได้รับสิทธิ์
-                    </p>
-                  )}
-
-                  {e.status === "rejected" && e.rejectReason && (
-                    <p className="flex items-start gap-1.5 border-t border-black/10 px-4 py-3 text-[13px] text-rose-800">
-                      <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
-                      {e.rejectReason} — เลือกคำสั่งซื้อนี้แล้วแนบรูปใหม่ได้เลย
-                    </p>
-                  )}
-
-                  {tries.length > 0 && (
-                    <div className="border-t border-black/10 bg-black/[0.02] px-4 py-3">
-                      <p className="text-[12px] font-semibold text-black/50">
-                        ส่งรูปแล้ว {tries.length} ครั้ง
-                      </p>
-                      <ul className="mt-2 flex flex-col gap-1.5">
-                        {tries.map((u) => {
-                          const v = u.aiVerdict ? AI_SHORT[u.aiVerdict] : { label: "ไม่ได้ตรวจอัตโนมัติ", tone: "text-black/50" };
-                          return (
-                            <li key={u.id} className="flex flex-wrap items-baseline gap-x-2 text-[12px]">
-                              <span className="tabular-nums text-black/55">{whenTime(u.createdAt)}</span>
-                              <span className={`font-semibold ${v.tone}`}>{v.label}</span>
-                              {!u.current && <span className="text-black/40">· ถูกแทนที่ด้วยรูปใหม่</span>}
-                            </li>
-                          );
-                        })}
-                      </ul>
+                        {e.keychainAmount > 0 && (
+                          <div>
+                            <dt className="text-black/50">Keychain</dt>
+                            <dd className="mt-0.5 font-bold text-black tabular-nums">{formatTHB(e.keychainAmount)}</dd>
+                          </div>
+                        )}
+                        <div>
+                          <dt className="text-black/50">ยอดทั้งบิล</dt>
+                          <dd className="mt-0.5 text-black tabular-nums">
+                            {e.orderTotal === null ? "—" : formatTHB(e.orderTotal)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-black/50">ส่งเมื่อ</dt>
+                          <dd className="mt-0.5 text-black">{when(e.createdAt)}</dd>
+                        </div>
+                      </dl>
                     </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+
+                    {/* Zero entries with nothing said about it is a support
+                        ticket. The reason is arithmetic we already did. */}
+                    {e.status !== "rejected" && e.entries === 0 && e.dentisteAmount < GENERAL_THRESHOLD && (
+                      <p className="border-t border-black/10 px-4 py-2.5 text-[13px] text-black/60">
+                        ยอดซื้อ DENTISTE&apos; ของคำสั่งซื้อนี้ยังไม่ถึง {formatTHB(GENERAL_THRESHOLD)} จึงยังไม่ได้รับสิทธิ์
+                      </p>
+                    )}
+
+                    {e.status === "rejected" && e.rejectReason && (
+                      <p className="flex items-start gap-1.5 border-t border-black/10 px-4 py-3 text-[13px] text-rose-800">
+                        <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
+                        {e.rejectReason} — เลือกคำสั่งซื้อนี้แล้วแนบรูปใหม่ได้เลย
+                      </p>
+                    )}
+
+                    {tries.length > 0 && (
+                      <div className="border-t border-black/10 bg-black/[0.02] px-4 py-3">
+                        <p className="text-[12px] font-semibold text-black/50">ส่งรูปแล้ว {tries.length} ครั้ง</p>
+                        <ul className="mt-2 flex flex-col gap-1.5">
+                          {tries.map((u) => {
+                            const v = u.aiVerdict
+                              ? AI_SHORT[u.aiVerdict]
+                              : { label: "ไม่ได้ตรวจอัตโนมัติ", tone: "text-black/50" };
+                            return (
+                              <li key={u.id} className="flex flex-wrap items-baseline gap-x-2 text-[12px]">
+                                <span className="tabular-nums text-black/55">{whenTime(u.createdAt)}</span>
+                                <span className={`font-semibold ${v.tone}`}>{v.label}</span>
+                                {!u.current && <span className="text-black/40">· ถูกแทนที่ด้วยรูปใหม่</span>}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+      </div>
     </div>
   );
 }
