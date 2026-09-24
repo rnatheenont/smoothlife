@@ -1,6 +1,7 @@
 "use client";
 
 import { cartCreate, shopifyConfigured, type CartDeliveryAddressInput } from "@/lib/shopify";
+import { thProvinceCode, splitRecipientName } from "@/lib/shopify-th-address";
 import { toE164Thai } from "@/lib/firebase-client";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 
@@ -9,16 +10,14 @@ import type { AddressRow } from "@/app/api/account/addresses/route";
 // is a deliberately separate path from the shared cart/checkout.
 function toShopifyDeliveryAddress(addr: AddressRow): CartDeliveryAddressInput | null {
   if (addr.country !== "TH") return null;
-  const [firstName, ...rest] = addr.recipient_name.trim().split(/\s+/);
   return {
     address1: addr.address_line,
     address2: addr.subdistrict ? `ตำบล/แขวง${addr.subdistrict}` : undefined,
     city: addr.district,
-    provinceCode: addr.province,
+    provinceCode: thProvinceCode(addr.province),
     zip: addr.postal_code,
     countryCode: addr.country,
-    firstName: firstName || undefined,
-    lastName: rest.length ? rest.join(" ") : undefined,
+    ...splitRecipientName(addr.recipient_name),
     phone: addr.phone ? toE164Thai(addr.phone) : undefined,
   };
 }

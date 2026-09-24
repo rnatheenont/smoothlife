@@ -4,6 +4,7 @@
 // / SHOPIFY_ADMIN_CLIENT_SECRET in .env.example. Never import from a "use
 // client" component.
 import { SHOPIFY_STOREFRONT_ORIGIN } from "@/lib/site-url";
+import { thProvinceCode, thPhoneE164, shopifyRecipientName } from "@/lib/shopify-th-address";
 
 const SHOP = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
 const CLIENT_ID = process.env.SHOPIFY_ADMIN_CLIENT_ID;
@@ -1831,7 +1832,8 @@ export async function createPaidShopifyOrder(opts: {
     lastName?: string;
     address1: string;
     city: string;
-    provinceCode?: string;
+    /** The province as the customer wrote it — converted to Shopify's code below. */
+    province?: string;
     zip: string;
     countryCode: string;
     phone?: string;
@@ -1855,15 +1857,16 @@ export async function createPaidShopifyOrder(opts: {
         customer: opts.customerId ? { toAssociate: { id: opts.customerId } } : undefined,
         financialStatus: "PAID",
         note: opts.note,
+        // Every field here is one orderCreate will silently drop the whole
+        // address over — see the note at the top of shopify-th-address.ts.
         shippingAddress: {
-          firstName: opts.shippingAddress.firstName,
-          lastName: opts.shippingAddress.lastName,
+          ...shopifyRecipientName(opts.shippingAddress.firstName, opts.shippingAddress.lastName),
           address1: opts.shippingAddress.address1,
           city: opts.shippingAddress.city,
-          provinceCode: opts.shippingAddress.provinceCode,
+          provinceCode: thProvinceCode(opts.shippingAddress.province),
           zip: opts.shippingAddress.zip,
           countryCode: opts.shippingAddress.countryCode,
-          phone: opts.shippingAddress.phone,
+          phone: thPhoneE164(opts.shippingAddress.phone),
         },
         lineItems: opts.lineItems.map((li) => ({
           variantId: li.variantId,
@@ -1908,7 +1911,8 @@ export async function createFulfillmentOnlyOrder(opts: {
     lastName?: string;
     address1: string;
     city: string;
-    provinceCode?: string;
+    /** The province as the customer wrote it — converted to Shopify's code below. */
+    province?: string;
     zip: string;
     countryCode: string;
     phone?: string;
@@ -1930,15 +1934,16 @@ export async function createFulfillmentOnlyOrder(opts: {
         customer: opts.customerId ? { toAssociate: { id: opts.customerId } } : undefined,
         financialStatus: "PAID",
         note: opts.note,
+        // Every field here is one orderCreate will silently drop the whole
+        // address over — see the note at the top of shopify-th-address.ts.
         shippingAddress: {
-          firstName: opts.shippingAddress.firstName,
-          lastName: opts.shippingAddress.lastName,
+          ...shopifyRecipientName(opts.shippingAddress.firstName, opts.shippingAddress.lastName),
           address1: opts.shippingAddress.address1,
           city: opts.shippingAddress.city,
-          provinceCode: opts.shippingAddress.provinceCode,
+          provinceCode: thProvinceCode(opts.shippingAddress.province),
           zip: opts.shippingAddress.zip,
           countryCode: opts.shippingAddress.countryCode,
-          phone: opts.shippingAddress.phone,
+          phone: thPhoneE164(opts.shippingAddress.phone),
         },
         lineItems: opts.lineItems.map((li) => ({
           variantId: li.variantId,
