@@ -14,7 +14,13 @@ import Footer from "@/components/Footer";
 // /chat is bare for a different reason: it is a full-height app screen whose
 // input sits on the bottom edge. A promo bar above it and a footer below
 // would leave the conversation a letterbox in the middle of the page.
-const BARE = ["/admin", "/chat"];
+//
+// /campaigns is bare because it is not wearing this site at all: a campaign
+// link goes to people who know the shop as smoothlife.com and have never seen
+// this one, so those pages bring the store's own header and footer. Two
+// headers, one of them belonging to a site that has not launched, is exactly
+// the impression a promotion cannot afford to make.
+const BARE = ["/admin", "/chat", "/campaigns"];
 
 export default function SiteChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();

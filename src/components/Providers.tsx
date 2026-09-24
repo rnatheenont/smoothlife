@@ -23,7 +23,11 @@ function StorefrontWidgets() {
   const pathname = usePathname();
   // /chat is the same conversation at full size — the corner bubble on top of
   // it would be a second door into the room you are already standing in.
-  if (pathname?.startsWith("/admin") || pathname?.startsWith("/chat")) return null;
+  // /campaigns wears the live store's chrome, not this site's — a chat bubble
+  // and a tab bar from an unlaunched site would give that away instantly.
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/chat") || pathname?.startsWith("/campaigns")) {
+    return null;
+  }
   return (
     <>
       {/* Shares the storefront-only rule: /admin has its own sign-in, and
