@@ -12,8 +12,11 @@ import Image from "next/image";
 import { AlertTriangle, Check, Clock, Loader2, Upload, X } from "lucide-react";
 import { formatTHB } from "@/lib/format";
 
+type AiCheck = { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] };
+
 type Order = {
   id: string;
+  orderNumber: string | null;
   invoiceNo: string;
   paidAt: string | null;
   total: number;
@@ -41,7 +44,17 @@ const STATUS: Record<Entry["status"], { label: string; tone: string; Icon: typeo
 const when = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
+const AI_TONE: Record<AiCheck["verdict"], string> = {
+  ok: "border-emerald-200 bg-emerald-50 text-emerald-900",
+  unclear: "border-amber-200 bg-amber-50 text-amber-900",
+  mismatch: "border-rose-200 bg-rose-50 text-rose-900",
+};
+
 export default function ReceiptForm({ open }: { open: boolean }) {
+  // ?test=1 before the campaign opens: the form works on any paid Dentiste
+  // order so the whole path can be walked once before it matters.
+  const [test, setTest] = useState(false);
+  const [ai, setAi] = useState<AiCheck | null>(null);
   const [state, setState] = useState<"loading" | "guest" | "ready" | "error">("loading");
   const [orders, setOrders] = useState<Order[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -54,10 +67,12 @@ export default function ReceiptForm({ open }: { open: boolean }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/campaigns/dentiste-x-kengnamping/receipts", { cache: "no-store" });
+      const q = new URLSearchParams(window.location.search).get("test") === "1" ? "?test=1" : "";
+      const res = await fetch(`/api/campaigns/dentiste-x-kengnamping/receipts${q}`, { cache: "no-store" });
       if (res.status === 401) return setState("guest");
       const data = await res.json();
       if (!res.ok || !data.ok) return setState("error");
+      setTest(Boolean(data.test));
       setOrders(data.orders as Order[]);
       setEntries(data.entries as Entry[]);
       setApproved(data.approvedEntries as number);
@@ -80,12 +95,14 @@ export default function ReceiptForm({ open }: { open: boolean }) {
       const body = new FormData();
       body.set("orderId", selected);
       body.set("photo", file);
-      const res = await fetch("/api/campaigns/dentiste-x-kengnamping/receipts", { method: "POST", body });
+      const q = new URLSearchParams(window.location.search).get("test") === "1" ? "?test=1" : "";
+      const res = await fetch(`/api/campaigns/dentiste-x-kengnamping/receipts${q}`, { method: "POST", body });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
         setNotice(data.error || "ส่งใบเสร็จไม่สำเร็จ ลองใหม่อีกครั้ง");
         return;
       }
+      setAi((data.entry?.aiCheck as AiCheck | null) ?? null);
       setSelected(null);
       setFile(null);
       if (fileInput.current) fileInput.current.value = "";
@@ -133,6 +150,30 @@ export default function ReceiptForm({ open }: { open: boolean }) {
 
   return (
     <div className="flex flex-col gap-8">
+      {test && (
+        <p className="rounded-2xl border border-sky-200 bg-sky-50 px-5 py-3 text-[13px] text-sky-900">
+          <b>โหมดทดลอง</b> — ฟอร์มเปิดให้ลองใช้ก่อนวันเริ่มจริง และรับคำสั่งซื้อ DENTISTE&apos; ทุกใบไม่จำกัดช่วงเวลา
+          ใบเสร็จที่ส่งในโหมดนี้จะถูกทำเครื่องหมายไว้เพื่อลบทิ้งก่อนเปิดจริง
+        </p>
+      )}
+      {ai && (
+        <div className={`rounded-2xl border px-5 py-4 text-[14px] ${AI_TONE[ai.verdict]}`}>
+          <p className="font-bold">
+            {ai.verdict === "ok" ? "ตรวจเบื้องต้นแล้ว รูปใช้ได้" : ai.verdict === "unclear" ? "อ่านรูปได้ไม่ชัด" : "รูปไม่ตรงกับคำสั่งซื้อที่เลือก"}
+          </p>
+          {ai.message && <p className="mt-1">{ai.message}</p>}
+          {ai.findings.length > 0 && (
+            <ul className="mt-2 list-inside list-disc text-[13px] opacity-80">
+              {ai.findings.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-2 text-[12px] opacity-70">
+            เป็นการตรวจเบื้องต้นด้วย AI เท่านั้น ทีมงานจะตรวจอีกครั้งเสมอ — ถ้ารูปไม่ชัด ส่งใหม่ได้เลย
+          </p>
+        </div>
+      )}
       {approved > 0 && (
         <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-[15px] font-bold text-emerald-900">
           คุณมีสิทธิ์ลุ้นรางวัลแล้ว {approved} สิทธิ์
@@ -160,7 +201,7 @@ export default function ReceiptForm({ open }: { open: boolean }) {
                     } ${o.alreadySent ? "opacity-50" : ""}`}
                   >
                     <span>
-                      <span className="block text-[14px] font-bold text-black">{o.invoiceNo}</span>
+                      <span className="block text-[14px] font-bold text-black">{o.orderNumber ?? o.invoiceNo}</span>
                       <span className="mt-0.5 block text-[13px] text-black/60">
                         {when(o.paidAt)} · DENTISTE&apos; {formatTHB(o.dentisteAmount)}
                         {o.keychainAmount > 0 && ` · Keychain ${formatTHB(o.keychainAmount)}`}

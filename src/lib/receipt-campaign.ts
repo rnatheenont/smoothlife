@@ -107,11 +107,28 @@ export function computeEntries({ dentisteAmount, keychainAmount }: Pick<ReceiptA
 }
 
 /** Whether a paid order is inside the campaign window at all. */
-export function withinCampaign(confirmedAt: string | null | undefined): boolean {
+export function withinCampaign(confirmedAt: string | null | undefined, anyOrder = false): boolean {
   if (!confirmedAt) return false;
+  if (anyOrder) return true;
   const t = Date.parse(confirmedAt);
   return Number.isFinite(t) && t >= OPENS_AT && t <= CLOSES_AT;
 }
+
+/**
+ * `?test=1` — the form, working, before the campaign opens.
+ *
+ * It exists so the whole path can be walked once on real orders rather than
+ * described: pick an order, upload, get the check back, watch it land in the
+ * review queue. It only answers true before the campaign opens, so it expires
+ * by itself on 28 Sep and there is no switch anybody has to remember to turn
+ * off. Entries made this way carry TEST_MARKER so they can be told apart and
+ * cleared out.
+ */
+export function isTestMode(value: string | null | undefined): boolean {
+  return value === "1" && Date.now() < OPENS_AT;
+}
+
+export const TEST_MARKER = "TESTMODE";
 
 /** 25 prizes per type; anyone drawn past that is a reserve, in the order called. */
 export const PRIZES_PER_TYPE = 25;
