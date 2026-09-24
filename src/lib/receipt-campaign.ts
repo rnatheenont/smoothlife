@@ -28,16 +28,17 @@ export const STACKS = true;
 /**
  * The campaign runs on purchases made in this window, Bangkok time.
  *
- * Brought forward to 24 Sep on the shop's decision — the terms document still
+ * Brought forward to 23 Sep on the shop's decision. The terms document still
  * says 28 Sep and has to be corrected to match, because VIP is decided by who
  * bought first and a start date nobody published is the kind of thing a
- * customer disputes at the announcement.
+ * customer disputes at the announcement — the earlier the real start, the more
+ * orders it quietly lets in ahead of everyone who read the published date.
  */
-export const OPENS_AT = Date.parse("2026-09-24T00:00:00+07:00");
+export const OPENS_AT = Date.parse("2026-09-23T00:00:00+07:00");
 export const CLOSES_AT = Date.parse("2026-10-26T23:59:59+07:00");
 
 /** The same dates, written the way they are shown to customers. */
-export const OPENS_LABEL = "24 ก.ย.";
+export const OPENS_LABEL = "23 ก.ย.";
 export const CLOSES_LABEL = "26 ต.ค. 2569";
 
 /**
