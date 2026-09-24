@@ -27,6 +27,14 @@ export type OrderCard = {
   button: { label: string; uri: string };
   /** A second, quieter button — "ติดตามพัสดุ" beside "ดูคำสั่งซื้อ". */
   secondaryButton?: { label: string; uri: string };
+  /**
+   * Where tapping the card itself goes — the order it is about.
+   *
+   * People tap the notification, not the button in it: a card that only
+   * responds to a small button at the bottom reads as a dead end, and the
+   * whole point of the card is that the order is one tap away.
+   */
+  tapUri?: string;
 };
 
 function textRow(row: Row) {
@@ -100,7 +108,12 @@ function bubble(card: OrderCard) {
 
   return {
     type: "bubble",
-    body: { type: "box", layout: "vertical", contents: body },
+    body: {
+      type: "box",
+      layout: "vertical",
+      contents: body,
+      ...(card.tapUri ? { action: { type: "uri", label: card.title.slice(0, 20), uri: card.tapUri } } : {}),
+    },
     footer: { type: "box", layout: "vertical", spacing: "sm", contents: buttons },
   };
 }
@@ -128,5 +141,13 @@ export function itemLines(lineItems: { title?: string; name?: string; quantity?:
   return shown;
 }
 
+/**
+ * The order's own page, not the list.
+ *
+ * The numeric Shopify id is what /account/orders/[id] expects — the same value
+ * the orders list links each row to — and dropping someone on a list to find
+ * the order they were just told about is a step they should not have to take.
+ */
+export const orderLink = (orderId: string | number) => lineOpenLink(`/account/orders/${orderId}`);
 export const ordersLink = () => lineOpenLink("/account/orders");
 export const pointsLink = () => lineOpenLink("/account");

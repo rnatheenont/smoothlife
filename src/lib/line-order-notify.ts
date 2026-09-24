@@ -4,7 +4,7 @@ import {
   orderCardMessage,
   baht,
   itemLines,
-  ordersLink,
+  orderLink,
   pointsLink,
   type OrderCard,
   type CardRow,
@@ -100,7 +100,9 @@ async function send(opts: {
     return { sent: false, reason: "already notified" };
   }
 
-  const ok = await pushLineMessages(lineUserId, [orderCardMessage({ ...opts.card, orderName })]);
+  const ok = await pushLineMessages(lineUserId, [
+    orderCardMessage({ ...opts.card, orderName, tapUri: opts.card.tapUri ?? orderLink(orderId) }),
+  ]);
   if (!ok) {
     await release(orderId, opts.kind);
     return { sent: false, reason: "LINE refused the push (blocked, or quota spent)" };
@@ -146,7 +148,7 @@ export async function notifyOrderPaid(opts: {
       subtitle: "ขอบคุณที่สั่งซื้อกับ Smooth Life ค่ะ กำลังเตรียมจัดส่งให้นะคะ",
       rows,
       items: itemLines(opts.order.line_items ?? []),
-      button: { label: "ดูคำสั่งซื้อ", uri: ordersLink() },
+      button: { label: "ดูคำสั่งซื้อ", uri: orderLink(opts.order.id) },
       secondaryButton: opts.points > 0 ? { label: "ดูแต้มสะสม", uri: pointsLink() } : undefined,
     },
   });
@@ -179,10 +181,13 @@ export async function notifyOrderShipped(opts: {
       subtitle: tracking.number ? "กดปุ่มด้านล่างเพื่อติดตามพัสดุได้เลยค่ะ" : "ทางร้านส่งพัสดุให้ขนส่งเรียบร้อยแล้วค่ะ",
       rows,
       items: itemLines(opts.items ?? []),
+      // Tracking wins the primary button when there is one — it is the thing
+      // they opened the message for — and the order stays one tap away on the
+      // card itself and on the second button.
       button: tracking.url
         ? { label: "ติดตามพัสดุ", uri: tracking.url }
-        : { label: "ดูคำสั่งซื้อ", uri: ordersLink() },
-      secondaryButton: tracking.url ? { label: "ดูคำสั่งซื้อ", uri: ordersLink() } : undefined,
+        : { label: "ดูคำสั่งซื้อ", uri: orderLink(opts.orderId) },
+      secondaryButton: tracking.url ? { label: "ดูคำสั่งซื้อ", uri: orderLink(opts.orderId) } : undefined,
     },
   });
 }
@@ -205,7 +210,7 @@ export async function notifyOrderDelivered(opts: {
       title: "จัดส่งสำเร็จแล้ว",
       subtitle: "ได้รับของเรียบร้อยไหมคะ ถ้ามีอะไรไม่ตรงหรือสงสัย ทักมาในแชทนี้ได้เลยค่ะ",
       rows: [],
-      button: { label: "ดูคำสั่งซื้อ", uri: ordersLink() },
+      button: { label: "ดูคำสั่งซื้อ", uri: orderLink(opts.orderId) },
     },
   });
 }
@@ -237,7 +242,7 @@ export async function notifyOrderRefunded(opts: {
       title: "คืนเงินสำเร็จ",
       subtitle: "เงินจะเข้าบัญชีตามรอบของธนาคารหรือผู้ให้บริการบัตร ปกติ 3–14 วันทำการค่ะ",
       rows,
-      button: { label: "ดูคำสั่งซื้อ", uri: ordersLink() },
+      button: { label: "ดูคำสั่งซื้อ", uri: orderLink(opts.orderId) },
     },
   });
 }
