@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AlertTriangle, Check, Clock, Loader2, Mail, Upload, X } from "lucide-react";
 import { formatTHB } from "@/lib/format";
-import { CLOSES_LABEL, GENERAL_THRESHOLD, OPENS_LABEL } from "@/lib/receipt-campaign";
+import { GENERAL_THRESHOLD } from "@/lib/receipt-campaign";
 import { shopifyAuthStartPath } from "@/lib/shopify-email-login";
 
 type AiCheck = { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] };
@@ -75,7 +75,15 @@ const AI_TONE: Record<AiCheck["verdict"], string> = {
   mismatch: "border-rose-200 bg-rose-50 text-rose-900",
 };
 
-export default function ReceiptForm({ open }: { open: boolean }) {
+export default function ReceiptForm({
+  open,
+  opensLabel,
+  closesLabel,
+}: {
+  open: boolean;
+  opensLabel: string;
+  closesLabel: string;
+}) {
   // ?test=1 before the campaign opens: the form works on any paid Dentiste
   // order so the whole path can be walked once before it matters.
   // From the URL rather than the API answer: a signed-out visitor never reaches
@@ -283,7 +291,7 @@ export default function ReceiptForm({ open }: { open: boolean }) {
                 <p className="text-[14px] font-bold text-black">ยังไม่พบคำสั่งซื้อที่เข้าเงื่อนไข</p>
                 <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
                   ต้องเป็นคำสั่งซื้อผลิตภัณฑ์ DENTISTE&apos; ที่ชำระเงินสำเร็จบน Smoothlife.com ระหว่าง{" "}
-                  {OPENS_LABEL} – {CLOSES_LABEL}
+                  {opensLabel} – {closesLabel}
                 </p>
                 {/* The most common reason for landing here is being early, not
                     being ineligible — the order row is written when 2C2P

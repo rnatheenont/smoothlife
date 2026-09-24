@@ -131,12 +131,23 @@ export function computeEntries({ dentisteAmount, keychainAmount }: Pick<ReceiptA
   return STACKS ? general + keychain : Math.max(general, keychain);
 }
 
-/** Whether a paid order is inside the campaign window at all. */
-export function withinCampaign(confirmedAt: string | null | undefined, anyOrder = false): boolean {
+/**
+ * Whether a paid order is inside the campaign window at all.
+ *
+ * The window is passed in rather than read from the constants above, because
+ * it is the one piece of this that the team can edit (see
+ * receipt-campaign-content.ts). A date shown to a customer and a date the
+ * filter uses must be the same date; the constants are only the fallback.
+ */
+export function withinCampaign(
+  confirmedAt: string | null | undefined,
+  anyOrder = false,
+  window: { opensAt: number; closesAt: number } = { opensAt: OPENS_AT, closesAt: CLOSES_AT }
+): boolean {
   if (!confirmedAt) return false;
   if (anyOrder) return true;
   const t = Date.parse(confirmedAt);
-  return Number.isFinite(t) && t >= OPENS_AT && t <= CLOSES_AT;
+  return Number.isFinite(t) && t >= window.opensAt && t <= window.closesAt;
 }
 
 /**
