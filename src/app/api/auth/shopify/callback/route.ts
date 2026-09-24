@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import {
   SHOPIFY_AUTH_COOKIE,
+  SHOPIFY_ID_TOKEN_COOKIE,
   exchangeCodeForEmail,
   shopifyEmailAuthConfigured,
   type ShopifyAuthTransaction,
@@ -91,7 +92,18 @@ export async function GET(req: NextRequest) {
 
   try {
     const redirectUri = new URL("/api/auth/shopify/callback", req.url).toString();
-    const { email } = await exchangeCodeForEmail({ code, redirectUri, transaction });
+    const { email, idToken } = await exchangeCodeForEmail({ code, redirectUri, transaction });
+
+    /**
+     * Signing out here cannot reach a cookie on shopify.com, so the Shopify
+     * session outlives ours unless we hand this back to their logout endpoint
+     * — which refuses a request without it. Same life as the session it
+     * belongs to; it is a receipt for one sign-in, not a credential.
+     */
+    const keepIdToken = (res: NextResponse) => {
+      res.cookies.set(SHOPIFY_ID_TOKEN_COOKIE, idToken, sessionCookieOptions);
+      return res;
+    };
 
     // ── Add or change the email on the account already signed in ──────────
     if (transaction.intent === "link") {
@@ -166,6 +178,7 @@ export async function GET(req: NextRequest) {
         });
         await linkShopify(identity.user_id, email).catch((err) => console.error("[shopify callback] link", err));
         const res = redirect(req, transaction.returnTo);
+        keepIdToken(res);
         res.cookies.set(SESSION_COOKIE, createSessionToken(identity.user_id), sessionCookieOptions);
         return res;
       }
@@ -192,6 +205,7 @@ export async function GET(req: NextRequest) {
       ? `/account/complete-profile?returnTo=${encodeURIComponent(transaction.returnTo)}`
       : transaction.returnTo;
     const res = redirect(req, destination);
+    keepIdToken(res);
     res.cookies.set(SESSION_COOKIE, createSessionToken(userId), sessionCookieOptions);
     return res;
   } catch (err) {
