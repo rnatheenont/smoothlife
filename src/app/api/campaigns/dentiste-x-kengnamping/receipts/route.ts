@@ -13,6 +13,7 @@ import {
 import { checkReceiptPhoto } from "@/lib/receipt-vision";
 import { orderNameByGid, orderNamesByGid } from "@/lib/shopify-admin";
 import { loadCampaignContent, windowOf } from "@/lib/receipt-campaign-content";
+import { holdsPrize } from "@/lib/receipt-campaign";
 import {
   ENTRY_COLUMNS,
   MAX_RECEIPT_BYTES,
@@ -58,6 +59,15 @@ type UploadRow = {
   created_at: string;
 };
 
+type WinnerRow = {
+  id: string;
+  user_id: string;
+  prize_type: "vip" | "lucky_fan";
+  rank: number;
+  status: "pending_confirm" | "confirmed" | "forfeited";
+  confirm_deadline: string;
+};
+
 function unauthorised() {
   return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบก่อนส่งใบเสร็จ" }, { status: 401 });
 }
@@ -83,14 +93,36 @@ export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
   const test = isTestMode(req.nextUrl.searchParams.get("test"));
-  const [orders, entries, uploads] = await Promise.all([
+  const [orders, entries, uploads, prizes] = await Promise.all([
     eligibleOrders(uid, test),
     entriesForUser(CAMPAIGN, uid),
     supabaseRest<UploadRow[]>(
       `receipt_campaign_uploads?user_id=eq.${pgValue(uid)}` +
         `&select=id,entry_id,ai_check,is_current,created_at&order=created_at.desc&limit=60`
     ).catch(() => [] as UploadRow[]),
+    // Every drawn place for this campaign, not only this customer's: whether
+    // they hold a prize depends on who above them gave theirs up.
+    supabaseRest<WinnerRow[]>(
+      `receipt_campaign_winners?campaign_key=eq.${CAMPAIGN}` +
+        `&select=id,user_id,prize_type,rank,status,confirm_deadline&order=rank`
+    ).catch(() => [] as WinnerRow[]),
   ]);
+
+  // What this customer is holding right now, in the words they need: the prize,
+  // the deadline, and whether they have answered yet.
+  const holding = new Set<string>();
+  for (const type of ["vip", "lucky_fan"] as const) {
+    for (const w of holdsPrize(prizes.filter((p) => p.prize_type === type))) holding.add(w.id);
+  }
+  const myPrizes = prizes
+    .filter((p) => p.user_id === uid && holding.has(p.id))
+    .map((p) => ({
+      id: p.id,
+      prizeType: p.prize_type,
+      rank: p.rank,
+      status: p.status,
+      confirmDeadline: p.confirm_deadline,
+    }));
   const used = new Set(entries.map((e) => e.payment_transaction_id).filter(Boolean));
   // One lookup for every order on the page — the ones they can still send and
   // the ones they already did.
@@ -104,6 +136,7 @@ export async function GET(req: NextRequest) {
     {
       ok: true,
       test,
+      prizes: myPrizes,
       orders: orders.map((tx) => {
         const amounts = amountsFromLineItems(tx.line_items);
         return {
