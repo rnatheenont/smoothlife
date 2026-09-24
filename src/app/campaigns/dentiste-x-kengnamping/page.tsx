@@ -39,12 +39,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
   const closed = now > CLOSES.getTime();
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-10">
       <p className="text-[13px] font-semibold uppercase tracking-wide text-black/50">DENTISTE&apos;S x KENG NAMPING</p>
-      <h1 className="mt-2 text-3xl font-extrabold leading-tight text-black sm:text-4xl">
+      <h1 className="mt-2 max-w-2xl text-3xl font-extrabold leading-tight text-black sm:text-4xl">
         ส่งใบเสร็จ ลุ้นรับรางวัลสุดพิเศษ
       </h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-black/70">
+      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-black/70">
         ซื้อผลิตภัณฑ์ DENTISTE&apos; ที่ Smoothlife.com แล้วส่งใบเสร็จเพื่อรับสิทธิ์ลุ้นรางวัล
         ยิ่งยอดซื้อมาก ยิ่งมีสิทธิ์มาก
       </p>
@@ -53,9 +53,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
         <CalendarDays size={15} aria-hidden /> เปิดรับใบเสร็จ {thaiDate(OPENS)} – {thaiDate(CLOSES)}
       </div>
 
-      <ol className="mt-10 flex flex-col gap-4">
+      <ol className="mt-10 grid gap-4 sm:grid-cols-3">
         {STEPS.map(({ Icon, title, body }, i) => (
-          <li key={title} className="flex gap-4 rounded-2xl border border-black/10 p-5">
+          <li key={title} className="flex gap-4 rounded-2xl border border-black/10 p-5 sm:flex-col sm:gap-3">
             <div className="grid size-10 shrink-0 place-items-center rounded-full bg-black/5 text-black">
               <Icon size={18} aria-hidden />
             </div>
