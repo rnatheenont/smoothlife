@@ -433,10 +433,10 @@ export default function ReceiptForm({
                       แคปหน้าจออีเมลยืนยันคำสั่งซื้อที่ได้รับจาก Smoothlife.com ให้เห็น
                       <b>เลขคำสั่งซื้อ (ORDER #)</b> รายการสินค้า และยอดรวม · JPG, PNG หรือ WEBP ไม่เกิน 8MB
                     </p>
-                    <label className="mt-4 flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.02] hover:border-black/40">
+                    <label className="mt-4 flex min-h-[240px] cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.02] p-3 hover:border-black/40 lg:min-h-[340px]">
                       {preview ? (
                         // eslint-disable-next-line @next/next/no-img-element -- a blob: URL from the file they just picked
-                        <img src={preview} alt="รูปใบเสร็จที่เลือก" className="h-full w-full object-contain" />
+                        <img src={preview} alt="รูปใบเสร็จที่เลือก" className="max-h-[420px] w-auto max-w-full rounded-lg object-contain" />
                       ) : (
                         <>
                           <Upload size={26} className="text-black/35" aria-hidden />
