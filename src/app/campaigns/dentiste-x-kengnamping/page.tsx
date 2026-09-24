@@ -24,7 +24,7 @@ const thaiDate = (d: Date) =>
 
 const STEPS = [
   { Icon: Receipt, title: "ซื้อผลิตภัณฑ์ DENTISTE'", body: `ที่ Smoothlife.com ระหว่าง ${OPENS_LABEL} – ${CLOSES_LABEL}` },
-  { Icon: Ticket, title: "ส่งใบเสร็จ", body: "เลือกคำสั่งซื้อของคุณแล้วแนบรูปใบเสร็จ ระบบคำนวณสิทธิ์ให้ทันที" },
+  { Icon: Ticket, title: "ส่งใบเสร็จ", body: "แนบรูปใบเสร็จของคำสั่งซื้อที่เข้าเงื่อนไข ระบบคำนวณสิทธิ์ให้ทันที" },
   { Icon: Gift, title: "ลุ้นรางวัล", body: "ประกาศผล 3 พ.ย. 2569 เวลา 18:00 น. และยืนยันสิทธิ์ภายใน 5 พ.ย." },
 ];
 

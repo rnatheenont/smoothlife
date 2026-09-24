@@ -340,9 +340,12 @@ export default function ReceiptForm({ open }: { open: boolean }) {
                         <span className="text-[32px] font-extrabold leading-none tracking-tight text-black tabular-nums">
                           {e.entries}
                         </span>
-                        <span className="text-[13px] leading-tight text-black/55">
-                          สิทธิ์{e.status === "approved" ? "" : " (รอยืนยัน)"}
-                        </span>
+                        <span className="text-[13px] leading-tight text-black/55">สิทธิ์</span>
+                        {e.status !== "approved" && (
+                          // Its own line: Thai has no hyphenation, so "(รอยืนยัน)"
+                          // tacked onto the label broke mid-word in the column.
+                          <span className="text-[12px] leading-tight text-black/40">รอยืนยัน</span>
+                        )}
                       </div>
 
                       <dl className="grid flex-1 grid-cols-2 gap-x-6 gap-y-3 text-[13px] @lg:grid-cols-3">
