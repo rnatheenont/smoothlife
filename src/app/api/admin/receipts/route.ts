@@ -3,7 +3,7 @@ import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { signedReceiptUrl } from "@/lib/receipt-photos";
 import { holdsPrize } from "@/lib/receipt-campaign";
-import { orderNamesByGid } from "@/lib/shopify-admin";
+import { orderPaymentByGid } from "@/lib/shopify-admin";
 
 // The review queue, the VIP order, and what Lucky Fan has to draw from.
 //
@@ -98,13 +98,16 @@ export async function GET(req: NextRequest) {
   // store is Shopify's internal id; what the receipt in the photo shows is the
   // order's name, and those are the two numbers a reviewer is comparing.
   const queuePage = pending.slice(0, 50);
-  const names = await orderNamesByGid(queuePage.map((r) => r.payment_transactions?.shopify_order_id));
+  const payments = await orderPaymentByGid(queuePage.map((r) => r.payment_transactions?.shopify_order_id));
 
   const queue = await Promise.all(
     queuePage.map(async (r) => ({
       id: r.id,
       customer: r.users?.display_name ?? null,
-      orderNumber: names.get(r.payment_transactions?.shopify_order_id ?? "") ?? null,
+      orderNumber: payments.get(r.payment_transactions?.shopify_order_id ?? "")?.name ?? null,
+      // Straight from Shopify, not from our own "the card cleared" row.
+      paymentStatus: payments.get(r.payment_transactions?.shopify_order_id ?? "")?.financialStatus ?? null,
+      refunded: payments.get(r.payment_transactions?.shopify_order_id ?? "")?.refunded ?? 0,
       invoiceNo: r.payment_transactions?.invoice_no ?? r.manual_receipt_no,
       paidAt: r.payment_transactions?.confirmed_at ?? null,
       orderTotal: r.payment_transactions ? Number(r.payment_transactions.amount) : null,

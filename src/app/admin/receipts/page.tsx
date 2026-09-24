@@ -27,6 +27,25 @@ type QueueItem = {
   sentAt: string;
   photoUrl: string | null;
   aiCheck: { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] } | null;
+  /** Shopify's own word on the order right now, not our 2C2P row. */
+  paymentStatus: string | null;
+  refunded: number;
+};
+
+/**
+ * Shopify's financial statuses, in the reviewer's language and coloured by
+ * what they mean for a claim: green is money we still have, amber is money we
+ * are waiting on or have partly given back, rose is money that is gone.
+ */
+const PAYMENT_STATUS: Record<string, [string, string]> = {
+  PAID: ["ชำระแล้ว", "bg-emerald-50 text-emerald-800 border-emerald-200"],
+  PARTIALLY_PAID: ["ชำระบางส่วน", "bg-amber-50 text-amber-900 border-amber-200"],
+  PENDING: ["รอชำระเงิน", "bg-amber-50 text-amber-900 border-amber-200"],
+  AUTHORIZED: ["กันวงเงินไว้ ยังไม่ตัด", "bg-amber-50 text-amber-900 border-amber-200"],
+  PARTIALLY_REFUNDED: ["คืนเงินบางส่วน", "bg-amber-50 text-amber-900 border-amber-200"],
+  REFUNDED: ["คืนเงินแล้ว", "bg-rose-50 text-rose-800 border-rose-200"],
+  VOIDED: ["ยกเลิกรายการ", "bg-rose-50 text-rose-800 border-rose-200"],
+  EXPIRED: ["หมดอายุ", "bg-rose-50 text-rose-800 border-rose-200"],
 };
 type Vip = {
   rank: number;
@@ -100,6 +119,25 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- first load
     load();
   }, [load]);
+
+  // Reads the order's line items again and applies today's rules to them.
+  async function recalculate(item: QueueItem) {
+    setBusy(item.id);
+    try {
+      const res = await fetch(`/api/admin/receipts/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "recalculate" }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "คำนวณใหม่ไม่สำเร็จ");
+      await load();
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "คำนวณใหม่ไม่สำเร็จ");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function decide(item: QueueItem, action: "approve" | "reject") {
     // A rejection is the only thing the customer can act on, and they are shown
@@ -254,6 +292,27 @@ export default function Page() {
                               the only number a reviewer can match by eye. */}
                           <dt className="text-slate-500">เลขคำสั่งซื้อ</dt>
                           <dd className="text-[15px] font-bold text-brand-ink">{item.orderNumber ?? "—"}</dd>
+                          <dt className="text-slate-500">สถานะการชำระเงิน</dt>
+                          <dd>
+                            {item.paymentStatus ? (
+                              <span
+                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[12px] font-bold ${
+                                  PAYMENT_STATUS[item.paymentStatus]?.[1] ?? "border-slate-200 bg-slate-50 text-slate-600"
+                                }`}
+                              >
+                                {PAYMENT_STATUS[item.paymentStatus]?.[0] ?? item.paymentStatus}
+                              </span>
+                            ) : (
+                              // Never guess green: if Shopify did not answer,
+                              // say so rather than implying the money is there.
+                              <span className="text-[12px] text-slate-400">อ่านสถานะจาก Shopify ไม่ได้</span>
+                            )}
+                            {item.refunded > 0 && (
+                              <span className="ms-2 text-[12px] font-semibold text-rose-700">
+                                คืนแล้ว {formatTHB(item.refunded)}
+                              </span>
+                            )}
+                          </dd>
                           <dt className="text-slate-500">เลขใบแจ้งหนี้ 2C2P</dt>
                           <dd className="font-mono text-[12px] text-slate-500">{item.invoiceNo ?? "—"}</dd>
                           <dt className="text-slate-500">ชำระเมื่อ</dt>
@@ -272,8 +331,20 @@ export default function Page() {
                           <dd className="text-brand-ink">{when(item.sentAt)}</dd>
                         </dl>
 
-                        <p className="mt-3 text-[13px] text-slate-600">
-                          ระบบคำนวณได้ <span className="font-bold text-brand-ink">{item.entries} สิทธิ์</span>
+                        <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-slate-600">
+                          <span>
+                            ระบบคำนวณได้ <span className="font-bold text-brand-ink">{item.entries} สิทธิ์</span>
+                          </span>
+                          {/* The stored number is the rules as they were when
+                              the photo arrived. They have not settled yet. */}
+                          <button
+                            type="button"
+                            disabled={busy === item.id}
+                            onClick={() => recalculate(item)}
+                            className="rounded-full border border-surface-line px-3 py-1 text-[12px] font-semibold text-brand-800 hover:bg-surface-soft disabled:opacity-50"
+                          >
+                            คำนวณสิทธิ์ใหม่
+                          </button>
                         </p>
 
                         {/* What a first glance saw. Never a decision — the

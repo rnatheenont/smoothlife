@@ -293,6 +293,66 @@ export async function orderNamesByGid(gids: (string | null | undefined)[]): Prom
   return out;
 }
 
+/**
+ * What Shopify currently says about an order's money, for the receipt queue.
+ *
+ * Our own row says a 2C2P charge succeeded. That is not the same question as
+ * "is this order paid *now*": a refund, a void or a pre-order still awaiting
+ * capture all leave payment_transactions.status = success untouched, and a
+ * reviewer about to hand out a claim on a ฿55,000 prize should be looking at
+ * the live answer rather than the one from the moment the card cleared.
+ *
+ * Not cached, unlike the name beside it — a name is fixed once an order has
+ * one, and this is exactly the part that changes.
+ */
+export type OrderPayment = { name: string; financialStatus: string | null; refunded: number };
+
+export async function orderPaymentByGid(gids: (string | null | undefined)[]): Promise<Map<string, OrderPayment>> {
+  const wanted = [...new Set(gids.filter((g): g is string => !!g && g.startsWith("gid://shopify/Order/")))];
+  const out = new Map<string, OrderPayment>();
+  if (!wanted.length || !shopifyAdminConfigured()) return out;
+
+  for (let i = 0; i < wanted.length; i += 200) {
+    const chunk = wanted.slice(i, i + 200);
+    try {
+      const data = await adminGraphql<{
+        nodes: ({
+          id: string;
+          name: string;
+          displayFinancialStatus: string | null;
+          totalRefundedSet: { shopMoney: { amount: string } } | null;
+        } | null)[];
+      }>(
+        `query OrderPayments($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on Order {
+              id
+              name
+              displayFinancialStatus
+              totalRefundedSet { shopMoney { amount } }
+            }
+          }
+        }`,
+        { ids: chunk },
+      );
+      for (const node of data.nodes ?? []) {
+        if (!node?.id) continue;
+        if (node.name) orderNameCache.set(node.id, node.name);
+        out.set(node.id, {
+          name: node.name,
+          financialStatus: node.displayFinancialStatus,
+          refunded: Number(node.totalRefundedSet?.shopMoney?.amount ?? 0) || 0,
+        });
+      }
+    } catch (err) {
+      // A status we cannot fetch is one the screen says nothing about, which
+      // is the honest outcome — never a green "paid" we did not read.
+      console.error("[shopify-admin] orderPaymentByGid failed", err);
+    }
+  }
+  return out;
+}
+
 export async function orderNameByGid(gid: string | null | undefined): Promise<string | null> {
   if (!gid) return null;
   return (await orderNamesByGid([gid])).get(gid) ?? null;
