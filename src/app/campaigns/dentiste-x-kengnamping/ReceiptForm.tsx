@@ -39,6 +39,10 @@ type Upload = {
 type Entry = {
   id: string;
   paymentTransactionId: string | null;
+  orderNumber: string | null;
+  orderTotal: number | null;
+  dentisteAmount: number;
+  keychainAmount: number;
   status: "pending_review" | "approved" | "rejected";
   rejectReason: string | null;
   entries: number;
@@ -297,53 +301,76 @@ export default function ReceiptForm({ open }: { open: boolean }) {
         </section>
       ) : null}
 
-      {uploads.length > 0 && (
-        <section>
-          <h2 className="text-lg font-bold text-black">ประวัติการอัปโหลด</h2>
-          <p className="mt-1 text-[13px] text-black/60">
-            ทุกครั้งที่ส่งรูป · รูปล่าสุดของแต่ละคำสั่งซื้อคือรูปที่ทีมงานใช้ตรวจ
-          </p>
-          <ul className="mt-3 flex flex-col gap-1.5">
-            {uploads.map((u) => {
-              const entry = entries.find((e) => e.id === u.entryId);
-              const verdict = u.aiVerdict
-                ? AI_SHORT[u.aiVerdict]
-                : { label: "ไม่ได้ตรวจอัตโนมัติ", tone: "text-black/50" };
-              return (
-                <li
-                  key={u.id}
-                  className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 rounded-xl border border-black/10 px-4 py-2.5 text-[13px]"
-                >
-                  <span className="text-black/70">{whenTime(u.createdAt)}</span>
-                  <span className={`font-semibold ${verdict.tone}`}>{verdict.label}</span>
-                  <span className="text-black/50">
-                    {u.current ? (entry ? STATUS[entry.status].label : "กำลังตรวจ") : "ถูกแทนที่ด้วยรูปใหม่"}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-
       {entries.length > 0 && (
         <section>
-          <h2 className="text-lg font-bold text-black">ผลการตรวจ</h2>
-          <ul className="mt-3 flex flex-col gap-2">
+          <h2 className="text-lg font-bold text-black">ประวัติการส่งใบเสร็จ</h2>
+          <ul className="mt-3 flex flex-col gap-3">
             {entries.map((e) => {
               const s = STATUS[e.status];
+              // Every photo sent for this order, newest first. The top one is
+              // what the team is looking at; the rest is what it replaced.
+              const tries = uploads.filter((u) => u.entryId === e.id);
               return (
-                <li key={e.id} className={`rounded-2xl border px-4 py-3.5 ${s.tone}`}>
-                  <p className="flex items-center gap-2 text-[14px] font-bold">
-                    <s.Icon size={15} aria-hidden /> {s.label}
-                    {e.status === "approved" && ` · ${e.entries} สิทธิ์`}
-                  </p>
-                  <p className="mt-1 text-[13px] opacity-80">ส่งเมื่อ {when(e.createdAt)}</p>
+                <li key={e.id} className="rounded-2xl border border-black/10">
+                  <div className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-t-2xl border-b px-4 py-3 ${s.tone}`}>
+                    <span className="text-[15px] font-bold">{e.orderNumber ?? "—"}</span>
+                    <span className="flex items-center gap-1.5 text-[13px] font-bold">
+                      <s.Icon size={14} aria-hidden /> {s.label}
+                    </span>
+                  </div>
+
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 px-4 py-3 text-[13px] sm:grid-cols-4">
+                    <div>
+                      <dt className="text-black/50">ยอดซื้อ DENTISTE&apos;</dt>
+                      <dd className="font-bold text-black">{formatTHB(e.dentisteAmount)}</dd>
+                    </div>
+                    {e.keychainAmount > 0 && (
+                      <div>
+                        <dt className="text-black/50">Keychain</dt>
+                        <dd className="font-bold text-black">{formatTHB(e.keychainAmount)}</dd>
+                      </div>
+                    )}
+                    <div>
+                      <dt className="text-black/50">ยอดทั้งบิล</dt>
+                      <dd className="text-black">{e.orderTotal === null ? "—" : formatTHB(e.orderTotal)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-black/50">สิทธิ์ที่ได้</dt>
+                      <dd className="font-bold text-black">
+                        {e.status === "approved" ? `${e.entries} สิทธิ์` : `${e.entries} สิทธิ์ (รอยืนยัน)`}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-black/50">ส่งเมื่อ</dt>
+                      <dd className="text-black">{when(e.createdAt)}</dd>
+                    </div>
+                  </dl>
+
                   {e.status === "rejected" && e.rejectReason && (
-                    <p className="mt-1.5 flex items-start gap-1.5 text-[13px]">
-                      <AlertTriangle size={13} className="mt-0.5 shrink-0" aria-hidden />
-                      {e.rejectReason} — เลือกคำสั่งซื้อเดิมแล้วแนบรูปใหม่ได้เลย
+                    <p className="flex items-start gap-1.5 border-t border-black/10 px-4 py-3 text-[13px] text-rose-800">
+                      <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
+                      {e.rejectReason} — เลือกคำสั่งซื้อนี้แล้วแนบรูปใหม่ได้เลย
                     </p>
+                  )}
+
+                  {tries.length > 0 && (
+                    <div className="border-t border-black/10 px-4 py-3">
+                      <p className="text-[12px] font-semibold text-black/50">
+                        ส่งรูปแล้ว {tries.length} ครั้ง
+                      </p>
+                      <ul className="mt-1.5 flex flex-col gap-1">
+                        {tries.map((u) => {
+                          const v = u.aiVerdict ? AI_SHORT[u.aiVerdict] : { label: "ไม่ได้ตรวจอัตโนมัติ", tone: "text-black/50" };
+                          return (
+                            <li key={u.id} className="flex flex-wrap items-baseline gap-x-3 text-[12px]">
+                              <span className="text-black/60">{whenTime(u.createdAt)}</span>
+                              <span className={`font-semibold ${v.tone}`}>{v.label}</span>
+                              {!u.current && <span className="text-black/40">ถูกแทนที่ด้วยรูปใหม่</span>}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
                   )}
                 </li>
               );

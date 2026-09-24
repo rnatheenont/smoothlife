@@ -88,6 +88,8 @@ export async function removeReceiptPhoto(path: string): Promise<void> {
 export type ReceiptEntryRow = {
   id: string;
   payment_transaction_id: string | null;
+  /** Joined so the history can name the order the way the customer sees it. */
+  payment_transactions?: { shopify_order_id: string | null; amount: number } | null;
   manual_receipt_no: string | null;
   dentiste_net_amount: number;
   keychain_amount: number;
@@ -99,7 +101,8 @@ export type ReceiptEntryRow = {
 };
 
 export const ENTRY_COLUMNS =
-  "id,payment_transaction_id,manual_receipt_no,dentiste_net_amount,keychain_amount,computed_entries,entries_override,status,reject_reason,created_at";
+  "id,payment_transaction_id,manual_receipt_no,dentiste_net_amount,keychain_amount,computed_entries," +
+  "entries_override,status,reject_reason,created_at,payment_transactions(shopify_order_id,amount)";
 
 /** The number that counts: what staff decided, or what the order came to. */
 export function entriesOf(row: Pick<ReceiptEntryRow, "computed_entries" | "entries_override">): number {
