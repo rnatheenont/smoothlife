@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { signedReceiptUrl } from "@/lib/receipt-photos";
+import { holdsPrize } from "@/lib/receipt-campaign";
 
 // The review queue, the VIP order, and what Lucky Fan has to draw from.
 //
@@ -37,15 +38,16 @@ type Row = {
   reviewed_at: string | null;
   created_at: string;
   users: { display_name: string | null } | null;
-  payment_transactions: { invoice_no: string; amount: number; confirmed_at: string | null } | null;
+  payment_transactions: { invoice_no: string; amount: number; confirmed_at: string | null; shopify_order_id: string | null } | null;
 };
 
 const SELECT =
   "id,user_id,payment_transaction_id,manual_receipt_no,receipt_photo_path,dentiste_net_amount," +
   "keychain_amount,computed_entries,entries_override,status,reject_reason,reviewed_at,created_at," +
-  "users(display_name),payment_transactions(invoice_no,amount,confirmed_at)";
+  "users(display_name),payment_transactions(invoice_no,amount,confirmed_at,shopify_order_id)";
 
 type WinnerRow = {
+  id: string;
   prize_type: "vip" | "lucky_fan";
   rank: number;
   user_id: string;
@@ -56,6 +58,16 @@ type WinnerRow = {
 };
 
 const entriesOf = (r: Row) => r.entries_override ?? r.computed_entries;
+
+/**
+ * The number printed on what the customer actually uploads.
+ *
+ * They send a screenshot of Shopify's order confirmation email, which says
+ * "ORDER #4292" — our own invoice_no is 2C2P's and appears nowhere on it. A
+ * reviewer comparing the photo against a number that is not on the photo is
+ * being asked to do the one thing this screen exists for, without the means.
+ */
+const orderNumber = (gid: string | null | undefined) => (gid ? `#${gid.split("/").pop()}` : null);
 
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
@@ -69,7 +81,7 @@ export async function GET(req: NextRequest) {
     ).catch(() => [] as Row[]),
     supabaseRest<WinnerRow[]>(
       `receipt_campaign_winners?campaign_key=eq.${CAMPAIGN}` +
-        `&select=prize_type,rank,user_id,status,confirm_deadline,drawn_at,users(display_name)` +
+        `&select=id,prize_type,rank,user_id,status,confirm_deadline,drawn_at,users(display_name)` +
         `&order=prize_type.asc,rank.asc&limit=200`
     ).catch(() => [] as WinnerRow[]),
   ]);
@@ -85,6 +97,7 @@ export async function GET(req: NextRequest) {
     pending.slice(0, 50).map(async (r) => ({
       id: r.id,
       customer: r.users?.display_name ?? null,
+      orderNumber: orderNumber(r.payment_transactions?.shopify_order_id),
       invoiceNo: r.payment_transactions?.invoice_no ?? r.manual_receipt_no,
       paidAt: r.payment_transactions?.confirmed_at ?? null,
       orderTotal: r.payment_transactions ? Number(r.payment_transactions.amount) : null,
@@ -138,16 +151,24 @@ export async function GET(req: NextRequest) {
         approvedAt: r.reviewed_at,
         reserve: i >= VIP_WINNERS,
       })),
-      // 1..25 win; past that is the reserve list, in the order it is called on.
-      winners: winners.map((w) => ({
-        prizeType: w.prize_type,
-        rank: w.rank,
-        customer: w.users?.display_name ?? null,
-        status: w.status,
-        reserve: w.rank > VIP_WINNERS,
-        confirmDeadline: w.confirm_deadline,
-        drawnAt: w.drawn_at,
-      })),
+      // Who is holding a prize right now, which is not the same as who was
+      // drawn into the first 25: a forfeit above you promotes you.
+      winners: (() => {
+        const holding = new Set<string>();
+        for (const type of ["vip", "lucky_fan"] as const) {
+          for (const w of holdsPrize(winners.filter((x) => x.prize_type === type))) holding.add(w.id);
+        }
+        return winners.map((w) => ({
+          id: w.id,
+          prizeType: w.prize_type,
+          rank: w.rank,
+          customer: w.users?.display_name ?? null,
+          status: w.status,
+          holding: holding.has(w.id),
+          confirmDeadline: w.confirm_deadline,
+          drawnAt: w.drawn_at,
+        }));
+      })(),
       luckyFan: [...tickets.entries()]
         .map(([userId, t]) => ({ userId, customer: t.name, entries: t.entries }))
         .sort((a, b) => b.entries - a.entries)

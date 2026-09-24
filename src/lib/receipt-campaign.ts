@@ -112,3 +112,23 @@ export function withinCampaign(confirmedAt: string | null | undefined): boolean 
   const t = Date.parse(confirmedAt);
   return Number.isFinite(t) && t >= OPENS_AT && t <= CLOSES_AT;
 }
+
+/** 25 prizes per type; anyone drawn past that is a reserve, in the order called. */
+export const PRIZES_PER_TYPE = 25;
+/** Winners have until the end of this day to claim. */
+export const CONFIRM_DEADLINE = "2026-11-05T23:59:59+07:00";
+
+export type DrawnPlace = { rank: number; status: "pending_confirm" | "confirmed" | "forfeited" };
+
+/**
+ * Who actually holds a prize right now.
+ *
+ * Promotion is not a rewrite. Marking someone forfeited moves the next reserve
+ * up by itself, because "winner" is the first twenty-five places that were not
+ * given up — ranks keep the order they were drawn in, so the record of what
+ * happened survives every change to who is holding what.
+ */
+export function holdsPrize<T extends DrawnPlace>(places: T[]): Set<T> {
+  const live = [...places].sort((a, b) => a.rank - b.rank).filter((p) => p.status !== "forfeited");
+  return new Set(live.slice(0, PRIZES_PER_TYPE));
+}
