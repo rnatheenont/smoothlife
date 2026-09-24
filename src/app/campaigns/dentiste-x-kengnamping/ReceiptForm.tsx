@@ -95,6 +95,7 @@ export default function ReceiptForm({ open }: { open: boolean }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
+  const [rechecking, setRechecking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -119,6 +120,19 @@ export default function ReceiptForm({ open }: { open: boolean }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- first load
     load();
   }, [load]);
+
+  // Paying and arriving here are minutes apart: the order is written when 2C2P
+  // confirms, which can land after the page has already been read. Someone who
+  // paid in another tab and came back to this one was looking at an answer we
+  // gathered before their money did.
+  useEffect(() => {
+    if (state !== "ready" || orders.length > 0) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [state, orders.length, load]);
 
   // A picker for one order is not a choice, it is the same card printed twice —
   // once to select, once in the history right below it. Pick it for them.
@@ -265,10 +279,34 @@ export default function ReceiptForm({ open }: { open: boolean }) {
             <h2 className="text-lg font-bold text-black">แนบรูปใบเสร็จ</h2>
 
             {orders.length === 0 ? (
-              <p className="mt-3 rounded-2xl border border-black/10 p-5 text-[14px] leading-relaxed text-black/70">
-                ยังไม่พบคำสั่งซื้อที่เข้าเงื่อนไข — ต้องเป็นคำสั่งซื้อผลิตภัณฑ์ DENTISTE&apos; ที่ชำระเงินสำเร็จบน
-                Smoothlife.com ระหว่าง {OPENS_LABEL} – {CLOSES_LABEL}
-              </p>
+              <div className="mt-3 rounded-2xl border border-black/10 p-5">
+                <p className="text-[14px] font-bold text-black">ยังไม่พบคำสั่งซื้อที่เข้าเงื่อนไข</p>
+                <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
+                  ต้องเป็นคำสั่งซื้อผลิตภัณฑ์ DENTISTE&apos; ที่ชำระเงินสำเร็จบน Smoothlife.com ระหว่าง{" "}
+                  {OPENS_LABEL} – {CLOSES_LABEL}
+                </p>
+                {/* The most common reason for landing here is being early, not
+                    being ineligible — the order row is written when 2C2P
+                    confirms the payment, a little after the customer is done
+                    paying. Saying so beats letting them conclude their purchase
+                    does not count. */}
+                <p className="mt-3 text-[13px] leading-relaxed text-black/55">
+                  เพิ่งชำระเงินไปเมื่อสักครู่? คำสั่งซื้อจะขึ้นที่นี่หลังระบบยืนยันการชำระเงินเสร็จ ลองกดตรวจสอบอีกครั้ง
+                </p>
+                <button
+                  type="button"
+                  disabled={rechecking}
+                  onClick={async () => {
+                    setRechecking(true);
+                    await load();
+                    setRechecking(false);
+                  }}
+                  className="mt-4 flex min-h-11 items-center gap-2 rounded-full border border-black/15 px-5 text-[14px] font-semibold text-black hover:bg-black/5 disabled:opacity-50"
+                >
+                  {rechecking && <Loader2 size={15} className="animate-spin" />}
+                  {rechecking ? "กำลังตรวจสอบ…" : "ตรวจสอบอีกครั้ง"}
+                </button>
+              </div>
             ) : (
               <>
                 <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
