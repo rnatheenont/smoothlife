@@ -17,6 +17,7 @@ import { formatTHB } from "@/lib/format";
 type QueueItem = {
   id: string;
   customer: string | null;
+  orderNumber: string | null;
   invoiceNo: string | null;
   paidAt: string | null;
   orderTotal: number | null;
@@ -242,8 +243,12 @@ export default function Page() {
                       <div className="flex flex-col">
                         <p className="text-[15px] font-bold text-brand-ink">{item.customer ?? "—"}</p>
                         <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[13px]">
-                          <dt className="text-slate-500">เลขที่</dt>
-                          <dd className="font-medium text-brand-ink">{item.invoiceNo ?? "—"}</dd>
+                          {/* What the uploaded screenshot says, first — it is
+                              the only number a reviewer can match by eye. */}
+                          <dt className="text-slate-500">เลขคำสั่งซื้อ</dt>
+                          <dd className="text-[15px] font-bold text-brand-ink">{item.orderNumber ?? "—"}</dd>
+                          <dt className="text-slate-500">เลขใบแจ้งหนี้ 2C2P</dt>
+                          <dd className="font-mono text-[12px] text-slate-500">{item.invoiceNo ?? "—"}</dd>
                           <dt className="text-slate-500">ชำระเมื่อ</dt>
                           <dd className="text-brand-ink">{when(item.paidAt)}</dd>
                           <dt className="text-slate-500">ยอดทั้งบิล</dt>

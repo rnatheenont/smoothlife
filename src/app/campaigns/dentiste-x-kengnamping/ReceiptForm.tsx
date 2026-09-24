@@ -179,7 +179,8 @@ export default function ReceiptForm({ open }: { open: boolean }) {
             <>
               <h2 className="mt-8 text-lg font-bold text-black">แนบรูปใบเสร็จ</h2>
               <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
-                ถ่ายให้เห็นวันที่ซื้อ รายการสินค้า และเลขที่ใบเสร็จให้ครบ · JPG, PNG หรือ WEBP ไม่เกิน 8MB
+                แคปหน้าจออีเมลยืนยันคำสั่งซื้อที่ได้รับจาก Smoothlife.com ให้เห็น
+                <b>เลขคำสั่งซื้อ (ORDER #)</b> รายการสินค้า และยอดรวม · JPG, PNG หรือ WEBP ไม่เกิน 8MB
                 <br />
                 กรุณาเก็บใบเสร็จตัวจริงไว้เป็นหลักฐานด้วย
               </p>
