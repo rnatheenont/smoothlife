@@ -9,9 +9,10 @@
 // what the conditions tell them to keep, and what a reviewer compares against.
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, Check, Clock, Loader2, Upload, X } from "lucide-react";
+import { AlertTriangle, Check, Clock, Loader2, Mail, Upload, X } from "lucide-react";
 import { formatTHB } from "@/lib/format";
 import { CLOSES_LABEL, OPENS_LABEL } from "@/lib/receipt-campaign";
+import { shopifyAuthStartPath } from "@/lib/shopify-email-login";
 
 type AiCheck = { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] };
 
@@ -161,23 +162,26 @@ export default function ReceiptForm({ open }: { open: boolean }) {
   }
 
   if (state === "guest") {
+    // One way in, on the page itself. Everyone this campaign is for bought on
+    // smoothlife.com, so they have an account there — sending them to a second
+    // page to choose between five ways of proving it was a step that asked a
+    // question they do not have.
     return (
       <div className="flex flex-col gap-6">
         {testBanner}
-        <div className="rounded-2xl border border-black/10 p-6 text-center">
-        <p className="text-[15px] font-bold text-black">เข้าสู่ระบบเพื่อส่งใบเสร็จ</p>
-        <p className="mt-1.5 text-[14px] text-black/70">
-          ใช้บัญชีเดียวกับที่สั่งซื้อ ระบบจะดึงคำสั่งซื้อที่เข้าเงื่อนไขมาให้เลือกโดยอัตโนมัติ
-        </p>
-        <a
-          // Back to the campaign page, still in whatever mode they were in.
-          href={`/campaigns/dentiste-x-kengnamping/login?returnTo=${encodeURIComponent(
-            `/campaigns/dentiste-x-kengnamping${window.location.search}`
-          )}`}
-          className="mt-5 inline-flex min-h-11 items-center rounded-full bg-black px-6 text-[14px] font-semibold text-white hover:opacity-90"
-        >
-          เข้าสู่ระบบ
-        </a>
+        <div>
+          <a
+            href={shopifyAuthStartPath({
+              intent: "login",
+              returnTo: `/campaigns/dentiste-x-kengnamping${window.location.search}`,
+            })}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-black text-[15px] font-semibold text-white hover:opacity-90"
+          >
+            <Mail size={18} aria-hidden /> เข้าสู่ระบบด้วยบัญชี Smoothlife.com
+          </a>
+          <p className="mt-2.5 text-center text-[13px] leading-relaxed text-black/60">
+            ใช้บัญชีเดียวกับที่สั่งซื้อ — ถ้าเข้าสู่ระบบที่ smoothlife.com อยู่แล้ว จะเข้าได้ทันทีโดยไม่ต้องกรอกอะไร
+          </p>
         </div>
       </div>
     );
