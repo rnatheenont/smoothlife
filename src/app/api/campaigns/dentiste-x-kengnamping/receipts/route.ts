@@ -12,6 +12,7 @@ import {
 } from "@/lib/receipt-campaign";
 import { checkReceiptPhoto } from "@/lib/receipt-vision";
 import { orderNameByGid, orderNamesByGid } from "@/lib/shopify-admin";
+import { loadCampaignContent, windowOf } from "@/lib/receipt-campaign-content";
 import {
   ENTRY_COLUMNS,
   MAX_RECEIPT_BYTES,
@@ -63,12 +64,16 @@ function unauthorised() {
 
 /** Every paid order of this customer that the campaign would accept. */
 async function eligibleOrders(userId: string, anyOrder = false): Promise<TxRow[]> {
-  const rows = await supabaseRest<TxRow[]>(
-    `payment_transactions?user_id=eq.${pgValue(userId)}&status=eq.success` +
-      `&select=id,invoice_no,amount,confirmed_at,line_items,shopify_order_id&order=confirmed_at.desc&limit=100`
-  ).catch(() => [] as TxRow[]);
+  const [rows, content] = await Promise.all([
+    supabaseRest<TxRow[]>(
+      `payment_transactions?user_id=eq.${pgValue(userId)}&status=eq.success` +
+        `&select=id,invoice_no,amount,confirmed_at,line_items,shopify_order_id&order=confirmed_at.desc&limit=100`
+    ).catch(() => [] as TxRow[]),
+    loadCampaignContent(CAMPAIGN),
+  ]);
+  const window = windowOf(content);
   return rows.filter(
-    (tx) => withinCampaign(tx.confirmed_at, anyOrder) && amountsFromLineItems(tx.line_items).dentisteAmount > 0
+    (tx) => withinCampaign(tx.confirmed_at, anyOrder, window) && amountsFromLineItems(tx.line_items).dentisteAmount > 0
   );
 }
 

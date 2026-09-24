@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { Check, Loader2, RefreshCw, X } from "lucide-react";
 import { PageHeader, Panel, StatCard, adminTable } from "@/components/admin/layout-kit";
+import CampaignSettings from "./CampaignSettings";
 import { formatTHB } from "@/lib/format";
 
 type QueueItem = {
@@ -88,6 +89,7 @@ const TABS = [
   ["vip", "VIP (มาก่อนได้ก่อน)"],
   ["fan", "สิทธิ์ Lucky Fan"],
   ["draw", "ประกาศผล"],
+  ["settings", "เงื่อนไข"],
 ] as const;
 
 const PRIZE_LABEL = { vip: "VIP 25 รางวัล", lucky_fan: "Lucky Fan 25 รางวัล" } as const;
@@ -543,6 +545,8 @@ export default function Page() {
           )}
         </>
       )}
+
+      {tab === "settings" && <CampaignSettings />}
     </div>
   );
 }

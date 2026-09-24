@@ -1,6 +1,7 @@
 import { CalendarDays, Gift, Receipt, Ticket } from "lucide-react";
 import ReceiptForm from "./ReceiptForm";
-import { CLOSES_AT, CLOSES_LABEL, OPENS_AT, OPENS_LABEL, isTestMode } from "@/lib/receipt-campaign";
+import { isTestMode } from "@/lib/receipt-campaign";
+import { labelsOf, loadCampaignContent } from "@/lib/receipt-campaign-content";
 
 // DENTISTE'S x KENG NAMPING — the shell. The receipt upload, the entry count
 // and the draw land here next; see the plan for what is still waiting on an
@@ -12,49 +13,40 @@ export const metadata = {
   description: "ซื้อผลิตภัณฑ์ DENTISTE' ที่ Smoothlife.com แล้วส่งใบเสร็จเพื่อรับสิทธิ์ลุ้นรางวัล",
 };
 
-// Dates come from the rule, not from a second copy of it.
-const OPENS = new Date(OPENS_AT);
-const CLOSES = new Date(CLOSES_AT);
-const ANNOUNCED = new Date("2026-11-03T18:00:00+07:00");
-
 export const dynamic = "force-dynamic";
 
-const thaiDate = (d: Date) =>
-  d.toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Bangkok" });
-
-const STEPS = [
-  { Icon: Receipt, title: "ซื้อผลิตภัณฑ์ DENTISTE'", body: `ที่ Smoothlife.com ระหว่าง ${OPENS_LABEL} – ${CLOSES_LABEL}` },
-  { Icon: Ticket, title: "ส่งใบเสร็จ", body: "แนบรูปใบเสร็จของคำสั่งซื้อที่เข้าเงื่อนไข ระบบคำนวณสิทธิ์ให้ทันที" },
-  { Icon: Gift, title: "ลุ้นรางวัล", body: "ประกาศผล 3 พ.ย. 2569 เวลา 18:00 น. และยืนยันสิทธิ์ภายใน 5 พ.ย." },
-];
+const CAMPAIGN = "dentiste-x-kengnamping";
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ test?: string }> }) {
-  const test = isTestMode((await searchParams).test);
+  const [{ test: testParam }, content] = await Promise.all([searchParams, loadCampaignContent(CAMPAIGN)]);
+  const test = isTestMode(testParam);
+  const label = labelsOf(content);
+
   // Rendered per request: the window opens and closes on a clock, not on a
   // deploy. force-dynamic keeps a build from freezing "not open yet" into the
   // page on the day it opens.
   // eslint-disable-next-line react-hooks/purity -- the clock is the point; force-dynamic renders this per request
   const now = Date.now();
-  const open = test || (now >= OPENS.getTime() && now <= CLOSES.getTime());
-  const closed = now > CLOSES.getTime();
+  const open = test || (now >= content.opensAt && now <= content.closesAt);
+  const closed = now > content.closesAt;
+
+  const steps = content.steps.map((step, i) => ({
+    Icon: [Receipt, Ticket, Gift][i] ?? Receipt,
+    ...step,
+  }));
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <p className="text-[13px] font-semibold uppercase tracking-wide text-black/50">DENTISTE&apos;S x KENG NAMPING</p>
-      <h1 className="mt-2 max-w-2xl text-3xl font-extrabold leading-tight text-black sm:text-4xl">
-        ส่งใบเสร็จ ลุ้นรับรางวัลสุดพิเศษ
-      </h1>
-      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-black/70">
-        ซื้อผลิตภัณฑ์ DENTISTE&apos; ที่ Smoothlife.com แล้วส่งใบเสร็จเพื่อรับสิทธิ์ลุ้นรางวัล
-        ยิ่งยอดซื้อมาก ยิ่งมีสิทธิ์มาก
-      </p>
+      <p className="text-[13px] font-semibold uppercase tracking-wide text-black/50">{content.eyebrow}</p>
+      <h1 className="mt-2 max-w-2xl text-3xl font-extrabold leading-tight text-black sm:text-4xl">{content.title}</h1>
+      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-black/70">{content.intro}</p>
 
       <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-black/5 px-4 py-2 text-[13px] font-semibold text-black">
-        <CalendarDays size={15} aria-hidden /> เปิดรับใบเสร็จ {thaiDate(OPENS)} – {thaiDate(CLOSES)}
+        <CalendarDays size={15} aria-hidden /> เปิดรับใบเสร็จ {label.opensLong} – {label.closesLong}
       </div>
 
       <ol className="mt-10 grid gap-4 sm:grid-cols-3">
-        {STEPS.map(({ Icon, title, body }, i) => (
+        {steps.map(({ Icon, title, body }, i) => (
           <li key={title} className="flex gap-4 rounded-2xl border border-black/10 p-5 sm:flex-col sm:gap-3">
             <div className="grid size-10 shrink-0 place-items-center rounded-full bg-black/5 text-black">
               <Icon size={18} aria-hidden />
@@ -74,8 +66,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
           <p className="text-[14px] font-bold text-black">{closed ? "ปิดรับใบเสร็จแล้ว" : "ยังไม่เปิดรับใบเสร็จ"}</p>
           <p className="mt-1 text-[14px] leading-relaxed text-black/70">
             {closed
-              ? `หมดเขตส่งใบเสร็จเมื่อ ${thaiDate(CLOSES)} — ประกาศผลวันที่ ${thaiDate(ANNOUNCED)} เวลา 18:00 น.`
-              : `ฟอร์มส่งใบเสร็จจะเปิดวันที่ ${thaiDate(OPENS)} และประกาศผลวันที่ ${thaiDate(ANNOUNCED)} เวลา 18:00 น.`}
+              ? `หมดเขตส่งใบเสร็จเมื่อ ${label.closesLong} — ประกาศผลวันที่ ${label.announce} เวลา 18:00 น.`
+              : `ฟอร์มส่งใบเสร็จจะเปิดวันที่ ${label.opensLong} และประกาศผลวันที่ ${label.announce} เวลา 18:00 น.`}
             {" "}เก็บใบเสร็จตัวจริงไว้เป็นหลักฐานด้วยนะคะ
           </p>
         </div>
@@ -84,8 +76,29 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
       {/* The form is rendered even while the window is shut, so someone who
           already sent a receipt can still see where it got to. */}
       <div className="mt-10">
-        <ReceiptForm open={open} />
+        <ReceiptForm open={open} opensLabel={label.opens} closesLabel={label.closes} />
       </div>
+
+      {/* The conditions, on the page rather than only in whatever document the
+          link came attached to. Published terms and a live system drifting
+          apart is not hypothetical here: the terms said the campaign opened on
+          28 September while it had been taking receipts since the 23rd. */}
+      {content.terms.length > 0 && (
+        <section className="mt-14 border-t border-black/10 pt-8">
+          <h2 className="text-lg font-bold text-black">เงื่อนไขการร่วมกิจกรรม</h2>
+          <ul className="mt-4 flex flex-col gap-2.5">
+            {content.terms.map((term, i) => (
+              <li key={term} className="flex gap-3 text-[14px] leading-relaxed text-black/70">
+                <span className="shrink-0 tabular-nums text-black/35">{i + 1}.</span>
+                <span>{term}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-5 text-[13px] leading-relaxed text-black/50">
+            ประกาศผล {label.announce} เวลา 18:00 น. · ยืนยันสิทธิ์ภายใน {label.confirm}
+          </p>
+        </section>
+      )}
     </div>
   );
 }
