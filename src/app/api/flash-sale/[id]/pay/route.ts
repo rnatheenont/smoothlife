@@ -100,7 +100,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       description: `Flash Sale: ${product.name}`.slice(0, 250),
       amount,
       paymentChannel: ["CC", "PPQR"],
-      frontendReturnUrl: `${origin}/checkout/success?cartToken=${cartToken}`,
+      frontendReturnUrl: `${origin}/api/payments/return?cartToken=${cartToken}`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p-flash-sale`,
       customer: { email: email?.provider_uid, mobileNo: shippingAddress.phone },
       shippingAddress,

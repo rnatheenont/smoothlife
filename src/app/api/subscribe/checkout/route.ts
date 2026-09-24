@@ -229,7 +229,7 @@ export async function POST(req: NextRequest) {
       recurringCount: plan.months,
       recurringIntervalDays: 30,
       chargeNextDate,
-      frontendReturnUrl: `${origin}/account/subscriptions?justSubscribed=1`,
+      frontendReturnUrl: `${origin}/api/payments/return?next=subscriptions`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p`,
       customer: { name: user?.display_name ?? undefined, email: emailIdentity?.provider_uid, mobileNo: user?.phone ?? undefined },
       shippingAddress: {
