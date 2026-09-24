@@ -27,6 +27,15 @@ type Order = {
   alreadySent: boolean;
 };
 
+type Upload = {
+  id: string;
+  entryId: string;
+  current: boolean;
+  aiVerdict: "ok" | "unclear" | "mismatch" | null;
+  aiMessage: string | null;
+  createdAt: string;
+};
+
 type Entry = {
   id: string;
   paymentTransactionId: string | null;
@@ -41,6 +50,16 @@ const STATUS: Record<Entry["status"], { label: string; tone: string; Icon: typeo
   approved: { label: "ได้รับสิทธิ์แล้ว", tone: "bg-emerald-50 text-emerald-900 border-emerald-200", Icon: Check },
   rejected: { label: "ใบเสร็จถูกตีกลับ", tone: "bg-rose-50 text-rose-900 border-rose-200", Icon: X },
 };
+
+/** AI's reading, in three words, for a list rather than a card. */
+const AI_SHORT: Record<"ok" | "unclear" | "mismatch", { label: string; tone: string }> = {
+  ok: { label: "รูปผ่านการตรวจเบื้องต้น", tone: "text-emerald-700" },
+  unclear: { label: "รูปไม่ชัด", tone: "text-amber-700" },
+  mismatch: { label: "รูปไม่ตรงกับคำสั่งซื้อ", tone: "text-rose-700" },
+};
+
+const whenTime = (iso: string) =>
+  new Date(iso).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 const when = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) : "—";
@@ -66,6 +85,7 @@ export default function ReceiptForm({ open }: { open: boolean }) {
   const [state, setState] = useState<"loading" | "guest" | "ready" | "error">("loading");
   const [orders, setOrders] = useState<Order[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [uploads, setUploads] = useState<Upload[]>([]);
   const [approved, setApproved] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -82,6 +102,7 @@ export default function ReceiptForm({ open }: { open: boolean }) {
       if (!res.ok || !data.ok) return setState("error");
       setOrders(data.orders as Order[]);
       setEntries(data.entries as Entry[]);
+      setUploads((data.uploads ?? []) as Upload[]);
       setApproved(data.approvedEntries as number);
       setState("ready");
     } catch {
@@ -209,11 +230,10 @@ export default function ReceiptForm({ open }: { open: boolean }) {
                 <li key={o.id}>
                   <button
                     type="button"
-                    disabled={o.alreadySent}
                     onClick={() => setSelected(o.id)}
                     className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 text-left transition-colors ${
                       selected === o.id ? "border-black bg-black/[0.03]" : "border-black/10 hover:border-black/30"
-                    } ${o.alreadySent ? "opacity-50" : ""}`}
+                    }`}
                   >
                     <span>
                       <span className="block text-[14px] font-bold text-black">{o.orderNumber ?? o.invoiceNo}</span>
@@ -222,8 +242,13 @@ export default function ReceiptForm({ open }: { open: boolean }) {
                         {o.keychainAmount > 0 && ` · Keychain ${formatTHB(o.keychainAmount)}`}
                       </span>
                     </span>
-                    <span className="shrink-0 text-[13px] font-bold text-black">
-                      {o.alreadySent ? "ส่งแล้ว" : `${o.entries} สิทธิ์`}
+                    <span className="shrink-0 text-right text-[13px] font-bold text-black">
+                      {o.entries} สิทธิ์
+                      {o.alreadySent && (
+                        // Sending again replaces the photo under review; it
+                        // never adds a second claim on the same order.
+                        <span className="mt-0.5 block text-[11px] font-medium text-black/50">ส่งแล้ว · ส่งรูปใหม่ได้</span>
+                      )}
                     </span>
                   </button>
                 </li>
@@ -231,7 +256,7 @@ export default function ReceiptForm({ open }: { open: boolean }) {
             </ul>
           )}
 
-          {selectable.length > 0 && (
+          {orders.length > 0 && (
             <>
               <h2 className="mt-8 text-lg font-bold text-black">แนบรูปใบเสร็จ</h2>
               <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
@@ -272,9 +297,38 @@ export default function ReceiptForm({ open }: { open: boolean }) {
         </section>
       ) : null}
 
+      {uploads.length > 0 && (
+        <section>
+          <h2 className="text-lg font-bold text-black">ประวัติการอัปโหลด</h2>
+          <p className="mt-1 text-[13px] text-black/60">
+            ทุกครั้งที่ส่งรูป · รูปล่าสุดของแต่ละคำสั่งซื้อคือรูปที่ทีมงานใช้ตรวจ
+          </p>
+          <ul className="mt-3 flex flex-col gap-1.5">
+            {uploads.map((u) => {
+              const entry = entries.find((e) => e.id === u.entryId);
+              const verdict = u.aiVerdict
+                ? AI_SHORT[u.aiVerdict]
+                : { label: "ไม่ได้ตรวจอัตโนมัติ", tone: "text-black/50" };
+              return (
+                <li
+                  key={u.id}
+                  className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 rounded-xl border border-black/10 px-4 py-2.5 text-[13px]"
+                >
+                  <span className="text-black/70">{whenTime(u.createdAt)}</span>
+                  <span className={`font-semibold ${verdict.tone}`}>{verdict.label}</span>
+                  <span className="text-black/50">
+                    {u.current ? (entry ? STATUS[entry.status].label : "กำลังตรวจ") : "ถูกแทนที่ด้วยรูปใหม่"}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       {entries.length > 0 && (
         <section>
-          <h2 className="text-lg font-bold text-black">ใบเสร็จที่ส่งแล้ว</h2>
+          <h2 className="text-lg font-bold text-black">ผลการตรวจ</h2>
           <ul className="mt-3 flex flex-col gap-2">
             {entries.map((e) => {
               const s = STATUS[e.status];

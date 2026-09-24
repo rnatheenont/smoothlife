@@ -46,6 +46,14 @@ type TxRow = {
 
 const orderNumber = (gid: string | null | undefined) => (gid ? `#${gid.split("/").pop()}` : null);
 
+type UploadRow = {
+  id: string;
+  entry_id: string;
+  ai_check: { verdict: "ok" | "unclear" | "mismatch"; message: string } | null;
+  is_current: boolean;
+  created_at: string;
+};
+
 function unauthorised() {
   return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบก่อนส่งใบเสร็จ" }, { status: 401 });
 }
@@ -67,7 +75,14 @@ export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
   const test = isTestMode(req.nextUrl.searchParams.get("test"));
-  const [orders, entries] = await Promise.all([eligibleOrders(uid, test), entriesForUser(CAMPAIGN, uid)]);
+  const [orders, entries, uploads] = await Promise.all([
+    eligibleOrders(uid, test),
+    entriesForUser(CAMPAIGN, uid),
+    supabaseRest<UploadRow[]>(
+      `receipt_campaign_uploads?user_id=eq.${pgValue(uid)}` +
+        `&select=id,entry_id,ai_check,is_current,created_at&order=created_at.desc&limit=60`
+    ).catch(() => [] as UploadRow[]),
+  ]);
   const used = new Set(entries.map((e) => e.payment_transaction_id).filter(Boolean));
 
   return NextResponse.json(
@@ -95,6 +110,16 @@ export async function GET(req: NextRequest) {
         rejectReason: e.reject_reason,
         entries: entriesOf(e),
         createdAt: e.created_at,
+      })),
+      // Every photo they have sent, newest first — including the ones replaced
+      // by a later attempt, which is the part they cannot otherwise see.
+      uploads: uploads.map((u) => ({
+        id: u.id,
+        entryId: u.entry_id,
+        current: u.is_current,
+        aiVerdict: u.ai_check?.verdict ?? null,
+        aiMessage: u.ai_check?.message ?? null,
+        createdAt: u.created_at,
       })),
       // What counts so far. Only approved receipts do.
       approvedEntries: entries.filter((e) => e.status === "approved").reduce((n, e) => n + entriesOf(e), 0),
@@ -201,10 +226,14 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify(fields),
       });
       entryId = existing.id;
-      // The photo it used to point at is now unreachable and still personal.
-      if (existing.receipt_photo_path && existing.receipt_photo_path !== path) {
-        await removeReceiptPhoto(existing.receipt_photo_path);
-      }
+      // Earlier attempts stop being the one under review but stay in the
+      // customer's history — the photo goes with them, because "what did I
+      // send" is unanswerable once the picture is gone.
+      await supabaseRest(`receipt_campaign_uploads?entry_id=eq.${pgValue(existing.id)}&is_current=is.true`, {
+        method: "PATCH",
+        returning: false,
+        body: JSON.stringify({ is_current: false }),
+      }).catch(() => {});
     } else {
       const [row] = await supabaseRest<ReceiptEntryRow[]>("receipt_campaign_entries", {
         method: "POST",
@@ -217,6 +246,20 @@ export async function POST(req: NextRequest) {
         }),
       });
       entryId = row?.id;
+    }
+
+    if (entryId) {
+      await supabaseRest("receipt_campaign_uploads", {
+        method: "POST",
+        returning: false,
+        body: JSON.stringify({
+          entry_id: entryId,
+          user_id: uid,
+          receipt_photo_path: path,
+          ai_check: aiCheck,
+          is_current: true,
+        }),
+      }).catch((err) => console.error("[receipts] could not record upload", err));
     }
 
     return NextResponse.json({
