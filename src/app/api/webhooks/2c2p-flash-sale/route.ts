@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { twoC2PConfigured, verifyPaymentCallback } from "@/lib/2c2p";
-import { confirmFlashSalePayment, LATE_PAYMENT_NOTE } from "@/lib/flash-sale";
-import { createFlashSaleOrder, FLASH_SALE_TX_COLUMNS, type FlashSaleTransaction } from "@/lib/flash-sale-orders";
+import { FLASH_SALE_TX_COLUMNS, type FlashSaleTransaction } from "@/lib/flash-sale-orders";
+import { settleFlashSaleCharge } from "@/lib/flash-sale-settlement";
 
 // backendReturnUrl for flash-sale payments (see /api/flash-sale/[id]/pay).
 // The only place a flash-sale reservation becomes paid (plan §5):
@@ -36,50 +36,9 @@ export async function POST(req: NextRequest) {
     console.error("[webhooks/2c2p-flash-sale] no flash-sale transaction for invoice", callback.invoiceNo);
     return NextResponse.json({ ok: false, error: "unknown transaction" }, { status: 200 });
   }
-  if (tx.status !== "pending") return NextResponse.json({ ok: true, result: "already processed" });
-
-  const txFilter = `payment_transactions?id=eq.${pgValue(tx.id)}&status=eq.pending`;
-
-  if (callback.respCode !== "0000") {
-    await supabaseRest(txFilter, {
-      method: "PATCH",
-      returning: false,
-      body: JSON.stringify({ status: "failed", tran_ref: callback.tranRef, resp_code: callback.respCode, resp_desc: callback.respDesc }),
-    });
-    // The shopper may try again within their remaining time.
-    await supabaseRest(`flash_sale_queue?id=eq.${pgValue(tx.flash_sale_entry_id)}&status=eq.reserved`, {
-      method: "PATCH",
-      returning: false,
-      body: JSON.stringify({ payment_pending_until: null }),
-    });
-    return NextResponse.json({ ok: true, result: "charge_failed" });
-  }
-
-  const amountMatches = Math.abs(Number(callback.amount) - Number(tx.amount)) < 0.005;
-  const paidEntry = amountMatches ? await confirmFlashSalePayment(tx.flash_sale_entry_id, callback.invoiceNo) : null;
-
-  await supabaseRest(txFilter, {
-    method: "PATCH",
-    returning: false,
-    body: JSON.stringify({
-      status: "success",
-      tran_ref: callback.tranRef,
-      resp_code: callback.respCode,
-      resp_desc: callback.respDesc,
-      confirmed_at: new Date().toISOString(),
-      refund_note: paidEntry
-        ? null
-        : amountMatches
-          ? LATE_PAYMENT_NOTE
-          : `FLASH_SALE_AMOUNT_MISMATCH: 2C2P ${callback.amount} ≠ ${tx.amount} ต้องตรวจสอบ`,
-    }),
-  });
-
-  if (!paidEntry) {
-    console.error("[webhooks/2c2p-flash-sale] charge not matched to a live reservation — flagged for refund", callback.invoiceNo);
-    return NextResponse.json({ ok: true, result: "flagged_for_refund" });
-  }
-
-  await createFlashSaleOrder({ ...tx, tran_ref: callback.tranRef });
-  return NextResponse.json({ ok: true, result: "charge_succeeded" });
+  // What happens to the reservation lives in flash-sale-settlement.ts, because
+  // the admin reconciliation needs the identical steps when 2C2P never calls
+  // here at all and the answer has to be fetched instead.
+  const result = await settleFlashSaleCharge(tx, callback);
+  return NextResponse.json({ ok: true, result });
 }
