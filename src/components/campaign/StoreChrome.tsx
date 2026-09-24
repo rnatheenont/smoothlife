@@ -62,7 +62,7 @@ function Line() {
 export function StoreHeader() {
   return (
     <header className="border-b border-black/10 bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4">
         <a href={STORE} aria-label="Smoothlife.com">
           <Image src={LOGO} alt="Smoothlife.com" width={220} height={34} priority className="h-[26px] w-auto sm:h-8" />
         </a>
@@ -97,24 +97,36 @@ function FooterColumn({ title, links }: { title: string; links: [string, string]
 export function StoreFooter() {
   return (
     <footer className="mt-16 border-t border-black/10 bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-10">
-        <a href={STORE} aria-label="Smoothlife.com">
-          <Image src={LOGO} alt="Smoothlife.com" width={220} height={34} className="h-7 w-auto" />
-        </a>
-        <p className="mt-4 max-w-md text-[14px] leading-relaxed text-black/70">
-          Smooth Life - Thailand&apos;s Leading Health &amp; Wellbeing Store. We sell a wide range of branded and
-          own-label products across these categories and also own a number of trademarks for specific product lines.
-        </p>
-
-        <div className="mt-5 flex items-center gap-5 text-black">
-          {SOCIAL.map(([label, href, icon]) => (
-            <a key={label} href={href} aria-label={label} className="hover:opacity-70" target="_blank" rel="noopener noreferrer">
-              {icon}
+      {/* Brand beside the links rather than stacked above them: stacked, the
+          two short lists left the right half of a desktop footer empty and
+          made the whole thing twice as tall as it needed to be. */}
+      <div className="mx-auto max-w-5xl px-4 py-12">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr]">
+          <div className="sm:col-span-2 lg:col-span-1">
+            <a href={STORE} aria-label="Smoothlife.com">
+              <Image src={LOGO} alt="Smoothlife.com" width={220} height={34} className="h-7 w-auto" />
             </a>
-          ))}
-        </div>
+            <p className="mt-4 max-w-sm text-[14px] leading-relaxed text-black/70">
+              Smooth Life - Thailand&apos;s Leading Health &amp; Wellbeing Store. We sell a wide range of branded and
+              own-label products across these categories and also own a number of trademarks for specific product
+              lines.
+            </p>
+            <div className="mt-5 flex items-center gap-5 text-black">
+              {SOCIAL.map(([label, href, icon]) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  className="hover:opacity-70"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {icon}
+                </a>
+              ))}
+            </div>
+          </div>
 
-        <div className="mt-10 grid gap-8 border-t border-black/10 pt-8 sm:grid-cols-2">
           <FooterColumn title="Sitemap" links={SITEMAP} />
           <FooterColumn title="Customer Service" links={CUSTOMER_SERVICE} />
         </div>
