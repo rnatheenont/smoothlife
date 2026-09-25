@@ -32,15 +32,6 @@ type Item = {
    * attached to the photo they are looking at.
    */
   declared: { orderNumber: string; paidAt: string; total: string };
-  /**
-   * Sent for a person to check rather than matched to an order.
-   *
-   * For the receipt of a purchase this site has no record of — the card
-   * cleared and the order was never written, or it was bought somewhere this
-   * table does not reach. Nothing can be computed from it, so it carries what
-   * the customer typed and waits for a reviewer.
-   */
-  manual: boolean;
   editing: boolean;
   reading: boolean;
   state: "ready" | "sending" | "sent" | "failed";
@@ -171,7 +162,6 @@ export default function ReceiptForm({
   const [reading, setReading] = useState(false);
   const [approved, setApproved] = useState(0);
   const [sending, setSending] = useState(false);
-  const [rechecking, setRechecking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -288,7 +278,6 @@ export default function ReceiptForm({
           declared,
           orderId: hit?.id ?? null,
           matched: hit ? "manual" : "none",
-          manual: hit ? false : row.manual,
           note: null,
         };
       })
@@ -316,7 +305,6 @@ export default function ReceiptForm({
       orderId: null,
       matched: "none",
       declared: { orderNumber: "", paidAt: "", total: "" },
-      manual: false,
       // On its own the receipt is the page, so its fields are open.
       editing: single,
       reading: true,
@@ -398,14 +386,26 @@ export default function ReceiptForm({
    */
   const twoUp = orders.length > 0 || items.length > 0;
 
-  /** A row the send button will actually take: matched, or flagged for review. */
-  const sendable = (row: Item) => Boolean(row.orderId) || row.manual;
-
-  /** Everything a manual row has to carry, since no order can supply it. */
+  /**
+   * Everything a receipt with no matching order has to carry.
+   *
+   * Nothing can be computed from it, so what the customer typed is all a
+   * reviewer will have — and all three are printed on the photo beside them.
+   */
   const manualReady = (row: Item) =>
     row.declared.orderNumber.trim().length > 0 &&
     row.declared.paidAt.trim().length > 0 &&
     Number(row.declared.total.replace(/[^0-9.]/g, "")) > 0;
+
+  /**
+   * A row the send button will take.
+   *
+   * No match is not a dead end and not a question to put to the customer:
+   * orders do go missing on our side, and the person who can tell is a
+   * reviewer. So it goes to one, and the only thing asked of the customer is
+   * the three numbers off their own receipt.
+   */
+  const sendable = (row: Item) => Boolean(row.orderId) || manualReady(row);
 
   /** Sends every row that has an order, one after another, and says how each went. */
   async function sendAll() {
@@ -418,6 +418,7 @@ export default function ReceiptForm({
       setItems((old) => old.map((row) => (row.id === item.id ? { ...row, state: "sending", error: null } : row)));
       try {
         const body = new FormData();
+        // No order to point at means the receipt goes to a person instead.
         if (item.orderId) body.set("orderId", item.orderId);
         else body.set("manual", "1");
         body.set("photo", item.file);
@@ -618,250 +619,215 @@ export default function ReceiptForm({
               {/* Left: the stack of receipts, not one at a time. */}
               <div>
                 <h2 className="text-lg font-bold text-black">แนบรูปใบเสร็จ</h2>
-                {/* No eligible order is a reason to explain, not a reason to
-                    close the form: a receipt this site has no record of is
-                    exactly the one that needs a person to look at it. */}
-                {orders.length === 0 && (
-                  <div className="mt-3 rounded-2xl border border-black/10 p-5">
-                    <p className="text-[14px] font-bold text-black">ยังไม่พบคำสั่งซื้อที่เข้าเงื่อนไข</p>
-                    <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
-                      ต้องเป็นคำสั่งซื้อผลิตภัณฑ์ DENTISTE&apos; ที่ชำระเงินสำเร็จบน Smoothlife.com ระหว่าง{" "}
-                      {opensLabel} – {closesLabel}
-                    </p>
-                    <p className="mt-3 text-[13px] leading-relaxed text-black/55">
-                      เพิ่งชำระเงินไปเมื่อสักครู่? คำสั่งซื้อจะขึ้นที่นี่หลังระบบยืนยันการชำระเงินเสร็จ ลองกดตรวจสอบอีกครั้ง
-                    </p>
+                <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
+                  แคปหน้าจออีเมลยืนยันคำสั่งซื้อที่ได้รับจาก Smoothlife.com ให้เห็น
+                  <b>เลขคำสั่งซื้อ (ORDER #)</b> รายการสินค้า และยอดรวม · JPG, PNG หรือ WEBP ไม่เกิน 8MB
+                  <br />
+                  <br />
+                  <b>ส่งได้ครั้งละ 1 ใบ</b> ส่งใบนี้เสร็จแล้วอัปโหลดใบต่อไปได้เลย
+                </p>
+
+                <label
+                  className={`relative mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.02] hover:border-black/40 ${
+                    singleItem?.preview ? "p-2" : "min-h-[120px] p-4"
+                  }`}
+                >
+                  {/* Taking the photo back off. Tapping the picture
+                      replaces it, which is the common case and why this is
+                      a corner and not a row of buttons — but "I picked the
+                      wrong one and want to start again" has no other way
+                      out. preventDefault because the whole frame is the
+                      file picker. */}
+                  {singleItem?.preview && (
                     <button
                       type="button"
-                      disabled={rechecking}
-                      onClick={async () => {
-                        setRechecking(true);
-                        await load();
-                        setRechecking(false);
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        removeItem(singleItem.id);
                       }}
-                      className="mt-4 flex min-h-11 items-center gap-2 rounded-full border border-black/15 px-5 text-[14px] font-semibold text-black hover:bg-black/5 disabled:opacity-50"
+                      aria-label="ลบรูปใบเสร็จ"
+                      title="ลบรูปใบเสร็จ"
+                      className="absolute end-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm hover:bg-black"
                     >
-                      {rechecking && <Loader2 size={15} className="animate-spin" />}
-                      {rechecking ? "กำลังตรวจสอบ…" : "ตรวจสอบอีกครั้ง"}
+                      <X size={16} aria-hidden />
                     </button>
-                    <p className="mt-3 text-[13px] leading-relaxed text-black/55">
-                      ซื้อจริงแต่คำสั่งซื้อไม่ขึ้นที่นี่? แนบรูปใบเสร็จด้านล่างแล้วติ๊ก “ส่งให้ทีมงานตรวจเอง” ได้เลย
-                    </p>
-                  </div>
-                )}
-                {(
-                  <>
-                    <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
-                      แคปหน้าจออีเมลยืนยันคำสั่งซื้อที่ได้รับจาก Smoothlife.com ให้เห็น
-                      <b>เลขคำสั่งซื้อ (ORDER #)</b> รายการสินค้า และยอดรวม · JPG, PNG หรือ WEBP ไม่เกิน 8MB
-                      <br />
-                      <br />
-                      <b>ส่งได้ครั้งละ 1 ใบ</b> ส่งใบนี้เสร็จแล้วอัปโหลดใบต่อไปได้เลย
-                    </p>
+                  )}
+                  {/* The receipt itself, at the size of the space it was
+                      asked for in. A photo you cannot read is a photo you
+                      cannot check before sending. */}
+                  {singleItem?.preview ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- a blob: URL from the file they just picked */}
+                      <img
+                        src={singleItem.preview}
+                        alt="รูปใบเสร็จที่เลือก"
+                        className="max-h-[70vh] w-full rounded-lg object-contain"
+                      />
+                      <span className="py-1 text-[12px] font-semibold text-black/45">แตะที่รูปเพื่อเปลี่ยน</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={24} className="text-black/35" aria-hidden />
+                      <span className="text-[14px] font-semibold text-black/60">
+                        {items.length ? "เพิ่มรูปใบเสร็จ" : "เลือกรูปใบเสร็จ"}
+                      </span>
+                      <span className="text-[12px] text-black/40">
+                        แตะเพื่อถ่ายรูปหรือเลือกจากคลัง
+                      </span>
+                    </>
+                  )}
+                  <input
+                    ref={fileInput}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const picked = Array.from(e.target.files ?? []);
+                      if (picked.length) addFiles(picked);
+                      // Let the same file be chosen again after a removal.
+                      if (fileInput.current) fileInput.current.value = "";
+                    }}
+                  />
+                </label>
 
-                    <label
-                      className={`relative mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.02] hover:border-black/40 ${
-                        singleItem?.preview ? "p-2" : "min-h-[120px] p-4"
-                      }`}
-                    >
-                      {/* Taking the photo back off. Tapping the picture
-                          replaces it, which is the common case and why this is
-                          a corner and not a row of buttons — but "I picked the
-                          wrong one and want to start again" has no other way
-                          out. preventDefault because the whole frame is the
-                          file picker. */}
-                      {singleItem?.preview && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            removeItem(singleItem.id);
-                          }}
-                          aria-label="ลบรูปใบเสร็จ"
-                          title="ลบรูปใบเสร็จ"
-                          className="absolute end-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm hover:bg-black"
-                        >
-                          <X size={16} aria-hidden />
-                        </button>
-                      )}
-                      {/* The receipt itself, at the size of the space it was
-                          asked for in. A photo you cannot read is a photo you
-                          cannot check before sending. */}
-                      {singleItem?.preview ? (
-                        <>
+                {/* Ten receipts is ten rows and a page that will not sit
+                    still. Past three the list scrolls inside itself, so the
+                    summary and the send button stay where they are. */}
+                {mode === "multi" && items.length > 0 && (
+                  <ul
+                    className={`mt-4 flex flex-col gap-3 ${
+                      mode === "multi" && items.length > 3 ? "max-h-[26rem] overflow-y-auto pe-1" : ""
+                    }`}
+                  >
+                    {items.map((item) => {
+                      const order = orders.find((o) => o.id === item.orderId) ?? null;
+                      // Two photos on the same order is one claim, not two
+                      // — say so here rather than after they press send.
+                      const duplicate =
+                        !!item.orderId && items.filter((row) => row.orderId === item.orderId).length > 1;
+                      return (
+                        <li key={item.id} className="flex gap-3 rounded-2xl border border-black/10 p-3">
                           {/* eslint-disable-next-line @next/next/no-img-element -- a blob: URL from the file they just picked */}
                           <img
-                            src={singleItem.preview}
-                            alt="รูปใบเสร็จที่เลือก"
-                            className="max-h-[70vh] w-full rounded-lg object-contain"
+                            src={item.preview}
+                            alt=""
+                            className="size-20 shrink-0 rounded-lg border border-black/10 object-cover"
                           />
-                          <span className="py-1 text-[12px] font-semibold text-black/45">แตะที่รูปเพื่อเปลี่ยน</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload size={24} className="text-black/35" aria-hidden />
-                          <span className="text-[14px] font-semibold text-black/60">
-                            {items.length ? "เพิ่มรูปใบเสร็จ" : "เลือกรูปใบเสร็จ"}
-                          </span>
-                          <span className="text-[12px] text-black/40">
-                            แตะเพื่อถ่ายรูปหรือเลือกจากคลัง
-                          </span>
-                        </>
-                      )}
-                      <input
-                        ref={fileInput}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="hidden"
-                        onChange={(e) => {
-                          const picked = Array.from(e.target.files ?? []);
-                          if (picked.length) addFiles(picked);
-                          // Let the same file be chosen again after a removal.
-                          if (fileInput.current) fileInput.current.value = "";
-                        }}
-                      />
-                    </label>
+                          <div className="min-w-0 flex-1">
+                            {item.reading ? (
+                              <p className="flex items-center gap-1.5 text-[13px] text-black/50">
+                                <Loader2 size={14} className="animate-spin" /> กำลังอ่านรูป…
+                              </p>
+                            ) : (
+                              <label className="block">
+                                <span className="text-[11px] font-semibold text-black/45">เลขคำสั่งซื้อ (ORDER #)</span>
+                                <input
+                                  value={item.declared.orderNumber}
+                                  placeholder="#0000"
+                                  disabled={item.state === "sending" || item.state === "sent"}
+                                  onChange={(e) => setDeclared(item.id, "orderNumber", e.target.value)}
+                                  className="mt-1 min-h-10 w-full rounded-xl border border-black/15 px-2.5 text-[13px] text-black"
+                                />
+                              </label>
+                            )}
 
-                    {/* Ten receipts is ten rows and a page that will not sit
-                        still. Past three the list scrolls inside itself, so the
-                        summary and the send button stay where they are. */}
-                    {mode === "multi" && items.length > 0 && (
-                      <ul
-                        className={`mt-4 flex flex-col gap-3 ${
-                          mode === "multi" && items.length > 3 ? "max-h-[26rem] overflow-y-auto pe-1" : ""
-                        }`}
-                      >
-                        {items.map((item) => {
-                          const order = orders.find((o) => o.id === item.orderId) ?? null;
-                          // Two photos on the same order is one claim, not two
-                          // — say so here rather than after they press send.
-                          const duplicate =
-                            !!item.orderId && items.filter((row) => row.orderId === item.orderId).length > 1;
-                          return (
-                            <li key={item.id} className="flex gap-3 rounded-2xl border border-black/10 p-3">
-                              {/* eslint-disable-next-line @next/next/no-img-element -- a blob: URL from the file they just picked */}
-                              <img
-                                src={item.preview}
-                                alt=""
-                                className="size-20 shrink-0 rounded-lg border border-black/10 object-cover"
-                              />
-                              <div className="min-w-0 flex-1">
-                                {item.reading ? (
-                                  <p className="flex items-center gap-1.5 text-[13px] text-black/50">
-                                    <Loader2 size={14} className="animate-spin" /> กำลังอ่านรูป…
-                                  </p>
-                                ) : (
-                                  <label className="block">
-                                    <span className="text-[11px] font-semibold text-black/45">เลขคำสั่งซื้อ (ORDER #)</span>
-                                    <input
-                                      value={item.declared.orderNumber}
-                                      placeholder="#0000"
-                                      disabled={item.state === "sending" || item.state === "sent"}
-                                      onChange={(e) => setDeclared(item.id, "orderNumber", e.target.value)}
-                                      className="mt-1 min-h-10 w-full rounded-xl border border-black/15 px-2.5 text-[13px] text-black"
-                                    />
-                                  </label>
-                                )}
+                            {!item.reading &&
+                              (order ? (
+                                <p className="mt-1.5 text-[12px] text-emerald-800">
+                                  ตรงกับคำสั่งซื้อในระบบ · ยอด DENTISTE&apos; {formatTHB(order.dentisteAmount)} ·{" "}
+                                  {order.entries} สิทธิ์
+                                </p>
+                              ) : (
+                                <p className="mt-1.5 text-[12px] text-amber-700">ไม่พบในระบบ — ทีมงานจะตรวจให้</p>
+                              ))}
 
-                                {!item.reading &&
-                                  (order ? (
-                                    <p className="mt-1.5 text-[12px] text-emerald-800">
-                                      ตรงกับคำสั่งซื้อในระบบ · ยอด DENTISTE&apos; {formatTHB(order.dentisteAmount)} ·{" "}
-                                      {order.entries} สิทธิ์
+                            {/* What this receipt says, as read off it, with
+                                a way in to fix it. Folded away by default:
+                                with several receipts on screen the list has
+                                to stay scannable, and most of the time the
+                                reading is right and nobody needs to touch
+                                it. */}
+                            {!item.reading && item.state !== "sent" && (
+                              <div className="mt-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setItems((old) =>
+                                      old.map((row) => (row.id === item.id ? { ...row, editing: !row.editing } : row))
+                                    )
+                                  }
+                                  className="flex w-full items-center justify-between gap-2 rounded-lg bg-black/[0.03] px-2.5 py-1.5 text-left text-[12px] text-black/60 hover:bg-black/[0.06]"
+                                >
+                                  <span className="min-w-0 truncate">
+                                    {item.declared.orderNumber || item.declared.total
+                                      ? `ข้อมูลในรูป: ${item.declared.orderNumber || "—"}${
+                                          item.declared.total ? ` · ฿${item.declared.total}` : ""
+                                        }`
+                                      : "ยังไม่มีข้อมูลจากรูป — กรอกเองได้"}
+                                  </span>
+                                  <span className="shrink-0 font-semibold text-black/45">
+                                    {item.editing ? "ปิด" : "แก้ไข"}
+                                  </span>
+                                </button>
+
+                                {item.editing && (
+                                  <div className="mt-2 grid gap-2">
+                                    {(
+                                      [
+                                        ["paidAt", "วันและเวลาที่ชำระเงิน", "datetime-local", ""],
+                                        ["total", "ยอดทั้งบิล (บาท)", "text", "0.00"],
+                                      ] as const
+                                    ).map(([key, label, type, placeholder]) => (
+                                      <label key={key} className="block">
+                                        <span className="text-[11px] font-semibold text-black/50">{label}</span>
+                                        <input
+                                          type={type}
+                                          value={item.declared[key]}
+                                          placeholder={placeholder}
+                                          onChange={(e) => setDeclared(item.id, key, e.target.value)}
+                                          className="mt-1 min-h-10 w-full rounded-lg border border-black/15 px-2.5 text-[13px] text-black"
+                                        />
+                                      </label>
+                                    ))}
+                                    <p className="text-[11px] leading-relaxed text-black/40">
+                                      ข้อมูลนี้ใช้ให้ทีมงานตรวจเทียบกับรูป — จำนวนสิทธิ์คำนวณจากคำสั่งซื้อในระบบเสมอ
                                     </p>
-                                  ) : (
-                                    <p className="mt-1.5 text-[12px] text-amber-700">ยังไม่พบคำสั่งซื้อเลขนี้ในบัญชีนี้</p>
-                                  ))}
-
-                                {/* What this receipt says, as read off it, with
-                                    a way in to fix it. Folded away by default:
-                                    with several receipts on screen the list has
-                                    to stay scannable, and most of the time the
-                                    reading is right and nobody needs to touch
-                                    it. */}
-                                {!item.reading && item.state !== "sent" && (
-                                  <div className="mt-2">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setItems((old) =>
-                                          old.map((row) => (row.id === item.id ? { ...row, editing: !row.editing } : row))
-                                        )
-                                      }
-                                      className="flex w-full items-center justify-between gap-2 rounded-lg bg-black/[0.03] px-2.5 py-1.5 text-left text-[12px] text-black/60 hover:bg-black/[0.06]"
-                                    >
-                                      <span className="min-w-0 truncate">
-                                        {item.declared.orderNumber || item.declared.total
-                                          ? `ข้อมูลในรูป: ${item.declared.orderNumber || "—"}${
-                                              item.declared.total ? ` · ฿${item.declared.total}` : ""
-                                            }`
-                                          : "ยังไม่มีข้อมูลจากรูป — กรอกเองได้"}
-                                      </span>
-                                      <span className="shrink-0 font-semibold text-black/45">
-                                        {item.editing ? "ปิด" : "แก้ไข"}
-                                      </span>
-                                    </button>
-
-                                    {item.editing && (
-                                      <div className="mt-2 grid gap-2">
-                                        {(
-                                          [
-                                            ["paidAt", "วันและเวลาที่ชำระเงิน", "datetime-local", ""],
-                                            ["total", "ยอดทั้งบิล (บาท)", "text", "0.00"],
-                                          ] as const
-                                        ).map(([key, label, type, placeholder]) => (
-                                          <label key={key} className="block">
-                                            <span className="text-[11px] font-semibold text-black/50">{label}</span>
-                                            <input
-                                              type={type}
-                                              value={item.declared[key]}
-                                              placeholder={placeholder}
-                                              onChange={(e) => setDeclared(item.id, key, e.target.value)}
-                                              className="mt-1 min-h-10 w-full rounded-lg border border-black/15 px-2.5 text-[13px] text-black"
-                                            />
-                                          </label>
-                                        ))}
-                                        <p className="text-[11px] leading-relaxed text-black/40">
-                                          ข้อมูลนี้ใช้ให้ทีมงานตรวจเทียบกับรูป — จำนวนสิทธิ์คำนวณจากคำสั่งซื้อในระบบเสมอ
-                                        </p>
-                                      </div>
-                                    )}
                                   </div>
                                 )}
-                                {item.note && <p className="mt-1.5 text-[12px] text-amber-700">{item.note}</p>}
-                                {duplicate && (
-                                  <p className="mt-1.5 text-[12px] text-amber-700">
-                                    มีรูปอื่นเป็นคำสั่งซื้อเดียวกัน — ระบบจะเก็บรูปล่าสุดเพียงรูปเดียว
-                                  </p>
-                                )}
-                                {item.error && <p className="mt-1.5 text-[12px] font-semibold text-rose-700">{item.error}</p>}
-                                {item.state === "sent" && (
-                                  <p className="mt-1.5 flex items-center gap-1 text-[12px] font-semibold text-emerald-700">
-                                    <Check size={13} /> ส่งแล้ว
-                                  </p>
-                                )}
                               </div>
-                              <button
-                                type="button"
-                                aria-label="ลบรูปนี้"
-                                disabled={item.state === "sending"}
-                                onClick={() => removeItem(item.id)}
-                                className="size-8 shrink-0 rounded-full text-black/35 hover:bg-black/5 hover:text-black disabled:opacity-40"
-                              >
-                                <X size={16} className="mx-auto" />
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-
-                    <p className="mt-3 text-[12px] leading-relaxed text-black/45">
-                      กรุณาเก็บใบเสร็จตัวจริงไว้เป็นหลักฐานด้วย
-                    </p>
-                  </>
+                            )}
+                            {item.note && <p className="mt-1.5 text-[12px] text-amber-700">{item.note}</p>}
+                            {duplicate && (
+                              <p className="mt-1.5 text-[12px] text-amber-700">
+                                มีรูปอื่นเป็นคำสั่งซื้อเดียวกัน — ระบบจะเก็บรูปล่าสุดเพียงรูปเดียว
+                              </p>
+                            )}
+                            {item.error && <p className="mt-1.5 text-[12px] font-semibold text-rose-700">{item.error}</p>}
+                            {item.state === "sent" && (
+                              <p className="mt-1.5 flex items-center gap-1 text-[12px] font-semibold text-emerald-700">
+                                <Check size={13} /> ส่งแล้ว
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            aria-label="ลบรูปนี้"
+                            disabled={item.state === "sending"}
+                            onClick={() => removeItem(item.id)}
+                            className="size-8 shrink-0 rounded-full text-black/35 hover:bg-black/5 hover:text-black disabled:opacity-40"
+                          >
+                            <X size={16} className="mx-auto" />
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
+
+                <p className="mt-3 text-[12px] leading-relaxed text-black/45">
+                  กรุณาเก็บใบเสร็จตัวจริงไว้เป็นหลักฐานด้วย
+                </p>
               </div>
 
               {/* Right: where they stand, what this receipt is worth, and the
@@ -947,49 +913,17 @@ export default function ReceiptForm({
                             ยอด DENTISTE&apos; {formatTHB(found.dentisteAmount)}
                           </p>
                         ) : (
+                          // Not a refusal. Orders do go missing on our side,
+                          // so an unmatched receipt is a receipt for a person
+                          // to look at — which is what happens on send, and
+                          // all this has to do is say so.
                           <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-900">
-                            ยังไม่พบคำสั่งซื้อเลขนี้ในบัญชีนี้ — ต้องเป็นคำสั่งซื้อที่ชำระเงินสำเร็จบน Smoothlife.com
-                            ในช่วงกิจกรรม และสั่งด้วยบัญชีที่กำลังเข้าสู่ระบบอยู่
-                            {/* The numbers that would work, because "not
-                                found" is a dead end and this is the next
-                                thing they would have to ask us for. */}
-                            {orders.length > 0 && (
-                              <>
-                                <br />
-                                คำสั่งซื้อที่เข้าเงื่อนไขของคุณ:{" "}
-                                <b>{orders.map((o) => o.orderNumber ?? o.invoiceNo).join(", ")}</b>
-                              </>
-                            )}
+                            ยังไม่พบคำสั่งซื้อเลขนี้ในระบบ — <b>ส่งได้ตามปกติ</b> ทีมงานจะตรวจใบเสร็จกับหลักฐานการชำระเงินแล้วให้สิทธิ์ย้อนหลัง
+                            <br />
+                            กรอกเลขคำสั่งซื้อ วันและเวลาที่ชำระเงิน และยอดรวมตามใบเสร็จให้ครบก่อนส่ง
                           </p>
                         );
                       })()}
-
-                      {/* The way out when the system is the one that is wrong.
-                          Some orders never reach this site — the card cleared
-                          and the order was not written, or it was bought
-                          through a channel this table does not see. The
-                          customer still has the receipt, and it is a reviewer
-                          who can tell. */}
-                      {!singleItem.reading && !singleItem.orderId && (
-                        <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-xl border border-black/10 bg-black/[0.02] p-3">
-                          <input
-                            type="checkbox"
-                            checked={singleItem.manual}
-                            onChange={(e) =>
-                              setItems((old) =>
-                                old.map((row) => (row.id === singleItem.id ? { ...row, manual: e.target.checked } : row))
-                              )
-                            }
-                            className="mt-0.5 h-4 w-4 accent-black"
-                          />
-                          <span className="text-[12px] leading-relaxed text-black/70">
-                            <b className="text-black">ซื้อจริงแต่ไม่พบคำสั่งซื้อในระบบ — ส่งให้ทีมงานตรวจเอง</b>
-                            <br />
-                            กรอกเลขคำสั่งซื้อ วันที่ชำระเงิน และยอดรวมตามใบเสร็จให้ครบ
-                            ทีมงานจะตรวจกับหลักฐานการชำระเงินแล้วให้สิทธิ์ย้อนหลัง
-                          </span>
-                        </label>
-                      )}
 
                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
                         {(
@@ -1047,11 +981,8 @@ export default function ReceiptForm({
                   )}
 
                   {(() => {
-                    const ready = items.filter(
-                      (row) => sendable(row) && row.state !== "sent" && (!row.manual || manualReady(row))
-                    );
-                    const missing = items.filter((row) => !sendable(row) && !row.reading).length;
-                    const incomplete = items.filter((row) => row.manual && !manualReady(row)).length;
+                    const ready = items.filter((row) => sendable(row) && row.state !== "sent");
+                    const incomplete = items.filter((row) => !sendable(row) && !row.reading).length;
                     const contactOk = contactName.trim().length >= 2 && contactPhone.replace(/\D/g, "").length >= 9;
                     return (
                       <>
@@ -1068,14 +999,9 @@ export default function ReceiptForm({
                               ? `ส่งใบเสร็จ ${ready.length} ใบ`
                               : "ส่งใบเสร็จ"}
                         </button>
-                        {missing > 0 && (
-                          <p className="text-center text-[12px] text-amber-700">
-                            ยังมี {missing} รูปที่ยังไม่พบคำสั่งซื้อ — ตรวจเลขคำสั่งซื้อของรูปนั้นอีกครั้ง
-                          </p>
-                        )}
                         {incomplete > 0 && (
                           <p className="text-center text-[12px] text-amber-700">
-                            ใบเสร็จเคสพิเศษต้องกรอกเลขคำสั่งซื้อ วันที่ชำระเงิน และยอดรวมให้ครบก่อนส่ง
+                            กรอกเลขคำสั่งซื้อ วันและเวลาที่ชำระเงิน และยอดรวมให้ครบก่อนส่ง
                           </p>
                         )}
                       </>
