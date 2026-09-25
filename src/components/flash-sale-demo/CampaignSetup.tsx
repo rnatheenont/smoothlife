@@ -8,7 +8,14 @@ import { formatTHB } from "@/lib/format";
 import { MAX_GROUP_PRODUCTS, SPECIAL_ACCENT_DEFAULT, type CampaignConfig, type DemoProduct } from "./campaign";
 import { fromLocalInput, toLocalInput } from "./scheduler";
 
-export type CatalogueItem = DemoProduct & { category: string; brandSlug: string };
+export type CatalogueItem = DemoProduct & {
+  category: string;
+  brandSlug: string;
+  /** Set when the shop has not published it: a product to draft a sale for. */
+  state?: "draft" | "unlisted";
+};
+
+const STATE_LABEL = { draft: "ร่าง", unlisted: "ไม่แสดงหน้าร้าน" } as const;
 export type ProductGroup = { id: string; kind: "category" | "brand" | "collection"; label: string; slugs: string[] };
 
 const KIND_LABEL: Record<ProductGroup["kind"], string> = {
@@ -164,10 +171,15 @@ export default function CampaignSetup({
       : null;
 
   const bySlug = useMemo(() => new Map(catalogue.map((p) => [p.slug, p])), [catalogue]);
+  // The whole shelf, narrowed by typing — not eight of it. Eight rows of a
+  // catalogue this size is a list that never contains what you came for, and
+  // it hid the one thing the picker is for: seeing what there is.
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = q ? catalogue.filter((p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q)) : catalogue;
-    return list.slice(0, 8);
+    if (!q) return catalogue;
+    return catalogue.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q) || p.slug.includes(q)
+    );
   }, [catalogue, query]);
 
   const group = kindGroups.find((g) => g.id === groupId) ?? kindGroups[0];
@@ -203,6 +215,8 @@ export default function CampaignSetup({
       ? "แบนเนอร์ต้องเป็นลิงก์ https จาก cdn.shopify.com หรือ smoothlife.com"
       : null;
   const canCreate = products.length > 0 && stock >= 1 && !timeError && !priceError && !heroError;
+  /** Chosen products the shop has not published — the sale cannot open on them. */
+  const draftPicked = products.filter((p) => bySlug.get(p.slug)?.state);
   const presentation =
     pageKind === "special"
       ? {
@@ -268,7 +282,12 @@ export default function CampaignSetup({
                 className={`${fieldClass} pl-9`}
               />
             </div>
-            <ul className="mt-3 flex flex-col gap-1.5" aria-label="ผลการค้นหา">
+            <p className="mt-2 text-xs text-slate-500">
+              {query.trim() ? `พบ ${matches.length} รายการ` : `ทั้งหมด ${matches.length} รายการ · พิมพ์เพื่อกรอง`}
+            </p>
+            {/* A long list that scrolls inside itself, so the rest of the form
+                stays where it was put. */}
+            <ul className="mt-2 flex max-h-[26rem] flex-col gap-1.5 overflow-y-auto pe-1" aria-label="ผลการค้นหา">
               {matches.map((p) => {
                 const isSel = p.slug === productSlug;
                 return (
@@ -287,8 +306,16 @@ export default function CampaignSetup({
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="line-clamp-1 text-sm text-brand-ink">{p.name}</span>
-                        <span className="text-xs text-slate-500">
+                        <span className="flex flex-wrap items-center gap-x-1.5 text-xs text-slate-500">
                           {p.brand} · {formatTHB(p.price)}
+                          {/* Nobody should mistake a draft for something on
+                              sale: the sale page will not sell it until the
+                              shop publishes it. */}
+                          {p.state && (
+                            <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900">
+                              {STATE_LABEL[p.state]}
+                            </span>
+                          )}
                         </span>
                       </span>
                       {isSel && <Check size={18} className="shrink-0 text-brand-800" aria-hidden />}
@@ -674,6 +701,14 @@ export default function CampaignSetup({
           </div>
           <div className="rounded-xl2 bg-surface-soft p-3 text-sm text-slate-600">
             <p className="font-semibold text-brand-ink">{products.length} สินค้า · รวม {products.length * stock} ชิ้น</p>
+            {/* Said at the moment of committing, because the picker where the
+                badge was has scrolled away by now. */}
+            {draftPicked.length > 0 && (
+              <p className="mt-1.5 rounded-l bg-amber-50 px-2.5 py-1.5 text-[12px] leading-relaxed text-amber-900">
+                มีสินค้าที่ยังไม่เผยแพร่ในร้าน {draftPicked.length} รายการ — สร้างแคมเปญไว้ก่อนได้
+                แต่ลูกค้าจะซื้อไม่ได้จนกว่าจะเผยแพร่สินค้าใน Shopify
+              </p>
+            )}
             <p className="mt-0.5 text-xs">1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ · เวลาไทย (GMT+7) · ระบบจริงสร้างรายการขาย 1 แถวต่อสินค้า</p>
           </div>
           <div className="flex gap-2">

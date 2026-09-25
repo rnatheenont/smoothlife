@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { CAMPAIGN_COLUMNS, parseCampaignInput, rowToCampaign, type FlashSaleCampaignRow } from "@/lib/flash-sale-campaigns";
+import { CAMPAIGN_COLUMNS, parseCampaignInput, rowToCampaign, variantIdOf, type FlashSaleCampaignRow } from "@/lib/flash-sale-campaigns";
+import { unpublishedIndex } from "@/lib/flash-sale-catalogue";
 import { updateFlashSaleCampaign } from "@/lib/flash-sale";
-import { getProductBySlug } from "@/data/products";
 
 // Admin: act on one campaign.
 //   PATCH { action: "update", ...campaign }
@@ -36,7 +36,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const now = new Date().toISOString();
 
   if (body?.action === "update") {
-    const parsed = parseCampaignInput(body);
+    const extra = await unpublishedIndex();
+    const parsed = parseCampaignInput(body, extra);
     if ("error" in parsed) return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
     const r = parsed.row;
     const result = await updateFlashSaleCampaign({
@@ -44,7 +45,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       id,
       products: r.product_slugs.map((slug) => ({
         slug,
-        variant_id: getProductBySlug(slug)?.variantId ?? null,
+        variant_id: variantIdOf(slug, extra),
         sale_price: parsed.salePrices[slug],
       })),
     });

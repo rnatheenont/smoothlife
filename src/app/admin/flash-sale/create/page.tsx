@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/admin/layout-kit";
-import { saleCatalogue, saleGroups } from "@/lib/flash-sale-catalogue";
+import { catalogueWithDrafts, saleCatalogue, saleGroups } from "@/lib/flash-sale-catalogue";
 import CreateCampaign from "./CreateCampaign";
 import "../heroui-demo.css";
 
@@ -21,7 +21,10 @@ export default async function CreateFlashSaleCampaignPage({
   searchParams: Promise<{ id?: string }>;
 }) {
   const editing = Boolean((await searchParams).id);
-  const catalogue = saleCatalogue();
+  // Drafts and unlisted products are in the picker here, so a sale can be set
+  // up before the product goes live. Groups stay built from the published
+  // catalogue: a category is a shelf customers can see.
+  const catalogue = await catalogueWithDrafts();
   return (
     <div>
       <PageHeader
@@ -41,7 +44,7 @@ export default async function CreateFlashSaleCampaignPage({
         }
       />
       {/* eslint-disable-next-line react-hooks/purity -- render time seeds the form's default start; the page is rendered per request */}
-      <CreateCampaign catalogue={catalogue} groups={saleGroups(catalogue)} now={Date.now()} />
+      <CreateCampaign catalogue={catalogue} groups={saleGroups(saleCatalogue())} now={Date.now()} />
     </div>
   );
 }
