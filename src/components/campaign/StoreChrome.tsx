@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { Facebook, Instagram } from "lucide-react";
+import BackToStore from "@/components/campaign/BackToStore";
 
 // The header and footer of www.smoothlife.com, for pages customers are sent to
 // before this site has launched.
@@ -66,12 +67,7 @@ export function StoreHeader() {
         <a href={STORE} aria-label="Smoothlife.com">
           <Image src={LOGO} alt="Smoothlife.com" width={220} height={34} priority className="h-[26px] w-auto sm:h-8" />
         </a>
-        <a
-          href={`${STORE}/collections/all`}
-          className="shrink-0 rounded-full border border-black/15 px-4 py-2 text-[13px] font-semibold text-black hover:bg-black/5"
-        >
-          กลับไปหน้าร้าน
-        </a>
+        <BackToStore fallback={`${STORE}/collections/all`} />
       </div>
     </header>
   );

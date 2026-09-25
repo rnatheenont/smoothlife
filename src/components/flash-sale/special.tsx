@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { Eye, X } from "lucide-react";
 
 // The parts that make a "special" campaign look like a ticket drop rather than
 // a plain flash sale: the full-bleed key visual, the big countdown, and the
@@ -51,6 +52,13 @@ export function SpecialHero({
   note: string | null;
   align?: HeroAlign;
 }) {
+  // The headline sits on the artwork, which is the one thing on this page the
+  // brand paid a photographer for — and a long product name set across it
+  // lands squarely on the faces. So it can be put away. The heading stays in
+  // the document either way: hidden from sight is not hidden from a screen
+  // reader or from Google.
+  const [showTitle, setShowTitle] = useState(true);
+
   return (
     <header className="relative isolate overflow-hidden bg-[#01010c] [clip-path:ellipse(140%_100%_at_50%_0%)]">
       <div className="relative mx-auto aspect-[4/3] w-full max-w-[1440px] sm:aspect-[21/9] lg:aspect-[3/1]">
@@ -59,13 +67,30 @@ export function SpecialHero({
         ) : (
           <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_50%_120%,var(--fs-accent),#01010c_65%)]" aria-hidden />
         )}
-        <div className={`absolute ${HERO_SCRIM[align]}`} aria-hidden />
-        <div className={`absolute inset-0 flex flex-col items-center px-6 text-center ${HERO_POSITION[align]}`}>
+        <div
+          className={`absolute transition-opacity duration-300 ${HERO_SCRIM[align]} ${showTitle ? "opacity-100" : "opacity-0"}`}
+          aria-hidden
+        />
+        <div
+          className={`absolute inset-0 flex flex-col items-center px-6 text-center transition-opacity duration-300 ${HERO_POSITION[align]} ${
+            showTitle ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+        >
           <h1 className="text-2xl font-extrabold uppercase tracking-[0.18em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] sm:text-4xl lg:text-5xl">
             {headline}
           </h1>
           {note && <p className="mt-2 text-xs text-white/85 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] sm:text-sm">{note}</p>}
         </div>
+
+        <button
+          type="button"
+          onClick={() => setShowTitle((v) => !v)}
+          aria-pressed={!showTitle}
+          aria-label={showTitle ? "ซ่อนหัวข้อเพื่อดูภาพเต็ม" : "แสดงหัวข้อ"}
+          className="absolute end-3 top-3 z-10 grid size-9 place-items-center rounded-full bg-black/35 text-white backdrop-blur transition hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+        >
+          {showTitle ? <X size={16} /> : <Eye size={16} />}
+        </button>
       </div>
     </header>
   );

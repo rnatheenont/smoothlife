@@ -280,7 +280,7 @@ export default function FlashSaleLive({
         </span>
       </p>
       <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-surface-muted" aria-hidden>
-        <div className="bg-brand-800 transition-[width] duration-500" style={{ width: `${(stock.sold / stock.total) * 100}%` }} />
+        <div className="bg-[var(--fs-accent)] transition-[width] duration-500" style={{ width: `${(stock.sold / stock.total) * 100}%` }} />
         <div className="bg-amber-400 transition-[width] duration-500" style={{ width: `${(stock.reserved / stock.total) * 100}%` }} />
       </div>
       <p className="mt-2 text-xs text-slate-600">
@@ -431,13 +431,22 @@ export default function FlashSaleLive({
       ) : (
         <a
           href={loginHref}
-          className="flex min-h-9 shrink-0 items-center rounded-full bg-brand-800 px-4 text-sm font-semibold text-white"
+          className="flex min-h-9 shrink-0 items-center rounded-full bg-[var(--fs-accent)] px-4 text-sm font-semibold text-white"
         >
           เข้าสู่ระบบ
         </a>
       )}
     </MobileStickyBar>
   );
+
+  // One accent, set once. A special campaign brings its own; a regular one
+  // uses the shop's. Everything below paints with the variable rather than a
+  // colour, so a campaign's own palette reaches the controls instead of
+  // stopping at the decoration — which is what made a purple page hand out a
+  // green progress bar and a green button.
+  const accentStyle = {
+    "--fs-accent": theme.kind === "special" ? theme.accent : "var(--color-brand-800)",
+  } as CSSProperties;
 
   const priceRow = (
     <p className="flex flex-wrap items-baseline gap-2">
@@ -456,8 +465,10 @@ export default function FlashSaleLive({
   if (theme.kind === "special") {
     return (
       <div
-        className="bg-[linear-gradient(180deg,#fdfbff_0%,#f4ebff_38%,#ffffff_100%)] pb-16"
-        style={{ "--fs-accent": theme.accent } as CSSProperties}
+        // Plain white behind the artwork: the key visual is the colour on this
+        // page, and a lavender wash under it was a second opinion about that.
+        className="bg-white pb-16"
+        style={accentStyle}
       >
         <SpecialHero image={theme.heroImage} headline={theme.heroHeadline || title} note={theme.heroNote} align={theme.heroAlign} />
 
@@ -503,7 +514,7 @@ export default function FlashSaleLive({
   }
 
   return (
-    <div className="container-page py-6 md:py-10">
+    <div className="container-page py-6 md:py-10" style={accentStyle}>
       {paymentTimer}
 
       <div className="mb-5">
@@ -729,7 +740,7 @@ function Panel({
         <>
           <a
             href={loginHref}
-            className="mt-5 flex min-h-12 w-full items-center justify-center rounded-full bg-brand-800 text-base font-semibold text-white hover:bg-brand-1000"
+            className="mt-5 flex min-h-12 w-full items-center justify-center rounded-full bg-[var(--fs-accent)] text-base font-semibold text-white hover:opacity-90"
           >
             เข้าสู่ระบบเพื่อเข้าคิว
           </a>
