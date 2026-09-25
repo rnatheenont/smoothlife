@@ -30,6 +30,7 @@ export default function CampaignList({
   collapseAll,
   expandAll,
   details,
+  live,
 }: {
   items: ScheduledCampaign[];
   now: number;
@@ -52,6 +53,15 @@ export default function CampaignList({
   expandAll?: () => void;
   /** That campaign's live queue, rendered inside its row. */
   details?: (item: ScheduledCampaign) => ReactNode;
+  /**
+   * What the database says about a real campaign, when there is one.
+   *
+   * The numbers on these rows came from the simulator that shares this
+   * console, so a run of the bots left a real campaign reading "จบแล้ว ·
+   * ขายหมด · ขาย 1/1" with nothing sold and the live panel underneath it
+   * saying so. Whatever is real wins; the simulator keeps its own rows.
+   */
+  live?: (id: string) => { sold: number; total: number; ended: boolean } | null;
 }) {
   const running = items.filter((i) => i.status === "running").length;
   const scheduled = items.filter((i) => i.status === "scheduled").length;
@@ -97,8 +107,12 @@ export default function CampaignList({
         <ul className="mt-4 flex flex-col gap-2.5">
           {items.map((i) => {
             const sales = i.campaign?.sales ?? [];
-            const total = i.config.stockPerProduct * i.config.products.length;
-            const sold = sales.reduce((t, s) => t + s.sale.sold, 0);
+            const real = live?.(i.id) ?? null;
+            const total = real?.total ?? i.config.stockPerProduct * i.config.products.length;
+            const sold = real?.sold ?? sales.reduce((t, s) => t + s.sale.sold, 0);
+            // A real campaign ends when the shop's own records say it has, not
+            // when a simulation of it did.
+            const status = real ? (real.ended ? "ended" : i.status === "scheduled" ? "scheduled" : "running") : i.status;
             const isCurrent = i.id === currentId;
             return (
               <li
@@ -178,7 +192,7 @@ export default function CampaignList({
                         </div>
                       </>
                     )}
-                    {i.status === "running" && (
+                    {status === "running" && (
                       <>
                         <Chip size="sm" variant="soft" color="danger">
                           กำลังขาย {sold}/{total}
@@ -191,12 +205,14 @@ export default function CampaignList({
                         </Button>
                       </>
                     )}
-                    {i.status === "ended" && (
+                    {status === "ended" && (
                       <>
                         <Chip size="sm" variant="soft" color="default">
-                          {i.campaign
-                            ? `จบแล้ว · ${i.endReason ? END_REASON[i.endReason] : ""} · ขาย ${sold}/${total}`
-                            : "ยกเลิกก่อนเริ่ม"}
+                          {real
+                            ? `จบแล้ว · ขาย ${sold}/${total}`
+                            : i.campaign
+                              ? `จบแล้ว · ${i.endReason ? END_REASON[i.endReason] : ""} · ขาย ${sold}/${total}`
+                              : "ยกเลิกก่อนเริ่ม"}
                         </Chip>
                         <Button size="sm" variant="ghost" isIconOnly aria-label="ลบแคมเปญ" onPress={() => remove(i.id)}>
                           <Trash2 size={15} aria-hidden />
