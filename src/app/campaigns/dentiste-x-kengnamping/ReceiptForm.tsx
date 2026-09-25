@@ -902,7 +902,7 @@ export default function ReceiptForm({
                     {entry.status === "revoked" && (
                       <p className="flex items-start gap-1.5 border-t border-black/10 bg-slate-50 px-4 py-2.5 text-[13px] text-slate-700">
                         <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
-                        คำสั่งซื้อนี้ได้รับการคืนเงินแล้ว สิทธิ์ที่ได้จากใบเสร็จนี้จึงถูกยกเลิก
+                        คำสั่งซื้อนี้ได้รับการคืนเงินแล้ว สิทธิ์ที่คำนวณจากบิลใบนี้จึงถูกยกเลิก — ใบอื่นไม่ได้รับผลกระทบ
                       </p>
                     )}
 
