@@ -21,11 +21,64 @@ export const dynamic = "force-dynamic";
 const KEY_RE = /^[a-z0-9][a-z0-9-]{1,63}$/;
 const DAY = 24 * 60 * 60 * 1000;
 
+type SettingsRow = { campaign_key: string; opens_at: string | null; closes_at: string | null };
+type TallyRow = { campaign_key: string; status: string; user_id: string };
+
+/**
+ * Every campaign with enough of its state to choose between them.
+ *
+ * The console used to open straight into one and offer the rest in a dropdown,
+ * which is the wrong shape once there is more than one: "which campaign needs
+ * me right now" is answered by the queue lengths, and a dropdown shows none of
+ * them. So the list carries the counts and the schedule, and opening one is a
+ * decision made with them in view.
+ */
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
-  return NextResponse.json({ ok: true, campaigns: await listCampaigns() });
+  const campaigns = await listCampaigns();
+  if (!supabaseConfigured()) return NextResponse.json({ ok: true, campaigns });
+
+  const [settings, rows] = await Promise.all([
+    supabaseRest<SettingsRow[]>(`receipt_campaign_settings?select=campaign_key,opens_at,closes_at`).catch(
+      () => [] as SettingsRow[]
+    ),
+    supabaseRest<TallyRow[]>(`receipt_campaign_entries?select=campaign_key,status,user_id&limit=20000`).catch(
+      () => [] as TallyRow[]
+    ),
+  ]);
+
+  const schedule = new Map(settings.map((r) => [r.campaign_key, r]));
+  const tally = new Map<string, { pending: number; approved: number; total: number; entrants: Set<string> }>();
+  for (const row of rows) {
+    const t =
+      tally.get(row.campaign_key) ?? { pending: 0, approved: 0, total: 0, entrants: new Set<string>() };
+    t.total += 1;
+    if (row.status === "pending_review") t.pending += 1;
+    if (row.status === "approved") {
+      t.approved += 1;
+      t.entrants.add(row.user_id);
+    }
+    tally.set(row.campaign_key, t);
+  }
+
+  return NextResponse.json({
+    ok: true,
+    campaigns: campaigns.map((c) => {
+      const t = tally.get(c.key);
+      const s = schedule.get(c.key);
+      return {
+        ...c,
+        opensAt: s?.opens_at ?? null,
+        closesAt: s?.closes_at ?? null,
+        pending: t?.pending ?? 0,
+        approved: t?.approved ?? 0,
+        total: t?.total ?? 0,
+        entrants: t?.entrants.size ?? 0,
+      };
+    }),
+  });
 }
 
 export async function POST(req: NextRequest) {
