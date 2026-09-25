@@ -252,35 +252,17 @@ export default function ReceiptForm({
    * order a second time from a list of their own purchases is asking a
    * question they have already answered.
    */
-  const orderFromNumber = (typed: string) => {
-    const n = digits(typed);
-    return n ? (orders.find((o) => digits(o.orderNumber) === n) ?? null) : null;
-  };
-
+  /**
+   * What the customer says their receipt says.
+   *
+   * Only that. Whether a purchase behind it is real is decided where the
+   * orders are — on the server when this is sent, and reported to a reviewer
+   * — because it is not a question the person holding the receipt can answer,
+   * and a screen that asks it can only get it wrong in public.
+   */
   function setDeclared(id: string, key: "orderNumber" | "paidAt" | "total", value: string) {
     setItems((old) =>
-      old.map((row) => {
-        if (row.id !== id) return row;
-        const declared = { ...row.declared, [key]: value };
-        if (key !== "orderNumber") return { ...row, declared };
-        // The number they typed decides the order; nothing else can.
-        //
-        // It used to fall back to "they only have one eligible order, so it
-        // must be that one", which filed a ฿1,600 receipt for #4305 against
-        // #4292 and told the customer the two matched. The case that fallback
-        // was written for — a receipt for an order that is not in the list —
-        // is the exact case worth catching, not papering over.
-        const hit = orderFromNumber(value);
-        // Typing a number that does match takes the row back out of the
-        // special-case path: there is an order now, and it decides.
-        return {
-          ...row,
-          declared,
-          orderId: hit?.id ?? null,
-          matched: hit ? "manual" : "none",
-          note: null,
-        };
-      })
+      old.map((row) => (row.id === id ? { ...row, declared: { ...row.declared, [key]: value }, note: null } : row))
     );
   }
 
@@ -405,7 +387,7 @@ export default function ReceiptForm({
    * reviewer. So it goes to one, and the only thing asked of the customer is
    * the three numbers off their own receipt.
    */
-  const sendable = (row: Item) => Boolean(row.orderId) || manualReady(row);
+  const sendable = (row: Item) => manualReady(row);
 
   /** Sends every row that has an order, one after another, and says how each went. */
   async function sendAll() {
@@ -418,9 +400,10 @@ export default function ReceiptForm({
       setItems((old) => old.map((row) => (row.id === item.id ? { ...row, state: "sending", error: null } : row)));
       try {
         const body = new FormData();
-        // No order to point at means the receipt goes to a person instead.
-        if (item.orderId) body.set("orderId", item.orderId);
-        else body.set("manual", "1");
+        // Which order this belongs to is the server's to work out from the
+        // number on the receipt: it has the customer's orders and this screen
+        // has no business deciding whether a purchase is real.
+        body.set("manual", "1");
         body.set("photo", item.file);
         body.set("contactName", contactName.trim());
         body.set("contactPhone", contactPhone.trim());
@@ -889,41 +872,26 @@ export default function ReceiptForm({
                       what they are read off. */}
                   {singleItem && (
                     <div className="rounded-2xl border border-black/10 p-4">
-                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                        <p className="text-[13px] font-bold text-black">ข้อมูลจากใบเสร็จ</p>
-                        {singleItem.reading && (
-                          <span className="flex items-center gap-1.5 text-[12px] text-black/50">
-                            <Loader2 size={13} className="animate-spin" /> กำลังอ่านรูป…
-                          </span>
-                        )}
-                      </div>
+                      <p className="text-[13px] font-bold text-black">ข้อมูลจากใบเสร็จ</p>
+                      {singleItem.reading ? (
+                        // Empty boxes beside a spinner in the corner read as
+                        // questions nobody answered. They are about to be
+                        // filled in, so the card says that and shows nothing
+                        // to correct until there is something to correct.
+                        <div className="flex flex-col items-center gap-3 py-10 text-center">
+                          <Loader2 size={26} className="animate-spin text-black/40" aria-hidden />
+                          <p className="text-[13px] font-semibold text-black">กำลังอ่านข้อมูลจากรูป…</p>
+                          <p className="text-[12px] leading-relaxed text-black/50">
+                            ระบบกำลังอ่านเลขคำสั่งซื้อ วันที่ และยอดรวมจากใบเสร็จให้อัตโนมัติ
+                            <br />
+                            ใช้เวลาสักครู่ · แก้ไขเองได้หลังอ่านเสร็จ
+                          </p>
+                        </div>
+                      ) : (
+                        <>
                       <p className="mt-1 text-[12px] leading-relaxed text-black/50">
                         {singleItem.note ?? "อ่านข้อมูลจากรูปให้แล้ว ตรวจดูอีกครั้งและแก้ไขได้ก่อนส่ง"}
                       </p>
-
-                      {/* What the number resolved to. Not a question — a
-                          receipt: this is the order we found, or we did not
-                          find one and they can fix the number above. */}
-                      {(() => {
-                        const found = orders.find((o) => o.id === singleItem.orderId) ?? null;
-                        if (singleItem.reading) return null;
-                        return found ? (
-                          <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-[12px] leading-relaxed text-emerald-900">
-                            ตรงกับคำสั่งซื้อ <b>{found.orderNumber ?? found.invoiceNo}</b> ในระบบ · {when(found.paidAt)} ·
-                            ยอด DENTISTE&apos; {formatTHB(found.dentisteAmount)}
-                          </p>
-                        ) : (
-                          // Not a refusal. Orders do go missing on our side,
-                          // so an unmatched receipt is a receipt for a person
-                          // to look at — which is what happens on send, and
-                          // all this has to do is say so.
-                          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-900">
-                            ยังไม่พบคำสั่งซื้อเลขนี้ในระบบ — <b>ส่งได้ตามปกติ</b> ทีมงานจะตรวจใบเสร็จกับหลักฐานการชำระเงินแล้วให้สิทธิ์ย้อนหลัง
-                            <br />
-                            กรอกเลขคำสั่งซื้อ วันและเวลาที่ชำระเงิน และยอดรวมตามใบเสร็จให้ครบก่อนส่ง
-                          </p>
-                        );
-                      })()}
 
                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
                         {(
@@ -963,19 +931,15 @@ export default function ReceiptForm({
                             </div>
                           </label>
                         ))}
-                        <div>
-                          <span className="text-[12px] font-semibold text-black/55">สิทธิ์ที่จะได้รับ</span>
-                          {/* Not a box: a field a customer can type into is a
-                              field a customer can award themselves with. */}
-                          <p className="mt-1.5 flex min-h-11 items-center rounded-xl bg-black/[0.04] px-3 text-[14px] font-bold text-black tabular-nums">
-                            {singleItem.orderId
-                              ? `${orders.find((o) => o.id === singleItem.orderId)?.entries ?? 0} สิทธิ์`
-                              : "—"}
-                          </p>
-                        </div>
                       </div>
+                      <p className="mt-3 text-[12px] leading-relaxed text-black/45">
+                        ทีมงานจะตรวจใบเสร็จกับคำสั่งซื้อในระบบแล้วคำนวณสิทธิ์ให้ · ดูผลได้ที่แท็บ
+                        “การอัปโหลดแต่ละครั้ง”
+                      </p>
                       {singleItem.error && (
                         <p className="mt-2 text-[12px] font-semibold text-rose-700">{singleItem.error}</p>
+                      )}
+                        </>
                       )}
                     </div>
                   )}

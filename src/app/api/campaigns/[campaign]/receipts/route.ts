@@ -237,6 +237,9 @@ async function checkManual(opts: {
   return null;
 }
 
+/** Digits only: "#4292", "4292" and " 4292 " are the same order number. */
+const digitsOfRaw = (v: string | null | undefined) => (v ?? "").replace(/\D/g, "");
+
 export async function POST(req: NextRequest, props: { params: Promise<{ campaign: string }> }) {
   const CAMPAIGN = campaignKeyFrom((await props.params).campaign);
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
@@ -302,7 +305,20 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
   // Dentiste — checked here rather than trusted from the form.
   const test = isTestMode(req.nextUrl.searchParams.get("test"));
   const { orders, rules } = await eligibleOrders(CAMPAIGN, uid, test);
-  const order = manual ? undefined : orders.find((o) => o.id === orderId);
+  // Which order the receipt names, worked out here rather than on the form.
+  //
+  // The customer's screen used to match the typed number against their own
+  // orders and show a verdict, which made "is this purchase real" a question
+  // asked of the person who cannot answer it. It is asked here, and where the
+  // answer is no the receipt still goes through — to a reviewer, marked.
+  const names = await orderNamesByGid(orders.map((o) => o.shopify_order_id));
+  const typed = digitsOfRaw(declaredOrderNumber);
+  const matched =
+    manual && typed
+      ? orders.find((o) => digitsOfRaw(names.get(o.shopify_order_id ?? "") ?? null) === typed)
+      : undefined;
+
+  const order = manual ? matched : orders.find((o) => o.id === orderId);
   if (!manual && !order) {
     return NextResponse.json(
       { ok: false, error: "ไม่พบคำสั่งซื้อนี้ หรือไม่เข้าเงื่อนไขของแคมเปญ" },
@@ -310,8 +326,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
     );
   }
 
-  const digitsOf = (v: string | null | undefined) => (v ?? "").replace(/\D/g, "");
-  if (manual) {
+  const digitsOf = digitsOfRaw;
+  if (manual && !order) {
     const stop = await checkManual({
       campaign: CAMPAIGN,
       uid,
