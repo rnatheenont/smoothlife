@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import AddressFields, { AddressFormValue, emptyAddressForm } from "@/components/account/AddressFields";
 import { Button } from "@/components/ui";
+import CampaignChrome from "@/components/campaign/CampaignChrome";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PLACEHOLDER_NAME = "สมาชิกใหม่";
@@ -33,7 +34,9 @@ function CompleteProfileContent() {
       .then((r) => r.json())
       .then((data) => {
         if (!data.user) {
-          router.replace("/account/login");
+          // Still carrying where they were headed — losing it here is how a
+          // campaign visitor ends up on a storefront they have never seen.
+          router.replace(`/account/login?returnTo=${encodeURIComponent(returnTo)}`);
           return;
         }
         setName(data.user.name && data.user.name !== PLACEHOLDER_NAME ? data.user.name : "");
@@ -50,7 +53,7 @@ function CompleteProfileContent() {
         else setNeedsEmail(true);
       })
       .finally(() => setLoading(false));
-  }, [router]);
+  }, [router, returnTo]);
 
   function toggleAddress(checked: boolean) {
     setWantsAddress(checked);
@@ -177,7 +180,12 @@ function CompleteProfileContent() {
 export default function CompleteProfilePage() {
   return (
     <Suspense fallback={<div className="container-page py-20 text-center text-slate-500">กำลังโหลด…</div>}>
-      <CompleteProfileContent />
+      {/* Whose header and footer this page wears depends on where the customer
+          is going back to, which is why it is decided here and not in the root
+          layout. */}
+      <CampaignChrome>
+        <CompleteProfileContent />
+      </CampaignChrome>
     </Suspense>
   );
 }
