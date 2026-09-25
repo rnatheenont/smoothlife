@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { signedReceiptUrl } from "@/lib/receipt-photos";
-import { holdsPrize } from "@/lib/receipt-campaign";
+import { amountsFromLineItems, holdsPrize, type LineItem } from "@/lib/receipt-campaign";
 import { orderPaymentByGid } from "@/lib/shopify-admin";
 
 // The review queue, the VIP order, and what Lucky Fan has to draw from.
@@ -45,13 +45,19 @@ type Row = {
   declared_order_number?: string | null;
   declared_paid_at?: string | null;
   declared_total?: number | string | null;
-  payment_transactions: { invoice_no: string; amount: number; confirmed_at: string | null; shopify_order_id: string | null } | null;
+  payment_transactions: {
+    invoice_no: string;
+    amount: number;
+    confirmed_at: string | null;
+    shopify_order_id: string | null;
+    line_items: LineItem[] | null;
+  } | null;
 };
 
 const SELECT =
   "id,user_id,payment_transaction_id,manual_receipt_no,receipt_photo_path,dentiste_net_amount," +
   "keychain_amount,computed_entries,entries_override,status,reject_reason,reviewed_at,created_at,ai_check," +
-  "contact_name,contact_phone,declared_order_number,declared_paid_at,declared_total,users(display_name),payment_transactions(invoice_no,amount,confirmed_at,shopify_order_id)";
+  "contact_name,contact_phone,declared_order_number,declared_paid_at,declared_total,users(display_name),payment_transactions(invoice_no,amount,confirmed_at,shopify_order_id,line_items)";
 
 type WinnerRow = {
   id: string;
@@ -117,6 +123,10 @@ export async function GET(req: NextRequest) {
       paidAt: r.payment_transactions?.confirmed_at ?? null,
       orderTotal: r.payment_transactions ? Number(r.payment_transactions.amount) : null,
       dentisteAmount: Number(r.dentiste_net_amount),
+      // The bill line by line, worked out from the order that is still on the
+      // row — "฿1,600 of Dentiste" does not say whether that was one set or
+      // six tubes, and the photo beside it lists both.
+      lines: amountsFromLineItems(r.payment_transactions?.line_items).lines,
       keychainAmount: Number(r.keychain_amount),
       entries: entriesOf(r),
       sentAt: r.created_at,
