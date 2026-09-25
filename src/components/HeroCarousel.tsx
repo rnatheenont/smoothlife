@@ -59,13 +59,33 @@ export default function HeroCarousel({ banners: heroBanners }: { banners: HeroBa
             className="absolute inset-0 transition-opacity duration-700 ease-out"
             style={{ opacity: i === index ? 1 : 0, pointerEvents: i === index ? "auto" : "none" }}
           >
+            {/* The banner's own colours, blurred, behind it.
+                Artwork arrives at whatever shape the designer worked in, and
+                the frame is a fixed 100:53. Cropping to fill it cut the edges
+                off anything taller or wider — usually the bit with the date or
+                the logo on it. Showing the whole image instead leaves bars, so
+                the bars are filled with the image itself, out of focus: the
+                banner keeps its own palette rather than sitting in a grey box,
+                and it changes with the slide because each slide carries one.
+
+                Deliberately fetched small. It is going to be blurred beyond
+                recognition, so a thumbnail's worth of pixels is plenty and the
+                page does not download every banner twice at full size. */}
+            <Image
+              src={banner.image}
+              alt=""
+              aria-hidden
+              fill
+              sizes="64px"
+              className="scale-110 object-cover blur-2xl"
+            />
             <Image
               src={banner.image}
               alt={banner.title}
               fill
               priority={i === 0}
               sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
+              className="object-contain"
             />
           </Link>
         ))}
