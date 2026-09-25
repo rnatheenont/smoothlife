@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/purge-receipt-photos",
       "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/receipt-refund-sweep",
+      "schedule": "15 4 * * *"
     }
   ]
 }
