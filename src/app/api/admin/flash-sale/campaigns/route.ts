@@ -18,7 +18,22 @@ export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) return unauthorized();
   if (!supabaseConfigured()) return unavailable();
   const rows = await supabaseRest<FlashSaleCampaignRow[]>(`flash_sale_campaigns?select=${CAMPAIGN_COLUMNS}&is_demo=is.false&order=starts_at.asc&limit=200`);
-  return NextResponse.json({ ok: true, campaigns: rows.map(rowToCampaign), serverNow: Date.now() });
+
+  // Who has queued, per campaign. The list needs it to stop offering a delete
+  // the database will refuse: flash_sale_queue references the campaign with ON
+  // DELETE RESTRICT, so once anyone has queued its history has to stay — and
+  // "ลบ" that always fails looks like a broken button rather than a rule.
+  const queued = await supabaseRest<{ campaign_id: string }[]>(
+    `flash_sale_queue?select=campaign_id&limit=20000`
+  ).catch(() => [] as { campaign_id: string }[]);
+  const queueRows = new Map<string, number>();
+  for (const q of queued) queueRows.set(q.campaign_id, (queueRows.get(q.campaign_id) ?? 0) + 1);
+
+  return NextResponse.json({
+    ok: true,
+    campaigns: rows.map((r) => ({ ...rowToCampaign(r), queueRows: queueRows.get(r.id) ?? 0 })),
+    serverNow: Date.now(),
+  });
 }
 
 export async function POST(req: NextRequest) {

@@ -92,7 +92,12 @@ export default function CreateCampaign({
       router.push("/admin/flash-sale");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
+      const message = err instanceof Error ? err.message : "บันทึกไม่สำเร็จ";
+      setError(message);
+      // The button is at the bottom of a form several screens long and the
+      // error line is at the top of it: without this, a refusal reads as the
+      // button doing nothing.
+      window.alert(message);
       setSaving(false);
     }
   }
@@ -140,6 +145,8 @@ export default function CreateCampaign({
         now={now}
         saving={saving}
         editing={editing}
+        submitLabel="สร้างแคมเปญ"
+        intro="เลือกสินค้า ตั้งวันเวลาและราคา แล้วกดสร้างแคมเปญ ระบบจะเปิดและปิดการขายให้เองตามเวลา"
         onCancelEdit={() => router.push("/admin/flash-sale")}
         onCreate={submit}
       />
