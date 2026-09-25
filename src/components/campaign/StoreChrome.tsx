@@ -74,6 +74,9 @@ export function StoreHeader({ storeUrl }: { storeUrl?: string }) {
           <Image src={LOGO} alt="Smoothlife.com" width={220} height={34} priority className="h-[26px] w-auto sm:h-8" />
         </a>
         <span className="flex shrink-0 items-center gap-2">
+          {/* Getting back to the shop comes first: it is the way out, and the
+              one most people reach for. */}
+          <BackToStore fallback={storeUrl ?? `${STORE}/collections/all`} />
           {/* The shop's own account page, not this site's. Someone who arrived
               from a campaign link has an account at smoothlife.com — orders,
               addresses, points — and no reason to know this app exists, so
@@ -86,7 +89,6 @@ export function StoreHeader({ storeUrl }: { storeUrl?: string }) {
             <span className="hidden sm:inline">บัญชีของฉัน</span>
             <span className="sr-only sm:hidden">บัญชีของฉัน</span>
           </a>
-          <BackToStore fallback={storeUrl ?? `${STORE}/collections/all`} />
         </span>
       </div>
     </header>
