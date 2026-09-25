@@ -294,13 +294,29 @@ export default function FlashSaleLive({
           เหลือ <strong className="text-lg text-sale">{remaining}</strong> ชิ้น
         </span>
       </p>
-      <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-surface-muted" aria-hidden>
+      <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-black/10" aria-hidden>
         <div className="bg-[var(--fs-accent)] transition-[width] duration-500" style={{ width: `${(stock.sold / stock.total) * 100}%` }} />
         <div className="bg-amber-400 transition-[width] duration-500" style={{ width: `${(stock.reserved / stock.total) * 100}%` }} />
       </div>
-      <p className="mt-2 text-xs text-slate-600">
-        ขายแล้ว {stock.sold} · กำลังรอชำระ {stock.reserved} · รอคิว {stock.waiting} คน
-      </p>
+      {/* Three numbers read as three numbers. Strung into one sentence they
+          were four words apart and none of them stood out, which on a page
+          whose whole subject is "how much is left" is the wrong way round. */}
+      <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+        {(
+          [
+            ["ขายแล้ว", stock.sold, "ชิ้น"],
+            ["กำลังรอชำระ", stock.reserved, "ชิ้น"],
+            ["รอคิว", stock.waiting, "คน"],
+          ] as const
+        ).map(([label, value, unit]) => (
+          <div key={label} className="rounded-l bg-white/70 py-2">
+            <dt className="text-[11px] leading-tight text-slate-500">{label}</dt>
+            <dd className="text-[15px] font-bold tabular-nums text-brand-ink">
+              {value} <span className="text-[11px] font-normal text-slate-500">{unit}</span>
+            </dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 
@@ -339,6 +355,8 @@ export default function FlashSaleLive({
       status={status}
       productName={product.name}
       productSoldOut={Boolean(stock && stock.sold >= stock.total)}
+      remaining={remaining ?? 0}
+      waiting={stock?.waiting ?? 0}
       secondsLeft={secondsLeft}
       windowSeconds={windowSeconds}
       serverNow={serverNow}
@@ -591,6 +609,8 @@ function Panel({
   status,
   productName,
   productSoldOut,
+  remaining,
+  waiting,
   secondsLeft,
   windowSeconds,
   serverNow,
@@ -607,6 +627,9 @@ function Panel({
   status: Status;
   productName: string;
   productSoldOut: boolean;
+  /** What the panel above says is left, so this one cannot contradict it. */
+  remaining: number;
+  waiting: number;
   secondsLeft: number;
   windowSeconds: number;
   serverNow: number;
@@ -736,7 +759,15 @@ function Panel({
         <>
           <AlertTriangle size={32} className="text-amber-500" aria-hidden />
           <h3 className="mt-2 text-xl font-bold text-brand-ink">หมดเวลาชำระเงิน</h3>
-          <p className="mt-1 text-sm text-slate-600">สิทธิ์ถูกส่งต่อให้คิวถัดไปแล้ว กลับเข้าคิวได้อีก {Math.max(0, requeuesLeft)} ครั้ง</p>
+          {/* "สิทธิ์ถูกส่งต่อให้คิวถัดไปแล้ว" was printed whatever the panel
+              directly above it said — including beside "รอคิว 0 คน · เหลือ 25
+              ชิ้น", which tells someone their turn was given away to nobody
+              while the whole stock sits there. The queue answers this. */}
+          <p className="mt-1 text-sm text-slate-600">
+            {waiting === 0 && remaining > 0
+              ? `ของยังเหลือ ${remaining} ชิ้น กดกลับเข้าคิวได้เลย · เข้าใหม่ได้อีก ${Math.max(0, requeuesLeft)} ครั้ง`
+              : `สิทธิ์ถูกส่งต่อให้คิวถัดไปแล้ว กลับเข้าคิวได้อีก ${Math.max(0, requeuesLeft)} ครั้ง`}
+          </p>
         </>
       ) : (
         <>

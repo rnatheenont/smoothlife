@@ -389,6 +389,15 @@ export default function ReceiptForm({
     });
   }
 
+  /**
+   * Whether the second column has anything to say yet.
+   *
+   * The summary and the prize recipient are worth a column the moment a photo
+   * is picked — including a receipt with no order behind it, which is exactly
+   * when the contact details matter most.
+   */
+  const twoUp = orders.length > 0 || items.length > 0;
+
   /** A row the send button will actually take: matched, or flagged for review. */
   const sendable = (row: Item) => Boolean(row.orderId) || row.manual;
 
@@ -600,7 +609,12 @@ export default function ReceiptForm({
       <div className="grid gap-8">
         {open && (!hasHistory || tab === "send") && (
           <section>
-            <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+            {/* Two columns once there is something to put in the second one.
+                The right side used to be gated on having an eligible order,
+                which was fine while that also closed the form — now the form
+                is always open, and a half-empty grid with the upload squeezed
+                into the left column is what that looked like. */}
+            <div className={`grid gap-6 lg:items-start ${twoUp ? "lg:grid-cols-2" : ""}`}>
               {/* Left: the stack of receipts, not one at a time. */}
               <div>
                 <h2 className="text-lg font-bold text-black">แนบรูปใบเสร็จ</h2>
@@ -852,7 +866,7 @@ export default function ReceiptForm({
 
               {/* Right: where they stand, what this receipt is worth, and the
                   two things only they can tell us. */}
-              {orders.length > 0 && (
+              {twoUp && (
                 <div className="flex flex-col gap-4">
                   <dl className="grid grid-cols-3 gap-4 rounded-2xl border border-black/10 p-4">
                     <div>
