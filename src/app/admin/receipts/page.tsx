@@ -13,52 +13,10 @@ import Image from "next/image";
 import { Check, Loader2, RefreshCw, X } from "lucide-react";
 import { PageHeader, Panel, StatCard, adminTable } from "@/components/admin/layout-kit";
 import CampaignSettings from "./CampaignSettings";
+import QueueTable from "./QueueTable";
+import { when, type QueueItem } from "./queue-vocab";
 import { formatTHB } from "@/lib/format";
 
-type QueueItem = {
-  id: string;
-  customer: string | null;
-  orderNumber: string | null;
-  invoiceNo: string | null;
-  paidAt: string | null;
-  orderTotal: number | null;
-  dentisteAmount: number;
-  keychainAmount: number;
-  entries: number;
-  sentAt: string;
-  photoUrl: string | null;
-  aiCheck: { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] } | null;
-  /** Shopify's own word on the order right now, not our 2C2P row. */
-  paymentStatus: string | null;
-  refunded: number;
-  contactName: string | null;
-  contactPhone: string | null;
-  /** What the customer said their receipt shows — their words, not our record. */
-  declared: { orderNumber: string | null; paidAt: string | null; total: number | null };
-  lines: { name: string; quantity: number; amount: number; kind: "dentiste" | "keychain" | "other" }[];
-};
-
-const LINE_KIND: Record<"dentiste" | "keychain" | "other", [string, string]> = {
-  dentiste: ["DENTISTE'", "bg-emerald-50 text-emerald-800"],
-  keychain: ["Keychain", "bg-violet-50 text-violet-800"],
-  other: ["ไม่นับ", "bg-slate-100 text-slate-500"],
-};
-
-/**
- * Shopify's financial statuses, in the reviewer's language and coloured by
- * what they mean for a claim: green is money we still have, amber is money we
- * are waiting on or have partly given back, rose is money that is gone.
- */
-const PAYMENT_STATUS: Record<string, [string, string]> = {
-  PAID: ["ชำระแล้ว", "bg-emerald-50 text-emerald-800 border-emerald-200"],
-  PARTIALLY_PAID: ["ชำระบางส่วน", "bg-amber-50 text-amber-900 border-amber-200"],
-  PENDING: ["รอชำระเงิน", "bg-amber-50 text-amber-900 border-amber-200"],
-  AUTHORIZED: ["กันวงเงินไว้ ยังไม่ตัด", "bg-amber-50 text-amber-900 border-amber-200"],
-  PARTIALLY_REFUNDED: ["คืนเงินบางส่วน", "bg-amber-50 text-amber-900 border-amber-200"],
-  REFUNDED: ["คืนเงินแล้ว", "bg-rose-50 text-rose-800 border-rose-200"],
-  VOIDED: ["ยกเลิกรายการ", "bg-rose-50 text-rose-800 border-rose-200"],
-  EXPIRED: ["หมดอายุ", "bg-rose-50 text-rose-800 border-rose-200"],
-};
 type Vip = {
   rank: number;
   customer: string | null;
@@ -88,15 +46,6 @@ type Data = {
   luckyFan: Fan[];
 };
 
-const when = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
-
-const AI_LABEL = {
-  ok: ["ตรงกับคำสั่งซื้อ", "border-emerald-200 bg-emerald-50 text-emerald-800"],
-  unclear: ["อ่านรูปไม่ชัด", "border-amber-200 bg-amber-50 text-amber-800"],
-  mismatch: ["ไม่ตรงกับคำสั่งซื้อ", "border-rose-200 bg-rose-50 text-rose-800"],
-} as const;
-
 const TABS = [
   ["queue", "คิวตรวจ"],
   ["vip", "VIP (มาก่อนได้ก่อน)"],
@@ -106,6 +55,7 @@ const TABS = [
 ] as const;
 
 const PRIZE_LABEL = { vip: "VIP 25 รางวัล", lucky_fan: "Lucky Fan 25 รางวัล" } as const;
+
 const WINNER_STATUS = {
   pending_confirm: "รอยืนยันสิทธิ์",
   confirmed: "ยืนยันแล้ว",
@@ -297,226 +247,20 @@ export default function Page() {
           </div>
 
           {tab === "queue" && (
-            <Panel title="คิวตรวจ — เก่าสุดก่อน" padded>
+            <Panel title="คิวตรวจ — เก่าสุดก่อน">
               {data.queue.length === 0 ? (
-                <p className="text-[13px] text-slate-500">ไม่มีใบเสร็จรอตรวจ</p>
+                <p className="px-3 py-6 text-[13px] text-slate-500">ไม่มีใบเสร็จรอตรวจ</p>
               ) : (
-                <ul className="flex flex-col gap-4">
-                  {data.queue.map((item) => (
-                    <li key={item.id} className="grid gap-4 rounded-xl2 border border-surface-line p-4 md:grid-cols-[minmax(0,260px)_1fr]">
-                      {item.photoUrl ? (
-                        <a href={item.photoUrl} target="_blank" rel="noopener noreferrer" className="block">
-                          <Image
-                            src={item.photoUrl}
-                            alt={`ใบเสร็จของ ${item.customer ?? "ลูกค้า"}`}
-                            width={520}
-                            height={700}
-                            unoptimized
-                            className="h-auto w-full rounded-lg border border-surface-line object-contain"
-                          />
-                        </a>
-                      ) : (
-                        <p className="grid place-items-center rounded-lg bg-surface-soft p-6 text-[12px] text-slate-400">
-                          เปิดรูปไม่ได้
-                        </p>
-                      )}
-
-                      <div className="flex flex-col">
-                        <p className="text-[15px] font-bold text-brand-ink">{item.customer ?? "—"}</p>
-                        <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[13px]">
-                          {/* What the uploaded screenshot says, first — it is
-                              the only number a reviewer can match by eye. */}
-                          <dt className="text-slate-500">เลขคำสั่งซื้อ</dt>
-                          <dd className="text-[15px] font-bold text-brand-ink">{item.orderNumber ?? "—"}</dd>
-                          <dt className="text-slate-500">สถานะการชำระเงิน</dt>
-                          <dd>
-                            {item.paymentStatus ? (
-                              <span
-                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[12px] font-bold ${
-                                  PAYMENT_STATUS[item.paymentStatus]?.[1] ?? "border-slate-200 bg-slate-50 text-slate-600"
-                                }`}
-                              >
-                                {PAYMENT_STATUS[item.paymentStatus]?.[0] ?? item.paymentStatus}
-                              </span>
-                            ) : (
-                              // Never guess green: if Shopify did not answer,
-                              // say so rather than implying the money is there.
-                              <span className="text-[12px] text-slate-400">อ่านสถานะจาก Shopify ไม่ได้</span>
-                            )}
-                            {item.refunded > 0 && (
-                              <span className="ms-2 text-[12px] font-semibold text-rose-700">
-                                คืนแล้ว {formatTHB(item.refunded)}
-                              </span>
-                            )}
-                          </dd>
-                          <dt className="text-slate-500">เลขใบแจ้งหนี้ 2C2P</dt>
-                          <dd className="font-mono text-[12px] text-slate-500">{item.invoiceNo ?? "—"}</dd>
-                          <dt className="text-slate-500">ชำระเมื่อ</dt>
-                          <dd className="text-brand-ink">{when(item.paidAt)}</dd>
-                          <dt className="text-slate-500">ยอดทั้งบิล</dt>
-                          <dd className="text-brand-ink">{item.orderTotal === null ? "—" : formatTHB(item.orderTotal)}</dd>
-                          <dt className="text-slate-500">ยอด DENTISTE&apos;</dt>
-                          <dd className="font-bold text-brand-ink">
-                            {formatTHB(item.dentisteAmount)}
-                            {item.lines.some((l) => l.kind !== "other") && (
-                              <span className="ms-2 font-medium text-slate-500">
-                                ({item.lines.filter((l) => l.kind !== "other").length} รายการ ·{" "}
-                                {item.lines.filter((l) => l.kind !== "other").reduce((n, l) => n + l.quantity, 0)} ชิ้น)
-                              </span>
-                            )}
-                          </dd>
-                          {item.keychainAmount > 0 && (
-                            <>
-                              <dt className="text-slate-500">Keychain</dt>
-                              <dd className="text-brand-ink">{formatTHB(item.keychainAmount)}</dd>
-                            </>
-                          )}
-                          <dt className="text-slate-500">ส่งเมื่อ</dt>
-                          <dd className="text-brand-ink">{when(item.sentAt)}</dd>
-                          <dt className="text-slate-500">ผู้รับรางวัล</dt>
-                          <dd className="text-brand-ink">
-                            {item.contactName ?? "—"}
-                            {item.contactPhone && (
-                              <a href={`tel:${item.contactPhone}`} className="ms-2 font-mono text-[12px] text-brand-800 underline">
-                                {item.contactPhone}
-                              </a>
-                            )}
-                          </dd>
-                        </dl>
-
-                        {/* The bill, line by line, to read against the "Order
-                            summary" in the photo. One order can hold several
-                            Dentiste products and something else beside them,
-                            and only some of it counts. */}
-                        {item.lines.length > 0 && (
-                          <div className="mt-3 overflow-hidden rounded-l border border-surface-line">
-                            <p className="bg-surface-soft px-3 py-1.5 text-[12px] font-semibold text-slate-500">
-                              รายการในบิล ({item.lines.length} รายการ)
-                            </p>
-                            <ul className="divide-y divide-surface-line">
-                              {item.lines.map((line, i) => (
-                                <li key={`${line.name}-${i}`} className="flex items-baseline gap-2 px-3 py-2 text-[12px]">
-                                  <span className={`shrink-0 rounded-full px-1.5 py-0.5 font-semibold ${LINE_KIND[line.kind][1]}`}>
-                                    {LINE_KIND[line.kind][0]}
-                                  </span>
-                                  <span className="min-w-0 flex-1 text-brand-ink">{line.name}</span>
-                                  <span className="shrink-0 tabular-nums text-slate-500">×{line.quantity}</span>
-                                  <span className="shrink-0 tabular-nums font-semibold text-brand-ink">
-                                    {formatTHB(line.amount)}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* What the customer typed, and whether it matches. A
-                            mismatch is not a verdict — a screenshot of the
-                            wrong order and a typo look identical here — but it
-                            is the thing worth looking at the photo for. */}
-                        {(item.declared.orderNumber || item.declared.total !== null) && (
-                          <div className="mt-3 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px]">
-                            <p className="font-semibold text-slate-500">ลูกค้ากรอกมาว่า</p>
-                            <p className="mt-1 text-brand-ink">
-                              เลขคำสั่งซื้อ{" "}
-                              <b
-                                className={
-                                  item.declared.orderNumber && item.orderNumber &&
-                                  item.declared.orderNumber.replace(/\D/g, "") !== item.orderNumber.replace(/\D/g, "")
-                                    ? "text-rose-700"
-                                    : "text-brand-ink"
-                                }
-                              >
-                                {item.declared.orderNumber ?? "—"}
-                              </b>
-                              {item.declared.total !== null && (
-                                <>
-                                  {" · "}ยอดทั้งบิล{" "}
-                                  <b
-                                    className={
-                                      item.orderTotal !== null && Math.abs(item.declared.total - item.orderTotal) > 0.5
-                                        ? "text-rose-700"
-                                        : "text-brand-ink"
-                                    }
-                                  >
-                                    {formatTHB(item.declared.total)}
-                                  </b>
-                                </>
-                              )}
-                              {item.declared.paidAt && <>{" · "}{when(item.declared.paidAt)}</>}
-                            </p>
-                          </div>
-                        )}
-
-                        <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-slate-600">
-                          <span>
-                            ระบบคำนวณได้ <span className="font-bold text-brand-ink">{item.entries} สิทธิ์</span>
-                          </span>
-                          {/* The stored number is the rules as they were when
-                              the photo arrived. They have not settled yet. */}
-                          <button
-                            type="button"
-                            disabled={busy === item.id}
-                            onClick={() => recalculate(item)}
-                            className="rounded-full border border-surface-line px-3 py-1 text-[12px] font-semibold text-brand-800 hover:bg-surface-soft disabled:opacity-50"
-                          >
-                            คำนวณสิทธิ์ใหม่
-                          </button>
-                        </p>
-
-                        {/* What a first glance saw. Never a decision — the
-                            buttons below are still the only thing that is. */}
-                        {item.aiCheck && (
-                          <div className={`mt-3 rounded-l border px-3 py-2 text-[12px] ${AI_LABEL[item.aiCheck.verdict][1]}`}>
-                            <p className="font-bold">AI ตรวจเบื้องต้น · {AI_LABEL[item.aiCheck.verdict][0]}</p>
-                            {item.aiCheck.message && <p className="mt-0.5">{item.aiCheck.message}</p>}
-                            {item.aiCheck.findings.length > 0 && (
-                              <ul className="mt-1 list-inside list-disc opacity-80">
-                                {item.aiCheck.findings.map((f) => (
-                                  <li key={f}>{f}</li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        )}
-
-                        {item.paymentStatus !== "PAID" && (
-                          <p className="mt-3 rounded-l border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-                            อนุมัติไม่ได้จนกว่าคำสั่งซื้อจะเป็น <b>ชำระแล้ว (PAID)</b> ใน Shopify — ตีกลับยังทำได้ตามปกติ
-                          </p>
-                        )}
-
-                        <div className="mt-auto flex gap-2 pt-4">
-                          <button
-                            type="button"
-                            disabled={busy === item.id || item.paymentStatus !== "PAID"}
-                            title={
-                              item.paymentStatus === "PAID"
-                                ? undefined
-                                : "อนุมัติได้เฉพาะคำสั่งซื้อที่ชำระเงินแล้ว (PAID)"
-                            }
-                            onClick={() => decide(item, "approve")}
-                            className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-800 px-4 text-[13px] font-semibold text-white disabled:opacity-50"
-                          >
-                            <Check size={14} aria-hidden /> อนุมัติ
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busy === item.id}
-                            onClick={() => decide(item, "reject")}
-                            className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-rose-200 px-4 text-[13px] font-semibold text-rose-700 disabled:opacity-50"
-                          >
-                            <X size={14} aria-hidden /> ตีกลับ
-                          </button>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <QueueTable
+                  queue={data.queue}
+                  busy={busy}
+                  onDecide={decide}
+                  onRecalculate={recalculate}
+                />
               )}
               {data.pendingBeyondQueue > 0 && (
-                <p className="mt-4 text-[12px] text-slate-500">
-                  แสดง 50 รายการแรก — เหลืออีก {data.pendingBeyondQueue} รายการ ตรวจชุดนี้ให้หมดแล้วกดรีเฟรช
+                <p className="px-3 pb-3 pt-2 text-[12px] text-slate-500">
+                  แสดง {data.queue.length} รายการแรก · ยังมีอีก {data.pendingBeyondQueue} รายการรอตรวจ
                 </p>
               )}
             </Panel>
