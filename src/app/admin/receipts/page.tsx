@@ -68,6 +68,9 @@ const WINNER_STATUS = {
 export default function Page() {
   const [data, setData] = useState<Data | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("queue");
+  // The campaign's own name, from the same row the customer's page reads, so
+  // renaming it in the settings tab renames it here.
+  const [campaignName, setCampaignName] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +90,19 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- first load
     load();
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/receipts/name", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.ok && typeof d.name === "string" && d.name.trim()) setCampaignName(d.name.trim());
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Putting a decided receipt back in the queue, when the decision was wrong.
   async function reopen(item: QueueItem) {
@@ -224,8 +240,8 @@ export default function Page() {
   return (
     <div>
       <PageHeader
-        title="ใบเสร็จชิงรางวัล"
-        subtitle="DENTISTE'S x KENG NAMPING — ตรวจใบเสร็จ ดูลำดับ VIP และสิทธิ์ Lucky Fan"
+        title={campaignName ?? "กิจกรรมชิงรางวัล"}
+        subtitle="ตรวจใบเสร็จ ดูลำดับ VIP และสิทธิ์ Lucky Fan"
         actions={
           <button
             type="button"
