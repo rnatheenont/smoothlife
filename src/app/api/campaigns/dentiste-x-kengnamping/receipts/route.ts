@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { isRateLimitedShared } from "@/lib/rate-limit";
+import { ipLimited, TOO_MANY_TH } from "@/lib/abuse-guard";
 import {
   TEST_MARKER,
   amountsFromLineItems,
@@ -198,6 +199,11 @@ export async function POST(req: NextRequest) {
   // Uploading costs storage and review time; a person sends a handful.
   if (await isRateLimitedShared(`receipt:${uid}`, 20, 60 * 60 * 1000)) {
     return NextResponse.json({ ok: false, error: "ส่งใบเสร็จบ่อยเกินไป กรุณาลองใหม่ในอีกสักครู่" }, { status: 429 });
+  }
+  // Per address as well as per account: every call here is a model call we pay
+  // for, and an account is the cheapest thing in this system to make more of.
+  if (await ipLimited(req, "receipt", 40, 60 * 60 * 1000)) {
+    return NextResponse.json({ ok: false, error: TOO_MANY_TH }, { status: 429 });
   }
 
   const form = await req.formData().catch(() => null);

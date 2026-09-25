@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { isRateLimitedShared } from "@/lib/rate-limit";
+import { ipLimited, TOO_MANY_TH } from "@/lib/abuse-guard";
 import { checkReceiptPhoto } from "@/lib/receipt-vision";
 import { receiptExtension, MAX_RECEIPT_BYTES } from "@/lib/receipt-photos";
 import { amountsFromLineItems, computeEntries, withinCampaign } from "@/lib/receipt-campaign";
@@ -39,6 +40,11 @@ export async function POST(req: NextRequest) {
   // Reading costs a model call; a person does it a handful of times.
   if (await isRateLimitedShared(`receipt-read:${uid}`, 30, 60 * 60 * 1000)) {
     return NextResponse.json({ ok: false, error: "ตรวจรูปบ่อยเกินไป กรุณาลองใหม่ในอีกสักครู่" }, { status: 429 });
+  }
+  // Per address as well as per account: every call here is a model call we pay
+  // for, and an account is the cheapest thing in this system to make more of.
+  if (await ipLimited(req, "receipt-read", 60, 60 * 60 * 1000)) {
+    return NextResponse.json({ ok: false, error: TOO_MANY_TH }, { status: 429 });
   }
 
   const form = await req.formData().catch(() => null);
