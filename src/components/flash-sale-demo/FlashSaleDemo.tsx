@@ -445,6 +445,16 @@ export default function FlashSaleDemo({
         newCampaign={newCampaign}
         showCreate={!embedded}
         remove={removeStored}
+        live={(id) => {
+          const m = monitors[id];
+          if (!m) return null;
+          const products = m.products ?? [];
+          return {
+            sold: products.reduce((t, x) => t + x.sold, 0),
+            total: products.reduce((t, x) => t + x.total, 0),
+            ended: m.campaign.phase === "ended",
+          };
+        }}
         details={(entry) =>
           /^[0-9a-f-]{36}$/i.test(entry.id) ? (
             <LiveMonitor
