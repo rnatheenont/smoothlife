@@ -611,7 +611,7 @@ export default function ReceiptForm({
                 </p>
 
                 <label
-                  className={`relative mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.02] hover:border-black/40 ${
+                  className={`relative mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-black/20 bg-white hover:border-black/40 ${
                     singleItem?.preview ? "p-2" : "min-h-[120px] p-4"
                   }`}
                 >
@@ -817,7 +817,7 @@ export default function ReceiptForm({
                   two things only they can tell us. */}
               {twoUp && (
                 <div className="flex flex-col gap-4">
-                  <dl className="grid grid-cols-3 gap-4 rounded-2xl border border-black/10 p-4">
+                  <dl className="grid grid-cols-3 gap-4 rounded-2xl border border-black/10 bg-white p-4">
                     <div>
                       <dt className="text-[12px] leading-tight text-black/50">สิทธิ์ที่ได้รับแล้ว</dt>
                       <dd className="mt-1 text-[24px] font-extrabold leading-none text-[var(--rc-ink,#000)] tabular-nums">{approved}</dd>
@@ -840,7 +840,7 @@ export default function ReceiptForm({
                       reach whoever is holding the receipt. Asked once, before
                       the receipt's own fields, because it is answered once —
                       the fields below change with every photo, this does not. */}
-                  <div className="rounded-2xl border border-black/10 p-4">
+                  <div className="rounded-2xl border border-black/10 bg-white p-4">
                     <p className="text-[13px] font-bold text-black">ผู้รับรางวัล</p>
                     <p className="mt-1 text-[12px] leading-relaxed text-black/50">
                       ใช้ติดต่อกลับถ้าคุณได้รับรางวัล — กรอกให้ตรงกับบัตรประชาชน
@@ -871,7 +871,7 @@ export default function ReceiptForm({
                       the fields are the form, and the photo on the left is
                       what they are read off. */}
                   {singleItem && (
-                    <div className="rounded-2xl border border-black/10 p-4">
+                    <div className="rounded-2xl border border-black/10 bg-white p-4">
                       <p className="text-[13px] font-bold text-black">ข้อมูลจากใบเสร็จ</p>
                       {singleItem.reading ? (
                         // Empty boxes beside a spinner in the corner read as
@@ -990,7 +990,7 @@ export default function ReceiptForm({
             {/* Where they stand, before the list of how they got there. Someone
                 who has sent five photos wants one number, not five cards to
                 add up. */}
-            <div className="mt-3 rounded-2xl border border-black/10 p-4">
+            <div className="mt-3 rounded-2xl border border-black/10 bg-white p-4">
               <dl className="grid grid-cols-3 gap-4">
                 <div>
                   <dt className="text-[12px] leading-tight text-black/50">สิทธิ์ที่ได้รับแล้ว</dt>
