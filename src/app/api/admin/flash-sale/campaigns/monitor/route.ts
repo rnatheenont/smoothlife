@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { flashSaleMonitor, UUID_RE } from "@/lib/flash-sale";
+import { sharedSourcesFor } from "@/lib/flash-sale-sources";
 
 // Admin: live numbers for several campaigns in one request. The console can
 // have any number of campaign queues unfolded at once, and each one polling
@@ -32,6 +33,8 @@ export async function GET(req: NextRequest) {
         .join(",")})&order=confirmed_at.desc&limit=200`
     ).catch(() => []);
 
+    const shared = await sharedSourcesFor(ids);
+
     const entries = await Promise.all(
       ids.map(async (id) => {
         const monitor = await flashSaleMonitor(id).catch(() => null);
@@ -39,7 +42,7 @@ export async function GET(req: NextRequest) {
         const refunds = refundRows
           .filter((r) => r.flash_sale_queue?.campaign_id === id)
           .map(({ invoice_no, amount, refund_note }) => ({ invoice_no, amount, refund_note }));
-        return [id, { ...monitor, refunds }] as const;
+        return [id, { ...monitor, refunds, sharedSources: shared[id] ?? [] }] as const;
       })
     );
 

@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FlashSaleMonitor } from "@/lib/flash-sale";
 
-export type Monitor = FlashSaleMonitor & { refunds: { invoice_no: string; amount: number; refund_note: string }[] };
+import type { SharedSource } from "@/lib/flash-sale-sources";
+
+export type Monitor = FlashSaleMonitor & {
+  refunds: { invoice_no: string; amount: number; refund_note: string }[];
+  sharedSources: SharedSource[];
+};
 
 const POLL_MS = 5000;
 
