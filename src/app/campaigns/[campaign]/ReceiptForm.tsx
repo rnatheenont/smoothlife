@@ -700,7 +700,7 @@ export default function ReceiptForm({
                                       {order.entries} สิทธิ์
                                     </p>
                                   ) : (
-                                    <p className="mt-1.5 text-[12px] text-amber-700">ยังไม่พบคำสั่งซื้อเลขนี้ในระบบ</p>
+                                    <p className="mt-1.5 text-[12px] text-amber-700">ยังไม่พบคำสั่งซื้อเลขนี้ในบัญชีนี้</p>
                                   ))}
 
                                 {/* What this receipt says, as read off it, with
