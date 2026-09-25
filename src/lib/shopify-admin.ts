@@ -2196,3 +2196,92 @@ export async function registerCatalogueWebhooks(callbackUrl: string): Promise<Ca
   }
   return results;
 }
+
+/**
+ * The products the storefront cannot see.
+ *
+ * The static catalogue is generated from the Storefront API, which only
+ * returns what is published — so a product still in draft, or hidden from the
+ * online store, does not exist as far as this app is concerned. That is
+ * correct for the shop and wrong for the console: a flash sale for next
+ * month's launch has to be set up before the product goes live.
+ *
+ * Only for admin screens, and only ever to draft with. A campaign pointed at
+ * a draft product cannot be bought until somebody publishes it, which is the
+ * whole point of drafting it.
+ */
+export type UnpublishedProduct = {
+  slug: string;
+  name: string;
+  brand: string;
+  image: string;
+  price: number;
+  compareAtPrice?: number;
+  variantId: string;
+  /** Why the storefront cannot see it. */
+  state: "draft" | "unlisted";
+};
+
+let unpublishedCache: { at: number; items: UnpublishedProduct[] } | null = null;
+
+export async function unpublishedProducts(): Promise<UnpublishedProduct[]> {
+  if (!shopifyAdminConfigured()) return [];
+  // A minute is long enough to stop a form's keystrokes hitting Shopify and
+  // short enough that publishing something shows up while you are still
+  // looking at the screen.
+  if (unpublishedCache && Date.now() - unpublishedCache.at < 60_000) return unpublishedCache.items;
+
+  try {
+    const data = await adminGraphql<{
+      products: {
+        nodes: {
+          handle: string;
+          title: string;
+          vendor: string;
+          status: string;
+          publishedAt: string | null;
+          featuredMedia: { preview: { image: { url: string } | null } | null } | null;
+          variants: {
+            nodes: { id: string; price: string; compareAtPrice: string | null }[];
+          };
+        }[];
+      };
+    }>(
+      `query Unpublished($q: String!) {
+         products(first: 100, query: $q, sortKey: UPDATED_AT, reverse: true) {
+           nodes {
+             handle title vendor status publishedAt
+             featuredMedia { preview { image { url } } }
+             variants(first: 1) { nodes { id price compareAtPrice } }
+           }
+         }
+       }`,
+      { q: "status:draft OR published_status:unpublished" }
+    );
+
+    const items: UnpublishedProduct[] = [];
+    for (const n of data.products?.nodes ?? []) {
+      const v = n.variants?.nodes?.[0];
+      const price = Number(v?.price);
+      if (!v?.id || !Number.isFinite(price) || price <= 0) continue;
+      const compare = Number(v.compareAtPrice);
+      items.push({
+        slug: n.handle,
+        name: n.title,
+        brand: n.vendor || "—",
+        image: n.featuredMedia?.preview?.image?.url ?? "",
+        price,
+        compareAtPrice: Number.isFinite(compare) && compare > price ? compare : undefined,
+        variantId: v.id,
+        state: n.status === "DRAFT" ? "draft" : "unlisted",
+      });
+    }
+    unpublishedCache = { at: Date.now(), items };
+    return items;
+  } catch (err) {
+    // The picker falls back to the published catalogue; drafting is a
+    // convenience, not something worth failing the screen over.
+    console.error("[shopify-admin] unpublishedProducts failed", err);
+    return [];
+  }
+}

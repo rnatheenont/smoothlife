@@ -104,11 +104,27 @@ export function rowToCampaign(r: FlashSaleCampaignRow): FlashSaleCampaignDTO {
   };
 }
 
+/**
+ * Products the storefront cannot see, for the console to draft with.
+ *
+ * The static catalogue comes from the Storefront API, so a draft or unlisted
+ * product is not in it — and a campaign being set up before its product goes
+ * live is a perfectly ordinary thing to want. The admin routes look those up
+ * from Shopify and hand them in here, so the slug still has to name something
+ * real: the client never says what a variant is.
+ */
+export type ExtraProducts = Map<string, { variantId: string; price: number }>;
+
 /** The price a product sells for outside the flash sale: its default variant's. */
-export function regularPrice(slug: string): number | null {
+export function regularPrice(slug: string, extra?: ExtraProducts): number | null {
   const p = getProductBySlug(slug);
-  if (!p) return null;
-  return p.variants.find((v) => v.variantId === p.variantId)?.price ?? p.price;
+  if (p) return p.variants.find((v) => v.variantId === p.variantId)?.price ?? p.price;
+  return extra?.get(slug)?.price ?? null;
+}
+
+/** The variant a campaign sells, published or not. */
+export function variantIdOf(slug: string, extra?: ExtraProducts): string | null {
+  return getProductBySlug(slug)?.variantId ?? extra?.get(slug)?.variantId ?? null;
 }
 
 export type PricingInput =
@@ -174,7 +190,8 @@ function parsePresentation(b: Record<string, unknown>): Pick<FlashSaleCampaignRo
 
 /** Validates a create request; returns the row to insert or a Thai error message. */
 export function parseCampaignInput(
-  body: unknown
+  body: unknown,
+  extra?: ExtraProducts
 ): { row: Omit<FlashSaleCampaignRow, "id" | "created_at" | "ended_manually_at">; salePrices: Record<string, number | null> } | { error: string } {
   if (!body || typeof body !== "object") return { error: "ข้อมูลไม่ถูกต้อง" };
   const b = body as Record<string, unknown>;
@@ -197,7 +214,7 @@ export function parseCampaignInput(
   if (slugs.length === 0) return { error: "กรุณาเลือกสินค้าอย่างน้อย 1 รายการ" };
   if (slugs.length > MAX_PRODUCTS) return { error: `เลือกสินค้าได้ไม่เกิน ${MAX_PRODUCTS} รายการต่อแคมเปญ` };
   if (mode === "single" && slugs.length !== 1) return { error: "แคมเปญสินค้าชิ้นเดียวต้องมีสินค้า 1 รายการ" };
-  const missing = slugs.find((s) => !getProductBySlug(s));
+  const missing = slugs.find((s) => !getProductBySlug(s) && !extra?.has(s));
   if (missing) return { error: `ไม่พบสินค้า: ${missing}` };
 
   const int = (v: unknown, min: number, max: number) => (Number.isInteger(v) && (v as number) >= min && (v as number) <= max ? (v as number) : null);
@@ -219,7 +236,7 @@ export function parseCampaignInput(
   const pricing = (b.pricing ?? { mode: "regular" }) as PricingInput;
   const salePrices: Record<string, number | null> = {};
   for (const slug of slugs) {
-    const regular = regularPrice(slug)!;
+    const regular = regularPrice(slug, extra)!;
     if (pricing.mode === "regular") {
       salePrices[slug] = null;
     } else if (pricing.mode === "percent") {

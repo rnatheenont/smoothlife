@@ -2,6 +2,8 @@ import { products } from "@/data/products";
 import { categories } from "@/data/categories";
 import { brands, brandSlugAliases, slugifyVendor } from "@/data/brands";
 import { collections } from "@/data/collections";
+import { unpublishedProducts } from "@/lib/shopify-admin";
+import type { ExtraProducts } from "@/lib/flash-sale-campaigns";
 import type { CatalogueItem, ProductGroup } from "@/components/flash-sale-demo/CampaignSetup";
 
 // What a flash sale can be built out of: the shop's own products, and the
@@ -54,4 +56,39 @@ export function saleGroups(catalogue: CatalogueItem[]): ProductGroup[] {
     })),
     // A "group" of one is a single-product campaign wearing the wrong hat.
   ].filter((g) => g.slugs.length >= 2);
+}
+
+/**
+ * The picker's list, including what the shop has not published yet.
+ *
+ * Drafts come last and carry a marker: a campaign can be set up for next
+ * month's launch, but nobody should mistake one for something on sale.
+ */
+export async function catalogueWithDrafts(): Promise<CatalogueItem[]> {
+  const published = saleCatalogue();
+  const known = new Set(published.map((p) => p.slug));
+  const drafts = await unpublishedProducts();
+  return [
+    ...published,
+    ...drafts
+      .filter((d) => !known.has(d.slug) && d.image)
+      .map((d) => ({
+        slug: d.slug,
+        name: d.name,
+        brand: d.brand,
+        brandSlug: slugifyVendor(d.brand),
+        // Not in any category the storefront knows, which is the point.
+        category: "",
+        image: d.image,
+        price: d.price,
+        compareAtPrice: d.compareAtPrice,
+        state: d.state,
+      })),
+  ];
+}
+
+/** Slug → variant and price, for the products the static catalogue lacks. */
+export async function unpublishedIndex(): Promise<ExtraProducts> {
+  const rows = await unpublishedProducts();
+  return new Map(rows.map((d) => [d.slug, { variantId: d.variantId, price: d.price }]));
 }
