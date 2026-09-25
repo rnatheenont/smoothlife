@@ -25,7 +25,10 @@ import Footer from "@/components/Footer";
 // the table it lives in. Which chrome it wears depends on the campaign row, not
 // on the URL, so the decision moves down to src/app/flash-sale/[id]/layout.tsx
 // where that row can be read. Both branches are here for it to pick from.
-const BARE = ["/admin", "/chat", "/campaigns", "/flash-sale"];
+// The pages a campaign sign-up passes through on the way back from Shopify
+// belong to whichever journey sent them, so they decide too — in
+// src/components/campaign/CampaignChrome.tsx, which can read returnTo.
+const BARE = ["/admin", "/chat", "/campaigns", "/flash-sale", "/account/complete-profile", "/account/login"];
 
 /** Exactly this path or something under it — never /flash-sale-demo. */
 const isUnder = (pathname: string | null, base: string) =>

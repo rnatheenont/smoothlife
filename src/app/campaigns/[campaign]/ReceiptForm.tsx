@@ -152,9 +152,10 @@ export default function ReceiptForm({
   const [items, setItems] = useState<Item[]>([]);
   const [openEntry, setOpenEntry] = useState<string | null>(null);
   // One receipt at a time is what almost everybody is doing, and a row in a
-  // list is a worse way to look at the only photo you have. Sending several is
-  // the exception, so it is the one you switch to.
-  const [mode, setMode] = useState<"single" | "multi">("single");
+  // list is a worse way to look at the only photo you have. So the form is not
+  // asking which one they want: it shows the photo on its own until there is
+  // more than one, and picking several at once is the whole of "several".
+  const mode = items.length > 1 ? "multi" : "single";
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   // What the photo was read to say, after the customer has had a look at it.
@@ -299,7 +300,7 @@ export default function ReceiptForm({
    * against the wrong order is worse than one the customer had to point at.
    */
   async function addFiles(picked: File[]) {
-    const single = mode === "single";
+    const single = picked.length === 1 && items.length <= 1;
     const fresh: Item[] = picked.slice(0, single ? 1 : 10).map((file, i) => ({
       id: `${Date.now()}-${i}-${file.name}`,
       file,
@@ -607,47 +608,9 @@ export default function ReceiptForm({
                       แคปหน้าจออีเมลยืนยันคำสั่งซื้อที่ได้รับจาก Smoothlife.com ให้เห็น
                       <b>เลขคำสั่งซื้อ (ORDER #)</b> รายการสินค้า และยอดรวม · JPG, PNG หรือ WEBP ไม่เกิน 8MB
                       <br />
-                      {mode === "multi" && (
-                        <>
-                          <br />
-                          <b>เลือกได้หลายรูปพร้อมกัน</b> ระบบจะอ่านเลขคำสั่งซื้อในรูปแล้วจับคู่ให้เอง
-                        </>
-                      )}
+                      <br />
+                      <b>เลือกได้หลายรูปพร้อมกัน</b> ระบบจะอ่านเลขคำสั่งซื้อในรูปแล้วจับคู่ให้เอง
                     </p>
-
-                    {/* The switch, not a setting: most people send one receipt
-                        and never need to know the other mode exists. */}
-                    <div className="mt-3 inline-flex rounded-full border border-black/10 p-0.5">
-                      {(
-                        [
-                          ["single", "ทีละใบ"],
-                          ["multi", "หลายใบพร้อมกัน"],
-                        ] as const
-                      ).map(([key, label]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => {
-                            if (key === mode) return;
-                            // Switching to one-at-a-time with a stack already
-                            // picked would have to throw work away; keep the
-                            // newest and say nothing about the rest.
-                            if (key === "single") {
-                              setItems((old) => {
-                                old.slice(0, -1).forEach((row) => URL.revokeObjectURL(row.preview));
-                                return old.slice(-1).map((row) => ({ ...row, editing: true }));
-                              });
-                            }
-                            setMode(key);
-                          }}
-                          className={`min-h-9 rounded-full px-4 text-[13px] font-semibold transition-colors ${
-                            mode === key ? "bg-black text-white" : "text-black/50 hover:text-black/80"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
 
                     <label
                       className={`mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.02] hover:border-black/40 ${
@@ -674,14 +637,14 @@ export default function ReceiptForm({
                             {items.length ? "เพิ่มรูปใบเสร็จ" : "เลือกรูปใบเสร็จ"}
                           </span>
                           <span className="text-[12px] text-black/40">
-                            แตะเพื่อถ่ายรูปหรือเลือกจากคลัง{mode === "multi" ? " · เลือกได้หลายรูป" : ""}
+                            แตะเพื่อถ่ายรูปหรือเลือกจากคลัง · เลือกได้หลายรูป
                           </span>
                         </>
                       )}
                       <input
                         ref={fileInput}
                         type="file"
-                        multiple={mode === "multi"}
+                        multiple
                         accept="image/jpeg,image/png,image/webp"
                         className="hidden"
                         onChange={(e) => {
