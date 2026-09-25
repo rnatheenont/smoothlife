@@ -85,6 +85,65 @@ async function recalculate(id: string, token: string | undefined) {
   return NextResponse.json({ ok: true, entries, dentisteAmount: amounts.dentisteAmount });
 }
 
+/**
+ * Puts a decided receipt back in the queue.
+ *
+ * Approving is a judgement made in a few seconds about somebody's claim on a
+ * ฿55,000 prize, and judgements made in a few seconds are sometimes wrong. The
+ * alternative to a way back is an admin editing the database by hand, which is
+ * the same act without the record of it.
+ *
+ * The decision is cleared, not overwritten: who decided and why goes to the
+ * audit log on the way past, so the history of a receipt survives being
+ * changed. A draw already made is not touched — entries move, a drawn result
+ * is a record of what happened, and reconciling the two is a person's call.
+ */
+async function reopen(id: string, token: string | undefined) {
+  const [entry] = await supabaseRest<
+    { id: string; status: string; reject_reason: string | null; revoke_reason: string | null }[]
+  >(
+    `receipt_campaign_entries?id=eq.${pgValue(id)}&campaign_key=eq.${CAMPAIGN}` +
+      `&select=id,status,reject_reason,revoke_reason&limit=1`
+  );
+  if (!entry) return NextResponse.json({ ok: false, error: "ไม่พบใบเสร็จรายการนี้" }, { status: 404 });
+  if (entry.status === "pending_review") {
+    return NextResponse.json({ ok: false, error: "ใบเสร็จนี้อยู่ในคิวตรวจอยู่แล้ว" }, { status: 409 });
+  }
+
+  await supabaseRest(`receipt_campaign_entries?id=eq.${pgValue(id)}`, {
+    method: "PATCH",
+    returning: false,
+    body: JSON.stringify({
+      status: "pending_review",
+      reject_reason: null,
+      revoked_at: null,
+      revoke_reason: null,
+      reviewed_by: null,
+      reviewed_at: null,
+      // A number typed over the old calculation was a correction to a decision
+      // that is being taken back with it.
+      entries_override: null,
+    }),
+  });
+
+  await supabaseRest("admin_audit_log", {
+    method: "POST",
+    returning: false,
+    body: JSON.stringify({
+      action: "receipt.reopen",
+      target: id,
+      detail: {
+        campaign: CAMPAIGN,
+        from: entry.status,
+        reason: entry.reject_reason ?? entry.revoke_reason ?? null,
+        by: getAdminSession(token)?.userId ?? null,
+      },
+    }),
+  }).catch((err) => console.error("[admin/receipts] audit write failed", err));
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
   const token = req.cookies.get(ADMIN_COOKIE)?.value;
@@ -99,8 +158,12 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const body = await req.json().catch(() => null);
   const action = body?.action;
   if (action === "recalculate") return recalculate(id, token);
+  if (action === "reopen") return reopen(id, token);
   if (action !== "approve" && action !== "reject") {
-    return NextResponse.json({ ok: false, error: "action ต้องเป็น approve, reject หรือ recalculate" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "action ต้องเป็น approve, reject, recalculate หรือ reopen" },
+      { status: 400 }
+    );
   }
 
   const reason = typeof body?.reason === "string" ? body.reason.trim().slice(0, 300) : "";

@@ -41,6 +41,8 @@ type Data = {
   counts: { pending: number; approved: number; rejected: number; entrants: number; tickets: number };
   queue: QueueItem[];
   pendingBeyondQueue: number;
+  decided: QueueItem[];
+  decidedTotal: number;
   vip: Vip[];
   winners: Winner[];
   luckyFan: Fan[];
@@ -50,6 +52,7 @@ const TABS = [
   ["queue", "คิวตรวจ"],
   ["vip", "VIP (มาก่อนได้ก่อน)"],
   ["fan", "สิทธิ์ Lucky Fan"],
+  ["decided", "ตรวจแล้ว"],
   ["draw", "ประกาศผล"],
   ["settings", "เงื่อนไข"],
 ] as const;
@@ -84,6 +87,26 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- first load
     load();
   }, [load]);
+
+  // Putting a decided receipt back in the queue, when the decision was wrong.
+  async function reopen(item: QueueItem) {
+    if (!window.confirm(`ดึงใบเสร็จของ ${item.customer ?? "ลูกค้า"} กลับมาตรวจใหม่?`)) return;
+    setBusy(item.id);
+    try {
+      const res = await fetch(`/api/admin/receipts/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reopen" }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "ดึงกลับไม่สำเร็จ");
+      await load();
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "ดึงกลับไม่สำเร็จ");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   // Confirming a prize for someone who replied, or marking one given up.
   // Forfeiting is what calls the next reserve up; nobody is renumbered.
@@ -256,11 +279,40 @@ export default function Page() {
                   busy={busy}
                   onDecide={decide}
                   onRecalculate={recalculate}
+                  onReopen={reopen}
                 />
               )}
               {data.pendingBeyondQueue > 0 && (
                 <p className="px-3 pb-3 pt-2 text-[12px] text-slate-500">
                   แสดง {data.queue.length} รายการแรก · ยังมีอีก {data.pendingBeyondQueue} รายการรอตรวจ
+                </p>
+              )}
+            </Panel>
+          )}
+
+          {tab === "decided" && (
+            <Panel title="ตรวจแล้ว — ล่าสุดก่อน">
+              <p className="px-3 pt-3 text-[12px] text-slate-500">
+                เปิดรายการแล้วกด <b>ดึงกลับมาตรวจใหม่</b> ได้ถ้าตัดสินผิด — ใบเสร็จจะกลับไปอยู่ในคิวตรวจ
+                และผลเดิมถูกบันทึกไว้ใน audit log
+              </p>
+              {data.decided.length === 0 ? (
+                <p className="px-3 py-6 text-[13px] text-slate-500">ยังไม่มีใบเสร็จที่ตรวจแล้ว</p>
+              ) : (
+                <div className="mt-2">
+                  <QueueTable
+                    queue={data.decided}
+                    busy={busy}
+                    decided
+                    onDecide={decide}
+                    onRecalculate={recalculate}
+                    onReopen={reopen}
+                  />
+                </div>
+              )}
+              {data.decidedTotal > data.decided.length && (
+                <p className="px-3 pb-3 pt-2 text-[12px] text-slate-500">
+                  แสดง {data.decided.length} รายการล่าสุด · ทั้งหมด {data.decidedTotal} รายการ
                 </p>
               )}
             </Panel>

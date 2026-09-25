@@ -6,7 +6,7 @@ import { AlertTriangle, Check, Loader2, RefreshCw, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { formatTHB } from "@/lib/format";
 import { adminTable } from "@/components/admin/layout-kit";
-import { AI_LABEL, LINE_KIND, PAYMENT_STATUS, when, type QueueItem } from "./queue-vocab";
+import { AI_LABEL, ENTRY_STATUS, LINE_KIND, PAYMENT_STATUS, when, type QueueItem } from "./queue-vocab";
 
 // The queue as a list you can read down, with everything else a click away.
 //
@@ -45,12 +45,14 @@ function DetailPanel({
   onClose,
   onDecide,
   onRecalculate,
+  onReopen,
 }: {
   item: QueueItem | null;
   busy: string | null;
   onClose: () => void;
   onDecide: (item: QueueItem, action: "approve" | "reject") => void;
   onRecalculate: (item: QueueItem) => void;
+  onReopen: (item: QueueItem) => void;
 }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
   useEffect(() => setHost(document.body), []);
@@ -246,6 +248,27 @@ function DetailPanel({
             </div>
 
             <div className="border-t border-surface-line px-5 py-4">
+              {item.status !== "pending_review" ? (
+                <>
+                  <p className="mb-3 text-[12px] text-slate-500">
+                    ตรวจแล้วเมื่อ {when(item.reviewedAt)}
+                    {(item.rejectReason || item.revokeReason) && <> · {item.rejectReason ?? item.revokeReason}</>}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={busy === item.id}
+                    onClick={() => onReopen(item)}
+                    className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-surface-line px-4 text-[14px] font-semibold text-brand-800 hover:bg-surface-soft disabled:opacity-50"
+                  >
+                    <RefreshCw size={15} /> ดึงกลับมาตรวจใหม่
+                  </button>
+                  <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+                    ใบเสร็จจะกลับไปอยู่ในคิวตรวจ และผลเดิมถูกบันทึกไว้ใน audit log —
+                    ถ้าประกาศผลไปแล้ว รายชื่อที่จับได้จะไม่เปลี่ยนตาม ต้องตัดสินใจแยก
+                  </p>
+                </>
+              ) : (
+                <>
               {item.paymentStatus !== "PAID" && (
                 <p className="mb-3 flex items-start gap-1.5 rounded-l border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
                   <AlertTriangle size={13} className="mt-0.5 shrink-0" />
@@ -270,6 +293,8 @@ function DetailPanel({
                   <X size={15} /> ตีกลับ
                 </button>
               </div>
+                </>
+              )}
             </div>
           </>
         )}
@@ -282,13 +307,18 @@ function DetailPanel({
 export default function QueueTable({
   queue,
   busy,
+  decided = false,
   onDecide,
   onRecalculate,
+  onReopen,
 }: {
   queue: QueueItem[];
   busy: string | null;
+  /** The list of receipts already decided — it gets a status column. */
+  decided?: boolean;
   onDecide: (item: QueueItem, action: "approve" | "reject") => void;
   onRecalculate: (item: QueueItem) => void;
+  onReopen: (item: QueueItem) => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   // Looked up in the list rather than copied out of it: approving reloads the
@@ -308,6 +338,7 @@ export default function QueueTable({
               <th className="text-right">ยอด DENTISTE&apos;</th>
               <th className="text-right">สิทธิ์</th>
               <th>AI ตรวจ</th>
+              {decided && <th>ผลตรวจ</th>}
               <th>ส่งเมื่อ</th>
               <th />
             </tr>
@@ -371,6 +402,17 @@ export default function QueueTable({
                       <span className="text-[11px] text-slate-400">ไม่ได้ตรวจ</span>
                     )}
                   </td>
+                  {decided && (
+                    <td className={adminTable.cell}>
+                      <span
+                        className={`inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-bold ${
+                          ENTRY_STATUS[item.status][1]
+                        }`}
+                      >
+                        {ENTRY_STATUS[item.status][0]}
+                      </span>
+                    </td>
+                  )}
                   <td className={adminTable.muted}>{when(item.sentAt)}</td>
                   <td className={`${adminTable.cell} text-right`}>
                     <span className="inline-flex items-center gap-1.5">
@@ -393,6 +435,7 @@ export default function QueueTable({
         onClose={() => setOpenId(null)}
         onDecide={onDecide}
         onRecalculate={onRecalculate}
+        onReopen={onReopen}
       />
     </>
   );
