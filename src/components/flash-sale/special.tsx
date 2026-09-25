@@ -59,11 +59,76 @@ export function SpecialHero({
   // reader or from Google.
   const [showTitle, setShowTitle] = useState(true);
 
+  // Where the artwork sits inside the frame.
+  //
+  // The frame is a fixed 3:1 and the artwork is not, so object-cover picks a
+  // middle slice and throws the rest away — on this one it cut the lettering
+  // off the top. Rather than guess a better fixed crop for artwork nobody has
+  // delivered yet, the image can be moved: drag it and the part you want is
+  // the part you see.
+  //
+  // Mouse and pen only. A vertical drag on a touch screen is how a page is
+  // scrolled, and a banner that swallowed it would trade a cropped picture for
+  // a page that will not move.
+  const [pos, setPos] = useState({ x: 50, y: 50 });
+  const [dragging, setDragging] = useState(false);
+  const [moved, setMoved] = useState(false);
+  const frame = useRef<HTMLDivElement | null>(null);
+  const from = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+
+  function onPointerDown(e: React.PointerEvent) {
+    if (e.pointerType === "touch") return;
+    const box = frame.current?.getBoundingClientRect();
+    if (!box) return;
+    from.current = { x: e.clientX, y: e.clientY, px: pos.x, py: pos.y };
+    setDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    const start = from.current;
+    const box = frame.current?.getBoundingClientRect();
+    if (!start || !box) return;
+    // A drag of the frame's width moves the crop across its whole range, which
+    // makes the image feel attached to the cursor at any size of screen.
+    const clamp = (n: number) => Math.min(100, Math.max(0, n));
+    const next = {
+      x: clamp(start.px - ((e.clientX - start.x) / box.width) * 100),
+      y: clamp(start.py - ((e.clientY - start.y) / box.height) * 100),
+    };
+    if (next.x !== pos.x || next.y !== pos.y) setMoved(true);
+    setPos(next);
+  }
+
+  function endDrag(e: React.PointerEvent) {
+    from.current = null;
+    setDragging(false);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+  }
+
   return (
     <header className="relative isolate overflow-hidden bg-[#01010c] [clip-path:ellipse(140%_100%_at_50%_0%)]">
-      <div className="relative mx-auto aspect-[4/3] w-full max-w-[1440px] sm:aspect-[21/9] lg:aspect-[3/1]">
+      <div
+        ref={frame}
+        onPointerDown={onPointerDown}
+        onPointerMove={dragging ? onPointerMove : undefined}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        className={`relative mx-auto aspect-[4/3] w-full max-w-[1440px] select-none sm:aspect-[21/9] lg:aspect-[3/1] ${
+          image ? (dragging ? "cursor-grabbing" : "cursor-grab") : ""
+        }`}
+      >
         {image ? (
-          <Image src={image} alt="" fill sizes="100vw" className="object-cover" priority />
+          <Image
+            src={image}
+            alt=""
+            fill
+            sizes="100vw"
+            draggable={false}
+            className="object-cover"
+            style={{ objectPosition: `${pos.x}% ${pos.y}%` }}
+            priority
+          />
         ) : (
           <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_50%_120%,var(--fs-accent),#01010c_65%)]" aria-hidden />
         )}
@@ -81,6 +146,25 @@ export function SpecialHero({
           </h1>
           {note && <p className="mt-2 text-xs text-white/85 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] sm:text-sm">{note}</p>}
         </div>
+
+        {/* Said once, and only while it is still true. */}
+        {image && !moved && (
+          <p className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/35 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur max-md:hidden">
+            ลากเพื่อเลื่อนภาพ
+          </p>
+        )}
+        {image && moved && (
+          <button
+            type="button"
+            onClick={() => {
+              setPos({ x: 50, y: 50 });
+              setMoved(false);
+            }}
+            className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/35 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur transition hover:bg-black/55 max-md:hidden"
+          >
+            คืนตำแหน่งเดิม
+          </button>
+        )}
 
         <button
           type="button"
