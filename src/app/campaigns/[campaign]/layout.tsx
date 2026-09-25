@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { StoreHeader, StoreFooter } from "@/components/campaign/StoreChrome";
 import { loadCampaignContent } from "@/lib/receipt-campaign-content";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
@@ -18,9 +18,23 @@ export default async function CampaignChromeLayout({
   children: ReactNode;
   params: Promise<{ campaign: string }>;
 }) {
-  const { storeUrl } = await loadCampaignContent(campaignKeyFrom((await params).campaign));
+  const { storeUrl, accent } = await loadCampaignContent(campaignKeyFrom((await params).campaign));
   return (
-    <div className="flex min-h-dvh flex-col bg-white">
+    // Four shades from one setting: the accent itself for fills, a darkened
+    // one for type, a wash for chips and icon circles, and the faintest of
+    // all behind the whole page. The cards are white so they still lift off
+    // it — a tint everywhere and nothing on top of it is just a grey page.
+    <div
+      className="flex min-h-dvh flex-col bg-[var(--rc-page)]"
+      style={
+        {
+          "--rc-accent": accent,
+          "--rc-ink": `color-mix(in oklab, ${accent} 78%, black)`,
+          "--rc-wash": `color-mix(in oklab, ${accent} 10%, white)`,
+          "--rc-page": `color-mix(in oklab, ${accent} 5%, white)`,
+        } as CSSProperties
+      }
+    >
       <StoreHeader storeUrl={storeUrl} />
       <main className="flex-1">{children}</main>
       <StoreFooter />

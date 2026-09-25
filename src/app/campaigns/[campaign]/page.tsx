@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { CalendarDays, Gift, Receipt, Ticket } from "lucide-react";
@@ -55,19 +54,7 @@ export default async function Page({
   }));
 
   return (
-    <div
-      className="mx-auto max-w-5xl px-4 py-10"
-      // Two shades from one setting: the campaign's own colour for fills, and
-      // a darkened version of it for type, because a vivid accent that reads
-      // well as a button is not a colour to set body copy in.
-      style={
-        {
-          "--rc-accent": content.accent,
-          "--rc-ink": `color-mix(in oklab, ${content.accent} 78%, black)`,
-          "--rc-wash": `color-mix(in oklab, ${content.accent} 10%, white)`,
-        } as CSSProperties
-      }
-    >
+    <div className="mx-auto max-w-5xl px-4 py-10">
       <p className="text-[13px] font-semibold uppercase tracking-wide text-[var(--rc-ink)]">{content.eyebrow}</p>
       <h1 className="mt-2 max-w-2xl text-3xl font-extrabold leading-tight text-black sm:text-4xl">{content.title}</h1>
       <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-black/70">{content.intro}</p>
@@ -78,7 +65,7 @@ export default async function Page({
 
       <ol className="mt-10 grid gap-4 sm:grid-cols-3">
         {steps.map(({ Icon, title, body }, i) => (
-          <li key={title} className="flex gap-4 rounded-2xl border border-black/10 p-5 sm:flex-col sm:gap-3">
+          <li key={title} className="flex gap-4 rounded-2xl border border-black/10 bg-white p-5 sm:flex-col sm:gap-3">
             <div className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--rc-wash)] text-[var(--rc-ink)]">
               <Icon size={18} aria-hidden />
             </div>
@@ -93,7 +80,7 @@ export default async function Page({
       </ol>
 
       {!open && (
-        <div className="mt-10 rounded-2xl border border-black/10 bg-black/[0.02] p-5">
+        <div className="mt-10 rounded-2xl border border-black/10 bg-white p-5">
           <p className="text-[14px] font-bold text-black">{closed ? "ปิดรับใบเสร็จแล้ว" : "ยังไม่เปิดรับใบเสร็จ"}</p>
           <p className="mt-1 text-[14px] leading-relaxed text-black/70">
             {closed
