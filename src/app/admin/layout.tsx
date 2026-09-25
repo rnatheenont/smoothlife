@@ -150,6 +150,7 @@ const FULL_WIDTH = [
   "/admin/knowledge-base",
   "/admin/line-rich-menu",
   "/admin/flash-sale",
+  "/admin/receipts",
   "/admin/inbox",
   "/admin/seo",
   "/admin/brand-insights",

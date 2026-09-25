@@ -246,12 +246,20 @@ export default function Page() {
 
       {data && (
         <>
-          <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
-            <StatCard label="รอตรวจ" value={String(data.counts.pending)} />
-            <StatCard label="อนุมัติแล้ว" value={String(data.counts.approved)} />
-            <StatCard label="ตีกลับ" value={String(data.counts.rejected)} />
-            <StatCard label="ผู้ร่วมสนุก" value={String(data.counts.entrants)} />
-            <StatCard label="สิทธิ์รวม" value={String(data.counts.tickets)} />
+          {/* Two groups, not five equal boxes. Three of these are the state
+              of the queue and two are the size of the campaign, and a row that
+              spaces them evenly across a wide screen says they are all the
+              same kind of number. */}
+          <div className="mb-5 grid gap-3 xl:grid-cols-[3fr_2fr]">
+            <div className="grid grid-cols-3 gap-3">
+              <StatCard label="รอตรวจ" value={String(data.counts.pending)} />
+              <StatCard label="อนุมัติแล้ว" value={String(data.counts.approved)} />
+              <StatCard label="ตีกลับ" value={String(data.counts.rejected)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <StatCard label="ผู้ร่วมสนุก" value={String(data.counts.entrants)} />
+              <StatCard label="สิทธิ์รวม" value={String(data.counts.tickets)} />
+            </div>
           </div>
 
           <div className="scrollbar-none mb-5 flex gap-1 overflow-x-auto border-b border-surface-line">

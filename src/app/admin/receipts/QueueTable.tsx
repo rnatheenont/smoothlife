@@ -329,7 +329,22 @@ export default function QueueTable({
   return (
     <>
       <div className={adminTable.scroll}>
-        <table className={adminTable.table}>
+        {/* The customer's name takes the slack; everything else is a number,
+            a chip or a date and gets exactly what it needs. Without this the
+            browser hands a 27" monitor's spare width to whichever column has
+            the longest word in it. */}
+        <table className={`${adminTable.table} table-fixed`}>
+          <colgroup>
+            <col className="w-[22%]" />
+            <col className="w-[13%]" />
+            <col className="w-[11%]" />
+            <col className="w-[13%]" />
+            <col className="w-[5%]" />
+            <col className="w-[13%]" />
+            {decided && <col className="w-[11%]" />}
+            <col className="w-[9%]" />
+            <col className="w-[10%]" />
+          </colgroup>
           <thead className={adminTable.thead}>
             <tr>
               <th>ลูกค้า</th>
