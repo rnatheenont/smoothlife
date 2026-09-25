@@ -10,7 +10,7 @@ import {
   withinCampaign,
   type LineItem,
 } from "@/lib/receipt-campaign";
-import { checkReceiptPhoto } from "@/lib/receipt-vision";
+import { checkReceiptPhoto, readMoment } from "@/lib/receipt-vision";
 import { orderNameByGid, orderNamesByGid } from "@/lib/shopify-admin";
 import { loadCampaignContent, windowOf } from "@/lib/receipt-campaign-content";
 import { holdsPrize } from "@/lib/receipt-campaign";
@@ -232,8 +232,9 @@ export async function POST(req: NextRequest) {
   // reviewer to compare against, and deliberately nowhere near the arithmetic
   // below — a number typed into a form must not be able to earn an entry.
   const declaredOrderNumber = String(form?.get("declaredOrderNumber") ?? "").trim().slice(0, 40) || null;
-  const declaredPaidRaw = String(form?.get("declaredPaidAt") ?? "").trim();
-  const declaredPaidAt = /^\d{4}-\d{2}-\d{2}$/.test(declaredPaidRaw) ? declaredPaidRaw : null;
+  // The form sends Bangkok wall-clock time; the column keeps the moment.
+  const declaredLocal = readMoment(String(form?.get("declaredPaidAt") ?? ""));
+  const declaredPaidAt = declaredLocal ? `${declaredLocal}:00+07:00` : null;
   const declaredTotalRaw = Number(String(form?.get("declaredTotal") ?? "").replace(/[^0-9.]/g, ""));
   const declaredTotal = Number.isFinite(declaredTotalRaw) && declaredTotalRaw > 0 ? declaredTotalRaw : null;
 
