@@ -74,6 +74,11 @@ const SYSTEM = `คุณคือผู้ช่วยตรวจใบเส�
 เรื่อง "read": อ่านเท่าที่เห็นจริงในภาพเท่านั้น ห้ามเดา ห้ามคัดลอกจากข้อมูลที่ระบบแจ้งให้
 ถ้าตรงไหนอ่านไม่ออกหรือไม่มีในภาพ ให้ใส่ null — ตัวเลขผิดที่ลูกค้าไม่ทันสังเกตแย่กว่าช่องว่าง
 
+เรื่อง "paidAt" โดยเฉพาะ — วันที่มักไม่ได้อยู่ในตัวอีเมล แต่อยู่ตรงหัวอีเมลข้างชื่อผู้ส่ง ให้มองหาตรงนั้นด้วย:
+- ถ้าเป็นปี พ.ศ. (เช่น 2569) ให้ลบ 543 แปลงเป็น ค.ศ. ก่อนเสมอ → 2569 = 2026
+- เดือนภาษาไทยย่อ เช่น "23 ก.ย." ให้แปลงเป็นเลขเดือน และถ้าไม่มีปีให้ใช้ปีปัจจุบัน
+- ถ้าเห็นแต่เวลา (เช่น "17:04") โดยไม่มีวันที่ที่ไหนเลยในภาพ ให้ใส่ null — อย่าเดาวันที่จากเวลา
+
 เกณฑ์:
 - "ok" = เป็นอีเมลยืนยันคำสั่งซื้อของ Smoothlife.com และเลขคำสั่งซื้อตรงกับที่ระบบแจ้ง
 - "unclear" = อ่านไม่ออก ภาพเบลอ มืด ถ่ายไม่ครบ หรือไม่เห็นเลขคำสั่งซื้อ
@@ -100,7 +105,11 @@ export function readMoment(value: string | null | undefined): string | null {
   const v = (value ?? "").trim().replace("T", " ");
   const m = /^(\d{4})-(\d{2})-(\d{2})(?:[ ](\d{2}):(\d{2}))?/.exec(v);
   if (!m) return null;
-  const [, y, mo, d, hh = "00", mi = "00"] = m;
+  const [, yRaw, mo, d, hh = "00", mi = "00"] = m;
+  // A receipt printed in Thailand says 2569, and a model repeating what it
+  // sees says 2569 too. That is 2026, five hundred and forty-three years of
+  // difference away from any campaign window this will be checked against.
+  const y = Number(yRaw) > 2400 ? String(Number(yRaw) - 543) : yRaw;
   const iso = `${y}-${mo}-${d}T${hh}:${mi}:00+07:00`;
   if (!Number.isFinite(Date.parse(iso))) return null;
   // Round-trip guard: Date.parse accepts 2026-02-31 and slides it to March.
