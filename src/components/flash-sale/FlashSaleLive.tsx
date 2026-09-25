@@ -631,14 +631,19 @@ function Panel({
   if (me?.status === "reserved") {
     return (
       <div>
-        <Chip color="success" variant="soft" size="sm">
+        <span
+          className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold text-white"
+          style={{ backgroundColor: "var(--fs-accent)" }}
+        >
           ถึงคิวคุณแล้ว
-        </Chip>
+        </span>
         <p className="mt-4 text-sm text-slate-600">เหลือเวลาชำระเงิน</p>
         <p className="text-5xl font-extrabold tabular-nums text-brand-ink">{mmss(secondsLeft)}</p>
+        {/* Under three minutes it goes red and stays red — that one is a
+            warning and not the campaign's to restyle. */}
         <ProgressBar aria-label="เวลาที่เหลือ" value={Math.max(0, secondsLeft)} maxValue={windowSeconds} color={secondsLeft < 180 ? "danger" : "accent"} className="mt-4">
           <ProgressBar.Track>
-            <ProgressBar.Fill />
+            <ProgressBar.Fill style={secondsLeft < 180 ? undefined : accentButton} />
           </ProgressBar.Track>
         </ProgressBar>
         {checkout}

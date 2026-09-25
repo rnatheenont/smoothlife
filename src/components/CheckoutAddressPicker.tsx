@@ -1,5 +1,8 @@
 "use client";
 
+// Selected states read --fs-accent when a campaign has set one and fall back
+// to the shop's own colour everywhere else, so the picker belongs to whatever
+// page it is standing on without a second code path for campaigns.
 import { useEffect, useState } from "react";
 import { Loader2, MapPin, Plus, X, Check, AlertTriangle } from "lucide-react";
 import AddressFields, { AddressFormValue, emptyAddressForm } from "@/components/account/AddressFields";
@@ -185,13 +188,13 @@ export default function CheckoutAddressPicker({
               onClick={() => pick(row)}
               aria-pressed={active}
               className={`w-full rounded-xl border p-3.5 text-left transition-colors ${
-                active ? "border-brand-teal bg-brand-gradient-soft" : "border-slate-200 hover:border-slate-300"
+                active ? "border-[var(--fs-accent,var(--color-brand-teal))] bg-black/[0.02]" : "border-slate-200 hover:border-slate-300"
               }`}
             >
               <span className="flex items-start gap-3">
                 <span
                   className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border ${
-                    active ? "border-brand-teal bg-brand-teal" : "border-slate-300"
+                    active ? "border-[var(--fs-accent,var(--color-brand-teal))] bg-[var(--fs-accent,var(--color-brand-teal))]" : "border-slate-300"
                   }`}
                 >
                   {active && <Check size={11} className="text-white" />}
@@ -219,7 +222,7 @@ export default function CheckoutAddressPicker({
         })}
 
         {usingUnsaved && (
-          <div className="rounded-xl border border-brand-teal bg-brand-gradient-soft p-3.5">
+          <div className="rounded-xl border border-[var(--fs-accent,var(--color-brand-teal))] bg-black/[0.02] p-3.5">
             <div className="flex items-start gap-3">
               <MapPin size={16} className="mt-0.5 shrink-0 text-brand-emerald" />
               <div className="min-w-0 flex-1">
