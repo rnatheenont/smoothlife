@@ -610,10 +610,31 @@ export default function ReceiptForm({
                     </p>
 
                     <label
-                      className={`mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.02] hover:border-black/40 ${
+                      className={`relative mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.02] hover:border-black/40 ${
                         singleItem?.preview ? "p-2" : "min-h-[120px] p-4"
                       }`}
                     >
+                      {/* Taking the photo back off. Tapping the picture
+                          replaces it, which is the common case and why this is
+                          a corner and not a row of buttons — but "I picked the
+                          wrong one and want to start again" has no other way
+                          out. preventDefault because the whole frame is the
+                          file picker. */}
+                      {singleItem?.preview && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeItem(singleItem.id);
+                          }}
+                          aria-label="ลบรูปใบเสร็จ"
+                          title="ลบรูปใบเสร็จ"
+                          className="absolute end-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm hover:bg-black"
+                        >
+                          <X size={16} aria-hidden />
+                        </button>
+                      )}
                       {/* The receipt itself, at the size of the space it was
                           asked for in. A photo you cannot read is a photo you
                           cannot check before sending. */}
