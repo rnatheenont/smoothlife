@@ -39,6 +39,8 @@ type Campaign = {
   endsAt: number | null;
   endedManuallyAt: number | null;
   salePrices: Record<string, number | null>;
+  /** How many people have queued. Anything above zero cannot be deleted. */
+  queueRows?: number;
 };
 
 const dateTime = (ms: number) =>
@@ -108,7 +110,11 @@ export default function CampaignList() {
       await load();
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : failure);
+      const message = err instanceof Error ? err.message : failure;
+      setError(message);
+      // The row is halfway down a table and the error line is above it; a
+      // refusal nobody sees is indistinguishable from a button that is broken.
+      window.alert(message);
       return false;
     } finally {
       setBusy(null);
@@ -126,7 +132,9 @@ export default function CampaignList() {
       if (!res.ok || !json.ok) throw new Error(json.error || "ลบไม่สำเร็จ");
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "ลบไม่สำเร็จ");
+      const message = err instanceof Error ? err.message : "ลบไม่สำเร็จ";
+      setError(message);
+      window.alert(message);
     } finally {
       setBusy(null);
     }
@@ -291,13 +299,24 @@ export default function CampaignList() {
                                   </>
                                 )}
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => remove(c)}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-rose-700 hover:bg-rose-50"
-                              >
-                                <Trash2 size={14} aria-hidden /> ลบแคมเปญ
-                              </button>
+                              {c.queueRows ? (
+                                // Not a disabled button with no explanation:
+                                // the reason is the whole of what to do next.
+                                <p className="px-3 py-2 text-[12px] leading-relaxed text-slate-500">
+                                  <Trash2 size={13} className="mb-0.5 me-1 inline" aria-hidden />
+                                  ลบไม่ได้ — มีลูกค้าเข้าคิวแล้ว {c.queueRows} คน
+                                  <br />
+                                  ใช้ “ปิดเผยแพร่” แทนเพื่อเอาหน้าขายลง
+                                </p>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => remove(c)}
+                                  className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-rose-700 hover:bg-rose-50"
+                                >
+                                  <Trash2 size={14} aria-hidden /> ลบแคมเปญ
+                                </button>
+                              )}
                             </div>
                           </>
                         )}

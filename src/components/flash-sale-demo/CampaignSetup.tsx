@@ -83,6 +83,8 @@ export default function CampaignSetup({
   saving = false,
   editing,
   onCancelEdit,
+  submitLabel = "เพิ่มเข้ารายการ",
+  intro,
 }: {
   config: CampaignConfig;
   catalogue: CatalogueItem[];
@@ -94,6 +96,10 @@ export default function CampaignSetup({
   saving?: boolean;
   editing?: EditingCampaign;
   onCancelEdit?: () => void;
+  /** What the button says. The simulator adds to a list; the console creates. */
+  submitLabel?: string;
+  /** The line under the heading, for the same reason. */
+  intro?: string;
 }) {
   const locked = editing?.scope === "limited";
   const [mode, setMode] = useState<CampaignConfig["mode"]>(config.mode);
@@ -219,7 +225,7 @@ export default function CampaignSetup({
               ? locked
                 ? "แคมเปญนี้เริ่มขายแล้ว แก้ได้เฉพาะชื่อ เวลาปิดการขาย และหน้าตาหน้าขาย"
                 : "ยังไม่ถึงเวลาเริ่มขาย แก้ไขได้ทุกอย่าง"
-              : "เลือกสินค้า ตั้งวันเวลา แล้วเพิ่มเข้ารายการ ระบบจะเปิดและปิดการขายให้เองตามเวลา"}
+              : (intro ?? "เลือกสินค้า ตั้งวันเวลา แล้วเพิ่มเข้ารายการ ระบบจะเปิดและปิดการขายให้เองตามเวลา")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -716,7 +722,7 @@ export default function CampaignSetup({
                 )
               }
             >
-              {saving ? "กำลังบันทึก…" : editing ? "บันทึกการแก้ไข" : "เพิ่มเข้ารายการ"}
+              {saving ? "กำลังบันทึก…" : editing ? "บันทึกการแก้ไข" : submitLabel}
             </Button>
           </div>
         </div>
