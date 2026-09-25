@@ -14,6 +14,19 @@ import { emptyAddressForm, type AddressFormValue } from "@/components/account/Ad
 import { SHOPIFY_EMAIL_LOGIN, shopifyAuthStartPath } from "@/lib/shopify-email-login";
 import { Countdown, Faq, SetPicker, SpecialHero, type CampaignTheme, type PickerItem } from "./special";
 
+/**
+ * How a campaign's colour reaches a button HeroUI paints itself.
+ *
+ * Inline rather than a class: the component's own variant styling wins a
+ * specificity fight with one, which is how the single page allowed its own
+ * palette ended up with the shop's green on every control. The value is a
+ * variable, so it follows whatever --fs-accent the surrounding layout set.
+ */
+const accentButton: CSSProperties = {
+  backgroundColor: "var(--fs-accent)",
+  borderColor: "var(--fs-accent)",
+};
+
 export type LiveProduct = {
   slug: string;
   name: string;
@@ -272,7 +285,9 @@ export default function FlashSaleLive({
   );
 
   const stockBlock = stock && (
-    <div className="rounded-xl2 bg-surface-soft p-4">
+    // Neutral rather than the shop's mint: on a campaign page it was a second
+    // colour arguing with the accent, and it is only a container.
+    <div className="rounded-xl2 bg-black/[0.03] p-4">
       <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
         <span className="whitespace-nowrap font-semibold text-brand-ink">จำนวนจำกัด {stock.total} ชิ้น</span>
         <span className="whitespace-nowrap text-slate-600">
@@ -292,7 +307,7 @@ export default function FlashSaleLive({
   const checkout = (
     <div className="mt-5 flex flex-col gap-3">
       <CheckoutAddressPicker value={address} onChange={setAddress} canSave={Boolean(status?.signedIn)} />
-      <Button fullWidth size="lg" isDisabled={!addressReady || paying} isPending={paying} onPress={pay}>
+      <Button fullWidth size="lg" style={accentButton} isDisabled={!addressReady || paying} isPending={paying} onPress={pay}>
         <CreditCard size={18} aria-hidden /> ชำระเงิน {formatTHB(price.pay)}
       </Button>
       {status?.me?.payment_pending && (
@@ -425,7 +440,7 @@ export default function FlashSaleLive({
           <Clock size={15} aria-hidden /> ยังไม่เปิดขาย
         </Button>
       ) : status.signedIn ? (
-        <Button size="sm" className="shrink-0" isDisabled={busy} isPending={busy} onPress={() => act("join")}>
+        <Button size="sm" className="shrink-0" style={accentButton} isDisabled={busy} isPending={busy} onPress={() => act("join")}>
           เข้าคิว
         </Button>
       ) : (
@@ -447,6 +462,7 @@ export default function FlashSaleLive({
   const accentStyle = {
     "--fs-accent": theme.kind === "special" ? theme.accent : "var(--color-brand-800)",
   } as CSSProperties;
+
 
   const priceRow = (
     <p className="flex flex-wrap items-baseline gap-2">
@@ -719,15 +735,26 @@ function Panel({
         </>
       ) : (
         <>
-          <Chip color="danger" variant="soft" size="sm">
+          <span
+            className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold text-white"
+            style={{ backgroundColor: "var(--fs-accent)" }}
+          >
             เปิดขายแล้ว
-          </Chip>
+          </span>
           <h3 className="mt-3 text-xl font-bold text-brand-ink">เข้าคิวเพื่อรับสิทธิ์ซื้อ</h3>
           <p className="mt-1 line-clamp-2 text-sm text-slate-600">{productName}</p>
         </>
       )}
       {signedIn ? (
-        <Button fullWidth size="lg" className="mt-5" isDisabled={busy || (expired && requeuesLeft <= 0)} isPending={busy} onPress={join}>
+        <Button
+          fullWidth
+          size="lg"
+          className="mt-5"
+          style={accentButton}
+          isDisabled={busy || (expired && requeuesLeft <= 0)}
+          isPending={busy}
+          onPress={join}
+        >
           {expired ? (
             <>
               <RotateCcw size={18} aria-hidden /> กลับเข้าคิวใหม่
