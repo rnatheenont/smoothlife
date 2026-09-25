@@ -2,6 +2,7 @@ import { randomInt } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
+import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
 // Drawing the prizes, once, in a way that can be checked afterwards.
 //
@@ -23,7 +24,8 @@ import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-aut
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CAMPAIGN = "dentiste-x-kengnamping";
+/** Which campaign this console is looking at; the first one when unstated. */
+const campaignOf = (req: NextRequest) => campaignKeyFrom(req.nextUrl.searchParams.get("campaign"));
 const WINNERS = 25;
 const RESERVES = 10;
 /** Winners have until the end of 5 Nov 2569 to claim. */
@@ -39,7 +41,7 @@ type Approved = {
 
 const entriesOf = (r: Approved) => r.entries_override ?? r.computed_entries;
 
-async function approvedEntries(): Promise<Approved[]> {
+async function approvedEntries(CAMPAIGN: string): Promise<Approved[]> {
   return supabaseRest<Approved[]>(
     `receipt_campaign_entries?campaign_key=eq.${CAMPAIGN}&status=eq.approved` +
       `&select=user_id,computed_entries,entries_override,created_at,payment_transactions(confirmed_at)` +
@@ -71,6 +73,7 @@ export function weightedDraw(pool: { userId: string; entries: number }[], take: 
 }
 
 export async function POST(req: NextRequest) {
+  const CAMPAIGN = campaignOf(req);
   const token = req.cookies.get(ADMIN_COOKIE)?.value;
   if (!verifyAdminToken(token)) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
@@ -95,7 +98,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const rows = await approvedEntries();
+  const rows = await approvedEntries(CAMPAIGN);
   if (rows.length === 0) {
     return NextResponse.json({ ok: false, error: "ยังไม่มีใบเสร็จที่อนุมัติแล้ว" }, { status: 409 });
   }
@@ -184,6 +187,7 @@ export async function POST(req: NextRequest) {
 
 /** Clearing a published result — deliberately its own action, never automatic. */
 export async function DELETE(req: NextRequest) {
+  const CAMPAIGN = campaignOf(req);
   const token = req.cookies.get(ADMIN_COOKIE)?.value;
   if (!verifyAdminToken(token)) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });

@@ -115,10 +115,13 @@ const AI_TONE: Record<AiCheck["verdict"], string> = {
 };
 
 export default function ReceiptForm({
+  campaign,
   open,
   opensLabel,
   closesLabel,
 }: {
+  /** Which campaign this page is — the key from the route, not a constant. */
+  campaign: string;
   open: boolean;
   opensLabel: string;
   closesLabel: string;
@@ -140,6 +143,10 @@ export default function ReceiptForm({
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [claiming, setClaiming] = useState<string | null>(null);
   const [tab, setTab] = useState<"send" | "history">("send");
+  // Built from the campaign this page is, so a second campaign needs no second
+  // component — only a second row in the settings table.
+  const base = `/campaigns/${campaign}`;
+  const api = `/api/campaigns/${campaign}`;
   // One row per photo. A customer who buys every week has a stack of receipts
   // and no reason to come back five times to send them.
   const [items, setItems] = useState<Item[]>([]);
@@ -161,7 +168,7 @@ export default function ReceiptForm({
   const load = useCallback(async () => {
     try {
       const q = new URLSearchParams(window.location.search).get("test") === "1" ? "?test=1" : "";
-      const res = await fetch(`/api/campaigns/dentiste-x-kengnamping/receipts${q}`, { cache: "no-store" });
+      const res = await fetch(`${api}/receipts${q}`, { cache: "no-store" });
       if (res.status === 401) return setState("guest");
       const data = await res.json();
       if (!res.ok || !data.ok) return setState("error");
@@ -229,7 +236,7 @@ export default function ReceiptForm({
   async function claim(prize: Prize) {
     setClaiming(prize.id);
     try {
-      const res = await fetch("/api/campaigns/dentiste-x-kengnamping/prizes", {
+      const res = await fetch(`${api}/prizes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: prize.id }),
@@ -320,7 +327,7 @@ export default function ReceiptForm({
       try {
         const body = new FormData();
         body.set("photo", item.file);
-        const res = await fetch("/api/campaigns/dentiste-x-kengnamping/read", { method: "POST", body });
+        const res = await fetch(`${api}/read`, { method: "POST", body });
         const data = await res.json().catch(() => ({}));
         setItems((old) =>
           old.map((row) => {
@@ -384,7 +391,7 @@ export default function ReceiptForm({
         body.set("declaredPaidAt", item.declared.paidAt.trim());
         body.set("declaredTotal", item.declared.total.trim());
         const q = new URLSearchParams(window.location.search).get("test") === "1" ? "?test=1" : "";
-        const res = await fetch(`/api/campaigns/dentiste-x-kengnamping/receipts${q}`, { method: "POST", body });
+        const res = await fetch(`${api}/receipts${q}`, { method: "POST", body });
         const data = await res.json().catch(() => ({}));
         const ok = res.ok && data.ok;
         if (ok) sent += 1;
@@ -440,7 +447,7 @@ export default function ReceiptForm({
           <a
             href={shopifyAuthStartPath({
               intent: "login",
-              returnTo: `/campaigns/dentiste-x-kengnamping${window.location.search}`,
+              returnTo: `${base}${window.location.search}`,
             })}
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-black text-[15px] font-semibold text-white hover:opacity-90"
           >

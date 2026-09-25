@@ -65,7 +65,7 @@ const field =
 const inlineField =
   "rounded-lg border border-surface-line px-2 py-1 text-[14px] text-brand-ink focus:border-brand-800 focus:outline-none";
 
-export default function CampaignSettings() {
+export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery?: string }) {
   const [content, setContent] = useState<Content | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [saving, setSaving] = useState(false);
@@ -76,7 +76,7 @@ export default function CampaignSettings() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/receipts/settings", { cache: "no-store" });
+      const res = await fetch(`/api/admin/receipts/settings${campaignQuery}`, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok || !json.ok) return setState("error");
       setContent(json.content as Content);
@@ -85,7 +85,7 @@ export default function CampaignSettings() {
     } catch {
       setState("error");
     }
-  }, []);
+  }, [campaignQuery]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- first load
@@ -116,7 +116,7 @@ export default function CampaignSettings() {
     setSaving(true);
     setNotice(null);
     try {
-      const res = await fetch("/api/admin/receipts/settings", {
+      const res = await fetch(`/api/admin/receipts/settings${campaignQuery}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

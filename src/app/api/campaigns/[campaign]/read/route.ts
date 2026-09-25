@@ -8,6 +8,7 @@ import { receiptExtension, MAX_RECEIPT_BYTES } from "@/lib/receipt-photos";
 import { amountsFromLineItems, computeEntries, withinCampaign } from "@/lib/receipt-campaign";
 import { loadCampaignContent, windowOf } from "@/lib/receipt-campaign-content";
 import { orderNamesByGid } from "@/lib/shopify-admin";
+import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
 // Reading a receipt before it is sent, so the form arrives filled in.
 //
@@ -21,7 +22,7 @@ import { orderNamesByGid } from "@/lib/shopify-admin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CAMPAIGN = "dentiste-x-kengnamping";
+
 
 type TxRow = {
   id: string;
@@ -32,7 +33,8 @@ type TxRow = {
   shopify_order_id: string | null;
 };
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest, props: { params: Promise<{ campaign: string }> }) {
+  const CAMPAIGN = campaignKeyFrom((await props.params).campaign);
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!uid) return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });

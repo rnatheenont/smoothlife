@@ -5,6 +5,7 @@ import { signedReceiptUrl } from "@/lib/receipt-photos";
 import { amountsFromLineItems, holdsPrize, type LineItem } from "@/lib/receipt-campaign";
 import { loadCampaignContent } from "@/lib/receipt-campaign-content";
 import { orderPaymentByGid } from "@/lib/shopify-admin";
+import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
 // The review queue, the VIP order, and what Lucky Fan has to draw from.
 //
@@ -20,7 +21,8 @@ import { orderPaymentByGid } from "@/lib/shopify-admin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CAMPAIGN = "dentiste-x-kengnamping";
+/** Which campaign this console is looking at; the first one when unstated. */
+const campaignOf = (req: NextRequest) => campaignKeyFrom(req.nextUrl.searchParams.get("campaign"));
 /** Winners, and the reserve list called on when someone does not confirm. */
 const VIP_WINNERS = 25;
 const VIP_RESERVE = 10;
@@ -84,6 +86,7 @@ const entriesOf = (r: EntryRow) => r.entries_override ?? r.computed_entries;
  */
 
 export async function GET(req: NextRequest) {
+  const CAMPAIGN = campaignOf(req);
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
   }

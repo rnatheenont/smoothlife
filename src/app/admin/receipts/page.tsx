@@ -71,12 +71,20 @@ export default function Page() {
   // The campaign's own name, from the same row the customer's page reads, so
   // renaming it in the settings tab renames it here.
   const [campaignName, setCampaignName] = useState<string | null>(null);
+  // Which campaign this screen is showing, and the rest to switch to. One
+  // screen for all of them: the second campaign should need a row in a table,
+  // not a copy of this page.
+  const [campaign, setCampaign] = useState<string | null>(null);
+  const [campaigns, setCampaigns] = useState<{ key: string; name: string }[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // "" for the first campaign keeps the URL clean and the server defaulting.
+  const campaignQuery = campaign ? `?campaign=${encodeURIComponent(campaign)}` : "";
+
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/receipts", { cache: "no-store" });
+      const res = await fetch(`/api/admin/receipts${campaignQuery}`, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || "โหลดข้อมูลไม่สำเร็จ");
       setData(json as Data);
@@ -84,7 +92,7 @@ export default function Page() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "โหลดข้อมูลไม่สำเร็จ");
     }
-  }, []);
+  }, [campaignQuery]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- first load
@@ -96,7 +104,10 @@ export default function Page() {
     fetch("/api/admin/receipts/name", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!cancelled && d?.ok && typeof d.name === "string" && d.name.trim()) setCampaignName(d.name.trim());
+        if (cancelled || !d?.ok) return;
+        if (typeof d.name === "string" && d.name.trim()) setCampaignName(d.name.trim());
+        if (Array.isArray(d.campaigns)) setCampaigns(d.campaigns);
+        if (typeof d.key === "string") setCampaign((c) => c ?? d.key);
       })
       .catch(() => {});
     return () => {
@@ -109,7 +120,7 @@ export default function Page() {
     if (!window.confirm(`ดึงใบเสร็จของ ${item.customer ?? "ลูกค้า"} กลับมาตรวจใหม่?`)) return;
     setBusy(item.id);
     try {
-      const res = await fetch(`/api/admin/receipts/${item.id}`, {
+      const res = await fetch(`/api/admin/receipts/${item.id}${campaignQuery}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "reopen" }),
@@ -130,7 +141,7 @@ export default function Page() {
     if (action === "forfeit" && !window.confirm(`ยืนยันว่าลำดับ ${w.rank} สละสิทธิ์? สิทธิ์จะตกไปที่ลำดับสำรองถัดไป`)) return;
     setBusy(w.id);
     try {
-      const res = await fetch(`/api/admin/receipts/winners/${w.id}`, {
+      const res = await fetch(`/api/admin/receipts/winners/${w.id}${campaignQuery}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
@@ -149,7 +160,7 @@ export default function Page() {
   async function recalculate(item: QueueItem) {
     setBusy(item.id);
     try {
-      const res = await fetch(`/api/admin/receipts/${item.id}`, {
+      const res = await fetch(`/api/admin/receipts/${item.id}${campaignQuery}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "recalculate" }),
@@ -181,7 +192,7 @@ export default function Page() {
 
     setBusy(item.id);
     try {
-      const res = await fetch(`/api/admin/receipts/${item.id}`, {
+      const res = await fetch(`/api/admin/receipts/${item.id}${campaignQuery}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, reason, entries }),
@@ -207,7 +218,7 @@ export default function Page() {
 
     setBusy(prizeType);
     try {
-      const res = await fetch("/api/admin/receipts/draw", {
+      const res = await fetch(`/api/admin/receipts/draw${campaignQuery}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prizeType }),
@@ -226,7 +237,7 @@ export default function Page() {
     if (!window.confirm(`ล้างผล ${PRIZE_LABEL[prizeType]} ทิ้ง?\n\nรายชื่อผู้ได้รับรางวัลทั้งหมดจะถูกลบ`)) return;
     setBusy(prizeType);
     try {
-      const res = await fetch(`/api/admin/receipts/draw?prizeType=${prizeType}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/receipts/draw?prizeType=${prizeType}${campaign ? `&campaign=${encodeURIComponent(campaign)}` : ""}`, { method: "DELETE" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "ล้างผลไม่สำเร็จ");
       await load();
@@ -240,9 +251,29 @@ export default function Page() {
   return (
     <div>
       <PageHeader
-        title={campaignName ?? "กิจกรรมชิงรางวัล"}
-        subtitle="ตรวจใบเสร็จ ดูลำดับ VIP และสิทธิ์ Lucky Fan"
+        title="กิจกรรมชิงรางวัล"
+        subtitle={
+          campaignName ? `${campaignName} — ตรวจใบเสร็จ ดูลำดับ VIP และสิทธิ์ Lucky Fan` : "ตรวจใบเสร็จ ดูลำดับ VIP และสิทธิ์ Lucky Fan"
+        }
         actions={
+          <>
+            {/* Only when there is a choice to make. */}
+            {campaigns.length > 1 && (
+              <select
+                value={campaign ?? ""}
+                onChange={(e) => {
+                  setCampaign(e.target.value);
+                  setCampaignName(null);
+                }}
+                className="min-h-8 rounded-full border border-surface-line bg-white px-3 text-[12px] font-semibold text-brand-ink"
+              >
+                {campaigns.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
           <button
             type="button"
             onClick={load}
@@ -250,6 +281,7 @@ export default function Page() {
           >
             <RefreshCw size={13} aria-hidden /> รีเฟรช
           </button>
+          </>
         }
       />
 
@@ -523,7 +555,7 @@ export default function Page() {
         </>
       )}
 
-      {tab === "settings" && <CampaignSettings />}
+      {tab === "settings" && <CampaignSettings campaignQuery={campaignQuery} />}
     </div>
   );
 }
