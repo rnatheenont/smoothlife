@@ -16,6 +16,7 @@ import { orderNameByGid, orderNamesByGid } from "@/lib/shopify-admin";
 import { loadCampaignContent, windowOf } from "@/lib/receipt-campaign-content";
 import { holdsPrize, type CampaignRules } from "@/lib/receipt-campaign";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
+import { eligibleOrders } from "@/lib/receipt-campaign-orders";
 import {
   ENTRY_COLUMNS,
   MAX_RECEIPT_BYTES,
@@ -72,30 +73,6 @@ type WinnerRow = {
 
 function unauthorised() {
   return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบก่อนส่งใบเสร็จ" }, { status: 401 });
-}
-
-/** Every paid order of this customer that the campaign would accept. */
-async function eligibleOrders(
-  campaignKey: string,
-  userId: string,
-  anyOrder = false
-): Promise<{ rules: CampaignRules; orders: TxRow[] }> {
-  const [rows, content] = await Promise.all([
-    supabaseRest<TxRow[]>(
-      `payment_transactions?user_id=eq.${pgValue(userId)}&status=eq.success` +
-        `&select=id,invoice_no,amount,confirmed_at,line_items,shopify_order_id&order=confirmed_at.desc&limit=100`
-    ).catch(() => [] as TxRow[]),
-    loadCampaignContent(campaignKey),
-  ]);
-  const window = windowOf(content);
-  return {
-    rules: content.rules,
-    orders: rows.filter(
-      (tx) =>
-        withinCampaign(tx.confirmed_at, anyOrder, window) &&
-        amountsFromLineItems(tx.line_items, content.rules).dentisteAmount > 0
-    ),
-  };
 }
 
 export async function GET(req: NextRequest, props: { params: Promise<{ campaign: string }> }) {
