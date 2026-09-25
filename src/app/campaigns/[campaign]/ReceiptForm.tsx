@@ -897,13 +897,32 @@ export default function ReceiptForm({
                         ).map(([key, label, type, placeholder]) => (
                           <label key={key} className="block">
                             <span className="text-[12px] font-semibold text-black/55">{label}</span>
-                            <input
-                              type={type}
-                              value={singleItem.declared[key]}
-                              placeholder={placeholder}
-                              onChange={(e) => setDeclared(singleItem.id, key, e.target.value)}
-                              className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black"
-                            />
+                            <div className="relative mt-1.5">
+                              <input
+                                type={type}
+                                value={singleItem.declared[key]}
+                                placeholder={placeholder}
+                                onChange={(e) => setDeclared(singleItem.id, key, e.target.value)}
+                                className={`min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black ${
+                                  key === "orderNumber" ? "pe-10" : ""
+                                }`}
+                              />
+                              {/* The number the model read is the one most
+                                  worth retyping, and backspacing five
+                                  characters on a phone to correct it is the
+                                  slow way to disagree with it. */}
+                              {key === "orderNumber" && singleItem.declared.orderNumber !== "" && (
+                                <button
+                                  type="button"
+                                  onClick={() => setDeclared(singleItem.id, "orderNumber", "")}
+                                  aria-label="ล้างเลขคำสั่งซื้อ"
+                                  title="ล้างเลขคำสั่งซื้อ"
+                                  className="absolute inset-y-0 end-0 flex w-10 items-center justify-center rounded-e-xl text-black/35 hover:text-black"
+                                >
+                                  <X size={16} aria-hidden />
+                                </button>
+                              )}
+                            </div>
                           </label>
                         ))}
                         <div>

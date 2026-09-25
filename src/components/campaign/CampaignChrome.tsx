@@ -1,7 +1,4 @@
-"use client";
-
 import type { ReactNode } from "react";
-import { useSearchParams } from "next/navigation";
 import { StoreHeader, StoreFooter } from "@/components/campaign/StoreChrome";
 import { SiteShell } from "@/components/SiteChrome";
 import { StorefrontWidgets } from "@/components/Providers";
@@ -19,6 +16,18 @@ import { StorefrontWidgets } from "@/components/Providers";
 // from the campaign page to Shopify and back, so the page can tell a campaign
 // sign-up from someone registering on this storefront, and each gets the
 // chrome it belongs in.
+//
+// The page reads returnTo on the server and tells this component the answer.
+// Reading it here instead would mean reading it in the browser: these pages
+// prerender, so the HTML would go out wearing the wrong shop and swap after
+// hydration — a flash of the site that has not launched, which is the whole
+// thing being avoided.
+/** returnTo as the page was given it — one value, or none. */
+export function returnToOf(searchParams: Record<string, string | string[] | undefined>): string | null {
+  const raw = searchParams.returnTo;
+  return (Array.isArray(raw) ? raw[0] : raw) ?? null;
+}
+
 export function isCampaignReturn(returnTo: string | null | undefined): boolean {
   // Only our own paths: "//evil.example" and "https://…" are somebody else's
   // site, and a destination we would not send anyone to is not a campaign.
@@ -32,8 +41,8 @@ export function isCampaignReturn(returnTo: string | null | undefined): boolean {
   return ["/campaigns", "/flash-sale"].some((base) => path === base || path.startsWith(`${base}/`));
 }
 
-export default function CampaignChrome({ children }: { children: ReactNode }) {
-  if (isCampaignReturn(useSearchParams().get("returnTo"))) {
+export default function CampaignChrome({ campaign, children }: { campaign: boolean; children: ReactNode }) {
+  if (campaign) {
     return (
       <div className="flex min-h-dvh flex-col bg-white">
         <StoreHeader />
