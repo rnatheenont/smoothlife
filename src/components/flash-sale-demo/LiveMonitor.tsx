@@ -132,6 +132,39 @@ export default function LiveMonitor({
             </Alert>
           )}
 
+          {data.sharedSources.length > 0 && (
+            // Shown, never enforced. Households share a router, offices share
+            // one address and a phone network puts a whole city behind a
+            // handful — so this is a place to look, not a verdict. The point
+            // is that a queue farmed from one machine is otherwise invisible.
+            <Alert status="warning" className="mt-4">
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Title>
+                  มีคิวจากที่มาเดียวกัน {data.sharedSources.length} กลุ่ม ·{" "}
+                  {data.sharedSources.reduce((n, g) => n + g.accounts.length, 0)} บัญชี
+                </Alert.Title>
+                <Alert.Description>
+                  <span className="mt-1 block text-xs">
+                    บ้านเดียวกัน ออฟฟิศ หรือเน็ตมือถือก็ขึ้นแบบนี้ได้ — ไม่ได้แปลว่าผิด แต่เป็นจุดที่ควรดู
+                  </span>
+                  <ul className="mt-2 flex flex-col gap-1.5">
+                    {data.sharedSources.map((group) => (
+                      <li key={group.source} className="text-xs">
+                        <span className="font-mono text-[11px] opacity-60">{group.source}</span>{" "}
+                        <b>{group.accounts.length} บัญชี</b>
+                        {" — "}
+                        {group.accounts
+                          .map((a) => `#${a.position} ${a.customer ?? a.userId.slice(0, 8)} (${STATUS_TH[a.status] ?? a.status})`)
+                          .join(" · ")}
+                      </li>
+                    ))}
+                  </ul>
+                </Alert.Description>
+              </Alert.Content>
+            </Alert>
+          )}
+
           {data.refunds.length > 0 && (
             <Alert status="warning" className="mt-4">
               <Alert.Indicator />

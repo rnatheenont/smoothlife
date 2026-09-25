@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { flashSaleMonitor, UUID_RE } from "@/lib/flash-sale";
+import { sharedSourcesFor } from "@/lib/flash-sale-sources";
 
 // Admin: live numbers for one campaign from the real queue.
+
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -20,8 +22,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     const refunds = await supabaseRest<{ invoice_no: string; amount: number; refund_note: string }[]>(
       `payment_transactions?refund_note=like.FLASH_SALE_*&status=eq.success&select=invoice_no,amount,refund_note,flash_sale_queue!inner(campaign_id)&flash_sale_queue.campaign_id=eq.${pgValue(id)}&order=confirmed_at.desc&limit=50`
     ).catch(() => []);
+    const sharedSources = (await sharedSourcesFor([id]))[id] ?? [];
+
     return NextResponse.json(
-      { ok: true, ...monitor, refunds: refunds.map(({ invoice_no, amount, refund_note }) => ({ invoice_no, amount, refund_note })) },
+      {
+        ok: true,
+        ...monitor,
+        sharedSources,
+        refunds: refunds.map(({ invoice_no, amount, refund_note }) => ({ invoice_no, amount, refund_note })),
+      },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (err) {
