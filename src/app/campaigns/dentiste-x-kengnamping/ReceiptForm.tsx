@@ -246,6 +246,9 @@ export default function ReceiptForm({
   }
 
   const digits = (v: string | null | undefined) => (v ?? "").replace(/\D/g, "");
+  // One receipt at a time: the photo goes in the drop area and its fields go
+  // in the column with the rest of the form, because they are the form.
+  const singleItem = mode === "single" ? (items[0] ?? null) : null;
 
   /**
    * Adds photos and works out which order each one belongs to.
@@ -607,16 +610,35 @@ export default function ReceiptForm({
                       ))}
                     </div>
 
-                    <label className="mt-4 flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.02] p-4 hover:border-black/40">
-                      <Upload size={24} className="text-black/35" aria-hidden />
-                      <span className="text-[14px] font-semibold text-black/60">
-                        {items.length
-                          ? mode === "single"
-                            ? "เปลี่ยนรูปใบเสร็จ"
-                            : "เพิ่มรูปใบเสร็จ"
-                          : "เลือกรูปใบเสร็จ"}
-                      </span>
-                      <span className="text-[12px] text-black/40">แตะเพื่อถ่ายรูปหรือเลือกจากคลัง · เลือกได้หลายรูป</span>
+                    <label
+                      className={`mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.02] hover:border-black/40 ${
+                        singleItem?.preview ? "p-2" : "min-h-[120px] p-4"
+                      }`}
+                    >
+                      {/* The receipt itself, at the size of the space it was
+                          asked for in. A photo you cannot read is a photo you
+                          cannot check before sending. */}
+                      {singleItem?.preview ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element -- a blob: URL from the file they just picked */}
+                          <img
+                            src={singleItem.preview}
+                            alt="รูปใบเสร็จที่เลือก"
+                            className="max-h-[70vh] w-full rounded-lg object-contain"
+                          />
+                          <span className="py-1 text-[12px] font-semibold text-black/45">แตะที่รูปเพื่อเปลี่ยน</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={24} className="text-black/35" aria-hidden />
+                          <span className="text-[14px] font-semibold text-black/60">
+                            {items.length ? "เพิ่มรูปใบเสร็จ" : "เลือกรูปใบเสร็จ"}
+                          </span>
+                          <span className="text-[12px] text-black/40">
+                            แตะเพื่อถ่ายรูปหรือเลือกจากคลัง{mode === "multi" ? " · เลือกได้หลายรูป" : ""}
+                          </span>
+                        </>
+                      )}
                       <input
                         ref={fileInput}
                         type="file"
@@ -635,7 +657,7 @@ export default function ReceiptForm({
                     {/* Ten receipts is ten rows and a page that will not sit
                         still. Past three the list scrolls inside itself, so the
                         summary and the send button stay where they are. */}
-                    {items.length > 0 && (
+                    {mode === "multi" && items.length > 0 && (
                       <ul
                         className={`mt-4 flex flex-col gap-3 ${
                           mode === "multi" && items.length > 3 ? "max-h-[26rem] overflow-y-auto pe-1" : ""
@@ -701,7 +723,6 @@ export default function ReceiptForm({
                                   <div className="mt-2">
                                     <button
                                       type="button"
-                                      hidden={mode === "single"}
                                       onClick={() =>
                                         setItems((old) =>
                                           old.map((row) => (row.id === item.id ? { ...row, editing: !row.editing } : row))
@@ -813,6 +834,96 @@ export default function ReceiptForm({
                       </dd>
                     </div>
                   </dl>
+
+                  {/* The receipt's own details, beside the rest of the form
+                      rather than tucked under its thumbnail. With one receipt
+                      the fields are the form, and the photo on the left is
+                      what they are read off. */}
+                  {singleItem && (
+                    <div className="rounded-2xl border border-black/10 p-4">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                        <p className="text-[13px] font-bold text-black">ข้อมูลจากใบเสร็จ</p>
+                        {singleItem.reading && (
+                          <span className="flex items-center gap-1.5 text-[12px] text-black/50">
+                            <Loader2 size={13} className="animate-spin" /> กำลังอ่านรูป…
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-[12px] leading-relaxed text-black/50">
+                        {singleItem.note ?? "อ่านข้อมูลจากรูปให้แล้ว ตรวจดูอีกครั้งและแก้ไขได้ก่อนส่ง"}
+                      </p>
+
+                      <label className="mt-3 block">
+                        <span className="text-[12px] font-semibold text-black/55">คำสั่งซื้อที่จะส่ง</span>
+                        <select
+                          value={singleItem.orderId ?? ""}
+                          disabled={singleItem.state === "sending"}
+                          onChange={(e) =>
+                            setItems((old) =>
+                              old.map((row) =>
+                                row.id === singleItem.id
+                                  ? { ...row, orderId: e.target.value || null, matched: e.target.value ? "manual" : "none", note: null }
+                                  : row
+                              )
+                            )
+                          }
+                          className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 bg-white px-3 text-[14px] text-black"
+                        >
+                          <option value="">เลือกคำสั่งซื้อ</option>
+                          {orders.map((o) => (
+                            <option key={o.id} value={o.id}>
+                              {`${o.orderNumber ?? o.invoiceNo} · ${when(o.paidAt)} · ${formatTHB(o.dentisteAmount)} · ${o.entries} สิทธิ์`}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      {singleItem.matched === "photo" && (
+                        <p className="mt-1.5 text-[12px] font-semibold text-emerald-700">จับคู่จากเลขในรูปให้แล้ว</p>
+                      )}
+
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        {(
+                          [
+                            ["orderNumber", "เลขคำสั่งซื้อ (ORDER #)", "text", "#0000"],
+                            ["paidAt", "วันและเวลาที่ชำระเงิน", "datetime-local", ""],
+                            ["total", "ยอดทั้งบิล (บาท)", "text", "0.00"],
+                          ] as const
+                        ).map(([key, label, type, placeholder]) => (
+                          <label key={key} className="block">
+                            <span className="text-[12px] font-semibold text-black/55">{label}</span>
+                            <input
+                              type={type}
+                              value={singleItem.declared[key]}
+                              placeholder={placeholder}
+                              onChange={(e) =>
+                                setItems((old) =>
+                                  old.map((row) =>
+                                    row.id === singleItem.id
+                                      ? { ...row, declared: { ...row.declared, [key]: e.target.value } }
+                                      : row
+                                  )
+                                )
+                              }
+                              className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black"
+                            />
+                          </label>
+                        ))}
+                        <div>
+                          <span className="text-[12px] font-semibold text-black/55">สิทธิ์ที่จะได้รับ</span>
+                          {/* Not a box: a field a customer can type into is a
+                              field a customer can award themselves with. */}
+                          <p className="mt-1.5 flex min-h-11 items-center rounded-xl bg-black/[0.04] px-3 text-[14px] font-bold text-black tabular-nums">
+                            {singleItem.orderId
+                              ? `${orders.find((o) => o.id === singleItem.orderId)?.entries ?? 0} สิทธิ์`
+                              : "เลือกคำสั่งซื้อก่อน"}
+                          </p>
+                        </div>
+                      </div>
+                      {singleItem.error && (
+                        <p className="mt-2 text-[12px] font-semibold text-rose-700">{singleItem.error}</p>
+                      )}
+                    </div>
+                  )}
 
                   {/* The account belongs to whoever set it up; the prize has to
                       reach whoever is holding the receipt. */}
