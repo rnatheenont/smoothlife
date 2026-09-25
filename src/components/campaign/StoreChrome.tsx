@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
-import { Facebook, Instagram } from "lucide-react";
+import { CircleUser, Facebook, Instagram } from "lucide-react";
 import BackToStore from "@/components/campaign/BackToStore";
 
 // The header and footer of www.smoothlife.com, for pages customers are sent to
@@ -73,7 +73,21 @@ export function StoreHeader({ storeUrl }: { storeUrl?: string }) {
         <a href={storeUrl ?? STORE} aria-label="Smoothlife.com">
           <Image src={LOGO} alt="Smoothlife.com" width={220} height={34} priority className="h-[26px] w-auto sm:h-8" />
         </a>
-        <BackToStore fallback={storeUrl ?? `${STORE}/collections/all`} />
+        <span className="flex shrink-0 items-center gap-2">
+          {/* The shop's own account page, not this site's. Someone who arrived
+              from a campaign link has an account at smoothlife.com — orders,
+              addresses, points — and no reason to know this app exists, so
+              "my account" has to mean the one they already have. */}
+          <a
+            href={`${STORE}/account`}
+            className="flex min-h-9 items-center gap-1.5 rounded-full border border-black/15 px-3 text-[13px] font-semibold text-black hover:bg-black/5"
+          >
+            <CircleUser size={16} aria-hidden />
+            <span className="hidden sm:inline">บัญชีของฉัน</span>
+            <span className="sr-only sm:hidden">บัญชีของฉัน</span>
+          </a>
+          <BackToStore fallback={storeUrl ?? `${STORE}/collections/all`} />
+        </span>
       </div>
     </header>
   );
