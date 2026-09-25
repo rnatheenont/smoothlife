@@ -20,7 +20,7 @@ export default async function CampaignChromeLayout({
 }) {
   const { storeUrl, accent } = await loadCampaignContent(campaignKeyFrom((await params).campaign));
   return (
-    // Four shades from one setting: the accent itself for fills, a darkened
+    // Five shades from one setting: the accent itself for fills, a darkened
     // one for type, a wash for chips and icon circles, and the faintest of
     // all behind the whole page. The cards are white so they still lift off
     // it — a tint everywhere and nothing on top of it is just a grey page.
@@ -32,6 +32,7 @@ export default async function CampaignChromeLayout({
           "--rc-ink": `color-mix(in oklab, ${accent} 78%, black)`,
           "--rc-wash": `color-mix(in oklab, ${accent} 10%, white)`,
           "--rc-page": `color-mix(in oklab, ${accent} 5%, white)`,
+          "--rc-line": `color-mix(in oklab, ${accent} 40%, white)`,
         } as CSSProperties
       }
     >

@@ -611,8 +611,10 @@ export default function ReceiptForm({
                 </p>
 
                 <label
-                  className={`relative mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-black/20 bg-white hover:border-black/40 ${
-                    singleItem?.preview ? "p-2" : "min-h-[120px] p-4"
+                  // The one thing on the page that is asking to be pressed,
+                  // in the campaign's colour rather than a grey dashed box.
+                  className={`relative mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-[var(--rc-line,rgb(0_0_0/0.2))] bg-[var(--rc-wash,#fff)] hover:border-[var(--rc-accent,rgb(0_0_0/0.4))] ${
+                    singleItem?.preview ? "p-2" : "min-h-[140px] p-4"
                   }`}
                 >
                   {/* Taking the photo back off. Tapping the picture
@@ -651,8 +653,8 @@ export default function ReceiptForm({
                     </>
                   ) : (
                     <>
-                      <Upload size={24} className="text-black/35" aria-hidden />
-                      <span className="text-[14px] font-semibold text-black/60">
+                      <Upload size={26} className="text-[var(--rc-ink,rgb(0_0_0/0.35))]" aria-hidden />
+                      <span className="text-[14px] font-semibold text-[var(--rc-ink,rgb(0_0_0/0.6))]">
                         {items.length ? "เพิ่มรูปใบเสร็จ" : "เลือกรูปใบเสร็จ"}
                       </span>
                       <span className="text-[12px] text-black/40">
