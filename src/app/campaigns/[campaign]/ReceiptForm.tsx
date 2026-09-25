@@ -219,19 +219,6 @@ export default function ReceiptForm({
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [state, orders.length, load]);
 
-  // The same idea as before, moved down a level: a customer with one order has
-  // no choice to make, so a photo that could not be read is still filed
-  // against the only order it could belong to.
-  useEffect(() => {
-    if (orders.length !== 1) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- derived from the loaded orders
-    setItems((old) =>
-      old.some((row) => !row.orderId && !row.reading)
-        ? old.map((row) => (row.orderId || row.reading ? row : { ...row, orderId: orders[0].id, matched: "manual", note: null }))
-        : old
-    );
-  }, [orders, items]);
-
   // Accepting a prize. Giving one up is deliberately not here — a tap that
   // hands ฿55,000 to the next person should not sit beside "ยืนยันสิทธิ์".
   async function claim(prize: Prize) {
@@ -278,14 +265,14 @@ export default function ReceiptForm({
         const declared = { ...row.declared, [key]: value };
         if (key !== "orderNumber") return { ...row, declared };
         // The number they typed decides the order; nothing else can.
+        //
+        // It used to fall back to "they only have one eligible order, so it
+        // must be that one", which filed a ฿1,600 receipt for #4305 against
+        // #4292 and told the customer the two matched. The case that fallback
+        // was written for — a receipt for an order that is not in the list —
+        // is the exact case worth catching, not papering over.
         const hit = orderFromNumber(value);
-        return {
-          ...row,
-          declared,
-          orderId: hit?.id ?? (orders.length === 1 ? orders[0].id : null),
-          matched: hit ? "manual" : orders.length === 1 ? "manual" : "none",
-          note: null,
-        };
+        return { ...row, declared, orderId: hit?.id ?? null, matched: hit ? "manual" : "none", note: null };
       })
     );
   }
@@ -356,7 +343,14 @@ export default function ReceiptForm({
                 paidAt: read.paidAt ?? bkk(hit?.paidAt),
                 total: String(read.total ?? hit?.total ?? ""),
               },
-              note: hit ? null : "อ่านเลขคำสั่งซื้อจากรูปไม่ได้ — กรอกเลขจากใบเสร็จเอง",
+              // Two different failures, and telling them apart is the whole
+              // of what to do next: nothing readable means type it, a number
+              // that is not in the list means check which receipt this is.
+              note: hit
+                ? null
+                : readNumber
+                  ? `อ่านจากรูปได้เลข ${read.orderNumber} แต่ยังไม่พบคำสั่งซื้อนี้ในระบบ`
+                  : "อ่านเลขคำสั่งซื้อจากรูปไม่ได้ — กรอกเลขจากใบเสร็จเอง",
             };
           })
         );
@@ -883,8 +877,18 @@ export default function ReceiptForm({
                           </p>
                         ) : (
                           <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-900">
-                            ยังไม่พบคำสั่งซื้อเลขนี้ในระบบ — ตรวจเลขคำสั่งซื้อด้านล่างอีกครั้ง
-                            ต้องเป็นคำสั่งซื้อที่ชำระเงินสำเร็จบน Smoothlife.com ในช่วงกิจกรรม
+                            ยังไม่พบคำสั่งซื้อเลขนี้ในบัญชีนี้ — ต้องเป็นคำสั่งซื้อที่ชำระเงินสำเร็จบน Smoothlife.com
+                            ในช่วงกิจกรรม และสั่งด้วยบัญชีที่กำลังเข้าสู่ระบบอยู่
+                            {/* The numbers that would work, because "not
+                                found" is a dead end and this is the next
+                                thing they would have to ask us for. */}
+                            {orders.length > 0 && (
+                              <>
+                                <br />
+                                คำสั่งซื้อที่เข้าเงื่อนไขของคุณ:{" "}
+                                <b>{orders.map((o) => o.orderNumber ?? o.invoiceNo).join(", ")}</b>
+                              </>
+                            )}
                           </p>
                         );
                       })()}
