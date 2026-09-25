@@ -54,6 +54,9 @@ type NavItem = {
 // payment gateway; "Widgets" named a React concept; "สัญญาณแบรนด์" named
 // nothing anyone would search for. The pages did not change, only what the
 // menu calls them.
+/** Until the campaign answers with its own name. */
+const RECEIPTS_FALLBACK_LABEL = "กิจกรรมชิงรางวัล";
+
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "",
@@ -86,7 +89,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "การขาย & โปรโมชั่น",
     items: [
       { href: "/admin/flash-sale", label: "Campaigns", icon: Zap, permission: "flash_sale.view" },
-      { href: "/admin/receipts", label: "ใบเสร็จชิงรางวัล", icon: Receipt, permission: "receipts.view" },
+      { href: "/admin/receipts", label: RECEIPTS_FALLBACK_LABEL, icon: Receipt, permission: "receipts.view" },
       { href: "/admin/free-gifts", label: "ของแถม & โปรโมชั่น", icon: Gift, permission: "free_gifts.manage" },
       {
         href: "/admin/free-gifts/widgets",
@@ -134,6 +137,31 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
 ];
 
 const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+
+/**
+ * The receipt campaign is called by its own name, not by what it is.
+ *
+ * Staff talk about "KENG NAMPING", not about "the receipt prize screen", and
+ * the name is already editable in the campaign's own settings — so the menu
+ * reads it from there and falls back to the generic wording until it answers,
+ * or for anyone whose session cannot.
+ */
+function useCampaignName() {
+  const [name, setName] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/receipts/name", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.ok && typeof d.name === "string" && d.name.trim()) setName(d.name.trim());
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return name;
+}
 // How much width a screen actually has content for: a dashboard fills the
 // window, a wide data table needs the room, and a list of rows or a form reads
 // better in a column than stretched across a 27" monitor.
@@ -168,6 +196,7 @@ function isActive(href: string, pathname: string | null) {
 }
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  const campaignName = useCampaignName();
   const pathname = usePathname();
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [me, setMe] = useState<{ display_name: string; role_key: string } | null>(null);
@@ -355,6 +384,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   };
   const visibleItems = ALL_ITEMS.filter(allowed);
 
+  // One place decides what that menu entry is called, so the sidebar, the
+  // breadcrumb and the tooltip cannot end up saying three different things.
+  const labelOf = (item: { href: string; label: string }) =>
+    item.href === "/admin/receipts" && campaignName ? campaignName : item.label;
   const current = ALL_ITEMS.find((item) => isActive(item.href, pathname));
   const query = navQuery.trim().toLowerCase();
   const groups = query
@@ -394,7 +427,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </Link>
           {current && (
             <p className="hidden min-w-0 items-center gap-1.5 text-sm text-slate-400 md:flex">
-              <span aria-hidden>/</span> <span className="truncate font-semibold text-slate-600">{current.label}</span>
+              <span aria-hidden>/</span> <span className="truncate font-semibold text-slate-600">{labelOf(current)}</span>
             </p>
           )}
           <div className="ms-auto flex items-center gap-1">
@@ -493,13 +526,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                             key={item.href}
                             href={item.href}
                             aria-current={active ? "page" : undefined}
-                            title={collapsed ? item.label : undefined}
+                            title={collapsed ? labelOf(item) : undefined}
                             className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
                               collapsed ? "lg:justify-center lg:px-0" : ""
                             } ${active ? "bg-brand-gradient-soft text-brand-800" : "text-slate-500 hover:bg-surface-soft hover:text-brand-ink"}`}
                           >
                             <Icon size={16} className="shrink-0" />
-                            <span className={collapsed ? "lg:hidden" : ""}>{item.label}</span>
+                            <span className={collapsed ? "lg:hidden" : ""}>{labelOf(item)}</span>
                           </Link>
                         );
                       })}
