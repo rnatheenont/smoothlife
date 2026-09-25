@@ -24,6 +24,15 @@ type Item = {
   orderId: string | null;
   /** How the order was chosen — read off the photo, or picked by hand. */
   matched: "photo" | "manual" | "none";
+  /**
+   * What this receipt says, read off it and editable before it is sent.
+   *
+   * Per row rather than per form now there are several: five receipts have
+   * five order numbers, and the one the customer can correct has to be the one
+   * attached to the photo they are looking at.
+   */
+  declared: { orderNumber: string; paidAt: string; total: string };
+  editing: boolean;
   reading: boolean;
   state: "ready" | "sending" | "sent" | "failed";
   error: string | null;
@@ -246,6 +255,8 @@ export default function ReceiptForm({
       preview: URL.createObjectURL(file),
       orderId: null,
       matched: "none",
+      declared: { orderNumber: "", paidAt: "", total: "" },
+      editing: false,
       reading: true,
       state: "ready",
       error: null,
@@ -267,13 +278,23 @@ export default function ReceiptForm({
             if (!res.ok || !data.ok) {
               return { ...row, reading: false, note: data.error || "อ่านรูปไม่สำเร็จ — เลือกคำสั่งซื้อเอง" };
             }
-            const readNumber = digits((data.read as { orderNumber?: string | null })?.orderNumber);
+            const read = (data.read ?? {}) as { orderNumber?: string | null; total?: number | null; paidAt?: string | null };
+            const readNumber = digits(read.orderNumber);
             const hit = readNumber ? orders.find((o) => digits(o.orderNumber) === readNumber) : undefined;
+            const bkk = (iso: string | null | undefined) =>
+              iso ? new Date(iso).toLocaleString("sv-SE", { timeZone: "Asia/Bangkok" }).slice(0, 16).replace(" ", "T") : "";
             return {
               ...row,
               reading: false,
               orderId: hit?.id ?? null,
               matched: hit ? "photo" : "none",
+              // The photo first — it is what they are looking at. The order
+              // fills only what the picture could not answer.
+              declared: {
+                orderNumber: read.orderNumber ?? hit?.orderNumber ?? "",
+                paidAt: read.paidAt ?? bkk(hit?.paidAt),
+                total: String(read.total ?? hit?.total ?? ""),
+              },
               note: hit ? null : "อ่านเลขคำสั่งซื้อจากรูปไม่ได้ — เลือกเอง",
             };
           })
@@ -309,6 +330,9 @@ export default function ReceiptForm({
         body.set("photo", item.file);
         body.set("contactName", contactName.trim());
         body.set("contactPhone", contactPhone.trim());
+        body.set("declaredOrderNumber", item.declared.orderNumber.trim());
+        body.set("declaredPaidAt", item.declared.paidAt.trim());
+        body.set("declaredTotal", item.declared.total.trim());
         const q = new URLSearchParams(window.location.search).get("test") === "1" ? "?test=1" : "";
         const res = await fetch(`/api/campaigns/dentiste-x-kengnamping/receipts${q}`, { method: "POST", body });
         const data = await res.json().catch(() => ({}));
@@ -600,6 +624,71 @@ export default function ReceiptForm({
                                     {item.matched === "photo" && <b className="text-emerald-700">จับคู่จากเลขในรูป · </b>}
                                     ยอด DENTISTE&apos; {formatTHB(order.dentisteAmount)} · {order.entries} สิทธิ์
                                   </p>
+                                )}
+
+                                {/* What this receipt says, as read off it, with
+                                    a way in to fix it. Folded away by default:
+                                    with several receipts on screen the list has
+                                    to stay scannable, and most of the time the
+                                    reading is right and nobody needs to touch
+                                    it. */}
+                                {!item.reading && item.state !== "sent" && (
+                                  <div className="mt-2">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setItems((old) =>
+                                          old.map((row) => (row.id === item.id ? { ...row, editing: !row.editing } : row))
+                                        )
+                                      }
+                                      className="flex w-full items-center justify-between gap-2 rounded-lg bg-black/[0.03] px-2.5 py-1.5 text-left text-[12px] text-black/60 hover:bg-black/[0.06]"
+                                    >
+                                      <span className="min-w-0 truncate">
+                                        {item.declared.orderNumber || item.declared.total
+                                          ? `ข้อมูลในรูป: ${item.declared.orderNumber || "—"}${
+                                              item.declared.total ? ` · ฿${item.declared.total}` : ""
+                                            }`
+                                          : "ยังไม่มีข้อมูลจากรูป — กรอกเองได้"}
+                                      </span>
+                                      <span className="shrink-0 font-semibold text-black/45">
+                                        {item.editing ? "ปิด" : "แก้ไข"}
+                                      </span>
+                                    </button>
+
+                                    {item.editing && (
+                                      <div className="mt-2 grid gap-2">
+                                        {(
+                                          [
+                                            ["orderNumber", "เลขคำสั่งซื้อ (ORDER #)", "text", "#0000"],
+                                            ["paidAt", "วันและเวลาที่ชำระเงิน", "datetime-local", ""],
+                                            ["total", "ยอดทั้งบิล (บาท)", "text", "0.00"],
+                                          ] as const
+                                        ).map(([key, label, type, placeholder]) => (
+                                          <label key={key} className="block">
+                                            <span className="text-[11px] font-semibold text-black/50">{label}</span>
+                                            <input
+                                              type={type}
+                                              value={item.declared[key]}
+                                              placeholder={placeholder}
+                                              onChange={(e) =>
+                                                setItems((old) =>
+                                                  old.map((row) =>
+                                                    row.id === item.id
+                                                      ? { ...row, declared: { ...row.declared, [key]: e.target.value } }
+                                                      : row
+                                                  )
+                                                )
+                                              }
+                                              className="mt-1 min-h-10 w-full rounded-lg border border-black/15 px-2.5 text-[13px] text-black"
+                                            />
+                                          </label>
+                                        ))}
+                                        <p className="text-[11px] leading-relaxed text-black/40">
+                                          ข้อมูลนี้ใช้ให้ทีมงานตรวจเทียบกับรูป — จำนวนสิทธิ์คำนวณจากคำสั่งซื้อในระบบเสมอ
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
                                 )}
                                 {item.note && <p className="mt-1.5 text-[12px] text-amber-700">{item.note}</p>}
                                 {duplicate && (
