@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { DEFAULT_CONTENT, loadCampaignContent, type CampaignStep } from "@/lib/receipt-campaign-content";
+import { DEFAULT_RULES } from "@/lib/receipt-campaign";
+import { products } from "@/data/products";
 
 // Reading and writing the campaign's own words.
 //
@@ -25,7 +27,19 @@ function guard(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const stop = guard(req);
   if (stop) return stop;
-  return NextResponse.json({ ok: true, content: await loadCampaignContent(CAMPAIGN), defaults: DEFAULT_CONTENT });
+  // The catalogue's Dentiste products, so naming the keychain sets is picking
+  // from a list rather than typing a slug and hoping.
+  const catalogue = products
+    .filter((product) => /dentiste/i.test(product.brand))
+    .map((product) => ({ slug: product.slug, name: product.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return NextResponse.json({
+    ok: true,
+    content: await loadCampaignContent(CAMPAIGN),
+    defaults: { ...DEFAULT_CONTENT, rules: DEFAULT_RULES },
+    catalogue,
+  });
 }
 
 const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -67,8 +81,39 @@ export async function PUT(req: NextRequest) {
     ? body.terms.map((t: unknown) => text(t, 500)).filter(Boolean).slice(0, 30)
     : [];
 
+  // The arithmetic. Bounded rather than trusted: these numbers decide who wins
+  // ฿55,000, and a threshold of zero would hand an entry to every ฿0 order in
+  // the shop's history.
+  const rules = (body.rules ?? {}) as Record<string, unknown>;
+  const money = (v: unknown, fallback: number) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 && n <= 1_000_000 ? Math.round(n * 100) / 100 : fallback;
+  };
+  const generalThreshold = money(rules.generalThreshold, DEFAULT_RULES.generalThreshold);
+  const keychainPrice = money(rules.keychainPrice, DEFAULT_RULES.keychainPrice);
+  const keychainEntriesRaw = Number(rules.keychainEntries);
+  const keychainEntries =
+    Number.isInteger(keychainEntriesRaw) && keychainEntriesRaw >= 0 && keychainEntriesRaw <= 100
+      ? keychainEntriesRaw
+      : DEFAULT_RULES.keychainEntries;
+  const rounding =
+    rules.rounding === "round" || rules.rounding === "ceil" || rules.rounding === "floor"
+      ? rules.rounding
+      : DEFAULT_RULES.rounding;
+  const knownSlugs = new Set(products.map((product) => product.slug));
+  const keychainSlugs = Array.isArray(rules.keychainSlugs)
+    ? [...new Set(rules.keychainSlugs.filter((v): v is string => typeof v === "string" && knownSlugs.has(v)))].slice(0, 50)
+    : [];
+
   const row = {
     campaign_key: CAMPAIGN,
+    general_threshold: generalThreshold,
+    keychain_price: keychainPrice,
+    keychain_entries: keychainEntries,
+    tiered: rules.tiered === true,
+    stacks: rules.stacks !== false,
+    rounding,
+    keychain_slugs: keychainSlugs,
     eyebrow: text(body.eyebrow, 120),
     title: text(body.title, 200),
     intro: text(body.intro, 600),
@@ -107,7 +152,17 @@ export async function PUT(req: NextRequest) {
       target: CAMPAIGN,
       // The window decides who is eligible, so the change to it is the part
       // worth being able to read back later.
-      detail: { opensAt, closesAt, announceAt: row.announce_at, terms: terms.length, steps: steps.length },
+      // The rules in full, every time. Six months from now "why did this
+      // receipt earn two" is answerable only if what the rules were that day
+      // is written down beside the change that made them so.
+      detail: {
+        opensAt,
+        closesAt,
+        announceAt: row.announce_at,
+        terms: terms.length,
+        steps: steps.length,
+        rules: { generalThreshold, keychainPrice, keychainEntries, tiered: row.tiered, stacks: row.stacks, rounding, keychainSlugs },
+      },
     }),
   }).catch((err) => console.error("[admin/receipts/settings] audit write failed", err));
 

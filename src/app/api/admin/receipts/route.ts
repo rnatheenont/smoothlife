@@ -3,6 +3,7 @@ import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { signedReceiptUrl } from "@/lib/receipt-photos";
 import { amountsFromLineItems, holdsPrize, type LineItem } from "@/lib/receipt-campaign";
+import { loadCampaignContent } from "@/lib/receipt-campaign-content";
 import { orderPaymentByGid } from "@/lib/shopify-admin";
 
 // The review queue, the VIP order, and what Lucky Fan has to draw from.
@@ -109,6 +110,9 @@ export async function GET(req: NextRequest) {
   // store is Shopify's internal id; what the receipt in the photo shows is the
   // order's name, and those are the two numbers a reviewer is comparing.
   const queuePage = pending.slice(0, 50);
+  // The rules as they stand now, so the line-by-line breakdown labels a
+  // keychain set the same way the calculation does.
+  const { rules } = await loadCampaignContent(CAMPAIGN);
   const payments = await orderPaymentByGid(queuePage.map((r) => r.payment_transactions?.shopify_order_id));
 
   const queue = await Promise.all(
@@ -126,7 +130,7 @@ export async function GET(req: NextRequest) {
       // The bill line by line, worked out from the order that is still on the
       // row — "฿1,600 of Dentiste" does not say whether that was one set or
       // six tubes, and the photo beside it lists both.
-      lines: amountsFromLineItems(r.payment_transactions?.line_items).lines,
+      lines: amountsFromLineItems(r.payment_transactions?.line_items, rules).lines,
       keychainAmount: Number(r.keychain_amount),
       entries: entriesOf(r),
       sentAt: r.created_at,

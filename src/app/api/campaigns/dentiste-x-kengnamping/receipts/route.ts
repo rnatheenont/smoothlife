@@ -14,7 +14,7 @@ import {
 import { checkReceiptPhoto, readMoment } from "@/lib/receipt-vision";
 import { orderNameByGid, orderNamesByGid } from "@/lib/shopify-admin";
 import { loadCampaignContent, windowOf } from "@/lib/receipt-campaign-content";
-import { holdsPrize } from "@/lib/receipt-campaign";
+import { holdsPrize, type CampaignRules } from "@/lib/receipt-campaign";
 import {
   ENTRY_COLUMNS,
   MAX_RECEIPT_BYTES,
@@ -74,7 +74,7 @@ function unauthorised() {
 }
 
 /** Every paid order of this customer that the campaign would accept. */
-async function eligibleOrders(userId: string, anyOrder = false): Promise<TxRow[]> {
+async function eligibleOrders(userId: string, anyOrder = false): Promise<{ rules: CampaignRules; orders: TxRow[] }> {
   const [rows, content] = await Promise.all([
     supabaseRest<TxRow[]>(
       `payment_transactions?user_id=eq.${pgValue(userId)}&status=eq.success` +
@@ -83,9 +83,14 @@ async function eligibleOrders(userId: string, anyOrder = false): Promise<TxRow[]
     loadCampaignContent(CAMPAIGN),
   ]);
   const window = windowOf(content);
-  return rows.filter(
-    (tx) => withinCampaign(tx.confirmed_at, anyOrder, window) && amountsFromLineItems(tx.line_items).dentisteAmount > 0
-  );
+  return {
+    rules: content.rules,
+    orders: rows.filter(
+      (tx) =>
+        withinCampaign(tx.confirmed_at, anyOrder, window) &&
+        amountsFromLineItems(tx.line_items, content.rules).dentisteAmount > 0
+    ),
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -94,7 +99,7 @@ export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
   const test = isTestMode(req.nextUrl.searchParams.get("test"));
-  const [orders, entries, uploads, profile, prizes] = await Promise.all([
+  const [{ orders, rules }, entries, uploads, profile, prizes] = await Promise.all([
     eligibleOrders(uid, test),
     entriesForUser(CAMPAIGN, uid),
     supabaseRest<UploadRow[]>(
@@ -149,7 +154,7 @@ export async function GET(req: NextRequest) {
         phone: entries[0]?.contact_phone ?? profile[0]?.phone ?? "",
       },
       orders: orders.map((tx) => {
-        const amounts = amountsFromLineItems(tx.line_items);
+        const amounts = amountsFromLineItems(tx.line_items, rules);
         return {
           id: tx.id,
           orderNumber: nameOf(tx.shopify_order_id),
@@ -158,7 +163,7 @@ export async function GET(req: NextRequest) {
           total: Number(tx.amount),
           dentisteAmount: amounts.dentisteAmount,
           keychainAmount: amounts.keychainAmount,
-          entries: computeEntries(amounts),
+          entries: computeEntries(amounts, rules),
           alreadySent: used.has(tx.id),
         };
       }),
@@ -247,7 +252,7 @@ export async function POST(req: NextRequest) {
   // The order has to be theirs, paid, inside the window and actually contain
   // Dentiste — checked here rather than trusted from the form.
   const test = isTestMode(req.nextUrl.searchParams.get("test"));
-  const orders = await eligibleOrders(uid, test);
+  const { orders, rules } = await eligibleOrders(uid, test);
   const order = orders.find((o) => o.id === orderId);
   if (!order) {
     return NextResponse.json(
@@ -256,7 +261,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const amounts = amountsFromLineItems(order.line_items);
+  const amounts = amountsFromLineItems(order.line_items, rules);
   const bytes = await photo.arrayBuffer();
 
   // Read before storing: the customer is still here, and a photo that cannot
@@ -298,7 +303,7 @@ export async function POST(req: NextRequest) {
     declared_total: declaredTotal,
     dentiste_net_amount: amounts.dentisteAmount,
     keychain_amount: amounts.keychainAmount,
-    computed_entries: computeEntries(amounts),
+    computed_entries: computeEntries(amounts, rules),
     status: "pending_review",
     reject_reason: null,
     // Whatever a reviewer decided about the old photo does not carry over.
