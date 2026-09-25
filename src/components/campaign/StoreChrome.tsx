@@ -60,14 +60,20 @@ function Line() {
   );
 }
 
-export function StoreHeader() {
+/**
+ * @param storeUrl where the way out leads — the shelf this campaign is about,
+ *   not the front door. A campaign that does not say gets the full listing.
+ */
+export function StoreHeader({ storeUrl }: { storeUrl?: string }) {
   return (
-    <header className="border-b border-black/10 bg-white">
+    // Stays put: the page below it is a form long enough to scroll, and the
+    // only way back to the shop should not be the thing you scroll away from.
+    <header className="sticky top-0 z-40 border-b border-black/10 bg-white/95 backdrop-blur-sm">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4">
-        <a href={STORE} aria-label="Smoothlife.com">
+        <a href={storeUrl ?? STORE} aria-label="Smoothlife.com">
           <Image src={LOGO} alt="Smoothlife.com" width={220} height={34} priority className="h-[26px] w-auto sm:h-8" />
         </a>
-        <BackToStore fallback={`${STORE}/collections/all`} />
+        <BackToStore fallback={storeUrl ?? `${STORE}/collections/all`} />
       </div>
     </header>
   );

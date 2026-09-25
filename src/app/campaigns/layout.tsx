@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { StoreHeader, StoreFooter } from "@/components/campaign/StoreChrome";
 
 // Campaign pages are handed out by link — from LINE, a post, a QR on a shelf —
 // and nothing on this site points at them. They stay out of search for the same
@@ -11,12 +10,8 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
+// The header and footer moved down to [campaign]/layout.tsx, which can read
+// which campaign this is and so where its way back to the shop leads.
 export default function CampaignLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex min-h-dvh flex-col bg-white">
-      <StoreHeader />
-      <main className="flex-1">{children}</main>
-      <StoreFooter />
-    </div>
-  );
+  return <>{children}</>;
 }

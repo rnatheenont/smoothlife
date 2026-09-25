@@ -30,6 +30,7 @@ type Content = {
   confirmDeadline: number;
   steps: Step[];
   terms: string[];
+  storeUrl: string;
   rules: Rules;
 };
 
@@ -129,6 +130,7 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
           confirmDeadline: fromLocalInput(toLocalInput(content.confirmDeadline)),
           steps: content.steps,
           terms: content.terms.filter((t) => t.trim()),
+          storeUrl: content.storeUrl,
           rules: content.rules,
         }),
       });
@@ -158,6 +160,21 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
           <label className="block">
             <span className="text-[12px] font-semibold text-slate-500">คำอธิบายใต้หัวเรื่อง</span>
             <textarea rows={3} className={`mt-1 ${field}`} value={content.intro} onChange={(e) => set("intro", e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="text-[12px] font-semibold text-slate-500">ปุ่ม “กลับไปหน้าร้าน” ลิงก์ไปที่</span>
+            <input
+              className={`mt-1 ${field}`}
+              value={content.storeUrl}
+              onChange={(e) => set("storeUrl", e.target.value)}
+              placeholder="https://www.smoothlife.com/collections/dentiste"
+            />
+            {/* Not a caption: a link off the shop is a campaign sending its
+                customers somewhere nobody approved, so the server refuses it
+                and keeps the old one. */}
+            <span className="mt-1 block text-[11px] text-slate-500">
+              ต้องเป็นหน้าในร้าน smoothlife.com เท่านั้น — ใส่ลิงก์ที่ไม่ใช่ ระบบจะไม่บันทึกและใช้ลิงก์เดิมต่อ
+            </span>
           </label>
         </div>
       </Panel>
