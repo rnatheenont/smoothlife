@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ArrowUpRight, ChevronRight, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { ArrowUpRight, ChevronRight, Eye, EyeOff, Loader2, MoreHorizontal, Trash2 } from "lucide-react";
 import { Panel, adminTable } from "@/components/admin/layout-kit";
 
 // Every campaign, before any one of them.
@@ -21,6 +21,7 @@ export type CampaignRow = {
   approved?: number;
   total?: number;
   entrants?: number;
+  published?: boolean;
 };
 
 const day = (iso: string | null | undefined) =>
@@ -30,6 +31,9 @@ const day = (iso: string | null | undefined) =>
 
 /** Open, not yet open, or finished — from the dates the customer's page uses. */
 function phaseOf(row: CampaignRow): { label: string; className: string } {
+  // Not a phase of the schedule, but the first thing to know about a row: the
+  // dates of a campaign whose link does not answer are hypothetical.
+  if (row.published === false) return { label: "ยังไม่เผยแพร่", className: "bg-slate-100 text-slate-600" };
   const now = Date.now();
   const opens = row.opensAt ? Date.parse(row.opensAt) : NaN;
   const closes = row.closesAt ? Date.parse(row.closesAt) : NaN;
@@ -41,23 +45,71 @@ function phaseOf(row: CampaignRow): { label: string; className: string } {
 export default function CampaignIndex({ onOpen }: { onOpen: (key: string) => void }) {
   const [rows, setRows] = useState<CampaignRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [menu, setMenu] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/receipts/campaigns", { cache: "no-store" });
+      const json = await res.json();
+      if (!json?.ok) throw new Error(json?.error || "โหลดรายการกิจกรรมไม่สำเร็จ");
+      setRows(json.campaigns as CampaignRow[]);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "โหลดรายการกิจกรรมไม่สำเร็จ");
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    fetch("/api/admin/receipts/campaigns", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (!json?.ok) throw new Error(json?.error || "โหลดรายการกิจกรรมไม่สำเร็จ");
-        setRows(json.campaigns as CampaignRow[]);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "โหลดรายการกิจกรรมไม่สำเร็จ");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- first load
+    load();
+  }, [load]);
+
+  // Publishing is what makes the link answer, so it says which way it is going
+  // and what that means before it does it.
+  async function togglePublished(row: CampaignRow) {
+    const next = row.published === false;
+    const message = next
+      ? `เผยแพร่ "${row.name}"?\n\nลิงก์ /campaigns/${row.key} จะเปิดให้ลูกค้าเข้าได้ทันที`
+      : `ปิดเผยแพร่ "${row.name}"?\n\nลิงก์ /campaigns/${row.key} จะขึ้นหน้าไม่พบสำหรับลูกค้า ใบเสร็จที่ส่งมาแล้วยังอยู่ครบ`;
+    if (!window.confirm(message)) return;
+    setMenu(null);
+    setBusy(row.key);
+    try {
+      const res = await fetch("/api/admin/receipts/campaigns", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: row.key, published: next }),
       });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "บันทึกไม่สำเร็จ");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  // The server refuses to delete a campaign anybody has entered; this asks
+  // first anyway, because the ones it will delete are gone for good.
+  async function remove(row: CampaignRow) {
+    if (!window.confirm(`ลบ "${row.name}" ทิ้ง?\n\nลบแล้วกู้คืนไม่ได้ (กิจกรรมที่มีใบเสร็จของลูกค้าแล้วจะลบไม่ได้)`)) return;
+    setMenu(null);
+    setBusy(row.key);
+    try {
+      const res = await fetch(`/api/admin/receipts/campaigns?campaign=${encodeURIComponent(row.key)}`, {
+        method: "DELETE",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "ลบไม่สำเร็จ");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ลบไม่สำเร็จ");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   if (error) return <p className="rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{error}</p>;
   if (!rows)
@@ -130,8 +182,60 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string) => voi
                   <td className={`${adminTable.cell} text-right text-[13px] tabular-nums text-slate-600`}>
                     {row.entrants ?? 0}
                   </td>
-                  <td className={`${adminTable.cell} text-right text-slate-400`}>
-                    <ChevronRight size={16} aria-hidden />
+                  <td className={`${adminTable.cell} text-right`} onClick={(e) => e.stopPropagation()}>
+                    <span className="relative inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        aria-label={`อื่นๆ สำหรับ ${row.name}`}
+                        aria-expanded={menu === row.key}
+                        onClick={() => setMenu(menu === row.key ? null : row.key)}
+                        disabled={busy === row.key}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
+                      >
+                        {busy === row.key ? (
+                          <Loader2 size={15} className="animate-spin" />
+                        ) : (
+                          <MoreHorizontal size={16} aria-hidden />
+                        )}
+                      </button>
+                      <ChevronRight size={16} className="text-slate-300" aria-hidden />
+                      {menu === row.key && (
+                        <>
+                          {/* Anywhere else closes it — a menu that only shuts
+                              by pressing its own button is one you fight. */}
+                          <button
+                            type="button"
+                            aria-label="ปิดเมนู"
+                            onClick={() => setMenu(null)}
+                            className="fixed inset-0 z-20 cursor-default"
+                          />
+                          <div className="absolute end-0 top-9 z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg">
+                            <button
+                              type="button"
+                              onClick={() => togglePublished(row)}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
+                            >
+                              {row.published === false ? (
+                                <>
+                                  <Eye size={14} aria-hidden /> เผยแพร่กิจกรรม
+                                </>
+                              ) : (
+                                <>
+                                  <EyeOff size={14} aria-hidden /> ปิดเผยแพร่
+                                </>
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => remove(row)}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-rose-700 hover:bg-rose-50"
+                            >
+                              <Trash2 size={14} aria-hidden /> ลบกิจกรรม
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </span>
                   </td>
                 </tr>
               );

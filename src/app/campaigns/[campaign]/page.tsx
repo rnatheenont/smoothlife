@@ -1,8 +1,11 @@
+import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
 import { CalendarDays, Gift, Receipt, Ticket } from "lucide-react";
 import ReceiptForm from "./ReceiptForm";
 import { isTestMode } from "@/lib/receipt-campaign";
 import { labelsOf, loadCampaignContent } from "@/lib/receipt-campaign-content";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
+import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 
 // DENTISTE'S x KENG NAMPING — the shell. The receipt upload, the entry count
 // and the draw land here next; see the plan for what is still waiting on an
@@ -26,6 +29,15 @@ export default async function Page({
   const campaign = campaignKeyFrom((await params).campaign);
   const [{ test: testParam }, content] = await Promise.all([searchParams, loadCampaignContent(campaign)]);
   const test = isTestMode(testParam);
+
+  // An unpublished campaign has no page. Whoever set it up can still see it —
+  // a draft you cannot look at is a draft you cannot check — but to everybody
+  // else the link simply does not exist yet.
+  if (!content.published) {
+    const admin = verifyAdminToken((await cookies()).get(ADMIN_COOKIE)?.value);
+    if (!admin) notFound();
+  }
+
   const label = labelsOf(content);
 
   // Rendered per request: the window opens and closes on a clock, not on a
