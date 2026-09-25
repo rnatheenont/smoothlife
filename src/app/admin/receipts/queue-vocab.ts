@@ -2,6 +2,10 @@
 // opens over it, so a status can never mean two different things on one screen.
 export type QueueItem = {
   id: string;
+  status: "pending_review" | "approved" | "rejected" | "revoked";
+  reviewedAt: string | null;
+  rejectReason: string | null;
+  revokeReason: string | null;
   customer: string | null;
   orderNumber: string | null;
   invoiceNo: string | null;
@@ -52,3 +56,11 @@ export const AI_LABEL: Record<"ok" | "unclear" | "mismatch", [string, string]> =
   unclear: ["อ่านรูปไม่ชัด", "border-amber-200 bg-amber-50 text-amber-800"],
   mismatch: ["ไม่ตรงกับคำสั่งซื้อ", "border-rose-200 bg-rose-50 text-rose-800"],
 } as const;
+
+/** How a decided receipt ended up, for the list of the ones already decided. */
+export const ENTRY_STATUS: Record<QueueItem["status"], [string, string]> = {
+  pending_review: ["รอตรวจสอบ", "border-amber-200 bg-amber-50 text-amber-900"],
+  approved: ["อนุมัติแล้ว", "border-emerald-200 bg-emerald-50 text-emerald-800"],
+  rejected: ["ตีกลับ", "border-rose-200 bg-rose-50 text-rose-800"],
+  revoked: ["ยกเลิกสิทธิ์ (คืนเงิน)", "border-slate-300 bg-slate-100 text-slate-700"],
+};

@@ -25,7 +25,7 @@ const CAMPAIGN = "dentiste-x-kengnamping";
 const VIP_WINNERS = 25;
 const VIP_RESERVE = 10;
 
-type Row = {
+type EntryRow = {
   id: string;
   user_id: string;
   payment_transaction_id: string | null;
@@ -36,6 +36,7 @@ type Row = {
   computed_entries: number;
   entries_override: number | null;
   status: "pending_review" | "approved" | "rejected" | "revoked";
+  revoke_reason?: string | null;
   reject_reason: string | null;
   reviewed_at: string | null;
   created_at: string;
@@ -58,7 +59,7 @@ type Row = {
 const SELECT =
   "id,user_id,payment_transaction_id,manual_receipt_no,receipt_photo_path,dentiste_net_amount," +
   "keychain_amount,computed_entries,entries_override,status,reject_reason,reviewed_at,created_at,ai_check," +
-  "contact_name,contact_phone,declared_order_number,declared_paid_at,declared_total,users(display_name),payment_transactions(invoice_no,amount,confirmed_at,shopify_order_id,line_items)";
+  "revoke_reason,contact_name,contact_phone,declared_order_number,declared_paid_at,declared_total,users(display_name),payment_transactions(invoice_no,amount,confirmed_at,shopify_order_id,line_items)";
 
 type WinnerRow = {
   id: string;
@@ -71,7 +72,7 @@ type WinnerRow = {
   users: { display_name: string | null } | null;
 };
 
-const entriesOf = (r: Row) => r.entries_override ?? r.computed_entries;
+const entriesOf = (r: EntryRow) => r.entries_override ?? r.computed_entries;
 
 /**
  * The number printed on what the customer actually uploads.
@@ -89,9 +90,9 @@ export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
   const [rows, winners] = await Promise.all([
-    supabaseRest<Row[]>(
+    supabaseRest<EntryRow[]>(
       `receipt_campaign_entries?campaign_key=eq.${CAMPAIGN}&select=${SELECT}&order=created_at.asc&limit=2000`
-    ).catch(() => [] as Row[]),
+    ).catch(() => [] as EntryRow[]),
     supabaseRest<WinnerRow[]>(
       `receipt_campaign_winners?campaign_key=eq.${CAMPAIGN}` +
         `&select=id,prize_type,rank,user_id,status,confirm_deadline,drawn_at,users(display_name)` +
@@ -109,15 +110,27 @@ export async function GET(req: NextRequest) {
   // The order numbers, asked for in one go before the rows are built. What we
   // store is Shopify's internal id; what the receipt in the photo shows is the
   // order's name, and those are the two numbers a reviewer is comparing.
+  // Decided receipts, newest first: this list exists to be corrected, and the
+  // mistake somebody wants back is nearly always the one just made.
+  const decidedPage = rows
+    .filter((r) => r.status !== "pending_review")
+    .sort((a, b) => (b.reviewed_at ?? b.created_at).localeCompare(a.reviewed_at ?? a.created_at))
+    .slice(0, 50);
+
   const queuePage = pending.slice(0, 50);
   // The rules as they stand now, so the line-by-line breakdown labels a
   // keychain set the same way the calculation does.
   const { rules } = await loadCampaignContent(CAMPAIGN);
-  const payments = await orderPaymentByGid(queuePage.map((r) => r.payment_transactions?.shopify_order_id));
+  const payments = await orderPaymentByGid(
+    [...queuePage, ...decidedPage].map((r) => r.payment_transactions?.shopify_order_id)
+  );
 
-  const queue = await Promise.all(
-    queuePage.map(async (r) => ({
+  const asRow = async (r: EntryRow) => ({
       id: r.id,
+      status: r.status,
+      reviewedAt: r.reviewed_at ?? null,
+      rejectReason: r.reject_reason ?? null,
+      revokeReason: r.revoke_reason ?? null,
       customer: r.users?.display_name ?? null,
       orderNumber: payments.get(r.payment_transactions?.shopify_order_id ?? "")?.name ?? null,
       // Straight from Shopify, not from our own "the card cleared" row.
@@ -145,12 +158,16 @@ export async function GET(req: NextRequest) {
       },
       photoUrl: await signedReceiptUrl(r.receipt_photo_path),
       aiCheck: r.ai_check,
-    }))
-  );
+  });
+
+  const [queue, decided] = await Promise.all([
+    Promise.all(queuePage.map(asRow)),
+    Promise.all(decidedPage.map(asRow)),
+  ]);
 
   // VIP: one place in line per person, taken by their earliest approved
   // receipt. Someone who sent three does not occupy three of the twenty-five.
-  const firstApproval = new Map<string, Row>();
+  const firstApproval = new Map<string, EntryRow>();
   for (const r of approved) {
     const seen = firstApproval.get(r.user_id);
     if (!seen || r.created_at < seen.created_at) firstApproval.set(r.user_id, r);
@@ -181,6 +198,8 @@ export async function GET(req: NextRequest) {
       },
       queue,
       pendingBeyondQueue: Math.max(0, pending.length - queue.length),
+      decided,
+      decidedTotal: rows.filter((r) => r.status !== "pending_review").length,
       vip: byPurchase.slice(0, VIP_WINNERS + VIP_RESERVE).map((r, i) => ({
         rank: i + 1,
         userId: r.user_id,
