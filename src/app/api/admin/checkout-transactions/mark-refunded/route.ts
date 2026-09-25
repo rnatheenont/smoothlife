@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseRest, supabaseConfigured, pgValue } from "@/lib/supabase-server";
 import { refundShopifyOrder } from "@/lib/shopify-admin";
+import { revokeEntriesForTransaction } from "@/lib/receipt-revoke";
 
 // "I have already sent the money back" — recorded in both books at once.
 //
@@ -54,8 +55,22 @@ export async function POST(req: NextRequest) {
     }),
   });
 
+  // The entries the refunded purchase bought go back with the money. Done
+  // here rather than left to a nightly sweep because the customer is being
+  // told about the refund now, and two messages a day apart about one event
+  // is how a shop sounds when nobody is in charge of it.
+  const revoked = await revokeEntriesForTransaction(
+    transactionId,
+    "คำสั่งซื้อนี้ได้รับการคืนเงินเรียบร้อยแล้ว"
+  ).catch((err) => {
+    console.error("[mark-refunded] revoke failed", err);
+    return { revoked: 0, heldPrize: false };
+  });
+
   return NextResponse.json({
     ok: true,
+    revokedEntries: revoked.revoked,
+    heldPrize: revoked.heldPrize,
     shopify: shopify?.ok ?? null,
     shopifyError: shopify && shopify.ok === false ? shopify.error : undefined,
   });

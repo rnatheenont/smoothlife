@@ -80,7 +80,7 @@ type Entry = {
   orderTotal: number | null;
   dentisteAmount: number;
   keychainAmount: number;
-  status: "pending_review" | "approved" | "rejected";
+  status: "pending_review" | "approved" | "rejected" | "revoked";
   rejectReason: string | null;
   entries: number;
   createdAt: string;
@@ -90,6 +90,9 @@ const STATUS: Record<Entry["status"], { label: string; tone: string; Icon: typeo
   pending_review: { label: "รอตรวจสอบ", tone: "bg-amber-50 text-amber-900 border-amber-200", Icon: Clock },
   approved: { label: "ใบเสร็จผ่านการตรวจ", tone: "bg-emerald-50 text-emerald-900 border-emerald-200", Icon: Check },
   rejected: { label: "ใบเสร็จถูกตีกลับ", tone: "bg-rose-50 text-rose-900 border-rose-200", Icon: X },
+  // The purchase was undone, so the entries went with it. Said as its own
+  // thing, because a customer told their receipt was rejected sends it again.
+  revoked: { label: "ยกเลิกสิทธิ์ (คืนเงินแล้ว)", tone: "bg-slate-100 text-slate-700 border-slate-300", Icon: X },
 };
 
 /** AI's reading, in three words, for a list rather than a card. */
@@ -896,6 +899,13 @@ export default function ReceiptForm({
                     </button>
 
                     {/* The one thing worth saying without being asked. */}
+                    {entry.status === "revoked" && (
+                      <p className="flex items-start gap-1.5 border-t border-black/10 bg-slate-50 px-4 py-2.5 text-[13px] text-slate-700">
+                        <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
+                        คำสั่งซื้อนี้ได้รับการคืนเงินแล้ว สิทธิ์ที่ได้จากใบเสร็จนี้จึงถูกยกเลิก
+                      </p>
+                    )}
+
                     {entry.status === "rejected" && entry.rejectReason && (
                       <p className="flex items-start gap-1.5 border-t border-black/10 bg-rose-50/60 px-4 py-2.5 text-[13px] text-rose-800">
                         <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />

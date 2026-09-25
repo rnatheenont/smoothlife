@@ -97,7 +97,7 @@ export type ReceiptEntryRow = {
   keychain_amount: number;
   computed_entries: number;
   entries_override: number | null;
-  status: "pending_review" | "approved" | "rejected";
+  status: "pending_review" | "approved" | "rejected" | "revoked";
   reject_reason: string | null;
   created_at: string;
 };
