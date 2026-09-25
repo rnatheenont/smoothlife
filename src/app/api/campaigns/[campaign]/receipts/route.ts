@@ -180,6 +180,63 @@ export async function GET(req: NextRequest, props: { params: Promise<{ campaign:
   );
 }
 
+/**
+ * What a receipt with no order still has to satisfy.
+ *
+ * Everything the order row would have answered is now the customer's word, so
+ * each of these is a door that word could otherwise walk through: a receipt
+ * dated outside the campaign, a number that is really one of their own orders
+ * (which belongs in the normal path, where it earns computed entries), and an
+ * account sending an unbounded pile of them for a reviewer to wade through.
+ */
+async function checkManual(opts: {
+  campaign: string;
+  uid: string;
+  orders: { shopify_order_id: string | null; invoice_no: string }[];
+  declaredOrderNumber: string | null;
+  declaredPaidAt: string | null;
+  declaredTotal: number | null;
+  window: { opensAt: number; closesAt: number };
+  digitsOf: (v: string | null | undefined) => string;
+}): Promise<NextResponse | null> {
+  const { campaign, uid, declaredOrderNumber, declaredPaidAt, declaredTotal, window, digitsOf } = opts;
+
+  if (!declaredOrderNumber || digitsOf(declaredOrderNumber).length < 3) {
+    return NextResponse.json({ ok: false, error: "กรุณากรอกเลขคำสั่งซื้อจากใบเสร็จ" }, { status: 400 });
+  }
+  if (!declaredTotal) {
+    return NextResponse.json({ ok: false, error: "กรุณากรอกยอดรวมจากใบเสร็จ" }, { status: 400 });
+  }
+  if (!declaredPaidAt) {
+    return NextResponse.json({ ok: false, error: "กรุณากรอกวันและเวลาที่ชำระเงิน" }, { status: 400 });
+  }
+  const paid = Date.parse(declaredPaidAt);
+  if (!Number.isFinite(paid) || paid < window.opensAt || paid > window.closesAt) {
+    return NextResponse.json(
+      { ok: false, error: "วันที่ชำระเงินอยู่นอกช่วงกิจกรรม — ตรวจวันที่บนใบเสร็จอีกครั้ง" },
+      { status: 400 }
+    );
+  }
+
+  const [pending] = await supabaseRest<{ id: string }[]>(
+    `receipt_campaign_entries?campaign_key=eq.${pgValue(campaign)}&user_id=eq.${pgValue(uid)}` +
+      `&payment_transaction_id=is.null&status=eq.pending_review&select=id&limit=6`
+  ).catch(() => []);
+  if (pending) {
+    const rows = await supabaseRest<{ id: string }[]>(
+      `receipt_campaign_entries?campaign_key=eq.${pgValue(campaign)}&user_id=eq.${pgValue(uid)}` +
+        `&payment_transaction_id=is.null&status=eq.pending_review&select=id&limit=20`
+    ).catch(() => []);
+    if (rows.length >= 5) {
+      return NextResponse.json(
+        { ok: false, error: "มีใบเสร็จเคสพิเศษรอตรวจอยู่หลายรายการแล้ว กรุณารอทีมงานตรวจก่อนส่งเพิ่ม" },
+        { status: 429 }
+      );
+    }
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest, props: { params: Promise<{ campaign: string }> }) {
   const CAMPAIGN = campaignKeyFrom((await props.params).campaign);
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
@@ -208,7 +265,15 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
   if (!receiptExtension(photo.type)) {
     return NextResponse.json({ ok: false, error: "รองรับเฉพาะไฟล์ JPG, PNG หรือ WEBP" }, { status: 400 });
   }
-  if (!/^[0-9a-f-]{36}$/i.test(orderId)) {
+  // The receipt of an order this site has no record of.
+  //
+  // It happens: the card cleared and the order never got written, the customer
+  // bought through a channel that does not reach this table, our own webhook
+  // missed. Refusing the upload leaves them with a receipt, a prize they
+  // qualify for and no way to say so — so it is taken, marked, and decided by
+  // a person instead of by a join.
+  const manual = String(form?.get("manual") ?? "") === "1";
+  if (!manual && !/^[0-9a-f-]{36}$/i.test(orderId)) {
     return NextResponse.json({ ok: false, error: "กรุณาเลือกคำสั่งซื้อ" }, { status: 400 });
   }
 
@@ -237,15 +302,34 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
   // Dentiste — checked here rather than trusted from the form.
   const test = isTestMode(req.nextUrl.searchParams.get("test"));
   const { orders, rules } = await eligibleOrders(CAMPAIGN, uid, test);
-  const order = orders.find((o) => o.id === orderId);
-  if (!order) {
+  const order = manual ? undefined : orders.find((o) => o.id === orderId);
+  if (!manual && !order) {
     return NextResponse.json(
       { ok: false, error: "ไม่พบคำสั่งซื้อนี้ หรือไม่เข้าเงื่อนไขของแคมเปญ" },
       { status: 409 }
     );
   }
 
-  const amounts = amountsFromLineItems(order.line_items, rules);
+  const digitsOf = (v: string | null | undefined) => (v ?? "").replace(/\D/g, "");
+  if (manual) {
+    const stop = await checkManual({
+      campaign: CAMPAIGN,
+      uid,
+      orders,
+      declaredOrderNumber,
+      declaredPaidAt,
+      declaredTotal,
+      window: windowOf(await loadCampaignContent(CAMPAIGN)),
+      digitsOf,
+    });
+    if (stop) return stop;
+  }
+
+  // Nothing computed on a manual receipt: there are no line items to read, so
+  // every number on it is the customer's word until a reviewer types theirs.
+  const amounts = order
+    ? amountsFromLineItems(order.line_items, rules)
+    : { dentisteAmount: 0, keychainAmount: 0 };
   const bytes = await photo.arrayBuffer();
 
   // Read before storing: the customer is still here, and a photo that cannot
@@ -255,13 +339,23 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
   const aiCheck = await checkReceiptPhoto({
     bytes,
     contentType: photo.type,
-    order: {
-      orderNumber: await orderNameByGid(order.shopify_order_id),
-      invoiceNo: order.invoice_no,
-      total: Number(order.amount),
-      paidAt: order.confirmed_at,
-      items: (order.line_items ?? []).map((li) => `variant ${li.variantId} x${li.quantity}`),
-    },
+    // With no order, the photo is checked against what the customer typed —
+    // which is the comparison a reviewer would make first anyway.
+    order: order
+      ? {
+          orderNumber: await orderNameByGid(order.shopify_order_id),
+          invoiceNo: order.invoice_no,
+          total: Number(order.amount),
+          paidAt: order.confirmed_at,
+          items: (order.line_items ?? []).map((li) => `variant ${li.variantId} x${li.quantity}`),
+        }
+      : {
+          orderNumber: declaredOrderNumber,
+          invoiceNo: null,
+          total: declaredTotal ?? 0,
+          paidAt: declaredPaidAt,
+          items: [],
+        },
   });
 
   const path = await uploadReceiptPhoto({
@@ -287,7 +381,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
     declared_total: declaredTotal,
     dentiste_net_amount: amounts.dentisteAmount,
     keychain_amount: amounts.keychainAmount,
-    computed_entries: computeEntries(amounts, rules),
+    computed_entries: order ? computeEntries(amounts, rules) : 0,
+    payment_transaction_id: order ? order.id : null,
+    manual_receipt_no: order ? null : declaredOrderNumber,
     status: "pending_review",
     reject_reason: null,
     // Whatever a reviewer decided about the old photo does not carry over.
@@ -297,9 +393,16 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
   };
 
   try {
+    // One entry per order — or, with no order, one per receipt number this
+    // customer has sent, so a clearer photo of the same receipt replaces the
+    // first rather than becoming a second claim on one purchase.
     const [existing] = await supabaseRest<{ id: string; receipt_photo_path: string }[]>(
-      `receipt_campaign_entries?campaign_key=eq.${CAMPAIGN}&payment_transaction_id=eq.${pgValue(order.id)}` +
-        `&select=id,receipt_photo_path&limit=1`
+      order
+        ? `receipt_campaign_entries?campaign_key=eq.${CAMPAIGN}&payment_transaction_id=eq.${pgValue(order.id)}` +
+            `&select=id,receipt_photo_path&limit=1`
+        : `receipt_campaign_entries?campaign_key=eq.${CAMPAIGN}&user_id=eq.${pgValue(uid)}` +
+            `&payment_transaction_id=is.null&manual_receipt_no=eq.${pgValue(declaredOrderNumber ?? "")}` +
+            `&select=id,receipt_photo_path&limit=1`
     );
 
     let entryId: string | undefined;
@@ -324,8 +427,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
         body: JSON.stringify({
           campaign_key: CAMPAIGN,
           user_id: uid,
-          payment_transaction_id: order.id,
-          ...(test ? { manual_receipt_no: TEST_MARKER } : {}),
+          ...(test && order ? { manual_receipt_no: TEST_MARKER } : {}),
           ...fields,
         }),
       });
@@ -348,7 +450,13 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
 
     return NextResponse.json({
       ok: true,
-      entry: { id: entryId, status: "pending_review", entries: computeEntries(amounts), aiCheck },
+      entry: {
+        id: entryId,
+        status: "pending_review",
+        entries: order ? computeEntries(amounts, rules) : 0,
+        manual: !order,
+        aiCheck,
+      },
     });
   } catch (err) {
     // No row means the photo is litter; it holds someone's address.

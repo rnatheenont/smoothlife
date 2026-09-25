@@ -91,7 +91,8 @@ function DetailPanel({
               <div>
                 <p className="text-[15px] font-bold text-brand-ink">{item.customer ?? "—"}</p>
                 <p className="mt-0.5 text-[13px] text-slate-500">
-                  {item.orderNumber ?? "—"} · ส่งเมื่อ {when(item.sentAt)}
+                  {item.manual ? `${item.declared.orderNumber ?? "—"} · เคสพิเศษ` : (item.orderNumber ?? "—")} · ส่งเมื่อ{" "}
+                  {when(item.sentAt)}
                 </p>
               </div>
               <button
@@ -127,7 +128,9 @@ function DetailPanel({
                 <div>
                   <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[13px]">
                     <dt className="text-slate-500">เลขคำสั่งซื้อ</dt>
-                    <dd className="text-[15px] font-bold text-brand-ink">{item.orderNumber ?? "—"}</dd>
+                    <dd className="text-[15px] font-bold text-brand-ink">
+                      {item.manual ? (item.declared.orderNumber ?? "—") : (item.orderNumber ?? "—")}
+                    </dd>
                     <dt className="text-slate-500">สถานะการชำระเงิน</dt>
                     <dd>
                       <PaymentChip item={item} />
@@ -390,7 +393,14 @@ export default function QueueTable({
                     </span>
                   </td>
                   <td className={adminTable.cell}>
-                    <span className="font-semibold text-brand-ink">{item.orderNumber ?? "—"}</span>
+                    <span className="font-semibold text-brand-ink">
+                      {item.manual ? (item.declared.orderNumber ?? "—") : (item.orderNumber ?? "—")}
+                    </span>
+                    {item.manual && (
+                      <span className="ms-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
+                        เคสพิเศษ
+                      </span>
+                    )}
                     <span className="block font-mono text-[11px] text-slate-400">{item.invoiceNo ?? ""}</span>
                   </td>
                   <td className={adminTable.cell}>

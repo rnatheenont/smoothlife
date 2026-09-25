@@ -186,11 +186,13 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       id: string;
       computed_entries: number;
       status: string;
+      payment_transaction_id: string | null;
+      manual_receipt_no: string | null;
       payment_transactions: { shopify_order_id: string | null } | null;
     }[]
   >(
     `receipt_campaign_entries?id=eq.${pgValue(id)}&campaign_key=eq.${CAMPAIGN}` +
-      `&select=id,computed_entries,status,payment_transactions(shopify_order_id)&limit=1`
+      `&select=id,computed_entries,status,payment_transaction_id,manual_receipt_no,payment_transactions(shopify_order_id)&limit=1`
   );
   if (!entry) return NextResponse.json({ ok: false, error: "ไม่พบใบเสร็จรายการนี้" }, { status: 404 });
   if (entry.status !== "pending_review") {
@@ -205,7 +207,21 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   // the expensive mistake here, while a reviewer waiting five minutes is not.
   // Rejecting stays open — nothing about the money should stop someone saying
   // a photo is wrong.
-  if (action === "approve") {
+  //
+  // A receipt with no order row at all is the one exception: the customer
+  // bought, something on our side lost the order, and the only record is the
+  // photo. There is nothing for Shopify to answer about, so the check that
+  // stands between it and a prize is a person — which is what this screen is.
+  // The entries are theirs to type, because nothing computed them.
+  const manual = action === "approve" && !entry.payment_transaction_id && Boolean(entry.manual_receipt_no);
+  if (manual && override === undefined) {
+    return NextResponse.json(
+      { ok: false, error: "ใบเสร็จเคสพิเศษไม่มีคำสั่งซื้อให้คำนวณ กรุณาระบุจำนวนสิทธิ์เอง" },
+      { status: 400 }
+    );
+  }
+
+  if (action === "approve" && !manual) {
     const gid = entry.payment_transactions?.shopify_order_id ?? null;
     if (!gid) {
       return NextResponse.json(

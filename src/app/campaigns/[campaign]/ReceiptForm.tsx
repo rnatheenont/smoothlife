@@ -32,6 +32,15 @@ type Item = {
    * attached to the photo they are looking at.
    */
   declared: { orderNumber: string; paidAt: string; total: string };
+  /**
+   * Sent for a person to check rather than matched to an order.
+   *
+   * For the receipt of a purchase this site has no record of — the card
+   * cleared and the order was never written, or it was bought somewhere this
+   * table does not reach. Nothing can be computed from it, so it carries what
+   * the customer typed and waits for a reviewer.
+   */
+  manual: boolean;
   editing: boolean;
   reading: boolean;
   state: "ready" | "sending" | "sent" | "failed";
@@ -272,7 +281,16 @@ export default function ReceiptForm({
         // was written for — a receipt for an order that is not in the list —
         // is the exact case worth catching, not papering over.
         const hit = orderFromNumber(value);
-        return { ...row, declared, orderId: hit?.id ?? null, matched: hit ? "manual" : "none", note: null };
+        // Typing a number that does match takes the row back out of the
+        // special-case path: there is an order now, and it decides.
+        return {
+          ...row,
+          declared,
+          orderId: hit?.id ?? null,
+          matched: hit ? "manual" : "none",
+          manual: hit ? false : row.manual,
+          note: null,
+        };
       })
     );
   }
@@ -298,6 +316,7 @@ export default function ReceiptForm({
       orderId: null,
       matched: "none",
       declared: { orderNumber: "", paidAt: "", total: "" },
+      manual: false,
       // On its own the receipt is the page, so its fields are open.
       editing: single,
       reading: true,
@@ -370,9 +389,18 @@ export default function ReceiptForm({
     });
   }
 
+  /** A row the send button will actually take: matched, or flagged for review. */
+  const sendable = (row: Item) => Boolean(row.orderId) || row.manual;
+
+  /** Everything a manual row has to carry, since no order can supply it. */
+  const manualReady = (row: Item) =>
+    row.declared.orderNumber.trim().length > 0 &&
+    row.declared.paidAt.trim().length > 0 &&
+    Number(row.declared.total.replace(/[^0-9.]/g, "")) > 0;
+
   /** Sends every row that has an order, one after another, and says how each went. */
   async function sendAll() {
-    const ready = items.filter((row) => row.orderId && row.state !== "sent");
+    const ready = items.filter((row) => sendable(row) && row.state !== "sent");
     if (!ready.length) return;
     setSending(true);
     setNotice(null);
@@ -381,7 +409,8 @@ export default function ReceiptForm({
       setItems((old) => old.map((row) => (row.id === item.id ? { ...row, state: "sending", error: null } : row)));
       try {
         const body = new FormData();
-        body.set("orderId", item.orderId!);
+        if (item.orderId) body.set("orderId", item.orderId);
+        else body.set("manual", "1");
         body.set("photo", item.file);
         body.set("contactName", contactName.trim());
         body.set("contactPhone", contactPhone.trim());
@@ -575,7 +604,10 @@ export default function ReceiptForm({
               {/* Left: the stack of receipts, not one at a time. */}
               <div>
                 <h2 className="text-lg font-bold text-black">แนบรูปใบเสร็จ</h2>
-                {orders.length === 0 ? (
+                {/* No eligible order is a reason to explain, not a reason to
+                    close the form: a receipt this site has no record of is
+                    exactly the one that needs a person to look at it. */}
+                {orders.length === 0 && (
                   <div className="mt-3 rounded-2xl border border-black/10 p-5">
                     <p className="text-[14px] font-bold text-black">ยังไม่พบคำสั่งซื้อที่เข้าเงื่อนไข</p>
                     <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
@@ -598,8 +630,12 @@ export default function ReceiptForm({
                       {rechecking && <Loader2 size={15} className="animate-spin" />}
                       {rechecking ? "กำลังตรวจสอบ…" : "ตรวจสอบอีกครั้ง"}
                     </button>
+                    <p className="mt-3 text-[13px] leading-relaxed text-black/55">
+                      ซื้อจริงแต่คำสั่งซื้อไม่ขึ้นที่นี่? แนบรูปใบเสร็จด้านล่างแล้วติ๊ก “ส่งให้ทีมงานตรวจเอง” ได้เลย
+                    </p>
                   </div>
-                ) : (
+                )}
+                {(
                   <>
                     <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
                       แคปหน้าจออีเมลยืนยันคำสั่งซื้อที่ได้รับจาก Smoothlife.com ให้เห็น
@@ -914,6 +950,33 @@ export default function ReceiptForm({
                         );
                       })()}
 
+                      {/* The way out when the system is the one that is wrong.
+                          Some orders never reach this site — the card cleared
+                          and the order was not written, or it was bought
+                          through a channel this table does not see. The
+                          customer still has the receipt, and it is a reviewer
+                          who can tell. */}
+                      {!singleItem.reading && !singleItem.orderId && (
+                        <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-xl border border-black/10 bg-black/[0.02] p-3">
+                          <input
+                            type="checkbox"
+                            checked={singleItem.manual}
+                            onChange={(e) =>
+                              setItems((old) =>
+                                old.map((row) => (row.id === singleItem.id ? { ...row, manual: e.target.checked } : row))
+                              )
+                            }
+                            className="mt-0.5 h-4 w-4 accent-black"
+                          />
+                          <span className="text-[12px] leading-relaxed text-black/70">
+                            <b className="text-black">ซื้อจริงแต่ไม่พบคำสั่งซื้อในระบบ — ส่งให้ทีมงานตรวจเอง</b>
+                            <br />
+                            กรอกเลขคำสั่งซื้อ วันที่ชำระเงิน และยอดรวมตามใบเสร็จให้ครบ
+                            ทีมงานจะตรวจกับหลักฐานการชำระเงินแล้วให้สิทธิ์ย้อนหลัง
+                          </span>
+                        </label>
+                      )}
+
                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
                         {(
                           [
@@ -970,8 +1033,11 @@ export default function ReceiptForm({
                   )}
 
                   {(() => {
-                    const ready = items.filter((row) => row.orderId && row.state !== "sent");
-                    const missing = items.filter((row) => !row.orderId && !row.reading).length;
+                    const ready = items.filter(
+                      (row) => sendable(row) && row.state !== "sent" && (!row.manual || manualReady(row))
+                    );
+                    const missing = items.filter((row) => !sendable(row) && !row.reading).length;
+                    const incomplete = items.filter((row) => row.manual && !manualReady(row)).length;
                     const contactOk = contactName.trim().length >= 2 && contactPhone.replace(/\D/g, "").length >= 9;
                     return (
                       <>
@@ -991,6 +1057,11 @@ export default function ReceiptForm({
                         {missing > 0 && (
                           <p className="text-center text-[12px] text-amber-700">
                             ยังมี {missing} รูปที่ยังไม่พบคำสั่งซื้อ — ตรวจเลขคำสั่งซื้อของรูปนั้นอีกครั้ง
+                          </p>
+                        )}
+                        {incomplete > 0 && (
+                          <p className="text-center text-[12px] text-amber-700">
+                            ใบเสร็จเคสพิเศษต้องกรอกเลขคำสั่งซื้อ วันที่ชำระเงิน และยอดรวมให้ครบก่อนส่ง
                           </p>
                         )}
                       </>
