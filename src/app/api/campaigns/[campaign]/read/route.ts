@@ -90,11 +90,16 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
     },
   });
 
+  // What the photo says, kept whatever happens to the verdict below. It is
+  // the whole point of this call: the boxes on the form are filled from it.
+  const reading = check?.read ?? null;
+
   if (!order) {
-    // Nothing to compare against on that pass, so only the reading survives
-    // it — the verdict is decided on submit, against the order the number
-    // turns out to name.
-    const typed = digitsOf(check?.read?.orderNumber);
+    // Nothing to compare against on that pass, so the verdict goes — it is a
+    // judgement about a comparison nobody made. The reading stays; the
+    // verdict that counts is the one made on submit, against the order the
+    // number turns out to name.
+    const typed = digitsOf(reading?.orderNumber);
     order = typed ? (orders.find((o) => digitsOf(nameOf(o)) === typed) ?? null) : null;
     check = null;
   }
@@ -107,7 +112,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
     // What the photo said, and what the order says. The form shows the first
     // and submits against the second; where they disagree the customer is the
     // one who can see both.
-    read: check?.read ?? { orderNumber: null, total: null, paidAt: null },
+    read: reading ?? { orderNumber: null, total: null, paidAt: null },
     order: order
       ? {
           id: order.id,
