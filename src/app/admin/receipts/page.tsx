@@ -10,8 +10,9 @@
 // order, and the photo is what says the order is really theirs.
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { Check, Loader2, RefreshCw, X } from "lucide-react";
+import { ArrowLeft, Check, Loader2, RefreshCw, X } from "lucide-react";
 import { PageHeader, Panel, StatCard, adminTable } from "@/components/admin/layout-kit";
+import CampaignIndex from "./CampaignIndex";
 import CampaignSettings from "./CampaignSettings";
 import NewCampaign from "./NewCampaign";
 import QueueTable from "./QueueTable";
@@ -69,14 +70,14 @@ const WINNER_STATUS = {
 export default function Page() {
   const [data, setData] = useState<Data | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("queue");
-  // The campaign's own name, from the same row the customer's page reads, so
-  // renaming it in the settings tab renames it here.
-  const [campaignName, setCampaignName] = useState<string | null>(null);
   // Which campaign this screen is showing, and the rest to switch to. One
   // screen for all of them: the second campaign should need a row in a table,
   // not a copy of this page.
   const [campaign, setCampaign] = useState<string | null>(null);
   const [campaigns, setCampaigns] = useState<{ key: string; name: string }[]>([]);
+  // The campaign's own name, from the same row the customer's page reads, so
+  // renaming it in the settings tab renames it here.
+  const campaignName = campaigns.find((c) => c.key === campaign)?.name ?? null;
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,6 +85,7 @@ export default function Page() {
   const campaignQuery = campaign ? `?campaign=${encodeURIComponent(campaign)}` : "";
 
   const load = useCallback(async () => {
+    if (!campaign) return;
     try {
       const res = await fetch(`/api/admin/receipts${campaignQuery}`, { cache: "no-store" });
       const json = await res.json();
@@ -93,7 +95,7 @@ export default function Page() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "โหลดข้อมูลไม่สำเร็จ");
     }
-  }, [campaignQuery]);
+  }, [campaign, campaignQuery]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- first load
@@ -106,9 +108,7 @@ export default function Page() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (cancelled || !d?.ok) return;
-        if (typeof d.name === "string" && d.name.trim()) setCampaignName(d.name.trim());
         if (Array.isArray(d.campaigns)) setCampaigns(d.campaigns);
-        if (typeof d.key === "string") setCampaign((c) => c ?? d.key);
       })
       .catch(() => {});
     return () => {
@@ -249,48 +249,54 @@ export default function Page() {
     }
   }
 
-  return (
-    <div>
-      <PageHeader
-        title="กิจกรรมชิงรางวัล"
-        subtitle={
-          campaignName ? `${campaignName} — ตรวจใบเสร็จ ดูลำดับ VIP และสิทธิ์ Lucky Fan` : "ตรวจใบเสร็จ ดูลำดับ VIP และสิทธิ์ Lucky Fan"
-        }
-        actions={
-          <span className="relative flex items-center gap-2">
-            {/* Only when there is a choice to make. */}
-            {campaigns.length > 1 && (
-              <select
-                value={campaign ?? ""}
-                onChange={(e) => {
-                  setCampaign(e.target.value);
-                  setCampaignName(null);
-                }}
-                className="min-h-8 rounded-full border border-surface-line bg-white px-3 text-[12px] font-semibold text-brand-ink"
-              >
-                {campaigns.map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          <button
-            type="button"
-            onClick={load}
-            className="inline-flex items-center gap-1.5 rounded-full border border-surface-line px-3 py-1.5 text-[12px] font-semibold text-brand-ink hover:bg-surface-soft"
-          >
-            <RefreshCw size={13} aria-hidden /> รีเฟรช
-          </button>
+  const pill =
+    "inline-flex items-center gap-1.5 rounded-full border border-surface-line px-3 py-1.5 text-[12px] font-semibold text-brand-ink hover:bg-surface-soft";
+
+  // Nothing is chosen yet: the list comes first, and the console is what
+  // opening a row gets you.
+  if (!campaign) {
+    return (
+      <div>
+        <PageHeader
+          title="กิจกรรม"
+          subtitle="เลือกกิจกรรมที่ต้องการดู — ตรวจใบเสร็จ ดูลำดับ VIP และสิทธิ์ Lucky Fan"
+          actions={
             <NewCampaign
               onCreated={(key) => {
                 // Straight into the new one, on the tab that finishes setting
                 // it up — a campaign with default dates is not one to leave.
                 setCampaign(key);
-                setCampaignName(null);
                 setTab("settings");
               }}
             />
+          }
+        />
+        <CampaignIndex onOpen={setCampaign} />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title={campaignName ?? "กิจกรรมชิงรางวัล"}
+        subtitle="ตรวจใบเสร็จ ดูลำดับ VIP และสิทธิ์ Lucky Fan"
+        actions={
+          <span className="relative flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCampaign(null);
+                setData(null);
+                setTab("queue");
+              }}
+              className={pill}
+            >
+              <ArrowLeft size={13} aria-hidden /> ทุกกิจกรรม
+            </button>
+            <button type="button" onClick={load} className={pill}>
+              <RefreshCw size={13} aria-hidden /> รีเฟรช
+            </button>
           </span>
         }
       />
