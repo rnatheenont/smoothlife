@@ -26,6 +26,15 @@ export type ReceiptCheck = {
   message: string;
   /** What the model could and could not make out, for the reviewer. */
   findings: string[];
+  /**
+   * What the model could read off the picture, to save the customer typing it.
+   *
+   * A suggestion, never an input to the arithmetic: entries are computed from
+   * the order row, and this is only here so the form arrives filled in and the
+   * customer can correct it. Anything unreadable comes back null rather than
+   * guessed — a wrong number they did not notice is worse than an empty box.
+   */
+  read: { orderNumber: string | null; total: number | null; paidAt: string | null };
   checkedAt: string;
   model: string;
 };
@@ -48,8 +57,16 @@ const SYSTEM = `คุณคือผู้ช่วยตรวจใบเส�
 {
   "verdict": "ok" | "unclear" | "mismatch",
   "message": "ข้อความภาษาไทยหนึ่งประโยคบอกลูกค้าว่าต้องทำอะไร",
-  "findings": ["สิ่งที่เห็นหรือไม่เห็นในภาพ เป็นภาษาไทย"]
+  "findings": ["สิ่งที่เห็นหรือไม่เห็นในภาพ เป็นภาษาไทย"],
+  "read": {
+    "orderNumber": "เลขคำสั่งซื้อที่อ่านได้จากภาพ เช่น #4292 หรือ null ถ้าอ่านไม่ได้",
+    "total": ยอดรวมเป็นตัวเลขที่อ่านได้จากภาพ หรือ null,
+    "paidAt": "วันที่ในภาพ รูปแบบ YYYY-MM-DD หรือ null"
+  }
 }
+
+เรื่อง "read": อ่านเท่าที่เห็นจริงในภาพเท่านั้น ห้ามเดา ห้ามคัดลอกจากข้อมูลที่ระบบแจ้งให้
+ถ้าตรงไหนอ่านไม่ออกหรือไม่มีในภาพ ให้ใส่ null — ตัวเลขผิดที่ลูกค้าไม่ทันสังเกตแย่กว่าช่องว่าง
 
 เกณฑ์:
 - "ok" = เป็นอีเมลยืนยันคำสั่งซื้อของ Smoothlife.com และเลขคำสั่งซื้อตรงกับที่ระบบแจ้ง
@@ -71,14 +88,30 @@ function parse(text: string): Omit<ReceiptCheck, "checkedAt" | "model"> | null {
   // deviation worth surviving rather than throwing the whole reading away.
   const body = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
   try {
-    const raw = JSON.parse(body) as { verdict?: string; message?: string; findings?: unknown };
+    const raw = JSON.parse(body) as {
+      verdict?: string;
+      message?: string;
+      findings?: unknown;
+      read?: { orderNumber?: unknown; total?: unknown; paidAt?: unknown };
+    };
     const verdict = raw.verdict === "ok" || raw.verdict === "mismatch" ? raw.verdict : "unclear";
+    const total = Number(raw.read?.total);
+    const paidAt = typeof raw.read?.paidAt === "string" ? raw.read.paidAt.trim() : "";
     return {
       verdict,
       message: typeof raw.message === "string" ? raw.message.slice(0, 300) : "",
       findings: Array.isArray(raw.findings)
         ? raw.findings.filter((f): f is string => typeof f === "string").slice(0, 6)
         : [],
+      read: {
+        orderNumber:
+          typeof raw.read?.orderNumber === "string" && raw.read.orderNumber.trim()
+            ? raw.read.orderNumber.trim().slice(0, 40)
+            : null,
+        total: Number.isFinite(total) && total > 0 ? total : null,
+        // Only a real calendar date survives — "2026-13-45" becomes nothing.
+        paidAt: /^\d{4}-\d{2}-\d{2}$/.test(paidAt) && Number.isFinite(Date.parse(paidAt)) ? paidAt : null,
+      },
     };
   } catch {
     return null;

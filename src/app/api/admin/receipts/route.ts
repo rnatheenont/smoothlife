@@ -40,13 +40,18 @@ type Row = {
   created_at: string;
   ai_check: { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] } | null;
   users: { display_name: string | null } | null;
+  contact_name?: string | null;
+  contact_phone?: string | null;
+  declared_order_number?: string | null;
+  declared_paid_at?: string | null;
+  declared_total?: number | string | null;
   payment_transactions: { invoice_no: string; amount: number; confirmed_at: string | null; shopify_order_id: string | null } | null;
 };
 
 const SELECT =
   "id,user_id,payment_transaction_id,manual_receipt_no,receipt_photo_path,dentiste_net_amount," +
   "keychain_amount,computed_entries,entries_override,status,reject_reason,reviewed_at,created_at,ai_check," +
-  "users(display_name),payment_transactions(invoice_no,amount,confirmed_at,shopify_order_id)";
+  "contact_name,contact_phone,declared_order_number,declared_paid_at,declared_total,users(display_name),payment_transactions(invoice_no,amount,confirmed_at,shopify_order_id)";
 
 type WinnerRow = {
   id: string;
@@ -115,6 +120,15 @@ export async function GET(req: NextRequest) {
       keychainAmount: Number(r.keychain_amount),
       entries: entriesOf(r),
       sentAt: r.created_at,
+      // The customer's own account of the receipt, next to the shop's record
+      // of the order — the two disagreeing is the thing worth a second look.
+      contactName: r.contact_name ?? null,
+      contactPhone: r.contact_phone ?? null,
+      declared: {
+        orderNumber: r.declared_order_number ?? null,
+        paidAt: r.declared_paid_at ?? null,
+        total: r.declared_total === null || r.declared_total === undefined ? null : Number(r.declared_total),
+      },
       photoUrl: await signedReceiptUrl(r.receipt_photo_path),
       aiCheck: r.ai_check,
     }))

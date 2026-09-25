@@ -228,6 +228,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "กรุณากรอกเบอร์โทรให้ครบถ้วน" }, { status: 400 });
   }
 
+  // The customer's own reading of their receipt. Stored beside the photo for a
+  // reviewer to compare against, and deliberately nowhere near the arithmetic
+  // below — a number typed into a form must not be able to earn an entry.
+  const declaredOrderNumber = String(form?.get("declaredOrderNumber") ?? "").trim().slice(0, 40) || null;
+  const declaredPaidRaw = String(form?.get("declaredPaidAt") ?? "").trim();
+  const declaredPaidAt = /^\d{4}-\d{2}-\d{2}$/.test(declaredPaidRaw) ? declaredPaidRaw : null;
+  const declaredTotalRaw = Number(String(form?.get("declaredTotal") ?? "").replace(/[^0-9.]/g, ""));
+  const declaredTotal = Number.isFinite(declaredTotalRaw) && declaredTotalRaw > 0 ? declaredTotalRaw : null;
+
   // The order has to be theirs, paid, inside the window and actually contain
   // Dentiste — checked here rather than trusted from the form.
   const test = isTestMode(req.nextUrl.searchParams.get("test"));
@@ -277,6 +286,9 @@ export async function POST(req: NextRequest) {
     ai_check: aiCheck,
     contact_name: contactName,
     contact_phone: contactPhone,
+    declared_order_number: declaredOrderNumber,
+    declared_paid_at: declaredPaidAt,
+    declared_total: declaredTotal,
     dentiste_net_amount: amounts.dentisteAmount,
     keychain_amount: amounts.keychainAmount,
     computed_entries: computeEntries(amounts),

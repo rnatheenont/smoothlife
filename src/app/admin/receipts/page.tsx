@@ -31,6 +31,10 @@ type QueueItem = {
   /** Shopify's own word on the order right now, not our 2C2P row. */
   paymentStatus: string | null;
   refunded: number;
+  contactName: string | null;
+  contactPhone: string | null;
+  /** What the customer said their receipt shows — their words, not our record. */
+  declared: { orderNumber: string | null; paidAt: string | null; total: number | null };
 };
 
 /**
@@ -354,7 +358,54 @@ export default function Page() {
                           )}
                           <dt className="text-slate-500">ส่งเมื่อ</dt>
                           <dd className="text-brand-ink">{when(item.sentAt)}</dd>
+                          <dt className="text-slate-500">ผู้รับรางวัล</dt>
+                          <dd className="text-brand-ink">
+                            {item.contactName ?? "—"}
+                            {item.contactPhone && (
+                              <a href={`tel:${item.contactPhone}`} className="ms-2 font-mono text-[12px] text-brand-800 underline">
+                                {item.contactPhone}
+                              </a>
+                            )}
+                          </dd>
                         </dl>
+
+                        {/* What the customer typed, and whether it matches. A
+                            mismatch is not a verdict — a screenshot of the
+                            wrong order and a typo look identical here — but it
+                            is the thing worth looking at the photo for. */}
+                        {(item.declared.orderNumber || item.declared.total !== null) && (
+                          <div className="mt-3 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px]">
+                            <p className="font-semibold text-slate-500">ลูกค้ากรอกมาว่า</p>
+                            <p className="mt-1 text-brand-ink">
+                              เลขคำสั่งซื้อ{" "}
+                              <b
+                                className={
+                                  item.declared.orderNumber && item.orderNumber &&
+                                  item.declared.orderNumber.replace(/\D/g, "") !== item.orderNumber.replace(/\D/g, "")
+                                    ? "text-rose-700"
+                                    : "text-brand-ink"
+                                }
+                              >
+                                {item.declared.orderNumber ?? "—"}
+                              </b>
+                              {item.declared.total !== null && (
+                                <>
+                                  {" · "}ยอดทั้งบิล{" "}
+                                  <b
+                                    className={
+                                      item.orderTotal !== null && Math.abs(item.declared.total - item.orderTotal) > 0.5
+                                        ? "text-rose-700"
+                                        : "text-brand-ink"
+                                    }
+                                  >
+                                    {formatTHB(item.declared.total)}
+                                  </b>
+                                </>
+                              )}
+                              {item.declared.paidAt && <>{" · "}{item.declared.paidAt}</>}
+                            </p>
+                          </div>
+                        )}
 
                         <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-slate-600">
                           <span>
