@@ -12,6 +12,11 @@ import { getProductBySlug } from "@/data/products";
 //   PATCH { action: "start_now" } — move starts_at to now (not once it has ended)
 //   PATCH { action: "end_now" }   — stamp ended_manually_at (a campaign ended
 //                                   before its start is simply cancelled)
+//   PATCH { action: "reopen", endsAt? }
+//                                 — clear the manual end and put a closing
+//                                   time back in the future (or none at all)
+//   PATCH { action: "publish", published }
+//                                 — whether the sale page answers customers
 //   DELETE                        — remove it
 // The conditions are part of each write's filter, so a second click, or a
 // click on a campaign someone else already ended, changes nothing.
@@ -56,8 +61,21 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   }
 
   let filter: string;
-  let patch: Record<string, string>;
-  if (body?.action === "start_now") {
+  let patch: Record<string, string | boolean | null>;
+  if (body?.action === "publish") {
+    filter = `id=eq.${pgValue(id)}`;
+    patch = { published: body?.published === true };
+  } else if (body?.action === "reopen") {
+    // Selling again means two things stop being true: somebody ended it, and
+    // its closing time is in the past. Both are undone here; the stock that
+    // has already sold is not, which is why the screen says so before asking.
+    const endsAt = typeof body?.endsAt === "number" && Number.isFinite(body.endsAt) ? new Date(body.endsAt) : null;
+    if (endsAt && endsAt.getTime() <= Date.now()) {
+      return NextResponse.json({ ok: false, error: "เวลาปิดการขายต้องอยู่ในอนาคต" }, { status: 400 });
+    }
+    filter = `id=eq.${pgValue(id)}`;
+    patch = { ended_manually_at: null, ends_at: endsAt ? endsAt.toISOString() : null };
+  } else if (body?.action === "start_now") {
     // ends_at must still be ahead, or the new start would fall after the end.
     filter = `id=eq.${pgValue(id)}&ended_manually_at=is.null&or=(ends_at.is.null,ends_at.gt.${pgValue(now)})`;
     patch = { starts_at: now };

@@ -42,13 +42,14 @@ export type FlashSaleCampaignRow = {
   starts_at: string;
   ends_at: string | null;
   ended_manually_at: string | null;
+  published?: boolean | null;
   created_at: string;
   /** Embedded from flash_sales (one row per product). */
   flash_sales?: { product_slug: string; sale_price: number | string | null }[];
 };
 
 export const CAMPAIGN_COLUMNS =
-  "id,title,mode,kind,hero_image_url,hero_headline,hero_note,hero_align,accent_color,faq,group_kind,group_key,product_slugs,stock_per_product,reservation_window_minutes,max_requeue_per_customer,starts_at,ends_at,ended_manually_at,created_at,flash_sales(product_slug,sale_price)";
+  "id,title,mode,kind,published,hero_image_url,hero_headline,hero_note,hero_align,accent_color,faq,group_kind,group_key,product_slugs,stock_per_product,reservation_window_minutes,max_requeue_per_customer,starts_at,ends_at,ended_manually_at,created_at,flash_sales(product_slug,sale_price)";
 
 /** What the admin page receives: times as epoch ms. */
 export type FlashSaleCampaignDTO = {
@@ -66,6 +67,8 @@ export type FlashSaleCampaignDTO = {
   startsAt: number;
   endsAt: number | null;
   endedManuallyAt: number | null;
+  /** Whether the sale page answers for customers at all. */
+  published: boolean;
   /** Flash price per product slug; null = regular price. */
   salePrices: Record<string, number | null>;
 };
@@ -93,6 +96,8 @@ export function rowToCampaign(r: FlashSaleCampaignRow): FlashSaleCampaignDTO {
     startsAt: Date.parse(r.starts_at),
     endsAt: r.ends_at ? Date.parse(r.ends_at) : null,
     endedManuallyAt: r.ended_manually_at ? Date.parse(r.ended_manually_at) : null,
+    // A row written before the column existed is a sale that has been live.
+    published: r.published !== false,
     salePrices: Object.fromEntries(
       (r.flash_sales ?? []).map((s) => [s.product_slug, s.sale_price === null ? null : Number(s.sale_price)])
     ),

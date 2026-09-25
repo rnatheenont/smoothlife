@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/data/products";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
@@ -5,6 +6,7 @@ import { UUID_RE } from "@/lib/flash-sale";
 import FlashSaleLive, { type LiveProduct } from "@/components/flash-sale/FlashSaleLive";
 import type { CampaignTheme } from "@/components/flash-sale/special";
 import { DEFAULT_ACCENT } from "@/lib/flash-sale-campaigns";
+import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 
 // A flash-sale campaign's sale page: real stock, real queue (fs_* functions).
 // The page itself only needs what doesn't change during the sale — title and
@@ -16,6 +18,7 @@ type Row = {
   title: string;
   product_slugs: string[];
   kind: "regular" | "special";
+  published?: boolean | null;
   hero_image_url: string | null;
   hero_headline: string | null;
   hero_note: string | null;
@@ -27,7 +30,7 @@ type Row = {
 
 async function getCampaign(id: string): Promise<Row | null> {
   if (!UUID_RE.test(id) || !supabaseConfigured()) return null;
-  const rows = await supabaseRest<Row[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=id,title,product_slugs,kind,hero_image_url,hero_headline,hero_note,hero_align,accent_color,faq,flash_sales(product_slug,sale_price)`);
+  const rows = await supabaseRest<Row[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=id,title,product_slugs,kind,published,hero_image_url,hero_headline,hero_note,hero_align,accent_color,faq,flash_sales(product_slug,sale_price)`);
   return rows[0] ?? null;
 }
 
@@ -39,6 +42,12 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
 export default async function FlashSalePage(props: { params: Promise<{ id: string }> }) {
   const campaign = await getCampaign((await props.params).id);
   if (!campaign) notFound();
+  // Taken off the air: the row, the queue and the orders all stay, the page
+  // does not. Whoever is signed in to the console can still open it, because
+  // a sale you cannot look at is a sale you cannot check before putting back.
+  if (campaign.published === false && !verifyAdminToken((await cookies()).get(ADMIN_COOKIE)?.value)) {
+    notFound();
+  }
   const products: LiveProduct[] = campaign.product_slugs
     .map((slug) => getProductBySlug(slug))
     .filter((p): p is NonNullable<typeof p> => Boolean(p))
