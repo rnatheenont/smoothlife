@@ -15,6 +15,7 @@ import { checkReceiptPhoto, readMoment } from "@/lib/receipt-vision";
 import { orderNameByGid, orderNamesByGid } from "@/lib/shopify-admin";
 import { loadCampaignContent, windowOf } from "@/lib/receipt-campaign-content";
 import { holdsPrize, type CampaignRules } from "@/lib/receipt-campaign";
+import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 import {
   ENTRY_COLUMNS,
   MAX_RECEIPT_BYTES,
@@ -37,7 +38,7 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CAMPAIGN = "dentiste-x-kengnamping";
+
 
 type TxRow = {
   id: string;
@@ -74,13 +75,17 @@ function unauthorised() {
 }
 
 /** Every paid order of this customer that the campaign would accept. */
-async function eligibleOrders(userId: string, anyOrder = false): Promise<{ rules: CampaignRules; orders: TxRow[] }> {
+async function eligibleOrders(
+  campaignKey: string,
+  userId: string,
+  anyOrder = false
+): Promise<{ rules: CampaignRules; orders: TxRow[] }> {
   const [rows, content] = await Promise.all([
     supabaseRest<TxRow[]>(
       `payment_transactions?user_id=eq.${pgValue(userId)}&status=eq.success` +
         `&select=id,invoice_no,amount,confirmed_at,line_items,shopify_order_id&order=confirmed_at.desc&limit=100`
     ).catch(() => [] as TxRow[]),
-    loadCampaignContent(CAMPAIGN),
+    loadCampaignContent(campaignKey),
   ]);
   const window = windowOf(content);
   return {
@@ -93,14 +98,15 @@ async function eligibleOrders(userId: string, anyOrder = false): Promise<{ rules
   };
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, props: { params: Promise<{ campaign: string }> }) {
+  const CAMPAIGN = campaignKeyFrom((await props.params).campaign);
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!uid) return unauthorised();
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
   const test = isTestMode(req.nextUrl.searchParams.get("test"));
   const [{ orders, rules }, entries, uploads, profile, prizes] = await Promise.all([
-    eligibleOrders(uid, test),
+    eligibleOrders(CAMPAIGN, uid, test),
     entriesForUser(CAMPAIGN, uid),
     supabaseRest<UploadRow[]>(
       `receipt_campaign_uploads?user_id=eq.${pgValue(uid)}` +
@@ -197,7 +203,8 @@ export async function GET(req: NextRequest) {
   );
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest, props: { params: Promise<{ campaign: string }> }) {
+  const CAMPAIGN = campaignKeyFrom((await props.params).campaign);
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!uid) return unauthorised();
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
@@ -252,7 +259,7 @@ export async function POST(req: NextRequest) {
   // The order has to be theirs, paid, inside the window and actually contain
   // Dentiste — checked here rather than trusted from the form.
   const test = isTestMode(req.nextUrl.searchParams.get("test"));
-  const { orders, rules } = await eligibleOrders(uid, test);
+  const { orders, rules } = await eligibleOrders(CAMPAIGN, uid, test);
   const order = orders.find((o) => o.id === orderId);
   if (!order) {
     return NextResponse.json(

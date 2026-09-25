@@ -2,6 +2,7 @@ import { CalendarDays, Gift, Receipt, Ticket } from "lucide-react";
 import ReceiptForm from "./ReceiptForm";
 import { isTestMode } from "@/lib/receipt-campaign";
 import { labelsOf, loadCampaignContent } from "@/lib/receipt-campaign-content";
+import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
 // DENTISTE'S x KENG NAMPING — the shell. The receipt upload, the entry count
 // and the draw land here next; see the plan for what is still waiting on an
@@ -15,10 +16,15 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-const CAMPAIGN = "dentiste-x-kengnamping";
-
-export default async function Page({ searchParams }: { searchParams: Promise<{ test?: string }> }) {
-  const [{ test: testParam }, content] = await Promise.all([searchParams, loadCampaignContent(CAMPAIGN)]);
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ campaign: string }>;
+  searchParams: Promise<{ test?: string }>;
+}) {
+  const campaign = campaignKeyFrom((await params).campaign);
+  const [{ test: testParam }, content] = await Promise.all([searchParams, loadCampaignContent(campaign)]);
   const test = isTestMode(testParam);
   const label = labelsOf(content);
 
@@ -76,7 +82,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
       {/* The form is rendered even while the window is shut, so someone who
           already sent a receipt can still see where it got to. */}
       <div className="mt-10">
-        <ReceiptForm open={open} opensLabel={label.opens} closesLabel={label.closes} />
+        <ReceiptForm campaign={campaign} open={open} opensLabel={label.opens} closesLabel={label.closes} />
       </div>
 
       {/* The conditions, on the page rather than only in whatever document the

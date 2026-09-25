@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { holdsPrize } from "@/lib/receipt-campaign";
+import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
 // A winner accepting their own prize.
 //
@@ -16,7 +17,7 @@ import { holdsPrize } from "@/lib/receipt-campaign";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CAMPAIGN = "dentiste-x-kengnamping";
+
 
 type Row = {
   id: string;
@@ -27,7 +28,8 @@ type Row = {
   confirm_deadline: string;
 };
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest, props: { params: Promise<{ campaign: string }> }) {
+  const CAMPAIGN = campaignKeyFrom((await props.params).campaign);
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!uid) return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });

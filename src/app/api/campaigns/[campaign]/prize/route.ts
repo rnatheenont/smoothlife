@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { holdsPrize } from "@/lib/receipt-campaign";
+import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
 // Whether this customer won, and letting them say they want it.
 //
@@ -14,7 +15,7 @@ import { holdsPrize } from "@/lib/receipt-campaign";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CAMPAIGN = "dentiste-x-kengnamping";
+
 
 type Place = {
   id: string;
@@ -27,16 +28,16 @@ type Place = {
 
 const PRIZE_LABEL = { vip: "รางวัล VIP", lucky_fan: "รางวัล Lucky Fan" } as const;
 
-async function placesFor(prizeType: string) {
+async function placesFor(campaignKey: string, prizeType: string) {
   return supabaseRest<Place[]>(
-    `receipt_campaign_winners?campaign_key=eq.${CAMPAIGN}&prize_type=eq.${prizeType}` +
+    `receipt_campaign_winners?campaign_key=eq.${pgValue(campaignKey)}&prize_type=eq.${prizeType}` +
       `&select=id,prize_type,rank,user_id,status,confirm_deadline&order=rank.asc&limit=200`
   ).catch(() => [] as Place[]);
 }
 
 /** Every prize this customer is currently holding, with what they can do about it. */
-async function myPrizes(uid: string) {
-  const [vip, fan] = await Promise.all([placesFor("vip"), placesFor("lucky_fan")]);
+async function myPrizes(campaignKey: string, uid: string) {
+  const [vip, fan] = await Promise.all([placesFor(campaignKey, "vip"), placesFor(campaignKey, "lucky_fan")]);
   const out = [];
   for (const places of [vip, fan]) {
     const holders = holdsPrize(places);
@@ -58,14 +59,16 @@ async function myPrizes(uid: string) {
   return out;
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, props: { params: Promise<{ campaign: string }> }) {
+  const CAMPAIGN = campaignKeyFrom((await props.params).campaign);
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!uid) return NextResponse.json({ ok: false, prizes: [] }, { status: 401 });
   if (!supabaseConfigured()) return NextResponse.json({ ok: true, prizes: [] });
-  return NextResponse.json({ ok: true, prizes: await myPrizes(uid) }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ ok: true, prizes: await myPrizes(CAMPAIGN, uid) }, { headers: { "Cache-Control": "no-store" } });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest, props: { params: Promise<{ campaign: string }> }) {
+  const CAMPAIGN = campaignKeyFrom((await props.params).campaign);
   const uid = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!uid) return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
@@ -78,7 +81,7 @@ export async function POST(req: NextRequest) {
 
   // Their own, still theirs to claim, and still in time — all three checked
   // here, because the button being on screen is not one of them.
-  const mine = (await myPrizes(uid)).find((p) => p.id === id);
+  const mine = (await myPrizes(CAMPAIGN, uid)).find((p) => p.id === id);
   if (!mine) return NextResponse.json({ ok: false, error: "ไม่พบรางวัลนี้" }, { status: 404 });
   if (mine.status === "forfeited") {
     return NextResponse.json({ ok: false, error: "รางวัลนี้ถูกสละสิทธิ์ไปแล้ว" }, { status: 409 });

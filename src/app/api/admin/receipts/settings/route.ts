@@ -4,6 +4,7 @@ import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-aut
 import { DEFAULT_CONTENT, loadCampaignContent, type CampaignStep } from "@/lib/receipt-campaign-content";
 import { DEFAULT_RULES } from "@/lib/receipt-campaign";
 import { products } from "@/data/products";
+import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
 // Reading and writing the campaign's own words.
 //
@@ -14,7 +15,8 @@ import { products } from "@/data/products";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CAMPAIGN = "dentiste-x-kengnamping";
+/** Which campaign this console is looking at; the first one when unstated. */
+const campaignOf = (req: NextRequest) => campaignKeyFrom(req.nextUrl.searchParams.get("campaign"));
 
 function guard(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
@@ -25,6 +27,7 @@ function guard(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const CAMPAIGN = campaignOf(req);
   const stop = guard(req);
   if (stop) return stop;
   // The catalogue's Dentiste products, so naming the keychain sets is picking
@@ -52,6 +55,7 @@ function when(v: unknown): string | null {
 }
 
 export async function PUT(req: NextRequest) {
+  const CAMPAIGN = campaignOf(req);
   const stop = guard(req);
   if (stop) return stop;
 

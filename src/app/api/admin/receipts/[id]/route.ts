@@ -4,6 +4,7 @@ import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-aut
 import { amountsFromLineItems, computeEntries, type LineItem } from "@/lib/receipt-campaign";
 import { orderPaymentByGid } from "@/lib/shopify-admin";
 import { loadCampaignContent } from "@/lib/receipt-campaign-content";
+import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
 // Approving or rejecting one receipt.
 //
@@ -15,7 +16,8 @@ import { loadCampaignContent } from "@/lib/receipt-campaign-content";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CAMPAIGN = "dentiste-x-kengnamping";
+/** Which campaign this console is looking at; the first one when unstated. */
+const campaignOf = (req: NextRequest) => campaignKeyFrom(req.nextUrl.searchParams.get("campaign"));
 
 /**
  * Work the entries out again from the order behind the receipt.
@@ -29,7 +31,7 @@ const CAMPAIGN = "dentiste-x-kengnamping";
  * It never touches the status, and it clears any manual override — a reviewer
  * who typed a number over the old calculation was correcting *that* one.
  */
-async function recalculate(id: string, token: string | undefined) {
+async function recalculate(CAMPAIGN: string, id: string, token: string | undefined) {
   const [entry] = await supabaseRest<
     {
       id: string;
@@ -98,7 +100,7 @@ async function recalculate(id: string, token: string | undefined) {
  * changed. A draw already made is not touched — entries move, a drawn result
  * is a record of what happened, and reconciling the two is a person's call.
  */
-async function reopen(id: string, token: string | undefined) {
+async function reopen(CAMPAIGN: string, id: string, token: string | undefined) {
   const [entry] = await supabaseRest<
     { id: string; status: string; reject_reason: string | null; revoke_reason: string | null }[]
   >(
@@ -145,6 +147,7 @@ async function reopen(id: string, token: string | undefined) {
 }
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const CAMPAIGN = campaignOf(req);
   const { id } = await props.params;
   const token = req.cookies.get(ADMIN_COOKIE)?.value;
   if (!verifyAdminToken(token)) {
@@ -157,8 +160,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
 
   const body = await req.json().catch(() => null);
   const action = body?.action;
-  if (action === "recalculate") return recalculate(id, token);
-  if (action === "reopen") return reopen(id, token);
+  if (action === "recalculate") return recalculate(CAMPAIGN, id, token);
+  if (action === "reopen") return reopen(CAMPAIGN, id, token);
   if (action !== "approve" && action !== "reject") {
     return NextResponse.json(
       { ok: false, error: "action ต้องเป็น approve, reject, recalculate หรือ reopen" },
@@ -277,7 +280,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
           type: "receipt_rejected",
           title: "ใบเสร็จของคุณถูกตีกลับ",
           body: `${reason} — ส่งรูปใหม่ได้ที่หน้าแคมเปญ`,
-          link: "/campaigns/dentiste-x-kengnamping",
+          link: `/campaigns/${CAMPAIGN}`,
           metadata: { campaign_key: CAMPAIGN, entry_id: id },
         }),
       }).catch((err) => console.error("[admin/receipts] notify failed", err));

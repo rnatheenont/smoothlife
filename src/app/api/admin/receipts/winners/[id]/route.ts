@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
+import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
 // Confirming a prize on someone's behalf, or marking it given up.
 //
@@ -16,9 +17,11 @@ import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CAMPAIGN = "dentiste-x-kengnamping";
+/** Which campaign this console is looking at; the first one when unstated. */
+const campaignOf = (req: NextRequest) => campaignKeyFrom(req.nextUrl.searchParams.get("campaign"));
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const CAMPAIGN = campaignOf(req);
   const { id } = await props.params;
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
