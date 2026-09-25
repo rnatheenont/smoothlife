@@ -118,6 +118,10 @@ export default function ReceiptForm({
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
+  // What the photo was read to say, after the customer has had a look at it.
+  const [reading, setReading] = useState(false);
+  const [form, setForm] = useState({ orderNumber: "", paidAt: "", total: "", dentisteAmount: "" });
+  const [readNote, setReadNote] = useState<string | null>(null);
   const [approved, setApproved] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -194,6 +198,41 @@ export default function ReceiptForm({
     }
   }
 
+  // Picking a photo asks what it says, so the boxes beside it arrive filled
+  // in. Purely a convenience: nothing is stored and no claim is made until
+  // they press send, and the entries are worked out from the order either way.
+  async function read(picked: File) {
+    setReading(true);
+    setReadNote(null);
+    try {
+      const body = new FormData();
+      body.set("photo", picked);
+      if (selected) body.set("orderId", selected);
+      const res = await fetch("/api/campaigns/dentiste-x-kengnamping/read", { method: "POST", body });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        setReadNote(data.error || "อ่านรูปไม่สำเร็จ กรอกข้อมูลเองได้เลย");
+        return;
+      }
+      const fromPhoto = (data.read ?? {}) as { orderNumber?: string | null; total?: number | null; paidAt?: string | null };
+      const fromOrder = (data.order ?? null) as { orderNumber?: string | null; paidAt?: string | null; total?: number; dentisteAmount?: number } | null;
+      setForm({
+        // The photo first — it is what the customer is looking at. The order
+        // fills the gaps the picture could not answer.
+        orderNumber: fromPhoto.orderNumber ?? fromOrder?.orderNumber ?? "",
+        paidAt: fromPhoto.paidAt ?? (fromOrder?.paidAt ? fromOrder.paidAt.slice(0, 10) : ""),
+        total: String(fromPhoto.total ?? fromOrder?.total ?? ""),
+        dentisteAmount: String(fromOrder?.dentisteAmount ?? ""),
+      });
+      setAi((data.aiCheck as AiCheck | null) ?? null);
+      setReadNote("อ่านข้อมูลจากรูปให้แล้ว ตรวจดูอีกครั้งและแก้ไขได้ก่อนส่ง");
+    } catch {
+      setReadNote("อ่านรูปไม่สำเร็จ กรอกข้อมูลเองได้เลย");
+    } finally {
+      setReading(false);
+    }
+  }
+
   async function send() {
     if (!selected || !file) return;
     setSending(true);
@@ -204,6 +243,11 @@ export default function ReceiptForm({
       body.set("photo", file);
       body.set("contactName", contactName.trim());
       body.set("contactPhone", contactPhone.trim());
+      // The customer's own account of their receipt, for the reviewer to read
+      // beside the photo. Never the basis for the entries.
+      body.set("declaredOrderNumber", form.orderNumber.trim());
+      body.set("declaredPaidAt", form.paidAt.trim());
+      body.set("declaredTotal", form.total.trim());
       const q = new URLSearchParams(window.location.search).get("test") === "1" ? "?test=1" : "";
       const res = await fetch(`/api/campaigns/dentiste-x-kengnamping/receipts${q}`, { method: "POST", body });
       const data = await res.json().catch(() => ({}));
@@ -215,6 +259,8 @@ export default function ReceiptForm({
       setSelected(null);
       setFile(null);
       setPreview(null);
+      setForm({ orderNumber: "", paidAt: "", total: "", dentisteAmount: "" });
+      setReadNote(null);
       if (fileInput.current) fileInput.current.value = "";
       setNotice("ส่งใบเสร็จเรียบร้อย ทีมงานจะตรวจสอบให้เร็วที่สุด");
       await load();
@@ -456,6 +502,7 @@ export default function ReceiptForm({
                             if (old) URL.revokeObjectURL(old);
                             return picked ? URL.createObjectURL(picked) : null;
                           });
+                          if (picked) read(picked);
                         }}
                       />
                     </label>
@@ -508,49 +555,94 @@ export default function ReceiptForm({
                     </div>
                   </dl>
 
-                  {/* Filled in from the order, not from the photo — the photo is
-                      the evidence, the order is the arithmetic. Read-only for
-                      the same reason. */}
+                  {/* What the photo says, in boxes the customer can correct.
+                      Read off the picture they just chose rather than typed
+                      from scratch, and checked against the order when they
+                      send — the numbers below are their account of their own
+                      receipt, which is what a reviewer wants beside it, and
+                      what must never be what decides a prize. */}
                   <div className="rounded-2xl border border-black/10 p-4">
-                    <p className="text-[13px] font-bold text-black">คำสั่งซื้อที่จะส่ง</p>
-                    {orders.length === 1 ? (
-                      <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 text-[13px]">
-                        <div>
-                          <dt className="text-black/50">เลขคำสั่งซื้อ</dt>
-                          <dd className="mt-0.5 font-bold text-black">{orders[0].orderNumber ?? orders[0].invoiceNo}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-black/50">วันที่ชำระเงิน</dt>
-                          <dd className="mt-0.5 text-black">{when(orders[0].paidAt)}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-black/50">ยอดซื้อ DENTISTE&apos;</dt>
-                          <dd className="mt-0.5 font-bold text-black tabular-nums">
-                            {formatTHB(orders[0].dentisteAmount)}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-black/50">สิทธิ์ที่จะได้รับ</dt>
-                          <dd className="mt-0.5 font-bold text-black tabular-nums">{orders[0].entries} สิทธิ์</dd>
-                        </div>
-                      </dl>
-                    ) : (
-                      <label className="mt-3 block">
-                        <span className="text-[12px] font-semibold text-black/55">เลือกคำสั่งซื้อ</span>
-                        <select
-                          value={selected ?? ""}
-                          onChange={(e) => setSelected(e.target.value || null)}
-                          className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 bg-white px-3 text-[14px] text-black"
-                        >
-                          <option value="">เลือกคำสั่งซื้อ</option>
-                          {orders.map((o) => (
-                            <option key={o.id} value={o.id}>
-                              {`${o.orderNumber ?? o.invoiceNo} · ${when(o.paidAt)} · ${formatTHB(o.dentisteAmount)} · ${o.entries} สิทธิ์${o.alreadySent ? " (ส่งแล้ว)" : ""}`}
-                            </option>
-                          ))}
-                        </select>
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                      <p className="text-[13px] font-bold text-black">ข้อมูลจากใบเสร็จ</p>
+                      {reading && (
+                        <span className="flex items-center gap-1.5 text-[12px] text-black/50">
+                          <Loader2 size={13} className="animate-spin" /> กำลังอ่านรูป…
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-[12px] leading-relaxed text-black/50">
+                      {readNote ?? "แนบรูปแล้วระบบจะอ่านข้อมูลมาให้ ตรวจดูและแก้ไขได้ก่อนส่ง"}
+                    </p>
+
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <label className="block">
+                        <span className="text-[12px] font-semibold text-black/55">เลขคำสั่งซื้อ (ORDER #)</span>
+                        <input
+                          value={form.orderNumber}
+                          onChange={(e) => setForm({ ...form, orderNumber: e.target.value })}
+                          placeholder="#0000"
+                          className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black"
+                        />
                       </label>
-                    )}
+                      <label className="block">
+                        <span className="text-[12px] font-semibold text-black/55">วันที่ชำระเงิน</span>
+                        <input
+                          type="date"
+                          value={form.paidAt}
+                          onChange={(e) => setForm({ ...form, paidAt: e.target.value })}
+                          className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-[12px] font-semibold text-black/55">ยอดทั้งบิล (บาท)</span>
+                        <input
+                          value={form.total}
+                          onChange={(e) => setForm({ ...form, total: e.target.value })}
+                          inputMode="decimal"
+                          placeholder="0.00"
+                          className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black tabular-nums"
+                        />
+                      </label>
+                      <div>
+                        <span className="text-[12px] font-semibold text-black/55">สิทธิ์ที่จะได้รับ</span>
+                        {/* Not a box. This one is the shop's arithmetic on the
+                            order, and a field a customer could type in is a
+                            field a customer could award themselves. */}
+                        <p className="mt-1.5 flex min-h-11 items-center rounded-xl bg-black/[0.04] px-3 text-[14px] font-bold text-black tabular-nums">
+                          {orders.length === 1
+                            ? `${orders[0].entries} สิทธิ์`
+                            : selected
+                              ? `${orders.find((o) => o.id === selected)?.entries ?? 0} สิทธิ์`
+                              : "เลือกคำสั่งซื้อก่อน"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 border-t border-black/10 pt-3">
+                      {orders.length === 1 ? (
+                        <p className="text-[12px] leading-relaxed text-black/50">
+                          ส่งในนามคำสั่งซื้อ{" "}
+                          <b className="text-black/70">{orders[0].orderNumber ?? orders[0].invoiceNo}</b> ·{" "}
+                          {when(orders[0].paidAt)} · ยอด DENTISTE&apos; {formatTHB(orders[0].dentisteAmount)}
+                        </p>
+                      ) : (
+                        <label className="block">
+                          <span className="text-[12px] font-semibold text-black/55">คำสั่งซื้อที่จะส่ง</span>
+                          <select
+                            value={selected ?? ""}
+                            onChange={(e) => setSelected(e.target.value || null)}
+                            className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 bg-white px-3 text-[14px] text-black"
+                          >
+                            <option value="">เลือกคำสั่งซื้อ</option>
+                            {orders.map((o) => (
+                              <option key={o.id} value={o.id}>
+                                {`${o.orderNumber ?? o.invoiceNo} · ${when(o.paidAt)} · ${formatTHB(o.dentisteAmount)} · ${o.entries} สิทธิ์`}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+                    </div>
                   </div>
 
                   {/* The account belongs to whoever set it up; the prize has to
