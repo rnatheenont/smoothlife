@@ -402,7 +402,7 @@ export default function Page() {
                                   </b>
                                 </>
                               )}
-                              {item.declared.paidAt && <>{" · "}{item.declared.paidAt}</>}
+                              {item.declared.paidAt && <>{" · "}{when(item.declared.paidAt)}</>}
                             </p>
                           </div>
                         )}

@@ -220,7 +220,13 @@ export default function ReceiptForm({
         // The photo first — it is what the customer is looking at. The order
         // fills the gaps the picture could not answer.
         orderNumber: fromPhoto.orderNumber ?? fromOrder?.orderNumber ?? "",
-        paidAt: fromPhoto.paidAt ?? (fromOrder?.paidAt ? fromOrder.paidAt.slice(0, 10) : ""),
+        // The order's own timestamp, as Bangkok wall-clock, for the gaps the
+        // picture could not fill.
+        paidAt:
+          fromPhoto.paidAt ??
+          (fromOrder?.paidAt
+            ? new Date(fromOrder.paidAt).toLocaleString("sv-SE", { timeZone: "Asia/Bangkok" }).slice(0, 16).replace(" ", "T")
+            : ""),
         total: String(fromPhoto.total ?? fromOrder?.total ?? ""),
         dentisteAmount: String(fromOrder?.dentisteAmount ?? ""),
       });
@@ -585,9 +591,9 @@ export default function ReceiptForm({
                         />
                       </label>
                       <label className="block">
-                        <span className="text-[12px] font-semibold text-black/55">วันที่ชำระเงิน</span>
+                        <span className="text-[12px] font-semibold text-black/55">วันและเวลาที่ชำระเงิน</span>
                         <input
-                          type="date"
+                          type="datetime-local"
                           value={form.paidAt}
                           onChange={(e) => setForm({ ...form, paidAt: e.target.value })}
                           className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black"

@@ -61,7 +61,7 @@ const SYSTEM = `คุณคือผู้ช่วยตรวจใบเส�
   "read": {
     "orderNumber": "เลขคำสั่งซื้อที่อ่านได้จากภาพ เช่น #4292 หรือ null ถ้าอ่านไม่ได้",
     "total": ยอดรวมเป็นตัวเลขที่อ่านได้จากภาพ หรือ null,
-    "paidAt": "วันที่ในภาพ รูปแบบ YYYY-MM-DD หรือ null"
+    "paidAt": "วันและเวลาในภาพ รูปแบบ YYYY-MM-DD HH:MM (เวลาไทย 24 ชม.) ถ้าเห็นแต่วันที่ไม่เห็นเวลาให้ใส่ YYYY-MM-DD เฉยๆ ถ้าไม่เห็นเลยให้ null"
   }
 }
 
@@ -82,6 +82,25 @@ const MEDIA: Record<string, ImageMedia> = {
   "image/png": "image/png",
   "image/webp": "image/webp",
 };
+
+/**
+ * A date, or a date and a time, as the receipt prints it — Bangkok, always.
+ *
+ * Returned in the shape <input type="datetime-local"> wants, so the form can
+ * put it straight into the box. A date with no time keeps midnight rather than
+ * inventing one.
+ */
+export function readMoment(value: string | null | undefined): string | null {
+  const v = (value ?? "").trim().replace("T", " ");
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[ ](\d{2}):(\d{2}))?/.exec(v);
+  if (!m) return null;
+  const [, y, mo, d, hh = "00", mi = "00"] = m;
+  const iso = `${y}-${mo}-${d}T${hh}:${mi}:00+07:00`;
+  if (!Number.isFinite(Date.parse(iso))) return null;
+  // Round-trip guard: Date.parse accepts 2026-02-31 and slides it to March.
+  const back = new Date(Date.parse(iso)).toLocaleString("sv-SE", { timeZone: "Asia/Bangkok" });
+  return back.slice(0, 10) === `${y}-${mo}-${d}` ? `${y}-${mo}-${d}T${hh}:${mi}` : null;
+}
 
 function parse(text: string): Omit<ReceiptCheck, "checkedAt" | "model"> | null {
   // The model is asked for bare JSON; a stray ```json fence is the one
@@ -109,8 +128,9 @@ function parse(text: string): Omit<ReceiptCheck, "checkedAt" | "model"> | null {
             ? raw.read.orderNumber.trim().slice(0, 40)
             : null,
         total: Number.isFinite(total) && total > 0 ? total : null,
-        // Only a real calendar date survives — "2026-13-45" becomes nothing.
-        paidAt: /^\d{4}-\d{2}-\d{2}$/.test(paidAt) && Number.isFinite(Date.parse(paidAt)) ? paidAt : null,
+        // A real moment or nothing: "2026-13-45" and "2026-09-24 99:99" both
+        // become null rather than a date nobody typed.
+        paidAt: readMoment(paidAt),
       },
     };
   } catch {
