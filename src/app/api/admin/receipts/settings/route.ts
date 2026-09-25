@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { DEFAULT_CONTENT, loadCampaignContent, type CampaignStep } from "@/lib/receipt-campaign-content";
+import { DEFAULT_CONTENT, loadCampaignContent, type CampaignStep, storeUrlOf } from "@/lib/receipt-campaign-content";
 import { DEFAULT_RULES } from "@/lib/receipt-campaign";
 import { products } from "@/data/products";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
@@ -127,6 +127,9 @@ export async function PUT(req: NextRequest) {
     confirm_deadline: when(body.confirmDeadline),
     steps,
     terms,
+    // Only ever a page of the live shop; a typo falls back to what the
+    // campaign already had rather than sending customers off-site.
+    store_url: storeUrlOf(text(body.storeUrl, 300), DEFAULT_CONTENT.storeUrl),
     updated_at: new Date().toISOString(),
     updated_by: getAdminSession(req.cookies.get(ADMIN_COOKIE)?.value)?.userId ?? null,
   };

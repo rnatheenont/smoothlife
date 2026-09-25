@@ -17,6 +17,27 @@ import { CLOSES_AT, DEFAULT_RULES, OPENS_AT, type CampaignRules } from "@/lib/re
 // withinCampaign() rather than read from the constants, and a date shown to a
 // customer is always the date the filter used.
 
+/** The live shop. A campaign's way back leads here and nowhere else. */
+const STORE = "https://www.smoothlife.com";
+const STORE_HOSTS = ["www.smoothlife.com", "smoothlife.com"];
+
+/**
+ * A stored link, if it is a page of the shop.
+ *
+ * The field is typed by hand in an admin screen, and "back to the store" is
+ * the one button on a campaign page that leaves the app — a typo in it is a
+ * campaign quietly sending its customers somewhere else.
+ */
+export function storeUrlOf(value: string | null | undefined, fallback: string): string {
+  if (!value?.trim()) return fallback;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" && STORE_HOSTS.includes(url.hostname) ? url.href : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export type CampaignStep = { title: string; body: string };
 
 export type CampaignContent = {
@@ -30,6 +51,15 @@ export type CampaignContent = {
   steps: CampaignStep[];
   /** The published conditions, one line each, shown on the campaign page. */
   terms: string[];
+  /**
+   * Where "กลับไปหน้าร้าน" leads.
+   *
+   * Per campaign, because "the store" means the shelf the campaign is about:
+   * someone who came for DENTISTE' and is sent to the front page has been
+   * handed the whole shop and asked to find it again. Only ever a page of the
+   * live shop — see storeUrlOf.
+   */
+  storeUrl: string;
   /**
    * The arithmetic.
    *
@@ -64,6 +94,7 @@ export const DEFAULT_CONTENT: CampaignContent = {
     { title: "ลุ้นรางวัล", body: "ประกาศผลและยืนยันสิทธิ์ตามกำหนดการด้านล่าง" },
   ],
   rules: DEFAULT_RULES,
+  storeUrl: `${STORE}/collections/all`,
   terms: [
     "ยอดช็อปทุกๆ 690 บาทต่อใบเสร็จ ได้รับ 1 สิทธิ์ ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้",
     "ยอดช็อป Set Keychain 990 บาทต่อใบเสร็จ ได้รับ 3 สิทธิ์ ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้",
@@ -83,6 +114,7 @@ type Row = {
   confirm_deadline: string | null;
   steps: CampaignStep[] | null;
   terms: string[] | null;
+  store_url: string | null;
   general_threshold: number | string | null;
   keychain_price: number | string | null;
   keychain_entries: number | null;
@@ -114,7 +146,7 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
   if (!supabaseConfigured()) return DEFAULT_CONTENT;
   const [row] = await supabaseRest<Row[]>(
     `receipt_campaign_settings?campaign_key=eq.${pgValue(campaignKey)}` +
-      `&select=eyebrow,title,intro,opens_at,closes_at,announce_at,confirm_deadline,steps,terms,` +
+      `&select=eyebrow,title,intro,opens_at,closes_at,announce_at,confirm_deadline,steps,terms,store_url,` +
       `general_threshold,keychain_price,keychain_entries,tiered,stacks,rounding,keychain_slugs&limit=1`
   ).catch(() => [] as Row[]);
   if (!row) return DEFAULT_CONTENT;
@@ -134,6 +166,7 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
     confirmDeadline: ms(row.confirm_deadline, DEFAULT_CONTENT.confirmDeadline),
     steps: steps.length ? steps : DEFAULT_CONTENT.steps,
     terms: terms.length ? terms : DEFAULT_CONTENT.terms,
+    storeUrl: storeUrlOf(row.store_url, DEFAULT_CONTENT.storeUrl),
     rules: {
       generalThreshold: num(row.general_threshold, DEFAULT_RULES.generalThreshold),
       keychainPrice: num(row.keychain_price, DEFAULT_RULES.keychainPrice),

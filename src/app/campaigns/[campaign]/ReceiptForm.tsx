@@ -300,7 +300,10 @@ export default function ReceiptForm({
    * against the wrong order is worse than one the customer had to point at.
    */
   async function addFiles(picked: File[]) {
-    const single = picked.length === 1 && items.length <= 1;
+    // One photo at a time, so a picker that hands over more than one (a
+    // browser that ignores the attribute, a drop of several files) keeps the
+    // newest rather than quietly filing the rest.
+    const single = true;
     const fresh: Item[] = picked.slice(0, single ? 1 : 10).map((file, i) => ({
       id: `${Date.now()}-${i}-${file.name}`,
       file,
@@ -609,7 +612,7 @@ export default function ReceiptForm({
                       <b>เลขคำสั่งซื้อ (ORDER #)</b> รายการสินค้า และยอดรวม · JPG, PNG หรือ WEBP ไม่เกิน 8MB
                       <br />
                       <br />
-                      <b>เลือกได้หลายรูปพร้อมกัน</b> ระบบจะอ่านเลขคำสั่งซื้อในรูปแล้วจับคู่ให้เอง
+                      <b>ส่งได้ครั้งละ 1 ใบ</b> ส่งใบนี้เสร็จแล้วอัปโหลดใบต่อไปได้เลย
                     </p>
 
                     <label
@@ -637,14 +640,13 @@ export default function ReceiptForm({
                             {items.length ? "เพิ่มรูปใบเสร็จ" : "เลือกรูปใบเสร็จ"}
                           </span>
                           <span className="text-[12px] text-black/40">
-                            แตะเพื่อถ่ายรูปหรือเลือกจากคลัง · เลือกได้หลายรูป
+                            แตะเพื่อถ่ายรูปหรือเลือกจากคลัง
                           </span>
                         </>
                       )}
                       <input
                         ref={fileInput}
                         type="file"
-                        multiple
                         accept="image/jpeg,image/png,image/webp"
                         className="hidden"
                         onChange={(e) => {
