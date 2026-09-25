@@ -86,11 +86,31 @@ function isKeychainVariant(variantId: string): boolean {
   return p ? KEYCHAIN_SLUGS.includes(p.slug) : false;
 }
 
+/** One line of an order, said the way the receipt says it. */
+export type ReceiptLine = {
+  name: string;
+  quantity: number;
+  amount: number;
+  kind: "dentiste" | "keychain" | "other";
+};
+
 export type ReceiptAmounts = {
   /** What was paid for Dentiste products, keychain sets excluded. */
   dentisteAmount: number;
   /** What was paid for keychain sets. */
   keychainAmount: number;
+  /**
+   * The bill, line by line.
+   *
+   * The two totals above are what the rules work on; this is what a reviewer
+   * compares against the "Order summary" in the photo. One bill can hold
+   * several Dentiste products and something else entirely beside them, and
+   * "฿1,600 of Dentiste" does not say whether that was one set or six tubes.
+   */
+  lines: ReceiptLine[];
+  /** How many Dentiste lines, and how many units across them. */
+  dentisteItems: number;
+  dentisteUnits: number;
   /** Line items we could not place in the catalogue — they count for nothing. */
   unknownVariants: string[];
 };
@@ -103,13 +123,38 @@ export type ReceiptAmounts = {
  * charged, which is the "ยอดสุทธิ" the conditions ask for.
  */
 export function amountsFromLineItems(lineItems: LineItem[] | null | undefined): ReceiptAmounts {
-  const out: ReceiptAmounts = { dentisteAmount: 0, keychainAmount: 0, unknownVariants: [] };
+  const out: ReceiptAmounts = {
+    dentisteAmount: 0,
+    keychainAmount: 0,
+    unknownVariants: [],
+    lines: [],
+    dentisteItems: 0,
+    dentisteUnits: 0,
+  };
   for (const li of lineItems ?? []) {
-    const total = Number(li.price) * Number(li.quantity);
+    const quantity = Number(li.quantity);
+    const total = Number(li.price) * quantity;
     if (!Number.isFinite(total) || total <= 0) continue;
-    if (isKeychainVariant(li.variantId)) out.keychainAmount += total;
-    else if (isDentisteVariant(li.variantId)) out.dentisteAmount += total;
+
+    const keychain = isKeychainVariant(li.variantId);
+    const dentiste = !keychain && isDentisteVariant(li.variantId);
+    if (keychain) out.keychainAmount += total;
+    else if (dentiste) out.dentisteAmount += total;
     else if (!BY_VARIANT.has(li.variantId)) out.unknownVariants.push(li.variantId);
+
+    if (keychain || dentiste) {
+      out.dentisteItems += 1;
+      out.dentisteUnits += Number.isFinite(quantity) ? quantity : 0;
+    }
+
+    out.lines.push({
+      // A variant we do not have in the catalogue still gets a line: a bill
+      // with something unrecognised on it is exactly the one worth looking at.
+      name: BY_VARIANT.get(li.variantId)?.name ?? `ไม่พบสินค้านี้ในแคตตาล็อก (${li.variantId.split("/").pop()})`,
+      quantity: Number.isFinite(quantity) ? quantity : 0,
+      amount: total,
+      kind: keychain ? "keychain" : dentiste ? "dentiste" : "other",
+    });
   }
   return out;
 }

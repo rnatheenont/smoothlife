@@ -35,6 +35,13 @@ type QueueItem = {
   contactPhone: string | null;
   /** What the customer said their receipt shows — their words, not our record. */
   declared: { orderNumber: string | null; paidAt: string | null; total: number | null };
+  lines: { name: string; quantity: number; amount: number; kind: "dentiste" | "keychain" | "other" }[];
+};
+
+const LINE_KIND: Record<"dentiste" | "keychain" | "other", [string, string]> = {
+  dentiste: ["DENTISTE'", "bg-emerald-50 text-emerald-800"],
+  keychain: ["Keychain", "bg-violet-50 text-violet-800"],
+  other: ["ไม่นับ", "bg-slate-100 text-slate-500"],
 };
 
 /**
@@ -349,7 +356,15 @@ export default function Page() {
                           <dt className="text-slate-500">ยอดทั้งบิล</dt>
                           <dd className="text-brand-ink">{item.orderTotal === null ? "—" : formatTHB(item.orderTotal)}</dd>
                           <dt className="text-slate-500">ยอด DENTISTE&apos;</dt>
-                          <dd className="font-bold text-brand-ink">{formatTHB(item.dentisteAmount)}</dd>
+                          <dd className="font-bold text-brand-ink">
+                            {formatTHB(item.dentisteAmount)}
+                            {item.lines.some((l) => l.kind !== "other") && (
+                              <span className="ms-2 font-medium text-slate-500">
+                                ({item.lines.filter((l) => l.kind !== "other").length} รายการ ·{" "}
+                                {item.lines.filter((l) => l.kind !== "other").reduce((n, l) => n + l.quantity, 0)} ชิ้น)
+                              </span>
+                            )}
+                          </dd>
                           {item.keychainAmount > 0 && (
                             <>
                               <dt className="text-slate-500">Keychain</dt>
@@ -368,6 +383,32 @@ export default function Page() {
                             )}
                           </dd>
                         </dl>
+
+                        {/* The bill, line by line, to read against the "Order
+                            summary" in the photo. One order can hold several
+                            Dentiste products and something else beside them,
+                            and only some of it counts. */}
+                        {item.lines.length > 0 && (
+                          <div className="mt-3 overflow-hidden rounded-l border border-surface-line">
+                            <p className="bg-surface-soft px-3 py-1.5 text-[12px] font-semibold text-slate-500">
+                              รายการในบิล ({item.lines.length} รายการ)
+                            </p>
+                            <ul className="divide-y divide-surface-line">
+                              {item.lines.map((line, i) => (
+                                <li key={`${line.name}-${i}`} className="flex items-baseline gap-2 px-3 py-2 text-[12px]">
+                                  <span className={`shrink-0 rounded-full px-1.5 py-0.5 font-semibold ${LINE_KIND[line.kind][1]}`}>
+                                    {LINE_KIND[line.kind][0]}
+                                  </span>
+                                  <span className="min-w-0 flex-1 text-brand-ink">{line.name}</span>
+                                  <span className="shrink-0 tabular-nums text-slate-500">×{line.quantity}</span>
+                                  <span className="shrink-0 tabular-nums font-semibold text-brand-ink">
+                                    {formatTHB(line.amount)}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
 
                         {/* What the customer typed, and whether it matches. A
                             mismatch is not a verdict — a screenshot of the
