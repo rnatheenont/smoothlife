@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Loader2, Plus, Trash2 } from "lucide-react";
 import { Panel } from "@/components/admin/layout-kit";
 
 // The campaign's own words, edited here instead of in a source file.
@@ -61,11 +61,17 @@ function fromLocalInput(v: string): string {
 const field =
   "w-full rounded-lg border border-surface-line px-3 py-2 text-[14px] text-brand-ink focus:border-brand-800 focus:outline-none";
 
+/** Sits inside a sentence rather than under a label. */
+const inlineField =
+  "rounded-lg border border-surface-line px-2 py-1 text-[14px] text-brand-ink focus:border-brand-800 focus:outline-none";
+
 export default function CampaignSettings() {
   const [content, setContent] = useState<Content | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [saving, setSaving] = useState(false);
   const [catalogue, setCatalogue] = useState<{ slug: string; name: string }[]>([]);
+  const [pickingKeychain, setPickingKeychain] = useState(false);
+  const [keychainSearch, setKeychainSearch] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -219,151 +225,179 @@ export default function CampaignSettings() {
       </Panel>
 
       <Panel title="วิธีคำนวณสิทธิ์" padded>
-        <p className="mb-3 rounded-l border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] text-rose-900">
-          ตัวเลขในหน้านี้ตัดสินว่าใครได้รางวัล — แก้แล้วมีผลกับใบเสร็จที่ส่งเข้ามา<b>หลังจากนี้</b>ทันที
-          ส่วนใบที่อยู่ในคิวแล้วยังถือเลขเดิม ต้องกด <b>คำนวณสิทธิ์ใหม่</b> ในหน้าคิวตรวจ · ทุกการแก้ไขถูกบันทึกใน audit log
+        <p className="mb-4 flex items-start gap-2 rounded-l border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-900">
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+          <span>
+            ตัวเลขในหน้านี้ตัดสินว่าใครได้รางวัล — มีผลกับใบเสร็จที่ส่งเข้ามา<b>หลังจากนี้</b>ทันที
+            ใบที่อยู่ในคิวแล้วต้องกด <b>คำนวณสิทธิ์ใหม่</b> · ทุกการแก้ไขถูกบันทึกใน audit log
+          </span>
         </p>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block">
-            <span className="text-[12px] font-semibold text-slate-500">ยอดซื้อต่อ 1 สิทธิ์ (บาท)</span>
-            <input
-              className={`mt-1 ${field}`}
-              inputMode="decimal"
-              value={content.rules.generalThreshold}
-              onChange={(e) => set("rules", { ...content.rules, generalThreshold: Number(e.target.value) || 0 })}
-            />
-          </label>
-          <label className="block">
-            <span className="text-[12px] font-semibold text-slate-500">วิธีนับ</span>
-            <select
-              className={`mt-1 ${field}`}
-              value={content.rules.tiered ? "tiered" : "flat"}
-              onChange={(e) => set("rules", { ...content.rules, tiered: e.target.value === "tiered" })}
-            >
-              <option value="tiered">ทุกๆ N บาท ได้ 1 สิทธิ์ (คูณ)</option>
-              <option value="flat">ครบ N บาท ได้ 1 สิทธิ์ (ครั้งเดียว)</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-[12px] font-semibold text-slate-500">ราคา Set Keychain (บาท)</span>
-            <input
-              className={`mt-1 ${field}`}
-              inputMode="decimal"
-              value={content.rules.keychainPrice}
-              onChange={(e) => set("rules", { ...content.rules, keychainPrice: Number(e.target.value) || 0 })}
-            />
-          </label>
-          <label className="block">
-            <span className="text-[12px] font-semibold text-slate-500">Set Keychain ได้กี่สิทธิ์</span>
-            <input
-              className={`mt-1 ${field}`}
-              inputMode="numeric"
-              value={content.rules.keychainEntries}
-              onChange={(e) => set("rules", { ...content.rules, keychainEntries: Number(e.target.value) || 0 })}
-            />
-          </label>
-          <label className="block">
-            <span className="text-[12px] font-semibold text-slate-500">การปัดเศษ</span>
-            <select
-              className={`mt-1 ${field}`}
-              disabled={!content.rules.tiered}
-              value={content.rules.rounding}
-              onChange={(e) => set("rules", { ...content.rules, rounding: e.target.value as Rules["rounding"] })}
-            >
-              <option value="floor">ปัดลง — ฿1,379 = 1 สิทธิ์</option>
-              <option value="round">ปัดใกล้สุด — ฿1,379 = 2 สิทธิ์</option>
-              <option value="ceil">ปัดขึ้น — ฿691 = 2 สิทธิ์</option>
-            </select>
-            {!content.rules.tiered && (
-              // A threshold rounded up is a different rule, not a rounded one.
-              <span className="mt-1 block text-[11px] text-slate-400">
-                ใช้ได้เฉพาะวิธีนับแบบ &ldquo;ทุกๆ N บาท&rdquo; — แบบ &ldquo;ครบ N บาท&rdquo; ไม่มีเศษให้ปัด
-              </span>
+        {/* Written as the rules read, not as six fields in a grid. The point
+            of the sentence is that the relationship between the boxes is the
+            rule — a threshold, a way of counting and a rounding mode are one
+            statement, and laid out as separate labelled inputs they stop
+            looking like one. */}
+        <div className="flex flex-col gap-3">
+          <div className="rounded-l border border-surface-line p-3">
+            <p className="text-[12px] font-bold uppercase tracking-wide text-slate-400">
+              กฎที่ 1 · ยอดซื้อ DENTISTE&apos;
+            </p>
+            <p className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-brand-ink">
+              <select
+                className={`${inlineField} w-auto`}
+                value={content.rules.tiered ? "tiered" : "flat"}
+                onChange={(e) => set("rules", { ...content.rules, tiered: e.target.value === "tiered" })}
+              >
+                <option value="tiered">ทุกๆ</option>
+                <option value="flat">ครบ</option>
+              </select>
+              <input
+                className={`${inlineField} w-24 text-center tabular-nums`}
+                inputMode="decimal"
+                value={content.rules.generalThreshold}
+                onChange={(e) => set("rules", { ...content.rules, generalThreshold: Number(e.target.value) || 0 })}
+              />
+              <span>บาทต่อใบเสร็จ =</span>
+              <b className="text-[15px]">1 สิทธิ์</b>
+              {content.rules.tiered && (
+                <>
+                  <span className="text-slate-400">·</span>
+                  <span className="text-slate-500">เศษที่เหลือ</span>
+                  <select
+                    className={`${inlineField} w-auto`}
+                    value={content.rules.rounding}
+                    onChange={(e) => set("rules", { ...content.rules, rounding: e.target.value as Rules["rounding"] })}
+                  >
+                    <option value="floor">ปัดลง</option>
+                    <option value="round">ปัดใกล้สุด</option>
+                    <option value="ceil">ปัดขึ้น</option>
+                  </select>
+                </>
+              )}
+            </p>
+
+            {/* The rule's own behaviour, on the line under it. */}
+            <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[12px] tabular-nums text-slate-500">
+              {[
+                content.rules.generalThreshold - 1,
+                content.rules.generalThreshold,
+                content.rules.generalThreshold * 2 - 1,
+                content.rules.generalThreshold * 2,
+                content.rules.generalThreshold * 3,
+              ].map((amount, i) => (
+                <li key={i}>
+                  ฿{amount.toLocaleString()} →{" "}
+                  <b className="text-brand-ink">{previewEntries(amount, content.rules)}</b>
+                </li>
+              ))}
+            </ul>
+            {content.rules.tiered && previewEntries(content.rules.generalThreshold - 1, content.rules) > 0 && (
+              <p className="mt-2 text-[12px] text-amber-800">
+                ⚠ ยอดที่ยังไม่ถึง ฿{content.rules.generalThreshold.toLocaleString()} ก็ได้สิทธิ์ด้วย
+                {content.rules.rounding === "ceil" && <> — แบบปัดขึ้น ยอดเพียง ฿1 ก็ได้ 1 สิทธิ์</>}
+              </p>
             )}
-          </label>
-          <label className="block">
-            <span className="text-[12px] font-semibold text-slate-500">ซื้อ Keychain พร้อมของอื่น</span>
+          </div>
+
+          <div className="rounded-l border border-surface-line p-3">
+            <p className="text-[12px] font-bold uppercase tracking-wide text-slate-400">กฎที่ 2 · Set Keychain</p>
+            <p className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-brand-ink">
+              <span>{content.rules.tiered ? "ทุกๆ" : "ครบ"}</span>
+              <input
+                className={`${inlineField} w-24 text-center tabular-nums`}
+                inputMode="decimal"
+                value={content.rules.keychainPrice}
+                onChange={(e) => set("rules", { ...content.rules, keychainPrice: Number(e.target.value) || 0 })}
+              />
+              <span>บาทต่อใบเสร็จ =</span>
+              <input
+                className={`${inlineField} w-16 text-center tabular-nums`}
+                inputMode="numeric"
+                value={content.rules.keychainEntries}
+                onChange={(e) => set("rules", { ...content.rules, keychainEntries: Number(e.target.value) || 0 })}
+              />
+              <b className="text-[15px]">สิทธิ์</b>
+            </p>
+
+            {/* The rule cannot fire at all until somebody says which products
+                it is about, so that is said here rather than in small print. */}
+            {content.rules.keychainSlugs.length === 0 ? (
+              <p className="mt-2.5 rounded bg-rose-50 px-2.5 py-1.5 text-[12px] text-rose-800">
+                ⚠ ยังไม่ได้เลือกสินค้า — กฎนี้จะไม่ทำงาน ทุกชิ้นถูกคิดเป็นยอดซื้อปกติตามกฎที่ 1
+              </p>
+            ) : (
+              <p className="mt-2.5 text-[12px] text-slate-500">
+                เลือกไว้ {content.rules.keychainSlugs.length} รายการ · ฿
+                {content.rules.keychainPrice.toLocaleString()} →{" "}
+                <b className="text-brand-ink">{previewEntries(content.rules.keychainPrice, content.rules, true)}</b> สิทธิ์
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setPickingKeychain((v) => !v)}
+              className="mt-2 text-[12px] font-semibold text-brand-800 underline"
+            >
+              {pickingKeychain ? "ปิดรายการสินค้า" : "เลือกสินค้าที่นับเป็น Set Keychain"}
+            </button>
+
+            {pickingKeychain && (
+              <div className="mt-2">
+                <input
+                  className={field}
+                  placeholder="ค้นหาชื่อสินค้า…"
+                  value={keychainSearch}
+                  onChange={(e) => setKeychainSearch(e.target.value)}
+                />
+                <div className="mt-2 max-h-56 overflow-y-auto rounded-l border border-surface-line">
+                  {(() => {
+                    const q = keychainSearch.trim().toLowerCase();
+                    const shown = q ? catalogue.filter((c) => c.name.toLowerCase().includes(q)) : catalogue;
+                    if (!shown.length) {
+                      return <p className="px-3 py-3 text-[12px] text-slate-400">ไม่พบสินค้าที่ค้นหา</p>;
+                    }
+                    return (
+                      <ul className="divide-y divide-surface-line">
+                        {shown.map((product) => (
+                          <li key={product.slug}>
+                            <label className="flex cursor-pointer items-start gap-2 px-3 py-2 text-[12px] hover:bg-surface-soft">
+                              <input
+                                type="checkbox"
+                                className="mt-0.5 size-3.5 shrink-0 rounded"
+                                checked={content.rules.keychainSlugs.includes(product.slug)}
+                                onChange={(e) =>
+                                  set("rules", {
+                                    ...content.rules,
+                                    keychainSlugs: e.target.checked
+                                      ? [...content.rules.keychainSlugs, product.slug]
+                                      : content.rules.keychainSlugs.filter((slug) => slug !== product.slug),
+                                  })
+                                }
+                              />
+                              <span className="text-brand-ink">{product.name}</span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <p className="flex flex-wrap items-center gap-2 px-1 text-[13px] text-slate-600">
+            <span>ถ้าบิลเดียวเข้าทั้งสองกฎ</span>
             <select
-              className={`mt-1 ${field}`}
+              className={`${inlineField} w-auto`}
               value={content.rules.stacks ? "stack" : "max"}
               onChange={(e) => set("rules", { ...content.rules, stacks: e.target.value === "stack" })}
             >
               <option value="stack">รวมสิทธิ์ทั้งสองส่วน</option>
               <option value="max">เอาเฉพาะส่วนที่ได้มากกว่า</option>
             </select>
-          </label>
-        </div>
-
-        {/* What the numbers above actually do, before they do it. */}
-        <div className="mt-4 overflow-hidden rounded-l border border-surface-line">
-          <p className="bg-surface-soft px-3 py-1.5 text-[12px] font-semibold text-slate-500">
-            ลองคำนวณด้วยกฎปัจจุบัน
           </p>
-          <ul className="divide-y divide-surface-line text-[12px]">
-            {[
-              content.rules.generalThreshold - 1,
-              content.rules.generalThreshold,
-              content.rules.generalThreshold * 2 - 1,
-              content.rules.generalThreshold * 2,
-              content.rules.generalThreshold * 3,
-            ].map((amount, i) => (
-              <li key={i} className="flex items-baseline justify-between px-3 py-1.5">
-                <span className="text-slate-600">ยอด DENTISTE&apos; ฿{amount.toLocaleString()}</span>
-                <span className="font-bold text-brand-ink">{previewEntries(amount, content.rules)} สิทธิ์</span>
-              </li>
-            ))}
-            <li className="flex items-baseline justify-between px-3 py-1.5">
-              <span className="text-slate-600">Set Keychain ฿{content.rules.keychainPrice.toLocaleString()}</span>
-              <span className="font-bold text-brand-ink">
-                {previewEntries(content.rules.keychainPrice, content.rules, true)} สิทธิ์
-              </span>
-            </li>
-          </ul>
-          {/* Rounding up or to nearest hands an entry to somebody who did not
-              reach the threshold — with "ปัดขึ้น", ฿1 does it. Legitimate if
-              it is what was meant, and worth saying out loud either way. */}
-          {content.rules.tiered && previewEntries(content.rules.generalThreshold - 1, content.rules) > 0 && (
-            <p className="border-t border-surface-line bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-              การปัดแบบนี้ทำให้ยอดที่<b>ยังไม่ถึง ฿{content.rules.generalThreshold.toLocaleString()}</b> ได้สิทธิ์ไปด้วย
-              {content.rules.rounding === "ceil" && <> — แบบปัดขึ้น ยอดเพียง ฿1 ก็ได้ 1 สิทธิ์</>}
-            </p>
-          )}
-        </div>
-
-        <div className="mt-4">
-          <p className="text-[12px] font-semibold text-slate-500">สินค้าที่นับเป็น Set Keychain</p>
-          <p className="mt-1 text-[11px] text-slate-400">
-            ถ้าไม่เลือกอะไรเลย ทุกชิ้นจะถูกคิดเป็นยอดซื้อปกติ — Keychain จะไม่ได้ {content.rules.keychainEntries} สิทธิ์
-          </p>
-          <div className="mt-2 max-h-52 overflow-y-auto rounded-l border border-surface-line">
-            {catalogue.length === 0 ? (
-              <p className="px-3 py-3 text-[12px] text-slate-400">ไม่พบสินค้าแบรนด์ DENTISTE&apos; ในแคตตาล็อก</p>
-            ) : (
-              <ul className="divide-y divide-surface-line">
-                {catalogue.map((product) => (
-                  <li key={product.slug}>
-                    <label className="flex cursor-pointer items-start gap-2 px-3 py-2 text-[12px] hover:bg-surface-soft">
-                      <input
-                        type="checkbox"
-                        className="mt-0.5 size-3.5 shrink-0 rounded"
-                        checked={content.rules.keychainSlugs.includes(product.slug)}
-                        onChange={(e) =>
-                          set("rules", {
-                            ...content.rules,
-                            keychainSlugs: e.target.checked
-                              ? [...content.rules.keychainSlugs, product.slug]
-                              : content.rules.keychainSlugs.filter((slug) => slug !== product.slug),
-                          })
-                        }
-                      />
-                      <span className="text-brand-ink">{product.name}</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </div>
       </Panel>
 
