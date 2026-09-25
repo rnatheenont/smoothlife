@@ -61,6 +61,15 @@ export type CampaignContent = {
    */
   storeUrl: string;
   /**
+   * Whether the customer's page answers at all.
+   *
+   * A campaign exists the moment somebody presses "สร้างกิจกรรมใหม่", with a
+   * month-long window and default wording nobody has read. The link working
+   * from that second is how a half-written promotion gets found; so it does
+   * not, until someone says so.
+   */
+  published: boolean;
+  /**
    * The arithmetic.
    *
    * It used to live only in code, on the grounds that these numbers settle who
@@ -95,6 +104,7 @@ export const DEFAULT_CONTENT: CampaignContent = {
   ],
   rules: DEFAULT_RULES,
   storeUrl: `${STORE}/collections/all`,
+  published: true,
   terms: [
     "ยอดช็อปทุกๆ 690 บาทต่อใบเสร็จ ได้รับ 1 สิทธิ์ ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้",
     "ยอดช็อป Set Keychain 990 บาทต่อใบเสร็จ ได้รับ 3 สิทธิ์ ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้",
@@ -115,6 +125,7 @@ type Row = {
   steps: CampaignStep[] | null;
   terms: string[] | null;
   store_url: string | null;
+  published: boolean | null;
   general_threshold: number | string | null;
   keychain_price: number | string | null;
   keychain_entries: number | null;
@@ -146,7 +157,7 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
   if (!supabaseConfigured()) return DEFAULT_CONTENT;
   const [row] = await supabaseRest<Row[]>(
     `receipt_campaign_settings?campaign_key=eq.${pgValue(campaignKey)}` +
-      `&select=eyebrow,title,intro,opens_at,closes_at,announce_at,confirm_deadline,steps,terms,store_url,` +
+      `&select=eyebrow,title,intro,opens_at,closes_at,announce_at,confirm_deadline,steps,terms,store_url,published,` +
       `general_threshold,keychain_price,keychain_entries,tiered,stacks,rounding,keychain_slugs&limit=1`
   ).catch(() => [] as Row[]);
   if (!row) return DEFAULT_CONTENT;
@@ -167,6 +178,9 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
     steps: steps.length ? steps : DEFAULT_CONTENT.steps,
     terms: terms.length ? terms : DEFAULT_CONTENT.terms,
     storeUrl: storeUrlOf(row.store_url, DEFAULT_CONTENT.storeUrl),
+    // Only an explicit false hides it: a row written before this column
+    // existed is a campaign that has been live for weeks.
+    published: row.published !== false,
     rules: {
       generalThreshold: num(row.general_threshold, DEFAULT_RULES.generalThreshold),
       keychainPrice: num(row.keychain_price, DEFAULT_RULES.keychainPrice),
