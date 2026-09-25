@@ -144,6 +144,10 @@ export default function ReceiptForm({
   // and no reason to come back five times to send them.
   const [items, setItems] = useState<Item[]>([]);
   const [openEntry, setOpenEntry] = useState<string | null>(null);
+  // One receipt at a time is what almost everybody is doing, and a row in a
+  // list is a worse way to look at the only photo you have. Sending several is
+  // the exception, so it is the one you switch to.
+  const [mode, setMode] = useState<"single" | "multi">("single");
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   // What the photo was read to say, after the customer has had a look at it.
@@ -253,20 +257,27 @@ export default function ReceiptForm({
    * against the wrong order is worse than one the customer had to point at.
    */
   async function addFiles(picked: File[]) {
-    const fresh: Item[] = picked.slice(0, 10).map((file, i) => ({
+    const single = mode === "single";
+    const fresh: Item[] = picked.slice(0, single ? 1 : 10).map((file, i) => ({
       id: `${Date.now()}-${i}-${file.name}`,
       file,
       preview: URL.createObjectURL(file),
       orderId: null,
       matched: "none",
       declared: { orderNumber: "", paidAt: "", total: "" },
-      editing: false,
+      // On its own the receipt is the page, so its fields are open.
+      editing: single,
       reading: true,
       state: "ready",
       error: null,
       note: null,
     }));
-    setItems((old) => [...old, ...fresh]);
+    // One at a time means the new photo is the photo, not another row.
+    setItems((old) => {
+      if (!single) return [...old, ...fresh];
+      old.forEach((row) => URL.revokeObjectURL(row.preview));
+      return fresh;
+    });
 
     // One at a time: each is a model call, and a stack of ten arriving at once
     // is the shape of a bill nobody meant to run up.
@@ -554,19 +565,62 @@ export default function ReceiptForm({
                       แคปหน้าจออีเมลยืนยันคำสั่งซื้อที่ได้รับจาก Smoothlife.com ให้เห็น
                       <b>เลขคำสั่งซื้อ (ORDER #)</b> รายการสินค้า และยอดรวม · JPG, PNG หรือ WEBP ไม่เกิน 8MB
                       <br />
-                      <b>เลือกได้หลายรูปพร้อมกัน</b> ระบบจะอ่านเลขคำสั่งซื้อในรูปแล้วจับคู่ให้เอง
+                      {mode === "multi" && (
+                        <>
+                          <br />
+                          <b>เลือกได้หลายรูปพร้อมกัน</b> ระบบจะอ่านเลขคำสั่งซื้อในรูปแล้วจับคู่ให้เอง
+                        </>
+                      )}
                     </p>
+
+                    {/* The switch, not a setting: most people send one receipt
+                        and never need to know the other mode exists. */}
+                    <div className="mt-3 inline-flex rounded-full border border-black/10 p-0.5">
+                      {(
+                        [
+                          ["single", "ทีละใบ"],
+                          ["multi", "หลายใบพร้อมกัน"],
+                        ] as const
+                      ).map(([key, label]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => {
+                            if (key === mode) return;
+                            // Switching to one-at-a-time with a stack already
+                            // picked would have to throw work away; keep the
+                            // newest and say nothing about the rest.
+                            if (key === "single") {
+                              setItems((old) => {
+                                old.slice(0, -1).forEach((row) => URL.revokeObjectURL(row.preview));
+                                return old.slice(-1).map((row) => ({ ...row, editing: true }));
+                              });
+                            }
+                            setMode(key);
+                          }}
+                          className={`min-h-9 rounded-full px-4 text-[13px] font-semibold transition-colors ${
+                            mode === key ? "bg-black text-white" : "text-black/50 hover:text-black/80"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
 
                     <label className="mt-4 flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-black/20 bg-black/[0.02] p-4 hover:border-black/40">
                       <Upload size={24} className="text-black/35" aria-hidden />
                       <span className="text-[14px] font-semibold text-black/60">
-                        {items.length ? "เพิ่มรูปใบเสร็จ" : "เลือกรูปใบเสร็จ"}
+                        {items.length
+                          ? mode === "single"
+                            ? "เปลี่ยนรูปใบเสร็จ"
+                            : "เพิ่มรูปใบเสร็จ"
+                          : "เลือกรูปใบเสร็จ"}
                       </span>
                       <span className="text-[12px] text-black/40">แตะเพื่อถ่ายรูปหรือเลือกจากคลัง · เลือกได้หลายรูป</span>
                       <input
                         ref={fileInput}
                         type="file"
-                        multiple
+                        multiple={mode === "multi"}
                         accept="image/jpeg,image/png,image/webp"
                         className="hidden"
                         onChange={(e) => {
@@ -584,7 +638,7 @@ export default function ReceiptForm({
                     {items.length > 0 && (
                       <ul
                         className={`mt-4 flex flex-col gap-3 ${
-                          items.length > 3 ? "max-h-[26rem] overflow-y-auto pe-1" : ""
+                          mode === "multi" && items.length > 3 ? "max-h-[26rem] overflow-y-auto pe-1" : ""
                         }`}
                       >
                         {items.map((item) => {
@@ -647,6 +701,7 @@ export default function ReceiptForm({
                                   <div className="mt-2">
                                     <button
                                       type="button"
+                                      hidden={mode === "single"}
                                       onClick={() =>
                                         setItems((old) =>
                                           old.map((row) => (row.id === item.id ? { ...row, editing: !row.editing } : row))
