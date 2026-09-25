@@ -70,24 +70,45 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
       `&select=id,invoice_no,amount,confirmed_at,line_items,shopify_order_id&order=confirmed_at.desc&limit=100`
   ).catch(() => [] as TxRow[]);
   const orders = rows.filter(
-    (tx) => withinCampaign(tx.confirmed_at, false, window) && amountsFromLineItems(tx.line_items).dentisteAmount > 0
+    (tx) =>
+      withinCampaign(tx.confirmed_at, false, window) &&
+      amountsFromLineItems(tx.line_items, content.rules).dentisteAmount > 0
   );
-  const order = orders.find((o) => o.id === orderId) ?? orders[0] ?? null;
+  // Which order this photo is compared against, and never a guess.
+  //
+  // It used to fall back to orders[0] — the customer's newest — so a ฿1,600
+  // receipt for #4305 was handed to the model as if it were #4292 and came
+  // back "ไม่ตรง". That is a verdict about a comparison nobody asked for, and
+  // it is the number printed on the photo that decides which order this is.
+  const names = await orderNamesByGid(orders.map((o) => o.shopify_order_id));
+  const digitsOf = (v: string | null | undefined) => (v ?? "").replace(/\D/g, "");
+  const nameOf = (o: TxRow) => names.get(o.shopify_order_id ?? "") ?? null;
 
-  const names = order ? await orderNamesByGid([order.shopify_order_id]) : new Map<string, string>();
-  const amounts = order ? amountsFromLineItems(order.line_items, content.rules) : null;
+  let order = orderId ? (orders.find((o) => o.id === orderId) ?? null) : null;
 
-  const check = await checkReceiptPhoto({
-    bytes: await photo.arrayBuffer(),
+  const bytes = await photo.arrayBuffer();
+  let check = await checkReceiptPhoto({
+    bytes,
     contentType: photo.type,
     order: {
-      orderNumber: order ? (names.get(order.shopify_order_id ?? "") ?? null) : null,
+      orderNumber: order ? nameOf(order) : null,
       invoiceNo: order?.invoice_no ?? null,
       total: order ? Number(order.amount) : 0,
       paidAt: order?.confirmed_at ?? null,
       items: (order?.line_items ?? []).map((li) => `variant ${li.variantId} x${li.quantity}`),
     },
   });
+
+  if (!order) {
+    // Nothing to compare against on that pass, so only the reading survives
+    // it — the verdict is decided on submit, against the order the number
+    // turns out to name.
+    const typed = digitsOf(check?.read?.orderNumber);
+    order = typed ? (orders.find((o) => digitsOf(nameOf(o)) === typed) ?? null) : null;
+    check = null;
+  }
+
+  const amounts = order ? amountsFromLineItems(order.line_items, content.rules) : null;
 
   return NextResponse.json({
     ok: true,
@@ -99,7 +120,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
     order: order
       ? {
           id: order.id,
-          orderNumber: names.get(order.shopify_order_id ?? "") ?? null,
+          orderNumber: nameOf(order),
           invoiceNo: order.invoice_no,
           paidAt: order.confirmed_at,
           total: Number(order.amount),
