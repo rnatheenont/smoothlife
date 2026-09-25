@@ -17,7 +17,11 @@ import { logAiUsage } from "@/lib/ai-usage";
 // as a correct one.
 
 const MODEL = process.env.ANTHROPIC_RECEIPT_MODEL || "claude-sonnet-5";
-const MAX_TOKENS = 700;
+// Thai costs roughly three tokens a word, and the answer carries a sentence
+// plus a list of findings. At 700 every reply hit the ceiling mid-JSON and
+// was thrown away unparsed — the customer saw "อ่านไม่ได้" for a photo the
+// model had read perfectly well.
+const MAX_TOKENS = 2000;
 
 export type ReceiptCheck = {
   /** ok: matches. unclear: cannot tell. mismatch: shows something else. */
@@ -53,17 +57,19 @@ const SYSTEM = `คุณคือผู้ช่วยตรวจใบเส�
 
 งานของคุณคือ "เทียบ" ภาพกับข้อมูลคำสั่งซื้อที่ระบบรู้อยู่แล้ว ไม่ใช่ "อ่านยอดเงินมาใช้" — ระบบคำนวณสิทธิ์จากฐานข้อมูลเองอยู่แล้ว
 
-ตอบเป็น JSON อย่างเดียว ไม่มีข้อความอื่น:
+ตอบเป็น JSON อย่างเดียว ไม่มีข้อความอื่น เรียงลำดับคีย์ตามนี้:
 {
-  "verdict": "ok" | "unclear" | "mismatch",
-  "message": "ข้อความภาษาไทยหนึ่งประโยคบอกลูกค้าว่าต้องทำอะไร",
-  "findings": ["สิ่งที่เห็นหรือไม่เห็นในภาพ เป็นภาษาไทย"],
   "read": {
     "orderNumber": "เลขคำสั่งซื้อที่อ่านได้จากภาพ เช่น #4292 หรือ null ถ้าอ่านไม่ได้",
     "total": ยอดรวมเป็นตัวเลขที่อ่านได้จากภาพ หรือ null,
     "paidAt": "วันและเวลาในภาพ รูปแบบ YYYY-MM-DD HH:MM (เวลาไทย 24 ชม.) ถ้าเห็นแต่วันที่ไม่เห็นเวลาให้ใส่ YYYY-MM-DD เฉยๆ ถ้าไม่เห็นเลยให้ null"
-  }
+  },
+  "verdict": "ok" | "unclear" | "mismatch",
+  "message": "ข้อความภาษาไทยหนึ่งประโยคสั้นๆ ไม่เกิน 120 ตัวอักษร",
+  "findings": ["สิ่งที่เห็นหรือไม่เห็นในภาพ สั้นๆ ไม่เกิน 3 ข้อ ข้อละไม่เกิน 80 ตัวอักษร"]
 }
+
+ตอบสั้นที่สุดเท่าที่ยังครบ — คำตอบที่ยาวเกินจะถูกตัดกลางคันและใช้ไม่ได้เลย
 
 เรื่อง "read": อ่านเท่าที่เห็นจริงในภาพเท่านั้น ห้ามเดา ห้ามคัดลอกจากข้อมูลที่ระบบแจ้งให้
 ถ้าตรงไหนอ่านไม่ออกหรือไม่มีในภาพ ให้ใส่ null — ตัวเลขผิดที่ลูกค้าไม่ทันสังเกตแย่กว่าช่องว่าง
@@ -102,6 +108,27 @@ export function readMoment(value: string | null | undefined): string | null {
   return back.slice(0, 10) === `${y}-${mo}-${d}` ? `${y}-${mo}-${d}T${hh}:${mi}` : null;
 }
 
+/**
+ * The reading out of an answer that was cut off.
+ *
+ * "read" is the first key the model is asked for, so a reply that ran out of
+ * room still has it in full — and it is the only part the form actually
+ * needs. Losing the whole thing to a missing closing brace is what made a
+ * legible receipt come back as "อ่านเลขคำสั่งซื้อจากรูปไม่ได้".
+ */
+function salvageRead(body: string): ReceiptCheck["read"] | null {
+  const str = (key: string) => body.match(new RegExp(`"${key}"\\s*:\\s*"([^"]{1,60})"`))?.[1]?.trim() || null;
+  const num = Number(body.match(/"total"\s*:\s*([0-9]+(?:\.[0-9]+)?)/)?.[1]);
+  const orderNumber = str("orderNumber");
+  // Through the same gate as the parsed path: a salvaged date is still a date
+  // that has to be real before it lands in a form.
+  const paidAt = readMoment(str("paidAt"));
+  const total = Number.isFinite(num) && num > 0 ? num : null;
+  return orderNumber || paidAt || total
+    ? { orderNumber: orderNumber ? orderNumber.slice(0, 40) : null, total, paidAt }
+    : null;
+}
+
 function parse(text: string): Omit<ReceiptCheck, "checkedAt" | "model"> | null {
   // The model is asked for bare JSON; a stray ```json fence is the one
   // deviation worth surviving rather than throwing the whole reading away.
@@ -134,6 +161,15 @@ function parse(text: string): Omit<ReceiptCheck, "checkedAt" | "model"> | null {
       },
     };
   } catch {
+    const salvaged = salvageRead(body);
+    if (salvaged) {
+      return {
+        verdict: "unclear",
+        message: "อ่านข้อมูลจากรูปได้บางส่วน กรุณาตรวจและแก้ไขให้ครบก่อนส่ง",
+        findings: [],
+        read: salvaged,
+      };
+    }
     return null;
   }
 }
