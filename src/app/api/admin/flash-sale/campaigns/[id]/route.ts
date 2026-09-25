@@ -110,24 +110,55 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
   // real Shopify order to the sale it came from, and no amount of tidying the
   // console is worth losing it — so the delete stops, says how many, and the
   // order has to be dealt with in Shopify first.
-  const paid = await supabaseRest<{ id: string }[]>(
-    `flash_sale_queue?campaign_id=eq.${pgValue(id)}&or=(paid_at.not.is.null,shopify_order_id.not.is.null)&select=id&limit=50`
-  ).catch(() => [] as { id: string }[]);
-  if (paid.length > 0) {
+  const queue = await supabaseRest<{ id: string; paid_at: string | null; shopify_order_id: string | null }[]>(
+    `flash_sale_queue?campaign_id=eq.${pgValue(id)}&select=id,paid_at,shopify_order_id&limit=5000`
+  ).catch(() => []);
+
+  // payment_transactions points at the queue row it was started from, with ON
+  // DELETE RESTRICT — so a slot somebody merely *tried* to pay for cannot be
+  // removed while that link exists. A pending or failed attempt is not a
+  // purchase: the transaction row is the record of money and it stays, but it
+  // stops pointing at a slot that is about to cease to exist.
+  const attempts = queue.length
+    ? await supabaseRest<{ id: string; flash_sale_entry_id: string; status: string }[]>(
+        `payment_transactions?flash_sale_entry_id=in.(${queue.map((q) => q.id).join(",")})` +
+          `&select=id,flash_sale_entry_id,status&limit=5000`
+      ).catch(() => [])
+    : [];
+
+  const bought = new Set(
+    attempts.filter((t) => t.status === "success").map((t) => t.flash_sale_entry_id)
+  );
+  for (const q of queue) if (q.paid_at || q.shopify_order_id) bought.add(q.id);
+
+  if (bought.size > 0) {
     return NextResponse.json(
       {
         ok: false,
-        error: `ลบไม่ได้ — แคมเปญนี้มีคำสั่งซื้อที่ชำระเงินแล้ว ${paid.length} รายการผูกอยู่ ` +
+        error: `ลบไม่ได้ — แคมเปญนี้มีคำสั่งซื้อที่ชำระเงินสำเร็จแล้ว ${bought.size} รายการผูกอยู่ ` +
           `ถ้าต้องการเอาหน้าขายลง ให้ใช้ “ปิดเผยแพร่” แทน`,
       },
       { status: 409 }
     );
   }
 
-  const evicted = await supabaseRest<{ id: string }[]>(
-    `flash_sale_queue?campaign_id=eq.${pgValue(id)}&select=id`,
-    { method: "DELETE" }
-  ).catch(() => [] as { id: string }[]);
+  const unlink = attempts.map((t) => t.id);
+  if (unlink.length) {
+    await supabaseRest(`payment_transactions?id=in.(${unlink.join(",")})`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({ flash_sale_entry_id: null }),
+    });
+  }
+
+  // Not caught: an eviction that quietly fails leaves the delete below to hit
+  // the same constraint and report something vague, which is exactly how this
+  // looked the first time.
+  const evicted = queue.length
+    ? await supabaseRest<{ id: string }[]>(`flash_sale_queue?campaign_id=eq.${pgValue(id)}&select=id`, {
+        method: "DELETE",
+      })
+    : [];
 
   let rows: { id: string }[];
   try {
