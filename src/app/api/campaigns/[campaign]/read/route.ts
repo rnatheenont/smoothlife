@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
+import { supabaseConfigured } from "@/lib/supabase-server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { isRateLimitedShared } from "@/lib/rate-limit";
 import { ipLimited, TOO_MANY_TH } from "@/lib/abuse-guard";
 import { checkReceiptPhoto } from "@/lib/receipt-vision";
 import { receiptExtension, MAX_RECEIPT_BYTES } from "@/lib/receipt-photos";
-import { amountsFromLineItems, computeEntries, withinCampaign } from "@/lib/receipt-campaign";
-import { loadCampaignContent, windowOf } from "@/lib/receipt-campaign-content";
+import { amountsFromLineItems, computeEntries } from "@/lib/receipt-campaign";
+import { loadCampaignContent } from "@/lib/receipt-campaign-content";
 import { orderNamesByGid } from "@/lib/shopify-admin";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
+import { eligibleOrders, type CampaignOrder } from "@/lib/receipt-campaign-orders";
 
 // Reading a receipt before it is sent, so the form arrives filled in.
 //
@@ -63,17 +64,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
   }
 
   const content = await loadCampaignContent(CAMPAIGN);
-  const window = windowOf(content);
-
-  const rows = await supabaseRest<TxRow[]>(
-    `payment_transactions?user_id=eq.${pgValue(uid)}&status=eq.success` +
-      `&select=id,invoice_no,amount,confirmed_at,line_items,shopify_order_id&order=confirmed_at.desc&limit=100`
-  ).catch(() => [] as TxRow[]);
-  const orders = rows.filter(
-    (tx) =>
-      withinCampaign(tx.confirmed_at, false, window) &&
-      amountsFromLineItems(tx.line_items, content.rules).dentisteAmount > 0
-  );
+  const { orders } = await eligibleOrders(CAMPAIGN, uid);
   // Which order this photo is compared against, and never a guess.
   //
   // It used to fall back to orders[0] — the customer's newest — so a ฿1,600
@@ -82,7 +73,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
   // it is the number printed on the photo that decides which order this is.
   const names = await orderNamesByGid(orders.map((o) => o.shopify_order_id));
   const digitsOf = (v: string | null | undefined) => (v ?? "").replace(/\D/g, "");
-  const nameOf = (o: TxRow) => names.get(o.shopify_order_id ?? "") ?? null;
+  const nameOf = (o: CampaignOrder) => names.get(o.shopify_order_id ?? "") ?? null;
 
   let order = orderId ? (orders.find((o) => o.id === orderId) ?? null) : null;
 
