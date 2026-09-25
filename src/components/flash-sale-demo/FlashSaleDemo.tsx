@@ -51,6 +51,7 @@ import {
   type SchedulerState,
 } from "./scheduler";
 import type { FlashSaleCampaignDTO } from "@/lib/flash-sale-campaigns";
+import { campaignBody } from "@/lib/flash-sale-campaign-body";
 import CampaignSetup, { type CatalogueItem, type EditingCampaign, type ProductGroup } from "./CampaignSetup";
 import FormDrawer from "./FormDrawer";
 import { useMonitors } from "./use-monitors";
@@ -236,26 +237,7 @@ export default function FlashSaleDemo({
       try {
         const { campaign: saved } = await api<{ campaign: FlashSaleCampaignDTO }>(API, {
           method: "POST",
-          body: JSON.stringify({
-            title: config.title,
-            mode: config.mode,
-            kind: config.kind ?? "regular",
-            heroImage: config.presentation?.heroImage ?? null,
-            heroHeadline: config.presentation?.heroHeadline ?? null,
-            heroNote: config.presentation?.heroNote ?? null,
-            heroAlign: config.presentation?.heroAlign ?? "top",
-            accent: config.presentation?.accent ?? null,
-            faq: config.presentation?.faq ?? [],
-            groupKind: config.group?.kind,
-            groupKey: config.group?.key,
-            productSlugs: config.products.map((p) => p.slug),
-            pricing: config.pricing ?? { mode: "regular" },
-            stockPerProduct: config.stockPerProduct,
-            windowMinutes: config.windowMinutes,
-            maxRequeue: config.maxRequeue,
-            startsAt,
-            endsAt: endsAt ?? null,
-          }),
+          body: JSON.stringify(campaignBody(config, startsAt, endsAt)),
         });
         const input = toInput(saved, bySlug);
         if (input) {
@@ -276,27 +258,7 @@ export default function FlashSaleDemo({
       try {
         const { campaign: saved } = await api<{ campaign: FlashSaleCampaignDTO }>(`${API}/${id}`, {
           method: "PATCH",
-          body: JSON.stringify({
-            action: "update",
-            title: config.title,
-            mode: config.mode,
-            kind: config.kind ?? "regular",
-            heroImage: config.presentation?.heroImage ?? null,
-            heroHeadline: config.presentation?.heroHeadline ?? null,
-            heroNote: config.presentation?.heroNote ?? null,
-            heroAlign: config.presentation?.heroAlign ?? "top",
-            accent: config.presentation?.accent ?? null,
-            faq: config.presentation?.faq ?? [],
-            groupKind: config.group?.kind,
-            groupKey: config.group?.key,
-            productSlugs: config.products.map((p) => p.slug),
-            pricing: config.pricing ?? { mode: "regular" },
-            stockPerProduct: config.stockPerProduct,
-            windowMinutes: config.windowMinutes,
-            maxRequeue: config.maxRequeue,
-            startsAt,
-            endsAt: endsAt ?? null,
-          }),
+          body: JSON.stringify({ action: "update", ...campaignBody(config, startsAt, endsAt) }),
         });
         const input = toInput(saved, bySlug);
         if (input) setScheduler((s) => addCampaign(s, input));
