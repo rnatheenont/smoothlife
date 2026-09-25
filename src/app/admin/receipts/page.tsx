@@ -13,6 +13,7 @@ import Image from "next/image";
 import { Check, Loader2, RefreshCw, X } from "lucide-react";
 import { PageHeader, Panel, StatCard, adminTable } from "@/components/admin/layout-kit";
 import CampaignSettings from "./CampaignSettings";
+import NewCampaign from "./NewCampaign";
 import QueueTable from "./QueueTable";
 import { when, type QueueItem } from "./queue-vocab";
 import { formatTHB } from "@/lib/format";
@@ -256,7 +257,7 @@ export default function Page() {
           campaignName ? `${campaignName} — ตรวจใบเสร็จ ดูลำดับ VIP และสิทธิ์ Lucky Fan` : "ตรวจใบเสร็จ ดูลำดับ VIP และสิทธิ์ Lucky Fan"
         }
         actions={
-          <>
+          <span className="relative flex items-center gap-2">
             {/* Only when there is a choice to make. */}
             {campaigns.length > 1 && (
               <select
@@ -281,7 +282,16 @@ export default function Page() {
           >
             <RefreshCw size={13} aria-hidden /> รีเฟรช
           </button>
-          </>
+            <NewCampaign
+              onCreated={(key) => {
+                // Straight into the new one, on the tab that finishes setting
+                // it up — a campaign with default dates is not one to leave.
+                setCampaign(key);
+                setCampaignName(null);
+                setTab("settings");
+              }}
+            />
+          </span>
         }
       />
 
