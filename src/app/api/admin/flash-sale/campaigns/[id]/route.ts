@@ -102,21 +102,51 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
   const { id } = await props.params;
   if (!UUID.test(id)) return NextResponse.json({ ok: false, error: "ไม่พบแคมเปญ" }, { status: 404 });
+  // Everyone still in the queue is turned out with the campaign: their slot
+  // is a place in a sale that is about to stop existing, so keeping the row
+  // preserves nothing.
+  //
+  // Anyone who paid is a different matter. That row is the only thing tying a
+  // real Shopify order to the sale it came from, and no amount of tidying the
+  // console is worth losing it — so the delete stops, says how many, and the
+  // order has to be dealt with in Shopify first.
+  const paid = await supabaseRest<{ id: string }[]>(
+    `flash_sale_queue?campaign_id=eq.${pgValue(id)}&or=(paid_at.not.is.null,shopify_order_id.not.is.null)&select=id&limit=50`
+  ).catch(() => [] as { id: string }[]);
+  if (paid.length > 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `ลบไม่ได้ — แคมเปญนี้มีคำสั่งซื้อที่ชำระเงินแล้ว ${paid.length} รายการผูกอยู่ ` +
+          `ถ้าต้องการเอาหน้าขายลง ให้ใช้ “ปิดเผยแพร่” แทน`,
+      },
+      { status: 409 }
+    );
+  }
+
+  const evicted = await supabaseRest<{ id: string }[]>(
+    `flash_sale_queue?campaign_id=eq.${pgValue(id)}&select=id`,
+    { method: "DELETE" }
+  ).catch(() => [] as { id: string }[]);
+
   let rows: { id: string }[];
   try {
     rows = await supabaseRest<{ id: string }[]>(`flash_sale_campaigns?id=eq.${pgValue(id)}&select=id`, {
       method: "DELETE",
     });
   } catch (err) {
-    // flash_sale_queue references the campaign with ON DELETE RESTRICT: once
-    // anyone has queued, its history (and any payments) must stay.
+    // Something else still references it — the stock rows go with the
+    // campaign, so this is a case worth seeing rather than guessing at.
     if (String(err).includes("23503")) {
-      return NextResponse.json({ ok: false, error: "ลบไม่ได้ เพราะมีลูกค้าเข้าคิวแล้ว ใช้ปิดการขายแทน" }, { status: 409 });
+      return NextResponse.json(
+        { ok: false, error: "ลบไม่ได้ เพราะยังมีข้อมูลอื่นผูกอยู่กับแคมเปญนี้ ใช้ปิดเผยแพร่แทน" },
+        { status: 409 }
+      );
     }
     throw err;
   }
   if (rows.length === 0) {
     return NextResponse.json({ ok: false, error: "ไม่พบแคมเปญ อาจถูกลบไปแล้ว" }, { status: 404 });
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, evicted: evicted.length });
 }
