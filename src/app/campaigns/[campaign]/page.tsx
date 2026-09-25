@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { CalendarDays, Gift, Receipt, Ticket } from "lucide-react";
@@ -54,19 +55,31 @@ export default async function Page({
   }));
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <p className="text-[13px] font-semibold uppercase tracking-wide text-black/50">{content.eyebrow}</p>
+    <div
+      className="mx-auto max-w-5xl px-4 py-10"
+      // Two shades from one setting: the campaign's own colour for fills, and
+      // a darkened version of it for type, because a vivid accent that reads
+      // well as a button is not a colour to set body copy in.
+      style={
+        {
+          "--rc-accent": content.accent,
+          "--rc-ink": `color-mix(in oklab, ${content.accent} 78%, black)`,
+          "--rc-wash": `color-mix(in oklab, ${content.accent} 10%, white)`,
+        } as CSSProperties
+      }
+    >
+      <p className="text-[13px] font-semibold uppercase tracking-wide text-[var(--rc-ink)]">{content.eyebrow}</p>
       <h1 className="mt-2 max-w-2xl text-3xl font-extrabold leading-tight text-black sm:text-4xl">{content.title}</h1>
       <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-black/70">{content.intro}</p>
 
-      <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-black/5 px-4 py-2 text-[13px] font-semibold text-black">
+      <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-[var(--rc-wash)] px-4 py-2 text-[13px] font-semibold text-[var(--rc-ink)]">
         <CalendarDays size={15} aria-hidden /> เปิดรับใบเสร็จ {label.opensLong} – {label.closesLong}
       </div>
 
       <ol className="mt-10 grid gap-4 sm:grid-cols-3">
         {steps.map(({ Icon, title, body }, i) => (
           <li key={title} className="flex gap-4 rounded-2xl border border-black/10 p-5 sm:flex-col sm:gap-3">
-            <div className="grid size-10 shrink-0 place-items-center rounded-full bg-black/5 text-black">
+            <div className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--rc-wash)] text-[var(--rc-ink)]">
               <Icon size={18} aria-hidden />
             </div>
             <div>
@@ -107,7 +120,7 @@ export default async function Page({
           <ul className="mt-4 flex flex-col gap-2.5">
             {content.terms.map((term, i) => (
               <li key={term} className="flex gap-3 text-[14px] leading-relaxed text-black/70">
-                <span className="shrink-0 tabular-nums text-black/35">{i + 1}.</span>
+                <span className="shrink-0 tabular-nums font-semibold text-[var(--rc-ink)]">{i + 1}.</span>
                 <span>{term}</span>
               </li>
             ))}

@@ -31,6 +31,7 @@ type Content = {
   steps: Step[];
   terms: string[];
   storeUrl: string;
+  accent: string;
   rules: Rules;
 };
 
@@ -131,6 +132,7 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
           steps: content.steps,
           terms: content.terms.filter((t) => t.trim()),
           storeUrl: content.storeUrl,
+          accent: content.accent,
           rules: content.rules,
         }),
       });
@@ -160,6 +162,27 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
           <label className="block">
             <span className="text-[12px] font-semibold text-slate-500">คำอธิบายใต้หัวเรื่อง</span>
             <textarea rows={3} className={`mt-1 ${field}`} value={content.intro} onChange={(e) => set("intro", e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="text-[12px] font-semibold text-slate-500">สีธีมของหน้ากิจกรรม</span>
+            <span className="mt-1 flex items-center gap-2">
+              <input
+                type="color"
+                value={/^#[0-9a-fA-F]{6}$/.test(content.accent) ? content.accent : "#0f766e"}
+                onChange={(e) => set("accent", e.target.value)}
+                className="h-10 w-14 cursor-pointer rounded-l border border-surface-line bg-white p-1"
+                aria-label="เลือกสีธีม"
+              />
+              <input
+                className={field}
+                value={content.accent}
+                onChange={(e) => set("accent", e.target.value)}
+                placeholder="#952ede"
+              />
+            </span>
+            <span className="mt-1 block text-[11px] text-slate-500">
+              ใช้กับหัวข้อ ไอคอนขั้นตอน และปุ่มส่งใบเสร็จ — ตั้งให้ตรงกับหน้า flash sale ของแคมเปญเดียวกันจะดูเป็นงานเดียวกัน
+            </span>
           </label>
           <label className="block">
             <span className="text-[12px] font-semibold text-slate-500">ปุ่ม “กลับไปหน้าร้าน” ลิงก์ไปที่</span>

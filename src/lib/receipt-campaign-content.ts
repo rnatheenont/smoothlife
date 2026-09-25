@@ -19,6 +19,14 @@ import { CLOSES_AT, DEFAULT_RULES, OPENS_AT, type CampaignRules } from "@/lib/re
 
 /** The live shop. A campaign's way back leads here and nowhere else. */
 const STORE = "https://www.smoothlife.com";
+/** Black is not a theme. A campaign with no colour of its own borrows the shop's. */
+const DEFAULT_ACCENT = "#0f766e";
+
+/** A colour, or the one already in use — never a string the page will choke on. */
+export function accentOf(value: string | null | undefined, fallback: string): string {
+  const v = (value ?? "").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : fallback;
+}
 const STORE_HOSTS = ["www.smoothlife.com", "smoothlife.com"];
 
 /**
@@ -70,6 +78,14 @@ export type CampaignContent = {
    */
   published: boolean;
   /**
+   * The page's theme colour, #RRGGBB.
+   *
+   * The same campaign usually has a flash-sale page too, drawn from its own
+   * accent — so this defaults to matching it. Two pages of one promotion in
+   * two different colours look like two promotions.
+   */
+  accent: string;
+  /**
    * The arithmetic.
    *
    * It used to live only in code, on the grounds that these numbers settle who
@@ -105,6 +121,7 @@ export const DEFAULT_CONTENT: CampaignContent = {
   rules: DEFAULT_RULES,
   storeUrl: `${STORE}/collections/all`,
   published: true,
+  accent: DEFAULT_ACCENT,
   terms: [
     "ยอดช็อปทุกๆ 690 บาทต่อใบเสร็จ ได้รับ 1 สิทธิ์ ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้",
     "ยอดช็อป Set Keychain 990 บาทต่อใบเสร็จ ได้รับ 3 สิทธิ์ ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้",
@@ -126,6 +143,7 @@ type Row = {
   terms: string[] | null;
   store_url: string | null;
   published: boolean | null;
+  accent_color: string | null;
   general_threshold: number | string | null;
   keychain_price: number | string | null;
   keychain_entries: number | null;
@@ -157,7 +175,7 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
   if (!supabaseConfigured()) return DEFAULT_CONTENT;
   const [row] = await supabaseRest<Row[]>(
     `receipt_campaign_settings?campaign_key=eq.${pgValue(campaignKey)}` +
-      `&select=eyebrow,title,intro,opens_at,closes_at,announce_at,confirm_deadline,steps,terms,store_url,published,` +
+      `&select=eyebrow,title,intro,opens_at,closes_at,announce_at,confirm_deadline,steps,terms,store_url,published,accent_color,` +
       `general_threshold,keychain_price,keychain_entries,tiered,stacks,rounding,keychain_slugs&limit=1`
   ).catch(() => [] as Row[]);
   if (!row) return DEFAULT_CONTENT;
@@ -181,6 +199,7 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
     // Only an explicit false hides it: a row written before this column
     // existed is a campaign that has been live for weeks.
     published: row.published !== false,
+    accent: accentOf(row.accent_color, DEFAULT_CONTENT.accent),
     rules: {
       generalThreshold: num(row.general_threshold, DEFAULT_RULES.generalThreshold),
       keychainPrice: num(row.keychain_price, DEFAULT_RULES.keychainPrice),

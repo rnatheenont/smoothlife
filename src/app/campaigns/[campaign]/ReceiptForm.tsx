@@ -579,7 +579,9 @@ export default function ReceiptForm({
               aria-selected={tab === key}
               onClick={() => setTab(key)}
               className={`-mb-px min-h-11 border-b-2 px-4 text-[14px] font-semibold transition-colors ${
-                tab === key ? "border-black text-black" : "border-transparent text-black/45 hover:text-black/70"
+                tab === key
+                  ? "border-[var(--rc-accent,#000)] text-[var(--rc-ink,#000)]"
+                  : "border-transparent text-black/45 hover:text-black/70"
               }`}
             >
               {label}
@@ -818,7 +820,7 @@ export default function ReceiptForm({
                   <dl className="grid grid-cols-3 gap-4 rounded-2xl border border-black/10 p-4">
                     <div>
                       <dt className="text-[12px] leading-tight text-black/50">สิทธิ์ที่ได้รับแล้ว</dt>
-                      <dd className="mt-1 text-[24px] font-extrabold leading-none text-black tabular-nums">{approved}</dd>
+                      <dd className="mt-1 text-[24px] font-extrabold leading-none text-[var(--rc-ink,#000)] tabular-nums">{approved}</dd>
                     </div>
                     <div>
                       <dt className="text-[12px] leading-tight text-black/50">สิทธิ์รอยืนยัน</dt>
@@ -952,7 +954,7 @@ export default function ReceiptForm({
                           type="button"
                           disabled={!ready.length || sending || !contactOk}
                           onClick={sendAll}
-                          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-black text-[15px] font-semibold text-white disabled:opacity-40"
+                          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--rc-ink,#000)] text-[15px] font-semibold text-white disabled:opacity-40"
                         >
                           {sending && <Loader2 size={16} className="animate-spin" />}
                           {sending
@@ -992,7 +994,7 @@ export default function ReceiptForm({
               <dl className="grid grid-cols-3 gap-4">
                 <div>
                   <dt className="text-[12px] leading-tight text-black/50">สิทธิ์ที่ได้รับแล้ว</dt>
-                  <dd className="mt-1 text-[26px] font-extrabold leading-none text-black tabular-nums">{approved}</dd>
+                  <dd className="mt-1 text-[26px] font-extrabold leading-none text-[var(--rc-ink,#000)] tabular-nums">{approved}</dd>
                 </div>
                 <div>
                   <dt className="text-[12px] leading-tight text-black/50">สิทธิ์รอยืนยัน</dt>
