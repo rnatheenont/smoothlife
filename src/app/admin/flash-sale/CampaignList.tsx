@@ -107,7 +107,9 @@ export default function CampaignList() {
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [menu, setMenu] = useState<string | null>(null);
+  // Anchored to the button and rendered fixed: the table scrolls sideways,
+  // and a menu positioned inside it gets clipped by that scroll box.
+  const [menu, setMenu] = useState<{ id: string; top: number; right: number } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<Campaign | null>(null);
 
@@ -268,9 +270,13 @@ export default function CampaignList() {
                         <button
                           type="button"
                           aria-label={`อื่นๆ สำหรับ ${c.title}`}
-                          aria-expanded={menu === c.id}
+                          aria-expanded={menu?.id === c.id}
                           disabled={busy === c.id}
-                          onClick={() => setMenu(menu === c.id ? null : c.id)}
+                          onClick={(e) => {
+                            if (menu?.id === c.id) return setMenu(null);
+                            const r = e.currentTarget.getBoundingClientRect();
+                            setMenu({ id: c.id, top: r.bottom + 6, right: window.innerWidth - r.right });
+                          }}
                           className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
                         >
                           {busy === c.id ? (
@@ -279,7 +285,7 @@ export default function CampaignList() {
                             <MoreHorizontal size={16} aria-hidden />
                           )}
                         </button>
-                        {menu === c.id && (
+                        {menu?.id === c.id && (
                           <>
                             {/* Anywhere else closes it. */}
                             <button
@@ -288,7 +294,10 @@ export default function CampaignList() {
                               onClick={() => setMenu(null)}
                               className="fixed inset-0 z-20 cursor-default"
                             />
-                            <div className="absolute end-0 top-9 z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg">
+                            <div
+                              style={{ top: menu.top, right: menu.right }}
+                              className="fixed z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg"
+                            >
                               <button
                                 type="button"
                                 onClick={() => {

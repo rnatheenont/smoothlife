@@ -45,7 +45,10 @@ function phaseOf(row: CampaignRow): { label: string; className: string } {
 export default function CampaignIndex({ onOpen }: { onOpen: (key: string) => void }) {
   const [rows, setRows] = useState<CampaignRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [menu, setMenu] = useState<string | null>(null);
+  // Where the menu goes, not just which row opened it: the table scrolls
+  // sideways, and an absolutely-positioned menu inside a scrolling box is a
+  // menu that box cuts off. Anchored to the button and rendered fixed.
+  const [menu, setMenu] = useState<{ key: string; top: number; right: number } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -187,8 +190,12 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string) => voi
                       <button
                         type="button"
                         aria-label={`อื่นๆ สำหรับ ${row.name}`}
-                        aria-expanded={menu === row.key}
-                        onClick={() => setMenu(menu === row.key ? null : row.key)}
+                        aria-expanded={menu?.key === row.key}
+                        onClick={(e) => {
+                          if (menu?.key === row.key) return setMenu(null);
+                          const r = e.currentTarget.getBoundingClientRect();
+                          setMenu({ key: row.key, top: r.bottom + 6, right: window.innerWidth - r.right });
+                        }}
                         disabled={busy === row.key}
                         className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
                       >
@@ -199,7 +206,7 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string) => voi
                         )}
                       </button>
                       <ChevronRight size={16} className="text-slate-300" aria-hidden />
-                      {menu === row.key && (
+                      {menu?.key === row.key && (
                         <>
                           {/* Anywhere else closes it — a menu that only shuts
                               by pressing its own button is one you fight. */}
@@ -209,7 +216,10 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string) => voi
                             onClick={() => setMenu(null)}
                             className="fixed inset-0 z-20 cursor-default"
                           />
-                          <div className="absolute end-0 top-9 z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg">
+                          <div
+                            style={{ top: menu.top, right: menu.right }}
+                            className="fixed z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg"
+                          >
                             <button
                               type="button"
                               onClick={() => togglePublished(row)}

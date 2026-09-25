@@ -136,6 +136,10 @@ export async function GET(req: NextRequest) {
       revokeReason: r.revoke_reason ?? null,
       customer: r.users?.display_name ?? null,
       orderNumber: payments.get(r.payment_transactions?.shopify_order_id ?? "")?.name ?? null,
+      // No order row behind it at all: the customer's receipt for a purchase
+      // this site never recorded. Nothing here was computed, so nothing here
+      // can be checked against anything but the photo and the reviewer.
+      manual: !r.payment_transaction_id && Boolean(r.manual_receipt_no),
       // Straight from Shopify, not from our own "the card cleared" row.
       paymentStatus: payments.get(r.payment_transactions?.shopify_order_id ?? "")?.financialStatus ?? null,
       refunded: payments.get(r.payment_transactions?.shopify_order_id ?? "")?.refunded ?? 0,

@@ -184,7 +184,15 @@ export default function Page() {
 
     let entries = item.entries;
     if (action === "approve") {
-      const typed = window.prompt(`จำนวนสิทธิ์สำหรับใบเสร็จนี้ (ระบบคำนวณได้ ${item.entries})`, String(item.entries));
+      // A manual receipt has no order to compute from, so the prompt says so
+      // rather than offering a zero that looks like an answer.
+      const typed = window.prompt(
+        item.manual
+          ? `เคสพิเศษ — ไม่มีคำสั่งซื้อในระบบให้คำนวณ\n\nตรวจใบเสร็จกับหลักฐานการชำระเงินแล้วระบุจำนวนสิทธิ์เอง` +
+              `\nลูกค้าแจ้งยอด ${item.declared.total ?? "—"} บาท`
+          : `จำนวนสิทธิ์สำหรับใบเสร็จนี้ (ระบบคำนวณได้ ${item.entries})`,
+        String(item.entries)
+      );
       if (typed === null) return;
       const n = Number(typed);
       if (!Number.isInteger(n) || n < 0) return;

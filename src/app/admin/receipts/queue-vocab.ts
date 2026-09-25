@@ -9,6 +9,8 @@ export type QueueItem = {
   customer: string | null;
   orderNumber: string | null;
   invoiceNo: string | null;
+  /** Sent without a matching order — the entries are a reviewer's to decide. */
+  manual?: boolean;
   paidAt: string | null;
   orderTotal: number | null;
   dentisteAmount: number;
