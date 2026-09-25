@@ -207,15 +207,18 @@ async function checkManual(opts: {
   if (!declaredTotal) {
     return NextResponse.json({ ok: false, error: "กรุณากรอกยอดรวมจากใบเสร็จ" }, { status: 400 });
   }
-  if (!declaredPaidAt) {
-    return NextResponse.json({ ok: false, error: "กรุณากรอกวันและเวลาที่ชำระเงิน" }, { status: 400 });
-  }
-  const paid = Date.parse(declaredPaidAt);
-  if (!Number.isFinite(paid) || paid < window.opensAt || paid > window.closesAt) {
-    return NextResponse.json(
-      { ok: false, error: "วันที่ชำระเงินอยู่นอกช่วงกิจกรรม — ตรวจวันที่บนใบเสร็จอีกครั้ง" },
-      { status: 400 }
-    );
+  // The date is often simply not on the receipt — a screenshot of an order
+  // confirmation taken the same day shows a time and no date anywhere. So it
+  // is not demanded; when it is there it still has to be inside the window,
+  // and when it is not the reviewer has the photo.
+  if (declaredPaidAt) {
+    const paid = Date.parse(declaredPaidAt);
+    if (!Number.isFinite(paid) || paid < window.opensAt || paid > window.closesAt) {
+      return NextResponse.json(
+        { ok: false, error: "วันที่ชำระเงินอยู่นอกช่วงกิจกรรม — ตรวจวันที่บนใบเสร็จอีกครั้ง" },
+        { status: 400 }
+      );
+    }
   }
 
   const [pending] = await supabaseRest<{ id: string }[]>(

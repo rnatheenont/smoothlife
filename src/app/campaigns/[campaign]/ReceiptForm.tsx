@@ -375,9 +375,7 @@ export default function ReceiptForm({
    * reviewer will have — and all three are printed on the photo beside them.
    */
   const manualReady = (row: Item) =>
-    row.declared.orderNumber.trim().length > 0 &&
-    row.declared.paidAt.trim().length > 0 &&
-    Number(row.declared.total.replace(/[^0-9.]/g, "")) > 0;
+    row.declared.orderNumber.trim().length > 0 && Number(row.declared.total.replace(/[^0-9.]/g, "")) > 0;
 
   /**
    * A row the send button will take.
@@ -758,7 +756,7 @@ export default function ReceiptForm({
                                   <div className="mt-2 grid gap-2">
                                     {(
                                       [
-                                        ["paidAt", "วันและเวลาที่ชำระเงิน", "datetime-local", ""],
+                                        ["paidAt", "วันและเวลาที่ชำระเงิน (ถ้ามีในใบเสร็จ)", "datetime-local", ""],
                                         ["total", "ยอดทั้งบิล (บาท)", "text", "0.00"],
                                       ] as const
                                     ).map(([key, label, type, placeholder]) => (
@@ -897,7 +895,7 @@ export default function ReceiptForm({
                         {(
                           [
                             ["orderNumber", "เลขคำสั่งซื้อ (ORDER #)", "text", "#0000"],
-                            ["paidAt", "วันและเวลาที่ชำระเงิน", "datetime-local", ""],
+                            ["paidAt", "วันและเวลาที่ชำระเงิน (ถ้ามีในใบเสร็จ)", "datetime-local", ""],
                             ["total", "ยอดทั้งบิล (บาท)", "text", "0.00"],
                           ] as const
                         ).map(([key, label, type, placeholder]) => (
@@ -965,7 +963,7 @@ export default function ReceiptForm({
                         </button>
                         {incomplete > 0 && (
                           <p className="text-center text-[12px] text-amber-700">
-                            กรอกเลขคำสั่งซื้อ วันและเวลาที่ชำระเงิน และยอดรวมให้ครบก่อนส่ง
+                            กรอกเลขคำสั่งซื้อและยอดรวมให้ครบก่อนส่ง
                           </p>
                         )}
                       </>
