@@ -279,7 +279,12 @@ export default function Page() {
             />
           }
         />
-        <CampaignIndex onOpen={setCampaign} />
+        <CampaignIndex
+          onOpen={(key, to) => {
+            setCampaign(key);
+            setTab(to ?? "queue");
+          }}
+        />
       </div>
     );
   }

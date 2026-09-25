@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowUpRight, ChevronRight, Eye, EyeOff, Loader2, MoreHorizontal, Trash2 } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Eye, EyeOff, Loader2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Panel, adminTable } from "@/components/admin/layout-kit";
 
 // Every campaign, before any one of them.
@@ -42,7 +42,10 @@ function phaseOf(row: CampaignRow): { label: string; className: string } {
   return { label: "เปิดรับอยู่", className: "bg-emerald-50 text-emerald-800" };
 }
 
-export default function CampaignIndex({ onOpen }: { onOpen: (key: string) => void }) {
+/** Where opening a campaign lands: its queue, or the form that sets it up. */
+export type CampaignTab = "queue" | "settings";
+
+export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: CampaignTab) => void }) {
   const [rows, setRows] = useState<CampaignRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Where the menu goes, not just which row opened it: the table scrolls
@@ -220,6 +223,19 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string) => voi
                             style={{ top: menu.top, right: menu.right }}
                             className="fixed z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg"
                           >
+                            {/* The same form that creates one — the schedule,
+                                the wording and the arithmetic all live in it,
+                                so there is nothing smaller worth offering. */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMenu(null);
+                                onOpen(row.key, "settings");
+                              }}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
+                            >
+                              <Pencil size={14} aria-hidden /> แก้ไขกิจกรรม
+                            </button>
                             <button
                               type="button"
                               onClick={() => togglePublished(row)}
