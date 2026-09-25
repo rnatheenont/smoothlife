@@ -23,15 +23,25 @@ export async function GET(req: NextRequest) {
   // the database will refuse: flash_sale_queue references the campaign with ON
   // DELETE RESTRICT, so once anyone has queued its history has to stay — and
   // "ลบ" that always fails looks like a broken button rather than a rule.
-  const queued = await supabaseRest<{ campaign_id: string }[]>(
-    `flash_sale_queue?select=campaign_id&limit=20000`
-  ).catch(() => [] as { campaign_id: string }[]);
+  const queued = await supabaseRest<{ campaign_id: string; paid_at: string | null; shopify_order_id: string | null }[]>(
+    `flash_sale_queue?select=campaign_id,paid_at,shopify_order_id&limit=20000`
+  ).catch(() => []);
   const queueRows = new Map<string, number>();
-  for (const q of queued) queueRows.set(q.campaign_id, (queueRows.get(q.campaign_id) ?? 0) + 1);
+  const paidRows = new Map<string, number>();
+  for (const q of queued) {
+    queueRows.set(q.campaign_id, (queueRows.get(q.campaign_id) ?? 0) + 1);
+    // A paid row is an order, not a place in a line: it is what stops a
+    // campaign being deleted, and the only number the console has to explain.
+    if (q.paid_at || q.shopify_order_id) paidRows.set(q.campaign_id, (paidRows.get(q.campaign_id) ?? 0) + 1);
+  }
 
   return NextResponse.json({
     ok: true,
-    campaigns: rows.map((r) => ({ ...rowToCampaign(r), queueRows: queueRows.get(r.id) ?? 0 })),
+    campaigns: rows.map((r) => ({
+      ...rowToCampaign(r),
+      queueRows: queueRows.get(r.id) ?? 0,
+      paidRows: paidRows.get(r.id) ?? 0,
+    })),
     serverNow: Date.now(),
   });
 }

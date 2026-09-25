@@ -39,8 +39,10 @@ type Campaign = {
   endsAt: number | null;
   endedManuallyAt: number | null;
   salePrices: Record<string, number | null>;
-  /** How many people have queued. Anything above zero cannot be deleted. */
+  /** How many people are in the queue — all evicted if the campaign is deleted. */
   queueRows?: number;
+  /** How many of those paid. One is enough to stop the delete. */
+  paidRows?: number;
 };
 
 const dateTime = (ms: number) =>
@@ -122,7 +124,13 @@ export default function CampaignList() {
   }
 
   async function remove(c: Campaign) {
-    if (!window.confirm(`ลบ "${c.title}" ทิ้ง?\n\nลบแล้วกู้คืนไม่ได้ (แคมเปญที่มีลูกค้าเข้าคิวแล้วจะลบไม่ได้)`)) return;
+    // The queue goes with it, so the number of people that happens to is the
+    // part worth reading before saying yes.
+    const waiting = (c.queueRows ?? 0) - (c.paidRows ?? 0);
+    const message =
+      `ลบ "${c.title}" ทิ้ง?\n\nลบแล้วกู้คืนไม่ได้` +
+      (waiting > 0 ? `\nคนที่อยู่ในคิว ${waiting} คนจะถูกเอาออกจากคิวไปด้วย` : "");
+    if (!window.confirm(message)) return;
     setMenu(null);
     setBusy(c.id);
     setError(null);
@@ -299,12 +307,12 @@ export default function CampaignList() {
                                   </>
                                 )}
                               </button>
-                              {c.queueRows ? (
+                              {c.paidRows ? (
                                 // Not a disabled button with no explanation:
                                 // the reason is the whole of what to do next.
                                 <p className="px-3 py-2 text-[12px] leading-relaxed text-slate-500">
                                   <Trash2 size={13} className="mb-0.5 me-1 inline" aria-hidden />
-                                  ลบไม่ได้ — มีลูกค้าเข้าคิวแล้ว {c.queueRows} คน
+                                  ลบไม่ได้ — มีคำสั่งซื้อที่ชำระแล้ว {c.paidRows} รายการผูกอยู่
                                   <br />
                                   ใช้ “ปิดเผยแพร่” แทนเพื่อเอาหน้าขายลง
                                 </p>
