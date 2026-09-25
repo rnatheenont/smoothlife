@@ -51,7 +51,7 @@ import {
   type SchedulerState,
 } from "./scheduler";
 import type { FlashSaleCampaignDTO } from "@/lib/flash-sale-campaigns";
-import { campaignBody } from "@/lib/flash-sale-campaign-body";
+import { campaignBody, campaignToConfig } from "@/lib/flash-sale-campaign-body";
 import CampaignSetup, { type CatalogueItem, type EditingCampaign, type ProductGroup } from "./CampaignSetup";
 import FormDrawer from "./FormDrawer";
 import { useMonitors } from "./use-monitors";
@@ -68,39 +68,14 @@ const API = "/api/admin/flash-sale/campaigns";
 
 /** A stored campaign → what the demo runs, with product details from the catalogue. */
 function toInput(c: FlashSaleCampaignDTO, bySlug: Map<string, CatalogueItem>): CampaignInput | null {
-  const products = c.productSlugs
-    .map((slug) => bySlug.get(slug))
-    .filter((p): p is CatalogueItem => Boolean(p))
-    .map(({ slug, name, brand, image, price, compareAtPrice }) => {
-      const sale = c.salePrices?.[slug];
-      return sale === null || sale === undefined
-        ? { slug, name, brand, image, price, compareAtPrice }
-        : { slug, name, brand, image, price: sale, compareAtPrice: Math.max(price, compareAtPrice ?? 0) };
-    });
-  if (products.length === 0) return null;
+  const config = campaignToConfig(c, bySlug);
+  if (!config) return null;
   return {
     id: c.id,
     startsAt: c.startsAt,
     endsAt: c.endsAt ?? undefined,
     endedManuallyAt: c.endedManuallyAt ?? undefined,
-    config: {
-      mode: c.mode,
-      kind: c.kind,
-      presentation: {
-        heroImage: c.presentation.heroImage ?? undefined,
-        heroHeadline: c.presentation.heroHeadline ?? undefined,
-        heroNote: c.presentation.heroNote ?? undefined,
-        heroAlign: c.presentation.heroAlign,
-        accent: c.presentation.accent ?? undefined,
-        faq: c.presentation.faq,
-      },
-      title: c.title,
-      products,
-      stockPerProduct: c.stockPerProduct,
-      windowMinutes: c.windowMinutes,
-      maxRequeue: c.maxRequeue,
-      group: c.groupKind && c.groupKey ? { kind: c.groupKind, key: c.groupKey } : undefined,
-    },
+    config,
   };
 }
 

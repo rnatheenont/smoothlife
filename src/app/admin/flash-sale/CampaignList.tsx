@@ -10,10 +10,11 @@
 // called it.
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowUpRight, Eye, EyeOff, Loader2, MoreHorizontal, Pencil, PlayCircle, RefreshCw, Trash2 } from "lucide-react";
 import { Panel, SectionTitle, adminTable } from "@/components/admin/layout-kit";
 
-/** The whole DTO, because editing sends back everything it did not change. */
+/** The whole DTO: the edit form is handed the campaign exactly as it is stored. */
 type Campaign = {
   id: string;
   title: string;
@@ -40,50 +41,6 @@ type Campaign = {
   salePrices: Record<string, number | null>;
 };
 
-/** datetime-local reads back Bangkok time, which is the only clock this shop has. */
-const toLocalInput = (ms: number) => new Date(ms - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-const fromLocalInput = (v: string) => {
-  const ms = new Date(v).getTime();
-  return Number.isFinite(ms) ? ms : null;
-};
-
-/**
- * The campaign as the update endpoint wants it back.
- *
- * Everything the dialog does not touch is round-tripped exactly, so editing
- * the closing time cannot quietly drop a banner, a FAQ or a flash price. The
- * prices are either all set or all unset — nothing can produce a mix — so the
- * two cases are the whole of it.
- */
-function toUpdateBody(c: Campaign, changes: Partial<Campaign>) {
-  const next = { ...c, ...changes };
-  const prices = next.salePrices ?? {};
-  const fixed = next.productSlugs.every((slug) => typeof prices[slug] === "number");
-  return {
-    action: "update",
-    title: next.title,
-    mode: next.mode,
-    kind: next.kind,
-    heroImage: next.presentation?.heroImage ?? null,
-    heroHeadline: next.presentation?.heroHeadline ?? null,
-    heroNote: next.presentation?.heroNote ?? null,
-    heroAlign: next.presentation?.heroAlign ?? "top",
-    accent: next.presentation?.accent ?? null,
-    faq: next.presentation?.faq ?? [],
-    groupKind: next.groupKind,
-    groupKey: next.groupKey,
-    productSlugs: next.productSlugs,
-    stockPerProduct: next.stockPerProduct,
-    windowMinutes: next.windowMinutes,
-    maxRequeue: next.maxRequeue,
-    startsAt: next.startsAt,
-    endsAt: next.endsAt,
-    pricing: fixed
-      ? { mode: "fixed" as const, prices: Object.fromEntries(next.productSlugs.map((s) => [s, prices[s] as number])) }
-      : { mode: "regular" as const },
-  };
-}
-
 const dateTime = (ms: number) =>
   new Date(ms).toLocaleString("th-TH", {
     day: "numeric",
@@ -103,6 +60,7 @@ function phaseOf(c: Campaign, now: number) {
 }
 
 export default function CampaignList() {
+  const router = useRouter();
   const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
@@ -111,7 +69,6 @@ export default function CampaignList() {
   // and a menu positioned inside it gets clipped by that scroll box.
   const [menu, setMenu] = useState<{ id: string; top: number; right: number } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [editing, setEditing] = useState<Campaign | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -302,7 +259,7 @@ export default function CampaignList() {
                                 type="button"
                                 onClick={() => {
                                   setMenu(null);
-                                  setEditing(c);
+                                  router.push(`/admin/flash-sale/create?id=${c.id}`);
                                 }}
                                 className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
                               >
@@ -354,113 +311,6 @@ export default function CampaignList() {
         </div>
       )}
 
-      {editing && (
-        <EditDialog
-          campaign={editing}
-          onClose={() => setEditing(null)}
-          onSave={async (changes) => {
-            const ok = await act(editing, toUpdateBody(editing, changes), "บันทึกไม่สำเร็จ");
-            if (ok) setEditing(null);
-          }}
-        />
-      )}
     </Panel>
-  );
-}
-
-/**
- * Editing the numbers, not the campaign.
- *
- * What goes wrong after a sale is set up is its schedule and its stock —
- * which products it sells and what they cost were decided with the product
- * picker and belong to it. Everything not here is round-tripped untouched, so
- * moving a closing time cannot lose a banner.
- */
-function EditDialog({
-  campaign,
-  onClose,
-  onSave,
-}: {
-  campaign: Campaign;
-  onClose: () => void;
-  onSave: (changes: Partial<Campaign>) => void | Promise<void>;
-}) {
-  const [title, setTitle] = useState(campaign.title);
-  const [startsAt, setStartsAt] = useState(toLocalInput(campaign.startsAt));
-  const [endsAt, setEndsAt] = useState(campaign.endsAt ? toLocalInput(campaign.endsAt) : "");
-  const [stock, setStock] = useState(String(campaign.stockPerProduct));
-  const [windowMinutes, setWindowMinutes] = useState(String(campaign.windowMinutes));
-  const [maxRequeue, setMaxRequeue] = useState(String(campaign.maxRequeue));
-  const [saving, setSaving] = useState(false);
-
-  const field =
-    "mt-1 min-h-10 w-full rounded-l border border-surface-line bg-white px-3 text-[13px] text-brand-ink";
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-      <div className="w-full max-w-lg rounded-xl2 bg-white p-5 shadow-lg">
-        <h2 className="text-base font-bold text-brand-ink">แก้ไขแคมเปญ</h2>
-        <p className="mt-0.5 text-[12px] text-slate-500">
-          สินค้าและราคาแก้ที่นี่ไม่ได้ — ส่วนที่เหลือของแคมเปญจะถูกเก็บไว้เหมือนเดิมทุกอย่าง
-        </p>
-
-        <label className="mt-4 block text-[12px] font-semibold text-slate-500">
-          ชื่อแคมเปญ
-          <input className={field} value={title} onChange={(e) => setTitle(e.target.value)} />
-        </label>
-
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <label className="block text-[12px] font-semibold text-slate-500">
-            เริ่มขาย
-            <input type="datetime-local" className={field} value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
-          </label>
-          <label className="block text-[12px] font-semibold text-slate-500">
-            ปิดการขาย (เว้นว่าง = จนกว่าของจะหมด)
-            <input type="datetime-local" className={field} value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
-          </label>
-          <label className="block text-[12px] font-semibold text-slate-500">
-            สต็อกต่อสินค้า
-            <input inputMode="numeric" className={field} value={stock} onChange={(e) => setStock(e.target.value)} />
-          </label>
-          <label className="block text-[12px] font-semibold text-slate-500">
-            เวลาชำระเงิน (นาที)
-            <input inputMode="numeric" className={field} value={windowMinutes} onChange={(e) => setWindowMinutes(e.target.value)} />
-          </label>
-          <label className="block text-[12px] font-semibold text-slate-500">
-            กลับเข้าคิวได้กี่ครั้ง
-            <input inputMode="numeric" className={field} value={maxRequeue} onChange={(e) => setMaxRequeue(e.target.value)} />
-          </label>
-        </div>
-
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full border border-surface-line px-4 py-2 text-[13px] font-semibold text-brand-ink hover:bg-surface-soft"
-          >
-            ยกเลิก
-          </button>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={async () => {
-              setSaving(true);
-              await onSave({
-                title: title.trim(),
-                startsAt: fromLocalInput(startsAt) ?? campaign.startsAt,
-                endsAt: endsAt ? fromLocalInput(endsAt) : null,
-                stockPerProduct: Number(stock),
-                windowMinutes: Number(windowMinutes),
-                maxRequeue: Number(maxRequeue),
-              });
-              setSaving(false);
-            }}
-            className="inline-flex items-center gap-1.5 rounded-full bg-brand-gradient px-4 py-2 text-[13px] font-semibold text-white disabled:opacity-50"
-          >
-            {saving && <Loader2 size={14} className="animate-spin" />} บันทึก
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
