@@ -820,6 +820,36 @@ export default function ReceiptForm({
                     </div>
                   </dl>
 
+                  {/* The account belongs to whoever set it up; the prize has to
+                      reach whoever is holding the receipt. Asked once, before
+                      the receipt's own fields, because it is answered once —
+                      the fields below change with every photo, this does not. */}
+                  <div className="rounded-2xl border border-black/10 p-4">
+                    <p className="text-[13px] font-bold text-black">ผู้รับรางวัล</p>
+                    <p className="mt-1 text-[12px] leading-relaxed text-black/50">
+                      ใช้ติดต่อกลับถ้าคุณได้รับรางวัล — กรอกให้ตรงกับบัตรประชาชน
+                    </p>
+                    <label className="mt-3 block">
+                      <span className="text-[12px] font-semibold text-black/55">ชื่อ-นามสกุล</span>
+                      <input
+                        value={contactName}
+                        onChange={(e) => setContactName(e.target.value)}
+                        placeholder="ชื่อ นามสกุล"
+                        className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black"
+                      />
+                    </label>
+                    <label className="mt-3 block">
+                      <span className="text-[12px] font-semibold text-black/55">เบอร์โทร</span>
+                      <input
+                        value={contactPhone}
+                        onChange={(e) => setContactPhone(e.target.value)}
+                        inputMode="tel"
+                        placeholder="08x-xxx-xxxx"
+                        className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black tabular-nums"
+                      />
+                    </label>
+                  </div>
+
                   {/* The receipt's own details, beside the rest of the form
                       rather than tucked under its thumbnail. With one receipt
                       the fields are the form, and the photo on the left is
@@ -892,34 +922,6 @@ export default function ReceiptForm({
                       )}
                     </div>
                   )}
-
-                  {/* The account belongs to whoever set it up; the prize has to
-                      reach whoever is holding the receipt. */}
-                  <div className="rounded-2xl border border-black/10 p-4">
-                    <p className="text-[13px] font-bold text-black">ผู้รับรางวัล</p>
-                    <p className="mt-1 text-[12px] leading-relaxed text-black/50">
-                      ใช้ติดต่อกลับถ้าคุณได้รับรางวัล — กรอกให้ตรงกับบัตรประชาชน
-                    </p>
-                    <label className="mt-3 block">
-                      <span className="text-[12px] font-semibold text-black/55">ชื่อ-นามสกุล</span>
-                      <input
-                        value={contactName}
-                        onChange={(e) => setContactName(e.target.value)}
-                        placeholder="ชื่อ นามสกุล"
-                        className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black"
-                      />
-                    </label>
-                    <label className="mt-3 block">
-                      <span className="text-[12px] font-semibold text-black/55">เบอร์โทร</span>
-                      <input
-                        value={contactPhone}
-                        onChange={(e) => setContactPhone(e.target.value)}
-                        inputMode="tel"
-                        placeholder="08x-xxx-xxxx"
-                        className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black tabular-nums"
-                      />
-                    </label>
-                  </div>
 
                   {(() => {
                     const ready = items.filter((row) => row.orderId && row.state !== "sent");
