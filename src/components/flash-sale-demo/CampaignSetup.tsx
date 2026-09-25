@@ -114,6 +114,28 @@ export default function CampaignSetup({
   const [heroAlign, setHeroAlign] = useState<"top" | "center" | "bottom">(config.presentation?.heroAlign ?? "top");
   const [accent, setAccent] = useState(config.presentation?.accent ?? SPECIAL_ACCENT_DEFAULT);
   const [faq, setFaq] = useState<{ q: string; a: string }[]>(config.presentation?.faq ?? []);
+  // The banner, from the machine it is sitting on. Pasting a Shopify Files
+  // link still works and is still the fallback; asking someone to go and make
+  // one first is not a step a campaign form should need.
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  async function uploadBanner(file: File) {
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append("image", file);
+      const res = await fetch("/api/admin/flash-sale/upload-image", { method: "POST", body });
+      const data = await res.json().catch(() => ({}));
+      if (!data.ok) return setUploadError(data.error || "อัปโหลดไม่สำเร็จ");
+      setHeroImage(data.url);
+    } catch {
+      setUploadError("อัปโหลดไม่สำเร็จ");
+    } finally {
+      setUploading(false);
+    }
+  }
   // An edited campaign keeps the exact prices it was saved with, so they come
   // back as "กำหนดเอง" whatever they were set with the first time.
   const storedPrices = editing?.salePrices ?? {};
@@ -459,12 +481,44 @@ export default function CampaignSetup({
                   placeholder="https://cdn.shopify.com/…/keng-namping.jpg"
                   className={fieldClass}
                 />
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <label className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-surface-line px-3 text-xs font-semibold text-brand-ink hover:bg-surface-soft">
+                    {uploading ? "กำลังอัปโหลด…" : "อัปโหลดรูปจากเครื่อง"}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadBanner(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {heroImage && (
+                    <button
+                      type="button"
+                      onClick={() => setHeroImage("")}
+                      className="min-h-9 rounded-full px-3 text-xs font-semibold text-slate-500 hover:text-brand-ink"
+                    >
+                      ลบรูป
+                    </button>
+                  )}
+                </div>
+                {uploadError && (
+                  <p role="alert" className="mt-1 text-xs text-rose-600">
+                    {uploadError}
+                  </p>
+                )}
                 {heroError ? (
                   <p role="alert" className="mt-1 text-xs text-rose-600">
                     {heroError}
                   </p>
                 ) : (
-                  <p className="mt-1 text-xs text-slate-500">อัปโหลดไฟล์ไว้ใน Shopify → Content → Files แล้ววางลิงก์ที่นี่ ถ้าเว้นว่างจะใช้รูปสินค้าแทน</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    อัปโหลดจากเครื่องได้เลย หรือวางลิงก์จาก Shopify → Content → Files ถ้าเว้นว่างจะใช้รูปสินค้าแทน
+                  </p>
                 )}
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
