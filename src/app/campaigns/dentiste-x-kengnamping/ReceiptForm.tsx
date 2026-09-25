@@ -251,6 +251,38 @@ export default function ReceiptForm({
   const singleItem = mode === "single" ? (items[0] ?? null) : null;
 
   /**
+   * Which order a receipt belongs to, worked out rather than asked.
+   *
+   * The customer is already looking at the order number — it is printed on
+   * the photo and typed into the box under it. Asking them to pick the same
+   * order a second time from a list of their own purchases is asking a
+   * question they have already answered.
+   */
+  const orderFromNumber = (typed: string) => {
+    const n = digits(typed);
+    return n ? (orders.find((o) => digits(o.orderNumber) === n) ?? null) : null;
+  };
+
+  function setDeclared(id: string, key: "orderNumber" | "paidAt" | "total", value: string) {
+    setItems((old) =>
+      old.map((row) => {
+        if (row.id !== id) return row;
+        const declared = { ...row.declared, [key]: value };
+        if (key !== "orderNumber") return { ...row, declared };
+        // The number they typed decides the order; nothing else can.
+        const hit = orderFromNumber(value);
+        return {
+          ...row,
+          declared,
+          orderId: hit?.id ?? (orders.length === 1 ? orders[0].id : null),
+          matched: hit ? "manual" : orders.length === 1 ? "manual" : "none",
+          note: null,
+        };
+      })
+    );
+  }
+
+  /**
    * Adds photos and works out which order each one belongs to.
    *
    * The model reads the order number off the picture, which is exactly the
@@ -294,7 +326,7 @@ export default function ReceiptForm({
           old.map((row) => {
             if (row.id !== item.id) return row;
             if (!res.ok || !data.ok) {
-              return { ...row, reading: false, note: data.error || "อ่านรูปไม่สำเร็จ — เลือกคำสั่งซื้อเอง" };
+              return { ...row, reading: false, note: data.error || "อ่านรูปไม่สำเร็จ — กรอกเลขคำสั่งซื้อเอง" };
             }
             const read = (data.read ?? {}) as { orderNumber?: string | null; total?: number | null; paidAt?: string | null };
             const readNumber = digits(read.orderNumber);
@@ -313,13 +345,13 @@ export default function ReceiptForm({
                 paidAt: read.paidAt ?? bkk(hit?.paidAt),
                 total: String(read.total ?? hit?.total ?? ""),
               },
-              note: hit ? null : "อ่านเลขคำสั่งซื้อจากรูปไม่ได้ — เลือกเอง",
+              note: hit ? null : "อ่านเลขคำสั่งซื้อจากรูปไม่ได้ — กรอกเลขจากใบเสร็จเอง",
             };
           })
         );
       } catch {
         setItems((old) =>
-          old.map((row) => (row.id === item.id ? { ...row, reading: false, note: "อ่านรูปไม่สำเร็จ — เลือกคำสั่งซื้อเอง" } : row))
+          old.map((row) => (row.id === item.id ? { ...row, reading: false, note: "อ่านรูปไม่สำเร็จ — กรอกเลขคำสั่งซื้อเอง" } : row))
         );
       }
     }
@@ -683,35 +715,27 @@ export default function ReceiptForm({
                                     <Loader2 size={14} className="animate-spin" /> กำลังอ่านรูป…
                                   </p>
                                 ) : (
-                                  <select
-                                    value={item.orderId ?? ""}
-                                    disabled={item.state === "sending" || item.state === "sent"}
-                                    onChange={(e) =>
-                                      setItems((old) =>
-                                        old.map((row) =>
-                                          row.id === item.id
-                                            ? { ...row, orderId: e.target.value || null, matched: e.target.value ? "manual" : "none", note: null }
-                                            : row
-                                        )
-                                      )
-                                    }
-                                    className="min-h-10 w-full rounded-xl border border-black/15 bg-white px-2 text-[13px] text-black"
-                                  >
-                                    <option value="">เลือกคำสั่งซื้อ</option>
-                                    {orders.map((o) => (
-                                      <option key={o.id} value={o.id}>
-                                        {`${o.orderNumber ?? o.invoiceNo} · ${when(o.paidAt)} · ${formatTHB(o.dentisteAmount)} · ${o.entries} สิทธิ์`}
-                                      </option>
-                                    ))}
-                                  </select>
+                                  <label className="block">
+                                    <span className="text-[11px] font-semibold text-black/45">เลขคำสั่งซื้อ (ORDER #)</span>
+                                    <input
+                                      value={item.declared.orderNumber}
+                                      placeholder="#0000"
+                                      disabled={item.state === "sending" || item.state === "sent"}
+                                      onChange={(e) => setDeclared(item.id, "orderNumber", e.target.value)}
+                                      className="mt-1 min-h-10 w-full rounded-xl border border-black/15 px-2.5 text-[13px] text-black"
+                                    />
+                                  </label>
                                 )}
 
-                                {order && (
-                                  <p className="mt-1.5 text-[12px] text-black/55">
-                                    {item.matched === "photo" && <b className="text-emerald-700">จับคู่จากเลขในรูป · </b>}
-                                    ยอด DENTISTE&apos; {formatTHB(order.dentisteAmount)} · {order.entries} สิทธิ์
-                                  </p>
-                                )}
+                                {!item.reading &&
+                                  (order ? (
+                                    <p className="mt-1.5 text-[12px] text-emerald-800">
+                                      ตรงกับคำสั่งซื้อในระบบ · ยอด DENTISTE&apos; {formatTHB(order.dentisteAmount)} ·{" "}
+                                      {order.entries} สิทธิ์
+                                    </p>
+                                  ) : (
+                                    <p className="mt-1.5 text-[12px] text-amber-700">ยังไม่พบคำสั่งซื้อเลขนี้ในระบบ</p>
+                                  ))}
 
                                 {/* What this receipt says, as read off it, with
                                     a way in to fix it. Folded away by default:
@@ -746,7 +770,6 @@ export default function ReceiptForm({
                                       <div className="mt-2 grid gap-2">
                                         {(
                                           [
-                                            ["orderNumber", "เลขคำสั่งซื้อ (ORDER #)", "text", "#0000"],
                                             ["paidAt", "วันและเวลาที่ชำระเงิน", "datetime-local", ""],
                                             ["total", "ยอดทั้งบิล (บาท)", "text", "0.00"],
                                           ] as const
@@ -757,15 +780,7 @@ export default function ReceiptForm({
                                               type={type}
                                               value={item.declared[key]}
                                               placeholder={placeholder}
-                                              onChange={(e) =>
-                                                setItems((old) =>
-                                                  old.map((row) =>
-                                                    row.id === item.id
-                                                      ? { ...row, declared: { ...row.declared, [key]: e.target.value } }
-                                                      : row
-                                                  )
-                                                )
-                                              }
+                                              onChange={(e) => setDeclared(item.id, key, e.target.value)}
                                               className="mt-1 min-h-10 w-full rounded-lg border border-black/15 px-2.5 text-[13px] text-black"
                                             />
                                           </label>
@@ -780,7 +795,7 @@ export default function ReceiptForm({
                                 {item.note && <p className="mt-1.5 text-[12px] text-amber-700">{item.note}</p>}
                                 {duplicate && (
                                   <p className="mt-1.5 text-[12px] text-amber-700">
-                                    มีรูปอื่นเลือกคำสั่งซื้อนี้อยู่แล้ว — ระบบจะเก็บรูปล่าสุดเพียงรูปเดียว
+                                    มีรูปอื่นเป็นคำสั่งซื้อเดียวกัน — ระบบจะเก็บรูปล่าสุดเพียงรูปเดียว
                                   </p>
                                 )}
                                 {item.error && <p className="mt-1.5 text-[12px] font-semibold text-rose-700">{item.error}</p>}
@@ -853,33 +868,24 @@ export default function ReceiptForm({
                         {singleItem.note ?? "อ่านข้อมูลจากรูปให้แล้ว ตรวจดูอีกครั้งและแก้ไขได้ก่อนส่ง"}
                       </p>
 
-                      <label className="mt-3 block">
-                        <span className="text-[12px] font-semibold text-black/55">คำสั่งซื้อที่จะส่ง</span>
-                        <select
-                          value={singleItem.orderId ?? ""}
-                          disabled={singleItem.state === "sending"}
-                          onChange={(e) =>
-                            setItems((old) =>
-                              old.map((row) =>
-                                row.id === singleItem.id
-                                  ? { ...row, orderId: e.target.value || null, matched: e.target.value ? "manual" : "none", note: null }
-                                  : row
-                              )
-                            )
-                          }
-                          className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 bg-white px-3 text-[14px] text-black"
-                        >
-                          <option value="">เลือกคำสั่งซื้อ</option>
-                          {orders.map((o) => (
-                            <option key={o.id} value={o.id}>
-                              {`${o.orderNumber ?? o.invoiceNo} · ${when(o.paidAt)} · ${formatTHB(o.dentisteAmount)} · ${o.entries} สิทธิ์`}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      {singleItem.matched === "photo" && (
-                        <p className="mt-1.5 text-[12px] font-semibold text-emerald-700">จับคู่จากเลขในรูปให้แล้ว</p>
-                      )}
+                      {/* What the number resolved to. Not a question — a
+                          receipt: this is the order we found, or we did not
+                          find one and they can fix the number above. */}
+                      {(() => {
+                        const found = orders.find((o) => o.id === singleItem.orderId) ?? null;
+                        if (singleItem.reading) return null;
+                        return found ? (
+                          <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-[12px] leading-relaxed text-emerald-900">
+                            ตรงกับคำสั่งซื้อ <b>{found.orderNumber ?? found.invoiceNo}</b> ในระบบ · {when(found.paidAt)} ·
+                            ยอด DENTISTE&apos; {formatTHB(found.dentisteAmount)}
+                          </p>
+                        ) : (
+                          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-900">
+                            ยังไม่พบคำสั่งซื้อเลขนี้ในระบบ — ตรวจเลขคำสั่งซื้อด้านล่างอีกครั้ง
+                            ต้องเป็นคำสั่งซื้อที่ชำระเงินสำเร็จบน Smoothlife.com ในช่วงกิจกรรม
+                          </p>
+                        );
+                      })()}
 
                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
                         {(
@@ -895,15 +901,7 @@ export default function ReceiptForm({
                               type={type}
                               value={singleItem.declared[key]}
                               placeholder={placeholder}
-                              onChange={(e) =>
-                                setItems((old) =>
-                                  old.map((row) =>
-                                    row.id === singleItem.id
-                                      ? { ...row, declared: { ...row.declared, [key]: e.target.value } }
-                                      : row
-                                  )
-                                )
-                              }
+                              onChange={(e) => setDeclared(singleItem.id, key, e.target.value)}
                               className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black"
                             />
                           </label>
@@ -915,7 +913,7 @@ export default function ReceiptForm({
                           <p className="mt-1.5 flex min-h-11 items-center rounded-xl bg-black/[0.04] px-3 text-[14px] font-bold text-black tabular-nums">
                             {singleItem.orderId
                               ? `${orders.find((o) => o.id === singleItem.orderId)?.entries ?? 0} สิทธิ์`
-                              : "เลือกคำสั่งซื้อก่อน"}
+                              : "—"}
                           </p>
                         </div>
                       </div>
@@ -974,7 +972,7 @@ export default function ReceiptForm({
                         </button>
                         {missing > 0 && (
                           <p className="text-center text-[12px] text-amber-700">
-                            ยังมี {missing} รูปที่ยังไม่ได้เลือกคำสั่งซื้อ — รูปเหล่านี้จะยังไม่ถูกส่ง
+                            ยังมี {missing} รูปที่ยังไม่พบคำสั่งซื้อ — ตรวจเลขคำสั่งซื้อของรูปนั้นอีกครั้ง
                           </p>
                         )}
                       </>
