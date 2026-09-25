@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
   const order = orders.find((o) => o.id === orderId) ?? orders[0] ?? null;
 
   const names = order ? await orderNamesByGid([order.shopify_order_id]) : new Map<string, string>();
-  const amounts = order ? amountsFromLineItems(order.line_items) : null;
+  const amounts = order ? amountsFromLineItems(order.line_items, content.rules) : null;
 
   const check = await checkReceiptPhoto({
     bytes: await photo.arrayBuffer(),
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
           paidAt: order.confirmed_at,
           total: Number(order.amount),
           dentisteAmount: amounts?.dentisteAmount ?? 0,
-          entries: amounts ? computeEntries(amounts) : 0,
+          entries: amounts ? computeEntries(amounts, content.rules) : 0,
         }
       : null,
   });

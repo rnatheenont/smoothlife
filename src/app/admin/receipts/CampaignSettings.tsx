@@ -11,6 +11,15 @@ import { Panel } from "@/components/admin/layout-kit";
 // screen rather than left to be discovered.
 
 type Step = { title: string; body: string };
+type Rules = {
+  generalThreshold: number;
+  keychainPrice: number;
+  keychainEntries: number;
+  tiered: boolean;
+  stacks: boolean;
+  rounding: "floor" | "round" | "ceil";
+  keychainSlugs: string[];
+};
 type Content = {
   eyebrow: string;
   title: string;
@@ -21,7 +30,24 @@ type Content = {
   confirmDeadline: number;
   steps: Step[];
   terms: string[];
+  rules: Rules;
 };
+
+/**
+ * The same arithmetic the server does, so the screen that edits it can show
+ * what it will do before it does it.
+ *
+ * Kept deliberately small and in sight: the point is that a threshold typed
+ * with a missing zero is visible as "฿690 earns 10 entries" while it can still
+ * be corrected, rather than as a prize draw nobody can explain.
+ */
+function previewEntries(amount: number, rules: Rules, keychain = false): number {
+  const round = rules.rounding === "ceil" ? Math.ceil : rules.rounding === "round" ? Math.round : Math.floor;
+  const step = keychain ? rules.keychainPrice : rules.generalThreshold;
+  const worth = keychain ? rules.keychainEntries : 1;
+  if (!(step > 0)) return 0;
+  return Math.max(0, rules.tiered ? round(amount / step) * worth : amount >= step ? worth : 0);
+}
 
 /** <input type="datetime-local"> wants wall-clock time, and the shop's is Bangkok. */
 function toLocalInput(ms: number): string {
@@ -39,6 +65,7 @@ export default function CampaignSettings() {
   const [content, setContent] = useState<Content | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [saving, setSaving] = useState(false);
+  const [catalogue, setCatalogue] = useState<{ slug: string; name: string }[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -47,6 +74,7 @@ export default function CampaignSettings() {
       const json = await res.json();
       if (!res.ok || !json.ok) return setState("error");
       setContent(json.content as Content);
+      setCatalogue((json.catalogue ?? []) as { slug: string; name: string }[]);
       setState("ready");
     } catch {
       setState("error");
@@ -95,6 +123,7 @@ export default function CampaignSettings() {
           confirmDeadline: fromLocalInput(toLocalInput(content.confirmDeadline)),
           steps: content.steps,
           terms: content.terms.filter((t) => t.trim()),
+          rules: content.rules,
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -186,6 +215,155 @@ export default function CampaignSettings() {
               />
             </div>
           ))}
+        </div>
+      </Panel>
+
+      <Panel title="วิธีคำนวณสิทธิ์" padded>
+        <p className="mb-3 rounded-l border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] text-rose-900">
+          ตัวเลขในหน้านี้ตัดสินว่าใครได้รางวัล — แก้แล้วมีผลกับใบเสร็จที่ส่งเข้ามา<b>หลังจากนี้</b>ทันที
+          ส่วนใบที่อยู่ในคิวแล้วยังถือเลขเดิม ต้องกด <b>คำนวณสิทธิ์ใหม่</b> ในหน้าคิวตรวจ · ทุกการแก้ไขถูกบันทึกใน audit log
+        </p>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-[12px] font-semibold text-slate-500">ยอดซื้อต่อ 1 สิทธิ์ (บาท)</span>
+            <input
+              className={`mt-1 ${field}`}
+              inputMode="decimal"
+              value={content.rules.generalThreshold}
+              onChange={(e) => set("rules", { ...content.rules, generalThreshold: Number(e.target.value) || 0 })}
+            />
+          </label>
+          <label className="block">
+            <span className="text-[12px] font-semibold text-slate-500">วิธีนับ</span>
+            <select
+              className={`mt-1 ${field}`}
+              value={content.rules.tiered ? "tiered" : "flat"}
+              onChange={(e) => set("rules", { ...content.rules, tiered: e.target.value === "tiered" })}
+            >
+              <option value="tiered">ทุกๆ N บาท ได้ 1 สิทธิ์ (คูณ)</option>
+              <option value="flat">ครบ N บาท ได้ 1 สิทธิ์ (ครั้งเดียว)</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-[12px] font-semibold text-slate-500">ราคา Set Keychain (บาท)</span>
+            <input
+              className={`mt-1 ${field}`}
+              inputMode="decimal"
+              value={content.rules.keychainPrice}
+              onChange={(e) => set("rules", { ...content.rules, keychainPrice: Number(e.target.value) || 0 })}
+            />
+          </label>
+          <label className="block">
+            <span className="text-[12px] font-semibold text-slate-500">Set Keychain ได้กี่สิทธิ์</span>
+            <input
+              className={`mt-1 ${field}`}
+              inputMode="numeric"
+              value={content.rules.keychainEntries}
+              onChange={(e) => set("rules", { ...content.rules, keychainEntries: Number(e.target.value) || 0 })}
+            />
+          </label>
+          <label className="block">
+            <span className="text-[12px] font-semibold text-slate-500">การปัดเศษ</span>
+            <select
+              className={`mt-1 ${field}`}
+              disabled={!content.rules.tiered}
+              value={content.rules.rounding}
+              onChange={(e) => set("rules", { ...content.rules, rounding: e.target.value as Rules["rounding"] })}
+            >
+              <option value="floor">ปัดลง — ฿1,379 = 1 สิทธิ์</option>
+              <option value="round">ปัดใกล้สุด — ฿1,379 = 2 สิทธิ์</option>
+              <option value="ceil">ปัดขึ้น — ฿691 = 2 สิทธิ์</option>
+            </select>
+            {!content.rules.tiered && (
+              // A threshold rounded up is a different rule, not a rounded one.
+              <span className="mt-1 block text-[11px] text-slate-400">
+                ใช้ได้เฉพาะวิธีนับแบบ &ldquo;ทุกๆ N บาท&rdquo; — แบบ &ldquo;ครบ N บาท&rdquo; ไม่มีเศษให้ปัด
+              </span>
+            )}
+          </label>
+          <label className="block">
+            <span className="text-[12px] font-semibold text-slate-500">ซื้อ Keychain พร้อมของอื่น</span>
+            <select
+              className={`mt-1 ${field}`}
+              value={content.rules.stacks ? "stack" : "max"}
+              onChange={(e) => set("rules", { ...content.rules, stacks: e.target.value === "stack" })}
+            >
+              <option value="stack">รวมสิทธิ์ทั้งสองส่วน</option>
+              <option value="max">เอาเฉพาะส่วนที่ได้มากกว่า</option>
+            </select>
+          </label>
+        </div>
+
+        {/* What the numbers above actually do, before they do it. */}
+        <div className="mt-4 overflow-hidden rounded-l border border-surface-line">
+          <p className="bg-surface-soft px-3 py-1.5 text-[12px] font-semibold text-slate-500">
+            ลองคำนวณด้วยกฎปัจจุบัน
+          </p>
+          <ul className="divide-y divide-surface-line text-[12px]">
+            {[
+              content.rules.generalThreshold - 1,
+              content.rules.generalThreshold,
+              content.rules.generalThreshold * 2 - 1,
+              content.rules.generalThreshold * 2,
+              content.rules.generalThreshold * 3,
+            ].map((amount, i) => (
+              <li key={i} className="flex items-baseline justify-between px-3 py-1.5">
+                <span className="text-slate-600">ยอด DENTISTE&apos; ฿{amount.toLocaleString()}</span>
+                <span className="font-bold text-brand-ink">{previewEntries(amount, content.rules)} สิทธิ์</span>
+              </li>
+            ))}
+            <li className="flex items-baseline justify-between px-3 py-1.5">
+              <span className="text-slate-600">Set Keychain ฿{content.rules.keychainPrice.toLocaleString()}</span>
+              <span className="font-bold text-brand-ink">
+                {previewEntries(content.rules.keychainPrice, content.rules, true)} สิทธิ์
+              </span>
+            </li>
+          </ul>
+          {/* Rounding up or to nearest hands an entry to somebody who did not
+              reach the threshold — with "ปัดขึ้น", ฿1 does it. Legitimate if
+              it is what was meant, and worth saying out loud either way. */}
+          {content.rules.tiered && previewEntries(content.rules.generalThreshold - 1, content.rules) > 0 && (
+            <p className="border-t border-surface-line bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+              การปัดแบบนี้ทำให้ยอดที่<b>ยังไม่ถึง ฿{content.rules.generalThreshold.toLocaleString()}</b> ได้สิทธิ์ไปด้วย
+              {content.rules.rounding === "ceil" && <> — แบบปัดขึ้น ยอดเพียง ฿1 ก็ได้ 1 สิทธิ์</>}
+            </p>
+          )}
+        </div>
+
+        <div className="mt-4">
+          <p className="text-[12px] font-semibold text-slate-500">สินค้าที่นับเป็น Set Keychain</p>
+          <p className="mt-1 text-[11px] text-slate-400">
+            ถ้าไม่เลือกอะไรเลย ทุกชิ้นจะถูกคิดเป็นยอดซื้อปกติ — Keychain จะไม่ได้ {content.rules.keychainEntries} สิทธิ์
+          </p>
+          <div className="mt-2 max-h-52 overflow-y-auto rounded-l border border-surface-line">
+            {catalogue.length === 0 ? (
+              <p className="px-3 py-3 text-[12px] text-slate-400">ไม่พบสินค้าแบรนด์ DENTISTE&apos; ในแคตตาล็อก</p>
+            ) : (
+              <ul className="divide-y divide-surface-line">
+                {catalogue.map((product) => (
+                  <li key={product.slug}>
+                    <label className="flex cursor-pointer items-start gap-2 px-3 py-2 text-[12px] hover:bg-surface-soft">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 size-3.5 shrink-0 rounded"
+                        checked={content.rules.keychainSlugs.includes(product.slug)}
+                        onChange={(e) =>
+                          set("rules", {
+                            ...content.rules,
+                            keychainSlugs: e.target.checked
+                              ? [...content.rules.keychainSlugs, product.slug]
+                              : content.rules.keychainSlugs.filter((slug) => slug !== product.slug),
+                          })
+                        }
+                      />
+                      <span className="text-brand-ink">{product.name}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </Panel>
 

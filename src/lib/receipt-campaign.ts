@@ -63,6 +63,40 @@ export const KEYCHAIN_SLUGS: string[] = [];
 
 export type LineItem = { variantId: string; quantity: number; price: number };
 
+/**
+ * The arithmetic, as the team has it set.
+ *
+ * Passed in rather than read from the constants above, which are now only the
+ * fallback — see receipt-campaign-content.ts. Every function here takes it
+ * optionally so nothing that has not been updated silently changes behaviour.
+ */
+export type CampaignRules = {
+  generalThreshold: number;
+  keychainPrice: number;
+  keychainEntries: number;
+  tiered: boolean;
+  stacks: boolean;
+  /** How a part-step counts once amounts multiply. */
+  rounding: "floor" | "round" | "ceil";
+  keychainSlugs: string[];
+};
+
+export const DEFAULT_RULES: CampaignRules = {
+  generalThreshold: GENERAL_THRESHOLD,
+  keychainPrice: KEYCHAIN_PRICE,
+  keychainEntries: KEYCHAIN_ENTRIES,
+  tiered: TIERED,
+  stacks: STACKS,
+  rounding: "floor",
+  keychainSlugs: KEYCHAIN_SLUGS,
+};
+
+const ROUND: Record<CampaignRules["rounding"], (n: number) => number> = {
+  floor: Math.floor,
+  round: Math.round,
+  ceil: Math.ceil,
+};
+
 /** Shopify vendor strings that mean Dentiste, slugified — "Dentiste'" included. */
 const DENTISTE_SLUGS = (() => {
   const brand = brands.find((b) => b.slug === "dentiste");
@@ -81,9 +115,9 @@ export function isDentisteVariant(variantId: string): boolean {
   return p ? DENTISTE_SLUGS.has(slugifyVendor(p.brand)) : false;
 }
 
-function isKeychainVariant(variantId: string): boolean {
+function isKeychainVariant(variantId: string, slugs: string[]): boolean {
   const p = BY_VARIANT.get(variantId);
-  return p ? KEYCHAIN_SLUGS.includes(p.slug) : false;
+  return p ? slugs.includes(p.slug) : false;
 }
 
 /** One line of an order, said the way the receipt says it. */
@@ -122,7 +156,10 @@ export type ReceiptAmounts = {
  * a discount is already reflected in the per-item price the customer was
  * charged, which is the "ยอดสุทธิ" the conditions ask for.
  */
-export function amountsFromLineItems(lineItems: LineItem[] | null | undefined): ReceiptAmounts {
+export function amountsFromLineItems(
+  lineItems: LineItem[] | null | undefined,
+  rules: CampaignRules = DEFAULT_RULES
+): ReceiptAmounts {
   const out: ReceiptAmounts = {
     dentisteAmount: 0,
     keychainAmount: 0,
@@ -136,7 +173,7 @@ export function amountsFromLineItems(lineItems: LineItem[] | null | undefined): 
     const total = Number(li.price) * quantity;
     if (!Number.isFinite(total) || total <= 0) continue;
 
-    const keychain = isKeychainVariant(li.variantId);
+    const keychain = isKeychainVariant(li.variantId, rules.keychainSlugs);
     const dentiste = !keychain && isDentisteVariant(li.variantId);
     if (keychain) out.keychainAmount += total;
     else if (dentiste) out.dentisteAmount += total;
@@ -160,20 +197,30 @@ export function amountsFromLineItems(lineItems: LineItem[] | null | undefined): 
 }
 
 /** How many entries an order is worth. Never negative, never fractional. */
-export function computeEntries({ dentisteAmount, keychainAmount }: Pick<ReceiptAmounts, "dentisteAmount" | "keychainAmount">): number {
-  const general = TIERED
-    ? Math.floor(dentisteAmount / GENERAL_THRESHOLD)
-    : dentisteAmount >= GENERAL_THRESHOLD
+export function computeEntries(
+  { dentisteAmount, keychainAmount }: Pick<ReceiptAmounts, "dentisteAmount" | "keychainAmount">,
+  rules: CampaignRules = DEFAULT_RULES
+): number {
+  const round = ROUND[rules.rounding] ?? Math.floor;
+
+  // Rounding only has anything to say once amounts multiply. "ครบ 690 บาท" is
+  // a threshold, and a threshold rounded up is a different rule, not a rounded
+  // one — ฿1 would earn an entry.
+  const general = rules.tiered
+    ? round(dentisteAmount / rules.generalThreshold)
+    : dentisteAmount >= rules.generalThreshold
       ? 1
       : 0;
 
-  const keychain = TIERED
-    ? Math.floor(keychainAmount / KEYCHAIN_PRICE) * KEYCHAIN_ENTRIES
-    : keychainAmount >= KEYCHAIN_PRICE
-      ? KEYCHAIN_ENTRIES
+  const keychain = rules.tiered
+    ? round(keychainAmount / rules.keychainPrice) * rules.keychainEntries
+    : keychainAmount >= rules.keychainPrice
+      ? rules.keychainEntries
       : 0;
 
-  return STACKS ? general + keychain : Math.max(general, keychain);
+  // Never negative, never fractional, and never something a rounding mode can
+  // turn into an entry nobody paid for.
+  return Math.max(0, rules.stacks ? general + keychain : Math.max(general, keychain));
 }
 
 /**

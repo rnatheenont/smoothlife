@@ -1,5 +1,5 @@
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
-import { CLOSES_AT, OPENS_AT } from "@/lib/receipt-campaign";
+import { CLOSES_AT, DEFAULT_RULES, OPENS_AT, type CampaignRules } from "@/lib/receipt-campaign";
 
 // The words and dates a receipt campaign shows its customers.
 //
@@ -30,6 +30,17 @@ export type CampaignContent = {
   steps: CampaignStep[];
   /** The published conditions, one line each, shown on the campaign page. */
   terms: string[];
+  /**
+   * The arithmetic.
+   *
+   * It used to live only in code, on the grounds that these numbers settle who
+   * wins ฿55,000. The trouble is that the two that mattered most were answers
+   * only marketing had, and a rule nobody but a deploy can correct is a rule
+   * that stays wrong — the campaign ran for a day awarding one entry where it
+   * had promised three. So it is editable, audited, and previewed on the
+   * screen that edits it.
+   */
+  rules: CampaignRules;
 };
 
 const thaiDate = (ms: number) =>
@@ -52,6 +63,7 @@ export const DEFAULT_CONTENT: CampaignContent = {
     { title: "ส่งใบเสร็จ", body: "แนบรูปใบเสร็จของคำสั่งซื้อที่เข้าเงื่อนไข ระบบคำนวณสิทธิ์ให้ทันที" },
     { title: "ลุ้นรางวัล", body: "ประกาศผลและยืนยันสิทธิ์ตามกำหนดการด้านล่าง" },
   ],
+  rules: DEFAULT_RULES,
   terms: [
     "ยอดช็อปทุกๆ 690 บาทต่อใบเสร็จ ได้รับ 1 สิทธิ์ ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้",
     "ยอดช็อป Set Keychain 990 บาทต่อใบเสร็จ ได้รับ 3 สิทธิ์ ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้",
@@ -71,6 +83,19 @@ type Row = {
   confirm_deadline: string | null;
   steps: CampaignStep[] | null;
   terms: string[] | null;
+  general_threshold: number | string | null;
+  keychain_price: number | string | null;
+  keychain_entries: number | null;
+  tiered: boolean | null;
+  stacks: boolean | null;
+  rounding: string | null;
+  keychain_slugs: string[] | null;
+};
+
+/** A stored number, or the one in code — never NaN, never a silent zero. */
+const num = (v: number | string | null | undefined, fallback: number) => {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
 };
 
 const ms = (iso: string | null | undefined, fallback: number) => {
@@ -89,7 +114,8 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
   if (!supabaseConfigured()) return DEFAULT_CONTENT;
   const [row] = await supabaseRest<Row[]>(
     `receipt_campaign_settings?campaign_key=eq.${pgValue(campaignKey)}` +
-      `&select=eyebrow,title,intro,opens_at,closes_at,announce_at,confirm_deadline,steps,terms&limit=1`
+      `&select=eyebrow,title,intro,opens_at,closes_at,announce_at,confirm_deadline,steps,terms,` +
+      `general_threshold,keychain_price,keychain_entries,tiered,stacks,rounding,keychain_slugs&limit=1`
   ).catch(() => [] as Row[]);
   if (!row) return DEFAULT_CONTENT;
 
@@ -108,6 +134,23 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
     confirmDeadline: ms(row.confirm_deadline, DEFAULT_CONTENT.confirmDeadline),
     steps: steps.length ? steps : DEFAULT_CONTENT.steps,
     terms: terms.length ? terms : DEFAULT_CONTENT.terms,
+    rules: {
+      generalThreshold: num(row.general_threshold, DEFAULT_RULES.generalThreshold),
+      keychainPrice: num(row.keychain_price, DEFAULT_RULES.keychainPrice),
+      keychainEntries:
+        Number.isInteger(row.keychain_entries) && (row.keychain_entries as number) >= 0
+          ? (row.keychain_entries as number)
+          : DEFAULT_RULES.keychainEntries,
+      tiered: row.tiered ?? DEFAULT_RULES.tiered,
+      stacks: row.stacks ?? DEFAULT_RULES.stacks,
+      rounding:
+        row.rounding === "round" || row.rounding === "ceil" || row.rounding === "floor"
+          ? row.rounding
+          : DEFAULT_RULES.rounding,
+      keychainSlugs: Array.isArray(row.keychain_slugs)
+        ? row.keychain_slugs.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+        : DEFAULT_RULES.keychainSlugs,
+    },
   };
 }
 

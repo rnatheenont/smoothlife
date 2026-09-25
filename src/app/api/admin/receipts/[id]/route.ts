@@ -3,6 +3,7 @@ import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server
 import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { amountsFromLineItems, computeEntries, type LineItem } from "@/lib/receipt-campaign";
 import { orderPaymentByGid } from "@/lib/shopify-admin";
+import { loadCampaignContent } from "@/lib/receipt-campaign-content";
 
 // Approving or rejecting one receipt.
 //
@@ -48,8 +49,11 @@ async function recalculate(id: string, token: string | undefined) {
     );
   }
 
-  const amounts = amountsFromLineItems(entry.payment_transactions.line_items);
-  const entries = computeEntries(amounts);
+  // Today's rules, which is the whole point of the button: the stored number
+  // is the rules as they were when the photo arrived.
+  const { rules } = await loadCampaignContent(CAMPAIGN);
+  const amounts = amountsFromLineItems(entry.payment_transactions.line_items, rules);
+  const entries = computeEntries(amounts, rules);
 
   await supabaseRest(`receipt_campaign_entries?id=eq.${pgValue(id)}`, {
     method: "PATCH",
@@ -72,6 +76,7 @@ async function recalculate(id: string, token: string | undefined) {
         campaign: CAMPAIGN,
         before: { entries: entry.computed_entries, override: entry.entries_override },
         after: { entries, dentisteAmount: amounts.dentisteAmount, keychainAmount: amounts.keychainAmount },
+        rules,
         by: getAdminSession(token)?.userId ?? null,
       },
     }),
