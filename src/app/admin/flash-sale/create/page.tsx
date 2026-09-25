@@ -5,21 +5,32 @@ import { saleCatalogue, saleGroups } from "@/lib/flash-sale-catalogue";
 import CreateCampaign from "./CreateCampaign";
 import "../heroui-demo.css";
 
-// Admin → Flash Sale → สร้างแคมเปญจริง.
+// Admin → Flash Sale → สร้างแคมเปญจริง, and ?id= to edit one.
 //
 // The form itself is CampaignSetup, the same one the simulator uses, because
-// there is no version of "the real one should be worse" that makes sense.
+// there is no version of "the real one should be worse" that makes sense —
+// and editing deserves the same picker and the same price preview that
+// creating gets, rather than a smaller form that can only move dates.
 
 // Rendered per request: the form defaults to starting ten minutes from now.
 export const dynamic = "force-dynamic";
 
-export default function CreateFlashSaleCampaignPage() {
+export default async function CreateFlashSaleCampaignPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ id?: string }>;
+}) {
+  const editing = Boolean((await searchParams).id);
   const catalogue = saleCatalogue();
   return (
     <div>
       <PageHeader
-        title="สร้างแคมเปญ Flash Sale"
-        subtitle="เลือกสินค้า ตั้งวันเวลาและราคา แล้วระบบจะเปิดและปิดการขายให้เองตามเวลา"
+        title={editing ? "แก้ไขแคมเปญ Flash Sale" : "สร้างแคมเปญ Flash Sale"}
+        subtitle={
+          editing
+            ? "แคมเปญที่เปิดขายไปแล้วจะแก้ได้เฉพาะชื่อ หน้าขาย และเวลาปิด — สต็อกกับราคาคือสิ่งที่ลูกค้าเข้าคิวมาแล้ว"
+            : "เลือกสินค้า ตั้งวันเวลาและราคา แล้วระบบจะเปิดและปิดการขายให้เองตามเวลา"
+        }
         actions={
           <Link
             href="/admin/flash-sale"

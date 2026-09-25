@@ -1,4 +1,6 @@
 import type { CampaignConfig } from "@/components/flash-sale-demo/campaign";
+import type { CatalogueItem } from "@/components/flash-sale-demo/CampaignSetup";
+import type { FlashSaleCampaignDTO } from "@/lib/flash-sale-campaigns";
 
 // A campaign as the API wants it written down.
 //
@@ -29,5 +31,51 @@ export function campaignBody(config: CampaignConfig, startsAt: number, endsAt?: 
     maxRequeue: config.maxRequeue,
     startsAt,
     endsAt: endsAt ?? null,
+  };
+}
+
+/**
+ * A saved campaign as the form wants to show it.
+ *
+ * The prices are folded into the products the way the form displays them —
+ * a flash price becomes the product's price, with the regular one moved to
+ * compareAtPrice — so what the admin sees is what the customer would. Which
+ * price mode produced them is restored from EditingCampaign.salePrices.
+ *
+ * Returns null when the catalogue no longer has any of its products: a
+ * campaign selling something since delisted cannot be rebuilt by this form,
+ * and a half-filled form is worse than saying so.
+ */
+export function campaignToConfig(
+  c: FlashSaleCampaignDTO,
+  bySlug: Map<string, CatalogueItem>
+): CampaignConfig | null {
+  const products = c.productSlugs
+    .map((slug) => bySlug.get(slug))
+    .filter((p): p is CatalogueItem => Boolean(p))
+    .map(({ slug, name, brand, image, price, compareAtPrice }) => {
+      const sale = c.salePrices?.[slug];
+      return sale === null || sale === undefined
+        ? { slug, name, brand, image, price, compareAtPrice }
+        : { slug, name, brand, image, price: sale, compareAtPrice: Math.max(price, compareAtPrice ?? 0) };
+    });
+  if (products.length === 0) return null;
+  return {
+    mode: c.mode,
+    kind: c.kind,
+    presentation: {
+      heroImage: c.presentation.heroImage ?? undefined,
+      heroHeadline: c.presentation.heroHeadline ?? undefined,
+      heroNote: c.presentation.heroNote ?? undefined,
+      heroAlign: c.presentation.heroAlign,
+      accent: c.presentation.accent ?? undefined,
+      faq: c.presentation.faq,
+    },
+    title: c.title,
+    products,
+    stockPerProduct: c.stockPerProduct,
+    windowMinutes: c.windowMinutes,
+    maxRequeue: c.maxRequeue,
+    group: c.groupKind && c.groupKey ? { kind: c.groupKind, key: c.groupKey } : undefined,
   };
 }
