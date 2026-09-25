@@ -140,6 +140,7 @@ export default function ReceiptForm({
   // One row per photo. A customer who buys every week has a stack of receipts
   // and no reason to come back five times to send them.
   const [items, setItems] = useState<Item[]>([]);
+  const [openEntry, setOpenEntry] = useState<string | null>(null);
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   // What the photo was read to say, after the customer has had a look at it.
@@ -574,8 +575,15 @@ export default function ReceiptForm({
                       />
                     </label>
 
+                    {/* Ten receipts is ten rows and a page that will not sit
+                        still. Past three the list scrolls inside itself, so the
+                        summary and the send button stay where they are. */}
                     {items.length > 0 && (
-                      <ul className="mt-4 flex flex-col gap-3">
+                      <ul
+                        className={`mt-4 flex flex-col gap-3 ${
+                          items.length > 3 ? "max-h-[26rem] overflow-y-auto pe-1" : ""
+                        }`}
+                      >
                         {items.map((item) => {
                           const order = orders.find((o) => o.id === item.orderId) ?? null;
                           // Two photos on the same order is one claim, not two
@@ -854,61 +862,101 @@ export default function ReceiptForm({
               )}
             </div>
 
-            <h3 className="mt-6 text-[15px] font-bold text-black">การอัปโหลดแต่ละครั้ง</h3>
-            <ul className="mt-3 flex flex-col gap-3">
-              {rows.map(({ key, at, entry, verdict, current }) => {
-                // The photo's own result heads the row; the receipt's status is
-                // a fact about the order, so it only belongs on the attempt the
-                // team is actually looking at.
-                const v = verdict
-                  ? AI_SHORT[verdict]
-                  : { label: "ไม่ได้ตรวจอัตโนมัติ", tone: "text-black/50" };
+            {/* One line per order, not one card per attempt.
+                A customer who buys every week and re-sends a photo now and
+                then had a page that grew by a card each time — twenty cards to
+                scroll through to find the one that was rejected. The order is
+                the thing they think in, so the order is the row, and the
+                attempts behind it open when there is a reason to look. */}
+            <h3 className="mt-6 text-[15px] font-bold text-black">ใบเสร็จที่ส่งไปแล้ว</h3>
+            <ul className="mt-3 flex flex-col gap-2">
+              {entries.map((entry) => {
+                const tries = rows.filter((r) => r.entry.id === entry.id);
+                const latest = tries[0];
                 const st = STATUS[entry.status];
+                const isOpen = openEntry === entry.id;
                 return (
-                  <li key={key} className="overflow-hidden rounded-2xl border border-black/10">
-                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-black/10 bg-black/[0.02] px-4 py-2.5">
-                      <span className={`text-[13px] font-bold ${v.tone}`}>{v.label}</span>
-                      <span className="text-[12px] tabular-nums text-black/50">{whenTime(at)}</span>
-                    </div>
+                  <li key={entry.id} className="overflow-hidden rounded-2xl border border-black/10">
+                    <button
+                      type="button"
+                      onClick={() => setOpenEntry(isOpen ? null : entry.id)}
+                      className="flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 text-left hover:bg-black/[0.02]"
+                    >
+                      <span className="text-[14px] font-bold text-black">{entry.orderNumber ?? "—"}</span>
+                      <span className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-bold ${st.tone}`}>
+                        <st.Icon size={12} aria-hidden /> {st.label}
+                      </span>
+                      <span className="text-[13px] text-black/55 tabular-nums">
+                        {formatTHB(entry.dentisteAmount)} · {entry.entries} สิทธิ์
+                      </span>
+                      <span className="ms-auto flex items-center gap-2 text-[12px] text-black/40">
+                        {tries.length > 1 && <span>ส่ง {tries.length} ครั้ง</span>}
+                        <span className="font-semibold text-black/45">{isOpen ? "ปิด" : "ดูรายละเอียด"}</span>
+                      </span>
+                    </button>
 
-                    <dl className="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-3 text-[13px] @lg:grid-cols-4">
-                      <div>
-                        <dt className="text-black/50">เลขคำสั่งซื้อ</dt>
-                        <dd className="mt-0.5 font-bold text-black">{entry.orderNumber ?? "—"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-black/50">สถานะ</dt>
-                        <dd className="mt-0.5 font-bold text-black">
-                          {current ? (
-                            <span className="inline-flex items-center gap-1">
-                              <st.Icon size={13} aria-hidden /> {st.label}
-                            </span>
-                          ) : (
-                            <span className="font-medium text-black/45">ถูกแทนที่</span>
-                          )}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-black/50">ยอดซื้อ DENTISTE&apos;</dt>
-                        <dd className="mt-0.5 font-bold text-black tabular-nums">{formatTHB(entry.dentisteAmount)}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-black/50">สิทธิ์ที่ได้</dt>
-                        <dd className="mt-0.5 font-bold text-black tabular-nums">{entry.entries} สิทธิ์</dd>
-                      </div>
-                    </dl>
-
-                    {!current && (
-                      <p className="border-t border-black/10 px-4 py-2 text-[12px] text-black/45">
-                        ถูกแทนที่ด้วยรูปที่ส่งทีหลัง — ทีมงานจะตรวจเฉพาะรูปล่าสุดของคำสั่งซื้อนี้
-                      </p>
-                    )}
-
-                    {current && entry.status === "rejected" && entry.rejectReason && (
-                      <p className="flex items-start gap-1.5 border-t border-black/10 px-4 py-3 text-[13px] text-rose-800">
+                    {/* The one thing worth saying without being asked. */}
+                    {entry.status === "rejected" && entry.rejectReason && (
+                      <p className="flex items-start gap-1.5 border-t border-black/10 bg-rose-50/60 px-4 py-2.5 text-[13px] text-rose-800">
                         <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
                         {entry.rejectReason} — ส่งรูปใหม่สำหรับคำสั่งซื้อนี้ได้เลย
                       </p>
+                    )}
+
+                    {isOpen && (
+                      <div className="border-t border-black/10 px-4 py-3">
+                        <dl className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-[13px] @sm:grid-cols-4">
+                          <div>
+                            <dt className="text-black/50">ยอดซื้อ DENTISTE&apos;</dt>
+                            <dd className="mt-0.5 font-bold text-black tabular-nums">{formatTHB(entry.dentisteAmount)}</dd>
+                          </div>
+                          {entry.keychainAmount > 0 && (
+                            <div>
+                              <dt className="text-black/50">Keychain</dt>
+                              <dd className="mt-0.5 font-bold text-black tabular-nums">{formatTHB(entry.keychainAmount)}</dd>
+                            </div>
+                          )}
+                          <div>
+                            <dt className="text-black/50">ยอดทั้งบิล</dt>
+                            <dd className="mt-0.5 text-black tabular-nums">
+                              {entry.orderTotal === null ? "—" : formatTHB(entry.orderTotal)}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-black/50">ส่งเมื่อ</dt>
+                            <dd className="mt-0.5 text-black">{when(entry.createdAt)}</dd>
+                          </div>
+                        </dl>
+
+                        {entry.status !== "rejected" &&
+                          entry.entries === 0 &&
+                          entry.dentisteAmount < GENERAL_THRESHOLD && (
+                            <p className="mt-3 text-[13px] text-black/60">
+                              ยอดซื้อ DENTISTE&apos; ของคำสั่งซื้อนี้ยังไม่ถึง {formatTHB(GENERAL_THRESHOLD)} จึงยังไม่ได้รับสิทธิ์
+                            </p>
+                          )}
+
+                        {tries.length > 0 && (
+                          <ul className="mt-3 flex flex-col gap-1.5 border-t border-black/10 pt-3">
+                            {tries.map((t) => {
+                              const v = t.verdict
+                                ? AI_SHORT[t.verdict]
+                                : { label: "ไม่ได้ตรวจอัตโนมัติ", tone: "text-black/50" };
+                              return (
+                                <li key={t.key} className="flex flex-wrap items-baseline gap-x-2 text-[12px]">
+                                  <span className="tabular-nums text-black/55">{whenTime(t.at)}</span>
+                                  <span className={`font-semibold ${v.tone}`}>{v.label}</span>
+                                  {t.key === latest?.key ? (
+                                    <span className="text-black/40">· รูปล่าสุด</span>
+                                  ) : (
+                                    <span className="text-black/40">· ถูกแทนที่</span>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
                     )}
                   </li>
                 );
