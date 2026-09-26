@@ -514,3 +514,18 @@
     0 0 0 1px rgba(16, 35, 28, 0.16),
     0 1px 2px rgba(16, 35, 28, 0.05);
 }
+
+/* A campaign page with the gradient background lets it through its own chrome,
+   so the colour reads as one field rather than a band between two white bars.
+   StoreHeader and StoreFooter are shared with /flash-sale, which has no
+   gradient, hence the scope.
+
+   Written here rather than as `[&_header]:bg-white/70` on the layout: that
+   arbitrary variant produced no CSS at all — the class landed in the HTML with
+   no rule behind it, which looks identical to working code right up until you
+   grep the stylesheet for it. */
+[data-campaign-shader] > header,
+[data-campaign-shader] > div > footer {
+  background-color: color-mix(in oklab, white 70%, transparent);
+  border-color: color-mix(in oklab, white 50%, transparent);
+}

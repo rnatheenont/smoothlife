@@ -34,17 +34,11 @@ export default async function CampaignChromeLayout({
     // The sheet keeps the reading surface white and lets the gradient have the
     // margins instead.
     <div
-      className={
-        shaderBackground
-          ? // The chrome goes translucent so the gradient is one field the page
-            // sits in, rather than a strip of colour between two white bars.
-            // Overridden from here because StoreHeader/StoreFooter are shared
-            // with /flash-sale, which has no gradient to show through them.
-            "relative flex min-h-dvh flex-col " +
-            "[&_header]:border-white/50 [&_header]:bg-white/70 " +
-            "[&_footer]:border-white/50 [&_footer]:bg-white/70"
-          : "relative flex min-h-dvh flex-col bg-white"
-      }
+      // data-campaign-shader, not a utility class: the chrome it makes
+      // translucent is rendered by StoreHeader/StoreFooter, which /flash-sale
+      // shares, so the rule lives in globals.css scoped to this attribute.
+      data-campaign-shader={shaderBackground ? "" : undefined}
+      className={`relative flex min-h-dvh flex-col ${shaderBackground ? "" : "bg-white"}`}
       style={
         {
           "--rc-accent": accent,
