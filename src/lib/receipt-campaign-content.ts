@@ -86,6 +86,14 @@ export type CampaignContent = {
    */
   accent: string;
   /**
+   * Whether the page draws the animated brand gradient behind its content.
+   *
+   * Per campaign, and off unless someone says otherwise: the page is a form
+   * somebody fills in from a phone, and a campaign that was designed on white
+   * paper should not wake up on a moving one because a column was added.
+   */
+  shaderBackground: boolean;
+  /**
    * The arithmetic.
    *
    * It used to live only in code, on the grounds that these numbers settle who
@@ -122,6 +130,7 @@ export const DEFAULT_CONTENT: CampaignContent = {
   storeUrl: `${STORE}/collections/all`,
   published: true,
   accent: DEFAULT_ACCENT,
+  shaderBackground: false,
   terms: [
     "ยอดช็อปทุกๆ 690 บาทต่อใบเสร็จ ได้รับ 1 สิทธิ์ ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้",
     "ยอดช็อป Set Keychain 990 บาทต่อใบเสร็จ ได้รับ 3 สิทธิ์ ทั้งนี้ไม่สามารถรวมยอดจากหลายใบเสร็จได้",
@@ -144,6 +153,7 @@ type Row = {
   store_url: string | null;
   published: boolean | null;
   accent_color: string | null;
+  shader_background: boolean | null;
   general_threshold: number | string | null;
   keychain_price: number | string | null;
   keychain_entries: number | null;
@@ -175,7 +185,7 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
   if (!supabaseConfigured()) return DEFAULT_CONTENT;
   const [row] = await supabaseRest<Row[]>(
     `receipt_campaign_settings?campaign_key=eq.${pgValue(campaignKey)}` +
-      `&select=eyebrow,title,intro,opens_at,closes_at,announce_at,confirm_deadline,steps,terms,store_url,published,accent_color,` +
+      `&select=eyebrow,title,intro,opens_at,closes_at,announce_at,confirm_deadline,steps,terms,store_url,published,accent_color,shader_background,` +
       `general_threshold,keychain_price,keychain_entries,tiered,stacks,rounding,keychain_slugs&limit=1`
   ).catch(() => [] as Row[]);
   if (!row) return DEFAULT_CONTENT;
@@ -200,6 +210,9 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
     // existed is a campaign that has been live for weeks.
     published: row.published !== false,
     accent: accentOf(row.accent_color, DEFAULT_CONTENT.accent),
+    // Only an explicit true turns it on, so a row written before the column
+    // existed reads as the white page it has always been.
+    shaderBackground: row.shader_background === true,
     rules: {
       generalThreshold: num(row.general_threshold, DEFAULT_RULES.generalThreshold),
       keychainPrice: num(row.keychain_price, DEFAULT_RULES.keychainPrice),

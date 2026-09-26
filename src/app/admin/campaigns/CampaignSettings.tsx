@@ -32,6 +32,7 @@ type Content = {
   terms: string[];
   storeUrl: string;
   accent: string;
+  shaderBackground: boolean;
   rules: Rules;
 };
 
@@ -133,6 +134,7 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
           terms: content.terms.filter((t) => t.trim()),
           storeUrl: content.storeUrl,
           accent: content.accent,
+          shaderBackground: content.shaderBackground,
           rules: content.rules,
         }),
       });
@@ -182,6 +184,21 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
             </span>
             <span className="mt-1 block text-[11px] text-slate-500">
               ใช้กับหัวข้อ ไอคอนขั้นตอน และปุ่มส่งใบเสร็จ — ตั้งให้ตรงกับหน้า flash sale ของแคมเปญเดียวกันจะดูเป็นงานเดียวกัน
+            </span>
+          </label>
+          <label className="flex items-start gap-2.5">
+            <input
+              type="checkbox"
+              checked={content.shaderBackground}
+              onChange={(e) => set("shaderBackground", e.target.checked)}
+              className="mt-0.5 size-4 shrink-0 cursor-pointer accent-brand-800"
+            />
+            <span className="block">
+              <span className="block text-[12px] font-semibold text-slate-500">พื้นหลังไล่สีแบบเคลื่อนไหว</span>
+              <span className="mt-0.5 block text-[11px] text-slate-500">
+                แทนพื้นขาวของหน้ากิจกรรมด้วยไล่สีแบรนด์ที่ขยับช้า ๆ — เนื้อหายังอยู่บนการ์ดขาวเหมือนเดิม
+                เครื่องที่ตั้งค่า “ลดการเคลื่อนไหว” จะเห็นเป็นภาพนิ่ง
+              </span>
             </span>
           </label>
           <label className="block">

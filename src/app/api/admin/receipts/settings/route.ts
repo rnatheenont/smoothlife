@@ -131,6 +131,9 @@ export async function PUT(req: NextRequest) {
     // campaign already had rather than sending customers off-site.
     store_url: storeUrlOf(text(body.storeUrl, 300), DEFAULT_CONTENT.storeUrl),
     accent_color: accentOf(text(body.accent, 7), DEFAULT_CONTENT.accent),
+    // Decoration, so it takes the cautious reading of anything that is not a
+    // plain true — a malformed save should leave the page on white paper.
+    shader_background: body.shaderBackground === true,
     updated_at: new Date().toISOString(),
     updated_by: getAdminSession(req.cookies.get(ADMIN_COOKIE)?.value)?.userId ?? null,
   };
