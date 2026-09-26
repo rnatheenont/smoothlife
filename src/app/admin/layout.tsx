@@ -54,8 +54,10 @@ type NavItem = {
 // payment gateway; "Widgets" named a React concept; "สัญญาณแบรนด์" named
 // nothing anyone would search for. The pages did not change, only what the
 // menu calls them.
-/** One screen for every receipt campaign, so it is named for the kind. */
-const RECEIPTS_LABEL = "กิจกรรม";
+/** One screen for every receipt campaign, so it is named for the kind. The
+ *  route matches the address it manages — /admin/campaigns runs the campaigns
+ *  customers reach at /campaigns/<key>. */
+const CAMPAIGNS_LABEL = "กิจกรรม";
 
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
@@ -89,7 +91,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "การขาย & โปรโมชั่น",
     items: [
       { href: "/admin/flash-sale", label: "Campaigns", icon: Zap, permission: "flash_sale.view" },
-      { href: "/admin/receipts", label: RECEIPTS_LABEL, icon: Receipt, permission: "receipts.view" },
+      { href: "/admin/campaigns", label: CAMPAIGNS_LABEL, icon: Receipt, permission: "receipts.view" },
       { href: "/admin/free-gifts", label: "ของแถม & โปรโมชั่น", icon: Gift, permission: "free_gifts.manage" },
       {
         href: "/admin/free-gifts/widgets",
@@ -154,7 +156,7 @@ const FULL_WIDTH = [
   "/admin/knowledge-base",
   "/admin/line-rich-menu",
   "/admin/flash-sale",
-  "/admin/receipts",
+  "/admin/campaigns",
   "/admin/inbox",
   "/admin/seo",
   "/admin/brand-insights",

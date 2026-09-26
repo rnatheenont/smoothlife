@@ -62,6 +62,14 @@ const nextConfig = {
     // rendering. Serving originals directly removes that failure mode.
     unoptimized: true,
   },
+  // The campaigns console moved from /admin/receipts to /admin/campaigns, to
+  // match the /campaigns/<key> addresses it manages. The old path is in the
+  // team's bookmarks and browser history, so it answers rather than 404s.
+  // Temporary (307), not permanent: a 308 is cached by the browser forever and
+  // would outlive the rename if the path is ever wanted back.
+  async redirects() {
+    return [{ source: "/admin/receipts", destination: "/admin/campaigns", permanent: false }];
+  },
   async headers() {
     return [
       // The live skin scan's face model and WASM runtime (~7 MB compressed
