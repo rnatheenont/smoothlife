@@ -90,7 +90,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "การขาย & โปรโมชั่น",
     items: [
-      { href: "/admin/flash-sale", label: "Campaigns", icon: Zap, permission: "flash_sale.view" },
+      { href: "/admin/flash-sale", label: "Events", icon: Zap, permission: "flash_sale.view" },
       { href: "/admin/campaigns", label: CAMPAIGNS_LABEL, icon: Receipt, permission: "receipts.view" },
       { href: "/admin/free-gifts", label: "ของแถม & โปรโมชั่น", icon: Gift, permission: "free_gifts.manage" },
       {
