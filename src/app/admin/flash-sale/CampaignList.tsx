@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Eye, EyeOff, Loader2, MoreHorizontal, Pencil, PlayCircle, RefreshCw, Trash2 } from "lucide-react";
-import { Panel, SectionTitle, adminTable } from "@/components/admin/layout-kit";
+import { Panel, adminTable } from "@/components/admin/layout-kit";
 
 /** The whole DTO: the edit form is handed the campaign exactly as it is stored. */
 type Campaign = {
@@ -175,25 +175,28 @@ export default function CampaignList() {
   const sorted = campaigns ? [...campaigns].sort((a, b) => b.startsAt - a.startsAt) : null;
 
   return (
-    <Panel>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <SectionTitle>แคมเปญที่สร้างไว้</SectionTitle>
+    // The title and the refresh button go through Panel's own header rather
+    // than being laid out inside the body: the body's padding is off so the
+    // table can reach the edges, and a hand-rolled header inherited that.
+    <Panel
+      title="แคมเปญที่สร้างไว้"
+      toolbar={
         <button
           type="button"
           onClick={load}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 rounded-full border border-surface-line px-3 py-1.5 text-[12px] font-semibold text-brand-ink hover:bg-surface-soft disabled:opacity-50"
+          className="ms-auto inline-flex items-center gap-1.5 rounded-full border border-surface-line px-3 py-1.5 text-[12px] font-semibold text-brand-ink hover:bg-surface-soft disabled:opacity-50"
         >
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} aria-hidden /> รีเฟรช
         </button>
-      </div>
+      }
+    >
+      {error && <p className="m-3 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{error}</p>}
 
-      {error && <p className="rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{error}</p>}
-
-      {!error && sorted === null && <p className="text-[13px] text-slate-400">กำลังโหลด…</p>}
+      {!error && sorted === null && <p className="p-4 text-[13px] text-slate-400">กำลังโหลด…</p>}
 
       {!error && sorted?.length === 0 && (
-        <p className="text-[13px] text-slate-500">ยังไม่มีแคมเปญ — กด “สร้างแคมเปญจริง” ด้านบนเพื่อเริ่ม</p>
+        <p className="p-4 text-[13px] text-slate-500">ยังไม่มีแคมเปญ — กด “สร้างแคมเปญจริง” ด้านบนเพื่อเริ่ม</p>
       )}
 
       {!error && sorted && sorted.length > 0 && (
