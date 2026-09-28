@@ -136,9 +136,6 @@ export default async function Page({
               </li>
             ))}
           </ul>
-          <p className="mt-5 text-[13px] leading-relaxed text-black/50">
-            ประกาศผล {label.announce} เวลา 18:00 น. · ยืนยันสิทธิ์ภายใน {label.confirm}
-          </p>
         </section>
       )}
     </div>
