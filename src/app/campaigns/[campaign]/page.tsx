@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { CalendarDays, Gift, Receipt, Ticket } from "lucide-react";
@@ -64,12 +65,30 @@ export default async function Page({
       </div>
 
       <ol className="mt-10 grid gap-4 sm:grid-cols-3">
-        {steps.map(({ Icon, title, body }, i) => (
-          <li key={title} className="flex gap-4 rounded-2xl border border-black/10 bg-white p-5 sm:flex-col sm:gap-3">
-            <div className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--rc-wash)] text-[var(--rc-ink)]">
-              <Icon size={18} aria-hidden />
-            </div>
-            <div>
+        {steps.map(({ Icon, title, body, image }, i) => (
+          <li
+            key={title}
+            className={`flex gap-4 rounded-2xl border border-black/10 bg-white sm:flex-col sm:gap-3 ${
+              image ? "overflow-hidden p-0 sm:pb-5" : "p-5"
+            }`}
+          >
+            {/* The campaign's own artwork where there was a generic glyph.
+                Across the top of the card on a wide screen, beside the text
+                on a narrow one — the row is already side by side there. */}
+            {image ? (
+              <Image
+                src={image}
+                alt=""
+                width={640}
+                height={360}
+                className="h-full w-28 shrink-0 object-cover sm:h-32 sm:w-full"
+              />
+            ) : (
+              <div className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--rc-wash)] text-[var(--rc-ink)]">
+                <Icon size={18} aria-hidden />
+              </div>
+            )}
+            <div className={image ? "py-5 pe-5 sm:px-5 sm:py-0" : ""}>
               <p className="text-[15px] font-bold text-black">
                 {i + 1}. {title}
               </p>

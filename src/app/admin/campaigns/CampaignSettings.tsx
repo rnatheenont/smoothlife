@@ -10,7 +10,7 @@ import { Panel } from "@/components/admin/layout-kit";
 // filter uses, so moving it changes which orders count. That is said on the
 // screen rather than left to be discovered.
 
-type Step = { title: string; body: string };
+type Step = { title: string; body: string; image?: string | null };
 type Rules = {
   generalThreshold: number;
   keychainPrice: number;
@@ -76,6 +76,8 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
   const [pickingKeychain, setPickingKeychain] = useState(false);
   const [keychainSearch, setKeychainSearch] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
+  /** Which step is uploading, so only its button says so. */
+  const [uploading, setUploading] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -94,6 +96,26 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
     // eslint-disable-next-line react-hooks/set-state-in-effect -- first load
     load();
   }, [load]);
+
+  /** Puts a picture on one step. The URL is the server's; the form never invents one. */
+  async function uploadStepImage(index: number, file: File) {
+    setUploading(index);
+    setNotice(null);
+    try {
+      const body = new FormData();
+      body.append("image", file);
+      const res = await fetch("/api/admin/receipts/upload-image", { method: "POST", body });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "อัปโหลดรูปไม่สำเร็จ");
+      setContent((c) =>
+        c ? { ...c, steps: c.steps.map((s, i) => (i === index ? { ...s, image: json.url as string } : s)) } : c
+      );
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "อัปโหลดรูปไม่สำเร็จ");
+    } finally {
+      setUploading(null);
+    }
+  }
 
   if (state === "loading") {
     return (
@@ -276,6 +298,46 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
                   set("steps", next);
                 }}
               />
+              {/* A picture in place of the generic icon. The campaign's own
+                  artwork says more in the same space than a receipt glyph. */}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {step.image && (
+                  // eslint-disable-next-line @next/next/no-img-element -- an uploaded URL, sized by CSS
+                  <img
+                    src={step.image}
+                    alt=""
+                    className="h-12 w-20 rounded-l border border-surface-line object-cover"
+                  />
+                )}
+                <label className="inline-flex min-h-9 cursor-pointer items-center rounded-full border border-surface-line px-3 text-[12px] font-semibold text-brand-ink hover:bg-surface-soft">
+                  {uploading === i ? "กำลังอัปโหลด…" : step.image ? "เปลี่ยนรูป" : "อัปโหลดรูป"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    disabled={uploading !== null}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (file) uploadStepImage(i, file);
+                    }}
+                  />
+                </label>
+                {step.image && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = [...content.steps];
+                      next[i] = { ...step, image: null };
+                      set("steps", next);
+                    }}
+                    className="min-h-9 rounded-full px-3 text-[12px] font-semibold text-slate-500 hover:text-brand-ink"
+                  >
+                    ลบรูป
+                  </button>
+                )}
+                <span className="text-[11px] text-slate-500">แนวนอน ~16:9 · ไม่เกิน 5MB · เว้นว่างจะใช้ไอคอนแทน</span>
+              </div>
             </div>
           ))}
         </div>
