@@ -66,6 +66,9 @@ export type FlashSalePaymentStats = {
   pressed_pay: number;
   attempts: number;
   paid: number;
+  /** Baht actually taken, and baht sitting in payment pages nobody finished. */
+  paid_amount: number;
+  open_amount: number;
   failed: number;
   /** Payment pages opened and never finished — still pending. */
   open: number;

@@ -61,13 +61,14 @@ const clock = (iso: string) =>
 function funnel(s: FlashSalePaymentStats) {
   const share = (n: number, of: number) => (of > 0 ? Math.round((n / of) * 100) : null);
   return [
-    { key: "turns", label: "ถึงคิวแล้ว", value: s.turns, share: null as number | null, rule: "bg-slate-300", note: "ได้สิทธิ์ซื้อ" },
+    { key: "turns", label: "ถึงคิวแล้ว", value: s.turns, share: null as number | null, rule: "bg-slate-300", money: null as number | null, note: "ได้สิทธิ์ซื้อ" },
     {
       key: "pressed",
       label: "กดชำระเงิน",
       value: s.pressed_pay,
       share: share(s.pressed_pay, s.turns),
       rule: "bg-brand-800",
+      money: null,
       note: `${s.attempts} ครั้ง`,
     },
     {
@@ -76,7 +77,10 @@ function funnel(s: FlashSalePaymentStats) {
       value: s.paid,
       share: share(s.paid, s.pressed_pay),
       rule: "bg-emerald-500",
-      note: s.median_seconds_to_pay !== null ? `เฉลี่ย ${mmss(s.median_seconds_to_pay)}` : "—",
+      // The number everyone actually came for. A count of sales on a page about
+      // ฿55,000 a piece was the one thing here nobody could read off it.
+      money: s.paid_amount,
+      note: s.median_seconds_to_pay !== null ? `เฉลี่ย ${mmss(s.median_seconds_to_pay)}` : "ยังไม่มียอดขาย",
     },
     {
       key: "stuck",
@@ -84,6 +88,7 @@ function funnel(s: FlashSalePaymentStats) {
       value: s.open + s.failed,
       share: null,
       rule: s.failed > 0 ? "bg-rose-500" : "bg-amber-400",
+      money: s.open_amount,
       note: `ค้าง ${s.open} · ไม่สำเร็จ ${s.failed}`,
     },
   ];
@@ -325,6 +330,11 @@ export default function LiveMonitor({
                       </span>
                     )}
                   </p>
+                  {step.money !== null && (
+                    <p className={`mt-0.5 text-sm font-bold tabular-nums ${step.key === "paid" ? "text-emerald-600" : "text-slate-500"}`}>
+                      {baht(step.money)}
+                    </p>
+                  )}
                   <p className="mt-0.5 text-[11px] text-slate-400">{step.note}</p>
                 </li>
               ))}
