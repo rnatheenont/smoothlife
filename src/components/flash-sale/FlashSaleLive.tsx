@@ -572,7 +572,12 @@ export default function FlashSaleLive({
                 one decorative thing here — and it stops entirely for anyone who
                 has asked for less motion. */}
             {!reducedMotion && (
-              <>
+              // Clipped to the card. The beam is a 220px square travelling the
+              // card's edge: the mask hides the part outside the border, but the
+              // element is still there as far as the page's scroll width is
+              // concerned, and on a phone that was ninety-four pixels of
+              // sideways scroll on every screen of the page.
+              <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
                 <BorderBeam
                   duration={8}
                   size={220}
@@ -586,7 +591,7 @@ export default function FlashSaleLive({
                   borderWidth={2}
                   className="from-transparent via-[var(--fs-accent)] to-transparent"
                 />
-              </>
+              </div>
             )}
             <div className="relative aspect-square overflow-hidden rounded-2xl bg-[linear-gradient(160deg,#f7f1ff,#ffffff)]">
               <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 45vw" className="rounded-2xl object-contain p-4 md:p-6" priority />
