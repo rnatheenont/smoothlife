@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { Eye, X } from "lucide-react";
+
 
 // The parts that make a "special" campaign look like a ticket drop rather than
 // a plain flash sale: the full-bleed key visual, the big countdown, and the
@@ -48,11 +48,11 @@ export function SpecialHero({
   align = "top",
 }: {
   image: string | null;
-  headline: string;
+  /** Empty means the banner is shown on its own, with no type over it. */
+  headline: string | null;
   note: string | null;
   align?: HeroAlign;
 }) {
-  const [showTitle, setShowTitle] = useState(true);
 
   // The frame takes the artwork's shape, so nothing is cut off.
   //
@@ -99,30 +99,24 @@ export function SpecialHero({
         ) : (
           <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_50%_120%,var(--fs-accent),#01010c_65%)]" aria-hidden />
         )}
-        <div
-          className={`absolute transition-opacity duration-300 ${HERO_SCRIM[align]} ${showTitle ? "opacity-100" : "opacity-0"}`}
-          aria-hidden
-        />
-        <div
-          className={`absolute inset-0 flex flex-col items-center px-6 text-center transition-opacity duration-300 ${HERO_POSITION[align]} ${
-            showTitle ? "opacity-100" : "pointer-events-none opacity-0"
-          }`}
-        >
-          <h1 className="text-2xl font-extrabold uppercase tracking-[0.18em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] sm:text-4xl lg:text-5xl">
-            {headline}
-          </h1>
-          {note && <p className="mt-2 text-xs text-white/85 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] sm:text-sm">{note}</p>}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setShowTitle((v) => !v)}
-          aria-pressed={!showTitle}
-          aria-label={showTitle ? "ซ่อนหัวข้อเพื่อดูภาพเต็ม" : "แสดงหัวข้อ"}
-          className="absolute end-3 top-3 z-10 grid size-9 place-items-center rounded-full bg-black/35 text-white backdrop-blur transition hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-        >
-          {showTitle ? <X size={16} /> : <Eye size={16} />}
-        </button>
+        {/* Whether the artwork carries type over it is the campaign's
+            decision, not the visitor's — a close button on it only offered
+            them a choice about someone else's layout. Clearing the headline
+            in the console is what turns it off now, and a banner made with
+            its own lettering can be shown exactly as it was drawn. */}
+        {headline && (
+          <>
+            <div className={`absolute ${HERO_SCRIM[align]}`} aria-hidden />
+            <div className={`absolute inset-0 flex flex-col items-center px-6 text-center ${HERO_POSITION[align]}`}>
+              <h1 className="text-2xl font-extrabold uppercase tracking-[0.18em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] sm:text-4xl lg:text-5xl">
+                {headline}
+              </h1>
+              {note && (
+                <p className="mt-2 text-xs text-white/85 drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] sm:text-sm">{note}</p>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </header>
   );

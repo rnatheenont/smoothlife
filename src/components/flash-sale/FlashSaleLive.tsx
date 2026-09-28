@@ -504,7 +504,9 @@ export default function FlashSaleLive({
         className="bg-white pb-16"
         style={accentStyle}
       >
-        <SpecialHero image={theme.heroImage} headline={theme.heroHeadline || title} note={theme.heroNote} align={theme.heroAlign} />
+        {/* No fallback to the campaign title: an empty headline field is how
+            the console says "show the artwork and nothing else". */}
+        <SpecialHero image={theme.heroImage} headline={theme.heroHeadline} note={theme.heroNote} align={theme.heroAlign} />
 
         <div className="mx-auto w-full max-w-6xl px-4">
           {paymentTimer}
