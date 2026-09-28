@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Alert, Button, Card, Chip } from "@heroui/react";
-import { ExternalLink, Radio } from "lucide-react";
-import type { FlashSaleMonitor } from "@/lib/flash-sale";
+import { CreditCard, ExternalLink, Radio } from "lucide-react";
+import type { FlashSaleMonitor, FlashSalePaymentStats } from "@/lib/flash-sale";
 import type { Monitor } from "./use-monitors";
 
 const STATUS_TH: Record<string, string> = {
@@ -23,6 +23,39 @@ const PHASE: Record<FlashSaleMonitor["campaign"]["phase"], { label: string; colo
 };
 
 const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.max(0, s) % 60).padStart(2, "0")}`;
+
+const ATTEMPT: Record<string, { label: string; color: "success" | "danger" | "warning" | "default" }> = {
+  success: { label: "จ่ายสำเร็จ", color: "success" },
+  failed: { label: "ไม่สำเร็จ", color: "danger" },
+  pending: { label: "เปิดหน้าจ่ายแล้ว", color: "warning" },
+};
+
+/**
+ * Queue → button → money, as four numbers that only mean anything next to each
+ * other. The last one is money that arrived and has nowhere to go, so it is
+ * the one allowed to shout.
+ */
+function funnel(s: FlashSalePaymentStats) {
+  const pct = (n: number, of: number) => (of > 0 ? `${Math.round((n / of) * 100)}%` : null);
+  return [
+    { label: "ถึงคิวแล้ว", value: s.turns, of: null as string | null, note: null as string | null, alarm: false },
+    { label: "กดชำระเงิน", value: s.pressed_pay, of: pct(s.pressed_pay, s.turns), note: `${s.attempts} ครั้ง`, alarm: false },
+    {
+      label: "จ่ายสำเร็จ",
+      value: s.paid,
+      of: pct(s.paid, s.pressed_pay),
+      note: s.median_seconds_to_pay !== null ? `ใช้เวลาเฉลี่ย ${mmss(s.median_seconds_to_pay)}` : null,
+      alarm: false,
+    },
+    {
+      label: "ค้างอยู่ / ไม่สำเร็จ",
+      value: s.open + s.failed,
+      of: null,
+      note: `ค้าง ${s.open} · ไม่สำเร็จ ${s.failed} · Shopify ${s.via_shopify} · 2C2P ${s.via_2c2p}`,
+      alarm: s.failed > 0,
+    },
+  ];
+}
 
 /** Admin: the real queue for one campaign, polled with every other open one. */
 
@@ -198,6 +231,76 @@ export default function LiveMonitor({
               </li>
             ))}
           </ul>
+
+          {data.payments && (
+            <div className="mt-5 rounded-xl2 ring-1 ring-surface-line">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-surface-line px-4 py-3">
+                <h4 className="flex items-center gap-2 text-sm font-bold text-brand-ink">
+                  <CreditCard size={15} className="text-brand-800" aria-hidden /> การชำระเงิน
+                </h4>
+                <p className="text-[11px] text-slate-500">
+                  ถึงคิวแล้วเกิดอะไรขึ้นต่อ — ตัวเลขนับทั้งแคมเปญ ไม่ใช่เฉพาะตอนนี้
+                </p>
+              </div>
+
+              {/* Where a queue stops being a queue and starts being money, in the
+                  order it actually happens. A drop between two of these is the
+                  only thing on this page that says what to go and fix. */}
+              <ol className="grid grid-cols-2 gap-px bg-surface-line @2xl:grid-cols-4">
+                {funnel(data.payments.stats).map((step) => (
+                  <li key={step.label} className="bg-white px-4 py-3">
+                    <p className="text-xs text-slate-500">{step.label}</p>
+                    <p className="mt-0.5 flex items-baseline gap-1.5">
+                      <span className={`text-2xl font-extrabold tabular-nums ${step.alarm ? "text-rose-600" : "text-brand-ink"}`}>
+                        {step.value}
+                      </span>
+                      {step.of !== null && <span className="text-[11px] tabular-nums text-slate-400">{step.of}</span>}
+                    </p>
+                    {step.note && <p className="mt-0.5 text-[11px] text-slate-500">{step.note}</p>}
+                  </li>
+                ))}
+              </ol>
+
+              {data.payments.stats.no_address > 0 && (
+                <p className="border-t border-surface-line bg-amber-50/60 px-4 py-2.5 text-[11px] leading-relaxed text-amber-900">
+                  {data.payments.stats.no_address} คนที่ถึงคิวยังไม่มีที่อยู่บันทึกไว้ในระบบ — แคมเปญที่ชำระผ่าน 2C2P
+                  ต้องกรอกที่อยู่ให้ครบก่อนจึงกดปุ่มชำระเงินได้ ถ้าคนกลุ่มนี้หลุดเยอะผิดปกติ นี่คือจุดที่ควรดูก่อน
+                </p>
+              )}
+
+              <div className="px-4 py-3">
+                <p className="text-xs font-semibold text-slate-500">
+                  ทุกครั้งที่กดชำระเงิน ({data.payments.attempts.length}
+                  {data.payments.stats.attempts > data.payments.attempts.length ? ` จาก ${data.payments.stats.attempts}` : ""})
+                </p>
+                {data.payments.attempts.length === 0 ? (
+                  <p className="mt-3 text-sm text-slate-500">ยังไม่มีใครกดชำระเงิน</p>
+                ) : (
+                  <ul className="mt-2 flex max-h-80 flex-col divide-y divide-surface-line overflow-y-auto">
+                    {data.payments.attempts.map((a) => (
+                      <li key={a.invoice_no} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2 text-sm">
+                        <span className="w-12 shrink-0 text-xs tabular-nums text-slate-400">
+                          {new Date(a.created_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" })}
+                        </span>
+                        <Chip size="sm" variant="soft" color={ATTEMPT[a.status]?.color ?? "default"}>
+                          {ATTEMPT[a.status]?.label ?? a.status}
+                        </Chip>
+                        <span className="tabular-nums text-brand-ink">฿{a.amount.toLocaleString("th-TH")}</span>
+                        <span className="text-[11px] text-slate-500">{a.via === "shopify" ? "Shopify" : "2C2P"}</span>
+                        {a.position !== null && <span className="text-[11px] tabular-nums text-slate-400">#{a.position}</span>}
+                        {a.order && <span className="text-[11px] font-semibold text-brand-800">{a.order}</span>}
+                        <span className="w-full text-[11px] text-slate-400">
+                          {a.invoice_no}
+                          {a.note ? ` · ${a.note}` : ""}
+                          {a.refund_note ? ` · ⚠️ ${a.refund_note}` : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="mt-5 grid gap-5 @3xl:grid-cols-2">
             <div>

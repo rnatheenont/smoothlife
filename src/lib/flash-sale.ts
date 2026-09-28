@@ -58,6 +58,28 @@ export const JOIN_ERROR_TH: Record<JoinError, string> = {
 const rpc = <T>(fn: string, args: Record<string, unknown>) =>
   supabaseRest<T>(`rpc/${fn}`, { method: "POST", body: JSON.stringify(args) });
 
+/** Admin: how a campaign's queue turns into money, and where it stops. */
+export type FlashSalePaymentStats = {
+  /** People who ever reached their turn. */
+  turns: number;
+  /** Of those, how many pressed ชำระเงิน at least once. */
+  pressed_pay: number;
+  attempts: number;
+  paid: number;
+  failed: number;
+  /** Payment pages opened and never finished — still pending. */
+  open: number;
+  via_shopify: number;
+  via_2c2p: number;
+  /** Of the people who reached their turn, how many have no usable saved address. */
+  no_address: number;
+  median_seconds_to_pay: number | null;
+};
+
+export function flashSalePaymentStats(campaignId: string) {
+  return rpc<FlashSalePaymentStats>("fs_admin_payment_stats", { p_campaign: campaignId });
+}
+
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function flashSaleStatus(campaignId: string, userId: string | null) {

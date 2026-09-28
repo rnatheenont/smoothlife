@@ -4,6 +4,7 @@ import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { flashSaleMonitor, UUID_RE } from "@/lib/flash-sale";
 import { sharedSourcesFor } from "@/lib/flash-sale-sources";
 import { raiseSoldToShopify } from "@/lib/flash-sale-sold";
+import { monitorPayments } from "@/lib/flash-sale-monitor-payments";
 
 // Admin: live numbers for several campaigns in one request. The console can
 // have any number of campaign queues unfolded at once, and each one polling
@@ -21,6 +22,10 @@ export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
   const ids = [...new Set((req.nextUrl.searchParams.get("ids") ?? "").split(",").filter((id) => UUID_RE.test(id)))].slice(0, MAX_CAMPAIGNS);
+  // The payment funnel is two more queries per campaign per cycle, which is
+  // worth it for the one sale somebody is sitting and watching and not for a
+  // list of twelve. The campaign's own page asks for it; the console does not.
+  const detail = req.nextUrl.searchParams.get("detail") === "1" && ids.length === 1;
   if (ids.length === 0) return NextResponse.json({ ok: true, monitors: {} }, { headers: { "Cache-Control": "no-store" } });
 
   try {
@@ -43,10 +48,11 @@ export async function GET(req: NextRequest) {
         // Same reckoning the sale page uses: two screens disagreeing about
         // one sale is worse than either being a minute stale.
         await raiseSoldToShopify(id, monitor.campaign.starts_at, monitor.products);
+        const payments = detail ? await monitorPayments(id) : null;
         const refunds = refundRows
           .filter((r) => r.flash_sale_queue?.campaign_id === id)
           .map(({ invoice_no, amount, refund_note }) => ({ invoice_no, amount, refund_note }));
-        return [id, { ...monitor, refunds, sharedSources: shared[id] ?? [] }] as const;
+        return [id, { ...monitor, refunds, sharedSources: shared[id] ?? [], payments }] as const;
       })
     );
 

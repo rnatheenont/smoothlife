@@ -12,7 +12,7 @@ import { useMonitors } from "@/components/flash-sale-demo/use-monitors";
 // running is a thing somebody sits and watches, so it gets a page.
 
 export default function CampaignMonitor({ id, names }: { id: string; names: Record<string, string> }) {
-  const { monitors, error, reload } = useMonitors([id]);
+  const { monitors, error, reload } = useMonitors([id], { detail: true });
   const data = monitors[id] ?? null;
 
   if (!data && !error) {

@@ -4,6 +4,7 @@ import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { flashSaleMonitor, UUID_RE } from "@/lib/flash-sale";
 import { sharedSourcesFor } from "@/lib/flash-sale-sources";
 import { raiseSoldToShopify } from "@/lib/flash-sale-sold";
+import { monitorPayments } from "@/lib/flash-sale-monitor-payments";
 
 // Admin: live numbers for one campaign from the real queue.
 
@@ -26,12 +27,14 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       `payment_transactions?refund_note=like.FLASH_SALE_*&status=eq.success&select=invoice_no,amount,refund_note,flash_sale_queue!inner(campaign_id)&flash_sale_queue.campaign_id=eq.${pgValue(id)}&order=confirmed_at.desc&limit=50`
     ).catch(() => []);
     const sharedSources = (await sharedSourcesFor([id]))[id] ?? [];
+    const payments = await monitorPayments(id);
 
     return NextResponse.json(
       {
         ok: true,
         ...monitor,
         sharedSources,
+        payments,
         refunds: refunds.map(({ invoice_no, amount, refund_note }) => ({ invoice_no, amount, refund_note })),
       },
       { headers: { "Cache-Control": "no-store" } }
