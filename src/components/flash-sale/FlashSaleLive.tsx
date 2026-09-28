@@ -205,7 +205,11 @@ export default function FlashSaleLive({
   const reserved = me?.status === "reserved";
   const secondsLeft = reserved ? (me.seconds_left ?? 0) - elapsed : 0;
   const windowSeconds = (status?.campaign.window_minutes ?? 15) * 60;
-  const remaining = stock ? stock.total - stock.sold : null;
+  // What someone arriving now could still get — which is not "total minus
+  // sold": a slot somebody is holding is spoken for, and the bar underneath
+  // has been drawing it in amber all along. The number said 25 left while
+  // ten of them were in other people's hands.
+  const remaining = stock ? Math.max(0, stock.total - stock.sold - stock.reserved) : null;
 
   const startsMs = status ? Date.parse(status.campaign.starts_at) : 0;
   const endsMs = status?.campaign.ends_at ? Date.parse(status.campaign.ends_at) : null;
@@ -411,7 +415,8 @@ export default function FlashSaleLive({
       image: p.image,
       pay,
       was,
-      remaining: s ? s.total - s.sold : null,
+      // Same reckoning as the single-product panel: held slots are not left.
+      remaining: s ? Math.max(0, s.total - s.sold - s.reserved) : null,
       soldOut: Boolean(s && s.sold >= s.total),
       disabled: Boolean(mySlug) && p.slug !== mySlug,
     };
