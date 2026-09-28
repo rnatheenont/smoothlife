@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { amountsFromLineItems, computeEntries, type LineItem } from "@/lib/receipt-campaign";
-import { orderPaymentByGid } from "@/lib/shopify-admin";
+import { ordersByName, normalizeOrderName, orderPaymentByGid } from "@/lib/shopify-admin";
 import { loadCampaignContent } from "@/lib/receipt-campaign-content";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
@@ -188,11 +188,12 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       status: string;
       payment_transaction_id: string | null;
       manual_receipt_no: string | null;
+      declared_order_number: string | null;
       payment_transactions: { shopify_order_id: string | null } | null;
     }[]
   >(
     `receipt_campaign_entries?id=eq.${pgValue(id)}&campaign_key=eq.${CAMPAIGN}` +
-      `&select=id,computed_entries,status,payment_transaction_id,manual_receipt_no,payment_transactions(shopify_order_id)&limit=1`
+      `&select=id,computed_entries,status,payment_transaction_id,manual_receipt_no,declared_order_number,payment_transactions(shopify_order_id)&limit=1`
   );
   if (!entry) return NextResponse.json({ ok: false, error: "ไม่พบใบเสร็จรายการนี้" }, { status: 404 });
   if (entry.status !== "pending_review") {
@@ -219,6 +220,25 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       { ok: false, error: "ใบเสร็จเคสพิเศษไม่มีคำสั่งซื้อให้คำนวณ กรุณาระบุจำนวนสิทธิ์เอง" },
       { status: 400 }
     );
+  }
+
+  // A special case whose number does turn out to be an order in the shop is
+  // only special in that we never recorded the purchase — the money is as
+  // checkable as any other, and approving a refunded one hands out entries
+  // for a purchase that was handed back. The screen says the same thing; this
+  // is here so it is true whatever the screen was showing.
+  if (action === "approve" && manual) {
+    const key = normalizeOrderName(entry.manual_receipt_no ?? entry.declared_order_number);
+    const claimed = key ? (await ordersByName([key]).catch(() => new Map())).get(key) : null;
+    if (claimed && claimed.financialStatus !== "PAID") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `อนุมัติไม่ได้ — คำสั่งซื้อ ${claimed.name} ในร้านอยู่ในสถานะ ${claimed.financialStatus ?? "ไม่ทราบ"} ไม่ใช่ PAID`,
+        },
+        { status: 409 }
+      );
+    }
   }
 
   if (action === "approve" && !manual) {

@@ -37,8 +37,28 @@ const AI_DOT: Record<"ok" | "unclear" | "mismatch", string> = {
  * number is on the claim, and whether that order was paid is a fact either
  * way, whoever bought it.
  */
+/**
+ * The order this claim is about, and whether its money is still there.
+ *
+ * One answer for the chip and the approve button, because they disagreed:
+ * the chip learned to fall back to the order looked up by number and the
+ * button did not, so a claim could read "ชำระแล้ว" above a bar saying it
+ * could not be approved until it was paid.
+ *
+ * A claim with no order anywhere — ours or the shop's — is the one case the
+ * button stays open for. That is what a เคสพิเศษ is: a receipt for a purchase
+ * this site never recorded, judged by a reviewer against the photo, with the
+ * entries typed in by hand.
+ */
+function paymentOf(item: QueueItem) {
+  const fromShop = item.claimedOrder?.found ? item.claimedOrder.financialStatus : null;
+  const status = item.paymentStatus ?? fromShop;
+  const hasOrder = Boolean(item.paymentStatus || item.claimedOrder?.found || !item.manual);
+  return { status, hasOrder, canApprove: hasOrder ? status === "PAID" : true };
+}
+
 function PaymentChip({ item }: { item: QueueItem }) {
-  const status = item.paymentStatus ?? (item.claimedOrder?.found ? item.claimedOrder.financialStatus : null);
+  const { status } = paymentOf(item);
   if (!status) {
     return (
       <span className="text-[11px] text-slate-400">
@@ -375,16 +395,32 @@ function DetailPanel({
                 </>
               ) : (
                 <>
-              {item.paymentStatus !== "PAID" && (
+              {!paymentOf(item).canApprove && (
                 <p className="mb-3 flex items-start gap-1.5 rounded-l border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
                   <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-                  อนุมัติไม่ได้จนกว่าคำสั่งซื้อจะเป็น <b>ชำระแล้ว (PAID)</b> ใน Shopify — ตีกลับยังทำได้ตามปกติ
+                  <span>
+                    อนุมัติไม่ได้ — คำสั่งซื้อนี้
+                    {paymentOf(item).status ? (
+                      <>
+                        {" "}อยู่ในสถานะ <b>{PAYMENT_STATUS[paymentOf(item).status!]?.[0] ?? paymentOf(item).status}</b>
+                      </>
+                    ) : (
+                      <> อ่านสถานะจาก Shopify ไม่ได้</>
+                    )}{" "}
+                    ไม่ใช่ <b>ชำระแล้ว (PAID)</b> — ตีกลับยังทำได้ตามปกติ
+                  </span>
+                </p>
+              )}
+              {paymentOf(item).canApprove && !paymentOf(item).hasOrder && (
+                <p className="mb-3 flex items-start gap-1.5 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px] text-slate-600">
+                  <AlertTriangle size={13} className="mt-0.5 shrink-0 text-slate-400" />
+                  ไม่พบคำสั่งซื้อนี้ในร้าน — อนุมัติได้ด้วยดุลพินิจของผู้ตรวจ และต้องระบุจำนวนสิทธิ์เอง
                 </p>
               )}
               <div className="flex gap-2">
                 <button
                   type="button"
-                  disabled={busy === item.id || item.paymentStatus !== "PAID"}
+                  disabled={busy === item.id || !paymentOf(item).canApprove}
                   onClick={() => onDecide(item, "approve")}
                   className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-full bg-brand-800 px-4 text-[14px] font-semibold text-white disabled:opacity-50"
                 >
