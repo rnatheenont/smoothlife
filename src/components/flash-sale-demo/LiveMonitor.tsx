@@ -44,7 +44,10 @@ const PHASE: Record<FlashSaleMonitor["campaign"]["phase"], { label: string; colo
 const VIA: Record<PaymentAttempt["via"], string> = {
   shopify: "Shopify",
   "2c2p": "2C2P",
-  storefront: "Shopify",
+  // Sold from the product page rather than the queue, but it is the same
+  // campaign selling the same box — counted as the queue's everywhere else on
+  // this page, so it says so here too.
+  storefront: "ผ่านคิว",
 };
 
 const ATTEMPT: Record<string, { label: string; color: "success" | "danger" | "warning" | "default"; dot: string }> = {
