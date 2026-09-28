@@ -76,12 +76,17 @@ export default async function Page({
                 Across the top of the card on a wide screen, beside the text
                 on a narrow one — the row is already side by side there. */}
             {image ? (
+              // Contained, not cropped: these are artwork with their own
+              // edges, and a cover crop cuts the top off every one of them.
+              // The box stays a fixed height so the three cards line up, and
+              // what is left over is the campaign's own wash rather than a
+              // grey letterbox.
               <Image
                 src={image}
                 alt=""
                 width={640}
                 height={360}
-                className="h-full w-28 shrink-0 object-cover sm:h-32 sm:w-full"
+                className="h-full w-28 shrink-0 bg-[var(--rc-wash)] object-contain sm:h-32 sm:w-full"
               />
             ) : (
               <div className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--rc-wash)] text-[var(--rc-ink)]">
