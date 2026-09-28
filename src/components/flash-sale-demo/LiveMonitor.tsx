@@ -44,7 +44,7 @@ const PHASE: Record<FlashSaleMonitor["campaign"]["phase"], { label: string; colo
 const VIA: Record<PaymentAttempt["via"], string> = {
   shopify: "Shopify",
   "2c2p": "2C2P",
-  storefront: "หน้าร้าน",
+  storefront: "Shopify",
 };
 
 const ATTEMPT: Record<string, { label: string; color: "success" | "danger" | "warning" | "default"; dot: string }> = {
@@ -231,6 +231,12 @@ export default function LiveMonitor({
       position: null,
     })),
   ].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+  // Counted off the same list the rows come from, so the header cannot drift
+  // from what is under it.
+  const byChannel = {
+    shopify: rows.filter((a) => a.via !== "2c2p").length,
+    "2c2p": rows.filter((a) => a.via === "2c2p").length,
+  };
   const shown = filter === "all" ? rows : rows.filter((a) => a.status === filter);
   const counts = {
     all: rows.length,
@@ -443,8 +449,7 @@ export default function LiveMonitor({
               title="การชำระเงิน"
               aside={
                 <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                  <CreditCard size={13} aria-hidden /> Shopify {data.payments.stats.via_shopify} · 2C2P {data.payments.stats.via_2c2p}
-                  {shopSold.count > 0 ? ` · หน้าร้าน ${shopOrders.length}` : ""}
+                  <CreditCard size={13} aria-hidden /> Shopify {byChannel.shopify} · 2C2P {byChannel["2c2p"]}
                 </span>
               }
             >
