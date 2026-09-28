@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, Check, Loader2, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, Check, ExternalLink, Loader2, RefreshCw, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { formatTHB } from "@/lib/format";
 import { adminTable } from "@/components/admin/layout-kit";
@@ -28,14 +28,96 @@ const AI_DOT: Record<"ok" | "unclear" | "mismatch", string> = {
   mismatch: "bg-rose-500",
 };
 
+/**
+ * The payment status of whatever order this claim is about.
+ *
+ * For a claim with no order of ours behind it, that is the order the customer
+ * named, looked up in the shop by its number. It said "อ่านไม่ได้" before,
+ * which was true of our own records and useless to the person reviewing: the
+ * number is on the claim, and whether that order was paid is a fact either
+ * way, whoever bought it.
+ */
 function PaymentChip({ item }: { item: QueueItem }) {
-  if (!item.paymentStatus) return <span className="text-[11px] text-slate-400">อ่านไม่ได้</span>;
-  const [label, tone] = PAYMENT_STATUS[item.paymentStatus] ?? ["—", "border-slate-200 bg-slate-50 text-slate-600"];
+  const status = item.paymentStatus ?? (item.claimedOrder?.found ? item.claimedOrder.financialStatus : null);
+  if (!status) {
+    return (
+      <span className="text-[11px] text-slate-400">
+        {item.claimedOrder && !item.claimedOrder.found ? "ไม่พบคำสั่งซื้อนี้" : "อ่านไม่ได้"}
+      </span>
+    );
+  }
+  const [label, tone] = PAYMENT_STATUS[status] ?? ["—", "border-slate-200 bg-slate-50 text-slate-600"];
   return (
     <span className={`inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-bold ${tone}`}>
       {label}
     </span>
   );
+}
+
+/** The order number, and a way into the order itself. */
+function OrderNumber({ item }: { item: QueueItem }) {
+  const shown = item.manual ? (item.declared.orderNumber ?? item.claimedOrder?.number ?? null) : item.orderNumber;
+  const href = item.claimedOrder?.found ? item.claimedOrder.adminUrl : null;
+  if (!shown) return <>—</>;
+  // Only a link when there is an order to open. A number Shopify has never
+  // heard of is still worth showing — it is what the customer wrote — but
+  // dressing it as a link would promise a page that is not there.
+  if (!href) return <>{shown}</>;
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-brand-800 underline">
+      {shown}
+      <ExternalLink size={12} />
+    </a>
+  );
+}
+
+/**
+ * The thing a reviewer must not miss: this order is not this customer's.
+ *
+ * A receipt campaign is claimed by typing a number, and a number that is paid
+ * and real can still be a stranger's purchase — the same receipt photographed
+ * in a shop, or a number guessed next to one's own. Approving it hands over
+ * entries somebody else earned, and nothing else on this screen would have
+ * said so.
+ */
+function ClaimWarning({ item }: { item: QueueItem }) {
+  if (!item.claimedOrder) return null;
+
+  if (!item.claimedOrder.found) {
+    return (
+      <p className="mt-3 flex items-start gap-2 rounded-l border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+        <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+        <span>
+          ไม่พบคำสั่งซื้อ <b>{item.claimedOrder.number}</b> ในร้าน — ตรวจจากรูปใบเสร็จเป็นหลัก
+        </span>
+      </p>
+    );
+  }
+
+  if (item.claimedOrder.belongsToCustomer === false) {
+    return (
+      <p className="mt-3 flex items-start gap-2 rounded-l border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] text-rose-900">
+        <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+        <span>
+          คำสั่งซื้อ <b>{item.claimedOrder.number}</b> ไม่ใช่ของลูกค้ารายนี้
+          {item.claimedOrder.ownerLabel ? <> — เป็นของ <b>{item.claimedOrder.ownerLabel}</b></> : null}
+        </span>
+      </p>
+    );
+  }
+
+  if (item.claimedOrder.belongsToCustomer === null) {
+    return (
+      <p className="mt-3 flex items-start gap-2 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px] text-slate-600">
+        <AlertTriangle size={14} className="mt-0.5 shrink-0 text-slate-400" />
+        <span>
+          ยืนยันไม่ได้ว่าคำสั่งซื้อ <b>{item.claimedOrder.number}</b> เป็นของลูกค้ารายนี้หรือไม่ (ไม่มีข้อมูลให้เทียบ)
+        </span>
+      </p>
+    );
+  }
+
+  return null;
 }
 
 /** Everything about one receipt, in a panel over the list. */
@@ -129,7 +211,7 @@ function DetailPanel({
                   <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[13px]">
                     <dt className="text-slate-500">เลขคำสั่งซื้อ</dt>
                     <dd className="text-[15px] font-bold text-brand-ink">
-                      {item.manual ? (item.declared.orderNumber ?? "—") : (item.orderNumber ?? "—")}
+                      <OrderNumber item={item} />
                     </dd>
                     <dt className="text-slate-500">สถานะการชำระเงิน</dt>
                     <dd>
@@ -198,6 +280,8 @@ function DetailPanel({
                       </ul>
                     </div>
                   )}
+
+                  <ClaimWarning item={item} />
 
                   {(item.declared.orderNumber || item.declared.total !== null) && (
                     <div className="mt-4 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px]">

@@ -2375,3 +2375,98 @@ export async function variantsSoldSince(
     return new Map();
   }
 }
+
+export type OrderByName = {
+  id: string;
+  name: string;
+  adminUrl: string;
+  financialStatus: string | null;
+  total: number;
+  refunded: number;
+  paidAt: string | null;
+  customerId: string | null;
+  customerLabel: string | null;
+  customerEmail: string | null;
+  customerPhone: string | null;
+};
+
+/**
+ * Orders looked up the way a customer refers to them — by the number printed
+ * on their receipt.
+ *
+ * Everything else here starts from an order we already know we sold to the
+ * person asking. This one deliberately does not: a receipt-campaign entry is
+ * a claim about an order number, and the useful questions are whether that
+ * order exists, whether the money is still there, and whose order it actually
+ * is. None of those can be answered by only looking at the claimant's own
+ * orders, which is why "ไม่ใช่ออเดอร์ของเขา" was previously indistinguishable
+ * from "ไม่มีออเดอร์นี้".
+ */
+export async function ordersByName(names: (string | null | undefined)[]): Promise<Map<string, OrderByName>> {
+  const out = new Map<string, OrderByName>();
+  const wanted = [...new Set(names.map(normalizeOrderName).filter((n): n is string => Boolean(n)))];
+  if (!wanted.length || !shopifyAdminConfigured()) return out;
+
+  // Shopify's order search takes an OR of names, so a screenful of entries is
+  // one request rather than one per row.
+  for (let i = 0; i < wanted.length; i += 25) {
+    const chunk = wanted.slice(i, i + 25);
+    try {
+      const data = await adminGraphql<{
+        orders: {
+          nodes: {
+            id: string;
+            name: string;
+            processedAt: string | null;
+            displayFinancialStatus: string | null;
+            totalPriceSet: { shopMoney: { amount: string } } | null;
+            totalRefundedSet: { shopMoney: { amount: string } } | null;
+            customer: { id: string; displayName: string | null; email: string | null; phone: string | null } | null;
+          }[];
+        };
+      }>(
+        `query OrdersByName($q: String!) {
+          orders(first: 50, query: $q) {
+            nodes {
+              id
+              name
+              processedAt
+              displayFinancialStatus
+              totalPriceSet { shopMoney { amount } }
+              totalRefundedSet { shopMoney { amount } }
+              customer { id displayName email phone }
+            }
+          }
+        }`,
+        { q: chunk.map((n) => `name:#${n}`).join(" OR ") },
+      );
+      for (const node of data.orders?.nodes ?? []) {
+        const key = normalizeOrderName(node.name);
+        if (!key) continue;
+        if (node.name) orderNameCache.set(node.id, node.name);
+        out.set(key, {
+          id: node.id,
+          name: node.name,
+          adminUrl: `https://admin.shopify.com/store/${STORES.smoothlife.adminHandle}/orders/${node.id.split("/").pop()}`,
+          financialStatus: node.displayFinancialStatus,
+          total: Number(node.totalPriceSet?.shopMoney?.amount ?? 0) || 0,
+          refunded: Number(node.totalRefundedSet?.shopMoney?.amount ?? 0) || 0,
+          paidAt: node.processedAt,
+          customerId: node.customer?.id ?? null,
+          customerLabel: node.customer?.displayName ?? null,
+          customerEmail: node.customer?.email ?? null,
+          customerPhone: node.customer?.phone ?? null,
+        });
+      }
+    } catch (err) {
+      console.error("[shopify-admin] ordersByName failed", err);
+    }
+  }
+  return out;
+}
+
+/** "#4305", "4305", " 4305 " — the digits are the part that identifies it. */
+export function normalizeOrderName(name: string | null | undefined): string | null {
+  const digits = (name ?? "").replace(/\D/g, "");
+  return digits || null;
+}

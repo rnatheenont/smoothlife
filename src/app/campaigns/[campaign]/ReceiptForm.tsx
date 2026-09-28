@@ -34,6 +34,8 @@ type Item = {
   declared: { orderNumber: string; paidAt: string; total: string };
   editing: boolean;
   reading: boolean;
+  /** Set when this number is already in the campaign under someone else. */
+  duplicate: boolean;
   state: "ready" | "sending" | "sent" | "failed";
   error: string | null;
   note: string | null;
@@ -260,10 +262,43 @@ export default function ReceiptForm({
    * — because it is not a question the person holding the receipt can answer,
    * and a screen that asks it can only get it wrong in public.
    */
+  // Told before the upload, not after it.
+  //
+  // The same number can only be in the campaign once, and finding that out by
+  // choosing a photo, waiting for it to go up and then being refused is a
+  // waste of the customer's time — worse when the reason is that somebody
+  // else has already claimed the receipt and there is nothing they can do
+  // about it on this screen.
+  const checkDuplicate = useCallback(
+    async (id: string, number: string) => {
+      const digits = number.replace(/\D/g, "");
+      if (digits.length < 3) {
+        setItems((old) => old.map((r) => (r.id === id ? { ...r, duplicate: false } : r)));
+        return;
+      }
+      try {
+        const res = await fetch(`${api}/order-check?number=${encodeURIComponent(digits)}`);
+        const data = await res.json();
+        const clash = Boolean(data?.taken && !data?.byMe);
+        setItems((old) => old.map((r) => (r.id === id ? { ...r, duplicate: clash } : r)));
+      } catch {
+        // A check that could not run says nothing; the send still checks.
+      }
+    },
+    [api]
+  );
+
+  const duplicateTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  function queueDuplicateCheck(id: string, value: string) {
+    clearTimeout(duplicateTimers.current[id]);
+    duplicateTimers.current[id] = setTimeout(() => checkDuplicate(id, value), 400);
+  }
+
   function setDeclared(id: string, key: "orderNumber" | "paidAt" | "total", value: string) {
     setItems((old) =>
       old.map((row) => (row.id === id ? { ...row, declared: { ...row.declared, [key]: value }, note: null } : row))
     );
+    if (key === "orderNumber") queueDuplicateCheck(id, value);
   }
 
   /**
@@ -287,6 +322,7 @@ export default function ReceiptForm({
       orderId: null,
       matched: "none",
       declared: { orderNumber: "", paidAt: "", total: "" },
+      duplicate: false,
       // On its own the receipt is the page, so its fields are open.
       editing: single,
       reading: true,
@@ -343,6 +379,11 @@ export default function ReceiptForm({
             };
           })
         );
+        // A number read off the photo is a claim like any typed one, so it
+        // gets checked the same way — otherwise the only customer warned
+        // before sending is the one who typed it by hand.
+        const readNumber = (data.read as { orderNumber?: string | null } | undefined)?.orderNumber;
+        if (readNumber) void checkDuplicate(item.id, String(readNumber));
       } catch {
         setItems((old) =>
           old.map((row) => (row.id === item.id ? { ...row, reading: false, note: "อ่านรูปไม่สำเร็จ — กรอกเลขคำสั่งซื้อเอง" } : row))
@@ -384,8 +425,12 @@ export default function ReceiptForm({
    * orders do go missing on our side, and the person who can tell is a
    * reviewer. So it goes to one, and the only thing asked of the customer is
    * the three numbers off their own receipt.
+   *
+   * A number already claimed is the one refusal made here rather than by a
+   * reviewer: it cannot become a second entry however it is reviewed, and
+   * sending it would only turn a fixable typo into a rejection.
    */
-  const sendable = (row: Item) => manualReady(row);
+  const sendable = (row: Item) => manualReady(row) && !row.duplicate;
 
   /** Sends every row that has an order, one after another, and says how each went. */
   async function sendAll() {
@@ -717,7 +762,14 @@ export default function ReceiptForm({
                               </label>
                             )}
 
-                            {!item.reading &&
+                            {item.duplicate && !item.reading && (
+                              <p className="mt-1.5 text-[12px] font-semibold text-rose-700">
+                                เลขคำสั่งซื้อนี้ถูกใช้ร่วมกิจกรรมไปแล้ว — ตรวจเลขบนใบเสร็จอีกครั้ง
+                                หากเป็นคำสั่งซื้อของคุณจริง ทักทีมงานในแชทได้เลยค่ะ
+                              </p>
+                            )}
+
+                            {!item.reading && !item.duplicate &&
                               (order ? (
                                 <p className="mt-1.5 text-[12px] text-emerald-800">
                                   ตรงกับคำสั่งซื้อในระบบ · ยอด DENTISTE&apos; {formatTHB(order.dentisteAmount)} ·{" "}

@@ -250,7 +250,11 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const adminId = getAdminSession(token)?.userId ?? null;
   const now = new Date().toISOString();
 
-  await supabaseRest(`receipt_campaign_entries?id=eq.${pgValue(id)}&status=eq.pending_review`, {
+  // The database keeps one live claim per order number, so approving a second
+  // claim on a number somebody else already holds is refused down there. Said
+  // plainly here, because "approve failed" tells a reviewer nothing and the
+  // fact — two people claiming one receipt — is the whole reason to look.
+  const decided = await supabaseRest(`receipt_campaign_entries?id=eq.${pgValue(id)}&status=eq.pending_review`, {
     method: "PATCH",
     returning: false,
     body: JSON.stringify({
@@ -264,7 +268,23 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
       reviewed_by: adminId,
       reviewed_at: now,
     }),
+  }).catch((err: unknown) => {
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes("receipt_campaign_entries_one_claim_per_number") || message.includes("23505")) {
+      return "duplicate" as const;
+    }
+    throw err;
   });
+
+  if (decided === "duplicate") {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `เลขคำสั่งซื้อ ${entry.manual_receipt_no ?? ""} ถูกอนุมัติให้ลูกค้ารายอื่นไปแล้ว — ตรวจว่าใบเสร็จเป็นของใครก่อนอนุมัติ`,
+      },
+      { status: 409 }
+    );
+  }
 
   await supabaseRest("admin_audit_log", {
     method: "POST",

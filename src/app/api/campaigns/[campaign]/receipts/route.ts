@@ -14,6 +14,7 @@ import {
 import { checkReceiptPhoto, readMoment } from "@/lib/receipt-vision";
 import { orderNameByGid, orderNamesByGid } from "@/lib/shopify-admin";
 import { loadCampaignContent, windowOf } from "@/lib/receipt-campaign-content";
+import { orderNumberClaim } from "@/lib/receipt-campaign-claims";
 import { holdsPrize, type CampaignRules } from "@/lib/receipt-campaign";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 import { eligibleOrders } from "@/lib/receipt-campaign-orders";
@@ -325,6 +326,23 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
   if (!manual && !order) {
     return NextResponse.json(
       { ok: false, error: "ไม่พบคำสั่งซื้อนี้ หรือไม่เข้าเงื่อนไขของแคมเปญ" },
+      { status: 409 }
+    );
+  }
+
+  // Somebody else's claim on this number stops here, whichever path it came
+  // in by. A rejected or revoked claim does not hold the number.
+  const claimedNumber = order ? (names.get(order.shopify_order_id ?? "") ?? declaredOrderNumber) : declaredOrderNumber;
+  const claim = await orderNumberClaim({ campaign: CAMPAIGN, userId: uid, number: claimedNumber }).catch(() => ({
+    taken: false,
+    byMe: false,
+  }));
+  if (claim.taken && !claim.byMe) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `เลขคำสั่งซื้อ ${claimedNumber} ถูกใช้ร่วมกิจกรรมไปแล้ว หากเป็นคำสั่งซื้อของคุณจริง กรุณาติดต่อทีมงานผ่านแชท`,
+      },
       { status: 409 }
     );
   }

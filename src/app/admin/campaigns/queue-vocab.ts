@@ -26,6 +26,25 @@ export type QueueItem = {
   contactPhone: string | null;
   /** What the customer said their receipt shows — their words, not our record. */
   declared: { orderNumber: string | null; paidAt: string | null; total: number | null };
+  /**
+   * The shop's own record of the number on the claim, for entries with no
+   * order of ours behind them. `belongsToCustomer` is null when there was
+   * nothing to match on — not the same as "no".
+   */
+  claimedOrder:
+    | { found: false; number: string }
+    | {
+        found: true;
+        number: string;
+        adminUrl: string;
+        financialStatus: string | null;
+        total: number;
+        refunded: number;
+        paidAt: string | null;
+        ownerLabel: string | null;
+        belongsToCustomer: boolean | null;
+      }
+    | null;
   lines: { name: string; quantity: number; amount: number; kind: "dentiste" | "keychain" | "other" }[];
 };
 

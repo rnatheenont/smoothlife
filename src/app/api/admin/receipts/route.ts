@@ -4,7 +4,7 @@ import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { signedReceiptUrl } from "@/lib/receipt-photos";
 import { amountsFromLineItems, holdsPrize, type LineItem } from "@/lib/receipt-campaign";
 import { loadCampaignContent } from "@/lib/receipt-campaign-content";
-import { orderPaymentByGid } from "@/lib/shopify-admin";
+import { orderPaymentByGid, ordersByName, normalizeOrderName } from "@/lib/shopify-admin";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
 // The review queue, the VIP order, and what Lucky Fan has to draw from.
@@ -43,7 +43,7 @@ type EntryRow = {
   reviewed_at: string | null;
   created_at: string;
   ai_check: { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] } | null;
-  users: { display_name: string | null } | null;
+  users: { display_name: string | null; shopify_customer_id?: string | null; phone?: string | null } | null;
   contact_name?: string | null;
   contact_phone?: string | null;
   declared_order_number?: string | null;
@@ -61,7 +61,8 @@ type EntryRow = {
 const SELECT =
   "id,user_id,payment_transaction_id,manual_receipt_no,receipt_photo_path,dentiste_net_amount," +
   "keychain_amount,computed_entries,entries_override,status,reject_reason,reviewed_at,created_at,ai_check," +
-  "revoke_reason,contact_name,contact_phone,declared_order_number,declared_paid_at,declared_total,users(display_name),payment_transactions(invoice_no,amount,confirmed_at,shopify_order_id,line_items)";
+  "revoke_reason,contact_name,contact_phone,declared_order_number,declared_paid_at,declared_total," +
+  "users(display_name,shopify_customer_id,phone),payment_transactions(invoice_no,amount,confirmed_at,shopify_order_id,line_items)";
 
 type WinnerRow = {
   id: string;
@@ -128,6 +129,58 @@ export async function GET(req: NextRequest) {
     [...queuePage, ...decidedPage].map((r) => r.payment_transactions?.shopify_order_id)
   );
 
+  // The order the customer says their receipt is for, looked up by that
+  // number in the shop — not among their own orders.
+  //
+  // An entry with no transaction behind it used to be a dead end: the status
+  // read "อ่านไม่ได้" and the reviewer had to go and search Shopify by hand
+  // to learn anything at all. The number is right there on the claim, and
+  // Shopify will say whether such an order exists, whether the money is still
+  // there, and whose order it is — which is the question the reviewer is
+  // actually asking when the number came from a receipt rather than from us.
+  const claimed = await ordersByName(
+    [...queuePage, ...decidedPage]
+      .filter((r) => !r.payment_transaction_id)
+      .map((r) => r.declared_order_number ?? r.manual_receipt_no)
+  ).catch(() => new Map());
+
+  /**
+   * What the shop knows about the number on this claim.
+   *
+   * `belongsToCustomer` is the part worth a reviewer's attention: an order
+   * that exists and is paid can still be somebody else's, and approving it
+   * hands this customer entries earned by a stranger's purchase. Ownership is
+   * settled by Shopify's customer id where we have one for both sides, and
+   * otherwise by the phone number on the order — the same evidence a person
+   * would use, with "we could not tell" kept separate from "no".
+   */
+  const claimedOrderOf = (r: EntryRow) => {
+    if (r.payment_transaction_id) return null;
+    const key = normalizeOrderName(r.declared_order_number ?? r.manual_receipt_no);
+    if (!key) return null;
+    const order = claimed.get(key);
+    if (!order) return { found: false as const, number: `#${key}` };
+
+    const sameId = Boolean(r.users?.shopify_customer_id && order.customerId &&
+      String(r.users.shopify_customer_id).replace(/\D/g, "") === order.customerId.replace(/\D/g, ""));
+    const digits = (v: string | null | undefined) => (v ?? "").replace(/\D/g, "").slice(-9);
+    const samePhone = Boolean(digits(r.contact_phone ?? r.users?.phone) &&
+      digits(r.contact_phone ?? r.users?.phone) === digits(order.customerPhone));
+    const known = Boolean(r.users?.shopify_customer_id || r.contact_phone || r.users?.phone);
+
+    return {
+      found: true as const,
+      number: order.name,
+      adminUrl: order.adminUrl,
+      financialStatus: order.financialStatus,
+      total: order.total,
+      refunded: order.refunded,
+      paidAt: order.paidAt,
+      ownerLabel: order.customerLabel,
+      belongsToCustomer: sameId || samePhone ? true : known ? false : null,
+    };
+  };
+
   const asRow = async (r: EntryRow) => ({
       id: r.id,
       status: r.status,
@@ -165,6 +218,7 @@ export async function GET(req: NextRequest) {
       },
       photoUrl: await signedReceiptUrl(r.receipt_photo_path),
       aiCheck: r.ai_check,
+      claimedOrder: claimedOrderOf(r),
   });
 
   const [queue, decided] = await Promise.all([
