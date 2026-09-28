@@ -161,6 +161,12 @@ export default function ReceiptForm({
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [campaignWindow, setCampaignWindow] = useState<{ opensAt: number; closesAt: number } | null>(null);
+  // A blank form is not a form full of mistakes. Nothing is marked wrong
+  // until the customer has left the box, or pressed send.
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const touch = (key: string) => setTouched((old) => ({ ...old, [key]: true }));
+  const showError = (key: string, message: string | null) => (touched[key] ? message : null);
   // What the photo was read to say, after the customer has had a look at it.
   const [reading, setReading] = useState(false);
   const [approved, setApproved] = useState(0);
@@ -184,6 +190,7 @@ export default function ReceiptForm({
       setContactName((v) => v || profile.name || "");
       setContactPhone((v) => v || profile.phone || "");
       setContactEmail((v) => v || profile.email || "");
+      setCampaignWindow((data.window as { opensAt: number; closesAt: number } | undefined) ?? null);
       setApproved(data.approvedEntries as number);
       setState("ready");
     } catch {
@@ -412,17 +419,84 @@ export default function ReceiptForm({
   const twoUp = orders.length > 0 || items.length > 0;
 
   /**
-   * Everything a receipt with no matching order has to carry.
+   * What is wrong with each field, in the customer's words — or null.
    *
-   * Nothing can be computed from it, so what the customer typed is all a
-   * reviewer will have. The date is part of that: a claim with no date is one
-   * nobody can place inside the campaign without opening the photo and
-   * squinting at it, and the reviewer is doing that fifty times.
+   * One set of rules for the message under a box and for whether the button
+   * works, because two sets drift: the form once said "fill in the order
+   * number and total" under a form that was filled in, and the only way to
+   * find out what it actually wanted was to keep pressing a button that did
+   * nothing.
+   *
+   * Each rule has a matching one on the server. These exist to say so before
+   * an 8MB photo goes up, never instead of checking.
    */
-  const manualReady = (row: Item) =>
-    row.declared.orderNumber.trim().length > 0 &&
-    row.declared.paidAt.trim().length > 0 &&
-    Number(row.declared.total.replace(/[^0-9.]/g, "")) > 0;
+  const nameError = (v: string) => {
+    const trimmed = v.trim();
+    if (!trimmed) return "กรอกชื่อ-นามสกุล";
+    if (trimmed.length < 2) return "ชื่อสั้นเกินไป";
+    if (!/\s/.test(trimmed)) return "กรอกทั้งชื่อและนามสกุล";
+    return null;
+  };
+
+  // Ten digits from 0, or the +66 form of the same number.
+  const phoneError = (v: string) => {
+    const digits = v.replace(/\D/g, "");
+    if (!digits) return "กรอกเบอร์โทร";
+    const local = digits.startsWith("66") ? `0${digits.slice(2)}` : digits;
+    if (local.length !== 10 || !local.startsWith("0")) return "เบอร์โทรต้องมี 10 หลัก เช่น 0812345678";
+    return null;
+  };
+
+  // Optional, but a wrong one is worse than none: it is where a prize
+  // deadline would be sent.
+  const emailError = (v: string) => {
+    const trimmed = v.trim();
+    if (!trimmed) return null;
+    return /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(trimmed) ? null : "อีเมลไม่ถูกต้อง";
+  };
+
+  const orderNumberError = (row: Item) => {
+    if (!row.declared.orderNumber.trim()) return "กรอกเลขคำสั่งซื้อจากใบเสร็จ";
+    if (row.declared.orderNumber.replace(/\D/g, "").length < 3) return "เลขคำสั่งซื้อไม่ครบ";
+    if (row.duplicate) return "เลขนี้ถูกใช้ไปแล้ว — ถ้าเป็นของคุณ ทักทีมงานได้เลยค่ะ";
+    return null;
+  };
+
+  // Against the campaign's own window — the one the submit checks. A date the
+  // server would reject is worth refusing while the receipt is still in front
+  // of them, not after the upload.
+  const paidAtError = (v: string) => {
+    if (!v.trim()) return "กรอกวันและเวลาที่ชำระเงิน";
+    const at = Date.parse(`${v}:00+07:00`);
+    if (!Number.isFinite(at)) return "วันที่ไม่ถูกต้อง";
+    // Bounded by the campaign, not by the clock: reading the clock while
+    // rendering makes the same form say two different things on the server
+    // and in the browser. A date in the future is outside the window anyway,
+    // which is the answer the customer needs either way.
+    if (campaignWindow && (at < campaignWindow.opensAt || at > campaignWindow.closesAt)) {
+      return "วันที่อยู่นอกช่วงกิจกรรม — ตรวจวันที่บนใบเสร็จอีกครั้ง";
+    }
+    return null;
+  };
+
+  const totalError = (v: string) => {
+    if (!v.trim()) return "กรอกยอดทั้งบิล";
+    const n = Number(v.replace(/[^0-9.]/g, ""));
+    if (!Number.isFinite(n) || n <= 0) return "ยอดต้องเป็นตัวเลขมากกว่า 0";
+    if (n > 1_000_000) return "ยอดสูงผิดปกติ — ตรวจอีกครั้ง";
+    return null;
+  };
+
+  const rowError = (row: Item) =>
+    orderNumberError(row) ?? paidAtError(row.declared.paidAt) ?? totalError(row.declared.total);
+
+  const contactError = () => nameError(contactName) ?? phoneError(contactPhone) ?? emailError(contactEmail);
+
+  /**
+   * Everything a receipt has to carry before it can be sent — which is now
+   * exactly "nothing is wrong with it".
+   */
+  const manualReady = (row: Item) => rowError(row) === null;
 
   /**
    * A row the send button will take.
@@ -910,19 +984,31 @@ export default function ReceiptForm({
                       <input
                         value={contactName}
                         onChange={(e) => setContactName(e.target.value)}
+                        onBlur={() => touch("name")}
                         placeholder="ชื่อ นามสกุล"
-                        className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black"
+                        className={`mt-1.5 min-h-11 w-full rounded-xl border px-3 text-[14px] text-black ${
+                          showError("name", nameError(contactName)) ? "border-rose-400" : "border-black/15"
+                        }`}
                       />
+                      {showError("name", nameError(contactName)) && (
+                        <span className="mt-1 block text-[12px] text-rose-700">{nameError(contactName)}</span>
+                      )}
                     </label>
                     <label className="mt-3 block">
                       <span className="text-[12px] font-semibold text-black/55">เบอร์โทร</span>
                       <input
                         value={contactPhone}
                         onChange={(e) => setContactPhone(e.target.value)}
+                        onBlur={() => touch("phone")}
                         inputMode="tel"
                         placeholder="08x-xxx-xxxx"
-                        className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black tabular-nums"
+                        className={`mt-1.5 min-h-11 w-full rounded-xl border px-3 text-[14px] text-black tabular-nums ${
+                          showError("phone", phoneError(contactPhone)) ? "border-rose-400" : "border-black/15"
+                        }`}
                       />
+                      {showError("phone", phoneError(contactPhone)) && (
+                        <span className="mt-1 block text-[12px] text-rose-700">{phoneError(contactPhone)}</span>
+                      )}
                     </label>
                     {/* Filled in from the account they signed in with, and
                         still theirs to change: a prize deadline announced to
@@ -934,12 +1020,18 @@ export default function ReceiptForm({
                       <input
                         value={contactEmail}
                         onChange={(e) => setContactEmail(e.target.value)}
+                        onBlur={() => touch("email")}
                         type="email"
                         inputMode="email"
                         autoComplete="email"
                         placeholder="you@example.com"
-                        className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black"
+                        className={`mt-1.5 min-h-11 w-full rounded-xl border px-3 text-[14px] text-black ${
+                          showError("email", emailError(contactEmail)) ? "border-rose-400" : "border-black/15"
+                        }`}
                       />
+                      {showError("email", emailError(contactEmail)) && (
+                        <span className="mt-1 block text-[12px] text-rose-700">{emailError(contactEmail)}</span>
+                      )}
                     </label>
                   </div>
 
@@ -986,8 +1078,20 @@ export default function ReceiptForm({
                                 value={singleItem.declared[key]}
                                 placeholder={placeholder}
                                 onChange={(e) => setDeclared(singleItem.id, key, e.target.value)}
-                                className={`min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black ${
+                                onBlur={() => touch(key)}
+                                className={`min-h-11 w-full rounded-xl border px-3 text-[14px] text-black ${
                                   key === "orderNumber" ? "pe-10" : ""
+                                } ${
+                                  showError(
+                                    key,
+                                    key === "orderNumber"
+                                      ? orderNumberError(singleItem)
+                                      : key === "paidAt"
+                                        ? paidAtError(singleItem.declared.paidAt)
+                                        : totalError(singleItem.declared.total)
+                                  )
+                                    ? "border-rose-400"
+                                    : "border-black/15"
                                 }`}
                               />
                               {/* The number the model read is the one most
@@ -1006,15 +1110,25 @@ export default function ReceiptForm({
                                 </button>
                               )}
                             </div>
-                            {/* Said where the number is, not only where the
+                            {/* Said where the field is, not only where the
                                 thumbnails are: with one receipt this column
-                                is the form, and a warning attached to the
-                                other layout is a warning nobody sees. */}
-                            {key === "orderNumber" && singleItem.duplicate && (
-                              <p className="mt-1.5 text-[12px] font-semibold text-rose-700">
-                                เลขนี้ถูกใช้ไปแล้ว — ถ้าเป็นของคุณ ทักทีมงานได้เลยค่ะ
-                              </p>
-                            )}
+                                is the form, and a message attached to the
+                                other layout is a message nobody sees. A taken
+                                order number shows immediately, since nothing
+                                about it depends on the customer finishing. */}
+                            {(() => {
+                              const message =
+                                key === "orderNumber"
+                                  ? orderNumberError(singleItem)
+                                  : key === "paidAt"
+                                    ? paidAtError(singleItem.declared.paidAt)
+                                    : totalError(singleItem.declared.total);
+                              const visible =
+                                key === "orderNumber" && singleItem.duplicate ? message : showError(key, message);
+                              return visible ? (
+                                <p className="mt-1.5 text-[12px] font-semibold text-rose-700">{visible}</p>
+                              ) : null;
+                            })()}
                           </label>
                         ))}
                       </div>
@@ -1037,13 +1151,26 @@ export default function ReceiptForm({
                     // form, and saying "fill in the fields" under a form that
                     // is filled in leaves the customer with nothing to do.
                     const duplicates = items.filter((row) => row.duplicate && !row.reading).length;
-                    const contactOk = contactName.trim().length >= 2 && contactPhone.replace(/\D/g, "").length >= 9;
+                    const contactProblem = contactError();
+                    const contactOk = contactProblem === null;
+                    // The first thing standing in their way, named. "Fill in
+                    // the fields" under a filled-in form is how this went
+                    // wrong before.
+                    const blocker =
+                      contactProblem ??
+                      items.filter((row) => !row.reading && row.state !== "sent").map(rowError).find(Boolean) ??
+                      null;
                     return (
                       <>
                         <button
                           type="button"
                           disabled={!ready.length || sending || !contactOk}
-                          onClick={sendAll}
+                          onClick={() => {
+                            // Pressing send is also a way of asking what is
+                            // missing, so everything gets to answer.
+                            setTouched({ name: true, phone: true, email: true, orderNumber: true, paidAt: true, total: true });
+                            void sendAll();
+                          }}
                           className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--rc-ink,#000)] text-[15px] font-semibold text-white disabled:opacity-40"
                         >
                           {sending && <Loader2 size={16} className="animate-spin" />}
@@ -1058,11 +1185,8 @@ export default function ReceiptForm({
                             เลขนี้ถูกใช้ไปแล้ว ส่งซ้ำไม่ได้
                           </p>
                         ) : (
-                          incomplete > 0 && (
-                            <p className="text-center text-[12px] text-amber-700">
-                              กรอกเลขคำสั่งซื้อ วันและเวลา และยอดรวมให้ครบก่อนส่ง
-                            </p>
-                          )
+                          (incomplete > 0 || !contactOk) &&
+                          blocker && <p className="text-center text-[12px] text-amber-700">{blocker}</p>
                         )}
                       </>
                     );

@@ -138,6 +138,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ campaign:
       ok: true,
       test,
       prizes: myPrizes,
+      // The same window the submit checks against, so the form can refuse a
+      // date the server would only reject after an upload.
+      window: windowOf(await loadCampaignContent(CAMPAIGN)),
       // Their last answer wins over the account's: someone who corrected the
       // name on a previous receipt meant it.
       profile: {
@@ -311,8 +314,18 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
   if (contactName.length < 2) {
     return NextResponse.json({ ok: false, error: "กรุณากรอกชื่อ-นามสกุล" }, { status: 400 });
   }
-  if (contactPhone.replace(/\D/g, "").length < 9) {
-    return NextResponse.json({ ok: false, error: "กรุณากรอกเบอร์โทรให้ครบถ้วน" }, { status: 400 });
+  // Ten digits from 0, or the +66 form of the same number — the rule the form
+  // applies, applied again to whatever actually arrives. The name is left at
+  // "two characters" rather than the form's "two words": the form asks for a
+  // full name because a prize is collected with an ID card, but somebody whose
+  // legal name is one word should not find the door locked.
+  const phoneDigits = contactPhone.replace(/\D/g, "");
+  const localPhone = phoneDigits.startsWith("66") ? `0${phoneDigits.slice(2)}` : phoneDigits;
+  if (localPhone.length !== 10 || !localPhone.startsWith("0")) {
+    return NextResponse.json(
+      { ok: false, error: "เบอร์โทรต้องมี 10 หลัก เช่น 0812345678" },
+      { status: 400 }
+    );
   }
 
   // The customer's own reading of their receipt. Stored beside the photo for a
@@ -323,7 +336,11 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
   const declaredLocal = readMoment(String(form?.get("declaredPaidAt") ?? ""));
   const declaredPaidAt = declaredLocal ? `${declaredLocal}:00+07:00` : null;
   const declaredTotalRaw = Number(String(form?.get("declaredTotal") ?? "").replace(/[^0-9.]/g, ""));
-  const declaredTotal = Number.isFinite(declaredTotalRaw) && declaredTotalRaw > 0 ? declaredTotalRaw : null;
+  // A million baht of Dentiste is a typo, not a receipt.
+  const declaredTotal =
+    Number.isFinite(declaredTotalRaw) && declaredTotalRaw > 0 && declaredTotalRaw <= 1_000_000
+      ? declaredTotalRaw
+      : null;
 
   // The order has to be theirs, paid, inside the window and actually contain
   // Dentiste — checked here rather than trusted from the form.
