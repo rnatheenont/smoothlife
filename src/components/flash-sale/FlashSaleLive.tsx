@@ -149,9 +149,10 @@ export default function FlashSaleLive({
     }
   };
 
-  // Opens 2C2P for the shopper's own reservation; the price and the slot are
-  // decided on the server. Payment happens in a frame over this page, so the
-  // countdown and the queue stay in view.
+  // Opens payment for the shopper's own reservation; the price, the slot and
+  // which checkout to use are all decided on the server. 2C2P's page runs in a
+  // frame over this one, so the countdown and the queue stay in view; Shopify's
+  // refuses to be framed, so that one takes the whole window.
   const pay = async () => {
     const [firstName, ...rest] = address.recipient_name.trim().split(/\s+/);
     setPaying(true);
@@ -176,6 +177,10 @@ export default function FlashSaleLive({
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
         setNotice(data.error || "เริ่มการชำระเงินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+        return;
+      }
+      if (data.provider === "shopify") {
+        window.location.href = data.webPaymentUrl;
         return;
       }
       setPayment({ url: data.webPaymentUrl, cartToken: data.cartToken });
@@ -336,7 +341,7 @@ export default function FlashSaleLive({
           เปิดหน้าชำระเงินไปแล้ว ถ้าชำระเสร็จ ระบบจะยืนยันให้ภายในไม่กี่วินาที ถ้ายังไม่ได้ชำระ กดชำระเงินอีกครั้งได้
         </p>
       )}
-      <p className="text-center text-xs text-slate-500">บัตรเครดิต/เดบิต หรือ PromptPay QR ผ่าน 2C2P · ส่งฟรีทั่วไทย</p>
+      <p className="text-center text-xs text-slate-500">บัตรเครดิต/เดบิต, PromptPay QR และช่องทางอื่นที่ร้านเปิดใช้ · ส่งฟรีทั่วไทย</p>
     </div>
   );
 

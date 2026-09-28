@@ -34,13 +34,14 @@ type Row = {
   resp_desc: string | null;
   tran_ref: string | null;
   shopify_order_id: string | null;
+  shopify_cart_id: string | null;
   flash_sale_entry_id: string | null;
   contact_phone: string | null;
   created_at: string;
 };
 
 const ROW_COLUMNS =
-  "id,invoice_no,amount,status,resp_code,resp_desc,tran_ref,shopify_order_id,flash_sale_entry_id,contact_phone,created_at";
+  "id,invoice_no,amount,status,resp_code,resp_desc,tran_ref,shopify_order_id,shopify_cart_id,flash_sale_entry_id,contact_phone,created_at";
 
 type Verdict =
   /** 2C2P says paid and our row already says so. */
@@ -86,8 +87,13 @@ export async function GET(req: NextRequest) {
 
   // "success" rows are included too: a row claiming money that never moved is
   // rarer and worse than the other way round, and only 2C2P can tell us.
+  //
+  // Rows with a Shopify cart are left out: those were paid at Shopify's own
+  // checkout, 2C2P has never heard of the invoice, and every one of them would
+  // come back "recorded_not_paid" — a page of false alarms about money that is
+  // sitting in the shop's account.
   const rows = await supabaseRest<Row[]>(
-    `payment_transactions?created_at=gte.${encodeURIComponent(since)}&select=${ROW_COLUMNS}` +
+    `payment_transactions?created_at=gte.${encodeURIComponent(since)}&shopify_cart_id=is.null&select=${ROW_COLUMNS}` +
       `&order=created_at.desc&limit=${limit}`
   );
 
@@ -161,6 +167,19 @@ export async function POST(req: NextRequest) {
       },
     }),
   }).catch((err) => console.error("[checkout-transactions/reconcile] audit write failed", err));
+
+  if (row.shopify_cart_id) {
+    // This slot was paid at Shopify's own checkout, so 2C2P has never heard of
+    // the invoice and its answer says nothing about the money. orders/paid is
+    // what settles these; asking 2C2P and writing down what it says would
+    // overwrite a real payment with an absence.
+    return NextResponse.json({
+      ok: true,
+      applied: false,
+      reason: "รายการนี้ชำระผ่านหน้าชำระเงินของ Shopify ไม่ใช่ 2C2P — ตรวจสอบสถานะได้ที่คำสั่งซื้อใน Shopify",
+      inquiry: theirs,
+    });
+  }
 
   if (!row.flash_sale_entry_id) {
     // A regular-checkout charge settles through its own webhook, which does

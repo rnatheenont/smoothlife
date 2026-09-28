@@ -13,6 +13,7 @@ import {
   notifyOrderDelivered,
   notifyOrderRefunded,
 } from "@/lib/line-order-notify";
+import { settleFlashSaleShopifyOrder } from "@/lib/flash-sale-shopify";
 
 // Shopify webhook endpoint — configure in Shopify Admin (or via
 // webhookSubscriptionCreate) to POST here for topics: orders/paid,
@@ -474,9 +475,18 @@ export async function POST(req: NextRequest) {
   try {
     let result: unknown;
     switch (topic) {
-      case "orders/paid":
-        result = await handleOrdersPaid(payload, req.url);
+      case "orders/paid": {
+        // The flash-sale reservation is settled first and on its own, because
+        // handleOrdersPaid gives up early when the buyer's email matches no
+        // account here — and a paid slot has to be marked paid either way.
+        // For an ordinary shop order this does nothing at all.
+        const flashSale = await settleFlashSaleShopifyOrder(payload).catch((err) => {
+          console.error("[shopify webhook] flash-sale settlement failed", err);
+          return { error: String(err) };
+        });
+        result = { flashSale, points: await handleOrdersPaid(payload, req.url) };
         break;
+      }
       case "orders/fulfilled":
         result = await handleOrdersFulfilled(payload);
         break;
