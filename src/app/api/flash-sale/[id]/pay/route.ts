@@ -3,6 +3,9 @@ import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { isRateLimitedShared } from "@/lib/rate-limit";
 import { createPaymentToken, twoC2PConfigured } from "@/lib/2c2p";
+
+/** What a PromptPay QR can carry in one go at most Thai banks. */
+const PROMPTPAY_MAX = 50_000;
 import { getProductBySlug } from "@/data/products";
 import { startFlashSalePayment, UUID_RE } from "@/lib/flash-sale";
 import { ATTRIBUTION_COOKIE, attributionColumns } from "@/lib/attribution";
@@ -99,7 +102,14 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       invoiceNo,
       description: `Flash Sale: ${product.name}`.slice(0, 250),
       amount,
-      paymentChannel: ["CC", "PPQR"],
+      // Card and PromptPay QR is the right pair for an ordinary basket and
+      // the wrong one for ฿55,000: PromptPay is capped at ฿50,000 at most
+      // Thai banks, so QR cannot complete a sale this size at all, and
+      // naming a list also hides every other channel the merchant has
+      // enabled — installments among them, which is what people actually
+      // reach for at this price. Above the QR ceiling, let 2C2P offer
+      // everything it has rather than two methods, one of which cannot work.
+      paymentChannel: amount > PROMPTPAY_MAX ? undefined : ["CC", "PPQR"],
       frontendReturnUrl: `${origin}/api/payments/return?cartToken=${cartToken}`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p-flash-sale`,
       customer: { email: email?.provider_uid, mobileNo: shippingAddress.phone },
