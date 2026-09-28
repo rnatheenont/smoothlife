@@ -244,6 +244,14 @@ function DetailPanel({
                           {item.contactPhone}
                         </a>
                       )}
+                      {item.contactEmail && (
+                        <a
+                          href={`mailto:${item.contactEmail}`}
+                          className="mt-0.5 block break-all text-[12px] text-brand-800 underline"
+                        >
+                          {item.contactEmail}
+                        </a>
+                      )}
                     </dd>
                   </dl>
 

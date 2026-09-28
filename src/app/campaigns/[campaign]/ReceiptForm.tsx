@@ -160,6 +160,7 @@ export default function ReceiptForm({
   const mode = items.length > 1 ? "multi" : "single";
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   // What the photo was read to say, after the customer has had a look at it.
   const [reading, setReading] = useState(false);
   const [approved, setApproved] = useState(0);
@@ -179,9 +180,10 @@ export default function ReceiptForm({
       setUploads((data.uploads ?? []) as Upload[]);
       setPrizes((data.prizes ?? []) as Prize[]);
       // Only ever a first guess — never overwrite what they are typing.
-      const profile = (data.profile ?? {}) as { name?: string; phone?: string };
+      const profile = (data.profile ?? {}) as { name?: string; phone?: string; email?: string };
       setContactName((v) => v || profile.name || "");
       setContactPhone((v) => v || profile.phone || "");
+      setContactEmail((v) => v || profile.email || "");
       setApproved(data.approvedEntries as number);
       setState("ready");
     } catch {
@@ -450,6 +452,7 @@ export default function ReceiptForm({
         body.set("photo", item.file);
         body.set("contactName", contactName.trim());
         body.set("contactPhone", contactPhone.trim());
+        body.set("contactEmail", contactEmail.trim());
         body.set("declaredOrderNumber", item.declared.orderNumber.trim());
         body.set("declaredPaidAt", item.declared.paidAt.trim());
         body.set("declaredTotal", item.declared.total.trim());
@@ -916,6 +919,23 @@ export default function ReceiptForm({
                         inputMode="tel"
                         placeholder="08x-xxx-xxxx"
                         className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black tabular-nums"
+                      />
+                    </label>
+                    {/* Filled in from the account they signed in with, and
+                        still theirs to change: a prize deadline announced to
+                        an address nobody reads is a prize nobody claims, and
+                        the address on the account is not always the one they
+                        watch. */}
+                    <label className="mt-3 block">
+                      <span className="text-[12px] font-semibold text-black/55">อีเมล</span>
+                      <input
+                        value={contactEmail}
+                        onChange={(e) => setContactEmail(e.target.value)}
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        placeholder="you@example.com"
+                        className="mt-1.5 min-h-11 w-full rounded-xl border border-black/15 px-3 text-[14px] text-black"
                       />
                     </label>
                   </div>

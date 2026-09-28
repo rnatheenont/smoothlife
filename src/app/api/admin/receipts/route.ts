@@ -46,6 +46,7 @@ type EntryRow = {
   users: { display_name: string | null; shopify_customer_id?: string | null; phone?: string | null } | null;
   contact_name?: string | null;
   contact_phone?: string | null;
+  contact_email?: string | null;
   declared_order_number?: string | null;
   declared_paid_at?: string | null;
   declared_total?: number | string | null;
@@ -61,7 +62,7 @@ type EntryRow = {
 const SELECT =
   "id,user_id,payment_transaction_id,manual_receipt_no,receipt_photo_path,dentiste_net_amount," +
   "keychain_amount,computed_entries,entries_override,status,reject_reason,reviewed_at,created_at,ai_check," +
-  "revoke_reason,contact_name,contact_phone,declared_order_number,declared_paid_at,declared_total," +
+  "revoke_reason,contact_name,contact_phone,contact_email,declared_order_number,declared_paid_at,declared_total," +
   "users(display_name,shopify_customer_id,phone),payment_transactions(invoice_no,amount,confirmed_at,shopify_order_id,line_items)";
 
 type WinnerRow = {
@@ -211,6 +212,7 @@ export async function GET(req: NextRequest) {
       // of the order — the two disagreeing is the thing worth a second look.
       contactName: r.contact_name ?? null,
       contactPhone: r.contact_phone ?? null,
+      contactEmail: r.contact_email ?? null,
       declared: {
         orderNumber: r.declared_order_number ?? null,
         paidAt: r.declared_paid_at ?? null,

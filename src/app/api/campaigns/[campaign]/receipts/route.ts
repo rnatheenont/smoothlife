@@ -83,7 +83,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ campaign:
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
 
   const test = isTestMode(req.nextUrl.searchParams.get("test"));
-  const [{ orders, rules }, entries, uploads, profile, prizes] = await Promise.all([
+  const [{ orders, rules }, entries, uploads, profile, emailIdentity, prizes] = await Promise.all([
     eligibleOrders(CAMPAIGN, uid, test),
     entriesForUser(CAMPAIGN, uid),
     supabaseRest<UploadRow[]>(
@@ -95,6 +95,13 @@ export async function GET(req: NextRequest, props: { params: Promise<{ campaign:
     // The account's own name and number, as the first guess at who to call.
     supabaseRest<{ display_name: string | null; phone: string | null }[]>(
       `users?id=eq.${pgValue(uid)}&select=display_name,phone&limit=1`
+    ).catch(() => []),
+    // The address they signed in with — a verified one, since signing in is
+    // what verified it. Shown in the form rather than used silently: the
+    // account's address and the one they want a prize sent to are allowed to
+    // differ, and they should be able to see which one we have.
+    supabaseRest<{ provider_uid: string }[]>(
+      `auth_identities?user_id=eq.${pgValue(uid)}&provider=eq.email&select=provider_uid&limit=1`
     ).catch(() => []),
     supabaseRest<WinnerRow[]>(
       `receipt_campaign_winners?campaign_key=eq.${CAMPAIGN}` +
@@ -136,6 +143,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ campaign:
       profile: {
         name: entries[0]?.contact_name ?? profile[0]?.display_name ?? "",
         phone: entries[0]?.contact_phone ?? profile[0]?.phone ?? "",
+        // Whatever they last told us, else the address they signed in with.
+        email: entries[0]?.contact_email ?? emailIdentity[0]?.provider_uid ?? "",
       },
       orders: orders.map((tx) => {
         const amounts = amountsFromLineItems(tx.line_items, rules);
@@ -288,6 +297,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
   // rather than chased in November, when a winner has a deadline to meet.
   const contactName = String(form?.get("contactName") ?? "").trim().slice(0, 120);
   const contactPhone = String(form?.get("contactPhone") ?? "").replace(/[^0-9+]/g, "").slice(0, 20);
+  const contactEmail = String(form?.get("contactEmail") ?? "").trim().slice(0, 160).toLowerCase() || null;
+  if (contactEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contactEmail)) {
+    return NextResponse.json({ ok: false, error: "อีเมลไม่ถูกต้อง — ตรวจอีกครั้งนะคะ" }, { status: 400 });
+  }
   if (contactName.length < 2) {
     return NextResponse.json({ ok: false, error: "กรุณากรอกชื่อ-นามสกุล" }, { status: 400 });
   }
@@ -413,6 +426,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
     ai_check: aiCheck,
     contact_name: contactName,
     contact_phone: contactPhone,
+    contact_email: contactEmail,
     declared_order_number: declaredOrderNumber,
     declared_paid_at: declaredPaidAt,
     declared_total: declaredTotal,

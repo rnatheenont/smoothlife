@@ -23,6 +23,7 @@ export type QueueItem = {
   paymentStatus: string | null;
   refunded: number;
   contactName: string | null;
+  contactEmail: string | null;
   contactPhone: string | null;
   /** What the customer said their receipt shows — their words, not our record. */
   declared: { orderNumber: string | null; paidAt: string | null; total: number | null };
