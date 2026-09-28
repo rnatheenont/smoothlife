@@ -294,6 +294,18 @@ export default function FlashSaleLive({
     </div>
   );
 
+  // The bar without the count. It still says "this is going" — filled for what
+  // has sold, amber for what is being paid for right now — without putting a
+  // number on how much is left, which is the part that reads as pressure on a
+  // twenty-five piece drop. aria-hidden because there is nothing here for a
+  // screen reader that the page does not already say in words.
+  const stockBar = stock && stock.total > 0 && (
+    <div className="flex h-2.5 overflow-hidden rounded-full bg-black/10" aria-hidden>
+      <div className="bg-[var(--fs-accent)] transition-[width] duration-500" style={{ width: `${(stock.sold / stock.total) * 100}%` }} />
+      <div className="bg-amber-400 transition-[width] duration-500" style={{ width: `${(stock.reserved / stock.total) * 100}%` }} />
+    </div>
+  );
+
   const checkout = (
     <div className="mt-5 flex flex-col gap-3">
       <CheckoutAddressPicker value={address} onChange={setAddress} canSave={Boolean(status?.signedIn)} />
@@ -508,6 +520,7 @@ export default function FlashSaleLive({
                 <h2 className="mt-1 text-2xl font-extrabold leading-snug text-[#003529] md:text-3xl">{product.name}</h2>
               </div>
               <div className="flex justify-center md:justify-start">{priceRow}</div>
+              {stockBar}
               <div ref={panelRef}>{panelBody}</div>
               {noticeBox}
               <p className="text-center text-xs text-slate-500 md:text-left">1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ · ถึงคิวแล้วมีเวลาชำระเงิน {status?.campaign.window_minutes ?? 15} นาที</p>
@@ -554,6 +567,7 @@ export default function FlashSaleLive({
                 <h2 className="mt-1 text-xl font-bold leading-snug text-brand-ink">{product.name}</h2>
               </div>
               {priceRow}
+              {stockBar}
               <ul className="flex flex-col gap-2 text-sm text-slate-600">
                 <li className="flex items-center gap-2">
                   <Users size={16} className="shrink-0 text-brand-800" aria-hidden /> 1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ
