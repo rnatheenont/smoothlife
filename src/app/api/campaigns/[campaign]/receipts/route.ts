@@ -12,7 +12,7 @@ import {
   type LineItem,
 } from "@/lib/receipt-campaign";
 import { checkReceiptPhoto, readMoment } from "@/lib/receipt-vision";
-import { orderNameByGid, orderNamesByGid } from "@/lib/shopify-admin";
+import { orderNameByGid, orderNamesByGid, orderPaymentByGid } from "@/lib/shopify-admin";
 import { loadCampaignContent, windowOf } from "@/lib/receipt-campaign-content";
 import { orderNumberClaim } from "@/lib/receipt-campaign-claims";
 import { holdsPrize, type CampaignRules } from "@/lib/receipt-campaign";
@@ -126,12 +126,22 @@ export async function GET(req: NextRequest, props: { params: Promise<{ campaign:
     }));
   const used = new Set(entries.map((e) => e.payment_transaction_id).filter(Boolean));
   // One lookup for every order on the page — the ones they can still send and
-  // the ones they already did.
-  const names = await orderNamesByGid([
+  // the ones they already did. The payment status comes back with the number
+  // because a receipt whose money went back is not a purchase any more, and
+  // the running total on this page said otherwise for as long as it only
+  // asked for names.
+  const payments = await orderPaymentByGid([
     ...orders.map((tx) => tx.shopify_order_id),
     ...entries.map((e) => e.payment_transactions?.shopify_order_id),
   ]);
-  const nameOf = (gid: string | null | undefined) => names.get(gid ?? "") ?? null;
+  const nameOf = (gid: string | null | undefined) => payments.get(gid ?? "")?.name ?? null;
+  /** Shopify's word for money that is not staying with the shop. */
+  const RETURNED = new Set(["REFUNDED", "VOIDED", "EXPIRED"]);
+  const refundedGid = (gid: string | null | undefined) => {
+    const payment = payments.get(gid ?? "");
+    if (!payment) return false;
+    return payment.refunded > 0 || RETURNED.has((payment.financialStatus ?? "").toUpperCase());
+  };
 
   return NextResponse.json(
     {
@@ -171,6 +181,10 @@ export async function GET(req: NextRequest, props: { params: Promise<{ campaign:
         orderTotal: e.payment_transactions ? Number(e.payment_transactions.amount) : null,
         dentisteAmount: Number(e.dentiste_net_amount),
         keychainAmount: Number(e.keychain_amount),
+        // Refunded in Shopify since it was sent — the entry stays in their
+        // history, because it happened, but it stops counting towards
+        // anything.
+        refunded: refundedGid(e.payment_transactions?.shopify_order_id),
         status: e.status,
         rejectReason: e.reject_reason,
         entries: entriesOf(e),

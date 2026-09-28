@@ -83,6 +83,8 @@ type Entry = {
   dentisteAmount: number;
   keychainAmount: number;
   status: "pending_review" | "approved" | "rejected" | "revoked";
+  /** The order behind it was refunded in Shopify after it was sent. */
+  refunded?: boolean;
   rejectReason: string | null;
   entries: number;
   createdAt: string;
@@ -620,7 +622,11 @@ export default function ReceiptForm({
   const pendingEntries = entries
     .filter((e) => e.status === "pending_review")
     .reduce((n, e) => n + e.entries, 0);
-  const totalDentiste = entries.reduce((n, e) => n + e.dentisteAmount, 0);
+  // What still counts. A receipt that was turned down, taken back, or whose
+  // order was refunded is not a purchase towards anything, and adding it here
+  // told the customer they had spent money the shop has already given back.
+  const stillCounts = (e: Entry) => e.status !== "rejected" && e.status !== "revoked" && !e.refunded;
+  const totalDentiste = entries.filter(stillCounts).reduce((n, e) => n + e.dentisteAmount, 0);
 
   // One row per attempt, newest first. A receipt with no upload row behind it
   // still gets a line: a receipt that vanishes from their own history because
@@ -1274,6 +1280,17 @@ export default function ReceiptForm({
                         <span className="font-semibold text-black/45">{isOpen ? "ปิด" : "ดูรายละเอียด"}</span>
                       </span>
                     </button>
+
+                    {/* Refunded after it was sent, but nobody has revoked the
+                        entry yet: the money is gone and the running total has
+                        already stopped counting it, so the row says why
+                        rather than leaving a number that does not add up. */}
+                    {entry.refunded && entry.status !== "revoked" && (
+                      <p className="flex items-start gap-1.5 border-t border-black/10 bg-slate-50 px-4 py-2.5 text-[13px] text-slate-700">
+                        <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden />
+                        คำสั่งซื้อนี้มีการคืนเงินแล้ว ยอดของใบนี้จึงไม่ถูกนับรวม
+                      </p>
+                    )}
 
                     {/* The one thing worth saying without being asked. */}
                     {entry.status === "revoked" && (
