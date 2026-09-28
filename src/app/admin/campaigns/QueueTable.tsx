@@ -98,9 +98,13 @@ function ClaimWarning({ item }: { item: QueueItem }) {
     return (
       <p className="mt-3 flex items-start gap-2 rounded-l border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] text-rose-900">
         <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+        {/* What was compared, not a verdict on the person. The reviewer is
+            the one who decides, and "the account and phone do not match" is
+            the fact; "this customer is lying" is a conclusion that a shared
+            phone or a guest checkout can make wrong. */}
         <span>
-          คำสั่งซื้อ <b>{item.claimedOrder.number}</b> ไม่ใช่ของลูกค้ารายนี้
-          {item.claimedOrder.ownerLabel ? <> — เป็นของ <b>{item.claimedOrder.ownerLabel}</b></> : null}
+          คำสั่งซื้อ <b>{item.claimedOrder.number}</b> อยู่ในชื่อคนอื่น
+          {item.claimedOrder.ownerLabel ? <> — <b>{item.claimedOrder.ownerLabel}</b></> : null} (เทียบจากบัญชีและเบอร์โทร)
         </span>
       </p>
     );
@@ -216,9 +220,10 @@ function DetailPanel({
                     <dt className="text-slate-500">สถานะการชำระเงิน</dt>
                     <dd>
                       <PaymentChip item={item} />
-                      {item.refunded > 0 && (
+                      {(item.refunded > 0 || (item.claimedOrder?.found ? item.claimedOrder.refunded : 0) > 0) && (
                         <span className="ms-2 text-[12px] font-semibold text-rose-700">
-                          คืนแล้ว {formatTHB(item.refunded)}
+                          คืนแล้ว{" "}
+                          {formatTHB(item.refunded || (item.claimedOrder?.found ? item.claimedOrder.refunded : 0))}
                         </span>
                       )}
                     </dd>
@@ -227,7 +232,13 @@ function DetailPanel({
                     <dt className="text-slate-500">ชำระเมื่อ</dt>
                     <dd className="text-brand-ink">{when(item.paidAt)}</dd>
                     <dt className="text-slate-500">ยอดทั้งบิล</dt>
-                    <dd className="text-brand-ink">{item.orderTotal === null ? "—" : formatTHB(item.orderTotal)}</dd>
+                    <dd className="text-brand-ink">
+                      {item.orderTotal !== null
+                        ? formatTHB(item.orderTotal)
+                        : item.claimedOrder?.found
+                          ? <>{formatTHB(item.claimedOrder.total)} <span className="text-[11px] text-slate-400">(จากคำสั่งซื้อในร้าน)</span></>
+                          : "—"}
+                    </dd>
                     <dt className="text-slate-500">ยอด DENTISTE&apos;</dt>
                     <dd className="font-bold text-brand-ink">{formatTHB(item.dentisteAmount)}</dd>
                     {item.keychainAmount > 0 && (
