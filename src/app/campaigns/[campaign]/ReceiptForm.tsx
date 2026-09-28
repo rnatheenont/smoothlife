@@ -767,8 +767,7 @@ export default function ReceiptForm({
 
                             {item.duplicate && !item.reading && (
                               <p className="mt-1.5 text-[12px] font-semibold text-rose-700">
-                                เลขคำสั่งซื้อนี้ถูกใช้ร่วมกิจกรรมไปแล้ว — ตรวจเลขบนใบเสร็จอีกครั้ง
-                                หากเป็นคำสั่งซื้อของคุณจริง ทักทีมงานในแชทได้เลยค่ะ
+                                เลขนี้ถูกใช้ไปแล้ว — ถ้าเป็นของคุณ ทักทีมงานได้เลยค่ะ
                               </p>
                             )}
 
@@ -1009,8 +1008,7 @@ export default function ReceiptForm({
                                 other layout is a warning nobody sees. */}
                             {key === "orderNumber" && singleItem.duplicate && (
                               <p className="mt-1.5 text-[12px] font-semibold text-rose-700">
-                                เลขนี้ถูกใช้ร่วมกิจกรรมไปแล้ว — ตรวจเลขบนใบเสร็จอีกครั้ง
-                                หากเป็นคำสั่งซื้อของคุณจริง ทักทีมงานในแชทได้เลยค่ะ
+                                เลขนี้ถูกใช้ไปแล้ว — ถ้าเป็นของคุณ ทักทีมงานได้เลยค่ะ
                               </p>
                             )}
                           </label>
@@ -1053,7 +1051,7 @@ export default function ReceiptForm({
                         </button>
                         {duplicates > 0 ? (
                           <p className="text-center text-[12px] font-semibold text-rose-700">
-                            เลขคำสั่งซื้อนี้ถูกใช้ร่วมกิจกรรมไปแล้ว — ใช้ซ้ำไม่ได้
+                            เลขนี้ถูกใช้ไปแล้ว ส่งซ้ำไม่ได้
                           </p>
                         ) : (
                           incomplete > 0 && (

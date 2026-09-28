@@ -354,7 +354,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
     return NextResponse.json(
       {
         ok: false,
-        error: `เลขคำสั่งซื้อ ${claimedNumber} ถูกใช้ร่วมกิจกรรมไปแล้ว หากเป็นคำสั่งซื้อของคุณจริง กรุณาติดต่อทีมงานผ่านแชท`,
+        error: `เลขคำสั่งซื้อ ${claimedNumber} ถูกใช้ไปแล้ว — ถ้าเป็นของคุณ ทักทีมงานได้เลยค่ะ`,
       },
       { status: 409 }
     );
