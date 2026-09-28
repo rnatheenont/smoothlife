@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { DEFAULT_CONTENT, loadCampaignContent, type CampaignStep, storeUrlOf, accentOf } from "@/lib/receipt-campaign-content";
+import { DEFAULT_CONTENT, loadCampaignContent, type CampaignStep, storeUrlOf, accentOf, stepImageOf } from "@/lib/receipt-campaign-content";
 import { DEFAULT_RULES } from "@/lib/receipt-campaign";
 import { products } from "@/data/products";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
@@ -74,8 +74,8 @@ export async function PUT(req: NextRequest) {
   const steps: CampaignStep[] = Array.isArray(body.steps)
     ? body.steps
         .map((s: unknown) => {
-          const step = s as { title?: unknown; body?: unknown };
-          return { title: text(step?.title, 80), body: text(step?.body, 300) };
+          const step = s as { title?: unknown; body?: unknown; image?: unknown };
+          return { title: text(step?.title, 80), body: text(step?.body, 300), image: stepImageOf(step?.image) };
         })
         .filter((s: CampaignStep) => s.title)
         .slice(0, 6)

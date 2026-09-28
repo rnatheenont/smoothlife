@@ -1,4 +1,5 @@
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
+import { publicStorageHost } from "@/lib/public-uploads";
 import { CLOSES_AT, DEFAULT_RULES, OPENS_AT, type CampaignRules } from "@/lib/receipt-campaign";
 
 // The words and dates a receipt campaign shows its customers.
@@ -46,7 +47,32 @@ export function storeUrlOf(value: string | null | undefined, fallback: string): 
   }
 }
 
-export type CampaignStep = { title: string; body: string };
+export type CampaignStep = {
+  title: string;
+  body: string;
+  /** A picture for this step, uploaded by an admin. Falls back to the icon. */
+  image?: string | null;
+};
+
+/**
+ * A step's picture, if it is one we put there.
+ *
+ * The field is typed into an admin screen and rendered on a public page, so
+ * it is held to the same rule as the campaign's other links: our own upload
+ * bucket, the shop, or Shopify's CDN. Anything else becomes no picture.
+ */
+export function stepImageOf(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const hosts = ["cdn.shopify.com", "www.smoothlife.com", "smoothlife.com", publicStorageHost()].filter(
+    (h): h is string => Boolean(h)
+  );
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" && hosts.includes(url.hostname) ? url.href : null;
+  } catch {
+    return null;
+  }
+}
 
 export type CampaignContent = {
   eyebrow: string;
@@ -181,7 +207,9 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
   if (!row) return DEFAULT_CONTENT;
 
   const steps = Array.isArray(row.steps)
-    ? row.steps.filter((s): s is CampaignStep => Boolean(s && typeof s.title === "string"))
+    ? row.steps
+        .filter((s): s is CampaignStep => Boolean(s && typeof s.title === "string"))
+        .map((s) => ({ ...s, image: stepImageOf(s.image) }))
     : [];
   const terms = Array.isArray(row.terms) ? row.terms.filter((t): t is string => typeof t === "string") : [];
 
