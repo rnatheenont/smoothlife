@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
+import { useReducedMotion } from "motion/react";
+import { BorderBeam } from "@/components/magicui/border-beam";
 import Link from "next/link";
 import { Alert, Button, Card, Chip, ProgressBar, Spinner } from "@heroui/react";
 import { AlertTriangle, CheckCircle2, Clock, CreditCard, MessageCircle, RotateCcw, Timer, Users } from "lucide-react";
@@ -97,6 +99,9 @@ export default function FlashSaleLive({
   const [, setTick] = useState(0);
   const received = useRef({ at: Date.now(), serverOffset: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
+  // Up here with the other hooks on purpose: there are early returns further
+  // down, and a hook called past one of them is a hook React stops finding.
+  const reducedMotion = useReducedMotion();
 
   const refresh = useCallback(async () => {
     try {
@@ -560,7 +565,29 @@ export default function FlashSaleLive({
           <div className="mt-6">{alerts}</div>
           <SetPicker items={pickerItems} value={product.slug} onChange={setSelected} />
 
-          <div className="mt-6 grid gap-6 rounded-3xl bg-white p-4 shadow-card ring-1 ring-black/5 md:grid-cols-2 md:gap-10 md:p-8 lg:items-center">
+          <div className="relative mt-6 grid gap-6 rounded-3xl bg-white p-4 shadow-card ring-1 ring-black/5 md:grid-cols-2 md:gap-10 md:p-8 lg:items-center">
+            {/* Two lights chasing each other round the card's own edge, half a
+                cycle apart, in the campaign's colour. The page already has a
+                countdown, a queue and a stock bar moving on it, so this is the
+                one decorative thing here — and it stops entirely for anyone who
+                has asked for less motion. */}
+            {!reducedMotion && (
+              <>
+                <BorderBeam
+                  duration={8}
+                  size={220}
+                  borderWidth={2}
+                  className="from-transparent via-[var(--fs-accent)] to-transparent"
+                />
+                <BorderBeam
+                  duration={8}
+                  delay={4}
+                  size={220}
+                  borderWidth={2}
+                  className="from-transparent via-[var(--fs-accent)] to-transparent"
+                />
+              </>
+            )}
             <div className="relative aspect-square overflow-hidden rounded-2xl bg-[linear-gradient(160deg,#f7f1ff,#ffffff)]">
               <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 45vw" className="rounded-2xl object-contain p-4 md:p-6" priority />
             </div>
