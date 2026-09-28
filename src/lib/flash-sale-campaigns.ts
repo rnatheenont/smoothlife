@@ -134,6 +134,18 @@ export type PricingInput =
 
 const MAX_PRODUCTS = 12;
 
+/**
+ * "As many times as they like", stored as a number because the column is one.
+ *
+ * A queue that turns people away after three misses is right for a drop
+ * people are racing for and wrong for one that runs all morning. Rather than
+ * a nullable column and a branch in every Postgres function that reads it,
+ * unlimited is a ceiling nobody reaches — the comparison stays the same
+ * comparison, and every screen that shows the number knows this one means
+ * "ไม่จำกัด".
+ */
+export const UNLIMITED_REQUEUE = 9999;
+
 /** A banner has to come from our own storefront, Shopify's CDN, or our own
  *  public upload bucket (see /api/admin/flash-sale/upload-image) — it is
  *  rendered on the sale page. */
@@ -222,8 +234,8 @@ export function parseCampaignInput(
   if (stock === null) return { error: "สต็อกต่อสินค้าต้องเป็น 1–10,000 ชิ้น" };
   const windowMinutes = int(b.windowMinutes, 1, 120);
   if (windowMinutes === null) return { error: "เวลาชำระเงินต้องอยู่ระหว่าง 1–120 นาที" };
-  const maxRequeue = int(b.maxRequeue, 0, 10);
-  if (maxRequeue === null) return { error: "จำนวนครั้งที่กลับเข้าคิวต้องอยู่ระหว่าง 0–10" };
+  const maxRequeue = int(b.maxRequeue, 0, UNLIMITED_REQUEUE);
+  if (maxRequeue === null) return { error: "จำนวนครั้งที่กลับเข้าคิวไม่ถูกต้อง" };
 
   const startsAt = typeof b.startsAt === "number" && Number.isFinite(b.startsAt) ? b.startsAt : NaN;
   if (Number.isNaN(startsAt)) return { error: "กรุณาเลือกวันเวลาเริ่มขาย" };

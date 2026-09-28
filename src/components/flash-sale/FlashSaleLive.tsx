@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Alert, Button, Card, Chip, ProgressBar, Spinner } from "@heroui/react";
 import { AlertTriangle, CheckCircle2, Clock, CreditCard, MessageCircle, RotateCcw, Timer, Users } from "lucide-react";
 import { formatTHB } from "@/lib/format";
+import { UNLIMITED_REQUEUE } from "@/lib/flash-sale-campaigns";
 import type { FlashSaleStatus } from "@/lib/flash-sale";
 import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
 import MobileStickyBar from "@/components/MobileStickyBar";
@@ -759,7 +760,12 @@ function Panel({
   }
 
   const expired = me?.status === "expired";
+  // A campaign that lets people back in as often as they like stores that as
+  // a ceiling nobody reaches; saying "เข้าใหม่ได้อีก 9998 ครั้ง" would be
+  // technically true and read as a bug.
+  const unlimitedRequeue = campaign.max_requeue >= UNLIMITED_REQUEUE;
   const requeuesLeft = me ? campaign.max_requeue - (me.expired_count - 1) : campaign.max_requeue;
+  const requeueLabel = unlimitedRequeue ? "ไม่จำกัดครั้ง" : `${Math.max(0, requeuesLeft)} ครั้ง`;
   return (
     <div>
       {expired ? (
@@ -772,8 +778,8 @@ function Panel({
               while the whole stock sits there. The queue answers this. */}
           <p className="mt-1 text-sm text-slate-600">
             {waiting === 0 && remaining > 0
-              ? `ของยังเหลือ ${remaining} ชิ้น กดกลับเข้าคิวได้เลย · เข้าใหม่ได้อีก ${Math.max(0, requeuesLeft)} ครั้ง`
-              : `สิทธิ์ถูกส่งต่อให้คิวถัดไปแล้ว กลับเข้าคิวได้อีก ${Math.max(0, requeuesLeft)} ครั้ง`}
+              ? `ของยังเหลือ ${remaining} ชิ้น กดกลับเข้าคิวได้เลย · เข้าใหม่ได้${requeueLabel}`
+              : `สิทธิ์ถูกส่งต่อให้คิวถัดไปแล้ว กลับเข้าคิวได้อีก ${requeueLabel}`}
           </p>
         </>
       ) : (
@@ -794,7 +800,7 @@ function Panel({
           size="lg"
           className="mt-5"
           style={accentButton}
-          isDisabled={busy || (expired && requeuesLeft <= 0)}
+          isDisabled={busy || (expired && !unlimitedRequeue && requeuesLeft <= 0)}
           isPending={busy}
           onPress={join}
         >
