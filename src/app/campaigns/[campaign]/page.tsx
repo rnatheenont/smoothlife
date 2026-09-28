@@ -108,8 +108,8 @@ export default async function Page({
           <p className="text-[14px] font-bold text-black">{closed ? "ปิดรับใบเสร็จแล้ว" : "ยังไม่เปิดรับใบเสร็จ"}</p>
           <p className="mt-1 text-[14px] leading-relaxed text-black/70">
             {closed
-              ? `หมดเขตส่งใบเสร็จเมื่อ ${label.closesLong} — ประกาศผลวันที่ ${label.announce} เวลา 18:00 น.`
-              : `ฟอร์มส่งใบเสร็จจะเปิดวันที่ ${label.opensLong} และประกาศผลวันที่ ${label.announce} เวลา 18:00 น.`}
+              ? `หมดเขตส่งใบเสร็จเมื่อ ${label.closesLong} — ประกาศผลวันที่ ${label.announce}`
+              : `ฟอร์มส่งใบเสร็จจะเปิดวันที่ ${label.opensLong} และประกาศผลวันที่ ${label.announce}`}
             {" "}เก็บใบเสร็จตัวจริงไว้เป็นหลักฐานด้วยนะคะ
           </p>
         </div>
