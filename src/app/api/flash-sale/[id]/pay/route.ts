@@ -3,6 +3,9 @@ import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { isRateLimitedShared } from "@/lib/rate-limit";
 import { createPaymentToken, twoC2PConfigured } from "@/lib/2c2p";
+
+/** How long 2C2P's own payment page stays usable, at minimum. */
+const PAYMENT_PAGE_MINUTES = 30;
 import { getProductBySlug } from "@/data/products";
 import { startFlashSalePayment, UUID_RE } from "@/lib/flash-sale";
 import { ATTRIBUTION_COOKIE, attributionColumns } from "@/lib/attribution";
@@ -110,7 +113,14 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       backendReturnUrl: `${origin}/api/webhooks/2c2p-flash-sale`,
       customer: { email: email?.provider_uid, mobileNo: shippingAddress.phone },
       shippingAddress,
-      paymentExpiry: new Date(started.expires_at),
+      // Not the reservation's own deadline. A shopper who presses pay with
+      // two minutes left handed 2C2P a two-minute window to load a page,
+      // choose a method, receive an OTP and answer it — and one who pressed
+      // with thirty-six seconds left handed it thirty-six. The queue still
+      // decides who gets the item; this only decides how long the payment
+      // page itself stays alive, and a charge that lands after the slot is
+      // gone is already handled (settleFlashSaleCharge flags it to refund).
+      paymentExpiry: new Date(Math.max(Date.parse(started.expires_at), Date.now() + PAYMENT_PAGE_MINUTES * 60_000)),
     });
     return NextResponse.json({ ok: true, webPaymentUrl: result.webPaymentUrl, cartToken });
   } catch (err) {
