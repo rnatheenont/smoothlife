@@ -2300,3 +2300,58 @@ export async function unpublishedProducts(): Promise<UnpublishedProduct[]> {
     return [];
   }
 }
+
+/**
+ * How many of each variant the shop has actually sold since a moment.
+ *
+ * The queue knows what it sold. It does not know what the storefront sold
+ * beside it — and on a "25 sets only" campaign those are the same twenty-five.
+ * Two went out of the front door within four minutes of the sale opening and
+ * the page still read "ขายแล้ว 0", because our own table was the only thing
+ * anyone had asked.
+ *
+ * Counted from paid orders, cached for a minute: the sale page polls this
+ * every few seconds from every open tab, and a number that is up to a minute
+ * old is much better than a rate limit in the middle of a drop.
+ */
+const soldCache = new Map<string, { at: number; counts: Map<string, number> }>();
+
+export async function variantsSoldSince(
+  variantIds: (string | null | undefined)[],
+  sinceIso: string
+): Promise<Map<string, number>> {
+  const wanted = new Set(variantIds.filter((v): v is string => Boolean(v)));
+  if (!wanted.size || !shopifyAdminConfigured()) return new Map();
+
+  const key = `${sinceIso}|${[...wanted].sort().join(",")}`;
+  const hit = soldCache.get(key);
+  if (hit && Date.now() - hit.at < 60_000) return hit.counts;
+
+  const counts = new Map<string, number>();
+  try {
+    // Paid only: an abandoned or expired checkout has sold nothing.
+    const data = await adminGraphql<{
+      orders: { nodes: { lineItems: { nodes: { quantity: number; variant: { id: string } | null }[] } }[] };
+    }>(
+      `query SoldSince($q: String!) {
+         orders(first: 100, query: $q, sortKey: CREATED_AT, reverse: true) {
+           nodes { lineItems(first: 50) { nodes { quantity variant { id } } } }
+         }
+       }`,
+      { q: `created_at:>='${sinceIso}' AND financial_status:paid` }
+    );
+    for (const order of data.orders?.nodes ?? []) {
+      for (const li of order.lineItems?.nodes ?? []) {
+        const id = li.variant?.id;
+        if (!id || !wanted.has(id)) continue;
+        counts.set(id, (counts.get(id) ?? 0) + (Number(li.quantity) || 0));
+      }
+    }
+    soldCache.set(key, { at: Date.now(), counts });
+    return counts;
+  } catch (err) {
+    // The queue's own number stands rather than the page failing to load.
+    console.error("[shopify-admin] variantsSoldSince failed", err);
+    return new Map();
+  }
+}
