@@ -67,7 +67,7 @@ const clock = (iso: string) =>
 function funnel(s: FlashSalePaymentStats, shopSold: { count: number; amount: number }) {
   const share = (n: number, of: number) => (of > 0 ? Math.round((n / of) * 100) : null);
   return [
-    { key: "turns", label: "ถึงคิวแล้ว", value: s.turns, share: null as number | null, rule: "bg-slate-300", money: null as number | null, note: "ได้สิทธิ์ซื้อ" },
+    { key: "turns", label: "ถึงคิวแล้ว", value: s.turns, share: null as number | null, rule: "bg-slate-300", money: null as number | null, note: "ได้สิทธิ์ซื้อ", extra: null as string | null },
     {
       key: "pressed",
       label: "กดชำระเงิน",
@@ -76,17 +76,30 @@ function funnel(s: FlashSalePaymentStats, shopSold: { count: number; amount: num
       rule: "bg-brand-800",
       money: null,
       note: `${s.attempts} ครั้ง`,
+      extra: null,
     },
     {
       key: "paid",
       label: "จ่ายสำเร็จ",
-      value: s.paid + shopSold.count,
+      // The queue's own number, because this row is the queue's story: 141
+      // reached their turn, 17 pressed, and what came out the far end. Adding
+      // the shop's own sales here produced "2" sitting beside "0%" and
+      // "ผ่านคิว 0" — three true numbers that contradicted each other.
+      value: s.paid,
       share: share(s.paid, s.pressed_pay),
       rule: "bg-emerald-500",
       // The number everyone actually came for. A count of sales on a page about
       // ฿55,000 a piece was the one thing here nobody could read off it.
-      money: s.paid_amount + shopSold.amount,
-      note: shopSold.count > 0 ? `ผ่านคิว ${s.paid} · หน้าร้าน ${shopSold.count}` : "ยังไม่มียอดขาย",
+      money: s.paid_amount,
+      note:
+        s.median_seconds_to_pay !== null
+          ? `เฉลี่ย ${mmss(s.median_seconds_to_pay)}`
+          : s.paid === 0
+            ? "ยังไม่มียอดขายผ่านคิว"
+            : null,
+      // Sold by the shop's own product page, beside the funnel rather than
+      // inside it — it is real money and it is not this row's path.
+      extra: shopSold.count > 0 ? `+ หน้าร้าน ${shopSold.count} ชิ้น · ${baht(shopSold.amount)}` : null,
     },
     {
       key: "stuck",
@@ -96,6 +109,7 @@ function funnel(s: FlashSalePaymentStats, shopSold: { count: number; amount: num
       rule: s.failed > 0 ? "bg-rose-500" : "bg-amber-400",
       money: s.open_amount,
       note: `ค้าง ${s.open} · ไม่สำเร็จ ${s.failed}`,
+      extra: null,
     },
   ];
 }
@@ -366,7 +380,8 @@ export default function LiveMonitor({
                       {baht(step.money)}
                     </p>
                   )}
-                  <p className="mt-0.5 text-[11px] text-slate-400">{step.note}</p>
+                  {step.note && <p className="mt-0.5 text-[11px] text-slate-400">{step.note}</p>}
+                  {step.extra && <p className="mt-0.5 text-[11px] font-semibold text-slate-500">{step.extra}</p>}
                 </li>
               ))}
             </ol>
