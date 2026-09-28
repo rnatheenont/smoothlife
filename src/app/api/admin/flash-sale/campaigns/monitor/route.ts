@@ -3,6 +3,7 @@ import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { flashSaleMonitor, UUID_RE } from "@/lib/flash-sale";
 import { sharedSourcesFor } from "@/lib/flash-sale-sources";
+import { raiseSoldToShopify } from "@/lib/flash-sale-sold";
 
 // Admin: live numbers for several campaigns in one request. The console can
 // have any number of campaign queues unfolded at once, and each one polling
@@ -39,6 +40,9 @@ export async function GET(req: NextRequest) {
       ids.map(async (id) => {
         const monitor = await flashSaleMonitor(id).catch(() => null);
         if (!monitor) return [id, null] as const;
+        // Same reckoning the sale page uses: two screens disagreeing about
+        // one sale is worse than either being a minute stale.
+        await raiseSoldToShopify(id, monitor.campaign.starts_at, monitor.products);
         const refunds = refundRows
           .filter((r) => r.flash_sale_queue?.campaign_id === id)
           .map(({ invoice_no, amount, refund_note }) => ({ invoice_no, amount, refund_note }));

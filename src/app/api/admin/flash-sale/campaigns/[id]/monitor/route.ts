@@ -3,6 +3,7 @@ import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { flashSaleMonitor, UUID_RE } from "@/lib/flash-sale";
 import { sharedSourcesFor } from "@/lib/flash-sale-sources";
+import { raiseSoldToShopify } from "@/lib/flash-sale-sold";
 
 // Admin: live numbers for one campaign from the real queue.
 
@@ -18,6 +19,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   try {
     const monitor = await flashSaleMonitor(id);
     if (!monitor) return NextResponse.json({ ok: false, error: "ไม่พบแคมเปญ" }, { status: 404 });
+    // The console counts what the shop sold, not what the queue sold.
+    await raiseSoldToShopify(id, monitor.campaign.starts_at, monitor.products);
     // Charges to refund by hand (late or duplicate) and paid slots still without an order.
     const refunds = await supabaseRest<{ invoice_no: string; amount: number; refund_note: string }[]>(
       `payment_transactions?refund_note=like.FLASH_SALE_*&status=eq.success&select=invoice_no,amount,refund_note,flash_sale_queue!inner(campaign_id)&flash_sale_queue.campaign_id=eq.${pgValue(id)}&order=confirmed_at.desc&limit=50`
