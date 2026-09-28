@@ -415,10 +415,14 @@ export default function ReceiptForm({
    * Everything a receipt with no matching order has to carry.
    *
    * Nothing can be computed from it, so what the customer typed is all a
-   * reviewer will have — and all three are printed on the photo beside them.
+   * reviewer will have. The date is part of that: a claim with no date is one
+   * nobody can place inside the campaign without opening the photo and
+   * squinting at it, and the reviewer is doing that fifty times.
    */
   const manualReady = (row: Item) =>
-    row.declared.orderNumber.trim().length > 0 && Number(row.declared.total.replace(/[^0-9.]/g, "")) > 0;
+    row.declared.orderNumber.trim().length > 0 &&
+    row.declared.paidAt.trim().length > 0 &&
+    Number(row.declared.total.replace(/[^0-9.]/g, "")) > 0;
 
   /**
    * A row the send button will take.
@@ -814,7 +818,7 @@ export default function ReceiptForm({
                                   <div className="mt-2 grid gap-2">
                                     {(
                                       [
-                                        ["paidAt", "วันและเวลาที่ชำระเงิน (ถ้ามีในใบเสร็จ)", "datetime-local", ""],
+                                        ["paidAt", "วันและเวลาที่ชำระเงิน", "datetime-local", ""],
                                         ["total", "ยอดทั้งบิล (บาท)", "text", "0.00"],
                                       ] as const
                                     ).map(([key, label, type, placeholder]) => (
@@ -970,7 +974,7 @@ export default function ReceiptForm({
                         {(
                           [
                             ["orderNumber", "เลขคำสั่งซื้อ (ORDER #)", "text", "#0000"],
-                            ["paidAt", "วันและเวลาที่ชำระเงิน (ถ้ามีในใบเสร็จ)", "datetime-local", ""],
+                            ["paidAt", "วันและเวลาที่ชำระเงิน", "datetime-local", ""],
                             ["total", "ยอดทั้งบิล (บาท)", "text", "0.00"],
                           ] as const
                         ).map(([key, label, type, placeholder]) => (
@@ -1056,7 +1060,7 @@ export default function ReceiptForm({
                         ) : (
                           incomplete > 0 && (
                             <p className="text-center text-[12px] text-amber-700">
-                              กรอกเลขคำสั่งซื้อและยอดรวมให้ครบก่อนส่ง
+                              กรอกเลขคำสั่งซื้อ วันและเวลา และยอดรวมให้ครบก่อนส่ง
                             </p>
                           )
                         )}

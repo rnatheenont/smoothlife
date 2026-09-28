@@ -217,10 +217,17 @@ async function checkManual(opts: {
   if (!declaredTotal) {
     return NextResponse.json({ ok: false, error: "กรุณากรอกยอดรวมจากใบเสร็จ" }, { status: 400 });
   }
-  // The date is often simply not on the receipt — a screenshot of an order
-  // confirmation taken the same day shows a time and no date anywhere. So it
-  // is not demanded; when it is there it still has to be inside the window,
-  // and when it is not the reviewer has the photo.
+  // Asked for, now, rather than left to the reviewer. It is often not printed
+  // in the body of an order-confirmation screenshot — the time is there and
+  // the date sits up in the mail app's own header — so this does cost some
+  // customers a look back at their inbox. The trade is that every claim
+  // arrives placeable inside the campaign window without opening the photo.
+  if (!declaredPaidAt) {
+    return NextResponse.json(
+      { ok: false, error: "กรุณากรอกวันและเวลาที่ชำระเงินจากใบเสร็จ" },
+      { status: 400 }
+    );
+  }
   if (declaredPaidAt) {
     const paid = Date.parse(declaredPaidAt);
     if (!Number.isFinite(paid) || paid < window.opensAt || paid > window.closesAt) {
