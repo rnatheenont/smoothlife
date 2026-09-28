@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Eye, EyeOff, Loader2, MoreHorizontal, Pencil, PlayCircle, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowUpRight, Eye, EyeOff, Loader2, MoreHorizontal, Pencil, PlayCircle, Radio, RefreshCw, Trash2 } from "lucide-react";
 import { Panel, adminTable } from "@/components/admin/layout-kit";
 
 /** The whole DTO: the edit form is handed the campaign exactly as it is stored. */
@@ -210,6 +210,7 @@ export default function CampaignList() {
                 <th>ปิด</th>
                 <th>สต็อก/ชิ้น</th>
                 <th>หน้าขาย</th>
+                <th>คิวสด</th>
                 <th />
               </tr>
             </thead>
@@ -239,6 +240,16 @@ export default function CampaignList() {
                         className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand-800 hover:underline"
                       >
                         เปิดดู <ArrowUpRight size={13} aria-hidden />
+                      </Link>
+                    </td>
+                    {/* The number worth staring at while a sale runs, one
+                        click from the row it belongs to. */}
+                    <td className={adminTable.cell}>
+                      <Link
+                        href={`/admin/flash-sale/${c.id}`}
+                        className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-brand-800 hover:underline"
+                      >
+                        <Radio size={13} aria-hidden /> มอนิเตอร์
                       </Link>
                     </td>
                     <td className={`${adminTable.cell} text-right`}>
