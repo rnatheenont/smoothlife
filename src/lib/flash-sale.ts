@@ -15,8 +15,14 @@ export type FlashSaleMe = {
   payment_reference: string | null;
   shopify_order_id: string | null;
   expired_count: number;
-  /** A 2C2P payment page has been opened for this reservation. */
+  /** A payment page has been opened for this reservation. */
   payment_pending?: boolean;
+  /**
+   * How long the slot is held for the payment already under way, which is not
+   * the same as the reservation's own window: Shopify's checkout is held for
+   * longer than it (see holdReservationForShopify).
+   */
+  payment_seconds_left?: number | null;
 };
 export type FlashSaleStatus = {
   campaign: {
