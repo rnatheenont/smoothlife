@@ -1003,6 +1003,16 @@ export default function ReceiptForm({
                                 </button>
                               )}
                             </div>
+                            {/* Said where the number is, not only where the
+                                thumbnails are: with one receipt this column
+                                is the form, and a warning attached to the
+                                other layout is a warning nobody sees. */}
+                            {key === "orderNumber" && singleItem.duplicate && (
+                              <p className="mt-1.5 text-[12px] font-semibold text-rose-700">
+                                เลขนี้ถูกใช้ร่วมกิจกรรมไปแล้ว — ตรวจเลขบนใบเสร็จอีกครั้ง
+                                หากเป็นคำสั่งซื้อของคุณจริง ทักทีมงานในแชทได้เลยค่ะ
+                              </p>
+                            )}
                           </label>
                         ))}
                       </div>
@@ -1020,7 +1030,11 @@ export default function ReceiptForm({
 
                   {(() => {
                     const ready = items.filter((row) => sendable(row) && row.state !== "sent");
-                    const incomplete = items.filter((row) => !sendable(row) && !row.reading).length;
+                    const incomplete = items.filter((row) => !sendable(row) && !row.reading && !row.duplicate).length;
+                    // A number already in the campaign is not an unfinished
+                    // form, and saying "fill in the fields" under a form that
+                    // is filled in leaves the customer with nothing to do.
+                    const duplicates = items.filter((row) => row.duplicate && !row.reading).length;
                     const contactOk = contactName.trim().length >= 2 && contactPhone.replace(/\D/g, "").length >= 9;
                     return (
                       <>
@@ -1037,10 +1051,16 @@ export default function ReceiptForm({
                               ? `ส่งใบเสร็จ ${ready.length} ใบ`
                               : "ส่งใบเสร็จ"}
                         </button>
-                        {incomplete > 0 && (
-                          <p className="text-center text-[12px] text-amber-700">
-                            กรอกเลขคำสั่งซื้อและยอดรวมให้ครบก่อนส่ง
+                        {duplicates > 0 ? (
+                          <p className="text-center text-[12px] font-semibold text-rose-700">
+                            เลขคำสั่งซื้อนี้ถูกใช้ร่วมกิจกรรมไปแล้ว — ใช้ซ้ำไม่ได้
                           </p>
+                        ) : (
+                          incomplete > 0 && (
+                            <p className="text-center text-[12px] text-amber-700">
+                              กรอกเลขคำสั่งซื้อและยอดรวมให้ครบก่อนส่ง
+                            </p>
+                          )
                         )}
                       </>
                     );
