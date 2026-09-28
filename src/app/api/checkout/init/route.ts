@@ -178,7 +178,9 @@ export async function POST(req: NextRequest) {
       invoiceNo,
       description: `คำสั่งซื้อ Smoothlife.com (${resolved.length} รายการ)`.slice(0, 250),
       amount,
-      paymentChannel: ["CC", "PPQR"],
+      // Same as the flash-sale route: the payment account decides which
+      // methods exist, not this file.
+      paymentChannel: undefined,
       frontendReturnUrl: `${origin}/api/payments/return?cartToken=${cartToken}`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p-checkout`,
       customer: { email: email ?? undefined, mobileNo: phone ?? undefined },
