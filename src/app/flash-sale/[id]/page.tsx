@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/data/products";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
+import { unpublishedProducts } from "@/lib/shopify-admin";
 import { UUID_RE } from "@/lib/flash-sale";
 import FlashSaleLive, { type LiveProduct } from "@/components/flash-sale/FlashSaleLive";
 import type { CampaignTheme } from "@/components/flash-sale/special";
@@ -48,22 +49,49 @@ export default async function FlashSalePage(props: { params: Promise<{ id: strin
   if (campaign.published === false && !verifyAdminToken((await cookies()).get(ADMIN_COOKIE)?.value)) {
     notFound();
   }
+  // The sale page describes its product out of the static catalogue, which is
+  // generated from the Storefront API — so a campaign set up for a launch
+  // that has not been published yet found nothing and rendered as "not
+  // found". The console can pick those products; this has to be able to show
+  // them. Shopify answers for whatever the catalogue does not have.
+  const salePriceOf = (slug: string) => {
+    const sale = campaign.flash_sales.find((s) => s.product_slug === slug)?.sale_price;
+    return sale === null || sale === undefined ? null : Number(sale);
+  };
+
+  const missing = campaign.product_slugs.filter((slug) => !getProductBySlug(slug));
+  const unpublished = missing.length
+    ? new Map((await unpublishedProducts()).map((p) => [p.slug, p]))
+    : new Map<string, never>();
+
   const products: LiveProduct[] = campaign.product_slugs
-    .map((slug) => getProductBySlug(slug))
-    .filter((p): p is NonNullable<typeof p> => Boolean(p))
-    .map((p) => {
-      const regular = p.variants.find((v) => v.variantId === p.variantId)?.price ?? p.price;
-      const sale = campaign.flash_sales.find((s) => s.product_slug === p.slug)?.sale_price;
-      return {
-        slug: p.slug,
-        name: p.name,
-        brand: p.brand,
-        image: p.image,
-        price: regular,
-        compareAtPrice: p.compareAtPrice,
-        salePrice: sale === null || sale === undefined ? null : Number(sale),
-      };
-    });
+    .map((slug): LiveProduct | null => {
+      const p = getProductBySlug(slug);
+      if (p) {
+        return {
+          slug: p.slug,
+          name: p.name,
+          brand: p.brand,
+          image: p.image,
+          price: p.variants.find((v) => v.variantId === p.variantId)?.price ?? p.price,
+          compareAtPrice: p.compareAtPrice,
+          salePrice: salePriceOf(p.slug),
+        };
+      }
+      const u = unpublished.get(slug);
+      return u
+        ? {
+            slug: u.slug,
+            name: u.name,
+            brand: u.brand,
+            image: u.image,
+            price: u.price,
+            compareAtPrice: u.compareAtPrice,
+            salePrice: salePriceOf(u.slug),
+          }
+        : null;
+    })
+    .filter((p): p is LiveProduct => Boolean(p));
   const theme: CampaignTheme = {
     kind: campaign.kind === "special" ? "special" : "regular",
     heroImage: campaign.hero_image_url,
