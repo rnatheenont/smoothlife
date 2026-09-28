@@ -58,9 +58,14 @@ export default function CouponPicker() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-bold text-brand-ink">{accepted.title || accepted.code}</span>
-              <span className="text-[10px] font-mono font-bold tracking-wide rounded-sm bg-white/70 px-1.5 py-0.5 text-slate-500">
-                {accepted.code}
-              </span>
+              {/* The chip is there to show which code is doing this. When a
+                  discount is named after its own code, showing it twice just
+                  reads as a mistake. */}
+              {accepted.title && accepted.title.toLowerCase() !== accepted.code.toLowerCase() && (
+                <span className="text-[10px] font-mono font-bold tracking-wide rounded-sm bg-white/70 px-1.5 py-0.5 text-slate-500">
+                  {accepted.code}
+                </span>
+              )}
             </div>
             <p className="text-xs font-semibold text-brand-800 mt-0.5">
               {t("ประหยัด", "You save")} ฿{accepted.discount.toLocaleString("th-TH")}

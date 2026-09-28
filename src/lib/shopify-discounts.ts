@@ -1,5 +1,21 @@
 import { adminGraphql } from "@/lib/shopify-admin";
 
+const STOREFRONT_DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN || "";
+const STOREFRONT_TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN || "";
+const STOREFRONT_VERSION = process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-10";
+
+async function storefrontGraphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
+  const res = await fetch(`https://${STOREFRONT_DOMAIN}/api/${STOREFRONT_VERSION}/graphql.json`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Shopify-Storefront-Access-Token": STOREFRONT_TOKEN },
+    body: JSON.stringify({ query, variables }),
+    cache: "no-store",
+  });
+  const json = await res.json();
+  if (json.errors?.length) throw new Error(json.errors.map((e: { message: string }) => e.message).join(", "));
+  return json.data as T;
+}
+
 // Discount codes, priced by the shop that issued them.
 //
 // The codes themselves live in Shopify — created in Admin, in campaigns, or
@@ -62,7 +78,14 @@ export async function listWebDiscountCodes(): Promise<{ code: string; title: str
     .filter((d) => d.code);
 }
 
-/** Whether a code exists at all, and whether it is live — for a useful error. */
+/**
+ * Whether a code exists at all, and whether it is live — for a useful error.
+ *
+ * null means Shopify was asked and has no such code. undefined means the
+ * question could not be put, which is a different thing entirely: telling
+ * someone their real code does not exist because our own lookup was down is
+ * worse than saying nothing specific.
+ */
 async function lookupCode(code: string): Promise<{ title: string; status: string } | null> {
   const data = await adminGraphql<{ codeDiscountNodeByCode: CodeDiscountNode | null }>(
     `query FindCode($code: String!) {
@@ -84,11 +107,15 @@ async function lookupCode(code: string): Promise<{ title: string; status: string
 /**
  * What this code takes off this cart, according to Shopify.
  *
- * The draft order is a question, not an order: it is created, read, and
- * deleted, it charges nobody and it does not consume a code's usage limit.
- * Shopify answers an unknown or unusable code the same quiet way — it simply
- * applies nothing and hands back an empty discountCodes — so the code is
- * looked up separately to tell the customer which of the two happened.
+ * Priced by building a Storefront cart — the same cart object, and the same
+ * discount engine, a customer would be using if they checked out on Shopify's
+ * own pages. It answers with the allocations it made, so a code's own effect
+ * can be told apart from any automatic discount running alongside it, and it
+ * costs the shop nothing: the cart is never completed and expires on its own.
+ *
+ * (A draft order would answer the same question, but only for an app holding
+ * write_draft_orders, which this one does not — and asking for a write
+ * permission to ask a read-only question is the wrong trade.)
  */
 export async function quoteDiscountCode(opts: {
   code: string;
@@ -97,59 +124,86 @@ export async function quoteDiscountCode(opts: {
   const code = opts.code.trim();
   if (!code) return { ok: false, reason: "กรุณากรอกโค้ดส่วนลด" };
   if (!opts.lines.length) return { ok: false, reason: "ตะกร้ายังไม่มีสินค้า" };
-
-  const found = await lookupCode(code);
-  if (!found) return { ok: false, reason: "ไม่พบโค้ดนี้ในระบบ" };
-  if (found.status !== "ACTIVE") {
-    return { ok: false, reason: found.status === "EXPIRED" ? "โค้ดนี้หมดอายุแล้ว" : "โค้ดนี้ยังไม่เปิดใช้งาน" };
-  }
-
-  const data = await adminGraphql<{
-    draftOrderCreate: {
-      draftOrder: {
-        id: string;
-        discountCodes: string[];
-        totalDiscountsSet: { shopMoney: { amount: string } };
-      } | null;
-      userErrors: { message: string }[];
-    };
-  }>(
-    `mutation QuoteDiscount($input: DraftOrderInput!) {
-      draftOrderCreate(input: $input) {
-        draftOrder {
-          id
-          discountCodes
-          totalDiscountsSet { shopMoney { amount } }
-        }
-        userErrors { field message }
-      }
-    }`,
-    { input: { lineItems: opts.lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })), discountCodes: [code] } }
-  );
-
-  const draft = data.draftOrderCreate.draftOrder;
-  if (!draft) {
-    const why = data.draftOrderCreate.userErrors.map((e) => e.message).join(", ");
-    console.error("[discounts] draft order quote failed", why);
+  if (!STOREFRONT_DOMAIN || !STOREFRONT_TOKEN) {
+    console.error("[discounts] storefront credentials missing");
     return { ok: false, reason: "ตรวจสอบโค้ดไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" };
   }
 
-  // Ask and forget. A draft left behind would sit in the shop's Drafts list
-  // looking like an order somebody abandoned.
-  void discardDraft(draft.id);
+  type Allocation = { __typename: string; code?: string; discountedAmount: { amount: string } };
+  const [details, cart] = await Promise.all([
+    // Only to say something useful when a code does not work. Best-effort:
+    // the answer below does not depend on it.
+    lookupCode(code).catch(() => undefined),
+    storefrontGraphql<{
+      cartCreate: {
+        cart: {
+          discountCodes: { code: string; applicable: boolean }[];
+          discountAllocations: Allocation[];
+          lines: { nodes: { discountAllocations: Allocation[] }[] };
+        } | null;
+        userErrors: { message: string }[];
+      };
+    }>(
+      `mutation QuoteDiscount($input: CartInput!) {
+        cartCreate(input: $input) {
+          cart {
+            discountCodes { code applicable }
+            discountAllocations {
+              __typename
+              discountedAmount { amount }
+              ... on CartCodeDiscountAllocation { code }
+            }
+            lines(first: 100) {
+              nodes {
+                discountAllocations {
+                  __typename
+                  discountedAmount { amount }
+                  ... on CartCodeDiscountAllocation { code }
+                }
+              }
+            }
+          }
+          userErrors { field message }
+        }
+      }`,
+      {
+        input: {
+          lines: opts.lines.map((l) => ({ merchandiseId: l.variantId, quantity: l.quantity })),
+          discountCodes: [code],
+        },
+      }
+    ).catch((err) => {
+      console.error("[discounts] storefront quote failed", err);
+      return null;
+    }),
+  ]);
 
-  const discount = Math.round(parseFloat(draft.totalDiscountsSet.shopMoney.amount) || 0);
-  if (!draft.discountCodes.length || discount <= 0) {
+  if (!cart?.cartCreate.cart) {
+    return { ok: false, reason: "ตรวจสอบโค้ดไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" };
+  }
+  const priced = cart.cartCreate.cart;
+
+  // Only what this code did. An automatic discount the shop is running is
+  // real money off too, but it applies with or without the customer typing
+  // anything, and counting it here would credit the coupon with it.
+  const mine = (a: Allocation) =>
+    a.__typename === "CartCodeDiscountAllocation" && (a.code ?? "").toLowerCase() === code.toLowerCase();
+  const discount = Math.round(
+    [...priced.discountAllocations, ...priced.lines.nodes.flatMap((l) => l.discountAllocations)]
+      .filter(mine)
+      .reduce((sum, a) => sum + (parseFloat(a.discountedAmount.amount) || 0), 0)
+  );
+
+  const applicable = priced.discountCodes.some(
+    (c) => c.code.toLowerCase() === code.toLowerCase() && c.applicable
+  );
+  if (!applicable || discount <= 0) {
+    if (details && details.status !== "ACTIVE") {
+      return { ok: false, reason: details.status === "EXPIRED" ? "โค้ดนี้หมดอายุแล้ว" : "โค้ดนี้ยังไม่เปิดใช้งาน" };
+    }
+    if (details === null) return { ok: false, reason: "ไม่พบโค้ดนี้ในระบบ" };
     return { ok: false, reason: "โค้ดนี้ใช้กับสินค้าในตะกร้าไม่ได้ หรือยอดยังไม่ถึงขั้นต่ำ" };
   }
 
-  return { ok: true, code, title: found.title.replace(/^web:\s*/i, ""), discount };
-}
-
-async function discardDraft(id: string) {
-  try {
-    await adminGraphql(`mutation DiscardDraft($id: ID!) { draftOrderDelete(input: { id: $id }) { deletedId } }`, { id });
-  } catch (err) {
-    console.error("[discounts] could not delete the quote draft order", err);
-  }
+  return { ok: true, code, title: (details?.title ?? code).replace(/^web:\s*/i, ""), discount };
 }
