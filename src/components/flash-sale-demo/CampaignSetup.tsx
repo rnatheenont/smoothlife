@@ -7,6 +7,7 @@ import { Check, Search } from "lucide-react";
 import { formatTHB } from "@/lib/format";
 import { MAX_GROUP_PRODUCTS, SPECIAL_ACCENT_DEFAULT, type CampaignConfig, type DemoProduct } from "./campaign";
 import { fromLocalInput, toLocalInput } from "./scheduler";
+import { UNLIMITED_REQUEUE } from "@/lib/flash-sale-campaigns";
 
 export type CatalogueItem = DemoProduct & {
   category: string;
@@ -691,9 +692,9 @@ export default function CampaignSetup({
                 กลับเข้าคิวได้
               </label>
               <select id="fs-requeue" disabled={locked} value={maxRequeue} onChange={(e) => setMaxRequeue(Number(e.target.value))} className={fieldClass}>
-                {[0, 1, 2, 3, 5].map((n) => (
+                {[0, 1, 2, 3, 5, UNLIMITED_REQUEUE].map((n) => (
                   <option key={n} value={n}>
-                    {n === 0 ? "ไม่ได้" : `${n} ครั้ง`}
+                    {n === 0 ? "ไม่ได้" : n === UNLIMITED_REQUEUE ? "ไม่จำกัด" : `${n} ครั้ง`}
                   </option>
                 ))}
               </select>
