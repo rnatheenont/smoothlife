@@ -11,6 +11,8 @@ type TransactionRow = {
   amount: number;
   currency_code: string;
   line_items: { variantId: string; quantity: number; price: number }[] | null;
+  discount_code: string | null;
+  discount_amount: number | null;
   contact_email: string | null;
   shipping_address: {
     firstName?: string;
@@ -46,7 +48,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [transaction] = await supabaseRest<TransactionRow[]>(
-    `payment_transactions?invoice_no=eq.${callback.invoiceNo}&select=id,cart_token,status,amount,currency_code,line_items,contact_email,shipping_address`
+    `payment_transactions?invoice_no=eq.${callback.invoiceNo}&select=id,cart_token,status,amount,currency_code,line_items,contact_email,shipping_address,discount_code,discount_amount`
   );
   if (!transaction) {
     console.error("[webhooks/2c2p-checkout] no transaction matches invoice", callback.invoiceNo);
@@ -102,6 +104,9 @@ export async function POST(req: NextRequest) {
       },
       note: "สั่งซื้อผ่านหน้าชำระเงินของเว็บไซต์ (2C2P)",
       tranRef: callback.tranRef,
+      discount: transaction.discount_code
+        ? { code: transaction.discount_code, amount: transaction.discount_amount ?? 0 }
+        : null,
     });
     await supabaseRest(`payment_transactions?id=eq.${transaction.id}`, {
       method: "PATCH",

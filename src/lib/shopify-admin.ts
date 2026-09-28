@@ -136,7 +136,7 @@ async function getAdminAccessToken(store: StoreKey = "smoothlife"): Promise<stri
   return data.access_token;
 }
 
-async function adminGraphql<T>(
+export async function adminGraphql<T>(
   query: string,
   variables?: Record<string, unknown>,
   store: StoreKey = "smoothlife",
@@ -2019,8 +2019,19 @@ export async function createPaidShopifyOrder(opts: {
   };
   note: string;
   tranRef: string;
+  /** The Shopify discount code the customer used, and what it took off. */
+  discount?: { code: string; amount: number } | null;
 }): Promise<{ id: string; name: string }> {
-  const totalAmount = opts.lineItems.reduce((sum, li) => sum + li.price * li.quantity, 0).toFixed(2);
+  // The order carries the code, not a set of quietly reduced prices: the
+  // lines keep what the products cost and the discount appears as itself, so
+  // Shopify's discount reports can see the code was used at all. The amount
+  // is the one already quoted and already charged — Shopify is told it, not
+  // asked to recompute it, because a recomputation seconds later (a usage
+  // limit reached, a campaign ending) would leave an order whose total does
+  // not match the money that moved.
+  const grossAmount = opts.lineItems.reduce((sum, li) => sum + li.price * li.quantity, 0);
+  const discountAmount = Math.min(Math.max(opts.discount?.amount ?? 0, 0), grossAmount);
+  const totalAmount = (grossAmount - discountAmount).toFixed(2);
   const data = await adminGraphql<{
     orderCreate: { order: { id: string; name: string } | null; userErrors: { field: string[]; message: string }[] };
   }>(
@@ -2052,6 +2063,15 @@ export async function createPaidShopifyOrder(opts: {
           quantity: li.quantity,
           priceSet: { shopMoney: { amount: li.price.toFixed(2), currencyCode: opts.currencyCode } },
         })),
+        discountCode:
+          opts.discount && discountAmount > 0
+            ? {
+                itemFixedDiscountCode: {
+                  code: opts.discount.code,
+                  amountSet: { shopMoney: { amount: discountAmount.toFixed(2), currencyCode: opts.currencyCode } },
+                },
+              }
+            : undefined,
         transactions: [
           {
             kind: "SALE",

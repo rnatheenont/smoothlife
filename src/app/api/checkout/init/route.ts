@@ -5,7 +5,7 @@ import { products } from "@/data/products";
 import { twoC2PConfigured, createPaymentToken } from "@/lib/2c2p";
 import { reserveStock, releaseStock } from "@/lib/stock-reservation";
 import { isRateLimitedShared, clientIp } from "@/lib/rate-limit";
-import { coupons, evaluateCoupon, CartLine } from "@/data/coupons";
+import { quoteDiscountCode } from "@/lib/shopify-discounts";
 import { getUserLoyalty } from "@/lib/user-tier";
 import { ATTRIBUTION_COOKIE, attributionColumns } from "@/lib/attribution";
 
@@ -40,28 +40,6 @@ function resolveLines(lines: LineInput[]): ResolvedLine[] | null {
     });
   }
   return resolved;
-}
-
-// Splits a discount across cart lines proportional to each line's own
-// subtotal share, rounding down and letting the last line absorb the
-// remainder — same "last item absorbs rounding" technique already used
-// for splitting a subscription charge across a set's items (see
-// splitAmountByRealPrice in webhooks/2c2p/route.ts). Keeps quantities
-// untouched, only reduces each line's per-unit price, so the stored
-// line_items already reflect the discounted total the webhook later
-// hands straight to Shopify — no discount-aware logic needed there.
-function applyDiscount(lines: ResolvedLine[], discount: number): ResolvedLine[] {
-  if (discount <= 0) return lines;
-  const subtotal = lines.reduce((s, l) => s + l.price * l.quantity, 0);
-  if (subtotal <= 0) return lines;
-  let allocated = 0;
-  return lines.map((l, i) => {
-    const lineTotal = l.price * l.quantity;
-    const isLast = i === lines.length - 1;
-    const lineDiscount = isLast ? discount - allocated : Math.round((lineTotal / subtotal) * discount);
-    allocated += lineDiscount;
-    return { ...l, price: Math.round(((lineTotal - lineDiscount) / l.quantity) * 100) / 100 };
-  });
 }
 
 const CHECKOUT_INIT_MAX_PER_HOUR = 15;
@@ -122,35 +100,31 @@ export async function POST(req: NextRequest) {
 
   const subtotal = resolved.reduce((sum, l) => sum + l.price * l.quantity, 0);
 
-  // Re-validate the coupon server-side against the resolved (real-price)
-  // lines — never trust a discount amount the client claims. Uses the
-  // exact same evaluateCoupon() the cart/checkout UI already runs, so an
-  // eligible code always produces the same number here as what the
-  // customer saw before submitting. An unknown/ineligible code is just
-  // silently ignored (no discount) rather than failing checkout — the UI
-  // already prevents selecting one that wouldn't qualify.
+  // Ask Shopify what the code is worth, against these exact lines, at this
+  // exact moment — never trust a discount the client claims, and never work
+  // it out here either. The customer was shown a figure quoted the same way
+  // moments ago; asking again is what makes "shown" and "charged" the same
+  // number even if the cart or the discount changed in between. A code that
+  // no longer applies is quietly worth nothing rather than failing checkout.
   let appliedCode: string | null = null;
   let discount = 0;
   if (typeof couponCode === "string" && couponCode) {
-    const coupon = coupons.find((c) => c.code.toLowerCase() === couponCode.toLowerCase());
-    if (coupon) {
-      const tier = uid ? (await getUserLoyalty(uid)).tier : undefined;
-      const cartLines: CartLine[] = resolved.map((l) => ({
-        slug: l.slug,
-        qty: l.quantity,
-        price: l.price,
-        brand: l.brand,
-        category: l.category as CartLine["category"],
-      }));
-      const evaluation = evaluateCoupon(coupon, cartLines, { signedIn: Boolean(uid), tier });
-      if (evaluation.eligible) {
-        appliedCode = coupon.code;
-        discount = evaluation.discount;
-      }
+    const quote = await quoteDiscountCode({
+      code: couponCode,
+      lines: resolved.map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
+    }).catch((err) => {
+      console.error("[checkout/init] discount quote failed", err);
+      return { ok: false as const, reason: "quote failed" };
+    });
+    if (quote.ok) {
+      appliedCode = quote.code;
+      discount = Math.min(quote.discount, subtotal);
     }
   }
 
-  const discountedLines = applyDiscount(resolved, discount);
+  // The lines keep their real prices and the discount rides alongside them,
+  // so the Shopify order can carry the code itself rather than a set of
+  // quietly reduced prices no report can explain.
   const amount = subtotal - discount + SHIPPING_FEE_THB;
   const invoiceNo = `CHKT${Date.now().toString(36).toUpperCase()}`.slice(0, 30);
 
@@ -165,7 +139,7 @@ export async function POST(req: NextRequest) {
       contact_email: email ?? null,
       contact_phone: phone ?? null,
       shipping_address: shippingAddress,
-      line_items: discountedLines.map((l) => ({ variantId: l.variantId, quantity: l.quantity, price: l.price })),
+      line_items: resolved.map((l) => ({ variantId: l.variantId, quantity: l.quantity, price: l.price })),
       discount_code: appliedCode,
       discount_amount: discount,
       ...attributionColumns(req.cookies.get(ATTRIBUTION_COOKIE)?.value),

@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { products } from "@/data/products";
 import { ProductVariant } from "@/data/types";
 import { useAuth } from "@/lib/auth-context";
-import { COUPONS_ENABLED, CartLine } from "@/data/coupons";
+import { CartLine } from "@/data/coupons";
 import { evaluateActiveFreeGifts, FreeGiftPromo } from "@/data/free-gifts";
 
 type CartItem = {
@@ -51,8 +51,15 @@ type CartContextValue = {
   }[];
   couponCode: string | null;
   setCouponCode: (code: string | null) => void;
+  /** What Shopify says the applied code takes off this exact cart. */
+  couponQuote: CouponQuote | null;
+  couponPending: boolean;
   giftPromos: FreeGiftPromo[];
 };
+
+export type CouponQuote =
+  | { ok: true; code: string; title: string; discount: number }
+  | { ok: false; code: string; reason: string };
 
 const CartContext = createContext<CartContextValue | null>(null);
 const CART_KEY = "sl_cart";
@@ -61,6 +68,8 @@ const COUPON_KEY = "sl_coupon";
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [couponCode, setCouponCodeState] = useState<string | null>(null);
+  const [couponQuote, setCouponQuote] = useState<CouponQuote | null>(null);
+  const [couponPending, setCouponPending] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [giftPromos, setGiftPromos] = useState<FreeGiftPromo[]>([]);
 
@@ -85,15 +94,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         })
         .filter(Boolean) as CartItem[];
       setItems(migrated);
-      // A coupon applied before the card was switched off stays in this
-      // browser, and with no picker on screen there is no way to take it back
-      // off — so the cart would quietly keep discounting an order Shopify
-      // charges in full. Forget it instead.
-      if (COUPONS_ENABLED) {
-        setCouponCodeState(localStorage.getItem(COUPON_KEY));
-      } else {
-        localStorage.removeItem(COUPON_KEY);
-      }
+      setCouponCodeState(localStorage.getItem(COUPON_KEY));
     } catch {
       setItems([]);
     }
@@ -103,6 +104,53 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated) localStorage.setItem(CART_KEY, JSON.stringify(items));
   }, [items, hydrated]);
+
+  // Every discount number the customer sees comes from Shopify, re-asked
+  // whenever the cart or the code changes.
+  //
+  // A coupon is a statement about a cart, not about a code: remove the one
+  // qualifying item and a ฿100 discount silently becomes nothing. Re-quoting
+  // on every change is how the cart, the checkout page and the charge stay
+  // the same number — and how a code that has stopped qualifying says so
+  // while the customer can still do something about it.
+  const quoteKey = JSON.stringify(items.map((i) => [i.variantId, i.qty]));
+  useEffect(() => {
+    if (!couponCode) {
+      setCouponQuote(null);
+      return;
+    }
+    const payload = items.map((i) => ({ variantId: i.variantId, quantity: i.qty }));
+    if (!payload.length) {
+      setCouponQuote(null);
+      return;
+    }
+    let cancelled = false;
+    setCouponPending(true);
+    fetch("/api/coupons/quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: couponCode, lines: payload }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setCouponQuote(
+          data?.ok
+            ? { ok: true, code: data.code, title: data.title, discount: data.discount }
+            : { ok: false, code: couponCode, reason: data?.reason || "ใช้โค้ดนี้ไม่ได้" }
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setCouponQuote({ ok: false, code: couponCode, reason: "ตรวจสอบโค้ดไม่สำเร็จ" });
+      })
+      .finally(() => {
+        if (!cancelled) setCouponPending(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [couponCode, quoteKey]);
 
   function setCouponCode(code: string | null) {
     setCouponCodeState(code);
@@ -259,6 +307,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         lines: linesWithGifts,
         couponCode,
         setCouponCode,
+        couponQuote,
+        couponPending,
         giftPromos,
       }}
     >

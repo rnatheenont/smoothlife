@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useCart } from "./cart-context";
 import { useAuth } from "./auth-context";
-import { coupons, evaluateCoupon, CartLine, pointsForAmount } from "@/data/coupons";
+import { pointsForAmount } from "@/data/coupons";
 import { subscriptionPlans } from "@/data/subscriptions";
 import { readReferralCookie, ReferralCookiePayload, REFEREE_DISCOUNT_AMOUNT, REFEREE_MIN_SUBTOTAL } from "@/lib/referral-shared";
 import { loyaltyTierProgress } from "@/lib/loyalty-shared";
@@ -16,7 +16,7 @@ export const FREE_SHIPPING_THRESHOLD = 0;
 export const SHIPPING_FEE = 50;
 
 export function useOrderTotals() {
-  const { lines, subtotal, couponCode } = useCart();
+  const { lines, subtotal, couponCode, couponQuote } = useCart();
   const { user } = useAuth();
 
   // Read once on mount, not during render, so the server-rendered pass
@@ -28,25 +28,18 @@ export function useOrderTotals() {
   }, []);
   const referralActive = Boolean(referral) && subtotal >= REFEREE_MIN_SUBTOTAL;
 
-  const cartLines: CartLine[] = lines.map((l) => ({
-    slug: l.slug,
-    qty: l.qty,
-    price: l.price,
-    brand: l.brand,
-    category: l.category as CartLine["category"],
-  }));
-
   // A referral welcome discount and a manually-picked coupon aren't set up
   // to combine in Shopify (see discountCodeBasicCreate in shopify-admin.ts —
   // no combinesWith), so showing both added together here would overstate
   // what checkout actually grants. The referral discount takes priority
   // when active — same single-discount-slot model the rest of this app
   // already uses.
-  const coupon = !referralActive && couponCode ? coupons.find((c) => c.code === couponCode) || null : null;
-  const evaluation = coupon
-    ? evaluateCoupon(coupon, cartLines, { signedIn: Boolean(user), tier: user?.tier })
-    : null;
-  const applied = evaluation && evaluation.eligible ? evaluation : null;
+  // The coupon figure is Shopify's, quoted against this cart in
+  // cart-context — not recomputed here. Two implementations of the same
+  // discount rules are two answers, and the customer would be shown one and
+  // charged the other.
+  const applied = !referralActive && couponQuote?.ok ? couponQuote : null;
+  const coupon = applied ? { code: applied.code, title: applied.title } : null;
 
   // Subscribe discount codes (SUB3/SUB6/SUB12) deliberately never live in
   // `coupons` — that list drives CouponPicker's manually-typeable/visible
@@ -68,7 +61,7 @@ export function useOrderTotals() {
     : subscribeDiscount;
   const netSubtotal = Math.max(0, subtotal - discount);
   const qualifiesFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0;
-  const freeShipping = qualifiesFreeShipping || Boolean(applied && applied.freeShipping);
+  const freeShipping = qualifiesFreeShipping;
   const shipping = freeShipping ? 0 : SHIPPING_FEE;
   const total = netSubtotal + shipping;
 

@@ -28,7 +28,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import RewardsOverviewCard from "@/components/account/RewardsOverviewCard";
-import { coupons } from "@/data/coupons";
 import SkinScanSummaryCard from "@/components/account/SkinScanSummaryCard";
 import OrdersList from "@/components/account/OrdersList";
 import { orderStage, type OrderStage } from "@/lib/order-status";
@@ -181,7 +180,7 @@ export default function AccountOverview() {
           <h2 className="mb-3 text-sm font-bold text-brand-ink">สิทธิประโยชน์ของฉัน</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
             <ServiceTile icon={Ticket} label="แลกแต้ม" href="/account/points" />
-            <ServiceTile icon={Gift} label={`คูปองส่วนลด ${coupons.length}`} href="/cart" />
+            <ServiceTile icon={Gift} label="คูปองส่วนลด" href="/cart" />
             <ServiceTile icon={Users} label="ชวนเพื่อน รับ ฿100" href="/account/referral" />
             <ServiceTile icon={Crown} label="สิทธิสมาชิก" href="/loyalty" />
           </div>
