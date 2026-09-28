@@ -67,12 +67,13 @@ const clock = (iso: string) =>
 function funnel(s: FlashSalePaymentStats, shopSold: { count: number; amount: number }) {
   const share = (n: number, of: number) => (of > 0 ? Math.round((n / of) * 100) : null);
   return [
-    { key: "turns", label: "ถึงคิวแล้ว", value: s.turns, share: null as number | null, rule: "bg-slate-300", money: null as number | null, note: "ได้สิทธิ์ซื้อ", extra: null as string | null },
+    { key: "turns", label: "ถึงคิวแล้ว", value: s.turns, share: null as number | null, sharePrefix: "", rule: "bg-slate-300", money: null as number | null, note: "ได้สิทธิ์ซื้อ", extra: null as string | null },
     {
       key: "pressed",
       label: "กดชำระเงิน",
       value: s.pressed_pay,
       share: share(s.pressed_pay, s.turns),
+      sharePrefix: "",
       rule: "bg-brand-800",
       money: null,
       note: `${s.attempts} ครั้ง`,
@@ -81,31 +82,33 @@ function funnel(s: FlashSalePaymentStats, shopSold: { count: number; amount: num
     {
       key: "paid",
       label: "จ่ายสำเร็จ",
-      // The queue's own number, because this row is the queue's story: 141
-      // reached their turn, 17 pressed, and what came out the far end. Adding
-      // the shop's own sales here produced "2" sitting beside "0%" and
-      // "ผ่านคิว 0" — three true numbers that contradicted each other.
-      value: s.paid,
+      // Everything sold, asked for that way: the queue's own sales plus the
+      // ones the shop's product page took by itself. The two are different
+      // paths, so the split is spelled out underneath and the percentage says
+      // which number it is a percentage of — a bare "0%" beside a "2" is the
+      // one thing this card must not do again.
+      value: s.paid + shopSold.count,
       share: share(s.paid, s.pressed_pay),
+      sharePrefix: shopSold.count > 0 ? "คิว " : "",
       rule: "bg-emerald-500",
       // The number everyone actually came for. A count of sales on a page about
       // ฿55,000 a piece was the one thing here nobody could read off it.
-      money: s.paid_amount,
+      money: s.paid_amount + shopSold.amount,
       note:
-        s.median_seconds_to_pay !== null
-          ? `เฉลี่ย ${mmss(s.median_seconds_to_pay)}`
-          : s.paid === 0
-            ? "ยังไม่มียอดขายผ่านคิว"
-            : null,
-      // Sold by the shop's own product page, beside the funnel rather than
-      // inside it — it is real money and it is not this row's path.
-      extra: shopSold.count > 0 ? `+ หน้าร้าน ${shopSold.count} ชิ้น · ${baht(shopSold.amount)}` : null,
+        shopSold.count > 0
+          ? `ผ่านคิว ${s.paid} · หน้าร้าน ${shopSold.count}`
+          : s.median_seconds_to_pay !== null
+            ? `เฉลี่ย ${mmss(s.median_seconds_to_pay)}`
+            : "ยังไม่มียอดขาย",
+      extra:
+        shopSold.count > 0 && s.median_seconds_to_pay !== null ? `เฉลี่ย ${mmss(s.median_seconds_to_pay)}` : null,
     },
     {
       key: "stuck",
       label: "ค้าง / ไม่สำเร็จ",
       value: s.open + s.failed,
       share: null,
+      sharePrefix: "",
       rule: s.failed > 0 ? "bg-rose-500" : "bg-amber-400",
       money: s.open_amount,
       note: `ค้าง ${s.open} · ไม่สำเร็จ ${s.failed}`,
@@ -371,6 +374,7 @@ export default function LiveMonitor({
                         }`}
                       >
                         {step.share < 50 && <ArrowDown size={11} aria-hidden />}
+                        {step.sharePrefix}
                         {step.share}%
                       </span>
                     )}
