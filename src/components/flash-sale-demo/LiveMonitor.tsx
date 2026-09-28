@@ -82,26 +82,25 @@ function funnel(s: FlashSalePaymentStats, shopSold: { count: number; amount: num
     {
       key: "paid",
       label: "จ่ายสำเร็จ",
-      // Everything sold, asked for that way: the queue's own sales plus the
-      // ones the shop's product page took by itself. The two are different
-      // paths, so the split is spelled out underneath and the percentage says
-      // which number it is a percentage of — a bare "0%" beside a "2" is the
-      // one thing this card must not do again.
+      // Every sale of this campaign's products counts here, whichever door it
+      // came through — asked for explicitly, after the objection that the shop's
+      // own product page is not this row's path. The percentage counts them the
+      // same way, so the card is one number and one ratio of it rather than a
+      // total that disagrees with its own split.
       value: s.paid + shopSold.count,
-      share: share(s.paid, s.pressed_pay),
-      sharePrefix: shopSold.count > 0 ? "คิว " : "",
+      share: share(s.paid + shopSold.count, s.pressed_pay),
+      sharePrefix: "",
       rule: "bg-emerald-500",
       // The number everyone actually came for. A count of sales on a page about
       // ฿55,000 a piece was the one thing here nobody could read off it.
       money: s.paid_amount + shopSold.amount,
       note:
-        shopSold.count > 0
-          ? `ผ่านคิว ${s.paid} · หน้าร้าน ${shopSold.count}`
-          : s.median_seconds_to_pay !== null
-            ? `เฉลี่ย ${mmss(s.median_seconds_to_pay)}`
-            : "ยังไม่มียอดขาย",
-      extra:
-        shopSold.count > 0 && s.median_seconds_to_pay !== null ? `เฉลี่ย ${mmss(s.median_seconds_to_pay)}` : null,
+        s.median_seconds_to_pay !== null
+          ? `เฉลี่ย ${mmss(s.median_seconds_to_pay)}`
+          : s.paid + shopSold.count === 0
+            ? "ยังไม่มียอดขาย"
+            : null,
+      extra: null,
     },
     {
       key: "stuck",
