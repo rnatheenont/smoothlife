@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, Check, ExternalLink, Loader2, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, Check, ExternalLink, Loader2, RefreshCw, Trash2, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { formatTHB } from "@/lib/format";
 import { adminTable } from "@/components/admin/layout-kit";
@@ -152,6 +152,7 @@ function DetailPanel({
   onDecide,
   onRecalculate,
   onReopen,
+  onDelete,
 }: {
   item: QueueItem | null;
   busy: string | null;
@@ -159,8 +160,13 @@ function DetailPanel({
   onDecide: (item: QueueItem, action: "approve" | "reject") => void;
   onRecalculate: (item: QueueItem) => void;
   onReopen: (item: QueueItem) => void;
+  onDelete: (item: QueueItem) => void;
 }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
+  // Asked once, in the panel, with the receipt still on screen beside it. A
+  // browser confirm() names nothing and is dismissed by reflex.
+  const [confirming, setConfirming] = useState(false);
+  useEffect(() => setConfirming(false), [item?.id]);
   useEffect(() => setHost(document.body), []);
   useEffect(() => {
     if (!item) return;
@@ -437,6 +443,46 @@ function DetailPanel({
               </div>
                 </>
               )}
+
+              {/* Permanent, and the only thing on this panel that is. Kept
+                  below a rule and behind a second press, because the row it
+                  destroys takes the customer's receipt photo with it. */}
+              <div className="mt-4 border-t border-surface-line pt-3">
+                {confirming ? (
+                  <div className="rounded-l border border-rose-200 bg-rose-50 p-3">
+                    <p className="text-[12px] leading-relaxed text-rose-900">
+                      ลบใบเสร็จของ <b>{item.customer || "ลูกค้ารายนี้"}</b> ถาวร — รวมรูปใบเสร็จที่อัปโหลดไว้
+                      กู้คืนไม่ได้
+                    </p>
+                    <div className="mt-2.5 flex gap-2">
+                      <button
+                        type="button"
+                        disabled={busy === item.id}
+                        onClick={() => onDelete(item)}
+                        className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-rose-600 px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+                      >
+                        <Trash2 size={14} /> ลบถาวร
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirming(false)}
+                        className="inline-flex min-h-9 items-center justify-center rounded-full border border-surface-line px-4 text-[13px] font-semibold text-slate-600"
+                      >
+                        ยกเลิก
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={busy === item.id}
+                    onClick={() => setConfirming(true)}
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                  >
+                    <Trash2 size={14} /> ลบใบเสร็จนี้
+                  </button>
+                )}
+              </div>
             </div>
           </>
         )}
@@ -453,6 +499,7 @@ export default function QueueTable({
   onDecide,
   onRecalculate,
   onReopen,
+  onDelete,
 }: {
   queue: QueueItem[];
   busy: string | null;
@@ -461,6 +508,7 @@ export default function QueueTable({
   onDecide: (item: QueueItem, action: "approve" | "reject") => void;
   onRecalculate: (item: QueueItem) => void;
   onReopen: (item: QueueItem) => void;
+  onDelete: (item: QueueItem) => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   // Looked up in the list rather than copied out of it: approving reloads the
@@ -600,6 +648,7 @@ export default function QueueTable({
         onDecide={onDecide}
         onRecalculate={onRecalculate}
         onReopen={onReopen}
+        onDelete={onDelete}
       />
     </>
   );

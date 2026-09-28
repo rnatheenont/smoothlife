@@ -5,6 +5,7 @@ import { amountsFromLineItems, computeEntries, type LineItem } from "@/lib/recei
 import { ordersByName, normalizeOrderName, orderPaymentByGid } from "@/lib/shopify-admin";
 import { loadCampaignContent } from "@/lib/receipt-campaign-content";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
+import { removeReceiptPhoto } from "@/lib/receipt-photos";
 
 // Approving or rejecting one receipt.
 //
@@ -344,4 +345,74 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   }
 
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * Deletes one receipt for good — the row, every photo ever uploaded for it,
+ * and the files behind them.
+ *
+ * Clearing a campaign's test data used to mean somebody with database access
+ * writing DELETE by hand, and the photos then stayed in the bucket because
+ * nothing else knew where they were. A receipt photo carries a name, a phone
+ * number and an address, so leaving the files behind is the part that actually
+ * matters.
+ *
+ * Deliberately not offered as a bulk action: this is a row at a time, behind
+ * the panel, with what it is about to destroy named in the confirmation.
+ */
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const CAMPAIGN = campaignOf(req);
+  const { id } = await props.params;
+  const token = req.cookies.get(ADMIN_COOKIE)?.value;
+  if (!verifyAdminToken(token)) {
+    return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
+  }
+  if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
+  if (!/^[0-9a-f-]{36}$/i.test(id)) {
+    return NextResponse.json({ ok: false, error: "ไม่พบใบเสร็จรายการนี้" }, { status: 400 });
+  }
+
+  const [entry] = await supabaseRest<
+    { id: string; status: string; receipt_photo_path: string | null; contact_name: string | null; computed_entries: number }[]
+  >(
+    `receipt_campaign_entries?id=eq.${pgValue(id)}&campaign_key=eq.${CAMPAIGN}` +
+      `&select=id,status,receipt_photo_path,contact_name,computed_entries&limit=1`
+  );
+  if (!entry) return NextResponse.json({ ok: false, error: "ไม่พบใบเสร็จรายการนี้" }, { status: 404 });
+
+  const uploads = await supabaseRest<{ id: string; receipt_photo_path: string | null }[]>(
+    `receipt_campaign_uploads?entry_id=eq.${pgValue(id)}&select=id,receipt_photo_path`
+  ).catch(() => []);
+
+  // Written down before anything is destroyed, because afterwards there is
+  // nothing left to describe: who deleted what, and which files went with it.
+  const photos = [...new Set([entry.receipt_photo_path, ...uploads.map((u) => u.receipt_photo_path)].filter((p): p is string => Boolean(p)))];
+  await supabaseRest("admin_audit_log", {
+    method: "POST",
+    returning: false,
+    body: JSON.stringify({
+      action: "receipt.delete",
+      target: id,
+      detail: {
+        campaign: CAMPAIGN,
+        status: entry.status,
+        entries: entry.computed_entries,
+        contactName: entry.contact_name,
+        photos,
+        by: getAdminSession(token)?.userId ?? null,
+      },
+    }),
+  }).catch((err) => console.error("[admin/receipts] delete audit write failed", err));
+
+  // Files first: a row still standing is a row that still names them, so a
+  // failure here is recoverable. The other order leaves orphans nobody can find.
+  await Promise.all(photos.map((path) => removeReceiptPhoto(path)));
+
+  await supabaseRest(`receipt_campaign_uploads?entry_id=eq.${pgValue(id)}`, { method: "DELETE", returning: false });
+  await supabaseRest(`receipt_campaign_entries?id=eq.${pgValue(id)}&campaign_key=eq.${CAMPAIGN}`, {
+    method: "DELETE",
+    returning: false,
+  });
+
+  return NextResponse.json({ ok: true, deleted: { uploads: uploads.length, photos: photos.length } });
 }

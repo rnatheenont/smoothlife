@@ -176,6 +176,22 @@ export default function Page() {
     }
   }
 
+  // Permanent, so it takes the photos with it — see the DELETE handler. The
+  // confirmation is in the panel, beside the receipt it is about to destroy.
+  async function removeEntry(item: QueueItem) {
+    setBusy(item.id);
+    try {
+      const res = await fetch(`/api/admin/receipts/${item.id}${campaignQuery}`, { method: "DELETE" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "ลบไม่สำเร็จ");
+      await load();
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "ลบไม่สำเร็จ");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function decide(item: QueueItem, action: "approve" | "reject") {
     // A rejection is the only thing the customer can act on, and they are shown
     // this text word for word.
@@ -365,6 +381,7 @@ export default function Page() {
                   onDecide={decide}
                   onRecalculate={recalculate}
                   onReopen={reopen}
+                  onDelete={removeEntry}
                 />
               )}
               {data.pendingBeyondQueue > 0 && (
@@ -392,6 +409,7 @@ export default function Page() {
                     onDecide={decide}
                     onRecalculate={recalculate}
                     onReopen={reopen}
+                  onDelete={removeEntry}
                   />
                 </div>
               )}
