@@ -152,8 +152,8 @@ function PaymentRow({ a }: { a: PaymentAttempt }) {
       <span className="text-xs text-slate-500">{VIA[a.via]}</span>
       <span className="text-xs tabular-nums text-slate-400">{a.position !== null ? `#${a.position}` : "—"}</span>
       <span className="col-span-2 min-w-0 text-xs text-slate-400 @3xl:col-span-1">
-        {a.order && <span className="font-semibold text-brand-800">{a.order} · </span>}
-        {a.invoice_no}
+        {a.order && <span className="font-semibold text-brand-800">{a.order}</span>}
+        {a.invoice_no !== a.order && `${a.order ? " · " : ""}${a.invoice_no}`}
         {a.note ? ` · ${a.note}` : ""}
         {a.refund_note ? <span className="text-rose-600"> · ต้องคืนเงิน</span> : null}
       </span>
@@ -449,20 +449,6 @@ export default function LiveMonitor({
                 </span>
               }
             >
-              {data.payments.stats.no_address > 0 && (
-                <p className="mb-3 rounded-xl2 bg-amber-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-amber-900">
-                  <b>{data.payments.stats.no_address} คน</b>ที่ถึงคิวยังไม่มีที่อยู่บันทึกไว้ในระบบ — แคมเปญที่ชำระผ่าน 2C2P
-                  ต้องกรอกที่อยู่ให้ครบก่อนจึงกดปุ่มชำระเงินได้ ถ้าคนกลุ่มนี้หลุดเยอะผิดปกติ นี่คือจุดที่ควรดูก่อน
-                </p>
-              )}
-
-              {shopOrders.length > 0 && (
-                <p className="mb-3 rounded-xl2 bg-surface-soft px-3.5 py-2.5 text-[11px] leading-relaxed text-slate-600">
-                  <b>{shopSold.count} ชิ้น</b> ({baht(shopSold.amount)}) ขายผ่านหน้าสินค้าบน Shopify โดยตรง ไม่ได้ผ่านคิว —
-                  ตัดสต็อกจริงและนับรวมในยอดขายแล้ว ถ้าอยากขายทางคิวทางเดียว ต้องเอาสินค้าออกจากช่องทาง Online Store ใน Shopify
-                </p>
-              )}
-
               {/* Filter by what you came to look for — usually the ones that did
                   not work. Counts sit on the tabs so the answer is there before
                   the click. */}
