@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Ticket, Check, Lock, X } from "lucide-react";
-import { evaluateAll, CartLine } from "@/data/coupons";
+import { evaluateAll, COUPONS_ENABLED, CartLine } from "@/data/coupons";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
@@ -45,6 +45,10 @@ export default function CouponPicker() {
     setCouponCode(found.coupon.code);
     setCode("");
   }
+
+  // After the hooks, never before them: an early return above useMemo would
+  // change the hook order between renders.
+  if (!COUPONS_ENABLED) return null;
 
   return (
     <div className="rounded-xl2 border border-slate-100 p-5 shadow-card">

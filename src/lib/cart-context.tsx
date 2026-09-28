@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { products } from "@/data/products";
 import { ProductVariant } from "@/data/types";
 import { useAuth } from "@/lib/auth-context";
-import { CartLine } from "@/data/coupons";
+import { COUPONS_ENABLED, CartLine } from "@/data/coupons";
 import { evaluateActiveFreeGifts, FreeGiftPromo } from "@/data/free-gifts";
 
 type CartItem = {
@@ -85,7 +85,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         })
         .filter(Boolean) as CartItem[];
       setItems(migrated);
-      setCouponCodeState(localStorage.getItem(COUPON_KEY));
+      // A coupon applied before the card was switched off stays in this
+      // browser, and with no picker on screen there is no way to take it back
+      // off — so the cart would quietly keep discounting an order Shopify
+      // charges in full. Forget it instead.
+      if (COUPONS_ENABLED) {
+        setCouponCodeState(localStorage.getItem(COUPON_KEY));
+      } else {
+        localStorage.removeItem(COUPON_KEY);
+      }
     } catch {
       setItems([]);
     }

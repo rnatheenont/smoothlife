@@ -19,6 +19,16 @@ export type Coupon = {
   expires: string;
 };
 
+/**
+ * Whether the cart and checkout show the coupon card at all.
+ *
+ * Off: the codes below are written here, not issued by Shopify, so anything
+ * applied from this list is a discount the store never actually created —
+ * the cart would show ฿100 off an order Shopify still charges in full. The
+ * card comes back the day these are real Shopify discount codes.
+ */
+export const COUPONS_ENABLED = false;
+
 export const coupons: Coupon[] = [
   {
     code: "SL100",
