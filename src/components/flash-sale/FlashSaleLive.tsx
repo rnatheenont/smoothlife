@@ -317,15 +317,41 @@ export default function FlashSaleLive({
     </div>
   );
 
-  // The bar without the count. It still says "this is going" — filled for what
-  // has sold, amber for what is being paid for right now — without putting a
-  // number on how much is left, which is the part that reads as pressure on a
-  // twenty-five piece drop. aria-hidden because there is nothing here for a
-  // screen reader that the page does not already say in words.
-  const stockBar = stock && stock.total > 0 && (
-    <div className="flex h-2.5 overflow-hidden rounded-full bg-black/10" aria-hidden>
-      <div className="bg-[var(--fs-accent)] transition-[width] duration-500" style={{ width: `${(stock.sold / stock.total) * 100}%` }} />
-      <div className="bg-amber-400 transition-[width] duration-500" style={{ width: `${(stock.reserved / stock.total) * 100}%` }} />
+  const stockBlock = stock && (
+    // Neutral rather than the shop's mint: on a campaign page it was a second
+    // colour arguing with the accent, and it is only a container.
+    <div className="rounded-xl2 bg-black/[0.03] p-4">
+      <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
+        <span className="whitespace-nowrap font-semibold text-brand-ink">จำนวนจำกัด {stock.total} ชิ้น</span>
+        <span className="whitespace-nowrap text-slate-600">
+          เหลือ <strong className="text-lg text-sale">{remaining}</strong> ชิ้น
+        </span>
+      </p>
+      {stock.total > 0 && (
+        <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-black/10" aria-hidden>
+          <div className="bg-[var(--fs-accent)] transition-[width] duration-500" style={{ width: `${(stock.sold / stock.total) * 100}%` }} />
+          <div className="bg-amber-400 transition-[width] duration-500" style={{ width: `${(stock.reserved / stock.total) * 100}%` }} />
+        </div>
+      )}
+      {/* Three numbers read as three numbers. Strung into one sentence they
+          were four words apart and none of them stood out, which on a page
+          whose whole subject is "how much is left" is the wrong way round. */}
+      <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+        {(
+          [
+            ["ขายแล้ว", stock.sold, "ชิ้น"],
+            ["กำลังรอชำระ", stock.reserved, "ชิ้น"],
+            ["รอคิว", stock.waiting, "คน"],
+          ] as const
+        ).map(([label, value, unit]) => (
+          <div key={label} className="rounded-l bg-white/70 py-2">
+            <dt className="text-[11px] leading-tight text-slate-500">{label}</dt>
+            <dd className="text-[15px] font-bold tabular-nums text-brand-ink">
+              {value} <span className="text-[11px] font-normal text-slate-500">{unit}</span>
+            </dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 
@@ -544,7 +570,7 @@ export default function FlashSaleLive({
                 <h2 className="mt-1 text-2xl font-extrabold leading-snug text-[#003529] md:text-3xl">{product.name}</h2>
               </div>
               <div className="flex justify-center md:justify-start">{priceRow}</div>
-              {stockBar}
+              {stockBlock}
               <div ref={panelRef}>{panelBody}</div>
               {noticeBox}
               <p className="text-center text-xs text-slate-500 md:text-left">1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ · ถึงคิวแล้วมีเวลาชำระเงิน {status?.campaign.window_minutes ?? 15} นาที</p>
@@ -591,7 +617,7 @@ export default function FlashSaleLive({
                 <h2 className="mt-1 text-xl font-bold leading-snug text-brand-ink">{product.name}</h2>
               </div>
               {priceRow}
-              {stockBar}
+              {stockBlock}
               <ul className="flex flex-col gap-2 text-sm text-slate-600">
                 <li className="flex items-center gap-2">
                   <Users size={16} className="shrink-0 text-brand-800" aria-hidden /> 1 บัญชีซื้อได้ 1 ชิ้นต่อแคมเปญ
