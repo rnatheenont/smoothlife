@@ -15,7 +15,8 @@ export type PaymentAttempt = {
   invoice_no: string;
   amount: number;
   status: "pending" | "success" | "failed" | string;
-  via: "shopify" | "2c2p";
+  /** "storefront" = sold by the shop's own product page, never through the queue. */
+  via: "shopify" | "2c2p" | "storefront";
   /** Shopify's own order name once there is one. */
   order: string | null;
   note: string | null;

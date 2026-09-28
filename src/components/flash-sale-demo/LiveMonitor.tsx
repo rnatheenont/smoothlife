@@ -41,6 +41,12 @@ const PHASE: Record<FlashSaleMonitor["campaign"]["phase"], { label: string; colo
   ended: { label: "ปิดการขายแล้ว", color: "default" },
 };
 
+const VIA: Record<PaymentAttempt["via"], string> = {
+  shopify: "Shopify",
+  "2c2p": "2C2P",
+  storefront: "หน้าร้าน",
+};
+
 const ATTEMPT: Record<string, { label: string; color: "success" | "danger" | "warning" | "default"; dot: string }> = {
   success: { label: "จ่ายสำเร็จ", color: "success", dot: "bg-emerald-500" },
   failed: { label: "ไม่สำเร็จ", color: "danger", dot: "bg-rose-500" },
@@ -126,7 +132,7 @@ function PaymentRow({ a }: { a: PaymentAttempt }) {
         <span className="text-xs font-semibold text-slate-600">{look.label}</span>
       </span>
       <span className="text-sm font-semibold tabular-nums text-brand-ink @3xl:text-right">{baht(a.amount)}</span>
-      <span className="text-xs text-slate-500">{a.via === "shopify" ? "Shopify" : "2C2P"}</span>
+      <span className="text-xs text-slate-500">{VIA[a.via]}</span>
       <span className="text-xs tabular-nums text-slate-400">{a.position !== null ? `#${a.position}` : "—"}</span>
       <span className="col-span-2 min-w-0 text-xs text-slate-400 @3xl:col-span-1">
         {a.order && <span className="font-semibold text-brand-800">{a.order} · </span>}
@@ -191,12 +197,30 @@ export default function LiveMonitor({
     (t, o) => ({ count: t.count + o.quantity, amount: t.amount + o.amount }),
     { count: 0, amount: 0 }
   );
-  const shown = filter === "all" ? attempts : attempts.filter((a) => a.status === filter);
+  // Both doors in one list, newest first. A sale through the shop's own product
+  // page is still a sale, and filing it under its own heading left the tab
+  // above it saying "จ่ายสำเร็จ 0" on a day two sets had gone out.
+  const rows: PaymentAttempt[] = [
+    ...attempts,
+    ...shopOrders.map((o) => ({
+      invoice_no: o.name,
+      amount: o.amount,
+      status: "success",
+      via: "storefront" as const,
+      order: o.name,
+      note: o.quantity > 1 ? `${o.quantity} ชิ้น` : null,
+      refund_note: null,
+      created_at: o.createdAt,
+      confirmed_at: o.createdAt,
+      position: null,
+    })),
+  ].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+  const shown = filter === "all" ? rows : rows.filter((a) => a.status === filter);
   const counts = {
-    all: attempts.length,
-    success: attempts.filter((a) => a.status === "success").length,
-    pending: attempts.filter((a) => a.status === "pending").length,
-    failed: attempts.filter((a) => a.status === "failed").length,
+    all: rows.length,
+    success: rows.filter((a) => a.status === "success").length,
+    pending: rows.filter((a) => a.status === "pending").length,
+    failed: rows.filter((a) => a.status === "failed").length,
   };
 
   return (
@@ -402,6 +426,7 @@ export default function LiveMonitor({
               aside={
                 <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
                   <CreditCard size={13} aria-hidden /> Shopify {data.payments.stats.via_shopify} · 2C2P {data.payments.stats.via_2c2p}
+                  {shopSold.count > 0 ? ` · หน้าร้าน ${shopOrders.length}` : ""}
                 </span>
               }
             >
@@ -409,6 +434,13 @@ export default function LiveMonitor({
                 <p className="mb-3 rounded-xl2 bg-amber-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-amber-900">
                   <b>{data.payments.stats.no_address} คน</b>ที่ถึงคิวยังไม่มีที่อยู่บันทึกไว้ในระบบ — แคมเปญที่ชำระผ่าน 2C2P
                   ต้องกรอกที่อยู่ให้ครบก่อนจึงกดปุ่มชำระเงินได้ ถ้าคนกลุ่มนี้หลุดเยอะผิดปกติ นี่คือจุดที่ควรดูก่อน
+                </p>
+              )}
+
+              {shopOrders.length > 0 && (
+                <p className="mb-3 rounded-xl2 bg-surface-soft px-3.5 py-2.5 text-[11px] leading-relaxed text-slate-600">
+                  <b>{shopSold.count} ชิ้น</b> ({baht(shopSold.amount)}) ขายผ่านหน้าสินค้าบน Shopify โดยตรง ไม่ได้ผ่านคิว —
+                  ตัดสต็อกจริงและนับรวมในยอดขายแล้ว ถ้าอยากขายทางคิวทางเดียว ต้องเอาสินค้าออกจากช่องทาง Online Store ใน Shopify
                 </p>
               )}
 
@@ -438,7 +470,7 @@ export default function LiveMonitor({
               </div>
 
               {shown.length === 0 ? (
-                <p className="py-3 text-sm text-slate-500">{attempts.length === 0 ? "ยังไม่มีใครกดชำระเงิน" : "ไม่มีรายการในหมวดนี้"}</p>
+                <p className="py-3 text-sm text-slate-500">{rows.length === 0 ? "ยังไม่มีใครกดชำระเงิน" : "ไม่มีรายการในหมวดนี้"}</p>
               ) : (
                 <ul className="flex max-h-96 flex-col divide-y divide-surface-line overflow-y-auto">
                   {shown.map((a) => (
@@ -446,32 +478,6 @@ export default function LiveMonitor({
                   ))}
                 </ul>
               )}
-            </Section>
-          )}
-
-          {shopOrders.length > 0 && (
-            <Section
-              title="ขายผ่านหน้าร้าน Shopify (ไม่ผ่านคิว)"
-              aside={
-                <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                  <Store size={13} aria-hidden /> {shopSold.count} ชิ้น · {baht(shopSold.amount)}
-                </span>
-              }
-            >
-              <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
-                สินค้าตัวเดียวกันยังเปิดขายที่หน้าสินค้าบน Shopify ด้วย — ออเดอร์พวกนี้ตัดสต็อกจริง
-                แต่ไม่ได้ผ่านคิว ถ้าอยากขายทางคิวทางเดียว ต้องเอาสินค้าออกจากช่องทาง Online Store ใน Shopify
-              </p>
-              <ul className="flex flex-col divide-y divide-surface-line">
-                {shopOrders.map((o) => (
-                  <li key={o.name} className="flex items-baseline gap-3 py-2.5 text-sm">
-                    <span className="w-12 shrink-0 text-xs tabular-nums text-slate-400">{clock(o.createdAt)}</span>
-                    <span className="font-semibold text-brand-800">{o.name}</span>
-                    <span className="text-xs text-slate-500">×{o.quantity}</span>
-                    <span className="ms-auto font-semibold tabular-nums text-brand-ink">{baht(o.amount)}</span>
-                  </li>
-                ))}
-              </ul>
             </Section>
           )}
 
