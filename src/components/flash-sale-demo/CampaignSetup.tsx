@@ -557,7 +557,7 @@ export default function CampaignSetup({
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label htmlFor="fs-headline" className="mb-1.5 block text-sm font-semibold text-brand-ink">
-                    พาดหัวบนแบนเนอร์
+                    พาดหัวบนแบนเนอร์ (เว้นว่าง = ไม่มีตัวอักษรทับรูป)
                   </label>
                   <input
                     id="fs-headline"
