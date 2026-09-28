@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Alert, Button, Card, Chip } from "@heroui/react";
-import { ArrowDown, CreditCard, ExternalLink, RefreshCw } from "lucide-react";
+import { ArrowDown, CreditCard, ExternalLink, RefreshCw, Store } from "lucide-react";
 import { NumberTicker } from "@/components/magicui/number-ticker";
 import type { FlashSaleMonitor, FlashSalePaymentStats } from "@/lib/flash-sale";
 import type { PaymentAttempt } from "@/lib/flash-sale-monitor-payments";
@@ -58,7 +58,7 @@ const clock = (iso: string) =>
  * gap between two of these is the only thing on this page that says where to go
  * and look.
  */
-function funnel(s: FlashSalePaymentStats) {
+function funnel(s: FlashSalePaymentStats, shopSold: { count: number; amount: number }) {
   const share = (n: number, of: number) => (of > 0 ? Math.round((n / of) * 100) : null);
   return [
     { key: "turns", label: "ถึงคิวแล้ว", value: s.turns, share: null as number | null, rule: "bg-slate-300", money: null as number | null, note: "ได้สิทธิ์ซื้อ" },
@@ -74,13 +74,13 @@ function funnel(s: FlashSalePaymentStats) {
     {
       key: "paid",
       label: "จ่ายสำเร็จ",
-      value: s.paid,
+      value: s.paid + shopSold.count,
       share: share(s.paid, s.pressed_pay),
       rule: "bg-emerald-500",
       // The number everyone actually came for. A count of sales on a page about
       // ฿55,000 a piece was the one thing here nobody could read off it.
-      money: s.paid_amount,
-      note: s.median_seconds_to_pay !== null ? `เฉลี่ย ${mmss(s.median_seconds_to_pay)}` : "ยังไม่มียอดขาย",
+      money: s.paid_amount + shopSold.amount,
+      note: shopSold.count > 0 ? `ผ่านคิว ${s.paid} · หน้าร้าน ${shopSold.count}` : "ยังไม่มียอดขาย",
     },
     {
       key: "stuck",
@@ -184,6 +184,13 @@ export default function LiveMonitor({
   );
   const live = data?.campaign.phase === "open";
   const attempts = data?.payments?.attempts ?? [];
+  // Orders for this campaign's products that never touched the queue: the shop
+  // sells the same box on its own product page at the same time.
+  const shopOrders = (data?.payments?.orders ?? []).filter((o) => !o.viaQueue);
+  const shopSold = shopOrders.reduce(
+    (t, o) => ({ count: t.count + o.quantity, amount: t.amount + o.amount }),
+    { count: 0, amount: 0 }
+  );
   const shown = filter === "all" ? attempts : attempts.filter((a) => a.status === filter);
   const counts = {
     all: attempts.length,
@@ -310,7 +317,7 @@ export default function LiveMonitor({
               number is allowed to be this large. */}
           {data.payments ? (
             <ol className="grid grid-cols-2 border-t border-surface-line @3xl:grid-cols-4">
-              {funnel(data.payments.stats).map((step, i) => (
+              {funnel(data.payments.stats, shopSold).map((step, i) => (
                 <li
                   key={step.key}
                   className={`relative px-4 py-4 md:px-6 ${i > 0 ? "border-surface-line @3xl:border-l" : ""} ${i < 2 ? "border-b border-surface-line @3xl:border-b-0" : ""} ${i % 2 === 1 ? "border-l border-surface-line @3xl:border-l" : ""}`}
@@ -439,6 +446,32 @@ export default function LiveMonitor({
                   ))}
                 </ul>
               )}
+            </Section>
+          )}
+
+          {shopOrders.length > 0 && (
+            <Section
+              title="ขายผ่านหน้าร้าน Shopify (ไม่ผ่านคิว)"
+              aside={
+                <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                  <Store size={13} aria-hidden /> {shopSold.count} ชิ้น · {baht(shopSold.amount)}
+                </span>
+              }
+            >
+              <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
+                สินค้าตัวเดียวกันยังเปิดขายที่หน้าสินค้าบน Shopify ด้วย — ออเดอร์พวกนี้ตัดสต็อกจริง
+                แต่ไม่ได้ผ่านคิว ถ้าอยากขายทางคิวทางเดียว ต้องเอาสินค้าออกจากช่องทาง Online Store ใน Shopify
+              </p>
+              <ul className="flex flex-col divide-y divide-surface-line">
+                {shopOrders.map((o) => (
+                  <li key={o.name} className="flex items-baseline gap-3 py-2.5 text-sm">
+                    <span className="w-12 shrink-0 text-xs tabular-nums text-slate-400">{clock(o.createdAt)}</span>
+                    <span className="font-semibold text-brand-800">{o.name}</span>
+                    <span className="text-xs text-slate-500">×{o.quantity}</span>
+                    <span className="ms-auto font-semibold tabular-nums text-brand-ink">{baht(o.amount)}</span>
+                  </li>
+                ))}
+              </ul>
             </Section>
           )}
 

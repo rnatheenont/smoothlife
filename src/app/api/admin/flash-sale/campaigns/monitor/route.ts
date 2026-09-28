@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
         // Same reckoning the sale page uses: two screens disagreeing about
         // one sale is worse than either being a minute stale.
         await raiseSoldToShopify(id, monitor.campaign.starts_at, monitor.products);
-        const payments = detail ? await monitorPayments(id) : null;
+        const payments = detail ? await monitorPayments(id, monitor.campaign.starts_at) : null;
         const refunds = refundRows
           .filter((r) => r.flash_sale_queue?.campaign_id === id)
           .map(({ invoice_no, amount, refund_note }) => ({ invoice_no, amount, refund_note }));

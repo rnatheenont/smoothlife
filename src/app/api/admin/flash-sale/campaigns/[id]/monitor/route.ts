@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       `payment_transactions?refund_note=like.FLASH_SALE_*&status=eq.success&select=invoice_no,amount,refund_note,flash_sale_queue!inner(campaign_id)&flash_sale_queue.campaign_id=eq.${pgValue(id)}&order=confirmed_at.desc&limit=50`
     ).catch(() => []);
     const sharedSources = (await sharedSourcesFor([id]))[id] ?? [];
-    const payments = await monitorPayments(id);
+    const payments = await monitorPayments(id, monitor.campaign.starts_at);
 
     return NextResponse.json(
       {

@@ -5,6 +5,9 @@
 // client" component.
 import { SHOPIFY_STOREFRONT_ORIGIN } from "@/lib/site-url";
 import { thProvinceCode, thPhoneE164, shopifyRecipientName } from "@/lib/shopify-th-address";
+// The cart attribute our own checkout sets, so an order can say where it came
+// from. Defined with the checkout that writes it, not duplicated here.
+import { FLASH_SALE_ENTRY_ATTR } from "@/lib/flash-sale-shopify";
 
 const SHOP = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
 const CLIENT_ID = process.env.SHOPIFY_ADMIN_CLIENT_ID;
@@ -2335,6 +2338,96 @@ export async function unpublishedProducts(): Promise<UnpublishedProduct[]> {
  * old is much better than a rate limit in the middle of a drop.
  */
 const soldCache = new Map<string, { at: number; counts: Map<string, number> }>();
+
+export type VariantOrder = {
+  name: string;
+  createdAt: string;
+  /** What the line for this campaign's variant came to, not the whole order. */
+  amount: number;
+  quantity: number;
+  /** Bought through our queue — it carries the reservation as an attribute. */
+  viaQueue: boolean;
+};
+
+const ordersCache = new Map<string, { at: number; orders: VariantOrder[] }>();
+
+/**
+ * Every paid order of these variants since a moment, and whether each came
+ * through our own queue.
+ *
+ * The console could say "ขาย 2" and, two lines down, "จ่ายสำเร็จ 0", both true:
+ * two sets went out of the shop's own front door while the queue sold nothing.
+ * Two numbers that disagree and no way to open either one is worse than either
+ * number alone, so the orders behind the first one are listed.
+ *
+ * One page of a hundred orders, same as variantsSoldSince: a campaign running
+ * for days in a busy shop will eventually push its own earliest sales off the
+ * end of this. Fine for watching a drop; not a ledger.
+ */
+export async function variantOrdersSince(
+  variantIds: (string | null | undefined)[],
+  sinceIso: string
+): Promise<VariantOrder[]> {
+  const wanted = new Set(variantIds.filter((v): v is string => Boolean(v)));
+  if (!wanted.size || !shopifyAdminConfigured()) return [];
+
+  const key = `${sinceIso}|${[...wanted].sort().join(",")}`;
+  const hit = ordersCache.get(key);
+  if (hit && Date.now() - hit.at < 60_000) return hit.orders;
+
+  try {
+    const data = await adminGraphql<{
+      orders: {
+        nodes: {
+          name: string;
+          createdAt: string;
+          customAttributes: { key: string; value: string }[];
+          lineItems: {
+            nodes: { quantity: number; variant: { id: string } | null; originalTotalSet: { shopMoney: { amount: string } } | null }[];
+          };
+        }[];
+      };
+    }>(
+      `query OrdersSince($q: String!) {
+         orders(first: 100, query: $q, sortKey: CREATED_AT, reverse: true) {
+           nodes {
+             name
+             createdAt
+             customAttributes { key value }
+             lineItems(first: 50) {
+               nodes { quantity variant { id } originalTotalSet { shopMoney { amount } } }
+             }
+           }
+         }
+       }`,
+      { q: `created_at:>='${sinceIso}' AND financial_status:paid` }
+    );
+
+    const orders: VariantOrder[] = [];
+    for (const order of data.orders?.nodes ?? []) {
+      let amount = 0;
+      let quantity = 0;
+      for (const li of order.lineItems?.nodes ?? []) {
+        if (!li.variant?.id || !wanted.has(li.variant.id)) continue;
+        quantity += Number(li.quantity) || 0;
+        amount += Number(li.originalTotalSet?.shopMoney?.amount ?? 0) || 0;
+      }
+      if (quantity === 0) continue;
+      orders.push({
+        name: order.name,
+        createdAt: order.createdAt,
+        amount,
+        quantity,
+        viaQueue: (order.customAttributes ?? []).some((a) => a.key === FLASH_SALE_ENTRY_ATTR),
+      });
+    }
+    ordersCache.set(key, { at: Date.now(), orders });
+    return orders;
+  } catch (err) {
+    console.error("[shopify-admin] variantOrdersSince failed", err);
+    return [];
+  }
+}
 
 export async function variantsSoldSince(
   variantIds: (string | null | undefined)[],
