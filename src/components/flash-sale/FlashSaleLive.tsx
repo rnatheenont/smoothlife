@@ -565,8 +565,15 @@ export default function FlashSaleLive({
           {/* `relative` went with the beams: nothing inside this card is
               positioned against it any more — the artwork carries its own. */}
           <div className="mt-6 grid gap-6 rounded-3xl bg-white p-4 shadow-card ring-1 ring-black/5 md:grid-cols-2 md:gap-10 md:p-8 lg:items-center">
-            <div className="relative aspect-square overflow-hidden rounded-2xl bg-[linear-gradient(160deg,#f7f1ff,#ffffff)]">
-              <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 45vw" className="rounded-2xl object-contain p-4 md:p-6" priority />
+            {/* The artwork fills its corner of the card. The lilac gradient
+                behind it only ever showed as a frame — the padding held the
+                image off the edges and the gradient filled the gap — so both
+                are gone and the image is clipped to the rounded corner
+                instead. object-contain, not cover: a campaign's picture is
+                square but a plain product shot need not be, and letterboxing
+                one is better than cropping it. */}
+            <div className="relative aspect-square overflow-hidden rounded-2xl">
+              <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, 45vw" className="object-contain" priority />
             </div>
             <div className="flex flex-col gap-4">
               <div className="text-center md:text-left">
