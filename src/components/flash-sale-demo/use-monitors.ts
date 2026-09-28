@@ -23,6 +23,9 @@ const POLL_MS = 5000;
 export function useMonitors(ids: string[], opts?: { detail?: boolean }) {
   const [monitors, setMonitors] = useState<Record<string, Monitor>>({});
   const [error, setError] = useState<string | null>(null);
+  // When the numbers on screen were last true. A page that polls silently looks
+  // identical to a page that stopped polling.
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   // The list of ids changes as rows open and close; the poller reads the
   // newest one rather than being torn down and rebuilt each time.
   const latest = useRef(ids);
@@ -45,6 +48,7 @@ export function useMonitors(ids: string[], opts?: { detail?: boolean }) {
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || "โหลดข้อมูลคิวไม่สำเร็จ");
       setMonitors(json.monitors);
+      setUpdatedAt(Date.now());
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "โหลดข้อมูลคิวไม่สำเร็จ");
@@ -58,5 +62,5 @@ export function useMonitors(ids: string[], opts?: { detail?: boolean }) {
     return () => clearInterval(timer);
   }, [key, load]);
 
-  return { monitors, error, reload: load };
+  return { monitors, error, updatedAt, reload: load };
 }
