@@ -90,6 +90,33 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   // The flash price fixed in the sale row when the campaign was created; the
   // regular price only for campaigns without one.
   const amount = started.sale_price !== null && started.sale_price !== undefined ? Number(started.sale_price) : variant.price;
+
+  // A price of nothing is never a price. variant.price is baked into the build
+  // by fetch-products.js, so it is only as good as the catalogue that build
+  // captured — and on 29 Sep some of them carried this campaign's ฿55,000
+  // pre-order at 0. Five customers were handed a ฿0 checkout for it within
+  // forty minutes, on the same sale, minutes apart from others quoted the
+  // right price, because requests were landing on different deployments.
+  //
+  // The product check above catches a variant that is missing. This catches
+  // the one that is there and worthless, which is the more dangerous of the
+  // two: it produces a working checkout at the wrong number rather than an
+  // error. Refusing costs the customer their turn in the queue, which is
+  // recoverable; selling a ฿55,000 set for nothing is not.
+  if (!Number.isFinite(amount) || amount <= 0) {
+    console.error("[flash-sale/pay] refusing a zero price", {
+      entryId: started.entry_id,
+      slug: started.product_slug,
+      variantId: variant.variantId,
+      salePrice: started.sale_price,
+      cataloguePrice: variant.price,
+    });
+    return NextResponse.json(
+      { ok: false, error: "ราคาสินค้าไม่ถูกต้อง กรุณาลองใหม่อีกครั้งหรือติดต่อทีมงาน" },
+      { status: 503 }
+    );
+  }
+
   // Shopify's checkout charges Shopify's price. That is the right price when
   // the campaign never set one of its own, and the wrong one the moment it did.
   const viaShopify = shopifyFlashSaleAvailable() && Math.abs(amount - variant.price) < 0.005;
