@@ -349,13 +349,19 @@ function DetailPanel({
                         was broken. The split still exists where it decides
                         anything: each line below carries its own tag, and the
                         breakdown shows here when a bill really has both. */}
-                    <dt className="text-slate-500">ยอดที่นับสิทธิ์</dt>
+                    <dt className="text-slate-500">ยอดสินค้าที่ร่วมรายการ</dt>
                     <dd className="font-bold text-brand-ink">
-                      {formatTHB(item.dentisteAmount + item.keychainAmount)}
+                      {formatTHB(item.dentisteAmount + item.keychainAmount + (item.vipAmount ?? 0))}
                       {item.dentisteAmount > 0 && item.keychainAmount > 0 && (
                         <span className="ms-2 text-[11px] font-normal text-slate-500">
                           DENTISTE&apos; {formatTHB(item.dentisteAmount)} · Keychain{" "}
                           {formatTHB(item.keychainAmount)}
+                        </span>
+                      )}
+                      {(item.vipAmount ?? 0) > 0 && (
+                        <span className="mt-0.5 block text-[11.5px] font-semibold text-amber-800">
+                          นับสิทธิ์ {formatTHB(item.dentisteAmount + item.keychainAmount)} · เซ็ต VIP{" "}
+                          {formatTHB(item.vipAmount ?? 0)} ไม่นับ
                         </span>
                       )}
                     </dd>
@@ -643,7 +649,7 @@ export default function QueueTable({
               <th>คำสั่งซื้อ</th>
               <th>การชำระเงิน</th>
               <th>สถานะพิเศษ</th>
-              <th className="text-right">ยอดที่นับสิทธิ์</th>
+              <th className="text-right whitespace-nowrap">ยอดสินค้า</th>
               <th className="text-right">สิทธิ์</th>
               <th>AI ตรวจ</th>
               {decided && <th>ผลตรวจ</th>}
@@ -705,16 +711,17 @@ export default function QueueTable({
                     )}
                   </td>
                   <td className={`${adminTable.cell} text-right`}>
+                    {/* The money on the bill is the black number, including
+                        the VIP set. It was the counted figure before, so a VIP
+                        row read ฿0 beside a ฿55,000 purchase and looked like
+                        the money had been missed. What counts moves to the
+                        line under it, and only appears when the two differ. */}
                     <span className="font-semibold tabular-nums text-brand-ink">
-                      {formatTHB(item.dentisteAmount + item.keychainAmount)}
+                      {formatTHB(item.dentisteAmount + item.keychainAmount + (item.vipAmount ?? 0))}
                     </span>
-                    {/* The counted figure is the one the draw runs on, so it
-                        stays the big number — but a bare ฿0 next to a ฿55,000
-                        bill reads as a failure to see the money. This says it
-                        was seen and why it counts for nothing. */}
                     {(item.vipAmount ?? 0) > 0 && (
                       <span className="block whitespace-nowrap text-[11px] font-semibold text-amber-800">
-                        VIP {formatTHB(item.vipAmount ?? 0)} · ไม่นับ
+                        นับสิทธิ์ {formatTHB(item.dentisteAmount + item.keychainAmount)} · เซ็ต VIP ไม่นับ
                       </span>
                     )}
                     {dentisteLines.length > 0 && (
