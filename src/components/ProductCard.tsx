@@ -88,11 +88,16 @@ export default function ProductCard({ product }: { product: Product }) {
     setTimeout(() => setAdded(false), 1500);
   }
 
-  // On a phone the picture and the words are the card — no shadow, a tighter
-  // radius. From md up it is the site's own card again: the desktop shop is a
-  // website and should go on looking like one.
+  // The hairline stays on every screen.
+  //
+  // It was taken off below md on the theory that a photograph and its price
+  // are enough to read as one object — true when a card sits on a canvas of a
+  // different colour, and not true here: these are white cards inside a white
+  // merchandising band, so without the ring they dissolved into it and there
+  // was no telling where one product ended. shadow-card is a hairline and a
+  // breath of shadow, which is one treatment, not a border and a shadow both.
   return (
-    <div className="group relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white transition-shadow duration-200 md:rounded-xl2 md:shadow-card md:hover:shadow-cardHover">
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 md:rounded-xl2 md:hover:shadow-cardHover">
       <button
         onClick={() => toggle(product.slug)}
         aria-label={isWished ? "เอาออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}
