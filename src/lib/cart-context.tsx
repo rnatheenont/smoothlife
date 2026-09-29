@@ -288,7 +288,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
           )
         );
       }
-      return [giftLineFor(products.find((pr) => pr.slug === e.promo.giftProductSlug), e.promo.giftQty, e.promo.slug)];
+      // The gift usually lives on Shopify's free-gift shelf rather than in our
+      // catalogue — every one of them is UNLISTED there — so the promo carries
+      // its name and picture and the line is built from those. The catalogue
+      // lookup stays for promos written before the shelf existed.
+      const fromCatalogue = giftLineFor(products.find((pr) => pr.slug === e.promo.giftProductSlug), e.promo.giftQty, e.promo.slug);
+      if (fromCatalogue) return [fromCatalogue];
+      if (!e.promo.giftVariantId) return [];
+      return [
+        {
+          slug: e.promo.giftVariantId,
+          variantId: e.promo.giftVariantId,
+          qty: e.promo.giftQty,
+          name: (e.promo.giftTitle ?? "ของแถม").replace(/^\s*(TEST\s*\|\s*)?\[Free Gift\]\s*/i, "").trim(),
+          price: 0,
+          image: e.promo.giftImage ?? "",
+          compareAtPrice: undefined,
+          brand: "",
+          category: "" as CartLine["category"],
+          size: "",
+          variants: [],
+          stock: undefined,
+          isGift: true,
+          giftPromoSlug: e.promo.slug,
+        },
+      ];
     })
     .filter(Boolean) as CartContextValue["lines"];
   const linesWithGifts = [...lines, ...giftLines];

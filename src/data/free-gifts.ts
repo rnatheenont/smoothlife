@@ -39,6 +39,13 @@ export type FreeGiftPromo = {
   giftVariantId?: string;
   /** Filled in by /api/free-gifts from Shopify: what is left of the gift. */
   giftStock?: number | null;
+  /**
+   * The gift's own name and picture, also from Shopify. The gifts are UNLISTED
+   * there and so are absent from our catalogue — without these the cart knows a
+   * gift has been unlocked and has nothing to show for it.
+   */
+  giftTitle?: string;
+  giftImage?: string | null;
 };
 
 // Row shape as stored in the Supabase `free_gift_promos` table (snake_case) —

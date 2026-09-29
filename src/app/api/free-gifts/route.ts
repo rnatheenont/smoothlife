@@ -21,12 +21,22 @@ export async function GET() {
     const promos = rows.map(rowToPromo);
 
     // One call for the whole page, cached five minutes inside the helper.
-    const wantsStock = promos.some((p) => p.giftVariantId);
-    const stock = wantsStock ? new Map((await freeGiftProducts()).map((g) => [g.variantId, g.stock])) : new Map();
+    const wantsGifts = promos.some((p) => p.giftVariantId);
+    const shelf = wantsGifts
+      ? new Map((await freeGiftProducts()).map((g) => [g.variantId, g]))
+      : new Map<string, Awaited<ReturnType<typeof freeGiftProducts>>[number]>();
 
     const now = Date.now();
     const live = promos
-      .map((p) => ({ ...p, giftStock: p.giftVariantId ? (stock.get(p.giftVariantId) ?? null) : undefined }))
+      .map((p) => {
+        const gift = p.giftVariantId ? shelf.get(p.giftVariantId) : undefined;
+        return {
+          ...p,
+          giftStock: p.giftVariantId ? (gift?.stock ?? null) : undefined,
+          giftTitle: gift?.title,
+          giftImage: gift?.image ?? null,
+        };
+      })
       .filter((p) => {
         if (p.starts && new Date(p.starts).getTime() > now) return false;
         if (p.expires && new Date(p.expires).getTime() < now) return false;
