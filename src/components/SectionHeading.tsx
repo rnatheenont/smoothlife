@@ -33,7 +33,7 @@ export default function SectionHeading({
   return (
     <div className="mb-5 flex items-end justify-between gap-4 md:mb-8">
       <div className="min-w-0">
-        <h2 className="text-xl font-bold leading-tight text-brand-ink md:text-[1.75rem]">{title}</h2>
+        <h2 className="text-[22px] font-bold leading-tight tracking-[-0.01em] text-brand-ink md:text-[30px]">{title}</h2>
         {extra && <p className="mt-1 text-sm text-slate-500">{extra}</p>}
       </div>
       {href && (

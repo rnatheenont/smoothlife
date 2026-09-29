@@ -114,7 +114,15 @@ export default async function HomePage() {
   }));
 
   return (
-    <div>
+    // One canvas, not a stack of bands.
+    //
+    // Every section used to paint its own background — white, pale green,
+    // white, pale green — which meant the page had eleven equally loud
+    // announcements and no way to tell which of them mattered. The colour
+    // now belongs to the page, and only the two sections that are genuinely
+    // a change of subject (membership, and the reading at the end) break out
+    // of it. The same components look considerably more expensive for it.
+    <div className="bg-[#FAFAF8]">
       {/* Hero — no separate AI-advisor CTA section further down: this is
           the only place that CTA ("น้อง Smoothie แนะนำ") appears,
           a second one later would be pure redundancy. */}
@@ -199,7 +207,7 @@ export default async function HomePage() {
           columns doesn't do better. The sub-line carries the condition that
           actually answers the doubt ("ไม่มียอดขั้นต่ำ") rather than restating
           the title ("ทุกออเดอร์"). */}
-      <section className="border-y border-surface-line bg-white">
+      <section className="border-y border-surface-line bg-white/70">
         <div className="container-page">
           <ul className="grid grid-cols-2 md:grid-cols-4">
             {[
@@ -242,7 +250,7 @@ export default async function HomePage() {
           the banner already shows these same categories. Desktop gets it in
           the same place in the order (before the products), so both screens
           read categories → products like the mockup. */}
-      <section className="hidden md:block bg-white md:pb-4 md:pt-14">
+      <section className="hidden md:block md:pb-4 md:pt-14">
         <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
         </ScrollReveal>
@@ -286,7 +294,7 @@ export default async function HomePage() {
       {/* Promotions — was the first section after Trust strip (filling the
           slot the mobile-only "today's deals" slider used to occupy);
           Categories now leads instead, so this follows it. */}
-      <section className="bg-surface-soft py-8 md:py-20">
+      <section className="py-12 md:py-16 lg:py-24">
         {/* The same Thai heading on every screen. Mobile used to get an
             English caps eyebrow in its place — shouting in the one language
             the page is not written in. */}
@@ -328,7 +336,7 @@ export default async function HomePage() {
           so grouping them together strengthens the "ways to start shopping"
           cluster right after the hero, instead of splitting it far apart
           from Categories with unrelated content in between. */}
-      <section className="bg-white py-8 md:py-20">
+      <section className="py-10 md:py-14 lg:py-16">
         <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามปัญหาผิวที่กังวล" subtitle="Shop by Concern" href="/concern" />
         </ScrollReveal>
@@ -377,7 +385,7 @@ export default async function HomePage() {
           recurring plan is a bigger ask than a one-off purchase, so it
           converts better after the catalogue, social proof, and brand story
           above have already built trust, rather than pitching it early. */}
-      <section className="container-page py-8 md:py-20">
+      <section className="container-page py-12 md:py-16 lg:py-24">
         <ScaleReveal className="relative overflow-hidden rounded-xl2 bg-brand-gradient p-8 md:p-12 text-white">
           {/* The one bold block on the page, deep green end to end. The two
               circles drifting across it on their own were decoration moving
@@ -466,7 +474,7 @@ export default async function HomePage() {
           fixed grid either got enormous or hid most of them; the marquee
           scales to any count without bloating page height and actually
           shows the full range of brands we carry. */}
-      <section className="bg-surface-soft py-8 md:py-20 overflow-hidden">
+      <section className="py-6 md:py-8 lg:py-10 overflow-hidden">
         <ScrollReveal className="container-page">
           <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
         </ScrollReveal>
@@ -479,7 +487,7 @@ export default async function HomePage() {
 
       {/* Wellness / knowledge teaser — kept last: bottom-funnel content for
           people still researching rather than ready to buy or subscribe. */}
-      <section className="bg-brand-gradient-soft py-8 md:py-20">
+      <section className="bg-brand-gradient-soft py-10 md:py-14 lg:py-16">
         <ScrollReveal className="container-page">
           <SectionHeading title="ความรู้เรื่องผิวและสุขภาพ" subtitle="Learn About Wellness" href="/knowledge" />
         </ScrollReveal>
