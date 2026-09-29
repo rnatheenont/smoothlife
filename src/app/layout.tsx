@@ -46,6 +46,21 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: ["/logo.webp"],
   },
+  // iOS does not read the manifest. Added to a home screen from Safari, this
+  // is where it finds the icon and the name under it, and what tells it to
+  // open the shop without Safari's own chrome around it.
+  appleWebApp: {
+    capable: true,
+    title: "Smoothlife",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   // Search Console proves ownership by finding a token it gave you in the
   // page head. It lives in an environment variable rather than here so
   // claiming the site — or re-claiming it after someone leaves the team — is

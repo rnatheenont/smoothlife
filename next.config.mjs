@@ -80,6 +80,16 @@ const nextConfig = {
         source: "/:dir(models|mediapipe)/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
       },
+      // The worker itself is never cached: a stale copy of the thing that
+      // decides what is cached takes a deploy to notice and a hard refresh to
+      // clear, on every phone that has it.
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        ],
+      },
       {
         source: "/:path*",
         headers: [
