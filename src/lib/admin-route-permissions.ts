@@ -47,6 +47,9 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   // answer back can confirm a payment and create an order, which does not.
   // Receipt campaign: answering "did my receipt go through" is support work;
   // approving one hands out a claim on a ฿55,000 prize.
+  // The campaign's sales figure is read-only and reads like the receipt
+  // console it sits in a tab of — same permission, no write side at all.
+  { prefix: "/api/admin/campaigns/dentiste-sales", permission: "receipts.view", methods: READ },
   { prefix: "/api/admin/receipts", permission: "receipts.view", methods: READ },
   { prefix: "/api/admin/receipts", permission: "receipts.manage" },
   { prefix: "/api/admin/checkout-transactions/reconcile", permission: "checkout.view", methods: READ },
