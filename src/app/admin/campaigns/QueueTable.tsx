@@ -340,14 +340,25 @@ function DetailPanel({
                           ? <>{formatTHB(item.claimedOrder.total)} <span className="text-[11px] text-slate-400">(จากคำสั่งซื้อในร้าน)</span></>
                           : "—"}
                     </dd>
-                    <dt className="text-slate-500">ยอด DENTISTE&apos;</dt>
-                    <dd className="font-bold text-brand-ink">{formatTHB(item.dentisteAmount)}</dd>
-                    {item.keychainAmount > 0 && (
-                      <>
-                        <dt className="text-slate-500">Keychain</dt>
-                        <dd className="text-brand-ink">{formatTHB(item.keychainAmount)}</dd>
-                      </>
-                    )}
+                    {/* One number, because two of them read as a fault. A
+                        keychain set is counted as keychain and deliberately
+                        kept out of the Dentiste step so it is not paid for
+                        twice — which put "ยอด DENTISTE' ฿0" next to "ยอดทั้งบิล
+                        ฿990" on every receipt that was nothing but the set,
+                        and the first question it drew was whether the system
+                        was broken. The split still exists where it decides
+                        anything: each line below carries its own tag, and the
+                        breakdown shows here when a bill really has both. */}
+                    <dt className="text-slate-500">ยอดที่นับสิทธิ์</dt>
+                    <dd className="font-bold text-brand-ink">
+                      {formatTHB(item.dentisteAmount + item.keychainAmount)}
+                      {item.dentisteAmount > 0 && item.keychainAmount > 0 && (
+                        <span className="ms-2 text-[11px] font-normal text-slate-500">
+                          DENTISTE&apos; {formatTHB(item.dentisteAmount)} · Keychain{" "}
+                          {formatTHB(item.keychainAmount)}
+                        </span>
+                      )}
+                    </dd>
                     <dt className="text-slate-500">ผู้รับรางวัล</dt>
                     <dd className="text-brand-ink">
                       {item.contactName ?? "—"}
@@ -615,7 +626,7 @@ export default function QueueTable({
               <th>ลูกค้า</th>
               <th>คำสั่งซื้อ</th>
               <th>การชำระเงิน</th>
-              <th className="text-right">ยอด DENTISTE&apos;</th>
+              <th className="text-right">ยอดที่นับสิทธิ์</th>
               <th className="text-right">สิทธิ์</th>
               <th>AI ตรวจ</th>
               {decided && <th>ผลตรวจ</th>}
@@ -669,7 +680,9 @@ export default function QueueTable({
                     <PaymentChip item={item} />
                   </td>
                   <td className={`${adminTable.cell} text-right`}>
-                    <span className="font-semibold tabular-nums text-brand-ink">{formatTHB(item.dentisteAmount)}</span>
+                    <span className="font-semibold tabular-nums text-brand-ink">
+                      {formatTHB(item.dentisteAmount + item.keychainAmount)}
+                    </span>
                     {dentisteLines.length > 0 && (
                       <span className="block text-[11px] text-slate-400">
                         {dentisteLines.length} รายการ · {dentisteLines.reduce((n, l) => n + l.quantity, 0)} ชิ้น
