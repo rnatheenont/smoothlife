@@ -125,7 +125,7 @@ function SkinScansContent() {
             ))}
           </ul>
 
-          <section className="mt-8 rounded-xl2 border border-slate-100 bg-white p-5 shadow-card">
+          <section className="mt-8 rounded-xl2 bg-white p-5 shadow-card">
             <SkinProgress scans={scans} onPhotosRemoved={history.reload} />
           </section>
         </>

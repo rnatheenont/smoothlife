@@ -20,7 +20,7 @@ export default function ConsentGate({ onConsent }: { onConsent: () => void }) {
 
   return (
     <div className="container-page py-10 md:py-14 max-w-2xl">
-      <div className="rounded-xl2 border border-slate-100 shadow-card p-6 md:p-8">
+      <div className="rounded-xl2 shadow-card p-6 md:p-8">
         <div className="flex items-center gap-2 text-brand-800 mb-4">
           <ShieldCheck size={22} />
           <span className="text-sm font-semibold">ก่อนเริ่ม Skin Coach</span>

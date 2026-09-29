@@ -148,7 +148,7 @@ export default function AccountOverview() {
 
       <div className="space-y-5 lg:contents">
         {/* Orders */}
-        <div className="rounded-xl2 border border-surface-line bg-white shadow-card lg:hidden">
+        <div className="rounded-xl2 bg-white shadow-card lg:hidden">
           <div className="flex items-center justify-between border-b border-surface-line px-4 py-3">
             <h2 className="text-sm font-bold text-brand-ink">การซื้อของฉัน</h2>
             <Link href="/account/orders" className="flex items-center gap-0.5 text-xs font-semibold text-brand-800">
@@ -209,7 +209,7 @@ export default function AccountOverview() {
         {/* Settings */}
         <div className="lg:hidden">
           <h2 className="mb-3 text-sm font-bold text-brand-ink">ตั้งค่าบัญชี</h2>
-          <div className="divide-y divide-surface-line overflow-hidden rounded-xl2 border border-surface-line bg-white shadow-card">
+          <div className="divide-y divide-surface-line overflow-hidden rounded-xl2 bg-white shadow-card">
             <SettingRow icon={User} label="ข้อมูลส่วนตัว" href="/account/profile" value={user.phone || undefined} />
             <SettingRow icon={MapPin} label="ที่อยู่จัดส่ง" href="/account/addresses" />
             <SettingRow icon={Receipt} label="ที่อยู่ใบกำกับภาษี" href="/account/tax-addresses" />

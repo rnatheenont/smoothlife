@@ -145,7 +145,7 @@ export default async function HomePage() {
               claim goes under it rather than on top of it — overlaid text
               would be competing with the picture it sits on. */}
           <StaggerReveal className="order-2 md:order-1">
-            <span className="mb-3 hidden items-center gap-1.5 rounded-full border border-slate-100 bg-white px-3 py-1.5 text-[11px] font-semibold text-brand-800 shadow-card md:mb-5 md:inline-flex md:px-3.5 md:text-xs">
+            <span className="mb-3 hidden items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-brand-800 shadow-card md:mb-5 md:inline-flex md:px-3.5 md:text-xs">
               {/* Counted, not typed: a number in the copy that a data file
                   can quietly outgrow is a number that will one day be wrong. */}
               <Sparkles size={13} aria-hidden="true" /> คัดจาก {brands.length} แบรนด์ที่ขายจริงในไทย
@@ -332,7 +332,7 @@ export default async function HomePage() {
             <Link
               key={promo.slug}
               href={`/promotions#${promo.slug}`}
-              className="group relative aspect-4/3 w-[72%] shrink-0 snap-start overflow-hidden rounded-xl2 transition-transform active:scale-[0.98] sm:w-[45%] md:w-auto md:active:scale-100"
+              className="group relative aspect-4/3 w-[72%] shrink-0 snap-start overflow-hidden rounded-surface transition-transform active:scale-[0.98] sm:w-[45%] md:w-auto md:active:scale-100"
             >
               <Image
                 src={promo.image}
@@ -414,7 +414,7 @@ export default async function HomePage() {
           converts better after the catalogue, social proof, and brand story
           above have already built trust, rather than pitching it early. */}
       <section className="container-page py-8 md:py-16 lg:py-24">
-        <ScaleReveal className="relative overflow-hidden rounded-xl2 bg-brand-gradient p-8 md:p-12 text-white">
+        <ScaleReveal className="relative overflow-hidden rounded-feature bg-brand-gradient p-8 md:p-12 text-white">
           {/* The one bold block on the page, deep green end to end. The two
               circles drifting across it on their own were decoration moving
               for no one's benefit. */}

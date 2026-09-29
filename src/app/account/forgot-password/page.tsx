@@ -54,7 +54,7 @@ function ForgotPasswordContent() {
 
   return (
     <div className="container-page py-16 max-w-sm mx-auto">
-      <div className="rounded-xl2 border border-slate-100 shadow-card p-6 md:p-8 text-center">
+      <div className="rounded-xl2 shadow-card p-6 md:p-8 text-center">
         <div className="grid h-12 w-12 mx-auto place-items-center rounded-full bg-brand-gradient-soft text-brand-800 mb-4">
           <KeyRound size={22} />
         </div>

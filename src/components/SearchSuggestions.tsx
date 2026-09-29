@@ -23,7 +23,7 @@ export default function SearchSuggestions({ query, onSelect }: { query: string; 
     .slice(0, MAX_RESULTS);
 
   return (
-    <div className="absolute left-0 right-0 top-full mt-2 rounded-2xl border border-slate-100 bg-white shadow-cardHover overflow-hidden z-50 text-left">
+    <div className="absolute left-0 right-0 top-full mt-2 rounded-2xl bg-white shadow-cardHover overflow-hidden z-50 text-left">
       {matches.length === 0 ? (
         <p className="px-4 py-4 text-sm text-slate-500">ไม่พบสินค้าที่ตรงกับ &ldquo;{query}&rdquo;</p>
       ) : (

@@ -15,7 +15,7 @@ export default function RoutineBuilderPage() {
           const items = products.filter((p) => p.concerns.includes(c.slug)).slice(0, 3);
           if (items.length === 0) return null;
           return (
-            <div key={c.slug} className="rounded-xl2 border border-slate-100 p-5 shadow-card">
+            <div key={c.slug} className="rounded-xl2 p-5 shadow-card">
               <h3 className="font-bold text-brand-ink mb-3">{c.nameTh}</h3>
               <ol className="flex flex-col gap-3">
                 {items.map((p, idx) => (

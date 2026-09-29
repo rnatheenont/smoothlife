@@ -15,15 +15,15 @@ export default function ContactPage() {
       <p className="text-sm text-slate-500 mb-6">ทีมบริการลูกค้าพร้อมช่วยเหลือคุณทุกวัน 9:00-20:00 น.</p>
 
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <a href="tel:020000000" className="flex flex-col items-center gap-1.5 rounded-xl2 border border-slate-100 p-4 shadow-card">
+        <a href="tel:020000000" className="flex flex-col items-center gap-1.5 rounded-xl2 p-4 shadow-card">
           <Phone size={18} className="text-brand-emerald" />
           <span className="text-xs font-medium">โทรหาเรา</span>
         </a>
-        <a href="mailto:support@smoothlife.com" className="flex flex-col items-center gap-1.5 rounded-xl2 border border-slate-100 p-4 shadow-card">
+        <a href="mailto:support@smoothlife.com" className="flex flex-col items-center gap-1.5 rounded-xl2 p-4 shadow-card">
           <Mail size={18} className="text-brand-emerald" />
           <span className="text-xs font-medium">อีเมล</span>
         </a>
-        <div className="flex flex-col items-center gap-1.5 rounded-xl2 border border-slate-100 p-4 shadow-card">
+        <div className="flex flex-col items-center gap-1.5 rounded-xl2 p-4 shadow-card">
           <MessageCircle size={18} className="text-brand-emerald" />
           <span className="text-xs font-medium">LINE OA</span>
         </div>

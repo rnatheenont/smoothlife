@@ -110,7 +110,7 @@ export default function SubscriptionTermsInfo({
       <h2 className="text-xl md:text-2xl font-extrabold text-brand-ink mb-1 text-center">เงื่อนไขการสมัครสมาชิก</h2>
       <p className="text-sm text-slate-500 mb-6 text-center">อ่านให้ครบก่อนสมัคร — ไม่มีเงื่อนไขซ่อนเร้น</p>
       <div className="grid sm:grid-cols-3 gap-4 md:gap-5">
-        <div className="rounded-xl2 border border-slate-100 shadow-card p-5">
+        <div className="rounded-xl2 shadow-card p-5">
           <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-gradient-soft text-brand-800 mb-3">
             <CreditCard size={18} />
           </div>
@@ -118,7 +118,7 @@ export default function SubscriptionTermsInfo({
           <CycleTerms billingEnabled={billingEnabled} />
         </div>
 
-        <div className="rounded-xl2 border border-slate-100 shadow-card p-5">
+        <div className="rounded-xl2 shadow-card p-5">
           <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-gradient-soft text-brand-800 mb-3">
             <Package size={18} />
           </div>
@@ -126,7 +126,7 @@ export default function SubscriptionTermsInfo({
           <ShippingTerms billingEnabled={billingEnabled} />
         </div>
 
-        <div className="rounded-xl2 border border-slate-100 shadow-card p-5">
+        <div className="rounded-xl2 shadow-card p-5">
           <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-gradient-soft text-brand-800 mb-3">
             <Percent size={18} />
           </div>

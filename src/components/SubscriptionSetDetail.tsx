@@ -168,7 +168,7 @@ export default function SubscriptionSetDetail({
       </div>
 
       <div>
-        <div className="rounded-xl2 border border-slate-100 shadow-card p-5 sticky top-24">
+        <div className="rounded-xl2 shadow-card p-5 sticky top-24">
           <h2 className="text-sm font-bold text-brand-ink mb-3">เลือกระยะเวลาสมัคร</h2>
           <div className="grid grid-cols-3 gap-2">
             {plans.map((p) => {

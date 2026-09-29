@@ -22,7 +22,7 @@ export default function TieredRewardBox() {
         const lastTier = tiers[tiers.length - 1];
         const percent = lastTier ? Math.min(100, (unlockedCount / tiers.length) * 100) : 0;
         return (
-          <div key={ev.promo.slug} className="rounded-xl2 border border-slate-100 p-4 shadow-card">
+          <div key={ev.promo.slug} className="rounded-xl2 p-4 shadow-card">
             <h3 className="font-bold text-brand-ink text-sm flex items-center gap-1.5 mb-3">
               <Gift size={15} className="text-brand-emerald" /> {lang === "en" ? ev.promo.titleEn : ev.promo.titleTh}
             </h3>

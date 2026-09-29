@@ -80,7 +80,7 @@ export default async function SubscriptionPage() {
               <Link
                 key={set.id}
                 href={`/subscription/set/${set.id}`}
-                className="group flex flex-col overflow-hidden rounded-xl2 border border-slate-100 bg-white shadow-card transition-shadow hover:shadow-cardHover"
+                className="group flex flex-col overflow-hidden rounded-xl2 bg-white shadow-card transition-shadow hover:shadow-cardHover"
               >
                 <div className="relative grid aspect-4/3 grid-cols-3 gap-px bg-surface-soft p-px">
                   {images.slice(0, 3).map((src, i) => (

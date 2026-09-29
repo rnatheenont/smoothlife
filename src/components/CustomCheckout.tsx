@@ -127,14 +127,14 @@ export default function CustomCheckout() {
       )}
       <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 flex flex-col gap-6">
-          <div className="rounded-xl2 border border-slate-100 p-5 shadow-card">
+          <div className="rounded-xl2 p-5 shadow-card">
             <h2 className="font-bold text-brand-ink mb-4 flex items-center gap-2">
               <MapPin size={18} className="text-brand-emerald" /> ที่อยู่จัดส่ง
             </h2>
             <CheckoutAddressPicker value={address} onChange={setAddress} canSave={Boolean(user?.real)} />
           </div>
 
-          <div className="rounded-xl2 border border-slate-100 p-5 shadow-card">
+          <div className="rounded-xl2 p-5 shadow-card">
             <h2 className="font-bold text-brand-ink mb-3 flex items-center gap-2">
               <ShieldCheck size={18} className="text-brand-emerald" /> วิธีชำระเงิน
             </h2>
@@ -159,7 +159,7 @@ export default function CustomCheckout() {
           )}
         </div>
 
-        <div className="rounded-xl2 border border-slate-100 p-5 h-fit shadow-card sticky top-[152px]">
+        <div className="rounded-xl2 p-5 h-fit shadow-card sticky top-[152px]">
           <h2 className="font-bold text-brand-ink mb-4">สรุปคำสั่งซื้อ</h2>
           <div className="flex flex-col gap-2 mb-4 max-h-56 overflow-y-auto">
             {lines.map((l) => (

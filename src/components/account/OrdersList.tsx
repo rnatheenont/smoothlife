@@ -160,7 +160,7 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
 
       <div className="flex flex-col gap-4">
         {shown.length === 0 && orders.length > 0 && (
-          <p className="rounded-xl2 border border-slate-100 bg-white px-4 py-8 text-center text-sm text-slate-500 shadow-card">
+          <p className="rounded-xl2 bg-white px-4 py-8 text-center text-sm text-slate-500 shadow-card">
             ไม่มีคำสั่งซื้อในสถานะนี้
           </p>
         )}
@@ -190,7 +190,7 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
           </div>
         )}
         {linked && orders.length === 0 && (
-          <div className="rounded-xl2 border border-slate-100 bg-white px-6 py-12 text-center shadow-card">
+          <div className="rounded-xl2 bg-white px-6 py-12 text-center shadow-card">
             <Package size={40} className="mx-auto text-slate-300" />
             {/* "You have no orders" would be a lie to a customer whose purchases
                 are simply older than what we may list. The totals come from the
@@ -214,7 +214,7 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
           const refunded = Number(o.refunded) > 0;
           const stalled = stalledOrder(o);
           return (
-            <div key={`${o.store}-${o.id}`} className="rounded-xl2 border border-slate-100 bg-white p-5 shadow-card">
+            <div key={`${o.store}-${o.id}`} className="rounded-xl2 bg-white p-5 shadow-card">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   {/* The whole header links through — the order number is what

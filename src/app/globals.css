@@ -124,8 +124,19 @@
   --text-tag--line-height: 1;
   --text-tag--letter-spacing: 0.08em;
 
+  /* Elevation, in three levels and no more.
+     0 — most of the interface: nothing. A surface, a photograph and type are
+         enough to group things, and eighty per cent of a screen should sit
+         flat on the page.
+     1 — shadow-card: a hairline ring and a breath of shadow, for the things
+         that are genuinely lifted off the canvas. It draws its own edge,
+         which is why an element carrying it does not also want a border —
+         the two together are the look that reads as a template.
+     2 — shadow-overlay: menus, popovers, anything floating over the page and
+         nothing else. A product card is not a popover. */
   --shadow-card:
     0 0 0 1px rgba(16, 35, 28, 0.07), 0 1px 2px rgba(16, 35, 28, 0.04);
+  --shadow-overlay: 0 8px 24px rgba(16, 35, 28, 0.1);
   --shadow-cardHover:
     0 0 0 1px rgba(16, 35, 28, 0.09), 0 10px 28px -10px rgba(16, 35, 28, 0.18);
   --shadow-layer-xs:
@@ -149,7 +160,14 @@
     0 3px 3px -1.5px rgba(15, 23, 42, 0.04),
     0 1px 1px -0.5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
 
-  --radius-xl2: 1.25rem;
+  /* Radius, as a scale rather than a habit. 16px is the default — cards,
+     images, tiles, anything the eye reads as one object. Bigger surfaces get
+     more, in two named steps, so that "a bit rounder" is a decision with a
+     name instead of whichever value was nearest to hand.
+     Chips and icon buttons stay fully round. */
+  --radius-xl2: 1rem;
+  --radius-surface: 1.25rem;
+  --radius-feature: 1.5rem;
   --radius-2xs: 0.1rem;
   --radius-xs: 0.2rem;
   --radius-s: 0.4rem;

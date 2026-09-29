@@ -170,7 +170,7 @@ export default function BundleBuilder({
       </div>
 
       <div>
-        <div className="rounded-xl2 border border-slate-100 shadow-card p-5 sticky top-24">
+        <div className="rounded-xl2 shadow-card p-5 sticky top-24">
           <h2 className="text-sm font-bold text-brand-ink mb-3 flex items-center gap-1.5">
             <Package size={16} className="text-brand-emerald" /> ชุดของคุณ
           </h2>

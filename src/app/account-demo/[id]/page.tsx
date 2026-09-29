@@ -43,7 +43,7 @@ export default function DemoOrderPage(props: { params: Promise<{ id: string }> }
         <ArrowLeft size={16} /> กลับไปรายการคำสั่งซื้อ
       </Link>
 
-      <div className="rounded-xl2 border border-slate-100 bg-white p-5 shadow-card">
+      <div className="rounded-xl2 bg-white p-5 shadow-card">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-lg font-bold text-brand-ink">{order.id}</h1>

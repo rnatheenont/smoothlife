@@ -111,7 +111,7 @@ export default function CompleteProfileForm() {
 
   return (
     <div className="container-page min-h-[70vh] flex items-center justify-center py-10 md:py-16">
-      <div className="w-full max-w-md rounded-2xl border border-slate-100 bg-white shadow-card p-6 md:p-8">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-card p-6 md:p-8">
         <h1 className="text-2xl font-extrabold text-brand-ink mb-1">ยินดีต้อนรับ</h1>
         <p className="text-sm text-slate-500 mb-6">กรอกข้อมูลเพิ่มเติมอีกนิด เพื่อให้เราดูแลคุณได้ดีขึ้น</p>
         <form onSubmit={submit} className="flex flex-col gap-3.5">

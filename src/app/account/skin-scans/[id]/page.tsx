@@ -129,7 +129,7 @@ function ScanDetail() {
       </p>
 
       {/* Skin report */}
-      <section className="mt-5 rounded-xl2 border border-slate-100 bg-white p-5 shadow-card">
+      <section className="mt-5 rounded-xl2 bg-white p-5 shadow-card">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <div>
             <p className="text-xs text-slate-500">คะแนนผิว</p>
@@ -182,7 +182,7 @@ function ScanDetail() {
 
       {/* Face map / score rings */}
       {scan.concerns && (
-        <section className="mt-5 rounded-xl2 border border-slate-100 bg-white p-5 shadow-card">
+        <section className="mt-5 rounded-xl2 bg-white p-5 shadow-card">
           <h2 className="text-base font-bold text-brand-ink">แผนที่ผิว</h2>
           <p className="mt-1 text-sm text-slate-600">
             {scan.photo_url ? "แตะคะแนนแต่ละด้านเพื่อดูว่าเห็นตรงบริเวณไหน" : "แตะคะแนนแต่ละด้านเพื่ออ่านสิ่งที่ระบบเห็น"}
@@ -211,7 +211,7 @@ function ScanDetail() {
       )}
 
       {/* Every area, worst first */}
-      <section className="mt-5 rounded-xl2 border border-slate-100 bg-white p-5 shadow-card">
+      <section className="mt-5 rounded-xl2 bg-white p-5 shadow-card">
         <h2 className="text-base font-bold text-brand-ink">คะแนนแต่ละด้าน</h2>
         <ul className="mt-3 flex flex-col gap-2.5">
           {areas.map((a) => (
@@ -234,7 +234,7 @@ function ScanDetail() {
 
       {/* Products for the weakest areas */}
       {picks.some((p) => p.list.length > 0) && (
-        <section className="mt-5 rounded-xl2 border border-slate-100 bg-white p-5 shadow-card">
+        <section className="mt-5 rounded-xl2 bg-white p-5 shadow-card">
           <h2 className="text-base font-bold text-brand-ink">สินค้าแนะนำสำหรับด้านที่ควรดูแล</h2>
           {picks
             .filter((p) => p.list.length > 0)

@@ -11,7 +11,7 @@ export default function ArticleGrid({ articles }: { articles: GridArticle[] }) {
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {articles.map((a) => (
-        <Link key={a.slug} href={`/knowledge/article/${a.slug}`} className="group rounded-xl2 border border-slate-100 shadow-card overflow-hidden">
+        <Link key={a.slug} href={`/knowledge/article/${a.slug}`} className="group rounded-xl2 shadow-card overflow-hidden">
           <div className="relative aspect-16/10 bg-surface-mist">
             {a.image && <Image src={a.image} alt="" fill sizes="(max-width: 640px) 100vw, 33vw" className="object-cover transition-transform duration-500" />}
           </div>

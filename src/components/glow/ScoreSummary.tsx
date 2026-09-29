@@ -22,7 +22,7 @@ function ScoreRow({ label, score }: { label: string; score: number }) {
 
 function LatestEntry({ entry }: { entry: DayEntry }) {
   return (
-    <div className="rounded-xl2 border border-slate-100 shadow-card p-6 mb-6">
+    <div className="rounded-xl2 shadow-card p-6 mb-6">
       <div className="flex items-center gap-4 mb-5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={entry.thumbDataUrl} alt={`รูปวันที่ ${entry.day}`} className="h-16 w-16 rounded-full object-cover" />
@@ -153,7 +153,7 @@ export default function ScoreSummary() {
       <LatestEntry entry={latest} />
 
       {hasComparison && (
-        <div className="rounded-xl2 border border-slate-100 shadow-card p-6 mb-6 text-center">
+        <div className="rounded-xl2 shadow-card p-6 mb-6 text-center">
           <h3 className="font-bold text-brand-ink mb-1">เปรียบเทียบวันที่ {day1.day} กับวันที่ {latest.day}</h3>
           <p className="text-xs text-slate-500 mb-5">บันทึกภาพผลลัพธ์เพื่อแชร์ได้เลย</p>
           <canvas ref={canvasRef} className="hidden" />

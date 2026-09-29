@@ -54,7 +54,7 @@ export default function CaptureStep({ day }: { day: number }) {
   }
 
   return (
-    <div className="rounded-xl2 border border-slate-100 shadow-card p-6 md:p-8 text-center">
+    <div className="rounded-xl2 shadow-card p-6 md:p-8 text-center">
       <h2 className="text-lg font-bold text-brand-ink mb-1">วันที่ {day} จาก 7</h2>
       <p className="text-sm text-slate-500 mb-6">
         ถ่ายรูปใบหน้าตรงๆ ในที่แสงสว่างสม่ำเสมอ พยายามถ่ายมุม/ระยะเดิมทุกวันเพื่อเทียบผลได้แม่นยำขึ้น

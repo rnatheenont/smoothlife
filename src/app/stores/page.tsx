@@ -14,7 +14,7 @@ export default function StoresPage() {
 
       <div className="grid md:grid-cols-2 gap-5 mb-10">
         {stores.map((s) => (
-          <div key={s.name} className="rounded-xl2 border border-slate-100 p-5 shadow-card">
+          <div key={s.name} className="rounded-xl2 p-5 shadow-card">
             <h3 className="font-bold text-brand-ink mb-2">{s.name}</h3>
             <div className="flex items-start gap-2 text-sm text-slate-600 mb-1.5">
               <MapPin size={15} className="mt-0.5 shrink-0 text-brand-emerald" /> {s.address}

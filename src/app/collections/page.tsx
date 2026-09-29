@@ -28,7 +28,7 @@ export default function CollectionsIndexPage() {
             <Link
               key={c.handle}
               href={`/collections/${c.handle}`}
-              className="group overflow-hidden rounded-xl2 border border-slate-100 shadow-card transition-shadow hover:shadow-cardHover"
+              className="group overflow-hidden rounded-xl2 shadow-card transition-shadow hover:shadow-cardHover"
             >
               <div className="relative aspect-4/3 bg-surface-soft">
                 {c.image ? (

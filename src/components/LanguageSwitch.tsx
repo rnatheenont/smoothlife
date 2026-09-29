@@ -113,7 +113,7 @@ export default function LanguageSwitch({
         role="menu"
         aria-label="เลือกภาษา / Language"
         className={clsx(
-          "absolute z-50 mt-2 w-48 origin-top rounded-xl2 border border-slate-100 bg-white p-1.5 shadow-cardHover transition duration-150",
+          "absolute z-50 mt-2 w-48 origin-top rounded-xl2 bg-white p-1.5 shadow-cardHover transition duration-150",
           align === "right" ? "right-0" : "left-0",
           open ? "visible scale-100 opacity-100" : "invisible scale-95 opacity-0"
         )}

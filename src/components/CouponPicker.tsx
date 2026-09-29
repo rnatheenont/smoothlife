@@ -41,7 +41,7 @@ export default function CouponPicker() {
   const accepted = couponQuote?.ok ? couponQuote : null;
 
   return (
-    <div className="rounded-xl2 border border-slate-100 p-5 shadow-card">
+    <div className="rounded-xl2 p-5 shadow-card">
       <h2 className="font-bold text-brand-ink flex items-center gap-2 mb-1">
         <Ticket size={17} className="text-brand-emerald" />
         {t("คูปองส่วนลด", "Coupons")}

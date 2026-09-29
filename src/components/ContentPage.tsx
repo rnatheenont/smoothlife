@@ -34,7 +34,7 @@ export default function ContentPage({
       )}
       <div className="grid md:grid-cols-2 gap-5">
         {sections.map((s) => (
-          <div key={s.title} className="rounded-xl2 border border-slate-100 p-5 shadow-card">
+          <div key={s.title} className="rounded-xl2 p-5 shadow-card">
             {s.icon && (
               <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-800 mb-3">
                 <s.icon size={18} />

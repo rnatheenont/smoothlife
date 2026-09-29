@@ -69,7 +69,7 @@ export default function AccountDemoPage() {
       </div>
 
       {/* Counters */}
-      <div className="mt-5 rounded-xl2 border border-surface-line bg-white shadow-card">
+      <div className="mt-5 rounded-xl2 bg-white shadow-card">
         <div className="border-b border-surface-line px-4 py-3">
           <h2 className="text-sm font-bold text-brand-ink">การซื้อของฉัน</h2>
         </div>
