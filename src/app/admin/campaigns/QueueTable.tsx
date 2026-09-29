@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, Check, ExternalLink, Loader2, RefreshCw, Trash2, X } from "lucide-react";
+import { AlertTriangle, Check, ExternalLink, Loader2, Maximize2, RefreshCw, Trash2, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { formatTHB } from "@/lib/format";
+import { Modal } from "@/components/ui";
 import { adminTable } from "@/components/admin/layout-kit";
 import { AI_LABEL, ENTRY_STATUS, LINE_KIND, PAYMENT_STATUS, when, type QueueItem } from "./queue-vocab";
 
@@ -144,6 +145,69 @@ function ClaimWarning({ item }: { item: QueueItem }) {
   return null;
 }
 
+/**
+ * The receipt photo, and the same photo big enough to read.
+ *
+ * It used to be a link to the raw file in a new tab, which is the one thing a
+ * reviewer cannot do cheaply: the panel they were comparing it against is on
+ * the tab they just left, so checking a total against the order meant going
+ * back and forth. The dialog keeps both on the same screen and Escape brings
+ * the panel back.
+ *
+ * Modal from @/components/ui rather than HeroUI's — admin loads no HeroUI at
+ * all today, and its modal CSS would go into the global stylesheet for every
+ * page of the shop. This one already handles Escape, the scroll lock, the
+ * focus trap and returning focus to the thumbnail.
+ */
+function ReceiptPhoto({ url, customer }: { url: string; customer: string | null }) {
+  const [open, setOpen] = useState(false);
+  const alt = `ใบเสร็จของ ${customer ?? "ลูกค้า"}`;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        className="block w-full rounded-lg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-action/40"
+      >
+        <Image
+          src={url}
+          alt={alt}
+          width={600}
+          height={800}
+          unoptimized
+          className="h-auto w-full rounded-lg border border-surface-line object-contain"
+        />
+        <span className="mt-1.5 flex items-center justify-center gap-1 text-[12px] text-slate-500">
+          <Maximize2 size={12} aria-hidden /> แตะเพื่อดูรูปใหญ่
+        </span>
+      </button>
+
+      <Modal open={open} onClose={() => setOpen(false)} title={alt} size="lg">
+        {/* Capped to the viewport rather than the panel: a receipt is tall, and
+            the point of opening it is to read the total at the bottom. */}
+        <Image
+          src={url}
+          alt={alt}
+          width={1200}
+          height={1600}
+          unoptimized
+          className="mx-auto h-auto max-h-[78dvh] w-auto max-w-full rounded-lg object-contain"
+        />
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand-800 underline"
+        >
+          <ExternalLink size={12} aria-hidden /> เปิดไฟล์ต้นฉบับในแท็บใหม่
+        </a>
+      </Modal>
+    </>
+  );
+}
+
 /** Everything about one receipt, in a panel over the list. */
 function DetailPanel({
   item,
@@ -220,17 +284,7 @@ function DetailPanel({
             <div className="flex-1 overflow-y-auto px-5 py-4">
               <div className="grid gap-5 lg:grid-cols-[minmax(0,300px)_1fr]">
                 {item.photoUrl ? (
-                  <a href={item.photoUrl} target="_blank" rel="noopener noreferrer" className="block">
-                    <Image
-                      src={item.photoUrl}
-                      alt={`ใบเสร็จของ ${item.customer ?? "ลูกค้า"}`}
-                      width={600}
-                      height={800}
-                      unoptimized
-                      className="h-auto w-full rounded-lg border border-surface-line object-contain"
-                    />
-                    <span className="mt-1.5 block text-center text-[12px] text-slate-400">แตะเพื่อเปิดรูปเต็ม</span>
-                  </a>
+                  <ReceiptPhoto url={item.photoUrl} customer={item.customer} />
                 ) : (
                   <p className="grid place-items-center rounded-lg bg-surface-soft p-6 text-[12px] text-slate-400">
                     เปิดรูปไม่ได้

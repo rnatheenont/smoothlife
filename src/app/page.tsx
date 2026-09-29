@@ -123,9 +123,14 @@ export default async function HomePage() {
     // a change of subject (membership, and the reading at the end) break out
     // of it. The same components look considerably more expensive for it.
     <div className="bg-[#FAFAF8]">
-      {/* Hero — no separate AI-advisor CTA section further down: this is
-          the only place that CTA ("น้อง Smoothie แนะนำ") appears,
-          a second one later would be pure redundancy. */}
+      {/* Hero — what the shop is, and why coming back is worth it.
+          It used to say "สุขภาพดี ผิวสวย ครบทุก Lifestyle ที่เดียว", which is
+          true of every shop of this kind and therefore says nothing. The
+          claim now is the one thing a multi-brand shop can claim: somebody
+          chose these. The advisor CTA that lived here has gone — it is in the
+          main nav and in the mobile tab bar, and the second button is better
+          spent on the points and subscription the page otherwise never
+          mentions until halfway down. */}
       <section className="relative overflow-hidden bg-white">
         {/* Mobile: plain white, no tint — desktop keeps the old short top
             banner + two floating blobs since its section is much taller
@@ -137,15 +142,17 @@ export default async function HomePage() {
         <div className="container-page relative pt-2 pb-6 md:py-24 grid md:grid-cols-[0.65fr_1.35fr] gap-8 md:gap-12 items-center">
           <StaggerReveal className="hidden md:block order-3 md:order-1">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-800 shadow-card mb-5 border border-slate-100">
-              <Sparkles size={13} aria-hidden="true" /> แนะนำน้อง Smoothie ผู้ช่วยคนใหม่
+              {/* Counted, not typed: a number in the copy that a data file
+                  can quietly outgrow is a number that will one day be wrong. */}
+              <Sparkles size={13} aria-hidden="true" /> คัดจาก {brands.length} แบรนด์ที่ขายจริงในไทย
             </span>
             <h1 className="text-4xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-[1.35]! tracking-tight text-brand-ink">
-              สุขภาพดี ผิวสวย <br />
-              <span className="brand-text-gradient">ครบทุก Lifestyle</span> <span className="whitespace-nowrap">ที่เดียว</span>
+              ของดีที่ใช้ได้จริง <br />
+              <span className="brand-text-gradient">คัดมาให้แล้ว</span>
             </h1>
             <p className="mt-5 text-slate-600 max-w-md leading-relaxed">
-              ค้นหาสินค้าง่าย ซื้อเร็ว เข้าสู่ระบบด้วย OTP หรือ LINE พร้อมรับคะแนนสะสมทุกการช้อป
-              ของแท้ 100% มีอย. จัดส่งฟรีทั่วไทย
+              สกินแคร์ อาหารเสริม ดูแลช่องปากและเส้นผม จากแบรนด์ที่วางขายจริงในไทย ของแท้ 100%
+              มี อย. ส่งฟรีทั่วไทยไม่มีขั้นต่ำ และสะสมคะแนนได้ทุกการช้อป
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button
@@ -157,10 +164,10 @@ export default async function HomePage() {
                 <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
               </Button>
               <Link
-                href="/advisor"
+                href="/loyalty"
                 className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-7 py-3.5 text-sm hover:border-brand-teal transition-colors"
               >
-                น้อง Smoothie แนะนำ
+                ดูสิทธิ์สมาชิก
               </Link>
             </div>
           </StaggerReveal>
