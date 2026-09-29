@@ -236,7 +236,7 @@ export default function Footer() {
             clearance that holds is vertical. Measured: it covers the bottom
             124px of the viewport below lg (the layout already contributes a
             60px spacer there) and 108px from lg. */}
-        <div className="container-page flex flex-col items-center justify-between gap-2 pt-4 pb-20 text-xs text-slate-600 sm:flex-row lg:pb-32">
+        <div className="container-page flex flex-col items-center justify-between gap-2 pt-4 pb-[calc(5rem+env(safe-area-inset-bottom))] text-xs text-slate-600 sm:flex-row lg:pb-32">
           <span>© 2026 Smoothlife.com — เว็บไซต์เดโมสำหรับการนำเสนอ (Prototype)</span>
           <div className="flex items-center gap-1">
             <Link href="/privacy" className={`${linkClass} px-2 py-2 text-xs`}>

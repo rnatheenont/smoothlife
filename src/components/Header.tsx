@@ -81,7 +81,18 @@ export default function Header() {
         hideHeader && !open ? "-translate-y-full" : "translate-y-0"
       } ${scrolled ? "border-b border-slate-100" : "border-b border-transparent"}`}
     >
-      <div className="bg-brand-gradient text-white text-[11px] md:text-xs py-1.5 overflow-hidden whitespace-nowrap">
+      {/* The ticker belongs to the top of the page, not to the app bar.
+          The header already hides on the way down and comes back on the way
+          up — but it was coming back with the promo line attached, so a
+          scroll-up gave back three stacked rows when what was wanted was the
+          search box. It now folds away as soon as the page moves and unfolds
+          only back at the very top, which is where a shop's announcements
+          make sense anyway. Desktop keeps it throughout: there is room. */}
+      <div
+        className={`bg-brand-gradient text-white text-[11px] md:text-xs overflow-hidden whitespace-nowrap transition-all duration-300 lg:max-h-10 lg:py-1.5 lg:opacity-100 ${
+          scrolled ? "max-h-0 py-0 opacity-0" : "max-h-10 py-1.5 opacity-100"
+        }`}
+      >
         {/* Repeated enough times that each half of the track comfortably
             exceeds any realistic viewport width — with just one repeat the
             track was narrower than the banner itself, so the loop showed a
