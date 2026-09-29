@@ -13,6 +13,8 @@ export type QueueItem = {
   manual?: boolean;
   /** The bill holds the VIP set, which earns no entries. */
   vip?: boolean;
+  /** What that set cost — shown beside the ฿0 it counts for. */
+  vipAmount?: number;
   paidAt: string | null;
   orderTotal: number | null;
   dentisteAmount: number;

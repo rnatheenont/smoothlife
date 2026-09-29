@@ -686,11 +686,6 @@ export default function QueueTable({
                     <span className="font-semibold text-brand-ink">
                       {item.manual ? (item.declared.orderNumber ?? "—") : (item.orderNumber ?? "—")}
                     </span>
-                    {item.manual && (
-                      <span className="ms-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
-                        เคสพิเศษ
-                      </span>
-                    )}
                     <span className="block font-mono text-[11px] text-slate-400">{item.invoiceNo ?? ""}</span>
                   </td>
                   <td className={adminTable.cell}>
@@ -713,6 +708,15 @@ export default function QueueTable({
                     <span className="font-semibold tabular-nums text-brand-ink">
                       {formatTHB(item.dentisteAmount + item.keychainAmount)}
                     </span>
+                    {/* The counted figure is the one the draw runs on, so it
+                        stays the big number — but a bare ฿0 next to a ฿55,000
+                        bill reads as a failure to see the money. This says it
+                        was seen and why it counts for nothing. */}
+                    {(item.vipAmount ?? 0) > 0 && (
+                      <span className="block whitespace-nowrap text-[11px] font-semibold text-amber-800">
+                        VIP {formatTHB(item.vipAmount ?? 0)} · ไม่นับ
+                      </span>
+                    )}
                     {dentisteLines.length > 0 && (
                       <span className="block text-[11px] text-slate-400">
                         {dentisteLines.length} รายการ · {dentisteLines.reduce((n, l) => n + l.quantity, 0)} ชิ้น

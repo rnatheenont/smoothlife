@@ -224,6 +224,11 @@ export async function GET(req: NextRequest) {
        * and a small number needs to know that is the rule and not a fault.
        */
       vip: linesOf(r).some((l) => l.kind === "vip"),
+      /** What the VIP set cost. Counted by nothing, shown so the row is not
+       *  a bare ฿0 beside a ฿55,000 bill. */
+      vipAmount: linesOf(r)
+        .filter((l) => l.kind === "vip")
+        .reduce((sum, l) => sum + l.amount, 0),
       keychainAmount: Number(r.keychain_amount),
       entries: entriesOf(r),
       sentAt: r.created_at,
