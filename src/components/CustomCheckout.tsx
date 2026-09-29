@@ -79,7 +79,11 @@ export default function CustomCheckout() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          lines: lines.map((l) => ({ variantId: l.variantId, quantity: l.qty })),
+          // Gifts are display lines: our promos are display-only, so nothing on
+          // Shopify's side zeroes them. Sending one would charge the shopper the
+          // gift's real price — ฿950 for a "free" cleansing gel — and the app
+          // that does grant gifts adds its own line at checkout anyway.
+          lines: lines.filter((l) => !l.isGift).map((l) => ({ variantId: l.variantId, quantity: l.qty })),
           couponCode: applied ? applied.code : undefined,
           email: user?.email || undefined,
           phone: address.phone,

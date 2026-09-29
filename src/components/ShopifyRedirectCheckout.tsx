@@ -106,7 +106,11 @@ export default function ShopifyRedirectCheckout() {
     setSubmitting(true);
     try {
       const cart = await cartCreate(
-        lines.map((l) => ({ merchandiseId: l.variantId, quantity: l.qty })),
+        // Gifts are display lines: our promos are display-only, so nothing on
+        // Shopify's side zeroes them. Sending one would charge the shopper the
+        // gift's real price — ฿950 for a "free" cleansing gel — and the app
+        // that does grant gifts adds its own line at checkout anyway.
+        lines.filter((l) => !l.isGift).map((l) => ({ merchandiseId: l.variantId, quantity: l.qty })),
         totals.referralActive ? totals.referralDiscountCode : couponCode,
         user?.email || null,
         defaultAddress ? toShopifyDeliveryAddress(defaultAddress) : null,
