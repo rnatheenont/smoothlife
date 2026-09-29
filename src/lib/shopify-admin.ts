@@ -2345,11 +2345,26 @@ export type VariantOrder = {
   /** What the line for this campaign's variant came to, not the whole order. */
   amount: number;
   quantity: number;
-  /** Bought through our queue — it carries the reservation as an attribute. */
+  /** Bought through this site rather than the shop's own product page. */
   viaQueue: boolean;
+  /** The sales channel Shopify attributed it to, for the console to show. */
+  channel: string | null;
 };
 
 const ordersCache = new Map<string, { at: number; orders: VariantOrder[] }>();
+
+/**
+ * Which orders this site made.
+ *
+ * Shopify attributes an order to the sales channel that created it, and the
+ * cart our flash-sale checkout builds comes from this app — so the channel
+ * answers "did this come through the queue" for the order as a whole, without
+ * depending on a cart attribute surviving the trip. Matched on the app's id
+ * *or* its name: the id survives someone renaming the app in Shopify, the name
+ * survives the app being reinstalled under a new id.
+ */
+const STOREFRONT_APP_ID = process.env.SHOPIFY_STOREFRONT_APP_ID || "407136960513";
+const STOREFRONT_APP_NAME = process.env.SHOPIFY_STOREFRONT_APP_NAME || "Smoothlife Next.js Storefront";
 
 /**
  * Every paid order of these variants since a moment, and whether each came
@@ -2381,6 +2396,8 @@ export async function variantOrdersSince(
         nodes: {
           name: string;
           createdAt: string;
+          sourceName: string | null;
+          app: { name: string | null } | null;
           customAttributes: { key: string; value: string }[];
           lineItems: {
             nodes: { quantity: number; variant: { id: string } | null; originalTotalSet: { shopMoney: { amount: string } } | null }[];
@@ -2393,6 +2410,8 @@ export async function variantOrdersSince(
            nodes {
              name
              createdAt
+             sourceName
+             app { name }
              customAttributes { key value }
              lineItems(first: 50) {
                nodes { quantity variant { id } originalTotalSet { shopMoney { amount } } }
@@ -2418,7 +2437,14 @@ export async function variantOrdersSince(
         createdAt: order.createdAt,
         amount,
         quantity,
-        viaQueue: (order.customAttributes ?? []).some((a) => a.key === FLASH_SALE_ENTRY_ATTR),
+        channel: order.app?.name ?? null,
+        // The channel decides it. The cart attribute stays as a second way in:
+        // it is what settlement matches on, and an order carrying one came
+        // through the queue whatever channel it was filed under.
+        viaQueue:
+          order.sourceName === STOREFRONT_APP_ID ||
+          order.app?.name === STOREFRONT_APP_NAME ||
+          (order.customAttributes ?? []).some((a) => a.key === FLASH_SALE_ENTRY_ATTR),
       });
     }
     ordersCache.set(key, { at: Date.now(), orders });

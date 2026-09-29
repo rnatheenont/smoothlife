@@ -44,10 +44,9 @@ const PHASE: Record<FlashSaleMonitor["campaign"]["phase"], { label: string; colo
 const VIA: Record<PaymentAttempt["via"], string> = {
   shopify: "Shopify",
   "2c2p": "2C2P",
-  // Sold from the product page rather than the queue, but it is the same
-  // campaign selling the same box — counted as the queue's everywhere else on
-  // this page, so it says so here too.
-  storefront: "ผ่านคิว",
+  // Only a fallback: a storefront row carries the channel Shopify filed it
+  // under and shows that instead.
+  storefront: "หน้าร้าน",
 };
 
 const ATTEMPT: Record<string, { label: string; color: "success" | "danger" | "warning" | "default"; dot: string }> = {
@@ -151,7 +150,7 @@ function PaymentRow({ a }: { a: PaymentAttempt }) {
         <span className="text-xs font-semibold text-slate-600">{look.label}</span>
       </span>
       <span className="text-sm font-semibold tabular-nums text-brand-ink @3xl:text-right">{baht(a.amount)}</span>
-      <span className="text-xs text-slate-500">{VIA[a.via]}</span>
+      <span className="text-xs text-slate-500">{a.channel ?? VIA[a.via]}</span>
       <span className="text-xs tabular-nums text-slate-400">{a.position !== null ? `#${a.position}` : "—"}</span>
       <span className="col-span-2 min-w-0 text-xs text-slate-400 @3xl:col-span-1">
         {a.order && <span className="font-semibold text-brand-800">{a.order}</span>}
@@ -226,6 +225,7 @@ export default function LiveMonitor({
       amount: o.amount,
       status: "success",
       via: "storefront" as const,
+      channel: o.channel,
       order: o.name,
       note: o.quantity > 1 ? `${o.quantity} ชิ้น` : null,
       refund_note: null,

@@ -15,8 +15,10 @@ export type PaymentAttempt = {
   invoice_no: string;
   amount: number;
   status: "pending" | "success" | "failed" | string;
-  /** "storefront" = sold by the shop's own product page, never through the queue. */
+  /** "storefront" = an order Shopify filed under a channel of its own. */
   via: "shopify" | "2c2p" | "storefront";
+  /** For a storefront row, the sales channel Shopify named — shown as-is. */
+  channel?: string | null;
   /** Shopify's own order name once there is one. */
   order: string | null;
   note: string | null;
