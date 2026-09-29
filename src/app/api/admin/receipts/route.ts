@@ -279,15 +279,13 @@ export async function GET(req: NextRequest) {
   const vipOrders = (
     await Promise.all(vipVariants.map((id) => ordersWithVariant(id).catch(() => null)))
   ).flatMap((list) => list ?? []);
+  // Only the people who actually own one. A pending or expired attempt is a
+  // cart, not a buyer, and the list is read as "who holds a VIP place" — the
+  // same customer can appear as both, which is how #4369 sat under #4368.
   const PAID_OK = new Set(["PAID", "PARTIALLY_REFUNDED"]);
   const vipBuyers = vipOrders
-    .map((o) => ({ ...o, paid: PAID_OK.has((o.financialStatus ?? "").toUpperCase()) }))
-    // Paid first and by purchase time, because that is the order the
-    // twenty-five places are given out in; everything else trails behind it.
-    .sort((a, b) => {
-      if (a.paid !== b.paid) return a.paid ? -1 : 1;
-      return Date.parse(a.processedAt ?? "") - Date.parse(b.processedAt ?? "");
-    });
+    .filter((o) => PAID_OK.has((o.financialStatus ?? "").toUpperCase()))
+    .sort((a, b) => Date.parse(a.processedAt ?? "") - Date.parse(b.processedAt ?? ""));
 
   return NextResponse.json(
     {
@@ -313,20 +311,18 @@ export async function GET(req: NextRequest) {
        * never went through it, so no table here holds all nine — Shopify does.
        */
       vipBuyers: vipBuyers.map((b, i) => ({
-        rank: b.paid ? i + 1 : null,
+        rank: i + 1,
         orderName: b.orderName,
         adminUrl: b.adminUrl,
         customer: b.customerName,
         email: b.customerEmail,
         phone: b.customerPhone,
         paidAt: b.processedAt,
-        financialStatus: b.financialStatus,
         total: b.total,
         quantity: b.quantity,
-        paid: b.paid,
-        reserve: b.paid && i >= VIP_WINNERS,
+        reserve: i >= VIP_WINNERS,
       })),
-      vipSoldOut: vipBuyers.filter((b) => b.paid).length >= VIP_WINNERS,
+      vipSeatsLeft: Math.max(0, VIP_WINNERS - vipBuyers.length),
       // Who is holding a prize right now, which is not the same as who was
       // drawn into the first 25: a forfeit above you promotes you.
       winners: (() => {

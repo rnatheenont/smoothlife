@@ -20,18 +20,15 @@ import { when, type QueueItem } from "./queue-vocab";
 import { formatTHB } from "@/lib/format";
 
 type Vip = {
-  /** null until the order is paid — an unpaid one holds no place. */
-  rank: number | null;
+  rank: number;
   orderName: string;
   adminUrl: string;
   customer: string | null;
   email: string | null;
   phone: string | null;
   paidAt: string | null;
-  financialStatus: string | null;
   total: number;
   quantity: number;
-  paid: boolean;
   reserve: boolean;
 };
 type Fan = { userId: string; customer: string | null; entries: number };
@@ -53,7 +50,7 @@ type Data = {
   decided: QueueItem[];
   decidedTotal: number;
   vipBuyers: Vip[];
-  vipSoldOut: boolean;
+  vipSeatsLeft: number;
   winners: Winner[];
   luckyFan: Fan[];
 };
@@ -432,8 +429,16 @@ export default function Page() {
           {tab === "vip" && (
             <Panel title="ผู้ซื้อเซ็ต VIP">
               <p className="px-3 pt-3 text-[12px] text-slate-500">
-                ทุกคำสั่งซื้อที่มี <b>[Pre-Order] Early Bird VIP 25 Set Only</b> เรียงตามเวลาที่ชำระเงิน ·
-                1–25 คือตัวจริง ที่เหลือคือสำรองตามลำดับ · ดึงจาก Shopify โดยตรง ไม่ใช่จากใบเสร็จที่ส่งเข้ามา
+                คนที่ซื้อ <b>[Pre-Order] Early Bird VIP 25 Set Only</b> และชำระเงินแล้ว เรียงตามเวลาที่ซื้อ ·
+                1–25 คือตัวจริง ที่เหลือคือสำรองตามลำดับ · ดึงจาก Shopify ทุกครั้งที่เปิดหน้านี้
+                {data.vipBuyers.length > 0 && (
+                  <>
+                    {" · "}
+                    <b className="text-brand-ink">
+                      ซื้อแล้ว {data.vipBuyers.length} · เหลืออีก {data.vipSeatsLeft} ที่
+                    </b>
+                  </>
+                )}
               </p>
               <div className={`mt-4 ${adminTable.scroll}`}>
                 <table className={adminTable.table}>
@@ -442,16 +447,15 @@ export default function Page() {
                       <th>#</th>
                       <th>ลูกค้า</th>
                       <th>คำสั่งซื้อ</th>
-                      <th>สถานะ</th>
                       <th className="text-right">ยอด</th>
                       <th>ชำระเมื่อ</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.vipBuyers.map((v) => (
-                      <tr key={v.orderName} className={`${adminTable.row} ${v.paid ? "" : "opacity-60"}`}>
+                      <tr key={v.orderName} className={adminTable.row}>
                         <td className={adminTable.mono}>
-                          {v.rank ?? "—"}
+                          {v.rank}
                           {v.reserve && <span className="ml-1 text-[11px] text-slate-400">สำรอง</span>}
                         </td>
                         <td className={adminTable.cell}>
@@ -470,17 +474,6 @@ export default function Page() {
                           {v.quantity > 1 && (
                             <span className="ml-1.5 text-[11px] text-slate-400">×{v.quantity}</span>
                           )}
-                        </td>
-                        <td className={adminTable.cell}>
-                          <span
-                            className={`inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-bold ${
-                              v.paid
-                                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                                : "border-amber-200 bg-amber-50 text-amber-900"
-                            }`}
-                          >
-                            {v.paid ? "ชำระแล้ว" : (v.financialStatus ?? "—")}
-                          </span>
                         </td>
                         <td className={`${adminTable.mono} text-right`}>{formatTHB(v.total)}</td>
                         <td className={adminTable.muted}>{when(v.paidAt)}</td>
