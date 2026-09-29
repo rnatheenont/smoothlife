@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/receipt-refund-sweep",
       "schedule": "15 4 * * *"
+    },
+    {
+      "path": "/api/cron/gift-stock-alert",
+      "schedule": "0 2 * * *"
     }
   ]
 }
