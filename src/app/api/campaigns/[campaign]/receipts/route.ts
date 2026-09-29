@@ -12,7 +12,13 @@ import {
   type LineItem,
 } from "@/lib/receipt-campaign";
 import { checkReceiptPhoto, readMoment } from "@/lib/receipt-vision";
-import { orderNameByGid, orderNamesByGid, orderPaymentByGid } from "@/lib/shopify-admin";
+import {
+  orderNameByGid,
+  orderNamesByGid,
+  orderPaymentByGid,
+  ordersByName,
+  normalizeOrderName,
+} from "@/lib/shopify-admin";
 import { loadCampaignContent, windowOf } from "@/lib/receipt-campaign-content";
 import { orderNumberClaim } from "@/lib/receipt-campaign-claims";
 import { holdsPrize, type CampaignRules } from "@/lib/receipt-campaign";
@@ -253,6 +259,16 @@ async function checkManual(opts: {
         { status: 400 }
       );
     }
+    // The window alone does not catch this: it runs to late October, so a
+    // receipt "paid" tomorrow is inside it. Both claims received so far were
+    // dated after the moment they were submitted — a slip in the date picker,
+    // not a fraud, but one nothing was telling the customer about.
+    if (paid > Date.now() + 60_000) {
+      return NextResponse.json(
+        { ok: false, error: "วันที่ชำระเงินเป็นเวลาในอนาคต — ตรวจวันที่บนใบเสร็จอีกครั้ง" },
+        { status: 400 }
+      );
+    }
   }
 
   const [pending] = await supabaseRest<{ id: string }[]>(
@@ -413,11 +429,29 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
     if (stop) return stop;
   }
 
-  // Nothing computed on a manual receipt: there are no line items to read, so
-  // every number on it is the customer's word until a reviewer types theirs.
-  const amounts = order
+  // A manual receipt used to compute to nothing: payment_transactions has no
+  // row for it, so there were no line items to read and every number on it was
+  // the customer's word until a reviewer typed theirs. Every claim this
+  // campaign has received so far came in that way, which made "the reviewer
+  // types it" the normal path rather than the exception it was written as.
+  //
+  // The order number is checkable, so it is checked: an order that exists in
+  // the shop, under that number, and is still PAID, brings its own lines. The
+  // lookup fails open — Shopify being unreachable leaves the entry exactly
+  // where it would have been anyway, at zero in front of a person.
+  let amounts = order
     ? amountsFromLineItems(order.line_items, rules)
     : { dentisteAmount: 0, keychainAmount: 0 };
+  let computed = order ? computeEntries(amounts, rules) : 0;
+
+  if (!order && declaredOrderNumber) {
+    const key = normalizeOrderName(declaredOrderNumber);
+    const claimed = key ? (await ordersByName([key]).catch(() => new Map())).get(key) : null;
+    if (claimed && (!claimed.financialStatus || claimed.financialStatus.toUpperCase() === "PAID")) {
+      amounts = amountsFromLineItems(claimed.lineItems, rules);
+      computed = computeEntries(amounts, rules);
+    }
+  }
   const bytes = await photo.arrayBuffer();
 
   // Read before storing: the customer is still here, and a photo that cannot
@@ -470,7 +504,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
     declared_total: declaredTotal,
     dentiste_net_amount: amounts.dentisteAmount,
     keychain_amount: amounts.keychainAmount,
-    computed_entries: order ? computeEntries(amounts, rules) : 0,
+    computed_entries: computed,
     payment_transaction_id: order ? order.id : null,
     manual_receipt_no: order ? null : declaredOrderNumber,
     status: "pending_review",

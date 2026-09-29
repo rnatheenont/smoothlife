@@ -38,24 +38,59 @@ async function recalculate(CAMPAIGN: string, id: string, token: string | undefin
       id: string;
       computed_entries: number;
       entries_override: number | null;
+      manual_receipt_no: string | null;
+      declared_order_number: string | null;
       payment_transactions: { line_items: LineItem[] | null } | null;
     }[]
   >(
     `receipt_campaign_entries?id=eq.${pgValue(id)}&campaign_key=eq.${CAMPAIGN}` +
-      `&select=id,computed_entries,entries_override,payment_transactions(line_items)&limit=1`
+      `&select=id,computed_entries,entries_override,manual_receipt_no,declared_order_number,` +
+      `payment_transactions(line_items)&limit=1`
   );
   if (!entry) return NextResponse.json({ ok: false, error: "ไม่พบใบเสร็จรายการนี้" }, { status: 404 });
+
+  // Where the line items come from, most trustworthy first.
+  //
+  // payment_transactions is our own record of a 2C2P payment taken on this
+  // site, so when it exists it is the closest thing to a receipt we have. It
+  // only exists for that one checkout path, though, and a customer who paid
+  // any other way used to land here with nothing to count — the button said
+  // "ไม่ได้ผูกกับคำสั่งซื้อในระบบ" and the entry stayed at zero for a reviewer
+  // to type over. The order number they declared is checkable against Shopify,
+  // which is the same check the approve step already makes before awarding
+  // anything, so its lines are read here too rather than asking a person to do
+  // the sum from a photo.
+  let lineItems: LineItem[] | null = entry.payment_transactions?.line_items ?? null;
+  let source: "payment" | "shopify" = "payment";
+
   if (!entry.payment_transactions) {
-    return NextResponse.json(
-      { ok: false, error: "ใบเสร็จนี้ไม่ได้ผูกกับคำสั่งซื้อในระบบ คำนวณใหม่ไม่ได้" },
-      { status: 409 }
-    );
+    const key = normalizeOrderName(entry.manual_receipt_no ?? entry.declared_order_number);
+    const claimed = key ? (await ordersByName([key]).catch(() => new Map())).get(key) : null;
+    if (!claimed) {
+      return NextResponse.json(
+        { ok: false, error: "ใบเสร็จนี้ไม่มีคำสั่งซื้อให้คำนวณ — ไม่พบทั้งในระบบและในร้าน" },
+        { status: 409 }
+      );
+    }
+    // A refunded order is not worth entries, and saying so here is cheaper
+    // than letting a reviewer approve a number this button just produced.
+    if (claimed.financialStatus && claimed.financialStatus.toUpperCase() !== "PAID") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `คำนวณไม่ได้ — คำสั่งซื้อ ${claimed.name} ในร้านอยู่ในสถานะ ${claimed.financialStatus} ไม่ใช่ PAID`,
+        },
+        { status: 409 }
+      );
+    }
+    lineItems = claimed.lineItems;
+    source = "shopify";
   }
 
   // Today's rules, which is the whole point of the button: the stored number
   // is the rules as they were when the photo arrived.
   const { rules } = await loadCampaignContent(CAMPAIGN);
-  const amounts = amountsFromLineItems(entry.payment_transactions.line_items, rules);
+  const amounts = amountsFromLineItems(lineItems, rules);
   const entries = computeEntries(amounts, rules);
 
   await supabaseRest(`receipt_campaign_entries?id=eq.${pgValue(id)}`, {
@@ -79,13 +114,14 @@ async function recalculate(CAMPAIGN: string, id: string, token: string | undefin
         campaign: CAMPAIGN,
         before: { entries: entry.computed_entries, override: entry.entries_override },
         after: { entries, dentisteAmount: amounts.dentisteAmount, keychainAmount: amounts.keychainAmount },
+        source,
         rules,
         by: getAdminSession(token)?.userId ?? null,
       },
     }),
   }).catch((err) => console.error("[admin/receipts] audit write failed", err));
 
-  return NextResponse.json({ ok: true, entries, dentisteAmount: amounts.dentisteAmount });
+  return NextResponse.json({ ok: true, entries, dentisteAmount: amounts.dentisteAmount, source });
 }
 
 /**

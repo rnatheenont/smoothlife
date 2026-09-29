@@ -2592,6 +2592,23 @@ export type OrderByName = {
   customerLabel: string | null;
   customerEmail: string | null;
   customerPhone: string | null;
+  /**
+   * What was on the order, in the shape the campaign's arithmetic takes.
+   *
+   * payment_transactions only has a row when the customer paid through 2C2P
+   * on this site, so a receipt for an order placed any other way had no line
+   * items at all and every such claim scored zero — see
+   * receipt-campaign-orders.ts. The order is already being fetched here to
+   * answer "does it exist and is the money still there"; asking for its lines
+   * in the same query is what lets those claims be counted.
+   *
+   * Prices are per unit and net of every discount — including the
+   * order-level allocations that pay for a free gift, which Shopify does not
+   * fold into the line's own discounted price. Empty when a line has no
+   * variant (a custom or deleted one), which the campaign cannot place in the
+   * catalogue anyway.
+   */
+  lineItems: { variantId: string; quantity: number; price: number }[];
 };
 
 /**
@@ -2626,6 +2643,14 @@ export async function ordersByName(names: (string | null | undefined)[]): Promis
             totalPriceSet: { shopMoney: { amount: string } } | null;
             totalRefundedSet: { shopMoney: { amount: string } } | null;
             customer: { id: string; displayName: string | null; email: string | null; phone: string | null } | null;
+            lineItems: {
+              nodes: {
+                quantity: number | null;
+                variant: { id: string } | null;
+                discountedTotalSet: { shopMoney: { amount: string } } | null;
+                discountAllocations: { allocatedAmountSet: { shopMoney: { amount: string } } | null }[] | null;
+              }[];
+            } | null;
           }[];
         };
       }>(
@@ -2639,6 +2664,14 @@ export async function ordersByName(names: (string | null | undefined)[]): Promis
               totalPriceSet { shopMoney { amount } }
               totalRefundedSet { shopMoney { amount } }
               customer { id displayName email phone }
+              lineItems(first: 100) {
+                nodes {
+                  quantity
+                  variant { id }
+                  discountedTotalSet { shopMoney { amount } }
+                  discountAllocations { allocatedAmountSet { shopMoney { amount } } }
+                }
+              }
             }
           }
         }`,
@@ -2660,6 +2693,32 @@ export async function ordersByName(names: (string | null | undefined)[]): Promis
           customerLabel: node.customer?.displayName ?? null,
           customerEmail: node.customer?.email ?? null,
           customerPhone: node.customer?.phone ?? null,
+          lineItems: (node.lineItems?.nodes ?? []).flatMap((li) => {
+            const variantId = li.variant?.id;
+            const quantity = Number(li.quantity);
+            if (!variantId || !Number.isFinite(quantity) || quantity <= 0) return [];
+
+            // discountedTotalSet is not the money that changed hands. It only
+            // carries discounts attached to the line itself; a free gift added
+            // by an order-level rule keeps its full price there and is written
+            // off in discountAllocations instead. Order #4345 is the case:
+            // three gift lines at ฿87 and ฿59 twice, all fully allocated away,
+            // on an order whose total is the ฿715 serum alone. Counting the
+            // shown price would have put ฿205 of gifts into the Dentiste
+            // total and, on a slightly different basket, handed out an entry
+            // nobody paid for.
+            const gross = Number(li.discountedTotalSet?.shopMoney?.amount);
+            if (!Number.isFinite(gross)) return [];
+            const allocated = (li.discountAllocations ?? []).reduce((sum, a) => {
+              const amount = Number(a?.allocatedAmountSet?.shopMoney?.amount);
+              return sum + (Number.isFinite(amount) ? amount : 0);
+            }, 0);
+            const net = Math.max(0, gross - allocated);
+
+            // Per unit, because that is what the campaign's arithmetic
+            // multiplies back out by quantity.
+            return [{ variantId, quantity, price: net / quantity }];
+          }),
         });
       }
     } catch (err) {
