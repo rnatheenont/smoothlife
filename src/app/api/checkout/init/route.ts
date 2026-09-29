@@ -154,7 +154,15 @@ export async function POST(req: NextRequest) {
       amount,
       // Same as the flash-sale route: the payment account decides which
       // methods exist, not this file.
-      paymentChannel: undefined,
+      // Cards and PromptPay QR only. Left open, 2C2P offers twenty-nine
+      // methods — every wallet, kiosk and direct-debit rail it carries — and a
+      // payment page that asks a shopper to choose from twenty-nine things is
+      // a payment page they leave. These two cover what this shop's customers
+      // actually use.
+      //
+      // The catch to know about: PromptPay QR stops at ฿50,000, so on anything
+      // larger this list leaves cards as the only way through.
+      paymentChannel: ["CC", "PPQR"],
       frontendReturnUrl: `${origin}/api/payments/return?cartToken=${cartToken}`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p-checkout`,
       customer: { email: email ?? undefined, mobileNo: phone ?? undefined },

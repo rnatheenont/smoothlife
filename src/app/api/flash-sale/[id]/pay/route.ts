@@ -173,13 +173,15 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       invoiceNo,
       description: `Flash Sale: ${product.name}`.slice(0, 250),
       amount,
-      // No list at all: 2C2P offers whatever the merchant account has
-      // enabled. Naming ["CC","PPQR"] meant the page could offer a method
-      // that cannot carry the amount — PromptPay stops at ฿50,000 — while
-      // hiding every one that can, installments among them. Which methods
-      // exist is a decision that belongs to the payment account, not to
-      // this file, and it was being made here by accident.
-      paymentChannel: undefined,
+      // Cards and PromptPay QR only. Left open, 2C2P offers twenty-nine
+      // methods — every wallet, kiosk and direct-debit rail it carries — and a
+      // payment page that asks a shopper to choose from twenty-nine things is
+      // a payment page they leave. These two cover what this shop's customers
+      // actually use.
+      //
+      // The catch to know about: PromptPay QR stops at ฿50,000, so on anything
+      // larger this list leaves cards as the only way through.
+      paymentChannel: ["CC", "PPQR"],
       frontendReturnUrl: `${origin}/api/payments/return?cartToken=${cartToken}`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p-flash-sale`,
       customer: { email: contactEmail ?? undefined, mobileNo: shippingAddress.phone },
