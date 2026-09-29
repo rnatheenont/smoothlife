@@ -1633,6 +1633,125 @@ export async function getOrderFulfillmentStatus(orderId: string): Promise<{ fulf
 // order.createdAt (paid date) is used as a conservative stand-in. That
 // means the window can start a few days earlier than true delivery; a real
 // deliveredAt lookup is a follow-up, not implemented here.
+export type PaidOrderLine = {
+  title: string;
+  vendor: string | null;
+  quantity: number;
+  /** Net of every discount, including the order-level ones that pay for gifts. */
+  amount: number;
+};
+
+export type PaidOrder = {
+  orderName: string;
+  adminUrl: string;
+  processedAt: string | null;
+  total: number;
+  customerName: string | null;
+  customerEmail: string | null;
+  lines: PaidOrderLine[];
+};
+
+/**
+ * Every paid order placed since a date, with each line's vendor and the money
+ * that actually stayed with the shop.
+ *
+ * Vendor comes off the line item rather than the baked catalogue: the
+ * catalogue is only as fresh as the last build, which is exactly what put a
+ * ฿55,000 pre-order through checkout at zero on 29 Sep. A sales figure read by
+ * the shop has to come from the shop.
+ *
+ * Net is discountedTotalSet minus its allocations, because Shopify leaves an
+ * order-level discount — the one that pays for a free gift — out of the line's
+ * own discounted price. Counting the shown price turns gifts into revenue.
+ */
+export async function paidOrdersSince(sinceISODate: string): Promise<PaidOrder[] | null> {
+  if (!shopifyAdminConfigured()) return null;
+  const out: PaidOrder[] = [];
+  let after: string | null = null;
+  try {
+    // Paged rather than one big ask: 42 orders today, but this is a date range
+    // that only grows.
+    for (let page = 0; page < 20; page += 1) {
+      const data: {
+        orders: {
+          nodes: {
+            id: string;
+            name: string;
+            processedAt: string | null;
+            totalPriceSet: { shopMoney: { amount: string } } | null;
+            customer: { displayName: string | null; email: string | null } | null;
+            lineItems: {
+              nodes: {
+                title: string;
+                vendor: string | null;
+                quantity: number | null;
+                discountedTotalSet: { shopMoney: { amount: string } } | null;
+                discountAllocations: { allocatedAmountSet: { shopMoney: { amount: string } } | null }[] | null;
+              }[];
+            };
+          }[];
+          pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        };
+      } = await adminGraphql(
+        `query PaidOrdersSince($q: String!, $after: String) {
+          orders(first: 100, query: $q, sortKey: PROCESSED_AT, reverse: true, after: $after) {
+            nodes {
+              id
+              name
+              processedAt
+              totalPriceSet { shopMoney { amount } }
+              customer { displayName email }
+              lineItems(first: 100) {
+                nodes {
+                  title
+                  vendor
+                  quantity
+                  discountedTotalSet { shopMoney { amount } }
+                  discountAllocations { allocatedAmountSet { shopMoney { amount } } }
+                }
+              }
+            }
+            pageInfo { hasNextPage endCursor }
+          }
+        }`,
+        { q: `processed_at:>='${sinceISODate}' AND financial_status:paid`, after },
+      );
+
+      for (const node of data.orders?.nodes ?? []) {
+        out.push({
+          orderName: node.name,
+          adminUrl: `https://admin.shopify.com/store/${STORES.smoothlife.adminHandle}/orders/${node.id.split("/").pop()}`,
+          processedAt: node.processedAt,
+          total: Number(node.totalPriceSet?.shopMoney?.amount ?? 0) || 0,
+          customerName: node.customer?.displayName ?? null,
+          customerEmail: node.customer?.email ?? null,
+          lines: node.lineItems.nodes.map((li) => {
+            const gross = Number(li.discountedTotalSet?.shopMoney?.amount);
+            const allocated = (li.discountAllocations ?? []).reduce((sum, a) => {
+              const amount = Number(a?.allocatedAmountSet?.shopMoney?.amount);
+              return sum + (Number.isFinite(amount) ? amount : 0);
+            }, 0);
+            return {
+              title: li.title,
+              vendor: li.vendor,
+              quantity: Number(li.quantity) || 0,
+              amount: Math.max(0, (Number.isFinite(gross) ? gross : 0) - allocated),
+            };
+          }),
+        });
+      }
+
+      if (!data.orders?.pageInfo?.hasNextPage) break;
+      after = data.orders.pageInfo.endCursor;
+      if (!after) break;
+    }
+    return out;
+  } catch (err) {
+    console.error("[shopify-admin] paidOrdersSince failed", err);
+    return null;
+  }
+}
+
 export type VariantBuyer = {
   orderName: string;
   orderId: string;

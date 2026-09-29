@@ -139,6 +139,15 @@ const BY_VARIANT = (() => {
   return map;
 })();
 
+/**
+ * The same question as isDentisteVariant, asked of a vendor string instead of
+ * a variant id — for Shopify line items, which carry their own vendor and so
+ * do not need the catalogue to have been rebuilt since the product was added.
+ */
+export function isDentisteVendor(vendor: string | null | undefined): boolean {
+  return vendor ? DENTISTE_SLUGS.has(slugifyVendor(vendor)) : false;
+}
+
 export function isDentisteVariant(variantId: string): boolean {
   const p = BY_VARIANT.get(variantId);
   return p ? DENTISTE_SLUGS.has(slugifyVendor(p.brand)) : false;

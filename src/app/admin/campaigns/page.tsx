@@ -32,6 +32,19 @@ type Vip = {
   reserve: boolean;
 };
 type Fan = { userId: string; customer: string | null; entries: number };
+type SaleItem = { title: string; quantity: number; amount: number };
+type Sale = {
+  orderName: string;
+  adminUrl: string;
+  paidAt: string | null;
+  customer: string | null;
+  email: string | null;
+  amount: number;
+  units: number;
+  orderTotal: number;
+  items: SaleItem[];
+};
+type Sales = { since: string; orders: Sale[]; totals: { orders: number; units: number; amount: number } };
 type Winner = {
   id: string;
   prizeType: "vip" | "lucky_fan";
@@ -58,6 +71,7 @@ type Data = {
 const TABS = [
   ["queue", "คิวตรวจ"],
   ["vip", "VIP (มาก่อนได้ก่อน)"],
+  ["sales", "ยอดขาย DENTISTE'"],
   ["fan", "สิทธิ์ Lucky Fan"],
   ["decided", "ตรวจแล้ว"],
   ["draw", "ประกาศผล"],
@@ -84,6 +98,12 @@ export default function Page() {
   // renaming it in the settings tab renames it here.
   const campaignName = campaigns.find((c) => c.key === campaign)?.name ?? null;
   const [busy, setBusy] = useState<string | null>(null);
+  // Sales come from Shopify, not from our own rows, and walking a date range
+  // that only grows should not be part of opening the console. Loaded the
+  // first time the tab is opened, and again only when asked.
+  const [sales, setSales] = useState<Sales | null>(null);
+  const [salesError, setSalesError] = useState<string | null>(null);
+  const [salesBusy, setSalesBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // "" for the first campaign keeps the URL clean and the server defaulting.
@@ -119,6 +139,21 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  const loadSales = useCallback(async () => {
+    setSalesBusy(true);
+    try {
+      const res = await fetch("/api/admin/campaigns/dentiste-sales", { cache: "no-store" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "โหลดยอดขายไม่สำเร็จ");
+      setSales(json as Sales);
+      setSalesError(null);
+    } catch (err) {
+      setSalesError(err instanceof Error ? err.message : "โหลดยอดขายไม่สำเร็จ");
+    } finally {
+      setSalesBusy(false);
+    }
   }, []);
 
   // Putting a decided receipt back in the queue, when the decision was wrong.
@@ -365,7 +400,12 @@ export default function Page() {
               <button
                 key={key}
                 type="button"
-                onClick={() => setTab(key)}
+                onClick={() => {
+                  setTab(key);
+                  // Opening the tab is what pays for the Shopify query; after
+                  // that it is the รีเฟรช button's job.
+                  if (key === "sales" && !sales && !salesBusy) loadSales();
+                }}
                 className={`shrink-0 border-b-2 px-3 pb-2.5 pt-1 text-sm ${
                   tab === key ? "border-brand-action font-bold text-brand-ink" : "border-transparent text-slate-500"
                 }`}
@@ -422,6 +462,102 @@ export default function Page() {
                 <p className="px-3 pb-3 pt-2 text-[12px] text-slate-500">
                   แสดง {data.decided.length} รายการล่าสุด · ทั้งหมด {data.decidedTotal} รายการ
                 </p>
+              )}
+            </Panel>
+          )}
+
+          {tab === "sales" && (
+            <Panel
+              title="ยอดขาย DENTISTE'"
+              toolbar={
+                <button type="button" onClick={loadSales} disabled={salesBusy} className={pill}>
+                  {salesBusy ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <RefreshCw size={13} aria-hidden />}
+                  รีเฟรช
+                </button>
+              }
+            >
+              <p className="px-3 pt-3 text-[12px] text-slate-500">
+                คำสั่งซื้อที่ <b>ชำระเงินสำเร็จ</b> ตั้งแต่ {sales ? sales.since.split("-").reverse().join("/") : "28/09/2026"} ดึงตรงจาก Shopify ·
+                นับเฉพาะยอดของแบรนด์ DENTISTE&apos; ในแต่ละออร์เดอร์ (ออร์เดอร์ที่มีแบรนด์อื่นปนจะนับแค่ส่วนของ DENTISTE&apos;)
+                · หักส่วนลดและของแถมออกแล้ว
+              </p>
+
+              {salesError && (
+                <p className="mx-3 mt-3 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{salesError}</p>
+              )}
+              {!sales && !salesError && (
+                <div className="flex justify-center py-12 text-slate-400">
+                  <Loader2 size={22} className="animate-spin" />
+                </div>
+              )}
+
+              {sales && (
+                <>
+                  <div className="mt-4 grid grid-cols-2 gap-3 px-3 md:grid-cols-3">
+                    <StatCard label="ยอดซื้อรวม" value={formatTHB(sales.totals.amount)} />
+                    <StatCard label="จำนวนออร์เดอร์" value={String(sales.totals.orders)} />
+                    <StatCard label="จำนวนชิ้น" value={String(sales.totals.units)} />
+                  </div>
+
+                  <div className={`mt-4 ${adminTable.scroll}`}>
+                    <table className={adminTable.table}>
+                      <thead className={adminTable.thead}>
+                        <tr>
+                          <th>คำสั่งซื้อ</th>
+                          <th>ลูกค้า</th>
+                          <th>สินค้า DENTISTE&apos;</th>
+                          <th className="text-right whitespace-nowrap">ยอด DENTISTE&apos;</th>
+                          <th className="whitespace-nowrap">ชำระเมื่อ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sales.orders.map((o) => (
+                          <tr key={o.orderName} className={adminTable.row}>
+                            <td className={adminTable.cell}>
+                              <a
+                                href={o.adminUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="font-semibold text-brand-800 underline"
+                              >
+                                {o.orderName}
+                              </a>
+                            </td>
+                            <td className={adminTable.cell}>
+                              <span className="font-semibold text-brand-ink">{o.customer ?? "—"}</span>
+                              {o.email && <span className="block text-[11px] text-slate-400">{o.email}</span>}
+                            </td>
+                            <td className={adminTable.cell}>
+                              {o.items.map((it, i) => (
+                                <span key={i} className="block text-[12px] text-slate-600">
+                                  {it.title}
+                                  {it.quantity > 1 && <span className="text-slate-400"> ×{it.quantity}</span>}
+                                </span>
+                              ))}
+                            </td>
+                            <td className={`${adminTable.mono} text-right`}>
+                              <span className="font-semibold text-brand-ink">{formatTHB(o.amount)}</span>
+                              {/* Said out loud only when they differ, so the
+                                  number above is never mistaken for the bill. */}
+                              {Math.abs(o.orderTotal - o.amount) >= 0.5 && (
+                                <span className="block whitespace-nowrap text-[11px] text-slate-400">
+                                  ทั้งบิล {formatTHB(o.orderTotal)}
+                                </span>
+                              )}
+                            </td>
+                            <td className={adminTable.muted}>{when(o.paidAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {sales.orders.length === 0 && (
+                    <p className="px-3 pb-3 pt-4 text-[13px] text-slate-500">
+                      ยังไม่มีคำสั่งซื้อ DENTISTE&apos; ที่ชำระเงินสำเร็จในช่วงนี้
+                    </p>
+                  )}
+                </>
               )}
             </Panel>
           )}
