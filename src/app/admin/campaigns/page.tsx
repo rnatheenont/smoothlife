@@ -16,6 +16,7 @@ import CampaignIndex from "./CampaignIndex";
 import CampaignSettings from "./CampaignSettings";
 import NewCampaign from "./NewCampaign";
 import QueueTable from "./QueueTable";
+import SalesPanel, { type Sales } from "./SalesPanel";
 import { when, type QueueItem } from "./queue-vocab";
 import { formatTHB } from "@/lib/format";
 
@@ -32,19 +33,6 @@ type Vip = {
   reserve: boolean;
 };
 type Fan = { userId: string; customer: string | null; entries: number };
-type SaleItem = { title: string; quantity: number; amount: number };
-type Sale = {
-  orderName: string;
-  adminUrl: string;
-  paidAt: string | null;
-  customer: string | null;
-  email: string | null;
-  amount: number;
-  units: number;
-  orderTotal: number;
-  items: SaleItem[];
-};
-type Sales = { since: string; orders: Sale[]; totals: { orders: number; units: number; amount: number } };
 type Winner = {
   id: string;
   prizeType: "vip" | "lucky_fan";
@@ -467,99 +455,7 @@ export default function Page() {
           )}
 
           {tab === "sales" && (
-            <Panel
-              title="ยอดขาย DENTISTE'"
-              toolbar={
-                <button type="button" onClick={loadSales} disabled={salesBusy} className={pill}>
-                  {salesBusy ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <RefreshCw size={13} aria-hidden />}
-                  รีเฟรช
-                </button>
-              }
-            >
-              <p className="px-3 pt-3 text-[12px] text-slate-500">
-                คำสั่งซื้อที่ <b>ชำระเงินสำเร็จ</b> ตั้งแต่ {sales ? sales.since.split("-").reverse().join("/") : "28/09/2026"} ดึงตรงจาก Shopify ·
-                นับเฉพาะยอดของแบรนด์ DENTISTE&apos; ในแต่ละออร์เดอร์ (ออร์เดอร์ที่มีแบรนด์อื่นปนจะนับแค่ส่วนของ DENTISTE&apos;)
-                · หักส่วนลดและของแถมออกแล้ว
-              </p>
-
-              {salesError && (
-                <p className="mx-3 mt-3 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{salesError}</p>
-              )}
-              {!sales && !salesError && (
-                <div className="flex justify-center py-12 text-slate-400">
-                  <Loader2 size={22} className="animate-spin" />
-                </div>
-              )}
-
-              {sales && (
-                <>
-                  <div className="mt-4 grid grid-cols-2 gap-3 px-3 md:grid-cols-3">
-                    <StatCard label="ยอดซื้อรวม" value={formatTHB(sales.totals.amount)} />
-                    <StatCard label="จำนวนออร์เดอร์" value={String(sales.totals.orders)} />
-                    <StatCard label="จำนวนชิ้น" value={String(sales.totals.units)} />
-                  </div>
-
-                  <div className={`mt-4 ${adminTable.scroll}`}>
-                    <table className={adminTable.table}>
-                      <thead className={adminTable.thead}>
-                        <tr>
-                          <th>คำสั่งซื้อ</th>
-                          <th>ลูกค้า</th>
-                          <th>สินค้า DENTISTE&apos;</th>
-                          <th className="text-right whitespace-nowrap">ยอด DENTISTE&apos;</th>
-                          <th className="whitespace-nowrap">ชำระเมื่อ</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sales.orders.map((o) => (
-                          <tr key={o.orderName} className={adminTable.row}>
-                            <td className={adminTable.cell}>
-                              <a
-                                href={o.adminUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="font-semibold text-brand-800 underline"
-                              >
-                                {o.orderName}
-                              </a>
-                            </td>
-                            <td className={adminTable.cell}>
-                              <span className="font-semibold text-brand-ink">{o.customer ?? "—"}</span>
-                              {o.email && <span className="block text-[11px] text-slate-400">{o.email}</span>}
-                            </td>
-                            <td className={adminTable.cell}>
-                              {o.items.map((it, i) => (
-                                <span key={i} className="block text-[12px] text-slate-600">
-                                  {it.title}
-                                  {it.quantity > 1 && <span className="text-slate-400"> ×{it.quantity}</span>}
-                                </span>
-                              ))}
-                            </td>
-                            <td className={`${adminTable.mono} text-right`}>
-                              <span className="font-semibold text-brand-ink">{formatTHB(o.amount)}</span>
-                              {/* Said out loud only when they differ, so the
-                                  number above is never mistaken for the bill. */}
-                              {Math.abs(o.orderTotal - o.amount) >= 0.5 && (
-                                <span className="block whitespace-nowrap text-[11px] text-slate-400">
-                                  ทั้งบิล {formatTHB(o.orderTotal)}
-                                </span>
-                              )}
-                            </td>
-                            <td className={adminTable.muted}>{when(o.paidAt)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {sales.orders.length === 0 && (
-                    <p className="px-3 pb-3 pt-4 text-[13px] text-slate-500">
-                      ยังไม่มีคำสั่งซื้อ DENTISTE&apos; ที่ชำระเงินสำเร็จในช่วงนี้
-                    </p>
-                  )}
-                </>
-              )}
-            </Panel>
+            <SalesPanel sales={sales} error={salesError} busy={salesBusy} onRefresh={loadSales} />
           )}
 
           {tab === "vip" && (
