@@ -1305,6 +1305,21 @@ export default function ReceiptForm({
           <section className="@container">
             <h2 className="text-lg font-bold text-black">ประวัติการส่งใบเสร็จ</h2>
 
+            {/* The tally below counts entries, and the VIP set earns none —
+                so without this the page reads as if the ฿55,000 bought
+                nothing. It bought the privileges, which is what this says. */}
+            {vip && (
+              <p className="mt-3 flex items-start gap-2 rounded-2xl border border-[#F5D580]/60 bg-[#120B33] px-4 py-3 text-[13px] text-white">
+                <Crown size={15} className="mt-0.5 shrink-0 text-[#F5D580]" aria-hidden />
+                <span>
+                  คุณเป็น <b className="text-[#F5D580]">VIP EXCLUSIVE PRIVILEGES</b>
+                  <span className="mt-0.5 block text-[12.5px] text-white/70">
+                    เซ็ต Early Bird VIP ไม่นับเป็นสิทธิ์ลุ้นรางวัล แต่คุณได้สิทธิพิเศษในงาน DENTISTE&rsquo; Live Winter Festival
+                  </span>
+                </span>
+              </p>
+            )}
+
             {/* Where they stand, before the list of how they got there. Someone
                 who has sent five photos wants one number, not five cards to
                 add up. */}

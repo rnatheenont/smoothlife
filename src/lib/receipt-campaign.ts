@@ -99,6 +99,8 @@ export type CampaignRules = {
   /** How a part-step counts once amounts multiply. */
   rounding: "floor" | "round" | "ceil";
   keychainSlugs: string[];
+  /** Sets that are their own reward and earn no entries — see VIP_SLUGS. */
+  vipSlugs: string[];
 };
 
 export const DEFAULT_RULES: CampaignRules = {
@@ -109,6 +111,7 @@ export const DEFAULT_RULES: CampaignRules = {
   stacks: STACKS,
   rounding: "floor",
   keychainSlugs: KEYCHAIN_SLUGS,
+  vipSlugs: VIP_SLUGS,
 };
 
 const ROUND: Record<CampaignRules["rounding"], (n: number) => number> = {
@@ -140,12 +143,17 @@ function isKeychainVariant(variantId: string, slugs: string[]): boolean {
   return p ? slugs.includes(p.slug) : false;
 }
 
+function isVipVariant(variantId: string, slugs: string[]): boolean {
+  const p = BY_VARIANT.get(variantId);
+  return p ? slugs.includes(p.slug) : false;
+}
+
 /** One line of an order, said the way the receipt says it. */
 export type ReceiptLine = {
   name: string;
   quantity: number;
   amount: number;
-  kind: "dentiste" | "keychain" | "other";
+  kind: "dentiste" | "keychain" | "vip" | "other";
 };
 
 export type ReceiptAmounts = {
@@ -153,6 +161,16 @@ export type ReceiptAmounts = {
   dentisteAmount: number;
   /** What was paid for keychain sets. */
   keychainAmount: number;
+  /**
+   * What was paid for a VIP set. Counted by nothing.
+   *
+   * The set costs ฿55,000, which against the ฿690 step is seventy-nine
+   * entries — a draw one purchase would decide. It buys its own privileges
+   * (see VIP_SLUGS), so it is kept out of both totals above rather than
+   * multiplied into them. Reported so a reviewer can see the money was
+   * recognised and not simply missed.
+   */
+  vipAmount: number;
   /**
    * The bill, line by line.
    *
@@ -183,6 +201,7 @@ export function amountsFromLineItems(
   const out: ReceiptAmounts = {
     dentisteAmount: 0,
     keychainAmount: 0,
+    vipAmount: 0,
     unknownVariants: [],
     lines: [],
     dentisteItems: 0,
@@ -193,9 +212,13 @@ export function amountsFromLineItems(
     const total = Number(li.price) * quantity;
     if (!Number.isFinite(total) || total <= 0) continue;
 
-    const keychain = isKeychainVariant(li.variantId, rules.keychainSlugs);
-    const dentiste = !keychain && isDentisteVariant(li.variantId);
-    if (keychain) out.keychainAmount += total;
+    // VIP first: the set is Dentiste and would otherwise land on the ฿690
+    // step, which is where the seventy-nine entries came from.
+    const vip = isVipVariant(li.variantId, rules.vipSlugs ?? []);
+    const keychain = !vip && isKeychainVariant(li.variantId, rules.keychainSlugs);
+    const dentiste = !vip && !keychain && isDentisteVariant(li.variantId);
+    if (vip) out.vipAmount += total;
+    else if (keychain) out.keychainAmount += total;
     else if (dentiste) out.dentisteAmount += total;
     else if (!BY_VARIANT.has(li.variantId)) out.unknownVariants.push(li.variantId);
 
@@ -210,7 +233,7 @@ export function amountsFromLineItems(
       name: BY_VARIANT.get(li.variantId)?.name ?? `ไม่พบสินค้านี้ในแคตตาล็อก (${li.variantId.split("/").pop()})`,
       quantity: Number.isFinite(quantity) ? quantity : 0,
       amount: total,
-      kind: keychain ? "keychain" : dentiste ? "dentiste" : "other",
+      kind: vip ? "vip" : keychain ? "keychain" : dentiste ? "dentiste" : "other",
     });
   }
   return out;

@@ -155,6 +155,16 @@ export async function GET(req: NextRequest) {
    * otherwise by the phone number on the order — the same evidence a person
    * would use, with "we could not tell" kept separate from "no".
    */
+  /** The bill behind a claim: ours if we took the payment, else the shop's. */
+  const linesOf = (r: EntryRow) => {
+    if (r.payment_transactions?.line_items) {
+      return amountsFromLineItems(r.payment_transactions.line_items, rules).lines;
+    }
+    const key = normalizeOrderName(r.declared_order_number ?? r.manual_receipt_no);
+    const order = key ? claimed.get(key) : null;
+    return order ? amountsFromLineItems(order.lineItems, rules).lines : [];
+  };
+
   const claimedOrderOf = (r: EntryRow) => {
     if (r.payment_transaction_id) return null;
     const key = normalizeOrderName(r.declared_order_number ?? r.manual_receipt_no);
@@ -204,7 +214,16 @@ export async function GET(req: NextRequest) {
       // The bill line by line, worked out from the order that is still on the
       // row — "฿1,600 of Dentiste" does not say whether that was one set or
       // six tubes, and the photo beside it lists both.
-      lines: amountsFromLineItems(r.payment_transactions?.line_items, rules).lines,
+      // Our own 2C2P row when there is one, else the order in the shop —
+      // which is where every claim in this campaign has come from, and why
+      // the bill below the photo used to be empty on all of them.
+      lines: linesOf(r),
+      /**
+       * Bought the VIP set. Worth saying on the screen that approves things:
+       * the set earns no entries by design, so a reviewer seeing a big total
+       * and a small number needs to know that is the rule and not a fault.
+       */
+      vip: linesOf(r).some((l) => l.kind === "vip"),
       keychainAmount: Number(r.keychain_amount),
       entries: entriesOf(r),
       sentAt: r.created_at,

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, Check, ExternalLink, Loader2, Maximize2, RefreshCw, Trash2, X } from "lucide-react";
+import { AlertTriangle, Check, Crown, ExternalLink, Loader2, Maximize2, RefreshCw, Trash2, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { formatTHB } from "@/lib/format";
 import { Modal } from "@/components/ui";
@@ -377,6 +377,22 @@ function DetailPanel({
                       )}
                     </dd>
                   </dl>
+
+                  {/* Said before the number, because the number is the thing
+                      that looks wrong: a ฿55,000 bill approving for nothing.
+                      The set buys its own privileges, so it earns no entries
+                      — that is the rule, not a miscalculation. */}
+                  {item.vip && (
+                    <p className="mt-3 flex items-start gap-2 rounded-l border border-amber-300 bg-amber-50 px-3 py-2 text-[12.5px] text-amber-900">
+                      <Crown size={14} className="mt-0.5 shrink-0" />
+                      <span>
+                        ลูกค้ามีสิทธิ <b>VIP EXCLUSIVE PRIVILEGES</b> — ซื้อเซ็ต Early Bird VIP 25 Set Only
+                        <span className="mt-0.5 block text-amber-800">
+                          เซ็ตนี้ไม่นับเป็นสิทธิ์ลุ้นรางวัล อนุมัติได้ตามปกติ
+                        </span>
+                      </span>
+                    </p>
+                  )}
 
                   <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-slate-600">
                     <span>

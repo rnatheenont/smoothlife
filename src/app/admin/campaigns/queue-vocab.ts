@@ -11,6 +11,8 @@ export type QueueItem = {
   invoiceNo: string | null;
   /** Sent without a matching order — the entries are a reviewer's to decide. */
   manual?: boolean;
+  /** The bill holds the VIP set, which earns no entries. */
+  vip?: boolean;
   paidAt: string | null;
   orderTotal: number | null;
   dentisteAmount: number;
@@ -46,12 +48,13 @@ export type QueueItem = {
         belongsToCustomer: boolean | null;
       }
     | null;
-  lines: { name: string; quantity: number; amount: number; kind: "dentiste" | "keychain" | "other" }[];
+  lines: { name: string; quantity: number; amount: number; kind: "dentiste" | "keychain" | "vip" | "other" }[];
 };
 
-export const LINE_KIND: Record<"dentiste" | "keychain" | "other", [string, string]> = {
+export const LINE_KIND: Record<"dentiste" | "keychain" | "vip" | "other", [string, string]> = {
   dentiste: ["DENTISTE'", "bg-emerald-50 text-emerald-800"],
   keychain: ["Keychain", "bg-violet-50 text-violet-800"],
+  vip: ["VIP · ไม่นับสิทธิ์", "bg-amber-50 text-amber-900"],
   other: ["ไม่นับ", "bg-slate-100 text-slate-500"],
 };
 

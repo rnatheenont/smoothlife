@@ -257,6 +257,8 @@ export async function loadCampaignContent(campaignKey: string): Promise<Campaign
       keychainSlugs: Array.isArray(row.keychain_slugs)
         ? row.keychain_slugs.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
         : DEFAULT_RULES.keychainSlugs,
+      // Constant, not a column — see VIP_SLUGS for why.
+      vipSlugs: DEFAULT_RULES.vipSlugs,
     },
   };
 }
