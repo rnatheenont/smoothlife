@@ -198,7 +198,56 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Trust strip. Four promises, and each one is now a link to the page
+      {/* Categories — hidden on mobile, where the quick category row under
+          the banner already shows these same categories. Desktop gets it in
+          the same place in the order (before the products), so both screens
+          read categories → products like the mockup. */}
+      <section className="hidden md:block md:pb-4 md:pt-14">
+        <ScrollReveal className="container-page">
+          <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
+        </ScrollReveal>
+        {/* Square tiles rather than the small circles this used to be. The
+            artwork is packshots — groups of bottles and boxes, wide and flat
+            — and a circle crops the sides off every one of them, which is why
+            the row read as six pale smudges. A tile gives the packshot its
+            own shape and about four times the area at the same row height. */}
+        <StaggerGrid className="container-page grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-5">
+          {categories.map((c) => (
+            <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col gap-2.5">
+              <div className="relative aspect-square overflow-hidden rounded-xl2 bg-surface-mist ring-1 ring-surface-line transition-all duration-300 group-hover:ring-brand-action/40 group-hover:shadow-card">
+                <Image
+                  src={categoryImage(c.slug)}
+                  alt=""
+                  fill
+                  sizes="(max-width:768px) 33vw, 16vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+                />
+              </div>
+              <span className="text-center text-xs font-semibold text-brand-ink transition-colors group-hover:text-brand-800 md:text-sm">
+                {c.nameTh}
+              </span>
+            </Link>
+          ))}
+        </StaggerGrid>
+      </section>
+
+      {/* Products — one tabbed section instead of four near-identical
+          stacked carousels (Best Sellers / On Sale / New / Bundles), so
+          browsing all of them costs one tap instead of a long scroll. */}
+      <ProductTabs
+        tabs={[
+          { label: "ขายดี", products: bestSellers },
+          { label: "ลดราคา", products: onSale },
+          { label: "มาใหม่", products: newArrivals },
+          { label: "เซ็ตสุดคุ้ม", products: bundles },
+        ]}
+      />
+
+      {/* Trust strip — now after the first shelf of products rather than
+          above it. Four promises mean nothing to somebody who has not yet
+          seen anything they want; they mean a good deal to somebody who has
+          just found it and is deciding whether to buy it here.
+          Four promises, and each one is now a link to the page
           that explains it — a shopper who reads "คืนสินค้าได้" and wants the
           conditions had nowhere to go from here.
 
@@ -246,52 +295,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Categories — hidden on mobile, where the quick category row under
-          the banner already shows these same categories. Desktop gets it in
-          the same place in the order (before the products), so both screens
-          read categories → products like the mockup. */}
-      <section className="hidden md:block md:pb-4 md:pt-14">
-        <ScrollReveal className="container-page">
-          <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
-        </ScrollReveal>
-        {/* Square tiles rather than the small circles this used to be. The
-            artwork is packshots — groups of bottles and boxes, wide and flat
-            — and a circle crops the sides off every one of them, which is why
-            the row read as six pale smudges. A tile gives the packshot its
-            own shape and about four times the area at the same row height. */}
-        <StaggerGrid className="container-page grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-5">
-          {categories.map((c) => (
-            <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col gap-2.5">
-              <div className="relative aspect-square overflow-hidden rounded-xl2 bg-surface-mist ring-1 ring-surface-line transition-all duration-300 group-hover:ring-brand-action/40 group-hover:shadow-card">
-                <Image
-                  src={categoryImage(c.slug)}
-                  alt=""
-                  fill
-                  sizes="(max-width:768px) 33vw, 16vw"
-                  className="object-cover transition-transform duration-500 group-hover:scale-[1.06]"
-                />
-              </div>
-              <span className="text-center text-xs font-semibold text-brand-ink transition-colors group-hover:text-brand-800 md:text-sm">
-                {c.nameTh}
-              </span>
-            </Link>
-          ))}
-        </StaggerGrid>
-      </section>
-
-      {/* Products — one tabbed section instead of four near-identical
-          stacked carousels (Best Sellers / On Sale / New / Bundles), so
-          browsing all of them costs one tap instead of a long scroll. */}
-      <ProductTabs
-        tabs={[
-          { label: "ขายดี", products: bestSellers },
-          { label: "ลดราคา", products: onSale },
-          { label: "มาใหม่", products: newArrivals },
-          { label: "เซ็ตสุดคุ้ม", products: bundles },
-        ]}
-      />
-
-      {/* Promotions — was the first section after Trust strip (filling the
+      {/* Promotions, and the deals that follow it, are one block of the page
+          now: campaign tiles, then the day's deal and any free-gift offer.
+          Was the first section after Trust strip (filling the
           slot the mobile-only "today's deals" slider used to occupy);
           Categories now leads instead, so this follows it. */}
       <section className="py-12 md:py-16 lg:py-24">
@@ -331,7 +337,23 @@ export default async function HomePage() {
         </StaggerGrid>
       </section>
 
-      {/* Concern hub teaser — moved up next to Categories: both are entry
+      {/* Free-gift promos — real active promos, rendered only when the
+          respective widgets are toggled on (both default off). No py here:
+          each card owns its own vertical margin so a disabled/empty widget
+          (the default) collapses to zero height instead of leaving a big
+          blank padded gap with nothing in it. Kept right next to
+          Promotions/ProductTabs since it's the same "deals" cluster. */}
+      <section className="container-page">
+        <DealOfTheDayCard />
+      </section>
+      <section className="container-page">
+        <FreeGiftPromoCard />
+      </section>
+
+      {/* Shop by concern — the other way in, for somebody who knows what is
+          bothering them but not what to buy for it. After the deals because
+          browsing by problem is slower than being shown a price.
+          Both this and Categories are entry
           points into the catalogue (browse by type vs. browse by problem),
           so grouping them together strengthens the "ways to start shopping"
           cluster right after the hero, instead of splitting it far apart
@@ -360,28 +382,10 @@ export default async function HomePage() {
         </StaggerGrid>
       </section>
 
-      {/* Free-gift promos — real active promos, rendered only when the
-          respective widgets are toggled on (both default off). No py here:
-          each card owns its own vertical margin so a disabled/empty widget
-          (the default) collapses to zero height instead of leaving a big
-          blank padded gap with nothing in it. Kept right next to
-          Promotions/ProductTabs since it's the same "deals" cluster. */}
-      <section className="container-page">
-        <DealOfTheDayCard />
-      </section>
-      <section className="container-page">
-        <FreeGiftPromoCard />
-      </section>
-
-      {/* Trending on social — moved after the deals/catalog cluster: video
-          engagement content works better once someone has already seen
-          what's for sale, as a "see it in action" follow-up rather than a
-          detour before they've even reached the product grid. Real
-          product-video clips (Firework CDN), each linking through to the
-          real product it shows. */}
-      <TrendingOnSocial clips={socialClips} initialIndex={socialClipSlugs.indexOf("dentiste-repaire-rex3-70g")} />
-
-      {/* Subscription teaser — moved later on purpose: committing to a
+      {/* Membership, in one place: subscribe, then the rewards and shipping
+          pair right under it. Three separate pitches for the same
+          relationship used to be spread across the page with other things in
+          between. Committing to a
           recurring plan is a bigger ask than a one-off purchase, so it
           converts better after the catalogue, social proof, and brand story
           above have already built trust, rather than pitching it early. */}
@@ -468,7 +472,20 @@ export default async function HomePage() {
         </ScaleReveal>
       </section>
 
-      {/* Brands strip — scrolling logo wall at every breakpoint. Used to be
+      <PromoPair />
+
+      {/* What other people say — kept near the end, where it answers "is
+          this shop any good" for whoever is still reading. Video
+          engagement content works better once someone has already seen
+          what's for sale, as a "see it in action" follow-up rather than a
+          detour before they've even reached the product grid. Real
+          product-video clips (Firework CDN), each linking through to the
+          real product it shows. */}
+      <TrendingOnSocial clips={socialClips} initialIndex={socialClipSlugs.indexOf("dentiste-repaire-rex3-70g")} />
+
+      {/* Brands, then the reading: the two things that say who we are rather
+          than what to buy today, closing the page together.
+          Scrolling logo wall at every breakpoint. Used to be
           a static desktop grid capped at the first 10 brands, but the
           catalogue now spans dozens of real vendors (see brands.ts), so a
           fixed grid either got enormous or hid most of them; the marquee
@@ -482,8 +499,6 @@ export default async function HomePage() {
           <BrandMarquee brands={brands} />
         </ScrollReveal>
       </section>
-
-      <PromoPair />
 
       {/* Wellness / knowledge teaser — kept last: bottom-funnel content for
           people still researching rather than ready to buy or subscribe. */}
