@@ -642,6 +642,7 @@ export default function QueueTable({
               <th>ลูกค้า</th>
               <th>คำสั่งซื้อ</th>
               <th>การชำระเงิน</th>
+              <th>สถานะพิเศษ</th>
               <th className="text-right">ยอดที่นับสิทธิ์</th>
               <th className="text-right">สิทธิ์</th>
               <th>AI ตรวจ</th>
@@ -694,6 +695,19 @@ export default function QueueTable({
                   </td>
                   <td className={adminTable.cell}>
                     <PaymentChip item={item} />
+                  </td>
+                  {/* Readable down the list, not only after opening a row. A
+                      VIP bill approves for nothing on purpose, and the
+                      reviewer scanning the สิทธิ์ column for a zero that looks
+                      wrong should find the reason on the same line. */}
+                  <td className={adminTable.cell}>
+                    {item.vip ? (
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900">
+                        <Crown size={11} aria-hidden /> VIP
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-slate-300">—</span>
+                    )}
                   </td>
                   <td className={`${adminTable.cell} text-right`}>
                     <span className="font-semibold tabular-nums text-brand-ink">
