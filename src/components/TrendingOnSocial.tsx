@@ -255,7 +255,7 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
   if (clips.length === 0) return null;
 
   return (
-    <section className="py-10 md:py-14 lg:py-16 overflow-hidden">
+    <section className="py-7 md:py-14 lg:py-16 overflow-hidden">
       {/* Same heading as every other section — left-aligned, one weight —
           so the page reads as one voice rather than a stack of templates. */}
       <div className="container-page">

@@ -88,8 +88,11 @@ export default function ProductCard({ product }: { product: Product }) {
     setTimeout(() => setAdded(false), 1500);
   }
 
+  // On a phone the picture and the words are the card — no shadow, a tighter
+  // radius. From md up it is the site's own card again: the desktop shop is a
+  // website and should go on looking like one.
   return (
-    <div className="group relative flex h-full flex-col overflow-hidden rounded-xl2 bg-white shadow-card transition-shadow duration-200 hover:shadow-cardHover">
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white transition-shadow duration-200 md:rounded-xl2 md:shadow-card md:hover:shadow-cardHover">
       <button
         onClick={() => toggle(product.slug)}
         aria-label={isWished ? "เอาออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}

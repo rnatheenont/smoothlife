@@ -31,9 +31,9 @@ export default function SectionHeading({
   const extra = subtitle && /[฀-๿]/.test(subtitle) ? subtitle : null;
 
   return (
-    <div className="mb-5 flex items-end justify-between gap-4 md:mb-8">
+    <div className="mb-3 flex items-end justify-between gap-4 md:mb-8">
       <div className="min-w-0">
-        <h2 className="text-[22px] font-bold leading-tight tracking-[-0.01em] text-brand-ink md:text-[30px]">{title}</h2>
+        <h2 className="text-[18px] font-bold leading-6 tracking-[-0.01em] text-brand-ink md:text-[30px] md:leading-tight">{title}</h2>
         {extra && <p className="mt-1 text-sm text-slate-500">{extra}</p>}
       </div>
       {href && (

@@ -145,7 +145,7 @@ export default async function HomePage() {
               claim goes under it rather than on top of it — overlaid text
               would be competing with the picture it sits on. */}
           <StaggerReveal className="order-2 md:order-1">
-            <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-100 bg-white px-3 py-1.5 text-[11px] font-semibold text-brand-800 shadow-card md:mb-5 md:px-3.5 md:text-xs">
+            <span className="mb-3 hidden items-center gap-1.5 rounded-full border border-slate-100 bg-white px-3 py-1.5 text-[11px] font-semibold text-brand-800 shadow-card md:mb-5 md:inline-flex md:px-3.5 md:text-xs">
               {/* Counted, not typed: a number in the copy that a data file
                   can quietly outgrow is a number that will one day be wrong. */}
               <Sparkles size={13} aria-hidden="true" /> คัดจาก {brands.length} แบรนด์ที่ขายจริงในไทย
@@ -154,11 +154,11 @@ export default async function HomePage() {
               ของดีที่ใช้ได้จริง <br />
               <span className="brand-text-gradient">คัดมาให้แล้ว</span>
             </h1>
-            <p className="mt-2.5 max-w-md text-[14px] leading-relaxed text-slate-600 md:mt-5 md:text-base">
+            <p className="mt-2 line-clamp-2 max-w-md text-[14px] leading-[22px] text-slate-600 md:mt-5 md:line-clamp-none md:text-base md:leading-relaxed">
               สกินแคร์ อาหารเสริม ดูแลช่องปากและเส้นผม จากแบรนด์ที่วางขายจริงในไทย ของแท้ 100%
               มี อย. ส่งฟรีทั่วไทยไม่มีขั้นต่ำ และสะสมคะแนนได้ทุกการช้อป
             </p>
-            <div className="mt-5 flex gap-2.5 md:mt-8 md:gap-3">
+            <div className="mt-4 flex items-center gap-3 md:mt-8">
               <Button
                 href="/shop"
                 size="none"
@@ -169,7 +169,7 @@ export default async function HomePage() {
               </Button>
               <Link
                 href="/loyalty"
-                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-brand-ink transition-colors hover:border-brand-teal md:flex-none md:px-7 md:py-3.5"
+                className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full px-1 text-sm font-semibold text-brand-800 underline-offset-4 transition-colors hover:underline md:flex-none md:rounded-full md:border md:border-slate-200 md:bg-white md:px-7 md:py-3.5 md:text-brand-ink md:no-underline md:hover:border-brand-teal"
               >
                 ดูสิทธิ์สมาชิก
               </Link>
@@ -311,7 +311,7 @@ export default async function HomePage() {
           Was the first section after Trust strip (filling the
           slot the mobile-only "today's deals" slider used to occupy);
           Categories now leads instead, so this follows it. */}
-      <section className="py-12 md:py-16 lg:py-24">
+      <section className="py-8 md:py-16 lg:py-24">
         {/* The same Thai heading on every screen. Mobile used to get an
             English caps eyebrow in its place — shouting in the one language
             the page is not written in. */}
@@ -378,7 +378,7 @@ export default async function HomePage() {
           so grouping them together strengthens the "ways to start shopping"
           cluster right after the hero, instead of splitting it far apart
           from Categories with unrelated content in between. */}
-      <section className="py-10 md:py-14 lg:py-16">
+      <section className="py-7 md:py-14 lg:py-16">
         <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามปัญหาผิวที่กังวล" subtitle="Shop by Concern" href="/concern" />
         </ScrollReveal>
@@ -413,7 +413,7 @@ export default async function HomePage() {
           recurring plan is a bigger ask than a one-off purchase, so it
           converts better after the catalogue, social proof, and brand story
           above have already built trust, rather than pitching it early. */}
-      <section className="container-page py-12 md:py-16 lg:py-24">
+      <section className="container-page py-8 md:py-16 lg:py-24">
         <ScaleReveal className="relative overflow-hidden rounded-xl2 bg-brand-gradient p-8 md:p-12 text-white">
           {/* The one bold block on the page, deep green end to end. The two
               circles drifting across it on their own were decoration moving
@@ -515,7 +515,7 @@ export default async function HomePage() {
           fixed grid either got enormous or hid most of them; the marquee
           scales to any count without bloating page height and actually
           shows the full range of brands we carry. */}
-      <section className="py-6 md:py-8 lg:py-10 overflow-hidden">
+      <section className="py-5 md:py-8 lg:py-10 overflow-hidden">
         <ScrollReveal className="container-page">
           <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
         </ScrollReveal>
@@ -526,7 +526,7 @@ export default async function HomePage() {
 
       {/* Wellness / knowledge teaser — kept last: bottom-funnel content for
           people still researching rather than ready to buy or subscribe. */}
-      <section className="bg-brand-gradient-soft py-10 md:py-14 lg:py-16">
+      <section className="bg-brand-gradient-soft py-7 md:py-14 lg:py-16">
         <ScrollReveal className="container-page">
           <SectionHeading title="ความรู้เรื่องผิวและสุขภาพ" subtitle="Learn About Wellness" href="/knowledge" />
         </ScrollReveal>

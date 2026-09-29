@@ -36,11 +36,11 @@ export default function ProductTabs({ tabs }: { tabs: ProductTab[] }) {
   }
 
   return (
-    <section className="bg-white py-12 md:py-16 lg:py-24 overflow-hidden">
+    <section className="bg-white py-8 md:py-16 lg:py-24 overflow-hidden">
       <ScrollReveal className="container-page">
         <div className="flex flex-wrap items-end justify-between gap-4 mb-6 md:mb-8">
           <div>
-            <h2 className="text-[22px] font-bold leading-tight tracking-[-0.01em] text-brand-ink md:text-[30px]">สินค้าแนะนำ</h2>
+            <h2 className="text-[18px] font-bold leading-6 tracking-[-0.01em] text-brand-ink md:text-[30px] md:leading-tight">สินค้าแนะนำ</h2>
             <p className="mt-1 text-sm text-slate-500">คัดมาให้แล้วจากสิ่งที่ลูกค้าชอบที่สุด</p>
           </div>
           <div className="flex items-center gap-4 sm:gap-5 overflow-x-auto scrollbar-none">
