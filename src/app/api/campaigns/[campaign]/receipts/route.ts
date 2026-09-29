@@ -13,6 +13,7 @@ import {
 } from "@/lib/receipt-campaign";
 import { checkReceiptPhoto, readMoment } from "@/lib/receipt-vision";
 import {
+  findPaidOrderForProduct,
   orderNameByGid,
   orderNamesByGid,
   orderPaymentByGid,
@@ -21,7 +22,7 @@ import {
 } from "@/lib/shopify-admin";
 import { loadCampaignContent, windowOf } from "@/lib/receipt-campaign-content";
 import { orderNumberClaim } from "@/lib/receipt-campaign-claims";
-import { holdsPrize, type CampaignRules } from "@/lib/receipt-campaign";
+import { holdsPrize, VIP_SLUGS, type CampaignRules } from "@/lib/receipt-campaign";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 import { eligibleOrders } from "@/lib/receipt-campaign-orders";
 import {
@@ -99,8 +100,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ campaign:
     // Every drawn place for this campaign, not only this customer's: whether
     // they hold a prize depends on who above them gave theirs up.
     // The account's own name and number, as the first guess at who to call.
-    supabaseRest<{ display_name: string | null; phone: string | null }[]>(
-      `users?id=eq.${pgValue(uid)}&select=display_name,phone&limit=1`
+    supabaseRest<{ display_name: string | null; phone: string | null; shopify_customer_id: string | null }[]>(
+      `users?id=eq.${pgValue(uid)}&select=display_name,phone,shopify_customer_id&limit=1`
     ).catch(() => []),
     // The address they signed in with — a verified one, since signing in is
     // what verified it. Shown in the form rather than used silently: the
@@ -149,11 +150,29 @@ export async function GET(req: NextRequest, props: { params: Promise<{ campaign:
     return payment.refunded > 0 || RETURNED.has((payment.financialStatus ?? "").toUpperCase());
   };
 
+  // Did they buy the VIP set? Asked of Shopify rather than of our own orders:
+  // payment_transactions only has a row when the checkout went through 2C2P on
+  // this site, and the set is a pre-order most of its twenty-five buyers placed
+  // some other way — the same gap that had every receipt in this campaign
+  // computing to zero. Failing open costs a card, not a claim.
+  const shopifyCustomerId = profile[0]?.shopify_customer_id ?? null;
+  const vipOrder = shopifyCustomerId
+    ? await (async () => {
+        for (const slug of VIP_SLUGS) {
+          const found = await findPaidOrderForProduct(shopifyCustomerId, slug).catch(() => null);
+          if (found) return found;
+        }
+        return null;
+      })()
+    : null;
+
   return NextResponse.json(
     {
       ok: true,
       test,
       prizes: myPrizes,
+      /** The VIP set, if this customer owns one — the card on the form. */
+      vip: vipOrder ? { orderNumber: vipOrder.orderName, paidAt: vipOrder.paidAt } : null,
       // The same window the submit checks against, so the form can refuse a
       // date the server would only reject after an upload.
       window: windowOf(await loadCampaignContent(CAMPAIGN)),

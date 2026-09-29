@@ -61,6 +61,26 @@ export const CLOSES_LABEL = "26 ต.ค. 2569";
  */
 export const KEYCHAIN_SLUGS: string[] = [];
 
+/**
+ * The VIP set, by product slug (Shopify's own handle).
+ *
+ * Twenty-five of these exist and they cost ฿55,000, so the people who bought
+ * one are a list the shop could read out by name. The campaign page says so
+ * to them and to nobody else — see VipCard in ReceiptForm.
+ *
+ * Matched against the handle Shopify returns on the order, not the baked
+ * catalogue: the set went on sale on 23 Sep and a build older than that would
+ * otherwise quietly stop recognising it.
+ *
+ * A constant rather than a campaign setting, deliberately. keychain_slugs is a
+ * column because it changes what a receipt is worth; this changes only what a
+ * card says, and a missing column would make loadCampaignContent fall back to
+ * defaults for every other rule with it.
+ */
+export const VIP_SLUGS: string[] = [
+  "only-25-set-dentiste-kengnamping-signature-vip-collection-an-exclusive-edition",
+];
+
 export type LineItem = { variantId: string; quantity: number; price: number };
 
 /**

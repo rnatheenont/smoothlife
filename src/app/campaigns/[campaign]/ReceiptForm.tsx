@@ -9,7 +9,8 @@
 // what the conditions tell them to keep, and what a reviewer compares against.
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, Check, Clock, Gift, Loader2, Mail, Upload, X } from "lucide-react";
+import { AlertTriangle, Check, Clock, Crown, Gift, Loader2, Mail, Upload, X } from "lucide-react";
+import { BorderBeam } from "@/components/magicui/border-beam";
 import { formatTHB } from "@/lib/format";
 import { GENERAL_THRESHOLD } from "@/lib/receipt-campaign";
 import { shopifyAuthStartPath } from "@/lib/shopify-email-login";
@@ -118,6 +119,94 @@ const AI_TONE: Record<AiCheck["verdict"], string> = {
   mismatch: "border-rose-200 bg-rose-50 text-rose-900",
 };
 
+/**
+ * The VIP set's owner, told so before they upload anything.
+ *
+ * Twenty-five of these were sold at ฿55,000, so the card is the campaign's
+ * own winter night rather than a panel in the page's colours — but painted,
+ * not photographed. The key visual sat behind this and lost: its title
+ * lockup and its two faces landed under the type, and no scrim fixes a
+ * headline reading through another headline.
+ *
+ * Order is the event, then the person, then what it means for them. The name
+ * in the middle is the whole point of the card — it is the difference between
+ * a poster and an invitation.
+ *
+ * The gold VIP pill stays gold against the violet: it is the tier, not the
+ * theme. And VIP is written, not only coloured — colour is not a label.
+ */
+function VipCard({ name, orderNumber }: { name: string; orderNumber: string | null }) {
+  return (
+    // One height whether or not the account has a name on it, so the form
+    // below does not jump between two customers looking at the same page.
+    // min-h rather than h: a long name wrapping to two lines has to be able to
+    // push the card taller instead of being cut off by it.
+    <div className="relative mb-5 flex min-h-[348px] flex-col overflow-hidden rounded-2xl bg-[#120B33] p-5 shadow-[0_2px_6px_-2px_rgba(18,11,51,0.30),0_18px_40px_-14px_rgba(18,11,51,0.55)] sm:p-6">
+      {/* The aurora, as light rather than a picture: one wash off the top
+          right, the way it falls across the poster. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(120% 85% at 100% 0%, rgba(167,139,250,0.28) 0%, rgba(99,102,241,0.14) 40%, transparent 72%)",
+        }}
+      />
+      {/* Magic UI, already in the project. Iced lavender: the beam is the
+          card's edge catching that light. */}
+      <BorderBeam
+        size={120}
+        duration={9}
+        borderWidth={1.5}
+        colorFrom="#E6DBFF"
+        colorTo="#6B4FA8"
+        className="motion-reduce:hidden"
+      />
+      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-2xl border border-white/15" />
+
+      <div className="relative flex flex-1 flex-col">
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#F5D580]/50 bg-[#F5D580]/10 px-3 py-1 text-[12px] font-extrabold tracking-[0.18em] text-[#F5D580]">
+          <Crown size={13} aria-hidden /> VIP
+        </span>
+
+        {/* The event first — what this is, before who it is for. */}
+        <p className="mt-3.5 text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#D8C9FF]">
+          ✨ VIP Exclusive Privileges
+        </p>
+        <p className="mt-1 text-[18px] font-extrabold leading-snug text-white sm:text-[20px]">
+          DENTISTE&rsquo; Live Winter Festival ✨
+        </p>
+        <p className="mt-2.5 text-[12.5px] font-semibold tracking-wide text-[#C9B8F5]">
+          8 พฤศจิกายน 2569 · SMOOTH LIFE TOWER
+          <span className="block font-normal text-[#C9B8F5]/80">ถนนสาทรเหนือ สีลม กรุงเทพฯ</span>
+        </p>
+
+        {/* Then the person. Between the two rules so it reads as the line the
+            card was made to carry — and it degrades to nothing rather than to
+            an empty rule if the account has no name on it yet. */}
+        {name.trim() && (
+          <p className="mt-4 border-y border-white/15 py-3.5 text-[19px] font-extrabold leading-snug text-white sm:text-[21px]">
+            {name.trim()}
+          </p>
+        )}
+
+        <p className={`${name.trim() ? "mt-3" : "mt-4 border-t border-white/15 pt-3.5"} text-[15px] font-bold leading-snug text-white/90`}>
+          คุณเป็น 1 ใน 25 ท่าน ในการเข้าร่วมกิจกรรมสุดพิเศษ
+        </p>
+
+        {/* mt-auto: sits on the bottom edge whatever the card's height turns
+            out to be, so the fixed height reads as designed rather than as
+            slack under the last line. */}
+        {orderNumber && (
+          <p className="mt-auto pt-3 text-[13px] text-white/60">
+            คำสั่งซื้อ <span className="font-semibold text-white/90">{orderNumber}</span>
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ReceiptForm({
   campaign,
   open,
@@ -145,6 +234,7 @@ export default function ReceiptForm({
   const [entries, setEntries] = useState<Entry[]>([]);
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
+  const [vip, setVip] = useState<{ orderNumber: string | null; paidAt: string | null } | null>(null);
   const [claiming, setClaiming] = useState<string | null>(null);
   const [tab, setTab] = useState<"send" | "history">("send");
   // Built from the campaign this page is, so a second campaign needs no second
@@ -187,6 +277,7 @@ export default function ReceiptForm({
       setEntries(data.entries as Entry[]);
       setUploads((data.uploads ?? []) as Upload[]);
       setPrizes((data.prizes ?? []) as Prize[]);
+      setVip((data.vip ?? null) as { orderNumber: string | null; paidAt: string | null } | null);
       // Only ever a first guess — never overwrite what they are typing.
       const profile = (data.profile ?? {}) as { name?: string; phone?: string; email?: string };
       setContactName((v) => v || profile.name || "");
@@ -733,6 +824,7 @@ export default function ReceiptForm({
             <div className={`grid gap-6 lg:items-start ${twoUp ? "lg:grid-cols-2" : ""}`}>
               {/* Left: the stack of receipts, not one at a time. */}
               <div>
+                {vip && <VipCard name={contactName} orderNumber={vip.orderNumber} />}
                 <h2 className="text-lg font-bold text-black">แนบรูปใบเสร็จ</h2>
                 <p className="mt-1.5 text-[14px] leading-relaxed text-black/70">
                   แคปหน้าจออีเมลยืนยันคำสั่งซื้อที่ได้รับจาก Smoothlife.com ให้เห็น
