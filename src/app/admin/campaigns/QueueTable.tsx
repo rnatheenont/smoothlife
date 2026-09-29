@@ -653,8 +653,8 @@ export default function QueueTable({
               <th className="text-right">สิทธิ์</th>
               <th>AI ตรวจ</th>
               {decided && <th>ผลตรวจ</th>}
-              <th>ส่งเมื่อ</th>
-              <th />
+              <th className="whitespace-nowrap">ส่งเมื่อ</th>
+              <th className="w-[124px]" />
             </tr>
           </thead>
           <tbody>
@@ -755,10 +755,15 @@ export default function QueueTable({
                     </td>
                   )}
                   <td className={adminTable.muted}>{when(item.sentAt)}</td>
-                  <td className={`${adminTable.cell} text-right`}>
-                    <span className="inline-flex items-center gap-1.5">
+                  {/* The table is table-fixed, so this column takes the width
+                      its header is given and nothing the content says can
+                      widen it — nowrap alone left an 89px pill in a 44px
+                      cell. The header below carries the width; this keeps the
+                      pill on one line inside it. */}
+                  <td className={`${adminTable.cell} whitespace-nowrap text-right`}>
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                       {busy === item.id && <Loader2 size={14} className="animate-spin text-slate-400" />}
-                      <span className="rounded-full border border-surface-line px-3 py-1 text-[12px] font-semibold text-brand-800">
+                      <span className="whitespace-nowrap rounded-full border border-surface-line px-3 py-1 text-[12px] font-semibold text-brand-800">
                         ดูรายละเอียด
                       </span>
                     </span>
