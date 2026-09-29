@@ -140,32 +140,36 @@ export default async function HomePage() {
         <div className="pointer-events-none hidden md:block absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-brand-sky/10 blur-3xl animate-floatSlow" />
 
         <div className="container-page relative pt-2 pb-6 md:py-24 grid md:grid-cols-[0.65fr_1.35fr] gap-8 md:gap-12 items-center">
-          <StaggerReveal className="hidden md:block order-3 md:order-1">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-800 shadow-card mb-5 border border-slate-100">
+          {/* Second on a phone, first on a desktop. The banner is the
+              campaign's own artwork and carries its own words, so the shop's
+              claim goes under it rather than on top of it — overlaid text
+              would be competing with the picture it sits on. */}
+          <StaggerReveal className="order-2 md:order-1">
+            <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-slate-100 bg-white px-3 py-1.5 text-[11px] font-semibold text-brand-800 shadow-card md:mb-5 md:px-3.5 md:text-xs">
               {/* Counted, not typed: a number in the copy that a data file
                   can quietly outgrow is a number that will one day be wrong. */}
               <Sparkles size={13} aria-hidden="true" /> คัดจาก {brands.length} แบรนด์ที่ขายจริงในไทย
             </span>
-            <h1 className="text-4xl md:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-[1.35]! tracking-tight text-brand-ink">
+            <h1 className="text-[28px] md:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-[1.3]! tracking-tight text-brand-ink md:leading-[1.35]!">
               ของดีที่ใช้ได้จริง <br />
               <span className="brand-text-gradient">คัดมาให้แล้ว</span>
             </h1>
-            <p className="mt-5 text-slate-600 max-w-md leading-relaxed">
+            <p className="mt-2.5 max-w-md text-[14px] leading-relaxed text-slate-600 md:mt-5 md:text-base">
               สกินแคร์ อาหารเสริม ดูแลช่องปากและเส้นผม จากแบรนด์ที่วางขายจริงในไทย ของแท้ 100%
               มี อย. ส่งฟรีทั่วไทยไม่มีขั้นต่ำ และสะสมคะแนนได้ทุกการช้อป
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-5 flex gap-2.5 md:mt-8 md:gap-3">
               <Button
                 href="/shop"
                 size="none"
-                className="group gap-1.5 px-7 py-3.5 text-sm shadow-cardHover"
+                className="group min-h-11 flex-1 justify-center gap-1.5 px-5 py-3 text-sm shadow-cardHover md:flex-none md:px-7 md:py-3.5"
               >
                 เริ่มช้อปเลย
                 <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
               </Button>
               <Link
                 href="/loyalty"
-                className="rounded-full bg-white border border-slate-200 text-brand-ink font-semibold px-7 py-3.5 text-sm hover:border-brand-teal transition-colors"
+                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-brand-ink transition-colors hover:border-brand-teal md:flex-none md:px-7 md:py-3.5"
               >
                 ดูสิทธิ์สมาชิก
               </Link>
@@ -182,7 +186,7 @@ export default async function HomePage() {
               "ทั้งหมด" closes the row into /shop. Same square tiles as the
               desktop section, for the same reason: the artwork is packshots,
               and a circle cuts the ends off every one of them. */}
-          <StaggerReveal className="order-2 -mx-4 flex gap-4 overflow-x-auto px-4 scrollbar-none md:hidden">
+          <StaggerReveal className="order-3 -mx-4 mt-1 flex gap-4 overflow-x-auto px-4 scrollbar-none md:hidden">
             {categories.map((c) => (
               <Link
                 key={c.slug}
