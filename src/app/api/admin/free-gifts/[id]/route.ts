@@ -32,14 +32,19 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   }
   if (typeof body.buyQty === "number") patch.buy_qty = body.buyQty;
   if (typeof body.minSubtotal === "number") patch.min_subtotal = body.minSubtotal;
-  if (typeof body.giftProductSlug === "string") {
+  // The gift moved to the shop's free-gift shelf (see the create route); a
+  // catalogue slug is only still accepted so an older promo can be edited
+  // without its gift being rewritten out from under it.
+  if (typeof body.giftProductSlug === "string" && body.giftProductSlug) {
     if (!getProductBySlug(body.giftProductSlug)) {
       return NextResponse.json({ ok: false, error: `ไม่พบสินค้าของแถม: ${body.giftProductSlug}` }, { status: 400 });
     }
     patch.gift_product_slug = body.giftProductSlug;
   }
   if (typeof body.giftQty === "number") patch.gift_qty = body.giftQty;
-  if (typeof body.expires === "string" || body.expires === null) patch.expires_at = body.expires;
+  if (typeof body.giftVariantId === "string" || body.giftVariantId === null) patch.gift_variant_id = body.giftVariantId;
+  if (typeof body.starts === "string" || body.starts === null) patch.starts_at = body.starts || null;
+  if (typeof body.expires === "string" || body.expires === null) patch.expires_at = body.expires || null;
   if (Array.isArray(body.tiers)) {
     for (const t of body.tiers) {
       if (!t.giftProductSlug || !getProductBySlug(t.giftProductSlug)) {

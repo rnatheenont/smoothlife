@@ -27,7 +27,18 @@ export type FreeGiftPromo = {
   giftQty: number;
   tiers?: FreeGiftTier[]; // kind: "tiered" — ascending reward ladder, each tier's discount grants the cumulative gift set
   shopifyDiscountId?: string; // GID of the real automatic discount enforcing this (bxgy/spend only) — informational only, not read by evaluation logic
+  starts?: string; // ISO datetime — before this, the promo is scheduled rather than running
   expires?: string; // ISO datetime — past this, evaluateFreeGift treats the promo as not eligible regardless of threshold
+  /**
+   * The gift is given out by the app on Shopify's side and this row only draws
+   * the progress bar and the popup. Never creates a Shopify discount — two
+   * hands reaching into one cart is how a shopper ends up with the gift twice.
+   */
+  displayOnly?: boolean;
+  /** The real Shopify variant of the gift, when it comes from the shop's free-gift shelf. */
+  giftVariantId?: string;
+  /** Filled in by /api/free-gifts from Shopify: what is left of the gift. */
+  giftStock?: number | null;
 };
 
 // Row shape as stored in the Supabase `free_gift_promos` table (snake_case) —
@@ -53,13 +64,16 @@ export type FreeGiftPromoRow = {
   gift_qty: number;
   tiers: FreeGiftTierRow[] | null;
   shopify_discount_id: string | null;
+  starts_at: string | null;
   expires_at: string | null;
+  display_only: boolean | null;
+  gift_variant_id: string | null;
 };
 
 // Shared SELECT column list — used by both the public /api/free-gifts route
 // and the admin CRUD routes so they never silently drift out of sync.
 export const FREE_GIFT_COLUMNS =
-  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,expires_at,created_at,updated_at";
+  "id,slug,active,title_th,title_en,kind,buy_product_slugs,buy_qty,min_subtotal,gift_product_slug,gift_qty,tiers,shopify_discount_id,starts_at,expires_at,display_only,gift_variant_id,created_at,updated_at";
 
 export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
   return {
@@ -82,7 +96,12 @@ export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
         }))
       : undefined,
     shopifyDiscountId: row.shopify_discount_id ?? undefined,
+    starts: row.starts_at ?? undefined,
     expires: row.expires_at ?? undefined,
+    // Rows written before the column existed were all mirrors too — none of
+    // them ever had a Shopify discount attached.
+    displayOnly: row.display_only !== false,
+    giftVariantId: row.gift_variant_id ?? undefined,
   };
 }
 
@@ -96,8 +115,17 @@ export type FreeGiftEval = {
 
 export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeGiftEval {
   if (!promo.active) return { promo, eligible: false, reasonTh: "", reasonEn: "" };
+  // A campaign can be written today and start on a date, rather than waiting
+  // for somebody to remember to switch it on at nine in the morning.
+  if (promo.starts && new Date(promo.starts).getTime() > Date.now()) {
+    return { promo, eligible: false, reasonTh: "ยังไม่ถึงวันเริ่มโปรโมชั่น", reasonEn: "This promotion has not started yet" };
+  }
   if (promo.expires && new Date(promo.expires).getTime() < Date.now()) {
     return { promo, eligible: false, reasonTh: "โปรโมชั่นนี้หมดอายุแล้ว", reasonEn: "This promotion has ended" };
+  }
+  // Promising a gift the shop has run out of is worse than not promising one.
+  if (promo.giftStock !== undefined && promo.giftStock !== null && promo.giftStock <= 0) {
+    return { promo, eligible: false, reasonTh: "ของแถมหมดแล้ว", reasonEn: "This gift is out of stock" };
   }
 
   if (promo.kind === "tiered") {

@@ -19,6 +19,7 @@ import { FreeGiftPromo, FreeGiftTier } from "@/data/free-gifts";
 import { getProductBySlug } from "@/data/products";
 import { Badge } from "@/components/ui";
 import ProductPicker from "@/components/admin/ProductPicker";
+import GiftPicker, { giftName, type GiftChoice } from "@/components/admin/GiftPicker";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, adminTable } from "@/components/admin/layout-kit";
 import GiftStockPanel from "./GiftStockPanel";
@@ -36,8 +37,13 @@ type FormState = {
   buyQty: string;
   minSubtotal: string;
   giftProductSlug: string;
+  /** The real Shopify gift, chosen from the shop's free-gift shelf. */
+  giftVariantId: string;
+  giftTitle: string;
+  giftImage: string | null;
   giftQty: string;
   tiers: TierFormRow[];
+  starts: string;
   expires: string;
 };
 
@@ -52,8 +58,12 @@ const EMPTY_FORM: FormState = {
   buyQty: "1",
   minSubtotal: "",
   giftProductSlug: "",
+  giftVariantId: "",
+  giftTitle: "",
+  giftImage: null,
   giftQty: "1",
   tiers: [{ ...EMPTY_TIER_ROW }],
+  starts: "",
   expires: "",
 };
 
@@ -149,6 +159,8 @@ export default function AdminFreeGiftsPage() {
                 giftQty: Number(t.giftQty) || 1,
               }))
             : undefined,
+        giftVariantId: form.giftVariantId || undefined,
+        starts: form.starts || undefined,
         expires: form.expires || undefined,
       };
       const url = editingId ? `/api/admin/free-gifts/${editingId}` : "/api/admin/free-gifts";
@@ -189,6 +201,10 @@ export default function AdminFreeGiftsPage() {
               giftQty: String(t.giftQty ?? 1),
             }))
           : [{ ...EMPTY_TIER_ROW }],
+      giftVariantId: p.giftVariantId ?? "",
+      giftTitle: "",
+      giftImage: null,
+      starts: p.starts ? p.starts.slice(0, 10) : "",
       expires: p.expires ?? "",
     });
     setFormError("");
@@ -695,25 +711,29 @@ export default function AdminFreeGiftsPage() {
               {form.kind !== "tiered" && (
                 <div>
                   <p className="text-xs font-bold text-brand-ink mb-2">3. สินค้าที่จะแถมฟรี</p>
-                  {form.giftProductSlug ? (
-                    <div className="flex items-center gap-2.5 rounded-lg bg-surface-soft p-2 mb-2">
-                      {(() => {
-                        const gp = getProductBySlug(form.giftProductSlug);
-                        return gp ? (
-                          <>
-                            <span className="relative h-9 w-9 shrink-0 rounded-lg overflow-hidden bg-white">
-                              <Image src={gp.image} alt={gp.name} fill sizes="36px" className="object-cover" />
-                            </span>
-                            <span className="text-xs text-brand-ink flex-1">{gp.name}</span>
-                            <button type="button" onClick={() => setForm({ ...form, giftProductSlug: "" })}>
-                              <X size={14} className="text-slate-400" />
-                            </button>
-                          </>
-                        ) : null;
-                      })()}
+                  {/* The shop's free-gift shelf, not the catalogue: every gift
+                      is UNLISTED in Shopify on purpose and none of them appears
+                      in the catalogue the other picker reads. */}
+                  {form.giftVariantId ? (
+                    <div className="mb-2 flex items-center gap-2.5 rounded-lg bg-surface-soft p-2">
+                      <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-white">
+                        {form.giftImage && <Image src={form.giftImage} alt="" fill sizes="36px" className="object-contain" />}
+                      </span>
+                      <span className="flex-1 text-xs text-brand-ink">{giftName(form.giftTitle) || form.giftVariantId}</span>
+                      <button
+                        type="button"
+                        aria-label="เปลี่ยนของแถม"
+                        onClick={() => setForm({ ...form, giftVariantId: "", giftTitle: "", giftImage: null })}
+                      >
+                        <X size={14} className="text-slate-400" />
+                      </button>
                     </div>
                   ) : (
-                    <ProductPicker onSelect={(slug) => setForm({ ...form, giftProductSlug: slug })} />
+                    <GiftPicker
+                      onSelect={(g: GiftChoice) =>
+                        setForm({ ...form, giftVariantId: g.variantId, giftTitle: g.title, giftImage: g.image })
+                      }
+                    />
                   )}
                   <label className="block text-[11px] text-slate-400 mb-1 mt-2">จำนวนที่แถม (ชิ้น)</label>
                   <input
@@ -763,6 +783,15 @@ export default function AdminFreeGiftsPage() {
                         onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}
                         disabled={Boolean(editingId)}
                         className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:bg-slate-50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">วันเริ่ม (ไม่บังคับ)</label>
+                      <input
+                        type="date"
+                        value={form.starts}
+                        onChange={(e) => setForm({ ...form, starts: e.target.value })}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                       />
                     </div>
                     <div>

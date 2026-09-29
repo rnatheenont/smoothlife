@@ -22,6 +22,20 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   if (!row) return NextResponse.json({ ok: false, error: "ไม่พบโปรโมชั่นนี้" }, { status: 404 });
   if (row.active) return NextResponse.json({ ok: false, error: "โปรโมชั่นนี้เปิดใช้งานอยู่แล้ว" }, { status: 400 });
 
+  // The gifts are given out by an app on Shopify's side — every gift line on an
+  // order carries its _aovCampId. A discount created from here would be a
+  // second hand reaching into the same cart, and a shopper only has to be
+  // surprised by that once. A display-only promo is switched on by writing
+  // active, nothing more.
+  if (row.display_only !== false) {
+    await supabaseRest(`free_gift_promos?id=eq.${pgValue(params.id)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({ active: true }),
+    });
+    return NextResponse.json({ ok: true, displayOnly: true, shopifyDiscountCreated: false });
+  }
+
   if (row.kind === "tiered") {
     if (!row.tiers?.length) {
       return NextResponse.json({ ok: false, error: "ไม่มีข้อมูลระดับ (tiers)" }, { status: 400 });

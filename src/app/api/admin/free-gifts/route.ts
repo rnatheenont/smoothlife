@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ ok: false, error: "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
 
-  const { slug, titleTh, titleEn, kind, buyProductSlugs, buyQty, minSubtotal, giftProductSlug, giftQty, expires, tiers } = body;
+  const { slug, titleTh, titleEn, kind, buyProductSlugs, buyQty, minSubtotal, giftProductSlug, giftVariantId, giftQty, starts, expires, tiers } = body;
 
   if (typeof slug !== "string" || !/^[a-z0-9-]+$/.test(slug)) {
     return NextResponse.json({ ok: false, error: "slug ต้องเป็นตัวพิมพ์เล็ก a-z 0-9 และ - เท่านั้น" }, { status: 400 });
@@ -40,15 +40,21 @@ export async function POST(req: NextRequest) {
     for (const s of buyProductSlugs) {
       if (!getProductBySlug(s)) return NextResponse.json({ ok: false, error: `ไม่พบสินค้า: ${s}` }, { status: 400 });
     }
-    if (!giftProductSlug || !getProductBySlug(giftProductSlug)) {
-      return NextResponse.json({ ok: false, error: `ไม่พบสินค้าของแถม: ${giftProductSlug}` }, { status: 400 });
+    // The gift is a variant on the shop's free-gift shelf, not a catalogue
+    // slug: every gift product is UNLISTED in Shopify and none of them is in
+    // the catalogue this route used to check against.
+    if (typeof giftVariantId !== "string" || !giftVariantId.startsWith("gid://shopify/ProductVariant/")) {
+      return NextResponse.json({ ok: false, error: "กรุณาเลือกของแถมจากรายการของแถมใน Shopify" }, { status: 400 });
     }
   } else if (kind === "spend") {
     if (!minSubtotal || minSubtotal <= 0) {
       return NextResponse.json({ ok: false, error: "กรุณาระบุยอดขั้นต่ำ" }, { status: 400 });
     }
-    if (!giftProductSlug || !getProductBySlug(giftProductSlug)) {
-      return NextResponse.json({ ok: false, error: `ไม่พบสินค้าของแถม: ${giftProductSlug}` }, { status: 400 });
+    // The gift is a variant on the shop's free-gift shelf, not a catalogue
+    // slug: every gift product is UNLISTED in Shopify and none of them is in
+    // the catalogue this route used to check against.
+    if (typeof giftVariantId !== "string" || !giftVariantId.startsWith("gid://shopify/ProductVariant/")) {
+      return NextResponse.json({ ok: false, error: "กรุณาเลือกของแถมจากรายการของแถมใน Shopify" }, { status: 400 });
     }
   } else {
     if (!Array.isArray(tiers) || tiers.length === 0) {
@@ -76,7 +82,11 @@ export async function POST(req: NextRequest) {
         buy_product_slugs: kind === "bxgy" ? buyProductSlugs : null,
         buy_qty: kind === "bxgy" ? buyQty : null,
         min_subtotal: kind === "spend" ? minSubtotal : null,
-        gift_product_slug: kind === "tiered" ? "" : giftProductSlug,
+        // The gift now comes from the shop's free-gift shelf, which is not in
+        // our catalogue, so the slug is whatever the older form left behind and
+        // the variant is the one that means anything.
+        gift_product_slug: kind === "tiered" ? "" : (giftProductSlug ?? ""),
+        gift_variant_id: kind === "tiered" ? null : (giftVariantId ?? null),
         gift_qty: kind === "tiered" ? 1 : giftQty && giftQty > 0 ? giftQty : 1,
         tiers:
           kind === "tiered"
@@ -88,6 +98,7 @@ export async function POST(req: NextRequest) {
               }))
             : null,
         shopify_discount_id: null,
+        starts_at: starts || null,
         expires_at: expires || null,
       }),
     });
