@@ -1633,6 +1633,98 @@ export async function getOrderFulfillmentStatus(orderId: string): Promise<{ fulf
 // order.createdAt (paid date) is used as a conservative stand-in. That
 // means the window can start a few days earlier than true delivery; a real
 // deliveredAt lookup is a follow-up, not implemented here.
+export type VariantBuyer = {
+  orderName: string;
+  orderId: string;
+  adminUrl: string;
+  processedAt: string | null;
+  financialStatus: string | null;
+  total: number;
+  quantity: number;
+  customerName: string | null;
+  customerEmail: string | null;
+  customerPhone: string | null;
+};
+
+/**
+ * Everyone who has an order for one variant, oldest purchase first.
+ *
+ * Asked of Shopify rather than assembled from our own tables, because no
+ * single table here has all of them: the VIP set sold six through the flash
+ * sale queue, two before the queue existed and one that never went through it,
+ * and the campaign's receipt entries are a different list again — the people
+ * who sent a photo, which is not the people who bought.
+ *
+ * Two calls: the variant's SKU, then the orders carrying it. Order search has
+ * no field for a variant id, and `sku:` is the only handle on a line item it
+ * will take — so the results are filtered by variant id afterwards, since a
+ * SKU search matches text rather than the variant itself.
+ */
+export async function ordersWithVariant(variantId: string): Promise<VariantBuyer[] | null> {
+  if (!shopifyAdminConfigured()) return null;
+  try {
+    const skuData = await adminGraphql<{ productVariant: { sku: string | null } | null }>(
+      `query VariantSku($id: ID!) { productVariant(id: $id) { sku } }`,
+      { id: variantId },
+    );
+    const sku = skuData.productVariant?.sku?.trim();
+    if (!sku) return [];
+
+    const data = await adminGraphql<{
+      orders: {
+        nodes: {
+          id: string;
+          name: string;
+          processedAt: string | null;
+          displayFinancialStatus: string | null;
+          totalPriceSet: { shopMoney: { amount: string } } | null;
+          customer: { displayName: string | null; email: string | null; phone: string | null } | null;
+          lineItems: { nodes: { quantity: number | null; variant: { id: string } | null }[] };
+        }[];
+      };
+    }>(
+      `query OrdersWithSku($q: String!) {
+        orders(first: 100, query: $q, sortKey: PROCESSED_AT) {
+          nodes {
+            id
+            name
+            processedAt
+            displayFinancialStatus
+            totalPriceSet { shopMoney { amount } }
+            customer { displayName email phone }
+            lineItems(first: 50) { nodes { quantity variant { id } } }
+          }
+        }
+      }`,
+      { q: `sku:${sku}` },
+    );
+
+    return (data.orders?.nodes ?? []).flatMap((node) => {
+      const quantity = node.lineItems.nodes
+        .filter((li) => li.variant?.id === variantId)
+        .reduce((n, li) => n + (Number(li.quantity) || 0), 0);
+      if (quantity <= 0) return [];
+      return [
+        {
+          orderName: node.name,
+          orderId: node.id,
+          adminUrl: `https://admin.shopify.com/store/${STORES.smoothlife.adminHandle}/orders/${node.id.split("/").pop()}`,
+          processedAt: node.processedAt,
+          financialStatus: node.displayFinancialStatus,
+          total: Number(node.totalPriceSet?.shopMoney?.amount ?? 0) || 0,
+          quantity,
+          customerName: node.customer?.displayName ?? null,
+          customerEmail: node.customer?.email ?? null,
+          customerPhone: node.customer?.phone ?? null,
+        },
+      ];
+    });
+  } catch (err) {
+    console.error("[shopify-admin] ordersWithVariant failed", err);
+    return null;
+  }
+}
+
 export async function findPaidOrderForProduct(
   shopifyCustomerId: string,
   productSlug: string,

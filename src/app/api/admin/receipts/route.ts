@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { signedReceiptUrl } from "@/lib/receipt-photos";
-import { amountsFromLineItems, holdsPrize, type LineItem } from "@/lib/receipt-campaign";
+import { amountsFromLineItems, holdsPrize, vipVariantIds, type LineItem } from "@/lib/receipt-campaign";
 import { loadCampaignContent } from "@/lib/receipt-campaign-content";
-import { orderPaymentByGid, ordersByName, normalizeOrderName } from "@/lib/shopify-admin";
+import { orderPaymentByGid, ordersByName, normalizeOrderName, ordersWithVariant } from "@/lib/shopify-admin";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
 // The review queue, the VIP order, and what Lucky Fan has to draw from.
@@ -273,6 +273,22 @@ export async function GET(req: NextRequest) {
     tickets.set(r.user_id, cur);
   }
 
+  // One call per VIP variant, and only its own failure to worry about: an
+  // unreachable Shopify leaves the tab empty rather than the page broken.
+  const vipVariants = vipVariantIds(rules.vipSlugs ?? []);
+  const vipOrders = (
+    await Promise.all(vipVariants.map((id) => ordersWithVariant(id).catch(() => null)))
+  ).flatMap((list) => list ?? []);
+  const PAID_OK = new Set(["PAID", "PARTIALLY_REFUNDED"]);
+  const vipBuyers = vipOrders
+    .map((o) => ({ ...o, paid: PAID_OK.has((o.financialStatus ?? "").toUpperCase()) }))
+    // Paid first and by purchase time, because that is the order the
+    // twenty-five places are given out in; everything else trails behind it.
+    .sort((a, b) => {
+      if (a.paid !== b.paid) return a.paid ? -1 : 1;
+      return Date.parse(a.processedAt ?? "") - Date.parse(b.processedAt ?? "");
+    });
+
   return NextResponse.json(
     {
       ok: true,
@@ -287,15 +303,30 @@ export async function GET(req: NextRequest) {
       pendingBeyondQueue: Math.max(0, pending.length - queue.length),
       decided,
       decidedTotal: rows.filter((r) => r.status !== "pending_review").length,
-      vip: byPurchase.slice(0, VIP_WINNERS + VIP_RESERVE).map((r, i) => ({
-        rank: i + 1,
-        userId: r.user_id,
-        customer: r.users?.display_name ?? null,
-        invoiceNo: r.payment_transactions?.invoice_no ?? r.manual_receipt_no,
-        paidAt: r.payment_transactions?.confirmed_at ?? null,
-        approvedAt: r.reviewed_at,
-        reserve: i >= VIP_WINNERS,
+      /**
+       * Who actually bought the VIP set, oldest purchase first.
+       *
+       * It used to be the approved receipts in purchase order, which is a
+       * different list of people: a receipt is a photo somebody sent, and the
+       * twenty-five sets were sold through the shop. Six went through the
+       * flash-sale queue, two were bought the day before it opened and one
+       * never went through it, so no table here holds all nine — Shopify does.
+       */
+      vipBuyers: vipBuyers.map((b, i) => ({
+        rank: b.paid ? i + 1 : null,
+        orderName: b.orderName,
+        adminUrl: b.adminUrl,
+        customer: b.customerName,
+        email: b.customerEmail,
+        phone: b.customerPhone,
+        paidAt: b.processedAt,
+        financialStatus: b.financialStatus,
+        total: b.total,
+        quantity: b.quantity,
+        paid: b.paid,
+        reserve: b.paid && i >= VIP_WINNERS,
       })),
+      vipSoldOut: vipBuyers.filter((b) => b.paid).length >= VIP_WINNERS,
       // Who is holding a prize right now, which is not the same as who was
       // drawn into the first 25: a forfeit above you promotes you.
       winners: (() => {

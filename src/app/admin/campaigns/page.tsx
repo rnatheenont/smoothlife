@@ -20,11 +20,18 @@ import { when, type QueueItem } from "./queue-vocab";
 import { formatTHB } from "@/lib/format";
 
 type Vip = {
-  rank: number;
+  /** null until the order is paid — an unpaid one holds no place. */
+  rank: number | null;
+  orderName: string;
+  adminUrl: string;
   customer: string | null;
-  invoiceNo: string | null;
+  email: string | null;
+  phone: string | null;
   paidAt: string | null;
-  approvedAt: string | null;
+  financialStatus: string | null;
+  total: number;
+  quantity: number;
+  paid: boolean;
   reserve: boolean;
 };
 type Fan = { userId: string; customer: string | null; entries: number };
@@ -45,7 +52,8 @@ type Data = {
   pendingBeyondQueue: number;
   decided: QueueItem[];
   decidedTotal: number;
-  vip: Vip[];
+  vipBuyers: Vip[];
+  vipSoldOut: boolean;
   winners: Winner[];
   luckyFan: Fan[];
 };
@@ -422,10 +430,10 @@ export default function Page() {
           )}
 
           {tab === "vip" && (
-            <Panel title="ลำดับ VIP">
+            <Panel title="ผู้ซื้อเซ็ต VIP">
               <p className="px-3 pt-3 text-[12px] text-slate-500">
-                เรียงตามเวลาที่ชำระเงิน · 1–25 คือตัวจริง ที่เหลือคือสำรองตามลำดับ · 1 คนมีได้ 1 ที่
-                — ยังรอทีมการตลาดยืนยันว่า &quot;มาก่อนได้ก่อน&quot; นับจากเวลาซื้อหรือเวลาอนุมัติ
+                ทุกคำสั่งซื้อที่มี <b>[Pre-Order] Early Bird VIP 25 Set Only</b> เรียงตามเวลาที่ชำระเงิน ·
+                1–25 คือตัวจริง ที่เหลือคือสำรองตามลำดับ · ดึงจาก Shopify โดยตรง ไม่ใช่จากใบเสร็จที่ส่งเข้ามา
               </p>
               <div className={`mt-4 ${adminTable.scroll}`}>
                 <table className={adminTable.table}>
@@ -433,29 +441,58 @@ export default function Page() {
                     <tr>
                       <th>#</th>
                       <th>ลูกค้า</th>
-                      <th>เลขที่</th>
+                      <th>คำสั่งซื้อ</th>
+                      <th>สถานะ</th>
+                      <th className="text-right">ยอด</th>
                       <th>ชำระเมื่อ</th>
-                      <th>อนุมัติเมื่อ</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.vip.map((v) => (
-                      <tr key={v.rank} className={adminTable.row}>
+                    {data.vipBuyers.map((v) => (
+                      <tr key={v.orderName} className={`${adminTable.row} ${v.paid ? "" : "opacity-60"}`}>
                         <td className={adminTable.mono}>
-                          {v.rank}
+                          {v.rank ?? "—"}
                           {v.reserve && <span className="ml-1 text-[11px] text-slate-400">สำรอง</span>}
                         </td>
-                        <td className={adminTable.cell}>{v.customer ?? "—"}</td>
-                        <td className={adminTable.muted}>{v.invoiceNo ?? "—"}</td>
+                        <td className={adminTable.cell}>
+                          <span className="font-semibold text-brand-ink">{v.customer ?? "—"}</span>
+                          {v.email && <span className="block text-[11px] text-slate-400">{v.email}</span>}
+                        </td>
+                        <td className={adminTable.cell}>
+                          <a
+                            href={v.adminUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-semibold text-brand-800 underline"
+                          >
+                            {v.orderName}
+                          </a>
+                          {v.quantity > 1 && (
+                            <span className="ml-1.5 text-[11px] text-slate-400">×{v.quantity}</span>
+                          )}
+                        </td>
+                        <td className={adminTable.cell}>
+                          <span
+                            className={`inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-bold ${
+                              v.paid
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                                : "border-amber-200 bg-amber-50 text-amber-900"
+                            }`}
+                          >
+                            {v.paid ? "ชำระแล้ว" : (v.financialStatus ?? "—")}
+                          </span>
+                        </td>
+                        <td className={`${adminTable.mono} text-right`}>{formatTHB(v.total)}</td>
                         <td className={adminTable.muted}>{when(v.paidAt)}</td>
-                        <td className={adminTable.muted}>{when(v.approvedAt)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              {data.vip.length === 0 && (
-                <p className="px-3 pb-3 text-[13px] text-slate-500">ยังไม่มีใบเสร็จที่อนุมัติแล้ว</p>
+              {data.vipBuyers.length === 0 && (
+                <p className="px-3 pb-3 text-[13px] text-slate-500">
+                  ยังไม่มีใครซื้อเซ็ต VIP — หรือเชื่อมต่อ Shopify ไม่ได้ในขณะนี้
+                </p>
               )}
             </Panel>
           )}

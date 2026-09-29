@@ -83,6 +83,12 @@ export const VIP_SLUGS: string[] = [
 
 export type LineItem = { variantId: string; quantity: number; price: number };
 
+/** The VIP set's variants, for asking Shopify who has bought one. */
+export function vipVariantIds(slugs: string[] = VIP_SLUGS): string[] {
+  return products.filter((p) => slugs.includes(p.slug)).flatMap((p) => p.variants.map((v) => v.variantId));
+}
+
+
 /**
  * The arithmetic, as the team has it set.
  *
