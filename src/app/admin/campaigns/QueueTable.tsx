@@ -310,7 +310,28 @@ function DetailPanel({
                     <dt className="text-slate-500">เลขใบแจ้งหนี้ 2C2P</dt>
                     <dd className="font-mono text-[12px] text-slate-500">{item.invoiceNo ?? "—"}</dd>
                     <dt className="text-slate-500">ชำระเมื่อ</dt>
-                    <dd className="text-brand-ink">{when(item.paidAt)}</dd>
+                    {/* Same fallback the total below already makes: our own
+                        2C2P row first, then the order in the shop. A receipt
+                        sent for an order we took no payment for has no paidAt
+                        of ours at all, which is every claim this campaign has
+                        had — the field was a dash on all of them while Shopify
+                        had the answer the whole time. The customer's own
+                        version stays where it is, under "ลูกค้ากรอกมาว่า":
+                        on #4360 they typed a date a day later than the order
+                        was actually processed, which is the kind of thing this
+                        line exists to let a reviewer see. */}
+                    <dd className="text-brand-ink">
+                      {item.paidAt ? (
+                        when(item.paidAt)
+                      ) : item.claimedOrder?.found && item.claimedOrder.paidAt ? (
+                        <>
+                          {when(item.claimedOrder.paidAt)}{" "}
+                          <span className="text-[11px] text-slate-400">(จากคำสั่งซื้อในร้าน)</span>
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </dd>
                     <dt className="text-slate-500">ยอดทั้งบิล</dt>
                     <dd className="text-brand-ink">
                       {item.orderTotal !== null
