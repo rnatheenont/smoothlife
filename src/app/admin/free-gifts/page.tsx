@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui";
 import ProductPicker from "@/components/admin/ProductPicker";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, adminTable } from "@/components/admin/layout-kit";
+import GiftStockPanel from "./GiftStockPanel";
 
 type AdminPromo = FreeGiftPromo & { id: string };
 
@@ -245,6 +246,13 @@ export default function AdminFreeGiftsPage() {
         title="ของแถม & โปรโมชั่น"
         subtitle="ตั้งโปร “ซื้อครบแถมฟรี” — ระบบจะเพิ่มของแถมในตะกร้าลูกค้าอัตโนมัติ และผูกกับส่วนลดจริงใน Shopify ให้ทันที"
       />
+
+      {/* Above the promos on purpose: what is left of the gifts decides whether
+          any promo below can be kept, and it is the one thing on this page
+          neither this console nor the app on Shopify was watching. */}
+      <div className="mb-4">
+        <GiftStockPanel />
+      </div>
 
       {promos.length === 0 ? (
         /* The dashed block is the whole invitation when there is nothing

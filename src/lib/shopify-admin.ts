@@ -2379,6 +2379,91 @@ const STOREFRONT_APP_NAME = process.env.SHOPIFY_STOREFRONT_APP_NAME || "Smoothli
  * for days in a busy shop will eventually push its own earliest sales off the
  * end of this. Fine for watching a drop; not a ledger.
  */
+export type GiftStockItem = {
+  variantId: string;
+  title: string;
+  /** UNLISTED for a gift in use, DRAFT for one being prepared. */
+  status: string;
+  image: string | null;
+  /** What the gift is worth if it were sold — several are priced normally and zeroed by the app. */
+  price: number;
+  stock: number;
+};
+
+const giftStockCache = { at: 0, items: [] as GiftStockItem[] };
+
+/**
+ * Every product the shop keeps as a free gift, with what is left of it.
+ *
+ * The gifts are given out by an app on Shopify's side — order line items carry
+ * its _aovCampId and _aovCampType — and nothing in this codebase knows what it
+ * has promised. What we can see is the shelf behind the promise, and on the day
+ * this was written four of the gifts on it were down to one or none while the
+ * shop was still handing them out.
+ *
+ * Tag rather than title: "[Free Gift]" is a naming habit, `free-gift` is the
+ * tag the shop actually files them under.
+ */
+export async function freeGiftProducts(): Promise<GiftStockItem[]> {
+  if (!shopifyAdminConfigured()) return [];
+  if (Date.now() - giftStockCache.at < 5 * 60_000) return giftStockCache.items;
+
+  try {
+    const items: GiftStockItem[] = [];
+    let after: string | null = null;
+    // A shop accumulates gifts; two pages is plenty and the loop has an end.
+    for (let page = 0; page < 3; page++) {
+      const data: {
+        products: {
+          nodes: {
+            title: string;
+            status: string;
+            featuredImage: { url: string } | null;
+            variants: { nodes: { id: string; price: string; inventoryQuantity: number | null }[] };
+          }[];
+          pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        };
+      } = await adminGraphql(
+        `query FreeGifts($after: String) {
+           products(first: 100, query: "tag:free-gift", after: $after) {
+             nodes {
+               title
+               status
+               featuredImage { url }
+               variants(first: 1) { nodes { id price inventoryQuantity } }
+             }
+             pageInfo { hasNextPage endCursor }
+           }
+         }`,
+        { after }
+      );
+      for (const node of data.products?.nodes ?? []) {
+        const variant = node.variants?.nodes?.[0];
+        if (!variant) continue;
+        items.push({
+          variantId: variant.id,
+          title: node.title,
+          status: node.status,
+          image: node.featuredImage?.url ?? null,
+          price: Number(variant.price) || 0,
+          stock: Number(variant.inventoryQuantity ?? 0),
+        });
+      }
+      if (!data.products?.pageInfo?.hasNextPage) break;
+      after = data.products.pageInfo.endCursor;
+      if (!after) break;
+    }
+    // Emptiest first: this list is read to find what is about to run out.
+    items.sort((a, b) => a.stock - b.stock || a.title.localeCompare(b.title, "th"));
+    giftStockCache.at = Date.now();
+    giftStockCache.items = items;
+    return items;
+  } catch (err) {
+    console.error("[shopify-admin] freeGiftProducts failed", err);
+    return giftStockCache.items;
+  }
+}
+
 export async function variantOrdersSince(
   variantIds: (string | null | undefined)[],
   sinceIso: string
