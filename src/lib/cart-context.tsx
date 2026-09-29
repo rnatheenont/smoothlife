@@ -273,6 +273,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
       giftPromoSlug,
     };
   }
+  /** A gift that lives only on Shopify's free-gift shelf — UNLISTED, so absent from our catalogue. */
+  function shopifyGiftLine(variantId: string, title: string | undefined, image: string | null | undefined, qty: number, giftPromoSlug: string) {
+    return {
+      slug: variantId,
+      variantId,
+      qty,
+      name: (title ?? "ของแถม").replace(/^\s*(TEST\s*\|\s*)?\[Free Gift\]\s*/i, "").trim(),
+      price: 0,
+      image: image ?? "",
+      compareAtPrice: undefined,
+      brand: "",
+      category: "" as CartLine["category"],
+      size: "",
+      variants: [],
+      stock: undefined,
+      isGift: true,
+      giftPromoSlug,
+    };
+  }
+
   const giftLines = evaluateActiveFreeGifts(giftPromos, cartLinesForEval)
     .filter((e) => e.eligible)
     .flatMap((e) => {
@@ -280,13 +300,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // Tiered promo — one synthetic line per unlocked tier, keyed
         // uniquely per tier so multiple tiers of the same promo don't
         // collide on giftPromoSlug.
-        return e.unlockedTiers.map((t) =>
-          giftLineFor(
-            products.find((pr) => pr.slug === t.giftProductSlug),
-            t.giftQty,
-            `${e.promo.slug}::tier-${t.tierIndex}`
-          )
-        );
+        return e.unlockedTiers.map((t) => {
+          const key = `${e.promo.slug}::tier-${t.tierIndex}`;
+          const fromCatalogue = giftLineFor(products.find((pr) => pr.slug === t.giftProductSlug), t.giftQty, key);
+          if (fromCatalogue) return fromCatalogue;
+          return t.giftVariantId ? shopifyGiftLine(t.giftVariantId, t.giftTitle, t.giftImage, t.giftQty, key) : null;
+        });
       }
       // The gift usually lives on Shopify's free-gift shelf rather than in our
       // catalogue — every one of them is UNLISTED there — so the promo carries
@@ -295,24 +314,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const fromCatalogue = giftLineFor(products.find((pr) => pr.slug === e.promo.giftProductSlug), e.promo.giftQty, e.promo.slug);
       if (fromCatalogue) return [fromCatalogue];
       if (!e.promo.giftVariantId) return [];
-      return [
-        {
-          slug: e.promo.giftVariantId,
-          variantId: e.promo.giftVariantId,
-          qty: e.promo.giftQty,
-          name: (e.promo.giftTitle ?? "ของแถม").replace(/^\s*(TEST\s*\|\s*)?\[Free Gift\]\s*/i, "").trim(),
-          price: 0,
-          image: e.promo.giftImage ?? "",
-          compareAtPrice: undefined,
-          brand: "",
-          category: "" as CartLine["category"],
-          size: "",
-          variants: [],
-          stock: undefined,
-          isGift: true,
-          giftPromoSlug: e.promo.slug,
-        },
-      ];
+      return [shopifyGiftLine(e.promo.giftVariantId, e.promo.giftTitle, e.promo.giftImage, e.promo.giftQty, e.promo.slug)];
     })
     .filter(Boolean) as CartContextValue["lines"];
   const linesWithGifts = [...lines, ...giftLines];

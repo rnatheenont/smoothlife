@@ -64,8 +64,8 @@ export async function POST(req: NextRequest) {
       if (!t.minSubtotal || t.minSubtotal <= 0) {
         return NextResponse.json({ ok: false, error: "กรุณาระบุยอดขั้นต่ำของแต่ละระดับ" }, { status: 400 });
       }
-      if (!t.giftProductSlug || !getProductBySlug(t.giftProductSlug)) {
-        return NextResponse.json({ ok: false, error: `ไม่พบสินค้าของแถม: ${t.giftProductSlug}` }, { status: 400 });
+      if (typeof t.giftVariantId !== "string" || !t.giftVariantId.startsWith("gid://shopify/ProductVariant/")) {
+        return NextResponse.json({ ok: false, error: "กรุณาเลือกของแถมของทุกระดับจากรายการของแถมใน Shopify" }, { status: 400 });
       }
     }
   }
@@ -90,9 +90,10 @@ export async function POST(req: NextRequest) {
         gift_qty: kind === "tiered" ? 1 : giftQty && giftQty > 0 ? giftQty : 1,
         tiers:
           kind === "tiered"
-            ? tiers.map((t: { minSubtotal: number; giftProductSlug: string; giftQty: number }) => ({
+            ? tiers.map((t: { minSubtotal: number; giftProductSlug?: string; giftVariantId?: string; giftQty: number }) => ({
                 min_subtotal: t.minSubtotal,
-                gift_product_slug: t.giftProductSlug,
+                gift_product_slug: t.giftProductSlug ?? "",
+                gift_variant_id: t.giftVariantId ?? null,
                 gift_qty: t.giftQty && t.giftQty > 0 ? t.giftQty : 1,
                 shopify_discount_id: null,
               }))

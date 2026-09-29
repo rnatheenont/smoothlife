@@ -10,6 +10,11 @@ import { CartLine } from "./coupons";
 export type FreeGiftTier = {
   minSubtotal: number;
   giftProductSlug: string;
+  /** The real Shopify gift, same shelf the single-gift promos pick from. */
+  giftVariantId?: string;
+  giftTitle?: string;
+  giftImage?: string | null;
+  giftStock?: number | null;
   giftQty: number;
   shopifyDiscountId?: string; // one real Shopify discount per tier — see activate route
 };
@@ -53,6 +58,7 @@ export type FreeGiftPromo = {
 export type FreeGiftTierRow = {
   min_subtotal: number;
   gift_product_slug: string;
+  gift_variant_id?: string | null;
   gift_qty: number;
   shopify_discount_id: string | null;
 };
@@ -98,6 +104,7 @@ export function rowToPromo(row: FreeGiftPromoRow): FreeGiftPromo {
       ? row.tiers.map((t) => ({
           minSubtotal: t.min_subtotal,
           giftProductSlug: t.gift_product_slug,
+          giftVariantId: t.gift_variant_id ?? undefined,
           giftQty: t.gift_qty,
           shopifyDiscountId: t.shopify_discount_id ?? undefined,
         }))
@@ -117,7 +124,14 @@ export type FreeGiftEval = {
   eligible: boolean;
   reasonTh: string;
   reasonEn: string;
-  unlockedTiers?: { tierIndex: number; giftProductSlug: string; giftQty: number }[];
+  unlockedTiers?: {
+    tierIndex: number;
+    giftProductSlug: string;
+    giftVariantId?: string;
+    giftTitle?: string;
+    giftImage?: string | null;
+    giftQty: number;
+  }[];
 };
 
 export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeGiftEval {
@@ -141,7 +155,14 @@ export function evaluateFreeGift(promo: FreeGiftPromo, lines: CartLine[]): FreeG
     const unlockedTiers = sortedTiers
       .map((t, tierIndex) => ({ t, tierIndex }))
       .filter(({ t }) => subtotal >= t.minSubtotal)
-      .map(({ t, tierIndex }) => ({ tierIndex, giftProductSlug: t.giftProductSlug, giftQty: t.giftQty }));
+      .map(({ t, tierIndex }) => ({
+        tierIndex,
+        giftProductSlug: t.giftProductSlug,
+        giftVariantId: t.giftVariantId,
+        giftTitle: t.giftTitle,
+        giftImage: t.giftImage,
+        giftQty: t.giftQty,
+      }));
     if (unlockedTiers.length > 0) {
       const allUnlocked = unlockedTiers.length === sortedTiers.length;
       if (allUnlocked) {

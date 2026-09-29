@@ -47,13 +47,14 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   if (typeof body.expires === "string" || body.expires === null) patch.expires_at = body.expires || null;
   if (Array.isArray(body.tiers)) {
     for (const t of body.tiers) {
-      if (!t.giftProductSlug || !getProductBySlug(t.giftProductSlug)) {
-        return NextResponse.json({ ok: false, error: `ไม่พบสินค้าของแถม: ${t.giftProductSlug}` }, { status: 400 });
+      if (typeof t.giftVariantId !== "string" || !t.giftVariantId.startsWith("gid://shopify/ProductVariant/")) {
+        return NextResponse.json({ ok: false, error: "กรุณาเลือกของแถมของทุกระดับจากรายการของแถมใน Shopify" }, { status: 400 });
       }
     }
-    patch.tiers = body.tiers.map((t: { minSubtotal: number; giftProductSlug: string; giftQty: number; shopifyDiscountId?: string }) => ({
+    patch.tiers = body.tiers.map((t: { minSubtotal: number; giftProductSlug?: string; giftVariantId?: string; giftQty: number; shopifyDiscountId?: string }) => ({
       min_subtotal: t.minSubtotal,
-      gift_product_slug: t.giftProductSlug,
+      gift_product_slug: t.giftProductSlug ?? "",
+      gift_variant_id: t.giftVariantId ?? null,
       gift_qty: t.giftQty && t.giftQty > 0 ? t.giftQty : 1,
       shopify_discount_id: t.shopifyDiscountId ?? null,
     }));

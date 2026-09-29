@@ -21,7 +21,7 @@ export async function GET() {
     const promos = rows.map(rowToPromo);
 
     // One call for the whole page, cached five minutes inside the helper.
-    const wantsGifts = promos.some((p) => p.giftVariantId);
+    const wantsGifts = promos.some((p) => p.giftVariantId || p.tiers?.some((x) => x.giftVariantId));
     const shelf = wantsGifts
       ? new Map((await freeGiftProducts()).map((g) => [g.variantId, g]))
       : new Map<string, Awaited<ReturnType<typeof freeGiftProducts>>[number]>();
@@ -35,6 +35,10 @@ export async function GET() {
           giftStock: p.giftVariantId ? (gift?.stock ?? null) : undefined,
           giftTitle: gift?.title,
           giftImage: gift?.image ?? null,
+          tiers: p.tiers?.map((tier) => {
+            const g = tier.giftVariantId ? shelf.get(tier.giftVariantId) : undefined;
+            return { ...tier, giftTitle: g?.title, giftImage: g?.image ?? null, giftStock: g?.stock ?? null };
+          }),
         };
       })
       .filter((p) => {

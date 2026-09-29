@@ -26,7 +26,7 @@ import GiftStockPanel from "./GiftStockPanel";
 
 type AdminPromo = FreeGiftPromo & { id: string };
 
-type TierFormRow = { minSubtotal: string; giftProductSlug: string; giftQty: string };
+type TierFormRow = { minSubtotal: string; giftProductSlug: string; giftVariantId: string; giftTitle: string; giftImage: string | null; giftQty: string };
 
 type FormState = {
   slug: string;
@@ -47,7 +47,7 @@ type FormState = {
   expires: string;
 };
 
-const EMPTY_TIER_ROW: TierFormRow = { minSubtotal: "", giftProductSlug: "", giftQty: "1" };
+const EMPTY_TIER_ROW: TierFormRow = { minSubtotal: "", giftProductSlug: "", giftVariantId: "", giftTitle: "", giftImage: null, giftQty: "1" };
 
 const EMPTY_FORM: FormState = {
   slug: "",
@@ -156,6 +156,7 @@ export default function AdminFreeGiftsPage() {
             ? form.tiers.map((t) => ({
                 minSubtotal: Number(t.minSubtotal),
                 giftProductSlug: t.giftProductSlug,
+                giftVariantId: t.giftVariantId,
                 giftQty: Number(t.giftQty) || 1,
               }))
             : undefined,
@@ -198,6 +199,9 @@ export default function AdminFreeGiftsPage() {
           ? p.tiers.map((t) => ({
               minSubtotal: String(t.minSubtotal),
               giftProductSlug: t.giftProductSlug,
+              giftVariantId: t.giftVariantId ?? "",
+              giftTitle: t.giftTitle ?? "",
+              giftImage: t.giftImage ?? null,
               giftQty: String(t.giftQty ?? 1),
             }))
           : [{ ...EMPTY_TIER_ROW }],
@@ -657,16 +661,15 @@ export default function AdminFreeGiftsPage() {
                           required
                           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                         />
-                        {tier.giftProductSlug ? (
+                        {tier.giftVariantId ? (
                           <div className="flex items-center gap-2 rounded-lg bg-surface-soft p-1.5">
-                            <span className="text-xs text-brand-ink flex-1">
-                              {getProductBySlug(tier.giftProductSlug)?.name ?? tier.giftProductSlug}
-                            </span>
+                            <span className="flex-1 text-xs text-brand-ink">{giftName(tier.giftTitle) || tier.giftVariantId}</span>
                             <button
                               type="button"
+                              aria-label="เปลี่ยนของแถมระดับนี้"
                               onClick={() => {
                                 const next = [...form.tiers];
-                                next[i] = { ...next[i], giftProductSlug: "" };
+                                next[i] = { ...next[i], giftVariantId: "", giftTitle: "", giftImage: null };
                                 setForm({ ...form, tiers: next });
                               }}
                             >
@@ -674,10 +677,10 @@ export default function AdminFreeGiftsPage() {
                             </button>
                           </div>
                         ) : (
-                          <ProductPicker
-                            onSelect={(slug) => {
+                          <GiftPicker
+                            onSelect={(g: GiftChoice) => {
                               const next = [...form.tiers];
-                              next[i] = { ...next[i], giftProductSlug: slug };
+                              next[i] = { ...next[i], giftVariantId: g.variantId, giftTitle: g.title, giftImage: g.image };
                               setForm({ ...form, tiers: next });
                             }}
                           />
@@ -812,7 +815,10 @@ export default function AdminFreeGiftsPage() {
                 type="submit"
                 disabled={
                   submitting ||
-                  (form.kind === "tiered" ? !form.tiers.some((t) => t.giftProductSlug) : !form.giftProductSlug)
+                  // The gift is a Shopify variant now, not a catalogue slug:
+                  // watching the old field left this disabled however many
+                  // gifts were picked.
+                  (form.kind === "tiered" ? !form.tiers.every((t) => t.giftVariantId) : !form.giftVariantId)
                 }
                 className="w-full rounded-full bg-brand-gradient text-white text-sm font-semibold py-3 disabled:opacity-50"
               >
