@@ -318,12 +318,21 @@ export default async function HomePage() {
         <ScrollReveal className="container-page">
           <SectionHeading title="โปรโมชั่นและดีลเด็ด" subtitle="New, Best Sellers and Promotions" href="/promotions" />
         </ScrollReveal>
-        <StaggerGrid className="container-page grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4" stagger={0.1}>
+        {/* A rail on a phone, a grid on a desktop.
+            Four tiles stacked two-by-two is a screen and a half of scrolling
+            to see four things; swiping through them sideways is how every app
+            on the same phone shows the same content, and it costs no height
+            at all. snap-mandatory so a half-shown tile settles rather than
+            hanging in the gutter. */}
+        <StaggerGrid
+          className="container-page flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none md:grid md:grid-cols-4 md:gap-4 md:overflow-visible"
+          stagger={0.1}
+        >
           {promotions.map((promo) => (
             <Link
               key={promo.slug}
               href={`/promotions#${promo.slug}`}
-              className="group relative aspect-4/3 overflow-hidden rounded-xl2"
+              className="group relative aspect-4/3 w-[72%] shrink-0 snap-start overflow-hidden rounded-xl2 transition-transform active:scale-[0.98] sm:w-[45%] md:w-auto md:active:scale-100"
             >
               <Image
                 src={promo.image}
@@ -373,9 +382,13 @@ export default async function HomePage() {
         <ScrollReveal className="container-page">
           <SectionHeading title="ช้อปตามปัญหาผิวที่กังวล" subtitle="Shop by Concern" href="/concern" />
         </ScrollReveal>
-        <StaggerGrid className="container-page grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+        <StaggerGrid className="container-page flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none md:grid md:grid-cols-3 lg:grid-cols-6 md:gap-4 md:overflow-visible">
           {concerns.map((c) => (
-            <Link key={c.slug} href={`/concern/${c.slug}`} className="group">
+            <Link
+              key={c.slug}
+              href={`/concern/${c.slug}`}
+              className="group w-[38%] shrink-0 snap-start transition-transform active:scale-[0.98] sm:w-[28%] md:w-auto md:active:scale-100"
+            >
               {/* The photo fills the tile in its own colours — no tinted well
                   or blend, same as the product cards. */}
               <div className="relative aspect-square overflow-hidden rounded-xl2 bg-white ring-1 ring-surface-line transition-shadow group-hover:ring-brand-800/30">
