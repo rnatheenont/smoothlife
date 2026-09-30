@@ -8,10 +8,40 @@ import { HeroBanner } from "@/data/heroBanners";
 
 const AUTO_ROTATE_MS = 8000;
 
+// Shopify serves two crops of the same campaign — a wide one for the desktop
+// slideshow and a square one for phones — and this component only ever drew
+// the wide one. On a phone that put a 3200px-wide artwork inside a strip a
+// little over half as tall as it was wide, so the words on it arrived about
+// the size of the small print.
+const MOBILE_QUERY = "(max-width: 767px)";
+
+function useIsMobile() {
+  // Server-rendered as desktop and corrected on mount: a phone loads the wide
+  // crop for a moment, which is the cost of not shipping both to everyone.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY);
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return isMobile;
+}
+
 export default function HeroCarousel({ banners: heroBanners }: { banners: HeroBanner[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
+  const isMobile = useIsMobile();
+
+  // One frame for the whole carousel, not one per slide: a box that changed
+  // shape every eight seconds would shove the page down and up beneath it.
+  // Square only when every slide has a square crop to fill it — the banners
+  // read live from the storefront do not carry one, and a wide artwork in a
+  // square box is mostly blurred bar.
+  const everySlideHasMobileCrop = heroBanners.every((b) => Boolean(b.mobileImage));
+  const mobileAspect = everySlideHasMobileCrop ? "aspect-square" : "aspect-4/3";
 
   useEffect(() => {
     if (paused || heroBanners.length === 0) return;
@@ -42,7 +72,7 @@ export default function HeroCarousel({ banners: heroBanners }: { banners: HeroBa
   return (
     <div>
       <div
-        className="group relative aspect-100/53 rounded-surface overflow-hidden select-none touch-pan-y bg-surface-soft"
+        className={`group relative ${mobileAspect} md:aspect-100/53 rounded-surface overflow-hidden select-none touch-pan-y bg-surface-soft`}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onMouseEnter={() => setPaused(true)}
@@ -72,7 +102,7 @@ export default function HeroCarousel({ banners: heroBanners }: { banners: HeroBa
                 recognition, so a thumbnail's worth of pixels is plenty and the
                 page does not download every banner twice at full size. */}
             <Image
-              src={banner.image}
+              src={isMobile ? (banner.mobileImage ?? banner.image) : banner.image}
               alt=""
               aria-hidden
               fill
@@ -80,11 +110,11 @@ export default function HeroCarousel({ banners: heroBanners }: { banners: HeroBa
               className="scale-110 object-cover blur-2xl"
             />
             <Image
-              src={banner.image}
+              src={isMobile ? (banner.mobileImage ?? banner.image) : banner.image}
               alt={banner.title}
               fill
               priority={i === 0}
-              sizes="(max-width: 768px) 100vw, 50vw"
+              sizes="(max-width: 767px) 100vw, (max-width: 1280px) 55vw, 700px"
               className="object-contain"
             />
           </Link>
