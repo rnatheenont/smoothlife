@@ -102,7 +102,7 @@ export default function MegaMenu({ label, href }: { label: string; href: string 
           id={panelId}
           className="absolute inset-x-0 top-full z-50 border-t border-slate-100 bg-white shadow-[0_18px_40px_-24px_rgba(0,53,41,0.35)] animate-fadeUp"
         >
-          <div className="container-page grid gap-0 py-6 md:grid-cols-[230px_1fr_260px]">
+          <div className="container-page grid gap-0 py-6 md:grid-cols-[230px_1fr_300px]">
             {/* Categories. Pointing at one changes the two panels beside it —
                 Etsy's idea, and the only way six categories and their contents
                 fit without becoming a wall. */}
@@ -183,21 +183,24 @@ export default function MegaMenu({ label, href }: { label: string; href: string 
             {/* Brands in this category, as the logos people actually scan for. */}
             <div className="border-slate-100 ps-0 pt-6 md:border-s md:ps-6 md:pt-0">
               <p className="text-[12px] font-semibold text-slate-400">แบรนด์ใน{active?.label}</p>
-              <ul className="mt-3 grid grid-cols-3 gap-2">
+              {/* Two across, not three. A brand logo is a thing people scan
+                  for by shape, and at a third of a narrow rail there was more
+                  padding than mark. */}
+              <ul className="mt-3 grid grid-cols-2 gap-2">
                 {active?.brands.map((b) => (
                   <li key={b.slug}>
                     <Link
                       href={`/brands/${b.slug}`}
                       onClick={() => setOpen(false)}
                       title={b.name}
-                      className="grid aspect-[4/3] place-items-center overflow-hidden rounded-lg bg-white ring-1 ring-slate-100 transition-colors hover:ring-brand-teal"
+                      className="grid aspect-[5/3] place-items-center overflow-hidden rounded-lg bg-white ring-1 ring-slate-100 transition-colors hover:ring-brand-teal"
                     >
                       {b.image ? (
                         <span className="relative h-full w-full">
-                          <Image src={b.image} alt={b.name} fill sizes="90px" className="object-contain p-2" />
+                          <Image src={b.image} alt={b.name} fill sizes="140px" className="object-contain p-1.5" />
                         </span>
                       ) : (
-                        <span className="px-1 text-center text-[10px] leading-tight text-slate-500">{b.name}</span>
+                        <span className="px-1.5 text-center text-[11px] font-medium leading-tight text-slate-600">{b.name}</span>
                       )}
                     </Link>
                   </li>
