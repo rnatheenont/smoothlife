@@ -5,7 +5,9 @@
 // Its own component because the number it shows is the one the campaign team
 // quotes, and a preview of it has to be the same markup as the console — a
 // copy would be free to drift from what the admin is really looking at.
-import { Loader2, RefreshCw } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Input, Label, TextField } from "@heroui/react";
+import { Loader2, RefreshCw, Search } from "lucide-react";
 import { Panel, StatCard, adminTable } from "@/components/admin/layout-kit";
 import { when } from "./queue-vocab";
 import { formatTHB } from "@/lib/format";
@@ -55,6 +57,22 @@ export default function SalesPanel({
   busy: boolean;
   onRefresh: () => void;
 }) {
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLowerCase();
+  // Name first, because that is what the team is handed — "ลูกค้าชื่อ …
+  // ซื้อหรือยัง" — but the order number and the email match too, since those
+  // are the other two things a customer gives when they write in.
+  const shown = useMemo(
+    () =>
+      !needle || !sales
+        ? (sales?.orders ?? [])
+        : sales.orders.filter((o) =>
+            [o.customer, o.email, o.orderName].some((v) => v?.toLowerCase().includes(needle))
+          ),
+    [sales, needle]
+  );
+  const shownAmount = shown.reduce((sum, o) => sum + o.amount, 0);
+
   return (
     <Panel
       title="ยอดขาย DENTISTE'"
@@ -80,7 +98,7 @@ export default function SalesPanel({
 
       {sales && (
         <>
-          {/* The money gets the full width on a phone: three across puts a
+          {/* The money gets the full width on a phone: sharing the row puts a
               six-figure number on two lines, and it is the number this tab
               exists to answer. */}
           <div className="mt-4 grid grid-cols-2 gap-3 px-3 md:grid-cols-4">
@@ -100,7 +118,26 @@ export default function SalesPanel({
             </p>
           )}
 
-          <div className={`mt-4 ${adminTable.scroll}`}>
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 px-3">
+            <TextField
+              value={query}
+              onChange={setQuery}
+              aria-label="ค้นหาชื่อลูกค้า อีเมล หรือเลขคำสั่งซื้อ"
+              className="w-full sm:w-80"
+            >
+              <Label className="sr-only">ค้นหาลูกค้า</Label>
+              <Input placeholder="ค้นหาชื่อลูกค้า / อีเมล / เลขบิล" />
+            </TextField>
+            {needle && (
+              <p className="text-[12px] text-slate-500">
+                <Search size={12} className="mr-1 inline" aria-hidden />
+                พบ <b className="text-brand-ink">{shown.length}</b> บิล · รวม{" "}
+                <b className="text-brand-ink">{formatTHB(shownAmount)}</b>
+              </p>
+            )}
+          </div>
+
+          <div className={`mt-3 ${adminTable.scroll}`}>
             <table className={adminTable.table}>
               <thead className={adminTable.thead}>
                 <tr>
@@ -113,7 +150,7 @@ export default function SalesPanel({
                 </tr>
               </thead>
               <tbody>
-                {sales.orders.map((o) => (
+                {shown.map((o) => (
                   <tr key={o.orderName} className={adminTable.row}>
                     <td className={adminTable.cell}>
                       <a href={o.adminUrl} target="_blank" rel="noreferrer" className="font-semibold text-brand-800 underline">
@@ -169,9 +206,11 @@ export default function SalesPanel({
             </table>
           </div>
 
-          {sales.orders.length === 0 && (
+          {shown.length === 0 && (
             <p className="px-3 pb-3 pt-4 text-[13px] text-slate-500">
-              ยังไม่มีคำสั่งซื้อ DENTISTE&apos; ที่ชำระเงินสำเร็จในช่วงนี้
+              {needle
+                ? `ไม่พบบิลที่ตรงกับ "${query.trim()}"`
+                : "ยังไม่มีคำสั่งซื้อ DENTISTE' ที่ชำระเงินสำเร็จในช่วงนี้"}
             </p>
           )}
         </>
