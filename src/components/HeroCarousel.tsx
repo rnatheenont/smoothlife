@@ -25,12 +25,14 @@ const AUTO_ROTATE_MS = 8000;
 const MOBILE_QUERY = "(max-width: 767px)";
 
 // How much of a slide the frame may crop away before it stops cropping and
-// shows the whole image instead, on its own blurred colours. Two numbers,
-// because the two directions are not equally survivable: campaign artwork is
-// drawn with air above and below the message, so losing a third of the height
-// costs nothing, while the logo and the product sit hard against the left and
-// right edges and a tenth off the sides takes one of them with it.
-const CROP_LIMIT_VERTICAL = 0.25;
+// shows the whole image instead, on its own blurred colours. Both numbers are
+// small, and the vertical one had to come down: these creatives are not drawn
+// with air around the message the way a photograph would be. Measured on the
+// Winter Festival banner, the brand logo begins 2.8% from the top edge and
+// the venue address ends 4.4% from the bottom, so a frame wider than the
+// artwork — which is every screen past about 1700px, since the banner is
+// capped in height — was filling itself by cutting both of them off.
+const CROP_LIMIT_VERTICAL = 0.06;
 const CROP_LIMIT_HORIZONTAL = 0.1;
 
 function useIsMobile() {

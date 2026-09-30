@@ -24,6 +24,10 @@ const DRIFT_Y = 0.15;
 
 const SNOW_SPAN_Z = [-6, 8] as const;
 
+// How much bigger than the viewport the forest is drawn, so a camera sway
+// never reaches its edge.
+const BG_OVERSCAN = 1.1;
+
 function snowSprite() {
   const size = 64;
   const c = document.createElement("canvas");
@@ -163,8 +167,8 @@ export default function HeroScene3D({
       const speeds = new Float32Array(count);
       const phases = new Float32Array(count);
       for (let i = 0; i < count; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * FRAME_W * 1.5;
-        positions[i * 3 + 1] = (Math.random() - 0.5) * frameH * 1.6;
+        positions[i * 3] = (Math.random() - 0.5) * snowHalfW * 2;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * worldH * 1.3;
         positions[i * 3 + 2] = zFrom + Math.random() * (zTo - zFrom);
         speeds[i] = 0.35 + Math.random() * 0.9;
         phases[i] = Math.random() * Math.PI * 2;
@@ -198,17 +202,39 @@ export default function HeroScene3D({
       pointer.y = 0;
     }
 
+    // The viewport in the scene's own units, kept up to date by resize() so
+    // the forest and the snow can be sized to whatever shape the banner is.
+    let worldW = FRAME_W;
+    let worldH = frameH;
+    let snowHalfW = FRAME_W * 0.75;
+    let bgMesh: THREE.Mesh | null = null;
+
     function resize() {
       const r = host!.getBoundingClientRect();
       if (!r.width || !r.height) return;
       renderer.setSize(r.width, r.height, false);
       camera.aspect = r.width / r.height;
-      // Cover, the same as the flat banner's object-cover: zoom until the
-      // artwork fills the frame in both directions, whichever runs out first.
       const visibleH = 2 * CAMERA_DISTANCE * Math.tan((FOV * Math.PI) / 360);
       const visibleW = visibleH * camera.aspect;
-      camera.zoom = Math.max(visibleH / frameH, visibleW / FRAME_W);
+      // Contain, not cover. The banner is capped in height, so past about
+      // 1700px wide the frame is a good deal wider than the artwork, and
+      // filling it by cropping takes the logo off the top and the venue off
+      // the bottom — both sit hard against their edges. So the artwork is
+      // kept whole and the forest is widened to meet the screen instead,
+      // which is the one thing a stack of layers can do that a flat picture
+      // cannot: the people and the lettering stay exactly as drawn, centred,
+      // with more winter either side of them.
+      camera.zoom = Math.min(visibleH / frameH, visibleW / FRAME_W);
       camera.updateProjectionMatrix();
+
+      worldW = visibleW / camera.zoom;
+      worldH = visibleH / camera.zoom;
+      if (bgMesh) {
+        bgMesh.scale.setScalar(
+          Math.max(worldW / FRAME_W, worldH / frameH) * BG_OVERSCAN,
+        );
+      }
+      snowHalfW = Math.max(FRAME_W, worldW) * 0.75;
     }
 
     let ro: ResizeObserver | undefined;
@@ -218,13 +244,14 @@ export default function HeroScene3D({
         const bgTex = await makeTexture(scene.background);
         if (disposed) return;
         const bg = planeFor(bgTex, 1);
-        // The background is the one layer that may be cropped, and it has to
-        // be: it is the only thing behind the camera's wandering, so it is
-        // grown enough that a sway never reaches its edge.
-        bg.mesh.scale.multiplyScalar(1.1);
+        // The one layer that may be cropped, and the one that has to be: it
+        // is what fills whatever the artwork does not reach. resize() gives
+        // it its size, so it is sized before anything is built against it.
         bg.mesh.position.set(0, 0, 0);
         bg.mesh.renderOrder = 0;
+        bgMesh = bg.mesh;
         three.add(bg.mesh);
+        resize();
 
         const snowBack = scene.snow
           ? buildSnow(Math.round(scene.snow * 0.65), SNOW_SPAN_Z[0], 1, 1)
@@ -264,7 +291,6 @@ export default function HeroScene3D({
           : null;
         if (snowFront) three.add(snowFront.points);
 
-        resize();
         ro = new ResizeObserver(resize);
         ro.observe(host!);
         host!.addEventListener("pointermove", onPointerMove);
@@ -304,9 +330,9 @@ export default function HeroScene3D({
               for (let i = 0; i < field.count; i++) {
                 p[i * 3 + 1] -= field.speeds[i] * dt;
                 p[i * 3] += Math.sin(t * 0.7 + field.phases[i]) * dt * 0.22;
-                if (p[i * 3 + 1] < -frameH * 0.85) {
-                  p[i * 3 + 1] = frameH * 0.85;
-                  p[i * 3] = (Math.random() - 0.5) * FRAME_W * 1.5;
+                if (p[i * 3 + 1] < -worldH * 0.62) {
+                  p[i * 3 + 1] = worldH * 0.62;
+                  p[i * 3] = (Math.random() - 0.5) * snowHalfW * 2;
                 }
               }
               field.points.geometry.attributes.position.needsUpdate = true;
