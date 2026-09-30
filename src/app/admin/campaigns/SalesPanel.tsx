@@ -13,7 +13,7 @@
 // 375px screen is a horizontal scrollbar hiding the two columns that matter.
 import { useMemo, useState } from "react";
 import { Input, Label, TextField } from "@heroui/react";
-import { Loader2, RefreshCw, Search } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { Panel, adminTable } from "@/components/admin/layout-kit";
 import { when } from "./queue-vocab";
 import { formatTHB } from "@/lib/format";
@@ -115,7 +115,6 @@ export default function SalesPanel({
   const shownAmount = shown.reduce((sum, o) => sum + o.amount, 0);
   const shownEntries = shown.reduce((sum, o) => sum + o.entries, 0);
   const shownUnits = shown.reduce((sum, o) => sum + o.units, 0);
-  const shownClaimed = shown.filter((o) => o.receipt).length;
   /** Whether the strip is showing a slice rather than the whole campaign. */
   const narrowed = Boolean(sales) && shown.length !== sales!.totals.orders;
 
@@ -180,7 +179,11 @@ export default function SalesPanel({
               scroll rather than wrap on a phone: five wrapped pills push the
               numbers below the fold before a single row has been read. */}
           <div className="mt-3 flex flex-col gap-2 px-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="scrollbar-none -mx-3 flex gap-1.5 overflow-x-auto px-3 pb-0.5 lg:mx-0 lg:px-0">
+            {/* The scroller keeps the gutter as padding rather than losing
+                it to the negative margin, so the first pill is never sliced
+                down its left edge; from lg there is room for all five and
+                nothing clips at all. */}
+            <div className="scrollbar-none -mx-3 flex gap-1.5 overflow-x-auto px-3 pb-0.5 lg:mx-0 lg:overflow-x-visible lg:px-0 lg:pb-0">
               {TABS.map(([key, label]) => (
                 <button
                   key={key}
@@ -228,26 +231,6 @@ export default function SalesPanel({
               </div>
             ))}
           </div>
-
-          <p className="px-3 pt-2.5 text-[12px] leading-relaxed text-slate-500">
-            {narrowed ? (
-              <>
-                {needle && (
-                  <>
-                    <Search size={12} className="mr-1 inline" aria-hidden />
-                    ค้นหา &ldquo;{query.trim()}&rdquo; ·{" "}
-                  </>
-                )}
-                จากทั้งแคมเปญ <b className="text-brand-ink">{sales.totals.orders}</b> บิล ·{" "}
-                <b className="text-brand-ink">{formatTHB(sales.totals.amount)}</b> · {sales.totals.entries} สิทธิ์
-              </>
-            ) : (
-              <>
-                ยื่นใบเสร็จแล้ว <b className="text-brand-ink">{shownClaimed}</b> บิล · ยังไม่ยื่นอีก{" "}
-                <b className="text-brand-ink">{shown.length - shownClaimed}</b> บิล — ซื้อแล้วแต่ยังไม่ส่งเข้ามาชิงรางวัล
-              </>
-            )}
-          </p>
 
           {/* Phones: one card per bill. The order number and the claim chip
               lead, because those are what the row is looked up by and what it
