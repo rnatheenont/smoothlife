@@ -92,9 +92,11 @@ export default function SalesPanel({
 }) {
   const [query, setQuery] = useState("");
   const [state, setState] = useState<"all" | ReceiptState | "none">("all");
-  // Bills too small to earn anything are noise on every one of these tabs,
-  // so they can be dropped from all of them at once rather than per tab.
-  const [earningOnly, setEarningOnly] = useState(false);
+  // On by default: this tab is read to chase entries, and a bill that earns
+  // none is not a lead. Untick it to see the whole campaign — and the line
+  // under the numbers says what the whole campaign is either way, so the
+  // headline figure is never hidden, only set aside.
+  const [earningOnly, setEarningOnly] = useState(true);
   const needle = query.trim().toLowerCase();
 
   const shown = useMemo(() => {
