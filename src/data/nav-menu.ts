@@ -13,7 +13,10 @@ import type { Category } from "./types";
 // the catalogue is rebuilt, and neither needs anyone to remember to update a
 // list by hand.
 
-export type MenuGroup = { title: string; items: { label: string; href: string }[] };
+export type MenuGroup = {
+  title: string;
+  items: { label: string; href: string }[];
+};
 
 export type MenuCategory = {
   slug: Category;
@@ -26,12 +29,18 @@ export type MenuCategory = {
   brands: { slug: string; name: string; image?: string }[];
   /** One thing to look at. Two of the six categories carry no concern data at
    *  all, and their half of the panel was an empty rectangle without this. */
-  featured: { slug: string; name: string; brand: string; image: string; price: number } | null;
+  featured: {
+    slug: string;
+    name: string;
+    brand: string;
+    image: string;
+    price: number;
+  } | null;
 };
 
 /** At most this many links under one heading: a column longer than this is a list, not a menu. */
 const MAX_PER_GROUP = 6;
-const MAX_BRANDS = 8;
+const MAX_BRANDS = 6;
 
 function buildCategory(slug: Category): MenuCategory | null {
   const info = categories.find((c) => c.slug === slug);
@@ -43,28 +52,40 @@ function buildCategory(slug: Category): MenuCategory | null {
   // skincare menu leads with acne rather than with whatever is alphabetically
   // first.
   const concernCount = new Map<string, number>();
-  for (const p of inCategory) for (const c of p.concerns) concernCount.set(c, (concernCount.get(c) ?? 0) + 1);
+  for (const p of inCategory)
+    for (const c of p.concerns)
+      concernCount.set(c, (concernCount.get(c) ?? 0) + 1);
   const topConcerns = concerns
     .filter((c) => concernCount.has(c.slug))
-    .sort((a, b) => (concernCount.get(b.slug) ?? 0) - (concernCount.get(a.slug) ?? 0))
+    .sort(
+      (a, b) =>
+        (concernCount.get(b.slug) ?? 0) - (concernCount.get(a.slug) ?? 0),
+    )
     .slice(0, MAX_PER_GROUP);
 
   const brandCount = new Map<string, number>();
   for (const b of brands) {
     const aliases = brandSlugAliases(b);
-    const n = inCategory.filter((p) => aliases.includes(slugifyVendor(p.brand))).length;
+    const n = inCategory.filter((p) =>
+      aliases.includes(slugifyVendor(p.brand)),
+    ).length;
     if (n > 0) brandCount.set(b.slug, n);
   }
   const topBrands = brands
     .filter((b) => brandCount.has(b.slug))
-    .sort((a, b) => (brandCount.get(b.slug) ?? 0) - (brandCount.get(a.slug) ?? 0))
+    .sort(
+      (a, b) => (brandCount.get(b.slug) ?? 0) - (brandCount.get(a.slug) ?? 0),
+    )
     .slice(0, MAX_BRANDS)
     .map((b) => ({ slug: b.slug, name: b.name, image: b.image }));
 
   const groups: MenuGroup[] = [
     {
       title: "เลือกตามปัญหา",
-      items: topConcerns.map((c) => ({ label: c.nameTh, href: `/concern/${c.slug}` })),
+      items: topConcerns.map((c) => ({
+        label: c.nameTh,
+        href: `/concern/${c.slug}`,
+      })),
     },
     {
       title: "ลัดไปเลย",
@@ -77,10 +98,29 @@ function buildCategory(slug: Category): MenuCategory | null {
     },
   ].filter((g) => g.items.length > 0);
 
-  const best = [...inCategory].sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0) || b.reviewCount - a.reviewCount)[0];
-  const featured = best ? { slug: best.slug, name: best.name, brand: best.brand, image: best.image, price: best.price } : null;
+  const best = [...inCategory].sort(
+    (a, b) => (b.sold ?? 0) - (a.sold ?? 0) || b.reviewCount - a.reviewCount,
+  )[0];
+  const featured = best
+    ? {
+        slug: best.slug,
+        name: best.name,
+        brand: best.brand,
+        image: best.image,
+        price: best.price,
+      }
+    : null;
 
-  return { slug, label: info.nameTh, href: `/shop/${slug}`, image: info.image, count: inCategory.length, groups, brands: topBrands, featured };
+  return {
+    slug,
+    label: info.nameTh,
+    href: `/shop/${slug}`,
+    image: info.image,
+    count: inCategory.length,
+    groups,
+    brands: topBrands,
+    featured,
+  };
 }
 
 /** The shop menu, built once at module load from the generated catalogue. */

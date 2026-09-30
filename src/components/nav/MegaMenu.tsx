@@ -121,7 +121,7 @@ export default function MegaMenu({
           id={panelId}
           className="absolute inset-x-0 top-full z-50 max-h-[80vh] overflow-y-auto border-t border-slate-100 bg-white shadow-[0_18px_40px_-24px_rgba(0,53,41,0.35)] animate-fadeUp"
         >
-          <div className="container-page grid gap-0 py-6 md:grid-cols-[230px_1fr_340px]">
+          <div className="container-page grid gap-0 py-6 md:grid-cols-[230px_1fr_340px] 2xl:grid-cols-[230px_1fr_400px]">
             {/* Categories. Pointing at one changes the two panels beside it —
                 Etsy's idea, and the only way six categories and their contents
                 fit without becoming a wall. */}
@@ -222,13 +222,20 @@ export default function MegaMenu({
               <p className="text-[12px] font-semibold text-slate-400">
                 แบรนด์ใน{active?.label}
               </p>
-              {/* Two across, not three, in a tile very close to square.
-                  Measured: nearly every one of these logo files is square —
-                  800x800, 1200x1200, 1280x1280 — so in the 5:3 tile this used
-                  to be, object-contain fitted them to the tile's *height* and
-                  a 134px-wide tile carried a 68px mark with white either
-                  side of it. The tile now follows the artwork rather than the
-                  other way round, and the rail widened to pay for it. */}
+              {/* Two across, in a square tile, because nearly every one of
+                  these logo files is square — 800x800, 1200x1200, 1280x1280.
+                  In the 5:3 tile this began as, object-contain fitted them to
+                  the tile's *height*, so a 134px-wide tile carried a 68px
+                  mark with white either side of it. A square tile is the
+                  shape the artwork already is, and it ends at 146px, or 176
+                  on a large monitor where the rail can afford to be wider.
+
+                  Six brands rather than eight is what pays for that. Two
+                  columns cannot grow wider than the rail, and four rows of a
+                  square tile would make the panel taller than a laptop
+                  screen; three rows of a big tile take the same room four
+                  rows of a small one did. "ดูแบรนด์ทั้งหมด" below carries
+                  the rest. */}
               <ul className="mt-3 grid grid-cols-2 gap-2">
                 {active?.brands.map((b) => (
                   <li key={b.slug}>
@@ -236,7 +243,7 @@ export default function MegaMenu({
                       href={`/brands/${b.slug}`}
                       onClick={() => setOpen(false)}
                       title={b.name}
-                      className="grid aspect-[4/3] place-items-center overflow-hidden rounded-lg bg-white ring-1 ring-slate-100 transition-colors hover:ring-brand-teal"
+                      className="grid aspect-square place-items-center overflow-hidden rounded-lg bg-white ring-1 ring-slate-100 transition-colors hover:ring-brand-teal"
                     >
                       {b.image ? (
                         <span className="relative h-full w-full">
@@ -244,7 +251,7 @@ export default function MegaMenu({
                             src={b.image}
                             alt={b.name}
                             fill
-                            sizes="160px"
+                            sizes="200px"
                             className="object-contain p-1"
                           />
                         </span>
