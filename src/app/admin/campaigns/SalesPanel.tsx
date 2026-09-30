@@ -33,6 +33,9 @@ export type Sale = {
   units: number;
   orderTotal: number;
   items: SaleItem[];
+  /** The part of the bill that counts toward entries — VIP and gifts are out. */
+  eligible: number;
+  entries: number;
   receipt: SaleReceipt | null;
 };
 export type Sales = {
@@ -40,7 +43,17 @@ export type Sales = {
   /** Which campaign's receipts the claim column was matched against. */
   campaign: string;
   orders: Sale[];
-  totals: { orders: number; units: number; amount: number; claimed: number; unclaimed: number };
+  totals: {
+    orders: number;
+    units: number;
+    amount: number;
+    claimed: number;
+    unclaimed: number;
+    earning: number;
+    noEntry: number;
+    entries: number;
+    threshold: number;
+  };
 };
 
 const pill =
@@ -58,20 +71,48 @@ export default function SalesPanel({
   onRefresh: () => void;
 }) {
   const [query, setQuery] = useState("");
+  const [state, setState] = useState<"all" | ReceiptState | "none">("all");
+  // Bills too small to earn anything are noise on every one of these tabs,
+  // so they can be dropped from all of them at once rather than per tab.
+  const [earningOnly, setEarningOnly] = useState(false);
   const needle = query.trim().toLowerCase();
   // Name first, because that is what the team is handed — "ลูกค้าชื่อ …
   // ซื้อหรือยัง" — but the order number and the email match too, since those
   // are the other two things a customer gives when they write in.
-  const shown = useMemo(
-    () =>
-      !needle || !sales
-        ? (sales?.orders ?? [])
-        : sales.orders.filter((o) =>
-            [o.customer, o.email, o.orderName].some((v) => v?.toLowerCase().includes(needle))
-          ),
-    [sales, needle]
-  );
+  const shown = useMemo(() => {
+    let rows = sales?.orders ?? [];
+    if (state !== "all") rows = rows.filter((o) => (state === "none" ? !o.receipt : o.receipt?.state === state));
+    if (earningOnly) rows = rows.filter((o) => o.entries > 0);
+    if (needle) {
+      rows = rows.filter((o) =>
+        [o.customer, o.email, o.orderName].some((v) => v?.toLowerCase().includes(needle))
+      );
+    }
+    return rows;
+  }, [sales, needle, state, earningOnly]);
   const shownAmount = shown.reduce((sum, o) => sum + o.amount, 0);
+  const shownEntries = shown.reduce((sum, o) => sum + o.entries, 0);
+
+  /** How many bills each tab holds, before the search box narrows them. */
+  const counts = useMemo(() => {
+    const rows = (sales?.orders ?? []).filter((o) => !earningOnly || o.entries > 0);
+    const of = (k: ReceiptState | "none") => rows.filter((o) => (k === "none" ? !o.receipt : o.receipt?.state === k)).length;
+    return {
+      all: rows.length,
+      approved: of("approved"),
+      pending_review: of("pending_review"),
+      rejected: of("rejected"),
+      none: of("none"),
+    };
+  }, [sales, earningOnly]);
+
+  const TABS: [keyof typeof counts, string][] = [
+    ["all", "ทั้งหมด"],
+    ["approved", "อนุมัติ"],
+    ["pending_review", "รอตรวจ"],
+    ["rejected", "ตีกลับ"],
+    ["none", "ยังไม่ยื่น"],
+  ];
 
   return (
     <Panel
@@ -118,7 +159,38 @@ export default function SalesPanel({
             </p>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 px-3">
+          <div className="mt-4 flex flex-wrap items-center gap-1 px-3">
+            {TABS.map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setState(key === "all" ? "all" : (key as ReceiptState | "none"))}
+                aria-pressed={state === key}
+                className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                  state === key
+                    ? "bg-brand-ink text-white"
+                    : "border border-surface-line text-slate-600 hover:bg-surface-soft"
+                }`}
+              >
+                {label} <span className={state === key ? "text-white/70" : "text-slate-400"}>{counts[key]}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-2 px-3">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-[12px] text-slate-600">
+              <input
+                type="checkbox"
+                checked={earningOnly}
+                onChange={(e) => setEarningOnly(e.target.checked)}
+                className="size-4 accent-brand-800"
+              />
+              เฉพาะบิลที่ได้สิทธิ์ — ซ่อนบิลที่ยอดไม่ถึง {formatTHB(sales.totals.threshold)}
+              <span className="text-slate-400">({sales.totals.noEntry} บิลไม่ได้สิทธิ์)</span>
+            </label>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 px-3">
             <TextField
               value={query}
               onChange={setQuery}
@@ -128,13 +200,11 @@ export default function SalesPanel({
               <Label className="sr-only">ค้นหาลูกค้า</Label>
               <Input placeholder="ค้นหาชื่อลูกค้า / อีเมล / เลขบิล" />
             </TextField>
-            {needle && (
-              <p className="text-[12px] text-slate-500">
-                <Search size={12} className="mr-1 inline" aria-hidden />
-                พบ <b className="text-brand-ink">{shown.length}</b> บิล · รวม{" "}
-                <b className="text-brand-ink">{formatTHB(shownAmount)}</b>
-              </p>
-            )}
+            <p className="text-[12px] text-slate-500">
+              <Search size={12} className="mr-1 inline" aria-hidden />
+              แสดง <b className="text-brand-ink">{shown.length}</b> บิล · รวม{" "}
+              <b className="text-brand-ink">{formatTHB(shownAmount)}</b> · {shownEntries} สิทธิ์
+            </p>
           </div>
 
           <div className={`mt-3 ${adminTable.scroll}`}>
@@ -145,6 +215,7 @@ export default function SalesPanel({
                   <th>ลูกค้า</th>
                   <th>สินค้า DENTISTE&apos;</th>
                   <th className="text-right whitespace-nowrap">ยอด DENTISTE&apos;</th>
+                  <th className="text-right whitespace-nowrap">สิทธิ์</th>
                   <th className="whitespace-nowrap">ใบเสร็จ</th>
                   <th className="whitespace-nowrap">ชำระเมื่อ</th>
                 </tr>
@@ -182,6 +253,13 @@ export default function SalesPanel({
                         </span>
                       )}
                     </td>
+                    <td className={`${adminTable.mono} text-right`}>
+                      {o.entries > 0 ? (
+                        <span className="font-semibold text-brand-ink">{o.entries}</span>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
                     <td className={adminTable.cell}>
                       {o.receipt ? (
                         <>
@@ -208,9 +286,7 @@ export default function SalesPanel({
 
           {shown.length === 0 && (
             <p className="px-3 pb-3 pt-4 text-[13px] text-slate-500">
-              {needle
-                ? `ไม่พบบิลที่ตรงกับ "${query.trim()}"`
-                : "ยังไม่มีคำสั่งซื้อ DENTISTE' ที่ชำระเงินสำเร็จในช่วงนี้"}
+              {needle ? `ไม่พบบิลที่ตรงกับ "${query.trim()}"` : "ไม่มีบิลในกลุ่มนี้"}
             </p>
           )}
         </>

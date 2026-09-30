@@ -1636,6 +1636,8 @@ export async function getOrderFulfillmentStatus(orderId: string): Promise<{ fulf
 export type PaidOrderLine = {
   title: string;
   vendor: string | null;
+  /** Needed to price the line against the campaign's own rules. */
+  variantId: string | null;
   quantity: number;
   /** Net of every discount, including the order-level ones that pay for gifts. */
   amount: number;
@@ -1686,6 +1688,7 @@ export async function paidOrdersSince(sinceISODate: string): Promise<PaidOrder[]
               nodes: {
                 title: string;
                 vendor: string | null;
+                variant: { id: string } | null;
                 quantity: number | null;
                 discountedTotalSet: { shopMoney: { amount: string } } | null;
                 discountAllocations: { allocatedAmountSet: { shopMoney: { amount: string } } | null }[] | null;
@@ -1707,6 +1710,7 @@ export async function paidOrdersSince(sinceISODate: string): Promise<PaidOrder[]
                 nodes {
                   title
                   vendor
+                  variant { id }
                   quantity
                   discountedTotalSet { shopMoney { amount } }
                   discountAllocations { allocatedAmountSet { shopMoney { amount } } }
@@ -1737,6 +1741,7 @@ export async function paidOrdersSince(sinceISODate: string): Promise<PaidOrder[]
             return {
               title: li.title,
               vendor: li.vendor,
+              variantId: li.variant?.id ?? null,
               quantity: Number(li.quantity) || 0,
               amount: Math.max(0, (Number.isFinite(gross) ? gross : 0) - allocated),
             };

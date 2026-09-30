@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
-import { isDentisteVendor } from "@/lib/receipt-campaign";
+import { amountsFromLineItems, computeEntries, isDentisteVendor, type LineItem } from "@/lib/receipt-campaign";
+import { loadCampaignContent } from "@/lib/receipt-campaign-content";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 import { normalizeOrderName, paidOrdersSince } from "@/lib/shopify-admin";
 
@@ -47,6 +48,10 @@ export async function GET(req: NextRequest) {
   const since = asked && DATE_RE.test(asked) ? asked : DEFAULT_SINCE;
   const campaign = campaignKeyFrom(req.nextUrl.searchParams.get("campaign"));
 
+  // The same rules the receipt console scores a claim with, so "ได้กี่สิทธิ์"
+  // is the same number in both places.
+  const { rules } = await loadCampaignContent(campaign);
+
   const orders = await paidOrdersSince(since);
   if (!orders) {
     return NextResponse.json({ ok: false, error: "เชื่อมต่อ Shopify ไม่ได้ในขณะนี้" }, { status: 502 });
@@ -83,6 +88,16 @@ export async function GET(req: NextRequest) {
       // pieces to the tally that nobody bought.
       const lines = o.lines.filter((l) => isDentisteVendor(l.vendor) && l.amount > 0);
       const claim = claims.get(normalizeOrderName(o.orderName) ?? "") ?? claims.get(o.orderId) ?? null;
+
+      // What this bill would be worth if its buyer sent it in. Scored off the
+      // whole order, not the DENTISTE' lines above: the rules classify by
+      // variant, and the VIP set is a DENTISTE' line that earns nothing.
+      const scored: LineItem[] = o.lines
+        .filter((l) => l.variantId && l.quantity > 0 && l.amount > 0)
+        .map((l) => ({ variantId: l.variantId as string, quantity: l.quantity, price: l.amount / l.quantity }));
+      const amounts = amountsFromLineItems(scored, rules);
+      const entries = computeEntries(amounts, rules);
+
       return {
         orderName: o.orderName,
         adminUrl: o.adminUrl,
@@ -93,6 +108,10 @@ export async function GET(req: NextRequest) {
         units: lines.reduce((sum, l) => sum + l.quantity, 0),
         orderTotal: o.total,
         items: lines.map((l) => ({ title: l.title, quantity: l.quantity, amount: l.amount })),
+        // The two numbers the campaign cares about, beside the money: what
+        // counts toward entries, and how many that comes to.
+        eligible: amounts.dentisteAmount + amounts.keychainAmount,
+        entries,
         receipt: claim ? { state: claim.state, at: claim.at, who: claim.who, count: claim.count } : null,
       };
     })
@@ -100,6 +119,7 @@ export async function GET(req: NextRequest) {
     .filter((r) => r.amount > 0);
 
   const claimed = rows.filter((r) => r.receipt).length;
+  const earning = rows.filter((r) => r.entries > 0).length;
 
   return NextResponse.json({
     ok: true,
@@ -112,6 +132,11 @@ export async function GET(req: NextRequest) {
       amount: rows.reduce((sum, r) => sum + r.amount, 0),
       claimed,
       unclaimed: rows.length - claimed,
+      earning,
+      /** Bills too small to be worth an entry — ฿690 is the step. */
+      noEntry: rows.length - earning,
+      entries: rows.reduce((sum, r) => sum + r.entries, 0),
+      threshold: rules.generalThreshold,
     },
   });
 }
