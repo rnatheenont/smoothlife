@@ -1,7 +1,7 @@
 import Link from "next/link";
 import clsx from "clsx";
 import Image from "next/image";
-import { Sparkles, ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Repeat, PercentCircle, LayoutGrid } from "lucide-react";
+import { ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Repeat, PercentCircle, LayoutGrid } from "lucide-react";
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
 import { categories, categoryImage, concerns, concernImage } from "@/data/categories";
@@ -26,7 +26,6 @@ import BrandMarquee from "@/components/BrandMarquee";
 import ProductTabs from "@/components/ProductTabs";
 import PromoPair from "@/components/home/PromoPair";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
-import { Button } from "@/components/ui";
 import { pageMetadata } from "@/lib/site-pages";
 
 export function generateMetadata() {
@@ -123,70 +122,30 @@ export default async function HomePage() {
     // a change of subject (membership, and the reading at the end) break out
     // of it. The same components look considerably more expensive for it.
     <div className="bg-[#FAFAF8]">
-      {/* Hero — what the shop is, and why coming back is worth it.
-          It used to say "สุขภาพดี ผิวสวย ครบทุก Lifestyle ที่เดียว", which is
-          true of every shop of this kind and therefore says nothing. The
-          claim now is the one thing a multi-brand shop can claim: somebody
-          chose these. The advisor CTA that lived here has gone — it is in the
-          main nav and in the mobile tab bar, and the second button is better
-          spent on the points and subscription the page otherwise never
-          mentions until halfway down. */}
-      <section className="relative overflow-hidden bg-white">
-        {/* Mobile: plain white, no tint — desktop keeps the old short top
-            banner + two floating blobs since its section is much taller
-            (headline column) and reads fine with the wash. */}
-        <div className="pointer-events-none hidden md:block absolute inset-x-0 top-0 h-40 bg-linear-to-b from-brand-teal/10 via-brand-sky/5 to-transparent" />
-        <div className="pointer-events-none hidden md:block absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/10 blur-3xl animate-floatSlow" />
-        <div className="pointer-events-none hidden md:block absolute -right-16 top-1/3 h-72 w-72 rounded-full bg-brand-sky/10 blur-3xl animate-floatSlow" />
+      {/* Hero — the campaign artwork, edge to edge, and nothing beside it.
+          This was a half-width card with the shop's claim in a column next to
+          it. The banners are full-width creatives that already carry their own
+          headline, dates and product shot, so a second headline set beside one
+          was two voices saying different things in the same breath — and the
+          artwork was rendered at under half the width it was drawn for.
+          The words are not lost: the promises row below ("ส่งฟรีทั่วไทย",
+          "ของแท้ 100%", "ให้คำปรึกษาฟรี") makes the same three claims with
+          links behind them, and the h1 stays for search engines and screen
+          readers, which by then were the only readers it still worked for. */}
+      <section className="relative bg-white">
+        <h1 className="sr-only">
+          Smoothlife — ของดีที่ใช้ได้จริง คัดมาให้แล้ว: สกินแคร์ อาหารเสริม ดูแลช่องปากและเส้นผม
+          จากแบรนด์ที่วางขายจริงในไทย ของแท้ 100% มี อย. ส่งฟรีทั่วไทยไม่มีขั้นต่ำ และสะสมคะแนนได้ทุกการช้อป
+        </h1>
+        <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
 
-        <div className="container-page relative pt-2 pb-6 md:py-24 grid md:grid-cols-[0.65fr_1.35fr] gap-8 md:gap-12 items-center">
-          {/* Second on a phone, first on a desktop. The banner is the
-              campaign's own artwork and carries its own words, so the shop's
-              claim goes under it rather than on top of it — overlaid text
-              would be competing with the picture it sits on. */}
-          <StaggerReveal className="order-2 md:order-1">
-            <span className="mb-3 hidden items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-brand-800 shadow-card md:mb-5 md:inline-flex md:px-3.5 md:text-xs">
-              {/* Counted, not typed: a number in the copy that a data file
-                  can quietly outgrow is a number that will one day be wrong. */}
-              <Sparkles size={13} aria-hidden="true" /> คัดจาก {brands.length} แบรนด์ที่ขายจริงในไทย
-            </span>
-            <h1 className="text-[28px] md:text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-[1.3]! tracking-tight text-brand-ink md:leading-[1.35]!">
-              ของดีที่ใช้ได้จริง <br />
-              <span className="brand-text-gradient">คัดมาให้แล้ว</span>
-            </h1>
-            <p className="mt-2 line-clamp-2 max-w-md text-[14px] leading-[22px] text-slate-600 md:mt-5 md:line-clamp-none md:text-base md:leading-relaxed">
-              สกินแคร์ อาหารเสริม ดูแลช่องปากและเส้นผม จากแบรนด์ที่วางขายจริงในไทย ของแท้ 100%
-              มี อย. ส่งฟรีทั่วไทยไม่มีขั้นต่ำ และสะสมคะแนนได้ทุกการช้อป
-            </p>
-            <div className="mt-4 flex items-center gap-3 md:mt-8">
-              <Button
-                href="/shop"
-                size="none"
-                className="group min-h-11 flex-1 justify-center gap-1.5 px-5 py-3 text-sm shadow-cardHover md:flex-none md:px-7 md:py-3.5"
-              >
-                เริ่มช้อปเลย
-                <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
-              </Button>
-              <Link
-                href="/loyalty"
-                className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full px-1 text-sm font-semibold text-brand-800 underline-offset-4 transition-colors hover:underline md:flex-none md:rounded-full md:border md:border-slate-200 md:bg-white md:px-7 md:py-3.5 md:text-brand-ink md:no-underline md:hover:border-brand-teal"
-              >
-                ดูสิทธิ์สมาชิก
-              </Link>
-            </div>
-          </StaggerReveal>
-          <div className="relative order-1 md:order-2">
-            <div className="pointer-events-none hidden md:block absolute -inset-6 rounded-4xl bg-brand-gradient opacity-30 blur-2xl" />
-            <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
-          </div>
-
-          {/* Mobile-only quick category row — the same real categories the
-              Categories section below lists in full, as one scrolling row so
-              a sixth category never leaves an orphan on its own line.
-              "ทั้งหมด" closes the row into /shop. Same square tiles as the
-              desktop section, for the same reason: the artwork is packshots,
-              and a circle cuts the ends off every one of them. */}
-          <StaggerReveal className="order-3 -mx-4 mt-1 flex gap-4 overflow-x-auto px-4 scrollbar-none md:hidden">
+        {/* Mobile-only quick category row — the same real categories the
+            Categories section below lists in full, as one scrolling row so
+            a sixth category never leaves an orphan on its own line.
+            "ทั้งหมด" closes the row into /shop. Same square tiles as the
+            desktop section, for the same reason: the artwork is packshots,
+            and a circle cuts the ends off every one of them. */}
+        <StaggerReveal className="mt-4 flex gap-4 overflow-x-auto px-4 pb-1 scrollbar-none md:hidden">
             {categories.map((c) => (
               <Link
                 key={c.slug}
@@ -205,8 +164,7 @@ export default async function HomePage() {
               </span>
               <span className="text-center text-[11px] font-medium text-brand-ink">ทั้งหมด</span>
             </Link>
-          </StaggerReveal>
-        </div>
+        </StaggerReveal>
       </section>
 
       {/* Categories — hidden on mobile, where the quick category row under

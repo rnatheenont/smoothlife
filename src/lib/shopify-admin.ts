@@ -715,7 +715,10 @@ function findSlideshowSettings(file: ThemeSectionsFile): Record<string, unknown>
   return null;
 }
 
-export type LiveHeroBanner = { slug: string; image: string; href: string };
+// image is always the *widest* crop the slide carries and mobileImage the
+// narrowest, decided by the real pixel dimensions rather than by which
+// theme setting they came from — see the picking code below for why.
+export type LiveHeroBanner = { slug: string; image: string; mobileImage?: string; href: string };
 
 // Pulls the homepage hero banner straight from the *published* Shopify
 // theme (the same slideshow block the team edits on smoothlife.com), so
@@ -754,31 +757,64 @@ async function getLiveHeroBannersUnsafe(): Promise<LiveHeroBanner[] | null> {
   const settings = findSlideshowSettings(parsed);
   if (!settings) return null;
 
-  const slides: { filename: string; href: string }[] = [];
+  // A slide carries more than one image: the theme's slideshow renders a wide
+  // crop in <img> and a square one in a <source media="(max-width: 768px)">.
+  // This used to read `slide_N_image` alone and got the square one for every
+  // slide — measured against the live smoothlife.com markup, that key holds
+  // the *phone* crop, so the desktop hero was showing 1200x1200 artwork in a
+  // wide frame. Rather than hard-code whichever key turns out to be which
+  // (the theme is edited by hand and app blocks rename their settings), take
+  // every `slide_N_image*` reference and let the pixels decide below.
+  const slides: { files: string[]; href: string }[] = [];
   for (let i = 1; i <= 10; i++) {
     if (settings[`slide_${i}_enabled`] === false) continue;
-    const imageRef = settings[`slide_${i}_image`];
-    if (typeof imageRef !== "string") continue;
-    const match = imageRef.match(/^shopify:\/\/shop_images\/(.+)$/);
-    if (!match) continue;
-    slides.push({ filename: match[1], href: resolveBannerLink(settings[`slide_${i}_link`]) });
+    const prefix = `slide_${i}_image`;
+    const files: string[] = [];
+    for (const [key, value] of Object.entries(settings)) {
+      if (!key.startsWith(prefix) || typeof value !== "string") continue;
+      const match = value.match(/^shopify:\/\/shop_images\/(.+)$/);
+      if (match && !files.includes(match[1])) files.push(match[1]);
+    }
+    if (files.length === 0) continue;
+    slides.push({ files, href: resolveBannerLink(settings[`slide_${i}_link`]) });
   }
   if (slides.length === 0) return null;
 
-  const aliasQuery = slides
+  const filenames = [...new Set(slides.flatMap((s) => s.files))];
+  const aliasQuery = filenames
     .map(
-      (s, i) =>
-        `f${i}: files(first: 1, query: ${JSON.stringify(`filename:${s.filename}`)}) { nodes { ... on MediaImage { image { url } } } }`,
+      (f, i) =>
+        `f${i}: files(first: 5, query: ${JSON.stringify(`filename:${f}`)}) { nodes { ... on MediaImage { image { url width height } } } }`,
     )
     .join("\n");
-  const filesData = await adminGraphql<Record<string, { nodes: { image?: { url: string } }[] }>>(
-    `query BannerImages { ${aliasQuery} }`,
-  );
+  const filesData = await adminGraphql<
+    Record<string, { nodes: { image?: { url: string; width: number | null; height: number | null } }[] }>
+  >(`query BannerImages { ${aliasQuery} }`);
+
+  // `filename:` is a search, not an exact match, so a slide whose file is
+  // named like its sibling can come back with the sibling first. Prefer the
+  // node whose URL really ends in the filename asked for.
+  const byName = new Map<string, { url: string; ratio: number }>();
+  filenames.forEach((f, i) => {
+    const nodes = filesData[`f${i}`]?.nodes ?? [];
+    const exact = nodes.find((n) => n.image?.url && new URL(n.image.url).pathname.endsWith(`/${f}`));
+    const img = (exact ?? nodes[0])?.image;
+    if (!img?.url) return;
+    byName.set(f, { url: img.url, ratio: img.width && img.height ? img.width / img.height : 1 });
+  });
 
   const banners: LiveHeroBanner[] = [];
   slides.forEach((slide, i) => {
-    const url = filesData[`f${i}`]?.nodes[0]?.image?.url;
-    if (url) banners.push({ slug: `live-${i}`, image: url, href: slide.href });
+    const found = slide.files.map((f) => byName.get(f)).filter((v): v is { url: string; ratio: number } => Boolean(v));
+    if (found.length === 0) return;
+    const widest = found.reduce((a, b) => (b.ratio > a.ratio ? b : a));
+    const narrowest = found.reduce((a, b) => (b.ratio < a.ratio ? b : a));
+    banners.push({
+      slug: `live-${i}`,
+      image: widest.url,
+      ...(narrowest.url === widest.url ? {} : { mobileImage: narrowest.url }),
+      href: slide.href,
+    });
   });
   return banners.length > 0 ? banners : null;
 }
