@@ -82,12 +82,42 @@ function offCampaignHost(req: NextRequest) {
   return NextResponse.redirect(new URL(pathname === "/" ? "/" : pathname, "https://www.smoothlife.com"), 307);
 }
 
+/**
+ * Everyone who still has the old address gets moved to the new one.
+ *
+ * Two deliberate limits:
+ *
+ * It does nothing until NEXT_PUBLIC_SITE_URL names a real custom domain, so
+ * this can ship before the DNS record exists without sending the whole site
+ * to a host that does not resolve yet. Moving the shop is then one variable.
+ *
+ * And it never touches /api. Shopify, LINE and 2C2P all hold webhook URLs on
+ * the old host, and a POST that meets a redirect is not re-sent by most of
+ * them — it is simply lost. Those keep answering where they were registered
+ * until each console is updated by hand.
+ */
+const OLD_HOST = "smoothlife.vercel.app";
+
+function movedHost(req: NextRequest) {
+  if (req.headers.get("host") !== OLD_HOST) return null;
+  const home = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!home || home.includes(".vercel.app")) return null;
+
+  const { pathname, search } = req.nextUrl;
+  if (pathname.startsWith("/api/") || pathname.startsWith("/_next/")) return null;
+
+  return NextResponse.redirect(new URL(`${pathname}${search}`, home), 308);
+}
+
 // The raw *.vercel.app deployment URL serves the exact same content as
 // www.smoothlife.com — without this, Google could index both and treat
 // them as duplicate sites. robots.txt/sitemap already point at the real
 // domain; this stops the vercel.app one from being indexable at all,
 // regardless of what crawls it directly.
 export async function proxy(req: NextRequest) {
+  const moved = movedHost(req);
+  if (moved) return moved;
+
   const elsewhere = offCampaignHost(req);
   if (elsewhere) return elsewhere;
 
