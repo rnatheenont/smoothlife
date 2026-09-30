@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Eye, EyeOff, Loader2, MoreHorizontal, Pencil, PlayCircle, Radio, RefreshCw, Trash2 } from "lucide-react";
-import { Panel, adminTable } from "@/components/admin/layout-kit";
+import { Panel, adminCards, adminTable } from "@/components/admin/layout-kit";
 
 /** The whole DTO: the edit form is handed the campaign exactly as it is stored. */
 type Campaign = {
@@ -174,6 +174,104 @@ export default function CampaignList() {
 
   const sorted = campaigns ? [...campaigns].sort((a, b) => b.startsAt - a.startsAt) : null;
 
+  /** The row's own menu, so a card on a phone can edit, publish and delete
+   *  the campaign exactly as the table row does. */
+  function RowMenu({ c }: { c: Campaign }) {
+    return (
+          <span className="relative inline-block">
+            <button
+              type="button"
+              aria-label={`อื่นๆ สำหรับ ${c.title}`}
+              aria-expanded={menu?.id === c.id}
+              disabled={busy === c.id}
+              onClick={(e) => {
+                if (menu?.id === c.id) return setMenu(null);
+                const r = e.currentTarget.getBoundingClientRect();
+                setMenu({ id: c.id, top: r.bottom + 6, right: window.innerWidth - r.right });
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
+            >
+              {busy === c.id ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <MoreHorizontal size={16} aria-hidden />
+              )}
+            </button>
+            {menu?.id === c.id && (
+              <>
+                {/* Anywhere else closes it. */}
+                <button
+                  type="button"
+                  aria-label="ปิดเมนู"
+                  onClick={() => setMenu(null)}
+                  className="fixed inset-0 z-20 cursor-default"
+                />
+                <div
+                  style={{ top: menu.top, right: menu.right }}
+                  className="fixed z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenu(null);
+                      router.push(`/admin/flash-sale/create?id=${c.id}`);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
+                  >
+                    <Pencil size={14} aria-hidden /> แก้ไข
+                  </button>
+                  {/* Only where it means something: a sale that
+                      has not finished is already selling. */}
+                  {(c.endedManuallyAt || (c.endsAt && now >= c.endsAt)) && (
+                    <button
+                      type="button"
+                      onClick={() => reopen(c)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
+                    >
+                      <PlayCircle size={14} aria-hidden /> เปิดขายอีกครั้ง
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => togglePublished(c)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
+                  >
+                    {c.published === false ? (
+                      <>
+                        <Eye size={14} aria-hidden /> เผยแพร่หน้าขาย
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff size={14} aria-hidden /> ปิดเผยแพร่
+                      </>
+                    )}
+                  </button>
+                  {c.paidRows ? (
+                    // Not a disabled button with no explanation:
+                    // the reason is the whole of what to do next.
+                    <p className="px-3 py-2 text-[12px] leading-relaxed text-slate-500">
+                      <Trash2 size={13} className="mb-0.5 me-1 inline" aria-hidden />
+                      ลบไม่ได้ — มีคำสั่งซื้อที่ชำระแล้ว {c.paidRows} รายการผูกอยู่
+                      <br />
+                      ใช้ “ปิดเผยแพร่” แทนเพื่อเอาหน้าขายลง
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => remove(c)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-rose-700 hover:bg-rose-50"
+                    >
+                      <Trash2 size={14} aria-hidden /> ลบแคมเปญ
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </span>
+    );
+  }
+
+
   return (
     // The title and the refresh button go through Panel's own header rather
     // than being laid out inside the body: the body's padding is off so the
@@ -200,7 +298,51 @@ export default function CampaignList() {
       )}
 
       {!error && sorted && sorted.length > 0 && (
-        <div className={adminTable.scroll}>
+        <>
+        {/* A phone gets a card per campaign: the title and its phase first,
+            then the dates, then the two links it is opened for. */}
+        <ul className={adminCards.list}>
+          {sorted.map((c) => {
+            const phase = phaseOf(c, now);
+            return (
+              <li key={c.id} className={adminCards.item}>
+                <div className={adminCards.head}>
+                  <span className="text-[14px] font-bold text-brand-ink">{c.title}</span>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${phase.tone}`}>
+                    {phase.label}
+                  </span>
+                </div>
+                <p className="mt-1 text-[12px] text-slate-400">
+                  {c.kind === "special" ? "หน้าแบบมีแบนเนอร์" : "หน้าขายแบบเรียบ"} · {c.productSlugs.length} สินค้า ·
+                  สต็อก {c.stockPerProduct}
+                </p>
+                <p className="mt-1 text-[12px] text-slate-500">
+                  {dateTime(c.startsAt)} – {c.endsAt ? dateTime(c.endsAt) : "จนกว่าของจะหมด"}
+                </p>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <span className="flex flex-wrap items-center gap-3">
+                    <Link
+                      href={`/flash-sale/${c.id}`}
+                      target="_blank"
+                      className="inline-flex min-h-9 items-center gap-1 text-[12px] font-semibold text-brand-800 hover:underline"
+                    >
+                      เปิดดู <ArrowUpRight size={13} aria-hidden />
+                    </Link>
+                    <Link
+                      href={`/admin/flash-sale/${c.id}`}
+                      className="inline-flex min-h-9 items-center gap-1.5 text-[12px] font-semibold text-brand-800 hover:underline"
+                    >
+                      <Radio size={13} aria-hidden /> มอนิเตอร์
+                    </Link>
+                  </span>
+                  <RowMenu c={c} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className={`${adminCards.forTable} ${adminTable.scroll}`}>
           <table className={adminTable.table}>
             <thead className={adminTable.thead}>
               <tr>
@@ -253,96 +395,7 @@ export default function CampaignList() {
                       </Link>
                     </td>
                     <td className={`${adminTable.cell} text-right`}>
-                      <span className="relative inline-block">
-                        <button
-                          type="button"
-                          aria-label={`อื่นๆ สำหรับ ${c.title}`}
-                          aria-expanded={menu?.id === c.id}
-                          disabled={busy === c.id}
-                          onClick={(e) => {
-                            if (menu?.id === c.id) return setMenu(null);
-                            const r = e.currentTarget.getBoundingClientRect();
-                            setMenu({ id: c.id, top: r.bottom + 6, right: window.innerWidth - r.right });
-                          }}
-                          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
-                        >
-                          {busy === c.id ? (
-                            <Loader2 size={15} className="animate-spin" />
-                          ) : (
-                            <MoreHorizontal size={16} aria-hidden />
-                          )}
-                        </button>
-                        {menu?.id === c.id && (
-                          <>
-                            {/* Anywhere else closes it. */}
-                            <button
-                              type="button"
-                              aria-label="ปิดเมนู"
-                              onClick={() => setMenu(null)}
-                              className="fixed inset-0 z-20 cursor-default"
-                            />
-                            <div
-                              style={{ top: menu.top, right: menu.right }}
-                              className="fixed z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg"
-                            >
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMenu(null);
-                                  router.push(`/admin/flash-sale/create?id=${c.id}`);
-                                }}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
-                              >
-                                <Pencil size={14} aria-hidden /> แก้ไข
-                              </button>
-                              {/* Only where it means something: a sale that
-                                  has not finished is already selling. */}
-                              {(c.endedManuallyAt || (c.endsAt && now >= c.endsAt)) && (
-                                <button
-                                  type="button"
-                                  onClick={() => reopen(c)}
-                                  className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
-                                >
-                                  <PlayCircle size={14} aria-hidden /> เปิดขายอีกครั้ง
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => togglePublished(c)}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
-                              >
-                                {c.published === false ? (
-                                  <>
-                                    <Eye size={14} aria-hidden /> เผยแพร่หน้าขาย
-                                  </>
-                                ) : (
-                                  <>
-                                    <EyeOff size={14} aria-hidden /> ปิดเผยแพร่
-                                  </>
-                                )}
-                              </button>
-                              {c.paidRows ? (
-                                // Not a disabled button with no explanation:
-                                // the reason is the whole of what to do next.
-                                <p className="px-3 py-2 text-[12px] leading-relaxed text-slate-500">
-                                  <Trash2 size={13} className="mb-0.5 me-1 inline" aria-hidden />
-                                  ลบไม่ได้ — มีคำสั่งซื้อที่ชำระแล้ว {c.paidRows} รายการผูกอยู่
-                                  <br />
-                                  ใช้ “ปิดเผยแพร่” แทนเพื่อเอาหน้าขายลง
-                                </p>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => remove(c)}
-                                  className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-rose-700 hover:bg-rose-50"
-                                >
-                                  <Trash2 size={14} aria-hidden /> ลบแคมเปญ
-                                </button>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </span>
+                      <RowMenu c={c} />
                     </td>
                   </tr>
                 );
@@ -350,6 +403,7 @@ export default function CampaignList() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
     </Panel>

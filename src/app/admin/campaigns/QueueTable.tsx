@@ -6,7 +6,7 @@ import { AlertTriangle, Check, Crown, ExternalLink, Loader2, Maximize2, RefreshC
 import { createPortal } from "react-dom";
 import { formatTHB } from "@/lib/format";
 import { Modal } from "@/components/ui";
-import { adminTable } from "@/components/admin/layout-kit";
+import { adminCards, adminTable } from "@/components/admin/layout-kit";
 import { AI_LABEL, ENTRY_STATUS, LINE_KIND, PAYMENT_STATUS, when, type QueueItem } from "./queue-vocab";
 
 // The queue as a list you can read down, with everything else a click away.
@@ -626,7 +626,89 @@ export default function QueueTable({
 
   return (
     <>
-      <div className={adminTable.scroll}>
+      {/* A phone gets a card per receipt. Tapping it opens the same panel the
+          row does — every decision lives in there, so the card only has to
+          carry what the reviewer picks a row by: whose it is, how much, how
+          many entries, and whether anything is flagged. */}
+      <ul className={adminCards.list}>
+        {queue.map((item) => (
+          <li key={item.id}>
+            <button
+              type="button"
+              onClick={() => setOpenId(item.id)}
+              className={`${adminCards.item} w-full text-left transition-colors hover:bg-brand-50/40`}
+            >
+              <span className="flex items-start gap-2.5">
+                {item.photoUrl ? (
+                  <Image
+                    src={item.photoUrl}
+                    alt=""
+                    width={44}
+                    height={44}
+                    unoptimized
+                    className="size-11 shrink-0 rounded border border-surface-line object-cover"
+                  />
+                ) : (
+                  <span className="size-11 shrink-0 rounded border border-surface-line bg-surface-soft" />
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="block truncate text-[13px] font-semibold text-brand-ink">
+                      {item.customer ?? "—"}
+                    </span>
+                    {busy === item.id && <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin text-slate-400" />}
+                  </span>
+                  <span className="block truncate text-[11px] text-slate-400">
+                    {(item.manual ? item.declared.orderNumber : item.orderNumber) ?? "—"}
+                    {item.invoiceNo ? ` · ${item.invoiceNo}` : ""}
+                  </span>
+
+                  <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <PaymentChip item={item} />
+                    {item.vip && (
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900">
+                        <Crown size={11} aria-hidden /> VIP
+                      </span>
+                    )}
+                    {decided && (
+                      <span
+                        className={`inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-bold ${
+                          ENTRY_STATUS[item.status][1]
+                        }`}
+                      >
+                        {ENTRY_STATUS[item.status][0]}
+                      </span>
+                    )}
+                    {item.aiCheck && (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                        <span className={`size-2 shrink-0 rounded-full ${AI_DOT[item.aiCheck.verdict]}`} />
+                        {AI_LABEL[item.aiCheck.verdict][0]}
+                      </span>
+                    )}
+                  </span>
+
+                  <span className="mt-2 flex flex-wrap items-baseline gap-x-2 text-[12px] text-slate-500">
+                    <span className="text-[15px] font-bold tabular-nums text-brand-ink">
+                      {formatTHB(item.dentisteAmount + item.keychainAmount + (item.vipAmount ?? 0))}
+                    </span>
+                    <span>·</span>
+                    <span className="font-semibold text-brand-ink">{item.entries} สิทธิ์</span>
+                    <span className="ml-auto text-[11px] text-slate-400">{when(item.sentAt)}</span>
+                  </span>
+
+                  {(item.vipAmount ?? 0) > 0 && (
+                    <span className="mt-0.5 block text-[11px] font-semibold text-amber-800">
+                      นับสิทธิ์ {formatTHB(item.dentisteAmount + item.keychainAmount)} · เซ็ต VIP ไม่นับ
+                    </span>
+                  )}
+                </span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <div className={`${adminCards.forTable} ${adminTable.scroll}`}>
         {/* The customer's name takes the slack; everything else is a number,
             a chip or a date and gets exactly what it needs. Without this the
             browser hands a 27" monitor's spare width to whichever column has

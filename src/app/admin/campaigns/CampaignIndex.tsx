@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ArrowUpRight, ChevronRight, Eye, EyeOff, Loader2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { Panel, adminTable } from "@/components/admin/layout-kit";
+import { Panel, adminCards, adminTable } from "@/components/admin/layout-kit";
 
 // Every campaign, before any one of them.
 //
@@ -125,9 +125,147 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: 
       </div>
     );
 
+  /** The row's own menu — the same one whether the row is a table row or a
+   *  card, because a phone needs to publish and delete a campaign too. */
+  function RowMenu({ row }: { row: CampaignRow }) {
+    return (
+          <span className="relative inline-flex items-center gap-1">
+            <button
+              type="button"
+              aria-label={`อื่นๆ สำหรับ ${row.name}`}
+              aria-expanded={menu?.key === row.key}
+              onClick={(e) => {
+                if (menu?.key === row.key) return setMenu(null);
+                const r = e.currentTarget.getBoundingClientRect();
+                setMenu({ key: row.key, top: r.bottom + 6, right: window.innerWidth - r.right });
+              }}
+              disabled={busy === row.key}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
+            >
+              {busy === row.key ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <MoreHorizontal size={16} aria-hidden />
+              )}
+            </button>
+            <ChevronRight size={16} className="text-slate-300" aria-hidden />
+            {menu?.key === row.key && (
+              <>
+                {/* Anywhere else closes it — a menu that only shuts
+                    by pressing its own button is one you fight. */}
+                <button
+                  type="button"
+                  aria-label="ปิดเมนู"
+                  onClick={() => setMenu(null)}
+                  className="fixed inset-0 z-20 cursor-default"
+                />
+                <div
+                  style={{ top: menu.top, right: menu.right }}
+                  className="fixed z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg"
+                >
+                  {/* The same form that creates one — the schedule,
+                      the wording and the arithmetic all live in it,
+                      so there is nothing smaller worth offering. */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenu(null);
+                      onOpen(row.key, "settings");
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
+                  >
+                    <Pencil size={14} aria-hidden /> แก้ไขกิจกรรม
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => togglePublished(row)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
+                  >
+                    {row.published === false ? (
+                      <>
+                        <Eye size={14} aria-hidden /> เผยแพร่กิจกรรม
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff size={14} aria-hidden /> ปิดเผยแพร่
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => remove(row)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-rose-700 hover:bg-rose-50"
+                  >
+                    <Trash2 size={14} aria-hidden /> ลบกิจกรรม
+                  </button>
+                </div>
+              </>
+            )}
+          </span>
+    );
+  }
+
   return (
     <Panel title="กิจกรรมทั้งหมด">
-      <div className="overflow-x-auto">
+      {/* A phone gets a card per campaign. The three counts sit on one line
+          at the bottom, labelled, because a bare "2 · 7 · 7" is a puzzle
+          once the column headers are gone. */}
+      <ul className={adminCards.list}>
+        {rows.map((row) => {
+          const phase = phaseOf(row);
+          return (
+            <li key={row.key} className={adminCards.item}>
+              <div className={adminCards.head}>
+                <button
+                  type="button"
+                  onClick={() => onOpen(row.key)}
+                  className="text-left text-[14px] font-bold text-brand-ink underline-offset-2 hover:underline"
+                >
+                  {row.name}
+                </button>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${phase.className}`}>
+                  {phase.label}
+                </span>
+              </div>
+
+              <a
+                href={`/campaigns/${row.key}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-flex items-center gap-1 text-[12px] text-slate-500 hover:text-brand-ink hover:underline"
+              >
+                /campaigns/{row.key} <ArrowUpRight size={12} aria-hidden />
+              </a>
+
+              <p className="mt-1 text-[12px] text-slate-500">
+                {day(row.opensAt)} – {day(row.closesAt)}
+              </p>
+
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <dl className="flex gap-4 text-[11px] text-slate-500">
+                  <div>
+                    <dt>รอตรวจ</dt>
+                    <dd className={`text-[15px] font-bold tabular-nums ${row.pending ? "text-brand-ink" : "text-slate-300"}`}>
+                      {row.pending ?? 0}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>อนุมัติแล้ว</dt>
+                    <dd className="text-[15px] font-bold tabular-nums text-slate-600">{row.approved ?? 0}</dd>
+                  </div>
+                  <div>
+                    <dt>ผู้ร่วมสนุก</dt>
+                    <dd className="text-[15px] font-bold tabular-nums text-slate-600">{row.entrants ?? 0}</dd>
+                  </div>
+                </dl>
+                <RowMenu row={row} />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className={`${adminCards.forTable} overflow-x-auto`}>
         <table className={adminTable.table}>
           <thead className={adminTable.thead}>
             <tr>
@@ -189,79 +327,7 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: 
                     {row.entrants ?? 0}
                   </td>
                   <td className={`${adminTable.cell} text-right`} onClick={(e) => e.stopPropagation()}>
-                    <span className="relative inline-flex items-center gap-1">
-                      <button
-                        type="button"
-                        aria-label={`อื่นๆ สำหรับ ${row.name}`}
-                        aria-expanded={menu?.key === row.key}
-                        onClick={(e) => {
-                          if (menu?.key === row.key) return setMenu(null);
-                          const r = e.currentTarget.getBoundingClientRect();
-                          setMenu({ key: row.key, top: r.bottom + 6, right: window.innerWidth - r.right });
-                        }}
-                        disabled={busy === row.key}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
-                      >
-                        {busy === row.key ? (
-                          <Loader2 size={15} className="animate-spin" />
-                        ) : (
-                          <MoreHorizontal size={16} aria-hidden />
-                        )}
-                      </button>
-                      <ChevronRight size={16} className="text-slate-300" aria-hidden />
-                      {menu?.key === row.key && (
-                        <>
-                          {/* Anywhere else closes it — a menu that only shuts
-                              by pressing its own button is one you fight. */}
-                          <button
-                            type="button"
-                            aria-label="ปิดเมนู"
-                            onClick={() => setMenu(null)}
-                            className="fixed inset-0 z-20 cursor-default"
-                          />
-                          <div
-                            style={{ top: menu.top, right: menu.right }}
-                            className="fixed z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg"
-                          >
-                            {/* The same form that creates one — the schedule,
-                                the wording and the arithmetic all live in it,
-                                so there is nothing smaller worth offering. */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setMenu(null);
-                                onOpen(row.key, "settings");
-                              }}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
-                            >
-                              <Pencil size={14} aria-hidden /> แก้ไขกิจกรรม
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => togglePublished(row)}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
-                            >
-                              {row.published === false ? (
-                                <>
-                                  <Eye size={14} aria-hidden /> เผยแพร่กิจกรรม
-                                </>
-                              ) : (
-                                <>
-                                  <EyeOff size={14} aria-hidden /> ปิดเผยแพร่
-                                </>
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => remove(row)}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-rose-700 hover:bg-rose-50"
-                            >
-                              <Trash2 size={14} aria-hidden /> ลบกิจกรรม
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </span>
+                    <RowMenu row={row} />
                   </td>
                 </tr>
               );

@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { ArrowLeft, Check, Loader2, RefreshCw, X } from "lucide-react";
-import { PageHeader, Panel, StatCard, adminTable } from "@/components/admin/layout-kit";
+import { PageHeader, Panel, StatCard, adminCards, adminTable } from "@/components/admin/layout-kit";
 import CampaignIndex from "./CampaignIndex";
 import CampaignSettings from "./CampaignSettings";
 import NewCampaign from "./NewCampaign";
@@ -301,6 +301,47 @@ export default function Page() {
     }
   }
 
+  /** The three decisions a drawn place can carry, wherever it is drawn. */
+  function WinnerActions({ w }: { w: Winner }) {
+    // Only the places actually holding a prize have anything to confirm; a
+    // reserve has nothing to give up yet.
+    if (!w.holding) return <span className="text-[12px] text-slate-400">—</span>;
+    return (
+      <span className="flex flex-wrap gap-1.5">
+        {w.status !== "confirmed" && (
+          <button
+            type="button"
+            disabled={busy === w.id}
+            onClick={() => decideWinner(w, "confirm")}
+            className="min-h-9 rounded-full bg-brand-800 px-3 text-[12px] font-semibold text-white disabled:opacity-50"
+          >
+            ยืนยันแล้ว
+          </button>
+        )}
+        {w.status !== "forfeited" && (
+          <button
+            type="button"
+            disabled={busy === w.id}
+            onClick={() => decideWinner(w, "forfeit")}
+            className="min-h-9 rounded-full border border-rose-200 px-3 text-[12px] font-semibold text-rose-700 disabled:opacity-50"
+          >
+            สละสิทธิ์
+          </button>
+        )}
+        {w.status !== "pending_confirm" && (
+          <button
+            type="button"
+            disabled={busy === w.id}
+            onClick={() => decideWinner(w, "reset")}
+            className="min-h-9 rounded-full border border-surface-line px-3 text-[12px] font-semibold text-slate-600 disabled:opacity-50"
+          >
+            ย้อนกลับ
+          </button>
+        )}
+      </span>
+    );
+  }
+
   const pill =
     "inline-flex items-center gap-1.5 rounded-full border border-surface-line px-3 py-1.5 text-[12px] font-semibold text-brand-ink hover:bg-surface-soft";
 
@@ -475,7 +516,37 @@ export default function Page() {
                   </>
                 )}
               </p>
-              <div className={`mt-4 ${adminTable.scroll}`}>
+              {/* A phone gets the same five facts stacked: the rank and the
+                  order lead, because that is what the list is read for. */}
+              <ul className={`mt-4 ${adminCards.list}`}>
+                {data.vipBuyers.map((v) => (
+                  <li key={v.orderName} className={adminCards.item}>
+                    <div className={adminCards.head}>
+                      <span className="font-mono text-[13px] font-bold text-brand-ink">
+                        #{v.rank}
+                        {v.reserve && <span className="ml-1 font-sans text-[11px] font-normal text-slate-400">สำรอง</span>}
+                      </span>
+                      <a
+                        href={v.adminUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-[13px] font-semibold text-brand-800 underline"
+                      >
+                        {v.orderName}
+                        {v.quantity > 1 && <span className="ml-1 text-[11px] text-slate-400">×{v.quantity}</span>}
+                      </a>
+                    </div>
+                    <p className="mt-1.5 text-[13px] font-semibold text-brand-ink">{v.customer ?? "—"}</p>
+                    {v.email && <p className="text-[11px] text-slate-400">{v.email}</p>}
+                    <div className={adminCards.foot}>
+                      <span className="text-[15px] font-bold tabular-nums text-brand-ink">{formatTHB(v.total)}</span>
+                      <span className="ml-auto text-[11px] text-slate-400">{when(v.paidAt)}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <div className={`mt-4 ${adminCards.forTable} ${adminTable.scroll}`}>
                 <table className={adminTable.table}>
                   <thead className={adminTable.thead}>
                     <tr>
@@ -564,7 +635,28 @@ export default function Page() {
                         : "สุ่มถ่วงน้ำหนักตามจำนวนสิทธิ์ · บันทึกจำนวนตั๋ว ผู้ร่วม และลำดับที่จับได้ไว้ตรวจย้อนหลัง"}
                     </p>
                     {drawn.length > 0 && (
-                      <div className={`mt-2 ${adminTable.scroll}`}>
+                      <ul className={`mt-2 ${adminCards.list}`}>
+                        {drawn.map((w) => (
+                          <li key={w.id} className={adminCards.item}>
+                            <div className={adminCards.head}>
+                              <span className="font-mono text-[13px] font-bold text-brand-ink">
+                                #{w.rank}
+                                {!w.holding && (
+                                  <span className="ml-1 font-sans text-[11px] font-normal text-slate-400">สำรอง</span>
+                                )}
+                              </span>
+                              <span className="text-[12px] text-slate-500">{WINNER_STATUS[w.status]}</span>
+                            </div>
+                            <p className="mt-1.5 text-[13px] font-semibold text-brand-ink">{w.customer ?? "—"}</p>
+                            <div className="mt-2">
+                              <WinnerActions w={w} />
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {drawn.length > 0 && (
+                      <div className={`mt-2 ${adminCards.forTable} ${adminTable.scroll}`}>
                         <table className={adminTable.table}>
                           <thead className={adminTable.thead}>
                             <tr>
@@ -584,45 +676,7 @@ export default function Page() {
                                 <td className={adminTable.cell}>{w.customer ?? "—"}</td>
                                 <td className={adminTable.muted}>{WINNER_STATUS[w.status]}</td>
                                 <td className={adminTable.cell}>
-                                  {/* Only the places actually holding a prize
-                                      have anything to confirm; a reserve has
-                                      nothing to give up yet. */}
-                                  {w.holding ? (
-                                    <span className="flex flex-wrap gap-1.5">
-                                      {w.status !== "confirmed" && (
-                                        <button
-                                          type="button"
-                                          disabled={busy === w.id}
-                                          onClick={() => decideWinner(w, "confirm")}
-                                          className="min-h-8 rounded-full bg-brand-800 px-3 text-[12px] font-semibold text-white disabled:opacity-50"
-                                        >
-                                          ยืนยันแล้ว
-                                        </button>
-                                      )}
-                                      {w.status !== "forfeited" && (
-                                        <button
-                                          type="button"
-                                          disabled={busy === w.id}
-                                          onClick={() => decideWinner(w, "forfeit")}
-                                          className="min-h-8 rounded-full border border-rose-200 px-3 text-[12px] font-semibold text-rose-700 disabled:opacity-50"
-                                        >
-                                          สละสิทธิ์
-                                        </button>
-                                      )}
-                                      {w.status !== "pending_confirm" && (
-                                        <button
-                                          type="button"
-                                          disabled={busy === w.id}
-                                          onClick={() => decideWinner(w, "reset")}
-                                          className="min-h-8 rounded-full border border-surface-line px-3 text-[12px] font-semibold text-slate-600 disabled:opacity-50"
-                                        >
-                                          ย้อนกลับ
-                                        </button>
-                                      )}
-                                    </span>
-                                  ) : (
-                                    <span className="text-[12px] text-slate-400">—</span>
-                                  )}
+                                  <WinnerActions w={w} />
                                 </td>
                               </tr>
                             ))}
@@ -641,7 +695,18 @@ export default function Page() {
               <p className="px-3 pt-3 text-[12px] text-slate-500">
                 ดูเพื่อความโปร่งใส ไม่ใช่การตัดสิน — ผู้ชนะมาจากการสุ่มถ่วงน้ำหนักตามจำนวนสิทธิ์
               </p>
-              <div className={`mt-4 ${adminTable.scroll}`}>
+              {/* Two columns is a list, not a table, once the screen is a
+                  phone: the name on the left and the number on the right. */}
+              <ul className={`mt-4 ${adminCards.list}`}>
+                {data.luckyFan.map((f) => (
+                  <li key={f.userId} className={`${adminCards.item} flex items-center justify-between gap-3`}>
+                    <span className="text-[13px] text-brand-ink">{f.customer ?? f.userId.slice(0, 8)}</span>
+                    <span className="font-mono text-[13px] font-bold tabular-nums text-brand-ink">{f.entries}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className={`mt-4 ${adminCards.forTable} ${adminTable.scroll}`}>
                 <table className={adminTable.table}>
                   <thead className={adminTable.thead}>
                     <tr>

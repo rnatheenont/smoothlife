@@ -279,15 +279,46 @@ export const adminSelect = [
  * while the body scrolls, and a hover tint so a row holds together across a
  * wide screen.
  */
+/**
+ * The same rows, as a list of cards, for screens a table cannot honestly fit.
+ *
+ * Pages pair them: `adminCards.list` holds the cards and disappears at md,
+ * `adminCards.forTable` hides the table until md. One rhythm for both, so a
+ * phone and a laptop are reading the same screen rather than two designs.
+ */
+export const adminCards = {
+  list: "divide-y divide-slate-100 border-t border-slate-100 md:hidden",
+  item: "px-3 py-3.5",
+  /** Put on the wrapper around a table that has a card list beside it. */
+  forTable: "hidden md:block",
+  /** Order number, name — the thing the card is looked up by. */
+  head: "flex items-start justify-between gap-2",
+  /** The last line: the numbers, and the date pushed to the end. */
+  foot: "mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12px] text-slate-500",
+} as const;
+
 export const adminTable = {
-  /** Wraps the table. Add a max-height to keep the page itself from scrolling. */
-  scroll: "overflow-y-auto",
-  table: "w-full text-left text-[13px]",
+  /**
+   * Wraps the table. Add a max-height to keep the page itself from scrolling.
+   *
+   * Scrolls sideways as well as down: a table narrower than its columns need
+   * does not shrink politely, it wraps every cell into a column of single
+   * words. Better to let the narrow screen push the table sideways than to
+   * make all of it unreadable at once.
+   */
+  scroll: "overflow-x-auto overflow-y-auto",
+  /**
+   * The floor is what a row needs to stay a row. Under it the columns stop
+   * being columns, so the wrapper above scrolls instead.
+   */
+  table: "w-full min-w-[560px] text-left text-[13px] leading-[1.45]",
   thead:
     "sticky top-0 z-10 bg-surface-soft text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 [&_tr]:border-b [&_tr]:border-slate-200 [&_th]:px-3 [&_th]:py-2.5",
   row: "align-middle border-t border-slate-100 transition-colors hover:bg-brand-50/40",
-  cell: "px-3 py-2.5",
+  /** py-3 rather than py-2.5: half these cells hold two lines, and 10px of
+   *  padding around a 40px stack reads as one run-on block. */
+  cell: "px-3 py-3",
   /** For a tracking number, an id, an amount — anything read digit by digit. */
-  mono: "px-3 py-2.5 font-mono text-[12px] text-slate-700",
-  muted: "px-3 py-2.5 text-[12px] text-slate-400",
+  mono: "px-3 py-3 font-mono text-[12px] text-slate-700",
+  muted: "px-3 py-3 text-[12px] text-slate-400",
 } as const;
