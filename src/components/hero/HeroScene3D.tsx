@@ -140,27 +140,24 @@ export default function HeroScene3D({
       mesh.position.set(cx * k, cy * k, depth);
     }
 
-    function planeFor(tex: THREE.Texture, widthFraction: number, bleed = 0) {
+    function planeFor(
+      tex: THREE.Texture,
+      widthFraction: number,
+      bleedBottom = 0,
+    ) {
       const img = tex.image as { width: number; height: number };
       const w = widthFraction * FRAME_W;
       const h = (w * img.height) / img.width;
-      // The plane is grown past the picture on every side and the extra area
-      // is given UVs outside 0..1, which ClampToEdgeWrapping resolves to the
-      // outermost row or column of pixels — so the artwork carries on out of
-      // the frame instead of ending in a straight cut. The picture itself is
-      // untouched: same size, same place, the mesh centre does not move.
-      const geo = new THREE.PlaneGeometry(
-        w * (1 + 2 * bleed),
-        h * (1 + 2 * bleed),
-      );
-      if (bleed > 0) {
+      // The plane is grown below the picture and the extra strip is given UVs
+      // below 0, which ClampToEdgeWrapping resolves to the image's bottom row
+      // — so the artwork carries on downward out of the frame instead of
+      // ending in a straight cut. The picture itself is untouched: it still
+      // occupies the top h of the plane, at the size and place it always had.
+      const geo = new THREE.PlaneGeometry(w, h * (1 + bleedBottom));
+      if (bleedBottom > 0) {
         const uv = geo.attributes.uv;
         for (let i = 0; i < uv.count; i++) {
-          uv.setXY(
-            i,
-            (uv.getX(i) - 0.5) * (1 + 2 * bleed) + 0.5,
-            (uv.getY(i) - 0.5) * (1 + 2 * bleed) + 0.5,
-          );
+          if (uv.getY(i) === 0) uv.setY(i, -bleedBottom);
         }
         uv.needsUpdate = true;
       }
@@ -175,7 +172,12 @@ export default function HeroScene3D({
       });
       disposables.push(geo, mat);
       if (!disposables.includes(tex)) disposables.push(tex);
-      return { mesh: new THREE.Mesh(geo, mat), heightFraction: h / frameH };
+      return {
+        mesh: new THREE.Mesh(geo, mat),
+        // The plane's full height, bleed included, so place() lands its *top*
+        // edge where the artwork's top belongs and the extra hangs below.
+        heightFraction: (h * (1 + bleedBottom)) / frameH,
+      };
     }
 
     function buildSnow(
@@ -287,7 +289,7 @@ export default function HeroScene3D({
               const { mesh, heightFraction } = planeFor(
                 tex,
                 layer.w,
-                layer.bleed ?? 0,
+                layer.bleedBottom ?? 0,
               );
               place(
                 mesh,

@@ -36,16 +36,19 @@ export type Hero3DLayer = {
    */
   boost?: number;
   /**
-   * How far past its own edges to carry the layer, as a fraction of its size,
-   * for artwork the frame cuts off rather than ends. The people are cut at the
-   * bottom of their picture and their arm is cut at the side; hung in a scene
-   * that leans, those cuts stopped being the frame's edge and became a
-   * straight line across the middle of them. The bleed repeats the outermost
-   * pixels outward, so the cut sits outside the frame again wherever the
-   * camera goes. It adds nothing inside the picture: the artwork keeps the
-   * exact size and place it has in the flat banner.
+   * How far below its own bottom edge to carry the layer, as a fraction of its
+   * height. The people's picture is cut off at the bottom, which in a flat
+   * banner is simply where the banner ends; in a scene that leans, the cut
+   * came away from the frame's edge and became a straight line across their
+   * waists. This repeats the bottom row of pixels downward so the bodies carry
+   * on out of the frame, and adds nothing inside the picture — the artwork
+   * keeps the exact size and place it has in the flat banner.
+   *
+   * Downward only, deliberately. Doing the same at the sides smeared the two
+   * outstretched arms, which the edges cut across rather than along, into a
+   * pair of flat bars hanging in the snow.
    */
-  bleed?: number;
+  bleedBottom?: number;
 };
 
 export type Hero3DScene = {
@@ -85,7 +88,7 @@ export const hero3DScenes: Hero3DScene[] = [
         x: 0.06,
         y: 0.226,
         depth: 5.2,
-        bleed: 0.1,
+        bleedBottom: 0.12,
       },
       // The date sits on their shirts in the original, so it is nearest.
       {
