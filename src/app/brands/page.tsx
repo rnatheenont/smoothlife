@@ -15,25 +15,25 @@ export function generateMetadata() {
 // products actually are, counted here at build time so the filter can never
 // promise a brand the catalogue does not back up.
 function entry(b: (typeof brands)[number]): BrandEntry {
-  const cats = [...new Set(brandProducts(b).map((p) => p.category))];
-  const first = b.name.trim().charAt(0).toUpperCase();
+  const items = brandProducts(b);
   return {
     slug: b.slug,
     name: b.name,
     tagline: b.tagline,
     image: b.image,
     productCount: b.productCount,
-    categories: cats,
-    letter: /[A-Z]/.test(first) ? first : "#",
+    categories: [...new Set(items.map((p) => p.category))],
+    // Nothing in the catalogue records units sold, but every product carries
+    // its real review count — so how many people have actually written about
+    // a brand's products stands in for how well known it is. It is a measured
+    // number, not a hand-picked "featured" list that would go stale.
+    reviews: items.reduce((n, p) => n + (p.reviewCount ?? 0), 0),
   };
 }
 
 export default function BrandsPage() {
   const house = houseBrands.map(entry);
-  const rest = brands
-    .filter((b) => !isHouseBrand(b.slug))
-    .map(entry)
-    .sort((a, b) => a.name.localeCompare(b.name, "en"));
+  const rest = brands.filter((b) => !isHouseBrand(b.slug)).map(entry);
 
   return <BrandsDirectory house={house} brands={rest} />;
 }
