@@ -3,8 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { HeroBanner } from "@/data/heroBanners";
+import { hero3DSceneFor } from "@/data/hero-3d";
+
+// Three.js and four layer images, a megabyte between them, for one slide of
+// one campaign — kept out of the page's own bundle and fetched only once a
+// desktop actually renders a slide that has a scene.
+const HeroScene3D = dynamic(() => import("@/components/hero/HeroScene3D"), {
+  ssr: false,
+});
 
 const AUTO_ROTATE_MS = 8000;
 
@@ -25,9 +34,13 @@ const CROP_LIMIT_VERTICAL = 0.25;
 const CROP_LIMIT_HORIZONTAL = 0.1;
 
 function useIsMobile() {
-  // Server-rendered as desktop and corrected on mount: a phone loads the wide
-  // crop for a moment, which is the cost of not shipping both to everyone.
-  const [isMobile, setIsMobile] = useState(false);
+  // Three states, not two. Server-rendered as unknown and settled on mount: a
+  // phone loads the wide crop for a moment, which is the cost of not shipping
+  // both to everyone — but "not yet known" has to be distinguishable from
+  // "known to be a desktop", because the 3D scene downloads three.js the
+  // instant it renders. Treating unknown as desktop had every phone fetch
+  // half a megabyte of it before the media query came back and unmounted it.
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_QUERY);
     const sync = () => setIsMobile(mq.matches);
@@ -105,18 +118,25 @@ export default function HeroCarousel({
     return lost <= limit ? "object-cover" : "object-contain";
   }
 
+  // Bumped whenever someone picks a slide, which restarts the countdown
+  // below. Without it the interval kept its own schedule, so a slide chosen
+  // by hand could be taken away again a moment later — worst exactly when
+  // someone went back for a banner they had just watched go past.
+  const [chosenAt, setChosenAt] = useState(0);
+
   useEffect(() => {
     if (paused || heroBanners.length === 0) return;
     const timer = setInterval(() => {
       setIndex((i) => (i + 1) % heroBanners.length);
     }, AUTO_ROTATE_MS);
     return () => clearInterval(timer);
-  }, [paused, heroBanners.length]);
+  }, [paused, heroBanners.length, chosenAt]);
 
   if (heroBanners.length === 0) return null;
 
   function showAt(i: number) {
     setIndex((i + heroBanners.length) % heroBanners.length);
+    setChosenAt(Date.now());
   }
 
   function onTouchStart(e: React.TouchEvent) {
@@ -150,48 +170,60 @@ export default function HeroCarousel({
       >
         {/* All slides stacked + cross-faded, instead of hard-swapping — reads
           as a premium transition instead of a jump cut. */}
-        {heroBanners.map((banner, i) => (
-          <Link
-            key={banner.slug}
-            href={banner.href}
-            aria-hidden={i !== index}
-            tabIndex={i === index ? 0 : -1}
-            className="absolute inset-0 transition-opacity duration-700 ease-out"
-            style={{
-              opacity: i === index ? 1 : 0,
-              pointerEvents: i === index ? "auto" : "none",
-            }}
-          >
-            {/* The banner's own colours, blurred, behind it — what fills the
+        {heroBanners.map((banner, i) => {
+          const scene3D = hero3DSceneFor(banner.image);
+          return (
+            <Link
+              key={banner.slug}
+              href={banner.href}
+              aria-hidden={i !== index}
+              tabIndex={i === index ? 0 : -1}
+              className="absolute inset-0 transition-opacity duration-700 ease-out"
+              style={{
+                opacity: i === index ? 1 : 0,
+                pointerEvents: i === index ? "auto" : "none",
+              }}
+            >
+              {/* The banner's own colours, blurred, behind it — what fills the
               frame for any slide the frame cannot crop to fit (see fitFor).
               It changes with the slide because each slide carries its own.
 
               Deliberately fetched small. It is going to be blurred beyond
               recognition, so a thumbnail's worth of pixels is plenty and the
               page does not download every banner twice at full size. */}
-            <Image
-              src={
-                isMobile ? (banner.mobileImage ?? banner.image) : banner.image
-              }
-              alt=""
-              aria-hidden
-              fill
-              sizes="64px"
-              className="scale-110 object-cover blur-2xl"
-            />
-            <Image
-              src={
-                isMobile ? (banner.mobileImage ?? banner.image) : banner.image
-              }
-              alt={banner.title ?? ""}
-              fill
-              priority={i === 0}
-              sizes="100vw"
-              onLoad={(e) => noteArt(banner.slug, e.currentTarget)}
-              className={fitFor(banner.slug)}
-            />
-          </Link>
-        ))}
+              <Image
+                src={
+                  isMobile ? (banner.mobileImage ?? banner.image) : banner.image
+                }
+                alt=""
+                aria-hidden
+                fill
+                sizes="64px"
+                className="scale-110 object-cover blur-2xl"
+              />
+              <Image
+                src={
+                  isMobile ? (banner.mobileImage ?? banner.image) : banner.image
+                }
+                alt={banner.title ?? ""}
+                fill
+                priority={i === 0}
+                sizes="100vw"
+                onLoad={(e) => noteArt(banner.slug, e.currentTarget)}
+                className={fitFor(banner.slug)}
+              />
+              {/* A campaign whose artwork has also been supplied as its separate
+              layers is rebuilt here with depth between them. Desktop only: it
+              is a pointer-led effect, it costs a megabyte, and the phone crop
+              is a different picture that has no layers. The flat banner above
+              stays exactly where it is and shows through until the scene has
+              loaded — or for good, on a machine with no WebGL. */}
+              {isMobile === false && scene3D && (
+                <HeroScene3D scene={scene3D} active={i === index} />
+              )}
+            </Link>
+          );
+        })}
 
         {heroBanners.length > 1 && (
           <>
