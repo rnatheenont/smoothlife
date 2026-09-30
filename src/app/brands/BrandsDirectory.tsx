@@ -14,6 +14,8 @@ export type BrandEntry = {
   image?: string;
   productCount: number;
   categories: Category[];
+  /** true = Thai brand, false = imported, undefined = not confirmed yet. */
+  thai?: boolean;
   /** Total reviews across the brand's products — see the comment where it is built. */
   reviews: number;
 };
@@ -95,6 +97,15 @@ export default function BrandsDirectory({
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category | null>(null);
   const [sort, setSort] = useState<Sort>("popular");
+  const [origin, setOrigin] = useState<"th" | "import" | null>(null);
+
+  const originCounts = useMemo(() => {
+    const all = [...house, ...brands];
+    return {
+      th: all.filter((b) => b.thai === true).length,
+      import: all.filter((b) => b.thai === false).length,
+    };
+  }, [house, brands]);
 
   const categoryCounts = useMemo(() => {
     const m = new Map<Category, number>();
@@ -111,6 +122,10 @@ export default function BrandsDirectory({
   const matches = useMemo(() => {
     return (b: BrandEntry) => {
       if (category && !b.categories.includes(category)) return false;
+      // A brand nobody has confirmed the origin of answers neither filter,
+      // rather than being quietly counted as one or the other.
+      if (origin === "th" && b.thai !== true) return false;
+      if (origin === "import" && b.thai !== false) return false;
       if (!q) return true;
       // Name is Latin and the tagline is Thai, and both are worth searching:
       // somebody after a toothpaste types "ฟัน", not "Dentiste".
@@ -118,7 +133,7 @@ export default function BrandsDirectory({
         b.name.toLowerCase().includes(q) || b.tagline.toLowerCase().includes(q)
       );
     };
-  }, [category, q]);
+  }, [category, origin, q]);
 
   const filtered = useMemo(() => {
     const list = brands.filter(matches);
@@ -134,7 +149,7 @@ export default function BrandsDirectory({
   }, [brands, matches, sort]);
 
   const houseShown = house.filter(matches);
-  const searching = Boolean(q) || category !== null;
+  const searching = Boolean(q) || category !== null || origin !== null;
   const total = filtered.length + houseShown.length;
 
   return (
@@ -222,8 +237,8 @@ export default function BrandsDirectory({
         </section>
       )}
 
-      <div className="mt-8 border-t border-slate-100 pt-6">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mt-8 space-y-3 border-t border-slate-100 pt-6">
+        <div>
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 scrollbar-none lg:mx-0 lg:px-0">
             <button
               type="button"
@@ -250,6 +265,51 @@ export default function BrandsDirectory({
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Thai or imported, which is a different question from which shelf
+              a brand belongs on, so it gets its own line rather than being
+              mixed in among the categories. Brands whose origin nobody has
+              confirmed answer neither — they are only ever in "ทุกแบรนด์" —
+              which is why the two counts here do not add up to the total. */}
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 scrollbar-none sm:mx-0 sm:px-0">
+            <button
+              type="button"
+              onClick={() => setOrigin(null)}
+              className={chip(origin === null)}
+            >
+              ทุกแบรนด์
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrigin(origin === "th" ? null : "th")}
+              className={chip(origin === "th")}
+            >
+              แบรนด์ไทย{" "}
+              <span
+                className={
+                  origin === "th" ? "text-brand-800/60" : "text-slate-400"
+                }
+              >
+                {originCounts.th}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrigin(origin === "import" ? null : "import")}
+              className={chip(origin === "import")}
+            >
+              แบรนด์นอก{" "}
+              <span
+                className={
+                  origin === "import" ? "text-brand-800/60" : "text-slate-400"
+                }
+              >
+                {originCounts.import}
+              </span>
+            </button>
           </div>
 
           {/* Sorting, not filtering, so it looks different from the chips it
@@ -293,6 +353,7 @@ export default function BrandsDirectory({
             onClick={() => {
               setQuery("");
               setCategory(null);
+              setOrigin(null);
             }}
             className="mt-3 rounded-full border border-slate-200 px-4 py-2 text-[13px] font-semibold text-brand-ink transition-colors hover:border-brand-teal"
           >

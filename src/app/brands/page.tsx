@@ -23,6 +23,7 @@ function entry(b: (typeof brands)[number]): BrandEntry {
     image: b.image,
     productCount: b.productCount,
     categories: [...new Set(items.map((p) => p.category))],
+    thai: b.origin?.thai,
     // Nothing in the catalogue records units sold, but every product carries
     // its real review count — so how many people have actually written about
     // a brand's products stands in for how well known it is. It is a measured

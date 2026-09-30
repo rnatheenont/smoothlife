@@ -77,6 +77,12 @@ export type Brand = {
   // Other exact Shopify vendor strings that should count as this brand (e.g.
   // "Palmers" vs "Palmer's", "Dentiste thailand" vs "Dentiste").
   vendorAliases?: string[];
+  /**
+   * Where the brand is from. `thai` is what the directory filters on;
+   * `country` is the detail, in Thai, for when a brand's own page wants it.
+   * Absent means nobody has confirmed it — see BRAND_ORIGIN in brands.ts.
+   */
+  origin?: { thai: boolean; country?: string };
 };
 
 export type CategoryInfo = {

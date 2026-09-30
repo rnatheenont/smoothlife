@@ -437,11 +437,76 @@ export function brandSlugAliases(brand: Pick<Brand, "name" | "vendorAliases">) {
   return [brand.name, ...(brand.vendorAliases || [])].map(slugifyVendor);
 }
 
+// Where each brand is from.
+//
+// Kept as one table rather than a field on all sixty-four entries above, so
+// the whole picture is visible and correctable in one place — and so the gaps
+// are obvious. A brand missing from here has simply not been confirmed, and
+// the directory leaves it out of both the Thai and the imported filter rather
+// than guess about it on a customer-facing page. Nothing here was inferred
+// from a brand's name: it is either stated in the brand's own tagline, or it
+// is a company whose home is not in question.
+//
+// Still unconfirmed, and worth someone at the shop filling in: albupro,
+// allwell, ambulance, botan, dr-frei, dr-master, exeter, hemomin, hi-care,
+// i-kids, imumate, karisma, lactis, neoplast, neotape, nola, oso-cal,
+// phecare, probac7, sanita, sensiplus, sos.
+const TH = { thai: true, country: "ไทย" } as const;
+const from = (country: string) => ({ thai: false, country });
+
+const BRAND_ORIGIN: Record<string, { thai: boolean; country?: string }> = {
+  // The shop's own, and the Thai names nobody needs convincing about.
+  "smooth-e": TH,
+  "smooth-life": TH,
+  dentiste: TH,
+  abhaibhubejhr: TH,
+  vistra: TH, // its own tagline: "อาหารเสริมและวิตามินยอดนิยมของไทย"
+  interpharma: TH,
+  mega: TH, // Mega Lifesciences, headquartered in Bangkok
+  "klean-kare": TH,
+  lamoon: TH,
+  mamarine: TH,
+
+  // Imported. The four marked (tagline) say so on the page already.
+  aromase: from("ไต้หวัน"), // (tagline)
+  janeke: from("อิตาลี"), // (tagline)
+  maro: from("ญี่ปุ่น"), // (tagline)
+  sebamed: from("เยอรมนี"), // (tagline)
+  blackmores: from("ออสเตรเลีย"), // (tagline)
+  vantelin: from("ญี่ปุ่น"), // (tagline)
+  swisse: from("ออสเตรเลีย"),
+  cerave: from("สหรัฐอเมริกา"),
+  cetaphil: from("สหรัฐอเมริกา"),
+  palmers: from("สหรัฐอเมริกา"),
+  blistex: from("สหรัฐอเมริกา"),
+  centrum: from("สหรัฐอเมริกา"),
+  ensure: from("สหรัฐอเมริกา"),
+  glucerna: from("สหรัฐอเมริกา"),
+  futuro: from("สหรัฐอเมริกา"),
+  "opti-free": from("สหรัฐอเมริกา"),
+  "acne-aid": from("สหรัฐอเมริกา"),
+  flowflex: from("สหรัฐอเมริกา"),
+  bioderma: from("ฝรั่งเศส"),
+  "la-roche-posay": from("ฝรั่งเศส"),
+  vichy: from("ฝรั่งเศส"),
+  eucerin: from("เยอรมนี"),
+  bepanthen: from("เยอรมนี"),
+  physiogel: from("เยอรมนี"),
+  durex: from("สหราชอาณาจักร"),
+  dettol: from("สหราชอาณาจักร"),
+  glucolin: from("สหราชอาณาจักร"),
+  berocca: from("สวิตเซอร์แลนด์"),
+  koolfever: from("ญี่ปุ่น"),
+  ammeltz: from("ญี่ปุ่น"),
+  "tiger-balm": from("สิงคโปร์"),
+  nutroplex: from("ฟิลิปปินส์"),
+};
+
 export const brands: Brand[] = brandDefs
   .map((b) => {
     const slugAliases = brandSlugAliases(b);
     const productCount = products.filter((p) => slugAliases.includes(slugifyVendor(p.brand))).length;
-    return { ...b, productCount };
+    return { ...b, productCount, origin: BRAND_ORIGIN[b.slug] };
   })
   .filter((b) => b.productCount > 0);
 
