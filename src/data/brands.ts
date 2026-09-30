@@ -41,7 +41,8 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     slug: "bioderma",
     name: "Bioderma",
     tagline: "ผิวแพ้ง่ายไว้ใจได้",
-    image: "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/Bioderma.webp?v=1758277671",
+    image:
+      "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/Bioderma.webp?v=1758277671",
   },
   {
     slug: "bepanthen",
@@ -55,13 +56,15 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     name: "Palmer's",
     tagline: "โกโก้บัตเตอร์เพื่อผิวชุ่มชื้น",
     vendorAliases: ["Palmers"],
-    image: "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/Palmer_s_Logo_1.jpg?v=1759812225",
+    image:
+      "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/Palmer_s_Logo_1.jpg?v=1759812225",
   },
   {
     slug: "eucerin",
     name: "Eucerin",
     tagline: "ผิวบอบบางแพ้ง่าย โดยแพทย์ผิวหนัง",
-    image: "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/Untitled_design_7.png?v=1755514772",
+    image:
+      "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/Untitled_design_7.png?v=1755514772",
   },
   {
     slug: "la-roche-posay",
@@ -74,37 +77,43 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     slug: "vichy",
     name: "Vichy",
     tagline: "นวัตกรรมสกินแคร์จากน้ำแร่ภูเขาไฟ",
-    image: "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/a_logo-vichy_og-image.png?v=1758265086",
+    image:
+      "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/a_logo-vichy_og-image.png?v=1758265086",
   },
   {
     slug: "blackmores",
     name: "Blackmores",
     tagline: "อาหารเสริมคุณภาพจากออสเตรเลีย",
-    image: "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/Untitled_design_13.png?v=1755252369",
+    image:
+      "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/Untitled_design_13.png?v=1755252369",
   },
   {
     slug: "ensure",
     name: "Ensure",
     tagline: "โภชนาการครบถ้วนสำหรับทุกวัย",
-    image: "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/Untitled_design_8.png?v=1755252385",
+    image:
+      "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/Untitled_design_8.png?v=1755252385",
   },
   {
     slug: "swisse",
     name: "Swisse",
     tagline: "วิตามินพรีเมียมเพื่อสุขภาพองค์รวม",
-    image: "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/Untitled_design_9.png?v=1755252318",
+    image:
+      "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/Untitled_design_9.png?v=1755252318",
   },
   {
     slug: "durex",
     name: "Durex",
     tagline: "ผลิตภัณฑ์เพื่อสุขภาวะทางเพศ",
-    image: "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/RB__Logo_Brand__1000x1000px-03.jpg?v=1765353185",
+    image:
+      "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/RB__Logo_Brand__1000x1000px-03.jpg?v=1765353185",
   },
   {
     slug: "blistex",
     name: "Blistex",
     tagline: "ลิปบาล์มบำรุงริมฝีปาก",
-    image: "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/blistex_logo.png?v=1760069844",
+    image:
+      "https://cdn.shopify.com/s/files/1/0663/8334/7863/collections/blistex_logo.png?v=1760069844",
   },
 
   // The rest of the store's real vendors — pulled straight from the live
@@ -115,13 +124,15 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     slug: "abhaibhubejhr",
     name: "Abhaibhubejhr",
     tagline: "ผลิตภัณฑ์สมุนไพรไทยแผนโบราณ",
-    image: "https://www.smoothlife.com/cdn/shop/files/03010010.png?v=1759223397",
+    image:
+      "https://www.smoothlife.com/cdn/shop/files/03010010.png?v=1759223397",
   },
   {
     slug: "acne-aid",
     name: "Acne-Aid",
     tagline: "ผลิตภัณฑ์ทำความสะอาดผิวสำหรับผิวเป็นสิว",
-    image: "https://www.smoothlife.com/cdn/shop/collections/19.png?v=1756029415",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/19.png?v=1756029415",
   },
   {
     slug: "albupro",
@@ -141,37 +152,43 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     slug: "ambulance",
     name: "Ambulance",
     tagline: "ยาหม่องบรรเทาอาการปวดเมื่อย",
-    image: "https://www.smoothlife.com/cdn/shop/collections/16.png?v=1756027932",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/16.png?v=1756027932",
   },
   {
     slug: "ammeltz",
     name: "Ammeltz",
     tagline: "สเปรย์และครีมบรรเทาอาการปวดเมื่อยกล้ามเนื้อ",
-    image: "https://www.smoothlife.com/cdn/shop/collections/AMMELTZ.png?v=1759216857",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/AMMELTZ.png?v=1759216857",
   },
   {
     slug: "aromase",
     name: "Aromase",
     tagline: "ผู้เชี่ยวชาญดูแลเส้นผมและหนังศีรษะจากไต้หวัน",
-    image: "https://www.smoothlife.com/cdn/shop/collections/aromase_logo.jpg?v=1760069897",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/aromase_logo.jpg?v=1760069897",
   },
   {
     slug: "berocca",
     name: "Berocca",
     tagline: "วิตามินซีและบีรวมชนิดฟู่เสริมพลังงาน",
-    image: "https://www.smoothlife.com/cdn/shop/collections/Untitled_design_16.png?v=1760598304",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/Untitled_design_16.png?v=1760598304",
   },
   {
     slug: "botan",
     name: "Botan",
     tagline: "ผลิตภัณฑ์สูดดมและบรรเทาอาการคัดจมูก",
-    image: "https://www.smoothlife.com/cdn/shop/collections/BOTAN.jpg?v=1759217984",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/BOTAN.jpg?v=1759217984",
   },
   {
     slug: "centrum",
     name: "Centrum",
     tagline: "มัลติวิตามินรวมสำหรับทุกวัย",
-    image: "https://www.smoothlife.com/cdn/shop/collections/Untitled_design_11.png?v=1755252333",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/Untitled_design_11.png?v=1755252333",
   },
   {
     slug: "cetaphil",
@@ -184,33 +201,38 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     slug: "dettol",
     name: "Dettol",
     tagline: "ผลิตภัณฑ์ฆ่าเชื้อและทำความสะอาด",
-    image: "https://www.smoothlife.com/cdn/shop/collections/Untitled_design_12.png?v=1755252344",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/Untitled_design_12.png?v=1755252344",
   },
   {
     slug: "dr-frei",
     name: "Dr.Frei",
     tagline: "ผลิตภัณฑ์ดูแลผิว",
     vendorAliases: ["Dr.Frei"],
-    image: "https://www.smoothlife.com/cdn/shop/collections/Dr.Frei.jpg?v=1759218326",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/Dr.Frei.jpg?v=1759218326",
   },
   {
     slug: "dr-master",
     name: "Dr.Master",
     tagline: "ผลิตภัณฑ์เสริมอาหาร",
     vendorAliases: ["Dr.Master"],
-    image: "https://www.smoothlife.com/cdn/shop/collections/27.png?v=1756028276",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/27.png?v=1756028276",
   },
   {
     slug: "exeter",
     name: "Exeter",
     tagline: "ผลิตภัณฑ์เพื่อสุขภาพ",
-    image: "https://www.smoothlife.com/cdn/shop/collections/34.png?v=1756028995",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/34.png?v=1756028995",
   },
   {
     slug: "flowflex",
     name: "Flowflex",
     tagline: "ชุดตรวจคัดกรองด้วยตนเอง",
-    image: "https://www.smoothlife.com/cdn/shop/collections/Flowflex.png?v=1759219166",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/Flowflex.png?v=1759219166",
   },
   {
     slug: "futuro",
@@ -230,19 +252,22 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     slug: "glucolin",
     name: "Glucolin",
     tagline: "เครื่องดื่มเกลือแร่ให้พลังงาน",
-    image: "https://www.smoothlife.com/cdn/shop/collections/02010001_1.jpg?v=1759219349",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/02010001_1.jpg?v=1759219349",
   },
   {
     slug: "hemomin",
     name: "Hemomin",
     tagline: "ผลิตภัณฑ์เสริมธาตุเหล็ก",
-    image: "https://www.smoothlife.com/cdn/shop/collections/Hemomin.png?v=1759220216",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/Hemomin.png?v=1759220216",
   },
   {
     slug: "hi-care",
     name: "Hi-Care",
     tagline: "ผลิตภัณฑ์ดูแลสุขภาพ",
-    image: "https://www.smoothlife.com/cdn/shop/files/HI-CARECLEAN_CAREORGANIC100_WETWIPES_04040526.jpg?v=1755248260",
+    image:
+      "https://www.smoothlife.com/cdn/shop/files/HI-CARECLEAN_CAREORGANIC100_WETWIPES_04040526.jpg?v=1755248260",
   },
   {
     slug: "i-kids",
@@ -256,7 +281,8 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     slug: "imumate",
     name: "Imumate",
     tagline: "ผลิตภัณฑ์เสริมภูมิคุ้มกัน",
-    image: "https://www.smoothlife.com/cdn/shop/files/IMUMATEELDERBERRYPLUSLYSINE50ML_02030435_1.jpg?v=1755248877",
+    image:
+      "https://www.smoothlife.com/cdn/shop/files/IMUMATEELDERBERRYPLUSLYSINE50ML_02030435_1.jpg?v=1755248877",
   },
   {
     slug: "interpharma",
@@ -297,7 +323,8 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     slug: "lactis",
     name: "Lactis",
     tagline: "โพรไบโอติกเพื่อสุขภาพลำไส้",
-    image: "https://www.smoothlife.com/cdn/shop/files/sg-11134201-7rceu-lrqukfxwxfzyfd.jpg?v=1755249065",
+    image:
+      "https://www.smoothlife.com/cdn/shop/files/sg-11134201-7rceu-lrqukfxwxfzyfd.jpg?v=1755249065",
   },
   {
     slug: "lamoon",
@@ -317,14 +344,16 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     slug: "maro",
     name: "Maro",
     tagline: "ผลิตภัณฑ์ดูแลเส้นผมสำหรับผู้ชายจากญี่ปุ่น",
-    image: "https://www.smoothlife.com/cdn/shop/collections/Maro_Logo.jpg?v=1759812295",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/Maro_Logo.jpg?v=1759812295",
   },
   {
     slug: "mega",
     name: "Mega",
     tagline: "อาหารเสริมและวิตามินคุณภาพ",
     vendorAliases: ["Mega We Care"],
-    image: "https://www.smoothlife.com/cdn/shop/collections/25.png?v=1756028173",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/25.png?v=1756028173",
   },
   {
     slug: "neoplast",
@@ -337,7 +366,8 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     slug: "neotape",
     name: "Neotape",
     tagline: "เทปทางการแพทย์",
-    image: "https://www.smoothlife.com/cdn/shop/files/NEOTAPE_2X6X10_04040222.jpg?v=1755249077",
+    image:
+      "https://www.smoothlife.com/cdn/shop/files/NEOTAPE_2X6X10_04040222.jpg?v=1755249077",
   },
   { slug: "nola", name: "Nola", tagline: "ผลิตภัณฑ์เพื่อสุขภาพ" },
   {
@@ -350,19 +380,22 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     slug: "opti-free",
     name: "Opti-Free",
     tagline: "น้ำยาล้างและแช่คอนแทคเลนส์",
-    image: "https://www.smoothlife.com/cdn/shop/collections/45.png?v=1756030598",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/45.png?v=1756030598",
   },
   {
     slug: "oso-cal",
     name: "Oso-Cal",
     tagline: "แคลเซียมเสริม",
-    image: "https://www.smoothlife.com/cdn/shop/files/OSO-CAL_CALCIUM_L-THREONATE_750_30_S_NEW_02020277_1.jpg?v=1755248867",
+    image:
+      "https://www.smoothlife.com/cdn/shop/files/OSO-CAL_CALCIUM_L-THREONATE_750_30_S_NEW_02020277_1.jpg?v=1755248867",
   },
   {
     slug: "phecare",
     name: "Phecare",
     tagline: "ผลิตภัณฑ์ดูแลสุขภาพ",
-    image: "https://www.smoothlife.com/cdn/shop/files/04030021.png?v=1759467065",
+    image:
+      "https://www.smoothlife.com/cdn/shop/files/04030021.png?v=1759467065",
   },
   {
     slug: "physiogel",
@@ -375,7 +408,8 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     slug: "probac7",
     name: "Probac7",
     tagline: "โพรไบโอติกเพื่อระบบขับถ่ายและภูมิคุ้มกัน",
-    image: "https://www.smoothlife.com/cdn/shop/files/FGOT000033.jpg?v=1760954103",
+    image:
+      "https://www.smoothlife.com/cdn/shop/files/FGOT000033.jpg?v=1760954103",
   },
   {
     slug: "sanita",
@@ -398,25 +432,29 @@ const brandDefs: Omit<Brand, "productCount">[] = [
     name: "Sensiplus",
     // Both products under this vendor are contact lens solution, not skincare.
     tagline: "น้ำยาดูแลคอนแทคเลนส์",
-    image: "https://www.smoothlife.com/cdn/shop/files/KLEAN_KARE_SENSIPLUS_100_ML_3030116_2.jpg?v=1755248804",
+    image:
+      "https://www.smoothlife.com/cdn/shop/files/KLEAN_KARE_SENSIPLUS_100_ML_3030116_2.jpg?v=1755248804",
   },
   {
     slug: "sos",
     name: "Sos",
     tagline: "ผลิตภัณฑ์ปฐมพยาบาลเบื้องต้น",
-    image: "https://www.smoothlife.com/cdn/shop/collections/Untitled_design_10.png?v=1755252300",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/Untitled_design_10.png?v=1755252300",
   },
   {
     slug: "tiger-balm",
     name: "Tiger Balm",
     tagline: "ยาหม่องบรรเทาอาการปวดเมื่อย",
-    image: "https://www.smoothlife.com/cdn/shop/collections/15.png?v=1756028000",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/15.png?v=1756028000",
   },
   {
     slug: "vantelin",
     name: "Vantelin",
     tagline: "ผ้าพยุงข้อและแผ่นแปะบรรเทาปวดจากญี่ปุ่น",
-    image: "https://www.smoothlife.com/cdn/shop/collections/35.png?v=1756029249",
+    image:
+      "https://www.smoothlife.com/cdn/shop/collections/35.png?v=1756029249",
   },
   {
     slug: "vistra",
@@ -439,15 +477,22 @@ export function brandSlugAliases(brand: Pick<Brand, "name" | "vendorAliases">) {
 
 // Where each brand is from.
 //
-// Kept as one table rather than a field on all sixty-four entries above, so
-// the whole picture is visible and correctable in one place — and so the gaps
-// are obvious. A brand missing from here has simply not been confirmed, and
-// the directory leaves it out of both the Thai and the imported filter rather
-// than guess about it on a customer-facing page. Nothing here was inferred
-// from a brand's name: it is either stated in the brand's own tagline, or it
-// is a company whose home is not in question.
+// Nothing groups by this. The brands directory carried a Thai/imported filter
+// off it for one afternoon and the owner decided against the split, so the
+// table stays as reference — a brand's own page can say "จากเยอรมนี" from it
+// without this having to be worked out twice — and the filter is gone. Strip
+// the whole thing if that day never comes.
 //
-// Still unconfirmed, and worth someone at the shop filling in: albupro,
+// Kept as one table rather than a field on all sixty-four entries above, so
+// the whole picture is visible and correctable in one place, and so the gaps
+// are obvious. Nothing here was inferred from a brand's name: it is either
+// stated in the brand's own tagline, or it is a company whose home is not in
+// question. A brand missing from here has not been confirmed by anyone, which
+// is deliberate — guessing a nationality onto a customer-facing page is worse
+// than saying nothing.
+//
+// Unconfirmed, and worth someone at the shop filling in if this is ever
+// used: albupro,
 // allwell, ambulance, botan, dr-frei, dr-master, exeter, hemomin, hi-care,
 // i-kids, imumate, karisma, lactis, neoplast, neotape, nola, oso-cal,
 // phecare, probac7, sanita, sensiplus, sos.
@@ -505,7 +550,9 @@ const BRAND_ORIGIN: Record<string, { thai: boolean; country?: string }> = {
 export const brands: Brand[] = brandDefs
   .map((b) => {
     const slugAliases = brandSlugAliases(b);
-    const productCount = products.filter((p) => slugAliases.includes(slugifyVendor(p.brand))).length;
+    const productCount = products.filter((p) =>
+      slugAliases.includes(slugifyVendor(p.brand)),
+    ).length;
     return { ...b, productCount, origin: BRAND_ORIGIN[b.slug] };
   })
   .filter((b) => b.productCount > 0);
@@ -513,11 +560,15 @@ export const brands: Brand[] = brandDefs
 // Smooth E / Smooth Life / Dentiste are the company's own house brands
 // (per the "Life So Smooth" brand concept) — always featured first, in
 // this fixed order, wherever brands are listed or browsed.
-export const HOUSE_BRAND_SLUGS = ["smooth-e", "smooth-life", "dentiste"] as const;
+export const HOUSE_BRAND_SLUGS = [
+  "smooth-e",
+  "smooth-life",
+  "dentiste",
+] as const;
 
-export const houseBrands: Brand[] = HOUSE_BRAND_SLUGS.map((slug) => brands.find((b) => b.slug === slug)).filter(
-  (b): b is Brand => !!b
-);
+export const houseBrands: Brand[] = HOUSE_BRAND_SLUGS.map((slug) =>
+  brands.find((b) => b.slug === slug),
+).filter((b): b is Brand => !!b);
 
 export function isHouseBrand(slug: string) {
   return (HOUSE_BRAND_SLUGS as readonly string[]).includes(slug);
