@@ -92,17 +92,17 @@ export default function SalesPanel({
 }) {
   const [query, setQuery] = useState("");
   const [state, setState] = useState<"all" | ReceiptState | "none">("all");
-  // On by default: this tab is read to chase entries, and a bill that earns
-  // none is not a lead. Untick it to see the whole campaign — and the line
-  // under the numbers says what the whole campaign is either way, so the
-  // headline figure is never hidden, only set aside.
-  const [earningOnly, setEarningOnly] = useState(true);
   const needle = query.trim().toLowerCase();
 
   const shown = useMemo(() => {
     let rows = sales?.orders ?? [];
     if (state !== "all") rows = rows.filter((o) => (state === "none" ? !o.receipt : o.receipt?.state === state));
-    if (earningOnly) rows = rows.filter((o) => o.entries > 0);
+    // Bills that earn nothing never appear here. This tab is read to chase
+    // entries and a bill worth none is not a lead — the VIP sets the rules
+    // exclude, and the odd order under the ฿690 step. The line under the
+    // numbers still says what the whole campaign is, so they are set aside
+    // rather than hidden.
+    rows = rows.filter((o) => o.entries > 0);
     if (needle) {
       // Name first, because that is what the team is handed — "ลูกค้าชื่อ …
       // ซื้อหรือยัง" — but the order number and the email match too, since
@@ -110,7 +110,7 @@ export default function SalesPanel({
       rows = rows.filter((o) => [o.customer, o.email, o.orderName].some((v) => v?.toLowerCase().includes(needle)));
     }
     return rows;
-  }, [sales, needle, state, earningOnly]);
+  }, [sales, needle, state]);
 
   const shownAmount = shown.reduce((sum, o) => sum + o.amount, 0);
   const shownEntries = shown.reduce((sum, o) => sum + o.entries, 0);
@@ -121,7 +121,7 @@ export default function SalesPanel({
 
   /** How many bills each tab holds, before the search box narrows them. */
   const counts = useMemo(() => {
-    const rows = (sales?.orders ?? []).filter((o) => !earningOnly || o.entries > 0);
+    const rows = (sales?.orders ?? []).filter((o) => o.entries > 0);
     const of = (k: ReceiptState | "none") =>
       rows.filter((o) => (k === "none" ? !o.receipt : o.receipt?.state === k)).length;
     return {
@@ -131,7 +131,7 @@ export default function SalesPanel({
       rejected: of("rejected"),
       none: of("none"),
     };
-  }, [sales, earningOnly]);
+  }, [sales]);
 
   const TABS: [keyof typeof counts, string][] = [
     ["all", "ทั้งหมด"],
@@ -161,7 +161,9 @@ export default function SalesPanel({
       <p className="max-w-4xl px-3 pt-3 text-[12px] leading-relaxed text-slate-500">
         คำสั่งซื้อที่ <b>ชำระเงินสำเร็จ</b> ตั้งแต่ {sales ? sales.since.split("-").reverse().join("/") : "28/09/2026"}{" "}
         ดึงตรงจาก Shopify · นับเฉพาะยอดของแบรนด์ DENTISTE&apos; ในแต่ละออร์เดอร์
-        (ออร์เดอร์ที่มีแบรนด์อื่นปนจะนับแค่ส่วนของ DENTISTE&apos;) · หักส่วนลดและของแถมออกแล้ว
+        (ออร์เดอร์ที่มีแบรนด์อื่นปนจะนับแค่ส่วนของ DENTISTE&apos;) · หักส่วนลดและของแถมออกแล้ว ·
+        แสดงเฉพาะบิลที่ได้สิทธิ์ ยอดตั้งแต่ {sales ? formatTHB(sales.totals.threshold) : "฿690"} ขึ้นไป
+        {sales && sales.totals.noEntry > 0 && ` (ซ่อนไว้ ${sales.totals.noEntry} บิล — รวมเซ็ต VIP ที่กติกาไม่นับสิทธิ์)`}
       </p>
 
       {error && <p className="mx-3 mt-3 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{error}</p>}
@@ -210,25 +212,10 @@ export default function SalesPanel({
             </TextField>
           </div>
 
-          <div className="mt-2.5 px-3">
-            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-[12px] text-slate-600">
-              <input
-                type="checkbox"
-                checked={earningOnly}
-                onChange={(e) => setEarningOnly(e.target.checked)}
-                className="size-4 shrink-0 accent-brand-800"
-              />
-              <span>
-                เฉพาะบิลที่ได้สิทธิ์ — ซ่อนบิลที่ยอดไม่ถึง {formatTHB(sales.totals.threshold)}{" "}
-                <span className="text-slate-400">({sales.totals.noEntry} บิลไม่ได้สิทธิ์)</span>
-              </span>
-            </label>
-          </div>
-
           {/* One strip rather than four floating cards: these four numbers are
               one reading of one group, and dividers say that where gaps do
               not. Every one of them counts only what is on screen. */}
-          <div className="mx-3 mt-1 grid grid-cols-2 overflow-hidden rounded-l border border-surface-line bg-surface md:grid-cols-4">
+          <div className="mx-3 mt-3 grid grid-cols-2 overflow-hidden rounded-l border border-surface-line bg-surface md:grid-cols-4">
             {stats.map(([label, value], i) => (
               <div
                 key={label}
