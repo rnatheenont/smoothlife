@@ -28,6 +28,9 @@ import HeaderSearch from "@/components/HeaderSearch";
 import { Avatar, Button } from "@/components/ui";
 import BrandLogo from "@/components/BrandLogo";
 
+import MegaMenu from "@/components/nav/MegaMenu";
+import MobileShopMenu from "@/components/nav/MobileShopMenu";
+
 const navLinks = [
   { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: LayoutGrid },
   { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern", icon: Heart },
@@ -230,13 +233,18 @@ export default function Header() {
         </div>
       </div>
 
-      <nav className="hidden lg:block border-t border-slate-100">
+      {/* relative: the mega panel hangs off this bar, edge to edge. */}
+      <nav className="relative hidden lg:block border-t border-slate-100">
         <div className="container-page flex items-center gap-7 py-2.5 text-sm font-medium text-slate-600">
-          {navLinks.map((l) => (
-            <Link key={l.href} href={l.href} className="hover:text-brand-800 transition-colors">
-              {t(l.th, l.en)}
-            </Link>
-          ))}
+          {navLinks.map((l) =>
+            l.href === "/shop" ? (
+              <MegaMenu key={l.href} label={t(l.th, l.en)} href={l.href} />
+            ) : (
+              <Link key={l.href} href={l.href} className="hover:text-brand-800 transition-colors">
+                {t(l.th, l.en)}
+              </Link>
+            )
+          )}
         </div>
       </nav>
     </header>
@@ -289,6 +297,8 @@ export default function Header() {
 
             <div className="flex flex-1 flex-col gap-4 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
               <LanguageSwitch compact />
+
+              <MobileShopMenu onNavigate={() => setOpen(false)} />
 
               <div className="flex flex-col gap-0.5">
                 {navLinks.map((l) => (
