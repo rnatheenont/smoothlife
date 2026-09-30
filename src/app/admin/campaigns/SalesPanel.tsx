@@ -11,6 +11,16 @@ import { when } from "./queue-vocab";
 import { formatTHB } from "@/lib/format";
 
 export type SaleItem = { title: string; quantity: number; amount: number };
+export type ReceiptState = "approved" | "pending_review" | "rejected" | "revoked";
+export type SaleReceipt = { state: ReceiptState; at: string; who: string | null; count: number };
+
+/** The claim on a bill, as the person chasing unclaimed ones needs to read it. */
+const RECEIPT_CHIP: Record<ReceiptState, [string, string]> = {
+  approved: ["ยื่นแล้ว · อนุมัติ", "bg-emerald-50 text-emerald-800"],
+  pending_review: ["ยื่นแล้ว · รอตรวจ", "bg-amber-50 text-amber-900"],
+  rejected: ["ยื่นแล้ว · ตีกลับ", "bg-rose-50 text-rose-700"],
+  revoked: ["ยื่นแล้ว · เพิกถอน", "bg-slate-100 text-slate-600"],
+};
 export type Sale = {
   orderName: string;
   adminUrl: string;
@@ -21,11 +31,14 @@ export type Sale = {
   units: number;
   orderTotal: number;
   items: SaleItem[];
+  receipt: SaleReceipt | null;
 };
 export type Sales = {
   since: string;
+  /** Which campaign's receipts the claim column was matched against. */
+  campaign: string;
   orders: Sale[];
-  totals: { orders: number; units: number; amount: number };
+  totals: { orders: number; units: number; amount: number; claimed: number; unclaimed: number };
 };
 
 const pill =
@@ -70,13 +83,22 @@ export default function SalesPanel({
           {/* The money gets the full width on a phone: three across puts a
               six-figure number on two lines, and it is the number this tab
               exists to answer. */}
-          <div className="mt-4 grid grid-cols-2 gap-3 px-3 md:grid-cols-3">
+          <div className="mt-4 grid grid-cols-2 gap-3 px-3 md:grid-cols-4">
             <div className="col-span-2 md:col-span-1">
               <StatCard label="ยอดซื้อรวม" value={formatTHB(sales.totals.amount)} />
             </div>
             <StatCard label="จำนวนออร์เดอร์" value={String(sales.totals.orders)} />
             <StatCard label="จำนวนชิ้น" value={String(sales.totals.units)} />
+            <StatCard
+              label="ยื่นใบเสร็จแล้ว"
+              value={`${sales.totals.claimed}/${sales.totals.orders}`}
+            />
           </div>
+          {sales.totals.unclaimed > 0 && (
+            <p className="px-3 pt-2 text-[12px] text-slate-500">
+              ยังไม่ยื่นใบเสร็จ <b className="text-brand-ink">{sales.totals.unclaimed}</b> บิล — ซื้อแล้วแต่ยังไม่ส่งเข้ามาชิงรางวัล
+            </p>
+          )}
 
           <div className={`mt-4 ${adminTable.scroll}`}>
             <table className={adminTable.table}>
@@ -86,6 +108,7 @@ export default function SalesPanel({
                   <th>ลูกค้า</th>
                   <th>สินค้า DENTISTE&apos;</th>
                   <th className="text-right whitespace-nowrap">ยอด DENTISTE&apos;</th>
+                  <th className="whitespace-nowrap">ใบเสร็จ</th>
                   <th className="whitespace-nowrap">ชำระเมื่อ</th>
                 </tr>
               </thead>
@@ -120,6 +143,23 @@ export default function SalesPanel({
                         <span className="block whitespace-nowrap text-[11px] text-slate-400">
                           ทั้งบิล {formatTHB(o.orderTotal)}
                         </span>
+                      )}
+                    </td>
+                    <td className={adminTable.cell}>
+                      {o.receipt ? (
+                        <>
+                          <span
+                            className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${RECEIPT_CHIP[o.receipt.state][1]}`}
+                          >
+                            {RECEIPT_CHIP[o.receipt.state][0]}
+                          </span>
+                          {o.receipt.count > 1 && (
+                            <span className="ml-1 text-[11px] text-slate-400">×{o.receipt.count}</span>
+                          )}
+                          <span className="block text-[11px] text-slate-400">{when(o.receipt.at)}</span>
+                        </>
+                      ) : (
+                        <span className="whitespace-nowrap text-[12px] text-slate-400">ยังไม่ยื่น</span>
                       )}
                     </td>
                     <td className={adminTable.muted}>{when(o.paidAt)}</td>

@@ -1643,6 +1643,8 @@ export type PaidOrderLine = {
 
 export type PaidOrder = {
   orderName: string;
+  /** Shopify's numeric order id, which is what our own rows store. */
+  orderId: string;
   adminUrl: string;
   processedAt: string | null;
   total: number;
@@ -1720,6 +1722,7 @@ export async function paidOrdersSince(sinceISODate: string): Promise<PaidOrder[]
       for (const node of data.orders?.nodes ?? []) {
         out.push({
           orderName: node.name,
+          orderId: node.id.split("/").pop() ?? "",
           adminUrl: `https://admin.shopify.com/store/${STORES.smoothlife.adminHandle}/orders/${node.id.split("/").pop()}`,
           processedAt: node.processedAt,
           total: Number(node.totalPriceSet?.shopMoney?.amount ?? 0) || 0,

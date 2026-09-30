@@ -132,7 +132,7 @@ export default function Page() {
   const loadSales = useCallback(async () => {
     setSalesBusy(true);
     try {
-      const res = await fetch("/api/admin/campaigns/dentiste-sales", { cache: "no-store" });
+      const res = await fetch(`/api/admin/campaigns/dentiste-sales${campaignQuery}`, { cache: "no-store" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "โหลดยอดขายไม่สำเร็จ");
       setSales(json as Sales);
@@ -142,7 +142,7 @@ export default function Page() {
     } finally {
       setSalesBusy(false);
     }
-  }, []);
+  }, [campaignQuery]);
 
   // Putting a decided receipt back in the queue, when the decision was wrong.
   async function reopen(item: QueueItem) {
@@ -392,7 +392,10 @@ export default function Page() {
                   setTab(key);
                   // Opening the tab is what pays for the Shopify query; after
                   // that it is the รีเฟรช button's job.
-                  if (key === "sales" && !sales && !salesBusy) loadSales();
+                  // Refetched when the console is switched to another
+                  // campaign, since the claim column is matched against that
+                  // campaign's receipts.
+                  if (key === "sales" && sales?.campaign !== campaign && !salesBusy) loadSales();
                 }}
                 className={`shrink-0 border-b-2 px-3 pb-2.5 pt-1 text-sm ${
                   tab === key ? "border-brand-action font-bold text-brand-ink" : "border-transparent text-slate-500"
