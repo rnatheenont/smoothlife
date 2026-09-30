@@ -12,15 +12,17 @@ const CAMERA_DISTANCE = 20;
 const FOV = 30;
 
 // How far the camera slides for a pointer at the very edge of the banner.
-// Small on purpose: this is a shop window with a little depth in it, not a
-// ride, and the layers are cut-outs whose edges give the game away if they
-// travel far.
-const POINTER_SWAY_X = 0.62;
-const POINTER_SWAY_Y = 0.34;
+// Small on purpose, and vertically smaller still — the campaign artwork has
+// the brand logo 2.8% from the top edge and the venue 4.4% from the bottom,
+// so a lean that moves the scene more than about 2% of its height starts
+// pushing one or the other out of the frame. Worked back from those two
+// numbers rather than chosen for feel.
+const POINTER_SWAY_X = 0.5;
+const POINTER_SWAY_Y = 0.13;
 // The same movement, unattended, so the banner has life in it before anyone
 // has touched the mouse — and for the whole of the time nobody does.
-const DRIFT_X = 0.26;
-const DRIFT_Y = 0.15;
+const DRIFT_X = 0.18;
+const DRIFT_Y = 0.05;
 
 const SNOW_SPAN_Z = [-6, 8] as const;
 
@@ -138,11 +140,30 @@ export default function HeroScene3D({
       mesh.position.set(cx * k, cy * k, depth);
     }
 
-    function planeFor(tex: THREE.Texture, widthFraction: number) {
+    function planeFor(tex: THREE.Texture, widthFraction: number, bleed = 0) {
       const img = tex.image as { width: number; height: number };
       const w = widthFraction * FRAME_W;
       const h = (w * img.height) / img.width;
-      const geo = new THREE.PlaneGeometry(w, h);
+      // The plane is grown past the picture on every side and the extra area
+      // is given UVs outside 0..1, which ClampToEdgeWrapping resolves to the
+      // outermost row or column of pixels — so the artwork carries on out of
+      // the frame instead of ending in a straight cut. The picture itself is
+      // untouched: same size, same place, the mesh centre does not move.
+      const geo = new THREE.PlaneGeometry(
+        w * (1 + 2 * bleed),
+        h * (1 + 2 * bleed),
+      );
+      if (bleed > 0) {
+        const uv = geo.attributes.uv;
+        for (let i = 0; i < uv.count; i++) {
+          uv.setXY(
+            i,
+            (uv.getX(i) - 0.5) * (1 + 2 * bleed) + 0.5,
+            (uv.getY(i) - 0.5) * (1 + 2 * bleed) + 0.5,
+          );
+        }
+        uv.needsUpdate = true;
+      }
       const mat = new THREE.MeshBasicMaterial({
         map: tex,
         transparent: true,
@@ -263,7 +284,11 @@ export default function HeroScene3D({
             const tex = await makeTexture(layer.src);
             const copies: THREE.Mesh[] = [];
             for (let pass = 0; pass < (layer.boost ?? 1); pass++) {
-              const { mesh, heightFraction } = planeFor(tex, layer.w);
+              const { mesh, heightFraction } = planeFor(
+                tex,
+                layer.w,
+                layer.bleed ?? 0,
+              );
               place(
                 mesh,
                 layer.w,

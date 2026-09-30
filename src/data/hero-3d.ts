@@ -35,6 +35,17 @@ export type Hero3DLayer = {
    * scene out over the flat banner underneath and looking for a change.
    */
   boost?: number;
+  /**
+   * How far past its own edges to carry the layer, as a fraction of its size,
+   * for artwork the frame cuts off rather than ends. The people are cut at the
+   * bottom of their picture and their arm is cut at the side; hung in a scene
+   * that leans, those cuts stopped being the frame's edge and became a
+   * straight line across the middle of them. The bleed repeats the outermost
+   * pixels outward, so the cut sits outside the frame again wherever the
+   * camera goes. It adds nothing inside the picture: the artwork keeps the
+   * exact size and place it has in the flat banner.
+   */
+  bleed?: number;
 };
 
 export type Hero3DScene = {
@@ -68,7 +79,14 @@ export const hero3DScenes: Hero3DScene[] = [
         depth: 2.6,
         boost: 2,
       },
-      { src: `${WINTER}/people.webp`, w: 0.784, x: 0.06, y: 0.226, depth: 5.2 },
+      {
+        src: `${WINTER}/people.webp`,
+        w: 0.784,
+        x: 0.06,
+        y: 0.226,
+        depth: 5.2,
+        bleed: 0.1,
+      },
       // The date sits on their shirts in the original, so it is nearest.
       {
         src: `${WINTER}/date.png`,
