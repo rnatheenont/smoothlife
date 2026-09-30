@@ -92,44 +92,76 @@ export default async function HomePreview() {
 
   return (
     <div className={`${display.variable} min-h-screen`} style={{ backgroundColor: PAPER, color: "#20302a" }}>
-      {/* 1 — the hero. One line, said once, with the artwork given room. */}
-      <section className="mx-auto grid w-full max-w-[1280px] items-center gap-8 px-5 pb-14 pt-8 md:grid-cols-[0.9fr_1.1fr] md:gap-14 md:pb-24 md:pt-16">
-        <div>
-          <Eyebrow>ของแท้ 100% · ส่งฟรีทั่วไทย</Eyebrow>
-          <Display className="mt-4 text-[38px] leading-[1.15] md:text-[58px]" >
-            <span style={{ color: INK }}>ดูแลตัวเอง</span>
-            <br />
-            <span style={{ color: INK }}>ให้ถูกวิธี</span>
-          </Display>
-          <p className="mt-5 max-w-[46ch] text-[15px] leading-relaxed text-[#5d6b64]">
-            สกินแคร์ ดูแลช่องปาก และวิตามินจากแบรนด์ที่เชื่อถือได้ คัดมาให้แล้วว่าเหมาะกับปัญหาแบบไหน
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link
-              href="/shop"
-              className="inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
-              style={{ backgroundColor: INK }}
-            >
-              เริ่มช้อป <ArrowRight size={16} aria-hidden />
-            </Link>
-            <Link
-              href="/ai-assistant"
-              className="inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-sm font-semibold ring-1 transition-colors hover:bg-white"
-              style={{ color: INK, borderColor: "transparent", boxShadow: "inset 0 0 0 1px rgba(0,53,41,0.18)" }}
-            >
-              <Sparkles size={15} aria-hidden /> ให้ AI ช่วยเลือก
-            </Link>
+      {/* 1 — the hero, edge to edge, with the line set on the photograph.
+             The first version split it in two — words left, picture right —
+             which is a card, not a cover, and Ceramide is a cover. The
+             photograph is also a quiet one now: the campaign key visual that
+             was here is a purple winter poster, and a loud picture on a calm
+             ground makes both look wrong. */}
+      <section className="relative isolate flex min-h-[62vh] items-center overflow-hidden md:min-h-[76vh]">
+        <Image
+          src="/concerns/dryness.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          priority
+          className="-z-10 object-cover object-[62%_center]"
+        />
+        {/* Paper, not black. A dark scrim would hold the text just as well and
+            sever the hero from the page below it; this keeps one ground. */}
+        <div
+          className="absolute inset-0 -z-10"
+          style={{
+            // Fades out by the middle, not by three-quarters: the wide version
+            // covered so much of the frame that the photograph stopped being in
+            // the hero at all and it read as an empty cream band.
+            background: `linear-gradient(95deg, ${PAPER} 0%, ${PAPER}f0 26%, ${PAPER}a8 42%, ${PAPER}00 60%)`,
+          }}
+          aria-hidden
+        />
+        <div className="mx-auto w-full max-w-[1280px] px-5 py-16 md:py-24">
+          <div className="max-w-[min(100%,34rem)]">
+            <Eyebrow>ของแท้ 100% · ส่งฟรีทั่วไทย</Eyebrow>
+            <Display className="mt-4 text-[40px] leading-[1.12] md:text-[64px]">
+              <span style={{ color: INK }}>ดูแลตัวเอง</span>
+              <br />
+              <span style={{ color: INK }}>ให้ถูกวิธี</span>
+            </Display>
+            <p className="mt-5 max-w-[40ch] text-[15px] leading-relaxed text-[#4e5c55]">
+              สกินแคร์ ดูแลช่องปาก และวิตามินจากแบรนด์ที่เชื่อถือได้ คัดมาให้แล้วว่าเหมาะกับปัญหาแบบไหน
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link
+                href="/shop"
+                className="inline-flex min-h-12 items-center gap-2 rounded-full px-7 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
+                style={{ backgroundColor: INK }}
+              >
+                เริ่มช้อป <ArrowRight size={16} aria-hidden />
+              </Link>
+              <Link
+                href="/ai-assistant"
+                className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white/70 px-6 text-sm font-semibold backdrop-blur-sm transition-colors hover:bg-white"
+                style={{ color: INK, boxShadow: "inset 0 0 0 1px rgba(0,53,41,0.14)" }}
+              >
+                <Sparkles size={15} aria-hidden /> ให้ AI ช่วยเลือก
+              </Link>
+            </div>
           </div>
         </div>
-        {hero && (
-          <Link href={hero.href} className="relative block aspect-[4/3] overflow-hidden rounded-[28px] bg-white md:aspect-[5/4]">
-            <Image src={hero.image} alt="" fill sizes="(max-width: 768px) 100vw, 55vw" className="object-cover" priority />
-          </Link>
-        )}
       </section>
 
+      {/* The campaign that used to be the hero, kept but sized as what it is:
+          one thing on this week rather than the face of the shop. */}
+      {hero && (
+        <section className="mx-auto w-full max-w-[1280px] px-5 pt-12 md:pt-16">
+          <Link href={hero.href} className="relative block aspect-[16/7] overflow-hidden rounded-[24px] bg-white md:aspect-[21/7]">
+            <Image src={hero.image} alt="" fill sizes="(max-width: 768px) 100vw, 1280px" className="object-cover" />
+          </Link>
+        </section>
+      )}
+
       {/* 2 — categories as round tiles, Ceramide's one structural idea worth taking. */}
-      <section className="mx-auto w-full max-w-[1280px] px-5 pb-16 md:pb-24">
+      <section className="mx-auto w-full max-w-[1280px] px-5 pb-16 pt-14 md:pb-24 md:pt-20">
         <ul className="flex gap-5 overflow-x-auto pb-2 scrollbar-none md:grid md:grid-cols-6 md:gap-8 md:overflow-visible">
           {categories.slice(0, 6).map((c) => (
             <li key={c.slug} className="shrink-0">
