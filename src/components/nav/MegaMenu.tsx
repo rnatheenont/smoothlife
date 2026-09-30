@@ -23,14 +23,21 @@ import { categoryImage } from "@/data/categories";
 
 const CLOSE_DELAY = 120;
 
-export default function MegaMenu({ label, href }: { label: string; href: string }) {
+export default function MegaMenu({
+  label,
+  href,
+}: {
+  label: string;
+  href: string;
+}) {
   const [open, setOpen] = useState(false);
   const [activeSlug, setActiveSlug] = useState(menuCategories[0]?.slug);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
 
-  const active = menuCategories.find((c) => c.slug === activeSlug) ?? menuCategories[0];
+  const active =
+    menuCategories.find((c) => c.slug === activeSlug) ?? menuCategories[0];
 
   // A pointer that leaves for a moment on its way to the panel should not close
   // it; one that leaves for good should.
@@ -70,12 +77,20 @@ export default function MegaMenu({ label, href }: { label: string; href: string 
   }
 
   return (
-    <div ref={wrapRef} className="static" onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
+    <div
+      ref={wrapRef}
+      className="static"
+      onMouseEnter={cancelClose}
+      onMouseLeave={scheduleClose}
+    >
       {/* The label is a link and the chevron is the toggle, which is the only
           arrangement where all three ways in behave the way each one expects.
           One element doing both meant the pointer opened the panel on enter
           and the click that followed toggled it straight back shut. */}
-      <span className="inline-flex items-center gap-0.5" onMouseEnter={() => setOpen(true)}>
+      <span
+        className="inline-flex items-center gap-0.5"
+        onMouseEnter={() => setOpen(true)}
+      >
         <Link
           href={href}
           onFocus={() => setOpen(true)}
@@ -93,16 +108,20 @@ export default function MegaMenu({ label, href }: { label: string; href: string 
           onClick={() => setOpen((v) => !v)}
           className="grid size-6 place-items-center rounded-md text-slate-400 transition-colors hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
         >
-          <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+          <ChevronDown
+            size={14}
+            className={`transition-transform ${open ? "rotate-180" : ""}`}
+            aria-hidden
+          />
         </button>
       </span>
 
       {open && (
         <div
           id={panelId}
-          className="absolute inset-x-0 top-full z-50 border-t border-slate-100 bg-white shadow-[0_18px_40px_-24px_rgba(0,53,41,0.35)] animate-fadeUp"
+          className="absolute inset-x-0 top-full z-50 max-h-[80vh] overflow-y-auto border-t border-slate-100 bg-white shadow-[0_18px_40px_-24px_rgba(0,53,41,0.35)] animate-fadeUp"
         >
-          <div className="container-page grid gap-0 py-6 md:grid-cols-[230px_1fr_300px]">
+          <div className="container-page grid gap-0 py-6 md:grid-cols-[230px_1fr_340px]">
             {/* Categories. Pointing at one changes the two panels beside it —
                 Etsy's idea, and the only way six categories and their contents
                 fit without becoming a wall. */}
@@ -117,16 +136,28 @@ export default function MegaMenu({ label, href }: { label: string; href: string 
                       onFocus={() => setActiveSlug(c.slug)}
                       onClick={() => setOpen(false)}
                       className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-[14px] transition-colors ${
-                        on ? "bg-surface-soft font-semibold text-brand-800" : "text-slate-600 hover:bg-surface-soft"
+                        on
+                          ? "bg-surface-soft font-semibold text-brand-800"
+                          : "text-slate-600 hover:bg-surface-soft"
                       }`}
                     >
                       <span className="flex items-center gap-2.5">
                         <span className="relative size-7 shrink-0 overflow-hidden rounded-full bg-surface-soft">
-                          <Image src={categoryImage(c.slug)} alt="" fill sizes="28px" className="object-cover" />
+                          <Image
+                            src={categoryImage(c.slug)}
+                            alt=""
+                            fill
+                            sizes="28px"
+                            className="object-cover"
+                          />
                         </span>
                         {c.label}
                       </span>
-                      <ChevronRight size={14} className={on ? "opacity-60" : "opacity-0"} aria-hidden />
+                      <ChevronRight
+                        size={14}
+                        className={on ? "opacity-60" : "opacity-0"}
+                        aria-hidden
+                      />
                     </Link>
                   </li>
                 );
@@ -139,7 +170,9 @@ export default function MegaMenu({ label, href }: { label: string; href: string 
             <div className="grid gap-x-8 gap-y-6 px-0 pt-2 sm:grid-cols-[1fr_1fr_auto] md:px-8 md:pt-0">
               {active?.groups.map((g) => (
                 <div key={g.title}>
-                  <p className="text-[12px] font-semibold text-slate-400">{g.title}</p>
+                  <p className="text-[12px] font-semibold text-slate-400">
+                    {g.title}
+                  </p>
                   <ul className="mt-2.5 flex flex-col">
                     {g.items.map((i) => (
                       <li key={i.href}>
@@ -171,8 +204,12 @@ export default function MegaMenu({ label, href }: { label: string; href: string 
                       className="object-contain p-4 transition-transform duration-500 group-hover:scale-105"
                     />
                   </span>
-                  <span className="mt-2 text-[11px] text-slate-400">ขายดีใน{active.label}</span>
-                  <span className="line-clamp-2 text-[13px] leading-snug text-slate-700">{active.featured.name}</span>
+                  <span className="mt-2 text-[11px] text-slate-400">
+                    ขายดีใน{active.label}
+                  </span>
+                  <span className="line-clamp-2 text-[13px] leading-snug text-slate-700">
+                    {active.featured.name}
+                  </span>
                   <span className="mt-0.5 text-[13px] font-semibold text-brand-800">
                     ฿{active.featured.price.toLocaleString("th-TH")}
                   </span>
@@ -182,10 +219,16 @@ export default function MegaMenu({ label, href }: { label: string; href: string 
 
             {/* Brands in this category, as the logos people actually scan for. */}
             <div className="border-slate-100 ps-0 pt-6 md:border-s md:ps-6 md:pt-0">
-              <p className="text-[12px] font-semibold text-slate-400">แบรนด์ใน{active?.label}</p>
-              {/* Two across, not three. A brand logo is a thing people scan
-                  for by shape, and at a third of a narrow rail there was more
-                  padding than mark. */}
+              <p className="text-[12px] font-semibold text-slate-400">
+                แบรนด์ใน{active?.label}
+              </p>
+              {/* Two across, not three, in a tile very close to square.
+                  Measured: nearly every one of these logo files is square —
+                  800x800, 1200x1200, 1280x1280 — so in the 5:3 tile this used
+                  to be, object-contain fitted them to the tile's *height* and
+                  a 134px-wide tile carried a 68px mark with white either
+                  side of it. The tile now follows the artwork rather than the
+                  other way round, and the rail widened to pay for it. */}
               <ul className="mt-3 grid grid-cols-2 gap-2">
                 {active?.brands.map((b) => (
                   <li key={b.slug}>
@@ -193,14 +236,22 @@ export default function MegaMenu({ label, href }: { label: string; href: string 
                       href={`/brands/${b.slug}`}
                       onClick={() => setOpen(false)}
                       title={b.name}
-                      className="grid aspect-[5/3] place-items-center overflow-hidden rounded-lg bg-white ring-1 ring-slate-100 transition-colors hover:ring-brand-teal"
+                      className="grid aspect-[4/3] place-items-center overflow-hidden rounded-lg bg-white ring-1 ring-slate-100 transition-colors hover:ring-brand-teal"
                     >
                       {b.image ? (
                         <span className="relative h-full w-full">
-                          <Image src={b.image} alt={b.name} fill sizes="140px" className="object-contain p-1.5" />
+                          <Image
+                            src={b.image}
+                            alt={b.name}
+                            fill
+                            sizes="160px"
+                            className="object-contain p-1"
+                          />
                         </span>
                       ) : (
-                        <span className="px-1.5 text-center text-[11px] font-medium leading-tight text-slate-600">{b.name}</span>
+                        <span className="px-1.5 text-center text-[11px] font-medium leading-tight text-slate-600">
+                          {b.name}
+                        </span>
                       )}
                     </Link>
                   </li>
