@@ -92,6 +92,10 @@ export default function SalesPanel({
   }, [sales, needle, state, earningOnly]);
   const shownAmount = shown.reduce((sum, o) => sum + o.amount, 0);
   const shownEntries = shown.reduce((sum, o) => sum + o.entries, 0);
+  const shownUnits = shown.reduce((sum, o) => sum + o.units, 0);
+  const shownClaimed = shown.filter((o) => o.receipt).length;
+  /** Whether the cards are showing a slice rather than the whole campaign. */
+  const narrowed = Boolean(sales) && shown.length !== sales!.totals.orders;
 
   /** How many bills each tab holds, before the search box narrows them. */
   const counts = useMemo(() => {
@@ -139,26 +143,6 @@ export default function SalesPanel({
 
       {sales && (
         <>
-          {/* The money gets the full width on a phone: sharing the row puts a
-              six-figure number on two lines, and it is the number this tab
-              exists to answer. */}
-          <div className="mt-4 grid grid-cols-2 gap-3 px-3 md:grid-cols-4">
-            <div className="col-span-2 md:col-span-1">
-              <StatCard label="ยอดซื้อรวม" value={formatTHB(sales.totals.amount)} />
-            </div>
-            <StatCard label="จำนวนออร์เดอร์" value={String(sales.totals.orders)} />
-            <StatCard label="จำนวนชิ้น" value={String(sales.totals.units)} />
-            <StatCard
-              label="ยื่นใบเสร็จแล้ว"
-              value={`${sales.totals.claimed}/${sales.totals.orders}`}
-            />
-          </div>
-          {sales.totals.unclaimed > 0 && (
-            <p className="px-3 pt-2 text-[12px] text-slate-500">
-              ยังไม่ยื่นใบเสร็จ <b className="text-brand-ink">{sales.totals.unclaimed}</b> บิล — ซื้อแล้วแต่ยังไม่ส่งเข้ามาชิงรางวัล
-            </p>
-          )}
-
           <div className="mt-4 flex flex-wrap items-center gap-1 px-3">
             {TABS.map(([key, label]) => (
               <button
@@ -200,12 +184,40 @@ export default function SalesPanel({
               <Label className="sr-only">ค้นหาลูกค้า</Label>
               <Input placeholder="ค้นหาชื่อลูกค้า / อีเมล / เลขบิล" />
             </TextField>
-            <p className="text-[12px] text-slate-500">
-              <Search size={12} className="mr-1 inline" aria-hidden />
-              แสดง <b className="text-brand-ink">{shown.length}</b> บิล · รวม{" "}
-              <b className="text-brand-ink">{formatTHB(shownAmount)}</b> · {shownEntries} สิทธิ์
-            </p>
+            {needle && (
+              <p className="text-[12px] text-slate-500">
+                <Search size={12} className="mr-1 inline" aria-hidden />
+                ค้นหา &ldquo;{query.trim()}&rdquo;
+              </p>
+            )}
           </div>
+
+          {/* Under the tabs, and about the tab: every one of these four counts
+              only what is on screen. The whole-campaign figure is one line
+              below, so narrowing never loses it. */}
+          <div className="mt-3 grid grid-cols-2 gap-3 px-3 md:grid-cols-4">
+            <div className="col-span-2 md:col-span-1">
+              <StatCard label={narrowed ? "ยอดซื้อในกลุ่มนี้" : "ยอดซื้อรวม"} value={formatTHB(shownAmount)} />
+            </div>
+            <StatCard label="จำนวนออร์เดอร์" value={String(shown.length)} />
+            <StatCard label="จำนวนชิ้น" value={String(shownUnits)} />
+            <StatCard label="สิทธิ์รวม" value={String(shownEntries)} />
+          </div>
+
+          <p className="px-3 pt-2 text-[12px] text-slate-500">
+            {narrowed ? (
+              <>
+                จากทั้งแคมเปญ <b className="text-brand-ink">{sales.totals.orders}</b> บิล ·{" "}
+                <b className="text-brand-ink">{formatTHB(sales.totals.amount)}</b> ·{" "}
+                {sales.totals.entries} สิทธิ์
+              </>
+            ) : (
+              <>
+                ยื่นใบเสร็จแล้ว <b className="text-brand-ink">{shownClaimed}</b> บิล · ยังไม่ยื่นอีก{" "}
+                <b className="text-brand-ink">{shown.length - shownClaimed}</b> บิล — ซื้อแล้วแต่ยังไม่ส่งเข้ามาชิงรางวัล
+              </>
+            )}
+          </p>
 
           <div className={`mt-3 ${adminTable.scroll}`}>
             <table className={adminTable.table}>
