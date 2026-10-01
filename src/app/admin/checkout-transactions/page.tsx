@@ -55,13 +55,13 @@ function TranRefCopy({ tranRef }: { tranRef: string }) {
           () => {},
         );
       }}
-      className="inline-flex items-center gap-1 rounded-md bg-white px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amber-900 ring-1 ring-amber-200 hover:bg-amber-50"
+      className="inline-flex items-center gap-1 rounded-md bg-white px-1.5 py-0.5 font-mono text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
     >
       {tranRef}
       {copied ? (
         <Check size={11} className="text-emerald-600" />
       ) : (
-        <Copy size={11} className="text-amber-500" />
+        <Copy size={11} className="text-slate-400" />
       )}
       <span className="sr-only">คัดลอก tran ref</span>
     </button>
@@ -300,7 +300,14 @@ export default function AdminCheckoutTransactionsPage() {
               <tbody>
                 {transactions.map((tx) => (
                   <tr key={tx.id} className={adminTable.row}>
-                    <td className={adminTable.mono}>{tx.invoice_no}</td>
+                    <td className={adminTable.mono}>
+                      {tx.invoice_no}
+                      {refundRouteFor(tx.tran_ref) === "portal" && tx.tran_ref && (
+                        <span className="mt-1 flex items-center gap-1 text-[11px] font-normal text-slate-400">
+                          2C2P <TranRefCopy tranRef={tx.tran_ref} />
+                        </span>
+                      )}
+                    </td>
                     <td className={adminTable.cell}>
                       {tx.contact_email || "-"}
                       <br />
@@ -388,6 +395,11 @@ export default function AdminCheckoutTransactionsPage() {
                     </span>
                   )}
                 </p>
+                {refundRouteFor(tx.tran_ref) === "portal" && tx.tran_ref && (
+                  <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-400">
+                    2C2P ref: <TranRefCopy tranRef={tx.tran_ref} />
+                  </p>
+                )}
                 {tx.refund_note && (
                   <p className="mt-1 text-[11px] text-slate-400">
                     {tx.refund_note}
