@@ -47,23 +47,23 @@ export default function SubscriptionBanner() {
   const maxDiscount = Math.max(...subscriptionPlans.map((p) => p.discountPct));
 
   return (
-    <div className="relative isolate overflow-hidden rounded-feature bg-[linear-gradient(135deg,#076051_0%,#0b8068_48%,#00ab8c_100%)] px-5 py-10 text-white ring-1 ring-inset ring-white/10 md:px-12 md:py-14">
+    <div className="relative isolate overflow-hidden rounded-feature bg-[linear-gradient(135deg,#0a8d72_0%,#02a384_48%,#15c2a4_100%)] px-5 py-10 text-white ring-1 ring-inset ring-white/10 md:px-12 md:py-14">
       {/* Depth, in layers that hold still. The two circles that used to drift
           across this block were decoration animating for no one's benefit. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-28 -top-32 h-[26rem] w-[26rem] rounded-full bg-brand-emerald/50 blur-[90px]"
+        className="pointer-events-none absolute -left-28 -top-32 h-[26rem] w-[26rem] rounded-full bg-brand-emerald/60 blur-[90px]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-44 -right-24 h-[26rem] w-[26rem] rounded-full bg-brand-sky/40 blur-[90px]"
+        className="pointer-events-none absolute -bottom-44 -right-24 h-[26rem] w-[26rem] rounded-full bg-brand-sky/50 blur-[90px]"
       />
       {/* A third light source, low and wide, so the cards sit in a pool of
           light. The corner blooms alone left the middle of the block — where
           the decision happens — its darkest part. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-[36%] left-1/2 h-64 w-[40rem] -translate-x-1/2 rounded-full bg-brand-teal/50 blur-[110px]"
+        className="pointer-events-none absolute bottom-[36%] left-1/2 h-64 w-[40rem] -translate-x-1/2 rounded-full bg-brand-teal/60 blur-[110px]"
       />
       <div
         aria-hidden="true"
@@ -71,17 +71,15 @@ export default function SubscriptionBanner() {
       />
 
       <div className="relative mx-auto max-w-3xl text-center">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold ring-1 ring-white/20 backdrop-blur-sm">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#04322c]/60 px-3.5 py-1.5 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur-sm">
           <Repeat size={13} aria-hidden="true" /> สมัครสมาชิกรายรอบ ไม่ต้องสั่งซ้ำ
         </span>
         <h2 className="mt-5 text-[30px] font-extrabold leading-[1.15] tracking-[-0.02em] md:text-[50px] md:leading-[1.08]">
           เลือกรอบส่ง<span className="whitespace-nowrap">ของคุณเอง</span>
           <br />
-          <span className="bg-[linear-gradient(90deg,#ffffff_0%,#9ff5dd_100%)] bg-clip-text text-transparent">
-            ยิ่งนานยิ่งประหยัด
-          </span>
+          ยิ่งนานยิ่งประหยัด
         </h2>
-        <p className="mx-auto mt-4 max-w-lg text-[15px] leading-relaxed text-white/90">
+        <p className="mx-auto mt-5 max-w-xl rounded-xl2 bg-[#04322c]/55 px-5 py-3 text-[15px] leading-relaxed text-white ring-1 ring-white/15 backdrop-blur-sm">
           สินค้าสุขภาพและความงามที่คุณใช้ประจำ มาเองตามรอบที่เลือก
           ส่วนลดล็อกไว้ทั้งเทอม สูงสุด {maxDiscount}%
         </p>
@@ -114,7 +112,7 @@ export default function SubscriptionBanner() {
                     three of them different heights. */}
                 <span
                   className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
-                    plan.popular ? "bg-brand-gradient text-white" : "invisible"
+                    plan.popular ? "bg-brand-800 text-white" : "invisible"
                   }`}
                 >
                   ยอดนิยม
@@ -175,8 +173,10 @@ export default function SubscriptionBanner() {
           );
         })}
       </ul>
-      <p className="relative mt-3 text-center text-xs text-white/90">
-        ตัวอย่างจากยอดสั่งซื้อ {formatTHB(EXAMPLE_BASE)} ต่อรอบ
+      <p className="relative mt-3.5 text-center">
+        <span className="inline-block rounded-full bg-[#04322c]/55 px-3.5 py-1 text-xs text-white ring-1 ring-white/15 backdrop-blur-sm">
+          ตัวอย่างจากยอดสั่งซื้อ {formatTHB(EXAMPLE_BASE)} ต่อรอบ
+        </span>
       </p>
 
       {/* One way in, under everything it was asking about. */}
