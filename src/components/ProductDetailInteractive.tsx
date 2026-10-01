@@ -53,9 +53,9 @@ const BASE_TABS = [
   { id: "delivery", label: "สต็อกและการจัดส่ง" },
 ];
 
-// The sixth tab only exists for a product somebody has written copy for, which
-// today is almost none of them. An empty tab labelled "รายละเอียดเพิ่มเติม" on
-// a thousand product pages would be a thousand small disappointments.
+// Only exists for a product somebody has written copy for, which today is a
+// small part of the catalogue. An empty tab labelled "รายละเอียดเพิ่มเติม" on a
+// thousand product pages would be a thousand small disappointments.
 const CONTENT_TAB = { id: "written", label: "รายละเอียดเพิ่มเติม" };
 
 export default function ProductDetailInteractive({
@@ -76,14 +76,21 @@ export default function ProductDetailInteractive({
   /** Published, hand-written copy for this product — null for most of them. */
   contentBlocks?: ContentBlock[] | null;
 }) {
-  const tabs = contentBlocks?.length ? [...BASE_TABS, CONTENT_TAB] : BASE_TABS;
+  // Written content says what the benefits tab says — the same facts, told for
+  // a person rather than assembled out of catalogue fields — so where it exists
+  // it opens the page and the catalogue tab steps aside instead of repeating it
+  // one tab later. Where nobody has written it yet, that catalogue tab is still
+  // the only place this page lists an ingredient at all.
+  const tabs = contentBlocks?.length
+    ? [CONTENT_TAB, ...BASE_TABS.filter((t) => t.id !== "benefits")]
+    : BASE_TABS;
   const images =
     product.images && product.images.length > 0
       ? product.images
       : ([product.image, product.image2].filter(Boolean) as string[]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [qty, setQty] = useState(1);
-  const [tab, setTab] = useState("benefits");
+  const [tab, setTab] = useState(tabs[0].id);
   const [added, setAdded] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState(product.variantId);
   const { addItem } = useCart();
