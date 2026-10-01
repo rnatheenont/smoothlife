@@ -266,11 +266,25 @@ export async function refundShopifyOrder(opts: {
   note?: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!shopifyAdminConfigured()) return { ok: false, error: "Shopify admin not configured" };
+
+  // payment_transactions.shopify_order_id holds two different shapes, because
+  // two different paths write it: the checkout webhooks and flash-sale orders
+  // store `order.id` straight from an Admin GraphQL reply, which is a GID,
+  // while the Shopify webhook route stores `String(order.id)` from a REST
+  // payload, which is a bare number. Measured on the live table: 3 rows GID,
+  // 7 rows numeric. GraphQL's ID! only takes the GID, so a refund on any of
+  // those 7 failed before it reached Shopify. Normalised here rather than at
+  // the writers, where changing the stored shape would break every other
+  // reader of the column.
+  const orderGid = opts.orderId.startsWith("gid://")
+    ? opts.orderId
+    : `gid://shopify/Order/${opts.orderId}`;
+
   try {
     // The refund has to be attached to the transaction that took the money.
     const order = await adminGraphql<{
       order: { transactions: { id: string; kind: string; status: string }[] } | null;
-    }>(`query RefundTx($id: ID!) { order(id: $id) { transactions { id kind status } } }`, { id: opts.orderId });
+    }>(`query RefundTx($id: ID!) { order(id: $id) { transactions { id kind status } } }`, { id: orderGid });
 
     const sale = order.order?.transactions.find((t) => t.kind === "SALE" && t.status === "SUCCESS");
     if (!sale) return { ok: false, error: "ไม่พบรายการชำระเงินของออเดอร์นี้ใน Shopify" };
@@ -288,14 +302,14 @@ export async function refundShopifyOrder(opts: {
       }`,
       {
         input: {
-          orderId: opts.orderId,
+          orderId: orderGid,
           note: opts.note?.slice(0, 250),
           // No notification: the customer has already been told by whoever
           // actually sent the money back.
           notify: false,
           transactions: [
             {
-              orderId: opts.orderId,
+              orderId: orderGid,
               parentId: sale.id,
               gateway: "2C2P",
               kind: "REFUND",

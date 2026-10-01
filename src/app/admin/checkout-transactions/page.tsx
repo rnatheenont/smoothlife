@@ -22,7 +22,13 @@ type Transaction = {
   confirmed_at: string | null;
 };
 
-function RefundControls({ tx, onDone }: { tx: Transaction; onDone: () => void }) {
+function RefundControls({
+  tx,
+  onDone,
+}: {
+  tx: Transaction;
+  onDone: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(String(tx.amount));
   const [note, setNote] = useState("");
@@ -54,11 +60,14 @@ function RefundControls({ tx, onDone }: { tx: Transaction; onDone: () => void })
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/checkout-transactions/mark-refunded", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId: tx.id, note }),
-      });
+      const res = await fetch(
+        "/api/admin/checkout-transactions/mark-refunded",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transactionId: tx.id, note }),
+        },
+      );
       const data = await res.json();
       if (!data.ok) {
         setError(data.error || "บันทึกไม่สำเร็จ");
@@ -102,26 +111,41 @@ function RefundControls({ tx, onDone }: { tx: Transaction; onDone: () => void })
           disabled={busy}
           className="flex items-center gap-1 rounded-full bg-rose-600 text-white font-semibold px-3 py-1.5 disabled:opacity-60"
         >
-          {busy && <Loader2 size={12} className="animate-spin" />} คืนเงินผ่าน 2C2P
+          {busy && <Loader2 size={12} className="animate-spin" />} คืนเงินผ่าน
+          2C2P
         </button>
         <button onClick={() => setOpen(false)} className="text-slate-400">
           ยกเลิก
         </button>
       </div>
       <div className="border-t border-slate-200 pt-2 mt-1">
-        <p className="text-slate-500 mb-1">หรือถ้าคืนเงินให้ลูกค้าด้วยวิธีอื่นแล้ว (เช่น ผ่าน 2C2P portal เอง):</p>
+        <p className="text-slate-500 mb-1">
+          หรือถ้าคืนเงินให้ลูกค้าด้วยวิธีอื่นแล้ว (เช่น ผ่าน 2C2P portal เอง):
+        </p>
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="หมายเหตุ (ถ้ามี)"
           className="w-full rounded-sm border border-slate-200 px-2 py-1 mb-2"
         />
-        <button onClick={submitManual} disabled={busy} className="text-slate-600 underline disabled:opacity-60">
+        <button
+          onClick={submitManual}
+          disabled={busy}
+          className="text-slate-600 underline disabled:opacity-60"
+        >
           บันทึกว่าคืนเงินแล้ว
         </button>
       </div>
     </div>
   );
+}
+
+/** The column holds two shapes — a GID from the checkout webhooks, a bare
+ *  number from the Shopify one — so the table was printing two different
+ *  kinds of thing under one heading. The number is the half a person can
+ *  paste into Shopify's admin search, so that is what is shown. */
+function orderNumber(id: string) {
+  return id.startsWith("gid://") ? (id.split("/").pop() ?? id) : id;
 }
 
 export default function AdminCheckoutTransactionsPage() {
@@ -145,7 +169,13 @@ export default function AdminCheckoutTransactionsPage() {
 
   useAdminAction({
     label: "รีเฟรชรายการซื้อ",
-    icon: <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden />,
+    icon: (
+      <RefreshCw
+        size={15}
+        className={loading ? "animate-spin" : ""}
+        aria-hidden
+      />
+    ),
     onClick: load,
     disabled: loading,
   });
@@ -196,14 +226,22 @@ export default function AdminCheckoutTransactionsPage() {
                     <td className={adminTable.cell}>
                       {tx.contact_email || "-"}
                       <br />
-                      <span className="text-[12px] text-slate-400">{tx.contact_phone}</span>
+                      <span className="text-[12px] text-slate-400">
+                        {tx.contact_phone}
+                      </span>
                     </td>
-                    <td className="px-3 py-2.5 text-right font-semibold tabular-nums">{formatTHB(tx.amount)}</td>
+                    <td className="px-3 py-2.5 text-right font-semibold tabular-nums">
+                      {formatTHB(tx.amount)}
+                    </td>
                     <td className={adminTable.cell}>
                       {tx.shopify_order_id ? (
-                        <span className="font-mono text-[12px] text-slate-700">{tx.shopify_order_id}</span>
+                        <span className="font-mono text-[12px] text-slate-700">
+                          {orderNumber(tx.shopify_order_id)}
+                        </span>
                       ) : (
-                        <span className="text-[12px] font-medium text-amber-600">ยังไม่มีออเดอร์ (ตรวจด้วยตนเอง)</span>
+                        <span className="text-[12px] font-medium text-amber-600">
+                          ยังไม่มีออเดอร์ (ตรวจด้วยตนเอง)
+                        </span>
                       )}
                     </td>
                     <td className={adminTable.cell}>
@@ -220,7 +258,9 @@ export default function AdminCheckoutTransactionsPage() {
                     </td>
                     <td className={adminTable.cell}>
                       <span className="flex flex-wrap justify-end gap-1.5">
-                        {tx.status === "success" ? <RefundControls tx={tx} onDone={load} /> : null}
+                        {tx.status === "success" ? (
+                          <RefundControls tx={tx} onDone={load} />
+                        ) : null}
                       </span>
                     </td>
                   </tr>
@@ -234,14 +274,18 @@ export default function AdminCheckoutTransactionsPage() {
               <li key={tx.id} className="p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-mono text-[12px] font-semibold text-brand-ink">{tx.invoice_no}</p>
+                    <p className="font-mono text-[12px] font-semibold text-brand-ink">
+                      {tx.invoice_no}
+                    </p>
                     <p className="mt-0.5 text-[11px] text-slate-500">
                       {tx.contact_email || "-"}
                       {tx.contact_phone ? ` · ${tx.contact_phone}` : ""}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="text-sm font-bold tabular-nums text-brand-ink">{formatTHB(tx.amount)}</p>
+                    <p className="text-sm font-bold tabular-nums text-brand-ink">
+                      {formatTHB(tx.amount)}
+                    </p>
                     <span className="mt-1 block">
                       {tx.status === "refunded" ? (
                         <Badge tone="neutral">คืนเงินแล้ว</Badge>
@@ -253,12 +297,20 @@ export default function AdminCheckoutTransactionsPage() {
                 </div>
                 <p className="mt-1.5 text-[11px] text-slate-500">
                   {tx.shopify_order_id ? (
-                    <span className="font-mono">Shopify: {tx.shopify_order_id}</span>
+                    <span className="font-mono">
+                      Shopify: {orderNumber(tx.shopify_order_id)}
+                    </span>
                   ) : (
-                    <span className="font-medium text-amber-600">ยังไม่มีออเดอร์ (ตรวจด้วยตนเอง)</span>
+                    <span className="font-medium text-amber-600">
+                      ยังไม่มีออเดอร์ (ตรวจด้วยตนเอง)
+                    </span>
                   )}
                 </p>
-                {tx.refund_note && <p className="mt-1 text-[11px] text-slate-400">{tx.refund_note}</p>}
+                {tx.refund_note && (
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    {tx.refund_note}
+                  </p>
+                )}
                 {tx.status === "success" && (
                   <div className="mt-2">
                     <RefundControls tx={tx} onDone={load} />
