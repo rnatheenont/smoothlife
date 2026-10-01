@@ -12,6 +12,35 @@
 // values across the 24 columns, and the entries below cover the great majority
 // of where they appear.
 
+/** Values whose reading depends on the column they sit in.
+ *
+ *  Shopify's taxonomy reuses one handle across metafields — "dry" is the same
+ *  value under "Suitable for skin type" and under "Suitable for hair type" — so
+ *  a flat table has to pick one meaning, and SPEC_VALUES picked skin. That is
+ *  how "เหมาะกับสภาพผม: ผิวแห้ง" (dry *skin* under a *hair* heading) reached
+ *  live product pages.
+ *
+ *  `null` means the value has no honest reading under that column and is
+ *  dropped, the same as a value this file does not list at all.
+ *
+ *  Keyed by the CSV column name, spelled as SPEC_LABELS spells it.
+ */
+export const SPEC_VALUES_BY_LABEL = {
+  "Suitable for hair type": {
+    dry: { th: "ผมแห้ง", en: "Dry hair" },
+    oily: { th: "ผมมัน", en: "Oily hair" },
+    sensitive: { th: "หนังศีรษะบอบบาง", en: "Sensitive scalp" },
+    "sensitive-skin": { th: "หนังศีรษะบอบบาง", en: "Sensitive scalp" },
+  },
+  "Product certifications & standards": {
+    // A skin type is not a certification. Every product the shop filed one on
+    // already lists it under "Suitable for skin type", so dropping it here
+    // loses nothing and stops the column from reading as a claim.
+    sensitive: null,
+    "sensitive-skin": null,
+  },
+};
+
 /** The Shopify metafield's own name, as the CSV column header spells it. */
 export const SPEC_LABELS = {
   "Active ingredient": { th: "สารออกฤทธิ์", en: "Active ingredient" },

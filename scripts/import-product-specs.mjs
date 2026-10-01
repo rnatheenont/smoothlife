@@ -18,7 +18,12 @@
 //   node scripts/import-product-specs.mjs <export.csv>          # dry run
 //   node scripts/import-product-specs.mjs <export.csv> --write  # apply
 import { readFileSync } from "node:fs";
-import { SPEC_LABELS, SPEC_VALUES, SPEC_COLUMN_ORDER } from "./product-spec-vocab.mjs";
+import {
+  SPEC_LABELS,
+  SPEC_VALUES,
+  SPEC_VALUES_BY_LABEL,
+  SPEC_COLUMN_ORDER,
+} from "./product-spec-vocab.mjs";
 
 const CSV = process.argv[2];
 const WRITE = process.argv.includes("--write");
@@ -118,11 +123,20 @@ for (const [handle, e] of byHandle) {
   for (const c of columns) {
     const raw = (e.first[c.i] ?? "").trim();
     if (!raw) continue;
-    const label = SPEC_LABELS[c.name.replace(/ \(product\.metafields\.[^)]+\)$/, "")];
+    const labelKey = c.name.replace(/ \(product\.metafields\.[^)]+\)$/, "");
+    const label = SPEC_LABELS[labelKey];
     if (!label) continue;
+    // What this column makes a value mean beats the general reading — and a
+    // column may say the value means nothing here, which drops it.
+    const byLabel = SPEC_VALUES_BY_LABEL[labelKey];
     const parts = raw.split(";").map((s) => s.trim()).filter(Boolean);
-    const known = parts.map((p) => SPEC_VALUES[p]).filter(Boolean);
-    for (const p of parts) if (!SPEC_VALUES[p]) skippedValues.set(p, (skippedValues.get(p) ?? 0) + 1);
+    const resolve = (p) => (byLabel && p in byLabel ? byLabel[p] : SPEC_VALUES[p]);
+    const known = parts.map(resolve).filter(Boolean);
+    // A value dropped on purpose is not an unknown one, and reporting it as
+    // missing vocabulary would send somebody to add it back.
+    for (const p of parts)
+      if (!resolve(p) && !(byLabel && p in byLabel))
+        skippedValues.set(p, (skippedValues.get(p) ?? 0) + 1);
     if (known.length === 0) continue;
     specRows.push({
       labelTh: label.th,
