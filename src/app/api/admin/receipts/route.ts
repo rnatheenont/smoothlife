@@ -107,7 +107,55 @@ export async function GET(req: NextRequest) {
 
   // Oldest first: the queue is worked in the order receipts arrived, which is
   // the same order VIP is decided in if the answer turns out to be "approval".
-  const pending = rows.filter((r) => r.status === "pending_review");
+  /**
+   * Searching the campaign, not the page of it.
+   *
+   * Both lists are cut to fifty before they are sent, because building a row
+   * signs a photo URL and fifty is as many as anyone reads at once. Filtering
+   * on the client would therefore search the fifty and report "not found" for
+   * a receipt sitting at number sixty — the worst possible answer, since it
+   * is indistinguishable from "never sent". So the text is matched here,
+   * against everything loaded, and the fifty are taken from what matched.
+   *
+   * Numbers are compared as digits: an admin reading "#4372" off a receipt
+   * and someone who typed "4372" are looking for the same order.
+   *
+   * Only what is on the row is searched — never the order name fetched from
+   * Shopify, which is read for the fifty rows being shown and would not exist
+   * yet for the two thousand being filtered. Every entry carries the number
+   * its customer typed, so the number is on the row either way.
+   */
+  const q = (req.nextUrl.searchParams.get("q") ?? "").trim().toLowerCase();
+  const qDigits = q.replace(/\D/g, "");
+  const matches = (r: EntryRow) => {
+    if (!q) return true;
+    const haystack = [
+      r.users?.display_name,
+      r.contact_name,
+      r.contact_email,
+      r.manual_receipt_no,
+      r.declared_order_number,
+      r.payment_transactions?.invoice_no,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    if (haystack.includes(q)) return true;
+    if (!qDigits) return false;
+    const digits = [
+      r.contact_phone,
+      r.users?.phone,
+      r.manual_receipt_no,
+      r.declared_order_number,
+      r.payment_transactions?.invoice_no,
+    ]
+      .filter(Boolean)
+      .map((v) => String(v).replace(/\D/g, ""))
+      .join(" ");
+    return digits.split(" ").some((d) => d.includes(qDigits));
+  };
+
+  const pending = rows.filter((r) => r.status === "pending_review" && matches(r));
   const approved = rows.filter((r) => r.status === "approved");
 
   // A photo link that expires in five minutes, made only for the queue an
@@ -118,7 +166,7 @@ export async function GET(req: NextRequest) {
   // Decided receipts, newest first: this list exists to be corrected, and the
   // mistake somebody wants back is nearly always the one just made.
   const decidedPage = rows
-    .filter((r) => r.status !== "pending_review")
+    .filter((r) => r.status !== "pending_review" && matches(r))
     .sort((a, b) => (b.reviewed_at ?? b.created_at).localeCompare(a.reviewed_at ?? a.created_at))
     .slice(0, 50);
 
@@ -300,7 +348,7 @@ export async function GET(req: NextRequest) {
       queue,
       pendingBeyondQueue: Math.max(0, pending.length - queue.length),
       decided,
-      decidedTotal: rows.filter((r) => r.status !== "pending_review").length,
+      decidedTotal: rows.filter((r) => r.status !== "pending_review" && matches(r)).length,
       /**
        * Who actually bought the VIP set, oldest purchase first.
        *

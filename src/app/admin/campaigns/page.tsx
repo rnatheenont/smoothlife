@@ -10,7 +10,7 @@
 // order, and the photo is what says the order is really theirs.
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, Check, Loader2, RefreshCw, X } from "lucide-react";
+import { ArrowLeft, Check, Loader2, RefreshCw, Search, X } from "lucide-react";
 import { PageHeader, Panel, StatCard, adminCards, adminTable } from "@/components/admin/layout-kit";
 import CampaignIndex from "./CampaignIndex";
 import CampaignSettings from "./CampaignSettings";
@@ -94,13 +94,27 @@ export default function Page() {
   const [salesBusy, setSalesBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Searching is done by the server, over every entry in the campaign rather
+  // than the fifty on screen — see the note in api/admin/receipts. Typing is
+  // held for a moment first: a request per keystroke would have the queue
+  // flickering through four wrong answers on the way to the right one.
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setQuery(search.trim()), 350);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   // "" for the first campaign keeps the URL clean and the server defaulting.
   const campaignQuery = campaign ? `?campaign=${encodeURIComponent(campaign)}` : "";
 
   const load = useCallback(async () => {
     if (!campaign) return;
     try {
-      const res = await fetch(`/api/admin/receipts${campaignQuery}`, { cache: "no-store" });
+      const params = new URLSearchParams();
+      if (campaign) params.set("campaign", campaign);
+      if (query) params.set("q", query);
+      const res = await fetch(`/api/admin/receipts${params.size ? `?${params}` : ""}`, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || "โหลดข้อมูลไม่สำเร็จ");
       setData(json as Data);
@@ -108,7 +122,7 @@ export default function Page() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "โหลดข้อมูลไม่สำเร็จ");
     }
-  }, [campaign, campaignQuery]);
+  }, [campaign, query]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- first load
@@ -447,10 +461,41 @@ export default function Page() {
             ))}
           </div>
 
+          {(tab === "queue" || tab === "decided") && (
+            <div className="mb-3 flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="ค้นหาชื่อลูกค้า เลขคำสั่งซื้อ เบอร์โทร หรืออีเมล"
+                  className="h-10 w-full rounded-l border border-surface-line bg-white ps-9 pe-9 text-[13px] text-brand-ink outline-hidden placeholder:text-slate-400 focus:border-brand-800"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    aria-label="ล้างคำค้น"
+                    className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-slate-400 hover:bg-black/5 hover:text-slate-600"
+                  >
+                    <X size={14} aria-hidden />
+                  </button>
+                )}
+              </div>
+              {query && (
+                <span className="shrink-0 text-[12px] text-slate-500">
+                  พบ {tab === "queue" ? data.queue.length : data.decided.length} รายการ
+                </span>
+              )}
+            </div>
+          )}
+
           {tab === "queue" && (
             <Panel title="คิวตรวจ — เก่าสุดก่อน">
               {data.queue.length === 0 ? (
-                <p className="px-3 py-6 text-[13px] text-slate-500">ไม่มีใบเสร็จรอตรวจ</p>
+                <p className="px-3 py-6 text-[13px] text-slate-500">
+                  {query ? `ไม่พบใบเสร็จรอตรวจที่ตรงกับ “${query}”` : "ไม่มีใบเสร็จรอตรวจ"}
+                </p>
               ) : (
                 <QueueTable
                   queue={data.queue}
@@ -476,7 +521,9 @@ export default function Page() {
                 และผลเดิมถูกบันทึกไว้ใน audit log
               </p>
               {data.decided.length === 0 ? (
-                <p className="px-3 py-6 text-[13px] text-slate-500">ยังไม่มีใบเสร็จที่ตรวจแล้ว</p>
+                <p className="px-3 py-6 text-[13px] text-slate-500">
+                  {query ? `ไม่พบใบเสร็จที่ตรวจแล้วที่ตรงกับ “${query}”` : "ยังไม่มีใบเสร็จที่ตรวจแล้ว"}
+                </p>
               ) : (
                 <div className="mt-2">
                   <QueueTable
