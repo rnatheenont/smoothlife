@@ -15,12 +15,32 @@ import { stableContentVariantId } from "@/lib/product-content";
 
 type Status = "published" | "draft" | "none";
 
-type OverrideRow = { variant_id: string; sku: string | null; published: boolean; blocks: unknown[] };
+type OverrideRow = {
+  variant_id: string;
+  sku: string | null;
+  published: boolean;
+  blocks: unknown[];
+};
 
-const STATUS_LABEL: Record<Status, { label: string; className: string; icon: typeof CheckCircle2 }> = {
-  published: { label: "เผยแพร่แล้ว", className: "text-emerald-700 bg-emerald-50", icon: CheckCircle2 },
-  draft: { label: "ร่าง", className: "text-amber-700 bg-amber-50", icon: FileEdit },
-  none: { label: "ยังไม่มีเนื้อหา", className: "text-slate-400 bg-slate-50", icon: Circle },
+const STATUS_LABEL: Record<
+  Status,
+  { label: string; className: string; icon: typeof CheckCircle2 }
+> = {
+  published: {
+    label: "เผยแพร่แล้ว",
+    className: "text-emerald-700 bg-emerald-50",
+    icon: CheckCircle2,
+  },
+  draft: {
+    label: "ร่าง",
+    className: "text-amber-700 bg-amber-50",
+    icon: FileEdit,
+  },
+  none: {
+    label: "ยังไม่มีเนื้อหา",
+    className: "text-slate-400 bg-slate-50",
+    icon: Circle,
+  },
 };
 
 export default function ProductContentListPage() {
@@ -28,6 +48,7 @@ export default function ProductContentListPage() {
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | Status>("all");
+  const [brand, setBrand] = useState("all");
 
   useEffect(() => {
     fetch("/api/admin/product-content")
@@ -49,28 +70,54 @@ export default function ProductContentListPage() {
         // variant on every build and would silently detach written content
         // from its row the day a price or stock level changes.
         const contentVariantId = stableContentVariantId(p);
-        const sku = p.variants.find((v) => v.variantId === contentVariantId)?.sku ?? null;
+        const sku =
+          p.variants.find((v) => v.variantId === contentVariantId)?.sku ?? null;
         const override = overrides[contentVariantId];
-        const status: Status = !override ? "none" : override.published ? "published" : "draft";
+        const status: Status = !override
+          ? "none"
+          : override.published
+            ? "published"
+            : "draft";
         return { product: p, contentVariantId, sku, status };
       }),
-    [overrides]
+    [overrides],
   );
 
+  // Vendor as the catalogue spells it, which is what these products are filed
+  // under; alphabetical rather than by size, because somebody filtering by
+  // brand already knows which one they want and is looking for its name.
+  const brandOptions = useMemo(() => {
+    const counted = new Map<string, number>();
+    for (const r of rows)
+      counted.set(r.product.brand, (counted.get(r.product.brand) ?? 0) + 1);
+    return [...counted.entries()].sort((a, b) =>
+      a[0].localeCompare(b[0], "th"),
+    );
+  }, [rows]);
+
+  // The brand narrows everything below it, including the progress bar and the
+  // status counts. "How far along is Dentiste" is the question a brand filter
+  // is for, and counts that stayed at the whole catalogue could not answer it.
+  const inBrand =
+    brand === "all" ? rows : rows.filter((r) => r.product.brand === brand);
+
   const q = query.trim().toLowerCase();
-  const filtered = rows.filter((r) => {
+  const filtered = inBrand.filter((r) => {
     if (filter !== "all" && r.status !== filter) return false;
     if (!q) return true;
-    return r.product.name.toLowerCase().includes(q) || (r.sku ?? "").toLowerCase().includes(q);
+    return (
+      r.product.name.toLowerCase().includes(q) ||
+      (r.sku ?? "").toLowerCase().includes(q)
+    );
   });
   const shown = filtered.slice(0, 200);
 
-  const counts = rows.reduce(
+  const counts = inBrand.reduce(
     (acc, r) => {
       acc[r.status] += 1;
       return acc;
     },
-    { published: 0, draft: 0, none: 0 } as Record<Status, number>
+    { published: 0, draft: 0, none: 0 } as Record<Status, number>,
   );
 
   return (
@@ -84,18 +131,25 @@ export default function ProductContentListPage() {
         <div className="h-2 w-40 overflow-hidden rounded-full bg-surface-muted">
           <div
             className="h-full rounded-full bg-brand-gradient"
-            style={{ width: `${rows.length > 0 ? Math.round((counts.published / rows.length) * 100) : 0}%` }}
+            style={{
+              width: `${inBrand.length > 0 ? Math.round((counts.published / inBrand.length) * 100) : 0}%`,
+            }}
           />
         </div>
         <span className="text-xs text-slate-500">
-          เผยแพร่แล้ว {counts.published.toLocaleString("th-TH")} · ร่าง {counts.draft.toLocaleString("th-TH")} ·
-          ยังไม่มีเนื้อหา {counts.none.toLocaleString("th-TH")} (จากทั้งหมด {rows.length.toLocaleString("th-TH")})
+          เผยแพร่แล้ว {counts.published.toLocaleString("th-TH")} · ร่าง{" "}
+          {counts.draft.toLocaleString("th-TH")} · ยังไม่มีเนื้อหา{" "}
+          {counts.none.toLocaleString("th-TH")} (จากทั้งหมด{" "}
+          {inBrand.length.toLocaleString("th-TH")})
         </span>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <div className="relative max-w-sm flex-1">
-          <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search
+            size={15}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+          />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -103,13 +157,34 @@ export default function ProductContentListPage() {
             className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-hidden focus:border-brand-teal"
           />
         </div>
+        <select
+          value={brand}
+          onChange={(e) => setBrand(e.target.value)}
+          aria-label="กรองตามแบรนด์"
+          className="rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm outline-hidden focus:border-brand-teal"
+        >
+          <option value="all">
+            ทุกแบรนด์ ({rows.length.toLocaleString("th-TH")})
+          </option>
+          {brandOptions.map(([name, n]) => (
+            <option key={name} value={name}>
+              {name} ({n.toLocaleString("th-TH")})
+            </option>
+          ))}
+        </select>
         <div className="inline-flex rounded-full bg-surface-muted p-1 text-xs">
           {(
             [
-              ["all", `ทั้งหมด ${rows.length.toLocaleString("th-TH")}`],
-              ["none", `ยังไม่มีเนื้อหา ${counts.none.toLocaleString("th-TH")}`],
+              ["all", `ทั้งหมด ${inBrand.length.toLocaleString("th-TH")}`],
+              [
+                "none",
+                `ยังไม่มีเนื้อหา ${counts.none.toLocaleString("th-TH")}`,
+              ],
               ["draft", `ร่าง ${counts.draft.toLocaleString("th-TH")}`],
-              ["published", `เผยแพร่แล้ว ${counts.published.toLocaleString("th-TH")}`],
+              [
+                "published",
+                `เผยแพร่แล้ว ${counts.published.toLocaleString("th-TH")}`,
+              ],
             ] as const
           ).map(([key, label]) => (
             <button
@@ -128,7 +203,9 @@ export default function ProductContentListPage() {
         </div>
       </div>
 
-      <div className={`mt-4 rounded-xl2 bg-white ring-1 ring-surface-line ${adminTable.scroll}`}>
+      <div
+        className={`mt-4 rounded-xl2 bg-white ring-1 ring-surface-line ${adminTable.scroll}`}
+      >
         <table className={adminTable.table}>
           <thead className={adminTable.thead}>
             <tr>
@@ -148,14 +225,26 @@ export default function ProductContentListPage() {
                       className="flex items-center gap-2.5 hover:text-brand-800"
                     >
                       <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-surface-soft ring-1 ring-surface-line">
-                        {p.image && <Image src={p.image} alt="" fill sizes="36px" className="object-cover" />}
+                        {p.image && (
+                          <Image
+                            src={p.image}
+                            alt=""
+                            fill
+                            sizes="36px"
+                            className="object-cover"
+                          />
+                        )}
                       </span>
-                      <span className="min-w-0 truncate font-medium text-brand-ink">{p.name}</span>
+                      <span className="min-w-0 truncate font-medium text-brand-ink">
+                        {p.name}
+                      </span>
                     </Link>
                   </td>
                   <td className={adminTable.mono}>{sku ?? "—"}</td>
                   <td className={adminTable.cell}>
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${St.className}`}>
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${St.className}`}
+                    >
                       <St.icon size={12} aria-hidden="true" />
                       {St.label}
                     </span>
@@ -165,7 +254,10 @@ export default function ProductContentListPage() {
             })}
             {loaded && shown.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-3 py-8 text-center text-sm text-slate-400">
+                <td
+                  colSpan={3}
+                  className="px-3 py-8 text-center text-sm text-slate-400"
+                >
                   ไม่พบรายการ
                 </td>
               </tr>
@@ -175,7 +267,8 @@ export default function ProductContentListPage() {
       </div>
       {filtered.length > shown.length && (
         <p className="mt-2 text-xs text-slate-400">
-          แสดง {shown.length} จาก {filtered.length.toLocaleString("th-TH")} รายการ — พิมพ์ค้นหาเพื่อแคบลง
+          แสดง {shown.length} จาก {filtered.length.toLocaleString("th-TH")}{" "}
+          รายการ — พิมพ์ค้นหาเพื่อแคบลง
         </p>
       )}
     </div>
