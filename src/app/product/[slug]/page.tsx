@@ -19,7 +19,7 @@ import RecentlyViewedSection from "@/components/RecentlyViewedSection";
 import { productJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { canonicalSlugFor } from "@/lib/product-canonical";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
-import { getPublishedProductContent } from "@/lib/product-content-public";
+import { getPublishedProductContent } from "@/lib/product-content";
 
 // Pages render on first visit and are then served from the edge cache,
 // refreshed at most every five minutes — and at once when a review is
