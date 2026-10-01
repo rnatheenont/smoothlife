@@ -7,8 +7,11 @@ import { refundTransaction, recurringMaintenanceConfigured } from "@/lib/2c2p";
 // partial). Gated by recurringMaintenanceConfigured() same as
 // cancelRecurringPlan/inquireRecurringPlan — needs the RSA key exchange
 // through 2C2P's merchant portal, not just TWOC2P_MERCHANT_ID/SECRET_KEY.
-// Until that's done this always fails cleanly with a clear error; the
-// admin UI falls back to the bookkeeping-only mark-refunded route below.
+// Until that's done this always fails cleanly with a clear error, and the
+// admin UI does not offer it at all — a button whose only outcome is an
+// error sat next to the money and read as "the customer has been paid".
+// Put it back next to the portal instructions in RefundControls once the key
+// exchange is done and refundTransaction() actually returns a refund.
 export async function POST(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });

@@ -1,11 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CreditCard, Undo2, Loader2, RefreshCw } from "lucide-react";
+import {
+  CreditCard,
+  Undo2,
+  Loader2,
+  RefreshCw,
+  ExternalLink,
+  Copy,
+  Check,
+} from "lucide-react";
 import { formatTHB } from "@/lib/format";
 import { Badge } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
+import {
+  refundRouteFor,
+  REFUND_ROUTE_LABEL,
+  type RefundRoute,
+} from "@/lib/refund-route";
 
 type Transaction = {
   id: string;
@@ -16,11 +29,44 @@ type Transaction = {
   shopify_order_id: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  tran_ref: string | null;
   refunded_at: string | null;
   refund_note: string | null;
   created_at: string;
   confirmed_at: string | null;
 };
+
+const PORTAL_URL = "https://merchant.2c2p.com/";
+
+/** The 2C2P transaction reference, which is what the portal searches by. Shown
+ *  rather than described because the alternative is an admin reading it off a
+ *  different screen and typing it wrong into a refund form. */
+function TranRefCopy({ tranRef }: { tranRef: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard?.writeText(tranRef).then(
+          () => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1600);
+          },
+          () => {},
+        );
+      }}
+      className="inline-flex items-center gap-1 rounded-md bg-white px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amber-900 ring-1 ring-amber-200 hover:bg-amber-50"
+    >
+      {tranRef}
+      {copied ? (
+        <Check size={11} className="text-emerald-600" />
+      ) : (
+        <Copy size={11} className="text-amber-500" />
+      )}
+      <span className="sr-only">คัดลอก tran ref</span>
+    </button>
+  );
+}
 
 function RefundControls({
   tx,
@@ -29,34 +75,18 @@ function RefundControls({
   tx: Transaction;
   onDone: () => void;
 }) {
+  const route = refundRouteFor(tx.tran_ref);
   const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState(String(tx.amount));
   const [note, setNote] = useState("");
+  const [portalDone, setPortalDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  async function submitRefund() {
-    setBusy(true);
-    setError("");
-    try {
-      const res = await fetch("/api/admin/checkout-transactions/refund", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId: tx.id, amount: Number(amount) }),
-      });
-      const data = await res.json();
-      if (!data.ok) {
-        setError(data.error || "คืนเงินไม่สำเร็จ");
-        return;
-      }
-      setOpen(false);
-      onDone();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function submitManual() {
+  // One endpoint for both routes, because on the Shopify route the record and
+  // the refund are the same event and splitting them is how they drift apart.
+  // It is sent the route this panel believes it is on, so a stale page gets a
+  // refusal instead of the wrong action.
+  async function submit() {
     setBusy(true);
     setError("");
     try {
@@ -65,7 +95,12 @@ function RefundControls({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transactionId: tx.id, note }),
+          body: JSON.stringify({
+            transactionId: tx.id,
+            route,
+            note,
+            portalRefunded: route === "portal" ? portalDone : undefined,
+          }),
         },
       );
       const data = await res.json();
@@ -75,6 +110,8 @@ function RefundControls({
       }
       setOpen(false);
       onDone();
+    } catch {
+      setError("เชื่อมต่อไม่สำเร็จ");
     } finally {
       setBusy(false);
     }
@@ -92,51 +129,92 @@ function RefundControls({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-slate-100 bg-surface-soft p-3 text-xs w-64">
-      <label className="flex items-center gap-2">
-        ยอดคืน (฿)
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          max={tx.amount}
-          min={1}
-          className="w-24 rounded-sm border border-slate-200 px-2 py-1"
-        />
-      </label>
-      {error && <p className="text-rose-500">{error}</p>}
+    <div className="flex w-72 flex-col gap-2 rounded-lg border border-slate-100 bg-surface-soft p-3 text-left text-xs">
+      {route === "portal" ? (
+        <>
+          <div className="rounded-md bg-amber-50 p-2.5 text-amber-900">
+            <p className="font-semibold">
+              Shopify คืนเงินออเดอร์นี้ให้ลูกค้าไม่ได้
+            </p>
+            <p className="mt-1 leading-relaxed">
+              เงินเข้ามาทางหน้าชำระเงินของเว็บ (2C2P) — ใน Shopify เป็นแค่
+              รายการที่เราบันทึกเอง กดคืนเงินใน Shopify ออเดอร์จะขึ้นว่า
+              คืนแล้วแต่ลูกค้าไม่ได้เงิน
+            </p>
+            <p className="mt-2 leading-relaxed">
+              ให้คืนใน 2C2P portal ด้วย tran ref{" "}
+              {tx.tran_ref ? (
+                <TranRefCopy tranRef={tx.tran_ref} />
+              ) : (
+                <span className="font-mono">
+                  (ไม่มี — ค้นด้วย invoice {tx.invoice_no})
+                </span>
+              )}{" "}
+              ยอด {formatTHB(tx.amount)}
+            </p>
+            <a
+              href={PORTAL_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-flex items-center gap-1 font-semibold underline"
+            >
+              เปิด 2C2P portal <ExternalLink size={11} />
+            </a>
+          </div>
+          <label className="flex items-start gap-2 leading-relaxed text-slate-600">
+            <input
+              type="checkbox"
+              checked={portalDone}
+              onChange={(e) => setPortalDone(e.target.checked)}
+              className="mt-0.5"
+            />
+            คืนเงินใน 2C2P portal เรียบร้อยแล้ว
+          </label>
+        </>
+      ) : (
+        <div className="rounded-md bg-rose-50 p-2.5 text-rose-900">
+          <p className="font-semibold">คืนเงินจริงให้ลูกค้าทันที</p>
+          <p className="mt-1 leading-relaxed">
+            ออเดอร์นี้จ่ายผ่านหน้าชำระเงินของ Shopify เอง กดแล้ว Shopify
+            จะคืนเงิน {formatTHB(tx.amount)} เต็มจำนวนให้ลูกค้าเลย
+            (คืนบางส่วนต้องทำในหน้า Shopify)
+          </p>
+        </div>
+      )}
+
+      <input
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="หมายเหตุ (ถ้ามี)"
+        className="w-full rounded-sm border border-slate-200 px-2 py-1"
+      />
+      {error && <p className="text-rose-600">{error}</p>}
       <div className="flex items-center gap-2">
         <button
-          onClick={submitRefund}
-          disabled={busy}
-          className="flex items-center gap-1 rounded-full bg-rose-600 text-white font-semibold px-3 py-1.5 disabled:opacity-60"
+          onClick={submit}
+          disabled={busy || (route === "portal" && !portalDone)}
+          className="flex items-center gap-1 rounded-full bg-rose-600 px-3 py-1.5 font-semibold text-white disabled:opacity-50"
         >
-          {busy && <Loader2 size={12} className="animate-spin" />} คืนเงินผ่าน
-          2C2P
+          {busy && <Loader2 size={12} className="animate-spin" />}
+          {route === "portal"
+            ? "บันทึกว่าคืนเงินแล้ว"
+            : `คืนเงิน ${formatTHB(tx.amount)} ผ่าน Shopify`}
         </button>
         <button onClick={() => setOpen(false)} className="text-slate-400">
           ยกเลิก
         </button>
       </div>
-      <div className="border-t border-slate-200 pt-2 mt-1">
-        <p className="text-slate-500 mb-1">
-          หรือถ้าคืนเงินให้ลูกค้าด้วยวิธีอื่นแล้ว (เช่น ผ่าน 2C2P portal เอง):
-        </p>
-        <input
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="หมายเหตุ (ถ้ามี)"
-          className="w-full rounded-sm border border-slate-200 px-2 py-1 mb-2"
-        />
-        <button
-          onClick={submitManual}
-          disabled={busy}
-          className="text-slate-600 underline disabled:opacity-60"
-        >
-          บันทึกว่าคืนเงินแล้ว
-        </button>
-      </div>
     </div>
+  );
+}
+
+/** At a glance, before anyone opens the refund panel: which system can actually
+ *  return this customer's money. */
+function RouteBadge({ route }: { route: RefundRoute }) {
+  return (
+    <Badge tone={route === "portal" ? "warning" : "info"}>
+      {REFUND_ROUTE_LABEL[route]}
+    </Badge>
   );
 }
 
@@ -250,6 +328,9 @@ export default function AdminCheckoutTransactionsPage() {
                       ) : (
                         <Badge tone="brand">สำเร็จ</Badge>
                       )}
+                      <span className="mt-1 block">
+                        <RouteBadge route={refundRouteFor(tx.tran_ref)} />
+                      </span>
                       {tx.refund_note && (
                         <p className="mt-1 max-w-[18rem] text-[11px] leading-relaxed text-slate-400">
                           {tx.refund_note}
@@ -286,12 +367,13 @@ export default function AdminCheckoutTransactionsPage() {
                     <p className="text-sm font-bold tabular-nums text-brand-ink">
                       {formatTHB(tx.amount)}
                     </p>
-                    <span className="mt-1 block">
+                    <span className="mt-1 flex flex-col items-end gap-1">
                       {tx.status === "refunded" ? (
                         <Badge tone="neutral">คืนเงินแล้ว</Badge>
                       ) : (
                         <Badge tone="brand">สำเร็จ</Badge>
                       )}
+                      <RouteBadge route={refundRouteFor(tx.tran_ref)} />
                     </span>
                   </div>
                 </div>

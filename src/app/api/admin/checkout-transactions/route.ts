@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       confirmed_at: string | null;
     }[]
   >(
-    "payment_transactions?status=in.(success,refunded)&select=id,invoice_no,amount,currency_code,status,shopify_order_id,contact_email,contact_phone,refunded_at,refund_note,created_at,confirmed_at&order=created_at.desc&limit=100"
+    "payment_transactions?status=in.(success,refunded)&select=id,invoice_no,amount,currency_code,status,shopify_order_id,contact_email,contact_phone,tran_ref,refunded_at,refund_note,created_at,confirmed_at&order=created_at.desc&limit=100"
   );
 
   return NextResponse.json({ ok: true, transactions: rows });
