@@ -4,10 +4,23 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, AlertTriangle, ExternalLink } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  AlertTriangle,
+  ExternalLink,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui";
 import { products } from "@/data/products";
-import { BLOCK_TYPES, isBlockComplete, type ContentBlock } from "@/lib/product-content";
+import {
+  BLOCK_TYPES,
+  isBlockComplete,
+  type ContentBlock,
+} from "@/lib/product-content";
 
 // The editor for one product's free-form content blocks. Left: a rough
 // preview in either language. Right: the blocks themselves — add, remove,
@@ -31,7 +44,10 @@ function emptyBlock(type: ContentBlock["type"]): ContentBlock {
 }
 
 function linesToItems(v: string): string[] {
-  return v.split("\n").map((s) => s.trim()).filter(Boolean);
+  return v
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 export default function ProductContentEditPage() {
@@ -44,14 +60,60 @@ export default function ProductContentEditPage() {
   // often not the one `Product.variantId` currently points at (that field is
   // the cheapest-in-stock variant, recomputed on every build). The product
   // this content belongs to is whichever one actually has this variant.
-  const product = useMemo(() => products.find((p) => p.variants.some((v) => v.variantId === variantId)), [variantId]);
-  const sku = product?.variants.find((v) => v.variantId === variantId)?.sku ?? null;
+  const product = useMemo(
+    () =>
+      products.find((p) => p.variants.some((v) => v.variantId === variantId)),
+    [variantId],
+  );
+  const sku =
+    product?.variants.find((v) => v.variantId === variantId)?.sku ?? null;
 
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<"draft" | "publish" | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [previewLang, setPreviewLang] = useState<"th" | "en">("th");
+  const [drafting, setDrafting] = useState<number | null>(null);
+
+  /**
+   * Ask the assistant to fill one block in from the product's own catalogue
+   * entry. It fills the fields and nothing else: hasVerifiedSource is forced
+   * back to false whatever came back, because a draft is by definition
+   * something nobody has pointed at a document for yet, and the checkbox is
+   * the one thing in this editor a machine must never tick for a person.
+   */
+  async function draftBlock(i: number) {
+    const block = blocks[i];
+    if (!block || drafting !== null) return;
+    setDrafting(i);
+    setNote(null);
+    try {
+      const res = await fetch(
+        `/api/admin/product-content/${encodeURIComponent(variantId)}/suggest`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: block.type }),
+        },
+      );
+      const data = await res.json().catch(() => null);
+      if (!data?.ok) {
+        setNote(data?.error || "ร่างไม่สำเร็จ กรุณาลองใหม่");
+        return;
+      }
+      updateBlock(i, {
+        ...data.draft,
+        hasVerifiedSource: false,
+      } as Partial<ContentBlock>);
+      setNote(
+        "ร่างด้วย AI แล้ว — ตรวจเนื้อหาและติ๊ก “มีแหล่งอ้างอิงแล้ว” ก่อนเผยแพร่",
+      );
+    } catch {
+      setNote("ร่างไม่สำเร็จ กรุณาลองใหม่");
+    } finally {
+      setDrafting(null);
+    }
+  }
 
   useEffect(() => {
     fetch(`/api/admin/product-content/${encodeURIComponent(variantId)}`)
@@ -77,18 +139,30 @@ export default function ProductContentEditPage() {
     });
   }
   function updateBlock(i: number, patch: Partial<ContentBlock>) {
-    setBlocks((b) => b.map((block, idx) => (idx === i ? ({ ...block, ...patch } as ContentBlock) : block)));
+    setBlocks((b) =>
+      b.map((block, idx) =>
+        idx === i ? ({ ...block, ...patch } as ContentBlock) : block,
+      ),
+    );
   }
 
   async function save(publish: boolean) {
     setSaving(publish ? "publish" : "draft");
     setNote(null);
     try {
-      const res = await fetch(`/api/admin/product-content/${encodeURIComponent(variantId)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blocks, published: publish, sku, slug: product?.slug ?? null }),
-      });
+      const res = await fetch(
+        `/api/admin/product-content/${encodeURIComponent(variantId)}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            blocks,
+            published: publish,
+            sku,
+            slug: product?.slug ?? null,
+          }),
+        },
+      );
       const data = await res.json();
       if (!data.ok) {
         setNote(data.error || "บันทึกไม่สำเร็จ");
@@ -104,27 +178,50 @@ export default function ProductContentEditPage() {
   }
 
   if (!product) {
-    return <p className="text-sm text-slate-500">ไม่พบสินค้านี้ในแคตตาล็อก (variant id ไม่ตรงกับที่มีอยู่)</p>;
+    return (
+      <p className="text-sm text-slate-500">
+        ไม่พบสินค้านี้ในแคตตาล็อก (variant id ไม่ตรงกับที่มีอยู่)
+      </p>
+    );
   }
 
   const incompleteCount = blocks.filter((b) => !isBlockComplete(b)).length;
-  const unverifiedCount = blocks.filter((b) => b.hasVerifiedSource === false).length;
+  const unverifiedCount = blocks.filter(
+    (b) => b.hasVerifiedSource === false,
+  ).length;
 
   return (
     <div>
-      <Link href="/admin/products/content" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-800">
+      <Link
+        href="/admin/products/content"
+        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-800"
+      >
         <ArrowLeft size={15} /> กลับไปรายการสินค้า
       </Link>
 
       <div className="mt-3 flex items-center gap-3">
         <span className="relative size-12 shrink-0 overflow-hidden rounded-xl bg-surface-soft ring-1 ring-surface-line">
-          {product.image && <Image src={product.image} alt="" fill sizes="48px" className="object-cover" />}
+          {product.image && (
+            <Image
+              src={product.image}
+              alt=""
+              fill
+              sizes="48px"
+              className="object-cover"
+            />
+          )}
         </span>
         <div className="min-w-0">
-          <h1 className="truncate text-lg font-bold text-brand-ink">{product.name}</h1>
+          <h1 className="truncate text-lg font-bold text-brand-ink">
+            {product.name}
+          </h1>
           <p className="text-xs text-slate-500">
             SKU: {sku ?? "ไม่มี"} ·{" "}
-            <Link href={`/product/${product.slug}`} target="_blank" className="inline-flex items-center gap-1 hover:text-brand-800">
+            <Link
+              href={`/product/${product.slug}`}
+              target="_blank"
+              className="inline-flex items-center gap-1 hover:text-brand-800"
+            >
               ดูหน้าจริง <ExternalLink size={11} />
             </Link>
           </p>
@@ -157,7 +254,11 @@ export default function ProductContentEditPage() {
               </div>
             </div>
             <div className="mt-2 rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
-              {blocks.length === 0 && <p className="text-sm text-slate-400">ยังไม่มีเนื้อหา — เพิ่มบล็อกทางขวาได้เลย</p>}
+              {blocks.length === 0 && (
+                <p className="text-sm text-slate-400">
+                  ยังไม่มีเนื้อหา — เพิ่มบล็อกทางขวาได้เลย
+                </p>
+              )}
               {blocks.map((b, i) => (
                 <PreviewBlock key={i} block={b} lang={previewLang} />
               ))}
@@ -167,14 +268,26 @@ export default function ProductContentEditPage() {
           {/* editor */}
           <div>
             {note && (
-              <p className="mb-3 rounded-lg bg-surface-soft px-3 py-2 text-sm text-slate-600">{note}</p>
+              <p className="mb-3 rounded-lg bg-surface-soft px-3 py-2 text-sm text-slate-600">
+                {note}
+              </p>
             )}
             {(incompleteCount > 0 || unverifiedCount > 0) && (
               <p className="mb-3 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                 <span>
-                  {incompleteCount > 0 && <>มี {incompleteCount} บล็อกที่ยังเขียนไม่ครบทั้งไทย-อังกฤษ — เผยแพร่ไม่ได้จนกว่าจะเติมครบ </>}
-                  {unverifiedCount > 0 && <>มี {unverifiedCount} บล็อกที่ยังไม่มีแหล่งอ้างอิง — ตรวจสอบก่อนเผยแพร่</>}
+                  {incompleteCount > 0 && (
+                    <>
+                      มี {incompleteCount} บล็อกที่ยังเขียนไม่ครบทั้งไทย-อังกฤษ
+                      — เผยแพร่ไม่ได้จนกว่าจะเติมครบ{" "}
+                    </>
+                  )}
+                  {unverifiedCount > 0 && (
+                    <>
+                      มี {unverifiedCount} บล็อกที่ยังไม่มีแหล่งอ้างอิง —
+                      ตรวจสอบก่อนเผยแพร่
+                    </>
+                  )}
                 </span>
               </p>
             )}
@@ -187,7 +300,11 @@ export default function ProductContentEditPage() {
                   onChange={(patch) => updateBlock(i, patch)}
                   onRemove={() => removeBlock(i)}
                   onMoveUp={i > 0 ? () => moveBlock(i, -1) : undefined}
-                  onMoveDown={i < blocks.length - 1 ? () => moveBlock(i, 1) : undefined}
+                  onMoveDown={
+                    i < blocks.length - 1 ? () => moveBlock(i, 1) : undefined
+                  }
+                  onDraft={() => draftBlock(i)}
+                  drafting={drafting === i}
                 />
               ))}
             </div>
@@ -206,10 +323,19 @@ export default function ProductContentEditPage() {
             </div>
 
             <div className="mt-6 flex items-center gap-3 border-t border-surface-line pt-4">
-              <Button variant="secondary" onClick={() => save(false)} loading={saving === "draft"} disabled={Boolean(saving)}>
+              <Button
+                variant="secondary"
+                onClick={() => save(false)}
+                loading={saving === "draft"}
+                disabled={Boolean(saving)}
+              >
                 บันทึกร่าง
               </Button>
-              <Button onClick={() => save(true)} loading={saving === "publish"} disabled={Boolean(saving)}>
+              <Button
+                onClick={() => save(true)}
+                loading={saving === "publish"}
+                disabled={Boolean(saving)}
+              >
                 เผยแพร่
               </Button>
             </div>
@@ -230,40 +356,73 @@ function BlockEditor({
   onRemove,
   onMoveUp,
   onMoveDown,
+  onDraft,
+  drafting,
 }: {
   block: ContentBlock;
   onChange: (patch: Partial<ContentBlock>) => void;
   onRemove: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  onDraft: () => void;
+  drafting: boolean;
 }) {
-  const typeLabel = BLOCK_TYPES.find((t) => t.key === block.type)?.label ?? block.type;
+  const typeLabel =
+    BLOCK_TYPES.find((t) => t.key === block.type)?.label ?? block.type;
 
   return (
     <div className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">{typeLabel}</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          {typeLabel}
+        </span>
         <div className="flex items-center gap-1">
           <label className="mr-2 flex items-center gap-1.5 text-xs text-slate-500">
             <input
               type="checkbox"
               checked={block.hasVerifiedSource ?? false}
-              onChange={(e) => onChange({ hasVerifiedSource: e.target.checked } as Partial<ContentBlock>)}
+              onChange={(e) =>
+                onChange({
+                  hasVerifiedSource: e.target.checked,
+                } as Partial<ContentBlock>)
+              }
               className="size-3.5 rounded"
             />
             มีแหล่งอ้างอิงแล้ว
           </label>
+          <button
+            type="button"
+            onClick={onDraft}
+            disabled={drafting}
+            title="ร่างเนื้อหาบล็อกนี้จากข้อมูลสินค้าที่มีอยู่"
+            className="mr-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-brand-800 transition-colors hover:bg-surface-soft disabled:opacity-50"
+          >
+            <Sparkles size={13} />
+            {drafting ? "กำลังร่าง…" : "ช่วยร่าง"}
+          </button>
           {onMoveUp && (
-            <button type="button" onClick={onMoveUp} className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-surface-soft">
+            <button
+              type="button"
+              onClick={onMoveUp}
+              className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-surface-soft"
+            >
               <ChevronUp size={14} />
             </button>
           )}
           {onMoveDown && (
-            <button type="button" onClick={onMoveDown} className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-surface-soft">
+            <button
+              type="button"
+              onClick={onMoveDown}
+              className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-surface-soft"
+            >
               <ChevronDown size={14} />
             </button>
           )}
-          <button type="button" onClick={onRemove} className="grid size-7 place-items-center rounded-full text-rose-400 hover:bg-rose-50">
+          <button
+            type="button"
+            onClick={onRemove}
+            className="grid size-7 place-items-center rounded-full text-rose-400 hover:bg-rose-50"
+          >
             <Trash2 size={14} />
           </button>
         </div>
@@ -275,7 +434,11 @@ function BlockEditor({
             {block.type === "image_text" && (
               <input
                 value={block.imageUrl}
-                onChange={(e) => onChange({ imageUrl: e.target.value } as Partial<ContentBlock>)}
+                onChange={(e) =>
+                  onChange({
+                    imageUrl: e.target.value,
+                  } as Partial<ContentBlock>)
+                }
                 placeholder="ลิงก์รูปภาพ (https://...)"
                 className={fieldClass()}
               />
@@ -283,13 +446,21 @@ function BlockEditor({
             <div className="grid gap-3 sm:grid-cols-2">
               <input
                 value={block.headingTh ?? ""}
-                onChange={(e) => onChange({ headingTh: e.target.value } as Partial<ContentBlock>)}
+                onChange={(e) =>
+                  onChange({
+                    headingTh: e.target.value,
+                  } as Partial<ContentBlock>)
+                }
                 placeholder="หัวข้อ (ไทย) — ไม่บังคับ"
                 className={fieldClass()}
               />
               <input
                 value={block.headingEn ?? ""}
-                onChange={(e) => onChange({ headingEn: e.target.value } as Partial<ContentBlock>)}
+                onChange={(e) =>
+                  onChange({
+                    headingEn: e.target.value,
+                  } as Partial<ContentBlock>)
+                }
                 placeholder="Heading (English) — optional"
                 className={fieldClass()}
               />
@@ -297,14 +468,18 @@ function BlockEditor({
             <div className="grid gap-3 sm:grid-cols-2">
               <textarea
                 value={block.bodyTh}
-                onChange={(e) => onChange({ bodyTh: e.target.value } as Partial<ContentBlock>)}
+                onChange={(e) =>
+                  onChange({ bodyTh: e.target.value } as Partial<ContentBlock>)
+                }
                 rows={4}
                 placeholder="เนื้อหา (ไทย)"
                 className={fieldClass()}
               />
               <textarea
                 value={block.bodyEn}
-                onChange={(e) => onChange({ bodyEn: e.target.value } as Partial<ContentBlock>)}
+                onChange={(e) =>
+                  onChange({ bodyEn: e.target.value } as Partial<ContentBlock>)
+                }
                 rows={4}
                 placeholder="Content (English)"
                 className={fieldClass()}
@@ -319,13 +494,21 @@ function BlockEditor({
               <div className="grid gap-3 sm:grid-cols-2">
                 <input
                   value={block.headingTh ?? ""}
-                  onChange={(e) => onChange({ headingTh: e.target.value } as Partial<ContentBlock>)}
+                  onChange={(e) =>
+                    onChange({
+                      headingTh: e.target.value,
+                    } as Partial<ContentBlock>)
+                  }
                   placeholder="หัวข้อ (ไทย) — ไม่บังคับ"
                   className={fieldClass()}
                 />
                 <input
                   value={block.headingEn ?? ""}
-                  onChange={(e) => onChange({ headingEn: e.target.value } as Partial<ContentBlock>)}
+                  onChange={(e) =>
+                    onChange({
+                      headingEn: e.target.value,
+                    } as Partial<ContentBlock>)
+                  }
                   placeholder="Heading (English) — optional"
                   className={fieldClass()}
                 />
@@ -334,14 +517,22 @@ function BlockEditor({
             <div className="grid gap-3 sm:grid-cols-2">
               <textarea
                 value={block.itemsTh.join("\n")}
-                onChange={(e) => onChange({ itemsTh: linesToItems(e.target.value) } as Partial<ContentBlock>)}
+                onChange={(e) =>
+                  onChange({
+                    itemsTh: linesToItems(e.target.value),
+                  } as Partial<ContentBlock>)
+                }
                 rows={5}
                 placeholder={"รายการ (ไทย) — บรรทัดละ 1 รายการ"}
                 className={fieldClass()}
               />
               <textarea
                 value={block.itemsEn.join("\n")}
-                onChange={(e) => onChange({ itemsEn: linesToItems(e.target.value) } as Partial<ContentBlock>)}
+                onChange={(e) =>
+                  onChange({
+                    itemsEn: linesToItems(e.target.value),
+                  } as Partial<ContentBlock>)
+                }
                 rows={5}
                 placeholder={"Items (English) — one per line"}
                 className={fieldClass()}
@@ -353,7 +544,10 @@ function BlockEditor({
         {block.type === "spec_table" && (
           <div className="space-y-2">
             {block.rows.map((row, ri) => (
-              <div key={ri} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-1.5">
+              <div
+                key={ri}
+                className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-1.5"
+              >
                 <input
                   value={row.labelTh}
                   onChange={(e) => {
@@ -396,7 +590,11 @@ function BlockEditor({
                 />
                 <button
                   type="button"
-                  onClick={() => onChange({ rows: block.rows.filter((_, idx) => idx !== ri) } as Partial<ContentBlock>)}
+                  onClick={() =>
+                    onChange({
+                      rows: block.rows.filter((_, idx) => idx !== ri),
+                    } as Partial<ContentBlock>)
+                  }
                   className="grid size-9 place-items-center rounded-lg text-rose-400 hover:bg-rose-50"
                 >
                   <Trash2 size={14} />
@@ -407,7 +605,10 @@ function BlockEditor({
               type="button"
               onClick={() =>
                 onChange({
-                  rows: [...block.rows, { labelTh: "", labelEn: "", valueTh: "", valueEn: "" }],
+                  rows: [
+                    ...block.rows,
+                    { labelTh: "", labelEn: "", valueTh: "", valueEn: "" },
+                  ],
                 } as Partial<ContentBlock>)
               }
               className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-800 hover:underline"
@@ -421,17 +622,28 @@ function BlockEditor({
   );
 }
 
-function PreviewBlock({ block, lang }: { block: ContentBlock; lang: "th" | "en" }) {
-  const pick = (th: string, en: string) => (lang === "th" ? th : en) || (lang === "th" ? en : th);
+function PreviewBlock({
+  block,
+  lang,
+}: {
+  block: ContentBlock;
+  lang: "th" | "en";
+}) {
+  const pick = (th: string, en: string) =>
+    (lang === "th" ? th : en) || (lang === "th" ? en : th);
 
   switch (block.type) {
     case "paragraph":
       return (
         <div className="mb-4 last:mb-0">
           {(block.headingTh || block.headingEn) && (
-            <p className="mb-1 text-sm font-bold text-brand-ink">{pick(block.headingTh ?? "", block.headingEn ?? "")}</p>
+            <p className="mb-1 text-sm font-bold text-brand-ink">
+              {pick(block.headingTh ?? "", block.headingEn ?? "")}
+            </p>
           )}
-          <p className="whitespace-pre-line text-sm text-slate-600">{pick(block.bodyTh, block.bodyEn) || "—"}</p>
+          <p className="whitespace-pre-line text-sm text-slate-600">
+            {pick(block.bodyTh, block.bodyEn) || "—"}
+          </p>
         </div>
       );
     case "image_text":
@@ -440,13 +652,21 @@ function PreviewBlock({ block, lang }: { block: ContentBlock; lang: "th" | "en" 
           {block.imageUrl && (
             <div className="relative mb-2 h-32 w-full overflow-hidden rounded-lg bg-surface-soft">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={block.imageUrl} alt="" className="h-full w-full object-cover" />
+              <img
+                src={block.imageUrl}
+                alt=""
+                className="h-full w-full object-cover"
+              />
             </div>
           )}
           {(block.headingTh || block.headingEn) && (
-            <p className="mb-1 text-sm font-bold text-brand-ink">{pick(block.headingTh ?? "", block.headingEn ?? "")}</p>
+            <p className="mb-1 text-sm font-bold text-brand-ink">
+              {pick(block.headingTh ?? "", block.headingEn ?? "")}
+            </p>
           )}
-          <p className="whitespace-pre-line text-sm text-slate-600">{pick(block.bodyTh, block.bodyEn) || "—"}</p>
+          <p className="whitespace-pre-line text-sm text-slate-600">
+            {pick(block.bodyTh, block.bodyEn) || "—"}
+          </p>
         </div>
       );
     case "bullet_list":
@@ -457,7 +677,9 @@ function PreviewBlock({ block, lang }: { block: ContentBlock; lang: "th" | "en" 
       return (
         <div className="mb-4 last:mb-0">
           {"headingTh" in block && (block.headingTh || block.headingEn) && (
-            <p className="mb-1 text-sm font-bold text-brand-ink">{pick(block.headingTh ?? "", block.headingEn ?? "")}</p>
+            <p className="mb-1 text-sm font-bold text-brand-ink">
+              {pick(block.headingTh ?? "", block.headingEn ?? "")}
+            </p>
           )}
           {shown.length === 0 ? (
             <p className="text-sm text-slate-400">—</p>
@@ -480,9 +702,16 @@ function PreviewBlock({ block, lang }: { block: ContentBlock; lang: "th" | "en" 
             <table className="w-full text-sm">
               <tbody>
                 {block.rows.map((row, i) => (
-                  <tr key={i} className="border-b border-surface-line/60 last:border-0">
-                    <td className="py-1.5 pr-3 font-medium text-brand-ink">{pick(row.labelTh, row.labelEn)}</td>
-                    <td className="py-1.5 text-slate-600">{pick(row.valueTh, row.valueEn)}</td>
+                  <tr
+                    key={i}
+                    className="border-b border-surface-line/60 last:border-0"
+                  >
+                    <td className="py-1.5 pr-3 font-medium text-brand-ink">
+                      {pick(row.labelTh, row.labelEn)}
+                    </td>
+                    <td className="py-1.5 text-slate-600">
+                      {pick(row.valueTh, row.valueEn)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
