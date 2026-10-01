@@ -84,9 +84,16 @@ export const hero3DScenes: Hero3DScene[] = [
       },
       {
         src: `${WINTER}/people.webp`,
-        w: 0.784,
-        x: 0.06,
-        y: 0.226,
+        // Re-fitted when the cutout was replaced with one whose arms are whole
+        // rather than cut off at the picture's edges. The new file is the same
+        // 1721x914 canvas but the figures sit smaller inside it, so the layer
+        // is drawn nearly full width and starts just off the left edge. Two
+        // independent fits agreed: the whole frame scored against the flat
+        // banner, and the faces alone — the one part of the two pictures that
+        // is pixel-for-pixel the same.
+        w: 0.984,
+        x: -0.04,
+        y: 0.205,
         depth: 5.2,
         bleedBottom: 0.12,
       },
