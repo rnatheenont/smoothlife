@@ -482,7 +482,7 @@ export default function Page() {
             ))}
           </div>
 
-          {(tab === "queue" || tab === "decided" || tab === "vip" || tab === "fan") && (
+          {(tab === "queue" || tab === "decided" || tab === "vip" || tab === "fan" || tab === "sales") && (
             <div className="mb-3 flex items-center gap-2">
               <div className="relative flex-1">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
@@ -503,7 +503,7 @@ export default function Page() {
                   </button>
                 )}
               </div>
-              {query && (
+              {query && tab !== "sales" && (
                 <span className="shrink-0 text-[12px] text-slate-500">
                   พบ{" "}
                   {tab === "queue"
@@ -575,7 +575,7 @@ export default function Page() {
           )}
 
           {tab === "sales" && (
-            <SalesPanel sales={sales} error={salesError} busy={salesBusy} onRefresh={loadSales} />
+            <SalesPanel sales={sales} error={salesError} busy={salesBusy} query={query} onRefresh={loadSales} />
           )}
 
           {tab === "vip" && (

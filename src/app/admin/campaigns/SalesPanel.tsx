@@ -12,7 +12,6 @@
 // On a phone the table becomes a list of cards — a five-column table on a
 // 375px screen is a horizontal scrollbar hiding the two columns that matter.
 import { useMemo, useState } from "react";
-import { Input, Label, TextField } from "@heroui/react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Panel, adminTable } from "@/components/admin/layout-kit";
 import { when } from "./queue-vocab";
@@ -83,14 +82,23 @@ export default function SalesPanel({
   sales,
   error,
   busy,
+  query,
   onRefresh,
 }: {
   sales: Sales | null;
   error: string | null;
   busy: boolean;
+  /**
+   * The campaign's search box, which lives above the tabs.
+   *
+   * This panel used to own a box of its own, tucked beside the filter chips.
+   * It worked, and it was in a different place from the one on every other
+   * tab — so whoever was looking for a customer had to remember which tab
+   * hides its search where. One box, one place, five tabs.
+   */
+  query: string;
   onRefresh: () => void;
 }) {
-  const [query, setQuery] = useState("");
   const [state, setState] = useState<"all" | ReceiptState | "none">("all");
   const needle = query.trim().toLowerCase();
 
@@ -204,15 +212,6 @@ export default function SalesPanel({
               ))}
             </div>
 
-            <TextField
-              value={query}
-              onChange={setQuery}
-              aria-label="ค้นหาชื่อลูกค้า อีเมล หรือเลขคำสั่งซื้อ"
-              className="w-full lg:w-72 lg:shrink-0"
-            >
-              <Label className="sr-only">ค้นหาลูกค้า</Label>
-              <Input placeholder="ค้นหาชื่อลูกค้า / อีเมล / เลขบิล" />
-            </TextField>
           </div>
 
           {/* One strip rather than four floating cards: these four numbers are
