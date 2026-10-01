@@ -46,7 +46,6 @@ import { Button } from "@/components/ui";
 const REVIEW_MIN_TEXT_LENGTH = 20;
 
 const BASE_TABS = [
-  { id: "benefits", label: "คุณประโยชน์และส่วนผสม" },
   { id: "reviews", label: "รีวิวและคำถาม" },
   { id: "howto", label: "เหมาะกับใครและวิธีใช้" },
   { id: "compare", label: "เปรียบเทียบและทางเลือกอื่น" },
@@ -76,14 +75,12 @@ export default function ProductDetailInteractive({
   /** Published, hand-written copy for this product — null for most of them. */
   contentBlocks?: ContentBlock[] | null;
 }) {
-  // Written content says what the benefits tab says — the same facts, told for
-  // a person rather than assembled out of catalogue fields — so where it exists
-  // it opens the page and the catalogue tab steps aside instead of repeating it
-  // one tab later. Where nobody has written it yet, that catalogue tab is still
-  // the only place this page lists an ingredient at all.
-  const tabs = contentBlocks?.length
-    ? [CONTENT_TAB, ...BASE_TABS.filter((t) => t.id !== "benefits")]
-    : BASE_TABS;
+  // Written content opens the page where somebody has written it. The tab that
+  // used to sit here assembled the same ground out of catalogue fields
+  // (about/benefits/ingredients) and has been dropped, so on a product nobody
+  // has written up yet the page starts at the reviews — until the write-up
+  // lands, those catalogue fields are not shown on the page at all.
+  const tabs = contentBlocks?.length ? [CONTENT_TAB, ...BASE_TABS] : BASE_TABS;
   const images =
     product.images && product.images.length > 0
       ? product.images
@@ -806,63 +803,6 @@ export default function ProductDetailInteractive({
         </div>
 
         <div className="py-6 md:py-8">
-          {tab === "benefits" && (
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                {product.about && product.about.length > 0 && (
-                  <div className="mb-6 space-y-3">
-                    <h3 className="font-bold text-brand-ink">
-                      รายละเอียดสินค้า
-                    </h3>
-                    {product.about.map((para, i) => (
-                      <p
-                        key={i}
-                        className="text-sm leading-relaxed text-slate-600"
-                      >
-                        {para}
-                      </p>
-                    ))}
-                  </div>
-                )}
-                {product.benefits.length > 0 && (
-                  <>
-                    <h3 className="font-bold text-brand-ink mb-3">
-                      คุณประโยชน์
-                    </h3>
-                    <ul className="space-y-2">
-                      {product.benefits.map((b) => (
-                        <li
-                          key={b}
-                          className="flex items-start gap-2 text-sm text-slate-600"
-                        >
-                          <CheckCircle2
-                            size={16}
-                            className="text-brand-emerald mt-0.5 shrink-0"
-                          />{" "}
-                          {b}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-                {/* Only when there's no fuller text above and it isn't just a repeat of a benefit. */}
-                {!product.about?.length &&
-                  product.shortDesc &&
-                  !product.benefits.includes(product.shortDesc) && (
-                    <p className="text-sm text-slate-600 mt-4">
-                      {product.shortDesc}
-                    </p>
-                  )}
-              </div>
-              <div>
-                <h3 className="font-bold text-brand-ink mb-3">ส่วนผสมสำคัญ</h3>
-                <p className="text-sm text-slate-600">
-                  {product.ingredients ||
-                    "ยังไม่มีข้อมูลส่วนผสมสำหรับสินค้านี้ค่ะ กรุณาติดต่อสอบถามเพิ่มเติมได้ที่ทีมงาน"}
-                </p>
-              </div>
-            </div>
-          )}
           {tab === "howto" && (
             <div className="grid md:grid-cols-2 gap-8">
               <div>
@@ -1007,8 +947,13 @@ export default function ProductDetailInteractive({
                   </form>
                 )}
 
+                {/* div, not p: StarRating renders a div, and a div inside a p is
+                    invalid HTML the browser silently reparents — which hydration
+                    then reports as a mismatch. Invisible while this panel only
+                    ever rendered after a click; it renders on load now that the
+                    reviews tab can be the first one. */}
                 {storeRating && (
-                  <p className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                  <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-600">
                     <StarRating rating={storeRating.value} size={14} />
                     <span>
                       <span className="font-semibold text-brand-ink">
@@ -1017,7 +962,7 @@ export default function ProductDetailInteractive({
                       จาก {storeRating.count.toLocaleString("th-TH")}{" "}
                       รีวิวที่ลูกค้าให้ไว้กับร้าน Smoothlife
                     </span>
-                  </p>
+                  </div>
                 )}
 
                 {reviewsList.length === 0 ? (
