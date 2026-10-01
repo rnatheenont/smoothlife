@@ -1145,8 +1145,18 @@ export default function ProductDetailInteractive({
             </div>
           )}
 
-          {tab === CONTENT_TAB.id && contentBlocks && (
-            <ProductContentBlocks blocks={contentBlocks} />
+          {/* Rendered whether or not its tab is open, and hidden rather than
+              unmounted. Every other panel here mounts only when selected,
+              which means four of the five are absent from the HTML a crawler
+              receives — fine for them, since their text is catalogue data that
+              reaches search engines through the page description and the
+              product JSON-LD anyway. This panel is the one place the copy
+              somebody wrote by hand exists at all, and content that is never
+              in the document cannot be indexed from it. */}
+          {contentBlocks && (
+            <div hidden={tab !== CONTENT_TAB.id}>
+              <ProductContentBlocks blocks={contentBlocks} />
+            </div>
           )}
         </div>
       </div>
