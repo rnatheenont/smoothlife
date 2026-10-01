@@ -1,4 +1,9 @@
-import { pgValue, supabaseConfigured, supabaseRestCached } from "@/lib/supabase-server";
+import {
+  pgValue,
+  supabaseConfigured,
+  supabaseRestCached,
+} from "@/lib/supabase-server";
+import type { Product } from "@/data/types";
 
 // The free-form, bilingual content blocks that overlay a product's page —
 // same idea as seo-overrides.ts (a Supabase row overlaying the generated
@@ -6,10 +11,27 @@ import { pgValue, supabaseConfigured, supabaseRestCached } from "@/lib/supabase-
 // got filled in for (see the plan this came out of: 0.2% of 1,086 products
 // had anything in Shopify's "Tab 1/Tab 2" fields).
 //
-// Keyed by `variant_id` (a Shopify GID), not by slug or SKU — see the
-// comment on `ProductVariant.sku` in data/types.ts for why: a slug can
-// change on a handle collision, and a SKU is hand-typed and not guaranteed
-// unique. `variant_id` is the one thing Shopify guarantees won't move.
+// Keyed by one specific variant's GID, not by slug or SKU — see the comment
+// on `ProductVariant.sku` in data/types.ts for why: a slug can change on a
+// handle collision, and a SKU is hand-typed and not guaranteed unique. A
+// variant's own GID never moves — but `Product.variantId` is NOT that: it's
+// recomputed on every catalogue build as whichever variant is currently
+// cheapest-and-in-stock (see fetch-products.js), so it can point at a
+// different variant the day a price changes or a size sells out. Content
+// written against it would silently "vanish" on the page that moved.
+// `stableContentVariantId()` below picks the variant whose GID sorts lowest
+// instead — the one thing about a product's variant set that doesn't change
+// unless that specific variant is deleted from Shopify.
+
+/** A fixed anchor for a product's content, independent of pricing/stock. */
+export function stableContentVariantId(product: Pick<Product, "variantId" | "variants">): string {
+  if (!product.variants.length) return product.variantId;
+  return product.variants.reduce((min, v) => {
+    const a = BigInt(v.variantId.split("/").pop() || "0");
+    const b = BigInt(min.variantId.split("/").pop() || "0");
+    return a < b ? v : min;
+  }, product.variants[0]).variantId;
+}
 
 export type ContentBlock =
   | {
@@ -45,7 +67,12 @@ export type ContentBlock =
     }
   | {
       type: "spec_table";
-      rows: { labelTh: string; labelEn: string; valueTh: string; valueEn: string }[];
+      rows: {
+        labelTh: string;
+        labelEn: string;
+        valueTh: string;
+        valueEn: string;
+      }[];
       hasVerifiedSource?: boolean;
     };
 
@@ -67,7 +94,8 @@ export type ProductContentOverride = {
   updated_at: string;
 };
 
-export const PRODUCT_CONTENT_COLUMNS = "id,variant_id,sku,slug,blocks,published,updated_at";
+export const PRODUCT_CONTENT_COLUMNS =
+  "id,variant_id,sku,slug,blocks,published,updated_at";
 
 export function productContentTag(variantId: string) {
   return `product-content:${variantId}`;
@@ -79,12 +107,17 @@ export function productContentTag(variantId: string) {
  * tagged, same pattern as getSeoOverride — never throws, since missing
  * content is not worth failing a page render over.
  */
-export async function getProductContentOverride(variantId: string): Promise<ProductContentOverride | null> {
+export async function getProductContentOverride(
+  variantId: string,
+): Promise<ProductContentOverride | null> {
   if (!supabaseConfigured()) return null;
   try {
     const rows = await supabaseRestCached<ProductContentOverride[]>(
       `product_content_overrides?variant_id=eq.${pgValue(variantId)}&select=${PRODUCT_CONTENT_COLUMNS}&limit=1`,
-      { revalidate: 3600, tags: [productContentTag(variantId), "product-content-overrides"] }
+      {
+        revalidate: 3600,
+        tags: [productContentTag(variantId), "product-content-overrides"],
+      },
     );
     return rows[0] ?? null;
   } catch {
@@ -103,9 +136,13 @@ export function isBlockComplete(block: ContentBlock): boolean {
     case "bullet_list":
     case "ingredients":
       return (
-        block.itemsTh.filter((s) => s.trim()).length > 0 && block.itemsEn.filter((s) => s.trim()).length > 0
+        block.itemsTh.filter((s) => s.trim()).length > 0 &&
+        block.itemsEn.filter((s) => s.trim()).length > 0
       );
     case "spec_table":
-      return block.rows.length > 0 && block.rows.every((r) => r.labelTh.trim() && r.labelEn.trim());
+      return (
+        block.rows.length > 0 &&
+        block.rows.every((r) => r.labelTh.trim() && r.labelEn.trim())
+      );
   }
 }

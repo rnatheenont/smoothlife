@@ -22,6 +22,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Search,
+  FileText,
   Store,
   Truck,
   Users,
@@ -113,6 +114,12 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/admin/knowledge-base", label: "ฐานความรู้ AI", icon: BookOpen, permission: "kb.draft" },
       { href: "/admin/seo", label: "SEO หน้าเว็บ", icon: Search, permission: "seo.manage" },
       {
+        href: "/admin/products/content",
+        label: "เนื้อหาสินค้า",
+        icon: FileText,
+        permission: "product_content.view",
+      },
+      {
         href: "/admin/brand-insights",
         label: "เสียงลูกค้า & คำค้นหา",
         icon: TrendingUp,
@@ -159,6 +166,7 @@ const FULL_WIDTH = [
   "/admin/campaigns",
   "/admin/inbox",
   "/admin/seo",
+  "/admin/products/content",
   "/admin/brand-insights",
   "/admin/tracking-sync",
 ];
