@@ -47,27 +47,27 @@ export default function SubscriptionBanner() {
   const maxDiscount = Math.max(...subscriptionPlans.map((p) => p.discountPct));
 
   return (
-    <div className="relative isolate overflow-hidden rounded-feature bg-[linear-gradient(135deg,#04322c_0%,#0a6a5a_48%,#00a87b_100%)] px-5 py-10 text-white ring-1 ring-inset ring-white/10 md:px-12 md:py-14">
+    <div className="relative isolate overflow-hidden rounded-feature bg-[linear-gradient(135deg,#076051_0%,#0b8068_48%,#00ab8c_100%)] px-5 py-10 text-white ring-1 ring-inset ring-white/10 md:px-12 md:py-14">
       {/* Depth, in layers that hold still. The two circles that used to drift
           across this block were decoration animating for no one's benefit. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-28 -top-32 h-[26rem] w-[26rem] rounded-full bg-brand-emerald/40 blur-[90px]"
+        className="pointer-events-none absolute -left-28 -top-32 h-[26rem] w-[26rem] rounded-full bg-brand-emerald/50 blur-[90px]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-44 -right-24 h-[26rem] w-[26rem] rounded-full bg-brand-sky/30 blur-[90px]"
+        className="pointer-events-none absolute -bottom-44 -right-24 h-[26rem] w-[26rem] rounded-full bg-brand-sky/40 blur-[90px]"
       />
       {/* A third light source, low and wide, so the cards sit in a pool of
           light. The corner blooms alone left the middle of the block — where
           the decision happens — its darkest part. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-[18%] left-1/2 h-64 w-[40rem] -translate-x-1/2 rounded-full bg-brand-teal/40 blur-[110px]"
+        className="pointer-events-none absolute bottom-[36%] left-1/2 h-64 w-[40rem] -translate-x-1/2 rounded-full bg-brand-teal/50 blur-[110px]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:radial-gradient(circle,white_1px,transparent_1px)] [background-size:22px_22px]"
+        className="pointer-events-none absolute inset-0 opacity-[0.09] [background-image:radial-gradient(circle,white_1px,transparent_1px)] [background-size:22px_22px]"
       />
 
       <div className="relative mx-auto max-w-3xl text-center">
@@ -81,7 +81,7 @@ export default function SubscriptionBanner() {
             ยิ่งนานยิ่งประหยัด
           </span>
         </h2>
-        <p className="mx-auto mt-4 max-w-lg text-[15px] leading-relaxed text-white/85">
+        <p className="mx-auto mt-4 max-w-lg text-[15px] leading-relaxed text-white/90">
           สินค้าสุขภาพและความงามที่คุณใช้ประจำ มาเองตามรอบที่เลือก
           ส่วนลดล็อกไว้ทั้งเทอม สูงสุด {maxDiscount}%
         </p>
@@ -106,7 +106,7 @@ export default function SubscriptionBanner() {
                 className={`group relative flex w-full flex-col items-center overflow-hidden rounded-xl2 px-2 pt-3 text-center transition-all duration-200 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-1000 md:px-4 md:pt-5 ${
                   plan.popular
                     ? "bg-white pb-5 text-brand-ink shadow-[0_24px_55px_-18px_rgba(0,0,0,0.65)] hover:-translate-y-1 md:pb-9"
-                    : "bg-[#04322c]/55 pb-4 text-white ring-1 ring-white/15 backdrop-blur-sm hover:-translate-y-1 hover:ring-white/35 md:pb-7"
+                    : "bg-[#04322c]/62 pb-4 text-white ring-1 ring-white/15 backdrop-blur-sm hover:-translate-y-1 hover:ring-white/35 md:pb-7"
                 }`}
               >
                 {/* Inside the card, not straddling its edge: the badge used to
@@ -122,7 +122,7 @@ export default function SubscriptionBanner() {
 
                 <p
                   className={`mt-2 text-xs font-semibold md:text-sm ${
-                    plan.popular ? "text-slate-500" : "text-white/70"
+                    plan.popular ? "text-slate-500" : "text-white/80"
                   }`}
                 >
                   ทุก {plan.months} เดือน
@@ -143,7 +143,7 @@ export default function SubscriptionBanner() {
                 <p className="mt-2.5 flex flex-col items-center gap-0 md:mt-4 md:flex-row md:gap-1.5">
                   <span
                     className={`text-xs line-through md:text-sm ${
-                      plan.popular ? "text-slate-400" : "text-white/55"
+                      plan.popular ? "text-slate-400" : "text-white/70"
                     }`}
                   >
                     {formatTHB(EXAMPLE_BASE)}
@@ -175,7 +175,7 @@ export default function SubscriptionBanner() {
           );
         })}
       </ul>
-      <p className="relative mt-3 text-center text-xs text-white/60">
+      <p className="relative mt-3 text-center text-xs text-white/90">
         ตัวอย่างจากยอดสั่งซื้อ {formatTHB(EXAMPLE_BASE)} ต่อรอบ
       </p>
 
@@ -194,7 +194,7 @@ export default function SubscriptionBanner() {
         </Link>
         {/* The three things somebody weighing a recurring charge wants to know
             before they click, rather than after. */}
-        <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/80">
+        <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 rounded-xl2 bg-[#04322c]/60 px-5 py-2.5 text-xs text-white ring-1 ring-white/15 backdrop-blur-sm">
           {PROMISES.map(({ icon: Icon, label }) => (
             <li key={label} className="inline-flex items-center gap-1.5">
               <Icon size={14} aria-hidden="true" className="text-brand-200" />
