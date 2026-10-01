@@ -17,13 +17,20 @@ export default function SubscriptionPicker({
   plans,
   products,
   subscriptionBillingEnabled = false,
+  defaultMonths,
 }: {
   plans: SubscriptionPlan[];
   products: Product[];
   subscriptionBillingEnabled?: boolean;
+  /** The plan somebody already chose on the way here (?plan=6 from the home
+   *  page banner). Picking a term and then finding the page on a different
+   *  one is the kind of small betrayal that makes a shopper re-read the
+   *  whole table. Unknown values fall back to the recommended plan. */
+  defaultMonths?: number;
 }) {
   const popular = plans.find((p) => p.popular) ?? plans[0];
-  const [selectedMonths, setSelectedMonths] = useState(popular.months);
+  const initial = plans.find((p) => p.months === defaultMonths) ?? popular;
+  const [selectedMonths, setSelectedMonths] = useState(initial.months);
   const plan = plans.find((p) => p.months === selectedMonths) ?? popular;
   const { user } = useAuth();
   const router = useRouter();

@@ -25,6 +25,7 @@ import ScaleReveal from "@/components/ScaleReveal";
 import BrandMarquee from "@/components/BrandMarquee";
 import ProductTabs from "@/components/ProductTabs";
 import PromoPair from "@/components/home/PromoPair";
+import SubscriptionBanner from "@/components/home/SubscriptionBanner";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 import { pageMetadata } from "@/lib/site-pages";
 
@@ -372,85 +373,8 @@ export default async function HomePage() {
           converts better after the catalogue, social proof, and brand story
           above have already built trust, rather than pitching it early. */}
       <section className="container-page py-8 md:py-16 lg:py-24">
-        <ScaleReveal className="relative overflow-hidden rounded-feature bg-brand-gradient p-8 md:p-12 text-white">
-          {/* The one bold block on the page, deep green end to end. The two
-              circles drifting across it on their own were decoration moving
-              for no one's benefit. */}
-          <div className="relative grid md:grid-cols-[1.1fr_1fr] gap-8 items-center">
-            <div>
-              <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-black/15 px-3 py-1 text-xs font-semibold">
-                <Repeat size={13} /> สมัครสมาชิกรายรอบ ไม่ต้องสั่งซ้ำ
-              </span>
-              <h2 className="text-2xl font-extrabold leading-tight md:text-4xl md:leading-10">
-                เลือกรอบส่ง<span className="whitespace-nowrap">ของคุณเอง</span> <br className="hidden md:block" />
-                ยิ่งนานยิ่งประหยัด
-              </h2>
-              <p className="mt-3 max-w-md text-white">
-                สมัคร Subscription สินค้าสุขภาพและความงามที่คุณใช้ประจำ เลือกได้ 3 / 6 / 12 เดือน
-                ประหยัดสูงสุด {Math.max(...subscriptionPlans.map((p) => p.discountPct))}%
-              </p>
-              <Link
-                href="/subscription"
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-brand-800 transition-colors hover:bg-brand-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-action"
-              >
-                <PercentCircle size={16} /> ดูแผนสมัครสมาชิก
-              </Link>
-            </div>
-            {/* Mobile: 3 full-width rows stacked made this card very tall
-                with a lot of unused horizontal room either side — a
-                3-across compact grid uses that width instead, so the whole
-                plan picker fits in roughly a third of the vertical space.
-                Desktop keeps the wider stacked rows (room for the sublabel
-                text next to the discount). */}
-            <div className="grid grid-cols-3 gap-2 md:hidden">
-              {subscriptionPlans.map((plan) => (
-                <div
-                  key={plan.months}
-                  className={`relative flex flex-col items-center gap-0.5 rounded-xl2 px-2 py-3 text-center ${
-                    plan.popular ? "bg-white text-brand-ink" : "bg-black/15 text-white"
-                  }`}
-                >
-                  {plan.popular && (
-                    <span className="absolute -top-2 rounded-full bg-brand-gradient text-white text-[9px] font-bold px-2 py-0.5">
-                      ยอดนิยม
-                    </span>
-                  )}
-                  <p className="font-bold text-xs mt-1.5">{plan.months} เดือน</p>
-                  <span className={`text-base font-extrabold ${plan.popular ? "text-brand-800" : "text-white"}`}>
-                    -{plan.discountPct}%
-                  </span>
-                  <p className={`text-[10px] leading-tight ${plan.popular ? "text-slate-600" : "text-white"}`}>
-                    {plan.sublabel}
-                  </p>
-                </div>
-              ))}
-            </div>
-            <div className="hidden md:flex flex-col gap-2.5">
-              {subscriptionPlans.map((plan) => (
-                <div
-                  key={plan.months}
-                  className={`flex items-center justify-between rounded-xl2 px-4 py-3 ${
-                    plan.popular ? "bg-white text-brand-ink" : "bg-black/15 text-white"
-                  }`}
-                >
-                  <div>
-                    <p className="font-bold text-sm flex items-center gap-1.5">
-                      {plan.label}
-                      {plan.popular && (
-                        <span className="rounded-full bg-brand-gradient text-white text-[10px] font-bold px-2 py-0.5">
-                          ยอดนิยม
-                        </span>
-                      )}
-                    </p>
-                    <p className={`text-xs ${plan.popular ? "text-slate-600" : "text-white"}`}>{plan.sublabel}</p>
-                  </div>
-                  <span className={`text-lg font-extrabold ${plan.popular ? "text-brand-800" : "text-white"}`}>
-                    -{plan.discountPct}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+        <ScaleReveal>
+          <SubscriptionBanner />
         </ScaleReveal>
       </section>
 

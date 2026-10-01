@@ -29,7 +29,13 @@ const perks = [
   { icon: ShieldCheck, label: "ของแท้ 100% มีอย." },
 ];
 
-export default async function SubscriptionPage() {
+export default async function SubscriptionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
+  const { plan: planParam } = await searchParams;
+  const defaultMonths = Number(planParam) || undefined;
   const maxDiscount = Math.max(...subscriptionPlans.map((p) => p.discountPct));
   const billingEnabled = subscriptionBillingConfigured();
   // Sets the shop assembled in the admin console — only the ones that can be
@@ -158,7 +164,7 @@ export default async function SubscriptionPage() {
       <section className="container-page py-10 md:py-14 border-t border-slate-100">
         <h2 className="text-xl md:text-2xl font-extrabold text-brand-ink mb-1">หรือเลือกสินค้าเอง</h2>
         <p className="text-sm text-slate-500 mb-6">อยากได้แค่สินค้าชิ้นเดียวแบบสมัครรายรอบ เลือกได้จากที่นี่</p>
-        <SubscriptionPicker plans={subscriptionPlans} products={subscriptionProducts} subscriptionBillingEnabled={subscriptionBillingConfigured()} />
+        <SubscriptionPicker plans={subscriptionPlans} products={subscriptionProducts} subscriptionBillingEnabled={subscriptionBillingConfigured()} defaultMonths={defaultMonths} />
       </section>
 
       {billingEnabled && (
