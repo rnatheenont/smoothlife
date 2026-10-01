@@ -250,7 +250,14 @@ export const SPEC_VALUES = {
   "oil-free": { th: "ไม่มีน้ำมัน", en: "Oil-free" },
   "non-gmo": { th: "ไม่ดัดแปรพันธุกรรม", en: "Non-GMO" },
   "no-preservatives": { th: "ไม่ใส่สารกันเสีย", en: "No preservatives" },
-  "fda-approved": { th: "มี อย.", en: "FDA-registered" },
+  // "fda-approved" is deliberately absent. It is Shopify's taxonomy value and
+  // means the US FDA; it was being rendered in Thai as "มี อย.", which states
+  // Thai FDA registration — a different regulator, and a regulated claim here.
+  // The US FDA does not approve cosmetics at all, so there is no honest reading
+  // to translate. An unmapped value is skipped by the importer (see
+  // import-product-specs.mjs:124), which is the wanted behaviour: say nothing
+  // rather than say the wrong regulator. Add it back only with a real source
+  // and a wording the team has checked.
   solid: { th: "แบบแข็ง", en: "Solid" },
   fine: { th: "เนื้อละเอียด", en: "Fine" },
   rubber: { th: "ยาง", en: "Rubber" },
