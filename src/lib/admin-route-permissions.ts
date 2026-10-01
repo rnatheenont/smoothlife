@@ -49,18 +49,38 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   // approving one hands out a claim on a ฿55,000 prize.
   // The campaign's sales figure is read-only and reads like the receipt
   // console it sits in a tab of — same permission, no write side at all.
-  { prefix: "/api/admin/campaigns/dentiste-sales", permission: "receipts.view", methods: READ },
+  {
+    prefix: "/api/admin/campaigns/dentiste-sales",
+    permission: "receipts.view",
+    methods: READ,
+  },
   { prefix: "/api/admin/receipts", permission: "receipts.view", methods: READ },
   { prefix: "/api/admin/receipts", permission: "receipts.manage" },
-  { prefix: "/api/admin/checkout-transactions/reconcile", permission: "checkout.view", methods: READ },
-  { prefix: "/api/admin/checkout-transactions/reconcile", permission: "checkout.refund" },
-  { prefix: "/api/admin/checkout-transactions/refund", permission: "checkout.refund" },
-  { prefix: "/api/admin/checkout-transactions/mark-refunded", permission: "checkout.refund" },
+  {
+    prefix: "/api/admin/checkout-transactions/reconcile",
+    permission: "checkout.view",
+    methods: READ,
+  },
+  {
+    prefix: "/api/admin/checkout-transactions/reconcile",
+    permission: "checkout.refund",
+  },
+  {
+    prefix: "/api/admin/checkout-transactions/refund",
+    permission: "checkout.refund",
+  },
+  {
+    prefix: "/api/admin/checkout-transactions/mark-refunded",
+    permission: "checkout.refund",
+  },
   { prefix: "/api/admin/checkout-transactions", permission: "checkout.view" },
   // Issuing a gift card creates money out of nothing.
   { prefix: "/api/admin/gift-cards", permission: "gift_cards.manage" },
   // Recomputes every customer's points at once.
-  { prefix: "/api/admin/loyalty/recalculate", permission: "loyalty.recalculate" },
+  {
+    prefix: "/api/admin/loyalty/recalculate",
+    permission: "loyalty.recalculate",
+  },
 
   // Knowledge base. Drafting and publishing are deliberately different: an
   // answer promoted from a real chat, or a correction filed against a wrong
@@ -80,6 +100,20 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   // Page titles and descriptions, and the assistant that drafts them.
   { prefix: "/api/admin/seo", permission: "seo.manage" },
 
+  // The free-form product content blocks (ingredients, how-to-use, etc. in
+  // both languages) that overlay the generated catalogue — same split as
+  // everywhere else content gets written: reading what's there is lighter
+  // than publishing a change to a live product page.
+  {
+    prefix: "/api/admin/product-content",
+    permission: "product_content.view",
+    methods: READ,
+  },
+  {
+    prefix: "/api/admin/product-content",
+    permission: "product_content.manage",
+  },
+
   { prefix: "/api/admin/inbox", permission: "inbox.manage" },
   { prefix: "/api/admin/canned-responses", permission: "inbox.manage" },
   { prefix: "/api/admin/customers", permission: "customers.manage" },
@@ -90,37 +124,63 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   { prefix: "/api/admin/points/adjust", permission: "points.manage" },
   // What the tiers are is reference for anyone answering a customer; what
   // they are worth is marketing's to set.
-  { prefix: "/api/admin/points/tiers", permission: "points.view", methods: READ },
+  {
+    prefix: "/api/admin/points/tiers",
+    permission: "points.view",
+    methods: READ,
+  },
   { prefix: "/api/admin/points/tiers", permission: "points.manage" },
   { prefix: "/api/admin/points/customers", permission: "points.view" },
 
   // Flash sale: fulfillment watches the queue to pack against it, marketing
   // runs the campaigns. Same paths, split by method.
-  { prefix: "/api/admin/flash-sale", permission: "flash_sale.view", methods: READ },
+  {
+    prefix: "/api/admin/flash-sale",
+    permission: "flash_sale.view",
+    methods: READ,
+  },
   { prefix: "/api/admin/flash-sale", permission: "flash_sale.manage" },
 
   { prefix: "/api/admin/free-gifts", permission: "free_gifts.manage" },
-  { prefix: "/api/admin/subscription-sets", permission: "subscription_sets.manage" },
-  { prefix: "/api/admin/subscription-products", permission: "subscription_products.manage" },
+  {
+    prefix: "/api/admin/subscription-sets",
+    permission: "subscription_sets.manage",
+  },
+  {
+    prefix: "/api/admin/subscription-products",
+    permission: "subscription_products.manage",
+  },
   { prefix: "/api/admin/line-rich-menu", permission: "line_rich_menu.manage" },
   { prefix: "/api/admin/tracking-sync", permission: "tracking_sync.manage" },
   // Reading past signals is part of planning content; only marketing (and
   // owner/admin via '*') can trigger a sync, since it calls an external API
   // on every keyword and could be run into the ground if anyone could fire it.
-  { prefix: "/api/admin/brand-insights", permission: "brand_signals.view", methods: READ },
+  {
+    prefix: "/api/admin/brand-insights",
+    permission: "brand_signals.view",
+    methods: READ,
+  },
   { prefix: "/api/admin/brand-insights", permission: "brand_signals.manage" },
-  { prefix: "/api/admin/brand-signals", permission: "brand_signals.view", methods: READ },
+  {
+    prefix: "/api/admin/brand-signals",
+    permission: "brand_signals.view",
+    methods: READ,
+  },
   { prefix: "/api/admin/brand-signals", permission: "brand_signals.manage" },
 
   // Wiring the shop up to Shopify's webhooks — setup, not daily work.
-  { prefix: "/api/admin/register-catalogue-webhooks", permission: "system.setup" },
+  {
+    prefix: "/api/admin/register-catalogue-webhooks",
+    permission: "system.setup",
+  },
 ];
 
 /** The rule covering this request, or null when nothing covers it. */
 export function ruleFor(pathname: string, method: string): RouteRule | null {
   const upper = method.toUpperCase();
   for (const rule of ADMIN_ROUTE_RULES) {
-    if (pathname !== rule.prefix && !pathname.startsWith(`${rule.prefix}/`)) continue;
+    if (pathname !== rule.prefix && !pathname.startsWith(`${rule.prefix}/`))
+      continue;
     if (rule.methods && !rule.methods.includes(upper)) continue;
     return rule;
   }
@@ -128,7 +188,9 @@ export function ruleFor(pathname: string, method: string): RouteRule | null {
 }
 
 export function isPublicAdminRoute(pathname: string): boolean {
-  return PUBLIC_ADMIN_ROUTES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  return PUBLIC_ADMIN_ROUTES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
 }
 
 /**
@@ -137,5 +199,9 @@ export function isPublicAdminRoute(pathname: string): boolean {
  * role_permissions from drifting apart.
  */
 export const ALL_ROUTE_PERMISSIONS = [
-  ...new Set(ADMIN_ROUTE_RULES.map((r) => r.permission).filter((p): p is string => Boolean(p))),
+  ...new Set(
+    ADMIN_ROUTE_RULES.map((r) => r.permission).filter((p): p is string =>
+      Boolean(p),
+    ),
+  ),
 ];

@@ -434,6 +434,7 @@ const PRODUCTS_QUERY = `
               node {
                 id
                 title
+                sku
                 availableForSale
                 quantityAvailable
                 price { amount }
@@ -558,6 +559,7 @@ function toProduct(p, usedSlugs) {
       const vCompare = v.compareAtPrice ? Math.round(parseFloat(v.compareAtPrice.amount)) : 0;
       return {
         variantId: v.id,
+        sku: v.sku || null,
         size: v.title && v.title !== "Default Title" ? v.title : "",
         price: vPrice,
         compareAtPrice: vCompare > vPrice ? vCompare : 0,
@@ -735,6 +737,7 @@ function serialise(list) {
     const variantRows = p.variants.map((v) => {
       const vf = [];
       vf.push(`variantId:"${esc(v.variantId)}"`);
+      if (v.sku) vf.push(`sku:"${esc(v.sku)}"`);
       vf.push(`size:"${esc(v.size)}"`);
       vf.push(`price:${v.price}`);
       if (v.compareAtPrice) vf.push(`compareAtPrice:${v.compareAtPrice}`);

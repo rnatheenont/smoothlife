@@ -17,6 +17,15 @@ export type Concern =
 export type ProductVariant = {
   /** Shopify ProductVariant GID (gid://shopify/ProductVariant/...) — required to add this variant to a real Shopify cart. */
   variantId: string;
+  /**
+   * The merchant's own stock code. Shopify has always returned it and the
+   * catalogue script has always read it; it simply was not written out. It is
+   * here because it is the only product identifier the people who write the
+   * product copy actually recognise — they search by it, not by a slug or a
+   * GID. Never use it as a join key: it is hand-typed, inconsistent across
+   * 1,086 products, and sometimes absent. `variantId` remains the key.
+   */
+  sku?: string;
   /** e.g. "80 ml." — empty string for a product with only Shopify's implicit "Default Title" variant. */
   size: string;
   price: number;
