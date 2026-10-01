@@ -105,6 +105,27 @@ export default function Page() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  /**
+   * The same search over the two lists that arrive whole.
+   *
+   * Queue and decided are filtered by the server, because only fifty of them
+   * are ever sent. These two are not: the VIP order list comes in full and
+   * Lucky Fan arrives as a tally capped at two hundred, which is far more
+   * names than a campaign of this size has. So they are filtered here, where
+   * it costs no request at all.
+   */
+  const needle = query.trim().toLowerCase();
+  const needleDigits = needle.replace(/\D/g, "");
+  const hit = (...fields: (string | null | undefined)[]) => {
+    if (!needle) return true;
+    const text = fields.filter(Boolean).join(" ").toLowerCase();
+    if (text.includes(needle)) return true;
+    if (!needleDigits) return false;
+    return text.replace(/\D/g, "").includes(needleDigits);
+  };
+  const vipShown = data?.vipBuyers.filter((v) => hit(v.customer, v.email, v.orderName)) ?? [];
+  const fanShown = data?.luckyFan.filter((f) => hit(f.customer, f.userId)) ?? [];
+
   // "" for the first campaign keeps the URL clean and the server defaulting.
   const campaignQuery = campaign ? `?campaign=${encodeURIComponent(campaign)}` : "";
 
@@ -461,7 +482,7 @@ export default function Page() {
             ))}
           </div>
 
-          {(tab === "queue" || tab === "decided") && (
+          {(tab === "queue" || tab === "decided" || tab === "vip" || tab === "fan") && (
             <div className="mb-3 flex items-center gap-2">
               <div className="relative flex-1">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
@@ -484,7 +505,15 @@ export default function Page() {
               </div>
               {query && (
                 <span className="shrink-0 text-[12px] text-slate-500">
-                  พบ {tab === "queue" ? data.queue.length : data.decided.length} รายการ
+                  พบ{" "}
+                  {tab === "queue"
+                    ? data.queue.length
+                    : tab === "decided"
+                      ? data.decided.length
+                      : tab === "vip"
+                        ? vipShown.length
+                        : fanShown.length}{" "}
+                  รายการ
                 </span>
               )}
             </div>
@@ -566,7 +595,7 @@ export default function Page() {
               {/* A phone gets the same five facts stacked: the rank and the
                   order lead, because that is what the list is read for. */}
               <ul className={`mt-4 ${adminCards.list}`}>
-                {data.vipBuyers.map((v) => (
+                {vipShown.map((v) => (
                   <li key={v.orderName} className={adminCards.item}>
                     <div className={adminCards.head}>
                       <span className="font-mono text-[13px] font-bold text-brand-ink">
@@ -605,7 +634,7 @@ export default function Page() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.vipBuyers.map((v) => (
+                    {vipShown.map((v) => (
                       <tr key={v.orderName} className={adminTable.row}>
                         <td className={adminTable.mono}>
                           {v.rank}
@@ -635,9 +664,11 @@ export default function Page() {
                   </tbody>
                 </table>
               </div>
-              {data.vipBuyers.length === 0 && (
+              {vipShown.length === 0 && (
                 <p className="px-3 pb-3 text-[13px] text-slate-500">
-                  ยังไม่มีใครซื้อเซ็ต VIP — หรือเชื่อมต่อ Shopify ไม่ได้ในขณะนี้
+                  {query
+                    ? `ไม่พบผู้ซื้อเซ็ต VIP ที่ตรงกับ “${query}”`
+                    : "ยังไม่มีใครซื้อเซ็ต VIP — หรือเชื่อมต่อ Shopify ไม่ได้ในขณะนี้"}
                 </p>
               )}
             </Panel>
@@ -745,7 +776,7 @@ export default function Page() {
               {/* Two columns is a list, not a table, once the screen is a
                   phone: the name on the left and the number on the right. */}
               <ul className={`mt-4 ${adminCards.list}`}>
-                {data.luckyFan.map((f) => (
+                {fanShown.map((f) => (
                   <li key={f.userId} className={`${adminCards.item} flex items-center justify-between gap-3`}>
                     <span className="text-[13px] text-brand-ink">{f.customer ?? f.userId.slice(0, 8)}</span>
                     <span className="font-mono text-[13px] font-bold tabular-nums text-brand-ink">{f.entries}</span>
@@ -762,7 +793,7 @@ export default function Page() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.luckyFan.map((f) => (
+                    {fanShown.map((f) => (
                       <tr key={f.userId} className={adminTable.row}>
                         <td className={adminTable.cell}>{f.customer ?? f.userId.slice(0, 8)}</td>
                         <td className={adminTable.mono}>{f.entries}</td>
@@ -771,8 +802,10 @@ export default function Page() {
                   </tbody>
                 </table>
               </div>
-              {data.luckyFan.length === 0 && (
-                <p className="px-3 pb-3 text-[13px] text-slate-500">ยังไม่มีสิทธิ์สะสม</p>
+              {fanShown.length === 0 && (
+                <p className="px-3 pb-3 text-[13px] text-slate-500">
+                  {query ? `ไม่พบลูกค้าที่ตรงกับ “${query}”` : "ยังไม่มีสิทธิ์สะสม"}
+                </p>
               )}
             </Panel>
           )}
