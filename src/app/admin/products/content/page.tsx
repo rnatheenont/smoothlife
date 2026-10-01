@@ -4,7 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, FileEdit, CheckCircle2, Circle } from "lucide-react";
-import { PageHeader, adminTable } from "@/components/admin/layout-kit";
+import {
+  PageHeader,
+  adminSelect,
+  adminTable,
+} from "@/components/admin/layout-kit";
 import { products } from "@/data/products";
 import { stableContentVariantId } from "@/lib/product-content";
 
@@ -161,7 +165,7 @@ export default function ProductContentListPage() {
           value={brand}
           onChange={(e) => setBrand(e.target.value)}
           aria-label="กรองตามแบรนด์"
-          className="rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm outline-hidden focus:border-brand-teal"
+          className={adminSelect}
         >
           <option value="all">
             ทุกแบรนด์ ({rows.length.toLocaleString("th-TH")})

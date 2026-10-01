@@ -2,14 +2,32 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
-import { User as UserIcon, Loader2, Camera, Mail, Phone, CheckCircle2 } from "lucide-react";
+import {
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  type ConfirmationResult,
+} from "firebase/auth";
+import {
+  User as UserIcon,
+  Loader2,
+  Camera,
+  Mail,
+  Phone,
+  CheckCircle2,
+} from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
 import { useAuth } from "@/lib/auth-context";
 import { resizeForAvatar } from "@/lib/image-utils";
-import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
+import {
+  firebaseConfigured,
+  getFirebaseAuth,
+  toE164Thai,
+} from "@/lib/firebase-client";
 import { Avatar, Button } from "@/components/ui";
-import { SHOPIFY_EMAIL_LOGIN, shopifyAuthStartPath } from "@/lib/shopify-email-login";
+import {
+  SHOPIFY_EMAIL_LOGIN,
+  shopifyAuthStartPath,
+} from "@/lib/shopify-email-login";
 
 const inputClass =
   "w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-hidden focus:border-brand-teal";
@@ -47,7 +65,11 @@ function ProfileContent() {
       if (!data.ok) throw new Error(data.error || "อัพโหลดไม่สำเร็จ");
       await refreshUser();
     } catch (err) {
-      setAvatarError(err instanceof Error ? err.message : "อัพโหลดไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+      setAvatarError(
+        err instanceof Error
+          ? err.message
+          : "อัพโหลดไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+      );
     } finally {
       setAvatarBusy(false);
     }
@@ -61,7 +83,11 @@ function ProfileContent() {
     const res = await fetch("/api/auth/profile", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name, gender: gender || null, birthdate: birthdate || null }),
+      body: JSON.stringify({
+        name,
+        gender: gender || null,
+        birthdate: birthdate || null,
+      }),
     });
     const data = await res.json();
     setBusy(false);
@@ -118,17 +144,28 @@ function ProfileContent() {
           <div>
             <p className="text-sm font-bold text-brand-ink">{user.name}</p>
             <p className="text-xs text-slate-500">{user.email || user.phone}</p>
-            {avatarError && <p className="text-xs text-rose-700 mt-1">{avatarError}</p>}
+            {avatarError && (
+              <p className="text-xs text-rose-700 mt-1">{avatarError}</p>
+            )}
           </div>
         </div>
 
         <div>
           <label className={labelClass}>ชื่อ-นามสกุล</label>
-          <input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+          <input
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={inputClass}
+          />
         </div>
         <div>
           <label className={labelClass}>เพศ</label>
-          <select value={gender || ""} onChange={(e) => setGender(e.target.value)} className={inputClass}>
+          <select
+            value={gender || ""}
+            onChange={(e) => setGender(e.target.value)}
+            className={`${inputClass} pe-9`}
+          >
             <option value="">ไม่ระบุ</option>
             <option value="male">ชาย</option>
             <option value="female">หญิง</option>
@@ -187,7 +224,11 @@ function EmailLinkCard() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const linked = params.get("emailLinked");
-    const failed = params.get("emailError") || (params.get("error")?.startsWith("shopify_") ? "ยืนยันอีเมลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" : null);
+    const failed =
+      params.get("emailError") ||
+      (params.get("error")?.startsWith("shopify_")
+        ? "ยืนยันอีเมลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"
+        : null);
     if (!linked && !failed) return;
     if (linked) {
       setJustLinked(linked);
@@ -298,7 +339,9 @@ function EmailLinkCard() {
         <Mail size={16} />
         <span className="text-xs font-semibold">Email</span>
       </div>
-      <h2 className="text-sm font-bold text-brand-ink mb-1">{isChanging ? "เปลี่ยนอีเมล" : "เพิ่มและยืนยันอีเมล"}</h2>
+      <h2 className="text-sm font-bold text-brand-ink mb-1">
+        {isChanging ? "เปลี่ยนอีเมล" : "เพิ่มและยืนยันอีเมล"}
+      </h2>
       <p className="text-xs text-slate-500 mb-4">
         {isChanging
           ? `อีเมลปัจจุบัน: ${user.email} — ${SHOPIFY_EMAIL_LOGIN ? "กรอกอีเมลใหม่ในหน้าถัดไป" : "กรอกอีเมลใหม่"}แล้วยืนยันด้วยรหัสที่ส่งไปที่อีเมลนั้น`
@@ -312,13 +355,20 @@ function EmailLinkCard() {
           {error && <p className="text-xs text-rose-700">{error}</p>}
           <Button
             onClick={() =>
-              (window.location.href = shopifyAuthStartPath({ intent: "link", returnTo: "/account/profile" }))
+              (window.location.href = shopifyAuthStartPath({
+                intent: "link",
+                returnTo: "/account/profile",
+              }))
             }
           >
             {isChanging ? "เปลี่ยนอีเมล" : "เพิ่มอีเมล"}
           </Button>
           {isChanging && (
-            <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-500">
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="text-xs text-slate-500"
+            >
               ยกเลิก
             </button>
           )}
@@ -339,20 +389,29 @@ function EmailLinkCard() {
             {sending ? "กำลังส่งรหัส…" : "ส่งรหัสยืนยัน"}
           </Button>
           {isChanging && (
-            <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-500">
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="text-xs text-slate-500"
+            >
               ยกเลิก
             </button>
           )}
         </form>
       ) : (
         <form onSubmit={verifyCode} className="flex flex-col gap-3">
-          <p className="text-xs text-slate-500">ส่งรหัสยืนยันไปที่ {email} แล้ว กรุณากรอกรหัสที่ได้รับทางอีเมล</p>
+          <p className="text-xs text-slate-500">
+            ส่งรหัสยืนยันไปที่ {email} แล้ว กรุณากรอกรหัสที่ได้รับทางอีเมล
+          </p>
           {devCode && (
             <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
               <p className="text-xs font-semibold text-amber-800 mb-1">
-                ยังไม่ได้ตั้งค่าระบบส่งอีเมลจริงในโปรเจกต์นี้ — ใช้รหัสนี้แทนได้เลย (dev mode)
+                ยังไม่ได้ตั้งค่าระบบส่งอีเมลจริงในโปรเจกต์นี้ —
+                ใช้รหัสนี้แทนได้เลย (dev mode)
               </p>
-              <p className="text-lg font-bold tracking-widest text-center text-amber-900">{devCode}</p>
+              <p className="text-lg font-bold tracking-widest text-center text-amber-900">
+                {devCode}
+              </p>
             </div>
           )}
           <input
@@ -437,14 +496,24 @@ function PhoneChangeCard() {
     try {
       const auth = getFirebaseAuth();
       if (!recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current = new RecaptchaVerifier(auth, "profile-recaptcha-container", { size: "invisible" });
+        recaptchaVerifierRef.current = new RecaptchaVerifier(
+          auth,
+          "profile-recaptcha-container",
+          { size: "invisible" },
+        );
       }
-      const confirmation = await signInWithPhoneNumber(auth, toE164Thai(phone), recaptchaVerifierRef.current);
+      const confirmation = await signInWithPhoneNumber(
+        auth,
+        toE164Thai(phone),
+        recaptchaVerifierRef.current,
+      );
       confirmationResultRef.current = confirmation;
       setSent(true);
     } catch (err) {
       console.error("[profile phone] send failed", err);
-      setError("ส่งรหัส OTP ไม่สำเร็จ กรุณาตรวจสอบเบอร์โทรศัพท์แล้วลองใหม่อีกครั้ง");
+      setError(
+        "ส่งรหัส OTP ไม่สำเร็จ กรุณาตรวจสอบเบอร์โทรศัพท์แล้วลองใหม่อีกครั้ง",
+      );
       recaptchaVerifierRef.current?.clear();
       recaptchaVerifierRef.current = null;
       setRecaptchaKey((k) => k + 1);
@@ -502,14 +571,18 @@ function PhoneChangeCard() {
         <Phone size={16} />
         <span className="text-xs font-semibold">Phone</span>
       </div>
-      <h2 className="text-sm font-bold text-brand-ink mb-1">{isChanging ? "เปลี่ยนเบอร์โทร" : "เพิ่มและยืนยันเบอร์โทร"}</h2>
+      <h2 className="text-sm font-bold text-brand-ink mb-1">
+        {isChanging ? "เปลี่ยนเบอร์โทร" : "เพิ่มและยืนยันเบอร์โทร"}
+      </h2>
       <p className="text-xs text-slate-500 mb-4">
         {isChanging
           ? `เบอร์ปัจจุบัน: ${user.phone} — กรอกเบอร์ใหม่แล้วยืนยันด้วยรหัสที่ส่ง SMS ไปที่เบอร์นั้น`
           : "ยังไม่มีเบอร์โทรในระบบ เพิ่มไว้เพื่อใช้เข้าสู่ระบบได้อีกทาง"}
       </p>
       {!firebaseConfigured() && (
-        <p className="text-xs text-rose-700 mb-3">ระบบยืนยันเบอร์โทรยังไม่ได้ตั้งค่า</p>
+        <p className="text-xs text-rose-700 mb-3">
+          ระบบยืนยันเบอร์โทรยังไม่ได้ตั้งค่า
+        </p>
       )}
 
       {!sent ? (
@@ -517,17 +590,28 @@ function PhoneChangeCard() {
           <input
             required
             value={phone}
-            onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            onChange={(e) =>
+              setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+            }
             placeholder="เบอร์โทรใหม่ (08X-XXX-XXXX)"
             className={inputClass}
           />
           {error && <p className="text-xs text-rose-700">{error}</p>}
-          <Button type="submit" disabled={sending || !firebaseConfigured() || phone.trim().length < 9}>
+          <Button
+            type="submit"
+            disabled={
+              sending || !firebaseConfigured() || phone.trim().length < 9
+            }
+          >
             {sending && <Loader2 size={14} className="animate-spin" />}
             {sending ? "กำลังส่งรหัส…" : "ส่งรหัส OTP"}
           </Button>
           {isChanging && (
-            <button type="button" onClick={() => setEditing(false)} className="text-xs text-slate-500">
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="text-xs text-slate-500"
+            >
               ยกเลิก
             </button>
           )}
@@ -535,7 +619,9 @@ function PhoneChangeCard() {
         </form>
       ) : (
         <form onSubmit={verifyCode} className="flex flex-col gap-3">
-          <p className="text-xs text-slate-500">ส่งรหัสยืนยันไปที่ {phone} แล้ว กรุณากรอกรหัสที่ได้รับทาง SMS</p>
+          <p className="text-xs text-slate-500">
+            ส่งรหัสยืนยันไปที่ {phone} แล้ว กรุณากรอกรหัสที่ได้รับทาง SMS
+          </p>
           <input
             value={code}
             onChange={(e) => setCode(e.target.value)}

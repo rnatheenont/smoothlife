@@ -73,17 +73,20 @@ export function validate(a: ShippingAddress) {
 
   if (a.name.trim().length < 2) e.name = "กรุณากรอกชื่อ-นามสกุลผู้รับ";
   if (digits.length !== 10) e.phone = "เบอร์มือถือต้องมี 10 หลัก";
-  else if (!/^0[689]/.test(digits)) e.phone = "เบอร์มือถือต้องขึ้นต้นด้วย 06, 08 หรือ 09";
+  else if (!/^0[689]/.test(digits))
+    e.phone = "เบอร์มือถือต้องขึ้นต้นด้วย 06, 08 หรือ 09";
   if (a.line1.trim().length < 5) e.line1 = "กรุณากรอกบ้านเลขที่ ถนน/ซอย";
   if (!a.country) e.country = "กรุณาเลือกประเทศ";
 
   if (isTH) {
-    if (!/^\d{5}$/.test(a.postcode)) e.postcode = "รหัสไปรษณีย์ต้องเป็นตัวเลข 5 หลัก";
+    if (!/^\d{5}$/.test(a.postcode))
+      e.postcode = "รหัสไปรษณีย์ต้องเป็นตัวเลข 5 หลัก";
     if (!a.province.trim()) e.province = "กรุณาเลือกจังหวัด";
     if (!a.district.trim()) e.district = "กรุณาเลือกเขต/อำเภอ";
     if (!a.subdistrict.trim()) e.subdistrict = "กรุณาเลือกแขวง/ตำบล";
   } else {
-    if (a.postcode.trim().length < 3) e.postcode = "กรุณากรอกรหัสไปรษณีย์ให้ถูกต้อง";
+    if (a.postcode.trim().length < 3)
+      e.postcode = "กรุณากรอกรหัสไปรษณีย์ให้ถูกต้อง";
     if (!a.province.trim()) e.province = "กรุณากรอกจังหวัด/รัฐ";
     if (!a.district.trim()) e.district = "กรุณากรอกเมือง/อำเภอ";
   }
@@ -125,7 +128,9 @@ function Field({
   const show = touched && error;
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-semibold text-brand-ink">{label}</span>
+      <span className="mb-1 block text-xs font-semibold text-brand-ink">
+        {label}
+      </span>
       {children}
       {show ? (
         <span className="mt-1 flex items-center gap-1 text-[11px] text-rose-700">
@@ -170,7 +175,8 @@ export default function AddressForm({
   const lastCode = useRef("");
   const isTH = value.country === "TH" || !value.country;
 
-  const set = (patch: Partial<ShippingAddress>) => onChange({ ...value, ...patch });
+  const set = (patch: Partial<ShippingAddress>) =>
+    onChange({ ...value, ...patch });
 
   // postcode -> province / district / subdistrict (Thailand only — that's
   // the only market we have a postcode database for)
@@ -193,11 +199,13 @@ export default function AddressForm({
           set({
             province: only.province,
             district: only.district,
-            subdistrict: only.subdistricts.length === 1 ? only.subdistricts[0] : "",
+            subdistrict:
+              only.subdistricts.length === 1 ? only.subdistricts[0] : "",
           });
         } else if (found.length > 1) {
           const provinces = new Set(found.map((f) => f.province));
-          if (provinces.size === 1) set({ province: found[0].province, district: "", subdistrict: "" });
+          if (provinces.size === 1)
+            set({ province: found[0].province, district: "", subdistrict: "" });
         }
       })
       .catch(() => {})
@@ -216,9 +224,13 @@ export default function AddressForm({
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <Field label={t("ประเทศ", "Country")} error={errors.country} touched={touched.country}>
+        <Field
+          label={t("ประเทศ", "Country")}
+          error={errors.country}
+          touched={touched.country}
+        >
           <select
-            className={ring(touched.country && !!errors.country)}
+            className={`${ring(touched.country && !!errors.country)} pe-9`}
             value={value.country || "TH"}
             onChange={(e) => {
               const country = e.target.value;
@@ -243,7 +255,11 @@ export default function AddressForm({
       </div>
 
       <div className="sm:col-span-2">
-        <Field label={t("ชื่อ-นามสกุลผู้รับ", "Recipient name")} error={errors.name} touched={touched.name}>
+        <Field
+          label={t("ชื่อ-นามสกุลผู้รับ", "Recipient name")}
+          error={errors.name}
+          touched={touched.name}
+        >
           <input
             className={ring(touched.name && !!errors.name)}
             value={value.name}
@@ -278,7 +294,10 @@ export default function AddressForm({
         touched={touched.postcode}
         hint={
           isTH && lookupOn
-            ? t("กรอกแล้วระบบเติมจังหวัด/เขตให้อัตโนมัติ", "We fill in province and district for you")
+            ? t(
+                "กรอกแล้วระบบเติมจังหวัด/เขตให้อัตโนมัติ",
+                "We fill in province and district for you",
+              )
             : undefined
         }
       >
@@ -330,7 +349,11 @@ export default function AddressForm({
       </div>
 
       <Field
-        label={isTH ? t("จังหวัด", "Province") : t("จังหวัด / รัฐ", "State / Province")}
+        label={
+          isTH
+            ? t("จังหวัด", "Province")
+            : t("จังหวัด / รัฐ", "State / Province")
+        }
         error={errors.province}
         touched={touched.province}
       >
@@ -340,19 +363,29 @@ export default function AddressForm({
           onChange={(e) => set({ province: e.target.value })}
           onBlur={() => onBlurField("province")}
           autoComplete="address-level1"
-          placeholder={isTH ? "กรุงเทพมหานคร" : t("เช่น กรุงเทพมหานคร", "e.g. California")}
-          readOnly={isTH && matches.length > 0 && new Set(matches.map((m) => m.province)).size === 1}
+          placeholder={
+            isTH ? "กรุงเทพมหานคร" : t("เช่น กรุงเทพมหานคร", "e.g. California")
+          }
+          readOnly={
+            isTH &&
+            matches.length > 0 &&
+            new Set(matches.map((m) => m.province)).size === 1
+          }
         />
       </Field>
 
       <Field
-        label={isTH ? t("เขต / อำเภอ", "District") : t("เมือง / อำเภอ", "City / District")}
+        label={
+          isTH
+            ? t("เขต / อำเภอ", "District")
+            : t("เมือง / อำเภอ", "City / District")
+        }
         error={errors.district}
         touched={touched.district}
       >
         {isTH && districts.length > 1 ? (
           <select
-            className={ring(touched.district && !!errors.district)}
+            className={`${ring(touched.district && !!errors.district)} pe-9`}
             value={value.district}
             onChange={(e) => set({ district: e.target.value, subdistrict: "" })}
             onBlur={() => onBlurField("district")}
@@ -371,7 +404,9 @@ export default function AddressForm({
             onChange={(e) => set({ district: e.target.value })}
             onBlur={() => onBlurField("district")}
             autoComplete="address-level2"
-            placeholder={isTH ? "วัฒนา" : t("เช่น เมืองที่อยู่", "e.g. Los Angeles")}
+            placeholder={
+              isTH ? "วัฒนา" : t("เช่น เมืองที่อยู่", "e.g. Los Angeles")
+            }
             readOnly={isTH && districts.length === 1}
           />
         )}
@@ -389,12 +424,14 @@ export default function AddressForm({
         >
           {isTH && subs.length > 1 ? (
             <select
-              className={ring(touched.subdistrict && !!errors.subdistrict)}
+              className={`${ring(touched.subdistrict && !!errors.subdistrict)} pe-9`}
               value={value.subdistrict}
               onChange={(e) => set({ subdistrict: e.target.value })}
               onBlur={() => onBlurField("subdistrict")}
             >
-              <option value="">{t("เลือกแขวง/ตำบล", "Select subdistrict")}</option>
+              <option value="">
+                {t("เลือกแขวง/ตำบล", "Select subdistrict")}
+              </option>
               {subs.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -407,7 +444,9 @@ export default function AddressForm({
               value={value.subdistrict}
               onChange={(e) => set({ subdistrict: e.target.value })}
               onBlur={() => onBlurField("subdistrict")}
-              placeholder={isTH ? "คลองเตยเหนือ" : t("เช่น ย่านที่อยู่", "e.g. Downtown")}
+              placeholder={
+                isTH ? "คลองเตยเหนือ" : t("เช่น ย่านที่อยู่", "e.g. Downtown")
+              }
               readOnly={isTH && subs.length === 1}
             />
           )}
@@ -415,12 +454,20 @@ export default function AddressForm({
       </div>
 
       <div className="sm:col-span-2">
-        <Field label={t("หมายเหตุถึงพนักงานส่ง (ไม่บังคับ)", "Note for the courier (optional)")}>
+        <Field
+          label={t(
+            "หมายเหตุถึงพนักงานส่ง (ไม่บังคับ)",
+            "Note for the courier (optional)",
+          )}
+        >
           <input
             className={ring(false)}
             value={value.note}
             onChange={(e) => set({ note: e.target.value })}
-            placeholder={t("เช่น ฝากไว้ที่นิติบุคคล", "e.g. leave with reception")}
+            placeholder={t(
+              "เช่น ฝากไว้ที่นิติบุคคล",
+              "e.g. leave with reception",
+            )}
           />
         </Field>
       </div>

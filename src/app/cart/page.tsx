@@ -93,7 +93,7 @@ export default function CartPage() {
               <select
                 value={line.variantId}
                 onChange={(e) => changeVariant(line.variantId, e.target.value, line.subscribeMonths)}
-                className="mt-1 self-start rounded-md border border-slate-200 bg-white text-xs text-slate-600 pl-1.5 pr-5 py-1"
+                className="mt-1 self-start rounded-md border border-slate-200 bg-white text-xs text-slate-600 pl-1.5 pr-8 py-1"
               >
                 {line.variants.map((v) => (
                   <option key={v.variantId} value={v.variantId} disabled={!v.inStock}>

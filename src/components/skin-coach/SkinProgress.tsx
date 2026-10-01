@@ -136,7 +136,7 @@ export default function SkinProgress({
               <select
                 value={before.id}
                 onChange={(e) => setBeforeId(e.target.value)}
-                className="rounded-lg border border-surface-line bg-white px-2 py-1 text-xs"
+                className="rounded-lg border border-surface-line bg-white py-1 pl-2 pr-8 text-xs"
               >
                 {withPhoto.slice(1).map((s) => (
                   <option key={s.id} value={s.id}>

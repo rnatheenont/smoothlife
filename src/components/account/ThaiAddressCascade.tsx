@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePostcodeMatches, useThaiProvinces, useThaiDistricts, useThaiSubdistricts } from "@/lib/postcode-lookup";
+import {
+  usePostcodeMatches,
+  useThaiProvinces,
+  useThaiDistricts,
+  useThaiSubdistricts,
+} from "@/lib/postcode-lookup";
 import { isThaiPostcode, VALIDATION_HINTS } from "@/lib/form-validation";
 
 export type ThaiAddressValue = {
@@ -30,10 +35,17 @@ export default function ThaiAddressCascade({
   const isTH = value.country === "TH";
   // Half-typed postcodes are normal while typing, so only complain once the
   // field is as long as a Thai postcode can be and still doesn't look like one.
-  const postcodeInvalid = isTH && value.postal_code.length === 5 && !isThaiPostcode(value.postal_code);
+  const postcodeInvalid =
+    isTH &&
+    value.postal_code.length === 5 &&
+    !isThaiPostcode(value.postal_code);
   const provinces = useThaiProvinces(value.country);
   const districts = useThaiDistricts(value.country, value.province);
-  const subdistricts = useThaiSubdistricts(value.country, value.province, value.district);
+  const subdistricts = useThaiSubdistricts(
+    value.country,
+    value.province,
+    value.district,
+  );
 
   // A single postcode often covers several districts (sometimes even two
   // provinces, e.g. island districts sharing a mainland code) — auto-fill
@@ -45,8 +57,13 @@ export default function ThaiAddressCascade({
     const uniqueProvinces = new Set(zipMatches.map((m) => m.province));
     if (uniqueProvinces.size !== 1) return;
     const province = zipMatches[0].province;
-    const districtsInProvince = new Set(zipMatches.filter((m) => m.province === province).map((m) => m.district));
-    onChange({ province, district: districtsInProvince.size === 1 ? zipMatches[0].district : "" });
+    const districtsInProvince = new Set(
+      zipMatches.filter((m) => m.province === province).map((m) => m.district),
+    );
+    onChange({
+      province,
+      district: districtsInProvince.size === 1 ? zipMatches[0].district : "",
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zipMatches, isTH, value.province]);
 
@@ -58,12 +75,21 @@ export default function ThaiAddressCascade({
           required
           value={value.postal_code}
           onChange={(e) => {
-            const next = isTH ? e.target.value.replace(/\D/g, "").slice(0, 5) : e.target.value;
+            const next = isTH
+              ? e.target.value.replace(/\D/g, "").slice(0, 5)
+              : e.target.value;
             // Clearing the postcode back to empty also clears whatever it
             // had filled in below — otherwise deleting it to retype leaves
             // a stale province/district/subdistrict that no longer matches.
             onChange(
-              next === "" ? { postal_code: "", province: "", district: "", subdistrict: "" } : { postal_code: next }
+              next === ""
+                ? {
+                    postal_code: "",
+                    province: "",
+                    district: "",
+                    subdistrict: "",
+                  }
+                : { postal_code: next },
             );
           }}
           placeholder="10110"
@@ -73,10 +99,13 @@ export default function ThaiAddressCascade({
           className={`${inputClass} ${postcodeInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
         {postcodeInvalid ? (
-          <p className="mt-1.5 text-[11px] text-rose-700">{VALIDATION_HINTS.postcode}</p>
+          <p className="mt-1.5 text-[11px] text-rose-700">
+            {VALIDATION_HINTS.postcode}
+          </p>
         ) : isTH ? (
           <p className="mt-1.5 text-[11px] text-slate-500">
-            ไม่ทราบรหัสไปรษณีย์ก็เลือกจังหวัดด้านล่างได้เลย ระบบจะเติมรหัสให้อัตโนมัติ
+            ไม่ทราบรหัสไปรษณีย์ก็เลือกจังหวัดด้านล่างได้เลย
+            ระบบจะเติมรหัสให้อัตโนมัติ
           </p>
         ) : null}
       </div>
@@ -86,8 +115,15 @@ export default function ThaiAddressCascade({
           <select
             required
             value={value.province}
-            onChange={(e) => onChange({ province: e.target.value, district: "", subdistrict: "", postal_code: "" })}
-            className={inputClass}
+            onChange={(e) =>
+              onChange({
+                province: e.target.value,
+                district: "",
+                subdistrict: "",
+                postal_code: "",
+              })
+            }
+            className={`${inputClass} pe-9`}
           >
             <option value="" disabled>
               เลือกจังหวัด
@@ -115,8 +151,14 @@ export default function ThaiAddressCascade({
               required
               disabled={!value.province}
               value={value.district}
-              onChange={(e) => onChange({ district: e.target.value, subdistrict: "", postal_code: "" })}
-              className={inputClass}
+              onChange={(e) =>
+                onChange({
+                  district: e.target.value,
+                  subdistrict: "",
+                  postal_code: "",
+                })
+              }
+              className={`${inputClass} pe-9`}
             >
               <option value="" disabled>
                 เลือกเขต/อำเภอ
@@ -144,10 +186,15 @@ export default function ThaiAddressCascade({
               disabled={!value.district}
               value={value.subdistrict}
               onChange={(e) => {
-                const picked = subdistricts.find((s) => s.name === e.target.value);
-                onChange({ subdistrict: e.target.value, postal_code: picked?.postal_code || value.postal_code });
+                const picked = subdistricts.find(
+                  (s) => s.name === e.target.value,
+                );
+                onChange({
+                  subdistrict: e.target.value,
+                  postal_code: picked?.postal_code || value.postal_code,
+                });
               }}
-              className={inputClass}
+              className={`${inputClass} pe-9`}
             >
               <option value="" disabled>
                 เลือกแขวง/ตำบล

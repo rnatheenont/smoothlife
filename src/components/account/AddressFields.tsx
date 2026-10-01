@@ -2,8 +2,16 @@
 
 import { COUNTRIES } from "@/components/AddressForm";
 import ThaiAddressCascade from "@/components/account/ThaiAddressCascade";
-import { sanitiseThaiPhoneInput, isValidPhoneForCountry, THAI_PHONE_HINT } from "@/lib/phone";
-import { isPersonName, isAddressLine, VALIDATION_HINTS } from "@/lib/form-validation";
+import {
+  sanitiseThaiPhoneInput,
+  isValidPhoneForCountry,
+  THAI_PHONE_HINT,
+} from "@/lib/phone";
+import {
+  isPersonName,
+  isAddressLine,
+  VALIDATION_HINTS,
+} from "@/lib/form-validation";
 
 export type AddressFormValue = {
   label: string;
@@ -44,26 +52,43 @@ export default function AddressFields({
   onChange: (v: AddressFormValue) => void;
   showDefaultToggle?: boolean;
 }) {
-  function set<K extends keyof AddressFormValue>(key: K, v: AddressFormValue[K]) {
+  function set<K extends keyof AddressFormValue>(
+    key: K,
+    v: AddressFormValue[K],
+  ) {
     onChange({ ...value, [key]: v });
   }
 
   const isTH = !value.country || value.country === "TH";
   // Only nag once there is something to be wrong about — an empty field is the
   // `required` attribute's job, not an error message's.
-  const phoneInvalid = value.phone.trim().length > 0 && !isValidPhoneForCountry(value.phone, value.country);
-  const nameInvalid = value.recipient_name.trim().length > 0 && !isPersonName(value.recipient_name);
-  const addressInvalid = value.address_line.trim().length > 0 && !isAddressLine(value.address_line);
+  const phoneInvalid =
+    value.phone.trim().length > 0 &&
+    !isValidPhoneForCountry(value.phone, value.country);
+  const nameInvalid =
+    value.recipient_name.trim().length > 0 &&
+    !isPersonName(value.recipient_name);
+  const addressInvalid =
+    value.address_line.trim().length > 0 && !isAddressLine(value.address_line);
 
   return (
     <div className="flex flex-col gap-4">
       <div>
         <label className={labelClass}>ชื่อที่อยู่ (เช่น บ้าน, ที่ทำงาน)</label>
-        <input value={value.label} onChange={(e) => set("label", e.target.value)} placeholder="บ้าน" className={inputClass} />
+        <input
+          value={value.label}
+          onChange={(e) => set("label", e.target.value)}
+          placeholder="บ้าน"
+          className={inputClass}
+        />
       </div>
       <div>
         <label className={labelClass}>ประเทศ</label>
-        <select value={value.country} onChange={(e) => set("country", e.target.value)} className={inputClass}>
+        <select
+          value={value.country}
+          onChange={(e) => set("country", e.target.value)}
+          className={`${inputClass} pe-9`}
+        >
           {COUNTRIES.map((c) => (
             <option key={c.code} value={c.code}>
               {c.th}
@@ -81,7 +106,11 @@ export default function AddressFields({
           aria-invalid={nameInvalid || undefined}
           className={`${inputClass} ${nameInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
-        {nameInvalid && <p className="mt-1 text-[11px] text-rose-700">{VALIDATION_HINTS.name}</p>}
+        {nameInvalid && (
+          <p className="mt-1 text-[11px] text-rose-700">
+            {VALIDATION_HINTS.name}
+          </p>
+        )}
       </div>
       <div>
         <label className={labelClass}>โทรศัพท์</label>
@@ -93,7 +122,12 @@ export default function AddressFields({
           value={value.phone}
           // Filter on the way in rather than only complaining afterwards, so a
           // pasted "081-234-5678" or "+66 81 234 5678" just works.
-          onChange={(e) => set("phone", isTH ? sanitiseThaiPhoneInput(e.target.value) : e.target.value)}
+          onChange={(e) =>
+            set(
+              "phone",
+              isTH ? sanitiseThaiPhoneInput(e.target.value) : e.target.value,
+            )
+          }
           placeholder={isTH ? "0891234567" : "เบอร์ติดต่อ"}
           aria-invalid={phoneInvalid || undefined}
           className={`${inputClass} ${phoneInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
@@ -101,7 +135,9 @@ export default function AddressFields({
         {phoneInvalid ? (
           <p className="mt-1 text-[11px] text-rose-700">{THAI_PHONE_HINT}</p>
         ) : isTH ? (
-          <p className="mt-1 text-[11px] text-slate-500">กรอกเฉพาะตัวเลข ไม่ต้องใส่ขีดหรือเว้นวรรค</p>
+          <p className="mt-1 text-[11px] text-slate-500">
+            กรอกเฉพาะตัวเลข ไม่ต้องใส่ขีดหรือเว้นวรรค
+          </p>
         ) : null}
       </div>
       <div>
@@ -115,12 +151,21 @@ export default function AddressFields({
           aria-invalid={addressInvalid || undefined}
           className={`${inputClass} ${addressInvalid ? "border-rose-300 focus:border-rose-400" : ""}`}
         />
-        {addressInvalid && <p className="mt-1 text-[11px] text-rose-700">{VALIDATION_HINTS.addressLine}</p>}
+        {addressInvalid && (
+          <p className="mt-1 text-[11px] text-rose-700">
+            {VALIDATION_HINTS.addressLine}
+          </p>
+        )}
       </div>
-      <ThaiAddressCascade value={value} onChange={(patch) => onChange({ ...value, ...patch })} />
+      <ThaiAddressCascade
+        value={value}
+        onChange={(patch) => onChange({ ...value, ...patch })}
+      />
       {showDefaultToggle && (
         <label className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
-          <span className="text-sm text-slate-600">ตั้งเป็นค่าเริ่มต้น จัดส่ง ที่อยู่</span>
+          <span className="text-sm text-slate-600">
+            ตั้งเป็นค่าเริ่มต้น จัดส่ง ที่อยู่
+          </span>
           <input
             type="checkbox"
             checked={value.is_default}

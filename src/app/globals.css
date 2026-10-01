@@ -355,6 +355,29 @@
     background-color: #fff;
   }
 
+  /* The browser draws a select's arrow hard against the field's right edge and
+     will not be talked out of it — padding-inline-end moves the text, not the
+     arrow. The only way to give it room is to stop using the browser's and
+     draw our own, which is what this does: same chevron as the rest of the
+     site, inset far enough to look deliberate. The chevron, its size and
+     its inset are the ones adminSelect in layout-kit.tsx already used — that
+     file solved this for the admin toolbars a while ago and this is the same
+     answer applied everywhere else. adminSelect keeps its own copy and wins
+     on the pages that use it, since utilities outrank base.
+
+     The padding here is a floor, not a rule: a select that sets its own
+     padding-inline-end wins, because utilities sit in a later cascade layer
+     than base. Anything tighter than about 2rem has the text run under the
+     chevron, so those few set it themselves. */
+  select:not([multiple]):not([size]) {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 12px 12px;
+    padding-inline-end: 2.25rem;
+  }
+
   /* Tailwind v4 dropped v3's `cursor: pointer` on buttons; the site was built
      with it, so it stays. */
   button:not(:disabled),
