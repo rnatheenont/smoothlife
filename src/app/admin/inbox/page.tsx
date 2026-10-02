@@ -621,17 +621,23 @@ export default function AdminInboxPage() {
           controls stranded up in the title row. Everything that changes what
           the list shows now sits together on the left, and everything that
           changes what the screen shows sits together on the right. */}
-      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl2 border border-slate-100 bg-white px-3 py-2">
+      <div className="mb-3 flex items-center gap-2 rounded-xl2 border border-slate-100 bg-white px-2 py-2 md:gap-3 md:px-3">
         {/* Not PageHeader: this screen measures its own height and fills it
             with three panes, so the subtitle every other page carries would
-            come straight out of the conversation list. */}
-        <h1 className="flex shrink-0 items-center gap-1.5 text-base font-bold text-brand-ink">
+            come straight out of the conversation list. Gone on a phone, where
+            the breadcrumb directly above says the same word and a line of
+            screen is worth more than saying it twice. */}
+        <h1 className="hidden shrink-0 items-center gap-1.5 text-base font-bold text-brand-ink md:flex">
           <Inbox size={17} className="text-brand-emerald" /> กล่องข้อความ
         </h1>
 
         <span className="hidden h-5 w-px bg-surface-line md:block" />
 
-        <div role="group" aria-label="กรองตามสถานะ" className="flex flex-wrap gap-1">
+        {/* One strip that scrolls sideways on a phone rather than wrapping to
+            three rows. The controls on the right stay put while it does. */}
+        <div className="min-w-0 flex-1 overflow-x-auto scrollbar-none">
+          <div className="flex w-max items-center gap-1 md:gap-3">
+        <div role="group" aria-label="กรองตามสถานะ" className="flex gap-1">
           {FILTERS.map((f) => (
             <button
               key={f.key}
@@ -659,11 +665,11 @@ export default function AdminInboxPage() {
           ))}
         </div>
 
-        <span className="hidden h-5 w-px bg-surface-line md:block" />
+        <span className="h-5 w-px shrink-0 bg-surface-line" />
 
         {/* The label that used to float in front of these is their group name
             now: it told the eye nothing it could not get from the options. */}
-        <div role="group" aria-label="กรองตามผู้ที่กำลังดูแล" className="flex flex-wrap gap-1">
+        <div role="group" aria-label="กรองตามผู้ที่กำลังดูแล" className="flex gap-1">
           {HANDLERS.map((h) => {
             const n = conversations.filter((c) => h.key === "any" || handlerOf(c.status) === h.key).length;
             return (
@@ -686,14 +692,21 @@ export default function AdminInboxPage() {
           })}
         </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1 md:gap-2">
           <span
             title="อัปเดตอัตโนมัติทุก 5 วินาที"
             className="hidden h-1.5 w-1.5 rounded-full bg-emerald-400 sm:block"
           />
           {counts.unread > 0 && (
-            <span className="rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-600">
-              ยังไม่ได้อ่าน {counts.unread}
+            <span
+              title={`ยังไม่ได้อ่าน ${counts.unread} ข้อความ`}
+              className="rounded-full bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-600"
+            >
+              <span className="hidden sm:inline">ยังไม่ได้อ่าน </span>
+              {counts.unread}
             </span>
           )}
           <button
