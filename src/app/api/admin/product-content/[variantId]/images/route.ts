@@ -89,13 +89,25 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ variantId
   // Only our own storage. Accepting any URL would turn this into an open
   // redirect for product photography — somebody else's server deciding what a
   // Smoothlife product looks like, and able to change it afterwards.
+  //
+  // Compared host to host, not as a string prefix: publicStorageHost() returns
+  // a bare hostname, and a prefix test would also wave through
+  // https://<our-host>.evil.example.com/.
   const host = publicStorageHost();
+  const ours = (url: string) => {
+    try {
+      const u = new URL(url);
+      return u.protocol === "https:" && u.hostname === host;
+    } catch {
+      return false;
+    }
+  };
   const images: UploadedImage[] = [];
   for (const raw of body.images.slice(0, MAX_IMAGES)) {
     const url = typeof raw?.url === "string" ? raw.url.trim() : "";
     const path = typeof raw?.path === "string" ? raw.path.trim() : "";
     if (!url) continue;
-    if (host && !url.startsWith(host)) {
+    if (host && !ours(url)) {
       return NextResponse.json(
         { ok: false, error: "รูปต้องเป็นไฟล์ที่อัปโหลดผ่านหน้านี้เท่านั้น" },
         { status: 400 }

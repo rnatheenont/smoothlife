@@ -56,6 +56,10 @@ const nextConfig = {
       { protocol: "https", hostname: "smoothlife.com" },
       { protocol: "https", hostname: "cdn.shopify.com" },
       { protocol: "https", hostname: "images.unsplash.com" },
+      // Product photographs uploaded through the admin (see product-images.ts).
+      // `unoptimized` below means remotePatterns is not consulted today, but a
+      // host missing from this list is what breaks the day it is turned off.
+      { protocol: "https", hostname: new URL(SUPABASE_ORIGIN).hostname },
     ],
     // Vercel's Image Optimization has a monthly transformation quota on the
     // current plan; the catalogue's product photos already come pre-resized

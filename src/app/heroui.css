@@ -27,3 +27,9 @@
 
 /* Labels for the icon-only controls in the admin inbox toolbar. */
 @import "@heroui/styles/components/tooltip.css" layer(components);
+
+/* The product-images card in /admin/products/content/[variantId]. */
+@import "@heroui/styles/components/chip.css" layer(components);
+@import "@heroui/styles/components/alert.css" layer(components);
+@import "@heroui/styles/components/toggle-button.css" layer(components);
+@import "@heroui/styles/components/toggle-button-group.css" layer(components);
