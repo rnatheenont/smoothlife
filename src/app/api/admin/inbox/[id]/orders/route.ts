@@ -6,6 +6,7 @@ import {
   findShopifyCustomerByEmail,
   findShopifyCustomerByPhone,
   shopifyAdminConfigured,
+  storeAdminHandle,
 } from "@/lib/shopify-admin";
 import { ConversationRow } from "@/lib/conversations";
 
@@ -74,5 +75,13 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     return NextResponse.json({ ok: false, error: "อ่านคำสั่งซื้อจาก Shopify ไม่สำเร็จ" }, { status: 502 });
   }
 
-  return NextResponse.json({ ok: true, orders, matchedBy, customerId });
+  // The deep link to the order in Shopify's own admin, built here because the
+  // store handle is a server-side concern and an order number staff cannot
+  // click is an order number they retype into a search box.
+  const withLinks = orders.map((o) => ({
+    ...o,
+    adminUrl: `https://admin.shopify.com/store/${storeAdminHandle(o.store)}/orders/${o.id.split("/").pop()}`,
+  }));
+
+  return NextResponse.json({ ok: true, orders: withLinks, matchedBy, customerId });
 }

@@ -75,6 +75,7 @@ type Order = {
   total: string;
   currency: string;
   items: OrderItem[];
+  adminUrl?: string;
 };
 
 const baht = (n: number) => `฿${n.toLocaleString("th-TH")}`;
@@ -204,6 +205,11 @@ export default function CustomerPanel({
     setFlagging(true);
     try {
       await onFlagUrgent();
+      // Raising the flag is the moment somebody should hear about it, not the
+      // next five-minute tick. Same endpoint the schedule calls, so there is
+      // one alerter and one record of what was sent — it is the signed-in
+      // admin asking it to look now rather than the database asking later.
+      await fetch("/api/cron/inbox-alert").catch(() => {});
     } finally {
       setFlagging(false);
     }
@@ -397,7 +403,19 @@ export default function CustomerPanel({
               {orders.map((o) => (
                 <div key={o.id} className="rounded-lg border border-slate-100 bg-white p-2.5">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="font-mono text-[12px] font-semibold text-brand-ink">{o.name}</span>
+                    {o.adminUrl ? (
+                      <a
+                        href={o.adminUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 font-mono text-[12px] font-semibold text-brand-800 hover:underline"
+                      >
+                        {o.name}
+                        <ExternalLink size={11} aria-hidden="true" />
+                      </a>
+                    ) : (
+                      <span className="font-mono text-[12px] font-semibold text-brand-ink">{o.name}</span>
+                    )}
                     <span className="text-[10px] text-slate-400">{thaiDate(o.createdAt)}</span>
                   </div>
                   <p className="mt-0.5 flex flex-wrap gap-1.5 text-[10px]">
