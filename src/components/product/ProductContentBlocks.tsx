@@ -150,7 +150,11 @@ export default function ProductContentBlocks({
             return (
               <section
                 key={i}
-                className="grid gap-4 sm:grid-cols-[200px_1fr] sm:items-start"
+                // Half and half, not a 200px thumbnail beside a line of text
+                // running the full width of the page: at desktop width that
+                // left the picture small, the measure far too long to read
+                // comfortably, and the bottom right of the block empty.
+                className="grid gap-5 sm:grid-cols-2 sm:items-start"
               >
                 {block.imageUrl && (
                   // Its own shape, not a square crop: a label shot or an
@@ -159,7 +163,7 @@ export default function ProductContentBlocks({
                   <ContentImage
                     src={block.imageUrl}
                     alt=""
-                    sizes="(max-width: 640px) 100vw, 200px"
+                    sizes="(max-width: 640px) 100vw, 50vw"
                   />
                 )}
                 <div>
