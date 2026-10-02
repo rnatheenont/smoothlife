@@ -24,3 +24,6 @@
 @import "@heroui/styles/components/field-error.css" layer(components);
 @import "@heroui/styles/components/input.css" layer(components);
 @import "@heroui/styles/components/textfield.css" layer(components);
+
+/* Labels for the icon-only controls in the admin inbox toolbar. */
+@import "@heroui/styles/components/tooltip.css" layer(components);

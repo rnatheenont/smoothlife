@@ -5,6 +5,7 @@ import CustomerPanel, {
   type Customer,
   type Insight,
 } from "@/components/admin/inbox/CustomerPanel";
+import IconButton from "@/components/admin/IconButton";
 import AlertSettings from "@/components/admin/inbox/AlertSettings";
 import ChannelBadge from "@/components/admin/inbox/ChannelBadge";
 import CustomerAvatar from "@/components/admin/inbox/CustomerAvatar";
@@ -709,26 +710,20 @@ export default function AdminInboxPage() {
               {counts.unread}
             </span>
           )}
-          <button
+          <IconButton
+            label="ตั้งค่าปลายทางแจ้งเตือน"
+            icon={<BellRing size={15} />}
+            pressed={showAlertSettings}
             onClick={() => setShowAlertSettings((v) => !v)}
-            aria-pressed={showAlertSettings}
-            title="ตั้งค่าปลายทางแจ้งเตือน"
-            className="inline-flex items-center rounded-full p-1.5 text-slate-500 transition-colors hover:bg-surface-soft hover:text-brand-800"
-          >
-            <BellRing size={15} />
-            <span className="sr-only">ตั้งค่าปลายทางแจ้งเตือน</span>
-          </button>
-          <button
-            onClick={togglePanel}
-            aria-pressed={layout.panelHidden}
-            title={layout.panelHidden ? "แสดงข้อมูลลูกค้า" : "ซ่อนข้อมูลลูกค้า"}
-            className="hidden items-center rounded-full p-1.5 text-slate-500 transition-colors hover:bg-surface-soft hover:text-brand-800 lg:inline-flex"
-          >
-            {layout.panelHidden ? <PanelRight size={15} /> : <PanelRightClose size={15} />}
-            <span className="sr-only">
-              {layout.panelHidden ? "แสดงข้อมูลลูกค้า" : "ซ่อนข้อมูลลูกค้า"}
-            </span>
-          </button>
+          />
+          <span className="hidden lg:inline-flex">
+            <IconButton
+              label={layout.panelHidden ? "แสดงข้อมูลลูกค้า" : "ซ่อนข้อมูลลูกค้า"}
+              icon={layout.panelHidden ? <PanelRight size={15} /> : <PanelRightClose size={15} />}
+              pressed={layout.panelHidden}
+              onClick={togglePanel}
+            />
+          </span>
         </div>
       </div>
 
@@ -834,10 +829,12 @@ export default function AdminInboxPage() {
         {/* thread */}
         <div
           className={clsx(
-            // No card of its own: the thread is the page these two panels
-            // sit on. Its header and composer keep a surface so the controls
-            // still read as controls.
-            "flex min-h-0 flex-col rounded-xl2 bg-white/55",
+            // Quieter than the two white cards, but still plainly a panel:
+            // at 55% white on a near-white field this had no edges at all and
+            // the middle of the screen looked like a gap. A different
+            // material — the soft surface, with a hairline — ranks below them
+            // without disappearing.
+            "flex min-h-0 flex-col rounded-xl2 bg-surface-soft ring-1 ring-surface-line",
             !selectedId && "hidden lg:flex",
           )}
         >
