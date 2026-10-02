@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ADMIN_COOKIE } from "@/lib/admin-auth";
+import { checkOwnerSession } from "@/lib/admin-permissions";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +29,27 @@ type AuditRow = {
 const PAGE = 300;
 
 export async function GET(req: NextRequest) {
+  // The owner, and nobody else. The log holds every admin's work, so reading
+  // it is a different thing from doing the work — the same reason /admin/users
+  // goes through this gate rather than a permission anyone can be granted.
+  //
+  // `"reason" in result` rather than `!result.ok`: strictNullChecks is off in
+  // this project, under which narrowing that union on the boolean silently
+  // does nothing. See checkOwnerSession.
+  const gate = await checkOwnerSession(req.cookies.get(ADMIN_COOKIE)?.value);
+  if ("reason" in gate) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          gate.reason === "unauthenticated"
+            ? "กรุณาเข้าสู่ระบบแอดมิน"
+            : "เฉพาะเจ้าของระบบเท่านั้นที่ดูบันทึกการใช้งานได้",
+      },
+      { status: gate.reason === "unauthenticated" ? 401 : 403 }
+    );
+  }
+
   if (!supabaseConfigured()) {
     return NextResponse.json({ ok: false, error: "ระบบยังไม่พร้อมใช้งาน" }, { status: 503 });
   }

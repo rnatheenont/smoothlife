@@ -137,9 +137,10 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "ตั้งค่าระบบ",
     items: [
       { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette, permission: null },
-      // Any admin may read it: a record of what the desk did that only one
-      // person can open is not a check on anybody.
-      { href: "/admin/audit", label: "บันทึกการใช้งาน", icon: ScrollText, permission: null },
+      // Owner only, like the user list: the log is every admin's work, and
+      // the page refuses anyone else on its own — this just stops the other
+      // roles walking into a wall.
+      { href: "/admin/audit", label: "บันทึกการใช้งาน", icon: ScrollText, ownerOnly: true },
       // Only the owner may open it, so only the owner is shown it. The page
       // still refuses anyone else on its own (see /api/admin/users) — this
       // just stops the other roles walking into a wall.
