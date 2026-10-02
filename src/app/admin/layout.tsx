@@ -192,6 +192,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   // What this role may do, from /api/admin/me. ["*"] until it answers, so the
   // menu does not flicker from empty to full on every load.
   const [permissions, setPermissions] = useState<string[]>(["*"]);
+  // How far behind the inbox is. Shown on its menu item so the answer to
+  // "is anyone waiting" does not require opening the inbox to find out —
+  // which is the one place it was visible before.
+  const [unread, setUnread] = useState<{ messages: number; urgent: number }>({ messages: 0, urgent: 0 });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -237,6 +241,29 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Polled rather than pushed: the inbox already refreshes itself on a timer,
+  // and a badge that is a minute stale is still the difference between knowing
+  // and having to go and look. Silent on failure — a role without inbox
+  // permission gets a 401 here and simply has no badge.
+  useEffect(() => {
+    if (!authed) return;
+    let alive = true;
+    const read = async () => {
+      try {
+        const d = await fetch("/api/admin/inbox/unread").then((r) => r.json());
+        if (alive && d?.ok) setUnread({ messages: d.messages ?? 0, urgent: d.urgent ?? 0 });
+      } catch {
+        // leave the last known number up rather than blinking to zero
+      }
+    };
+    read();
+    const t = setInterval(read, 30000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [authed, pathname]);
 
   async function submitLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -517,8 +544,30 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                               collapsed ? "lg:justify-center lg:px-0" : ""
                             } ${active ? "bg-brand-gradient-soft text-brand-800" : "text-slate-600 hover:bg-surface-soft hover:text-brand-ink"}`}
                           >
-                            <Icon size={16} className="shrink-0" />
+                            <span className="relative shrink-0">
+                              <Icon size={16} />
+                              {/* Collapsed, the number has nowhere to sit, so
+                                  it becomes a dot on the icon — still the
+                                  answer to "is anyone waiting". */}
+                              {item.href === "/admin/inbox" && unread.messages > 0 && collapsed && (
+                                <span
+                                  className={`absolute -right-1 -top-1 hidden size-2 rounded-full lg:block ${
+                                    unread.urgent > 0 ? "bg-rose-500" : "bg-brand-action"
+                                  }`}
+                                />
+                              )}
+                            </span>
                             <span className={collapsed ? "lg:hidden" : ""}>{labelOf(item)}</span>
+                            {item.href === "/admin/inbox" && unread.messages > 0 && (
+                              <span
+                                aria-label={`ยังไม่ได้อ่าน ${unread.messages} ข้อความ`}
+                                className={`ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white ${
+                                  unread.urgent > 0 ? "bg-rose-500" : "bg-brand-action"
+                                } ${collapsed ? "lg:hidden" : ""}`}
+                              >
+                                {unread.messages > 99 ? "99+" : unread.messages}
+                              </span>
+                            )}
                           </Link>
                         );
                       })}
