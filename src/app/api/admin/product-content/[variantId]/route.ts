@@ -76,7 +76,9 @@ function parseBlocks(value: unknown): ContentBlock[] | { error: string } {
         break;
       }
       case "bullet_list":
-      case "ingredients": {
+      case "ingredients":
+      case "who_for":
+      case "how_to_use": {
         const block = {
           type: b.type,
           ...(b.type === "bullet_list"

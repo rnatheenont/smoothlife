@@ -22,6 +22,7 @@ import ProductMediaCard from "@/components/admin/products/ProductMediaCard";
 import { products } from "@/data/products";
 import {
   BLOCK_TYPES,
+  FIXED_HEADING,
   isBlockComplete,
   parseVideoUrl,
   type ContentBlock,
@@ -42,6 +43,8 @@ function emptyBlock(type: ContentBlock["type"]): ContentBlock {
     case "bullet_list":
       return { type, itemsTh: [], itemsEn: [] };
     case "ingredients":
+    case "who_for":
+    case "how_to_use":
       return { type, itemsTh: [], itemsEn: [] };
     case "spec_table":
       return { type, rows: [] };
@@ -616,7 +619,10 @@ function BlockEditor({
           </>
         )}
 
-        {(block.type === "bullet_list" || block.type === "ingredients") && (
+        {(block.type === "bullet_list" ||
+          block.type === "ingredients" ||
+          block.type === "who_for" ||
+          block.type === "how_to_use") && (
           <>
             {block.type === "bullet_list" && (
               <div className="grid gap-3 sm:grid-cols-2">
@@ -646,12 +652,20 @@ function BlockEditor({
               <ItemsEditor
                 items={block.itemsTh}
                 onChange={(itemsTh) => onChange({ itemsTh } as Partial<ContentBlock>)}
-                placeholder="รายการ (ไทย) — บรรทัดละ 1 รายการ"
+                placeholder={
+                  block.type === "how_to_use"
+                    ? "ขั้นตอน (ไทย) — บรรทัดละ 1 ขั้น"
+                    : "รายการ (ไทย) — บรรทัดละ 1 รายการ"
+                }
               />
               <ItemsEditor
                 items={block.itemsEn}
                 onChange={(itemsEn) => onChange({ itemsEn } as Partial<ContentBlock>)}
-                placeholder="Items (English) — one per line"
+                placeholder={
+                  block.type === "how_to_use"
+                    ? "Steps (English) — one per line"
+                    : "Items (English) — one per line"
+                }
               />
             </div>
           </>
@@ -927,21 +941,38 @@ function PreviewBlock({
       );
     }
     case "bullet_list":
-    case "ingredients": {
+    case "ingredients":
+    case "who_for":
+    case "how_to_use": {
       const items = lang === "th" ? block.itemsTh : block.itemsEn;
       const fallback = lang === "th" ? block.itemsEn : block.itemsTh;
       const shown = items.length ? items : fallback;
       return (
         <div className="mb-4 last:mb-0">
-          {"headingTh" in block && (block.headingTh || block.headingEn) && (
+          {"headingTh" in block && (block.headingTh || block.headingEn) ? (
             <p className="mb-1 text-sm font-bold text-brand-ink">
               {pick(block.headingTh ?? "", block.headingEn ?? "")}
             </p>
+          ) : (
+            FIXED_HEADING[block.type] && (
+              <p className="mb-1 text-sm font-bold text-brand-ink">
+                {pick(
+                  FIXED_HEADING[block.type]?.th ?? "",
+                  FIXED_HEADING[block.type]?.en ?? "",
+                )}
+              </p>
+            )
           )}
           {shown.length === 0 ? (
             <p className="text-sm text-slate-400">—</p>
           ) : (
-            <ul className="list-inside list-disc space-y-0.5 text-sm text-slate-600">
+            <ul
+              className={`space-y-0.5 text-sm text-slate-600 ${
+                block.type === "how_to_use"
+                  ? "list-inside list-decimal"
+                  : "list-inside list-disc"
+              }`}
+            >
               {shown.map((item, i) => (
                 <li key={i}>{renderInline(item)}</li>
               ))}

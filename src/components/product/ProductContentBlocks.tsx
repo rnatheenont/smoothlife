@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
-import { parseVideoUrl, type ContentBlock } from "@/lib/product-content";
+import { FIXED_HEADING, parseVideoUrl, type ContentBlock } from "@/lib/product-content";
 import { renderInline, renderRichText } from "@/lib/rich-text";
 
 // The product copy the shop writes itself, rendered from its blocks.
@@ -22,6 +22,8 @@ function hasText(block: ContentBlock, th: boolean): boolean {
       return Boolean((th ? block.bodyTh : block.bodyEn)?.trim());
     case "bullet_list":
     case "ingredients":
+    case "who_for":
+    case "how_to_use":
       return (th ? block.itemsTh : block.itemsEn).some((i) => i.trim());
     case "spec_table":
       return block.rows.some((r) => (th ? r.valueTh : r.valueEn).trim());
@@ -128,11 +130,17 @@ export default function ProductContentBlocks({
                 </ul>
               </section>
             );
+          // Named groups rather than a free list: a chip each, the way the
+          // ingredients have always been shown, because these are things to
+          // recognise yourself in rather than sentences to read.
           case "ingredients":
+          case "who_for":
             return (
               <section key={i}>
                 <h3 className="mb-2 font-bold text-brand-ink">
-                  {th ? "ส่วนผสม" : "Ingredients"}
+                  {th
+                    ? FIXED_HEADING[block.type]?.th
+                    : FIXED_HEADING[block.type]?.en}
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {items(block).map((item, n) => (
@@ -172,6 +180,32 @@ export default function ProductContentBlocks({
                     {renderRichText(th ? block.bodyTh : block.bodyEn)}
                   </div>
                 </div>
+              </section>
+            );
+          // Steps are numbered: "ใช้เช้า-เย็น" after "ล้างหน้า" is an order,
+          // and a bullet does not say so.
+          case "how_to_use":
+            return (
+              <section key={i}>
+                <h3 className="mb-2 font-bold text-brand-ink">
+                  {th ? FIXED_HEADING.how_to_use?.th : FIXED_HEADING.how_to_use?.en}
+                </h3>
+                <ol className="space-y-2">
+                  {items(block).map((item, n) => (
+                    <li
+                      key={n}
+                      className="flex gap-2.5 text-sm leading-relaxed text-slate-600"
+                    >
+                      <span
+                        aria-hidden
+                        className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-brand-50 text-[11px] font-bold text-brand-800"
+                      >
+                        {n + 1}
+                      </span>
+                      <span className="min-w-0 flex-1">{renderInline(item)}</span>
+                    </li>
+                  ))}
+                </ol>
               </section>
             );
           case "image": {

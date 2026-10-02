@@ -59,6 +59,21 @@ export type ContentBlock =
       hasVerifiedSource?: boolean;
     }
   | {
+      // Both carry their own heading, the way "ingredients" does: a product
+      // page that calls this section something different on every product is
+      // a page nobody can skim.
+      type: "who_for";
+      itemsTh: string[];
+      itemsEn: string[];
+      hasVerifiedSource?: boolean;
+    }
+  | {
+      type: "how_to_use";
+      itemsTh: string[];
+      itemsEn: string[];
+      hasVerifiedSource?: boolean;
+    }
+  | {
       type: "image_text";
       imageUrl: string;
       headingTh?: string;
@@ -101,7 +116,18 @@ export const BLOCK_TYPES: { key: ContentBlock["type"]; label: string }[] = [
   { key: "spec_table", label: "ตารางสเปค" },
   { key: "image", label: "รูปภาพ" },
   { key: "video", label: "วิดีโอ" },
+  { key: "who_for", label: "เหมาะสำหรับใคร" },
+  { key: "how_to_use", label: "วิธีใช้" },
 ];
+
+/** The heading these blocks always carry, in both languages. */
+export const FIXED_HEADING: Partial<
+  Record<ContentBlock["type"], { th: string; en: string }>
+> = {
+  ingredients: { th: "ส่วนผสม", en: "Ingredients" },
+  who_for: { th: "เหมาะสำหรับใคร", en: "Who it's for" },
+  how_to_use: { th: "วิธีใช้", en: "How to use" },
+};
 
 // ---------------------------------------------------------------------------
 // Video links.
@@ -283,6 +309,8 @@ export function isBlockComplete(block: ContentBlock): boolean {
       return Boolean(block.bodyTh.trim() && block.bodyEn.trim());
     case "bullet_list":
     case "ingredients":
+    case "who_for":
+    case "how_to_use":
       return (
         block.itemsTh.filter((s) => s.trim()).length > 0 &&
         block.itemsEn.filter((s) => s.trim()).length > 0

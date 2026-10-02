@@ -58,6 +58,8 @@ const SHAPES: Partial<Record<ContentBlock["type"], string>> = {
   ingredients: `{"itemsTh":["ชื่อส่วนผสม 1","ชื่อส่วนผสม 2"],"itemsEn":["ingredient 1","ingredient 2"]}`,
   image_text: `{"headingTh":"หัวข้อสั้น","headingEn":"short heading","bodyTh":"2-3 ประโยค","bodyEn":"2-3 sentences"}`,
   spec_table: `{"rows":[{"labelTh":"หัวข้อ","labelEn":"label","valueTh":"ค่า","valueEn":"value"}]}`,
+  who_for: `{"itemsTh":["กลุ่มที่ 1","กลุ่มที่ 2"],"itemsEn":["group 1","group 2"]}`,
+  how_to_use: `{"itemsTh":["ขั้นที่ 1","ขั้นที่ 2"],"itemsEn":["step 1","step 2"]}`,
 };
 
 const GUIDANCE: Partial<Record<ContentBlock["type"], string>> = {
@@ -68,6 +70,10 @@ const GUIDANCE: Partial<Record<ContentBlock["type"], string>> = {
   image_text: "ข้อความสั้นที่จะวางคู่กับรูป",
   spec_table:
     "ตารางข้อมูลจำเพาะ เช่น ขนาดบรรจุ รูปแบบ วิธีเก็บ — เฉพาะที่มีในข้อมูล",
+  who_for:
+    "กลุ่มคนหรือสภาพผิว/สุขภาพที่สินค้านี้เหมาะด้วย ข้อละบรรทัด เฉพาะที่ระบุไว้ในข้อมูล ห้ามเดาเอง ถ้าข้อมูลไม่ได้บอกให้ตอบ insufficient",
+  how_to_use:
+    "ขั้นตอนการใช้ เรียงตามลำดับ ข้อละบรรทัด เฉพาะที่ระบุไว้ในข้อมูล ถ้าข้อมูลไม่ได้บอกวิธีใช้ให้ตอบ insufficient",
 };
 
 function isBlockType(v: unknown): v is ContentBlock["type"] {
