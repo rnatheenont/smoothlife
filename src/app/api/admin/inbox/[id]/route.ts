@@ -3,7 +3,8 @@ import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { getProductBySlug } from "@/data/products";
 import { translateForCustomer } from "@/lib/reply-translate";
-import { appendMessage, ConversationRow } from "@/lib/conversations";
+import { appendMessage, transcriptKeyFor, ConversationRow } from "@/lib/conversations";
+import { clearInboxAlert } from "@/lib/inbox-alert";
 import { lineImageMessage, lineTextMessage, linePushConfigured, pushLineMessages, type LineMessage } from "@/lib/line-push";
 import {
   signedAttachmentUrl,
@@ -28,13 +29,24 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   // The thread is worth fetching even if the conversation row turns out to be
   // missing: one wasted query on a 404 costs less than a round trip on every
   // open that succeeds.
-  const [[conversation], messages] = await Promise.all([
+  const [[conversation], messages, [insight]] = await Promise.all([
     supabaseRest<ConversationRow[]>(`conversations?id=eq.${pgValue(params.id)}&select=*&limit=1`),
     supabaseRest<
       { id: string; sender_type: string; content: string; is_draft: boolean; created_at: string; attachment_path: string | null; delivered_content: string | null; translation: string | null }[]
     >(
       `conversation_messages?conversation_id=eq.${pgValue(params.id)}&select=id,sender_type,content,is_draft,created_at,attachment_path,delivered_content,translation&order=created_at.asc&limit=200`
     ),
+    // Whatever the assistant last made of this thread, if anyone has asked it
+    // (see ./analyze). Nothing runs it here — the reading is shown, not taken.
+    supabaseRest<
+      {
+        topic: string | null; need: string | null; mood: string | null; confidence: string | null;
+        suggest_urgent: boolean; reason: string | null; staff_verdict: string | null; analyzed_at: string;
+      }[]
+    >(
+      `conversation_insights?conversation_id=eq.${pgValue(params.id)}` +
+        `&select=topic,need,mood,confidence,suggest_urgent,reason,staff_verdict,analyzed_at&limit=1`
+    ).catch(() => []),
   ]);
   if (!conversation) return NextResponse.json({ ok: false, error: "ไม่พบบทสนทนานี้" }, { status: 404 });
 
@@ -49,8 +61,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     // screen staff keep open all day — the customer is not more identified for
     // having been fetched slowly.
     const [[user], [loyalty], [points], [email], subscriptions, skinScans] = await Promise.all([
-      supabaseRest<{ id: string; display_name: string | null; phone: string | null }[]>(
-        `users?id=eq.${uid}&select=id,display_name,phone&limit=1`
+      supabaseRest<{ id: string; display_name: string | null; phone: string | null; shopify_customer_id: string | null }[]>(
+        `users?id=eq.${uid}&select=id,display_name,phone,shopify_customer_id&limit=1`
       ).catch(() => []),
       // Tier lives in user_loyalty.current_tier (maintained by the daily cron);
       // the spendable balance is the points_balance view, the same source
@@ -80,6 +92,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       name: user?.display_name ?? null,
       phone: user?.phone ?? null,
       email: email?.provider_uid ?? null,
+      // Carried so the orders tab knows whether it can go straight to Shopify
+      // or has to search by email/phone first (see ./orders).
+      shopifyCustomerId: user?.shopify_customer_id ?? null,
       tier: loyalty?.current_tier ?? null,
       spend12mo: loyalty?.rolling_12mo_spend ?? null,
       points: points?.balance ?? null,
@@ -102,12 +117,34 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   // the catalogue is a megabyte, and the admin bundle should not carry it just
   // to draw a few cards. Staff need to see what was recommended — a bare
   // [[slug]] tells them nothing about which product the customer was shown.
-  const slugs = new Set<string>();
-  for (const m of messages) {
-    for (const match of m.content.matchAll(/\[\[([a-z0-9-]+)\]\]/gi)) slugs.add(match[1]);
+  // Newest first, because the product under discussion is the one just
+  // mentioned, not the one mentioned forty messages ago.
+  const discussed: string[] = [];
+  for (const m of [...messages].reverse()) {
+    for (const match of m.content.matchAll(/\[\[([a-z0-9-]+)\]\]/gi)) {
+      if (!discussed.includes(match[1])) discussed.push(match[1]);
+    }
   }
-  const productCards: Record<string, { name: string; image: string; price: number; compareAtPrice?: number }> = {};
-  for (const slug of slugs) {
+
+  // What they had open on the site while they were typing. Every web message
+  // has carried this since the widget shipped — it was only ever read when a
+  // case was escalated, so staff could not see it while answering, which is
+  // the moment it is worth something.
+  const viewedRows = await supabaseRest<{ viewing_product_slug: string | null }[]>(
+    `chat_messages?session_key=eq.${pgValue(transcriptKeyFor(conversation))}` +
+      `&viewing_product_slug=not.is.null&select=viewing_product_slug&order=created_at.desc&limit=60`
+  ).catch((): { viewing_product_slug: string | null }[] => []);
+  const viewed: string[] = [];
+  for (const r of viewedRows) {
+    const slug = r.viewing_product_slug;
+    if (slug && !discussed.includes(slug) && !viewed.includes(slug)) viewed.push(slug);
+  }
+
+  const productCards: Record<
+    string,
+    { name: string; image: string; price: number; compareAtPrice?: number; inStock: boolean }
+  > = {};
+  for (const slug of [...discussed, ...viewed]) {
     const product = getProductBySlug(slug);
     if (product) {
       productCards[slug] = {
@@ -115,6 +152,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
         image: product.image,
         price: product.price,
         compareAtPrice: product.compareAtPrice,
+        inStock: product.inStock,
       };
     }
   }
@@ -127,7 +165,27 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     body: JSON.stringify({ staff_read_at: new Date().toISOString() }),
   }).catch((err) => console.error("[admin/inbox] could not mark read", err));
 
-  return NextResponse.json({ ok: true, conversation, messages: withUrls, customer, products: productCards });
+  return NextResponse.json({
+    ok: true,
+    conversation,
+    messages: withUrls,
+    customer,
+    products: productCards,
+    insight: insight
+      ? {
+          topic: insight.topic,
+          need: insight.need,
+          mood: insight.mood,
+          confidence: insight.confidence,
+          suggestUrgent: insight.suggest_urgent,
+          reason: insight.reason,
+          staffVerdict: insight.staff_verdict,
+          analyzedAt: insight.analyzed_at,
+        }
+      : null,
+    discussedSlugs: discussed.filter((s) => productCards[s]),
+    viewedSlugs: viewed.filter((s) => productCards[s]),
+  });
 }
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -154,6 +212,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     await deleteAttachmentsForConversation(params.id).catch((err) =>
       console.error("[admin/inbox] could not delete attachments on close", err)
     );
+    // A closed case is no longer waiting for anyone. Forgetting it here is
+    // what lets the same conversation raise a fresh alert if the customer
+    // comes back and it falls behind again.
+    await clearInboxAlert(params.id);
   }
   return NextResponse.json({ ok: true });
 }
@@ -212,14 +274,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     }
   }
 
-  // Where this customer's transcript lives in chat_messages. For web that is
-  // the same value as channel_user_id; for LINE it is their site user id when
-  // they have ever signed in, and "line:<userId>" when they have not — the
-  // LINE userId on its own is nobody's session key (see the LINE webhook).
-  const transcriptKey =
-    conversation.channel === "line"
-      ? (conversation.user_id ?? `line:${conversation.channel_user_id}`)
-      : conversation.channel_user_id;
+  const transcriptKey = transcriptKeyFor(conversation);
 
   // What the customer will read. Staff answer in Thai; someone who wrote in
   // English or Japanese should not have to translate their own support reply.
@@ -313,6 +368,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     returning: false,
     body: JSON.stringify({ status: "assigned" }),
   });
+  // Answered, so it stops being one of the cases waiting for an answer.
+  await clearInboxAlert(conversation.id);
 
   return NextResponse.json({ ok: true });
 }

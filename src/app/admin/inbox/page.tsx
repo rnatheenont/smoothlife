@@ -1,7 +1,10 @@
 "use client";
 
 import clsx from "clsx";
-import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
+import CustomerPanel, {
+  type Customer,
+  type Insight,
+} from "@/components/admin/inbox/CustomerPanel";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Loader2,
@@ -47,23 +50,6 @@ type Message = {
   translation?: string | null;
 };
 type Canned = { id: string; title: string; content: string; category: string | null };
-type Customer = {
-  name: string | null;
-  phone: string | null;
-  email: string | null;
-  tier: string | null;
-  spend12mo: number | null;
-  points: number | null;
-  subscriptions: {
-    id: string;
-    product_name: string;
-    status: string;
-    plan_months: number;
-    next_charge_date: string | null;
-  }[];
-  skinScans?: AdminSkinScan[];
-};
-
 const STATUS_LABEL: Record<string, string> = {
   ai_handling: "AI กำลังตอบ",
   waiting_human: "รอทีมงานตอบ",
@@ -162,7 +148,7 @@ function sinceLabel(iso: string) {
   return days === 1 ? "เมื่อวาน" : `${days} วันที่แล้ว`;
 }
 
-type ProductCard = { name: string; image: string; price: number; compareAtPrice?: number };
+type ProductCard = { name: string; image: string; price: number; compareAtPrice?: number; inStock?: boolean };
 
 const PRODUCT_MARKER = /\[\[([a-z0-9-]+)\]\]/gi;
 
@@ -257,6 +243,10 @@ export default function AdminInboxPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [productCards, setProductCards] = useState<Record<string, ProductCard>>({});
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [insight, setInsight] = useState<Insight | null>(null);
+  const [discussedSlugs, setDiscussedSlugs] = useState<string[]>([]);
+  const [viewedSlugs, setViewedSlugs] = useState<string[]>([]);
+  const [urgency, setUrgency] = useState<"normal" | "urgent">("normal");
   const [loadingThread, setLoadingThread] = useState(false);
   const [reply, setReply] = useState("");
   const [attachment, setAttachment] = useState<ResizedImage | null>(null);
@@ -338,6 +328,28 @@ export default function AdminInboxPage() {
       .catch(() => {});
   }, []);
 
+  /** Raise the flag the inbox list has always known how to draw. The column
+   *  and the badge shipped with the first version of this screen; until now
+   *  nothing in the product ever set it, so it was a lamp with no switch. */
+  const flagUrgent = useCallback(async () => {
+    if (!selectedId) return;
+    const res = await fetch(`/api/admin/inbox/${selectedId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urgency: "urgent" }),
+    });
+    if (!res.ok) return;
+    setUrgency("urgent");
+    // The list draws the "ด่วน" badge off its own copy of the row.
+    loadList();
+  }, [selectedId, loadList]);
+
+  /** Drop a product into the reply as the marker that renders its card, so
+   *  nobody has to remember a slug and type it by hand. */
+  const insertProduct = useCallback((slug: string) => {
+    setReply((current) => (current.trimEnd() ? `${current.trimEnd()}\n[[${slug}]]` : `[[${slug}]]`));
+  }, []);
+
   const loadThread = useCallback(async (id: string, silent = false) => {
     if (!silent) {
       setLoadingThread(true);
@@ -349,6 +361,10 @@ export default function AdminInboxPage() {
       setMessages(data.messages ?? []);
       setCustomer(data.customer ?? null);
       setProductCards(data.products ?? {});
+      setInsight(data.insight ?? null);
+      setDiscussedSlugs(data.discussedSlugs ?? []);
+      setViewedSlugs(data.viewedSlugs ?? []);
+      setUrgency(data.conversation?.urgency === "urgent" ? "urgent" : "normal");
       setCaseUrl(data.conversation?.clickup_task_url ?? null);
       setSubject(data.conversation?.subject ?? null);
     } finally {
@@ -1051,44 +1067,19 @@ export default function AdminInboxPage() {
         >
           {!selected ? (
             <p className="text-xs text-slate-400">—</p>
-          ) : !customer ? (
-            <p className="text-xs text-slate-400">ยังไม่รู้ว่าเป็นลูกค้าคนไหน (ยังไม่ได้ผูกบัญชี)</p>
           ) : (
-            <div className="flex flex-col gap-3 text-xs">
-              <div>
-                <p className="font-semibold text-brand-ink">{customer.name || "ไม่ระบุชื่อ"}</p>
-                {customer.email && <p className="text-slate-500">{customer.email}</p>}
-                {customer.phone && <p className="text-slate-500">{customer.phone}</p>}
-              </div>
-              <div className="rounded-lg bg-surface-soft p-2.5">
-                <p className="text-slate-500">
-                  ระดับ <span className="font-semibold text-brand-ink">{customer.tier || "—"}</span>
-                </p>
-                <p className="text-slate-500">
-                  แต้มคงเหลือ <span className="font-semibold text-brand-ink">{customer.points ?? "—"}</span>
-                </p>
-                {customer.spend12mo !== null && (
-                  <p className="text-slate-500">ยอดซื้อ 12 เดือน ฿{customer.spend12mo.toLocaleString()}</p>
-                )}
-              </div>
-              <div>
-                <p className="mb-1 font-semibold text-slate-500">สมาชิกรายเดือน</p>
-                {customer.subscriptions.length === 0 ? (
-                  <p className="text-slate-400">—</p>
-                ) : (
-                  customer.subscriptions.map((s) => (
-                    <p key={s.id} className="text-slate-500">
-                      {s.product_name} · {s.status}
-                      {s.next_charge_date && ` · ตัดถัดไป ${new Date(s.next_charge_date).toLocaleDateString("th-TH")}`}
-                    </p>
-                  ))
-                )}
-              </div>
-              <div>
-                <p className="mb-1 font-semibold text-slate-500">ผลสแกนผิว</p>
-                <SkinScanSummary scans={customer.skinScans ?? []} compact />
-              </div>
-            </div>
+            <CustomerPanel
+              conversationId={selected.id}
+              customer={customer}
+              insight={insight}
+              products={productCards}
+              discussedSlugs={discussedSlugs}
+              viewedSlugs={viewedSlugs}
+              urgency={urgency}
+              onInsight={setInsight}
+              onFlagUrgent={flagUrgent}
+              onInsertProduct={insertProduct}
+            />
           )}
         </div>
       </div>

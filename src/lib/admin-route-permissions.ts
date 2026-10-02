@@ -118,6 +118,11 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
     permission: "product_content.manage",
   },
 
+  // Covers the sub-routes too, ./analyze included — that one spends money per
+  // press, so it wants a narrower permission of its own (inbox.ai_analysis in
+  // the plan) listed above this line. Which roles should hold it is a question
+  // for whoever runs the CS team; inventing the mapping here would be guessing
+  // at someone else's workflow.
   { prefix: "/api/admin/inbox", permission: "inbox.manage" },
   { prefix: "/api/admin/canned-responses", permission: "inbox.manage" },
   { prefix: "/api/admin/customers", permission: "customers.manage" },

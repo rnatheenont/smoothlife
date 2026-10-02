@@ -22,6 +22,21 @@ export type ConversationRow = {
 };
 
 /**
+ * Where this conversation's customer-facing transcript lives in chat_messages.
+ *
+ * For web it is the same value as channel_user_id. For LINE it is their site
+ * user id when they have ever signed in, and "line:<userId>" when they have
+ * not — the LINE userId on its own is nobody's session key (see the LINE
+ * webhook). Worked out in two places before this existed, which is one more
+ * than a rule this easy to get subtly wrong should live in.
+ */
+export function transcriptKeyFor(conversation: Pick<ConversationRow, "channel" | "channel_user_id" | "user_id">): string {
+  return conversation.channel === "line"
+    ? (conversation.user_id ?? `line:${conversation.channel_user_id}`)
+    : conversation.channel_user_id;
+}
+
+/**
  * Finds this person's still-open conversation on this channel, or starts one.
  *
  * "Open" deliberately excludes resolved: a customer coming back a week after a
