@@ -38,7 +38,7 @@ export function PageHeader({
           {icon}
           {title}
         </h1>
-        {subtitle && <p className="mt-0.5 text-body-xs text-slate-500">{subtitle}</p>}
+        {subtitle && <p className="mt-1 text-body-xs text-slate-600">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
@@ -81,9 +81,9 @@ export function StatCard({
         <span className={clsx("text-h4 font-bold tabular-nums", alert ? "text-amber-700" : "text-brand-ink")}>
           {value}
         </span>
-        {unit && <span className="text-[11px] text-slate-400">{unit}</span>}
+        {unit && <span className="text-xs text-slate-500">{unit}</span>}
       </p>
-      {hint && <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">{hint}</p>}
+      {hint && <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{hint}</p>}
     </>
   );
   const shell = clsx(
@@ -185,7 +185,11 @@ export function FilterChip({
  */
 export function SectionLabel({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <h2 className={clsx("text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400", className)}>
+    // 12px rather than 11, and the secondary step rather than the muted one:
+    // these are the words that tell you what the next block of the page is,
+    // and they were measuring 2.13:1 — the least readable thing on a screen
+    // whose whole job is to be scanned.
+    <h2 className={clsx("text-xs font-bold uppercase tracking-[0.07em] text-slate-500", className)}>
       {children}
     </h2>
   );

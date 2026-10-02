@@ -546,6 +546,33 @@
   .article-body h1, .article-body h2 { font-size: 1.5rem; }
 }
 
+/* The console's text ramp.
+   -------------------------------------------------------------------------
+   Measured on /admin before this existed: the section labels that organise
+   the page ran at 2.13:1 against their own background, the card descriptions
+   at 2.56:1, the page subtitle at 3.96:1 — all under the 4.5:1 that normal
+   text needs, while only the card titles and the big numbers were readable.
+   Staff described the result as "ดูยาก", which is exactly what a screen looks
+   like when four of its five text roles are below the line.
+
+   The cause was one class: text-slate-400 appears 309 times in /admin and
+   text-slate-500 another 241, and on white those are 2.56:1 and 4.76:1. The
+   fix is here rather than in 550 edits because inside /admin those two steps
+   are used for text and nothing else — not one border, background, ring or
+   icon fill — so moving the colour moves only what it was failing.
+
+   Three steps, each with a job and a measured floor on white:
+     slate-400  muted      4.76:1   timestamps, counts, the quiet half of a pair
+     slate-500  secondary  6.79:1   descriptions, labels, supporting lines
+     slate-600  body       9.28:1   anything somebody actually reads
+   The gap between them is what carries hierarchy now; before, 400 and 500
+   were a step apart in name and indistinguishable in use. */
+.admin-canvas {
+  --color-slate-400: #64748b;
+  --color-slate-500: #4e5c70;
+  --color-slate-600: #3c4857;
+}
+
 /* The console is nothing but cards, and the storefront's card edge — a 1px
    ring at 7% — disappears on a near-white page: staff reported the cards
    "having no background". Inside /admin the same shadow carries a hairline

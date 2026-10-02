@@ -496,7 +496,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     )}
                   >
                     {group.label && !collapsed && (
-                      <p className="mb-1.5 hidden px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500 lg:block">
+                      <p className="mb-1.5 hidden px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400 lg:block">
                         {group.label}
                       </p>
                     )}
@@ -515,7 +515,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                             title={collapsed ? labelOf(item) : undefined}
                             className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
                               collapsed ? "lg:justify-center lg:px-0" : ""
-                            } ${active ? "bg-brand-gradient-soft text-brand-800" : "text-slate-500 hover:bg-surface-soft hover:text-brand-ink"}`}
+                            } ${active ? "bg-brand-gradient-soft text-brand-800" : "text-slate-600 hover:bg-surface-soft hover:text-brand-ink"}`}
                           >
                             <Icon size={16} className="shrink-0" />
                             <span className={collapsed ? "lg:hidden" : ""}>{labelOf(item)}</span>

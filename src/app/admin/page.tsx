@@ -247,9 +247,9 @@ export default function AdminHomePage() {
             review count failed to load" are different answers, and a card
             that disappears cannot tell them apart. */}
         {clear.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 px-1 text-[11px] text-slate-400">
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 px-1 text-xs text-slate-500">
             {clear.map((c) => (
-              <Link key={c.label} href={c.href} className="hover:text-slate-600">
+              <Link key={c.label} href={c.href} className="hover:text-brand-800 hover:underline">
                 {c.label} 0
               </Link>
             ))}
