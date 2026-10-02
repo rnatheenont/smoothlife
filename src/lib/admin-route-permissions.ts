@@ -34,6 +34,10 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   { prefix: "/api/admin/me", permission: null },
   { prefix: "/api/admin/logout", permission: null },
   { prefix: "/api/admin/overview", permission: null },
+  // The audit log is readable by any signed-in admin, deliberately. It is the
+  // record of what the desk did, and a record only its subject can read is
+  // not much of a check on anybody.
+  { prefix: "/api/admin/audit", permission: null, methods: READ },
 
   // Accounts and roles keep their own, stricter gate inside the route
   // (checkOwnerSession — literally the owner, not a permission anyone can be

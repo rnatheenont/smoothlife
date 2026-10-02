@@ -169,6 +169,7 @@ export async function POST(req: NextRequest) {
     method: "POST",
     returning: false,
     body: JSON.stringify({
+      admin_user_id: adminId,
       action: `receipt.draw.${prizeType}`,
       target: CAMPAIGN,
       detail: { entrants: totals.size, tickets: ticketCount, winners: Math.min(WINNERS, picked.length), picked },

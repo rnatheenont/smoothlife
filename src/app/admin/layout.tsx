@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import { usePathname } from "next/navigation";
-import {
+import { ScrollText,
   BookOpen,
   Lock,
   Gift,
@@ -137,6 +137,9 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: "ตั้งค่าระบบ",
     items: [
       { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette, permission: null },
+      // Any admin may read it: a record of what the desk did that only one
+      // person can open is not a check on anybody.
+      { href: "/admin/audit", label: "บันทึกการใช้งาน", icon: ScrollText, permission: null },
       // Only the owner may open it, so only the owner is shown it. The page
       // still refuses anyone else on its own (see /api/admin/users) — this
       // just stops the other roles walking into a wall.

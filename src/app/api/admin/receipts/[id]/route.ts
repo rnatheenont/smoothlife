@@ -108,6 +108,7 @@ async function recalculate(CAMPAIGN: string, id: string, token: string | undefin
     method: "POST",
     returning: false,
     body: JSON.stringify({
+      admin_user_id: getAdminSession(token)?.userId ?? null,
       action: "receipt.recalculate",
       target: id,
       detail: {
@@ -169,6 +170,7 @@ async function reopen(CAMPAIGN: string, id: string, token: string | undefined) {
     method: "POST",
     returning: false,
     body: JSON.stringify({
+      admin_user_id: getAdminSession(token)?.userId ?? null,
       action: "receipt.reopen",
       target: id,
       detail: {
@@ -347,6 +349,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     method: "POST",
     returning: false,
     body: JSON.stringify({
+      admin_user_id: getAdminSession(token)?.userId ?? null,
       action: `receipt.${action}`,
       target: id,
       detail: {
@@ -427,6 +430,7 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
     method: "POST",
     returning: false,
     body: JSON.stringify({
+      admin_user_id: getAdminSession(token)?.userId ?? null,
       action: "receipt.delete",
       target: id,
       detail: {

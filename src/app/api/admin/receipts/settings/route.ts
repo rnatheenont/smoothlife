@@ -159,6 +159,7 @@ export async function PUT(req: NextRequest) {
     method: "POST",
     returning: false,
     body: JSON.stringify({
+      admin_user_id: getAdminSession(req.cookies.get(ADMIN_COOKIE)?.value)?.userId ?? null,
       action: "receipt.settings",
       target: CAMPAIGN,
       // The window decides who is eligible, so the change to it is the part
