@@ -829,12 +829,13 @@ export default function AdminInboxPage() {
         {/* thread */}
         <div
           className={clsx(
-            // Quieter than the two white cards, but still plainly a panel:
-            // at 55% white on a near-white field this had no edges at all and
-            // the middle of the screen looked like a gap. A different
-            // material — the soft surface, with a hairline — ranks below them
-            // without disappearing.
-            "flex min-h-0 flex-col rounded-xl2 bg-surface-soft ring-1 ring-surface-line",
+            // White, like the list and the customer panel. It was a tinted
+            // panel to rank it below them, which inverted the hierarchy: the
+            // thread is the work, and on a tint the message bubbles — one of
+            // them the same tint — had nothing to stand on. It reads as the
+            // main surface because it is the widest and the only one with
+            // bubbles on it, not because it is a different colour.
+            "flex min-h-0 flex-col rounded-xl2 bg-white shadow-card",
             !selectedId && "hidden lg:flex",
           )}
         >
@@ -842,7 +843,7 @@ export default function AdminInboxPage() {
             <p className="grid flex-1 place-items-center text-xs text-slate-400">เลือกบทสนทนาทางซ้าย</p>
           ) : (
             <>
-              <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-2.5">
+              <div className="flex items-center justify-between gap-2 border-b border-surface-line px-4 py-2.5">
                 {/* The way back, which a phone has no other way to offer. */}
                 <button
                   type="button"
@@ -894,8 +895,8 @@ export default function AdminInboxPage() {
                   view and staff had to scroll up past the whole conversation to
                   find out what the case was about. */}
               {caseRequest && (
-                <div className="border-b border-amber-100 bg-amber-50/60 px-4 py-2.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">เรื่องที่แจ้ง</p>
+                <div className="border-b border-amber-200 bg-amber-50 px-4 py-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-800">เรื่องที่แจ้ง</p>
                   <p className="mt-0.5 text-xs leading-relaxed text-slate-700">{caseRequest}</p>
                 </div>
               )}
@@ -916,17 +917,21 @@ export default function AdminInboxPage() {
                         {newDay && (
                           <div className="my-3 flex items-center gap-2">
                             <span className="h-px flex-1 bg-slate-100" />
-                            <span className="text-[10px] font-medium text-slate-400">{dayLabel(m.created_at)}</span>
+                            <span className="text-[10px] font-medium text-slate-500">{dayLabel(m.created_at)}</span>
                             <span className="h-px flex-1 bg-slate-100" />
                           </div>
                         )}
                         <div className={`flex flex-col gap-0.5 ${fromCustomer ? "items-start" : "items-end"}`}>
-                          <span className="px-1 text-[10px] text-slate-400">
+                          <span className="px-1 text-[10px] text-slate-500">
                             {senderLabel(m.sender_type)} · {timeLabel(m.created_at)}
                           </span>
                           {m.content === "— เรื่องใหม่จากลูกค้า —" ? (
-                            <span className="my-1 w-full text-center text-[10px] font-semibold text-amber-600">
-                              — เรื่องใหม่จากลูกค้า —
+                            <span className="my-1 flex w-full items-center gap-2">
+                              <span className="h-px flex-1 bg-amber-200" />
+                              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                                เรื่องใหม่จากลูกค้า
+                              </span>
+                              <span className="h-px flex-1 bg-amber-200" />
                             </span>
                           ) : isTranscriptDump(m.content) ? (
                             // Folded away rather than deleted. It is the chat
@@ -934,7 +939,7 @@ export default function AdminInboxPage() {
                             // it pushed the customer's actual request off the
                             // screen — staff had to scroll up to find out what
                             // the case was even about.
-                            <details className="max-w-[85%] rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs xl:max-w-[68ch]">
+                            <details className="max-w-[85%] rounded-xl border border-surface-line bg-surface-soft px-3 py-2 text-xs xl:max-w-[68ch]">
                               <summary className="cursor-pointer select-none font-medium text-slate-500">
                                 บทสนทนากับน้อง Smoothie ก่อนหน้านี้
                               </summary>
@@ -944,10 +949,27 @@ export default function AdminInboxPage() {
                             <div
                               className={`max-w-[85%] rounded-xl px-3 py-2 text-xs whitespace-pre-wrap xl:max-w-[68ch] ${
                                 fromCustomer
-                                  ? "bg-surface-soft text-slate-700"
+                                  ? // Incoming: a plain fill, the quietest of
+                                    // the three. It used to be surface-soft,
+                                    // the panel's own colour, so the bubble
+                                    // was invisible and the words floated.
+                                    // The hairline is what gives it an edge:
+                                    // a fill this close to white (1.12:1) is
+                                    // a shape you see by its border.
+                                    "bg-surface-muted text-slate-700 ring-1 ring-surface-line"
                                   : m.sender_type === "staff"
-                                    ? "bg-brand-gradient text-white"
-                                    : "bg-slate-100 text-slate-600"
+                                    ? // A person from the team. Solid brand
+                                      // rather than the gradient: the gradient
+                                      // ends on #00aeef, where white 12px text
+                                      // sits at about 2.3:1 — under half of
+                                      // what WCAG AA asks for. brand-800 with
+                                      // white clears 7:1.
+                                      "bg-brand-800 text-white"
+                                    : // The assistant. Ours, but not a person,
+                                      // so it is brand-tinted instead of brand
+                                      // — and no longer the same grey as the
+                                      // customer's bubble.
+                                      "bg-brand-50 text-brand-ink ring-1 ring-brand-100"
                               }`}
                             >
                               {m.attachmentUrl && (
@@ -1040,7 +1062,7 @@ export default function AdminInboxPage() {
                 <div ref={bottomRef} />
               </div>
 
-              <div className="border-t border-slate-100 p-3">
+              <div className="border-t border-surface-line bg-surface-soft/60 p-3">
                 {error && <p className="mb-2 text-[11px] text-rose-500">{error}</p>}
                 <div className="mb-2 flex flex-wrap items-center gap-1.5">
                   <button
@@ -1217,7 +1239,7 @@ export default function AdminInboxPage() {
                     )}
                   </Button>
                 </div>
-                <p className="mt-1.5 text-[10px] text-slate-400">Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่</p>
+                <p className="mt-1.5 text-[10px] text-slate-500">Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่</p>
               </div>
             </>
           )}
