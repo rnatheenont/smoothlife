@@ -666,7 +666,7 @@ function BlockEditor({
               onChange={(e) =>
                 onChange({ videoUrl: e.target.value } as Partial<ContentBlock>)
               }
-              placeholder="ลิงก์วิดีโอ — YouTube, Vimeo หรือไฟล์ .mp4"
+              placeholder="ลิงก์วิดีโอ — YouTube, Facebook, TikTok, Instagram, Vimeo หรือไฟล์ .mp4"
               className={fieldClass()}
             />
             {/* Said here rather than at save time: the admin is looking at the
@@ -675,8 +675,10 @@ function BlockEditor({
             {block.videoUrl.trim() && !parseVideoUrl(block.videoUrl) && (
               <p className="flex items-start gap-1.5 text-xs text-rose-500">
                 <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-                ลิงก์นี้ยังเล่นไม่ได้ — ใช้ลิงก์ YouTube, Vimeo
-                หรือไฟล์ .mp4 จาก Shopify / smoothlife.com
+                ลิงก์นี้ยังเล่นไม่ได้ — ใช้ลิงก์วิดีโอจาก YouTube, Facebook,
+                TikTok, Instagram, Vimeo หรือไฟล์ .mp4 จาก Shopify /
+                smoothlife.com (ลิงก์ย่อ vt.tiktok.com ใช้ไม่ได้
+                ให้เปิดคลิปแล้วก๊อปลิงก์เต็ม)
               </p>
             )}
             <ImageField
@@ -861,7 +863,12 @@ function PreviewBlock({
       return (
         <div className="mb-4 last:mb-0">
           {video ? (
-            <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+            <div
+              className={`relative w-full overflow-hidden rounded-lg bg-black ${
+                video.aspect === "16 / 9" ? "" : "mx-auto max-w-[240px]"
+              }`}
+              style={{ aspectRatio: video.aspect }}
+            >
               {video.kind === "file" ? (
                 <video
                   src={video.src}

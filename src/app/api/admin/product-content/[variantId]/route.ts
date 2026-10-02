@@ -109,7 +109,7 @@ function parseBlocks(value: unknown): ContentBlock[] | { error: string } {
         if (videoUrl && !parseVideoUrl(videoUrl)) {
           return {
             error:
-              "ลิงก์วิดีโอไม่รองรับ — ใช้ได้กับ YouTube, Vimeo หรือไฟล์ .mp4 จาก Shopify / smoothlife.com",
+              "ลิงก์วิดีโอไม่รองรับ — ใช้ได้กับ YouTube, Facebook, TikTok, Instagram, Vimeo หรือไฟล์ .mp4 จาก Shopify / smoothlife.com",
           };
         }
         const posterUrl = parseImageUrl(b.posterUrl, "ลิงก์รูปปกวิดีโอ");

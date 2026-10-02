@@ -191,9 +191,18 @@ export default function ProductContentBlocks({
             const video = parseVideoUrl(block.videoUrl);
             if (!video) return null;
             const caption = (th ? block.captionTh : block.captionEn)?.trim();
+            // An upright clip gets an upright frame, capped in width so a
+            // phone-shaped video does not run the height of the screen on a
+            // desktop.
+            const upright = video.aspect !== "16 / 9";
             return (
               <figure key={i}>
-                <div className="relative aspect-video w-full overflow-hidden rounded-xl2 bg-black">
+                <div
+                  className={`relative w-full overflow-hidden rounded-xl2 bg-black ${
+                    upright ? "mx-auto max-w-[360px]" : ""
+                  }`}
+                  style={{ aspectRatio: video.aspect }}
+                >
                   {video.kind === "file" ? (
                     <video
                       src={video.src}
@@ -213,7 +222,7 @@ export default function ProductContentBlocks({
                       // Lazy, so the player is fetched when it is scrolled to
                       // rather than on every page view.
                       loading="lazy"
-                      allow="accelerated-2d-canvas; encrypted-media; picture-in-picture; fullscreen"
+                      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen; web-share"
                       allowFullScreen
                       className="absolute inset-0 h-full w-full border-0"
                     />

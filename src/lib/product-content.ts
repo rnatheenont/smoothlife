@@ -114,12 +114,26 @@ export const BLOCK_TYPES: { key: ContentBlock["type"]; label: string }[] = [
 // about, and the allowlist here is what keeps it to the three players the CSP
 // in next.config.mjs permits.
 
-export type VideoSource =
-  | { kind: "youtube"; src: string }
-  | { kind: "vimeo"; src: string }
-  | { kind: "file"; src: string };
+export type VideoSource = {
+  kind: "youtube" | "vimeo" | "facebook" | "tiktok" | "instagram" | "file";
+  src: string;
+  /** What shape to give the frame. Social clips are shot for a phone and are
+   *  taller than they are wide; forcing them into 16:9 leaves the player
+   *  letterboxed in a wide black band. */
+  aspect: string;
+};
 
+const LANDSCAPE = "16 / 9";
 const YOUTUBE_ID = /^[\w-]{6,20}$/;
+
+/** A Facebook link that actually points at a video rather than a photo or a
+ *  profile — their player answers with an error page for the rest. */
+function isFacebookVideoPath(parts: string[], search: URLSearchParams): boolean {
+  if (parts.includes("videos") || parts[0] === "reel" || parts[0] === "watch") return true;
+  if (parts[0] === "share" && parts[1] === "v") return true;
+  if (parts[0] === "video.php" || parts[0] === "watch.php") return true;
+  return Boolean(search.get("v"));
+}
 
 export function parseVideoUrl(value: string): VideoSource | null {
   let url: URL;
@@ -146,13 +160,60 @@ export function parseVideoUrl(value: string): VideoSource | null {
     if (!id || !YOUTUBE_ID.test(id)) return null;
     // -nocookie: the same player without the ad/profile cookies a product page
     // has no business setting on a visitor who never pressed play.
-    return { kind: "youtube", src: `https://www.youtube-nocookie.com/embed/${id}?rel=0` };
+    return {
+      kind: "youtube",
+      src: `https://www.youtube-nocookie.com/embed/${id}?rel=0`,
+      aspect: LANDSCAPE,
+    };
   }
 
   if (host === "vimeo.com" || host === "player.vimeo.com") {
     const id = (parts[0] === "video" ? parts[1] : parts[0]) ?? "";
     if (!/^\d{6,12}$/.test(id)) return null;
-    return { kind: "vimeo", src: `https://player.vimeo.com/video/${id}` };
+    return { kind: "vimeo", src: `https://player.vimeo.com/video/${id}`, aspect: LANDSCAPE };
+  }
+
+  // Social clips. Each of these is the platform's own embed address, built
+  // from the link somebody copied out of the app — nothing is fetched here to
+  // work out what the link points at, so a link whose shape says nothing about
+  // a video is refused rather than framed and hoped for.
+  if (host === "facebook.com" || host === "web.facebook.com" || host === "fb.watch") {
+    if (host !== "fb.watch" && !isFacebookVideoPath(parts, url.searchParams)) return null;
+    // Facebook's player takes the whole original link as a parameter, so there
+    // is no id to pull out — which is just as well, given how many shapes
+    // their video URLs come in (/<page>/videos/<slug>, /watch/?v=, /reel/, a
+    // share link).
+    return {
+      kind: "facebook",
+      src: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(
+        url.toString(),
+      )}&show_text=false`,
+      // A reel is shot upright; the rest of their videos are not.
+      aspect: parts[0] === "reel" ? "9 / 16" : LANDSCAPE,
+    };
+  }
+
+  if (host === "tiktok.com") {
+    const after = parts[parts.indexOf("video") + 1] ?? "";
+    const id = parts.includes("video") ? after : parts[0] === "embed" ? parts[parts.length - 1] : "";
+    // A vt.tiktok.com / vm.tiktok.com short link hides the id behind a redirect
+    // we would have to follow server-side, so it is refused with the same
+    // message as any other link we cannot play.
+    if (!/^\d{6,25}$/.test(id)) return null;
+    return { kind: "tiktok", src: `https://www.tiktok.com/embed/v2/${id}`, aspect: "9 / 16" };
+  }
+
+  if (host === "instagram.com") {
+    const kind = parts[0] === "reels" ? "reel" : parts[0];
+    const code = parts[1] ?? "";
+    if (!["p", "reel", "tv"].includes(kind ?? "") || !/^[\w-]{5,30}$/.test(code)) return null;
+    // Their embed adds a header and the caption under the video, so the frame
+    // is taller than the clip itself.
+    return {
+      kind: "instagram",
+      src: `https://www.instagram.com/${kind}/${code}/embed`,
+      aspect: "3 / 4",
+    };
   }
 
   // A file served from somewhere we control — a Shopify CDN video, our own
@@ -166,7 +227,7 @@ export function parseVideoUrl(value: string): VideoSource | null {
     host === "smoothlife.com" ||
     url.hostname.endsWith(".supabase.co");
   if (ourHost && /\.(mp4|webm|mov)$/i.test(url.pathname)) {
-    return { kind: "file", src: url.toString() };
+    return { kind: "file", src: url.toString(), aspect: LANDSCAPE };
   }
   return null;
 }
