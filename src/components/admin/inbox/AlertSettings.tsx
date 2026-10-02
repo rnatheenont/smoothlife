@@ -1,0 +1,186 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Loader2, BellRing, Check, X, Send } from "lucide-react";
+import { Button } from "@/components/ui";
+
+// Where "somebody is waiting" gets sent, edited by the people it gets sent to.
+//
+// It lives on the inbox rather than in a settings area of its own, because the
+// moment anyone wonders where these go is the moment they are looking at a
+// case nobody answered.
+//
+// Reports whether each channel can deliver at all, separately from whether an
+// address is filled in: an address saved against a shop with no mail provider
+// behind it looks exactly like a working one until the day it matters.
+
+type Settings = { alertEmail: string; lineTo: string; waitingMinutes: number };
+
+export default function AlertSettings({ onClose }: { onClose: () => void }) {
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [channels, setChannels] = useState<{ email: boolean; line: boolean }>({ email: false, line: false });
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/inbox-alert-settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.ok) {
+          setError(d.error || "โหลดการตั้งค่าไม่สำเร็จ");
+          return;
+        }
+        setSettings(d.settings);
+        setChannels(d.channels);
+      })
+      .catch(() => setError("โหลดการตั้งค่าไม่สำเร็จ"));
+  }, []);
+
+  async function save() {
+    if (!settings) return;
+    setSaving(true);
+    setError("");
+    setSaved(false);
+    try {
+      const res = await fetch("/api/admin/inbox-alert-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error || "บันทึกไม่สำเร็จ");
+        return;
+      }
+      setSettings(data.settings);
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /** Runs the real alerter rather than sending a pretend message, so what
+   *  arrives is what would arrive — and if nothing is waiting, it says so
+   *  instead of inventing a case to tell you about. */
+  async function sendTest() {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const data = await fetch("/api/cron/inbox-alert").then((r) => r.json());
+      if (!data.ok) {
+        setTestResult(data.error || "ส่งทดสอบไม่สำเร็จ");
+        return;
+      }
+      const sent = [data.emailed ? "อีเมล" : null, data.lined ? "LINE" : null].filter(Boolean);
+      const fresh = (data.newlyUrgent?.length ?? 0) + (data.newlyWaiting?.length ?? 0);
+      setTestResult(
+        fresh === 0
+          ? `ตอนนี้ไม่มีเคสที่เข้าเงื่อนไข (ตรวจ ${data.checked ?? 0} เคส) — ยังไม่มีอะไรให้แจ้ง`
+          : sent.length > 0
+            ? `ส่งแล้ว ${fresh} เคส ทาง ${sent.join(" และ ")}${data.emailError ? ` · อีเมลไม่สำเร็จ: ${data.emailError}` : ""}`
+            : `พบ ${fresh} เคส แต่ส่งไม่ได้: ${data.emailError ?? data.skipped ?? "ไม่ทราบสาเหตุ"}`,
+      );
+    } catch {
+      setTestResult("ส่งทดสอบไม่สำเร็จ");
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  return (
+    <div className="mb-3 rounded-xl2 border border-slate-200 bg-white p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <p className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-ink">
+          <BellRing size={15} className="text-brand-emerald" aria-hidden="true" /> ปลายทางแจ้งเตือนเคส
+        </p>
+        <button
+          onClick={onClose}
+          aria-label="ปิด"
+          className="rounded-md p-1 text-slate-400 hover:bg-surface-soft hover:text-brand-ink"
+        >
+          <X size={15} />
+        </button>
+      </div>
+
+      {!settings ? (
+        <p className="text-xs text-slate-400">
+          {error || (
+            <span className="inline-flex items-center gap-1.5">
+              <Loader2 size={13} className="animate-spin" /> กำลังโหลด…
+            </span>
+          )}
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3 text-xs">
+          <div className="grid gap-3 md:grid-cols-3">
+            <label className="flex flex-col gap-1">
+              <span className="font-semibold text-slate-600">
+                อีเมล
+                {!channels.email && (
+                  <span className="ml-1.5 font-normal text-amber-600">(ยังไม่ได้ตั้งค่าระบบส่งอีเมล)</span>
+                )}
+              </span>
+              <input
+                type="email"
+                value={settings.alertEmail}
+                onChange={(e) => setSettings({ ...settings, alertEmail: e.target.value })}
+                placeholder="cs@smoothlife.com"
+                className="rounded-lg border border-slate-200 px-2.5 py-2 outline-hidden focus:border-brand-teal"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="font-semibold text-slate-600">
+                LINE id ของกลุ่มทีมงาน
+                {!channels.line && (
+                  <span className="ml-1.5 font-normal text-amber-600">(ยังไม่ได้ตั้งค่า LINE)</span>
+                )}
+              </span>
+              <input
+                value={settings.lineTo}
+                onChange={(e) => setSettings({ ...settings, lineTo: e.target.value })}
+                placeholder="Cxxxxxxxx… (กลุ่ม) หรือ Uxxxxxxxx… (คน)"
+                className="rounded-lg border border-slate-200 px-2.5 py-2 font-mono outline-hidden focus:border-brand-teal"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="font-semibold text-slate-600">แจ้งเมื่อรอเกิน (นาที)</span>
+              <input
+                type="number"
+                min={1}
+                max={1440}
+                value={settings.waitingMinutes}
+                onChange={(e) => setSettings({ ...settings, waitingMinutes: Number(e.target.value) })}
+                className="rounded-lg border border-slate-200 px-2.5 py-2 outline-hidden focus:border-brand-teal"
+              />
+            </label>
+          </div>
+
+          <p className="text-[11px] leading-relaxed text-slate-400">
+            เคสที่ขึ้นธงด่วนจะแจ้งทันทีไม่ต้องรอครบเวลา · แจ้งครั้งเดียวต่อเคส
+            และจะแจ้งอีกครั้งก็ต่อเมื่อเคสนั้นถูกตอบหรือปิดไปแล้วกลับมารออีก ·
+            LINE ต้องเป็นกลุ่มของทีมงาน ไม่ใช่ OA ที่คุยกับลูกค้า
+          </p>
+
+          {error && <p className="text-rose-600">{error}</p>}
+          {testResult && <p className="text-slate-600">{testResult}</p>}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" onClick={save} disabled={saving}>
+              {saving ? <Loader2 size={13} className="animate-spin" /> : saved ? <Check size={13} /> : null}
+              {saved ? "บันทึกแล้ว" : "บันทึก"}
+            </Button>
+            <Button size="sm" variant="secondary" onClick={sendTest} disabled={testing}>
+              {testing ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+              ส่งทดสอบ
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

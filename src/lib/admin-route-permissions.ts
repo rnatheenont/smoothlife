@@ -118,6 +118,10 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
     permission: "product_content.manage",
   },
 
+  // Above the broad inbox rule, which its path would otherwise match first.
+  // Same permission as answering: whoever is on the receiving end of
+  // "somebody is waiting" is who should point it at the right place.
+  { prefix: "/api/admin/inbox-alert-settings", permission: "inbox.manage" },
   // Covers the sub-routes too, ./analyze included — that one spends money per
   // press, so it wants a narrower permission of its own (inbox.ai_analysis in
   // the plan) listed above this line. Which roles should hold it is a question

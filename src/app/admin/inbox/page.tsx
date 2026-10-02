@@ -5,6 +5,7 @@ import CustomerPanel, {
   type Customer,
   type Insight,
 } from "@/components/admin/inbox/CustomerPanel";
+import AlertSettings from "@/components/admin/inbox/AlertSettings";
 import ChannelBadge from "@/components/admin/inbox/ChannelBadge";
 import CustomerAvatar from "@/components/admin/inbox/CustomerAvatar";
 import {
@@ -35,6 +36,7 @@ import {
   ChevronLeft,
   PanelRight,
   PanelRightClose,
+  BellRing,
 } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 import { Button } from "@/components/ui";
@@ -251,6 +253,7 @@ export default function AdminInboxPage() {
   const [viewedSlugs, setViewedSlugs] = useState<string[]>([]);
   const [urgency, setUrgency] = useState<"normal" | "urgent">("normal");
   const { layout, setList, setPanel, togglePanel } = useInboxLayout();
+  const [showAlertSettings, setShowAlertSettings] = useState(false);
   const [loadingThread, setLoadingThread] = useState(false);
   const [reply, setReply] = useState("");
   const [attachment, setAttachment] = useState<ResizedImage | null>(null);
@@ -627,6 +630,14 @@ export default function AdminInboxPage() {
               way rather than useful. Desktop only — below lg the panel is a
               separate view already, not a column taking up room. */}
           <button
+            onClick={() => setShowAlertSettings((v) => !v)}
+            aria-pressed={showAlertSettings}
+            title="ตั้งค่าปลายทางแจ้งเตือน"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition-colors hover:border-brand-200 hover:text-brand-800"
+          >
+            <BellRing size={13} /> แจ้งเตือน
+          </button>
+          <button
             onClick={togglePanel}
             aria-pressed={layout.panelHidden}
             title={layout.panelHidden ? "แสดงข้อมูลลูกค้า" : "ซ่อนข้อมูลลูกค้า"}
@@ -667,6 +678,8 @@ export default function AdminInboxPage() {
           </span>
         )}
       </div>
+
+      {showAlertSettings && <AlertSettings onClose={() => setShowAlertSettings(false)} />}
 
       <div className="mb-3 flex flex-wrap items-center gap-1.5">
         <span className="mr-0.5 text-[11px] text-slate-400">กำลังคุยกับ</span>
