@@ -771,54 +771,67 @@ export default function AdminInboxPage() {
                 <button
                   key={c.id}
                   onClick={() => select(c.id)}
-                  className={`flex w-full flex-col gap-1 border-b border-slate-100 p-3 text-left ${
+                  // Two lines, not five. Each row carried the name, three
+                  // pills, two lines of preview and the time on separate
+                  // rows — about 110px, so four conversations filled the
+                  // column and finding one meant scrolling. What a row has to
+                  // answer is who, when and what about; everything else earns
+                  // its space or goes.
+                  className={`flex w-full items-start gap-2 border-b border-slate-100 px-3 py-2.5 text-left ${
                     c.id === selectedId ? "bg-brand-gradient-soft" : "hover:bg-surface-soft"
                   }`}
                 >
-                  <span className="flex items-center gap-2">
-                    <CustomerAvatar
-                      name={c.customerName}
-                      src={c.customerAvatar}
-                      seed={c.channel_user_id}
-                      size={30}
-                    />
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[c.status] ?? "bg-slate-300"}`} />
-                    <span
-                      className={`truncate text-xs ${c.unread > 0 ? "font-bold text-brand-ink" : "font-semibold text-brand-ink"}`}
-                    >
-                      {c.customerName || c.channel_user_id.slice(0, 12)}
-                    </span>
-                    {c.unread > 0 && (
-                      <span className="ml-auto shrink-0 rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
-                        {c.unread}
+                  <CustomerAvatar
+                    name={c.customerName}
+                    src={c.customerAvatar}
+                    seed={c.channel_user_id}
+                    size={30}
+                  />
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span
+                        title={STATUS_LABEL[c.status] ?? c.status}
+                        className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[c.status] ?? "bg-slate-300"}`}
+                      />
+                      <span
+                        className={`min-w-0 truncate text-xs ${c.unread > 0 ? "font-bold text-brand-ink" : "font-semibold text-brand-ink"}`}
+                      >
+                        {c.customerName || c.channel_user_id.slice(0, 12)}
                       </span>
-                    )}
-                    {c.unread === 0 && c.urgency === "urgent" && (
-                      <span className="ml-auto shrink-0 rounded-full bg-rose-50 px-1.5 text-[10px] font-semibold text-rose-500">
-                        ด่วน
+                      {c.unread > 0 ? (
+                        <span className="shrink-0 rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                          {c.unread}
+                        </span>
+                      ) : (
+                        c.urgency === "urgent" && (
+                          <span className="shrink-0 rounded-full bg-rose-50 px-1.5 text-[10px] font-semibold text-rose-500">
+                            ด่วน
+                          </span>
+                        )
+                      )}
+                      {/* Icon only: the colour is what gets scanned — "the
+                          LINE ones" — and the word cost a line of its own. */}
+                      <ChannelBadge channel={c.channel} compact className="ml-auto" />
+                      <span className="shrink-0 text-[10px] text-slate-500">
+                        {sinceLabel(c.last_message_at)}
                       </span>
-                    )}
-                  </span>
-
-                  {/* Where it came from. A case Smoothie could not answer is a
-                      different thing from someone chatting to the bot, and the
-                      channel says which of three inboxes it would have been. */}
-                  <span className="flex flex-wrap items-center gap-1">
-                    <span
-                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                        c.origin === "escalation" ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
-                      {c.origin === "escalation" ? "ส่งต่อจาก AI" : "แชทกับ AI"}
                     </span>
-                    <ChannelBadge channel={c.channel} />
-                    <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-                      {STATUS_LABEL[c.status] ?? c.status}
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      {/* Only when it is one. A case Smoothie could not answer
+                          is worth a flag; "แชทกับ AI" was on almost every row,
+                          which is a label that tells you nothing — and the
+                          status pill beside it only repeated the dot and the
+                          tab already filtering the list. */}
+                      {c.origin === "escalation" && (
+                        <span className="shrink-0 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                          ส่งต่อจาก AI
+                        </span>
+                      )}
+                      <span className="min-w-0 truncate text-[11px] text-slate-500">
+                        {c.preview || c.subject || "—"}
+                      </span>
                     </span>
                   </span>
-
-                  <span className="line-clamp-2 text-[11px] text-slate-500">{c.preview || c.subject || "—"}</span>
-                  <span className="text-[10px] text-slate-400">{sinceLabel(c.last_message_at)}</span>
                 </button>
               );
             })

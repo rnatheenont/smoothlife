@@ -37,25 +37,33 @@ const CHANNEL: Record<
 export default function ChannelBadge({
   channel,
   className,
+  compact = false,
 }: {
   channel: string;
   className?: string;
+  /** Icon only. For the conversation list, where the colour is the part that
+   *  gets scanned and the word costs a line of its own. */
+  compact?: boolean;
 }) {
   // An unknown channel still says which one it is rather than disappearing:
   // a fourth adapter landing before this file knows about it should look
   // unstyled, not invisible.
   const c = CHANNEL[channel];
   const Icon = c?.icon ?? Globe;
+  const label = c?.label ?? channel;
   return (
     <span
+      title={compact ? label : undefined}
+      aria-label={compact ? label : undefined}
       className={clsx(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset",
+        "inline-flex items-center rounded-full text-[10px] font-bold ring-1 ring-inset",
+        compact ? "size-[18px] justify-center" : "gap-1 px-2 py-0.5",
         c?.className ?? "bg-slate-100 text-slate-600 ring-slate-200",
         className,
       )}
     >
       <Icon size={11} aria-hidden="true" />
-      {c?.label ?? channel}
+      {!compact && label}
     </span>
   );
 }
