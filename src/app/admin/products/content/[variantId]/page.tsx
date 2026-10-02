@@ -809,14 +809,15 @@ function PreviewBlock({
       return (
         <div className="mb-4 last:mb-0">
           {block.imageUrl && (
-            <div className="relative mb-2 h-32 w-full overflow-hidden rounded-lg bg-surface-soft">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={block.imageUrl}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            </div>
+            /* The whole picture, at its own shape. It used to be cropped into
+               a 128px-tall strip, which showed the admin a slice of their own
+               image and none of what the product page would show. */
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={block.imageUrl}
+              alt=""
+              className="mb-2 w-full rounded-lg bg-surface-soft"
+            />
           )}
           {(block.headingTh || block.headingEn) && (
             <p className="mb-1 text-sm font-bold text-brand-ink">

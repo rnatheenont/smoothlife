@@ -40,7 +40,15 @@ function hasText(block: ContentBlock, th: boolean): boolean {
  * ingredient diagrams and how-to-use panels, where the cut-off part is usually
  * the part with the words on it.
  */
-function ContentImage({ src, alt }: { src: string; alt: string }) {
+function ContentImage({
+  src,
+  alt,
+  sizes = "(max-width: 768px) 100vw, 680px",
+}: {
+  src: string;
+  alt: string;
+  sizes?: string;
+}) {
   const [ratio, setRatio] = useState<number | null>(null);
   return (
     <span
@@ -53,7 +61,7 @@ function ContentImage({ src, alt }: { src: string; alt: string }) {
         src={src}
         alt={alt}
         fill
-        sizes="(max-width: 768px) 100vw, 680px"
+        sizes={sizes}
         className="object-contain"
         onLoad={(e) => {
           const img = e.currentTarget;
@@ -145,15 +153,14 @@ export default function ProductContentBlocks({
                 className="grid gap-4 sm:grid-cols-[200px_1fr] sm:items-start"
               >
                 {block.imageUrl && (
-                  <span className="relative block aspect-square w-full overflow-hidden rounded-xl2 bg-surface-soft">
-                    <Image
-                      src={block.imageUrl}
-                      alt=""
-                      fill
-                      sizes="(max-width: 640px) 100vw, 200px"
-                      className="object-cover"
-                    />
-                  </span>
+                  // Its own shape, not a square crop: a label shot or an
+                  // ingredient diagram loses the part with the words on it
+                  // when it is cropped to fit.
+                  <ContentImage
+                    src={block.imageUrl}
+                    alt=""
+                    sizes="(max-width: 640px) 100vw, 200px"
+                  />
                 )}
                 <div>
                   {heading(block.headingTh, block.headingEn)}
