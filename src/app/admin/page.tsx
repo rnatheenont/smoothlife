@@ -23,6 +23,12 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
+import {
+  NAV_GROUPS,
+  TONE_TILE,
+  isAllowed,
+  useAdminAccess,
+} from "@/components/admin/nav-map";
 import { PageHeader, SectionLabel, StatCard } from "@/components/admin/layout-kit";
 
 // Admin home. It used to redirect straight into the promotions screen, which
@@ -167,40 +173,13 @@ export default function AdminHomePage() {
     },
   ];
 
-  const sections = [
-    { href: "/admin/inbox", icon: Inbox, label: "กล่องข้อความ", desc: "ตอบแชทลูกค้าทุกช่องทางจากที่เดียว" },
-    { href: "/admin/free-gifts", icon: Gift, label: "ของแถม & โปรโมชั่น", desc: "ของแถมและแคมเปญหน้าร้าน" },
-    {
-      href: "/admin/free-gifts/widgets",
-      icon: SlidersHorizontal,
-      label: "กล่องโปรโมชั่นหน้าเว็บ",
-      desc: "เปิด/ปิดกล่องโปรโมชั่นบนหน้าร้าน",
-    },
-    { href: "/admin/points", icon: Award, label: "แต้มสะสม & ของรางวัล", desc: "ปรับแต้มลูกค้าและตั้งของรางวัล" },
-    { href: "/admin/reviews", icon: MessageSquareText, label: "รีวิวรออนุมัติ", desc: "ตรวจรีวิวก่อนขึ้นหน้าเว็บ" },
-    { href: "/admin/gift-cards", icon: CreditCard, label: "บัตรของขวัญ", desc: "ออกและตรวจสอบบัตรของขวัญ" },
-    {
-      href: "/admin/subscription-products",
-      icon: Repeat,
-      label: "สินค้าสมัครรับประจำ",
-      desc: "เลือกสินค้าที่สมัครรับประจำได้",
-    },
-    {
-      href: "/admin/checkout-transactions",
-      icon: Receipt,
-      label: "การชำระเงิน & คืนเงิน",
-      desc: "ตรวจการชำระเงินและคืนเงิน",
-    },
-    { href: "/admin/flash-sale", icon: Zap, label: "Flash Sale", desc: "ตั้งแคมเปญ คิวจริง และหน้าขายแบบพิเศษ" },
-    {
-      href: "/admin/knowledge-base",
-      icon: BookOpen,
-      label: "ฐานความรู้ AI",
-      desc: "คำตอบที่อนุมัติแล้วให้ AI ใช้ตอบลูกค้า",
-    },
-    { href: "/admin/tracking-sync", icon: Truck, label: "เลขพัสดุจากคลัง", desc: "ดึงเลขพัสดุจาก soko เข้า Shopify" },
-    { href: "/admin/customers", icon: Users, label: "ลูกค้า & บัญชีผู้ใช้", desc: "ค้นหาลูกค้าและผูกบัญชี LINE" },
-  ];
+  // The console's own map, minus the overview itself (you are on it) and
+  // minus anything this role may not open.
+  const access = useAdminAccess();
+  const shortcutGroups = NAV_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((i) => i.href !== "/admin" && isAllowed(i, access)),
+  })).filter((g) => g.label && g.items.length > 0);
 
   // Zero is the answer most of these give most days, and seven cards saying
   // zero is a page that has to be read before it can be dismissed. The ones
@@ -273,33 +252,44 @@ export default function AdminHomePage() {
         </div>
       </section>
 
-      <section>
-        <SectionLabel className="mb-2">ทั้งหมด</SectionLabel>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {sections.map((s) => {
-            const Icon = s.icon;
-            return (
-              <Link
-                key={s.href + s.label}
-                href={s.href}
-                className="group flex items-start gap-3 rounded-xl2 border border-slate-100 bg-white p-4 transition-colors hover:border-brand-teal/40"
-              >
-                <span className="grid size-9 shrink-0 place-items-center rounded-l bg-brand-gradient-soft">
-                  <Icon size={16} className="text-brand-emerald" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-brand-ink">{s.label}</span>
-                  <span className="mt-0.5 block text-xs text-slate-400">{s.desc}</span>
-                </span>
-                <ArrowRight
-                  size={15}
-                  className="mt-1 shrink-0 text-slate-300 transition-colors group-hover:text-brand-emerald"
-                />
-              </Link>
-            );
-          })}
-        </div>
-      </section>
+      {/* The same groups as the menu on the left, in the same order, because
+          a console that organises itself one way in the sidebar and another
+          way here is two consoles to learn. Twelve identical cards in one
+          grid was the version before: a wall with no way in except reading
+          every label.
+
+          Filtered by permission, which the hand-kept copy of this list never
+          was — a role without gift_cards.manage was shown the card and
+          bounced at the door. */}
+      {shortcutGroups.map((group) => (
+        <section key={group.label}>
+          <SectionLabel className="mb-2">{group.label}</SectionLabel>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="group flex items-start gap-3 rounded-xl2 border border-slate-100 bg-white p-4 transition-colors hover:border-brand-teal/40"
+                >
+                  <span className={`grid size-9 shrink-0 place-items-center rounded-l ${TONE_TILE[group.tone]}`}>
+                    <Icon size={16} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-brand-ink">{item.label}</span>
+                    {item.desc && <span className="mt-0.5 block text-xs text-slate-500">{item.desc}</span>}
+                  </span>
+                  <ArrowRight
+                    size={15}
+                    className="mt-1 shrink-0 text-slate-300 transition-colors group-hover:text-brand-emerald"
+                  />
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

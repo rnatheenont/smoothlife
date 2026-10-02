@@ -34,22 +34,19 @@ import { ScrollText,
 import { Button } from "@/components/ui";
 import { AdminActionButton, AdminActionProvider } from "@/components/admin/header-action";
 import CommandPalette from "@/components/admin/command-palette";
+import {
+  NAV_GROUPS,
+  ALL_ITEMS,
+  groupOf,
+  isAllowed,
+  AdminAccessProvider,
+} from "@/components/admin/nav-map";
 
 const NAV_COLLAPSED_KEY = "admin-nav-collapsed";
 
 // Grouped the way the work is grouped — orders, then selling, then the
 // content and the system settings — so fourteen entries read as four short
 // lists instead of one long one.
-type NavItem = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  /** The permission needed to open it; null when every role may. */
-  permission?: string | null;
-  /** The accounts screen, which only the owner may open. */
-  ownerOnly?: boolean;
-};
-
 // Grouped by when the work happens, and named the way the person doing it
 // would say it — not after the system behind it. "รายการซื้อ (2C2P)" named a
 // payment gateway; "Widgets" named a React concept; "สัญญาณแบรนด์" named
@@ -58,98 +55,7 @@ type NavItem = {
 /** One screen for every receipt campaign, so it is named for the kind. The
  *  route matches the address it manages — /admin/campaigns runs the campaigns
  *  customers reach at /campaigns/<key>. */
-const CAMPAIGNS_LABEL = "กิจกรรม";
 
-const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
-  {
-    label: "",
-    items: [{ href: "/admin", label: "ภาพรวม", icon: LayoutDashboard, permission: null }],
-  },
-  {
-    // Queues: things that arrive on their own and wait for a person.
-    label: "งานประจำวัน",
-    items: [
-      { href: "/admin/inbox", label: "กล่องข้อความ", icon: Inbox, permission: "inbox.manage" },
-      { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText, permission: "reviews.manage" },
-      { href: "/admin/tracking-sync", label: "เลขพัสดุจากคลัง", icon: Truck, permission: "tracking_sync.manage" },
-    ],
-  },
-  {
-    label: "ลูกค้า & การเงิน",
-    items: [
-      { href: "/admin/customers", label: "ลูกค้า & บัญชีผู้ใช้", icon: Users, permission: "customers.manage" },
-      {
-        href: "/admin/checkout-transactions",
-        label: "การชำระเงิน & คืนเงิน",
-        icon: Receipt,
-        permission: "checkout.view",
-      },
-      { href: "/admin/points", label: "แต้มสะสม & ของรางวัล", icon: Award, permission: "points.view" },
-      { href: "/admin/gift-cards", label: "บัตรของขวัญ", icon: CreditCard, permission: "gift_cards.manage" },
-    ],
-  },
-  {
-    label: "การขาย & โปรโมชั่น",
-    items: [
-      { href: "/admin/flash-sale", label: "Events", icon: Zap, permission: "flash_sale.view" },
-      { href: "/admin/campaigns", label: CAMPAIGNS_LABEL, icon: Receipt, permission: "receipts.view" },
-      { href: "/admin/free-gifts", label: "ของแถม & โปรโมชั่น", icon: Gift, permission: "free_gifts.manage" },
-      {
-        href: "/admin/free-gifts/widgets",
-        label: "กล่องโปรโมชั่นหน้าเว็บ",
-        icon: SlidersHorizontal,
-        permission: "free_gifts.manage",
-      },
-      {
-        href: "/admin/subscription-products",
-        label: "สินค้าสมัครรับประจำ",
-        icon: Repeat,
-        permission: "subscription_products.manage",
-      },
-    ],
-  },
-  {
-    label: "เนื้อหา & การค้นหา",
-    items: [
-      { href: "/admin/knowledge-base", label: "ฐานความรู้ AI", icon: BookOpen, permission: "kb.draft" },
-      { href: "/admin/seo", label: "SEO หน้าเว็บ", icon: Search, permission: "seo.manage" },
-      {
-        href: "/admin/products/content",
-        label: "เนื้อหาสินค้า",
-        icon: FileText,
-        permission: "product_content.view",
-      },
-      {
-        href: "/admin/brand-insights",
-        label: "เสียงลูกค้า & คำค้นหา",
-        icon: TrendingUp,
-        permission: "brand_signals.view",
-      },
-      {
-        href: "/admin/line-rich-menu",
-        label: "เมนู LINE OA",
-        icon: MessageCircle,
-        permission: "line_rich_menu.manage",
-      },
-    ],
-  },
-  {
-    label: "ตั้งค่าระบบ",
-    items: [
-      { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette, permission: null },
-      // Owner only, like the user list: the log is every admin's work, and
-      // the page refuses anyone else on its own — this just stops the other
-      // roles walking into a wall.
-      { href: "/admin/audit", label: "บันทึกการใช้งาน", icon: ScrollText, ownerOnly: true },
-      // Only the owner may open it, so only the owner is shown it. The page
-      // still refuses anyone else on its own (see /api/admin/users) — this
-      // just stops the other roles walking into a wall.
-      { href: "/admin/users", label: "ผู้ใช้ & สิทธิ์", icon: UserCog, ownerOnly: true },
-    ],
-  },
-];
-
-const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
 // How much width a screen actually has content for: a dashboard fills the
 // window, a wide data table needs the room, and a list of rows or a form reads
@@ -176,7 +82,6 @@ const FULL_WIDTH = [
 ];
 const WIDE_TABLE: string[] = [];
 
-const groupOf = (href: string) => NAV_GROUPS.find((g) => g.items.some((i) => i.href === href))?.label ?? "";
 
 /** "/admin" prefixes every route, and "/admin/free-gifts" prefixes the widgets
  *  route — an exact match is the only correct test for both. */
@@ -393,11 +298,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   // Courtesy, not protection: the request is refused by the gate in proxy.ts
   // whatever the menu shows. This only spares people the walk to a locked
   // door — an item with no permission of its own is for everyone.
-  const allowed = (item: { permission?: string | null; ownerOnly?: boolean }) => {
-    if (item.ownerOnly) return !me || me.role_key === "owner";
-    if (!item.permission) return true;
-    return permissions.includes("*") || permissions.includes(item.permission);
-  };
+  const allowed = (item: { permission?: string | null; ownerOnly?: boolean }) =>
+    isAllowed(item, { permissions, role: me?.role_key ?? null });
   const visibleItems = ALL_ITEMS.filter(allowed);
 
   const labelOf = (item: { label: string }) => item.label;
@@ -414,6 +316,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       : "mx-auto w-full max-w-[1100px]";
 
   return (
+    // Screens inside the console read this rather than each asking
+    // /api/admin/me again — the overview filters its shortcuts with it.
+    <AdminAccessProvider value={{ permissions, role: me?.role_key ?? null }}>
     <AdminActionProvider>
       {/* The canvas the cards sit on. surface-soft at half opacity came out
           at #f9fcfb and surface-muted at #eef3f2 — both close enough to white
@@ -599,5 +504,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
     </AdminActionProvider>
+    </AdminAccessProvider>
   );
 }
