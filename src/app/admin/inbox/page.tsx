@@ -616,95 +616,110 @@ export default function AdminInboxPage() {
 
   return (
     <div ref={shellRef} style={shellHeight ? { height: shellHeight } : undefined} className="flex flex-col">
-      <div className="mb-3 flex items-center justify-between gap-3">
+      {/* One band instead of two rows that did the same kind of job in two
+          different styles — status above, "กำลังคุยกับ" below, with the view
+          controls stranded up in the title row. Everything that changes what
+          the list shows now sits together on the left, and everything that
+          changes what the screen shows sits together on the right. */}
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl2 border border-slate-100 bg-white px-3 py-2">
         {/* Not PageHeader: this screen measures its own height and fills it
             with three panes, so the subtitle every other page carries would
-            come straight out of the conversation list. The title matches
-            theirs; the rest of the header does not, on purpose. */}
-        <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
-          <Inbox size={20} className="text-brand-emerald" /> กล่องข้อความรวม
+            come straight out of the conversation list. */}
+        <h1 className="flex shrink-0 items-center gap-1.5 text-base font-bold text-brand-ink">
+          <Inbox size={17} className="text-brand-emerald" /> กล่องข้อความ
         </h1>
-        <span className="ml-auto flex items-center gap-3">
-          <span className="flex items-center gap-1.5 text-[11px] text-slate-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> อัปเดตอัตโนมัติทุก 5 วินาที
-          </span>
-          {/* Reading a long thread is the one time the third column is in the
-              way rather than useful. Desktop only — below lg the panel is a
-              separate view already, not a column taking up room. */}
+
+        <span className="hidden h-5 w-px bg-surface-line md:block" />
+
+        <div role="group" aria-label="กรองตามสถานะ" className="flex flex-wrap gap-1">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              aria-pressed={filter === f.key}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                filter === f.key
+                  ? "bg-brand-gradient text-white"
+                  : "text-slate-600 hover:bg-surface-soft"
+              }`}
+            >
+              {f.label}
+              {/* The number is the point of the tab: "รอตอบ 3" is a queue,
+                  "รอตอบ" is a place you have to click to find out. */}
+              {countFor(f.key, counts) > 0 && (
+                <span
+                  className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] ${
+                    filter === f.key ? "bg-white/25" : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  {countFor(f.key, counts)}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <span className="hidden h-5 w-px bg-surface-line md:block" />
+
+        {/* The label that used to float in front of these is their group name
+            now: it told the eye nothing it could not get from the options. */}
+        <div role="group" aria-label="กรองตามผู้ที่กำลังดูแล" className="flex flex-wrap gap-1">
+          {HANDLERS.map((h) => {
+            const n = conversations.filter((c) => h.key === "any" || handlerOf(c.status) === h.key).length;
+            return (
+              <button
+                key={h.key}
+                onClick={() => setHandler(h.key)}
+                aria-pressed={handler === h.key}
+                className={`flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                  handler === h.key
+                    ? "bg-brand-50 text-brand-800"
+                    : "text-slate-500 hover:bg-surface-soft"
+                }`}
+              >
+                {h.key === "ai" && <Bot size={11} />}
+                {h.key === "staff" && <UserRound size={11} />}
+                {h.label}
+                {n > 0 && <span className="text-slate-400">{n}</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span
+            title="อัปเดตอัตโนมัติทุก 5 วินาที"
+            className="hidden h-1.5 w-1.5 rounded-full bg-emerald-400 sm:block"
+          />
+          {counts.unread > 0 && (
+            <span className="rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-600">
+              ยังไม่ได้อ่าน {counts.unread}
+            </span>
+          )}
           <button
             onClick={() => setShowAlertSettings((v) => !v)}
             aria-pressed={showAlertSettings}
             title="ตั้งค่าปลายทางแจ้งเตือน"
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition-colors hover:border-brand-200 hover:text-brand-800"
+            className="inline-flex items-center rounded-full p-1.5 text-slate-500 transition-colors hover:bg-surface-soft hover:text-brand-800"
           >
-            <BellRing size={13} /> แจ้งเตือน
+            <BellRing size={15} />
+            <span className="sr-only">ตั้งค่าปลายทางแจ้งเตือน</span>
           </button>
           <button
             onClick={togglePanel}
             aria-pressed={layout.panelHidden}
             title={layout.panelHidden ? "แสดงข้อมูลลูกค้า" : "ซ่อนข้อมูลลูกค้า"}
-            className="hidden items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition-colors hover:border-brand-200 hover:text-brand-800 lg:inline-flex"
+            className="hidden items-center rounded-full p-1.5 text-slate-500 transition-colors hover:bg-surface-soft hover:text-brand-800 lg:inline-flex"
           >
-            {layout.panelHidden ? <PanelRight size={13} /> : <PanelRightClose size={13} />}
-            {layout.panelHidden ? "แสดงข้อมูลลูกค้า" : "ซ่อนข้อมูลลูกค้า"}
+            {layout.panelHidden ? <PanelRight size={15} /> : <PanelRightClose size={15} />}
+            <span className="sr-only">
+              {layout.panelHidden ? "แสดงข้อมูลลูกค้า" : "ซ่อนข้อมูลลูกค้า"}
+            </span>
           </button>
-        </span>
-      </div>
-
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-              filter === f.key ? "bg-brand-gradient text-white" : "border border-slate-200 text-slate-600"
-            }`}
-          >
-            {f.label}
-            {/* The number is the point of the tab: "รอตอบ 3" is a queue, "รอตอบ"
-                is a place you have to click to find out. */}
-            {countFor(f.key, counts) > 0 && (
-              <span
-                className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] ${
-                  filter === f.key ? "bg-white/25" : "bg-slate-100 text-slate-500"
-                }`}
-              >
-                {countFor(f.key, counts)}
-              </span>
-            )}
-          </button>
-        ))}
-        {counts.unread > 0 && (
-          <span className="ml-auto self-center rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-600">
-            ยังไม่ได้อ่าน {counts.unread}
-          </span>
-        )}
+        </div>
       </div>
 
       {showAlertSettings && <AlertSettings onClose={() => setShowAlertSettings(false)} />}
-
-      <div className="mb-3 flex flex-wrap items-center gap-1.5">
-        <span className="mr-0.5 text-[11px] text-slate-400">กำลังคุยกับ</span>
-        {HANDLERS.map((h) => {
-          const n = conversations.filter((c) => h.key === "any" || handlerOf(c.status) === h.key).length;
-          return (
-            <button
-              key={h.key}
-              onClick={() => setHandler(h.key)}
-              className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                handler === h.key
-                  ? "border-brand-200 bg-brand-50 text-brand-800"
-                  : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
-              }`}
-            >
-              {h.key === "ai" && <Bot size={11} />}
-              {h.key === "staff" && <UserRound size={11} />}
-              {h.label}
-              {n > 0 && <span className="text-slate-400">{n}</span>}
-            </button>
-          );
-        })}
-      </div>
 
       {/* The two outer columns are dragged to whatever width the person using
           them wants and remembered per browser (see ./layout). They started at
@@ -737,7 +752,7 @@ export default function AdminInboxPage() {
             onResize={setList}
             label="ปรับความกว้างรายการแชท"
           />
-          <div className="h-full overflow-y-auto rounded-xl2 border border-slate-100 bg-white">
+          <div className="h-full overflow-y-auto rounded-xl2 bg-white shadow-card">
           {loadingList ? (
             <p className="p-4 text-xs text-slate-400">กำลังโหลด…</p>
           ) : visible.length === 0 ? (
@@ -806,7 +821,10 @@ export default function AdminInboxPage() {
         {/* thread */}
         <div
           className={clsx(
-            "flex min-h-0 flex-col rounded-xl2 border border-slate-100 bg-white",
+            // No card of its own: the thread is the page these two panels
+            // sit on. Its header and composer keep a surface so the controls
+            // still read as controls.
+            "flex min-h-0 flex-col rounded-xl2 bg-white/55",
             !selectedId && "hidden lg:flex",
           )}
         >
@@ -1213,7 +1231,7 @@ export default function AdminInboxPage() {
             onResize={setPanel}
             label="ปรับความกว้างข้อมูลลูกค้า"
           />
-          <div className="h-full overflow-y-auto rounded-xl2 border border-slate-100 bg-white p-3">
+          <div className="h-full overflow-y-auto rounded-xl2 bg-white p-3 shadow-card">
           {!selected ? (
             <p className="text-xs text-slate-400">—</p>
           ) : (
