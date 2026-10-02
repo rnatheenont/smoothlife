@@ -450,7 +450,8 @@ export default function ProductMediaCard({ variantId, product }: Props) {
 
             <div>
               <h3 className="text-xs font-semibold text-slate-600">
-                รูปของเรา ({images.length}/{MAX_IMAGES} รูป)
+                สื่อของเรา ({images.length}/{MAX_IMAGES} รูป · {videos.length}/
+                {MAX_VIDEOS} คลิป)
               </h3>
 
               <input
@@ -463,6 +464,17 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                   const picked = Array.from(e.target.files ?? []);
                   e.target.value = "";
                   if (picked.length > 0) void addFiles(picked);
+                }}
+              />
+              <input
+                ref={videoInput}
+                type="file"
+                accept={VIDEO_ACCEPT.join(",")}
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void addVideoFile(file);
                 }}
               />
 
@@ -481,7 +493,7 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                   if (dropped.length > 0) void addFiles(dropped);
                 }}
                 className={
-                  "mt-2 rounded-xl border-2 border-dashed p-4 text-center transition-colors " +
+                  "mt-2 rounded-xl border-2 border-dashed p-3 text-center transition-colors " +
                   (overZone
                     ? "border-brand-action bg-brand-50"
                     : "border-surface-line bg-surface-soft")
@@ -493,25 +505,79 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                     กำลังอัปโหลด {progress.done + 1}/{progress.total} รูป…
                   </p>
                 ) : (
-                  <>
-                    <p className="text-sm text-slate-600">ลากรูปมาวางที่นี่</p>
+                  <span className="flex flex-wrap items-center justify-center gap-2">
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="mt-2"
                       isDisabled={images.length >= MAX_IMAGES}
                       onPress={() => fileInput.current?.click()}
                     >
-                      <ImagePlus size={15} /> เลือกไฟล์
+                      <ImagePlus size={15} /> เลือกรูป
                     </Button>
-                    <p className="mt-2 text-xs text-slate-500">
-                      JPG, PNG, WebP · เลือกหลายไฟล์ได้ · ย่อขนาดให้อัตโนมัติ
-                    </p>
-                  </>
+                    <span className="text-xs text-slate-500">
+                      หรือลากรูปมาวางที่นี่ · JPG, PNG, WebP · ย่อขนาดให้อัตโนมัติ
+                    </span>
+                  </span>
                 )}
               </div>
 
-              {images.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  isDisabled={videos.length >= MAX_VIDEOS || videoProgress !== null}
+                  isPending={videoProgress !== null}
+                  onPress={() => videoInput.current?.click()}
+                >
+                  <Video size={15} /> วิดีโอ
+                </Button>
+                <div className="flex min-w-[220px] flex-1 items-center gap-2">
+                  <span className="relative flex-1">
+                    <Link2
+                      size={14}
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                      type="url"
+                      value={link}
+                      onChange={(e) => setLink(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void addVideoLink();
+                        }
+                      }}
+                      placeholder="หรือวางลิงก์ YouTube, TikTok, Facebook, IG, Vimeo"
+                      aria-label="ลิงก์วิดีโอ"
+                      className="w-full rounded-lg border border-surface-line bg-white py-1.5 pl-8 pr-3 text-sm text-brand-ink placeholder:text-slate-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-action"
+                    />
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="tertiary"
+                    isDisabled={!link.trim() || videos.length >= MAX_VIDEOS}
+                    onPress={addVideoLink}
+                  >
+                    เพิ่ม
+                  </Button>
+                </div>
+              </div>
+
+              {videoProgress && (
+                <p className="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
+                  <Loader2 size={15} className="animate-spin" />
+                  กำลังอัปโหลด {videoProgress}…
+                </p>
+              )}
+
+              {/* One strip, pictures then clips — the order the gallery shows
+                  them in, so what is on screen here is what a customer gets.
+                  Only the strip is shared: the two lists stay separate all the
+                  way down to the database, because a video in the picture list
+                  would reach an <Image>, the link preview and Google's product
+                  listing. */}
+              {(images.length > 0 || videos.length > 0) && (
                 <ul className="mt-3 flex flex-wrap gap-3">
                   {images.map((img, i) => (
                     <li
@@ -578,149 +644,66 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                       </div>
                     </li>
                   ))}
-                </ul>
-              )}
 
-              {images.length > 0 && (
-                <p className="mt-2 text-xs text-slate-500">
-                  รูปแรกคือรูปหลัก รูปที่สองคือรูปที่โชว์ตอนชี้เมาส์ — ลากสลับลำดับได้
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Clips, under the pictures and never mixed into them: a video does
-              not belong on a product card, in a link preview or in Google's
-              listing, which is exactly where the picture list goes. */}
-          <div className="mt-4 border-t border-surface-line pt-4">
-            <h3 className="text-xs font-semibold text-slate-600">
-              วิดีโอ ({videos.length}/{MAX_VIDEOS} คลิป) — แสดงต่อจากรูปในแกลเลอรี
-            </h3>
-
-            <input
-              ref={videoInput}
-              type="file"
-              accept={VIDEO_ACCEPT.join(",")}
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                e.target.value = "";
-                if (file) void addVideoFile(file);
-              }}
-            />
-
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                isDisabled={videos.length >= MAX_VIDEOS || videoProgress !== null}
-                isPending={videoProgress !== null}
-                onPress={() => videoInput.current?.click()}
-              >
-                <Video size={15} /> อัปโหลดวิดีโอ
-              </Button>
-              <span className="text-xs text-slate-500">หรือ</span>
-              <div className="flex min-w-[260px] flex-1 items-center gap-2">
-                <span className="relative flex-1">
-                  <Link2
-                    size={14}
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
-                  />
-                  <input
-                    type="url"
-                    value={link}
-                    onChange={(e) => setLink(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        void addVideoLink();
-                      }
-                    }}
-                    placeholder="วางลิงก์ YouTube, TikTok, Facebook, IG, Vimeo"
-                    aria-label="ลิงก์วิดีโอ"
-                    className="w-full rounded-lg border border-surface-line bg-white py-1.5 pl-8 pr-3 text-sm text-brand-ink placeholder:text-slate-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-action"
-                  />
-                </span>
-                <Button
-                  size="sm"
-                  variant="tertiary"
-                  isDisabled={!link.trim() || videos.length >= MAX_VIDEOS}
-                  onPress={addVideoLink}
-                >
-                  เพิ่ม
-                </Button>
-              </div>
-            </div>
-
-            {videoProgress && (
-              <p className="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
-                <Loader2 size={15} className="animate-spin" />
-                กำลังอัปโหลด {videoProgress}…
-              </p>
-            )}
-
-            <p className="mt-2 text-xs text-slate-500">
-              MP4, WebM, MOV · ไม่เกิน 50MB ต่อคลิป · ไฟล์ส่งตรงเข้าคลัง
-              ไม่ผ่านเซิร์ฟเวอร์ จึงอัปไฟล์ใหญ่ได้
-            </p>
-
-            {videos.length > 0 && (
-              <ul className="mt-3 space-y-2">
-                {videos.map((v, i) => {
-                  const parsed = parseVideoUrl(v.url);
-                  return (
-                    <li
-                      key={v.url}
-                      className="flex items-center gap-2 rounded-xl bg-surface-soft px-2 py-2 ring-1 ring-surface-line"
-                    >
-                      <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-black">
-                        {parsed?.kind === "file" ? (
-                          // The browser draws the first frame itself, so there
-                          // is no poster to generate and store.
-                          <video
-                            src={`${v.url}#t=0.1`}
-                            preload="metadata"
-                            muted
-                            playsInline
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <Video size={16} className="text-white/80" aria-hidden="true" />
-                        )}
-                      </span>
-                      <span className="min-w-0 flex-1">
+                  {videos.map((v, i) => {
+                    const parsed = parseVideoUrl(v.url);
+                    return (
+                      <li key={v.url} className="w-20">
                         <a
                           href={v.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="block truncate text-xs text-slate-600 hover:text-brand-800"
+                          title={v.path ? `ไฟล์ของเรา · ${v.url}` : v.url}
+                          className="relative grid size-20 place-items-center overflow-hidden rounded-xl bg-black ring-1 ring-surface-line"
                         >
-                          {v.path ? "ไฟล์ของเรา" : (parsed?.kind ?? "ลิงก์")} · {v.url}
+                          {parsed?.kind === "file" ? (
+                            // The browser draws the first frame itself, so
+                            // there is no poster to generate and store.
+                            <video
+                              src={`${v.url}#t=0.1`}
+                              preload="metadata"
+                              muted
+                              playsInline
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <Video size={18} className="text-white/80" aria-hidden="true" />
+                          )}
+                          <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1 text-[9px] font-semibold text-white">
+                            {v.path ? "ไฟล์" : (parsed?.kind ?? "ลิงก์")}
+                          </span>
                         </a>
-                      </span>
-                      <ThumbButton
-                        label="เลื่อนขึ้น"
-                        disabled={i === 0}
-                        onClick={() => moveVideo(i, i - 1)}
-                      >
-                        <ChevronLeft size={13} className="-rotate-90" />
-                      </ThumbButton>
-                      <ThumbButton
-                        label="เลื่อนลง"
-                        disabled={i === videos.length - 1}
-                        onClick={() => moveVideo(i, i + 1)}
-                      >
-                        <ChevronRight size={13} className="-rotate-90" />
-                      </ThumbButton>
-                      <ThumbButton label="ลบคลิปนี้" onClick={() => removeVideo(i)}>
-                        <X size={13} />
-                      </ThumbButton>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+                        <div className="mt-1 flex items-center justify-center gap-0.5">
+                          <ThumbButton
+                            label="เลื่อนไปซ้าย"
+                            disabled={i === 0}
+                            onClick={() => moveVideo(i, i - 1)}
+                          >
+                            <ChevronLeft size={13} />
+                          </ThumbButton>
+                          <ThumbButton
+                            label="เลื่อนไปขวา"
+                            disabled={i === videos.length - 1}
+                            onClick={() => moveVideo(i, i + 1)}
+                          >
+                            <ChevronRight size={13} />
+                          </ThumbButton>
+                          <ThumbButton label="ลบคลิปนี้" onClick={() => removeVideo(i)}>
+                            <X size={13} />
+                          </ThumbButton>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              <p className="mt-2 text-xs text-slate-500">
+                {images.length > 0
+                  ? "รูปแรกคือรูปหลัก รูปที่สองคือรูปที่โชว์ตอนชี้เมาส์ — ลากสลับลำดับได้ · คลิปแสดงต่อจากรูป"
+                  : "JPG, PNG, WebP · วิดีโอ MP4, WebM, MOV ไม่เกิน 50MB ต่อคลิป"}
+              </p>
+            </div>
           </div>
 
           {/* Only about the pictures. A clip reaches the product page through
