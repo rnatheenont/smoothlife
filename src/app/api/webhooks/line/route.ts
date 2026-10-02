@@ -43,7 +43,7 @@ export const dynamic = "force-dynamic";
 // still runs on this function's clock.
 export const maxDuration = 60;
 
-type LineSource = { type: string; userId?: string };
+type LineSource = { type: string; userId?: string; groupId?: string; roomId?: string };
 type LineEvent = {
   type: string;
   webhookEventId?: string;
@@ -387,9 +387,32 @@ const WELCOME =
   "ถ้าอยากคุยกับทีมงานตัวจริง พิมพ์ว่า “ขอคุยกับแอดมิน” ได้เลยค่ะ\n\n" +
   "เมนูด้านล่างเปิดร้านค้า แต้มสะสม และติดตามพัสดุได้ทันทีค่ะ";
 
+/** Notes a group the OA has been added to, so the alert settings can offer it
+ *  as a destination. Never throws: failing to write this down must not stop
+ *  the webhook from answering the events that matter. */
+async function rememberLineGroup(groupId: string, kind: "group" | "room") {
+  await supabaseRest("line_groups?on_conflict=group_id", {
+    method: "POST",
+    returning: false,
+    headers: { Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify({ group_id: groupId, kind, last_seen_at: new Date().toISOString() }),
+  }).catch((err) => console.error("[line] could not record group", err));
+}
+
 async function handleEvent(event: LineEvent) {
   // Only one-to-one chats. The OA can be invited into a group, and a bot
   // answering every message in someone's group chat is not a feature.
+  //
+  // One exception, and it is silent: a group id exists nowhere in the LINE
+  // app — it is only ever in this payload — so the staff alert settings have
+  // no way to offer "send it to our team group" unless something writes the
+  // id down when it goes past. This does that and then stops.
+  const groupId = event.source?.groupId ?? event.source?.roomId;
+  if (groupId) {
+    await rememberLineGroup(groupId, event.source?.roomId ? "room" : "group");
+    return;
+  }
+
   const lineUserId = event.source?.type === "user" ? event.source.userId : undefined;
   if (!lineUserId) return;
   if (alreadyHandled(event.webhookEventId)) return;

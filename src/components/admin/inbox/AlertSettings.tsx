@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { Loader2, BellRing, Check, X, Send } from "lucide-react";
 import { Button } from "@/components/ui";
@@ -15,10 +16,12 @@ import { Button } from "@/components/ui";
 // behind it looks exactly like a working one until the day it matters.
 
 type Settings = { alertEmail: string; lineTo: string; waitingMinutes: number };
+type LineGroup = { group_id: string; kind: string; last_seen_at: string };
 
 export default function AlertSettings({ onClose }: { onClose: () => void }) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [channels, setChannels] = useState<{ email: boolean; line: boolean }>({ email: false, line: false });
+  const [lineGroups, setLineGroups] = useState<LineGroup[]>([]);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState("");
@@ -35,6 +38,7 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
         }
         setSettings(d.settings);
         setChannels(d.channels);
+        setLineGroups(d.lineGroups ?? []);
       })
       .catch(() => setError("โหลดการตั้งค่าไม่สำเร็จ"));
   }, []);
@@ -145,6 +149,37 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
                 placeholder="Cxxxxxxxx… (กลุ่ม) หรือ Uxxxxxxxx… (คน)"
                 className="rounded-lg border border-slate-200 px-2.5 py-2 font-mono outline-hidden focus:border-brand-teal"
               />
+              {/* A group id is nowhere in the LINE app — it only ever appears
+                  in a webhook payload. These are the groups the OA has been
+                  added to, so this field can be filled by pointing rather
+                  than by finding a 33-character string that is not shown
+                  anywhere. */}
+              {lineGroups.length > 0 ? (
+                <span className="flex flex-wrap items-center gap-1 pt-0.5">
+                  <span className="text-[11px] text-slate-500">กลุ่มที่บอทอยู่:</span>
+                  {lineGroups.map((g) => (
+                    <button
+                      key={g.group_id}
+                      type="button"
+                      onClick={() => setSettings({ ...settings, lineTo: g.group_id })}
+                      className={clsx(
+                        "rounded-full px-2 py-0.5 font-mono text-[10px] ring-1 transition-colors",
+                        settings.lineTo === g.group_id
+                          ? "bg-brand-50 text-brand-800 ring-brand-200"
+                          : "bg-white text-slate-600 ring-slate-200 hover:bg-surface-soft",
+                      )}
+                    >
+                      {g.kind === "room" ? "ห้องแชท" : "กลุ่ม"} …{g.group_id.slice(-6)}
+                    </button>
+                  ))}
+                </span>
+              ) : (
+                <span className="pt-0.5 text-[11px] leading-relaxed text-slate-500">
+                  ยังไม่เคยเห็นกลุ่มไหนเลย — เชิญ OA ของร้านเข้ากลุ่มทีมงาน แล้วพิมพ์
+                  อะไรก็ได้ในกลุ่มหนึ่งครั้ง จากนั้นกดเปิดหน้านี้ใหม่ กลุ่มจะมาขึ้นให้เลือกตรงนี้
+                  (บอทไม่ตอบอะไรในกลุ่ม แค่จำรหัสกลุ่มไว้)
+                </span>
+              )}
             </label>
 
             <label className="flex flex-col gap-1">

@@ -18,9 +18,17 @@ export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "not configured" }, { status: 503 });
 
   const settings = await getInboxAlertSettings();
+  // The groups the OA has been added to. A group id is not visible anywhere
+  // in LINE, so offering the ones we have seen is the only way somebody can
+  // fill this field without guessing.
+  const groups = await supabaseRest<{ group_id: string; kind: string; last_seen_at: string }[]>(
+    "line_groups?select=group_id,kind,last_seen_at&order=last_seen_at.desc&limit=20"
+  ).catch((): { group_id: string; kind: string; last_seen_at: string }[] => []);
+
   return NextResponse.json({
     ok: true,
     settings,
+    lineGroups: groups,
     defaultWaitingMinutes: DEFAULT_WAITING_MINUTES,
     channels: { email: emailConfigured(), line: linePushConfigured() },
   });
