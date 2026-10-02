@@ -3,16 +3,27 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import NextImage from "next/image";
 import { Alert, Button, Chip, ToggleButton, ToggleButtonGroup } from "@heroui/react";
-import { ChevronLeft, ChevronRight, ImagePlus, Loader2, RefreshCw, Star, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ImagePlus,
+  Link2,
+  Loader2,
+  RefreshCw,
+  Star,
+  Video,
+  X,
+} from "lucide-react";
 import { resizeProductImage } from "@/lib/image-utils";
 import {
   MAX_IMAGES,
   resolveProductImages,
   type UploadedImage,
 } from "@/lib/product-images";
+import { parseVideoUrl } from "@/lib/product-content";
 import type { Product } from "@/data/types";
 
-// The one place an admin puts our own photographs on a product.
+// The one place an admin puts our own photographs and clips on a product.
 //
 // Two separate things live here and the card keeps them visibly separate,
 // because confusing them is the only way to take a product's pictures down by
@@ -30,6 +41,16 @@ import type { Product } from "@/data/types";
 // uploaded" reads "showing Shopify's" — which is the truth — instead of the
 // admin's intention.
 //
+// Pictures and videos travel separately all the way down, including in the
+// database. A video in the picture list would eventually reach an <Image>, the
+// link preview and Google's product listing — three places that would show a
+// broken thumbnail rather than refuse it.
+//
+// Videos are also the one thing here the browser does not send through our own
+// server: a route on Vercel may receive about 4.5 MB and a clip is many times
+// that, so the file goes straight to storage with a one-shot ticket (see
+// createVideoUploadTicket). A pasted link uploads nothing at all.
+//
 // resolveProductImages comes from a module that also talks to Supabase. Only
 // the pure function is referenced here, so the rest is tree-shaken out, the
 // same way this editor already imports isBlockComplete from product-content.ts
@@ -42,10 +63,13 @@ type Props = {
 };
 
 const ACCEPT = ["image/jpeg", "image/png", "image/webp"];
+const VIDEO_ACCEPT = ["video/mp4", "video/webm", "video/quicktime"];
+const MAX_VIDEOS = 10;
 
-export default function ProductImagesCard({ variantId, product }: Props) {
+export default function ProductMediaCard({ variantId, product }: Props) {
   const [useCustom, setUseCustom] = useState(false);
   const [images, setImages] = useState<UploadedImage[]>([]);
+  const [videos, setVideos] = useState<UploadedImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -53,16 +77,19 @@ export default function ProductImagesCard({ variantId, product }: Props) {
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [overZone, setOverZone] = useState(false);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
+  const [videoProgress, setVideoProgress] = useState<string | null>(null);
+  const [link, setLink] = useState("");
 
   const fileInput = useRef<HTMLInputElement | null>(null);
+  const videoInput = useRef<HTMLInputElement | null>(null);
   const dragFrom = useRef<number | null>(null);
-  const endpoint = `/api/admin/product-content/${encodeURIComponent(variantId)}/images`;
+  const endpoint = `/api/admin/product-content/${encodeURIComponent(variantId)}/media`;
 
   // What has actually been decided, as opposed to what the last render drew.
   // Deleting two thumbnails quickly is one click per render, and the second
   // click's handler was built from the list before the first one removed
   // anything — so without this, the second delete puts the first one back.
-  const latest = useRef({ useCustom, images });
+  const latest = useRef({ useCustom, images, videos });
   // And the writes themselves queue, so the row can never be left describing
   // the earlier of two overlapping saves.
   const queue = useRef<Promise<unknown>>(Promise.resolve());
@@ -77,10 +104,12 @@ export default function ProductImagesCard({ variantId, product }: Props) {
         const loaded = {
           useCustom: d.useCustom === true,
           images: Array.isArray(d.images) ? d.images : [],
+          videos: Array.isArray(d.videos) ? d.videos : [],
         };
         latest.current = loaded;
         setUseCustom(loaded.useCustom);
         setImages(loaded.images);
+        setVideos(loaded.videos);
       })
       .catch(() => {})
       .finally(() => alive && setLoading(false));
@@ -102,7 +131,7 @@ export default function ProductImagesCard({ variantId, product }: Props) {
    * Showing the new order and then failing silently would leave the card
    * describing a shop that does not look like that.
    */
-  type State = { useCustom: boolean; images: UploadedImage[] };
+  type State = { useCustom: boolean; images: UploadedImage[]; videos: UploadedImage[] };
 
   const apply = useCallback(
     (change: (cur: State) => State) => {
@@ -114,6 +143,7 @@ export default function ProductImagesCard({ variantId, product }: Props) {
       latest.current = next;
       setUseCustom(next.useCustom);
       setImages(next.images);
+      setVideos(next.videos);
       pending.current += 1;
       setSaving(true);
       setError(null);
@@ -126,13 +156,14 @@ export default function ProductImagesCard({ variantId, product }: Props) {
             body: JSON.stringify({ ...next, slug: product.slug }),
           });
           const data = await res.json().catch(() => null);
-          if (!data?.ok) throw new Error(data?.error || "บันทึกรูปไม่สำเร็จ");
+          if (!data?.ok) throw new Error(data?.error || "บันทึกไม่สำเร็จ");
           setSaved(true);
         } catch (err) {
           latest.current = prev;
           setUseCustom(prev.useCustom);
           setImages(prev.images);
-          setError(err instanceof Error ? err.message : "บันทึกรูปไม่สำเร็จ กรุณาลองใหม่");
+          setVideos(prev.videos);
+          setError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ กรุณาลองใหม่");
         } finally {
           pending.current -= 1;
           if (pending.current === 0) setSaving(false);
@@ -217,6 +248,96 @@ export default function ProductImagesCard({ variantId, product }: Props) {
     if (notes.length > 0) setError(notes.join(" · "));
   }
 
+  /**
+   * One clip, sent straight to storage.
+   *
+   * The ticket comes from our own route (so the service key stays there), and
+   * then the bytes go to Supabase without touching Vercel — the only way a
+   * file over about 4.5 MB can be uploaded at all from this page.
+   */
+  async function addVideoFile(file: File) {
+    if (videoProgress) return;
+    setError(null);
+    if (latest.current.videos.length >= MAX_VIDEOS) {
+      setError(`ใส่วิดีโอได้สูงสุด ${MAX_VIDEOS} คลิป — ลบคลิปเดิมออกก่อน`);
+      return;
+    }
+    if (!VIDEO_ACCEPT.includes(file.type)) {
+      setError("รองรับเฉพาะวิดีโอ MP4, WebM และ MOV");
+      return;
+    }
+
+    setVideoProgress(file.name);
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentType: file.type, size: file.size }),
+      });
+      const ticket = await res.json().catch(() => null);
+      if (!ticket?.ok) {
+        setError(ticket?.error || "เตรียมอัปโหลดวิดีโอไม่สำเร็จ");
+        return;
+      }
+      // Straight to storage: the address carries its own one-shot token and
+      // nothing of ours is sent with it.
+      const put = await fetch(ticket.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!put.ok) {
+        setError("อัปโหลดวิดีโอไม่สำเร็จ กรุณาลองใหม่");
+        return;
+      }
+      await apply((cur) => ({
+        ...cur,
+        videos: [...cur.videos, { url: ticket.url, path: ticket.path }].slice(0, MAX_VIDEOS),
+      }));
+    } catch {
+      setError("อัปโหลดวิดีโอไม่สำเร็จ กรุณาลองใหม่");
+    } finally {
+      setVideoProgress(null);
+    }
+  }
+
+  /** A pasted link, checked here first so a wrong one is refused in the field
+   *  rather than after a round trip — by the same function the page will play
+   *  it with, so the two cannot disagree about what is playable. */
+  async function addVideoLink() {
+    const url = link.trim();
+    if (!url) return;
+    setError(null);
+    if (latest.current.videos.length >= MAX_VIDEOS) {
+      setError(`ใส่วิดีโอได้สูงสุด ${MAX_VIDEOS} คลิป — ลบคลิปเดิมออกก่อน`);
+      return;
+    }
+    if (!parseVideoUrl(url)) {
+      setError("ลิงก์นี้เล่นไม่ได้ — รองรับ YouTube, Vimeo, Facebook, TikTok และ Instagram");
+      return;
+    }
+    if (latest.current.videos.some((v) => v.url === url)) {
+      setError("ลิงก์นี้ใส่ไว้แล้ว");
+      return;
+    }
+    setLink("");
+    await apply((cur) => ({ ...cur, videos: [...cur.videos, { url }] }));
+  }
+
+  function moveVideo(from: number, to: number) {
+    void apply((cur) => {
+      if (from === to || to < 0 || to >= cur.videos.length) return cur;
+      const next = [...cur.videos];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return { ...cur, videos: next };
+    });
+  }
+
+  function removeVideo(i: number) {
+    void apply((cur) => ({ ...cur, videos: cur.videos.filter((_, idx) => idx !== i) }));
+  }
+
   function move(from: number, to: number) {
     void apply((cur) => {
       if (from === to || from < 0 || to < 0 || from >= cur.images.length || to >= cur.images.length)
@@ -233,19 +354,28 @@ export default function ProductImagesCard({ variantId, product }: Props) {
   }
 
   const shopify = resolveProductImages(product, null).images;
-  const live = resolveProductImages(product, { variantId, slug: product.slug, useCustom, images });
+  const live = resolveProductImages(product, {
+    variantId,
+    slug: product.slug,
+    useCustom,
+    images,
+    videos,
+  });
+  // Only about the pictures: a clip is an extra, and a product with one and no
+  // photographs of its own is still showing Shopify's, correctly.
   const switchedOnButEmpty = useCustom && images.length === 0;
 
   return (
     <section className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-bold text-brand-ink">รูปภาพสินค้า</h2>
+        <h2 className="text-sm font-bold text-brand-ink">รูปภาพและวิดีโอสินค้า</h2>
         {!loading && (
           <Chip size="sm" color={live.source === "custom" ? "success" : "default"}>
             ตอนนี้เว็บแสดง:{" "}
             {live.source === "custom"
               ? `รูปของเรา (${live.images.length} รูป)`
               : `รูปจาก Shopify (${shopify.length} รูป)`}
+            {live.videos.length > 0 && ` + วิดีโอ ${live.videos.length} คลิป`}
           </Chip>
         )}
       </div>
@@ -459,6 +589,142 @@ export default function ProductImagesCard({ variantId, product }: Props) {
             </div>
           </div>
 
+          {/* Clips, under the pictures and never mixed into them: a video does
+              not belong on a product card, in a link preview or in Google's
+              listing, which is exactly where the picture list goes. */}
+          <div className="mt-4 border-t border-surface-line pt-4">
+            <h3 className="text-xs font-semibold text-slate-600">
+              วิดีโอ ({videos.length}/{MAX_VIDEOS} คลิป) — แสดงต่อจากรูปในแกลเลอรี
+            </h3>
+
+            <input
+              ref={videoInput}
+              type="file"
+              accept={VIDEO_ACCEPT.join(",")}
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void addVideoFile(file);
+              }}
+            />
+
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                isDisabled={videos.length >= MAX_VIDEOS || videoProgress !== null}
+                isPending={videoProgress !== null}
+                onPress={() => videoInput.current?.click()}
+              >
+                <Video size={15} /> อัปโหลดวิดีโอ
+              </Button>
+              <span className="text-xs text-slate-500">หรือ</span>
+              <div className="flex min-w-[260px] flex-1 items-center gap-2">
+                <span className="relative flex-1">
+                  <Link2
+                    size={14}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    type="url"
+                    value={link}
+                    onChange={(e) => setLink(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void addVideoLink();
+                      }
+                    }}
+                    placeholder="วางลิงก์ YouTube, TikTok, Facebook, IG, Vimeo"
+                    aria-label="ลิงก์วิดีโอ"
+                    className="w-full rounded-lg border border-surface-line bg-white py-1.5 pl-8 pr-3 text-sm text-brand-ink placeholder:text-slate-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-action"
+                  />
+                </span>
+                <Button
+                  size="sm"
+                  variant="tertiary"
+                  isDisabled={!link.trim() || videos.length >= MAX_VIDEOS}
+                  onPress={addVideoLink}
+                >
+                  เพิ่ม
+                </Button>
+              </div>
+            </div>
+
+            {videoProgress && (
+              <p className="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
+                <Loader2 size={15} className="animate-spin" />
+                กำลังอัปโหลด {videoProgress}…
+              </p>
+            )}
+
+            <p className="mt-2 text-xs text-slate-500">
+              MP4, WebM, MOV · ไม่เกิน 50MB ต่อคลิป · ไฟล์ส่งตรงเข้าคลัง
+              ไม่ผ่านเซิร์ฟเวอร์ จึงอัปไฟล์ใหญ่ได้
+            </p>
+
+            {videos.length > 0 && (
+              <ul className="mt-3 space-y-2">
+                {videos.map((v, i) => {
+                  const parsed = parseVideoUrl(v.url);
+                  return (
+                    <li
+                      key={v.url}
+                      className="flex items-center gap-2 rounded-xl bg-surface-soft px-2 py-2 ring-1 ring-surface-line"
+                    >
+                      <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-black">
+                        {parsed?.kind === "file" ? (
+                          // The browser draws the first frame itself, so there
+                          // is no poster to generate and store.
+                          <video
+                            src={`${v.url}#t=0.1`}
+                            preload="metadata"
+                            muted
+                            playsInline
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <Video size={16} className="text-white/80" aria-hidden="true" />
+                        )}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <a
+                          href={v.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block truncate text-xs text-slate-600 hover:text-brand-800"
+                        >
+                          {v.path ? "ไฟล์ของเรา" : (parsed?.kind ?? "ลิงก์")} · {v.url}
+                        </a>
+                      </span>
+                      <ThumbButton
+                        label="เลื่อนขึ้น"
+                        disabled={i === 0}
+                        onClick={() => moveVideo(i, i - 1)}
+                      >
+                        <ChevronLeft size={13} className="-rotate-90" />
+                      </ThumbButton>
+                      <ThumbButton
+                        label="เลื่อนลง"
+                        disabled={i === videos.length - 1}
+                        onClick={() => moveVideo(i, i + 1)}
+                      >
+                        <ChevronRight size={13} className="-rotate-90" />
+                      </ThumbButton>
+                      <ThumbButton label="ลบคลิปนี้" onClick={() => removeVideo(i)}>
+                        <X size={13} />
+                      </ThumbButton>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* Only about the pictures. A clip reaches the product page through
+              the server on the next request, and reaches nowhere else. */}
           {images.length > 0 && <RebuildNotice />}
         </>
       )}

@@ -23,8 +23,9 @@ export const MAX_IMAGES = 10;
 
 export type UploadedImage = {
   url: string;
-  /** Where it lives in storage, kept so it can be deleted later. */
-  path: string;
+  /** Where it lives in storage, kept so it can be deleted later. Absent on a
+   *  video that was pasted as a link — there is nothing of ours to delete. */
+  path?: string;
 };
 
 export type ImageOverride = {
@@ -32,12 +33,20 @@ export type ImageOverride = {
   slug: string | null;
   useCustom: boolean;
   images: UploadedImage[];
+  /** Clips, either uploaded to our storage or pasted as a link to YouTube and
+   *  the rest. parseVideoUrl in product-content.ts decides which, at the point
+   *  of playing it, so this list is just the addresses. */
+  videos: UploadedImage[];
 };
 
 export type ResolvedImages = {
   image: string;
   image2?: string;
   images: string[];
+  /** Clips to show after the photographs. Shopify has no equivalent, so this
+   *  is empty unless the switch is on — and a product with only a video
+   *  keeps Shopify's photographs, which is what `source` will say. */
+  videos: string[];
   /** Which set is actually on screen. The admin's status chip reads this
    *  rather than guessing from the switch, which is not the same question. */
   source: "custom" | "shopify";
@@ -48,6 +57,7 @@ type Row = {
   slug: string | null;
   use_custom: boolean;
   images: UploadedImage[] | null;
+  videos: UploadedImage[] | null;
 };
 
 const rowToOverride = (r: Row): ImageOverride => ({
@@ -55,6 +65,7 @@ const rowToOverride = (r: Row): ImageOverride => ({
   slug: r.slug,
   useCustom: r.use_custom,
   images: Array.isArray(r.images) ? r.images.filter((i) => i?.url) : [],
+  videos: Array.isArray(r.videos) ? r.videos.filter((v) => v?.url) : [],
 });
 
 /**
@@ -68,6 +79,7 @@ export function resolveProductImages(
   product: Pick<Product, "image" | "image2" | "images">,
   override?: ImageOverride | null,
 ): ResolvedImages {
+  const videos = override?.useCustom ? override.videos.map((v) => v.url) : [];
   const custom = override?.useCustom ? override.images : [];
   if (custom.length > 0) {
     const urls = custom.map((i) => i.url);
@@ -75,6 +87,7 @@ export function resolveProductImages(
       image: urls[0],
       image2: urls[1],
       images: urls,
+      videos,
       source: "custom",
     };
   }
@@ -86,6 +99,7 @@ export function resolveProductImages(
     image: product.image,
     image2: product.image2,
     images: shopify,
+    videos,
     source: "shopify",
   };
 }
@@ -94,7 +108,7 @@ export function resolveProductImages(
  *  actually using their own images, which is a short list. */
 export async function getImageOverrideMap(): Promise<Map<string, ImageOverride>> {
   const rows = await supabaseRestCached<Row[]>(
-    "product_image_overrides?use_custom=is.true&select=variant_id,slug,use_custom,images",
+    "product_image_overrides?use_custom=is.true&select=variant_id,slug,use_custom,images,videos",
     { revalidate: 3600, tags: [IMAGES_TAG] },
   ).catch((): Row[] => []);
   return new Map(rows.map((r) => [r.variant_id, rowToOverride(r)]));
@@ -142,6 +156,25 @@ export async function withCustomImagesOne<T extends ProductImageFields>(product:
   return out;
 }
 
+/**
+ * The clips for one product, for the gallery on its own page.
+ *
+ * Kept out of `withCustomImages` because a video must never travel inside
+ * `Product.images` — that field reaches <Image>, the OG picture and the
+ * generated catalogue, none of which would survive an .mp4. The product page
+ * asks for these separately and passes them as their own prop.
+ */
+export async function customVideosFor(
+  product: Pick<Product, "variantId" | "variants">,
+): Promise<string[]> {
+  const map = await getImageOverrideMap();
+  if (map.size === 0) return [];
+  return resolveProductImages(
+    { image: "", image2: undefined, images: [] },
+    overrideFor(product, map),
+  ).videos;
+}
+
 type ProductImageFields = Pick<
   Product,
   "image" | "image2" | "images" | "variantId" | "variants"
@@ -158,7 +191,7 @@ function overlay<T extends ProductImageFields>(product: T, override: ImageOverri
 export async function getImageOverride(variantId: string): Promise<ImageOverride | null> {
   const [row] = await supabaseRest<Row[]>(
     `product_image_overrides?variant_id=eq.${pgValue(variantId)}` +
-      "&select=variant_id,slug,use_custom,images&limit=1",
+      "&select=variant_id,slug,use_custom,images,videos&limit=1",
   ).catch((): Row[] => []);
   return row ? rowToOverride(row) : null;
 }

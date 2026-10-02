@@ -47,16 +47,19 @@ const STATUS_LABEL: Record<
   },
 };
 
-type ImageStatus = { useCustom: boolean; count: number };
+type ImageStatus = { useCustom: boolean; count: number; videoCount: number };
 
 /** What the shop is showing for this product, by the same rule the shop uses:
  *  our pictures only when the switch is on *and* there is at least one. */
 function imageLabel(s: ImageStatus | undefined) {
+  // Clips only play when the switch is on, so they are counted as live by the
+  // same test the pictures are and simply added to whichever label wins.
+  const clips = s?.useCustom && s.videoCount > 0 ? ` +${s.videoCount} วิดีโอ` : "";
   if (s?.useCustom && s.count > 0)
-    return { text: `ของเรา (${s.count})`, className: "text-emerald-700 bg-emerald-50" };
+    return { text: `ของเรา (${s.count})${clips}`, className: "text-emerald-700 bg-emerald-50" };
   if (s && s.count > 0)
     return { text: `อัปไว้ ${s.count} — ยังไม่เปิด`, className: "text-amber-700 bg-amber-50" };
-  return { text: "Shopify", className: "text-slate-500 bg-slate-50" };
+  return { text: `Shopify${clips}`, className: "text-slate-500 bg-slate-50" };
 }
 
 export default function ProductContentListPage() {
@@ -84,7 +87,11 @@ export default function ProductContentListPage() {
       .then((d) => {
         const map: Record<string, ImageStatus> = {};
         for (const row of d?.items ?? [])
-          map[row.variantId] = { useCustom: row.useCustom, count: row.count };
+          map[row.variantId] = {
+            useCustom: row.useCustom,
+            count: row.count,
+            videoCount: row.videoCount ?? 0,
+          };
         setImageStatus(map);
       })
       .catch(() => {});
@@ -140,7 +147,11 @@ export default function ProductContentListPage() {
   const q = query.trim().toLowerCase();
   const filtered = inBrand.filter((r) => {
     if (filter !== "all" && r.status !== filter) return false;
-    if (customImagesOnly && !(r.images?.useCustom && r.images.count > 0)) return false;
+    if (
+      customImagesOnly &&
+      !(r.images?.useCustom && (r.images.count > 0 || r.images.videoCount > 0))
+    )
+      return false;
     if (!q) return true;
     return (
       r.product.name.toLowerCase().includes(q) ||
@@ -150,7 +161,7 @@ export default function ProductContentListPage() {
   const shown = filtered.slice(0, 200);
 
   const customImageCount = inBrand.filter(
-    (r) => r.images?.useCustom && r.images.count > 0,
+    (r) => r.images?.useCustom && (r.images.count > 0 || r.images.videoCount > 0),
   ).length;
 
   const counts = inBrand.reduce(

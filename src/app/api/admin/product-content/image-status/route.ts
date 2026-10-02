@@ -15,7 +15,12 @@ import type { UploadedImage } from "@/lib/product-images";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Row = { variant_id: string; use_custom: boolean; images: UploadedImage[] | null };
+type Row = {
+  variant_id: string;
+  use_custom: boolean;
+  images: UploadedImage[] | null;
+  videos: UploadedImage[] | null;
+};
 
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
@@ -24,7 +29,7 @@ export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: true, items: [] });
 
   const rows = await supabaseRest<Row[]>(
-    "product_image_overrides?select=variant_id,use_custom,images",
+    "product_image_overrides?select=variant_id,use_custom,images,videos",
   ).catch((): Row[] => []);
 
   return NextResponse.json({
@@ -33,6 +38,7 @@ export async function GET(req: NextRequest) {
       variantId: r.variant_id,
       useCustom: r.use_custom,
       count: Array.isArray(r.images) ? r.images.filter((i) => i?.url).length : 0,
+      videoCount: Array.isArray(r.videos) ? r.videos.filter((v) => v?.url).length : 0,
     })),
   });
 }

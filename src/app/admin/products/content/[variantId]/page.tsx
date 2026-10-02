@@ -18,7 +18,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui";
-import ProductImagesCard from "@/components/admin/products/ProductImagesCard";
+import ProductMediaCard from "@/components/admin/products/ProductMediaCard";
 import { products } from "@/data/products";
 import {
   BLOCK_TYPES,
@@ -240,7 +240,7 @@ export default function ProductContentEditPage() {
       {/* Pictures before words: it is the first thing anyone wants to fix, and
           it saves on its own — nothing below's draft/publish buttons touch it. */}
       <div className="mt-5">
-        <ProductImagesCard variantId={variantId} product={product} />
+        <ProductMediaCard variantId={variantId} product={product} />
       </div>
 
       {loading ? (

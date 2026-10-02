@@ -15,6 +15,7 @@ import {
   Star,
   MessageCircleQuestion,
   Expand,
+  Play,
   X,
   ChevronLeft,
   ChevronRight,
@@ -22,7 +23,11 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Product } from "@/data/types";
-import type { ContentBlock } from "@/lib/product-content";
+import {
+  parseVideoUrl,
+  type ContentBlock,
+  type VideoSource,
+} from "@/lib/product-content";
 import ProductContentBlocks from "@/components/product/ProductContentBlocks";
 import type { ReviewRow } from "@/app/api/reviews/route";
 import type { QuestionRow } from "@/app/api/product-questions/route";
@@ -57,6 +62,69 @@ const BASE_TABS = [
 // thousand product pages would be a thousand small disappointments.
 const CONTENT_TAB = { id: "written", label: "รายละเอียดเพิ่มเติม" };
 
+// One thing in the gallery. A photograph is a URL; a clip also carries what
+// parseVideoUrl worked out about it, so nothing downstream has to parse the
+// same link twice to decide between a <video> and a player frame.
+type Slide =
+  | { kind: "image"; src: string }
+  | { kind: "video"; src: string; video: VideoSource };
+
+/** A clip, playing where a photograph would be. `object-contain` rather than
+ *  cover: a portrait TikTok cropped to the gallery's square would lose the
+ *  top and bottom of whatever it is showing. */
+function VideoSlide({ video, title }: { video: VideoSource; title: string }) {
+  if (video.kind === "file") {
+    return (
+      <video
+        src={video.src}
+        controls
+        playsInline
+        // metadata, not auto: a product page should not pull a video down a
+        // phone's data plan before anyone presses play.
+        preload="metadata"
+        className="absolute inset-0 h-full w-full bg-black object-contain"
+      />
+    );
+  }
+  return (
+    <iframe
+      src={video.src}
+      title={title}
+      loading="lazy"
+      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen; web-share"
+      allowFullScreen
+      className="absolute inset-0 h-full w-full border-0 bg-black"
+    />
+  );
+}
+
+/** The thumbnail for a clip. Our own file draws its own first frame, which is
+ *  free and always matches; an embedded player has no frame to borrow, so it
+ *  gets a play mark on black rather than a blank square. */
+function VideoThumb({ video }: { video: VideoSource }) {
+  return (
+    <span className="absolute inset-0 grid place-items-center bg-black">
+      {video.kind === "file" && (
+        <video
+          // The fragment asks for a frame slightly in, which is what makes
+          // Safari paint one instead of leaving the poster area black.
+          src={`${video.src}#t=0.1`}
+          preload="metadata"
+          muted
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+      <span
+        aria-hidden="true"
+        className="relative grid h-7 w-7 place-items-center rounded-full bg-black/55 text-white ring-1 ring-white/40"
+      >
+        <Play size={12} fill="currentColor" />
+      </span>
+    </span>
+  );
+}
+
 export default function ProductDetailInteractive({
   product,
   related,
@@ -65,6 +133,7 @@ export default function ProductDetailInteractive({
   subscriptionBillingEnabled = false,
   subscribable = false,
   contentBlocks = null,
+  videos = [],
 }: {
   product: Product;
   related: Product[];
@@ -74,6 +143,10 @@ export default function ProductDetailInteractive({
   subscribable?: boolean;
   /** Published, hand-written copy for this product — null for most of them. */
   contentBlocks?: ContentBlock[] | null;
+  /** Clips an admin added, shown after the photographs. Addresses only — what
+   *  each one is and how to play it is parseVideoUrl's answer, same as in the
+   *  written content blocks. */
+  videos?: string[];
 }) {
   // Written content opens the page where somebody has written it. The tab that
   // used to sit here assembled the same ground out of catalogue fields
@@ -85,6 +158,20 @@ export default function ProductDetailInteractive({
     product.images && product.images.length > 0
       ? product.images
       : ([product.image, product.image2].filter(Boolean) as string[]);
+  // The gallery is pictures and then clips, in one list, because that is what
+  // the dots, the arrows and a swipe all move through. `images` stays a list
+  // of photographs on its own — it is what the variant jump below matches
+  // against, and the only thing that can go in an <Image>.
+  const slides: Slide[] = [
+    ...images.map((src) => ({ kind: "image" as const, src })),
+    ...videos
+      .map((url) => ({ url, video: parseVideoUrl(url) }))
+      // A link the shop cannot play is left out rather than shown as an empty
+      // frame; the editor refuses to save one, so this is for a player that
+      // was dropped from the allowlist after the fact.
+      .filter((v) => v.video !== null)
+      .map((v) => ({ kind: "video" as const, src: v.url, video: v.video! })),
+  ];
   const [activeIndex, setActiveIndex] = useState(0);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState(tabs[0].id);
@@ -101,15 +188,15 @@ export default function ProductDetailInteractive({
   const { user } = useAuth();
   const { setOpen: setChatOpen } = useQuickChat();
   const router = useRouter();
-  const activeImage = images[activeIndex] || images[0];
+  const activeSlide = slides[activeIndex] || slides[0];
   const touchStartX = useRef<number | null>(null);
   const [zoomOpen, setZoomOpen] = useState(false);
 
   function showPrev() {
-    setActiveIndex((i) => (i - 1 + images.length) % images.length);
+    setActiveIndex((i) => (i - 1 + slides.length) % slides.length);
   }
   function showNext() {
-    setActiveIndex((i) => (i + 1) % images.length);
+    setActiveIndex((i) => (i + 1) % slides.length);
   }
   function onImageTouchStart(e: React.TouchEvent) {
     touchStartX.current = e.touches[0].clientX;
@@ -388,48 +475,62 @@ export default function ProductDetailInteractive({
           {/* A button, not a div with a click handler, so the zoom is
               reachable from a keyboard and announced. The photo sits
               contained on the mist well like every card that led here. */}
-          <button
-            type="button"
-            aria-label="ขยายรูปสินค้า"
-            className="relative block aspect-square w-full cursor-zoom-in select-none overflow-hidden rounded-xl2 bg-white touch-pan-y focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
-            onTouchStart={onImageTouchStart}
-            onTouchEnd={onImageTouchEnd}
-            onClick={() => setZoomOpen(true)}
-          >
-            <Image
-              src={activeImage}
-              alt={product.name}
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
-              priority
-            />
-            <span
-              aria-hidden="true"
-              className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-brand-ink ring-1 ring-surface-line"
+          {activeSlide?.kind === "video" ? (
+            // A clip is its own controls, so it is not wrapped in the zoom
+            // button — a tap has to reach play, not open a lightbox. The dots
+            // move outside it for the same reason.
+            <div className="relative aspect-square w-full overflow-hidden rounded-xl2 bg-black">
+              <VideoSlide video={activeSlide.video} title={product.name} />
+            </div>
+          ) : (
+            <button
+              type="button"
+              aria-label="ขยายรูปสินค้า"
+              className="relative block aspect-square w-full cursor-zoom-in select-none overflow-hidden rounded-xl2 bg-white touch-pan-y focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
+              onTouchStart={onImageTouchStart}
+              onTouchEnd={onImageTouchEnd}
+              onClick={() => setZoomOpen(true)}
             >
-              <Expand size={16} />
-            </span>
-            {images.length > 1 && (
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
-                {images.map((img, i) => (
-                  <span
-                    key={img}
-                    className={`h-1.5 rounded-full transition shadow-[0_0_0_1px_rgba(0,0,0,0.15)] ${
-                      i === activeIndex ? "w-4 bg-white" : "w-1.5 bg-white/70"
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-          </button>
-          {images.length > 1 && (
+              <Image
+                src={activeSlide?.src ?? product.image}
+                alt={product.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover"
+                priority
+              />
+              <span
+                aria-hidden="true"
+                className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-brand-ink ring-1 ring-surface-line"
+              >
+                <Expand size={16} />
+              </span>
+            </button>
+          )}
+          {slides.length > 1 && (
+            <div
+              aria-hidden="true"
+              className="mt-2 flex items-center justify-center gap-1.5"
+            >
+              {slides.map((slide, i) => (
+                <span
+                  key={slide.src}
+                  className={`h-1.5 rounded-full transition ${
+                    i === activeIndex ? "w-4 bg-brand-800" : "w-1.5 bg-surface-line"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+          {slides.length > 1 && (
             <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-none">
-              {images.map((img, i) => (
+              {slides.map((slide, i) => (
                 <button
-                  key={img}
+                  key={slide.src}
                   onClick={() => setActiveIndex(i)}
-                  aria-label={`ดูรูปที่ ${i + 1}`}
+                  aria-label={
+                    slide.kind === "video" ? `ดูวิดีโอที่ ${i + 1}` : `ดูรูปที่ ${i + 1}`
+                  }
                   aria-current={i === activeIndex}
                   className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-white ${
                     i === activeIndex
@@ -437,13 +538,17 @@ export default function ProductDetailInteractive({
                       : "border-transparent hover:border-surface-line"
                   }`}
                 >
-                  <Image
-                    src={img}
-                    alt=""
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
+                  {slide.kind === "video" ? (
+                    <VideoThumb video={slide.video} />
+                  ) : (
+                    <Image
+                      src={slide.src}
+                      alt=""
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
+                  )}
                 </button>
               ))}
             </div>
@@ -1143,9 +1248,9 @@ export default function ProductDetailInteractive({
       {zoomOpen && (
         <div className="fixed inset-0 z-110 bg-black/95 flex flex-col">
           <div className="flex items-center justify-between p-4 pt-[calc(1rem+env(safe-area-inset-top))] shrink-0">
-            {images.length > 1 ? (
+            {slides.length > 1 ? (
               <span className="text-sm text-white/70">
-                {activeIndex + 1} / {images.length}
+                {activeIndex + 1} / {slides.length}
               </span>
             ) : (
               <span />
@@ -1163,13 +1268,17 @@ export default function ProductDetailInteractive({
             onTouchStart={onImageTouchStart}
             onTouchEnd={onImageTouchEnd}
           >
-            <Image
-              src={activeImage}
-              alt={product.name}
-              fill
-              className="object-contain"
-            />
-            {images.length > 1 && (
+            {activeSlide?.kind === "video" ? (
+              <VideoSlide video={activeSlide.video} title={product.name} />
+            ) : (
+              <Image
+                src={activeSlide?.src ?? product.image}
+                alt={product.name}
+                fill
+                className="object-contain"
+              />
+            )}
+            {slides.length > 1 && (
               <>
                 <button
                   onClick={showPrev}
@@ -1188,13 +1297,13 @@ export default function ProductDetailInteractive({
               </>
             )}
           </div>
-          {images.length > 1 && (
+          {slides.length > 1 && (
             <div className="flex items-center justify-center gap-2 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shrink-0">
-              {images.map((img, i) => (
+              {slides.map((slide, i) => (
                 <button
-                  key={img}
+                  key={slide.src}
                   onClick={() => setActiveIndex(i)}
-                  aria-label={`ไปที่รูปที่ ${i + 1}`}
+                  aria-label={`ไปที่สื่อที่ ${i + 1}`}
                   className={`h-1.5 rounded-full transition ${i === activeIndex ? "w-5 bg-white" : "w-1.5 bg-white/40"}`}
                 />
               ))}

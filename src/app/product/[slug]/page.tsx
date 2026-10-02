@@ -20,7 +20,11 @@ import { productJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { canonicalSlugFor } from "@/lib/product-canonical";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import { getPublishedProductContent } from "@/lib/product-content";
-import { withCustomImages, withCustomImagesOne } from "@/lib/product-images";
+import {
+  customVideosFor,
+  withCustomImages,
+  withCustomImagesOne,
+} from "@/lib/product-images";
 
 // Pages render on first visit and are then served from the edge cache,
 // refreshed at most every five minutes — and at once when a review is
@@ -133,7 +137,7 @@ export default async function ProductPage(props: {
     found,
     ...getRelatedProducts(found, 4),
   ]);
-  const [reviews, questions, subscribable, contentBlocks] = await Promise.all([
+  const [reviews, questions, subscribable, contentBlocks, videos] = await Promise.all([
     getReviews(product.slug),
     getQuestions(product.slug),
     getSubscribable(product.slug),
@@ -146,6 +150,9 @@ export default async function ProductPage(props: {
         ...(product.variants?.map((v) => v.variantId) ?? []),
       ]),
     ]),
+    // Their own prop, not part of the product: Product.images is read by
+    // <Image>, the link preview and the JSON-LD, none of which can show a clip.
+    customVideosFor(product),
   ]);
   const categoryInfo = categories.find((c) => c.slug === product.category);
   const breadcrumbItems = [
@@ -184,6 +191,7 @@ export default async function ProductPage(props: {
         subscriptionBillingEnabled={subscriptionBillingConfigured()}
         subscribable={subscribable}
         contentBlocks={contentBlocks}
+        videos={videos}
       />
 
       {related.length > 0 && (
