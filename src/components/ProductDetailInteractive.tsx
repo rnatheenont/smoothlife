@@ -50,9 +50,13 @@ import { Button } from "@/components/ui";
 // live preview text.
 const REVIEW_MIN_TEXT_LENGTH = 20;
 
+// "เหมาะกับใครและวิธีใช้" used to be a tab of its own, printing the two
+// catalogue fields as they came. It is now written per product as content
+// blocks (who_for / how_to_use in product-content.ts), which land in the
+// "รายละเอียดเพิ่มเติม" tab — reviewed in both languages instead of whatever
+// the import happened to carry.
 const BASE_TABS = [
   { id: "reviews", label: "รีวิวและคำถาม" },
-  { id: "howto", label: "เหมาะกับใครและวิธีใช้" },
   { id: "compare", label: "เปรียบเทียบและทางเลือกอื่น" },
   { id: "delivery", label: "สต็อกและการจัดส่ง" },
 ];
@@ -908,20 +912,6 @@ export default function ProductDetailInteractive({
         </div>
 
         <div className="py-6 md:py-8">
-          {tab === "howto" && (
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="font-bold text-brand-ink mb-3">
-                  เหมาะสำหรับใคร
-                </h3>
-                <p className="text-sm text-slate-600">{product.whoFor}</p>
-              </div>
-              <div>
-                <h3 className="font-bold text-brand-ink mb-3">วิธีใช้</h3>
-                <p className="text-sm text-slate-600">{product.howToUse}</p>
-              </div>
-            </div>
-          )}
           {tab === "compare" && (
             <div>
               <h3 className="font-bold text-brand-ink mb-4">
