@@ -35,6 +35,15 @@ export function stableContentVariantId(
   }, product.variants[0]).variantId;
 }
 
+/**
+ * `hidden` is on every block: the shop writes a block, parks it, and keeps
+ * publishing the rest. Without it the only way to keep one block off the page
+ * was to unpublish the whole product or delete the words.
+ *
+ * A hidden block is not held to the both-languages rule either — see the
+ * publish check in the PUT route. Parking a half-written block is most of why
+ * it exists.
+ */
 export type ContentBlock =
   | {
       type: "paragraph";
@@ -43,6 +52,7 @@ export type ContentBlock =
       bodyTh: string;
       bodyEn: string;
       hasVerifiedSource?: boolean;
+      hidden?: boolean;
     }
   | {
       type: "bullet_list";
@@ -51,12 +61,14 @@ export type ContentBlock =
       itemsTh: string[];
       itemsEn: string[];
       hasVerifiedSource?: boolean;
+      hidden?: boolean;
     }
   | {
       type: "ingredients";
       itemsTh: string[];
       itemsEn: string[];
       hasVerifiedSource?: boolean;
+      hidden?: boolean;
     }
   | {
       // Both carry their own heading, the way "ingredients" does: a product
@@ -66,12 +78,14 @@ export type ContentBlock =
       itemsTh: string[];
       itemsEn: string[];
       hasVerifiedSource?: boolean;
+      hidden?: boolean;
     }
   | {
       type: "how_to_use";
       itemsTh: string[];
       itemsEn: string[];
       hasVerifiedSource?: boolean;
+      hidden?: boolean;
     }
   | {
       type: "image_text";
@@ -81,6 +95,7 @@ export type ContentBlock =
       bodyTh: string;
       bodyEn: string;
       hasVerifiedSource?: boolean;
+      hidden?: boolean;
     }
   | {
       type: "image";
@@ -88,6 +103,7 @@ export type ContentBlock =
       captionTh?: string;
       captionEn?: string;
       hasVerifiedSource?: boolean;
+      hidden?: boolean;
     }
   | {
       type: "video";
@@ -96,6 +112,7 @@ export type ContentBlock =
       captionTh?: string;
       captionEn?: string;
       hasVerifiedSource?: boolean;
+      hidden?: boolean;
     }
   | {
       type: "spec_table";
@@ -106,6 +123,7 @@ export type ContentBlock =
         valueEn: string;
       }[];
       hasVerifiedSource?: boolean;
+      hidden?: boolean;
     };
 
 export const BLOCK_TYPES: { key: ContentBlock["type"]; label: string }[] = [

@@ -16,6 +16,8 @@ import {
   ExternalLink,
   Sparkles,
   Upload,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import ProductMediaCard from "@/components/admin/products/ProductMediaCard";
@@ -197,8 +199,11 @@ export default function ProductContentEditPage() {
     );
   }
 
-  const incompleteCount = blocks.filter((b) => !isBlockComplete(b)).length;
-  const unverifiedCount = blocks.filter(
+  // Both counts ignore parked blocks: they are not on the page, so they cannot
+  // be wrong on it.
+  const shownBlocks = blocks.filter((b) => !b.hidden);
+  const incompleteCount = shownBlocks.filter((b) => !isBlockComplete(b)).length;
+  const unverifiedCount = shownBlocks.filter(
     (b) => b.hasVerifiedSource === false,
   ).length;
 
@@ -277,9 +282,18 @@ export default function ProductContentEditPage() {
                   ยังไม่มีเนื้อหา — เพิ่มบล็อกทางขวาได้เลย
                 </p>
               )}
-              {blocks.map((b, i) => (
-                <PreviewBlock key={i} block={b} lang={previewLang} />
-              ))}
+              {blocks.map((b, i) =>
+                b.hidden ? (
+                  <div key={i} className="mb-4 opacity-45 last:mb-0">
+                    <p className="mb-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                      <EyeOff size={11} /> ซ่อนจากลูกค้า
+                    </p>
+                    <PreviewBlock block={b} lang={previewLang} />
+                  </div>
+                ) : (
+                  <PreviewBlock key={i} block={b} lang={previewLang} />
+                ),
+              )}
             </div>
           </div>
 
@@ -507,11 +521,22 @@ function BlockEditor({
   const typeLabel =
     BLOCK_TYPES.find((t) => t.key === block.type)?.label ?? block.type;
 
+  const hidden = block.hidden === true;
+
   return (
-    <div className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
+    <div
+      className={`rounded-xl2 bg-white p-4 ring-1 ring-surface-line ${
+        hidden ? "opacity-60" : ""
+      }`}
+    >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
           {typeLabel}
+          {hidden && (
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-slate-500">
+              ซ่อนจากลูกค้า
+            </span>
+          )}
         </span>
         <div className="flex items-center gap-1">
           <label className="mr-2 flex items-center gap-1.5 text-xs text-slate-500">
@@ -539,6 +564,23 @@ function BlockEditor({
             {drafting ? "กำลังร่าง…" : "ช่วยร่าง"}
           </button>
           )}
+          <button
+            type="button"
+            onClick={() => onChange({ hidden: !hidden } as Partial<ContentBlock>)}
+            title={
+              hidden
+                ? "แสดงบล็อกนี้ในหน้าสินค้า"
+                : "ซ่อนบล็อกนี้ไม่ให้ลูกค้าเห็น (ยังเก็บไว้ที่นี่)"
+            }
+            aria-pressed={hidden}
+            className={`grid size-7 place-items-center rounded-full ${
+              hidden
+                ? "bg-slate-100 text-slate-600"
+                : "text-slate-400 hover:bg-surface-soft"
+            }`}
+          >
+            {hidden ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
           {onMoveUp && (
             <button
               type="button"

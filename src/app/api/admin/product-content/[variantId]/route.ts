@@ -59,6 +59,7 @@ function parseBlocks(value: unknown): ContentBlock[] | { error: string } {
     const strArr = (v: unknown, max: number) =>
       Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").map((x) => x.trim().slice(0, max)).slice(0, 50) : [];
     const hasVerifiedSource = Boolean(b.hasVerifiedSource);
+    const hidden = Boolean(b.hidden);
 
     switch (b.type) {
       case "paragraph":
@@ -70,6 +71,7 @@ function parseBlocks(value: unknown): ContentBlock[] | { error: string } {
           bodyTh: str(b.bodyTh, 5000),
           bodyEn: str(b.bodyEn, 5000),
           hasVerifiedSource,
+          hidden,
           ...(b.type === "image_text" ? { imageUrl: str(b.imageUrl, 1000) } : {}),
         } as ContentBlock;
         blocks.push(block);
@@ -87,6 +89,7 @@ function parseBlocks(value: unknown): ContentBlock[] | { error: string } {
           itemsTh: strArr(b.itemsTh, 300),
           itemsEn: strArr(b.itemsEn, 300),
           hasVerifiedSource,
+          hidden,
         } as ContentBlock;
         blocks.push(block);
         break;
@@ -100,6 +103,7 @@ function parseBlocks(value: unknown): ContentBlock[] | { error: string } {
           captionTh: str(b.captionTh, 300) || undefined,
           captionEn: str(b.captionEn, 300) || undefined,
           hasVerifiedSource,
+          hidden,
         } as ContentBlock);
         break;
       }
@@ -123,6 +127,7 @@ function parseBlocks(value: unknown): ContentBlock[] | { error: string } {
           captionTh: str(b.captionTh, 300) || undefined,
           captionEn: str(b.captionEn, 300) || undefined,
           hasVerifiedSource,
+          hidden,
         } as ContentBlock);
         break;
       }
@@ -137,7 +142,7 @@ function parseBlocks(value: unknown): ContentBlock[] | { error: string } {
             valueEn: str(row.valueEn, 300),
           };
         });
-        blocks.push({ type: "spec_table", rows, hasVerifiedSource } as ContentBlock);
+        blocks.push({ type: "spec_table", rows, hasVerifiedSource, hidden } as ContentBlock);
         break;
       }
       default:
@@ -170,7 +175,9 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ variantId
   // in progress, which is the one thing `published` exists to prevent.
   const published = Boolean(body.published);
   if (published) {
-    const incomplete = parsed.find((b) => !isBlockComplete(b));
+    // Only what the page will actually show: a parked block is allowed to be
+    // half-written, which is most of the point of parking it.
+    const incomplete = parsed.filter((b) => !b.hidden).find((b) => !isBlockComplete(b));
     if (incomplete) {
       return NextResponse.json(
         { ok: false, error: "มีบล็อกที่ยังเขียนไม่ครบทั้งไทย-อังกฤษ กรุณาเติมให้ครบก่อนเผยแพร่" },

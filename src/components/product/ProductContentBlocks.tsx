@@ -85,7 +85,8 @@ export default function ProductContentBlocks({
   const th = lang === "th";
   // A block written in one language only is skipped in the other rather than
   // shown with an empty body or, worse, its Thai under an English heading.
-  const shown = blocks.filter((b) => hasText(b, th));
+  // A hidden one is skipped in both: the shop parked it on purpose.
+  const shown = blocks.filter((b) => !b.hidden && hasText(b, th));
   if (shown.length === 0) return null;
 
   const heading = (thText?: string, enText?: string) => {
