@@ -5,13 +5,20 @@ import CustomerPanel, {
   type Customer,
   type Insight,
 } from "@/components/admin/inbox/CustomerPanel";
+import ChannelBadge from "@/components/admin/inbox/ChannelBadge";
+import CustomerAvatar from "@/components/admin/inbox/CustomerAvatar";
+import {
+  useInboxLayout,
+  ColumnResizer,
+  LIST_MIN,
+  LIST_MAX,
+  PANEL_MIN,
+  PANEL_MAX,
+} from "@/components/admin/inbox/layout";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Loader2,
   Send,
-  Globe,
-  MessageCircle,
-  Facebook,
   RefreshCw,
   CheckCheck,
   Sparkles,
@@ -26,6 +33,8 @@ import {
   Check,
   Inbox,
   ChevronLeft,
+  PanelRight,
+  PanelRightClose,
 } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
 import { Button } from "@/components/ui";
@@ -62,7 +71,6 @@ const STATUS_DOT: Record<string, string> = {
   assigned: "bg-sky-400",
   resolved: "bg-slate-300",
 };
-const CHANNEL_ICON: Record<string, typeof Globe> = { web: Globe, line: MessageCircle, facebook: Facebook };
 
 // "ทั้งหมด" leads, and is where the page opens. Landing on "รอตอบ" meant
 // starting on a tab that is empty whenever the team is on top of things, which
@@ -122,11 +130,6 @@ function withLinks(text: string) {
   return parts;
 }
 
-const CHANNEL_LABEL: Record<string, string> = {
-  web: "เว็บไซต์",
-  line: "LINE",
-  facebook: "Facebook",
-};
 
 function countFor(key: string, counts: Record<string, number>) {
   // "ทั้งหมด" fetches every thread, resolved included (see the API route), so
@@ -247,6 +250,7 @@ export default function AdminInboxPage() {
   const [discussedSlugs, setDiscussedSlugs] = useState<string[]>([]);
   const [viewedSlugs, setViewedSlugs] = useState<string[]>([]);
   const [urgency, setUrgency] = useState<"normal" | "urgent">("normal");
+  const { layout, setList, setPanel, togglePanel } = useInboxLayout();
   const [loadingThread, setLoadingThread] = useState(false);
   const [reply, setReply] = useState("");
   const [attachment, setAttachment] = useState<ResizedImage | null>(null);
@@ -615,8 +619,22 @@ export default function AdminInboxPage() {
         <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
           <Inbox size={20} className="text-brand-emerald" /> กล่องข้อความรวม
         </h1>
-        <span className="ml-auto flex items-center gap-1.5 text-[11px] text-slate-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> อัปเดตอัตโนมัติทุก 5 วินาที
+        <span className="ml-auto flex items-center gap-3">
+          <span className="flex items-center gap-1.5 text-[11px] text-slate-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> อัปเดตอัตโนมัติทุก 5 วินาที
+          </span>
+          {/* Reading a long thread is the one time the third column is in the
+              way rather than useful. Desktop only — below lg the panel is a
+              separate view already, not a column taking up room. */}
+          <button
+            onClick={togglePanel}
+            aria-pressed={layout.panelHidden}
+            title={layout.panelHidden ? "แสดงข้อมูลลูกค้า" : "ซ่อนข้อมูลลูกค้า"}
+            className="hidden items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition-colors hover:border-brand-200 hover:text-brand-800 lg:inline-flex"
+          >
+            {layout.panelHidden ? <PanelRight size={13} /> : <PanelRightClose size={13} />}
+            {layout.panelHidden ? "แสดงข้อมูลลูกค้า" : "ซ่อนข้อมูลลูกค้า"}
+          </button>
         </span>
       </div>
 
@@ -673,27 +691,44 @@ export default function AdminInboxPage() {
         })}
       </div>
 
-      {/* Wider list and customer panel, because both were being asked to hold
-          Thai product names and wrapped to three lines, while the thread in
-          the middle had room to set a reply in 150-character lines. */}
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)_minmax(0,300px)]">
+      {/* The two outer columns are dragged to whatever width the person using
+          them wants and remembered per browser (see ./layout). They started at
+          a fixed 320 and 300, which was a guess: a long Thai product name
+          wraps to three lines in the list, and on a wide monitor the thread in
+          the middle gets a measure nobody wants to read. Below lg the grid
+          collapses and the widths do not apply. */}
+      <div
+        className="grid min-h-0 flex-1 gap-3 lg:[grid-template-columns:var(--inbox-cols)]"
+        style={
+          {
+            "--inbox-cols": `minmax(0,${layout.list}px) minmax(0,1fr)${
+              layout.panelHidden ? "" : ` minmax(0,${layout.panel}px)`
+            }`,
+          } as React.CSSProperties
+        }
+      >
         {/* Three panes side by side is a desktop idea. On a phone they became
             three 200px boxes stacked down a 1,900px page, each with its own
             scrollbar — so below lg this behaves like every chat app: the list,
             and then the thread once you pick one, with a way back. */}
         <div
-          className={clsx(
-            "min-h-0 overflow-y-auto rounded-xl2 border border-slate-100 bg-white",
-            selectedId && "hidden lg:block",
-          )}
+          className={clsx("relative min-h-0", selectedId && "hidden lg:block")}
         >
+          <ColumnResizer
+            edge="right"
+            width={layout.list}
+            min={LIST_MIN}
+            max={LIST_MAX}
+            onResize={setList}
+            label="ปรับความกว้างรายการแชท"
+          />
+          <div className="h-full overflow-y-auto rounded-xl2 border border-slate-100 bg-white">
           {loadingList ? (
             <p className="p-4 text-xs text-slate-400">กำลังโหลด…</p>
           ) : visible.length === 0 ? (
             <p className="p-4 text-xs text-slate-400">ไม่มีบทสนทนาในหมวดนี้</p>
           ) : (
             visible.map((c) => {
-              const Icon = CHANNEL_ICON[c.channel] ?? Globe;
               return (
                 <button
                   key={c.id}
@@ -702,9 +737,14 @@ export default function AdminInboxPage() {
                     c.id === selectedId ? "bg-brand-gradient-soft" : "hover:bg-surface-soft"
                   }`}
                 >
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-2">
+                    <CustomerAvatar
+                      name={c.customerName}
+                      src={c.customerAvatar}
+                      seed={c.channel_user_id}
+                      size={30}
+                    />
                     <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[c.status] ?? "bg-slate-300"}`} />
-                    <Icon size={12} className="shrink-0 text-slate-400" />
                     <span
                       className={`truncate text-xs ${c.unread > 0 ? "font-bold text-brand-ink" : "font-semibold text-brand-ink"}`}
                     >
@@ -733,9 +773,7 @@ export default function AdminInboxPage() {
                     >
                       {c.origin === "escalation" ? "ส่งต่อจาก AI" : "แชทกับ AI"}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-                      {CHANNEL_LABEL[c.channel] ?? c.channel}
-                    </span>
+                    <ChannelBadge channel={c.channel} />
                     <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
                       {STATUS_LABEL[c.status] ?? c.status}
                     </span>
@@ -747,6 +785,7 @@ export default function AdminInboxPage() {
               );
             })
           )}
+          </div>
         </div>
 
         {/* thread */}
@@ -1144,10 +1183,22 @@ export default function AdminInboxPage() {
         {/* customer panel */}
         <div
           className={clsx(
-            "min-h-0 overflow-y-auto rounded-xl2 border border-slate-100 bg-white p-3",
+            "relative min-h-0",
             !selectedId && "hidden lg:block",
+            // Hidden only on desktop: below lg this is its own view, reached
+            // by picking a conversation, and there is no column to reclaim.
+            layout.panelHidden && "lg:hidden",
           )}
         >
+          <ColumnResizer
+            edge="left"
+            width={layout.panel}
+            min={PANEL_MIN}
+            max={PANEL_MAX}
+            onResize={setPanel}
+            label="ปรับความกว้างข้อมูลลูกค้า"
+          />
+          <div className="h-full overflow-y-auto rounded-xl2 border border-slate-100 bg-white p-3">
           {!selected ? (
             <p className="text-xs text-slate-400">—</p>
           ) : (
@@ -1164,6 +1215,7 @@ export default function AdminInboxPage() {
               onInsertProduct={insertProduct}
             />
           )}
+          </div>
         </div>
       </div>
     </div>
