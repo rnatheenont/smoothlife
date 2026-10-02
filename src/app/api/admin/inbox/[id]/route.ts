@@ -157,13 +157,22 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     }
   }
 
-  // Opening the thread is what "read" means here. Fire-and-forget: a failed
-  // marker should leave the badge up, never block the thread from loading.
-  supabaseRest(`conversations?id=eq.${pgValue(params.id)}`, {
-    method: "PATCH",
-    returning: false,
-    body: JSON.stringify({ staff_read_at: new Date().toISOString() }),
-  }).catch((err) => console.error("[admin/inbox] could not mark read", err));
+  // A person opening the thread is what "read" means here — not the screen
+  // refreshing itself. The inbox re-reads whatever is on screen every five
+  // seconds, and while that counted as reading, a case somebody left open on
+  // a second monitor could never show as unread to anyone: the customer wrote,
+  // the poll marked it read, and the badge stayed at zero. The poll asks with
+  // read=0; everything a person does leaves it off and still marks it.
+  //
+  // Fire-and-forget: a failed marker should leave the badge up, never block
+  // the thread from loading.
+  if (req.nextUrl.searchParams.get("read") !== "0") {
+    supabaseRest(`conversations?id=eq.${pgValue(params.id)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({ staff_read_at: new Date().toISOString() }),
+    }).catch((err) => console.error("[admin/inbox] could not mark read", err));
+  }
 
   return NextResponse.json({
     ok: true,

@@ -364,13 +364,15 @@ export default function AdminInboxPage() {
     setReply((current) => (current.trimEnd() ? `${current.trimEnd()}\n[[${slug}]]` : `[[${slug}]]`));
   }, []);
 
-  const loadThread = useCallback(async (id: string, silent = false) => {
+  /** `read` is whether this load counts as a person looking at the thread.
+   *  The five-second poll passes false — see the GET handler for why. */
+  const loadThread = useCallback(async (id: string, silent = false, read = true) => {
     if (!silent) {
       setLoadingThread(true);
       setError("");
     }
     try {
-      const res = await fetch(`/api/admin/inbox/${id}`);
+      const res = await fetch(`/api/admin/inbox/${id}${read ? "" : "?read=0"}`);
       const data = await res.json();
       setMessages(data.messages ?? []);
       setCustomer(data.customer ?? null);
@@ -564,7 +566,7 @@ export default function AdminInboxPage() {
     const tick = () => {
       if (document.hidden) return;
       loadList(true);
-      if (selectedId) loadThread(selectedId, true);
+      if (selectedId) loadThread(selectedId, true, false);
     };
     const id = window.setInterval(tick, 5000);
     // A tab that was hidden for a while is stale the moment it comes back.
