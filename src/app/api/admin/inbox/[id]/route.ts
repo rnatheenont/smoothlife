@@ -227,6 +227,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
 
   const body = await req.json().catch(() => ({}));
   const content = typeof body.content === "string" ? body.content.trim() : "";
+  // Set when staff confirmed (and possibly edited) a translation preview
+  // first — that exact text is what goes out, so this reply is never
+  // translated a second time independently of what staff actually approved.
+  const deliveredOverride = typeof body.deliveredOverride === "string" ? body.deliveredOverride.trim() : "";
   const imageBase64 = typeof body.image?.base64 === "string" ? body.image.base64 : "";
   const imageType = body.image?.mediaType === "image/png" ? "image/png" : "image/jpeg";
   // A photo on its own is a perfectly good reply — "does it look like this?"
@@ -281,7 +285,12 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   // Only when it differs — a staff member who already answered in their
   // language gets delivered verbatim.
   let delivered: string | null = null;
-  if (content) {
+  if (deliveredOverride) {
+    // Staff already saw this exact text in the preview panel and approved
+    // it — translating again here could silently produce something slightly
+    // different from what they confirmed.
+    delivered = deliveredOverride !== content ? deliveredOverride : null;
+  } else if (content) {
     // Read from chat_messages, not the inbox copy. Rows filed there as
     // "customer" include things the customer never typed — our own
     // "— เรื่องใหม่จากลูกค้า —" divider, and the request summary Smoothie writes

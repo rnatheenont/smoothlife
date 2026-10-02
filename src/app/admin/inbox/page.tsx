@@ -252,6 +252,13 @@ export default function AdminInboxPage() {
   const [attachment, setAttachment] = useState<ResizedImage | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
+  // A reply bound for a customer who doesn't write Thai goes through here
+  // first — staff see exactly what will land in the customer's language
+  // before it's irreversible, and can edit it right there.
+  const [checkingTranslation, setCheckingTranslation] = useState(false);
+  const [pendingTranslation, setPendingTranslation] = useState<{ original: string; translated: string } | null>(
+    null,
+  );
   const [translating, setTranslating] = useState<string | null>(null);
   // Answers already promoted into the knowledge base in this session, so the
   // button says so instead of quietly making a second draft of the same thing.
@@ -406,10 +413,12 @@ export default function AdminInboxPage() {
     }
   }
 
-  async function send() {
-    if (!selectedId || (!reply.trim() && !attachment)) return;
-    const text = reply.trim();
-    const image = attachment;
+  // The actual send. `deliveredOverride` is what staff saw and approved in
+  // the translation preview — passing it tells the server "this exact text,
+  // don't translate again", so what staff confirmed is word-for-word what
+  // goes out, not a second independent translation of the same reply.
+  async function doSend(text: string, image: ResizedImage | null, deliveredOverride?: string) {
+    if (!selectedId) return;
     setSending(true);
     setError("");
     // Shown before the round trip. The reload afterwards used to blank the
@@ -428,6 +437,7 @@ export default function AdminInboxPage() {
     ]);
     setReply("");
     setAttachment(null);
+    setPendingTranslation(null);
     try {
       const res = await fetch(`/api/admin/inbox/${selectedId}`, {
         method: "POST",
@@ -435,6 +445,7 @@ export default function AdminInboxPage() {
         body: JSON.stringify({
           content: text,
           image: image ? { base64: image.base64, mediaType: image.mediaType } : undefined,
+          deliveredOverride,
         }),
       });
       const data = await res.json();
@@ -453,6 +464,39 @@ export default function AdminInboxPage() {
     } finally {
       setSending(false);
     }
+  }
+
+  // What the "ส่ง" button and Enter actually call. A reply with no text (a
+  // photo on its own) or one already confirmed in the preview panel sends
+  // straight away; anything else is checked first in case it needs
+  // translating, so staff see that before it reaches the customer, not after.
+  async function send() {
+    if (!selectedId || (!reply.trim() && !attachment)) return;
+    const text = reply.trim();
+    const image = attachment;
+    if (!text) return doSend(text, image);
+    setCheckingTranslation(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/inbox/${selectedId}/preview-translate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: text }),
+      });
+      const data = await res.json();
+      if (data.ok && data.translated) {
+        // Held for confirmation — see the panel in the composer below.
+        setPendingTranslation({ original: text, translated: data.translated });
+        return;
+      }
+    } catch {
+      // A failed check must never block a reply: fall through and send as
+      // typed. The server translates again on the way out regardless, so
+      // nothing here was the only chance to get it right.
+    } finally {
+      setCheckingTranslation(false);
+    }
+    await doSend(text, image);
   }
 
   async function draftWithAi() {
@@ -982,6 +1026,40 @@ export default function AdminInboxPage() {
                   </div>
                 )}
 
+                {pendingTranslation && (
+                  <div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5">
+                    <p className="text-[10px] font-semibold text-amber-800">
+                      ลูกค้าคุยเป็นภาษาอื่น — นี่คือข้อความที่จะส่งไปจริง ๆ (แก้ไขได้ก่อนส่ง)
+                    </p>
+                    <p className="mt-1.5 text-[10px] text-slate-500">ที่พิมพ์ไว้: {pendingTranslation.original}</p>
+                    <textarea
+                      value={pendingTranslation.translated}
+                      onChange={(e) =>
+                        setPendingTranslation((p) => (p ? { ...p, translated: e.target.value } : p))
+                      }
+                      rows={2}
+                      className="mt-1.5 w-full resize-none rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-xs outline-hidden focus:border-brand-teal"
+                    />
+                    <div className="mt-1.5 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPendingTranslation(null)}
+                        className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:bg-white"
+                      >
+                        แก้ไขคำตอบเอง
+                      </button>
+                      <Button
+                        size="none"
+                        className="rounded-full px-3 py-1 text-[11px]"
+                        disabled={sending || !pendingTranslation.translated.trim()}
+                        onClick={() => doSend(pendingTranslation.original, attachment, pendingTranslation.translated)}
+                      >
+                        ส่งข้อความนี้
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {attachment && (
                   <div className="mb-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-surface-soft p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1039,17 +1117,22 @@ export default function AdminInboxPage() {
                         void send();
                       }
                     }}
+                    disabled={!!pendingTranslation}
                     rows={2}
                     placeholder="พิมพ์คำตอบ…"
-                    className="min-w-0 flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs outline-hidden focus:border-brand-teal"
+                    className="min-w-0 flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs outline-hidden focus:border-brand-teal disabled:bg-surface-soft disabled:text-slate-400"
                   />
                   <Button
                     size="none"
                     className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-lg p-0"
                     onClick={send}
-                    disabled={sending || (!reply.trim() && !attachment)}
+                    disabled={sending || checkingTranslation || !!pendingTranslation || (!reply.trim() && !attachment)}
                   >
-                    {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                    {sending || checkingTranslation ? (
+                      <Loader2 size={15} className="animate-spin" />
+                    ) : (
+                      <Send size={15} />
+                    )}
                   </Button>
                 </div>
                 <p className="mt-1.5 text-[10px] text-slate-400">Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่</p>
