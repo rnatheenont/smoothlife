@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   const contentType = file.type === "image/png" ? "image/png" : file.type === "image/webp" ? "image/webp" : "image/jpeg";
 
   try {
-    const url = await uploadPublicImage({
+    const { url } = await uploadPublicImage({
       folder: "flash-sale-hero",
       bytes: await file.arrayBuffer(),
       contentType,

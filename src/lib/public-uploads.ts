@@ -40,7 +40,7 @@ export async function uploadPublicImage(opts: {
   folder: string;
   bytes: ArrayBuffer;
   contentType: string;
-}): Promise<string> {
+}): Promise<{ url: string; path: string }> {
   const ext = ALLOWED_TYPES[opts.contentType];
   if (!ext) throw new Error(`unsupported content type: ${opts.contentType}`);
   const path = `${opts.folder}/${crypto.randomUUID()}.${ext}`;
@@ -50,11 +50,19 @@ export async function uploadPublicImage(opts: {
       Authorization: `Bearer ${serviceKey()}`,
       "Content-Type": opts.contentType,
       "x-upsert": "false",
+      // A year. The name is a uuid, so a given URL can never point at
+      // different bytes — and these are served at full size with no image
+      // optimiser in front of them (next.config sets images.unoptimized),
+      // which makes the browser cache the only thing between a product page
+      // and a fresh download of every photograph.
+      "Cache-Control": "public, max-age=31536000, immutable",
     },
     body: opts.bytes,
   });
   if (!res.ok) {
     throw new Error(`storage upload failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
   }
-  return `${storageBase()}/storage/v1/object/public/${BUCKET}/${path}`;
+  // The path comes back too: a caller that replaces an image needs to know
+  // which object to delete later, and a URL is a poor handle for that.
+  return { url: `${storageBase()}/storage/v1/object/public/${BUCKET}/${path}`, path };
 }

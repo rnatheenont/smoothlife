@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     file.type === "image/png" ? "image/png" : file.type === "image/webp" ? "image/webp" : "image/jpeg";
 
   try {
-    const url = await uploadPublicImage({ folder: "campaign-steps", bytes: await file.arrayBuffer(), contentType });
+    const { url } = await uploadPublicImage({ folder: "campaign-steps", bytes: await file.arrayBuffer(), contentType });
     return NextResponse.json({ ok: true, url });
   } catch (err) {
     console.error("[receipts/upload-image] upload failed", err);
