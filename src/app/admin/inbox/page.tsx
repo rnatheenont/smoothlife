@@ -35,6 +35,7 @@ import {
   Check,
   Inbox,
   ChevronLeft,
+  ArrowUpRight,
   PanelRight,
   PanelRightClose,
   BellRing,
@@ -73,6 +74,14 @@ const STATUS_DOT: Record<string, string> = {
   waiting_human: "bg-amber-400",
   assigned: "bg-sky-400",
   resolved: "bg-slate-300",
+};
+// The same four states as a stripe down the edge of a row. Stronger than the
+// dot was: it is read at a glance down a column, not looked at.
+const STATUS_STRIPE: Record<string, string> = {
+  ai_handling: "bg-emerald-500",
+  waiting_human: "bg-amber-500",
+  assigned: "bg-sky-500",
+  resolved: "bg-transparent",
 };
 
 // "ทั้งหมด" leads, and is where the page opens. Landing on "รอตอบ" meant
@@ -771,65 +780,70 @@ export default function AdminInboxPage() {
                 <button
                   key={c.id}
                   onClick={() => select(c.id)}
-                  // Two lines, not five. Each row carried the name, three
-                  // pills, two lines of preview and the time on separate
-                  // rows — about 110px, so four conversations filled the
-                  // column and finding one meant scrolling. What a row has to
-                  // answer is who, when and what about; everything else earns
-                  // its space or goes.
-                  className={`flex w-full items-start gap-2 border-b border-slate-100 px-3 py-2.5 text-left ${
+                  // Each thing a row has to say gets a place of its own: the
+                  // state is the stripe, the channel is the badge on the
+                  // avatar, the name is the name, and the second line is all
+                  // preview. It used to be a chip plus whatever preview fitted
+                  // after it — and since nearly every conversation here arrives
+                  // from the assistant, that chip was on every row, pushing the
+                  // one thing that differs between them off the end of the line.
+                  className={`relative flex w-full items-start gap-2.5 border-b border-slate-100 py-2.5 pe-3 ps-4 text-left ${
                     c.id === selectedId ? "bg-brand-gradient-soft" : "hover:bg-surface-soft"
                   }`}
                 >
-                  <CustomerAvatar
-                    name={c.customerName}
-                    src={c.customerAvatar}
-                    seed={c.channel_user_id}
-                    size={30}
+                  <span
+                    aria-hidden
+                    title={STATUS_LABEL[c.status] ?? c.status}
+                    className={`absolute inset-y-0 start-0 w-[3px] ${STATUS_STRIPE[c.status] ?? "bg-transparent"}`}
                   />
+                  <span className="relative shrink-0">
+                    <CustomerAvatar
+                      name={c.customerName}
+                      src={c.customerAvatar}
+                      seed={c.channel_user_id}
+                      size={32}
+                    />
+                    {/* On the avatar, the way every chat app says which app a
+                        message came through. */}
+                    <ChannelBadge
+                      channel={c.channel}
+                      compact
+                      className="absolute -bottom-0.5 -end-0.5 ring-2 ring-white"
+                    />
+                  </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="flex min-w-0 items-center gap-1.5">
+                      {c.origin === "escalation" && (
+                        // A mark, not a pill: it is on nearly every row, so it
+                        // has to cost almost nothing. The tooltip is what makes
+                        // it legible the first time someone wonders.
+                        <span title="ส่งต่อจาก AI" aria-label="ส่งต่อจาก AI" className="shrink-0">
+                          <ArrowUpRight size={13} aria-hidden className="text-amber-500" />
+                        </span>
+                      )}
                       <span
-                        title={STATUS_LABEL[c.status] ?? c.status}
-                        className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[c.status] ?? "bg-slate-300"}`}
-                      />
-                      <span
-                        className={`min-w-0 truncate text-xs ${c.unread > 0 ? "font-bold text-brand-ink" : "font-semibold text-brand-ink"}`}
+                        className={`min-w-0 truncate text-[13px] ${c.unread > 0 ? "font-bold text-brand-ink" : "font-semibold text-brand-ink"}`}
                       >
                         {c.customerName || c.channel_user_id.slice(0, 12)}
                       </span>
-                      {c.unread > 0 ? (
+                      {c.urgency === "urgent" && (
+                        <span className="shrink-0 rounded-full bg-rose-50 px-1.5 text-[10px] font-semibold text-rose-500">
+                          ด่วน
+                        </span>
+                      )}
+                      {c.unread > 0 && (
                         <span className="shrink-0 rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
                           {c.unread}
                         </span>
-                      ) : (
-                        c.urgency === "urgent" && (
-                          <span className="shrink-0 rounded-full bg-rose-50 px-1.5 text-[10px] font-semibold text-rose-500">
-                            ด่วน
-                          </span>
-                        )
                       )}
-                      {/* Icon only: the colour is what gets scanned — "the
-                          LINE ones" — and the word cost a line of its own. */}
-                      <ChannelBadge channel={c.channel} compact className="ml-auto" />
-                      <span className="shrink-0 text-[10px] text-slate-500">
+                      <span className="ms-auto shrink-0 text-[10px] text-slate-500">
                         {sinceLabel(c.last_message_at)}
                       </span>
                     </span>
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      {/* Only when it is one. A case Smoothie could not answer
-                          is worth a flag; "แชทกับ AI" was on almost every row,
-                          which is a label that tells you nothing — and the
-                          status pill beside it only repeated the dot and the
-                          tab already filtering the list. */}
-                      {c.origin === "escalation" && (
-                        <span className="shrink-0 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
-                          ส่งต่อจาก AI
-                        </span>
-                      )}
-                      <span className="min-w-0 truncate text-[11px] text-slate-500">
-                        {c.preview || c.subject || "—"}
-                      </span>
+                    {/* The whole line: the only part of a row that says what
+                        this conversation is actually about. */}
+                    <span className="min-w-0 truncate text-xs text-slate-500">
+                      {c.preview || c.subject || "—"}
                     </span>
                   </span>
                 </button>
