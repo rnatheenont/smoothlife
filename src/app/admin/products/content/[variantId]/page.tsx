@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import RichTextArea from "@/components/admin/RichTextArea";
+import { renderRichText } from "@/lib/rich-text";
 import {
   ArrowLeft,
   Plus,
@@ -466,23 +468,15 @@ function BlockEditor({
               />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <textarea
+              <RichTextArea
                 value={block.bodyTh}
-                onChange={(e) =>
-                  onChange({ bodyTh: e.target.value } as Partial<ContentBlock>)
-                }
-                rows={4}
+                onChange={(v) => onChange({ bodyTh: v } as Partial<ContentBlock>)}
                 placeholder="เนื้อหา (ไทย)"
-                className={fieldClass()}
               />
-              <textarea
+              <RichTextArea
                 value={block.bodyEn}
-                onChange={(e) =>
-                  onChange({ bodyEn: e.target.value } as Partial<ContentBlock>)
-                }
-                rows={4}
+                onChange={(v) => onChange({ bodyEn: v } as Partial<ContentBlock>)}
                 placeholder="Content (English)"
-                className={fieldClass()}
               />
             </div>
           </>
@@ -641,9 +635,9 @@ function PreviewBlock({
               {pick(block.headingTh ?? "", block.headingEn ?? "")}
             </p>
           )}
-          <p className="whitespace-pre-line text-sm text-slate-600">
-            {pick(block.bodyTh, block.bodyEn) || "—"}
-          </p>
+          <div className="text-sm text-slate-600">
+            {renderRichText(pick(block.bodyTh, block.bodyEn)) ?? "—"}
+          </div>
         </div>
       );
     case "image_text":
@@ -664,9 +658,9 @@ function PreviewBlock({
               {pick(block.headingTh ?? "", block.headingEn ?? "")}
             </p>
           )}
-          <p className="whitespace-pre-line text-sm text-slate-600">
-            {pick(block.bodyTh, block.bodyEn) || "—"}
-          </p>
+          <div className="text-sm text-slate-600">
+            {renderRichText(pick(block.bodyTh, block.bodyEn)) ?? "—"}
+          </div>
         </div>
       );
     case "bullet_list":

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useLang } from "@/lib/lang-context";
 import type { ContentBlock } from "@/lib/product-content";
+import { renderRichText } from "@/lib/rich-text";
 
 // The product copy the shop writes itself, rendered from its blocks.
 //
@@ -55,9 +56,9 @@ export default function ProductContentBlocks({
             return (
               <section key={i}>
                 {heading(block.headingTh, block.headingEn)}
-                <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600">
-                  {th ? block.bodyTh : block.bodyEn}
-                </p>
+                <div className="text-sm leading-relaxed text-slate-600">
+                  {renderRichText(th ? block.bodyTh : block.bodyEn)}
+                </div>
               </section>
             );
           case "bullet_list":
@@ -117,9 +118,9 @@ export default function ProductContentBlocks({
                 )}
                 <div>
                   {heading(block.headingTh, block.headingEn)}
-                  <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600">
-                    {th ? block.bodyTh : block.bodyEn}
-                  </p>
+                  <div className="text-sm leading-relaxed text-slate-600">
+                    {renderRichText(th ? block.bodyTh : block.bodyEn)}
+                  </div>
                 </div>
               </section>
             );
