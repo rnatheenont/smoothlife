@@ -68,6 +68,21 @@ export type ContentBlock =
       hasVerifiedSource?: boolean;
     }
   | {
+      type: "image";
+      imageUrl: string;
+      captionTh?: string;
+      captionEn?: string;
+      hasVerifiedSource?: boolean;
+    }
+  | {
+      type: "video";
+      videoUrl: string;
+      posterUrl?: string;
+      captionTh?: string;
+      captionEn?: string;
+      hasVerifiedSource?: boolean;
+    }
+  | {
       type: "spec_table";
       rows: {
         labelTh: string;
@@ -84,7 +99,77 @@ export const BLOCK_TYPES: { key: ContentBlock["type"]; label: string }[] = [
   { key: "ingredients", label: "ส่วนผสม" },
   { key: "image_text", label: "รูปภาพ + คำอธิบาย" },
   { key: "spec_table", label: "ตารางสเปค" },
+  { key: "image", label: "รูปภาพ" },
+  { key: "video", label: "วิดีโอ" },
 ];
+
+// ---------------------------------------------------------------------------
+// Video links.
+//
+// A "video" block holds whatever link an admin pasted; this is the one place
+// that decides what that link actually plays, so the editor's preview and the
+// product page cannot disagree about it. Anything unrecognised returns null
+// and is treated as "not filled in yet" rather than dropped into an <iframe>
+// unseen — the src of a frame on our own origin is not a field to be lax
+// about, and the allowlist here is what keeps it to the three players the CSP
+// in next.config.mjs permits.
+
+export type VideoSource =
+  | { kind: "youtube"; src: string }
+  | { kind: "vimeo"; src: string }
+  | { kind: "file"; src: string };
+
+const YOUTUBE_ID = /^[\w-]{6,20}$/;
+
+export function parseVideoUrl(value: string): VideoSource | null {
+  let url: URL;
+  try {
+    url = new URL(value.trim());
+  } catch {
+    return null;
+  }
+  // http:// would be blocked as mixed content anyway, and a javascript: or
+  // data: link must never reach an iframe src.
+  if (url.protocol !== "https:") return null;
+  const host = url.hostname.replace(/^www\.|^m\./, "");
+  const parts = url.pathname.split("/").filter(Boolean);
+
+  if (host === "youtu.be" || host === "youtube.com" || host === "youtube-nocookie.com") {
+    const id =
+      host === "youtu.be"
+        ? parts[0]
+        : parts[0] === "watch"
+          ? url.searchParams.get("v") || ""
+          : ["embed", "shorts", "live", "v"].includes(parts[0] ?? "")
+            ? parts[1]
+            : "";
+    if (!id || !YOUTUBE_ID.test(id)) return null;
+    // -nocookie: the same player without the ad/profile cookies a product page
+    // has no business setting on a visitor who never pressed play.
+    return { kind: "youtube", src: `https://www.youtube-nocookie.com/embed/${id}?rel=0` };
+  }
+
+  if (host === "vimeo.com" || host === "player.vimeo.com") {
+    const id = (parts[0] === "video" ? parts[1] : parts[0]) ?? "";
+    if (!/^\d{6,12}$/.test(id)) return null;
+    return { kind: "vimeo", src: `https://player.vimeo.com/video/${id}` };
+  }
+
+  // A file served from somewhere we control — a Shopify CDN video, our own
+  // storage bucket. Plays in a <video> tag, no third-party player involved.
+  // Restricted to those hosts for the same reason the pictures are (IMAGE_HOSTS
+  // in the save route) and to match media-src in next.config.mjs: a file from
+  // a host nobody here controls is one that can be swapped for something else
+  // after the page was approved.
+  const ourHost =
+    host === "cdn.shopify.com" ||
+    host === "smoothlife.com" ||
+    url.hostname.endsWith(".supabase.co");
+  if (ourHost && /\.(mp4|webm|mov)$/i.test(url.pathname)) {
+    return { kind: "file", src: url.toString() };
+  }
+  return null;
+}
 
 export type ProductContentOverride = {
   id: string;
@@ -146,6 +231,14 @@ export function isBlockComplete(block: ContentBlock): boolean {
         block.rows.length > 0 &&
         block.rows.every((r) => r.labelTh.trim() && r.labelEn.trim())
       );
+    // Media carries itself: a photo or a clip is as complete in Thai as it is
+    // in English, so the both-languages rule the text blocks live by would
+    // only block publishing over an optional caption. The link is the thing
+    // that has to be there.
+    case "image":
+      return Boolean(block.imageUrl.trim());
+    case "video":
+      return parseVideoUrl(block.videoUrl) !== null;
   }
 }
 

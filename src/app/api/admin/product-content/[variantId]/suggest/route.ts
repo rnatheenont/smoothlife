@@ -48,8 +48,11 @@ const SYSTEM = `คุณช่วยทีมงาน Smoothlife.com ร่า
 
 ตอบกลับเป็น JSON เท่านั้น ไม่มีข้อความอื่นประกอบ`;
 
-/** The JSON each kind of block expects back, described for the model. */
-const SHAPES: Record<ContentBlock["type"], string> = {
+/** The JSON each kind of block expects back, described for the model.
+ *  Partial on purpose: a block with nothing to write — a picture, a video —
+ *  has no entry, and the route refuses to draft it rather than inventing a
+ *  caption for a file the model has never seen. */
+const SHAPES: Partial<Record<ContentBlock["type"], string>> = {
   paragraph: `{"headingTh":"หัวข้อสั้น","headingEn":"short heading","bodyTh":"2-4 ประโยค","bodyEn":"2-4 sentences"}`,
   bullet_list: `{"headingTh":"หัวข้อสั้น","headingEn":"short heading","itemsTh":["ข้อ 1","ข้อ 2"],"itemsEn":["point 1","point 2"]}`,
   ingredients: `{"itemsTh":["ชื่อส่วนผสม 1","ชื่อส่วนผสม 2"],"itemsEn":["ingredient 1","ingredient 2"]}`,
@@ -57,7 +60,7 @@ const SHAPES: Record<ContentBlock["type"], string> = {
   spec_table: `{"rows":[{"labelTh":"หัวข้อ","labelEn":"label","valueTh":"ค่า","valueEn":"value"}]}`,
 };
 
-const GUIDANCE: Record<ContentBlock["type"], string> = {
+const GUIDANCE: Partial<Record<ContentBlock["type"], string>> = {
   paragraph: "ย่อหน้าอธิบายว่าสินค้านี้คืออะไรและช่วยดูแลเรื่องอะไร",
   bullet_list: "รายการจุดเด่นหรือประโยชน์ ข้อละบรรทัด สั้น ๆ",
   ingredients:
@@ -114,6 +117,13 @@ export async function POST(
       { ok: false, error: "ไม่รู้จักชนิดบล็อกนี้" },
       { status: 400 },
     );
+  const shape = SHAPES[type];
+  const guidance = GUIDANCE[type];
+  if (!shape || !guidance)
+    return NextResponse.json(
+      { ok: false, error: "บล็อกนี้ร่างด้วย AI ไม่ได้" },
+      { status: 400 },
+    );
 
   const context = contextFor(variantId);
   if (!context)
@@ -142,8 +152,8 @@ export async function POST(
             role: "user",
             content: [
               `ข้อมูลสินค้าที่มีอยู่จริง (ใช้ได้เฉพาะเท่านี้):\n${context.text}`,
-              `\nบล็อกที่ต้องร่าง: ${GUIDANCE[type]}`,
-              `\nรูปแบบ JSON ที่ต้องตอบ:\n${SHAPES[type]}`,
+              `\nบล็อกที่ต้องร่าง: ${guidance}`,
+              `\nรูปแบบ JSON ที่ต้องตอบ:\n${shape}`,
               `\nถ้าข้อมูลข้างบนไม่พอ ตอบ {"insufficient":true}`,
             ].join("\n"),
           },

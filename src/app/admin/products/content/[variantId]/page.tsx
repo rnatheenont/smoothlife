@@ -15,12 +15,14 @@ import {
   AlertTriangle,
   ExternalLink,
   Sparkles,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { products } from "@/data/products";
 import {
   BLOCK_TYPES,
   isBlockComplete,
+  parseVideoUrl,
   type ContentBlock,
 } from "@/lib/product-content";
 
@@ -42,6 +44,10 @@ function emptyBlock(type: ContentBlock["type"]): ContentBlock {
       return { type, itemsTh: [], itemsEn: [] };
     case "spec_table":
       return { type, rows: [] };
+    case "image":
+      return { type, imageUrl: "" };
+    case "video":
+      return { type, videoUrl: "" };
   }
 }
 
@@ -352,6 +358,85 @@ function fieldClass() {
   return "w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal";
 }
 
+/** Nothing for the assistant to write: a picture and a clip are links somebody
+ *  has to choose, and a caption for a file it cannot see would be invention. */
+const DRAFTABLE = (t: ContentBlock["type"]) => t !== "image" && t !== "video";
+
+/**
+ * A picture: paste a link, or choose a file and let the upload produce one.
+ * The field stays editable either way — the upload is the convenience, not the
+ * only route, and the same URL rules apply to both (see IMAGE_HOSTS in the PUT
+ * route, which is what actually decides).
+ */
+function ImageField({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+  placeholder: string;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function upload(file: File) {
+    setBusy(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("image", file);
+      const res = await fetch("/api/admin/product-content/upload-image", {
+        method: "POST",
+        body: form,
+      });
+      const data = await res.json().catch(() => null);
+      if (!data?.ok) {
+        setError(data?.error || "อัปโหลดไม่สำเร็จ");
+        return;
+      }
+      onChange(data.url);
+    } catch {
+      setError("อัปโหลดไม่สำเร็จ");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex gap-2">
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={fieldClass()}
+        />
+        <label
+          className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-600 hover:border-brand-teal hover:text-brand-800 ${
+            busy ? "pointer-events-none opacity-50" : ""
+          }`}
+        >
+          <Upload size={13} />
+          {busy ? "กำลังอัปโหลด…" : "อัปโหลด"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              // Cleared so choosing the same file again still fires onChange.
+              e.target.value = "";
+              if (file) upload(file);
+            }}
+          />
+        </label>
+      </div>
+      {error && <p className="text-xs text-rose-500">{error}</p>}
+    </div>
+  );
+}
+
 function BlockEditor({
   block,
   onChange,
@@ -392,6 +477,7 @@ function BlockEditor({
             />
             มีแหล่งอ้างอิงแล้ว
           </label>
+          {DRAFTABLE(block.type) && (
           <button
             type="button"
             onClick={onDraft}
@@ -402,6 +488,7 @@ function BlockEditor({
             <Sparkles size={13} />
             {drafting ? "กำลังร่าง…" : "ช่วยร่าง"}
           </button>
+          )}
           {onMoveUp && (
             <button
               type="button"
@@ -529,6 +616,84 @@ function BlockEditor({
                 }
                 rows={5}
                 placeholder={"Items (English) — one per line"}
+                className={fieldClass()}
+              />
+            </div>
+          </>
+        )}
+
+        {block.type === "image" && (
+          <>
+            <ImageField
+              value={block.imageUrl}
+              onChange={(url) =>
+                onChange({ imageUrl: url } as Partial<ContentBlock>)
+              }
+              placeholder="ลิงก์รูปภาพ (https://...) หรือกดอัปโหลด"
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input
+                value={block.captionTh ?? ""}
+                onChange={(e) =>
+                  onChange({ captionTh: e.target.value } as Partial<ContentBlock>)
+                }
+                placeholder="คำบรรยายใต้รูป (ไทย) — ไม่บังคับ"
+                className={fieldClass()}
+              />
+              <input
+                value={block.captionEn ?? ""}
+                onChange={(e) =>
+                  onChange({ captionEn: e.target.value } as Partial<ContentBlock>)
+                }
+                placeholder="Caption (English) — optional"
+                className={fieldClass()}
+              />
+            </div>
+          </>
+        )}
+
+        {block.type === "video" && (
+          <>
+            <input
+              value={block.videoUrl}
+              onChange={(e) =>
+                onChange({ videoUrl: e.target.value } as Partial<ContentBlock>)
+              }
+              placeholder="ลิงก์วิดีโอ — YouTube, Vimeo หรือไฟล์ .mp4"
+              className={fieldClass()}
+            />
+            {/* Said here rather than at save time: the admin is looking at the
+                field they just pasted into, and the message names the one
+                thing to change. */}
+            {block.videoUrl.trim() && !parseVideoUrl(block.videoUrl) && (
+              <p className="flex items-start gap-1.5 text-xs text-rose-500">
+                <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                ลิงก์นี้ยังเล่นไม่ได้ — ใช้ลิงก์ YouTube, Vimeo
+                หรือไฟล์ .mp4 จาก Shopify / smoothlife.com
+              </p>
+            )}
+            <ImageField
+              value={block.posterUrl ?? ""}
+              onChange={(url) =>
+                onChange({ posterUrl: url } as Partial<ContentBlock>)
+              }
+              placeholder="รูปปกก่อนกดเล่น — ไม่บังคับ (ใช้กับไฟล์วิดีโอ)"
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input
+                value={block.captionTh ?? ""}
+                onChange={(e) =>
+                  onChange({ captionTh: e.target.value } as Partial<ContentBlock>)
+                }
+                placeholder="คำบรรยายใต้วิดีโอ (ไทย) — ไม่บังคับ"
+                className={fieldClass()}
+              />
+              <input
+                value={block.captionEn ?? ""}
+                onChange={(e) =>
+                  onChange({ captionEn: e.target.value } as Partial<ContentBlock>)
+                }
+                placeholder="Caption (English) — optional"
                 className={fieldClass()}
               />
             </div>
@@ -663,6 +828,61 @@ function PreviewBlock({
           </div>
         </div>
       );
+    case "image":
+      return (
+        <div className="mb-4 last:mb-0">
+          {block.imageUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={block.imageUrl}
+              alt=""
+              className="w-full rounded-lg bg-surface-soft"
+            />
+          ) : (
+            <p className="text-sm text-slate-400">— ยังไม่ได้ใส่รูป</p>
+          )}
+          {pick(block.captionTh ?? "", block.captionEn ?? "") && (
+            <p className="mt-1 text-xs text-slate-500">
+              {pick(block.captionTh ?? "", block.captionEn ?? "")}
+            </p>
+          )}
+        </div>
+      );
+    case "video": {
+      const video = parseVideoUrl(block.videoUrl);
+      return (
+        <div className="mb-4 last:mb-0">
+          {video ? (
+            <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+              {video.kind === "file" ? (
+                <video
+                  src={video.src}
+                  poster={block.posterUrl || undefined}
+                  controls
+                  preload="metadata"
+                  className="h-full w-full"
+                />
+              ) : (
+                <iframe
+                  src={video.src}
+                  title="ตัวอย่างวิดีโอ"
+                  loading="lazy"
+                  allowFullScreen
+                  className="absolute inset-0 h-full w-full border-0"
+                />
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-400">— ยังไม่ได้ใส่ลิงก์วิดีโอ</p>
+          )}
+          {pick(block.captionTh ?? "", block.captionEn ?? "") && (
+            <p className="mt-1 text-xs text-slate-500">
+              {pick(block.captionTh ?? "", block.captionEn ?? "")}
+            </p>
+          )}
+        </div>
+      );
+    }
     case "bullet_list":
     case "ingredients": {
       const items = lang === "th" ? block.itemsTh : block.itemsEn;

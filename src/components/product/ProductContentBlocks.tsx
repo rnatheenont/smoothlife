@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
-import type { ContentBlock } from "@/lib/product-content";
+import { parseVideoUrl, type ContentBlock } from "@/lib/product-content";
 import { renderRichText } from "@/lib/rich-text";
 
 // The product copy the shop writes itself, rendered from its blocks.
@@ -24,7 +25,45 @@ function hasText(block: ContentBlock, th: boolean): boolean {
       return (th ? block.itemsTh : block.itemsEn).some((i) => i.trim());
     case "spec_table":
       return block.rows.some((r) => (th ? r.valueTh : r.valueEn).trim());
+    // A picture and a clip say the same thing in both languages — the caption
+    // under them is optional, so neither is hidden for want of one.
+    case "image":
+      return Boolean(block.imageUrl.trim());
+    case "video":
+      return parseVideoUrl(block.videoUrl) !== null;
   }
+}
+
+/**
+ * A content picture at its own shape. The frame takes the file's aspect ratio
+ * once it loads rather than cropping it to a guess: these are label shots,
+ * ingredient diagrams and how-to-use panels, where the cut-off part is usually
+ * the part with the words on it.
+ */
+function ContentImage({ src, alt }: { src: string; alt: string }) {
+  const [ratio, setRatio] = useState<number | null>(null);
+  return (
+    <span
+      className={`relative block w-full overflow-hidden rounded-xl2 bg-surface-soft ${
+        ratio ? "" : "aspect-[4/3]"
+      }`}
+      style={ratio ? { aspectRatio: String(ratio) } : undefined}
+    >
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes="(max-width: 768px) 100vw, 680px"
+        className="object-contain"
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          if (img.naturalWidth && img.naturalHeight) {
+            setRatio(img.naturalWidth / img.naturalHeight);
+          }
+        }}
+      />
+    </span>
+  );
 }
 
 export default function ProductContentBlocks({
@@ -124,6 +163,59 @@ export default function ProductContentBlocks({
                 </div>
               </section>
             );
+          case "image": {
+            const caption = (th ? block.captionTh : block.captionEn)?.trim();
+            return (
+              <figure key={i}>
+                <ContentImage src={block.imageUrl} alt={caption || ""} />
+                {caption && (
+                  <figcaption className="mt-2 text-[13px] text-slate-500">
+                    {caption}
+                  </figcaption>
+                )}
+              </figure>
+            );
+          }
+          case "video": {
+            const video = parseVideoUrl(block.videoUrl);
+            if (!video) return null;
+            const caption = (th ? block.captionTh : block.captionEn)?.trim();
+            return (
+              <figure key={i}>
+                <div className="relative aspect-video w-full overflow-hidden rounded-xl2 bg-black">
+                  {video.kind === "file" ? (
+                    <video
+                      src={video.src}
+                      poster={block.posterUrl || undefined}
+                      controls
+                      playsInline
+                      // metadata, not auto: a product page should not pull a
+                      // video down a phone's data plan before anyone presses
+                      // play.
+                      preload="metadata"
+                      className="h-full w-full"
+                    />
+                  ) : (
+                    <iframe
+                      src={video.src}
+                      title={caption || (th ? "วิดีโอสินค้า" : "Product video")}
+                      // Lazy, so the player is fetched when it is scrolled to
+                      // rather than on every page view.
+                      loading="lazy"
+                      allow="accelerated-2d-canvas; encrypted-media; picture-in-picture; fullscreen"
+                      allowFullScreen
+                      className="absolute inset-0 h-full w-full border-0"
+                    />
+                  )}
+                </div>
+                {caption && (
+                  <figcaption className="mt-2 text-[13px] text-slate-500">
+                    {caption}
+                  </figcaption>
+                )}
+              </figure>
+            );
+          }
           case "spec_table":
             return (
               <section key={i}>

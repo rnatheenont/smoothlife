@@ -12,6 +12,9 @@
 //   LINE LIFF SDK — the in-LINE app at /liff
 //   2C2P — the payment page shown in an iframe
 //   Firework CDN — product videos
+//   YouTube (nocookie) / Vimeo — videos in a product's own content blocks
+//   Shopify CDN / smoothlife.com / Supabase storage — video files in those
+//     same blocks, played in a <video> tag rather than a third-party player
 //   Vercel Analytics / Speed Insights
 // 'unsafe-inline' scripts: Next.js inlines its bootstrap and JSON-LD; a nonce
 // would force every page dynamic and lose the edge cache. 'wasm-unsafe-eval':
@@ -31,9 +34,9 @@ const CSP = [
   `img-src 'self' data: blob: https://cdn.shopify.com https://www.smoothlife.com https://smoothlife.com https://images.unsplash.com ${SUPABASE_ORIGIN} https://*.googleusercontent.com https://profile.line-scdn.net https://*.line-scdn.net https://www.gstatic.com`,
   "font-src 'self' data:",
   `connect-src 'self' ${SUPABASE_ORIGIN} https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://www.google.com https://api.line.me https://*.line-scdn.net https://liffsdk.line-scdn.net https://vitals.vercel-insights.com`,
-  "media-src 'self' blob: https://*.fireworktv.com",
+  `media-src 'self' blob: https://*.fireworktv.com https://cdn.shopify.com https://www.smoothlife.com https://smoothlife.com ${SUPABASE_ORIGIN}`,
   "worker-src 'self' blob:",
-  "frame-src 'self' https://*.2c2p.com https://www.google.com https://recaptcha.google.com https://*.firebaseapp.com",
+  "frame-src 'self' https://*.2c2p.com https://www.google.com https://recaptcha.google.com https://*.firebaseapp.com https://www.youtube-nocookie.com https://player.vimeo.com",
   "form-action 'self' https://*.2c2p.com https://access.line.me https://accounts.google.com https://appleid.apple.com https://shopify.com https://*.shopify.com",
   "frame-ancestors 'self'",
   "base-uri 'self'",

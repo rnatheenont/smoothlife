@@ -6,15 +6,48 @@ import {
   PRODUCT_CONTENT_COLUMNS,
   productContentTag,
   isBlockComplete,
+  parseVideoUrl,
   type ContentBlock,
   type ProductContentOverride,
 } from "@/lib/product-content";
+import { publicStorageHost } from "@/lib/public-uploads";
 
 // One product's content override. `variantId` is a Shopify GID
 // (gid://shopify/ProductVariant/...), which contains slashes — the caller
 // must encodeURIComponent it to put it in a URL path segment; Next.js hands
 // it back decoded in `params`.
 export const dynamic = "force-dynamic";
+
+/** Where a picture in a content block may come from: our own storefront,
+ *  Shopify's CDN, or the bucket /api/admin/product-content/upload-image writes
+ *  to. Same list, same reason as the flash-sale banner (flash-sale-campaigns.ts):
+ *  this ends up in an <img> on a live product page, so a pasted link to
+ *  somewhere nobody controls is refused out loud rather than saved and left to
+ *  break later. */
+const IMAGE_HOSTS = [
+  "cdn.shopify.com",
+  "www.smoothlife.com",
+  "smoothlife.com",
+  publicStorageHost(),
+].filter((h): h is string => Boolean(h));
+
+function parseImageUrl(value: unknown, field: string): string | { error: string } {
+  if (typeof value !== "string" || !value.trim()) return "";
+  const raw = value.trim().slice(0, 1000);
+  if (raw.startsWith("/")) return raw;
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return { error: `${field}ไม่ถูกต้อง` };
+  }
+  if (url.protocol !== "https:" || !IMAGE_HOSTS.includes(url.hostname)) {
+    return {
+      error: `${field}ต้องเป็นลิงก์จาก Shopify, smoothlife.com หรืออัปโหลดเข้าระบบ`,
+    };
+  }
+  return url.toString();
+}
 
 function parseBlocks(value: unknown): ContentBlock[] | { error: string } {
   if (!Array.isArray(value)) return { error: "ข้อมูลเนื้อหาไม่ถูกต้อง" };
@@ -54,6 +87,41 @@ function parseBlocks(value: unknown): ContentBlock[] | { error: string } {
           hasVerifiedSource,
         } as ContentBlock;
         blocks.push(block);
+        break;
+      }
+      case "image": {
+        const imageUrl = parseImageUrl(b.imageUrl, "ลิงก์รูปภาพ");
+        if (typeof imageUrl !== "string") return imageUrl;
+        blocks.push({
+          type: "image",
+          imageUrl,
+          captionTh: str(b.captionTh, 300) || undefined,
+          captionEn: str(b.captionEn, 300) || undefined,
+          hasVerifiedSource,
+        } as ContentBlock);
+        break;
+      }
+      case "video": {
+        const videoUrl = str(b.videoUrl, 1000);
+        // Stored only once it is a link we know how to play — see
+        // parseVideoUrl. An unplayable link saved now is an empty frame on the
+        // product page later, with nothing in the editor to say why.
+        if (videoUrl && !parseVideoUrl(videoUrl)) {
+          return {
+            error:
+              "ลิงก์วิดีโอไม่รองรับ — ใช้ได้กับ YouTube, Vimeo หรือไฟล์ .mp4 จาก Shopify / smoothlife.com",
+          };
+        }
+        const posterUrl = parseImageUrl(b.posterUrl, "ลิงก์รูปปกวิดีโอ");
+        if (typeof posterUrl !== "string") return posterUrl;
+        blocks.push({
+          type: "video",
+          videoUrl,
+          posterUrl: posterUrl || undefined,
+          captionTh: str(b.captionTh, 300) || undefined,
+          captionEn: str(b.captionEn, 300) || undefined,
+          hasVerifiedSource,
+        } as ContentBlock);
         break;
       }
       case "spec_table": {
