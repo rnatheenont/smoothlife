@@ -35,7 +35,6 @@ import {
   Check,
   Inbox,
   ChevronLeft,
-  ArrowUpRight,
   PanelRight,
   PanelRightClose,
   BellRing,
@@ -801,7 +800,7 @@ export default function AdminInboxPage() {
                       name={c.customerName}
                       src={c.customerAvatar}
                       seed={c.channel_user_id}
-                      size={32}
+                      size={40}
                     />
                     {/* On the avatar, the way every chat app says which app a
                         message came through. */}
@@ -813,14 +812,6 @@ export default function AdminInboxPage() {
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="flex min-w-0 items-center gap-1.5">
-                      {c.origin === "escalation" && (
-                        // A mark, not a pill: it is on nearly every row, so it
-                        // has to cost almost nothing. The tooltip is what makes
-                        // it legible the first time someone wonders.
-                        <span title="ส่งต่อจาก AI" aria-label="ส่งต่อจาก AI" className="shrink-0">
-                          <ArrowUpRight size={13} aria-hidden className="text-amber-500" />
-                        </span>
-                      )}
                       <span
                         className={`min-w-0 truncate text-[13px] ${c.unread > 0 ? "font-bold text-brand-ink" : "font-semibold text-brand-ink"}`}
                       >
