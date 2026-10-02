@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { useLang } from "@/lib/lang-context";
 import { parseVideoUrl, type ContentBlock } from "@/lib/product-content";
-import { renderRichText } from "@/lib/rich-text";
+import { renderInline, renderRichText } from "@/lib/rich-text";
 
 // The product copy the shop writes itself, rendered from its blocks.
 //
@@ -122,7 +122,7 @@ export default function ProductContentBlocks({
                         aria-hidden
                         className="mt-2 size-1.5 shrink-0 rounded-full bg-brand-teal"
                       />
-                      {item}
+                      {renderInline(item)}
                     </li>
                   ))}
                 </ul>
@@ -140,7 +140,7 @@ export default function ProductContentBlocks({
                       key={n}
                       className="rounded-full bg-surface-soft px-3 py-1.5 text-[13px] text-slate-600"
                     >
-                      {item}
+                      {renderInline(item)}
                     </span>
                   ))}
                 </div>

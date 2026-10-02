@@ -39,6 +39,15 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
 }
 
 /**
+ * The same two markers, for text that is already one line of something else —
+ * an item in a bullet list, a name in the ingredients row. No paragraphs, no
+ * list: those lines are the list.
+ */
+export function renderInline(text: string): ReactNode {
+  return <>{inline(text, "x")}</>;
+}
+
+/**
  * Lines beginning "- " or "• " become a list; everything else stays a
  * paragraph with its line breaks intact, which is how this text has always
  * been shown.

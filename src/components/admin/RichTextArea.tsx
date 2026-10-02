@@ -16,9 +16,19 @@ type Props = {
   placeholder?: string;
   rows?: number;
   className?: string;
+  /** Off where every line is already an item of a list — the bullet-list and
+   *  ingredients fields — so the button cannot put a stray "- " inside one. */
+  showList?: boolean;
 };
 
-export default function RichTextArea({ value, onChange, placeholder, rows = 4, className = "" }: Props) {
+export default function RichTextArea({
+  value,
+  onChange,
+  placeholder,
+  rows = 4,
+  className = "",
+  showList = true,
+}: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
   function surround(marker: string) {
@@ -75,10 +85,14 @@ export default function RichTextArea({ value, onChange, placeholder, rows = 4, c
         <button type="button" onClick={() => surround("*")} title="ตัวเอียง" aria-label="ตัวเอียง" className={button}>
           <Italic size={14} aria-hidden />
         </button>
-        <button type="button" onClick={bulletLines} title="หัวข้อย่อย" aria-label="หัวข้อย่อย" className={button}>
-          <List size={14} aria-hidden />
-        </button>
-        <span className="ms-auto pe-1 text-[10px] text-slate-400">**หนา** · *เอียง* · ขึ้นบรรทัดด้วย - คือหัวข้อย่อย</span>
+        {showList && (
+          <button type="button" onClick={bulletLines} title="หัวข้อย่อย" aria-label="หัวข้อย่อย" className={button}>
+            <List size={14} aria-hidden />
+          </button>
+        )}
+        <span className="ms-auto pe-1 text-[10px] text-slate-400">
+          {showList ? "**หนา** · *เอียง* · ขึ้นบรรทัดด้วย - คือหัวข้อย่อย" : "**หนา** · *เอียง* · บรรทัดละ 1 รายการ"}
+        </span>
       </div>
       <textarea
         ref={ref}

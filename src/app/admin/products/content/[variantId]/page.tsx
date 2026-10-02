@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import RichTextArea from "@/components/admin/RichTextArea";
-import { renderRichText } from "@/lib/rich-text";
+import { renderInline, renderRichText } from "@/lib/rich-text";
 import {
   ArrowLeft,
   Plus,
@@ -365,6 +365,46 @@ function fieldClass() {
   return "w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal";
 }
 
+/**
+ * The lines of a bullet list or an ingredients row, with the same bold/italic
+ * toolbar the body fields have.
+ *
+ * It keeps the text it is given rather than the parsed items: the parent
+ * stores string[] and parsing throws away blank lines, so round-tripping every
+ * keystroke through it meant pressing Enter did nothing — the empty line was
+ * dropped and the caret jumped back up. The draft is what the person typed;
+ * the parent still gets the items.
+ */
+function ItemsEditor({
+  items,
+  onChange,
+  placeholder,
+}: {
+  items: string[];
+  onChange: (items: string[]) => void;
+  placeholder: string;
+}) {
+  const [draft, setDraft] = useState(items.join("\n"));
+  useEffect(() => {
+    // Only when the change came from somewhere else — "ช่วยร่าง", a block
+    // moving — never to rewrite what is being typed right now.
+    const joined = items.join("\n");
+    setDraft((d) => (linesToItems(d).join("\n") === joined ? d : joined));
+  }, [items]);
+  return (
+    <RichTextArea
+      value={draft}
+      onChange={(v) => {
+        setDraft(v);
+        onChange(linesToItems(v));
+      }}
+      placeholder={placeholder}
+      rows={5}
+      showList={false}
+    />
+  );
+}
+
 /** Nothing for the assistant to write: a picture and a clip are links somebody
  *  has to choose, and a caption for a file it cannot see would be invention. */
 const DRAFTABLE = (t: ContentBlock["type"]) => t !== "image" && t !== "video";
@@ -603,27 +643,15 @@ function BlockEditor({
               </div>
             )}
             <div className="grid gap-3 sm:grid-cols-2">
-              <textarea
-                value={block.itemsTh.join("\n")}
-                onChange={(e) =>
-                  onChange({
-                    itemsTh: linesToItems(e.target.value),
-                  } as Partial<ContentBlock>)
-                }
-                rows={5}
-                placeholder={"รายการ (ไทย) — บรรทัดละ 1 รายการ"}
-                className={fieldClass()}
+              <ItemsEditor
+                items={block.itemsTh}
+                onChange={(itemsTh) => onChange({ itemsTh } as Partial<ContentBlock>)}
+                placeholder="รายการ (ไทย) — บรรทัดละ 1 รายการ"
               />
-              <textarea
-                value={block.itemsEn.join("\n")}
-                onChange={(e) =>
-                  onChange({
-                    itemsEn: linesToItems(e.target.value),
-                  } as Partial<ContentBlock>)
-                }
-                rows={5}
-                placeholder={"Items (English) — one per line"}
-                className={fieldClass()}
+              <ItemsEditor
+                items={block.itemsEn}
+                onChange={(itemsEn) => onChange({ itemsEn } as Partial<ContentBlock>)}
+                placeholder="Items (English) — one per line"
               />
             </div>
           </>
@@ -915,7 +943,7 @@ function PreviewBlock({
           ) : (
             <ul className="list-inside list-disc space-y-0.5 text-sm text-slate-600">
               {shown.map((item, i) => (
-                <li key={i}>{item}</li>
+                <li key={i}>{renderInline(item)}</li>
               ))}
             </ul>
           )}
