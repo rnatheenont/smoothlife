@@ -3,21 +3,28 @@ import { promotions } from "@/data/promotions";
 import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { pageMetadata } from "@/lib/site-pages";
+import { withCustomImages } from "@/lib/product-images";
 
 export function generateMetadata() {
   return pageMetadata("promotions");
 }
 
-export default function PromotionsPage() {
+export default async function PromotionsPage() {
+  // Resolved up front rather than inside the loop: one query for the whole
+  // page instead of one per promotion.
+  const sections = await Promise.all(
+    promotions.map(async (promo, i) => {
+      const items = products.filter((p) => p.badges?.some((b) => b === promo.badge)).slice(0, 4);
+      const fallback = products.slice(i * 4, i * 4 + 4);
+      return { promo, display: await withCustomImages(items.length > 0 ? items : fallback) };
+    }),
+  );
   return (
     <div className="container-page py-8 md:py-10">
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">New, Best Sellers and Promotions</h1>
       <p className="text-sm text-slate-500 mb-8">รวมโปรโมชั่นและดีลพิเศษประจำเดือนจาก Smooth Life</p>
 
-      {promotions.map((promo, i) => {
-        const items = products.filter((p) => p.badges?.some((b) => b === promo.badge)).slice(0, 4);
-        const fallback = products.slice(i * 4, i * 4 + 4);
-        const display = items.length > 0 ? items : fallback;
+      {sections.map(({ promo, display }) => {
         return (
           <section key={promo.slug} id={promo.slug} className="mb-14 scroll-mt-24">
             <div className="relative rounded-xl2 overflow-hidden h-40 md:h-56 mb-5">

@@ -353,7 +353,7 @@ async function handleText(event: LineEvent, lineUserId: string, text: string, im
   const { text: answer, kind, options, reason } = splitMarker(raw);
   let reply = renderForLine(answer) || FALLBACK;
   // Built from the answer before the brackets were stripped out of it.
-  const carousel = productCarousel(productSlugsIn(answer));
+  const carousel = await productCarousel(productSlugsIn(answer));
 
   if (kind === "handoff") {
     await escalate({

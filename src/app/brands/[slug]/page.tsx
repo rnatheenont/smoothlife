@@ -10,6 +10,7 @@ import { brandJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import ProductCard from "@/components/ProductCard";
 import StarRating from "@/components/StarRating";
+import { withCustomImages } from "@/lib/product-images";
 
 // One page per brand.
 //
@@ -59,7 +60,10 @@ export default async function BrandHubPage(props: { params: Promise<{ slug: stri
   const facts = brandFacts(params.slug);
   if (!facts) notFound();
 
-  const { brand, items, reviews, rating, minPrice, categoryNames } = facts;
+  const { brand, reviews, rating, minPrice, categoryNames } = facts;
+  // Overlaid once here, before the groups and the bestseller row are cut
+  // out of it, so every card on the page comes from the same list.
+  const items = await withCustomImages(facts.items);
   const groups = groupBrandProducts(items);
   // Most-reviewed first: the only popularity signal in the catalogue that is
   // real (`sold` is 0 for every item here), so it is the one we use. Skipped

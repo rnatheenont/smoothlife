@@ -11,6 +11,7 @@ import {
   taggedProducts,
 } from "@/lib/kb-public";
 import { thaiDate } from "@/lib/storefront-articles";
+import { withCustomImages } from "@/lib/product-images";
 
 // One question, one page — the answer the team wrote, and the products it is
 // about. Refreshed on a quarter-hour; the knowledge base changes when someone
@@ -37,7 +38,7 @@ export default async function PublicQuestionPage(props: { params: Promise<{ slug
   const question = await getPublicQuestion(decodeURIComponent(slug));
   if (!question) notFound();
 
-  const products = taggedProducts(question.product_tags);
+  const products = await withCustomImages(taggedProducts(question.product_tags));
   const others = (await getPublicQuestions()).filter((q) => q.public_slug !== question.public_slug).slice(0, 6);
   const paragraphs = question.content.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 

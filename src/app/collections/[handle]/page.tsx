@@ -6,6 +6,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import BackButton from "@/components/BackButton";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
+import { withCustomImages } from "@/lib/product-images";
 
 // One page per real Shopify collection. These are the merchandising groups the
 // marketing team actually maintains (clearance-sale, buy-1-get-1-free-deal,
@@ -43,7 +44,7 @@ export default async function CollectionPage(props: { params: Promise<{ handle: 
   const collection = getCollectionByHandle(params.handle);
   if (!collection) notFound();
 
-  const items = getCollectionProducts(collection);
+  const items = await withCustomImages(getCollectionProducts(collection));
 
   const breadcrumbItems = [
     { label: "หน้าแรก", href: "/" },

@@ -13,6 +13,7 @@ import {
   MAX_ATTACHMENT_BYTES,
   LINE_ATTACHMENT_TTL_SECONDS,
 } from "@/lib/chat-attachments";
+import { withCustomImages } from "@/lib/product-images";
 
 // One conversation: the whole thread plus the customer context staff would
 // otherwise go and look up in three other screens.
@@ -144,17 +145,21 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     string,
     { name: string; image: string; price: number; compareAtPrice?: number; inStock: boolean }
   > = {};
-  for (const slug of [...discussed, ...viewed]) {
-    const product = getProductBySlug(slug);
-    if (product) {
-      productCards[slug] = {
-        name: product.name,
-        image: product.image,
-        price: product.price,
-        compareAtPrice: product.compareAtPrice,
-        inStock: product.inStock,
-      };
-    }
+  // Staff are looking at the same product the customer is: resolved through
+  // the overlay so the thumbnail in the thread matches the product page.
+  const cardProducts = await withCustomImages(
+    [...discussed, ...viewed]
+      .map((slug) => getProductBySlug(slug))
+      .filter((p): p is NonNullable<typeof p> => Boolean(p)),
+  );
+  for (const product of cardProducts) {
+    productCards[product.slug] = {
+      name: product.name,
+      image: product.image,
+      price: product.price,
+      compareAtPrice: product.compareAtPrice,
+      inStock: product.inStock,
+    };
   }
 
   // A person opening the thread is what "read" means here — not the screen

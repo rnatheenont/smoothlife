@@ -12,6 +12,7 @@ import BackButton from "@/components/BackButton";
 import { notFound } from "next/navigation";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
+import { withCustomImages } from "@/lib/product-images";
 
 const ADVISOR_ENTRY: Record<string, { href: string; title: string; subtitle: string }> = {
   "oral-care": {
@@ -63,7 +64,7 @@ export default async function CategoryPage(
   if (!categoryInfo) notFound();
 
   const current = { ...searchParams, category: params.category };
-  const items = filterProducts(current);
+  const items = await withCustomImages(filterProducts(current));
 
   const breadcrumbItems = [{ label: "หน้าแรก", href: "/" }, { label: "ช้อป", href: "/shop" }, { label: categoryInfo.nameTh }];
 

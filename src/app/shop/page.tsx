@@ -11,6 +11,7 @@ import CategoryCircles from "@/components/shop/CategoryCircles";
 import ViewToggle from "@/components/shop/ViewToggle";
 import ProductRow from "@/components/shop/ProductRow";
 import { pageMetadata } from "@/lib/site-pages";
+import { withCustomImages } from "@/lib/product-images";
 
 // Every ?brand=/?page=/?sort= filter combination renders this same route —
 // without a canonical they'd all index as separate near-duplicate pages.
@@ -40,7 +41,7 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
   const allItems = filterProducts(searchParams);
   const totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
   const page = Math.min(Math.max(1, Number(searchParams.page) || 1), totalPages);
-  const items = allItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const items = await withCustomImages(allItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
   const isList = searchParams.view === "list";
   const activeCategory = categories.find((c) => c.slug === searchParams.category);
 

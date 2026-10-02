@@ -6,6 +6,7 @@ import ProductCard from "@/components/ProductCard";
 import { sortSoldOutLast } from "@/lib/filter-products";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
+import { withCustomImages } from "@/lib/product-images";
 
 export function generateStaticParams() {
   return concerns.map((c) => ({ slug: c.slug }));
@@ -37,7 +38,9 @@ export default async function ConcernDetailPage(props: { params: Promise<{ slug:
   const concern = concerns.find((c) => c.slug === params.slug);
   if (!concern) notFound();
 
-  const items = sortSoldOutLast(products.filter((p) => p.concerns.includes(concern.slug)));
+  const items = await withCustomImages(
+    sortSoldOutLast(products.filter((p) => p.concerns.includes(concern.slug))),
+  );
 
   const breadcrumbItems = [
     { label: "หน้าแรก", href: "/" },

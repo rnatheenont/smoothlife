@@ -1,5 +1,6 @@
 import { getProductBySlug } from "@/data/products";
 import { lineOpenLink, type LineMessage } from "@/lib/line-push";
+import { withCustomImages } from "@/lib/product-images";
 
 // Smoothie's product recommendations, as LINE sees them.
 //
@@ -90,14 +91,19 @@ function bubble(product: NonNullable<ReturnType<typeof getProductBySlug>>) {
  * rather than showing an empty card — the answer's text still stands on its
  * own, which is why the slugs are stripped from it either way.
  */
-export function productCarousel(slugs: string[]): LineMessage | null {
+export async function productCarousel(slugs: string[]): Promise<LineMessage | null> {
   const seen = new Set<string>();
-  const bubbles = slugs
-    .filter((slug) => !seen.has(slug) && (seen.add(slug), true))
-    .map((slug) => getProductBySlug(slug))
-    .filter((p): p is NonNullable<typeof p> => Boolean(p?.image))
-    .slice(0, MAX_BUBBLES)
-    .map(bubble);
+  // LINE fetches the hero image itself and caches it, so a bubble built from
+  // the generated catalogue would keep showing Shopify's photograph for this
+  // product long after the shop stopped using it.
+  const found = await withCustomImages(
+    slugs
+      .filter((slug) => !seen.has(slug) && (seen.add(slug), true))
+      .map((slug) => getProductBySlug(slug))
+      .filter((p): p is NonNullable<typeof p> => Boolean(p?.image))
+      .slice(0, MAX_BUBBLES),
+  );
+  const bubbles = found.map(bubble);
 
   if (!bubbles.length) return null;
   return {

@@ -20,6 +20,7 @@ import { productJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { canonicalSlugFor } from "@/lib/product-canonical";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import { getPublishedProductContent } from "@/lib/product-content";
+import { withCustomImages, withCustomImagesOne } from "@/lib/product-images";
 
 // Pages render on first visit and are then served from the edge cache,
 // refreshed at most every five minutes — and at once when a review is
@@ -38,7 +39,10 @@ export async function generateMetadata(props: {
   params: Promise<{ slug: string }>;
 }) {
   const params = await props.params;
-  const product = getProductBySlug(params.slug);
+  const base = getProductBySlug(params.slug);
+  // The OG image is the one place a stale photograph outlives the page it
+  // came from — LINE and Facebook cache it — so it is resolved here too.
+  const product = base ? await withCustomImagesOne(base) : base;
   // Three sources, most deliberate first: a title written in /admin/seo wins;
   // then whatever the team already typed into Shopify's search-engine listing
   // for this product — 904 of the 944 have one, and they were written by
@@ -119,10 +123,16 @@ export default async function ProductPage(props: {
   params: Promise<{ slug: string }>;
 }) {
   const params = await props.params;
-  const product = getProductBySlug(params.slug);
-  if (!product) notFound();
+  const found = getProductBySlug(params.slug);
+  if (!found) notFound();
 
-  const related = getRelatedProducts(product, 4);
+  // Our own photographs, if this product has any switched on — one query for
+  // the product and the four related cards below it. Everything downstream
+  // reads product.image as it always has.
+  const [product, ...related] = await withCustomImages([
+    found,
+    ...getRelatedProducts(found, 4),
+  ]);
   const [reviews, questions, subscribable, contentBlocks] = await Promise.all([
     getReviews(product.slug),
     getQuestions(product.slug),

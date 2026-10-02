@@ -121,6 +121,38 @@ export function overrideFor(
   return null;
 }
 
+/**
+ * What a server component actually calls.
+ *
+ * Hands back products whose image fields already say what the shop should
+ * show, so every card, gallery, OG tag and JSON-LD block downstream keeps
+ * reading `product.image` and knows nothing about any of this. One query per
+ * render covers a whole page of them, and a product with no override is
+ * returned as the very same object — a page with no custom photography
+ * anywhere allocates nothing and renders exactly as before.
+ */
+export async function withCustomImages<T extends ProductImageFields>(products: T[]): Promise<T[]> {
+  const map = await getImageOverrideMap();
+  if (map.size === 0) return products;
+  return products.map((p) => overlay(p, overrideFor(p, map)));
+}
+
+export async function withCustomImagesOne<T extends ProductImageFields>(product: T): Promise<T> {
+  const [out] = await withCustomImages([product]);
+  return out;
+}
+
+type ProductImageFields = Pick<
+  Product,
+  "image" | "image2" | "images" | "variantId" | "variants"
+>;
+
+function overlay<T extends ProductImageFields>(product: T, override: ImageOverride | null): T {
+  const resolved = resolveProductImages(product, override);
+  if (resolved.source === "shopify") return product;
+  return { ...product, image: resolved.image, image2: resolved.image2, images: resolved.images };
+}
+
 /** The admin editor's own read: the row whether or not the switch is on, so
  *  the card can show what has been uploaded but not yet turned on. */
 export async function getImageOverride(variantId: string): Promise<ImageOverride | null> {
