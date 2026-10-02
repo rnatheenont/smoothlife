@@ -47,8 +47,22 @@ const STATUS_LABEL: Record<
   },
 };
 
+type ImageStatus = { useCustom: boolean; count: number };
+
+/** What the shop is showing for this product, by the same rule the shop uses:
+ *  our pictures only when the switch is on *and* there is at least one. */
+function imageLabel(s: ImageStatus | undefined) {
+  if (s?.useCustom && s.count > 0)
+    return { text: `ของเรา (${s.count})`, className: "text-emerald-700 bg-emerald-50" };
+  if (s && s.count > 0)
+    return { text: `อัปไว้ ${s.count} — ยังไม่เปิด`, className: "text-amber-700 bg-amber-50" };
+  return { text: "Shopify", className: "text-slate-500 bg-slate-50" };
+}
+
 export default function ProductContentListPage() {
   const [overrides, setOverrides] = useState<Record<string, OverrideRow>>({});
+  const [imageStatus, setImageStatus] = useState<Record<string, ImageStatus>>({});
+  const [customImagesOnly, setCustomImagesOnly] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | Status>("all");
@@ -64,6 +78,16 @@ export default function ProductContentListPage() {
       })
       .catch(() => {})
       .finally(() => setLoaded(true));
+
+    fetch("/api/admin/product-content/image-status")
+      .then((r) => r.json())
+      .then((d) => {
+        const map: Record<string, ImageStatus> = {};
+        for (const row of d?.items ?? [])
+          map[row.variantId] = { useCustom: row.useCustom, count: row.count };
+        setImageStatus(map);
+      })
+      .catch(() => {});
   }, []);
 
   const rows = useMemo(
@@ -82,9 +106,17 @@ export default function ProductContentListPage() {
           : override.published
             ? "published"
             : "draft";
-        return { product: p, contentVariantId, sku, status };
+        return {
+          product: p,
+          contentVariantId,
+          sku,
+          status,
+          // Matched on the stable variant alone, the same key the editor
+          // writes under — the editor is the only way a row gets here.
+          images: imageStatus[contentVariantId],
+        };
       }),
-    [overrides],
+    [overrides, imageStatus],
   );
 
   // Vendor as the catalogue spells it, which is what these products are filed
@@ -108,6 +140,7 @@ export default function ProductContentListPage() {
   const q = query.trim().toLowerCase();
   const filtered = inBrand.filter((r) => {
     if (filter !== "all" && r.status !== filter) return false;
+    if (customImagesOnly && !(r.images?.useCustom && r.images.count > 0)) return false;
     if (!q) return true;
     return (
       r.product.name.toLowerCase().includes(q) ||
@@ -115,6 +148,10 @@ export default function ProductContentListPage() {
     );
   });
   const shown = filtered.slice(0, 200);
+
+  const customImageCount = inBrand.filter(
+    (r) => r.images?.useCustom && r.images.count > 0,
+  ).length;
 
   const counts = inBrand.reduce(
     (acc, r) => {
@@ -205,6 +242,22 @@ export default function ProductContentListPage() {
             </button>
           ))}
         </div>
+
+        {/* Its own control rather than a fifth status: which pictures a
+            product uses and how far its write-up has got are two different
+            questions, and filtering by both at once is a fair thing to want. */}
+        <button
+          type="button"
+          onClick={() => setCustomImagesOnly((v) => !v)}
+          aria-pressed={customImagesOnly}
+          className={
+            customImagesOnly
+              ? "rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white"
+              : "rounded-full px-3 py-1.5 text-xs font-medium text-slate-500 ring-1 ring-surface-line hover:text-brand-ink"
+          }
+        >
+          ใช้รูปของเรา {customImageCount.toLocaleString("th-TH")}
+        </button>
       </div>
 
       <div
@@ -216,11 +269,13 @@ export default function ProductContentListPage() {
               <th>สินค้า</th>
               <th>SKU</th>
               <th>สถานะ</th>
+              <th>รูป</th>
             </tr>
           </thead>
           <tbody>
-            {shown.map(({ product: p, contentVariantId, sku, status }) => {
+            {shown.map(({ product: p, contentVariantId, sku, status, images }) => {
               const St = STATUS_LABEL[status];
+              const img = imageLabel(images);
               return (
                 <tr key={contentVariantId} className={adminTable.row}>
                   <td className={adminTable.cell}>
@@ -253,13 +308,20 @@ export default function ProductContentListPage() {
                       {St.label}
                     </span>
                   </td>
+                  <td className={adminTable.cell}>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${img.className}`}
+                    >
+                      {img.text}
+                    </span>
+                  </td>
                 </tr>
               );
             })}
             {loaded && shown.length === 0 && (
               <tr>
                 <td
-                  colSpan={3}
+                  colSpan={4}
                   className="px-3 py-8 text-center text-sm text-slate-400"
                 >
                   ไม่พบรายการ

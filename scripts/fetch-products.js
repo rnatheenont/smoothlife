@@ -67,6 +67,74 @@ function applyContentCache(products) {
   if (applied) console.log(`[catalogue] applied AI content cache to ${applied} products`);
 }
 
+/**
+ * Replace Shopify's photographs with ours, for the products an admin has
+ * switched over in /admin/products/content (see src/lib/product-images.ts).
+ *
+ * The server already overlays this on the pages it renders. This exists for
+ * everywhere it cannot: around twenty-five client components — the cart,
+ * search, the chat's product chips, wishlist, order history — import the
+ * generated catalogue straight into the browser bundle, so the only way to
+ * change what they show is to change the file itself.
+ *
+ * Never a build blocker. Supabase being slow, unreachable or unconfigured
+ * leaves every product with the Shopify images it already has, which is the
+ * same thing that happens when nobody has uploaded any.
+ */
+async function applyImageOverrides(products) {
+  const base = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!base || !key) return;
+
+  let rows;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(
+      base + "/rest/v1/product_image_overrides?use_custom=is.true&select=variant_id,images",
+      {
+        headers: { apikey: key, Authorization: "Bearer " + key },
+        signal: controller.signal,
+      }
+    ).finally(() => clearTimeout(timer));
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    rows = await res.json();
+  } catch (err) {
+    console.warn(
+      "[catalogue] could not read custom product images, keeping Shopify's: " + (err && err.message)
+    );
+    return;
+  }
+
+  const byVariant = new Map();
+  for (const row of rows || []) {
+    const urls = (row.images || []).map((i) => i && i.url).filter(Boolean);
+    if (urls.length) byVariant.set(row.variant_id, urls);
+  }
+  if (!byVariant.size) return;
+
+  // Matched on every variant, not just the default one: the row is keyed to a
+  // single variant and a product's sizes come and go, the same reason
+  // getPublishedProductContent matches on all of them.
+  let applied = 0;
+  for (const p of products) {
+    const ids = [p.variantId].concat((p.variants || []).map((v) => v.variantId));
+    let urls = null;
+    for (const id of ids) {
+      if (byVariant.has(id)) {
+        urls = byVariant.get(id);
+        break;
+      }
+    }
+    if (!urls) continue;
+    p.image = urls[0];
+    p.image2 = urls[1] || "";
+    p.images = urls;
+    applied++;
+  }
+  console.log("[catalogue] applied custom images to " + applied + " products");
+}
+
 /* ---------- text helpers ---------- */
 
 function decodeEntities(s) {
@@ -883,6 +951,7 @@ async function main() {
   const min = process.env.CATALOGUE_FIXTURE ? 1 : 1;
   if (mapped.length < min) throw new Error("only " + mapped.length + " usable products");
   applyContentCache(mapped);
+  await applyImageOverrides(mapped);
   fs.writeFileSync(OUT, serialise(mapped), "utf8");
   fs.writeFileSync(SNAPSHOT, JSON.stringify(mapped), "utf8");
   const byCat = {};
