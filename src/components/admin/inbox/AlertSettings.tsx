@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { Loader2, BellRing, Check, X, Send } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Button, Input, Label, TextField } from "@heroui/react";
 
 // Where "somebody is waiting" gets sent, edited by the people it gets sent to.
 //
@@ -120,35 +120,33 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
       ) : (
         <div className="flex flex-col gap-3 text-xs">
           <div className="grid gap-3 md:grid-cols-3">
-            <label className="flex flex-col gap-1">
-              <span className="font-semibold text-slate-600">
+            <TextField
+              type="email"
+              value={settings.alertEmail}
+              onChange={(v) => setSettings({ ...settings, alertEmail: v })}
+              fullWidth
+            >
+              <Label className="text-xs font-semibold text-slate-600">
                 อีเมล
                 {!channels.email && (
                   <span className="ml-1.5 font-normal text-amber-600">(ยังไม่ได้ตั้งค่าระบบส่งอีเมล)</span>
                 )}
-              </span>
-              <input
-                type="email"
-                value={settings.alertEmail}
-                onChange={(e) => setSettings({ ...settings, alertEmail: e.target.value })}
-                placeholder="cs@smoothlife.com"
-                className="rounded-lg border border-slate-200 px-2.5 py-2 outline-hidden focus:border-brand-teal"
-              />
-            </label>
+              </Label>
+              <Input placeholder="cs@smoothlife.com" />
+            </TextField>
 
-            <label className="flex flex-col gap-1">
-              <span className="font-semibold text-slate-600">
+            <TextField
+              value={settings.lineTo}
+              onChange={(v) => setSettings({ ...settings, lineTo: v })}
+              fullWidth
+            >
+              <Label className="text-xs font-semibold text-slate-600">
                 LINE id ของกลุ่มทีมงาน
                 {!channels.line && (
                   <span className="ml-1.5 font-normal text-amber-600">(ยังไม่ได้ตั้งค่า LINE)</span>
                 )}
-              </span>
-              <input
-                value={settings.lineTo}
-                onChange={(e) => setSettings({ ...settings, lineTo: e.target.value })}
-                placeholder="Cxxxxxxxx… (กลุ่ม) หรือ Uxxxxxxxx… (คน)"
-                className="rounded-lg border border-slate-200 px-2.5 py-2 font-mono outline-hidden focus:border-brand-teal"
-              />
+              </Label>
+              <Input className="font-mono" placeholder="Cxxxxxxxx… (กลุ่ม) หรือ Uxxxxxxxx… (คน)" />
               {/* A group id is nowhere in the LINE app — it only ever appears
                   in a webhook payload. These are the groups the OA has been
                   added to, so this field can be filled by pointing rather
@@ -180,19 +178,17 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
                   (บอทไม่ตอบอะไรในกลุ่ม แค่จำรหัสกลุ่มไว้)
                 </span>
               )}
-            </label>
+            </TextField>
 
-            <label className="flex flex-col gap-1">
-              <span className="font-semibold text-slate-600">แจ้งเมื่อรอเกิน (นาที)</span>
-              <input
-                type="number"
-                min={1}
-                max={1440}
-                value={settings.waitingMinutes}
-                onChange={(e) => setSettings({ ...settings, waitingMinutes: Number(e.target.value) })}
-                className="rounded-lg border border-slate-200 px-2.5 py-2 outline-hidden focus:border-brand-teal"
-              />
-            </label>
+            <TextField
+              type="number"
+              value={String(settings.waitingMinutes)}
+              onChange={(v) => setSettings({ ...settings, waitingMinutes: Number(v) })}
+              fullWidth
+            >
+              <Label className="text-xs font-semibold text-slate-600">แจ้งเมื่อรอเกิน (นาที)</Label>
+              <Input min={1} max={1440} />
+            </TextField>
           </div>
 
           <p className="text-[11px] leading-relaxed text-slate-400">
@@ -205,12 +201,12 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
           {testResult && <p className="text-slate-600">{testResult}</p>}
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" onClick={save} disabled={saving}>
-              {saving ? <Loader2 size={13} className="animate-spin" /> : saved ? <Check size={13} /> : null}
+            <Button size="sm" onPress={save} isPending={saving}>
+              {saved && !saving ? <Check size={13} /> : null}
               {saved ? "บันทึกแล้ว" : "บันทึก"}
             </Button>
-            <Button size="sm" variant="secondary" onClick={sendTest} disabled={testing}>
-              {testing ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+            <Button size="sm" variant="secondary" onPress={sendTest} isPending={testing}>
+              {!testing && <Send size={13} />}
               ส่งทดสอบ
             </Button>
           </div>
