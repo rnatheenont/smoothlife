@@ -22,6 +22,10 @@ export type InboxListRow = {
 
 export type InboxListItem = InboxListRow & {
   customerName: string | null;
+  /** Their profile picture, when they have signed in with something that
+   *  carries one. A row of names reads as a list; a row of faces reads as
+   *  people waiting, which is what it is. */
+  customerAvatar: string | null;
   preview: string | null;
   /** Customer messages since staff last opened the thread. */
   unread: number;
@@ -50,12 +54,14 @@ export async function GET(req: NextRequest) {
   // list is the screen staff keep open all day, so an N+1 here would be felt.
   const userIds = [...new Set(conversations.map((c) => c.user_id).filter(Boolean))] as string[];
   const names = new Map<string, string>();
+  const avatars = new Map<string, string>();
   if (userIds.length) {
-    const users = await supabaseRest<{ id: string; display_name: string | null }[]>(
-      `users?id=in.(${userIds.map((id) => pgValue(id)).join(",")})&select=id,display_name`
+    const users = await supabaseRest<{ id: string; display_name: string | null; avatar_url: string | null }[]>(
+      `users?id=in.(${userIds.map((id) => pgValue(id)).join(",")})&select=id,display_name,avatar_url`
     );
     for (const u of users) {
       names.set(u.id, u.display_name || "");
+      if (u.avatar_url) avatars.set(u.id, u.avatar_url);
     }
   }
 
@@ -94,6 +100,7 @@ export async function GET(req: NextRequest) {
     return {
       ...c,
       customerName: (c.user_id && names.get(c.user_id)) || null,
+      customerAvatar: (c.user_id && avatars.get(c.user_id)) || null,
       preview: previews.get(c.id) ?? null,
       unread: n,
       origin,
