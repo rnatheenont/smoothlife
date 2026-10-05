@@ -719,7 +719,7 @@ export default function CampaignSettings({
                     content.terms.filter((_, j) => j !== i),
                   )
                 }
-                className="mt-1.5 grid size-8 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-surface-soft hover:text-rose-600"
+                className="mt-1.5 grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-surface-soft hover:text-rose-600"
               >
                 <Trash2 size={15} />
               </button>

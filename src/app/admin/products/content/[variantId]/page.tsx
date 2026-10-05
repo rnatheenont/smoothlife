@@ -588,7 +588,7 @@ function BlockEditor({
                 : "ซ่อนบล็อกนี้ไม่ให้ลูกค้าเห็น (ยังเก็บไว้ที่นี่)"
             }
             aria-pressed={hidden}
-            className={`grid size-7 place-items-center rounded-full ${
+            className={`grid size-9 shrink-0 place-items-center rounded-full ${
               hidden
                 ? "bg-slate-100 text-slate-600"
                 : "text-slate-400 hover:bg-surface-soft"
@@ -602,7 +602,7 @@ function BlockEditor({
               onClick={onMoveUp}
               aria-label="ย้ายบล็อกนี้ขึ้น"
               title="ย้ายขึ้น"
-              className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-surface-soft"
+              className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-surface-soft"
             >
               <ChevronUp size={14} aria-hidden="true" />
             </button>
@@ -613,7 +613,7 @@ function BlockEditor({
               onClick={onMoveDown}
               aria-label="ย้ายบล็อกนี้ลง"
               title="ย้ายลง"
-              className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-surface-soft"
+              className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-surface-soft"
             >
               <ChevronDown size={14} aria-hidden="true" />
             </button>
@@ -623,7 +623,7 @@ function BlockEditor({
             onClick={onRemove}
             aria-label="ลบบล็อกนี้"
             title="ลบบล็อกนี้"
-            className="grid size-7 place-items-center rounded-full text-rose-400 hover:bg-rose-50"
+            className="grid size-9 shrink-0 place-items-center rounded-full text-rose-400 hover:bg-rose-50"
           >
             <Trash2 size={14} aria-hidden="true" />
           </button>

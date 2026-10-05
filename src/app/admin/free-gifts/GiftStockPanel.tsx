@@ -96,7 +96,7 @@ export default function GiftStockPanel() {
           onClick={load}
           aria-label="โหลดใหม่"
           disabled={loading}
-          className="grid size-8 place-items-center rounded-full text-slate-400 ring-1 ring-surface-line hover:bg-surface-mist hover:text-brand-ink disabled:opacity-50"
+          className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 ring-1 ring-surface-line hover:bg-surface-mist hover:text-brand-ink disabled:opacity-50"
         >
           {loading ? (
             <Spinner size="sm" color="current" />

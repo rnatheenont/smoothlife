@@ -581,7 +581,7 @@ export default function SubscriptionSets({
                               ),
                             )
                           }
-                          className="grid size-8 place-items-center rounded-full bg-white text-slate-600"
+                          className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-slate-600"
                         >
                           <Minus size={13} />
                         </button>
@@ -603,7 +603,7 @@ export default function SubscriptionSets({
                               ),
                             )
                           }
-                          className="grid size-8 place-items-center rounded-full bg-white text-slate-600"
+                          className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-slate-600"
                         >
                           <Plus size={13} />
                         </button>
@@ -617,7 +617,7 @@ export default function SubscriptionSets({
                               ),
                             )
                           }
-                          className="grid size-8 place-items-center rounded-full text-slate-400 hover:text-rose-600"
+                          className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:text-rose-600"
                         >
                           <Trash2 size={14} />
                         </button>

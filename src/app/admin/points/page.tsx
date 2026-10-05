@@ -313,7 +313,7 @@ export default function AdminPointsPage() {
                   <button
                     onClick={() => deleteTier(t.id)}
                     disabled={tierBusyId === t.id}
-                    className="rounded-full border border-rose-200 text-rose-500 p-1.5 shrink-0 disabled:opacity-30"
+                    className="grid size-9 shrink-0 place-items-center rounded-full border border-rose-200 text-rose-500 disabled:opacity-30"
                     aria-label="ลบ"
                   >
                     <Trash2 size={13} />
@@ -335,7 +335,11 @@ export default function AdminPointsPage() {
             />
             {/* No magnifier here: the field beside it already carries one, and
                 two in a row reads as two different searches. */}
-            <Button className="px-4 text-xs" type="submit" isPending={searching}>
+            <Button
+              className="px-4 text-xs"
+              type="submit"
+              isPending={searching}
+            >
               ค้นหา
             </Button>
           </form>

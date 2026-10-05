@@ -223,7 +223,7 @@ export default function CampaignList() {
               right: window.innerWidth - r.right,
             });
           }}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
         >
           {busy === c.id ? (
             <Spinner size="sm" color="current" />

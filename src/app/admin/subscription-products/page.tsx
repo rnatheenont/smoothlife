@@ -406,7 +406,8 @@ export default function AdminSubscriptionProductsPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="grid h-7 w-7 place-items-center rounded-full border border-slate-200 disabled:opacity-40"
+                  aria-label="หน้าก่อนหน้า"
+                  className="grid size-9 shrink-0 place-items-center rounded-full border border-slate-200 disabled:opacity-40"
                 >
                   <ChevronLeft size={14} />
                 </button>
@@ -416,7 +417,8 @@ export default function AdminSubscriptionProductsPage() {
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="grid h-7 w-7 place-items-center rounded-full border border-slate-200 disabled:opacity-40"
+                  aria-label="หน้าถัดไป"
+                  className="grid size-9 shrink-0 place-items-center rounded-full border border-slate-200 disabled:opacity-40"
                 >
                   <ChevronRight size={14} />
                 </button>

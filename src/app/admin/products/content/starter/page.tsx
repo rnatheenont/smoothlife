@@ -176,7 +176,7 @@ export default function StarterBlocksPage() {
                             disabled={i === 0}
                             aria-label="ย้ายขึ้น"
                             title="ย้ายขึ้น"
-                            className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-white disabled:opacity-30"
+                            className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-white disabled:opacity-30"
                           >
                             <ChevronUp size={14} aria-hidden="true" />
                           </button>
@@ -186,7 +186,7 @@ export default function StarterBlocksPage() {
                             disabled={i === blocks.length - 1}
                             aria-label="ย้ายลง"
                             title="ย้ายลง"
-                            className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-white disabled:opacity-30"
+                            className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-white disabled:opacity-30"
                           >
                             <ChevronDown size={14} aria-hidden="true" />
                           </button>
@@ -197,7 +197,7 @@ export default function StarterBlocksPage() {
                             }
                             aria-label="เอาบล็อกนี้ออกจากโครง"
                             title="เอาออกจากโครง"
-                            className="grid size-7 place-items-center rounded-full text-rose-400 hover:bg-rose-50"
+                            className="grid size-9 shrink-0 place-items-center rounded-full text-rose-400 hover:bg-rose-50"
                           >
                             <Trash2 size={14} aria-hidden="true" />
                           </button>

@@ -187,7 +187,7 @@ export default function CampaignIndex({
             });
           }}
           disabled={busy === row.key}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
         >
           {busy === row.key ? (
             <Spinner size="sm" color="current" />

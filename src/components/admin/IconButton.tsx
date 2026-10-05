@@ -41,7 +41,7 @@ export default function IconButton({
             aria-pressed={pressed}
             aria-label={label}
             className={clsx(
-              "inline-flex items-center rounded-full p-1.5 text-slate-500 transition-colors",
+              "grid size-9 shrink-0 place-items-center rounded-full text-slate-500 transition-colors",
               "hover:bg-surface-soft hover:text-brand-800",
               "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-action",
               className,

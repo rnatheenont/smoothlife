@@ -82,7 +82,7 @@ export default function RichTextArea({
   }
 
   const button =
-    "grid size-7 place-items-center rounded-md text-slate-500 transition-colors hover:bg-black/5 hover:text-brand-ink";
+    "grid size-9 shrink-0 place-items-center rounded-md text-slate-500 transition-colors hover:bg-black/5 hover:text-brand-ink";
 
   return (
     <div

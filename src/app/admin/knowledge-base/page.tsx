@@ -699,7 +699,7 @@ export default function AdminKnowledgeBasePage() {
                               type="button"
                               onClick={() => remove(a)}
                               aria-label={`ลบ ${a.title}`}
-                              className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                              className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                             >
                               <Trash2 size={14} />
                             </button>
