@@ -23,7 +23,21 @@ type OverrideRow = {
   sku: string | null;
   published: boolean;
   blocks: unknown[];
+  updated_by: string | null;
+  updated_at: string;
 };
+
+/** Bangkok, not the reader's clock: "แก้เมื่อ 09:41" has to mean the same
+ *  thing to the person who wrote it and the person asking about it. */
+const when = (iso: string) =>
+  new Date(iso).toLocaleString("th-TH", {
+    day: "2-digit",
+    month: "short",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Bangkok",
+  });
 
 const STATUS_LABEL: Record<
   Status,
@@ -73,6 +87,7 @@ export default function ProductContentListPage() {
   const [imageStatus, setImageStatus] = useState<Record<string, ImageStatus>>(
     {},
   );
+  const [editors, setEditors] = useState<Record<string, string>>({});
   const [customImagesOnly, setCustomImagesOnly] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState("");
@@ -86,6 +101,7 @@ export default function ProductContentListPage() {
         const map: Record<string, OverrideRow> = {};
         for (const row of d?.overrides ?? []) map[row.variant_id] = row;
         setOverrides(map);
+        setEditors(d?.editors ?? {});
       })
       .catch(() => {})
       .finally(() => setLoaded(true));
@@ -126,6 +142,7 @@ export default function ProductContentListPage() {
           contentVariantId,
           sku,
           status,
+          override,
           // Matched on the stable variant alone, the same key the editor
           // writes under — the editor is the only way a row gets here.
           images: imageStatus[contentVariantId],
@@ -295,11 +312,19 @@ export default function ProductContentListPage() {
               <th>SKU</th>
               <th>สถานะ</th>
               <th>รูป</th>
+              <th>แก้ไขล่าสุด</th>
             </tr>
           </thead>
           <tbody>
             {shown.map(
-              ({ product: p, contentVariantId, sku, status, images }) => {
+              ({
+                product: p,
+                contentVariantId,
+                sku,
+                status,
+                images,
+                override,
+              }) => {
                 const St = STATUS_LABEL[status];
                 const img = imageLabel(images);
                 return (
@@ -341,6 +366,33 @@ export default function ProductContentListPage() {
                         {img.text}
                       </span>
                     </td>
+                    <td className={adminTable.cell}>
+                      {override ? (
+                        <span className="block">
+                          <span className="block text-[12px] text-brand-ink">
+                            {override.updated_by ? (
+                              (editors[override.updated_by] ??
+                              "ผู้ใช้ที่ถูกลบแล้ว")
+                            ) : (
+                              // Null means the save carried no identity: a bulk
+                              // import, or somebody signed in with the shared
+                              // password. Naming either would be a guess.
+                              <span
+                                className="text-slate-400"
+                                title="ไม่ได้บันทึกว่าใครแก้ — มาจากการนำเข้าอัตโนมัติ หรือเข้าระบบด้วยรหัสผ่านรวม"
+                              >
+                                ไม่ระบุ
+                              </span>
+                            )}
+                          </span>
+                          <span className="block text-[11px] tabular-nums text-slate-400">
+                            {when(override.updated_at)}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-[12px] text-slate-300">—</span>
+                      )}
+                    </td>
                   </tr>
                 );
               },
@@ -348,7 +400,7 @@ export default function ProductContentListPage() {
             {loaded && shown.length === 0 && (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="px-3 py-8 text-center text-sm text-slate-400"
                 >
                   ไม่พบรายการ

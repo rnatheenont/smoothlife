@@ -313,11 +313,15 @@ export type ProductContentOverride = {
   slug: string | null;
   blocks: ContentBlock[];
   published: boolean;
+  /** The admin_users row that last saved this, when there was one. Null for a
+   *  bulk import and for anyone who signed in with the shared password, which
+   *  carries no identity — see getAdminSession. */
+  updated_by: string | null;
   updated_at: string;
 };
 
 export const PRODUCT_CONTENT_COLUMNS =
-  "id,variant_id,sku,slug,blocks,published,updated_at";
+  "id,variant_id,sku,slug,blocks,published,updated_by,updated_at";
 
 export function productContentTag(variantId: string) {
   return `product-content:${variantId}`;
