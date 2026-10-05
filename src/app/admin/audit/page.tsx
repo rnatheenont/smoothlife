@@ -43,6 +43,7 @@ const LABEL: Record<string, string> = {
   "account.merge": "รวมบัญชีลูกค้า",
   "account.relink-shopify": "ผูกบัญชี Shopify ใหม่",
   "account.delete-test-accounts": "ลบบัญชีทดสอบ",
+  "account.rename": "แก้ชื่อลูกค้า",
   "points.purge-test-data": "ล้างข้อมูลแต้มทดสอบ",
   "tracking.attach": "ผูกเลขพัสดุ",
   "tracking.ignore": "ข้ามรายการพัสดุ",

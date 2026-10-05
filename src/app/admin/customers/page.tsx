@@ -13,9 +13,10 @@ import {
   ExternalLink,
   ShieldCheck,
   Merge,
+  Pencil,
   Stethoscope,
 } from "lucide-react";
-import { Badge, Card } from "@/components/ui";
+import { Badge, Card, Modal } from "@/components/ui";
 import SkinScanSummary, {
   type AdminSkinScan,
 } from "@/components/admin/SkinScanSummary";
@@ -37,6 +38,10 @@ import AdminSearch from "@/components/admin/AdminSearch";
 // records that match the same search — because the whole difficulty is working
 // out which of several near-identical Shopify records is the one with the
 // orders in it.
+
+// What an account is called before anybody has said who they are. Mirrors
+// link-shopify-customer.ts, which is server-only and cannot be imported here.
+const PLACEHOLDER_NAME = "สมาชิกใหม่";
 
 type Identity = { provider: string; uid: string; verified: boolean };
 type Account = {
@@ -132,6 +137,12 @@ export default function AdminCustomersPage() {
   const [health, setHealth] = useState<Health | null>(null);
   const [checking, setChecking] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  // Typing in a name for an account that has none — the customers whose name
+  // only ever existed in a chat message.
+  const [renaming, setRenaming] = useState<Account | null>(null);
+  const [nameValue, setNameValue] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [nameBusy, setNameBusy] = useState(false);
   // The selected member's saved Skin Coach scans, for context when helping them.
   const [scans, setScans] = useState<AdminSkinScan[] | null>(null);
   useEffect(() => {
@@ -267,6 +278,48 @@ export default function AdminCustomersPage() {
     setTerm(term);
     setTimeout(() => void search(), 0);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function openRename(a: Account) {
+    setRenaming(a);
+    // Blank rather than the placeholder: "สมาชิกใหม่" is the absence of a
+    // name, and nobody wants to delete it before typing.
+    setNameValue(a.display_name === PLACEHOLDER_NAME ? "" : a.display_name || "");
+    setNameError("");
+  }
+
+  async function submitRename(e: React.FormEvent) {
+    e.preventDefault();
+    if (!renaming) return;
+    const name = nameValue.trim();
+    if (!name) {
+      setNameError("กรุณากรอกชื่อ");
+      return;
+    }
+    setNameError("");
+    setNameBusy(true);
+    try {
+      const res = await fetch("/api/admin/customers/name", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: renaming.id, name }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!json?.ok) {
+        setNameError(json?.error || "บันทึกชื่อไม่สำเร็จ");
+        return;
+      }
+      setAccounts((list) =>
+        (list || []).map((a) =>
+          a.id === renaming.id ? { ...a, display_name: name } : a,
+        ),
+      );
+      setRenaming(null);
+    } catch {
+      setNameError("บันทึกชื่อไม่สำเร็จ กรุณาลองใหม่");
+    } finally {
+      setNameBusy(false);
+    }
   }
 
   async function merge(loserId: string) {
@@ -527,8 +580,24 @@ export default function AdminCustomersPage() {
                       )}
                     >
                       <td className={adminTable.cell}>
-                        <span className="block truncate font-semibold text-brand-ink">
-                          {a.display_name || "(ไม่มีชื่อ)"}
+                        <span className="flex items-center gap-1">
+                          <span className="min-w-0 truncate font-semibold text-brand-ink">
+                            {a.display_name || "(ไม่มีชื่อ)"}
+                          </span>
+                          {/* stopPropagation: the row itself selects the
+                              account, and editing the name is not that. */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openRename(a);
+                            }}
+                            aria-label={`แก้ชื่อของ ${a.display_name || "บัญชีนี้"}`}
+                            title="แก้ชื่อ"
+                            className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-white hover:text-brand-ink"
+                          >
+                            <Pencil size={13} aria-hidden="true" />
+                          </button>
                         </span>
                         <span className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
                           {a.phone && <span>{a.phone}</span>}
@@ -631,8 +700,32 @@ export default function AdminCustomersPage() {
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-brand-ink truncate">
-                      {a.display_name || "(ไม่มีชื่อ)"}
+                    <span className="flex min-w-0 items-center gap-1">
+                      <span className="truncate text-sm font-semibold text-brand-ink">
+                        {a.display_name || "(ไม่มีชื่อ)"}
+                      </span>
+                      {/* A span, not a button: the whole card is a button
+                          already and one cannot be nested in the other. */}
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openRename(a);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openRename(a);
+                          }
+                        }}
+                        aria-label={`แก้ชื่อของ ${a.display_name || "บัญชีนี้"}`}
+                        title="แก้ชื่อ"
+                        className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-white hover:text-brand-ink"
+                      >
+                        <Pencil size={13} aria-hidden="true" />
+                      </span>
                     </span>
                     {a.shopify_customer_id ? (
                       <Badge tone="success">
@@ -1064,6 +1157,41 @@ export default function AdminCustomersPage() {
             </button>
           ))}
         </Card>
+      )}
+
+      {renaming && (
+        <Modal
+          open
+          onClose={() => setRenaming(null)}
+          size="sm"
+          title="แก้ชื่อลูกค้า"
+          description={
+            renaming.identities.find((i) => i.provider === "email")?.uid ||
+            renaming.phone ||
+            undefined
+          }
+        >
+          <form onSubmit={submitRename} className="space-y-3">
+            <AdminField
+              label="ชื่อ"
+              value={nameValue}
+              onChange={setNameValue}
+              placeholder="เช่น สมหญิง ใจดี"
+            />
+            <p className="text-xs text-slate-500">
+              ลูกค้าเห็นชื่อนี้ในหน้าบัญชีของตัวเอง
+              และชื่อที่กรอกไว้จะไม่ถูกทับด้วยชื่อจาก Shopify ภายหลัง
+            </p>
+            {nameError && (
+              <p role="alert" className="text-xs font-medium text-rose-600">
+                {nameError}
+              </p>
+            )}
+            <Button type="submit" fullWidth isPending={nameBusy}>
+              บันทึกชื่อ
+            </Button>
+          </form>
+        </Modal>
       )}
     </div>
   );
