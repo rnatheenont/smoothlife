@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Sparkles, ExternalLink, Check, Image as ImageIcon, AlertTriangle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { categories, categoryImage, concerns } from "@/data/categories";
 import { products } from "@/data/products";
@@ -12,6 +11,7 @@ import { collections } from "@/data/collections";
 import { brands } from "@/data/brands";
 import { brandFacts, brandSeoDefaults } from "@/lib/brand-seo";
 import { SITE_PAGES } from "@/lib/site-pages";
+import { Button } from "@heroui/react";
 import {
   DESCRIPTION_MAX,
   SEO_ANGLES,
@@ -495,7 +495,7 @@ export default function AdminSeoPage() {
                     {selected.href} <ExternalLink size={12} aria-hidden="true" />
                   </Link>
                 </div>
-                <Button type="button" variant="secondary" size="sm" onClick={suggest} disabled={thinking}>
+                <Button type="button" variant="secondary" size="sm" onPress={suggest} isDisabled={thinking}>
                   <Sparkles size={14} aria-hidden="true" />
                   {thinking ? "กำลังคิด…" : "ให้ AI ช่วยคิด"}
                 </Button>
@@ -770,7 +770,7 @@ export default function AdminSeoPage() {
               {/* Pinned, not scrolled to: with the previews and six fields
                   above it, Save used to sit below the fold on every page. */}
               <div className="flex items-center gap-3 border-t border-surface-line p-5 py-3">
-                <Button type="button" onClick={save} disabled={saving}>
+                <Button type="button" onPress={save} isDisabled={saving}>
                   {saving ? "กำลังบันทึก…" : "บันทึก"}
                 </Button>
                 {note && <span className="text-xs text-slate-500">{note}</span>}

@@ -16,10 +16,11 @@ import {
   Merge,
   Stethoscope,
 } from "lucide-react";
-import { Badge, Button, Card } from "@/components/ui";
+import { Badge, Card } from "@/components/ui";
 import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, SectionTitle, adminTable } from "@/components/admin/layout-kit";
+import { Button } from "@heroui/react";
 
 // Attaching a returning customer's purchase history to their login.
 //
@@ -289,7 +290,7 @@ export default function AdminCustomersPage() {
           placeholder="อีเมล / เบอร์โทร / ชื่อลูกค้า"
           className="flex-1 min-w-0 rounded-xl2 border border-slate-200 px-3 py-2 text-sm"
         />
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" isDisabled={loading}>
           {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
           ค้นหา
         </Button>
@@ -316,7 +317,7 @@ export default function AdminCustomersPage() {
             </h2>
             <p className="text-[11px] text-slate-400 mt-0.5">หาบัญชีที่มองไม่เห็นออเดอร์ตัวเอง โดยไม่ต้องรอลูกค้าทัก</p>
           </div>
-          <Button size="sm" variant="soft" onClick={runHealthCheck} disabled={checking}>
+          <Button size="sm" variant="secondary" onPress={runHealthCheck} isDisabled={checking}>
             {checking ? <Loader2 size={13} className="animate-spin" /> : <Stethoscope size={13} />}
             ตรวจเลย
           </Button>
@@ -689,8 +690,8 @@ export default function AdminCustomersPage() {
                             ) : provenFor(c) ? (
                               <Button
                                 size="sm"
-                                disabled={!selected || busy !== ""}
-                                onClick={() => link(c.id, true, c.store)}
+                                isDisabled={!selected || busy !== ""}
+                                onPress={() => link(c.id, true, c.store)}
                               >
                                 {busy === c.id ? (
                                   <Loader2 size={13} className="animate-spin" />
@@ -702,8 +703,8 @@ export default function AdminCustomersPage() {
                             ) : (
                               <Button
                                 size="sm"
-                                disabled={!selected || busy !== "" || note.trim().length < 3}
-                                onClick={() => link(c.id, false, c.store)}
+                                isDisabled={!selected || busy !== "" || note.trim().length < 3}
+                                onPress={() => link(c.id, false, c.store)}
                               >
                                 {busy === c.id ? <Loader2 size={13} className="animate-spin" /> : <Link2 size={13} />}
                                 ผูกกับบัญชีนี้
@@ -789,15 +790,15 @@ export default function AdminCustomersPage() {
                       {linkedHere ? (
                         <Badge tone="success">ผูกกับบัญชีนี้อยู่</Badge>
                       ) : provenFor(c) ? (
-                        <Button size="sm" disabled={!selected || busy !== ""} onClick={() => link(c.id, true, c.store)}>
+                        <Button size="sm" isDisabled={!selected || busy !== ""} onPress={() => link(c.id, true, c.store)}>
                           {busy === c.id ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
                           ผูกอัตโนมัติ
                         </Button>
                       ) : (
                         <Button
                           size="sm"
-                          disabled={!selected || busy !== "" || note.trim().length < 3}
-                          onClick={() => link(c.id, false, c.store)}
+                          isDisabled={!selected || busy !== "" || note.trim().length < 3}
+                          onPress={() => link(c.id, false, c.store)}
                         >
                           {busy === c.id ? <Loader2 size={13} className="animate-spin" /> : <Link2 size={13} />}
                           ผูกกับบัญชีนี้

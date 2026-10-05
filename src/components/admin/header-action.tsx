@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Button } from "@/components/ui";
+import { Button } from "@heroui/react";
 
 // The primary action of an admin page ("สร้างแคมเปญใหม่", "เพิ่ม…") belongs in
 // the top right of the console, the way every CMS back-office puts it — but
@@ -54,7 +54,7 @@ export function AdminActionButton() {
   const { action } = useContext(Ctx);
   if (!action) return null;
   return (
-    <Button onClick={action.onClick} disabled={action.disabled} className="shrink-0">
+    <Button onPress={action.onClick} isDisabled={action.disabled} className="shrink-0">
       {action.icon}
       {action.label}
     </Button>

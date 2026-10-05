@@ -40,11 +40,11 @@ import {
   BellRing,
 } from "lucide-react";
 import type { InboxListItem } from "@/app/api/admin/inbox/route";
-import { Button } from "@/components/ui";
 import { splitMarker } from "@/lib/chat-markers";
 import { isTranscriptDump } from "@/lib/inbox-transcript";
 import { resizeForUpload, type ResizedImage } from "@/lib/image-utils";
 import { useAdminAction } from "@/components/admin/header-action";
+import { Button } from "@heroui/react";
 
 // Unified inbox (plan §7.2): conversation list, thread, customer panel.
 // Only the web channel exists so far — LINE and Facebook adapters write into
@@ -1171,10 +1171,10 @@ export default function AdminInboxPage() {
                         แก้ไขคำตอบเอง
                       </button>
                       <Button
-                        size="none"
+                       
                         className="rounded-full px-3 py-1 text-[11px]"
-                        disabled={sending || !pendingTranslation.translated.trim()}
-                        onClick={() => doSend(pendingTranslation.original, attachment, pendingTranslation.translated)}
+                        isDisabled={sending || !pendingTranslation.translated.trim()}
+                        onPress={() => doSend(pendingTranslation.original, attachment, pendingTranslation.translated)}
                       >
                         ส่งข้อความนี้
                       </Button>
@@ -1245,10 +1245,10 @@ export default function AdminInboxPage() {
                     className="min-w-0 flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs outline-hidden focus:border-brand-teal disabled:bg-surface-soft disabled:text-slate-400"
                   />
                   <Button
-                    size="none"
+                   
                     className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-lg p-0"
-                    onClick={send}
-                    disabled={sending || checkingTranslation || !!pendingTranslation || (!reply.trim() && !attachment)}
+                    onPress={send}
+                    isDisabled={sending || checkingTranslation || !!pendingTranslation || (!reply.trim() && !attachment)}
                   >
                     {sending || checkingTranslation ? (
                       <Loader2 size={15} className="animate-spin" />

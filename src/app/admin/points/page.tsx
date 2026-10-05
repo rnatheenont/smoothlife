@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Award, Plus, X, Trash2, Search } from "lucide-react";
-import { Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, SectionTitle } from "@/components/admin/layout-kit";
+import { Button } from "@heroui/react";
 
 type Tier = {
   id: string;
@@ -309,7 +309,7 @@ export default function AdminPointsPage() {
               placeholder="ค้นหาด้วยชื่อ, เบอร์โทร, หรืออีเมล"
               className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
             />
-            <Button size="none" className="gap-1 px-4 text-xs" type="submit" disabled={searching}>
+            <Button className="gap-1 px-4 text-xs" type="submit" isDisabled={searching}>
               <Search size={13} /> ค้นหา
             </Button>
           </form>
@@ -369,7 +369,7 @@ export default function AdminPointsPage() {
                   placeholder="หมายเหตุ (ไม่บังคับ)"
                   className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
                 />
-                <Button size="sm" className="shrink-0" type="submit" disabled={adjusting}>
+                <Button size="sm" className="shrink-0" type="submit" isDisabled={adjusting}>
                   {adjusting ? "กำลังบันทึก…" : "ปรับแต้ม"}
                 </Button>
               </form>
@@ -484,7 +484,7 @@ export default function AdminPointsPage() {
                 />
               </div>
               {tierFormError && <p className="text-xs text-rose-500">{tierFormError}</p>}
-              <Button fullWidth type="submit" disabled={tierSubmitting}>
+              <Button fullWidth type="submit" isDisabled={tierSubmitting}>
                 {tierSubmitting ? "กำลังบันทึก…" : "บันทึก"}
               </Button>
             </form>

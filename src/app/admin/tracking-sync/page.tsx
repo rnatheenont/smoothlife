@@ -18,10 +18,11 @@ import {
   UserRound,
   PackagePlus,
 } from "lucide-react";
-import { Badge, Button, Card } from "@/components/ui";
+import { Badge, Card } from "@/components/ui";
 import type { TrackingSyncRow } from "@/app/api/admin/tracking-sync/route";
 import { useAdminAction } from "@/components/admin/header-action";
 import { adminTable } from "@/components/admin/layout-kit";
+import { Button } from "@heroui/react";
 
 // Three questions, in the order staff ask them: is the integration alive,
 // is there anything for me to decide, and what happened. The page is laid out
@@ -550,7 +551,7 @@ export default function AdminTrackingSyncPage() {
               CRON_SECRET is stored on Vercel as a sensitive value, so nobody
               can read it back — triggering a run by hand meant rotating it and
               redeploying. Staff are already signed in here; that is the key. */}
-          <Button variant="secondary" size="sm" onClick={load} disabled={loading}>
+          <Button variant="secondary" size="sm" onPress={load} isDisabled={loading}>
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> รีเฟรช
           </Button>
         </div>

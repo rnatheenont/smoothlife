@@ -4,8 +4,8 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Lock } from "lucide-react";
-import { Button } from "@/components/ui";
 import { PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
+import { Button } from "@heroui/react";
 
 // Where the emailed link lands. Rendered outside the admin gate (see
 // layout.tsx) — the reason someone is here is that they cannot get in.
@@ -97,7 +97,7 @@ function ResetForm() {
         />
       </div>
       {error && <p className="text-xs text-rose-500">{error}</p>}
-      <Button fullWidth type="submit" disabled={saving}>
+      <Button fullWidth type="submit" isDisabled={saving}>
         {saving ? "กำลังบันทึก…" : "ตั้งรหัสผ่านใหม่"}
       </Button>
     </form>

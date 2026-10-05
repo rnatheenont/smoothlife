@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { CreditCard, Check, Copy, Plus } from "lucide-react";
-import { Badge, Button } from "@/components/ui";
+import { Badge } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
+import { Button } from "@heroui/react";
 
 type GiftCardSummary = {
   id: string;
@@ -189,7 +190,7 @@ export default function AdminGiftCardsPage() {
               </div>
             </div>
             {error && <p className="text-xs text-rose-500">{error}</p>}
-            <Button fullWidth type="submit" disabled={submitting}>
+            <Button fullWidth type="submit" isDisabled={submitting}>
               {submitting ? "กำลังออกบัตร…" : "ออกบัตรของขวัญและส่งอีเมล"}
             </Button>
           </form>

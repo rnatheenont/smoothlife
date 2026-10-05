@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { UserCog, Plus, Copy, Check, KeyRound, Ban, RotateCcw } from "lucide-react";
-import { Button, Badge, Field, Modal } from "@/components/ui";
+import { Badge, Field, Modal } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
 import AdminSelect from "@/components/admin/AdminSelect";
+import { Button } from "@heroui/react";
 
 type Role = { key: string; label: string };
 type AdminUserRow = {
@@ -233,16 +234,16 @@ export default function AdminUsersPage() {
                           <Button
                             variant="secondary"
                             size="sm"
-                            disabled={busyId === u.id}
-                            onClick={() => patchUser(u.id, { reset_password: true })}
+                            isDisabled={busyId === u.id}
+                            onPress={() => patchUser(u.id, { reset_password: true })}
                           >
                             <KeyRound size={13} /> ตั้งรหัสผ่านใหม่
                           </Button>
                           <Button
                             variant={u.status === "active" ? "danger" : "secondary"}
                             size="sm"
-                            disabled={isSelf || busyId === u.id}
-                            onClick={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
+                            isDisabled={isSelf || busyId === u.id}
+                            onPress={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
                           >
                             {u.status === "active" ? (
                               <>
@@ -289,16 +290,16 @@ export default function AdminUsersPage() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      disabled={busyId === u.id}
-                      onClick={() => patchUser(u.id, { reset_password: true })}
+                      isDisabled={busyId === u.id}
+                      onPress={() => patchUser(u.id, { reset_password: true })}
                     >
                       <KeyRound size={13} /> ตั้งรหัสผ่านใหม่
                     </Button>
                     <Button
                       variant={u.status === "active" ? "danger" : "secondary"}
                       size="sm"
-                      disabled={isSelf || busyId === u.id}
-                      onClick={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
+                      isDisabled={isSelf || busyId === u.id}
+                      onPress={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
                     >
                       {u.status === "active" ? (
                         <>
@@ -361,7 +362,7 @@ export default function AdminUsersPage() {
               {formError}
             </p>
           )}
-          <Button type="submit" fullWidth loading={submitting}>
+          <Button type="submit" fullWidth isPending={submitting}>
             สร้างบัญชี
           </Button>
         </form>

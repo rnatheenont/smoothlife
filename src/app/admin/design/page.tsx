@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Sun, Moon, ShoppingBag, CreditCard, Palette } from "lucide-react";
-import { Button, Badge, Card, Field, Modal } from "@/components/ui";
+import { Badge, Card, Field, Modal } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader } from "@/components/admin/layout-kit";
 import Link from "next/link";
+import { Button } from "@heroui/react";
 
 // A living style guide: it reads the brand tokens straight out of the shipped
 // stylesheet (the `@theme static` block in globals.css), so it cannot drift
@@ -247,18 +248,20 @@ export default function AdminDesignSystemPage() {
             <div className="mb-1.5 flex flex-wrap items-center gap-2">
               <Button>ซื้อเลย</Button>
               <Button variant="secondary">ดูรายละเอียด</Button>
-              <Button variant="soft">บันทึกไว้ก่อน</Button>
+              <Button variant="secondary">บันทึกไว้ก่อน</Button>
               <Button variant="ghost">ยกเลิก</Button>
               <Button variant="danger">ลบ</Button>
             </div>
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <Button size="sm">เล็ก</Button>
               <Button size="lg">ใหญ่</Button>
-              <Button loading>กำลังส่ง</Button>
-              <Button disabled>กดไม่ได้</Button>
-              <Button href="/shop" variant="secondary" size="sm">
+              <Button isPending>กำลังส่ง</Button>
+              <Button isDisabled>กดไม่ได้</Button>
+              {/* HeroUI's Button is a real <button> and takes no href, so a
+                  link that looks like one borrows the same classes. */}
+              <Link href="/shop" className="button button--sm button--secondary">
                 <ShoppingBag size={13} /> เป็นลิงก์
-              </Button>
+              </Link>
             </div>
 
             <p className="mb-2 text-label font-semibold uppercase tracking-wide text-slate-400">Badge</p>
@@ -295,7 +298,7 @@ export default function AdminDesignSystemPage() {
             </div>
 
             <p className="mb-2 mt-4 text-label font-semibold uppercase tracking-wide text-slate-400">Modal</p>
-            <Button variant="secondary" size="sm" onClick={() => setModalOpen(true)}>
+            <Button variant="secondary" size="sm" onPress={() => setModalOpen(true)}>
               เปิดตัวอย่าง Modal
             </Button>
           </div>
@@ -308,10 +311,10 @@ export default function AdminDesignSystemPage() {
           description="กด Esc หรือคลิกพื้นหลังเพื่อปิด — โฟกัสจะวนอยู่ในกล่องนี้เท่านั้น"
           footer={
             <>
-              <Button variant="ghost" onClick={() => setModalOpen(false)}>
+              <Button variant="ghost" onPress={() => setModalOpen(false)}>
                 ไม่ใช่ตอนนี้
               </Button>
-              <Button variant="danger" onClick={() => setModalOpen(false)}>
+              <Button variant="danger" onPress={() => setModalOpen(false)}>
                 ยืนยันยกเลิก
               </Button>
             </>

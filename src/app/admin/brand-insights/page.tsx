@@ -13,9 +13,9 @@ import {
   Search,
   TrendingUp,
 } from "lucide-react";
-import { Button } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, SectionTitle, adminTable } from "@/components/admin/layout-kit";
+import { Button } from "@heroui/react";
 
 // What the brand's own signals say, and which keyword is worth the next
 // afternoon.
@@ -221,8 +221,8 @@ export default function BrandInsightsPage() {
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => run("insight")}
-                disabled={Boolean(busy)}
+                onPress={() => run("insight")}
+                isDisabled={Boolean(busy)}
               >
                 <Sparkles size={14} aria-hidden="true" />
                 {busy === "insight" ? "กำลังสรุป…" : "ให้ AI สรุปใหม่"}
@@ -401,7 +401,7 @@ export default function BrandInsightsPage() {
       <section className="mt-8">
         <SectionTitle
           action={
-            <Button type="button" variant="secondary" size="sm" onClick={() => run("score")} disabled={Boolean(busy)}>
+            <Button type="button" variant="secondary" size="sm" onPress={() => run("score")} isDisabled={Boolean(busy)}>
               <RefreshCw size={14} aria-hidden="true" />
               {busy === "score" ? "กำลังคำนวณ…" : "คำนวณใหม่"}
             </Button>

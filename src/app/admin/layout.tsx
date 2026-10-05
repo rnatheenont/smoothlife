@@ -31,9 +31,9 @@ import { ScrollText,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui";
 import { AdminActionButton, AdminActionProvider } from "@/components/admin/header-action";
 import CommandPalette from "@/components/admin/command-palette";
+import { Button } from "@heroui/react";
 import {
   NAV_GROUPS,
   ALL_ITEMS,
@@ -283,7 +283,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <p className="text-xs text-slate-500">
                   กรอกอีเมลบัญชีแอดมินของคุณด้านบน แล้วกดส่งลิงก์ ลิงก์มีอายุ 15 นาที
                 </p>
-                <Button fullWidth type="button" variant="secondary" onClick={requestReset} disabled={forgotSending}>
+                <Button fullWidth type="button" variant="secondary" onPress={requestReset} isDisabled={forgotSending}>
                   {forgotSending ? "กำลังส่ง…" : "ส่งลิงก์ตั้งรหัสผ่านใหม่"}
                 </Button>
                 {forgotNote && <p className="text-xs text-slate-500">{forgotNote}</p>}

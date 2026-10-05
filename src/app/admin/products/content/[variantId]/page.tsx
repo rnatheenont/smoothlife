@@ -19,9 +19,9 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { Button } from "@/components/ui";
 import ProductMediaCard from "@/components/admin/products/ProductMediaCard";
 import { products } from "@/data/products";
+import { Button } from "@heroui/react";
 import {
   BLOCK_TYPES,
   FIXED_HEADING,
@@ -357,16 +357,16 @@ export default function ProductContentEditPage() {
             <div className="mt-6 flex items-center gap-3 border-t border-surface-line pt-4">
               <Button
                 variant="secondary"
-                onClick={() => save(false)}
-                loading={saving === "draft"}
-                disabled={Boolean(saving)}
+                onPress={() => save(false)}
+                isPending={saving === "draft"}
+                isDisabled={Boolean(saving)}
               >
                 บันทึกร่าง
               </Button>
               <Button
-                onClick={() => save(true)}
-                loading={saving === "publish"}
-                disabled={Boolean(saving)}
+                onPress={() => save(true)}
+                isPending={saving === "publish"}
+                isDisabled={Boolean(saving)}
               >
                 เผยแพร่
               </Button>
