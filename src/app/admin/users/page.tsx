@@ -111,6 +111,7 @@ export default function AdminUsersPage() {
   // other needs the account named back at you before it goes.
   const [renaming, setRenaming] = useState<AdminUserRow | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [emailValue, setEmailValue] = useState("");
   const [renameError, setRenameError] = useState("");
   const [renameBusy, setRenameBusy] = useState(false);
   const [deleting, setDeleting] = useState<AdminUserRow | null>(null);
@@ -210,6 +211,7 @@ export default function AdminUsersPage() {
   function openRename(u: AdminUserRow) {
     setRenaming(u);
     setRenameValue(u.display_name);
+    setEmailValue(u.email);
     setRenameError("");
   }
 
@@ -221,17 +223,22 @@ export default function AdminUsersPage() {
       setRenameError("กรุณากรอกชื่อที่ใช้แสดงผล");
       return;
     }
+    const email = emailValue.trim().toLowerCase();
+    if (!email) {
+      setRenameError("กรุณากรอกอีเมล");
+      return;
+    }
     setRenameError("");
     setRenameBusy(true);
     try {
       const res = await fetch(`/api/admin/users/${renaming.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name: name }),
+        body: JSON.stringify({ display_name: name, email }),
       });
       const data = await res.json().catch(() => null);
       if (!data?.ok) {
-        setRenameError(data?.error || "แก้ชื่อไม่สำเร็จ");
+        setRenameError(data?.error || "บันทึกไม่สำเร็จ");
         return;
       }
       setUsers((prev) =>
@@ -239,7 +246,7 @@ export default function AdminUsersPage() {
       );
       setRenaming(null);
     } catch {
-      setRenameError("แก้ชื่อไม่สำเร็จ กรุณาลองใหม่");
+      setRenameError("บันทึกไม่สำเร็จ กรุณาลองใหม่");
     } finally {
       setRenameBusy(false);
     }
@@ -316,8 +323,8 @@ export default function AdminUsersPage() {
                           <button
                             type="button"
                             onClick={() => openRename(u)}
-                            aria-label={`แก้ชื่อของ ${u.display_name}`}
-                            title="แก้ชื่อ"
+                            aria-label={`แก้ชื่อและอีเมลของ ${u.display_name}`}
+                            title="แก้ชื่อและอีเมล"
                             className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-surface-soft hover:text-brand-ink"
                           >
                             <Pencil size={13} aria-hidden="true" />
@@ -417,8 +424,8 @@ export default function AdminUsersPage() {
                     <button
                       type="button"
                       onClick={() => openRename(u)}
-                      aria-label={`แก้ชื่อของ ${u.display_name}`}
-                      title="แก้ชื่อ"
+                      aria-label={`แก้ชื่อและอีเมลของ ${u.display_name}`}
+                      title="แก้ชื่อและอีเมล"
                       className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-surface-soft hover:text-brand-ink"
                     >
                       <Pencil size={13} aria-hidden="true" />
@@ -549,8 +556,8 @@ export default function AdminUsersPage() {
         <Modal
           open
           onClose={() => setRenaming(null)}
-          title="แก้ชื่อที่ใช้แสดงผล"
-          description={renaming.email}
+          title="แก้ชื่อและอีเมล"
+          description={renaming.display_name}
         >
           <form onSubmit={submitRename} className="space-y-3">
             <Field
@@ -564,13 +571,31 @@ export default function AdminUsersPage() {
               ชื่อนี้ขึ้นในบันทึกการใช้งานและหน้าเนื้อหาสินค้า
               แก้แล้วงานเก่าจะขึ้นเป็นชื่อใหม่ด้วย
             </p>
+            <Field
+              label="อีเมล"
+              type="email"
+              required
+              value={emailValue}
+              onChange={(e) => setEmailValue(e.target.value)}
+              placeholder="name@smooth-e.com"
+            />
+            {/* The email is the login, so this says what actually changes —
+                not "this field is the email", which the label already said. */}
+            <p className="text-xs text-slate-500">
+              {emailValue.trim().toLowerCase() !==
+              renaming.email.trim().toLowerCase()
+                ? `เปลี่ยนแล้ว ${renaming.email} จะเข้าระบบไม่ได้อีก ต้องใช้อีเมลใหม่แทน${
+                    me?.id === renaming.id ? " — รวมถึงการเข้าระบบของคุณเอง" : ""
+                  }`
+                : "อีเมลนี้คือชื่อผู้ใช้สำหรับเข้าระบบ และเป็นที่อยู่ที่ลิงก์ตั้งรหัสผ่านใหม่ถูกส่งไป"}
+            </p>
             {renameError && (
               <p role="alert" className="text-xs font-medium text-rose-600">
                 {renameError}
               </p>
             )}
             <Button type="submit" fullWidth isPending={renameBusy}>
-              บันทึกชื่อ
+              บันทึก
             </Button>
           </form>
         </Modal>

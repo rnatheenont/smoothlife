@@ -26,6 +26,7 @@ async function requireOwner(
 
 // PATCH body is one of:
 //   { display_name }       — rename the account
+//   { email }              — change the address this person signs in with
 //   { role_key }          — change what this person can do
 //   { status }             — suspend / reactivate
 //   { reset_password: true } — issue a new temporary password, returned once
@@ -70,6 +71,36 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     if (name.length > 80) return NextResponse.json({ ok: false, error: "ชื่อยาวเกินไป (ไม่เกิน 80 ตัวอักษร)" }, { status: 400 });
     patch.display_name = name;
   }
+  // The email is the login, so this one is a security change, not a cosmetic
+  // one: after it saves, the old address signs in to nothing and any reset
+  // link already sent to it stops resolving. It is still allowed on your own
+  // account — the session is keyed by id, not address, so changing it does
+  // not sign you out — and it is the only way to fix an invite sent to a
+  // typo'd address without starting the account over.
+  let emailChange: { from: string; to: string } | null = null;
+  if (body.email !== undefined) {
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    // The same shape forgot-password accepts: this address has to be able to
+    // receive a reset link, so "has an @ in it" is not enough.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ ok: false, error: "กรุณากรอกอีเมลให้ถูกต้อง" }, { status: 400 });
+    }
+    const [current] = await supabaseRest<{ email: string }[]>(
+      `admin_users?id=eq.${pgValue(id)}&select=email&limit=1`
+    );
+    if (!current) return NextResponse.json({ ok: false, error: "ไม่พบผู้ใช้นี้" }, { status: 404 });
+    if (current.email !== email) {
+      // `id=neq` so re-saving the same row's own address is not a clash.
+      const taken = await supabaseRest<{ id: string }[]>(
+        `admin_users?email=eq.${pgValue(email)}&id=neq.${pgValue(id)}&select=id&limit=1`
+      );
+      if (taken.length > 0) {
+        return NextResponse.json({ ok: false, error: "มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว" }, { status: 409 });
+      }
+      emailChange = { from: current.email, to: email };
+      patch.email = email;
+    }
+  }
   if (typeof body.role_key === "string") patch.role_key = body.role_key;
   if (body.status === "active" || body.status === "suspended") patch.status = body.status;
   if (Object.keys(patch).length === 0) return NextResponse.json({ ok: false, error: "ไม่มีข้อมูลให้แก้ไข" }, { status: 400 });
@@ -79,6 +110,23 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     { method: "PATCH", body: JSON.stringify(patch) }
   );
   if (!updated) return NextResponse.json({ ok: false, error: "ไม่พบผู้ใช้นี้" }, { status: 404 });
+
+  // Logged because it moves where a password reset can be sent — the one
+  // change here that could hand an account to someone else. Both addresses
+  // go in: afterwards the row only remembers the new one.
+  if (emailChange) {
+    await supabaseRest("admin_audit_log", {
+      method: "POST",
+      returning: false,
+      body: JSON.stringify({
+        action: "admin-user.email",
+        target: emailChange.to,
+        detail: { from: emailChange.from, to: emailChange.to, display_name: updated.display_name },
+        admin_user_id: auth.session?.userId ?? null,
+      }),
+    }).catch((err) => console.error("[admin/users] audit write failed", err));
+  }
+
   return NextResponse.json({ ok: true, user: updated });
 }
 
