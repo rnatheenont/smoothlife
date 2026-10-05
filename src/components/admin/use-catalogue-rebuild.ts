@@ -38,7 +38,7 @@ function coolingUntil(iso: string | null | undefined): number | null {
 
 export function useCatalogueRebuild(
   /** Which screen asked, for the record the server keeps. */
-  reason: "product-images" | "overview" = "product-images",
+  reason: "product-images" | "product-content" | "overview" = "product-images",
 ): CatalogueRebuild {
   const [available, setAvailable] = useState(false);
   const [readyAt, setReadyAt] = useState<number | null>(null);

@@ -74,7 +74,10 @@ export async function POST(req: NextRequest) {
   // from" is not a question worth letting a client answer in its own words.
   const body = await req.json().catch(() => null);
   const asked = (body as { reason?: unknown } | null)?.reason;
-  const reason = asked === "overview" ? "overview" : "product-images";
+  const reason =
+    asked === "overview" || asked === "product-content"
+      ? asked
+      : "product-images";
 
   // Written before the hook fires, not after: a hook that succeeds while the
   // response is lost would otherwise leave no record and no cooldown, and the

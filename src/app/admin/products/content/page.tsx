@@ -9,7 +9,14 @@ import { products } from "@/data/products";
 import { stableContentVariantId } from "@/lib/product-content";
 import AdminSelect from "@/components/admin/AdminSelect";
 import AdminSearch from "@/components/admin/AdminSearch";
-import { FileEdit, CheckCircle2, Circle, LayoutList } from "lucide-react";
+import {
+  FileEdit,
+  CheckCircle2,
+  Circle,
+  LayoutList,
+  RefreshCw,
+} from "lucide-react";
+import { useCatalogueRebuild } from "@/components/admin/use-catalogue-rebuild";
 
 // Every product, searchable by SKU first (what the team actually recognises
 // — see the comment on ProductVariant.sku) or by name, with how far each
@@ -93,6 +100,9 @@ export default function ProductContentListPage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | Status>("all");
   const [brand, setBrand] = useState("all");
+  // "Pull everything from Shopify again" — the same action as on the console's
+  // home page, see use-catalogue-rebuild.ts.
+  const catalogue = useCatalogueRebuild("product-content");
 
   useEffect(() => {
     fetch("/api/admin/product-content")
@@ -204,17 +214,43 @@ export default function ProductContentListPage() {
         title="เนื้อหาสินค้า"
         subtitle="รายละเอียดสินค้าแบบอิสระ 2 ภาษา — ค้นด้วย SKU หรือชื่อสินค้า"
         actions={
-          // Reachable from here as well as from the note inside a blank
-          // product: somebody deciding what a product page should contain is
-          // usually looking at the whole list, not at one product.
-          <Link
-            href="/admin/products/content/starter"
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-surface-line px-3.5 text-[12px] font-semibold text-slate-600 hover:bg-surface-soft hover:text-brand-ink"
-          >
-            <LayoutList size={14} aria-hidden="true" /> โครงเริ่มต้น
-          </Link>
+          <span className="flex flex-wrap items-center gap-2">
+            {/* Here as well as on the console's home page: this list is built
+                from the generated catalogue, so a product added in Shopify is
+                not in it at all until the next build — and this is the screen
+                somebody is on when they notice that. */}
+            {catalogue.available && (
+              <button
+                type="button"
+                onClick={catalogue.trigger}
+                disabled={catalogue.busy || catalogue.readyAt !== null}
+                title="ดึงสินค้า ราคา สต็อก และรูปจาก Shopify ใหม่ทั้งเว็บ — ใช้เวลาราว 3-5 นาที และนับเป็น 1 deploy จากโควตา 100 ครั้ง/วัน"
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-surface-line px-3.5 text-[12px] font-semibold text-slate-600 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40 disabled:hover:bg-transparent"
+              >
+                <RefreshCw size={14} aria-hidden="true" />
+                {catalogue.readyAt === null
+                  ? "ดึงข้อมูลจาก Shopify"
+                  : `สั่งใหม่ได้ ${catalogue.readyLabel}`}
+              </button>
+            )}
+            {/* Reachable from here as well as from the note inside a blank
+                product: somebody deciding what a product page should contain
+                is usually looking at the whole list, not at one product. */}
+            <Link
+              href="/admin/products/content/starter"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-surface-line px-3.5 text-[12px] font-semibold text-slate-600 hover:bg-surface-soft hover:text-brand-ink"
+            >
+              <LayoutList size={14} aria-hidden="true" /> โครงเริ่มต้น
+            </Link>
+          </span>
         }
       />
+
+      {catalogue.note && (
+        <p className="mt-3 rounded-lg bg-surface-soft px-3 py-2 text-xs text-slate-600">
+          {catalogue.note}
+        </p>
+      )}
 
       <div className="mt-5 flex items-center gap-3">
         <div className="h-2 w-40 overflow-hidden rounded-full bg-surface-muted">
@@ -232,6 +268,13 @@ export default function ProductContentListPage() {
           {inBrand.length.toLocaleString("th-TH")})
         </span>
       </div>
+
+      {catalogue.available && (
+        <p className="mt-2 text-xs text-slate-400">
+          รายชื่อสินค้าชุดนี้มาจากรอบ build ล่าสุด — สินค้าที่เพิ่งเพิ่มใน
+          Shopify จะยังไม่อยู่ในรายการจนกว่าจะกด “ดึงข้อมูลจาก Shopify”
+        </p>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <AdminSearch
