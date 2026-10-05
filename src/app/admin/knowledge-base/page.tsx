@@ -804,6 +804,7 @@ export default function AdminKnowledgeBasePage() {
               หัวข้อ
             </label>
             <Input
+              fullWidth
               id="kb-title"
               value={form.title}
               onChange={(e) =>
@@ -891,6 +892,7 @@ export default function AdminKnowledgeBasePage() {
               ผูกกับสินค้า (ไม่บังคับ)
             </label>
             <Input
+              fullWidth
               id="kb-tags"
               value={form.tags}
               onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
@@ -916,6 +918,7 @@ export default function AdminKnowledgeBasePage() {
             </label>
             <div className="flex gap-2">
               <Input
+                fullWidth
                 id="kb-public-slug"
                 value={form.publicSlug}
                 onChange={(e) =>

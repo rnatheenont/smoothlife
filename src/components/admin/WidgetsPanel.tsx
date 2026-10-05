@@ -263,6 +263,7 @@ export default function WidgetsPanel() {
                       {CONFIG_LABELS[k] ?? k}
                     </label>
                     <Input
+                      fullWidth
                       value={drafts[w.key]?.[k] ?? ""}
                       onChange={(e) =>
                         setDrafts((prev) => ({

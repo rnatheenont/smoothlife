@@ -540,7 +540,7 @@ export default function AdminSeoPage() {
           </div>
 
           {selected ? (
-            <div className="flex min-h-0 min-w-0 flex-col rounded-xl2 bg-white ring-1 ring-surface-line">
+            <div className="@container flex min-h-0 min-w-0 flex-col rounded-xl2 bg-white ring-1 ring-surface-line">
               <div className="flex items-start justify-between gap-3 border-b border-surface-line p-5 pb-4">
                 <div className="min-w-0">
                   <h2 className="truncate font-bold text-brand-ink">
@@ -590,8 +590,15 @@ export default function AdminSeoPage() {
                   you look at while typing, so neither should be a scroll
                   away from the other. Stacked below 1280px with the previews
                   first, which is the only order that fits a narrow pane. */}
-              <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 xl:grid-cols-[minmax(0,1fr)_520px]">
-                <div className="min-w-0 xl:order-2">
+              {/* A container query, not `xl:`. The window being 1280px wide
+                  said nothing about this panel, which is the third column of
+                  the page and about 590px on such a screen — so the split
+                  turned on, the fixed 520px preview took almost all of it,
+                  and every field was left in an 8px column. Now the two
+                  columns appear when this panel is wide enough to hold them,
+                  which is the thing that was ever being asked. */}
+              <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 [grid-template-columns:minmax(0,1fr)] @5xl:[grid-template-columns:minmax(0,1fr)_520px]">
+                <div className="min-w-0 @5xl:order-2">
                   {/* What Google will actually show. The boxes below are abstract
                   until you can see the result they produce — and the line
                   that gets truncated is obvious here and nowhere else. */}
@@ -662,7 +669,7 @@ export default function AdminSeoPage() {
                   </div>
                 </div>
 
-                <div className="min-w-0 xl:order-1">
+                <div className="min-w-0 @5xl:order-1">
                   {/* The counter rides on the label rather than taking a line of
                   its own under every field — six fields, six saved lines. */}
                   <div className="flex items-baseline justify-between gap-2">
@@ -684,6 +691,7 @@ export default function AdminSeoPage() {
                     </span>
                   </div>
                   <Input
+                    fullWidth
                     id="seo-title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -723,6 +731,7 @@ export default function AdminSeoPage() {
                     คำค้นหาที่อยากให้ติด
                   </label>
                   <Input
+                    fullWidth
                     id="seo-keywords"
                     value={keywords}
                     onChange={(e) => setKeywords(e.target.value)}
@@ -741,6 +750,7 @@ export default function AdminSeoPage() {
                   </label>
                   <div className="mt-1.5 flex gap-2">
                     <Input
+                      fullWidth
                       id="seo-og"
                       value={ogImage}
                       onChange={(e) => setOgImage(e.target.value)}

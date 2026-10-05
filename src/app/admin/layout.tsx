@@ -280,6 +280,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
           <form onSubmit={submitLogin} className="space-y-3">
             <Input
+              fullWidth
               type="email"
               aria-label="อีเมล"
               value={email}
@@ -288,6 +289,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               autoFocus
             />
             <Input
+              fullWidth
               type="password"
               aria-label="รหัสผ่าน"
               value={password}

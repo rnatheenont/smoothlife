@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import {
   Repeat,
-  Search,
   PackagePlus,
   Package,
   Plus,
@@ -18,8 +17,9 @@ import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader } from "@/components/admin/layout-kit";
 import SubscriptionSets from "@/components/admin/SubscriptionSets";
 import { products } from "@/data/products";
+import AdminSearch from "@/components/admin/AdminSearch";
 import AdminSelect from "@/components/admin/AdminSelect";
-import { Input, Spinner } from "@heroui/react";
+import { Spinner } from "@heroui/react";
 
 type ProductRow = {
   slug: string;
@@ -267,27 +267,17 @@ export default function AdminSubscriptionProductsPage() {
       ) : (
         <>
           <div className="mb-4 flex flex-col gap-2 sm:flex-row">
-            <div className="relative flex-1">
-              <Search
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <Input
-                aria-label="พิมพ์ชื่อสินค้าหรือยี่ห้อ เพื่อเพิ่มเข้าลิสต์…"
-                value={queryInput}
-                onChange={(e) => setQueryInput(e.target.value)}
-                placeholder="พิมพ์ชื่อสินค้าหรือยี่ห้อ เพื่อเพิ่มเข้าลิสต์…"
-              />
-              {queryInput && (
-                <button
-                  onClick={() => setQueryInput("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  aria-label="ล้างการค้นหา"
-                >
-                  <X size={15} />
-                </button>
-              )}
-            </div>
+            {/* The console's search box, rather than a magnifier and a clear
+                button hand-placed over a field: this one was neither told to
+                fill its row nor padded around its own icon, so it sat at the
+                browser's default width with the magnifier on top of the
+                words. */}
+            <AdminSearch
+              className="flex-1"
+              value={queryInput}
+              onChange={setQueryInput}
+              placeholder="พิมพ์ชื่อสินค้าหรือยี่ห้อ เพื่อเพิ่มเข้าลิสต์…"
+            />
             {/* Only useful while browsing search results — filtering a list of five
             things you already curated is noise. */}
             {searching && (
