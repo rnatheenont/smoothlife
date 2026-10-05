@@ -16,9 +16,10 @@ import {
 } from "lucide-react";
 import { categories } from "@/data/categories";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader, adminSelect } from "@/components/admin/layout-kit";
+import { PageHeader } from "@/components/admin/layout-kit";
 import SubscriptionSets from "@/components/admin/SubscriptionSets";
 import { products } from "@/data/products";
+import AdminSelect from "@/components/admin/AdminSelect";
 
 type ProductRow = {
   slug: string;
@@ -260,21 +261,18 @@ export default function AdminSubscriptionProductsPage() {
             {/* Only useful while browsing search results — filtering a list of five
             things you already curated is noise. */}
             {searching && (
-              <select
+              <AdminSelect
+                label="กรองตามหมวดหมู่"
                 value={category}
-                onChange={(e) => {
+                onChange={(v) => {
                   setPage(1);
-                  setCategory(e.target.value);
+                  setCategory(v);
                 }}
-                className={adminSelect}
-              >
-                <option value="">ทุกหมวดหมู่</option>
-                {categories.map((c) => (
-                  <option key={c.slug} value={c.slug}>
-                    {c.nameTh}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: "", label: "ทุกหมวดหมู่" },
+                  ...categories.map((c) => ({ value: c.slug, label: c.nameTh })),
+                ]}
+              />
             )}
           </div>
 

@@ -7,6 +7,7 @@ import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { categories } from "@/data/categories";
 import { INTERVALS, STATUS_TH, type SubscriptionSetStatus } from "@/lib/subscription-sets";
 import { formatTHB } from "@/lib/format";
+import AdminSelect from "@/components/admin/AdminSelect";
 
 // Admin → สินค้าสมัครสมาชิก → ชุดที่จัดไว้แล้ว. The shop assembles a bundle,
 // prices it, and sells it as one subscription.
@@ -498,18 +499,14 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
               <label htmlFor="set-interval" className="mb-1.5 block text-sm font-semibold text-brand-ink">
                 รอบจัดส่ง
               </label>
-              <select
-                id="set-interval"
-                value={form.interval_days}
-                onChange={(e) => setForm((f) => ({ ...f, interval_days: Number(e.target.value) }))}
-                className={field}
-              >
-                {INTERVALS.map((d) => (
-                  <option key={d} value={d}>
-                    ทุก {d} วัน
-                  </option>
-                ))}
-              </select>
+              <AdminSelect
+                label="รอบจัดส่ง"
+                value={String(form.interval_days)}
+                onChange={(v) => setForm((f) => ({ ...f, interval_days: Number(v) }))}
+                className="w-full"
+                triggerClassName="min-h-11 w-full rounded-xl2 text-sm font-normal"
+                options={INTERVALS.map((d) => ({ value: String(d), label: `ทุก ${d} วัน` }))}
+              />
             </div>
           </div>
 

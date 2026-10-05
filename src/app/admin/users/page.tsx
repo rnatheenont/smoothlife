@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { UserCog, Plus, Copy, Check, KeyRound, Ban, RotateCcw } from "lucide-react";
 import { Button, Badge, Field, Modal } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
-import clsx from "clsx";
-import { PageHeader, Panel, adminSelect, adminTable } from "@/components/admin/layout-kit";
+import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
+import AdminSelect from "@/components/admin/AdminSelect";
 
 type Role = { key: string; label: string };
 type AdminUserRow = {
@@ -217,19 +217,15 @@ export default function AdminUsersPage() {
                         <p className="text-[12px] text-slate-400">{u.email}</p>
                       </td>
                       <td className={adminTable.cell}>
-                        <select
+                        <AdminSelect
+                          label={`สิทธิ์ของ ${u.display_name}`}
                           value={u.role_key}
-                          disabled={isSelf || busyId === u.id}
-                          onChange={(e) => patchUser(u.id, { role_key: e.target.value })}
-                          className={clsx(adminSelect, "w-full disabled:opacity-50")}
-                          aria-label={`สิทธิ์ของ ${u.display_name}`}
-                        >
-                          {roles.map((r) => (
-                            <option key={r.key} value={r.key}>
-                              {r.label}
-                            </option>
-                          ))}
-                        </select>
+                          isDisabled={isSelf || busyId === u.id}
+                          onChange={(v) => patchUser(u.id, { role_key: v })}
+                          className="w-full"
+                          triggerClassName="w-full"
+                          options={roles.map((r) => ({ value: r.key, label: r.label }))}
+                        />
                       </td>
                       <td className={adminTable.muted}>{formatDate(u.last_login_at)}</td>
                       <td className={adminTable.cell}>
@@ -280,19 +276,15 @@ export default function AdminUsersPage() {
                   <p className="mt-0.5 text-[11px] text-slate-400">
                     {u.email} · เข้าระบบล่าสุด {formatDate(u.last_login_at)}
                   </p>
-                  <select
+                  <AdminSelect
+                    label={`สิทธิ์ของ ${u.display_name}`}
                     value={u.role_key}
-                    disabled={isSelf || busyId === u.id}
-                    onChange={(e) => patchUser(u.id, { role_key: e.target.value })}
-                    className={clsx(adminSelect, "mt-2 w-full disabled:opacity-50")}
-                    aria-label={`สิทธิ์ของ ${u.display_name}`}
-                  >
-                    {roles.map((r) => (
-                      <option key={r.key} value={r.key}>
-                        {r.label}
-                      </option>
-                    ))}
-                  </select>
+                    isDisabled={isSelf || busyId === u.id}
+                    onChange={(v) => patchUser(u.id, { role_key: v })}
+                    className="mt-2 w-full"
+                    triggerClassName="w-full"
+                    options={roles.map((r) => ({ value: r.key, label: r.label }))}
+                  />
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <Button
                       variant="secondary"
@@ -352,21 +344,17 @@ export default function AdminUsersPage() {
             <label className="mb-1 block text-xs font-semibold text-slate-600">
               สิทธิ์ <span className="text-rose-700">*</span>
             </label>
-            <select
-              required
+            <AdminSelect
+              label="สิทธิ์"
+              placeholder="เลือกสิทธิ์"
               value={form.role_key}
-              onChange={(e) => setForm((f) => ({ ...f, role_key: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 py-2 pl-3 pr-9 text-sm outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
-            >
-              <option value="" disabled>
-                เลือกสิทธิ์
-              </option>
-              {roles.map((r) => (
-                <option key={r.key} value={r.key}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setForm((f) => ({ ...f, role_key: v }))}
+              className="w-full"
+              // Not a pill here: it sits in a stack of form fields with square
+              // corners, and a capsule among them reads as a different control.
+              triggerClassName="w-full rounded-lg"
+              options={roles.map((r) => ({ value: r.key, label: r.label }))}
+            />
           </div>
           {formError && (
             <p role="alert" className="text-xs font-medium text-rose-600">

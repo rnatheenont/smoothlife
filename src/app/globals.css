@@ -359,11 +359,9 @@
      will not be talked out of it — padding-inline-end moves the text, not the
      arrow. The only way to give it room is to stop using the browser's and
      draw our own, which is what this does: same chevron as the rest of the
-     site, inset far enough to look deliberate. The chevron, its size and
-     its inset are the ones adminSelect in layout-kit.tsx already used — that
-     file solved this for the admin toolbars a while ago and this is the same
-     answer applied everywhere else. adminSelect keeps its own copy and wins
-     on the pages that use it, since utilities outrank base.
+     site, inset far enough to look deliberate. This is the storefront's
+     answer; the console no longer has a native select to fix — every
+     dropdown under /admin is AdminSelect, which draws its own menu.
 
      The padding here is a floor, not a rule: a select that sets its own
      padding-inline-end wins, because utilities sit in a later cascade layer
@@ -571,6 +569,37 @@
   --color-slate-400: #64748b;
   --color-slate-500: #4e5c70;
   --color-slate-600: #3c4857;
+
+  /* HeroUI, speaking the console's colours.
+     ------------------------------------------------------------------
+     HeroUI components read their own theme variables, and its defaults
+     are a neutral grey with a blue accent — on this page that makes an
+     outline button's edge invisible and its primary button the wrong
+     green. Mapped once here, every HeroUI control inside /admin picks up
+     the console's own tokens, so a migrated screen needs no className to
+     look like the screen beside it.
+
+     Scoped to .admin-canvas on purpose: the storefront's footer
+     newsletter and the flash-sale pages use HeroUI too, and they are not
+     this page. */
+  --border: var(--color-surface-line);
+  --border-secondary: var(--color-surface-line);
+  --default: var(--color-surface-mist);
+  --default-hover: var(--color-surface-muted);
+  --default-foreground: var(--color-brand-ink);
+
+  /* A field with no edge is one nobody can see the end of. HeroUI ships
+     these at transparent/0 and relies on its own shadow, which this page
+     flattens (see the .shadow-card rule below). */
+  --field-border: var(--color-surface-line);
+  --field-border-width: 1px;
+  --field-background: #ffffff;
+  --field-foreground: var(--color-brand-ink);
+
+  --accent: var(--color-brand-action);
+  --accent-hover: var(--color-brand-action-hover);
+  --accent-foreground: #ffffff;
+  --focus: var(--color-brand-action);
 }
 
 /* The console is nothing but cards, and the storefront's card edge — a 1px

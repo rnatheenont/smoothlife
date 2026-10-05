@@ -6,11 +6,11 @@ import Image from "next/image";
 import { Search, FileEdit, CheckCircle2, Circle } from "lucide-react";
 import {
   PageHeader,
-  adminSelect,
   adminTable,
 } from "@/components/admin/layout-kit";
 import { products } from "@/data/products";
 import { stableContentVariantId } from "@/lib/product-content";
+import AdminSelect from "@/components/admin/AdminSelect";
 
 // Every product, searchable by SKU first (what the team actually recognises
 // — see the comment on ProductVariant.sku) or by name, with how far each
@@ -209,21 +209,18 @@ export default function ProductContentListPage() {
             className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-hidden focus:border-brand-teal"
           />
         </div>
-        <select
+        <AdminSelect
+          label="กรองตามแบรนด์"
           value={brand}
-          onChange={(e) => setBrand(e.target.value)}
-          aria-label="กรองตามแบรนด์"
-          className={adminSelect}
-        >
-          <option value="all">
-            ทุกแบรนด์ ({rows.length.toLocaleString("th-TH")})
-          </option>
-          {brandOptions.map(([name, n]) => (
-            <option key={name} value={name}>
-              {name} ({n.toLocaleString("th-TH")})
-            </option>
-          ))}
-        </select>
+          onChange={setBrand}
+          options={[
+            { value: "all", label: `ทุกแบรนด์ (${rows.length.toLocaleString("th-TH")})` },
+            ...brandOptions.map(([name, n]) => ({
+              value: name,
+              label: `${name} (${n.toLocaleString("th-TH")})`,
+            })),
+          ]}
+        />
         <div className="inline-flex rounded-full bg-surface-muted p-1 text-xs">
           {(
             [

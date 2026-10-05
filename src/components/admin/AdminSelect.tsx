@@ -51,8 +51,16 @@ export default function AdminSelect({
       placeholder={placeholder}
     >
       <Select.Trigger
+        // Shape and type only. The horizontal padding is HeroUI's to set: the
+        // chevron is positioned absolutely and the trigger earns its right-hand
+        // padding from a :has() rule, so overriding pr- here puts the arrow on
+        // top of the words.
+        // Border and display are set here rather than left to HeroUI's field
+        // variables: the console wants a visible hairline on every dropdown,
+        // and these sit inside running sentences on the campaign screens where
+        // a block-level trigger drops off the text's baseline.
         className={clsx(
-          "min-h-9 rounded-full border border-surface-line bg-white py-1.5 pl-3.5 pr-3",
+          "inline-flex rounded-full border border-surface-line bg-white",
           "text-[12px] font-semibold text-brand-ink",
           triggerClassName,
         )}

@@ -130,7 +130,7 @@ export default function AuditPage() {
           ]}
         />
 
-        <Button variant="outline" size="sm" isPending={loading} onPress={load}>
+        <Button variant="outline" isPending={loading} onPress={load}>
           <RefreshCw size={14} /> รีเฟรช
         </Button>
 

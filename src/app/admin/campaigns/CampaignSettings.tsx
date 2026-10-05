@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Loader2, Plus, Trash2 } from "lucide-react";
 import { Panel } from "@/components/admin/layout-kit";
+import AdminSelect from "@/components/admin/AdminSelect";
 
 // The campaign's own words, edited here instead of in a source file.
 //
@@ -362,15 +363,20 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
             <p className="text-[12px] font-bold uppercase tracking-wide text-slate-400">
               กฎที่ 1 · ยอดซื้อ DENTISTE&apos;
             </p>
-            <p className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-brand-ink">
-              <select
-                className={`${inlineField} w-auto`}
+            {/* A <div>, not a <p>: the dropdowns inside are HeroUI Selects whose root
+                is a <div>, and the parser closes a paragraph at one — the page then
+                hydrates into a different tree than the server sent. */}
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-brand-ink">
+              <AdminSelect
+                label="วิธีนับยอด"
+                triggerClassName="rounded-lg py-1 text-[14px] font-normal"
                 value={content.rules.tiered ? "tiered" : "flat"}
-                onChange={(e) => set("rules", { ...content.rules, tiered: e.target.value === "tiered" })}
-              >
-                <option value="tiered">ทุกๆ</option>
-                <option value="flat">ครบ</option>
-              </select>
+                onChange={(v) => set("rules", { ...content.rules, tiered: v === "tiered" })}
+                options={[
+                  { value: "tiered", label: "ทุกๆ" },
+                  { value: "flat", label: "ครบ" },
+                ]}
+              />
               <input
                 className={`${inlineField} w-24 text-center tabular-nums`}
                 inputMode="decimal"
@@ -383,18 +389,20 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
                 <>
                   <span className="text-slate-400">·</span>
                   <span className="text-slate-500">เศษที่เหลือ</span>
-                  <select
-                    className={`${inlineField} w-auto`}
+                  <AdminSelect
+                    label="วิธีปัดเศษ"
+                    triggerClassName="rounded-lg py-1 text-[14px] font-normal"
                     value={content.rules.rounding}
-                    onChange={(e) => set("rules", { ...content.rules, rounding: e.target.value as Rules["rounding"] })}
-                  >
-                    <option value="floor">ปัดลง</option>
-                    <option value="round">ปัดใกล้สุด</option>
-                    <option value="ceil">ปัดขึ้น</option>
-                  </select>
+                    onChange={(v) => set("rules", { ...content.rules, rounding: v as Rules["rounding"] })}
+                    options={[
+                      { value: "floor", label: "ปัดลง" },
+                      { value: "round", label: "ปัดใกล้สุด" },
+                      { value: "ceil", label: "ปัดขึ้น" },
+                    ]}
+                  />
                 </>
               )}
-            </p>
+            </div>
 
             {/* The rule's own behaviour, on the line under it. */}
             <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[12px] tabular-nums text-slate-500">
@@ -421,7 +429,10 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
 
           <div className="rounded-l border border-surface-line p-3">
             <p className="text-[12px] font-bold uppercase tracking-wide text-slate-400">กฎที่ 2 · Set Keychain</p>
-            <p className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-brand-ink">
+            {/* A <div>, not a <p>: the dropdowns inside are HeroUI Selects whose root
+                is a <div>, and the parser closes a paragraph at one — the page then
+                hydrates into a different tree than the server sent. */}
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-brand-ink">
               <span>{content.rules.tiered ? "ทุกๆ" : "ครบ"}</span>
               <input
                 className={`${inlineField} w-24 text-center tabular-nums`}
@@ -437,7 +448,7 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
                 onChange={(e) => set("rules", { ...content.rules, keychainEntries: Number(e.target.value) || 0 })}
               />
               <b className="text-[15px]">สิทธิ์</b>
-            </p>
+            </div>
 
             {/* The rule cannot fire at all until somebody says which products
                 it is about, so that is said here rather than in small print. */}
@@ -506,17 +517,22 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
             )}
           </div>
 
-          <p className="flex flex-wrap items-center gap-2 px-1 text-[13px] text-slate-600">
+          {/* A <div>, not a <p>: the dropdowns inside are HeroUI Selects whose root
+              is a <div>, and the parser closes a paragraph at one — the page then
+              hydrates into a different tree than the server sent. */}
+          <div className="flex flex-wrap items-center gap-2 px-1 text-[13px] text-slate-600">
             <span>ถ้าบิลเดียวเข้าทั้งสองกฎ</span>
-            <select
-              className={`${inlineField} w-auto`}
+            <AdminSelect
+              label="วิธีรวมสิทธิ์"
+              triggerClassName="rounded-lg py-1 text-[14px] font-normal"
               value={content.rules.stacks ? "stack" : "max"}
-              onChange={(e) => set("rules", { ...content.rules, stacks: e.target.value === "stack" })}
-            >
-              <option value="stack">รวมสิทธิ์ทั้งสองส่วน</option>
-              <option value="max">เอาเฉพาะส่วนที่ได้มากกว่า</option>
-            </select>
-          </p>
+              onChange={(v) => set("rules", { ...content.rules, stacks: v === "stack" })}
+              options={[
+                { value: "stack", label: "รวมสิทธิ์ทั้งสองส่วน" },
+                { value: "max", label: "เอาเฉพาะส่วนที่ได้มากกว่า" },
+              ]}
+            />
+          </div>
         </div>
       </Panel>
 

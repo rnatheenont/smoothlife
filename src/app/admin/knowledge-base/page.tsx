@@ -6,11 +6,12 @@ import { useSearchParams } from "next/navigation";
 import { BookOpen, Loader2, MessageSquare, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { Card } from "@/components/ui";
-import { PageHeader, adminSelect, adminTable } from "@/components/admin/layout-kit";
+import { PageHeader, adminTable } from "@/components/admin/layout-kit";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { CATEGORY_TH, STATUS_TH, type KbArticle, type KbCategory, type KbStatus } from "@/lib/kb";
 import { slugifyThai } from "@/lib/kb-public";
 import { isReviewDue, reviewLabel } from "@/lib/kb-review";
+import AdminSelect from "@/components/admin/AdminSelect";
 
 // Admin → ฐานความรู้ AI. The articles the chat assistant is allowed to answer
 // from: it quotes these and nothing else, so what is published here is exactly
@@ -413,54 +414,57 @@ export default function AdminKnowledgeBasePage() {
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
               แหล่งที่มา
-              <select
+              <AdminSelect
+                label="ที่มา"
                 value={source}
-                onChange={(e) => setSource(e.target.value as typeof source)}
-                className={adminSelect}
-              >
-                <option value="all">ทั้งหมด</option>
-                <option value="curated">
-                  ทีมเขียนเอง ({(sourceCounts.manual ?? 0) + (sourceCounts.chat_promoted ?? 0)})
-                </option>
-                <option value="shopify_sync">จากสินค้า ({sourceCounts.shopify_sync ?? 0})</option>
-              </select>
+                onChange={(v) => setSource(v as typeof source)}
+                options={[
+                  { value: "all", label: "ทั้งหมด" },
+                  {
+                    value: "curated",
+                    label: `ทีมเขียนเอง (${(sourceCounts.manual ?? 0) + (sourceCounts.chat_promoted ?? 0)})`,
+                  },
+                  { value: "shopify_sync", label: `จากสินค้า (${sourceCounts.shopify_sync ?? 0})` },
+                ]}
+              />
             </label>
 
             <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
               สถานะ
-              <select
+              <AdminSelect
+                label="สถานะ"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                className={adminSelect}
-              >
-                <option value="all">ทั้งหมด</option>
-                {(["published", "draft", "needs_review", "archived"] as const).map((st) => (
-                  <option key={st} value={st}>
-                    {STATUS_TH[st]}
-                    {truncated ? "" : ` (${counts[st] ?? 0})`}
-                  </option>
-                ))}
-                <option value="review_due">ถึงรอบรีวิว{truncated ? "" : ` (${reviewDueCount})`}</option>
-              </select>
+                onChange={(v) => setStatusFilter(v as typeof statusFilter)}
+                options={[
+                  { value: "all", label: "ทั้งหมด" },
+                  ...(["published", "draft", "needs_review", "archived"] as const).map((st) => ({
+                    value: st,
+                    label: `${STATUS_TH[st]}${truncated ? "" : ` (${counts[st] ?? 0})`}`,
+                  })),
+                  {
+                    value: "review_due",
+                    label: `ถึงรอบรีวิว${truncated ? "" : ` (${reviewDueCount})`}`,
+                  },
+                ]}
+              />
             </label>
 
             <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
               ประเภท
-              <select
+              <AdminSelect
+                label="หมวด"
                 value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
-                className={adminSelect}
-              >
-                <option value="all">ทั้งหมด</option>
-                {(Object.keys(CATEGORY_TH) as KbCategory[])
-                  .filter((c) => (categoryCounts[c] ?? 0) > 0 || categoryFilter === c)
-                  .map((c) => (
-                    <option key={c} value={c}>
-                      {CATEGORY_TH[c]}
-                      {truncated ? "" : ` (${categoryCounts[c] ?? 0})`}
-                    </option>
-                  ))}
-              </select>
+                onChange={(v) => setCategoryFilter(v as typeof categoryFilter)}
+                options={[
+                  { value: "all", label: "ทั้งหมด" },
+                  ...(Object.keys(CATEGORY_TH) as KbCategory[])
+                    .filter((c) => (categoryCounts[c] ?? 0) > 0 || categoryFilter === c)
+                    .map((c) => ({
+                      value: c,
+                      label: `${CATEGORY_TH[c]}${truncated ? "" : ` (${categoryCounts[c] ?? 0})`}`,
+                    })),
+                ]}
+              />
             </label>
 
             {/* What is actually on, and one click to take it off. With three
@@ -701,35 +705,33 @@ export default function AdminKnowledgeBasePage() {
               <label htmlFor="kb-category" className="mb-1.5 block text-sm font-semibold text-brand-ink">
                 หมวดหมู่
               </label>
-              <select
-                id="kb-category"
+              <AdminSelect
+                label="หมวด"
                 value={form.category}
-                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as KbCategory }))}
-                className={fieldClass}
-              >
-                {(Object.keys(CATEGORY_TH) as KbCategory[]).map((c) => (
-                  <option key={c} value={c}>
-                    {CATEGORY_TH[c]}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setForm((f) => ({ ...f, category: v as KbCategory }))}
+                className="w-full"
+                triggerClassName="w-full rounded-lg"
+                options={(Object.keys(CATEGORY_TH) as KbCategory[]).map((c) => ({
+                  value: c,
+                  label: CATEGORY_TH[c],
+                }))}
+              />
             </div>
             <div>
               <label htmlFor="kb-status" className="mb-1.5 block text-sm font-semibold text-brand-ink">
                 สถานะ
               </label>
-              <select
-                id="kb-status"
+              <AdminSelect
+                label="สถานะ"
                 value={form.status}
-                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as KbStatus }))}
-                className={fieldClass}
-              >
-                {(Object.keys(STATUS_TH) as KbStatus[]).map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_TH[s]}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setForm((f) => ({ ...f, status: v as KbStatus }))}
+                className="w-full"
+                triggerClassName="w-full rounded-lg"
+                options={(Object.keys(STATUS_TH) as KbStatus[]).map((s) => ({
+                  value: s,
+                  label: STATUS_TH[s],
+                }))}
+              />
             </div>
           </div>
 
