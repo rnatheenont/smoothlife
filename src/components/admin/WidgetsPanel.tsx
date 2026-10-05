@@ -3,11 +3,18 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, Sliders, Eye, RefreshCw } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
+import { Input } from "@heroui/react";
 
-type WidgetRow = { key: string; label_th: string; enabled: boolean; config: Record<string, unknown> };
+type WidgetRow = {
+  key: string;
+  label_th: string;
+  enabled: boolean;
+  config: Record<string, unknown>;
+};
 
 const DESCRIPTIONS: Record<string, string> = {
-  milestone_bar: "แถบขั้นบันไดแสดงความคืบหน้าของทุกโปร (หน้าตะกร้า, หน้าสินค้า)",
+  milestone_bar:
+    "แถบขั้นบันไดแสดงความคืบหน้าของทุกโปร (หน้าตะกร้า, หน้าสินค้า)",
   deal_of_day: "การ์ดดีลวันนี้พร้อมนับถอยหลังจริง (หน้าแรก)",
   tiered_box: "กล่องแสดงระดับรางวัลของโปรแบบขั้นบันได (หน้าตะกร้า)",
   promotion_card: "การ์ดโปรโมชั่นจริงบนหน้าแรก (แทนที่การ์ดตัวอย่าง)",
@@ -51,7 +58,9 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
     case "deal_of_day":
       return (
         <div className="rounded-lg bg-amber-50 border border-amber-200 p-2 text-center">
-          <p className="text-[10px] font-bold text-brand-ink">ดีลวันนี้ รับของแถมได้เลย</p>
+          <p className="text-[10px] font-bold text-brand-ink">
+            ดีลวันนี้ รับของแถมได้เลย
+          </p>
           <p className="text-xs font-bold mt-1">23:59:59</p>
         </div>
       );
@@ -101,7 +110,11 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
         </div>
       );
     default:
-      return <p className="text-[11px] text-slate-400">แสดงในตะกร้าแบบเลื่อน (มุมขวาบน)</p>;
+      return (
+        <p className="text-[11px] text-slate-400">
+          แสดงในตะกร้าแบบเลื่อน (มุมขวาบน)
+        </p>
+      );
   }
 }
 
@@ -109,7 +122,9 @@ export default function WidgetsPanel() {
   const [widgets, setWidgets] = useState<WidgetRow[]>([]);
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState<string | null>(null);
-  const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>({});
+  const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>(
+    {},
+  );
   const [saving, setSaving] = useState<string | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);
 
@@ -120,7 +135,11 @@ export default function WidgetsPanel() {
   }
 
   // The widgets are read from the database; someone else may have changed them.
-  useAdminAction({ label: "รีเฟรชวิดเจ็ต", icon: <RefreshCw size={15} aria-hidden />, onClick: () => load() });
+  useAdminAction({
+    label: "รีเฟรชวิดเจ็ต",
+    icon: <RefreshCw size={15} aria-hidden />,
+    onClick: () => load(),
+  });
 
   useEffect(() => {
     load();
@@ -128,7 +147,9 @@ export default function WidgetsPanel() {
 
   async function toggle(key: string, enabled: boolean) {
     setToggleError(null);
-    setWidgets((prev) => prev.map((w) => (w.key === key ? { ...w, enabled } : w)));
+    setWidgets((prev) =>
+      prev.map((w) => (w.key === key ? { ...w, enabled } : w)),
+    );
     try {
       const res = await fetch(`/api/admin/free-gifts/widgets/${key}`, {
         method: "PATCH",
@@ -139,7 +160,9 @@ export default function WidgetsPanel() {
     } catch {
       // Save failed — revert the optimistic flip instead of leaving the UI
       // showing a state that was never actually persisted.
-      setWidgets((prev) => prev.map((w) => (w.key === key ? { ...w, enabled: !enabled } : w)));
+      setWidgets((prev) =>
+        prev.map((w) => (w.key === key ? { ...w, enabled: !enabled } : w)),
+      );
       setToggleError("บันทึกไม่สำเร็จ กรุณาเข้าสู่ระบบใหม่แล้วลองอีกครั้ง");
     }
   }
@@ -159,7 +182,8 @@ export default function WidgetsPanel() {
     const config: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(draft)) {
       const num = Number(v);
-      config[k] = v !== "" && !isNaN(num) && /^-?\d+(\.\d+)?$/.test(v) ? num : v;
+      config[k] =
+        v !== "" && !isNaN(num) && /^-?\d+(\.\d+)?$/.test(v) ? num : v;
     }
     try {
       await fetch(`/api/admin/free-gifts/widgets/${w.key}`, {
@@ -177,14 +201,21 @@ export default function WidgetsPanel() {
   return (
     <div className="space-y-2.5">
       {toggleError && (
-        <p className="rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs px-3 py-2">{toggleError}</p>
+        <p className="rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs px-3 py-2">
+          {toggleError}
+        </p>
       )}
       {widgets.map((w) => (
-        <div key={w.key} className="rounded-xl2 border border-slate-100 bg-white p-3.5 shadow-card">
+        <div
+          key={w.key}
+          className="rounded-xl2 border border-slate-100 bg-white p-3.5 shadow-card"
+        >
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="text-sm font-bold text-brand-ink">{w.label_th}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">{DESCRIPTIONS[w.key]}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {DESCRIPTIONS[w.key]}
+              </p>
             </div>
             <button
               onClick={() => toggle(w.key, !w.enabled)}
@@ -204,7 +235,11 @@ export default function WidgetsPanel() {
               <Sliders size={12} /> ปรับแต่ง
               <ChevronDown
                 size={12}
-                className={openKey === w.key ? "rotate-180 transition-transform" : "transition-transform"}
+                className={
+                  openKey === w.key
+                    ? "rotate-180 transition-transform"
+                    : "transition-transform"
+                }
               />
             </button>
             <button
@@ -218,17 +253,23 @@ export default function WidgetsPanel() {
           {openKey === w.key && (
             <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
               {Object.keys(w.config).length === 0 ? (
-                <p className="text-[11px] text-slate-400">widget นี้ไม่มีตัวเลือกให้ปรับแต่ง</p>
+                <p className="text-[11px] text-slate-400">
+                  widget นี้ไม่มีตัวเลือกให้ปรับแต่ง
+                </p>
               ) : (
                 Object.keys(w.config).map((k) => (
                   <div key={k}>
-                    <label className="block text-[11px] text-slate-400 mb-1">{CONFIG_LABELS[k] ?? k}</label>
-                    <input
+                    <label className="block text-[11px] text-slate-400 mb-1">
+                      {CONFIG_LABELS[k] ?? k}
+                    </label>
+                    <Input
                       value={drafts[w.key]?.[k] ?? ""}
                       onChange={(e) =>
-                        setDrafts((prev) => ({ ...prev, [w.key]: { ...prev[w.key], [k]: e.target.value } }))
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [w.key]: { ...prev[w.key], [k]: e.target.value },
+                        }))
                       }
-                      className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
                     />
                   </div>
                 ))
@@ -245,7 +286,9 @@ export default function WidgetsPanel() {
 
           {previewKey === w.key && (
             <div className="mt-3 border-t border-slate-100 pt-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">ตัวอย่าง</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">
+                ตัวอย่าง
+              </p>
               <PreviewMock widgetKey={w.key} />
             </div>
           )}

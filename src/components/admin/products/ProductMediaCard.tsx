@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import NextImage from "next/image";
-import { Alert, Button, Chip, ToggleButton, ToggleButtonGroup } from "@heroui/react";
+import { Alert, Button, Chip, Input, ToggleButton, ToggleButtonGroup } from "@heroui/react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -538,7 +538,7 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                       aria-hidden="true"
                       className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
                     />
-                    <input
+                    <Input
                       type="url"
                       value={link}
                       onChange={(e) => setLink(e.target.value)}

@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/admin/layout-kit";
 import SubscriptionSets from "@/components/admin/SubscriptionSets";
 import { products } from "@/data/products";
 import AdminSelect from "@/components/admin/AdminSelect";
+import { Input } from "@heroui/react";
 
 type ProductRow = {
   slug: string;
@@ -47,38 +48,47 @@ type Tab = Field | "sets";
 //
 // One tab per setting, too. Two switch columns meant reading every row twice
 // and travelling to the far right of the table for both answers.
-const TABS: { key: Tab; label: string; icon: typeof Repeat; blurb: string }[] = [
-  {
-    key: "subscribable",
-    label: "สมัครรับประจำ",
-    icon: Repeat,
-    blurb: "ลูกค้าเลือกสมัครรับสินค้านี้ทุกเดือนได้",
-  },
-  {
-    key: "bundleEligible",
-    label: "จัดชุดเอง",
-    icon: PackagePlus,
-    blurb: "ลูกค้าหยิบสินค้านี้ใส่ชุดสมาชิกที่จัดเองได้",
-  },
-  {
-    key: "sets",
-    label: "ชุดที่จัดไว้แล้ว",
-    icon: Package,
-    blurb: "ชุดสำเร็จรูปที่ทีมจัดและตั้งราคาไว้ ลูกค้ากดสมัครได้ทันที",
-  },
-];
+const TABS: { key: Tab; label: string; icon: typeof Repeat; blurb: string }[] =
+  [
+    {
+      key: "subscribable",
+      label: "สมัครรับประจำ",
+      icon: Repeat,
+      blurb: "ลูกค้าเลือกสมัครรับสินค้านี้ทุกเดือนได้",
+    },
+    {
+      key: "bundleEligible",
+      label: "จัดชุดเอง",
+      icon: PackagePlus,
+      blurb: "ลูกค้าหยิบสินค้านี้ใส่ชุดสมาชิกที่จัดเองได้",
+    },
+    {
+      key: "sets",
+      label: "ชุดที่จัดไว้แล้ว",
+      icon: Package,
+      blurb: "ชุดสำเร็จรูปที่ทีมจัดและตั้งราคาไว้ ลูกค้ากดสมัครได้ทันที",
+    },
+  ];
 
 function ProductLine({ row }: { row: ProductRow }) {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2.5">
       <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-surface-soft">
-        <Image src={row.image} alt="" fill sizes="40px" className="object-cover" />
+        <Image
+          src={row.image}
+          alt=""
+          fill
+          sizes="40px"
+          className="object-cover"
+        />
       </div>
       <div className="min-w-0">
         {/* Two lines: these names share a long prefix ("[1 Free 1] Smooth E 24k
             Glow Booster…"), so one clipped line makes different products look
             identical. */}
-        <p className="line-clamp-2 text-xs font-semibold text-brand-ink">{row.name}</p>
+        <p className="line-clamp-2 text-xs font-semibold text-brand-ink">
+          {row.name}
+        </p>
         <p className="text-[11px] text-slate-400">
           {row.brand}
           {!row.inStock && " · สินค้าหมด"}
@@ -98,7 +108,11 @@ export default function AdminSubscriptionProductsPage() {
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [counts, setCounts] = useState({ total: 0, subscribableOn: 0, bundleOn: 0 });
+  const [counts, setCounts] = useState({
+    total: 0,
+    subscribableOn: 0,
+    bundleOn: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [busySlug, setBusySlug] = useState<string | null>(null);
 
@@ -135,7 +149,11 @@ export default function AdminSubscriptionProductsPage() {
     try {
       // Searching looks across the whole catalogue — that is the point of
       // searching. Not searching shows only what is already on for this tab.
-      const status = searching ? "all" : productTab === "subscribable" ? "subscribable-on" : "bundle-on";
+      const status = searching
+        ? "all"
+        : productTab === "subscribable"
+          ? "subscribable-on"
+          : "bundle-on";
       const params = new URLSearchParams({ page: String(page), status });
       if (query) params.set("q", query);
       if (category) params.set("category", category);
@@ -180,17 +198,26 @@ export default function AdminSubscriptionProductsPage() {
         setTotal((t) => Math.max(0, t - 1));
         return;
       }
-      setRows((prev) => prev.map((r) => (r.slug === slug ? { ...r, [field]: value } : r)));
+      setRows((prev) =>
+        prev.map((r) => (r.slug === slug ? { ...r, [field]: value } : r)),
+      );
     } finally {
       setBusySlug(null);
     }
   }
 
-  const onCount = productTab === "subscribable" ? counts.subscribableOn : counts.bundleOn;
+  const onCount =
+    productTab === "subscribable" ? counts.subscribableOn : counts.bundleOn;
 
   useAdminAction({
     label: "รีเฟรชรายการ",
-    icon: <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden />,
+    icon: (
+      <RefreshCw
+        size={15}
+        className={loading ? "animate-spin" : ""}
+        aria-hidden
+      />
+    ),
     onClick: () => load(),
     disabled: loading,
   });
@@ -207,7 +234,8 @@ export default function AdminSubscriptionProductsPage() {
       <div className="mb-4 flex flex-wrap gap-1.5">
         {TABS.map((t) => {
           const Icon = t.icon;
-          const n = t.key === "subscribable" ? counts.subscribableOn : counts.bundleOn;
+          const n =
+            t.key === "subscribable" ? counts.subscribableOn : counts.bundleOn;
           return (
             <button
               key={t.key}
@@ -216,7 +244,9 @@ export default function AdminSubscriptionProductsPage() {
                 setPage(1);
               }}
               className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                tab === t.key ? "bg-brand-gradient text-white" : "bg-surface-soft text-slate-500 hover:text-slate-700"
+                tab === t.key
+                  ? "bg-brand-gradient text-white"
+                  : "bg-surface-soft text-slate-500 hover:text-slate-700"
               }`}
             >
               <Icon size={14} />
@@ -241,12 +271,15 @@ export default function AdminSubscriptionProductsPage() {
         <>
           <div className="mb-4 flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
+              <Search
+                size={15}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <Input
+                aria-label="พิมพ์ชื่อสินค้าหรือยี่ห้อ เพื่อเพิ่มเข้าลิสต์…"
                 value={queryInput}
                 onChange={(e) => setQueryInput(e.target.value)}
                 placeholder="พิมพ์ชื่อสินค้าหรือยี่ห้อ เพื่อเพิ่มเข้าลิสต์…"
-                className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-9 text-sm outline-hidden focus:border-brand-teal"
               />
               {queryInput && (
                 <button
@@ -270,7 +303,10 @@ export default function AdminSubscriptionProductsPage() {
                 }}
                 options={[
                   { value: "", label: "ทุกหมวดหมู่" },
-                  ...categories.map((c) => ({ value: c.slug, label: c.nameTh })),
+                  ...categories.map((c) => ({
+                    value: c.slug,
+                    label: c.nameTh,
+                  })),
                 ]}
               />
             )}
@@ -279,24 +315,34 @@ export default function AdminSubscriptionProductsPage() {
           {searching ? (
             <p className="mb-2 text-xs text-slate-500">
               ผลการค้นหา {total.toLocaleString()} รายการ — กด{" "}
-              <span className="font-semibold text-brand-800">เพิ่ม</span> เพื่อเปิด &ldquo;{active.label}&rdquo;
+              <span className="font-semibold text-brand-800">เพิ่ม</span>{" "}
+              เพื่อเปิด &ldquo;{active.label}&rdquo;
             </p>
           ) : (
             <p className="mb-2 text-xs text-slate-500">
-              เปิด &ldquo;{active.label}&rdquo; อยู่ {onCount.toLocaleString()} รายการ
+              เปิด &ldquo;{active.label}&rdquo; อยู่ {onCount.toLocaleString()}{" "}
+              รายการ
             </p>
           )}
 
           {loading ? (
-            <p className="py-10 text-center text-sm text-slate-400">กำลังโหลด…</p>
+            <p className="py-10 text-center text-sm text-slate-400">
+              กำลังโหลด…
+            </p>
           ) : rows.length === 0 ? (
             <div className="rounded-xl2 border border-dashed border-slate-200 py-10 text-center">
               {searching ? (
-                <p className="text-sm text-slate-400">ไม่พบสินค้าที่ตรงกับคำค้นหา</p>
+                <p className="text-sm text-slate-400">
+                  ไม่พบสินค้าที่ตรงกับคำค้นหา
+                </p>
               ) : (
                 <>
-                  <p className="text-sm text-slate-500">ยังไม่ได้เปิด &ldquo;{active.label}&rdquo; ให้สินค้าไหนเลย</p>
-                  <p className="mt-1 text-xs text-slate-400">พิมพ์ค้นหาด้านบนเพื่อเพิ่มสินค้าเข้าลิสต์</p>
+                  <p className="text-sm text-slate-500">
+                    ยังไม่ได้เปิด &ldquo;{active.label}&rdquo; ให้สินค้าไหนเลย
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    พิมพ์ค้นหาด้านบนเพื่อเพิ่มสินค้าเข้าลิสต์
+                  </p>
                 </>
               )}
             </div>
@@ -306,9 +352,16 @@ export default function AdminSubscriptionProductsPage() {
            doubled the scrolling through a 200-product catalogue. */
             <div className="grid gap-1.5 xl:grid-cols-2">
               {rows.map((r) => {
-                const on = productTab === "subscribable" ? r.subscribable : r.bundleEligible;
-                const other = productTab === "subscribable" ? r.bundleEligible : r.subscribable;
-                const otherLabel = productTab === "subscribable" ? "จัดชุดเอง" : "สมัครรับประจำ";
+                const on =
+                  productTab === "subscribable"
+                    ? r.subscribable
+                    : r.bundleEligible;
+                const other =
+                  productTab === "subscribable"
+                    ? r.bundleEligible
+                    : r.subscribable;
+                const otherLabel =
+                  productTab === "subscribable" ? "จัดชุดเอง" : "สมัครรับประจำ";
                 return (
                   <div
                     key={r.slug}

@@ -3,16 +3,31 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { BookOpen, Loader2, MessageSquare, Pencil, Plus, Trash2, X } from "lucide-react";
+import {
+  BookOpen,
+  Loader2,
+  MessageSquare,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { Card } from "@/components/ui";
 import { PageHeader, adminTable } from "@/components/admin/layout-kit";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
-import { CATEGORY_TH, STATUS_TH, type KbArticle, type KbCategory, type KbStatus } from "@/lib/kb";
+import {
+  CATEGORY_TH,
+  STATUS_TH,
+  type KbArticle,
+  type KbCategory,
+  type KbStatus,
+} from "@/lib/kb";
 import { slugifyThai } from "@/lib/kb-public";
 import { isReviewDue, reviewLabel } from "@/lib/kb-review";
 import AdminSelect from "@/components/admin/AdminSelect";
 import AdminSearch from "@/components/admin/AdminSearch";
+import { Input, TextArea } from "@heroui/react";
 
 // Admin → ฐานความรู้ AI. The articles the chat assistant is allowed to answer
 // from: it quotes these and nothing else, so what is published here is exactly
@@ -49,10 +64,16 @@ export default function AdminKnowledgeBasePage() {
   const [error, setError] = useState<string | null>(null);
   const [embeddings, setEmbeddings] = useState(false);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<KbStatus | "all" | "review_due">("all");
-  const [categoryFilter, setCategoryFilter] = useState<KbCategory | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    KbStatus | "all" | "review_due"
+  >("all");
+  const [categoryFilter, setCategoryFilter] = useState<KbCategory | "all">(
+    "all",
+  );
   const [confirming, setConfirming] = useState<string | null>(null);
-  const [source, setSource] = useState<"curated" | "shopify_sync" | "all">("curated");
+  const [source, setSource] = useState<"curated" | "shopify_sync" | "all">(
+    "curated",
+  );
   const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
   const [truncated, setTruncated] = useState(false);
 
@@ -64,9 +85,12 @@ export default function AdminKnowledgeBasePage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/kb/articles?source=${source}`, { cache: "no-store" });
+      const res = await fetch(`/api/admin/kb/articles?source=${source}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || "โหลดฐานความรู้ไม่สำเร็จ");
+      if (!res.ok || !data.ok)
+        throw new Error(data.error || "โหลดฐานความรู้ไม่สำเร็จ");
       setArticles(data.articles);
       setSourceCounts(data.sourceCounts ?? {});
       setTruncated(Boolean(data.truncated));
@@ -99,7 +123,11 @@ export default function AdminKnowledgeBasePage() {
     setOpen(true);
   }, []);
 
-  useAdminAction({ label: "เพิ่มความรู้ใหม่", icon: <Plus size={15} aria-hidden />, onClick: startCreate });
+  useAdminAction({
+    label: "เพิ่มความรู้ใหม่",
+    icon: <Plus size={15} aria-hidden />,
+    onClick: startCreate,
+  });
 
   const startEdit = (a: KbArticle) => {
     setEditingId(a.id);
@@ -118,21 +146,26 @@ export default function AdminKnowledgeBasePage() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(editingId ? `/api/admin/kb/articles/${editingId}` : "/api/admin/kb/articles", {
-        method: editingId ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: form.title,
-          content: form.content,
-          category: form.category,
-          status: form.status,
-          product_tags: form.tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean),
-          public_slug: form.publicSlug.trim(),
-        }),
-      });
+      const res = await fetch(
+        editingId
+          ? `/api/admin/kb/articles/${editingId}`
+          : "/api/admin/kb/articles",
+        {
+          method: editingId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: form.title,
+            content: form.content,
+            category: form.category,
+            status: form.status,
+            product_tags: form.tags
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean),
+            public_slug: form.publicSlug.trim(),
+          }),
+        },
+      );
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || "บันทึกไม่สำเร็จ");
       setOpen(false);
@@ -173,7 +206,8 @@ export default function AdminKnowledgeBasePage() {
           body: JSON.stringify({ offset }),
         });
         const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.error || "ซิงก์ไม่สำเร็จ");
+        if (!res.ok || !data.ok)
+          throw new Error(data.error || "ซิงก์ไม่สำเร็จ");
         totals.created += data.created;
         totals.updated += data.updated;
         totals.unchanged += data.unchanged;
@@ -212,14 +246,23 @@ export default function AdminKnowledgeBasePage() {
           body: JSON.stringify({ offset }),
         });
         const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.error || "สร้าง embedding ไม่สำเร็จ");
+        if (!res.ok || !data.ok)
+          throw new Error(data.error || "สร้าง embedding ไม่สำเร็จ");
         done += data.indexed;
         offset = data.nextOffset;
-        setSyncNote(`กำลังสร้าง embedding… ทำแล้ว ${done} · เหลือ ${Math.max(0, data.total - data.indexed)} บทความ`);
+        setSyncNote(
+          `กำลังสร้าง embedding… ทำแล้ว ${done} · เหลือ ${Math.max(0, data.total - data.indexed)} บทความ`,
+        );
       }
-      setSyncNote(done > 0 ? `สร้าง embedding ครบแล้ว ${done} บทความ` : "ทุกบทความมี embedding อยู่แล้ว");
+      setSyncNote(
+        done > 0
+          ? `สร้าง embedding ครบแล้ว ${done} บทความ`
+          : "ทุกบทความมี embedding อยู่แล้ว",
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "สร้าง embedding ไม่สำเร็จ");
+      setError(
+        err instanceof Error ? err.message : "สร้าง embedding ไม่สำเร็จ",
+      );
     } finally {
       setIndexing(false);
     }
@@ -235,7 +278,9 @@ export default function AdminKnowledgeBasePage() {
       if (!res.ok || !data.ok) throw new Error(data.error || "นำเข้าไม่สำเร็จ");
       await load();
       setError(
-        data.created > 0 || data.updated > 0 ? null : "บทความตั้งต้นอยู่ในฐานความรู้ครบแล้ว และเนื้อหาตรงกับต้นฉบับ",
+        data.created > 0 || data.updated > 0
+          ? null
+          : "บทความตั้งต้นอยู่ในฐานความรู้ครบแล้ว และเนื้อหาตรงกับต้นฉบับ",
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "นำเข้าไม่สำเร็จ");
@@ -254,19 +299,30 @@ export default function AdminKnowledgeBasePage() {
     const q = query.trim().toLowerCase();
     return articles.filter(
       (a) =>
-        (statusFilter === "all" || (statusFilter === "review_due" ? isReviewDue(a) : a.status === statusFilter)) &&
+        (statusFilter === "all" ||
+          (statusFilter === "review_due"
+            ? isReviewDue(a)
+            : a.status === statusFilter)) &&
         (categoryFilter === "all" || a.category === categoryFilter) &&
-        (!q || `${a.title} ${a.content} ${a.product_tags.join(" ")}`.toLowerCase().includes(q)),
+        (!q ||
+          `${a.title} ${a.content} ${a.product_tags.join(" ")}`
+            .toLowerCase()
+            .includes(q)),
     );
   }, [articles, query, statusFilter, categoryFilter]);
 
-  const reviewDueCount = useMemo(() => articles.filter((a) => isReviewDue(a)).length, [articles]);
+  const reviewDueCount = useMemo(
+    () => articles.filter((a) => isReviewDue(a)).length,
+    [articles],
+  );
 
   /** Read it, still agree with it: the date moves, the text does not. */
   const confirmReviewed = async (a: KbArticle) => {
     setConfirming(a.id);
     try {
-      const res = await fetch(`/api/admin/kb/articles/${a.id}/reviewed`, { method: "POST" });
+      const res = await fetch(`/api/admin/kb/articles/${a.id}/reviewed`, {
+        method: "POST",
+      });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || "ยืนยันไม่สำเร็จ");
       await load();
@@ -278,14 +334,21 @@ export default function AdminKnowledgeBasePage() {
   };
 
   const counts = useMemo(
-    () => articles.reduce<Record<string, number>>((acc, a) => ({ ...acc, [a.status]: (acc[a.status] ?? 0) + 1 }), {}),
+    () =>
+      articles.reduce<Record<string, number>>(
+        (acc, a) => ({ ...acc, [a.status]: (acc[a.status] ?? 0) + 1 }),
+        {},
+      ),
     [articles],
   );
 
   /** Same basis as the status counts: the list the server sent for this source. */
   const categoryCounts = useMemo(
     () =>
-      articles.reduce<Record<string, number>>((acc, a) => ({ ...acc, [a.category]: (acc[a.category] ?? 0) + 1 }), {}),
+      articles.reduce<Record<string, number>>(
+        (acc, a) => ({ ...acc, [a.category]: (acc[a.category] ?? 0) + 1 }),
+        {},
+      ),
     [articles],
   );
 
@@ -303,7 +366,10 @@ export default function AdminKnowledgeBasePage() {
       label: `ประเภท: ${CATEGORY_TH[categoryFilter]}`,
       clear: () => setCategoryFilter("all"),
     },
-    query.trim() !== "" && { label: `ค้นหา: ${query.trim()}`, clear: () => setQuery("") },
+    query.trim() !== "" && {
+      label: `ค้นหา: ${query.trim()}`,
+      clear: () => setQuery(""),
+    },
   ].filter(Boolean) as { label: string; clear: () => void }[];
 
   const fieldClass =
@@ -321,11 +387,13 @@ export default function AdminKnowledgeBasePage() {
         title="ฐานความรู้ AI"
         subtitle={
           <>
-            น้อง Smoothie ตอบลูกค้าได้เฉพาะจากบทความที่ <strong>เผยแพร่แล้ว</strong> ในหน้านี้เท่านั้น —
-            เรื่องไหนไม่มีในนี้ ระบบจะส่งต่อให้ทีมงานตอบ ไม่เดาคำตอบเอง
+            น้อง Smoothie ตอบลูกค้าได้เฉพาะจากบทความที่{" "}
+            <strong>เผยแพร่แล้ว</strong> ในหน้านี้เท่านั้น — เรื่องไหนไม่มีในนี้
+            ระบบจะส่งต่อให้ทีมงานตอบ ไม่เดาคำตอบเอง
             {lastSyncAt && (
               <span className="mt-0.5 block text-slate-400">
-                ซิงก์ข้อมูลสินค้าล่าสุด {thaiDate(lastSyncAt)} · ระบบซิงก์ให้เองทุกเช้า
+                ซิงก์ข้อมูลสินค้าล่าสุด {thaiDate(lastSyncAt)} ·
+                ระบบซิงก์ให้เองทุกเช้า
               </span>
             )}
           </>
@@ -342,12 +410,18 @@ export default function AdminKnowledgeBasePage() {
 
       {!embeddings && (
         <p className="mb-4 rounded-xl2 bg-surface-soft px-3 py-2 text-xs leading-relaxed text-slate-500">
-          ตอนนี้ค้นหาด้วยการจับคู่ข้อความ · ถ้าเพิ่มค่า <code className="rounded-sm bg-white px-1">VOYAGE_API_KEY</code>{" "}
-          ใน Vercel ระบบจะเปลี่ยนไปค้นแบบเข้าใจความหมาย (ฝังเวกเตอร์) ให้เองโดยไม่ต้องแก้อะไรเพิ่ม
+          ตอนนี้ค้นหาด้วยการจับคู่ข้อความ · ถ้าเพิ่มค่า{" "}
+          <code className="rounded-sm bg-white px-1">VOYAGE_API_KEY</code> ใน
+          Vercel ระบบจะเปลี่ยนไปค้นแบบเข้าใจความหมาย (ฝังเวกเตอร์)
+          ให้เองโดยไม่ต้องแก้อะไรเพิ่ม
         </p>
       )}
 
-      {error && <p className="mb-4 rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
+      {error && (
+        <p className="mb-4 rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </p>
+      )}
       {syncNote && (
         <p className="mb-4 rounded-xl2 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           ซิงก์สินค้าเรียบร้อย — {syncNote}
@@ -372,7 +446,9 @@ export default function AdminKnowledgeBasePage() {
             {/* Run now and then, not while reading: grouped, quiet, and out
                 of the way of the filters. */}
             <span className="ml-auto flex flex-wrap items-center gap-1.5">
-              <span className="mr-0.5 text-[11px] text-slate-400">เครื่องมือ</span>
+              <span className="mr-0.5 text-[11px] text-slate-400">
+                เครื่องมือ
+              </span>
               <button
                 type="button"
                 onClick={syncProducts}
@@ -399,7 +475,9 @@ export default function AdminKnowledgeBasePage() {
                   title="สร้าง embedding ให้บทความที่ยังไม่มี (หลังเพิ่ม VOYAGE_API_KEY)"
                   className="rounded-full px-3 py-1.5 text-xs font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
                 >
-                  {indexing ? "กำลังสร้าง embedding…" : "สร้าง embedding ที่ยังขาด"}
+                  {indexing
+                    ? "กำลังสร้าง embedding…"
+                    : "สร้าง embedding ที่ยังขาด"}
                 </button>
               )}
             </span>
@@ -424,7 +502,10 @@ export default function AdminKnowledgeBasePage() {
                     value: "curated",
                     label: `ทีมเขียนเอง (${(sourceCounts.manual ?? 0) + (sourceCounts.chat_promoted ?? 0)})`,
                   },
-                  { value: "shopify_sync", label: `จากสินค้า (${sourceCounts.shopify_sync ?? 0})` },
+                  {
+                    value: "shopify_sync",
+                    label: `จากสินค้า (${sourceCounts.shopify_sync ?? 0})`,
+                  },
                 ]}
               />
             </label>
@@ -437,7 +518,9 @@ export default function AdminKnowledgeBasePage() {
                 onChange={(v) => setStatusFilter(v as typeof statusFilter)}
                 options={[
                   { value: "all", label: "ทั้งหมด" },
-                  ...(["published", "draft", "needs_review", "archived"] as const).map((st) => ({
+                  ...(
+                    ["published", "draft", "needs_review", "archived"] as const
+                  ).map((st) => ({
                     value: st,
                     label: `${STATUS_TH[st]}${truncated ? "" : ` (${counts[st] ?? 0})`}`,
                   })),
@@ -458,7 +541,10 @@ export default function AdminKnowledgeBasePage() {
                 options={[
                   { value: "all", label: "ทั้งหมด" },
                   ...(Object.keys(CATEGORY_TH) as KbCategory[])
-                    .filter((c) => (categoryCounts[c] ?? 0) > 0 || categoryFilter === c)
+                    .filter(
+                      (c) =>
+                        (categoryCounts[c] ?? 0) > 0 || categoryFilter === c,
+                    )
                     .map((c) => ({
                       value: c,
                       label: `${CATEGORY_TH[c]}${truncated ? "" : ` (${categoryCounts[c] ?? 0})`}`,
@@ -505,8 +591,10 @@ export default function AdminKnowledgeBasePage() {
         <div className="p-3">
           {!loading && (
             <p className="mb-2 text-xs text-slate-400">
-              แสดง {shown.length.toLocaleString("th-TH")} จาก {articles.length.toLocaleString("th-TH")} บทความ
-              {truncated && " · ระบบโหลดมาล่าสุด 300 รายการ ใช้ช่องค้นหาเพื่อหาที่เหลือ"}
+              แสดง {shown.length.toLocaleString("th-TH")} จาก{" "}
+              {articles.length.toLocaleString("th-TH")} บทความ
+              {truncated &&
+                " · ระบบโหลดมาล่าสุด 300 รายการ ใช้ช่องค้นหาเพื่อหาที่เหลือ"}
             </p>
           )}
           {loading ? (
@@ -516,7 +604,9 @@ export default function AdminKnowledgeBasePage() {
           ) : shown.length === 0 ? (
             <div className="rounded-xl2 border border-dashed border-surface-line p-10 text-center">
               <p className="text-sm text-slate-500">
-                {articles.length === 0 ? "ยังไม่มีความรู้ในระบบ" : "ไม่พบบทความที่ตรงกับตัวกรองนี้"}
+                {articles.length === 0
+                  ? "ยังไม่มีความรู้ในระบบ"
+                  : "ไม่พบบทความที่ตรงกับตัวกรองนี้"}
               </p>
               <button
                 type="button"
@@ -553,8 +643,12 @@ export default function AdminKnowledgeBasePage() {
                     {shown.map((a) => (
                       <tr key={a.id} className={adminTable.row}>
                         <td className={adminTable.cell}>
-                          <p className="font-semibold text-brand-ink">{a.title}</p>
-                          <p className="mt-0.5 line-clamp-1 max-w-[70ch] text-[12px] text-slate-500">{a.content}</p>
+                          <p className="font-semibold text-brand-ink">
+                            {a.title}
+                          </p>
+                          <p className="mt-0.5 line-clamp-1 max-w-[70ch] text-[12px] text-slate-500">
+                            {a.content}
+                          </p>
                         </td>
                         <td className={adminTable.cell}>
                           <span className="rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-slate-500">
@@ -576,10 +670,15 @@ export default function AdminKnowledgeBasePage() {
                           )}
                         </td>
                         <td className={adminTable.cell}>
-                          <span className="block text-[12px] text-slate-500">{thaiDate(a.updated_at)}</span>
-                          {(a.product_tags.length > 0 || a.source === "chat_promoted") && (
+                          <span className="block text-[12px] text-slate-500">
+                            {thaiDate(a.updated_at)}
+                          </span>
+                          {(a.product_tags.length > 0 ||
+                            a.source === "chat_promoted") && (
                             <span className="mt-0.5 block truncate text-[11px] text-slate-400">
-                              {a.product_tags.length > 0 ? `สินค้า: ${a.product_tags.join(", ")}` : "มาจากคำตอบในแชท"}
+                              {a.product_tags.length > 0
+                                ? `สินค้า: ${a.product_tags.join(", ")}`
+                                : "มาจากคำตอบในแชท"}
                             </span>
                           )}
                         </td>
@@ -592,7 +691,9 @@ export default function AdminKnowledgeBasePage() {
                                 disabled={confirming === a.id}
                                 className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 disabled:opacity-60"
                               >
-                                {confirming === a.id ? "กำลังบันทึก…" : "ยังถูกต้องอยู่"}
+                                {confirming === a.id
+                                  ? "กำลังบันทึก…"
+                                  : "ยังถูกต้องอยู่"}
                               </button>
                             )}
                             <button
@@ -620,11 +721,16 @@ export default function AdminKnowledgeBasePage() {
 
               <ul className="flex flex-col gap-2 md:hidden">
                 {shown.map((a) => (
-                  <li key={a.id} className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
+                  <li
+                    key={a.id}
+                    className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line"
+                  >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-brand-ink">{a.title}</span>
+                          <span className="font-semibold text-brand-ink">
+                            {a.title}
+                          </span>
                           <span
                             className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${STATUS_TONE[a.status]}`}
                           >
@@ -634,18 +740,23 @@ export default function AdminKnowledgeBasePage() {
                             {CATEGORY_TH[a.category]}
                           </span>
                         </p>
-                        <p className="mt-1 line-clamp-2 text-sm text-slate-500">{a.content}</p>
+                        <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                          {a.content}
+                        </p>
                         {reviewLabel(a) && (
                           <p
                             className={`mt-1.5 text-[11px] font-semibold ${isReviewDue(a) ? "text-amber-700" : "text-slate-400"}`}
                           >
                             {reviewLabel(a)}
-                            {a.last_reviewed_at ? ` · ตรวจล่าสุด ${thaiDate(a.last_reviewed_at)}` : ""}
+                            {a.last_reviewed_at
+                              ? ` · ตรวจล่าสุด ${thaiDate(a.last_reviewed_at)}`
+                              : ""}
                           </p>
                         )}
                         <p className="mt-1.5 text-[11px] text-slate-400">
                           แก้ไขล่าสุด {thaiDate(a.updated_at)}
-                          {a.product_tags.length > 0 && ` · สินค้า: ${a.product_tags.join(", ")}`}
+                          {a.product_tags.length > 0 &&
+                            ` · สินค้า: ${a.product_tags.join(", ")}`}
                           {a.source === "chat_promoted" && " · มาจากคำตอบในแชท"}
                         </p>
                       </div>
@@ -657,7 +768,9 @@ export default function AdminKnowledgeBasePage() {
                             disabled={confirming === a.id}
                             className="min-h-9 rounded-full px-3 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 disabled:opacity-60"
                           >
-                            {confirming === a.id ? "กำลังบันทึก…" : "ยังถูกต้องอยู่"}
+                            {confirming === a.id
+                              ? "กำลังบันทึก…"
+                              : "ยังถูกต้องอยู่"}
                           </button>
                         )}
                         <button
@@ -685,46 +798,66 @@ export default function AdminKnowledgeBasePage() {
         </div>
       </Card>
 
-      <FormDrawer open={open} title={editingId ? "แก้ไขความรู้" : "เพิ่มความรู้ใหม่"} onClose={() => setOpen(false)}>
+      <FormDrawer
+        open={open}
+        title={editingId ? "แก้ไขความรู้" : "เพิ่มความรู้ใหม่"}
+        onClose={() => setOpen(false)}
+      >
         <div className="flex flex-col gap-4">
           <div>
-            <label htmlFor="kb-title" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+            <label
+              htmlFor="kb-title"
+              className="mb-1.5 block text-sm font-semibold text-brand-ink"
+            >
               หัวข้อ
             </label>
-            <input
+            <Input
               id="kb-title"
               value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, title: e.target.value }))
+              }
               placeholder="เช่น ส่งฟรีทุกออเดอร์ไหม"
-              className={fieldClass}
             />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label htmlFor="kb-category" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+              <label
+                htmlFor="kb-category"
+                className="mb-1.5 block text-sm font-semibold text-brand-ink"
+              >
                 หมวดหมู่
               </label>
               <AdminSelect
                 label="หมวด"
                 value={form.category}
-                onChange={(v) => setForm((f) => ({ ...f, category: v as KbCategory }))}
+                onChange={(v) =>
+                  setForm((f) => ({ ...f, category: v as KbCategory }))
+                }
                 className="w-full"
                 triggerClassName="w-full rounded-lg"
-                options={(Object.keys(CATEGORY_TH) as KbCategory[]).map((c) => ({
-                  value: c,
-                  label: CATEGORY_TH[c],
-                }))}
+                options={(Object.keys(CATEGORY_TH) as KbCategory[]).map(
+                  (c) => ({
+                    value: c,
+                    label: CATEGORY_TH[c],
+                  }),
+                )}
               />
             </div>
             <div>
-              <label htmlFor="kb-status" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+              <label
+                htmlFor="kb-status"
+                className="mb-1.5 block text-sm font-semibold text-brand-ink"
+              >
                 สถานะ
               </label>
               <AdminSelect
                 label="สถานะ"
                 value={form.status}
-                onChange={(v) => setForm((f) => ({ ...f, status: v as KbStatus }))}
+                onChange={(v) =>
+                  setForm((f) => ({ ...f, status: v as KbStatus }))
+                }
                 className="w-full"
                 triggerClassName="w-full rounded-lg"
                 options={(Object.keys(STATUS_TH) as KbStatus[]).map((s) => ({
@@ -736,34 +869,44 @@ export default function AdminKnowledgeBasePage() {
           </div>
 
           <div>
-            <label htmlFor="kb-content" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+            <label
+              htmlFor="kb-content"
+              className="mb-1.5 block text-sm font-semibold text-brand-ink"
+            >
               เนื้อหา
             </label>
-            <textarea
+            <TextArea
+              fullWidth
               id="kb-content"
               value={form.content}
-              onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, content: e.target.value }))
+              }
               rows={14}
               placeholder="เขียนคำตอบแบบที่อยากให้ตอบลูกค้าจริง แยกย่อหน้าเมื่อเปลี่ยนประเด็น"
-              className={`${fieldClass} min-h-40 py-2 leading-relaxed`}
             />
             <p className="mt-1 text-xs text-slate-500">
-              ระบบจะตัดเป็นท่อนตามย่อหน้าเพื่อใช้ค้นหา — แยกย่อหน้าให้ชัดจะค้นแม่นขึ้น
+              ระบบจะตัดเป็นท่อนตามย่อหน้าเพื่อใช้ค้นหา —
+              แยกย่อหน้าให้ชัดจะค้นแม่นขึ้น
             </p>
           </div>
 
           <div>
-            <label htmlFor="kb-tags" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+            <label
+              htmlFor="kb-tags"
+              className="mb-1.5 block text-sm font-semibold text-brand-ink"
+            >
               ผูกกับสินค้า (ไม่บังคับ)
             </label>
-            <input
+            <Input
               id="kb-tags"
               value={form.tags}
               onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
               placeholder="slug สินค้า คั่นด้วยจุลภาค เช่น smooth-e-baby-face-foam"
-              className={fieldClass}
             />
-            <p className="mt-1 text-xs text-slate-500">เว้นว่าง = ใช้ตอบได้ทุกคำถาม</p>
+            <p className="mt-1 text-xs text-slate-500">
+              เว้นว่าง = ใช้ตอบได้ทุกคำถาม
+            </p>
           </div>
 
           {/* Publishing to the assistant and publishing to the web are two
@@ -773,21 +916,27 @@ export default function AdminKnowledgeBasePage() {
               So this is off unless someone types a slug, and the warning
               below fires on exactly the phrasing that gives it away. */}
           <div>
-            <label htmlFor="kb-public-slug" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+            <label
+              htmlFor="kb-public-slug"
+              className="mb-1.5 block text-sm font-semibold text-brand-ink"
+            >
               แสดงเป็นหน้าเว็บสาธารณะ (ไม่บังคับ)
             </label>
             <div className="flex gap-2">
-              <input
+              <Input
                 id="kb-public-slug"
                 value={form.publicSlug}
-                onChange={(e) => setForm((f) => ({ ...f, publicSlug: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, publicSlug: e.target.value }))
+                }
                 placeholder="เว้นว่าง = ไม่แสดงเป็นหน้าเว็บ"
-                className={fieldClass}
                 disabled={form.status !== "published"}
               />
               <button
                 type="button"
-                onClick={() => setForm((f) => ({ ...f, publicSlug: slugifyThai(f.title) }))}
+                onClick={() =>
+                  setForm((f) => ({ ...f, publicSlug: slugifyThai(f.title) }))
+                }
                 disabled={form.status !== "published" || !form.title.trim()}
                 className="min-h-12 shrink-0 rounded-full px-4 text-sm font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-50"
               >
@@ -795,7 +944,9 @@ export default function AdminKnowledgeBasePage() {
               </button>
             </div>
             {form.status !== "published" ? (
-              <p className="mt-1 text-xs text-slate-500">ต้องเผยแพร่บทความก่อนจึงจะทำเป็นหน้าเว็บได้</p>
+              <p className="mt-1 text-xs text-slate-500">
+                ต้องเผยแพร่บทความก่อนจึงจะทำเป็นหน้าเว็บได้
+              </p>
             ) : form.publicSlug.trim() ? (
               <>
                 <p className="mt-1 text-xs text-slate-500">
@@ -803,13 +954,16 @@ export default function AdminKnowledgeBasePage() {
                 </p>
                 {/\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32/.test(form.content) && (
                   <p className="mt-1 text-xs text-amber-600">
-                    เนื้อหามีคำว่า &ldquo;ลูกค้า&rdquo; — บทความนี้อาจเขียนไว้สั่งงาน AI ไม่ได้เขียนคุยกับลูกค้าโดยตรง
+                    เนื้อหามีคำว่า &ldquo;ลูกค้า&rdquo; —
+                    บทความนี้อาจเขียนไว้สั่งงาน AI ไม่ได้เขียนคุยกับลูกค้าโดยตรง
                     ตรวจสำนวนก่อนเผยแพร่เป็นหน้าเว็บ
                   </p>
                 )}
               </>
             ) : (
-              <p className="mt-1 text-xs text-slate-500">เว้นว่าง = ใช้ตอบในแชทอย่างเดียว ไม่ขึ้นหน้าเว็บ</p>
+              <p className="mt-1 text-xs text-slate-500">
+                เว้นว่าง = ใช้ตอบในแชทอย่างเดียว ไม่ขึ้นหน้าเว็บ
+              </p>
             )}
           </div>
 
@@ -827,7 +981,11 @@ export default function AdminKnowledgeBasePage() {
               disabled={saving || !form.title.trim() || !form.content.trim()}
               className="min-h-12 flex-1 rounded-full bg-brand-800 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {saving ? "กำลังบันทึก…" : editingId ? "บันทึกการแก้ไข" : "เพิ่มเข้าฐานความรู้"}
+              {saving
+                ? "กำลังบันทึก…"
+                : editingId
+                  ? "บันทึกการแก้ไข"
+                  : "เพิ่มเข้าฐานความรู้"}
             </button>
           </div>
         </div>

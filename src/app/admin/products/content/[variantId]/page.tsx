@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import ProductMediaCard from "@/components/admin/products/ProductMediaCard";
 import { products } from "@/data/products";
-import { Button } from "@heroui/react";
+import { Button, Checkbox, Input } from "@heroui/react";
 import {
   BLOCK_TYPES,
   FIXED_HEADING,
@@ -470,11 +470,11 @@ function ImageField({
   return (
     <div className="space-y-1.5">
       <div className="flex gap-2">
-        <input
+        <Input
+          aria-label={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={fieldClass()}
         />
         <label
           className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-600 hover:border-brand-teal hover:text-brand-800 ${
@@ -539,34 +539,37 @@ function BlockEditor({
           )}
         </span>
         <div className="flex items-center gap-1">
-          <label className="mr-2 flex items-center gap-1.5 text-xs text-slate-500">
-            <input
-              type="checkbox"
-              checked={block.hasVerifiedSource ?? false}
-              onChange={(e) =>
-                onChange({
-                  hasVerifiedSource: e.target.checked,
-                } as Partial<ContentBlock>)
-              }
-              className="size-3.5 rounded"
-            />
-            มีแหล่งอ้างอิงแล้ว
-          </label>
-          {DRAFTABLE(block.type) && (
-          <button
-            type="button"
-            onClick={onDraft}
-            disabled={drafting}
-            title="ร่างเนื้อหาบล็อกนี้จากข้อมูลสินค้าที่มีอยู่"
-            className="mr-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-brand-800 transition-colors hover:bg-surface-soft disabled:opacity-50"
+          <Checkbox
+            isSelected={block.hasVerifiedSource ?? false}
+            onChange={(v) =>
+              onChange({ hasVerifiedSource: v } as Partial<ContentBlock>)
+            }
+            className="mr-2 text-xs text-slate-500"
           >
-            <Sparkles size={13} />
-            {drafting ? "กำลังร่าง…" : "ช่วยร่าง"}
-          </button>
+            <Checkbox.Content className="flex items-center gap-1.5">
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              มีแหล่งอ้างอิงแล้ว
+            </Checkbox.Content>
+          </Checkbox>
+          {DRAFTABLE(block.type) && (
+            <button
+              type="button"
+              onClick={onDraft}
+              disabled={drafting}
+              title="ร่างเนื้อหาบล็อกนี้จากข้อมูลสินค้าที่มีอยู่"
+              className="mr-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-brand-800 transition-colors hover:bg-surface-soft disabled:opacity-50"
+            >
+              <Sparkles size={13} />
+              {drafting ? "กำลังร่าง…" : "ช่วยร่าง"}
+            </button>
           )}
           <button
             type="button"
-            onClick={() => onChange({ hidden: !hidden } as Partial<ContentBlock>)}
+            onClick={() =>
+              onChange({ hidden: !hidden } as Partial<ContentBlock>)
+            }
             title={
               hidden
                 ? "แสดงบล็อกนี้ในหน้าสินค้า"
@@ -613,7 +616,8 @@ function BlockEditor({
         {(block.type === "paragraph" || block.type === "image_text") && (
           <>
             {block.type === "image_text" && (
-              <input
+              <Input
+                aria-label="ลิงก์รูปภาพ (https://...)"
                 value={block.imageUrl}
                 onChange={(e) =>
                   onChange({
@@ -621,11 +625,11 @@ function BlockEditor({
                   } as Partial<ContentBlock>)
                 }
                 placeholder="ลิงก์รูปภาพ (https://...)"
-                className={fieldClass()}
               />
             )}
             <div className="grid gap-3 sm:grid-cols-2">
-              <input
+              <Input
+                aria-label="หัวข้อ (ไทย) — ไม่บังคับ"
                 value={block.headingTh ?? ""}
                 onChange={(e) =>
                   onChange({
@@ -633,9 +637,9 @@ function BlockEditor({
                   } as Partial<ContentBlock>)
                 }
                 placeholder="หัวข้อ (ไทย) — ไม่บังคับ"
-                className={fieldClass()}
               />
-              <input
+              <Input
+                aria-label="Heading (English) — optional"
                 value={block.headingEn ?? ""}
                 onChange={(e) =>
                   onChange({
@@ -643,18 +647,21 @@ function BlockEditor({
                   } as Partial<ContentBlock>)
                 }
                 placeholder="Heading (English) — optional"
-                className={fieldClass()}
               />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <RichTextArea
                 value={block.bodyTh}
-                onChange={(v) => onChange({ bodyTh: v } as Partial<ContentBlock>)}
+                onChange={(v) =>
+                  onChange({ bodyTh: v } as Partial<ContentBlock>)
+                }
                 placeholder="เนื้อหา (ไทย)"
               />
               <RichTextArea
                 value={block.bodyEn}
-                onChange={(v) => onChange({ bodyEn: v } as Partial<ContentBlock>)}
+                onChange={(v) =>
+                  onChange({ bodyEn: v } as Partial<ContentBlock>)
+                }
                 placeholder="Content (English)"
               />
             </div>
@@ -668,7 +675,8 @@ function BlockEditor({
           <>
             {block.type === "bullet_list" && (
               <div className="grid gap-3 sm:grid-cols-2">
-                <input
+                <Input
+                  aria-label="หัวข้อ (ไทย) — ไม่บังคับ"
                   value={block.headingTh ?? ""}
                   onChange={(e) =>
                     onChange({
@@ -676,9 +684,9 @@ function BlockEditor({
                     } as Partial<ContentBlock>)
                   }
                   placeholder="หัวข้อ (ไทย) — ไม่บังคับ"
-                  className={fieldClass()}
                 />
-                <input
+                <Input
+                  aria-label="Heading (English) — optional"
                   value={block.headingEn ?? ""}
                   onChange={(e) =>
                     onChange({
@@ -686,14 +694,15 @@ function BlockEditor({
                     } as Partial<ContentBlock>)
                   }
                   placeholder="Heading (English) — optional"
-                  className={fieldClass()}
                 />
               </div>
             )}
             <div className="grid gap-3 sm:grid-cols-2">
               <ItemsEditor
                 items={block.itemsTh}
-                onChange={(itemsTh) => onChange({ itemsTh } as Partial<ContentBlock>)}
+                onChange={(itemsTh) =>
+                  onChange({ itemsTh } as Partial<ContentBlock>)
+                }
                 placeholder={
                   block.type === "how_to_use"
                     ? "ขั้นตอน (ไทย) — บรรทัดละ 1 ขั้น"
@@ -702,7 +711,9 @@ function BlockEditor({
               />
               <ItemsEditor
                 items={block.itemsEn}
-                onChange={(itemsEn) => onChange({ itemsEn } as Partial<ContentBlock>)}
+                onChange={(itemsEn) =>
+                  onChange({ itemsEn } as Partial<ContentBlock>)
+                }
                 placeholder={
                   block.type === "how_to_use"
                     ? "Steps (English) — one per line"
@@ -723,21 +734,25 @@ function BlockEditor({
               placeholder="ลิงก์รูปภาพ (https://...) หรือกดอัปโหลด"
             />
             <div className="grid gap-3 sm:grid-cols-2">
-              <input
+              <Input
+                aria-label="คำบรรยายใต้รูป (ไทย) — ไม่บังคับ"
                 value={block.captionTh ?? ""}
                 onChange={(e) =>
-                  onChange({ captionTh: e.target.value } as Partial<ContentBlock>)
+                  onChange({
+                    captionTh: e.target.value,
+                  } as Partial<ContentBlock>)
                 }
                 placeholder="คำบรรยายใต้รูป (ไทย) — ไม่บังคับ"
-                className={fieldClass()}
               />
-              <input
+              <Input
+                aria-label="Caption (English) — optional"
                 value={block.captionEn ?? ""}
                 onChange={(e) =>
-                  onChange({ captionEn: e.target.value } as Partial<ContentBlock>)
+                  onChange({
+                    captionEn: e.target.value,
+                  } as Partial<ContentBlock>)
                 }
                 placeholder="Caption (English) — optional"
-                className={fieldClass()}
               />
             </div>
           </>
@@ -745,13 +760,13 @@ function BlockEditor({
 
         {block.type === "video" && (
           <>
-            <input
+            <Input
+              aria-label="ลิงก์วิดีโอ — YouTube, Facebook, TikTok, Instagram, Vimeo หรือไฟล์ .mp4"
               value={block.videoUrl}
               onChange={(e) =>
                 onChange({ videoUrl: e.target.value } as Partial<ContentBlock>)
               }
               placeholder="ลิงก์วิดีโอ — YouTube, Facebook, TikTok, Instagram, Vimeo หรือไฟล์ .mp4"
-              className={fieldClass()}
             />
             {/* Said here rather than at save time: the admin is looking at the
                 field they just pasted into, and the message names the one
@@ -773,21 +788,25 @@ function BlockEditor({
               placeholder="รูปปกก่อนกดเล่น — ไม่บังคับ (ใช้กับไฟล์วิดีโอ)"
             />
             <div className="grid gap-3 sm:grid-cols-2">
-              <input
+              <Input
+                aria-label="คำบรรยายใต้วิดีโอ (ไทย) — ไม่บังคับ"
                 value={block.captionTh ?? ""}
                 onChange={(e) =>
-                  onChange({ captionTh: e.target.value } as Partial<ContentBlock>)
+                  onChange({
+                    captionTh: e.target.value,
+                  } as Partial<ContentBlock>)
                 }
                 placeholder="คำบรรยายใต้วิดีโอ (ไทย) — ไม่บังคับ"
-                className={fieldClass()}
               />
-              <input
+              <Input
+                aria-label="Caption (English) — optional"
                 value={block.captionEn ?? ""}
                 onChange={(e) =>
-                  onChange({ captionEn: e.target.value } as Partial<ContentBlock>)
+                  onChange({
+                    captionEn: e.target.value,
+                  } as Partial<ContentBlock>)
                 }
                 placeholder="Caption (English) — optional"
-                className={fieldClass()}
               />
             </div>
           </>
@@ -800,7 +819,8 @@ function BlockEditor({
                 key={ri}
                 className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-1.5"
               >
-                <input
+                <Input
+                  aria-label="หัวข้อ (ไทย)"
                   value={row.labelTh}
                   onChange={(e) => {
                     const rows = [...block.rows];
@@ -808,9 +828,9 @@ function BlockEditor({
                     onChange({ rows } as Partial<ContentBlock>);
                   }}
                   placeholder="หัวข้อ (ไทย)"
-                  className={fieldClass()}
                 />
-                <input
+                <Input
+                  aria-label="Label (EN)"
                   value={row.labelEn}
                   onChange={(e) => {
                     const rows = [...block.rows];
@@ -818,9 +838,9 @@ function BlockEditor({
                     onChange({ rows } as Partial<ContentBlock>);
                   }}
                   placeholder="Label (EN)"
-                  className={fieldClass()}
                 />
-                <input
+                <Input
+                  aria-label="ค่า (ไทย)"
                   value={row.valueTh}
                   onChange={(e) => {
                     const rows = [...block.rows];
@@ -828,9 +848,9 @@ function BlockEditor({
                     onChange({ rows } as Partial<ContentBlock>);
                   }}
                   placeholder="ค่า (ไทย)"
-                  className={fieldClass()}
                 />
-                <input
+                <Input
+                  aria-label="Value (EN)"
                   value={row.valueEn}
                   onChange={(e) => {
                     const rows = [...block.rows];
@@ -838,7 +858,6 @@ function BlockEditor({
                     onChange({ rows } as Partial<ContentBlock>);
                   }}
                   placeholder="Value (EN)"
-                  className={fieldClass()}
                 />
                 <button
                   type="button"

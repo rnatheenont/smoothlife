@@ -85,7 +85,7 @@ export default function AdminField({
         </Label>
       )}
       {multiline ? (
-        <TextArea rows={rows} placeholder={placeholder} className={controlClassName} />
+        <TextArea fullWidth rows={rows} placeholder={placeholder} className={controlClassName} />
       ) : (
         <Input
           placeholder={placeholder}

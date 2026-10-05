@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles, ExternalLink, Check, Image as ImageIcon, AlertTriangle } from "lucide-react";
+import {
+  Sparkles,
+  ExternalLink,
+  Check,
+  Image as ImageIcon,
+  AlertTriangle,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAdminAction } from "@/components/admin/header-action";
@@ -11,7 +17,7 @@ import { collections } from "@/data/collections";
 import { brands } from "@/data/brands";
 import { brandFacts, brandSeoDefaults } from "@/lib/brand-seo";
 import { SITE_PAGES } from "@/lib/site-pages";
-import { Button } from "@heroui/react";
+import { Button, Input, TextArea } from "@heroui/react";
 import AdminSearch from "@/components/admin/AdminSearch";
 import {
   DESCRIPTION_MAX,
@@ -81,14 +87,17 @@ function itemsFor(type: SeoPageType): Item[] {
       image: c.image,
       href: `/collections/${c.handle}`,
       autoTitle: `${c.title} | Smoothlife.com`,
-      autoDescription: c.description?.slice(0, 160) || `ช้อป ${c.title} ที่ Smoothlife.com`,
+      autoDescription:
+        c.description?.slice(0, 160) || `ช้อป ${c.title} ที่ Smoothlife.com`,
       context: `คอลเลกชัน: ${c.title}\nคำอธิบายที่มีอยู่: ${(c.description || "(ไม่มี)").slice(0, 1200)}`,
     }));
   }
   if (type === "brand") {
     return brands.map((b) => {
       const facts = brandFacts(b.slug);
-      const auto = facts ? brandSeoDefaults(facts) : { title: `${b.name} | Smoothlife.com`, description: b.tagline };
+      const auto = facts
+        ? brandSeoDefaults(facts)
+        : { title: `${b.name} | Smoothlife.com`, description: b.tagline };
       return {
         key: b.slug,
         label: b.name,
@@ -159,9 +168,9 @@ export default function AdminSeoPage() {
   const [thinking, setThinking] = useState(false);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
-  const [searches, setSearches] = useState<{ normalized: string; searches: number; zero_result_searches: number }[]>(
-    [],
-  );
+  const [searches, setSearches] = useState<
+    { normalized: string; searches: number; zero_result_searches: number }[]
+  >([]);
   const [articleItems, setArticleItems] = useState<Item[] | null>(null);
 
   useAdminAction({
@@ -176,7 +185,8 @@ export default function AdminSeoPage() {
     const res = await fetch("/api/admin/seo");
     const data = await res.json().catch(() => null);
     const map: Record<string, SeoOverride> = {};
-    for (const row of data?.overrides ?? []) map[`${row.page_type}:${row.page_key}`] = row;
+    for (const row of data?.overrides ?? [])
+      map[`${row.page_type}:${row.page_key}`] = row;
     setOverrides(map);
   }
   useEffect(() => {
@@ -197,7 +207,10 @@ export default function AdminSeoPage() {
       .catch(() => setArticleItems([]));
   }, [tab, articleItems]);
 
-  const items = useMemo(() => (tab === "article" ? (articleItems ?? []) : itemsFor(tab)), [tab, articleItems]);
+  const items = useMemo(
+    () => (tab === "article" ? (articleItems ?? []) : itemsFor(tab)),
+    [tab, articleItems],
+  );
   const q = query.trim().toLowerCase();
 
   function open(item: Item) {
@@ -282,7 +295,9 @@ export default function AdminSeoPage() {
       Object.fromEntries(
         SEO_PAGE_TYPES.map((t) => [
           t.key,
-          t.key === "article" ? (articleItems?.length ?? null) : itemsFor(t.key).length,
+          t.key === "article"
+            ? (articleItems?.length ?? null)
+            : itemsFor(t.key).length,
         ]),
       ) as Record<SeoPageType, number | null>,
     [articleItems],
@@ -291,7 +306,11 @@ export default function AdminSeoPage() {
   /** Written on this screen — the only kind we can edit back. */
   const overridden = (item: Item) => {
     const row = overrides[`${tab}:${item.key}`];
-    return Boolean(row?.meta_title || row?.meta_description || (row?.keywords?.length ?? 0) > 0);
+    return Boolean(
+      row?.meta_title ||
+      row?.meta_description ||
+      (row?.keywords?.length ?? 0) > 0,
+    );
   };
 
   /** Written anywhere: here, or in Shopify's own search-listing fields. */
@@ -317,13 +336,17 @@ export default function AdminSeoPage() {
   // how much of the catalogue has been written, and a search box should not
   // flatter the answer.
   const doneCount = items.filter(edited).length;
-  const donePercent = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
+  const donePercent =
+    items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-brand-ink md:text-2xl">SEO หน้าเว็บ</h1>
+      <h1 className="text-xl font-bold text-brand-ink md:text-2xl">
+        SEO หน้าเว็บ
+      </h1>
       <p className="mt-1 text-sm text-slate-500">
-        หัวข้อและคำอธิบายที่แสดงในผลค้นหา Google — เว้นว่างไว้ ระบบจะใช้ค่าที่สร้างให้อัตโนมัติ
+        หัวข้อและคำอธิบายที่แสดงในผลค้นหา Google — เว้นว่างไว้
+        ระบบจะใช้ค่าที่สร้างให้อัตโนมัติ
       </p>
 
       {/* Scrolls sideways rather than wrapping: eight pills with counts
@@ -350,7 +373,13 @@ export default function AdminSeoPage() {
           >
             {t.label}
             {tabCounts[t.key] !== null && (
-              <span className={tab === t.key ? "ml-1.5 text-xs text-slate-500" : "ml-1.5 text-xs text-slate-400"}>
+              <span
+                className={
+                  tab === t.key
+                    ? "ml-1.5 text-xs text-slate-500"
+                    : "ml-1.5 text-xs text-slate-400"
+                }
+              >
                 {tabCounts[t.key]?.toLocaleString("th-TH")}
               </span>
             )}
@@ -365,18 +394,23 @@ export default function AdminSeoPage() {
               the unfilled part vanished — leaving 11% looking like a stray
               green dot. */}
           <div className="h-2 w-40 overflow-hidden rounded-full bg-slate-200">
-            <div className="h-full rounded-full bg-brand-gradient" style={{ width: `${donePercent}%` }} />
+            <div
+              className="h-full rounded-full bg-brand-gradient"
+              style={{ width: `${donePercent}%` }}
+            />
           </div>
           <span className="text-xs text-slate-500">
-            ตั้งค่าแล้ว {doneCount.toLocaleString("th-TH")} จาก {items.length.toLocaleString("th-TH")} ({donePercent}%)
+            ตั้งค่าแล้ว {doneCount.toLocaleString("th-TH")} จาก{" "}
+            {items.length.toLocaleString("th-TH")} ({donePercent}%)
           </span>
         </div>
       )}
 
       {tab === "campaign" ? (
         <p className="mt-6 rounded-xl2 bg-surface-soft p-5 text-sm text-slate-500">
-          หน้าแคมเปญ Flash Sale ถูกตั้งค่าไม่ให้ Google เก็บไว้ในผลค้นหา (เพราะปิดการขายแล้วจะกลายเป็นหน้าว่าง)
-          การตั้งหัวข้อ SEO ให้แคมเปญจึงยังไม่มีผล จนกว่าจะทำหน้า landing ถาวรแยกต่างหาก
+          หน้าแคมเปญ Flash Sale ถูกตั้งค่าไม่ให้ Google เก็บไว้ในผลค้นหา
+          (เพราะปิดการขายแล้วจะกลายเป็นหน้าว่าง) การตั้งหัวข้อ SEO
+          ให้แคมเปญจึงยังไม่มีผล จนกว่าจะทำหน้า landing ถาวรแยกต่างหาก
         </p>
       ) : (
         // 21rem is what actually sits above this on screen — breadcrumb,
@@ -399,7 +433,10 @@ export default function AdminSeoPage() {
               {(
                 [
                   ["all", `ทั้งหมด ${items.length.toLocaleString("th-TH")}`],
-                  ["todo", `ยังไม่ตั้ง ${(items.length - doneCount).toLocaleString("th-TH")}`],
+                  [
+                    "todo",
+                    `ยังไม่ตั้ง ${(items.length - doneCount).toLocaleString("th-TH")}`,
+                  ],
                   ["done", `ตั้งแล้ว ${doneCount.toLocaleString("th-TH")}`],
                 ] as const
               ).map(([key, label]) => (
@@ -425,7 +462,9 @@ export default function AdminSeoPage() {
                     onClick={() => open(item)}
                     className={
                       "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm " +
-                      (selected?.key === item.key ? "bg-brand-gradient-soft text-brand-ink" : "hover:bg-surface-soft")
+                      (selected?.key === item.key
+                        ? "bg-brand-gradient-soft text-brand-ink"
+                        : "hover:bg-surface-soft")
                     }
                   >
                     {/* Position in the list, so "ทำถึงไหนแล้ว" has an answer
@@ -436,11 +475,23 @@ export default function AdminSeoPage() {
                       {(i + 1).toLocaleString("th-TH")}
                     </span>
                     <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-surface-mist ring-1 ring-surface-line">
-                      {item.image && <Image src={item.image} alt="" fill sizes="36px" className="object-cover" />}
+                      {item.image && (
+                        <Image
+                          src={item.image}
+                          alt=""
+                          fill
+                          sizes="36px"
+                          className="object-cover"
+                        />
+                      )}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate">{item.label}</span>
-                      {item.sub && <span className="block truncate text-[11px] text-slate-400">{item.sub}</span>}
+                      {item.sub && (
+                        <span className="block truncate text-[11px] text-slate-400">
+                          {item.sub}
+                        </span>
+                      )}
                     </span>
                     {/* Three states, not two: written here, written in
                         Shopify, or written nowhere. The middle one is the
@@ -470,11 +521,16 @@ export default function AdminSeoPage() {
                 </li>
               ))}
               {tab === "article" && articleItems === null && (
-                <li className="px-3 py-2 text-sm text-slate-400">กำลังดึงบทความจาก Shopify…</li>
+                <li className="px-3 py-2 text-sm text-slate-400">
+                  กำลังดึงบทความจาก Shopify…
+                </li>
               )}
-              {shown.length === 0 && !(tab === "article" && articleItems === null) && (
-                <li className="px-3 py-2 text-sm text-slate-400">ไม่พบรายการ</li>
-              )}
+              {shown.length === 0 &&
+                !(tab === "article" && articleItems === null) && (
+                  <li className="px-3 py-2 text-sm text-slate-400">
+                    ไม่พบรายการ
+                  </li>
+                )}
               {shown.length > 0 && (
                 <li className="px-3 py-3 text-center text-xs text-slate-400">
                   ครบ {shown.length.toLocaleString("th-TH")} รายการ
@@ -487,16 +543,25 @@ export default function AdminSeoPage() {
             <div className="flex min-h-0 min-w-0 flex-col rounded-xl2 bg-white ring-1 ring-surface-line">
               <div className="flex items-start justify-between gap-3 border-b border-surface-line p-5 pb-4">
                 <div className="min-w-0">
-                  <h2 className="truncate font-bold text-brand-ink">{selected.label}</h2>
+                  <h2 className="truncate font-bold text-brand-ink">
+                    {selected.label}
+                  </h2>
                   <Link
                     href={selected.href}
                     target="_blank"
                     className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-brand-800 hover:underline"
                   >
-                    {selected.href} <ExternalLink size={12} aria-hidden="true" />
+                    {selected.href}{" "}
+                    <ExternalLink size={12} aria-hidden="true" />
                   </Link>
                 </div>
-                <Button type="button" variant="secondary" size="sm" onPress={suggest} isDisabled={thinking}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onPress={suggest}
+                  isDisabled={thinking}
+                >
                   <Sparkles size={14} aria-hidden="true" />
                   {thinking ? "กำลังคิด…" : "ให้ AI ช่วยคิด"}
                 </Button>
@@ -507,10 +572,15 @@ export default function AdminSeoPage() {
                   read, and nothing on the page would ever tell them. */}
               {selected.editableHere === false && (
                 <div className="mx-5 mt-4 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
-                  <AlertTriangle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+                  <AlertTriangle
+                    size={14}
+                    className="mt-0.5 shrink-0"
+                    aria-hidden="true"
+                  />
                   <span>
-                    บทความนี้อยู่บน Shopify และหน้านี้ชี้ canonical กลับไปที่ smoothlife.com — Google
-                    จะอ่านหัวข้อจากฝั่ง Shopify ไม่ใช่ที่นี่ ถ้าจะแก้ให้มีผลกับผลค้นหา ต้องไปแก้ในช่อง SEO
+                    บทความนี้อยู่บน Shopify และหน้านี้ชี้ canonical กลับไปที่
+                    smoothlife.com — Google จะอ่านหัวข้อจากฝั่ง Shopify
+                    ไม่ใช่ที่นี่ ถ้าจะแก้ให้มีผลกับผลค้นหา ต้องไปแก้ในช่อง SEO
                     ของบทความนั้นใน Shopify
                   </span>
                 </div>
@@ -527,10 +597,15 @@ export default function AdminSeoPage() {
                   that gets truncated is obvious here and nowhere else. */}
                   <div className="mt-4 rounded-xl2 bg-surface-soft p-4">
                     <p className="mb-2 text-[11px] font-semibold text-slate-400">
-                      ตัวอย่างที่จะแสดงใน Google {title || description ? "(ค่าที่ตั้งเอง)" : "(ค่าอัตโนมัติ)"}
+                      ตัวอย่างที่จะแสดงใน Google{" "}
+                      {title || description
+                        ? "(ค่าที่ตั้งเอง)"
+                        : "(ค่าอัตโนมัติ)"}
                     </p>
                     <div className="rounded-lg bg-white p-3">
-                      <p className="truncate text-xs text-slate-500">smoothlife.com{selected.href}</p>
+                      <p className="truncate text-xs text-slate-500">
+                        smoothlife.com{selected.href}
+                      </p>
                       <p className="mt-0.5 line-clamp-1 text-[17px] leading-snug text-[#1a0dab]">
                         {title || selected.autoTitle}
                       </p>
@@ -549,7 +624,8 @@ export default function AdminSeoPage() {
                   <div className="mt-3 rounded-xl2 bg-surface-soft p-4">
                     <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
                       <ImageIcon size={12} aria-hidden="true" />
-                      ตัวอย่างตอนแชร์ลิงก์ (LINE / Facebook) {ogImage ? "(รูปที่ตั้งเอง)" : "(รูปอัตโนมัติ)"}
+                      ตัวอย่างตอนแชร์ลิงก์ (LINE / Facebook){" "}
+                      {ogImage ? "(รูปที่ตั้งเอง)" : "(รูปอัตโนมัติ)"}
                     </p>
                     {/* Fills its column — 520px, about what a share card gets
                         in a desktop feed. The cap that used to be here was
@@ -560,7 +636,11 @@ export default function AdminSeoPage() {
                       <div className="relative aspect-[1.91/1] bg-surface-mist">
                         {previewImage ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={previewImage} alt="" className="h-full w-full object-cover" />
+                          <img
+                            src={previewImage}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
                           <span className="absolute inset-0 grid place-items-center text-xs text-slate-400">
                             หน้านี้ยังไม่มีรูป — จะใช้โลโก้เว็บแทน
@@ -568,7 +648,9 @@ export default function AdminSeoPage() {
                         )}
                       </div>
                       <div className="p-3">
-                        <p className="truncate text-[11px] uppercase text-slate-400">smoothlife.com</p>
+                        <p className="truncate text-[11px] uppercase text-slate-400">
+                          smoothlife.com
+                        </p>
                         <p className="mt-0.5 line-clamp-2 text-sm font-semibold text-brand-ink">
                           {title || selected.autoTitle}
                         </p>
@@ -584,65 +666,85 @@ export default function AdminSeoPage() {
                   {/* The counter rides on the label rather than taking a line of
                   its own under every field — six fields, six saved lines. */}
                   <div className="flex items-baseline justify-between gap-2">
-                    <label htmlFor="seo-title" className="text-sm font-semibold text-brand-ink">
+                    <label
+                      htmlFor="seo-title"
+                      className="text-sm font-semibold text-brand-ink"
+                    >
                       หัวข้อ (title)
                     </label>
-                    <span className={"text-xs " + (title.length > TITLE_MAX ? "text-amber-600" : "text-slate-400")}>
+                    <span
+                      className={
+                        "text-xs " +
+                        (title.length > TITLE_MAX
+                          ? "text-amber-600"
+                          : "text-slate-400")
+                      }
+                    >
                       {title.length}/{TITLE_MAX}
                     </span>
                   </div>
-                  <input
+                  <Input
                     id="seo-title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="เว้นว่าง = ใช้ค่าอัตโนมัติ"
-                    className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
                   />
 
                   <div className="mt-3 flex items-baseline justify-between gap-2">
-                    <label htmlFor="seo-desc" className="text-sm font-semibold text-brand-ink">
+                    <label
+                      htmlFor="seo-desc"
+                      className="text-sm font-semibold text-brand-ink"
+                    >
                       คำอธิบาย (description)
                     </label>
                     <span
                       className={
-                        "text-xs " + (description.length > DESCRIPTION_MAX ? "text-amber-600" : "text-slate-400")
+                        "text-xs " +
+                        (description.length > DESCRIPTION_MAX
+                          ? "text-amber-600"
+                          : "text-slate-400")
                       }
                     >
                       {description.length}/{DESCRIPTION_MAX}
                     </span>
                   </div>
-                  <textarea
+                  <TextArea
+                    fullWidth
                     id="seo-desc"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
                     placeholder="เว้นว่าง = ใช้ค่าอัตโนมัติ"
-                    className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
                   />
-                  <label htmlFor="seo-keywords" className="mt-3 block text-sm font-semibold text-brand-ink">
+                  <label
+                    htmlFor="seo-keywords"
+                    className="mt-3 block text-sm font-semibold text-brand-ink"
+                  >
                     คำค้นหาที่อยากให้ติด
                   </label>
-                  <input
+                  <Input
                     id="seo-keywords"
                     value={keywords}
                     onChange={(e) => setKeywords(e.target.value)}
                     placeholder="คั่นด้วยจุลภาค เช่น บิลเบอร์รี่ บำรุงสายตา, อาหารเสริมสายตา"
-                    className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
                   />
                   <p className="mt-1 text-xs text-slate-400">
-                    ใช้เป็นโจทย์ให้ AI เขียน และเป็นบันทึกว่าหน้านี้ตั้งใจจับคำไหน
+                    ใช้เป็นโจทย์ให้ AI เขียน
+                    และเป็นบันทึกว่าหน้านี้ตั้งใจจับคำไหน
                   </p>
 
-                  <label htmlFor="seo-og" className="mt-3 block text-sm font-semibold text-brand-ink">
+                  <label
+                    htmlFor="seo-og"
+                    className="mt-3 block text-sm font-semibold text-brand-ink"
+                  >
                     รูปตอนแชร์ลิงก์ (thumbnail)
                   </label>
                   <div className="mt-1.5 flex gap-2">
-                    <input
+                    <Input
                       id="seo-og"
                       value={ogImage}
                       onChange={(e) => setOgImage(e.target.value)}
                       placeholder="เว้นว่าง = ใช้รูปของหน้านั้น"
-                      className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
                     />
                     {selected.image && selected.image !== ogImage && (
                       <button
@@ -664,15 +766,18 @@ export default function AdminSeoPage() {
                     )}
                   </div>
                   <p className="mt-1 text-xs text-slate-400">
-                    ต้องเป็นลิงก์เต็มขึ้นต้นด้วย https:// — สัดส่วนที่ LINE และ Facebook ครอบคือ 1.91:1 (แนะนำ 1200×630
-                    px) รูปสินค้าเป็นสี่เหลี่ยมจัตุรัส เวลาแชร์จะโดนครอบบน-ล่าง
+                    ต้องเป็นลิงก์เต็มขึ้นต้นด้วย https:// — สัดส่วนที่ LINE และ
+                    Facebook ครอบคือ 1.91:1 (แนะนำ 1200×630 px)
+                    รูปสินค้าเป็นสี่เหลี่ยมจัตุรัส เวลาแชร์จะโดนครอบบน-ล่าง
                   </p>
 
                   {/* The angle is an editorial decision, not a tone setting: the
                   same product yields a different title depending on whether
                   the shopper is looking for the brand or for the problem. */}
                   <fieldset className="mt-4 min-w-0">
-                    <legend className="text-sm font-semibold text-brand-ink">อยากให้ AI เน้นด้านไหน</legend>
+                    <legend className="text-sm font-semibold text-brand-ink">
+                      อยากให้ AI เน้นด้านไหน
+                    </legend>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {SEO_ANGLES.map((a) => {
                         const on = angles.includes(a.key);
@@ -691,7 +796,11 @@ export default function AdminSeoPage() {
                               className="sr-only"
                               checked={on}
                               onChange={() =>
-                                setAngles((prev) => (on ? prev.filter((k) => k !== a.key) : [...prev, a.key]))
+                                setAngles((prev) =>
+                                  on
+                                    ? prev.filter((k) => k !== a.key)
+                                    : [...prev, a.key],
+                                )
                               }
                             />
                             {a.label}
@@ -699,7 +808,9 @@ export default function AdminSeoPage() {
                         );
                       })}
                     </div>
-                    <p className="mt-1.5 text-xs text-slate-400">ไม่เลือก = ให้ AI ตัดสินใจเอง</p>
+                    <p className="mt-1.5 text-xs text-slate-400">
+                      ไม่เลือก = ให้ AI ตัดสินใจเอง
+                    </p>
                   </fieldset>
 
                   {/* No keyword tool is connected, and a made-up volume number is
@@ -719,7 +830,9 @@ export default function AdminSeoPage() {
                             type="button"
                             onClick={() =>
                               setKeywords((prev) =>
-                                prev.trim() ? `${prev.replace(/,\s*$/, "")}, ${row.normalized}` : row.normalized,
+                                prev.trim()
+                                  ? `${prev.replace(/,\s*$/, "")}, ${row.normalized}`
+                                  : row.normalized,
                               )
                             }
                             title={
@@ -734,7 +847,10 @@ export default function AdminSeoPage() {
                                 : "text-slate-600 ring-surface-line")
                             }
                           >
-                            {row.normalized} <span className="text-slate-400">{row.searches}</span>
+                            {row.normalized}{" "}
+                            <span className="text-slate-400">
+                              {row.searches}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -757,8 +873,12 @@ export default function AdminSeoPage() {
                               }}
                               className="w-full rounded-lg border border-surface-line p-3 text-left hover:border-brand-action/40 hover:bg-surface-soft"
                             >
-                              <span className="block text-sm font-semibold text-brand-ink">{s.title}</span>
-                              <span className="mt-0.5 block text-xs text-slate-500">{s.description}</span>
+                              <span className="block text-sm font-semibold text-brand-ink">
+                                {s.title}
+                              </span>
+                              <span className="mt-0.5 block text-xs text-slate-500">
+                                {s.description}
+                              </span>
                             </button>
                           </li>
                         ))}

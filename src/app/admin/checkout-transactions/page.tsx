@@ -14,7 +14,7 @@ import { formatTHB } from "@/lib/format";
 import { Badge } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
-import { Button } from "@heroui/react";
+import { Button, Checkbox } from "@heroui/react";
 import AdminField from "@/components/admin/AdminField";
 import {
   refundRouteFor,
@@ -163,15 +163,18 @@ function RefundControls({
               เปิด 2C2P portal <ExternalLink size={11} />
             </a>
           </div>
-          <label className="flex items-start gap-2 leading-relaxed text-slate-600">
-            <input
-              type="checkbox"
-              checked={portalDone}
-              onChange={(e) => setPortalDone(e.target.checked)}
-              className="mt-0.5"
-            />
-            คืนเงินใน 2C2P portal เรียบร้อยแล้ว
-          </label>
+          <Checkbox
+            isSelected={portalDone}
+            onChange={setPortalDone}
+            className="items-start leading-relaxed text-slate-600"
+          >
+            <Checkbox.Content className="flex items-start gap-2">
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              คืนเงินใน 2C2P portal เรียบร้อยแล้ว
+            </Checkbox.Content>
+          </Checkbox>
         </>
       ) : (
         <div className="rounded-md bg-rose-50 p-2.5 text-rose-900">
@@ -192,10 +195,11 @@ function RefundControls({
       />
       {error && <p className="text-rose-600">{error}</p>}
       <div className="flex items-center gap-2">
-        <Button variant="danger" size="sm"
+        <Button
+          variant="danger"
+          size="sm"
           onPress={submit}
           isDisabled={busy || (route === "portal" && !portalDone)}
-          
         >
           {busy && <Loader2 size={12} className="animate-spin" />}
           {route === "portal"
@@ -304,11 +308,12 @@ export default function AdminCheckoutTransactionsPage() {
                   <tr key={tx.id} className={adminTable.row}>
                     <td className={adminTable.mono}>
                       {tx.invoice_no}
-                      {refundRouteFor(tx.tran_ref) === "portal" && tx.tran_ref && (
-                        <span className="mt-1 flex items-center gap-1 text-[11px] font-normal text-slate-400">
-                          2C2P <TranRefCopy tranRef={tx.tran_ref} />
-                        </span>
-                      )}
+                      {refundRouteFor(tx.tran_ref) === "portal" &&
+                        tx.tran_ref && (
+                          <span className="mt-1 flex items-center gap-1 text-[11px] font-normal text-slate-400">
+                            2C2P <TranRefCopy tranRef={tx.tran_ref} />
+                          </span>
+                        )}
                     </td>
                     <td className={adminTable.cell}>
                       {tx.contact_email || "-"}

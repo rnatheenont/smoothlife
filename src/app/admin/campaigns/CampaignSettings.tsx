@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Loader2, Plus, Trash2 } from "lucide-react";
 import { Panel } from "@/components/admin/layout-kit";
 import AdminSelect from "@/components/admin/AdminSelect";
-import { Button } from "@heroui/react";
+import { Button, Checkbox, Input, TextArea } from "@heroui/react";
 import AdminSearch from "@/components/admin/AdminSearch";
 
 // The campaign's own words, edited here instead of in a source file.
@@ -47,12 +47,24 @@ type Content = {
  * with a missing zero is visible as "฿690 earns 10 entries" while it can still
  * be corrected, rather than as a prize draw nobody can explain.
  */
-function previewEntries(amount: number, rules: Rules, keychain = false): number {
-  const round = rules.rounding === "ceil" ? Math.ceil : rules.rounding === "round" ? Math.round : Math.floor;
+function previewEntries(
+  amount: number,
+  rules: Rules,
+  keychain = false,
+): number {
+  const round =
+    rules.rounding === "ceil"
+      ? Math.ceil
+      : rules.rounding === "round"
+        ? Math.round
+        : Math.floor;
   const step = keychain ? rules.keychainPrice : rules.generalThreshold;
   const worth = keychain ? rules.keychainEntries : 1;
   if (!(step > 0)) return 0;
-  return Math.max(0, rules.tiered ? round(amount / step) * worth : amount >= step ? worth : 0);
+  return Math.max(
+    0,
+    rules.tiered ? round(amount / step) * worth : amount >= step ? worth : 0,
+  );
 }
 
 /** <input type="datetime-local"> wants wall-clock time, and the shop's is Bangkok. */
@@ -71,11 +83,17 @@ const field =
 const inlineField =
   "rounded-lg border border-surface-line px-2 py-1 text-[14px] text-brand-ink focus:border-brand-800 focus:outline-none";
 
-export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery?: string }) {
+export default function CampaignSettings({
+  campaignQuery = "",
+}: {
+  campaignQuery?: string;
+}) {
   const [content, setContent] = useState<Content | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [saving, setSaving] = useState(false);
-  const [catalogue, setCatalogue] = useState<{ slug: string; name: string }[]>([]);
+  const [catalogue, setCatalogue] = useState<{ slug: string; name: string }[]>(
+    [],
+  );
   const [pickingKeychain, setPickingKeychain] = useState(false);
   const [keychainSearch, setKeychainSearch] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -84,7 +102,9 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`/api/admin/receipts/settings${campaignQuery}`, { cache: "no-store" });
+      const res = await fetch(`/api/admin/receipts/settings${campaignQuery}`, {
+        cache: "no-store",
+      });
       const json = await res.json();
       if (!res.ok || !json.ok) return setState("error");
       setContent(json.content as Content);
@@ -107,11 +127,22 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
     try {
       const body = new FormData();
       body.append("image", file);
-      const res = await fetch("/api/admin/receipts/upload-image", { method: "POST", body });
+      const res = await fetch("/api/admin/receipts/upload-image", {
+        method: "POST",
+        body,
+      });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "อัปโหลดรูปไม่สำเร็จ");
+      if (!res.ok || !json.ok)
+        throw new Error(json.error || "อัปโหลดรูปไม่สำเร็จ");
       setContent((c) =>
-        c ? { ...c, steps: c.steps.map((s, i) => (i === index ? { ...s, image: json.url as string } : s)) } : c
+        c
+          ? {
+              ...c,
+              steps: c.steps.map((s, i) =>
+                i === index ? { ...s, image: json.url as string } : s,
+              ),
+            }
+          : c,
       );
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "อัปโหลดรูปไม่สำเร็จ");
@@ -132,12 +163,15 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
   if (state === "error" || !content) {
     return (
       <Panel title="เงื่อนไขและข้อความบนหน้าแคมเปญ">
-        <p className="px-3 py-6 text-[13px] text-rose-700">โหลดข้อมูลไม่สำเร็จ</p>
+        <p className="px-3 py-6 text-[13px] text-rose-700">
+          โหลดข้อมูลไม่สำเร็จ
+        </p>
       </Panel>
     );
   }
 
-  const set = <K extends keyof Content>(key: K, value: Content[K]) => setContent({ ...content, [key]: value });
+  const set = <K extends keyof Content>(key: K, value: Content[K]) =>
+    setContent({ ...content, [key]: value });
 
   async function save() {
     if (!content) return;
@@ -154,7 +188,9 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
           opensAt: fromLocalInput(toLocalInput(content.opensAt)),
           closesAt: fromLocalInput(toLocalInput(content.closesAt)),
           announceAt: fromLocalInput(toLocalInput(content.announceAt)),
-          confirmDeadline: fromLocalInput(toLocalInput(content.confirmDeadline)),
+          confirmDeadline: fromLocalInput(
+            toLocalInput(content.confirmDeadline),
+          ),
           steps: content.steps,
           terms: content.terms.filter((t) => t.trim()),
           storeUrl: content.storeUrl,
@@ -179,28 +215,55 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
       <Panel title="ข้อความบนหน้าแคมเปญ" padded>
         <div className="flex flex-col gap-3">
           <label className="block">
-            <span className="text-[12px] font-semibold text-slate-500">ชื่อแคมเปญ (ตัวเล็กด้านบน)</span>
-            <input className={`mt-1 ${field}`} value={content.eyebrow} onChange={(e) => set("eyebrow", e.target.value)} />
+            <span className="text-[12px] font-semibold text-slate-500">
+              ชื่อแคมเปญ (ตัวเล็กด้านบน)
+            </span>
+            <Input
+              className={`mt-1 ${field}`}
+              value={content.eyebrow}
+              onChange={(e) => set("eyebrow", e.target.value)}
+            />
           </label>
           <label className="block">
-            <span className="text-[12px] font-semibold text-slate-500">หัวเรื่อง</span>
-            <input className={`mt-1 ${field}`} value={content.title} onChange={(e) => set("title", e.target.value)} />
+            <span className="text-[12px] font-semibold text-slate-500">
+              หัวเรื่อง
+            </span>
+            <Input
+              className={`mt-1 ${field}`}
+              value={content.title}
+              onChange={(e) => set("title", e.target.value)}
+            />
           </label>
           <label className="block">
-            <span className="text-[12px] font-semibold text-slate-500">คำอธิบายใต้หัวเรื่อง</span>
-            <textarea rows={3} className={`mt-1 ${field}`} value={content.intro} onChange={(e) => set("intro", e.target.value)} />
+            <span className="text-[12px] font-semibold text-slate-500">
+              คำอธิบายใต้หัวเรื่อง
+            </span>
+            <TextArea
+              fullWidth
+              className="mt-1"
+              rows={3}
+              value={content.intro}
+              onChange={(e) => set("intro", e.target.value)}
+            />
           </label>
           <label className="block">
-            <span className="text-[12px] font-semibold text-slate-500">สีธีมของหน้ากิจกรรม</span>
+            <span className="text-[12px] font-semibold text-slate-500">
+              สีธีมของหน้ากิจกรรม
+            </span>
             <span className="mt-1 flex items-center gap-2">
               <input
                 type="color"
-                value={/^#[0-9a-fA-F]{6}$/.test(content.accent) ? content.accent : "#0f766e"}
+                value={
+                  /^#[0-9a-fA-F]{6}$/.test(content.accent)
+                    ? content.accent
+                    : "#0f766e"
+                }
                 onChange={(e) => set("accent", e.target.value)}
                 className="h-10 w-14 cursor-pointer rounded-l border border-surface-line bg-white p-1"
                 aria-label="เลือกสีธีม"
               />
-              <input
+              <Input
+                aria-label="#952ede"
                 className={field}
                 value={content.accent}
                 onChange={(e) => set("accent", e.target.value)}
@@ -208,27 +271,37 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
               />
             </span>
             <span className="mt-1 block text-[11px] text-slate-500">
-              ใช้กับหัวข้อ ไอคอนขั้นตอน และปุ่มส่งใบเสร็จ — ตั้งให้ตรงกับหน้า flash sale ของแคมเปญเดียวกันจะดูเป็นงานเดียวกัน
+              ใช้กับหัวข้อ ไอคอนขั้นตอน และปุ่มส่งใบเสร็จ — ตั้งให้ตรงกับหน้า
+              flash sale ของแคมเปญเดียวกันจะดูเป็นงานเดียวกัน
             </span>
           </label>
-          <label className="flex items-start gap-2.5">
-            <input
-              type="checkbox"
-              checked={content.shaderBackground}
-              onChange={(e) => set("shaderBackground", e.target.checked)}
-              className="mt-0.5 size-4 shrink-0 cursor-pointer accent-brand-800"
-            />
-            <span className="block">
-              <span className="block text-[12px] font-semibold text-slate-500">พื้นหลังไล่สีแบบเคลื่อนไหว</span>
-              <span className="mt-0.5 block text-[11px] text-slate-500">
-                แทนพื้นขาวของหน้ากิจกรรมด้วยไล่สีแบรนด์ที่ขยับช้า ๆ — เนื้อหายังอยู่บนการ์ดขาวเหมือนเดิม
-                เครื่องที่ตั้งค่า “ลดการเคลื่อนไหว” จะเห็นเป็นภาพนิ่ง
+          <Checkbox
+            isSelected={content.shaderBackground}
+            onChange={(v) => set("shaderBackground", v)}
+            className="items-start gap-2.5"
+          >
+            <Checkbox.Content className="flex items-start gap-2.5">
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              <span className="block">
+                <span className="block text-[12px] font-semibold text-slate-500">
+                  พื้นหลังไล่สีแบบเคลื่อนไหว
+                </span>
+                <span className="mt-0.5 block text-[11px] text-slate-500">
+                  แทนพื้นขาวของหน้ากิจกรรมด้วยไล่สีแบรนด์ที่ขยับช้า ๆ —
+                  เนื้อหายังอยู่บนการ์ดขาวเหมือนเดิม เครื่องที่ตั้งค่า
+                  “ลดการเคลื่อนไหว” จะเห็นเป็นภาพนิ่ง
+                </span>
               </span>
-            </span>
-          </label>
+            </Checkbox.Content>
+          </Checkbox>
           <label className="block">
-            <span className="text-[12px] font-semibold text-slate-500">ปุ่ม “กลับไปหน้าร้าน” ลิงก์ไปที่</span>
-            <input
+            <span className="text-[12px] font-semibold text-slate-500">
+              ปุ่ม “กลับไปหน้าร้าน” ลิงก์ไปที่
+            </span>
+            <Input
+              aria-label="https://www.smoothlife.com/collections/dentiste"
               className={`mt-1 ${field}`}
               value={content.storeUrl}
               onChange={(e) => set("storeUrl", e.target.value)}
@@ -238,7 +311,8 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
                 customers somewhere nobody approved, so the server refuses it
                 and keeps the old one. */}
             <span className="mt-1 block text-[11px] text-slate-500">
-              ต้องเป็นหน้าในร้าน smoothlife.com เท่านั้น — ใส่ลิงก์ที่ไม่ใช่ ระบบจะไม่บันทึกและใช้ลิงก์เดิมต่อ
+              ต้องเป็นหน้าในร้าน smoothlife.com เท่านั้น — ใส่ลิงก์ที่ไม่ใช่
+              ระบบจะไม่บันทึกและใช้ลิงก์เดิมต่อ
             </span>
           </label>
         </div>
@@ -247,8 +321,9 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
       <Panel title="กำหนดการ" padded>
         {/* Not a caption: these dates decide which orders the form accepts. */}
         <p className="mb-3 rounded-l border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-          ช่วงเปิด–ปิดรับใบเสร็จนี้คือช่วงที่ระบบใช้ตัดสินว่าคำสั่งซื้อใดเข้าเงื่อนไข ไม่ใช่แค่ข้อความบนหน้าเว็บ —
-          ถ้าเลื่อนวันเปิดให้เร็วขึ้น คำสั่งซื้อที่ซื้อก่อนหน้าจะเข้าร่วมได้ทันที
+          ช่วงเปิด–ปิดรับใบเสร็จนี้คือช่วงที่ระบบใช้ตัดสินว่าคำสั่งซื้อใดเข้าเงื่อนไข
+          ไม่ใช่แค่ข้อความบนหน้าเว็บ — ถ้าเลื่อนวันเปิดให้เร็วขึ้น
+          คำสั่งซื้อที่ซื้อก่อนหน้าจะเข้าร่วมได้ทันที
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {(
@@ -260,8 +335,10 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
             ] as const
           ).map(([key, label]) => (
             <label key={key} className="block">
-              <span className="text-[12px] font-semibold text-slate-500">{label}</span>
-              <input
+              <span className="text-[12px] font-semibold text-slate-500">
+                {label}
+              </span>
+              <Input
                 type="datetime-local"
                 className={`mt-1 ${field}`}
                 value={toLocalInput(content[key])}
@@ -279,8 +356,11 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
         <div className="flex flex-col gap-3">
           {content.steps.map((step, i) => (
             <div key={i} className="rounded-lg border border-surface-line p-3">
-              <p className="text-[12px] font-semibold text-slate-500">ขั้นที่ {i + 1}</p>
-              <input
+              <p className="text-[12px] font-semibold text-slate-500">
+                ขั้นที่ {i + 1}
+              </p>
+              <Input
+                aria-label="หัวข้อ"
                 className={`mt-1.5 ${field}`}
                 value={step.title}
                 placeholder="หัวข้อ"
@@ -290,9 +370,11 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
                   set("steps", next);
                 }}
               />
-              <textarea
+              <TextArea
+                fullWidth
+                className="mt-2"
+                aria-label="คำอธิบาย"
                 rows={2}
-                className={`mt-2 ${field}`}
                 value={step.body}
                 placeholder="คำอธิบาย"
                 onChange={(e) => {
@@ -313,7 +395,11 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
                   />
                 )}
                 <label className="inline-flex min-h-9 cursor-pointer items-center rounded-full border border-surface-line px-3 text-[12px] font-semibold text-brand-ink hover:bg-surface-soft">
-                  {uploading === i ? "กำลังอัปโหลด…" : step.image ? "เปลี่ยนรูป" : "อัปโหลดรูป"}
+                  {uploading === i
+                    ? "กำลังอัปโหลด…"
+                    : step.image
+                      ? "เปลี่ยนรูป"
+                      : "อัปโหลดรูป"}
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
@@ -339,7 +425,9 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
                     ลบรูป
                   </button>
                 )}
-                <span className="text-[11px] text-slate-500">แนวนอน ~16:9 · ไม่เกิน 5MB · เว้นว่างจะใช้ไอคอนแทน</span>
+                <span className="text-[11px] text-slate-500">
+                  แนวนอน ~16:9 · ไม่เกิน 5MB · เว้นว่างจะใช้ไอคอนแทน
+                </span>
               </div>
             </div>
           ))}
@@ -350,8 +438,9 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
         <p className="mb-4 flex items-start gap-2 rounded-l border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-900">
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
           <span>
-            ตัวเลขในหน้านี้ตัดสินว่าใครได้รางวัล — มีผลกับใบเสร็จที่ส่งเข้ามา<b>หลังจากนี้</b>ทันที
-            ใบที่อยู่ในคิวแล้วต้องกด <b>คำนวณสิทธิ์ใหม่</b> · ทุกการแก้ไขถูกบันทึกใน audit log
+            ตัวเลขในหน้านี้ตัดสินว่าใครได้รางวัล — มีผลกับใบเสร็จที่ส่งเข้ามา
+            <b>หลังจากนี้</b>ทันที ใบที่อยู่ในคิวแล้วต้องกด{" "}
+            <b>คำนวณสิทธิ์ใหม่</b> · ทุกการแก้ไขถูกบันทึกใน audit log
           </span>
         </p>
 
@@ -373,17 +462,23 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
                 label="วิธีนับยอด"
                 triggerClassName="rounded-lg py-1 text-[14px] font-normal"
                 value={content.rules.tiered ? "tiered" : "flat"}
-                onChange={(v) => set("rules", { ...content.rules, tiered: v === "tiered" })}
+                onChange={(v) =>
+                  set("rules", { ...content.rules, tiered: v === "tiered" })
+                }
                 options={[
                   { value: "tiered", label: "ทุกๆ" },
                   { value: "flat", label: "ครบ" },
                 ]}
               />
-              <input
-                className={`${inlineField} w-24 text-center tabular-nums`}
+              <Input
                 inputMode="decimal"
                 value={content.rules.generalThreshold}
-                onChange={(e) => set("rules", { ...content.rules, generalThreshold: Number(e.target.value) || 0 })}
+                onChange={(e) =>
+                  set("rules", {
+                    ...content.rules,
+                    generalThreshold: Number(e.target.value) || 0,
+                  })
+                }
               />
               <span>บาทต่อใบเสร็จ =</span>
               <b className="text-[15px]">1 สิทธิ์</b>
@@ -395,7 +490,12 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
                     label="วิธีปัดเศษ"
                     triggerClassName="rounded-lg py-1 text-[14px] font-normal"
                     value={content.rules.rounding}
-                    onChange={(v) => set("rules", { ...content.rules, rounding: v as Rules["rounding"] })}
+                    onChange={(v) =>
+                      set("rules", {
+                        ...content.rules,
+                        rounding: v as Rules["rounding"],
+                      })
+                    }
                     options={[
                       { value: "floor", label: "ปัดลง" },
                       { value: "round", label: "ปัดใกล้สุด" },
@@ -417,37 +517,57 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
               ].map((amount, i) => (
                 <li key={i}>
                   ฿{amount.toLocaleString()} →{" "}
-                  <b className="text-brand-ink">{previewEntries(amount, content.rules)}</b>
+                  <b className="text-brand-ink">
+                    {previewEntries(amount, content.rules)}
+                  </b>
                 </li>
               ))}
             </ul>
-            {content.rules.tiered && previewEntries(content.rules.generalThreshold - 1, content.rules) > 0 && (
-              <p className="mt-2 text-[12px] text-amber-800">
-                ⚠ ยอดที่ยังไม่ถึง ฿{content.rules.generalThreshold.toLocaleString()} ก็ได้สิทธิ์ด้วย
-                {content.rules.rounding === "ceil" && <> — แบบปัดขึ้น ยอดเพียง ฿1 ก็ได้ 1 สิทธิ์</>}
-              </p>
-            )}
+            {content.rules.tiered &&
+              previewEntries(
+                content.rules.generalThreshold - 1,
+                content.rules,
+              ) > 0 && (
+                <p className="mt-2 text-[12px] text-amber-800">
+                  ⚠ ยอดที่ยังไม่ถึง ฿
+                  {content.rules.generalThreshold.toLocaleString()}{" "}
+                  ก็ได้สิทธิ์ด้วย
+                  {content.rules.rounding === "ceil" && (
+                    <> — แบบปัดขึ้น ยอดเพียง ฿1 ก็ได้ 1 สิทธิ์</>
+                  )}
+                </p>
+              )}
           </div>
 
           <div className="rounded-l border border-surface-line p-3">
-            <p className="text-[12px] font-bold uppercase tracking-wide text-slate-400">กฎที่ 2 · Set Keychain</p>
+            <p className="text-[12px] font-bold uppercase tracking-wide text-slate-400">
+              กฎที่ 2 · Set Keychain
+            </p>
             {/* A <div>, not a <p>: the dropdowns inside are HeroUI Selects whose root
                 is a <div>, and the parser closes a paragraph at one — the page then
                 hydrates into a different tree than the server sent. */}
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-brand-ink">
               <span>{content.rules.tiered ? "ทุกๆ" : "ครบ"}</span>
-              <input
-                className={`${inlineField} w-24 text-center tabular-nums`}
+              <Input
                 inputMode="decimal"
                 value={content.rules.keychainPrice}
-                onChange={(e) => set("rules", { ...content.rules, keychainPrice: Number(e.target.value) || 0 })}
+                onChange={(e) =>
+                  set("rules", {
+                    ...content.rules,
+                    keychainPrice: Number(e.target.value) || 0,
+                  })
+                }
               />
               <span>บาทต่อใบเสร็จ =</span>
-              <input
-                className={`${inlineField} w-16 text-center tabular-nums`}
+              <Input
                 inputMode="numeric"
                 value={content.rules.keychainEntries}
-                onChange={(e) => set("rules", { ...content.rules, keychainEntries: Number(e.target.value) || 0 })}
+                onChange={(e) =>
+                  set("rules", {
+                    ...content.rules,
+                    keychainEntries: Number(e.target.value) || 0,
+                  })
+                }
               />
               <b className="text-[15px]">สิทธิ์</b>
             </div>
@@ -456,13 +576,21 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
                 it is about, so that is said here rather than in small print. */}
             {content.rules.keychainSlugs.length === 0 ? (
               <p className="mt-2.5 rounded bg-rose-50 px-2.5 py-1.5 text-[12px] text-rose-800">
-                ⚠ ยังไม่ได้เลือกสินค้า — กฎนี้จะไม่ทำงาน ทุกชิ้นถูกคิดเป็นยอดซื้อปกติตามกฎที่ 1
+                ⚠ ยังไม่ได้เลือกสินค้า — กฎนี้จะไม่ทำงาน
+                ทุกชิ้นถูกคิดเป็นยอดซื้อปกติตามกฎที่ 1
               </p>
             ) : (
               <p className="mt-2.5 text-[12px] text-slate-500">
                 เลือกไว้ {content.rules.keychainSlugs.length} รายการ · ฿
                 {content.rules.keychainPrice.toLocaleString()} →{" "}
-                <b className="text-brand-ink">{previewEntries(content.rules.keychainPrice, content.rules, true)}</b> สิทธิ์
+                <b className="text-brand-ink">
+                  {previewEntries(
+                    content.rules.keychainPrice,
+                    content.rules,
+                    true,
+                  )}
+                </b>{" "}
+                สิทธิ์
               </p>
             )}
 
@@ -471,7 +599,9 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
               onClick={() => setPickingKeychain((v) => !v)}
               className="mt-2 text-[12px] font-semibold text-brand-800 underline"
             >
-              {pickingKeychain ? "ปิดรายการสินค้า" : "เลือกสินค้าที่นับเป็น Set Keychain"}
+              {pickingKeychain
+                ? "ปิดรายการสินค้า"
+                : "เลือกสินค้าที่นับเป็น Set Keychain"}
             </button>
 
             {pickingKeychain && (
@@ -485,30 +615,50 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
                 <div className="mt-2 max-h-56 overflow-y-auto rounded-l border border-surface-line">
                   {(() => {
                     const q = keychainSearch.trim().toLowerCase();
-                    const shown = q ? catalogue.filter((c) => c.name.toLowerCase().includes(q)) : catalogue;
+                    const shown = q
+                      ? catalogue.filter((c) =>
+                          c.name.toLowerCase().includes(q),
+                        )
+                      : catalogue;
                     if (!shown.length) {
-                      return <p className="px-3 py-3 text-[12px] text-slate-400">ไม่พบสินค้าที่ค้นหา</p>;
+                      return (
+                        <p className="px-3 py-3 text-[12px] text-slate-400">
+                          ไม่พบสินค้าที่ค้นหา
+                        </p>
+                      );
                     }
                     return (
                       <ul className="divide-y divide-surface-line">
                         {shown.map((product) => (
                           <li key={product.slug}>
-                            <label className="flex cursor-pointer items-start gap-2 px-3 py-2 text-[12px] hover:bg-surface-soft">
-                              <input
-                                type="checkbox"
-                                className="mt-0.5 size-3.5 shrink-0 rounded"
-                                checked={content.rules.keychainSlugs.includes(product.slug)}
-                                onChange={(e) =>
-                                  set("rules", {
-                                    ...content.rules,
-                                    keychainSlugs: e.target.checked
-                                      ? [...content.rules.keychainSlugs, product.slug]
-                                      : content.rules.keychainSlugs.filter((slug) => slug !== product.slug),
-                                  })
-                                }
-                              />
-                              <span className="text-brand-ink">{product.name}</span>
-                            </label>
+                            <Checkbox
+                              className="w-full px-3 py-2 text-[12px] hover:bg-surface-soft"
+                              isSelected={content.rules.keychainSlugs.includes(
+                                product.slug,
+                              )}
+                              onChange={(on) =>
+                                set("rules", {
+                                  ...content.rules,
+                                  keychainSlugs: on
+                                    ? [
+                                        ...content.rules.keychainSlugs,
+                                        product.slug,
+                                      ]
+                                    : content.rules.keychainSlugs.filter(
+                                        (slug) => slug !== product.slug,
+                                      ),
+                                })
+                              }
+                            >
+                              <Checkbox.Content className="flex items-start gap-2">
+                                <Checkbox.Control>
+                                  <Checkbox.Indicator />
+                                </Checkbox.Control>
+                                <span className="text-brand-ink">
+                                  {product.name}
+                                </span>
+                              </Checkbox.Content>
+                            </Checkbox>
                           </li>
                         ))}
                       </ul>
@@ -528,7 +678,9 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
               label="วิธีรวมสิทธิ์"
               triggerClassName="rounded-lg py-1 text-[14px] font-normal"
               value={content.rules.stacks ? "stack" : "max"}
-              onChange={(v) => set("rules", { ...content.rules, stacks: v === "stack" })}
+              onChange={(v) =>
+                set("rules", { ...content.rules, stacks: v === "stack" })
+              }
               options={[
                 { value: "stack", label: "รวมสิทธิ์ทั้งสองส่วน" },
                 { value: "max", label: "เอาเฉพาะส่วนที่ได้มากกว่า" },
@@ -545,10 +697,12 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
         <div className="flex flex-col gap-2">
           {content.terms.map((term, i) => (
             <div key={i} className="flex items-start gap-2">
-              <span className="mt-2.5 w-5 shrink-0 text-right text-[12px] tabular-nums text-slate-400">{i + 1}.</span>
-              <textarea
+              <span className="mt-2.5 w-5 shrink-0 text-right text-[12px] tabular-nums text-slate-400">
+                {i + 1}.
+              </span>
+              <TextArea
+                fullWidth
                 rows={2}
-                className={field}
                 value={term}
                 onChange={(e) => {
                   const next = [...content.terms];
@@ -559,7 +713,12 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
               <button
                 type="button"
                 aria-label={`ลบข้อ ${i + 1}`}
-                onClick={() => set("terms", content.terms.filter((_, j) => j !== i))}
+                onClick={() =>
+                  set(
+                    "terms",
+                    content.terms.filter((_, j) => j !== i),
+                  )
+                }
                 className="mt-1.5 grid size-8 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-surface-soft hover:text-rose-600"
               >
                 <Trash2 size={15} />
@@ -567,7 +726,9 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
             </div>
           ))}
         </div>
-        <Button variant="outline" size="sm"
+        <Button
+          variant="outline"
+          size="sm"
           onPress={() => set("terms", [...content.terms, ""])}
           className="mt-3"
         >
@@ -576,11 +737,7 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
       </Panel>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="primary"
-          isDisabled={saving}
-          onPress={save}
-          
-        >
+        <Button variant="primary" isDisabled={saving} onPress={save}>
           {saving && <Loader2 size={15} className="animate-spin" />}
           {saving ? "กำลังบันทึก…" : "บันทึกเงื่อนไข"}
         </Button>

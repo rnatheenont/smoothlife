@@ -2,18 +2,31 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Check, Loader2, MessageSquare, PencilLine, Plus, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  Check,
+  Loader2,
+  MessageSquare,
+  PencilLine,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader } from "@/components/admin/layout-kit";
 import type { AiLogRow } from "@/app/api/admin/kb/logs/route";
-import { Button } from "@heroui/react";
+import { Button, TextArea } from "@heroui/react";
 
 // Admin → ฐานความรู้ AI → Log. Every answer the assistant gave from the
 // knowledge base, with the articles behind it. A question with no article is
 // not a failure to hide — it is the next article to write, so those are one
 // click from becoming one.
 
-const CHANNEL_TH: Record<string, string> = { web_chat: "เว็บแชท", line: "LINE", facebook: "Facebook" };
+const CHANNEL_TH: Record<string, string> = {
+  web_chat: "เว็บแชท",
+  line: "LINE",
+  facebook: "Facebook",
+};
 
 const stamp = (iso: string) =>
   new Date(iso).toLocaleString("th-TH", {
@@ -27,7 +40,9 @@ const stamp = (iso: string) =>
 export default function AdminAiLogPage() {
   const [rows, setRows] = useState<AiLogRow[]>([]);
   const [titles, setTitles] = useState<Record<string, string>>({});
-  const [filter, setFilter] = useState<"all" | "answered" | "unanswered">("all");
+  const [filter, setFilter] = useState<"all" | "answered" | "unanswered">(
+    "all",
+  );
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -42,9 +57,13 @@ export default function AdminAiLogPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/kb/logs?filter=${filter}&page=${page}`, { cache: "no-store" });
+      const res = await fetch(
+        `/api/admin/kb/logs?filter=${filter}&page=${page}`,
+        { cache: "no-store" },
+      );
       const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || "โหลด log ไม่สำเร็จ");
+      if (!res.ok || !data.ok)
+        throw new Error(data.error || "โหลด log ไม่สำเร็จ");
       setRows(data.rows);
       setTitles(data.titles);
       setHasMore(data.hasMore);
@@ -70,7 +89,8 @@ export default function AdminAiLogPage() {
         body: JSON.stringify({ correction }),
       });
       const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || "บันทึกคำแก้ไม่สำเร็จ");
+      if (!res.ok || !data.ok)
+        throw new Error(data.error || "บันทึกคำแก้ไม่สำเร็จ");
       setCorrected((ids) => [...ids, row.id]);
       setCorrectingId(null);
       setCorrection("");
@@ -84,7 +104,13 @@ export default function AdminAiLogPage() {
 
   useAdminAction({
     label: "รีเฟรช log",
-    icon: <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden />,
+    icon: (
+      <RefreshCw
+        size={15}
+        className={loading ? "animate-spin" : ""}
+        aria-hidden
+      />
+    ),
     onClick: load,
     disabled: loading,
   });
@@ -105,7 +131,11 @@ export default function AdminAiLogPage() {
         />
       </div>
 
-      {error && <p className="rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
+      {error && (
+        <p className="rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </p>
+      )}
 
       {/* bg-white: surface-muted is the canvas colour now. */}
       {/* Swipes rather than wraps: at 375px "ตอบจากความรู้" broke across two
@@ -121,10 +151,16 @@ export default function AdminAiLogPage() {
             }}
             aria-pressed={filter === f}
             className={`min-h-9 shrink-0 whitespace-nowrap rounded-full bg-white px-4 text-sm font-semibold shadow-card transition sm:bg-transparent sm:shadow-none ${
-              filter === f ? "bg-brand-gradient-soft text-brand-800" : "text-slate-600 hover:text-brand-ink"
+              filter === f
+                ? "bg-brand-gradient-soft text-brand-800"
+                : "text-slate-600 hover:text-brand-ink"
             }`}
           >
-            {f === "all" ? "ทั้งหมด" : f === "answered" ? "ตอบจากความรู้" : "ยังไม่มีความรู้รองรับ"}
+            {f === "all"
+              ? "ทั้งหมด"
+              : f === "answered"
+                ? "ตอบจากความรู้"
+                : "ยังไม่มีความรู้รองรับ"}
           </button>
         ))}
       </div>
@@ -135,7 +171,9 @@ export default function AdminAiLogPage() {
         </p>
       ) : rows.length === 0 ? (
         <div className="rounded-xl2 border border-dashed border-surface-line p-10 text-center text-sm text-slate-500">
-          {filter === "unanswered" ? "ไม่มีคำถามที่ตอบไม่ได้ในช่วงนี้" : "ยังไม่มีการตอบจากฐานความรู้"}
+          {filter === "unanswered"
+            ? "ไม่มีคำถามที่ตอบไม่ได้ในช่วงนี้"
+            : "ยังไม่มีการตอบจากฐานความรู้"}
         </div>
       ) : (
         /* Two to a row. Full width on a question-and-answer log means very
@@ -159,14 +197,21 @@ export default function AdminAiLogPage() {
                   )}
                 </div>
 
-                <p className="mt-2 text-sm font-semibold text-brand-ink">{r.question}</p>
+                <p className="mt-2 text-sm font-semibold text-brand-ink">
+                  {r.question}
+                </p>
                 {r.ai_answer && (
-                  <p className="mt-1.5 line-clamp-4 whitespace-pre-wrap text-sm text-slate-600">{r.ai_answer}</p>
+                  <p className="mt-1.5 line-clamp-4 whitespace-pre-wrap text-sm text-slate-600">
+                    {r.ai_answer}
+                  </p>
                 )}
 
                 {(r.staff_correction || corrected.includes(r.id)) && (
                   <p className="mt-2 rounded-xl2 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                    <span className="font-semibold">คำตอบที่ถูกต้อง (ทีมงานแก้):</span> {r.staff_correction}
+                    <span className="font-semibold">
+                      คำตอบที่ถูกต้อง (ทีมงานแก้):
+                    </span>{" "}
+                    {r.staff_correction}
                   </p>
                 )}
 
@@ -177,7 +222,8 @@ export default function AdminAiLogPage() {
                       href="/admin/knowledge-base"
                       className="flex items-center gap-1 rounded-full bg-surface-soft px-2.5 py-1 text-[11px] text-slate-600 hover:text-brand-ink"
                     >
-                      <BookOpen size={11} /> {titles[id] ?? "บทความที่ถูกลบไปแล้ว"}
+                      <BookOpen size={11} />{" "}
+                      {titles[id] ?? "บทความที่ถูกลบไปแล้ว"}
                     </Link>
                   ))}
                   {!r.staff_correction && !corrected.includes(r.id) && (
@@ -189,7 +235,10 @@ export default function AdminAiLogPage() {
                       }}
                       className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-surface-line hover:bg-surface-soft"
                     >
-                      <PencilLine size={11} /> {correctingId === r.id ? "ปิดช่องแก้" : "ตอบแบบนี้ไม่ถูก — แก้คำตอบ"}
+                      <PencilLine size={11} />{" "}
+                      {correctingId === r.id
+                        ? "ปิดช่องแก้"
+                        : "ตอบแบบนี้ไม่ถูก — แก้คำตอบ"}
                     </button>
                   )}
                   {unanswered && (
@@ -204,28 +253,37 @@ export default function AdminAiLogPage() {
 
                 {correctingId === r.id && (
                   <div className="mt-2.5 rounded-xl2 bg-surface-soft p-3">
-                    <label htmlFor={`fix-${r.id}`} className="mb-1.5 block text-xs font-semibold text-brand-ink">
+                    <label
+                      htmlFor={`fix-${r.id}`}
+                      className="mb-1.5 block text-xs font-semibold text-brand-ink"
+                    >
                       คำตอบที่ถูกต้องสำหรับคำถามนี้
                     </label>
-                    <textarea
+                    <TextArea
+                      fullWidth
+                      aria-label="เขียนคำตอบที่อยากให้ AI ใช้ตอบคำถามแบบนี้ครั้งหน้า"
                       id={`fix-${r.id}`}
                       value={correction}
                       onChange={(e) => setCorrection(e.target.value)}
                       rows={4}
-                      className="w-full rounded-xl2 border border-surface-line bg-white p-3 text-sm leading-relaxed text-brand-ink focus:border-brand-800 focus:outline-none"
                       placeholder="เขียนคำตอบที่อยากให้ AI ใช้ตอบคำถามแบบนี้ครั้งหน้า"
                     />
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <Button variant="primary"
+                      <Button
+                        variant="primary"
                         onPress={() => saveCorrection(r)}
                         isDisabled={savingCorrection || !correction.trim()}
-                        
                       >
-                        {savingCorrection ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                        {savingCorrection ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : (
+                          <Check size={13} />
+                        )}
                         บันทึกคำแก้เป็นความรู้ใหม่
                       </Button>
                       <span className="text-[11px] text-slate-500">
-                        บันทึกเป็นฉบับร่างในฐานความรู้ ต้องกดเผยแพร่ก่อน AI จึงจะใช้ตอบ
+                        บันทึกเป็นฉบับร่างในฐานความรู้ ต้องกดเผยแพร่ก่อน AI
+                        จึงจะใช้ตอบ
                       </span>
                     </div>
                   </div>
