@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, FileEdit, CheckCircle2, Circle } from "lucide-react";
+import { FileEdit, CheckCircle2, Circle } from "lucide-react";
 import {
   PageHeader,
   adminTable,
@@ -11,6 +11,7 @@ import {
 import { products } from "@/data/products";
 import { stableContentVariantId } from "@/lib/product-content";
 import AdminSelect from "@/components/admin/AdminSelect";
+import AdminSearch from "@/components/admin/AdminSearch";
 
 // Every product, searchable by SKU first (what the team actually recognises
 // — see the comment on ProductVariant.sku) or by name, with how far each
@@ -197,18 +198,12 @@ export default function ProductContentListPage() {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <div className="relative max-w-sm flex-1">
-          <Search
-            size={15}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-          />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="ค้นหา SKU หรือชื่อสินค้า…"
-            className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-hidden focus:border-brand-teal"
-          />
-        </div>
+        <AdminSearch
+          className="max-w-sm flex-1"
+          value={query}
+          onChange={setQuery}
+          placeholder="ค้นหา SKU หรือชื่อสินค้า…"
+        />
         <AdminSelect
           label="กรองตามแบรนด์"
           value={brand}

@@ -5,6 +5,7 @@ import { Award, Plus, X, Trash2, Search } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, SectionTitle } from "@/components/admin/layout-kit";
 import { Button } from "@heroui/react";
+import AdminSearch from "@/components/admin/AdminSearch";
 
 type Tier = {
   id: string;
@@ -303,11 +304,11 @@ export default function AdminPointsPage() {
         <section className="order-1 min-w-0">
           <SectionTitle className="mb-3">ค้นหาลูกค้า / ปรับแต้ม</SectionTitle>
           <form onSubmit={submitSearch} className="flex gap-2 mb-3">
-            <input
+            <AdminSearch
+              className="flex-1"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={setQuery}
               placeholder="ค้นหาด้วยชื่อ, เบอร์โทร, หรืออีเมล"
-              className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
             />
             <Button className="gap-1 px-4 text-xs" type="submit" isDisabled={searching}>
               <Search size={13} /> ค้นหา

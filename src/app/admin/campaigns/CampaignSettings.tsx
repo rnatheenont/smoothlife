@@ -5,6 +5,7 @@ import { AlertTriangle, Loader2, Plus, Trash2 } from "lucide-react";
 import { Panel } from "@/components/admin/layout-kit";
 import AdminSelect from "@/components/admin/AdminSelect";
 import { Button } from "@heroui/react";
+import AdminSearch from "@/components/admin/AdminSearch";
 
 // The campaign's own words, edited here instead of in a source file.
 //
@@ -475,11 +476,11 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
 
             {pickingKeychain && (
               <div className="mt-2">
-                <input
-                  className={field}
+                <AdminSearch
+                  className="w-full"
                   placeholder="ค้นหาชื่อสินค้า…"
                   value={keychainSearch}
-                  onChange={(e) => setKeychainSearch(e.target.value)}
+                  onChange={setKeychainSearch}
                 />
                 <div className="mt-2 max-h-56 overflow-y-auto rounded-l border border-surface-line">
                   {(() => {

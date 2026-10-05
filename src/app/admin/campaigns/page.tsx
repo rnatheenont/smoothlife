@@ -20,6 +20,7 @@ import SalesPanel, { type Sales } from "./SalesPanel";
 import { when, type QueueItem } from "./queue-vocab";
 import { formatTHB } from "@/lib/format";
 import { Button } from "@heroui/react";
+import AdminSearch from "@/components/admin/AdminSearch";
 
 type Vip = {
   rank: number;
@@ -482,25 +483,12 @@ export default function Page() {
 
           {(tab === "queue" || tab === "decided" || tab === "vip" || tab === "fan" || tab === "sales") && (
             <div className="mb-3 flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="ค้นหาชื่อลูกค้า เลขคำสั่งซื้อ เบอร์โทร หรืออีเมล"
-                  className="h-10 w-full rounded-l border border-surface-line bg-white ps-9 pe-9 text-[13px] text-brand-ink outline-hidden placeholder:text-slate-400 focus:border-brand-800"
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    aria-label="ล้างคำค้น"
-                    className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-slate-400 hover:bg-black/5 hover:text-slate-600"
-                  >
-                    <X size={14} aria-hidden />
-                  </button>
-                )}
-              </div>
+              <AdminSearch
+                className="flex-1"
+                value={search}
+                onChange={setSearch}
+                placeholder="ค้นหาชื่อลูกค้า เลขคำสั่งซื้อ เบอร์โทร หรืออีเมล"
+              />
               {query && tab !== "sales" && (
                 <span className="shrink-0 text-[12px] text-slate-500">
                   พบ{" "}

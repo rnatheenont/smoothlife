@@ -43,3 +43,6 @@
 @import "@heroui/styles/components/textarea.css" layer(components);
 @import "@heroui/styles/components/checkbox.css" layer(components);
 @import "@heroui/styles/components/switch.css" layer(components);
+
+/* Search boxes across the console: icon, field and clear button as one. */
+@import "@heroui/styles/components/input-group.css" layer(components);

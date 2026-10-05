@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { products } from "@/data/products";
 import { formatTHB } from "@/lib/format";
+import AdminSearch from "@/components/admin/AdminSearch";
 
 const MAX_RESULTS = 8;
 
@@ -25,11 +26,11 @@ export default function ProductPicker({ onSelect }: { onSelect: (slug: string) =
 
   return (
     <div className="relative">
-      <input
+      <AdminSearch
+        className="w-full"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={setQuery}
         placeholder="พิมพ์ชื่อสินค้าเพื่อค้นหา…"
-        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
       />
       {matches.length > 0 && (
         <div className="absolute left-0 right-0 top-full mt-1 rounded-xl border border-slate-100 bg-white shadow-cardHover overflow-hidden z-20 max-h-72 overflow-y-auto">

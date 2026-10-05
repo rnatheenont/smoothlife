@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, Search, X } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@heroui/react";
 import { PageHeader, Panel, adminCards, adminTable } from "@/components/admin/layout-kit";
 import AdminSelect from "@/components/admin/AdminSelect";
+import AdminSearch from "@/components/admin/AdminSearch";
 
 // What the desk did, in the order it happened.
 //
@@ -100,25 +101,12 @@ export default function AuditPage() {
       />
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[220px] flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="ค้นหาชื่อแอดมิน รหัสรายการ หรือรายละเอียด"
-            className="h-10 w-full rounded-l border border-surface-line bg-white ps-9 pe-9 text-[13px] text-brand-ink outline-hidden placeholder:text-slate-400 focus:border-brand-800"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              aria-label="ล้างคำค้น"
-              className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-slate-400 hover:bg-black/5 hover:text-slate-600"
-            >
-              <X size={14} aria-hidden />
-            </button>
-          )}
-        </div>
+        <AdminSearch
+          className="min-w-[220px] flex-1"
+          value={search}
+          onChange={setSearch}
+          placeholder="ค้นหาชื่อแอดมิน รหัสรายการ หรือรายละเอียด"
+        />
 
         <AdminSelect
           label="กรองตามการกระทำ"

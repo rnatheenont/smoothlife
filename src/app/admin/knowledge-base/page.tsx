@@ -12,6 +12,7 @@ import { CATEGORY_TH, STATUS_TH, type KbArticle, type KbCategory, type KbStatus 
 import { slugifyThai } from "@/lib/kb-public";
 import { isReviewDue, reviewLabel } from "@/lib/kb-review";
 import AdminSelect from "@/components/admin/AdminSelect";
+import AdminSearch from "@/components/admin/AdminSearch";
 
 // Admin → ฐานความรู้ AI. The articles the chat assistant is allowed to answer
 // from: it quotes these and nothing else, so what is published here is exactly
@@ -361,13 +362,12 @@ export default function AdminKnowledgeBasePage() {
       <Card padded={false} className="overflow-hidden">
         <div className="flex flex-col gap-2 border-b border-slate-100 p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="search"
+            <AdminSearch
+              className="min-w-[12rem] max-w-sm flex-1"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={setQuery}
+              label="ค้นหาบทความ"
               placeholder="ค้นหาหัวข้อหรือเนื้อหา"
-              aria-label="ค้นหาบทความ"
-              className={`${fieldClass} min-w-[12rem] max-w-sm flex-1`}
             />
             {/* Run now and then, not while reading: grouped, quiet, and out
                 of the way of the filters. */}

@@ -34,6 +34,7 @@ import { ScrollText,
 import { AdminActionButton, AdminActionProvider } from "@/components/admin/header-action";
 import CommandPalette from "@/components/admin/command-palette";
 import { Button } from "@heroui/react";
+import AdminSearch from "@/components/admin/AdminSearch";
 import {
   NAV_GROUPS,
   ALL_ITEMS,
@@ -393,18 +394,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <div className="lg:sticky lg:top-12 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:p-3 lg:pt-4 md:lg:top-14 md:lg:max-h-[calc(100vh-3.5rem)]">
               {!collapsed && (
                 <div className="relative mb-3 hidden lg:block">
-                  <Search
-                    size={14}
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    aria-hidden
-                  />
-                  <input
-                    type="search"
+                  <AdminSearch
+                    className="w-full"
                     value={navQuery}
-                    onChange={(e) => setNavQuery(e.target.value)}
+                    onChange={setNavQuery}
+                    label="ค้นหาเมนู"
                     placeholder="ค้นหาเมนู"
-                    aria-label="ค้นหาเมนู"
-                    className="min-h-9 w-full rounded-xl border border-surface-line bg-white pl-8 pr-3 text-sm text-brand-ink focus:border-brand-800 focus:outline-none"
                   />
                 </div>
               )}

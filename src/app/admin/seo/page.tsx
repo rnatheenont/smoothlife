@@ -12,6 +12,7 @@ import { brands } from "@/data/brands";
 import { brandFacts, brandSeoDefaults } from "@/lib/brand-seo";
 import { SITE_PAGES } from "@/lib/site-pages";
 import { Button } from "@heroui/react";
+import AdminSearch from "@/components/admin/AdminSearch";
 import {
   DESCRIPTION_MAX,
   SEO_ANGLES,
@@ -388,11 +389,11 @@ export default function AdminSeoPage() {
               more so now the canvas is a shade darker. Same surface on both
               sides. */}
           <div className="flex min-h-0 min-w-0 flex-col rounded-xl2 bg-white p-3 shadow-card">
-            <input
+            <AdminSearch
+              className="w-full"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={setQuery}
               placeholder="ค้นหาชื่อสินค้าหรือแบรนด์…"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-hidden focus:border-brand-teal"
             />
             <div className="mt-2 inline-flex rounded-full bg-surface-muted p-1 text-xs">
               {(
