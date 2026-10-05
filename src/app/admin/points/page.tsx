@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Award, Plus, X, Trash2, Search } from "lucide-react";
+import { Award, Plus, X, Trash2 } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, SectionTitle } from "@/components/admin/layout-kit";
 import { Button } from "@heroui/react";
@@ -333,12 +333,10 @@ export default function AdminPointsPage() {
               onChange={setQuery}
               placeholder="ค้นหาด้วยชื่อ, เบอร์โทร, หรืออีเมล"
             />
-            <Button
-              className="gap-1 px-4 text-xs"
-              type="submit"
-              isDisabled={searching}
-            >
-              <Search size={13} /> ค้นหา
+            {/* No magnifier here: the field beside it already carries one, and
+                two in a row reads as two different searches. */}
+            <Button className="px-4 text-xs" type="submit" isPending={searching}>
+              ค้นหา
             </Button>
           </form>
 
