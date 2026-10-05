@@ -6,6 +6,7 @@ import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, SectionTitle } from "@/components/admin/layout-kit";
 import { Button } from "@heroui/react";
 import AdminSearch from "@/components/admin/AdminSearch";
+import AdminField from "@/components/admin/AdminField";
 
 type Tier = {
   id: string;
@@ -357,18 +358,21 @@ export default function AdminPointsPage() {
               </p>
 
               <form onSubmit={submitAdjust} className="flex flex-col sm:flex-row gap-2 mb-4">
-                <input
+                <AdminField
+                  label="จำนวนแต้ม"
                   type="number"
+                  inputMode="numeric"
                   value={adjustDelta}
-                  onChange={(e) => setAdjustDelta(e.target.value)}
+                  onChange={setAdjustDelta}
                   placeholder="+/- จำนวนแต้ม"
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm sm:w-32"
+                  className="sm:w-32"
                 />
-                <input
+                <AdminField
+                  label="หมายเหตุ"
                   value={adjustNote}
-                  onChange={(e) => setAdjustNote(e.target.value)}
+                  onChange={setAdjustNote}
                   placeholder="หมายเหตุ (ไม่บังคับ)"
-                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="flex-1"
                 />
                 <Button size="sm" className="shrink-0" type="submit" isDisabled={adjusting}>
                   {adjusting ? "กำลังบันทึก…" : "ปรับแต้ม"}
@@ -416,37 +420,29 @@ export default function AdminPointsPage() {
               </button>
             </div>
             <form onSubmit={submitTierForm} className="space-y-3">
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">ชื่อรายการ (ภาษาไทย)</label>
-                <input
-                  value={tierForm.labelTh}
-                  onChange={(e) => setTierForm({ ...tierForm, labelTh: e.target.value })}
-                  placeholder="เช่น ส่วนลด 10%"
-                  required
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">ชื่อรายการ (ภาษาอังกฤษ)</label>
-                <input
-                  value={tierForm.labelEn}
-                  onChange={(e) => setTierForm({ ...tierForm, labelEn: e.target.value })}
-                  placeholder="e.g. 10% off"
-                  required
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">แต้มที่ใช้แลก</label>
-                <input
-                  type="number"
-                  value={tierForm.pointsCost}
-                  onChange={(e) => setTierForm({ ...tierForm, pointsCost: e.target.value })}
-                  placeholder="เช่น 500"
-                  required
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                />
-              </div>
+              <AdminField
+                label="ชื่อรายการ (ภาษาไทย)"
+                value={tierForm.labelTh}
+                onChange={(v) => setTierForm({ ...tierForm, labelTh: v })}
+                placeholder="เช่น ส่วนลด 10%"
+                isRequired
+              />
+              <AdminField
+                label="ชื่อรายการ (ภาษาอังกฤษ)"
+                value={tierForm.labelEn}
+                onChange={(v) => setTierForm({ ...tierForm, labelEn: v })}
+                placeholder="e.g. 10% off"
+                isRequired
+              />
+              <AdminField
+                label="แต้มที่ใช้แลก"
+                type="number"
+                inputMode="numeric"
+                value={tierForm.pointsCost}
+                onChange={(v) => setTierForm({ ...tierForm, pointsCost: v })}
+                placeholder="เช่น 500"
+                isRequired
+              />
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -471,19 +467,15 @@ export default function AdminPointsPage() {
                   ลดเป็นจำนวนเงิน
                 </button>
               </div>
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
-                  มูลค่าส่วนลด {tierForm.discountType === "percent" ? "(%)" : "(บาท)"}
-                </label>
-                <input
-                  type="number"
-                  value={tierForm.discountValue}
-                  onChange={(e) => setTierForm({ ...tierForm, discountValue: e.target.value })}
-                  placeholder={tierForm.discountType === "percent" ? "เช่น 10" : "เช่น 50"}
-                  required
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                />
-              </div>
+              <AdminField
+                label={`มูลค่าส่วนลด ${tierForm.discountType === "percent" ? "(%)" : "(บาท)"}`}
+                type="number"
+                inputMode="numeric"
+                value={tierForm.discountValue}
+                onChange={(v) => setTierForm({ ...tierForm, discountValue: v })}
+                placeholder={tierForm.discountType === "percent" ? "เช่น 10" : "เช่น 50"}
+                isRequired
+              />
               {tierFormError && <p className="text-xs text-rose-500">{tierFormError}</p>}
               <Button fullWidth type="submit" isDisabled={tierSubmitting}>
                 {tierSubmitting ? "กำลังบันทึก…" : "บันทึก"}

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
 import { Button } from "@heroui/react";
+import AdminField from "@/components/admin/AdminField";
 
 type GiftCardSummary = {
   id: string;
@@ -129,65 +130,48 @@ export default function AdminGiftCardsPage() {
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)]">
         <Panel title="ออกบัตรใหม่" padded>
           <form id="gift-card-form" onSubmit={submit} className="space-y-3">
-            <div>
-              <label className="block text-[11px] text-slate-400 mb-1">อีเมลลูกค้า</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="customer@email.com"
-                required
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            <AdminField
+              label="อีเมลลูกค้า"
+              type="email"
+              value={form.email}
+              onChange={(v) => setForm({ ...form, email: v })}
+              placeholder="customer@email.com"
+              isRequired
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <AdminField
+                label="ชื่อ (ถ้าเป็นลูกค้าใหม่)"
+                value={form.firstName}
+                onChange={(v) => setForm({ ...form, firstName: v })}
+              />
+              <AdminField
+                label="นามสกุล"
+                value={form.lastName}
+                onChange={(v) => setForm({ ...form, lastName: v })}
               />
             </div>
+            <AdminField
+              label="มูลค่าบัตร (บาท)"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={form.amount}
+              onChange={(v) => setForm({ ...form, amount: v })}
+              placeholder="เช่น 500"
+              isRequired
+            />
             <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">ชื่อ (ถ้าเป็นลูกค้าใหม่)</label>
-                <input
-                  value={form.firstName}
-                  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">นามสกุล</label>
-                <input
-                  value={form.lastName}
-                  onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-[11px] text-slate-400 mb-1">มูลค่าบัตร (บาท)</label>
-              <input
-                type="number"
-                value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                placeholder="เช่น 500"
-                required
-                min="1"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              <AdminField
+                label="หมายเหตุ (ไม่แสดงให้ลูกค้าเห็น)"
+                value={form.note}
+                onChange={(v) => setForm({ ...form, note: v })}
               />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">หมายเหตุ (ไม่แสดงให้ลูกค้าเห็น)</label>
-                <input
-                  value={form.note}
-                  onChange={(e) => setForm({ ...form, note: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">วันหมดอายุ (ไม่บังคับ)</label>
-                <input
-                  type="date"
-                  value={form.expiresOn}
-                  onChange={(e) => setForm({ ...form, expiresOn: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                />
-              </div>
+              <AdminField
+                label="วันหมดอายุ (ไม่บังคับ)"
+                type="date"
+                value={form.expiresOn}
+                onChange={(v) => setForm({ ...form, expiresOn: v })}
+              />
             </div>
             {error && <p className="text-xs text-rose-500">{error}</p>}
             <Button fullWidth type="submit" isDisabled={submitting}>

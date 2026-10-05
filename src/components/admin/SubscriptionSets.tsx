@@ -9,6 +9,8 @@ import { INTERVALS, STATUS_TH, type SubscriptionSetStatus } from "@/lib/subscrip
 import { formatTHB } from "@/lib/format";
 import AdminSelect from "@/components/admin/AdminSelect";
 import { Button } from "@heroui/react";
+import AdminField from "@/components/admin/AdminField";
+import AdminSearch from "@/components/admin/AdminSearch";
 
 // Admin → สินค้าสมัครสมาชิก → ชุดที่จัดไว้แล้ว. The shop assembles a bundle,
 // prices it, and sells it as one subscription.
@@ -308,62 +310,39 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
 
       <FormDrawer open={open} title={editingId ? "แก้ไขชุด" : "สร้างชุดใหม่"} onClose={() => setOpen(false)}>
         <div className="flex flex-col gap-4">
-          <div>
-            <label htmlFor="set-name" className="mb-1.5 block text-sm font-semibold text-brand-ink">
-              ชื่อชุด
-            </label>
-            <input
-              id="set-name"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="เช่น ชุดดูแลผิวหน้าครบวงจร"
-              className={field}
-            />
-          </div>
+          <AdminField
+            label="ชื่อชุด"
+            value={form.name}
+            onChange={(v) => setForm((f) => ({ ...f, name: v }))}
+            placeholder="เช่น ชุดดูแลผิวหน้าครบวงจร"
+          />
 
-          <div>
-            <label htmlFor="set-desc" className="mb-1.5 block text-sm font-semibold text-brand-ink">
-              คำอธิบาย (ไม่บังคับ)
-            </label>
-            <textarea
-              id="set-desc"
-              rows={3}
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="บอกลูกค้าว่าชุดนี้เหมาะกับใคร ใช้ยังไง"
-              className={`${field} py-2 leading-relaxed`}
-            />
-          </div>
+          <AdminField
+            label="คำอธิบาย (ไม่บังคับ)"
+            multiline
+            rows={3}
+            value={form.description}
+            onChange={(v) => setForm((f) => ({ ...f, description: v }))}
+            placeholder="บอกลูกค้าว่าชุดนี้เหมาะกับใคร ใช้ยังไง"
+            controlClassName="leading-relaxed"
+          />
 
           <div>
             <p className="mb-1.5 text-sm font-semibold text-brand-ink">สินค้าในชุด ({items.length})</p>
-            <div className="relative">
-              <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  // Type a couple of letters, press Enter, it is in the set.
-                  if (e.key === "Enter" && matches[0]) {
-                    e.preventDefault();
-                    addItem(matches[0].slug);
-                  }
-                }}
-                placeholder="พิมพ์ชื่อสินค้า ยี่ห้อ หรือหมวด แล้วกด Enter"
-                aria-label="ค้นหาสินค้า"
-                className={`${field} pl-9 pr-9`}
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  aria-label="ล้างคำค้นหา"
-                  className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-slate-400 hover:text-brand-ink"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
+            <AdminSearch
+              className="w-full"
+              value={search}
+              onChange={setSearch}
+              onKeyDown={(e) => {
+                // Type a couple of letters, press Enter, it is in the set.
+                if (e.key === "Enter" && matches[0]) {
+                  e.preventDefault();
+                  addItem(matches[0].slug);
+                }
+              }}
+              label="ค้นหาสินค้า"
+              placeholder="พิมพ์ชื่อสินค้า ยี่ห้อ หรือหมวด แล้วกด Enter"
+            />
 
             {/* Narrowing by category is faster than describing the product in
                 words, and the shop thinks in these categories already. */}
@@ -482,17 +461,13 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label htmlFor="set-price" className="mb-1.5 block text-sm font-semibold text-brand-ink">
-                ราคาชุด (บาท)
-              </label>
-              <input
-                id="set-price"
+              <AdminField
+                label="ราคาชุด (บาท)"
                 type="number"
                 inputMode="decimal"
                 min={1}
                 value={form.bundle_price}
-                onChange={(e) => setForm((f) => ({ ...f, bundle_price: e.target.value }))}
-                className={field}
+                onChange={(v) => setForm((f) => ({ ...f, bundle_price: v }))}
               />
             </div>
             <div>

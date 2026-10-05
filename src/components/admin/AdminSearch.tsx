@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import clsx from "clsx";
 import { Search, X } from "lucide-react";
 import { InputGroup } from "@heroui/react";
@@ -22,6 +23,7 @@ export default function AdminSearch({
   className,
   autoFocus,
   inputClassName,
+  onKeyDown,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -31,6 +33,8 @@ export default function AdminSearch({
   className?: string;
   autoFocus?: boolean;
   inputClassName?: string;
+  /** For the lists where Enter picks the first match. */
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
   return (
     <InputGroup className={clsx("min-h-10", className)}>
@@ -48,6 +52,7 @@ export default function AdminSearch({
         placeholder={placeholder}
         aria-label={label ?? placeholder ?? "ค้นหา"}
         autoFocus={autoFocus}
+        onKeyDown={onKeyDown}
         className={clsx("[&::-webkit-search-cancel-button]:appearance-none", inputClassName)}
       />
       {value && (
