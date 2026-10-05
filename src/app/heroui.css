@@ -33,3 +33,13 @@
 @import "@heroui/styles/components/alert.css" layer(components);
 @import "@heroui/styles/components/toggle-button.css" layer(components);
 @import "@heroui/styles/components/toggle-button-group.css" layer(components);
+
+/* Form controls across the admin console. popover/list-box carry the Select's
+   menu; checkbox and switch are the two toggles the admin forms use. */
+@import "@heroui/styles/components/popover.css" layer(components);
+@import "@heroui/styles/components/list-box.css" layer(components);
+@import "@heroui/styles/components/list-box-item.css" layer(components);
+@import "@heroui/styles/components/select.css" layer(components);
+@import "@heroui/styles/components/textarea.css" layer(components);
+@import "@heroui/styles/components/checkbox.css" layer(components);
+@import "@heroui/styles/components/switch.css" layer(components);

@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, RefreshCw, Search, X } from "lucide-react";
-import { PageHeader, Panel, adminCards, adminSelect, adminTable } from "@/components/admin/layout-kit";
+import { RefreshCw, Search, X } from "lucide-react";
+import { Button } from "@heroui/react";
+import { PageHeader, Panel, adminCards, adminTable } from "@/components/admin/layout-kit";
+import AdminSelect from "@/components/admin/AdminSelect";
 
 // What the desk did, in the order it happened.
 //
@@ -118,23 +120,19 @@ export default function AuditPage() {
           )}
         </div>
 
-        <select value={action} onChange={(e) => setAction(e.target.value)} className={adminSelect}>
-          <option value="">ทุกการกระทำ</option>
-          {actions.map((a) => (
-            <option key={a} value={a}>
-              {LABEL[a] ?? a}
-            </option>
-          ))}
-        </select>
+        <AdminSelect
+          label="กรองตามการกระทำ"
+          value={action}
+          onChange={setAction}
+          options={[
+            { value: "", label: "ทุกการกระทำ" },
+            ...actions.map((a) => ({ value: a, label: LABEL[a] ?? a })),
+          ]}
+        />
 
-        <button
-          type="button"
-          onClick={load}
-          disabled={loading}
-          className="inline-flex h-10 items-center gap-1.5 rounded-full border border-surface-line px-4 text-[13px] font-semibold text-brand-800 hover:bg-surface-soft disabled:opacity-50"
-        >
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} รีเฟรช
-        </button>
+        <Button variant="outline" size="sm" isPending={loading} onPress={load}>
+          <RefreshCw size={14} /> รีเฟรช
+        </Button>
 
         <span className="text-[12px] text-slate-500">
           {total} รายการ{total > entries.length ? ` · แสดง ${entries.length} ล่าสุด` : ""}
