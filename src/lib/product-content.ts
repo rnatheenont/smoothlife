@@ -429,6 +429,53 @@ export async function getStarterBlocks(): Promise<ContentBlock[]> {
   return Array.isArray(saved) ? saved : starterBlocks();
 }
 
+/** What section of the page a block is, for deciding whether a product
+ *  already has it.
+ *
+ *  Keyed on the heading a reader would see rather than on the block type,
+ *  because the same section is written both ways across this catalogue: half
+ *  the drafts carry วิธีใช้ as a how_to_use block and half as a paragraph
+ *  headed "วิธีใช้". Matching on type alone put a second, empty วิธีใช้ under
+ *  the one that was already there. Blocks with no heading at all — a picture,
+ *  a clip, the spec table — are one of a kind, so those fall back to type. */
+function sectionKey(block: ContentBlock): string {
+  const own =
+    block.type === "paragraph" ||
+    block.type === "bullet_list" ||
+    block.type === "image_text"
+      ? block.headingTh
+      : FIXED_HEADING[block.type]?.th;
+  const heading = (own ?? "").trim().toLowerCase();
+  return heading ? `h:${heading}` : `t:${block.type}`;
+}
+
+/**
+ * The starter sections a product is still missing.
+ *
+ * A draft is unfinished by definition, and most of this catalogue's drafts
+ * are a spec table imported from Shopify and nothing else — opening one
+ * showed a finished-looking table and no sign that a write-up was expected.
+ * These fill that gap: the sections the starter asks for and the product does
+ * not have, as empty blocks beside what is already there. Nothing saved is
+ * touched, reordered or rewritten.
+ */
+export function missingStarterBlocks(
+  saved: ContentBlock[],
+  starter: ContentBlock[],
+): ContentBlock[] {
+  const have = new Set(saved.map(sectionKey));
+  const out: ContentBlock[] = [];
+  for (const block of starter) {
+    const key = sectionKey(block);
+    if (have.has(key)) continue;
+    // Added as we go, so a starter that lists the same section twice still
+    // only puts it on the page once.
+    have.add(key);
+    out.push(block);
+  }
+  return out;
+}
+
 /**
  * Strip a submitted starter back to structure.
  *

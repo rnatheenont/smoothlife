@@ -64,10 +64,13 @@ export default function ProductContentEditPage() {
     product?.variants.find((v) => v.variantId === variantId)?.sku ?? null;
 
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
-  // Whether what is on screen is the starter scaffold rather than saved work.
-  // Nothing has been written to the database at this point — opening a product
-  // must not be the same as creating content for it.
+  // Whether some of what is on screen is starter scaffold rather than saved
+  // work. Nothing has been written to the database at this point — opening a
+  // product must not be the same as creating content for it.
   const [scaffold, setScaffold] = useState(false);
+  // …and whether the scaffold was added next to content that was already
+  // there, which is a draft being topped up rather than a blank product.
+  const [toppedUp, setToppedUp] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<"draft" | "publish" | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -118,14 +121,20 @@ export default function ProductContentEditPage() {
     fetch(`/api/admin/product-content/${encodeURIComponent(variantId)}`)
       .then((r) => r.json())
       .then((d) => {
+        // The server decides what a product starts with — and, for a draft,
+        // which sections it is still missing — so the team can change it in
+        // /admin/products/content/starter without a deploy.
+        const starter = Array.isArray(d?.starter) ? d.starter : [];
         const saved = d?.override?.blocks;
         if (Array.isArray(saved) && saved.length > 0) {
-          setBlocks(saved);
+          // Appended, never interleaved: where somebody put their own blocks
+          // is their decision, and the skeleton arriving later does not get
+          // to reorder it.
+          setBlocks(starter.length > 0 ? [...saved, ...starter] : saved);
+          setScaffold(starter.length > 0);
+          setToppedUp(starter.length > 0);
           return;
         }
-        // The server decides what a blank product starts with, so the team
-        // can change it in /admin/products/content/starter without a deploy.
-        const starter = Array.isArray(d?.starter) ? d.starter : [];
         setBlocks(starter);
         setScaffold(starter.length > 0);
       })
@@ -198,10 +207,18 @@ export default function ProductContentEditPage() {
   // Both counts ignore parked blocks: they are not on the page, so they cannot
   // be wrong on it.
   const shownBlocks = blocks.filter((b) => !b.hidden);
+  const incompleteCount = shownBlocks.filter((b) => !isBlockComplete(b)).length;
   // The scaffold is empty by definition; saying so the moment the page opens
   // would make an untouched product look like a product with mistakes in it.
-  const untouched = scaffold && blocks.every(isBlockEmpty);
-  const incompleteCount = shownBlocks.filter((b) => !isBlockComplete(b)).length;
+  // A block with nothing in it at all is a placeholder waiting to be filled,
+  // so while every unfinished block is in that state the page is still the
+  // skeleton; the first half-written block is a real "cannot publish yet".
+  // Stated that way rather than by remembering which blocks were added, so it
+  // survives deleting and reordering them.
+  const untouched =
+    scaffold &&
+    incompleteCount > 0 &&
+    incompleteCount === shownBlocks.filter(isBlockEmpty).length;
   const unverifiedCount = shownBlocks.filter(
     (b) => b.hasVerifiedSource === false,
   ).length;
@@ -253,7 +270,11 @@ export default function ProductContentEditPage() {
       {loading ? (
         <p className="mt-6 text-sm text-slate-400">กำลังโหลด…</p>
       ) : (
-        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <div className="mt-6 grid gap-6 [grid-template-columns:minmax(0,1fr)] lg:[grid-template-columns:minmax(0,1fr)_minmax(0,1.4fr)]">
+          {/* The one-column track is spelled out rather than left implicit: an
+              implicit `auto` track is sized by its content's min-content
+              width, and the spec table in the preview is wider than a phone —
+              which scrolled the whole page sideways. */}
           {/* preview */}
           <div className="lg:sticky lg:top-20 lg:self-start">
             <div className="flex items-center justify-between">
@@ -305,9 +326,10 @@ export default function ProductContentEditPage() {
             )}
             {untouched && (
               <p className="mb-3 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800">
-                สินค้านี้ยังไม่มีเนื้อหา — วางโครงไว้ให้แล้ว เติมในช่องได้เลย
-                บล็อกไหนไม่ใช้กดถังขยะลบทิ้งได้
-                และยังไม่มีอะไรถูกบันทึกจนกว่าจะกด “บันทึกร่าง” หรือ “เผยแพร่” ·{" "}
+                {toppedUp
+                  ? "ร่างนี้ยังขาดบางหัวข้อตามโครง — วางบล็อกเปล่าไว้ให้แล้วต่อท้ายของเดิม ของที่เขียนไว้ไม่ถูกแตะ เติมในช่องได้เลย บล็อกไหนไม่ใช้กดถังขยะลบทิ้งได้ และบล็อกที่เพิ่มให้ยังไม่ถูกบันทึกจนกว่าจะกด “บันทึกร่าง” หรือ “เผยแพร่”"
+                  : "สินค้านี้ยังไม่มีเนื้อหา — วางโครงไว้ให้แล้ว เติมในช่องได้เลย บล็อกไหนไม่ใช้กดถังขยะลบทิ้งได้ และยังไม่มีอะไรถูกบันทึกจนกว่าจะกด “บันทึกร่าง” หรือ “เผยแพร่”"}{" "}
+                ·{" "}
                 <Link
                   href="/admin/products/content/starter"
                   className="font-semibold underline underline-offset-2"
@@ -835,9 +857,16 @@ function BlockEditor({
             {block.rows.map((row, ri) => (
               <div
                 key={ri}
-                className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-1.5"
+                // Four fields in a row need a phone-width fallback: `1fr` is
+                // minmax(auto,1fr), and a HeroUI Input's auto width is the
+                // browser's 20-character default — four of those are wider
+                // than any phone, which scrolled the page sideways. Two
+                // columns here, four from sm up, and minmax(0,…) so a track
+                // may go narrower than its field wants to be.
+                className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-1.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
               >
                 <Input
+                  fullWidth
                   aria-label="หัวข้อ (ไทย)"
                   value={row.labelTh}
                   onChange={(e) => {
@@ -848,6 +877,7 @@ function BlockEditor({
                   placeholder="หัวข้อ (ไทย)"
                 />
                 <Input
+                  fullWidth
                   aria-label="Label (EN)"
                   value={row.labelEn}
                   onChange={(e) => {
@@ -858,6 +888,7 @@ function BlockEditor({
                   placeholder="Label (EN)"
                 />
                 <Input
+                  fullWidth
                   aria-label="ค่า (ไทย)"
                   value={row.valueTh}
                   onChange={(e) => {
@@ -868,6 +899,7 @@ function BlockEditor({
                   placeholder="ค่า (ไทย)"
                 />
                 <Input
+                  fullWidth
                   aria-label="Value (EN)"
                   value={row.valueEn}
                   onChange={(e) => {
@@ -886,7 +918,7 @@ function BlockEditor({
                   }
                   aria-label="ลบแถวนี้"
                   title="ลบแถวนี้"
-                  className="grid size-9 place-items-center rounded-lg text-rose-400 hover:bg-rose-50"
+                  className="col-span-2 grid size-9 place-items-center justify-self-end rounded-lg text-rose-400 hover:bg-rose-50 sm:col-span-1"
                 >
                   <Trash2 size={14} aria-hidden="true" />
                 </button>

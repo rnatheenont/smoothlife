@@ -6,6 +6,7 @@ import {
   PRODUCT_CONTENT_COLUMNS,
   productContentTag,
   getStarterBlocks,
+  missingStarterBlocks,
   isBlockComplete,
   parseVideoUrl,
   type ContentBlock,
@@ -159,14 +160,23 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ variantI
   const [row] = await supabaseRest<ProductContentOverride[]>(
     `product_content_overrides?variant_id=eq.${pgValue(variantId)}&select=${PRODUCT_CONTENT_COLUMNS}&limit=1`
   ).catch((): ProductContentOverride[] => []);
-  // The starter rides along so a product with nothing written opens with the
-  // skeleton in one request, and the editor never has to decide for itself
-  // what a blank product should look like.
-  const hasContent = Array.isArray(row?.blocks) && row.blocks.length > 0;
+  // The starter rides along so a product opens with the skeleton in one
+  // request, and the editor never has to decide for itself what is missing.
+  //
+  // Nothing written yet: the whole starter. A draft: only the sections it
+  // does not already have, because unfinished is exactly the state the
+  // skeleton is for. Published: none — adding empty blocks to a live page
+  // would turn a finished product into an incomplete one without anybody
+  // having edited it.
+  const saved = Array.isArray(row?.blocks) ? row.blocks : [];
+  let starter: ContentBlock[] = [];
+  if (saved.length === 0) starter = await getStarterBlocks();
+  else if (!row?.published)
+    starter = missingStarterBlocks(saved, await getStarterBlocks());
   return NextResponse.json({
     ok: true,
     override: row ?? null,
-    starter: hasContent ? null : await getStarterBlocks(),
+    starter: starter.length > 0 ? starter : null,
   });
 }
 
