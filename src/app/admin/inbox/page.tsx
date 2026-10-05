@@ -862,7 +862,13 @@ export default function AdminInboxPage() {
           the middle gets a measure nobody wants to read. Below lg the grid
           collapses and the widths do not apply. */}
       <div
-        className="grid min-h-0 flex-1 gap-3 lg:[grid-template-columns:var(--inbox-cols)]"
+        // The base track is minmax(0,1fr) for the same reason the lg ones are:
+        // a grid item defaults to min-width:auto and will not shrink below its
+        // content, so on a phone the conversation list sized itself to the
+        // longest name in it (596px in a 424px window) and pushed the whole
+        // page sideways. Leaving the base implicit was the gap when the
+        // desktop widths moved behind lg.
+        className="grid min-h-0 flex-1 gap-3 [grid-template-columns:minmax(0,1fr)] lg:[grid-template-columns:var(--inbox-cols)]"
         style={
           {
             "--inbox-cols": `minmax(0,${layout.list}px) minmax(0,1fr)${
