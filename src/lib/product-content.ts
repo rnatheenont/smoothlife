@@ -1,6 +1,7 @@
 import {
   pgValue,
   supabaseConfigured,
+  supabaseRest,
   supabaseRestCached,
 } from "@/lib/supabase-server";
 import type { Product } from "@/data/types";
@@ -404,6 +405,61 @@ export function starterBlocks(): ContentBlock[] {
     // Carries its own heading from FIXED_HEADING, so it needs none here.
     emptyBlock("how_to_use"),
   ] as ContentBlock[];
+}
+
+/**
+ * The starter the team has set, or the built-in one if they never did.
+ *
+ * Read on the server as part of loading a product's editor, so opening a
+ * blank product is still one request and the decision of "what goes in a
+ * starter" never reaches the browser as two possible answers.
+ */
+export async function getStarterBlocks(): Promise<ContentBlock[]> {
+  if (!supabaseConfigured()) return starterBlocks();
+  const [row] = await supabaseRest<{ blocks: ContentBlock[] | null }[]>(
+    "product_content_starter?select=blocks&limit=1",
+  ).catch((): { blocks: ContentBlock[] | null }[] => []);
+  const saved = row?.blocks;
+  // An empty list is a real answer — the team can decide a blank page is the
+  // right start — so only a missing row falls back to the built-in one.
+  return Array.isArray(saved) ? saved : starterBlocks();
+}
+
+/**
+ * Strip a submitted starter back to structure.
+ *
+ * Rebuilt from `emptyBlock` rather than trusted field by field: a starter
+ * carrying words would put the same sentence on every product nobody had got
+ * to yet, and this is the only place that can make that impossible.
+ */
+export function sanitiseStarter(input: unknown): ContentBlock[] {
+  if (!Array.isArray(input)) return [];
+  const types = new Set(BLOCK_TYPES.map((t) => t.key));
+  const out: ContentBlock[] = [];
+  for (const raw of input.slice(0, 12)) {
+    const type = (raw as { type?: unknown })?.type;
+    if (typeof type !== "string" || !types.has(type as ContentBlock["type"]))
+      continue;
+    const block = emptyBlock(type as ContentBlock["type"]);
+    // Keyed off the type, not off whether the key is already there: an empty
+    // paragraph has no `headingTh` property at all, so `"headingTh" in block`
+    // was false for exactly the blocks that are allowed one, and every heading
+    // the team typed was dropped on save.
+    if (
+      block.type === "paragraph" ||
+      block.type === "bullet_list" ||
+      block.type === "image_text"
+    ) {
+      const th = (raw as { headingTh?: unknown }).headingTh;
+      const en = (raw as { headingEn?: unknown }).headingEn;
+      if (typeof th === "string" && th.trim())
+        block.headingTh = th.trim().slice(0, 120);
+      if (typeof en === "string" && en.trim())
+        block.headingEn = en.trim().slice(0, 120);
+    }
+    out.push(block);
+  }
+  return out;
 }
 
 /** Nothing has been typed into it yet — the state a starter block is in until

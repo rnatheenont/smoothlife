@@ -5,6 +5,7 @@ import { getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
 import {
   PRODUCT_CONTENT_COLUMNS,
   productContentTag,
+  getStarterBlocks,
   isBlockComplete,
   parseVideoUrl,
   type ContentBlock,
@@ -158,7 +159,15 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ variantI
   const [row] = await supabaseRest<ProductContentOverride[]>(
     `product_content_overrides?variant_id=eq.${pgValue(variantId)}&select=${PRODUCT_CONTENT_COLUMNS}&limit=1`
   ).catch((): ProductContentOverride[] => []);
-  return NextResponse.json({ ok: true, override: row ?? null });
+  // The starter rides along so a product with nothing written opens with the
+  // skeleton in one request, and the editor never has to decide for itself
+  // what a blank product should look like.
+  const hasContent = Array.isArray(row?.blocks) && row.blocks.length > 0;
+  return NextResponse.json({
+    ok: true,
+    override: row ?? null,
+    starter: hasContent ? null : await getStarterBlocks(),
+  });
 }
 
 export async function PUT(req: NextRequest, props: { params: Promise<{ variantId: string }> }) {

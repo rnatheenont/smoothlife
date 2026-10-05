@@ -9,7 +9,7 @@ import { products } from "@/data/products";
 import { stableContentVariantId } from "@/lib/product-content";
 import AdminSelect from "@/components/admin/AdminSelect";
 import AdminSearch from "@/components/admin/AdminSearch";
-import { FileEdit, CheckCircle2, Circle } from "lucide-react";
+import { FileEdit, CheckCircle2, Circle, LayoutList } from "lucide-react";
 
 // Every product, searchable by SKU first (what the team actually recognises
 // — see the comment on ProductVariant.sku) or by name, with how far each
@@ -186,6 +186,17 @@ export default function ProductContentListPage() {
       <PageHeader
         title="เนื้อหาสินค้า"
         subtitle="รายละเอียดสินค้าแบบอิสระ 2 ภาษา — ค้นด้วย SKU หรือชื่อสินค้า"
+        actions={
+          // Reachable from here as well as from the note inside a blank
+          // product: somebody deciding what a product page should contain is
+          // usually looking at the whole list, not at one product.
+          <Link
+            href="/admin/products/content/starter"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-surface-line px-3.5 text-[12px] font-semibold text-slate-600 hover:bg-surface-soft hover:text-brand-ink"
+          >
+            <LayoutList size={14} aria-hidden="true" /> โครงเริ่มต้น
+          </Link>
+        }
       />
 
       <div className="mt-5 flex items-center gap-3">

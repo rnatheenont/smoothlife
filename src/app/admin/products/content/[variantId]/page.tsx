@@ -26,7 +26,6 @@ import {
   BLOCK_TYPES,
   emptyBlock,
   isBlockEmpty,
-  starterBlocks,
   FIXED_HEADING,
   isBlockComplete,
   parseVideoUrl,
@@ -124,8 +123,11 @@ export default function ProductContentEditPage() {
           setBlocks(saved);
           return;
         }
-        setBlocks(starterBlocks());
-        setScaffold(true);
+        // The server decides what a blank product starts with, so the team
+        // can change it in /admin/products/content/starter without a deploy.
+        const starter = Array.isArray(d?.starter) ? d.starter : [];
+        setBlocks(starter);
+        setScaffold(starter.length > 0);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -305,7 +307,13 @@ export default function ProductContentEditPage() {
               <p className="mb-3 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800">
                 สินค้านี้ยังไม่มีเนื้อหา — วางโครงไว้ให้แล้ว เติมในช่องได้เลย
                 บล็อกไหนไม่ใช้กดถังขยะลบทิ้งได้
-                และยังไม่มีอะไรถูกบันทึกจนกว่าจะกด “บันทึกร่าง” หรือ “เผยแพร่”
+                และยังไม่มีอะไรถูกบันทึกจนกว่าจะกด “บันทึกร่าง” หรือ “เผยแพร่” ·{" "}
+                <Link
+                  href="/admin/products/content/starter"
+                  className="font-semibold underline underline-offset-2"
+                >
+                  แก้โครงเริ่มต้น
+                </Link>
               </p>
             )}
             {!untouched && (incompleteCount > 0 || unverifiedCount > 0) && (
