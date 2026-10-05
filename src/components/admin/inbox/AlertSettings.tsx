@@ -2,8 +2,8 @@
 
 import clsx from "clsx";
 import { useEffect, useState } from "react";
-import { Loader2, BellRing, Check, X, Send } from "lucide-react";
-import { Button, Input, Label, TextField } from "@heroui/react";
+import { BellRing, Check, X, Send } from "lucide-react";
+import { Button, Input, Label, Spinner, TextField } from "@heroui/react";
 
 // Where "somebody is waiting" gets sent, edited by the people it gets sent to.
 //
@@ -20,7 +20,10 @@ type LineGroup = { group_id: string; kind: string; last_seen_at: string };
 
 export default function AlertSettings({ onClose }: { onClose: () => void }) {
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [channels, setChannels] = useState<{ email: boolean; line: boolean }>({ email: false, line: false });
+  const [channels, setChannels] = useState<{ email: boolean; line: boolean }>({
+    email: false,
+    line: false,
+  });
   const [lineGroups, setLineGroups] = useState<LineGroup[]>([]);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -78,8 +81,12 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
         setTestResult(data.error || "ส่งทดสอบไม่สำเร็จ");
         return;
       }
-      const sent = [data.emailed ? "อีเมล" : null, data.lined ? "LINE" : null].filter(Boolean);
-      const fresh = (data.newlyUrgent?.length ?? 0) + (data.newlyWaiting?.length ?? 0);
+      const sent = [
+        data.emailed ? "อีเมล" : null,
+        data.lined ? "LINE" : null,
+      ].filter(Boolean);
+      const fresh =
+        (data.newlyUrgent?.length ?? 0) + (data.newlyWaiting?.length ?? 0);
       setTestResult(
         fresh === 0
           ? `ตอนนี้ไม่มีเคสที่เข้าเงื่อนไข (ตรวจ ${data.checked ?? 0} เคส) — ยังไม่มีอะไรให้แจ้ง`
@@ -98,7 +105,12 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
     <div className="mb-3 rounded-xl2 border border-slate-200 bg-white p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-ink">
-          <BellRing size={15} className="text-brand-emerald" aria-hidden="true" /> ปลายทางแจ้งเตือนเคส
+          <BellRing
+            size={15}
+            className="text-brand-emerald"
+            aria-hidden="true"
+          />{" "}
+          ปลายทางแจ้งเตือนเคส
         </p>
         <button
           onClick={onClose}
@@ -113,7 +125,7 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
         <p className="text-xs text-slate-400">
           {error || (
             <span className="inline-flex items-center gap-1.5">
-              <Loader2 size={13} className="animate-spin" /> กำลังโหลด…
+              <Spinner size="sm" color="current" /> กำลังโหลด…
             </span>
           )}
         </p>
@@ -129,7 +141,9 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
               <Label className="text-xs font-semibold text-slate-600">
                 อีเมล
                 {!channels.email && (
-                  <span className="ml-1.5 font-normal text-amber-600">(ยังไม่ได้ตั้งค่าระบบส่งอีเมล)</span>
+                  <span className="ml-1.5 font-normal text-amber-600">
+                    (ยังไม่ได้ตั้งค่าระบบส่งอีเมล)
+                  </span>
                 )}
               </Label>
               <Input placeholder="cs@smoothlife.com" />
@@ -143,10 +157,15 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
               <Label className="text-xs font-semibold text-slate-600">
                 LINE id ของกลุ่มทีมงาน
                 {!channels.line && (
-                  <span className="ml-1.5 font-normal text-amber-600">(ยังไม่ได้ตั้งค่า LINE)</span>
+                  <span className="ml-1.5 font-normal text-amber-600">
+                    (ยังไม่ได้ตั้งค่า LINE)
+                  </span>
                 )}
               </Label>
-              <Input className="font-mono" placeholder="Cxxxxxxxx… (กลุ่ม) หรือ Uxxxxxxxx… (คน)" />
+              <Input
+                className="font-mono"
+                placeholder="Cxxxxxxxx… (กลุ่ม) หรือ Uxxxxxxxx… (คน)"
+              />
               {/* A group id is nowhere in the LINE app — it only ever appears
                   in a webhook payload. These are the groups the OA has been
                   added to, so this field can be filled by pointing rather
@@ -154,12 +173,16 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
                   anywhere. */}
               {lineGroups.length > 0 ? (
                 <span className="flex flex-wrap items-center gap-1 pt-0.5">
-                  <span className="text-[11px] text-slate-500">กลุ่มที่บอทอยู่:</span>
+                  <span className="text-[11px] text-slate-500">
+                    กลุ่มที่บอทอยู่:
+                  </span>
                   {lineGroups.map((g) => (
                     <button
                       key={g.group_id}
                       type="button"
-                      onClick={() => setSettings({ ...settings, lineTo: g.group_id })}
+                      onClick={() =>
+                        setSettings({ ...settings, lineTo: g.group_id })
+                      }
                       className={clsx(
                         "rounded-full px-2 py-0.5 font-mono text-[10px] ring-1 transition-colors",
                         settings.lineTo === g.group_id
@@ -167,15 +190,17 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
                           : "bg-white text-slate-600 ring-slate-200 hover:bg-surface-soft",
                       )}
                     >
-                      {g.kind === "room" ? "ห้องแชท" : "กลุ่ม"} …{g.group_id.slice(-6)}
+                      {g.kind === "room" ? "ห้องแชท" : "กลุ่ม"} …
+                      {g.group_id.slice(-6)}
                     </button>
                   ))}
                 </span>
               ) : (
                 <span className="pt-0.5 text-[11px] leading-relaxed text-slate-500">
-                  ยังไม่เคยเห็นกลุ่มไหนเลย — เชิญ OA ของร้านเข้ากลุ่มทีมงาน แล้วพิมพ์
-                  อะไรก็ได้ในกลุ่มหนึ่งครั้ง จากนั้นกดเปิดหน้านี้ใหม่ กลุ่มจะมาขึ้นให้เลือกตรงนี้
-                  (บอทไม่ตอบอะไรในกลุ่ม แค่จำรหัสกลุ่มไว้)
+                  ยังไม่เคยเห็นกลุ่มไหนเลย — เชิญ OA ของร้านเข้ากลุ่มทีมงาน
+                  แล้วพิมพ์ อะไรก็ได้ในกลุ่มหนึ่งครั้ง จากนั้นกดเปิดหน้านี้ใหม่
+                  กลุ่มจะมาขึ้นให้เลือกตรงนี้ (บอทไม่ตอบอะไรในกลุ่ม
+                  แค่จำรหัสกลุ่มไว้)
                 </span>
               )}
             </TextField>
@@ -183,10 +208,14 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
             <TextField
               type="number"
               value={String(settings.waitingMinutes)}
-              onChange={(v) => setSettings({ ...settings, waitingMinutes: Number(v) })}
+              onChange={(v) =>
+                setSettings({ ...settings, waitingMinutes: Number(v) })
+              }
               fullWidth
             >
-              <Label className="text-xs font-semibold text-slate-600">แจ้งเมื่อรอเกิน (นาที)</Label>
+              <Label className="text-xs font-semibold text-slate-600">
+                แจ้งเมื่อรอเกิน (นาที)
+              </Label>
               <Input min={1} max={1440} />
             </TextField>
           </div>
@@ -205,7 +234,12 @@ export default function AlertSettings({ onClose }: { onClose: () => void }) {
               {saved && !saving ? <Check size={13} /> : null}
               {saved ? "บันทึกแล้ว" : "บันทึก"}
             </Button>
-            <Button size="sm" variant="secondary" onPress={sendTest} isPending={testing}>
+            <Button
+              size="sm"
+              variant="secondary"
+              onPress={sendTest}
+              isPending={testing}
+            >
               {!testing && <Send size={13} />}
               ส่งทดสอบ
             </Button>

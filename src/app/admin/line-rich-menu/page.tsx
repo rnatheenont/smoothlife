@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Loader2, Upload, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
+import {
+  MessageCircle,
+  Upload,
+  CheckCircle2,
+  AlertTriangle,
+  RefreshCw,
+} from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, Panel } from "@/components/admin/layout-kit";
+import { Spinner } from "@heroui/react";
 
 // Installs the LINE Rich Menu (plan §6). Deliberately shows the button layout
 // even when the account isn't connected yet — the layout is the part worth
@@ -17,7 +24,12 @@ type Status = {
   reason?: string;
   menus?: { richMenuId: string; name: string }[];
   defaultRichMenuId?: string | null;
-  webhook?: { url: string; secretSet: boolean; registered?: string | null; active?: boolean };
+  webhook?: {
+    url: string;
+    secretSet: boolean;
+    registered?: string | null;
+    active?: boolean;
+  };
   error?: string;
 };
 
@@ -25,7 +37,10 @@ export default function AdminLineRichMenuPage() {
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState(false);
-  const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    kind: "ok" | "error";
+    text: string;
+  } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function load() {
@@ -48,13 +63,22 @@ export default function AdminLineRichMenuPage() {
     try {
       const body = new FormData();
       body.append("image", file);
-      const res = await fetch("/api/admin/line-rich-menu", { method: "POST", body });
+      const res = await fetch("/api/admin/line-rich-menu", {
+        method: "POST",
+        body,
+      });
       const data = await res.json();
       if (!data.ok) {
-        setMessage({ kind: "error", text: data.error || "ติดตั้งเมนูไม่สำเร็จ" });
+        setMessage({
+          kind: "error",
+          text: data.error || "ติดตั้งเมนูไม่สำเร็จ",
+        });
         return;
       }
-      setMessage({ kind: "ok", text: "ติดตั้งเมนูเรียบร้อย — เปิดแชท LINE OA แล้วจะเห็นเมนูด้านล่าง" });
+      setMessage({
+        kind: "ok",
+        text: "ติดตั้งเมนูเรียบร้อย — เปิดแชท LINE OA แล้วจะเห็นเมนูด้านล่าง",
+      });
       load();
     } catch {
       setMessage({ kind: "error", text: "ติดตั้งเมนูไม่สำเร็จ" });
@@ -68,12 +92,18 @@ export default function AdminLineRichMenuPage() {
   // "Live" for the chat means all three: our secret, LINE pointed here, and
   // the switch actually on. Any one missing and customers type into silence.
   const webhookLive = Boolean(
-    status?.webhook?.secretSet && status.webhook.active && status.webhook.registered === status.webhook.url
+    status?.webhook?.secretSet &&
+    status.webhook.active &&
+    status.webhook.registered === status.webhook.url,
   );
 
   useAdminAction({
     label: "รีเฟรชสถานะเมนู",
-    icon: <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden />,
+    icon: loading ? (
+      <Spinner size="sm" color="current" />
+    ) : (
+      <RefreshCw size={15} aria-hidden />
+    ),
     onClick: load,
     disabled: loading,
   });
@@ -106,12 +136,21 @@ export default function AdminLineRichMenuPage() {
             >
               {status?.configured ? (
                 live ? (
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                  <CheckCircle2
+                    size={16}
+                    className="mt-0.5 shrink-0 text-emerald-600"
+                  />
                 ) : (
-                  <Upload size={16} className="mt-0.5 shrink-0 text-slate-400" />
+                  <Upload
+                    size={16}
+                    className="mt-0.5 shrink-0 text-slate-400"
+                  />
                 )
               ) : (
-                <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                <AlertTriangle
+                  size={16}
+                  className="mt-0.5 shrink-0 text-amber-600"
+                />
               )}
               <div className="min-w-0">
                 <p className="font-semibold text-brand-ink">
@@ -123,20 +162,32 @@ export default function AdminLineRichMenuPage() {
                 </p>
                 {!status?.configured && (
                   <>
-                    <p className="mt-1 text-xs text-slate-600">{status?.reason}</p>
+                    <p className="mt-1 text-xs text-slate-600">
+                      {status?.reason}
+                    </p>
                     <ol className="mt-2 list-decimal space-y-0.5 pl-4 text-xs text-slate-500">
-                      <li>สร้าง LINE Official Account ที่ manager.line.biz (ถ้ามีแล้วข้าม)</li>
                       <li>
-                        เปิด Messaging API ให้ OA นั้น โดยเลือก provider เป็น <b>SmoothLife</b> — ต้องเป็นตัวเดียวกับ
-                        LIFF ไม่งั้นลูกค้าคนเดียวจะกลายเป็นสองบัญชี
+                        สร้าง LINE Official Account ที่ manager.line.biz
+                        (ถ้ามีแล้วข้าม)
                       </li>
                       <li>
-                        ตั้งค่า <code className="rounded-sm bg-white px-1">LINE_MESSAGING_ACCESS_TOKEN</code> บน Vercel
+                        เปิด Messaging API ให้ OA นั้น โดยเลือก provider เป็น{" "}
+                        <b>SmoothLife</b> — ต้องเป็นตัวเดียวกับ LIFF
+                        ไม่งั้นลูกค้าคนเดียวจะกลายเป็นสองบัญชี
+                      </li>
+                      <li>
+                        ตั้งค่า{" "}
+                        <code className="rounded-sm bg-white px-1">
+                          LINE_MESSAGING_ACCESS_TOKEN
+                        </code>{" "}
+                        บน Vercel
                       </li>
                     </ol>
                   </>
                 )}
-                {status?.error && <p className="mt-1 text-xs text-rose-600">{status.error}</p>}
+                {status?.error && (
+                  <p className="mt-1 text-xs text-rose-600">{status.error}</p>
+                )}
               </div>
             </div>
 
@@ -151,8 +202,12 @@ export default function AdminLineRichMenuPage() {
                     key={b.path}
                     className="flex flex-col items-center justify-center rounded-l bg-surface-soft px-3 text-center"
                   >
-                    <p className="text-xs font-semibold text-brand-ink">{b.label}</p>
-                    <p className="mt-0.5 text-[10px] text-slate-400">{b.path}</p>
+                    <p className="text-xs font-semibold text-brand-ink">
+                      {b.label}
+                    </p>
+                    <p className="mt-0.5 text-[10px] text-slate-400">
+                      {b.path}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -161,8 +216,8 @@ export default function AdminLineRichMenuPage() {
 
           <Panel title="รูปเมนู" padded>
             <p className="mb-2 text-xs leading-relaxed text-slate-500">
-              ต้องเป็น PNG หรือ JPEG ขนาด <b>2500 × 1686 px</b> ไม่เกิน 1 MB — ช่องปุ่มเรียงซ้ายไปขวา บนลงล่าง
-              ตามลำดับด้านบน
+              ต้องเป็น PNG หรือ JPEG ขนาด <b>2500 × 1686 px</b> ไม่เกิน 1 MB —
+              ช่องปุ่มเรียงซ้ายไปขวา บนลงล่าง ตามลำดับด้านบน
             </p>
             <input
               ref={fileRef}
@@ -177,11 +232,13 @@ export default function AdminLineRichMenuPage() {
             />
             {installing && (
               <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-                <Loader2 size={13} className="animate-spin" /> กำลังติดตั้ง…
+                <Spinner size="sm" color="current" /> กำลังติดตั้ง…
               </p>
             )}
             {message && (
-              <p className={`mt-2 text-xs ${message.kind === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
+              <p
+                className={`mt-2 text-xs ${message.kind === "ok" ? "text-emerald-600" : "text-rose-600"}`}
+              >
                 {message.text}
               </p>
             )}
@@ -193,7 +250,11 @@ export default function AdminLineRichMenuPage() {
           <Panel title="แชทกับน้อง Smoothie ในไลน์" padded>
             <p
               className={`text-xs font-semibold ${
-                webhookLive ? "text-emerald-600" : status?.webhook?.secretSet ? "text-amber-600" : "text-slate-500"
+                webhookLive
+                  ? "text-emerald-600"
+                  : status?.webhook?.secretSet
+                    ? "text-amber-600"
+                    : "text-slate-500"
               }`}
             >
               {webhookLive
@@ -204,18 +265,22 @@ export default function AdminLineRichMenuPage() {
                     ? "LINE ชี้เว็บฮุกไปที่อื่นอยู่ หรือยังปิด Use webhook"
                     : "ยังไม่ได้ใส่ Webhook URL ใน LINE Developers Console"}
             </p>
-            <p className="mt-2 text-[11px] text-slate-500">Webhook URL — วางใน Messaging API &gt; Webhook URL</p>
+            <p className="mt-2 text-[11px] text-slate-500">
+              Webhook URL — วางใน Messaging API &gt; Webhook URL
+            </p>
             <code className="mt-1 block break-all rounded-l bg-surface-soft px-2 py-1.5 text-[11px] text-brand-ink">
               {status?.webhook?.url}
             </code>
-            {status?.webhook?.registered && status.webhook.registered !== status.webhook.url && (
-              <p className="mt-1 break-all text-[11px] text-amber-600">
-                ตอนนี้ LINE ชี้ไปที่ {status.webhook.registered}
-              </p>
-            )}
+            {status?.webhook?.registered &&
+              status.webhook.registered !== status.webhook.url && (
+                <p className="mt-1 break-all text-[11px] text-amber-600">
+                  ตอนนี้ LINE ชี้ไปที่ {status.webhook.registered}
+                </p>
+              )}
             <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-              อย่าลืมปิด “ข้อความตอบกลับอัตโนมัติ” ใน manager.line.biz &gt; การตั้งค่า &gt; การตอบกลับ
-              ไม่งั้น LINE จะตอบข้อความสำเร็จรูปแทนน้อง Smoothie
+              อย่าลืมปิด “ข้อความตอบกลับอัตโนมัติ” ใน manager.line.biz &gt;
+              การตั้งค่า &gt; การตอบกลับ ไม่งั้น LINE
+              จะตอบข้อความสำเร็จรูปแทนน้อง Smoothie
             </p>
           </Panel>
         </div>

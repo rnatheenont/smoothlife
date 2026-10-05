@@ -32,15 +32,24 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <header className={clsx("flex flex-wrap items-start justify-between gap-3", className)}>
+    <header
+      className={clsx(
+        "flex flex-wrap items-start justify-between gap-3",
+        className,
+      )}
+    >
       <div className="min-w-0">
         <h1 className="flex items-center gap-2 text-xl font-bold text-brand-ink">
           {icon}
           {title}
         </h1>
-        {subtitle && <p className="mt-1 text-body-xs text-slate-600">{subtitle}</p>}
+        {subtitle && (
+          <p className="mt-1 text-body-xs text-slate-600">{subtitle}</p>
+        )}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      {actions && (
+        <div className="flex flex-wrap items-center gap-2">{actions}</div>
+      )}
     </header>
   );
 }
@@ -78,12 +87,19 @@ export function StatCard({
         {label}
       </p>
       <p className="mt-1 flex items-baseline gap-1">
-        <span className={clsx("text-h4 font-bold tabular-nums", alert ? "text-amber-700" : "text-brand-ink")}>
+        <span
+          className={clsx(
+            "text-h4 font-bold tabular-nums",
+            alert ? "text-amber-700" : "text-brand-ink",
+          )}
+        >
           {value}
         </span>
         {unit && <span className="text-xs text-slate-500">{unit}</span>}
       </p>
-      {hint && <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{hint}</p>}
+      {hint && (
+        <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{hint}</p>
+      )}
     </>
   );
   const shell = clsx(
@@ -122,10 +138,19 @@ export function StatusTile({
   }[tone];
   return (
     <Card padded={false} className="flex min-w-0 items-start gap-3 p-4">
-      <span className={clsx("grid size-9 shrink-0 place-items-center rounded-l", ring)}>{icon}</span>
+      <span
+        className={clsx(
+          "grid size-9 shrink-0 place-items-center rounded-l",
+          ring,
+        )}
+      >
+        {icon}
+      </span>
       <div className="min-w-0">
         <p className="text-[11px] font-medium text-slate-500">{label}</p>
-        <p className="mt-0.5 truncate text-sm font-semibold text-brand-ink">{value}</p>
+        <p className="mt-0.5 truncate text-sm font-semibold text-brand-ink">
+          {value}
+        </p>
         {children}
       </div>
     </Card>
@@ -165,13 +190,23 @@ export function FilterChip({
     >
       {dot && !active && (
         <span
-          className={clsx("size-1.5 rounded-full", dot === "danger" ? "bg-rose-500" : "bg-amber-500")}
+          className={clsx(
+            "size-1.5 rounded-full",
+            dot === "danger" ? "bg-rose-500" : "bg-amber-500",
+          )}
           aria-hidden
         />
       )}
       {label}
       {count !== undefined && (
-        <span className={clsx("font-bold tabular-nums", active ? "text-brand-800" : "text-slate-400")}>{count}</span>
+        <span
+          className={clsx(
+            "font-bold tabular-nums",
+            active ? "text-brand-800" : "text-slate-400",
+          )}
+        >
+          {count}
+        </span>
       )}
     </button>
   );
@@ -183,13 +218,24 @@ export function FilterChip({
  * Deliberately quiet and deliberately not the same thing as a panel's title:
  * this names a group, the other names a box.
  */
-export function SectionLabel({ children, className }: { children: ReactNode; className?: string }) {
+export function SectionLabel({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     // 12px rather than 11, and the secondary step rather than the muted one:
     // these are the words that tell you what the next block of the page is,
     // and they were measuring 2.13:1 — the least readable thing on a screen
     // whose whole job is to be scanned.
-    <h2 className={clsx("text-xs font-bold uppercase tracking-[0.07em] text-slate-500", className)}>
+    <h2
+      className={clsx(
+        "text-xs font-bold uppercase tracking-[0.07em] text-slate-500",
+        className,
+      )}
+    >
       {children}
     </h2>
   );
@@ -213,7 +259,12 @@ export function SectionTitle({
   className?: string;
 }) {
   return (
-    <div className={clsx("flex flex-wrap items-center justify-between gap-2", className)}>
+    <div
+      className={clsx(
+        "flex flex-wrap items-center justify-between gap-2",
+        className,
+      )}
+    >
       <h2 className="flex items-center gap-1.5 text-sm font-bold text-brand-ink">
         {icon}
         {children}

@@ -16,14 +16,31 @@ import { Button } from "@heroui/react";
 
 type Theme = {
   colors: Record<string, Record<string | number, string>>;
-  fontSize: Record<string, [string, { lineHeight?: string; letterSpacing?: string }]>;
+  fontSize: Record<
+    string,
+    [string, { lineHeight?: string; letterSpacing?: string }]
+  >;
   borderRadius: Record<string, string>;
   boxShadow: Record<string, string>;
 };
 
 // Only the site's own tokens — Tailwind's defaults are documented upstream.
 const COLOR_GROUPS = ["brand", "surface", "sale", "sand", "grey"];
-const DEFAULT_TEXT = new Set(["xs", "sm", "base", "lg", "xl", "2xl", "3xl", "4xl", "5xl", "6xl", "7xl", "8xl", "9xl"]);
+const DEFAULT_TEXT = new Set([
+  "xs",
+  "sm",
+  "base",
+  "lg",
+  "xl",
+  "2xl",
+  "3xl",
+  "4xl",
+  "5xl",
+  "6xl",
+  "7xl",
+  "8xl",
+  "9xl",
+]);
 const DEFAULT_RADIUS = new Set(["sm", "md", "lg", "xl", "2xl", "3xl", "4xl"]);
 const DEFAULT_SHADOW = new Set(["2xs", "xs", "sm", "md", "lg", "xl", "2xl"]);
 
@@ -33,7 +50,8 @@ function readThemeVars(): Map<string, string> {
     for (const rule of Array.from(rules)) {
       if (rule instanceof CSSStyleRule && rule.selectorText.includes(":root")) {
         for (const name of Array.from(rule.style)) {
-          if (name.startsWith("--")) vars.set(name, rule.style.getPropertyValue(name).trim());
+          if (name.startsWith("--"))
+            vars.set(name, rule.style.getPropertyValue(name).trim());
         }
       } else if ("cssRules" in rule) {
         walk((rule as CSSGroupingRule).cssRules);
@@ -51,10 +69,20 @@ function readThemeVars(): Map<string, string> {
 }
 
 function useTheme(): Theme {
-  const [theme, setTheme] = useState<Theme>({ colors: {}, fontSize: {}, borderRadius: {}, boxShadow: {} });
+  const [theme, setTheme] = useState<Theme>({
+    colors: {},
+    fontSize: {},
+    borderRadius: {},
+    boxShadow: {},
+  });
   useEffect(() => {
     const vars = readThemeVars();
-    const next: Theme = { colors: {}, fontSize: {}, borderRadius: {}, boxShadow: {} };
+    const next: Theme = {
+      colors: {},
+      fontSize: {},
+      borderRadius: {},
+      boxShadow: {},
+    };
     for (const [name, value] of vars) {
       const color = name.match(/^--color-([a-z]+)(?:-(.+))?$/);
       if (color && COLOR_GROUPS.includes(color[1])) {
@@ -71,9 +99,11 @@ function useTheme(): Theme {
         ];
       }
       const radius = name.match(/^--radius-(.+)$/);
-      if (radius && !DEFAULT_RADIUS.has(radius[1])) next.borderRadius[radius[1]] = value;
+      if (radius && !DEFAULT_RADIUS.has(radius[1]))
+        next.borderRadius[radius[1]] = value;
       const shadow = name.match(/^--shadow-(.+)$/);
-      if (shadow && !DEFAULT_SHADOW.has(shadow[1])) next.boxShadow[shadow[1]] = value;
+      if (shadow && !DEFAULT_SHADOW.has(shadow[1]))
+        next.boxShadow[shadow[1]] = value;
     }
     setTheme(next);
   }, []);
@@ -84,7 +114,11 @@ function useTheme(): Theme {
 
 function parseColor(c: string): [number, number, number] | null {
   if (c.startsWith("#") && c.length === 7) {
-    return [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)) as [number, number, number];
+    return [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)) as [
+      number,
+      number,
+      number,
+    ];
   }
   const m = c.match(/rgba?\(([^)]+)\)/);
   if (!m) return null;
@@ -105,11 +139,21 @@ function contrastOnWhite(c: string): number | null {
   return 1.05 / (l + 0.05);
 }
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Section({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="mb-8">
       <h2 className="text-title font-bold text-brand-ink">{title}</h2>
-      {hint && <p className="mt-0.5 mb-3 text-body-xs text-slate-500">{hint}</p>}
+      {hint && (
+        <p className="mt-0.5 mb-3 text-body-xs text-slate-500">{hint}</p>
+      )}
       {children}
     </section>
   );
@@ -136,8 +180,10 @@ export default function AdminDesignSystemPage() {
         title="ระบบดีไซน์"
         subtitle={
           <>
-            อ่านค่าจาก <code className="rounded-sm bg-surface-soft px-1">@theme</code> ใน globals.css ที่เว็บใช้จริง —
-            หน้านี้จึงตรงกับของจริงเสมอ ไม่มีทางเพี้ยน
+            อ่านค่าจาก{" "}
+            <code className="rounded-sm bg-surface-soft px-1">@theme</code> ใน
+            globals.css ที่เว็บใช้จริง — หน้านี้จึงตรงกับของจริงเสมอ
+            ไม่มีทางเพี้ยน
           </>
         }
         actions={
@@ -158,21 +204,29 @@ export default function AdminDesignSystemPage() {
       >
         {colorGroups.map(([group, shades]) => (
           <div key={group} className="mb-4">
-            <p className="mb-1.5 text-label font-semibold uppercase tracking-wide text-slate-400">{group}</p>
+            <p className="mb-1.5 text-label font-semibold uppercase tracking-wide text-slate-400">
+              {group}
+            </p>
             <div className="flex flex-wrap gap-2">
               {Object.entries(shades).map(([step, value]) => {
                 const ratio = contrastOnWhite(value);
                 const readable = ratio !== null && ratio >= 4.5;
                 return (
                   <div key={step} className="w-28">
-                    <div className="h-12 rounded-m shadow-layer-xs" style={{ background: value }} />
+                    <div
+                      className="h-12 rounded-m shadow-layer-xs"
+                      style={{ background: value }}
+                    />
                     <p className="mt-1 text-body-xs font-semibold text-brand-ink">
                       {group}-{step}
                     </p>
                     <p className="text-[10px] text-slate-400">{value}</p>
                     {ratio !== null && (
-                      <p className={`text-[10px] ${readable ? "text-brand-800" : "text-slate-400"}`}>
-                        {ratio.toFixed(2)} {readable ? "· อ่านได้" : "· พื้น/UI เท่านั้น"}
+                      <p
+                        className={`text-[10px] ${readable ? "text-brand-800" : "text-slate-400"}`}
+                      >
+                        {ratio.toFixed(2)}{" "}
+                        {readable ? "· อ่านได้" : "· พื้น/UI เท่านั้น"}
                       </p>
                     )}
                   </div>
@@ -183,28 +237,48 @@ export default function AdminDesignSystemPage() {
         ))}
       </Section>
 
-      <Section title="ตัวอักษร" hint="ชื่อคลาสใช้ได้เลย เช่น text-h3, text-body-s">
+      <Section
+        title="ตัวอักษร"
+        hint="ชื่อคลาสใช้ได้เลย เช่น text-h3, text-body-s"
+      >
         <div className="flex flex-col gap-2 rounded-l border border-slate-100 bg-white p-4">
           {Object.entries(theme.fontSize ?? {}).map(([name, [size, opts]]) => (
-            <div key={name} className="flex items-baseline gap-4 border-b border-slate-50 pb-2 last:border-0">
-              <code className="w-24 shrink-0 text-[11px] text-slate-400">text-{name}</code>
+            <div
+              key={name}
+              className="flex items-baseline gap-4 border-b border-slate-50 pb-2 last:border-0"
+            >
+              <code className="w-24 shrink-0 text-[11px] text-slate-400">
+                text-{name}
+              </code>
               <span
                 className="min-w-0 truncate text-brand-ink"
-                style={{ fontSize: size, lineHeight: opts?.lineHeight, letterSpacing: opts?.letterSpacing }}
+                style={{
+                  fontSize: size,
+                  lineHeight: opts?.lineHeight,
+                  letterSpacing: opts?.letterSpacing,
+                }}
               >
                 สวัสดี Smoothlife
               </span>
-              <span className="ml-auto shrink-0 text-[10px] text-slate-400">{size}</span>
+              <span className="ml-auto shrink-0 text-[10px] text-slate-400">
+                {size}
+              </span>
             </div>
           ))}
         </div>
       </Section>
 
-      <Section title="ความโค้งมุม" hint="xl / 2xl / 3xl ตั้งใจไม่ทับของ Tailwind เพราะเว็บใช้อยู่ 62 จุด">
+      <Section
+        title="ความโค้งมุม"
+        hint="xl / 2xl / 3xl ตั้งใจไม่ทับของ Tailwind เพราะเว็บใช้อยู่ 62 จุด"
+      >
         <div className="flex flex-wrap gap-3">
           {Object.entries(theme.borderRadius ?? {}).map(([name, value]) => (
             <div key={name} className="text-center">
-              <div className="h-16 w-16 border border-brand-200 bg-brand-50" style={{ borderRadius: value }} />
+              <div
+                className="h-16 w-16 border border-brand-200 bg-brand-50"
+                style={{ borderRadius: value }}
+              />
               <p className="mt-1 text-[11px] text-slate-500">rounded-{name}</p>
               <p className="text-[10px] text-slate-400">{value}</p>
             </div>
@@ -212,11 +286,17 @@ export default function AdminDesignSystemPage() {
         </div>
       </Section>
 
-      <Section title="เงา" hint="ชั้นบาง ๆ ซ้อนกันแทนเงาหนาชั้นเดียว — card / cardHover เป็นของเดิม ไม่ได้แก้">
+      <Section
+        title="เงา"
+        hint="ชั้นบาง ๆ ซ้อนกันแทนเงาหนาชั้นเดียว — card / cardHover เป็นของเดิม ไม่ได้แก้"
+      >
         <div className="flex flex-wrap gap-4 rounded-l bg-sand-50 p-6">
           {Object.entries(theme.boxShadow ?? {}).map(([name, value]) => (
             <div key={name} className="text-center">
-              <div className="h-16 w-24 rounded-m bg-white" style={{ boxShadow: value }} />
+              <div
+                className="h-16 w-24 rounded-m bg-white"
+                style={{ boxShadow: value }}
+              />
               <p className="mt-2 text-[11px] text-slate-500">shadow-{name}</p>
             </div>
           ))}
@@ -236,7 +316,9 @@ export default function AdminDesignSystemPage() {
             {dark ? <Sun size={13} /> : <Moon size={13} />}
             ดูโหมด{dark ? "สว่าง" : "มืด"}
           </button>
-          <span className="text-[11px] text-slate-400">สลับเฉพาะกล่องด้านล่าง — ทั้งเว็บยังเป็นโหมดสว่างอยู่</span>
+          <span className="text-[11px] text-slate-400">
+            สลับเฉพาะกล่องด้านล่าง — ทั้งเว็บยังเป็นโหมดสว่างอยู่
+          </span>
         </div>
 
         {/* The `dark` class scopes Tailwind's dark: variants to this subtree
@@ -244,7 +326,9 @@ export default function AdminDesignSystemPage() {
             page keeps rendering exactly as it does in production. */}
         <div className={dark ? "dark" : undefined}>
           <div className="rounded-l bg-sand-50 p-5 dark:bg-slate-950">
-            <p className="mb-2 text-label font-semibold uppercase tracking-wide text-slate-400">Button</p>
+            <p className="mb-2 text-label font-semibold uppercase tracking-wide text-slate-400">
+              Button
+            </p>
             <div className="mb-1.5 flex flex-wrap items-center gap-2">
               <Button>ซื้อเลย</Button>
               <Button variant="secondary">ดูรายละเอียด</Button>
@@ -259,12 +343,17 @@ export default function AdminDesignSystemPage() {
               <Button isDisabled>กดไม่ได้</Button>
               {/* HeroUI's Button is a real <button> and takes no href, so a
                   link that looks like one borrows the same classes. */}
-              <Link href="/shop" className="button button--sm button--secondary">
+              <Link
+                href="/shop"
+                className="button button--sm button--secondary"
+              >
                 <ShoppingBag size={13} /> เป็นลิงก์
               </Link>
             </div>
 
-            <p className="mb-2 text-label font-semibold uppercase tracking-wide text-slate-400">Badge</p>
+            <p className="mb-2 text-label font-semibold uppercase tracking-wide text-slate-400">
+              Badge
+            </p>
             <div className="mb-4 flex flex-wrap items-center gap-1.5">
               <Badge tone="brand">สมาชิก Gold</Badge>
               <Badge tone="success">ชำระแล้ว</Badge>
@@ -274,10 +363,14 @@ export default function AdminDesignSystemPage() {
               <Badge>ทั่วไป</Badge>
             </div>
 
-            <p className="mb-2 text-label font-semibold uppercase tracking-wide text-slate-400">Card + Field</p>
+            <p className="mb-2 text-label font-semibold uppercase tracking-wide text-slate-400">
+              Card + Field
+            </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <Card>
-                <p className="text-title font-bold text-brand-ink dark:text-slate-100">การ์ดปกติ</p>
+                <p className="text-title font-bold text-brand-ink dark:text-slate-100">
+                  การ์ดปกติ
+                </p>
                 <p className="mt-1 text-body-xs text-slate-500 dark:text-slate-400">
                   ใช้ shadow-card กับ rounded-xl2 ตัวเดิม ไม่ได้เปลี่ยนหน้าตา
                 </p>
@@ -292,13 +385,24 @@ export default function AdminDesignSystemPage() {
                     value={demoEmail}
                     onChange={(e) => setDemoEmail(e.target.value)}
                   />
-                  <Field label="เบอร์โทร" required error="กรุณากรอกเบอร์โทร 10 หลัก" defaultValue="08" />
+                  <Field
+                    label="เบอร์โทร"
+                    required
+                    error="กรุณากรอกเบอร์โทร 10 หลัก"
+                    defaultValue="08"
+                  />
                 </div>
               </Card>
             </div>
 
-            <p className="mb-2 mt-4 text-label font-semibold uppercase tracking-wide text-slate-400">Modal</p>
-            <Button variant="secondary" size="sm" onPress={() => setModalOpen(true)}>
+            <p className="mb-2 mt-4 text-label font-semibold uppercase tracking-wide text-slate-400">
+              Modal
+            </p>
+            <Button
+              variant="secondary"
+              size="sm"
+              onPress={() => setModalOpen(true)}
+            >
               เปิดตัวอย่าง Modal
             </Button>
           </div>
@@ -321,7 +425,8 @@ export default function AdminDesignSystemPage() {
           }
         >
           <p className="text-body-s text-slate-600 dark:text-slate-300">
-            ลองกด Tab ดู — โฟกัสจะไม่หลุดออกไปหน้าเบื้องหลัง และเมื่อปิดจะกลับไปที่ปุ่มเดิมที่กดเปิด
+            ลองกด Tab ดู — โฟกัสจะไม่หลุดออกไปหน้าเบื้องหลัง
+            และเมื่อปิดจะกลับไปที่ปุ่มเดิมที่กดเปิด
           </p>
         </Modal>
       </Section>

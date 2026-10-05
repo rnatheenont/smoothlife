@@ -19,7 +19,10 @@ import { FreeGiftPromo, FreeGiftTier } from "@/data/free-gifts";
 import { getProductBySlug } from "@/data/products";
 import { Badge } from "@/components/ui";
 import ProductPicker from "@/components/admin/ProductPicker";
-import GiftPicker, { giftName, type GiftChoice } from "@/components/admin/GiftPicker";
+import GiftPicker, {
+  giftName,
+  type GiftChoice,
+} from "@/components/admin/GiftPicker";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, adminTable } from "@/components/admin/layout-kit";
 import GiftStockPanel from "./GiftStockPanel";
@@ -28,7 +31,14 @@ import AdminField from "@/components/admin/AdminField";
 
 type AdminPromo = FreeGiftPromo & { id: string };
 
-type TierFormRow = { minSubtotal: string; giftProductSlug: string; giftVariantId: string; giftTitle: string; giftImage: string | null; giftQty: string };
+type TierFormRow = {
+  minSubtotal: string;
+  giftProductSlug: string;
+  giftVariantId: string;
+  giftTitle: string;
+  giftImage: string | null;
+  giftQty: string;
+};
 
 type FormState = {
   slug: string;
@@ -49,7 +59,14 @@ type FormState = {
   expires: string;
 };
 
-const EMPTY_TIER_ROW: TierFormRow = { minSubtotal: "", giftProductSlug: "", giftVariantId: "", giftTitle: "", giftImage: null, giftQty: "1" };
+const EMPTY_TIER_ROW: TierFormRow = {
+  minSubtotal: "",
+  giftProductSlug: "",
+  giftVariantId: "",
+  giftTitle: "",
+  giftImage: null,
+  giftQty: "1",
+};
 
 const EMPTY_FORM: FormState = {
   slug: "",
@@ -93,7 +110,12 @@ function describeCondition(p: {
   if (p.kind === "tiered") {
     const tiers = p.tiers ?? [];
     if (tiers.length === 0) return "ยังไม่ได้ตั้งระดับ";
-    return tiers.map((t, i) => `ครบ ฿${Number(t.minSubtotal || 0).toLocaleString()} → ระดับ ${i + 1}`).join(", ");
+    return tiers
+      .map(
+        (t, i) =>
+          `ครบ ฿${Number(t.minSubtotal || 0).toLocaleString()} → ระดับ ${i + 1}`,
+      )
+      .join(", ");
   }
   const count = (p.buyProductSlugs ?? []).length;
   const qty = p.buyQty || "___";
@@ -144,14 +166,20 @@ export default function AdminFreeGiftsPage() {
         // slugify() drops any character outside a-z0-9 — a Thai-only title
         // (titleEn blank) collapses to an empty string, so fall back to a
         // generated id rather than submitting a slug that fails validation.
-        slug: form.slug || slugify(form.titleEn || form.titleTh) || `promo-${Date.now().toString(36)}`,
+        slug:
+          form.slug ||
+          slugify(form.titleEn || form.titleTh) ||
+          `promo-${Date.now().toString(36)}`,
         titleTh: form.titleTh,
         titleEn: form.titleEn || form.titleTh,
         kind: form.kind,
-        buyProductSlugs: form.kind === "bxgy" ? form.buyProductSlugs : undefined,
+        buyProductSlugs:
+          form.kind === "bxgy" ? form.buyProductSlugs : undefined,
         buyQty: form.kind === "bxgy" ? Number(form.buyQty) : undefined,
-        minSubtotal: form.kind === "spend" ? Number(form.minSubtotal) : undefined,
-        giftProductSlug: form.kind === "tiered" ? undefined : form.giftProductSlug,
+        minSubtotal:
+          form.kind === "spend" ? Number(form.minSubtotal) : undefined,
+        giftProductSlug:
+          form.kind === "tiered" ? undefined : form.giftProductSlug,
         giftQty: form.kind === "tiered" ? undefined : Number(form.giftQty) || 1,
         tiers:
           form.kind === "tiered"
@@ -166,7 +194,9 @@ export default function AdminFreeGiftsPage() {
         starts: form.starts || undefined,
         expires: form.expires || undefined,
       };
-      const url = editingId ? `/api/admin/free-gifts/${editingId}` : "/api/admin/free-gifts";
+      const url = editingId
+        ? `/api/admin/free-gifts/${editingId}`
+        : "/api/admin/free-gifts";
       const res = await fetch(url, {
         method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -221,7 +251,9 @@ export default function AdminFreeGiftsPage() {
   async function activate(id: string) {
     setBusyId(id);
     try {
-      const res = await fetch(`/api/admin/free-gifts/${id}/activate`, { method: "POST" });
+      const res = await fetch(`/api/admin/free-gifts/${id}/activate`, {
+        method: "POST",
+      });
       const data = await res.json();
       if (!data.ok) {
         alert(data.error || "เปิดใช้งานไม่สำเร็จ");
@@ -251,7 +283,9 @@ export default function AdminFreeGiftsPage() {
     if (!confirm("ลบโปรโมชั่นนี้? กู้คืนไม่ได้")) return;
     setBusyId(id);
     try {
-      const res = await fetch(`/api/admin/free-gifts/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/free-gifts/${id}`, {
+        method: "DELETE",
+      });
       const data = await res.json();
       if (!data.ok) alert(data.error || "ลบไม่สำเร็จ");
       loadList();
@@ -307,11 +341,25 @@ export default function AdminFreeGiftsPage() {
               </thead>
               <tbody>
                 {promos.map((p) => {
-                  const giftProduct = p.kind === "tiered" ? undefined : getProductBySlug(p.giftProductSlug);
-                  const KindIcon = p.kind === "spend" ? ShoppingBag : p.kind === "bxgy" ? Layers : TrendingUp;
+                  const giftProduct =
+                    p.kind === "tiered"
+                      ? undefined
+                      : getProductBySlug(p.giftProductSlug);
+                  const KindIcon =
+                    p.kind === "spend"
+                      ? ShoppingBag
+                      : p.kind === "bxgy"
+                        ? Layers
+                        : TrendingUp;
                   const kindLabel =
-                    p.kind === "spend" ? "ซื้อครบยอด" : p.kind === "bxgy" ? "ซื้อครบจำนวน" : "ขั้นบันได";
-                  const tierDiscountsLinked = p.kind === "tiered" && (p.tiers ?? []).every((t) => t.shopifyDiscountId);
+                    p.kind === "spend"
+                      ? "ซื้อครบยอด"
+                      : p.kind === "bxgy"
+                        ? "ซื้อครบจำนวน"
+                        : "ขั้นบันได";
+                  const tierDiscountsLinked =
+                    p.kind === "tiered" &&
+                    (p.tiers ?? []).every((t) => t.shopifyDiscountId);
                   return (
                     <tr key={p.id} className={adminTable.row}>
                       <td className={adminTable.cell}>
@@ -326,11 +374,16 @@ export default function AdminFreeGiftsPage() {
                                 className="object-cover"
                               />
                             ) : p.kind === "tiered" ? (
-                              <TrendingUp size={18} className="text-slate-300" />
+                              <TrendingUp
+                                size={18}
+                                className="text-slate-300"
+                              />
                             ) : null}
                           </span>
                           <span className="min-w-0">
-                            <span className="block font-semibold text-brand-ink">{p.titleTh}</span>
+                            <span className="block font-semibold text-brand-ink">
+                              {p.titleTh}
+                            </span>
                             <span className="mt-0.5 block max-w-[60ch] text-[12px] text-slate-500">
                               {p.kind === "tiered" ? (
                                 describeCondition(p)
@@ -338,7 +391,9 @@ export default function AdminFreeGiftsPage() {
                                 <>
                                   {describeCondition(p)} →{" "}
                                   <span className="font-semibold text-brand-ink">
-                                    รับฟรี {giftProduct?.name ?? p.giftProductSlug} x{p.giftQty}
+                                    รับฟรี{" "}
+                                    {giftProduct?.name ?? p.giftProductSlug} x
+                                    {p.giftQty}
                                   </span>
                                 </>
                               )}
@@ -377,7 +432,10 @@ export default function AdminFreeGiftsPage() {
                               disabled={busyId === p.id}
                               className="flex items-center gap-1 rounded-full bg-brand-gradient px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
                             >
-                              <Check size={12} /> {busyId === p.id ? "กำลังเปิด…" : "เปิดใช้งานจริง"}
+                              <Check size={12} />{" "}
+                              {busyId === p.id
+                                ? "กำลังเปิด…"
+                                : "เปิดใช้งานจริง"}
                             </button>
                           )}
                           <button
@@ -389,7 +447,11 @@ export default function AdminFreeGiftsPage() {
                           <button
                             onClick={() => remove(p.id)}
                             disabled={p.active || busyId === p.id}
-                            title={p.active ? "ปิดใช้งานก่อนถึงจะลบได้" : "ลบโปรโมชั่นนี้"}
+                            title={
+                              p.active
+                                ? "ปิดใช้งานก่อนถึงจะลบได้"
+                                : "ลบโปรโมชั่นนี้"
+                            }
                             className="flex items-center gap-1 rounded-full border border-rose-200 px-2.5 py-1 text-[11px] font-semibold text-rose-500 disabled:opacity-30"
                           >
                             <Trash2 size={12} /> ลบ
@@ -405,12 +467,30 @@ export default function AdminFreeGiftsPage() {
 
           <div className="grid items-start gap-3 md:hidden">
             {promos.map((p) => {
-              const giftProduct = p.kind === "tiered" ? undefined : getProductBySlug(p.giftProductSlug);
-              const KindIcon = p.kind === "spend" ? ShoppingBag : p.kind === "bxgy" ? Layers : TrendingUp;
-              const kindLabel = p.kind === "spend" ? "ซื้อครบยอด" : p.kind === "bxgy" ? "ซื้อครบจำนวน" : "ขั้นบันได";
-              const tierDiscountsLinked = p.kind === "tiered" && (p.tiers ?? []).every((t) => t.shopifyDiscountId);
+              const giftProduct =
+                p.kind === "tiered"
+                  ? undefined
+                  : getProductBySlug(p.giftProductSlug);
+              const KindIcon =
+                p.kind === "spend"
+                  ? ShoppingBag
+                  : p.kind === "bxgy"
+                    ? Layers
+                    : TrendingUp;
+              const kindLabel =
+                p.kind === "spend"
+                  ? "ซื้อครบยอด"
+                  : p.kind === "bxgy"
+                    ? "ซื้อครบจำนวน"
+                    : "ขั้นบันได";
+              const tierDiscountsLinked =
+                p.kind === "tiered" &&
+                (p.tiers ?? []).every((t) => t.shopifyDiscountId);
               return (
-                <div key={p.id} className="rounded-xl2 border border-slate-100 bg-white p-4 shadow-card">
+                <div
+                  key={p.id}
+                  className="rounded-xl2 border border-slate-100 bg-white p-4 shadow-card"
+                >
                   <div className="flex items-start gap-3">
                     <div className="relative h-14 w-14 shrink-0 rounded-xl overflow-hidden bg-surface-soft grid place-items-center">
                       {giftProduct ? (
@@ -429,19 +509,25 @@ export default function AdminFreeGiftsPage() {
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span
                           className={`flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-0.5 ${
-                            p.active ? "bg-brand-gradient-soft text-brand-800" : "bg-slate-100 text-slate-400"
+                            p.active
+                              ? "bg-brand-gradient-soft text-brand-800"
+                              : "bg-slate-100 text-slate-400"
                           }`}
                         >
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${p.active ? "bg-brand-emerald" : "bg-slate-300"}`}
                           />
-                          {p.active ? "กำลังใช้งานจริง" : "ร่าง — ยังไม่เปิดใช้งาน"}
+                          {p.active
+                            ? "กำลังใช้งานจริง"
+                            : "ร่าง — ยังไม่เปิดใช้งาน"}
                         </span>
                         <span className="flex items-center gap-1 text-[10px] text-slate-400">
                           <KindIcon size={11} /> {kindLabel}
                         </span>
                       </div>
-                      <p className="font-bold text-brand-ink mt-1">{p.titleTh}</p>
+                      <p className="font-bold text-brand-ink mt-1">
+                        {p.titleTh}
+                      </p>
                       <p className="text-xs text-slate-500 mt-0.5">
                         {p.kind === "tiered" ? (
                           describeCondition(p)
@@ -449,7 +535,8 @@ export default function AdminFreeGiftsPage() {
                           <>
                             {describeCondition(p)} →{" "}
                             <span className="font-semibold text-brand-ink">
-                              รับฟรี {giftProduct?.name ?? p.giftProductSlug} x{p.giftQty}
+                              รับฟรี {giftProduct?.name ?? p.giftProductSlug} x
+                              {p.giftQty}
                             </span>
                           </>
                         )}
@@ -468,7 +555,10 @@ export default function AdminFreeGiftsPage() {
                         disabled={busyId === p.id}
                         className="flex items-center gap-1 rounded-full bg-brand-gradient text-white text-xs font-semibold px-3 py-1.5 disabled:opacity-50"
                       >
-                        <Check size={12} /> {busyId === p.id ? "กำลังเปิดใช้งาน…" : "เปิดใช้งานจริง"}
+                        <Check size={12} />{" "}
+                        {busyId === p.id
+                          ? "กำลังเปิดใช้งาน…"
+                          : "เปิดใช้งานจริง"}
                       </button>
                     )}
                     {p.active && (
@@ -488,7 +578,11 @@ export default function AdminFreeGiftsPage() {
                     </button>
                     {/* The hint sits on a wrapper: a disabled button does not
                         fire the hover events its own title would need. */}
-                    <span title={p.active ? "ปิดใช้งานก่อนถึงจะลบได้" : "ลบโปรโมชั่นนี้"}>
+                    <span
+                      title={
+                        p.active ? "ปิดใช้งานก่อนถึงจะลบได้" : "ลบโปรโมชั่นนี้"
+                      }
+                    >
                       <Button
                         variant="danger-soft"
                         size="sm"
@@ -520,7 +614,9 @@ export default function AdminFreeGiftsPage() {
             <form onSubmit={submitForm} className="space-y-5">
               {/* 1. ชื่อโปร */}
               <div>
-                <p className="text-xs font-bold text-brand-ink mb-2">1. ตั้งชื่อโปรโมชั่น</p>
+                <p className="text-xs font-bold text-brand-ink mb-2">
+                  1. ตั้งชื่อโปรโมชั่น
+                </p>
                 <AdminField
                   label="ชื่อที่ลูกค้าจะเห็น (ภาษาไทย)"
                   value={form.titleTh}
@@ -539,40 +635,63 @@ export default function AdminFreeGiftsPage() {
 
               {/* 2. เงื่อนไข */}
               <div>
-                <p className="text-xs font-bold text-brand-ink mb-2">2. เงื่อนไขการรับของแถม</p>
+                <p className="text-xs font-bold text-brand-ink mb-2">
+                  2. เงื่อนไขการรับของแถม
+                </p>
                 <div className="grid grid-cols-3 gap-2 mb-3">
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, kind: "spend" })}
                     className={`rounded-xl border-2 p-3 text-left transition-colors ${
-                      form.kind === "spend" ? "border-brand-teal bg-brand-gradient-soft" : "border-slate-200"
+                      form.kind === "spend"
+                        ? "border-brand-teal bg-brand-gradient-soft"
+                        : "border-slate-200"
                     }`}
                   >
-                    <ShoppingBag size={16} className="text-brand-emerald mb-1" />
-                    <p className="text-xs font-bold text-brand-ink">ซื้อครบยอด</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">ซื้ออะไรก็ได้ครบยอดที่กำหนด</p>
+                    <ShoppingBag
+                      size={16}
+                      className="text-brand-emerald mb-1"
+                    />
+                    <p className="text-xs font-bold text-brand-ink">
+                      ซื้อครบยอด
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      ซื้ออะไรก็ได้ครบยอดที่กำหนด
+                    </p>
                   </button>
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, kind: "bxgy" })}
                     className={`rounded-xl border-2 p-3 text-left transition-colors ${
-                      form.kind === "bxgy" ? "border-brand-teal bg-brand-gradient-soft" : "border-slate-200"
+                      form.kind === "bxgy"
+                        ? "border-brand-teal bg-brand-gradient-soft"
+                        : "border-slate-200"
                     }`}
                   >
                     <Layers size={16} className="text-brand-emerald mb-1" />
-                    <p className="text-xs font-bold text-brand-ink">ซื้อครบจำนวน</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">ต้องซื้อสินค้าที่กำหนดครบจำนวน</p>
+                    <p className="text-xs font-bold text-brand-ink">
+                      ซื้อครบจำนวน
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      ต้องซื้อสินค้าที่กำหนดครบจำนวน
+                    </p>
                   </button>
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, kind: "tiered" })}
                     className={`rounded-xl border-2 p-3 text-left transition-colors ${
-                      form.kind === "tiered" ? "border-brand-teal bg-brand-gradient-soft" : "border-slate-200"
+                      form.kind === "tiered"
+                        ? "border-brand-teal bg-brand-gradient-soft"
+                        : "border-slate-200"
                     }`}
                   >
                     <TrendingUp size={16} className="text-brand-emerald mb-1" />
-                    <p className="text-xs font-bold text-brand-ink">แบบขั้นบันได</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">ยิ่งซื้อเยอะ ยิ่งได้ของแถมมากขึ้น</p>
+                    <p className="text-xs font-bold text-brand-ink">
+                      แบบขั้นบันได
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      ยิ่งซื้อเยอะ ยิ่งได้ของแถมมากขึ้น
+                    </p>
                   </button>
                 </div>
 
@@ -604,7 +723,13 @@ export default function AdminFreeGiftsPage() {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setForm({ ...form, buyProductSlugs: form.buyProductSlugs.filter((x) => x !== s) })
+                                  setForm({
+                                    ...form,
+                                    buyProductSlugs:
+                                      form.buyProductSlugs.filter(
+                                        (x) => x !== s,
+                                      ),
+                                  })
                                 }
                               >
                                 <X size={11} />
@@ -638,16 +763,29 @@ export default function AdminFreeGiftsPage() {
                 ) : (
                   <div className="space-y-3">
                     <label className="block text-[11px] text-slate-400">
-                      ตั้งระดับยอดซื้อ → ของแถมของระดับนั้น (เรียงจากน้อยไปมาก ระดับหลังจะได้ของแถมของระดับก่อนหน้าด้วย)
+                      ตั้งระดับยอดซื้อ → ของแถมของระดับนั้น (เรียงจากน้อยไปมาก
+                      ระดับหลังจะได้ของแถมของระดับก่อนหน้าด้วย)
                     </label>
                     {form.tiers.map((tier, i) => (
-                      <div key={i} className="rounded-lg border border-slate-200 p-2.5 space-y-2">
+                      <div
+                        key={i}
+                        className="rounded-lg border border-slate-200 p-2.5 space-y-2"
+                      >
                         <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-brand-ink">ระดับ {i + 1}</span>
+                          <span className="text-[11px] font-bold text-brand-ink">
+                            ระดับ {i + 1}
+                          </span>
                           {form.tiers.length > 1 && (
                             <button
                               type="button"
-                              onClick={() => setForm({ ...form, tiers: form.tiers.filter((_, idx) => idx !== i) })}
+                              onClick={() =>
+                                setForm({
+                                  ...form,
+                                  tiers: form.tiers.filter(
+                                    (_, idx) => idx !== i,
+                                  ),
+                                })
+                              }
                             >
                               <X size={13} className="text-slate-400" />
                             </button>
@@ -668,13 +806,20 @@ export default function AdminFreeGiftsPage() {
                         />
                         {tier.giftVariantId ? (
                           <div className="flex items-center gap-2 rounded-lg bg-surface-soft p-1.5">
-                            <span className="flex-1 text-xs text-brand-ink">{giftName(tier.giftTitle) || tier.giftVariantId}</span>
+                            <span className="flex-1 text-xs text-brand-ink">
+                              {giftName(tier.giftTitle) || tier.giftVariantId}
+                            </span>
                             <button
                               type="button"
                               aria-label="เปลี่ยนของแถมระดับนี้"
                               onClick={() => {
                                 const next = [...form.tiers];
-                                next[i] = { ...next[i], giftVariantId: "", giftTitle: "", giftImage: null };
+                                next[i] = {
+                                  ...next[i],
+                                  giftVariantId: "",
+                                  giftTitle: "",
+                                  giftImage: null,
+                                };
                                 setForm({ ...form, tiers: next });
                               }}
                             >
@@ -685,7 +830,12 @@ export default function AdminFreeGiftsPage() {
                           <GiftPicker
                             onSelect={(g: GiftChoice) => {
                               const next = [...form.tiers];
-                              next[i] = { ...next[i], giftVariantId: g.variantId, giftTitle: g.title, giftImage: g.image };
+                              next[i] = {
+                                ...next[i],
+                                giftVariantId: g.variantId,
+                                giftTitle: g.title,
+                                giftImage: g.image,
+                              };
                               setForm({ ...form, tiers: next });
                             }}
                           />
@@ -707,7 +857,12 @@ export default function AdminFreeGiftsPage() {
                     ))}
                     <button
                       type="button"
-                      onClick={() => setForm({ ...form, tiers: [...form.tiers, { ...EMPTY_TIER_ROW }] })}
+                      onClick={() =>
+                        setForm({
+                          ...form,
+                          tiers: [...form.tiers, { ...EMPTY_TIER_ROW }],
+                        })
+                      }
                       className="flex items-center gap-1 text-xs font-semibold text-brand-800"
                     >
                       <Plus size={13} /> เพิ่มระดับ
@@ -719,20 +874,39 @@ export default function AdminFreeGiftsPage() {
               {/* 3. ของแถม (spend/bxgy only — tiered sets gift per level above) */}
               {form.kind !== "tiered" && (
                 <div>
-                  <p className="text-xs font-bold text-brand-ink mb-2">3. สินค้าที่จะแถมฟรี</p>
+                  <p className="text-xs font-bold text-brand-ink mb-2">
+                    3. สินค้าที่จะแถมฟรี
+                  </p>
                   {/* The shop's free-gift shelf, not the catalogue: every gift
                       is UNLISTED in Shopify on purpose and none of them appears
                       in the catalogue the other picker reads. */}
                   {form.giftVariantId ? (
                     <div className="mb-2 flex items-center gap-2.5 rounded-lg bg-surface-soft p-2">
                       <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-white">
-                        {form.giftImage && <Image src={form.giftImage} alt="" fill sizes="36px" className="object-contain" />}
+                        {form.giftImage && (
+                          <Image
+                            src={form.giftImage}
+                            alt=""
+                            fill
+                            sizes="36px"
+                            className="object-contain"
+                          />
+                        )}
                       </span>
-                      <span className="flex-1 text-xs text-brand-ink">{giftName(form.giftTitle) || form.giftVariantId}</span>
+                      <span className="flex-1 text-xs text-brand-ink">
+                        {giftName(form.giftTitle) || form.giftVariantId}
+                      </span>
                       <button
                         type="button"
                         aria-label="เปลี่ยนของแถม"
-                        onClick={() => setForm({ ...form, giftVariantId: "", giftTitle: "", giftImage: null })}
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            giftVariantId: "",
+                            giftTitle: "",
+                            giftImage: null,
+                          })
+                        }
                       >
                         <X size={14} className="text-slate-400" />
                       </button>
@@ -740,7 +914,12 @@ export default function AdminFreeGiftsPage() {
                   ) : (
                     <GiftPicker
                       onSelect={(g: GiftChoice) =>
-                        setForm({ ...form, giftVariantId: g.variantId, giftTitle: g.title, giftImage: g.image })
+                        setForm({
+                          ...form,
+                          giftVariantId: g.variantId,
+                          giftTitle: g.title,
+                          giftImage: g.image,
+                        })
                       }
                     />
                   )}
@@ -758,9 +937,13 @@ export default function AdminFreeGiftsPage() {
 
               {/* preview */}
               {form.titleTh &&
-                (form.kind === "tiered" ? form.tiers.some((t) => t.giftProductSlug) : form.giftProductSlug) && (
+                (form.kind === "tiered"
+                  ? form.tiers.some((t) => t.giftProductSlug)
+                  : form.giftProductSlug) && (
                   <div className="rounded-xl bg-brand-gradient-soft p-3">
-                    <p className="text-[10px] font-bold text-brand-800 uppercase mb-1">ตัวอย่างที่ลูกค้าจะเห็น</p>
+                    <p className="text-[10px] font-bold text-brand-800 uppercase mb-1">
+                      ตัวอย่างที่ลูกค้าจะเห็น
+                    </p>
                     <p className="text-xs text-brand-ink">
                       {form.kind === "tiered"
                         ? describeCondition(form)
@@ -778,7 +961,11 @@ export default function AdminFreeGiftsPage() {
                 >
                   <ChevronDown
                     size={12}
-                    className={showAdvanced ? "rotate-180 transition-transform" : "transition-transform"}
+                    className={
+                      showAdvanced
+                        ? "rotate-180 transition-transform"
+                        : "transition-transform"
+                    }
                   />
                   ตั้งค่าขั้นสูง (ไม่จำเป็นต้องกรอก)
                 </button>
@@ -806,7 +993,9 @@ export default function AdminFreeGiftsPage() {
                 )}
               </div>
 
-              {formError && <p className="text-xs text-rose-500">{formError}</p>}
+              {formError && (
+                <p className="text-xs text-rose-500">{formError}</p>
+              )}
               <button
                 type="submit"
                 disabled={
@@ -814,14 +1003,19 @@ export default function AdminFreeGiftsPage() {
                   // The gift is a Shopify variant now, not a catalogue slug:
                   // watching the old field left this disabled however many
                   // gifts were picked.
-                  (form.kind === "tiered" ? !form.tiers.every((t) => t.giftVariantId) : !form.giftVariantId)
+                  (form.kind === "tiered"
+                    ? !form.tiers.every((t) => t.giftVariantId)
+                    : !form.giftVariantId)
                 }
                 className="w-full rounded-full bg-brand-gradient text-white text-sm font-semibold py-3 disabled:opacity-50"
               >
-                {submitting ? "กำลังบันทึก…" : "บันทึกเป็นร่าง (ยังไม่เปิดใช้งาน)"}
+                {submitting
+                  ? "กำลังบันทึก…"
+                  : "บันทึกเป็นร่าง (ยังไม่เปิดใช้งาน)"}
               </button>
               <p className="text-[11px] text-slate-400 text-center">
-                บันทึกแล้วยังไม่มีผลกับลูกค้า ต้องกด &ldquo;เปิดใช้งานจริง&rdquo; ในหน้ารายการอีกครั้ง
+                บันทึกแล้วยังไม่มีผลกับลูกค้า ต้องกด
+                &ldquo;เปิดใช้งานจริง&rdquo; ในหน้ารายการอีกครั้ง
               </p>
             </form>
           </div>

@@ -3,15 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import {
-  BookOpen,
-  Loader2,
-  MessageSquare,
-  Pencil,
-  Plus,
-  Trash2,
-  X,
-} from "lucide-react";
+import { BookOpen, MessageSquare, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { Card } from "@/components/ui";
 import { PageHeader, adminTable } from "@/components/admin/layout-kit";
@@ -27,7 +19,7 @@ import { slugifyThai } from "@/lib/kb-public";
 import { isReviewDue, reviewLabel } from "@/lib/kb-review";
 import AdminSelect from "@/components/admin/AdminSelect";
 import AdminSearch from "@/components/admin/AdminSearch";
-import { Input, TextArea } from "@heroui/react";
+import { Input, Spinner, TextArea } from "@heroui/react";
 
 // Admin → ฐานความรู้ AI. The articles the chat assistant is allowed to answer
 // from: it quotes these and nothing else, so what is published here is exactly
@@ -599,7 +591,7 @@ export default function AdminKnowledgeBasePage() {
           )}
           {loading ? (
             <p className="py-10 text-center text-sm text-slate-400">
-              <Loader2 size={18} className="mx-auto animate-spin" />
+              <Spinner size="md" color="current" className="mx-auto" />
             </p>
           ) : shown.length === 0 ? (
             <div className="rounded-xl2 border border-dashed border-surface-line p-10 text-center">

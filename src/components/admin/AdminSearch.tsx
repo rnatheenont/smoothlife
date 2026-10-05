@@ -53,7 +53,10 @@ export default function AdminSearch({
         aria-label={label ?? placeholder ?? "ค้นหา"}
         autoFocus={autoFocus}
         onKeyDown={onKeyDown}
-        className={clsx("[&::-webkit-search-cancel-button]:appearance-none", inputClassName)}
+        className={clsx(
+          "[&::-webkit-search-cancel-button]:appearance-none",
+          inputClassName,
+        )}
       />
       {value && (
         <InputGroup.Suffix>

@@ -59,10 +59,18 @@ export default function RichTextArea({
     const toRaw = value.indexOf("\n", end);
     const to = toRaw === -1 ? value.length : toRaw;
     const block = value.slice(from, to);
-    const already = block.split("\n").every((l) => /^\s*[-•]\s/.test(l) || !l.trim());
+    const already = block
+      .split("\n")
+      .every((l) => /^\s*[-•]\s/.test(l) || !l.trim());
     const changed = block
       .split("\n")
-      .map((l) => (already ? l.replace(/^\s*[-•]\s+/, "") : l.trim() ? `- ${l.replace(/^\s*[-•]\s+/, "")}` : l))
+      .map((l) =>
+        already
+          ? l.replace(/^\s*[-•]\s+/, "")
+          : l.trim()
+            ? `- ${l.replace(/^\s*[-•]\s+/, "")}`
+            : l,
+      )
       .join("\n");
     const next = `${value.slice(0, from)}${changed}${value.slice(to)}`;
     onChange(next);
@@ -77,21 +85,43 @@ export default function RichTextArea({
     "grid size-7 place-items-center rounded-md text-slate-500 transition-colors hover:bg-black/5 hover:text-brand-ink";
 
   return (
-    <div className={`rounded-l border border-surface-line bg-white focus-within:border-brand-800 ${className}`}>
+    <div
+      className={`rounded-l border border-surface-line bg-white focus-within:border-brand-800 ${className}`}
+    >
       <div className="flex items-center gap-0.5 border-b border-surface-line px-1.5 py-1">
-        <button type="button" onClick={() => surround("**")} title="ตัวหนา" aria-label="ตัวหนา" className={button}>
+        <button
+          type="button"
+          onClick={() => surround("**")}
+          title="ตัวหนา"
+          aria-label="ตัวหนา"
+          className={button}
+        >
           <Bold size={14} aria-hidden />
         </button>
-        <button type="button" onClick={() => surround("*")} title="ตัวเอียง" aria-label="ตัวเอียง" className={button}>
+        <button
+          type="button"
+          onClick={() => surround("*")}
+          title="ตัวเอียง"
+          aria-label="ตัวเอียง"
+          className={button}
+        >
           <Italic size={14} aria-hidden />
         </button>
         {showList && (
-          <button type="button" onClick={bulletLines} title="หัวข้อย่อย" aria-label="หัวข้อย่อย" className={button}>
+          <button
+            type="button"
+            onClick={bulletLines}
+            title="หัวข้อย่อย"
+            aria-label="หัวข้อย่อย"
+            className={button}
+          >
             <List size={14} aria-hidden />
           </button>
         )}
         <span className="ms-auto pe-1 text-[10px] text-slate-400">
-          {showList ? "**หนา** · *เอียง* · ขึ้นบรรทัดด้วย - คือหัวข้อย่อย" : "**หนา** · *เอียง* · บรรทัดละ 1 รายการ"}
+          {showList
+            ? "**หนา** · *เอียง* · ขึ้นบรรทัดด้วย - คือหัวข้อย่อย"
+            : "**หนา** · *เอียง* · บรรทัดละ 1 รายการ"}
         </span>
       </div>
       <textarea

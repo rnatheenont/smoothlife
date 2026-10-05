@@ -18,7 +18,11 @@ import { Select, ListBox, ListBoxItem } from "@heroui/react";
 // every call site here is a controlled string, and a wrapper that still spoke
 // in Keys would leave `String(key)` scattered across forty screens.
 
-export type AdminSelectOption = { value: string; label: string; isDisabled?: boolean };
+export type AdminSelectOption = {
+  value: string;
+  label: string;
+  isDisabled?: boolean;
+};
 
 export default function AdminSelect({
   value,

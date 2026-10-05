@@ -14,8 +14,12 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader, SectionTitle, adminTable } from "@/components/admin/layout-kit";
-import { Button } from "@heroui/react";
+import {
+  PageHeader,
+  SectionTitle,
+  adminTable,
+} from "@/components/admin/layout-kit";
+import { Button, Spinner } from "@heroui/react";
 
 // What the brand's own signals say, and which keyword is worth the next
 // afternoon.
@@ -62,13 +66,21 @@ type Opportunity = {
   recommended_action: string;
 };
 
-const COMPETITION_TH = { low: "แข่งไม่ยาก", medium: "ปานกลาง", high: "แข่งยาก" };
+const COMPETITION_TH = {
+  low: "แข่งไม่ยาก",
+  medium: "ปานกลาง",
+  high: "แข่งยาก",
+};
 
 export default function BrandInsightsPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [breakdown, setBreakdown] = useState<ProductBreakdown[]>([]);
-  const [sentiment, setSentiment] = useState({ positive: 0, neutral: 0, negative: 0 });
+  const [sentiment, setSentiment] = useState({
+    positive: 0,
+    neutral: 0,
+    negative: 0,
+  });
   const [busy, setBusy] = useState("");
   // Ten of the thirteen rows are a single mention with no sentiment, which is
   // not a product problem — it is one person naming a product once. They stay
@@ -103,7 +115,9 @@ export default function BrandInsightsPage() {
         let points = 0;
         const failed: string[] = [];
         while (offset !== null) {
-          const res = await fetch(`/api/admin/brand-signals?offset=${offset}`, { method: "POST" });
+          const res = await fetch(`/api/admin/brand-signals?offset=${offset}`, {
+            method: "POST",
+          });
           const data = await res.json().catch(() => null);
           if (!data?.ok) {
             setNote(data?.error || "ซิงก์ไม่สำเร็จ");
@@ -112,24 +126,34 @@ export default function BrandInsightsPage() {
           reviews += data.ownReviews?.synced ?? 0;
           points += data.googleTrends?.synced ?? 0;
           failed.push(...(data.googleTrends?.failed ?? []));
-          setNote(`กำลังซิงก์… ${Math.min(data.offset + 5, data.total)}/${data.total} คำ`);
+          setNote(
+            `กำลังซิงก์… ${Math.min(data.offset + 5, data.total)}/${data.total} คำ`,
+          );
           offset = data.nextOffset;
         }
         setNote(
           `ซิงก์แล้ว — รีวิว ${reviews} รายการ, Google Trends ${points} จุด` +
-            (failed.length > 0 ? ` · ดึงไม่สำเร็จ ${failed.length} คำ: ${failed.join(", ")}` : ""),
+            (failed.length > 0
+              ? ` · ดึงไม่สำเร็จ ${failed.length} คำ: ${failed.join(", ")}`
+              : ""),
         );
         await load();
         return;
       }
 
-      const res = await fetch(`/api/admin/brand-insights?job=${job}`, { method: "POST" });
+      const res = await fetch(`/api/admin/brand-insights?job=${job}`, {
+        method: "POST",
+      });
       const data = await res.json().catch(() => null);
       if (!data?.ok) {
         setNote(data?.error || "ทำงานไม่สำเร็จ");
         return;
       }
-      setNote(job === "score" ? `คำนวณโอกาสแล้ว ${data.scored} คำ` : "สรุปข้อมูลใหม่แล้ว");
+      setNote(
+        job === "score"
+          ? `คำนวณโอกาสแล้ว ${data.scored} คำ`
+          : "สรุปข้อมูลใหม่แล้ว",
+      );
       await load();
     } finally {
       setBusy("");
@@ -147,18 +171,29 @@ export default function BrandInsightsPage() {
   // neutral mention is noise at the top of a list sorted by how bad things
   // are — kept, but folded away. If every row is a single mention there is
   // nothing to fold, so the list stays whole.
-  const notableProducts = breakdown.filter((r) => r.total > 1 || r.negative > 0 || r.positive > 0);
-  const shownBreakdown = (showEveryProduct || notableProducts.length === 0 ? breakdown : notableProducts).slice(0, 30);
+  const notableProducts = breakdown.filter(
+    (r) => r.total > 1 || r.negative > 0 || r.positive > 0,
+  );
+  const shownBreakdown = (
+    showEveryProduct || notableProducts.length === 0
+      ? breakdown
+      : notableProducts
+  ).slice(0, 30);
   const hiddenProducts = Math.min(breakdown.length, 30) - shownBreakdown.length;
-  const totalReviews = sentiment.positive + sentiment.neutral + sentiment.negative;
-  const pct = (n: number) => (totalReviews > 0 ? Math.round((n / totalReviews) * 100) : 0);
+  const totalReviews =
+    sentiment.positive + sentiment.neutral + sentiment.negative;
+  const pct = (n: number) =>
+    totalReviews > 0 ? Math.round((n / totalReviews) * 100) : 0;
 
   // The four figures at the top, each one a real count rather than a score.
   const mentions = breakdown.reduce((sum, r) => sum + r.total, 0);
   const negatives = breakdown.reduce((sum, r) => sum + r.negative, 0);
   const loudest = [...breakdown].sort((a, b) => b.total - a.total)[0];
   const top = opportunities[0];
-  const zeroResults = opportunities.reduce((sum, o) => sum + o.site_searches_without_results, 0);
+  const zeroResults = opportunities.reduce(
+    (sum, o) => sum + o.site_searches_without_results,
+    0,
+  );
 
   return (
     // Full width, but not unbounded: past about 1700px the two columns stop
@@ -172,7 +207,15 @@ export default function BrandInsightsPage() {
 
       {note && (
         <p className="mt-3 flex items-start gap-2 rounded-lg bg-brand-gradient-soft px-4 py-2.5 text-sm text-brand-ink">
-          <RefreshCw size={14} className={"mt-0.5 shrink-0 " + (busy ? "animate-spin" : "")} aria-hidden="true" />
+          {busy ? (
+            <Spinner size="sm" color="current" className="mt-0.5 shrink-0" />
+          ) : (
+            <RefreshCw
+              size={14}
+              className="mt-0.5 shrink-0"
+              aria-hidden="true"
+            />
+          )}
           {note}
         </p>
       )}
@@ -185,21 +228,33 @@ export default function BrandInsightsPage() {
           icon={ThumbsUp}
           label="รีวิวบนเว็บ"
           value={totalReviews.toLocaleString("th-TH")}
-          sub={totalReviews > 0 ? `บวก ${sentiment.positive} · ลบ ${sentiment.negative}` : "ยังไม่มีรีวิวที่อนุมัติ"}
+          sub={
+            totalReviews > 0
+              ? `บวก ${sentiment.positive} · ลบ ${sentiment.negative}`
+              : "ยังไม่มีรีวิวที่อนุมัติ"
+          }
           tone={totalReviews === 0 ? "muted" : "good"}
         />
         <Stat
           icon={MessageSquare}
           label="เสียงที่ระบุสินค้า (30 วัน)"
           value={mentions.toLocaleString("th-TH")}
-          sub={loudest ? `พูดถึงมากสุด: ${loudest.keyword}` : "ยังไม่มีสัญญาณที่ระบุสินค้า"}
+          sub={
+            loudest
+              ? `พูดถึงมากสุด: ${loudest.keyword}`
+              : "ยังไม่มีสัญญาณที่ระบุสินค้า"
+          }
           tone={negatives > 0 ? "bad" : "muted"}
         />
         <Stat
           icon={Search}
           label="ค้นในเว็บแล้วไม่เจอ"
           value={zeroResults.toLocaleString("th-TH")}
-          sub={zeroResults > 0 ? "คำที่คนพิมพ์แล้วไม่มีสินค้าขึ้น" : "ยังไม่พบคำที่ค้นแล้วไม่เจอ"}
+          sub={
+            zeroResults > 0
+              ? "คำที่คนพิมพ์แล้วไม่มีสินค้าขึ้น"
+              : "ยังไม่พบคำที่ค้นแล้วไม่เจอ"
+          }
           tone={zeroResults > 0 ? "warn" : "muted"}
         />
         <Stat
@@ -233,7 +288,8 @@ export default function BrandInsightsPage() {
           </SectionTitle>
           {!latest ? (
             <p className="mt-2 rounded-xl2 bg-surface-soft p-5 text-sm text-slate-500">
-              ยังไม่เคยสรุป — กด &ldquo;ให้ AI สรุปใหม่&rdquo; เมื่อมีข้อมูลพอแล้ว
+              ยังไม่เคยสรุป — กด &ldquo;ให้ AI สรุปใหม่&rdquo;
+              เมื่อมีข้อมูลพอแล้ว
             </p>
           ) : (
             <div className="mt-2 rounded-xl2 bg-white p-5 ring-1 ring-surface-line">
@@ -268,7 +324,9 @@ export default function BrandInsightsPage() {
               </div>
               {(latest.recommendations ?? []).length > 0 && (
                 <div className="mt-3 rounded-lg bg-surface-soft p-4">
-                  <p className="text-xs font-semibold text-brand-800">ข้อเสนอแนะ</p>
+                  <p className="text-xs font-semibold text-brand-800">
+                    ข้อเสนอแนะ
+                  </p>
                   <ol className="mt-1.5 space-y-1.5 text-sm text-slate-600">
                     {(latest.recommendations ?? []).map((t, i) => (
                       <li key={t} className="flex gap-2">
@@ -292,7 +350,8 @@ export default function BrandInsightsPage() {
             <SectionTitle>ความรู้สึกจากรีวิวบนเว็บ</SectionTitle>
             {totalReviews === 0 ? (
               <p className="mt-2 rounded-xl2 bg-surface-soft p-5 text-sm text-slate-500">
-                ยังไม่มีรีวิวที่อนุมัติแล้วในระบบ — กด &ldquo;ซิงก์ข้อมูลใหม่&rdquo; หลังจากมีรีวิวเข้ามา
+                ยังไม่มีรีวิวที่อนุมัติแล้วในระบบ — กด
+                &ldquo;ซิงก์ข้อมูลใหม่&rdquo; หลังจากมีรีวิวเข้ามา
               </p>
             ) : (
               /* Three numbers do not need three boxes. A bar with its legend
@@ -300,25 +359,53 @@ export default function BrandInsightsPage() {
                  and the column below it is the part worth scrolling. */
               <div className="mt-2 rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
                 <div className="flex h-2.5 overflow-hidden rounded-full bg-slate-200">
-                  <div className="bg-emerald-500" style={{ width: `${pct(sentiment.positive)}%` }} />
-                  <div className="bg-slate-300" style={{ width: `${pct(sentiment.neutral)}%` }} />
-                  <div className="bg-rose-400" style={{ width: `${pct(sentiment.negative)}%` }} />
+                  <div
+                    className="bg-emerald-500"
+                    style={{ width: `${pct(sentiment.positive)}%` }}
+                  />
+                  <div
+                    className="bg-slate-300"
+                    style={{ width: `${pct(sentiment.neutral)}%` }}
+                  />
+                  <div
+                    className="bg-rose-400"
+                    style={{ width: `${pct(sentiment.negative)}%` }}
+                  />
                 </div>
                 <dl className="mt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[12px]">
                   {[
-                    ["บวก", sentiment.positive, "bg-emerald-500", "text-emerald-600"],
-                    ["กลาง", sentiment.neutral, "bg-slate-300", "text-slate-500"],
+                    [
+                      "บวก",
+                      sentiment.positive,
+                      "bg-emerald-500",
+                      "text-emerald-600",
+                    ],
+                    [
+                      "กลาง",
+                      sentiment.neutral,
+                      "bg-slate-300",
+                      "text-slate-500",
+                    ],
                     ["ลบ", sentiment.negative, "bg-rose-400", "text-rose-600"],
                   ].map(([label, n, dot, colour]) => (
-                    <div key={label as string} className="flex items-center gap-1.5">
-                      <span className={"size-2 rounded-full " + dot} aria-hidden="true" />
+                    <div
+                      key={label as string}
+                      className="flex items-center gap-1.5"
+                    >
+                      <span
+                        className={"size-2 rounded-full " + dot}
+                        aria-hidden="true"
+                      />
                       <dt className="text-slate-500">{label}</dt>
-                      <dd className={"font-bold tabular-nums " + colour}>{n as number}</dd>
+                      <dd className={"font-bold tabular-nums " + colour}>
+                        {n as number}
+                      </dd>
                     </div>
                   ))}
                   {totalReviews < 30 && (
                     <p className="w-full text-[11px] text-slate-400">
-                      จาก {totalReviews} รีวิว — ยังน้อยเกินกว่าจะถือเป็นภาพรวมของแบรนด์
+                      จาก {totalReviews} รีวิว —
+                      ยังน้อยเกินกว่าจะถือเป็นภาพรวมของแบรนด์
                     </p>
                   )}
                 </dl>
@@ -329,7 +416,8 @@ export default function BrandInsightsPage() {
           <section>
             <SectionTitle>ปัญหาแยกตามสินค้า</SectionTitle>
             <p className="mt-1 text-xs text-slate-500">
-              นับจากรีวิวและแชทที่ระบุสินค้าไว้ชัดเจน (30 วันล่าสุด) — เรียงจากลบมากไปน้อย ไม่ใช่ให้ AI เดา
+              นับจากรีวิวและแชทที่ระบุสินค้าไว้ชัดเจน (30 วันล่าสุด) —
+              เรียงจากลบมากไปน้อย ไม่ใช่ให้ AI เดา
             </p>
             {breakdown.length === 0 ? (
               <p className="mt-2 rounded-xl2 bg-surface-soft p-5 text-sm text-slate-500">
@@ -338,8 +426,13 @@ export default function BrandInsightsPage() {
             ) : (
               <ul className="mt-2 divide-y divide-surface-line/60 rounded-xl2 bg-white ring-1 ring-surface-line">
                 {shownBreakdown.map((row, i) => (
-                  <li key={row.keyword} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className="w-7 shrink-0 pr-1.5 text-right text-xs tabular-nums text-slate-400">{i + 1}</span>
+                  <li
+                    key={row.keyword}
+                    className="flex items-center gap-3 px-4 py-2.5"
+                  >
+                    <span className="w-7 shrink-0 pr-1.5 text-right text-xs tabular-nums text-slate-400">
+                      {i + 1}
+                    </span>
                     <span className="min-w-0 flex-1">
                       <Link
                         href={`/product/${row.keyword}`}
@@ -359,9 +452,24 @@ export default function BrandInsightsPage() {
                           className="mt-1 flex h-1.5 overflow-hidden rounded-full bg-slate-200"
                           title={`ลบ ${row.negative} · บวก ${row.positive} · กลาง ${row.neutral} · พูดถึง ${row.unclassified}`}
                         >
-                          <span className="bg-rose-400" style={{ width: `${(row.negative / row.total) * 100}%` }} />
-                          <span className="bg-emerald-500" style={{ width: `${(row.positive / row.total) * 100}%` }} />
-                          <span className="bg-slate-300" style={{ width: `${(row.neutral / row.total) * 100}%` }} />
+                          <span
+                            className="bg-rose-400"
+                            style={{
+                              width: `${(row.negative / row.total) * 100}%`,
+                            }}
+                          />
+                          <span
+                            className="bg-emerald-500"
+                            style={{
+                              width: `${(row.positive / row.total) * 100}%`,
+                            }}
+                          />
+                          <span
+                            className="bg-slate-300"
+                            style={{
+                              width: `${(row.neutral / row.total) * 100}%`,
+                            }}
+                          />
                         </span>
                       ) : (
                         <span className="mt-0.5 block text-[11px] text-slate-400">
@@ -374,7 +482,9 @@ export default function BrandInsightsPage() {
                         ลบ {row.negative}
                       </span>
                     )}
-                    <span className="w-8 shrink-0 text-right text-sm tabular-nums text-slate-500">{row.total}</span>
+                    <span className="w-8 shrink-0 text-right text-sm tabular-nums text-slate-500">
+                      {row.total}
+                    </span>
                   </li>
                 ))}
                 {hiddenProducts > 0 && (
@@ -401,13 +511,22 @@ export default function BrandInsightsPage() {
       <section className="mt-8">
         <SectionTitle
           action={
-            <Button type="button" variant="secondary" size="sm" onPress={() => run("score")} isDisabled={Boolean(busy)}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onPress={() => run("score")}
+              isDisabled={Boolean(busy)}
+            >
               <RefreshCw size={14} aria-hidden="true" />
               {busy === "score" ? "กำลังคำนวณ…" : "คำนวณใหม่"}
             </Button>
           }
         >
-          โอกาส SEO <span className="font-normal text-slate-400">({opportunities.length})</span>
+          โอกาส SEO{" "}
+          <span className="font-normal text-slate-400">
+            ({opportunities.length})
+          </span>
         </SectionTitle>
 
         {/* True, and worth reading — once. Three lines of standing caveat
@@ -416,12 +535,16 @@ export default function BrandInsightsPage() {
         <details className="group mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
           <summary className="flex cursor-pointer list-none items-center gap-2 font-medium">
             <AlertTriangle size={14} className="shrink-0" aria-hidden="true" />
-            ตัวเลขนี้คือ &ldquo;ควรลงแรงกับคำไหนก่อน&rdquo; ไม่ใช่ &ldquo;โอกาสติดอันดับ&rdquo;
-            <span className="ml-auto text-[11px] text-amber-700 group-open:hidden">อ่านเพิ่ม</span>
+            ตัวเลขนี้คือ &ldquo;ควรลงแรงกับคำไหนก่อน&rdquo; ไม่ใช่
+            &ldquo;โอกาสติดอันดับ&rdquo;
+            <span className="ml-auto text-[11px] text-amber-700 group-open:hidden">
+              อ่านเพิ่ม
+            </span>
           </summary>
           <p className="mt-1.5 pl-6 leading-relaxed">
-            ยังไม่ได้ต่อ Search Console จึงยังไม่รู้อันดับจริงของเรา และช่อง &ldquo;การแข่งขัน&rdquo;
-            เป็นการประเมินจากรูปแบบของคำ ไม่ใช่การวัดหน้าผลค้นหาจริง
+            ยังไม่ได้ต่อ Search Console จึงยังไม่รู้อันดับจริงของเรา และช่อง
+            &ldquo;การแข่งขัน&rdquo; เป็นการประเมินจากรูปแบบของคำ
+            ไม่ใช่การวัดหน้าผลค้นหาจริง
           </p>
         </details>
 
@@ -454,11 +577,16 @@ export default function BrandInsightsPage() {
                       <td className="px-3 py-2.5 font-medium text-brand-ink">
                         {o.page_slug && o.page_type ? (
                           <Link
-                            href={o.page_type === "concern" ? `/concern/${o.page_slug}` : `/shop/${o.page_slug}`}
+                            href={
+                              o.page_type === "concern"
+                                ? `/concern/${o.page_slug}`
+                                : `/shop/${o.page_slug}`
+                            }
                             target="_blank"
                             className="inline-flex items-center gap-1 hover:text-brand-800"
                           >
-                            {o.keyword} <ArrowUpRight size={12} aria-hidden="true" />
+                            {o.keyword}{" "}
+                            <ArrowUpRight size={12} aria-hidden="true" />
                           </Link>
                         ) : (
                           o.keyword
@@ -479,17 +607,25 @@ export default function BrandInsightsPage() {
                       </td>
                       <td className="px-3 py-2.5 text-xs tabular-nums text-slate-500">
                         {o.search_volume_estimate ?? (
-                          <span title="Google Trends ไม่มีข้อมูลสำหรับคำนี้">ไม่มีข้อมูล</span>
+                          <span title="Google Trends ไม่มีข้อมูลสำหรับคำนี้">
+                            ไม่มีข้อมูล
+                          </span>
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-xs tabular-nums text-slate-500">
                         {o.site_searches}
                         {o.site_searches_without_results > 0 && (
-                          <span className="ml-1 text-amber-700">({o.site_searches_without_results} ไม่เจอ)</span>
+                          <span className="ml-1 text-amber-700">
+                            ({o.site_searches_without_results} ไม่เจอ)
+                          </span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-500">{COMPETITION_TH[o.competition_level]}</td>
-                      <td className="px-3 py-2.5 text-xs leading-relaxed text-slate-600">{o.recommended_action}</td>
+                      <td className="px-3 py-2.5 text-xs text-slate-500">
+                        {COMPETITION_TH[o.competition_level]}
+                      </td>
+                      <td className="px-3 py-2.5 text-xs leading-relaxed text-slate-600">
+                        {o.recommended_action}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -501,14 +637,21 @@ export default function BrandInsightsPage() {
                 <li key={o.keyword} className="p-3">
                   <div className="flex items-start justify-between gap-2">
                     <p className="min-w-0 text-sm font-semibold text-brand-ink">
-                      <span className="mr-1.5 text-xs tabular-nums text-slate-400">{i + 1}</span>
+                      <span className="mr-1.5 text-xs tabular-nums text-slate-400">
+                        {i + 1}
+                      </span>
                       {o.page_slug && o.page_type ? (
                         <Link
-                          href={o.page_type === "concern" ? `/concern/${o.page_slug}` : `/shop/${o.page_slug}`}
+                          href={
+                            o.page_type === "concern"
+                              ? `/concern/${o.page_slug}`
+                              : `/shop/${o.page_slug}`
+                          }
                           target="_blank"
                           className="inline-flex items-center gap-1 hover:text-brand-800"
                         >
-                          {o.keyword} <ArrowUpRight size={12} aria-hidden="true" />
+                          {o.keyword}{" "}
+                          <ArrowUpRight size={12} aria-hidden="true" />
                         </Link>
                       ) : (
                         o.keyword
@@ -525,13 +668,19 @@ export default function BrandInsightsPage() {
                     />
                   </span>
                   <p className="mt-1.5 text-[11px] text-slate-500">
-                    Trends {o.search_volume_estimate ?? "ไม่มีข้อมูล"} · ค้นในเว็บ {o.site_searches}
+                    Trends {o.search_volume_estimate ?? "ไม่มีข้อมูล"} ·
+                    ค้นในเว็บ {o.site_searches}
                     {o.site_searches_without_results > 0 && (
-                      <span className="text-amber-700"> ({o.site_searches_without_results} ไม่เจอ)</span>
+                      <span className="text-amber-700">
+                        {" "}
+                        ({o.site_searches_without_results} ไม่เจอ)
+                      </span>
                     )}{" "}
                     · แข่งขัน {COMPETITION_TH[o.competition_level]}
                   </p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-600">{o.recommended_action}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                    {o.recommended_action}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -568,7 +717,9 @@ function Stat({
         <Icon size={13} className={TONES[tone]} aria-hidden="true" />
         {label}
       </p>
-      <p className="mt-1 text-xl font-bold tabular-nums text-brand-ink">{value}</p>
+      <p className="mt-1 text-xl font-bold tabular-nums text-brand-ink">
+        {value}
+      </p>
       <p className="mt-0.5 truncate text-[11px] text-slate-400" title={sub}>
         {sub}
       </p>
@@ -576,7 +727,15 @@ function Stat({
   );
 }
 
-function ThemeList({ title, items, className }: { title: string; items: string[]; className: string }) {
+function ThemeList({
+  title,
+  items,
+  className,
+}: {
+  title: string;
+  items: string[];
+  className: string;
+}) {
   return (
     <div className={"rounded-lg p-3 " + className}>
       <p className="text-xs font-semibold">{title}</p>

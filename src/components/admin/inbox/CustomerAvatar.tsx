@@ -68,7 +68,10 @@ export default function CustomerAvatar({
         width={size}
         height={size}
         onError={() => setFailed(true)}
-        className={clsx("shrink-0 rounded-full bg-surface-soft object-cover", className)}
+        className={clsx(
+          "shrink-0 rounded-full bg-surface-soft object-cover",
+          className,
+        )}
         style={{ width: size, height: size }}
       />
     );

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+
 import CampaignSetup, {
   type CatalogueItem,
   type EditingCampaign,
@@ -11,6 +11,8 @@ import CampaignSetup, {
 import type { CampaignConfig } from "@/components/flash-sale-demo/campaign";
 import type { FlashSaleCampaignDTO } from "@/lib/flash-sale-campaigns";
 import { campaignBody, campaignToConfig } from "@/lib/flash-sale-campaign-body";
+import { Spinner } from "@heroui/react";
+import {} from "lucide-react";
 
 // Creating a real campaign, and editing one, on the same form.
 //
@@ -47,7 +49,10 @@ export default function CreateCampaign({
   const [loaded, setLoaded] = useState<FlashSaleCampaignDTO | null>(null);
   const [loading, setLoading] = useState(Boolean(id));
 
-  const bySlug = useMemo(() => new Map(catalogue.map((p) => [p.slug, p])), [catalogue]);
+  const bySlug = useMemo(
+    () => new Map(catalogue.map((p) => [p.slug, p])),
+    [catalogue],
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -57,12 +62,15 @@ export default function CreateCampaign({
       .then((json) => {
         if (cancelled) return;
         if (!json?.ok) throw new Error(json?.error || "โหลดแคมเปญไม่สำเร็จ");
-        const found = (json.campaigns as FlashSaleCampaignDTO[]).find((c) => c.id === id);
+        const found = (json.campaigns as FlashSaleCampaignDTO[]).find(
+          (c) => c.id === id,
+        );
         if (!found) throw new Error("ไม่พบแคมเปญนี้ อาจถูกลบไปแล้ว");
         setLoaded(found);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "โหลดแคมเปญไม่สำเร็จ");
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : "โหลดแคมเปญไม่สำเร็จ");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -72,21 +80,30 @@ export default function CreateCampaign({
     };
   }, [id]);
 
-  async function submit(config: CampaignConfig, startsAt: number, endsAt?: number) {
+  async function submit(
+    config: CampaignConfig,
+    startsAt: number,
+    endsAt?: number,
+  ) {
     setSaving(true);
     setError(null);
     try {
       const body = campaignBody(config, startsAt, endsAt);
       const res = await fetch(
-        loaded ? `/api/admin/flash-sale/campaigns/${loaded.id}` : "/api/admin/flash-sale/campaigns",
+        loaded
+          ? `/api/admin/flash-sale/campaigns/${loaded.id}`
+          : "/api/admin/flash-sale/campaigns",
         {
           method: loaded ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(loaded ? { action: "update", ...body } : body),
-        }
+        },
       );
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || (loaded ? "บันทึกไม่สำเร็จ" : "สร้างแคมเปญไม่สำเร็จ"));
+      if (!res.ok || !json.ok)
+        throw new Error(
+          json.error || (loaded ? "บันทึกไม่สำเร็จ" : "สร้างแคมเปญไม่สำเร็จ"),
+        );
       // Back to the list, which is where the campaign now is — and where its
       // sale page, its schedule and the rest of the row can be seen.
       router.push("/admin/flash-sale");
@@ -105,7 +122,7 @@ export default function CreateCampaign({
   if (loading) {
     return (
       <div className="flex justify-center py-12 text-slate-400">
-        <Loader2 size={22} className="animate-spin" />
+        <Spinner size="md" color="current" />
       </div>
     );
   }
@@ -114,7 +131,8 @@ export default function CreateCampaign({
   if (id && !config) {
     return (
       <p className="rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
-        {error ?? "แคมเปญนี้ขายสินค้าที่ไม่มีในแคตตาล็อกแล้ว แก้ไขผ่านหน้านี้ไม่ได้"}
+        {error ??
+          "แคมเปญนี้ขายสินค้าที่ไม่มีในแคตตาล็อกแล้ว แก้ไขผ่านหน้านี้ไม่ได้"}
       </p>
     );
   }
@@ -130,13 +148,18 @@ export default function CreateCampaign({
         startsAt: loaded.startsAt,
         endsAt: loaded.endsAt ?? undefined,
         salePrices: loaded.salePrices ?? {},
-        scope: !loaded.endedManuallyAt && now < loaded.startsAt ? "full" : "limited",
+        scope:
+          !loaded.endedManuallyAt && now < loaded.startsAt ? "full" : "limited",
       }
     : undefined;
 
   return (
     <>
-      {error && <p className="mb-4 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{error}</p>}
+      {error && (
+        <p className="mb-4 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
+          {error}
+        </p>
+      )}
       <CampaignSetup
         key={loaded?.id ?? "new"}
         config={config ?? BLANK}

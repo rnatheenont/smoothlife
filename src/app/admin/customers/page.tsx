@@ -7,7 +7,6 @@ import {
   Search,
   Link2,
   Unlink,
-  Loader2,
   ShoppingBag,
   AlertTriangle,
   Check,
@@ -600,7 +599,11 @@ export default function AdminCustomersPage() {
                               className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-white disabled:text-slate-300"
                             >
                               {busy === a.id ? (
-                                <Loader2 size={11} className="animate-spin" />
+                                <Spinner
+                                  size="sm"
+                                  color="current"
+                                  className="size-3"
+                                />
                               ) : (
                                 <Merge size={11} />
                               )}
@@ -688,7 +691,7 @@ export default function AdminCustomersPage() {
                       )}
                     >
                       {busy === a.id ? (
-                        <Loader2 size={11} className="animate-spin" />
+                        <Spinner size="sm" color="current" className="size-3" />
                       ) : (
                         <Merge size={11} />
                       )}
@@ -1011,7 +1014,8 @@ export default function AdminCustomersPage() {
           <SectionTitle className="mb-2">ผลสแกนผิว (Skin Coach)</SectionTitle>
           {scans === null ? (
             <p className="flex items-center gap-1.5 text-xs text-slate-500">
-              <Loader2 size={12} className="animate-spin" /> กำลังโหลด…
+              <Spinner size="sm" color="current" className="size-3" />{" "}
+              กำลังโหลด…
             </p>
           ) : (
             <SkinScanSummary scans={scans} />
@@ -1042,7 +1046,7 @@ export default function AdminCustomersPage() {
               className="mt-3 flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700 disabled:opacity-40"
             >
               {busy === "unlink" ? (
-                <Loader2 size={12} className="animate-spin" />
+                <Spinner size="sm" color="current" className="size-3" />
               ) : (
                 <Unlink size={12} />
               )}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { MessageSquareText, Star, Check, X, RefreshCw } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader } from "@/components/admin/layout-kit";
-import { Button } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 
 type PendingReview = {
   id: string;
@@ -64,7 +64,11 @@ export default function AdminReviewsPage() {
 
   useAdminAction({
     label: "รีเฟรชรายการรีวิว",
-    icon: <RefreshCw size={15} className={loading ? "animate-spin" : ""} aria-hidden />,
+    icon: loading ? (
+      <Spinner size="sm" color="current" />
+    ) : (
+      <RefreshCw size={15} aria-hidden />
+    ),
     onClick: load,
     disabled: loading,
   });
@@ -96,12 +100,18 @@ export default function AdminReviewsPage() {
            on a wide screen made that a scroll instead of a glance. */
         <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
           {reviews.map((r) => (
-            <div key={r.id} className="rounded-xl2 border border-slate-100 bg-white p-4 shadow-card">
+            <div
+              key={r.id}
+              className="rounded-xl2 border border-slate-100 bg-white p-4 shadow-card"
+            >
               <div className="mb-2 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-brand-ink">{r.author_name}</p>
+                  <p className="truncate text-sm font-bold text-brand-ink">
+                    {r.author_name}
+                  </p>
                   <p className="text-[11px] text-slate-400">
-                    {r.product_slug} · {new Date(r.created_at).toLocaleString("th-TH")}
+                    {r.product_slug} ·{" "}
+                    {new Date(r.created_at).toLocaleString("th-TH")}
                   </p>
                 </div>
                 <span className="shrink-0 rounded-full bg-brand-gradient-soft px-2.5 py-1 text-[11px] font-semibold text-brand-800">
@@ -113,15 +123,29 @@ export default function AdminReviewsPage() {
                   <Star
                     key={n}
                     size={14}
-                    className={n <= r.rating ? "fill-amber-400 text-amber-400" : "text-slate-200"}
+                    className={
+                      n <= r.rating
+                        ? "fill-amber-400 text-amber-400"
+                        : "text-slate-200"
+                    }
                   />
                 ))}
                 <span className="ml-2 text-[11px] text-slate-400">
-                  {r.review_type ? (REVIEW_TYPE_LABELS[r.review_type] ?? r.review_type) : "-"}
+                  {r.review_type
+                    ? (REVIEW_TYPE_LABELS[r.review_type] ?? r.review_type)
+                    : "-"}
                 </span>
               </div>
-              {r.title && <p className="mb-1 text-sm font-semibold text-brand-ink">{r.title}</p>}
-              {r.body && <p className="mb-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">{r.body}</p>}
+              {r.title && (
+                <p className="mb-1 text-sm font-semibold text-brand-ink">
+                  {r.title}
+                </p>
+              )}
+              {r.body && (
+                <p className="mb-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
+                  {r.body}
+                </p>
+              )}
               {r.media_urls && r.media_urls.length > 0 && (
                 <div className="mb-2 flex gap-2 overflow-x-auto">
                   {r.media_urls.map((url) => (
@@ -145,7 +169,9 @@ export default function AdminReviewsPage() {
                 >
                   <Check size={14} /> อนุมัติ
                 </button>
-                <Button variant="danger-soft" size="sm"
+                <Button
+                  variant="danger-soft"
+                  size="sm"
                   onPress={() => act(r.id, "reject")}
                   isDisabled={busyId === r.id}
                   className="flex-1"

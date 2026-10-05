@@ -55,7 +55,13 @@ export default function FlashSaleSimulatorPage() {
         </Link>
       </div>
       {/* eslint-disable-next-line react-hooks/purity -- render time seeds the demo clock; the page is rendered per request */}
-      <FlashSaleDemo embedded baseMs={Date.now()} initialConfig={initialConfig} catalogue={catalogue} groups={groups} />
+      <FlashSaleDemo
+        embedded
+        baseMs={Date.now()}
+        initialConfig={initialConfig}
+        catalogue={catalogue}
+        groups={groups}
+      />
     </div>
   );
 }

@@ -2,7 +2,14 @@
 
 import clsx from "clsx";
 import type { ReactNode } from "react";
-import { Description, FieldError, Input, Label, TextArea, TextField } from "@heroui/react";
+import {
+  Description,
+  FieldError,
+  Input,
+  Label,
+  TextArea,
+  TextField,
+} from "@heroui/react";
 
 // One text field in the console, label and all.
 //
@@ -45,7 +52,15 @@ export default function AdminField({
   label?: string;
   value: string;
   onChange: (value: string) => void;
-  type?: "text" | "email" | "password" | "url" | "tel" | "number" | "date" | "datetime-local";
+  type?:
+    | "text"
+    | "email"
+    | "password"
+    | "url"
+    | "tel"
+    | "number"
+    | "date"
+    | "datetime-local";
   placeholder?: string;
   /** Said once, under the field, before anything has gone wrong. */
   hint?: ReactNode;
@@ -56,7 +71,8 @@ export default function AdminField({
   isReadOnly?: boolean;
   multiline?: boolean;
   rows?: number;
-  inputMode?: "text" | "numeric" | "decimal" | "tel" | "email" | "url" | "search";
+  inputMode?:
+    "text" | "numeric" | "decimal" | "tel" | "email" | "url" | "search";
   autoComplete?: string;
   min?: number | string;
   max?: number | string;
@@ -85,7 +101,12 @@ export default function AdminField({
         </Label>
       )}
       {multiline ? (
-        <TextArea fullWidth rows={rows} placeholder={placeholder} className={controlClassName} />
+        <TextArea
+          fullWidth
+          rows={rows}
+          placeholder={placeholder}
+          className={controlClassName}
+        />
       ) : (
         <Input
           placeholder={placeholder}
@@ -100,7 +121,11 @@ export default function AdminField({
       {/* The hint steps aside for the error rather than stacking under it:
           two lines of small grey-and-red text under a field is how a form
           ends up taller than the screen it is meant to fit on. */}
-      {error ? <FieldError>{error}</FieldError> : hint ? <Description>{hint}</Description> : null}
+      {error ? (
+        <FieldError>{error}</FieldError>
+      ) : hint ? (
+        <Description>{hint}</Description>
+      ) : null}
     </TextField>
   );
 }

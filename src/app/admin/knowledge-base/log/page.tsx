@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   BookOpen,
   Check,
-  Loader2,
   MessageSquare,
   PencilLine,
   Plus,
@@ -104,12 +103,10 @@ export default function AdminAiLogPage() {
 
   useAdminAction({
     label: "รีเฟรช log",
-    icon: (
-      <RefreshCw
-        size={15}
-        className={loading ? "animate-spin" : ""}
-        aria-hidden
-      />
+    icon: loading ? (
+      <Spinner size="sm" color="current" />
+    ) : (
+      <RefreshCw size={15} aria-hidden />
     ),
     onClick: load,
     disabled: loading,
@@ -167,7 +164,11 @@ export default function AdminAiLogPage() {
 
       {loading ? (
         <p className="py-10 text-center">
-          <Loader2 size={18} className="mx-auto animate-spin text-slate-300" />
+          <Spinner
+            size="md"
+            color="current"
+            className="mx-auto text-slate-300"
+          />
         </p>
       ) : rows.length === 0 ? (
         <div className="rounded-xl2 border border-dashed border-surface-line p-10 text-center text-sm text-slate-500">

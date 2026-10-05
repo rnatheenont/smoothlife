@@ -11,7 +11,17 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Eye, EyeOff, Loader2, MoreHorizontal, Pencil, PlayCircle, Radio, RefreshCw, Trash2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  Eye,
+  EyeOff,
+  MoreHorizontal,
+  Pencil,
+  PlayCircle,
+  Radio,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 import { Panel, adminCards, adminTable } from "@/components/admin/layout-kit";
 import { Button, Spinner } from "@heroui/react";
 
@@ -57,10 +67,14 @@ const dateTime = (ms: number) =>
 
 /** What the admin needs to know at a glance, in the shop's own words. */
 function phaseOf(c: Campaign, now: number) {
-  if (c.published === false) return { label: "ปิดเผยแพร่", tone: "bg-slate-100 text-slate-600" };
-  if (c.endedManuallyAt) return { label: "ปิดด้วยมือ", tone: "bg-slate-100 text-slate-600" };
-  if (c.endsAt && now >= c.endsAt) return { label: "จบแล้ว", tone: "bg-slate-100 text-slate-600" };
-  if (now < c.startsAt) return { label: "รอเปิด", tone: "bg-amber-100 text-amber-800" };
+  if (c.published === false)
+    return { label: "ปิดเผยแพร่", tone: "bg-slate-100 text-slate-600" };
+  if (c.endedManuallyAt)
+    return { label: "ปิดด้วยมือ", tone: "bg-slate-100 text-slate-600" };
+  if (c.endsAt && now >= c.endsAt)
+    return { label: "จบแล้ว", tone: "bg-slate-100 text-slate-600" };
+  if (now < c.startsAt)
+    return { label: "รอเปิด", tone: "bg-amber-100 text-amber-800" };
   return { label: "กำลังขาย", tone: "bg-emerald-100 text-emerald-800" };
 }
 
@@ -72,21 +86,30 @@ export default function CampaignList() {
   const [loading, setLoading] = useState(false);
   // Anchored to the button and rendered fixed: the table scrolls sideways,
   // and a menu positioned inside it gets clipped by that scroll box.
-  const [menu, setMenu] = useState<{ id: string; top: number; right: number } | null>(null);
+  const [menu, setMenu] = useState<{
+    id: string;
+    top: number;
+    right: number;
+  } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/flash-sale/campaigns", { cache: "no-store" });
+      const res = await fetch("/api/admin/flash-sale/campaigns", {
+        cache: "no-store",
+      });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || "โหลดรายการแคมเปญไม่สำเร็จ");
+      if (!res.ok || !data.ok)
+        throw new Error(data.error || "โหลดรายการแคมเปญไม่สำเร็จ");
       setCampaigns(data.campaigns as Campaign[]);
       // The server's clock decides which campaign is live, not the admin's.
       setNow(typeof data.serverNow === "number" ? data.serverNow : Date.now());
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "โหลดรายการแคมเปญไม่สำเร็จ");
+      setError(
+        err instanceof Error ? err.message : "โหลดรายการแคมเปญไม่สำเร็จ",
+      );
     } finally {
       setLoading(false);
     }
@@ -130,13 +153,17 @@ export default function CampaignList() {
     const waiting = (c.queueRows ?? 0) - (c.paidRows ?? 0);
     const message =
       `ลบ "${c.title}" ทิ้ง?\n\nลบแล้วกู้คืนไม่ได้` +
-      (waiting > 0 ? `\nคนที่อยู่ในคิว ${waiting} คนจะถูกเอาออกจากคิวไปด้วย` : "");
+      (waiting > 0
+        ? `\nคนที่อยู่ในคิว ${waiting} คนจะถูกเอาออกจากคิวไปด้วย`
+        : "");
     if (!window.confirm(message)) return;
     setMenu(null);
     setBusy(c.id);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/flash-sale/campaigns/${c.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/flash-sale/campaigns/${c.id}`, {
+        method: "DELETE",
+      });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "ลบไม่สำเร็จ");
       await load();
@@ -156,7 +183,7 @@ export default function CampaignList() {
     if (
       !window.confirm(
         `เปิดขาย "${c.title}" อีกครั้ง?\n\nจะกลับมาขายทันทีจนกว่าของจะหมด — ของที่ขายไปแล้วไม่ได้คืนมา ` +
-          `ถ้าอยากเติมสต็อก ให้กดแก้ไขแล้วปรับจำนวนก่อน`
+          `ถ้าอยากเติมสต็อก ให้กดแก้ไขแล้วปรับจำนวนก่อน`,
       )
     ) {
       return;
@@ -173,105 +200,114 @@ export default function CampaignList() {
     act(c, { action: "publish", published: next }, "บันทึกไม่สำเร็จ");
   }
 
-  const sorted = campaigns ? [...campaigns].sort((a, b) => b.startsAt - a.startsAt) : null;
+  const sorted = campaigns
+    ? [...campaigns].sort((a, b) => b.startsAt - a.startsAt)
+    : null;
 
   /** The row's own menu, so a card on a phone can edit, publish and delete
    *  the campaign exactly as the table row does. */
   function RowMenu({ c }: { c: Campaign }) {
     return (
-          <span className="relative inline-block">
+      <span className="relative inline-block">
+        <button
+          type="button"
+          aria-label={`อื่นๆ สำหรับ ${c.title}`}
+          aria-expanded={menu?.id === c.id}
+          disabled={busy === c.id}
+          onClick={(e) => {
+            if (menu?.id === c.id) return setMenu(null);
+            const r = e.currentTarget.getBoundingClientRect();
+            setMenu({
+              id: c.id,
+              top: r.bottom + 6,
+              right: window.innerWidth - r.right,
+            });
+          }}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
+        >
+          {busy === c.id ? (
+            <Spinner size="sm" color="current" />
+          ) : (
+            <MoreHorizontal size={16} aria-hidden />
+          )}
+        </button>
+        {menu?.id === c.id && (
+          <>
+            {/* Anywhere else closes it. */}
             <button
               type="button"
-              aria-label={`อื่นๆ สำหรับ ${c.title}`}
-              aria-expanded={menu?.id === c.id}
-              disabled={busy === c.id}
-              onClick={(e) => {
-                if (menu?.id === c.id) return setMenu(null);
-                const r = e.currentTarget.getBoundingClientRect();
-                setMenu({ id: c.id, top: r.bottom + 6, right: window.innerWidth - r.right });
-              }}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
+              aria-label="ปิดเมนู"
+              onClick={() => setMenu(null)}
+              className="fixed inset-0 z-20 cursor-default"
+            />
+            <div
+              style={{ top: menu.top, right: menu.right }}
+              className="fixed z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg"
             >
-              {busy === c.id ? (
-                <Loader2 size={15} className="animate-spin" />
-              ) : (
-                <MoreHorizontal size={16} aria-hidden />
-              )}
-            </button>
-            {menu?.id === c.id && (
-              <>
-                {/* Anywhere else closes it. */}
+              <button
+                type="button"
+                onClick={() => {
+                  setMenu(null);
+                  router.push(`/admin/flash-sale/create?id=${c.id}`);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
+              >
+                <Pencil size={14} aria-hidden /> แก้ไข
+              </button>
+              {/* Only where it means something: a sale that
+                      has not finished is already selling. */}
+              {(c.endedManuallyAt || (c.endsAt && now >= c.endsAt)) && (
                 <button
                   type="button"
-                  aria-label="ปิดเมนู"
-                  onClick={() => setMenu(null)}
-                  className="fixed inset-0 z-20 cursor-default"
-                />
-                <div
-                  style={{ top: menu.top, right: menu.right }}
-                  className="fixed z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg"
+                  onClick={() => reopen(c)}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenu(null);
-                      router.push(`/admin/flash-sale/create?id=${c.id}`);
-                    }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
-                  >
-                    <Pencil size={14} aria-hidden /> แก้ไข
-                  </button>
-                  {/* Only where it means something: a sale that
-                      has not finished is already selling. */}
-                  {(c.endedManuallyAt || (c.endsAt && now >= c.endsAt)) && (
-                    <button
-                      type="button"
-                      onClick={() => reopen(c)}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
-                    >
-                      <PlayCircle size={14} aria-hidden /> เปิดขายอีกครั้ง
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => togglePublished(c)}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
-                  >
-                    {c.published === false ? (
-                      <>
-                        <Eye size={14} aria-hidden /> เผยแพร่หน้าขาย
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff size={14} aria-hidden /> ปิดเผยแพร่
-                      </>
-                    )}
-                  </button>
-                  {c.paidRows ? (
-                    // Not a disabled button with no explanation:
-                    // the reason is the whole of what to do next.
-                    <p className="px-3 py-2 text-[12px] leading-relaxed text-slate-500">
-                      <Trash2 size={13} className="mb-0.5 me-1 inline" aria-hidden />
-                      ลบไม่ได้ — มีคำสั่งซื้อที่ชำระแล้ว {c.paidRows} รายการผูกอยู่
-                      <br />
-                      ใช้ “ปิดเผยแพร่” แทนเพื่อเอาหน้าขายลง
-                    </p>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => remove(c)}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-rose-700 hover:bg-rose-50"
-                    >
-                      <Trash2 size={14} aria-hidden /> ลบแคมเปญ
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </span>
+                  <PlayCircle size={14} aria-hidden /> เปิดขายอีกครั้ง
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => togglePublished(c)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
+              >
+                {c.published === false ? (
+                  <>
+                    <Eye size={14} aria-hidden /> เผยแพร่หน้าขาย
+                  </>
+                ) : (
+                  <>
+                    <EyeOff size={14} aria-hidden /> ปิดเผยแพร่
+                  </>
+                )}
+              </button>
+              {c.paidRows ? (
+                // Not a disabled button with no explanation:
+                // the reason is the whole of what to do next.
+                <p className="px-3 py-2 text-[12px] leading-relaxed text-slate-500">
+                  <Trash2
+                    size={13}
+                    className="mb-0.5 me-1 inline"
+                    aria-hidden
+                  />
+                  ลบไม่ได้ — มีคำสั่งซื้อที่ชำระแล้ว {c.paidRows} รายการผูกอยู่
+                  <br />
+                  ใช้ “ปิดเผยแพร่” แทนเพื่อเอาหน้าขายลง
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => remove(c)}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-rose-700 hover:bg-rose-50"
+                >
+                  <Trash2 size={14} aria-hidden /> ลบแคมเปญ
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </span>
     );
   }
-
 
   return (
     // The title and the refresh button go through Panel's own header rather
@@ -280,132 +316,164 @@ export default function CampaignList() {
     <Panel
       title="แคมเปญที่สร้างไว้"
       toolbar={
-        <Button variant="outline" size="sm"
+        <Button
+          variant="outline"
+          size="sm"
           onPress={load}
           isPending={loading}
           className="ms-auto"
         >
-          {loading ? <Spinner size="sm" color="current" /> : <RefreshCw size={13} aria-hidden />} รีเฟรช
+          {loading ? (
+            <Spinner size="sm" color="current" />
+          ) : (
+            <RefreshCw size={13} aria-hidden />
+          )}{" "}
+          รีเฟรช
         </Button>
       }
     >
-      {error && <p className="m-3 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{error}</p>}
+      {error && (
+        <p className="m-3 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
+          {error}
+        </p>
+      )}
 
-      {!error && sorted === null && <p className="p-4 text-[13px] text-slate-400">กำลังโหลด…</p>}
+      {!error && sorted === null && (
+        <p className="p-4 text-[13px] text-slate-400">กำลังโหลด…</p>
+      )}
 
       {!error && sorted?.length === 0 && (
-        <p className="p-4 text-[13px] text-slate-500">ยังไม่มีแคมเปญ — กด “สร้างแคมเปญจริง” ด้านบนเพื่อเริ่ม</p>
+        <p className="p-4 text-[13px] text-slate-500">
+          ยังไม่มีแคมเปญ — กด “สร้างแคมเปญจริง” ด้านบนเพื่อเริ่ม
+        </p>
       )}
 
       {!error && sorted && sorted.length > 0 && (
         <>
-        {/* A phone gets a card per campaign: the title and its phase first,
+          {/* A phone gets a card per campaign: the title and its phase first,
             then the dates, then the two links it is opened for. */}
-        <ul className={adminCards.list}>
-          {sorted.map((c) => {
-            const phase = phaseOf(c, now);
-            return (
-              <li key={c.id} className={adminCards.item}>
-                <div className={adminCards.head}>
-                  <span className="text-[14px] font-bold text-brand-ink">{c.title}</span>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${phase.tone}`}>
-                    {phase.label}
-                  </span>
-                </div>
-                <p className="mt-1 text-[12px] text-slate-400">
-                  {c.kind === "special" ? "หน้าแบบมีแบนเนอร์" : "หน้าขายแบบเรียบ"} · {c.productSlugs.length} สินค้า ·
-                  สต็อก {c.stockPerProduct}
-                </p>
-                <p className="mt-1 text-[12px] text-slate-500">
-                  {dateTime(c.startsAt)} – {c.endsAt ? dateTime(c.endsAt) : "จนกว่าของจะหมด"}
-                </p>
-                <div className="mt-2 flex items-center justify-between gap-3">
-                  <span className="flex flex-wrap items-center gap-3">
-                    <Link
-                      href={`/flash-sale/${c.id}`}
-                      target="_blank"
-                      className="inline-flex min-h-9 items-center gap-1 text-[12px] font-semibold text-brand-800 hover:underline"
+          <ul className={adminCards.list}>
+            {sorted.map((c) => {
+              const phase = phaseOf(c, now);
+              return (
+                <li key={c.id} className={adminCards.item}>
+                  <div className={adminCards.head}>
+                    <span className="text-[14px] font-bold text-brand-ink">
+                      {c.title}
+                    </span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${phase.tone}`}
                     >
-                      เปิดดู <ArrowUpRight size={13} aria-hidden />
-                    </Link>
-                    <Link
-                      href={`/admin/flash-sale/${c.id}`}
-                      className="inline-flex min-h-9 items-center gap-1.5 text-[12px] font-semibold text-brand-800 hover:underline"
-                    >
-                      <Radio size={13} aria-hidden /> มอนิเตอร์
-                    </Link>
-                  </span>
-                  <RowMenu c={c} />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-
-        <div className={`${adminCards.forTable} ${adminTable.scroll}`}>
-          <table className={adminTable.table}>
-            <thead className={adminTable.thead}>
-              <tr>
-                <th>แคมเปญ</th>
-                <th>สถานะ</th>
-                <th>เริ่ม</th>
-                <th>ปิด</th>
-                <th>สต็อก/ชิ้น</th>
-                <th>หน้าขาย</th>
-                <th>คิวสด</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((c) => {
-                const phase = phaseOf(c, now);
-                return (
-                  <tr key={c.id} className={adminTable.row}>
-                    <td className={adminTable.cell}>
-                      <span className="font-semibold text-brand-ink">{c.title}</span>
-                      <span className="mt-0.5 block text-[12px] text-slate-400">
-                        {c.kind === "special" ? "หน้าแบบมีแบนเนอร์" : "หน้าขายแบบเรียบ"} · {c.productSlugs.length} สินค้า
-                      </span>
-                    </td>
-                    <td className={adminTable.cell}>
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${phase.tone}`}>
-                        {phase.label}
-                      </span>
-                    </td>
-                    <td className={adminTable.muted}>{dateTime(c.startsAt)}</td>
-                    <td className={adminTable.muted}>{c.endsAt ? dateTime(c.endsAt) : "จนกว่าของจะหมด"}</td>
-                    <td className={adminTable.mono}>{c.stockPerProduct}</td>
-                    <td className={adminTable.cell}>
+                      {phase.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[12px] text-slate-400">
+                    {c.kind === "special"
+                      ? "หน้าแบบมีแบนเนอร์"
+                      : "หน้าขายแบบเรียบ"}{" "}
+                    · {c.productSlugs.length} สินค้า · สต็อก {c.stockPerProduct}
+                  </p>
+                  <p className="mt-1 text-[12px] text-slate-500">
+                    {dateTime(c.startsAt)} –{" "}
+                    {c.endsAt ? dateTime(c.endsAt) : "จนกว่าของจะหมด"}
+                  </p>
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <span className="flex flex-wrap items-center gap-3">
                       <Link
                         href={`/flash-sale/${c.id}`}
                         target="_blank"
-                        className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand-800 hover:underline"
+                        className="inline-flex min-h-9 items-center gap-1 text-[12px] font-semibold text-brand-800 hover:underline"
                       >
                         เปิดดู <ArrowUpRight size={13} aria-hidden />
                       </Link>
-                    </td>
-                    {/* The number worth staring at while a sale runs, one
-                        click from the row it belongs to. */}
-                    <td className={adminTable.cell}>
                       <Link
                         href={`/admin/flash-sale/${c.id}`}
-                        className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-brand-800 hover:underline"
+                        className="inline-flex min-h-9 items-center gap-1.5 text-[12px] font-semibold text-brand-800 hover:underline"
                       >
                         <Radio size={13} aria-hidden /> มอนิเตอร์
                       </Link>
-                    </td>
-                    <td className={`${adminTable.cell} text-right`}>
-                      <RowMenu c={c} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </span>
+                    <RowMenu c={c} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className={`${adminCards.forTable} ${adminTable.scroll}`}>
+            <table className={adminTable.table}>
+              <thead className={adminTable.thead}>
+                <tr>
+                  <th>แคมเปญ</th>
+                  <th>สถานะ</th>
+                  <th>เริ่ม</th>
+                  <th>ปิด</th>
+                  <th>สต็อก/ชิ้น</th>
+                  <th>หน้าขาย</th>
+                  <th>คิวสด</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((c) => {
+                  const phase = phaseOf(c, now);
+                  return (
+                    <tr key={c.id} className={adminTable.row}>
+                      <td className={adminTable.cell}>
+                        <span className="font-semibold text-brand-ink">
+                          {c.title}
+                        </span>
+                        <span className="mt-0.5 block text-[12px] text-slate-400">
+                          {c.kind === "special"
+                            ? "หน้าแบบมีแบนเนอร์"
+                            : "หน้าขายแบบเรียบ"}{" "}
+                          · {c.productSlugs.length} สินค้า
+                        </span>
+                      </td>
+                      <td className={adminTable.cell}>
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${phase.tone}`}
+                        >
+                          {phase.label}
+                        </span>
+                      </td>
+                      <td className={adminTable.muted}>
+                        {dateTime(c.startsAt)}
+                      </td>
+                      <td className={adminTable.muted}>
+                        {c.endsAt ? dateTime(c.endsAt) : "จนกว่าของจะหมด"}
+                      </td>
+                      <td className={adminTable.mono}>{c.stockPerProduct}</td>
+                      <td className={adminTable.cell}>
+                        <Link
+                          href={`/flash-sale/${c.id}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand-800 hover:underline"
+                        >
+                          เปิดดู <ArrowUpRight size={13} aria-hidden />
+                        </Link>
+                      </td>
+                      {/* The number worth staring at while a sale runs, one
+                        click from the row it belongs to. */}
+                      <td className={adminTable.cell}>
+                        <Link
+                          href={`/admin/flash-sale/${c.id}`}
+                          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-brand-800 hover:underline"
+                        >
+                          <Radio size={13} aria-hidden /> มอนิเตอร์
+                        </Link>
+                      </td>
+                      <td className={`${adminTable.cell} text-right`}>
+                        <RowMenu c={c} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
-
     </Panel>
   );
 }

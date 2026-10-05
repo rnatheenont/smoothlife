@@ -1,17 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+} from "react";
 import { useRouter } from "next/navigation";
 import { CornerDownLeft, Search } from "lucide-react";
 
-export type CommandItem = { href: string; label: string; group: string; icon: ComponentType<{ size?: number; className?: string }> };
+export type CommandItem = {
+  href: string;
+  label: string;
+  group: string;
+  icon: ComponentType<{ size?: number; className?: string }>;
+};
 
 /**
  * ⌘K / Ctrl+K: type a couple of letters, hit Enter, land on the page. The
  * console has fourteen screens and the people using it are on it all day —
  * reaching for the mouse to read a menu is the slow path.
  */
-export default function CommandPalette({ items, openOnMount = false }: { items: CommandItem[]; openOnMount?: boolean }) {
+export default function CommandPalette({
+  items,
+  openOnMount = false,
+}: {
+  items: CommandItem[];
+  openOnMount?: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(openOnMount);
   const [query, setQuery] = useState("");
@@ -40,7 +57,9 @@ export default function CommandPalette({ items, openOnMount = false }: { items: 
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q ? items.filter((i) => `${i.label} ${i.group}`.toLowerCase().includes(q)) : items;
+    return q
+      ? items.filter((i) => `${i.label} ${i.group}`.toLowerCase().includes(q))
+      : items;
   }, [items, query]);
 
   const go = (href: string) => {
@@ -81,13 +100,16 @@ export default function CommandPalette({ items, openOnMount = false }: { items: 
                 e.preventDefault();
                 setCursor((c) => Math.max(c - 1, 0));
               }
-              if (e.key === "Enter" && matches[cursor]) go(matches[cursor].href);
+              if (e.key === "Enter" && matches[cursor])
+                go(matches[cursor].href);
             }}
             placeholder="ไปที่หน้า… (พิมพ์ชื่อเมนู)"
             aria-label="ค้นหาเมนูหลังบ้าน"
             className="min-h-12 w-full bg-transparent text-sm text-brand-ink outline-none"
           />
-          <kbd className="hidden shrink-0 rounded border border-surface-line px-1.5 py-0.5 text-[10px] text-slate-400 sm:block">esc</kbd>
+          <kbd className="hidden shrink-0 rounded border border-surface-line px-1.5 py-0.5 text-[10px] text-slate-400 sm:block">
+            esc
+          </kbd>
         </div>
 
         <ul className="max-h-80 overflow-y-auto p-2">
@@ -100,18 +122,32 @@ export default function CommandPalette({ items, openOnMount = false }: { items: 
                   onMouseEnter={() => setCursor(i)}
                   onClick={() => go(item.href)}
                   className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm ${
-                    i === cursor ? "bg-brand-gradient-soft text-brand-800" : "text-slate-600"
+                    i === cursor
+                      ? "bg-brand-gradient-soft text-brand-800"
+                      : "text-slate-600"
                   }`}
                 >
                   <Icon size={15} className="shrink-0" />
                   <span className="flex-1 font-semibold">{item.label}</span>
-                  <span className="text-[11px] text-slate-400">{item.group}</span>
-                  {i === cursor && <CornerDownLeft size={13} className="text-slate-400" aria-hidden />}
+                  <span className="text-[11px] text-slate-400">
+                    {item.group}
+                  </span>
+                  {i === cursor && (
+                    <CornerDownLeft
+                      size={13}
+                      className="text-slate-400"
+                      aria-hidden
+                    />
+                  )}
                 </button>
               </li>
             );
           })}
-          {matches.length === 0 && <li className="px-3 py-6 text-center text-sm text-slate-400">ไม่พบเมนูที่ค้นหา</li>}
+          {matches.length === 0 && (
+            <li className="px-3 py-6 text-center text-sm text-slate-400">
+              ไม่พบเมนูที่ค้นหา
+            </li>
+          )}
         </ul>
       </div>
     </div>

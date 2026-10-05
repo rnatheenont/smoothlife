@@ -3,9 +3,26 @@
 import { createContext, useContext } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
-  LayoutDashboard, Inbox, MessageSquareText, Truck, Users, Receipt, Award, CreditCard,
-  Zap, Gift, SlidersHorizontal, Repeat, BookOpen, Search, FileText, TrendingUp,
-  MessageCircle, Palette, ScrollText, UserCog,
+  LayoutDashboard,
+  Inbox,
+  MessageSquareText,
+  Truck,
+  Users,
+  Receipt,
+  Award,
+  CreditCard,
+  Zap,
+  Gift,
+  SlidersHorizontal,
+  Repeat,
+  BookOpen,
+  Search,
+  FileText,
+  TrendingUp,
+  MessageCircle,
+  Palette,
+  ScrollText,
+  UserCog,
 } from "lucide-react";
 
 // The console's map of itself, in one place.
@@ -53,60 +70,187 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "",
     tone: "brand",
-    items: [{ href: "/admin", label: "ภาพรวม", icon: LayoutDashboard, permission: null }],
+    items: [
+      {
+        href: "/admin",
+        label: "ภาพรวม",
+        icon: LayoutDashboard,
+        permission: null,
+      },
+    ],
   },
   {
     // Queues: things that arrive on their own and wait for a person.
     label: "งานประจำวัน",
     tone: "brand",
     items: [
-      { href: "/admin/inbox", label: "กล่องข้อความ", icon: Inbox, desc: "ตอบแชทลูกค้าทุกช่องทางจากที่เดียว", permission: "inbox.manage" },
-      { href: "/admin/reviews", label: "รีวิวรออนุมัติ", icon: MessageSquareText, desc: "ตรวจรีวิวก่อนขึ้นหน้าเว็บ", permission: "reviews.manage" },
-      { href: "/admin/tracking-sync", label: "เลขพัสดุจากคลัง", icon: Truck, desc: "ดึงเลขพัสดุจาก soko เข้า Shopify", permission: "tracking_sync.manage" },
+      {
+        href: "/admin/inbox",
+        label: "กล่องข้อความ",
+        icon: Inbox,
+        desc: "ตอบแชทลูกค้าทุกช่องทางจากที่เดียว",
+        permission: "inbox.manage",
+      },
+      {
+        href: "/admin/reviews",
+        label: "รีวิวรออนุมัติ",
+        icon: MessageSquareText,
+        desc: "ตรวจรีวิวก่อนขึ้นหน้าเว็บ",
+        permission: "reviews.manage",
+      },
+      {
+        href: "/admin/tracking-sync",
+        label: "เลขพัสดุจากคลัง",
+        icon: Truck,
+        desc: "ดึงเลขพัสดุจาก soko เข้า Shopify",
+        permission: "tracking_sync.manage",
+      },
     ],
   },
   {
     label: "ลูกค้า & การเงิน",
     tone: "sky",
     items: [
-      { href: "/admin/customers", label: "ลูกค้า & บัญชีผู้ใช้", icon: Users, desc: "ค้นหาลูกค้าและผูกบัญชี LINE", permission: "customers.manage" },
-      { href: "/admin/checkout-transactions", label: "การชำระเงิน & คืนเงิน", icon: Receipt, desc: "ตรวจการชำระเงินและคืนเงิน", permission: "checkout.view" },
-      { href: "/admin/points", label: "แต้มสะสม & ของรางวัล", icon: Award, desc: "ปรับแต้มลูกค้าและตั้งของรางวัล", permission: "points.view" },
-      { href: "/admin/gift-cards", label: "บัตรของขวัญ", icon: CreditCard, desc: "ออกและตรวจสอบบัตรของขวัญ", permission: "gift_cards.manage" },
+      {
+        href: "/admin/customers",
+        label: "ลูกค้า & บัญชีผู้ใช้",
+        icon: Users,
+        desc: "ค้นหาลูกค้าและผูกบัญชี LINE",
+        permission: "customers.manage",
+      },
+      {
+        href: "/admin/checkout-transactions",
+        label: "การชำระเงิน & คืนเงิน",
+        icon: Receipt,
+        desc: "ตรวจการชำระเงินและคืนเงิน",
+        permission: "checkout.view",
+      },
+      {
+        href: "/admin/points",
+        label: "แต้มสะสม & ของรางวัล",
+        icon: Award,
+        desc: "ปรับแต้มลูกค้าและตั้งของรางวัล",
+        permission: "points.view",
+      },
+      {
+        href: "/admin/gift-cards",
+        label: "บัตรของขวัญ",
+        icon: CreditCard,
+        desc: "ออกและตรวจสอบบัตรของขวัญ",
+        permission: "gift_cards.manage",
+      },
     ],
   },
   {
     label: "การขาย & โปรโมชั่น",
     tone: "amber",
     items: [
-      { href: "/admin/flash-sale", label: "Events", icon: Zap, desc: "ตั้งแคมเปญ คิวจริง และหน้าขายแบบพิเศษ", permission: "flash_sale.view" },
-      { href: "/admin/campaigns", label: CAMPAIGNS_LABEL, icon: Receipt, desc: "ตรวจใบเสร็จและผู้ร่วมแคมเปญ", permission: "receipts.view" },
-      { href: "/admin/free-gifts", label: "ของแถม & โปรโมชั่น", icon: Gift, desc: "ของแถมและแคมเปญหน้าร้าน", permission: "free_gifts.manage" },
-      { href: "/admin/free-gifts/widgets", label: "กล่องโปรโมชั่นหน้าเว็บ", icon: SlidersHorizontal, desc: "เปิด/ปิดกล่องโปรโมชั่นบนหน้าร้าน", permission: "free_gifts.manage" },
-      { href: "/admin/subscription-products", label: "สินค้าสมัครรับประจำ", icon: Repeat, desc: "เลือกสินค้าที่สมัครรับประจำได้", permission: "subscription_products.manage" },
+      {
+        href: "/admin/flash-sale",
+        label: "Events",
+        icon: Zap,
+        desc: "ตั้งแคมเปญ คิวจริง และหน้าขายแบบพิเศษ",
+        permission: "flash_sale.view",
+      },
+      {
+        href: "/admin/campaigns",
+        label: CAMPAIGNS_LABEL,
+        icon: Receipt,
+        desc: "ตรวจใบเสร็จและผู้ร่วมแคมเปญ",
+        permission: "receipts.view",
+      },
+      {
+        href: "/admin/free-gifts",
+        label: "ของแถม & โปรโมชั่น",
+        icon: Gift,
+        desc: "ของแถมและแคมเปญหน้าร้าน",
+        permission: "free_gifts.manage",
+      },
+      {
+        href: "/admin/free-gifts/widgets",
+        label: "กล่องโปรโมชั่นหน้าเว็บ",
+        icon: SlidersHorizontal,
+        desc: "เปิด/ปิดกล่องโปรโมชั่นบนหน้าร้าน",
+        permission: "free_gifts.manage",
+      },
+      {
+        href: "/admin/subscription-products",
+        label: "สินค้าสมัครรับประจำ",
+        icon: Repeat,
+        desc: "เลือกสินค้าที่สมัครรับประจำได้",
+        permission: "subscription_products.manage",
+      },
     ],
   },
   {
     label: "เนื้อหา & การค้นหา",
     tone: "violet",
     items: [
-      { href: "/admin/knowledge-base", label: "ฐานความรู้ AI", icon: BookOpen, desc: "คำตอบที่อนุมัติแล้วให้ AI ใช้ตอบลูกค้า", permission: "kb.draft" },
-      { href: "/admin/seo", label: "SEO หน้าเว็บ", icon: Search, desc: "ชื่อหน้าและคำโปรยที่ขึ้นบน Google", permission: "seo.manage" },
-      { href: "/admin/products/content", label: "เนื้อหาสินค้า", icon: FileText, desc: "รายละเอียดสินค้าแบบอิสระ 2 ภาษา", permission: "product_content.view" },
-      { href: "/admin/brand-insights", label: "เสียงลูกค้า & คำค้นหา", icon: TrendingUp, desc: "สิ่งที่ลูกค้าถามและค้นหาบ่อย", permission: "brand_signals.view" },
-      { href: "/admin/line-rich-menu", label: "เมนู LINE OA", icon: MessageCircle, desc: "เมนูด้านล่างในแชท LINE ของร้าน", permission: "line_rich_menu.manage" },
+      {
+        href: "/admin/knowledge-base",
+        label: "ฐานความรู้ AI",
+        icon: BookOpen,
+        desc: "คำตอบที่อนุมัติแล้วให้ AI ใช้ตอบลูกค้า",
+        permission: "kb.draft",
+      },
+      {
+        href: "/admin/seo",
+        label: "SEO หน้าเว็บ",
+        icon: Search,
+        desc: "ชื่อหน้าและคำโปรยที่ขึ้นบน Google",
+        permission: "seo.manage",
+      },
+      {
+        href: "/admin/products/content",
+        label: "เนื้อหาสินค้า",
+        icon: FileText,
+        desc: "รายละเอียดสินค้าแบบอิสระ 2 ภาษา",
+        permission: "product_content.view",
+      },
+      {
+        href: "/admin/brand-insights",
+        label: "เสียงลูกค้า & คำค้นหา",
+        icon: TrendingUp,
+        desc: "สิ่งที่ลูกค้าถามและค้นหาบ่อย",
+        permission: "brand_signals.view",
+      },
+      {
+        href: "/admin/line-rich-menu",
+        label: "เมนู LINE OA",
+        icon: MessageCircle,
+        desc: "เมนูด้านล่างในแชท LINE ของร้าน",
+        permission: "line_rich_menu.manage",
+      },
     ],
   },
   {
     label: "ตั้งค่าระบบ",
     tone: "slate",
     items: [
-      { href: "/admin/design", label: "ระบบดีไซน์", icon: Palette, desc: "สี ตัวอักษร และส่วนประกอบของหลังบ้าน", permission: null },
+      {
+        href: "/admin/design",
+        label: "ระบบดีไซน์",
+        icon: Palette,
+        desc: "สี ตัวอักษร และส่วนประกอบของหลังบ้าน",
+        permission: null,
+      },
       // Owner only, like the user list: the log is every admin's work, and
       // the page refuses anyone else on its own — this just stops the other
       // roles walking into a wall.
-      { href: "/admin/audit", label: "บันทึกการใช้งาน", icon: ScrollText, desc: "ใครทำอะไรไว้บ้างในหลังบ้าน", ownerOnly: true },
-      { href: "/admin/users", label: "ผู้ใช้ & สิทธิ์", icon: UserCog, desc: "เพิ่มทีมงานและกำหนดสิทธิ์", ownerOnly: true },
+      {
+        href: "/admin/audit",
+        label: "บันทึกการใช้งาน",
+        icon: ScrollText,
+        desc: "ใครทำอะไรไว้บ้างในหลังบ้าน",
+        ownerOnly: true,
+      },
+      {
+        href: "/admin/users",
+        label: "ผู้ใช้ & สิทธิ์",
+        icon: UserCog,
+        desc: "เพิ่มทีมงานและกำหนดสิทธิ์",
+        ownerOnly: true,
+      },
     ],
   },
 ];
@@ -125,12 +269,18 @@ export function isAllowed(
 ) {
   if (item.ownerOnly) return !access.role || access.role === "owner";
   if (!item.permission) return true;
-  return access.permissions.includes("*") || access.permissions.includes(item.permission);
+  return (
+    access.permissions.includes("*") ||
+    access.permissions.includes(item.permission)
+  );
 }
 
 /** What the signed-in admin may do, so screens inside the console filter the
  *  same way the sidebar does without each fetching /api/admin/me again. */
-const AdminAccessContext = createContext<{ permissions: string[]; role: string | null }>({
+const AdminAccessContext = createContext<{
+  permissions: string[];
+  role: string | null;
+}>({
   // "*" until the layout answers, matching the sidebar: a flash of too few
   // links reads as missing features, and the gate refuses either way.
   permissions: ["*"],

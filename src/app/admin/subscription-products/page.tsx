@@ -7,7 +7,6 @@ import {
   Search,
   PackagePlus,
   Package,
-  Loader2,
   Plus,
   X,
   ChevronLeft,
@@ -20,7 +19,7 @@ import { PageHeader } from "@/components/admin/layout-kit";
 import SubscriptionSets from "@/components/admin/SubscriptionSets";
 import { products } from "@/data/products";
 import AdminSelect from "@/components/admin/AdminSelect";
-import { Input } from "@heroui/react";
+import { Input, Spinner } from "@heroui/react";
 
 type ProductRow = {
   slug: string;
@@ -211,12 +210,10 @@ export default function AdminSubscriptionProductsPage() {
 
   useAdminAction({
     label: "รีเฟรชรายการ",
-    icon: (
-      <RefreshCw
-        size={15}
-        className={loading ? "animate-spin" : ""}
-        aria-hidden
-      />
+    icon: loading ? (
+      <Spinner size="sm" color="current" />
+    ) : (
+      <RefreshCw size={15} aria-hidden />
     ),
     onClick: () => load(),
     disabled: loading,
@@ -388,7 +385,7 @@ export default function AdminSubscriptionProductsPage() {
                       }`}
                     >
                       {busySlug === r.slug ? (
-                        <Loader2 size={13} className="animate-spin" />
+                        <Spinner size="sm" color="current" />
                       ) : on ? (
                         <X size={13} />
                       ) : (

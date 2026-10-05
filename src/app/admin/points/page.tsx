@@ -18,7 +18,13 @@ type Tier = {
   active: boolean;
 };
 
-type Customer = { id: string; displayName: string | null; phone: string | null; email: string | null; balance: number };
+type Customer = {
+  id: string;
+  displayName: string | null;
+  phone: string | null;
+  email: string | null;
+  balance: number;
+};
 type LedgerEntry = {
   id: string;
   delta: number;
@@ -136,7 +142,9 @@ export default function AdminPointsPage() {
         discountType: tierForm.discountType,
         discountValue: Number(tierForm.discountValue),
       };
-      const url = editingTierId ? `/api/admin/points/tiers/${editingTierId}` : "/api/admin/points/tiers";
+      const url = editingTierId
+        ? `/api/admin/points/tiers/${editingTierId}`
+        : "/api/admin/points/tiers";
       const res = await fetch(url, {
         method: editingTierId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -186,7 +194,9 @@ export default function AdminPointsPage() {
     setSearched(true);
     setSelected(null);
     try {
-      const res = await fetch(`/api/admin/points/customers?q=${encodeURIComponent(query.trim())}`);
+      const res = await fetch(
+        `/api/admin/points/customers?q=${encodeURIComponent(query.trim())}`,
+      );
       const data = await res.json();
       setResults(data.ok ? data.customers : []);
     } finally {
@@ -218,7 +228,11 @@ export default function AdminPointsPage() {
       const res = await fetch("/api/admin/points/adjust", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: selected.id, delta, note: adjustNote || undefined }),
+        body: JSON.stringify({
+          userId: selected.id,
+          delta,
+          note: adjustNote || undefined,
+        }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -226,7 +240,11 @@ export default function AdminPointsPage() {
         return;
       }
       setSelected({ ...selected, balance: data.balance });
-      setResults((prev) => prev.map((c) => (c.id === selected.id ? { ...c, balance: data.balance } : c)));
+      setResults((prev) =>
+        prev.map((c) =>
+          c.id === selected.id ? { ...c, balance: data.balance } : c,
+        ),
+      );
       setAdjustDelta("");
       setAdjustNote("");
       selectCustomer({ ...selected, balance: data.balance });
@@ -255,7 +273,9 @@ export default function AdminPointsPage() {
               under a second name here was two buttons for one job. */}
           <SectionTitle className="mb-3">รายการแลกแต้ม</SectionTitle>
           {tiers.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-6">ยังไม่มีรายการแลกแต้ม</p>
+            <p className="text-sm text-slate-400 text-center py-6">
+              ยังไม่มีรายการแลกแต้ม
+            </p>
           ) : (
             <div className="space-y-2.5">
               {tiers.map((t) => (
@@ -264,7 +284,9 @@ export default function AdminPointsPage() {
                   className="flex items-center gap-3 rounded-xl2 border border-slate-100 bg-white p-3.5 shadow-card"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-brand-ink">{t.label_th}</p>
+                    <p className="text-sm font-bold text-brand-ink">
+                      {t.label_th}
+                    </p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
                       {t.points_cost.toLocaleString()} แต้ม →{" "}
                       {t.discount_type === "percent"
@@ -311,13 +333,19 @@ export default function AdminPointsPage() {
               onChange={setQuery}
               placeholder="ค้นหาด้วยชื่อ, เบอร์โทร, หรืออีเมล"
             />
-            <Button className="gap-1 px-4 text-xs" type="submit" isDisabled={searching}>
+            <Button
+              className="gap-1 px-4 text-xs"
+              type="submit"
+              isDisabled={searching}
+            >
               <Search size={13} /> ค้นหา
             </Button>
           </form>
 
           {searched && !searching && results.length === 0 && (
-            <p className="text-sm text-slate-400 text-center py-4">ไม่พบลูกค้าที่ตรงกับคำค้นหา</p>
+            <p className="text-sm text-slate-400 text-center py-4">
+              ไม่พบลูกค้าที่ตรงกับคำค้นหา
+            </p>
           )}
 
           {results.length > 0 && !selected && (
@@ -329,12 +357,16 @@ export default function AdminPointsPage() {
                   className="flex w-full items-center justify-between rounded-xl2 border border-slate-100 bg-white p-3 text-left transition-colors hover:border-brand-teal"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-brand-ink truncate">{c.displayName || "ไม่ระบุชื่อ"}</p>
+                    <p className="text-sm font-semibold text-brand-ink truncate">
+                      {c.displayName || "ไม่ระบุชื่อ"}
+                    </p>
                     <p className="text-[11px] text-slate-400">
                       {[c.phone, c.email].filter(Boolean).join(" · ") || "-"}
                     </p>
                   </div>
-                  <p className="text-sm font-bold text-brand-800 shrink-0 ml-3">{c.balance.toLocaleString()} แต้ม</p>
+                  <p className="text-sm font-bold text-brand-800 shrink-0 ml-3">
+                    {c.balance.toLocaleString()} แต้ม
+                  </p>
                 </button>
               ))}
             </div>
@@ -344,9 +376,13 @@ export default function AdminPointsPage() {
             <div className="rounded-xl2 border border-slate-100 bg-white p-4 shadow-card">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="text-sm font-bold text-brand-ink">{selected.displayName || "ไม่ระบุชื่อ"}</p>
+                  <p className="text-sm font-bold text-brand-ink">
+                    {selected.displayName || "ไม่ระบุชื่อ"}
+                  </p>
                   <p className="text-[11px] text-slate-400">
-                    {[selected.phone, selected.email].filter(Boolean).join(" · ") || "-"}
+                    {[selected.phone, selected.email]
+                      .filter(Boolean)
+                      .join(" · ") || "-"}
                   </p>
                 </div>
                 <button onClick={() => setSelected(null)} aria-label="ปิด">
@@ -357,7 +393,10 @@ export default function AdminPointsPage() {
                 {selected.balance.toLocaleString()} แต้ม
               </p>
 
-              <form onSubmit={submitAdjust} className="flex flex-col sm:flex-row gap-2 mb-4">
+              <form
+                onSubmit={submitAdjust}
+                className="flex flex-col sm:flex-row gap-2 mb-4"
+              >
                 <AdminField
                   label="จำนวนแต้ม"
                   type="number"
@@ -374,21 +413,35 @@ export default function AdminPointsPage() {
                   placeholder="หมายเหตุ (ไม่บังคับ)"
                   className="flex-1"
                 />
-                <Button size="sm" className="shrink-0" type="submit" isDisabled={adjusting}>
+                <Button
+                  size="sm"
+                  className="shrink-0"
+                  type="submit"
+                  isDisabled={adjusting}
+                >
                   {adjusting ? "กำลังบันทึก…" : "ปรับแต้ม"}
                 </Button>
               </form>
-              {adjustError && <p className="text-xs text-rose-500 mb-3">{adjustError}</p>}
+              {adjustError && (
+                <p className="text-xs text-rose-500 mb-3">{adjustError}</p>
+              )}
 
-              <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">ประวัติล่าสุด</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">
+                ประวัติล่าสุด
+              </p>
               {ledger.length === 0 ? (
                 <p className="text-xs text-slate-400">ยังไม่มีประวัติ</p>
               ) : (
                 <div className="space-y-1.5 max-h-64 overflow-y-auto">
                   {ledger.map((entry) => (
-                    <div key={entry.id} className="flex items-center justify-between text-xs">
+                    <div
+                      key={entry.id}
+                      className="flex items-center justify-between text-xs"
+                    >
                       <div className="min-w-0">
-                        <p className="text-slate-600">{describeReason(entry.reason)}</p>
+                        <p className="text-slate-600">
+                          {describeReason(entry.reason)}
+                        </p>
                         <p className="text-[10px] text-slate-400">
                           {new Date(entry.created_at).toLocaleString("th-TH")}
                         </p>
@@ -446,7 +499,9 @@ export default function AdminPointsPage() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setTierForm({ ...tierForm, discountType: "percent" })}
+                  onClick={() =>
+                    setTierForm({ ...tierForm, discountType: "percent" })
+                  }
                   className={`rounded-lg border-2 py-2 text-xs font-semibold ${
                     tierForm.discountType === "percent"
                       ? "border-brand-teal bg-brand-gradient-soft text-brand-800"
@@ -457,7 +512,9 @@ export default function AdminPointsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setTierForm({ ...tierForm, discountType: "amount" })}
+                  onClick={() =>
+                    setTierForm({ ...tierForm, discountType: "amount" })
+                  }
                   className={`rounded-lg border-2 py-2 text-xs font-semibold ${
                     tierForm.discountType === "amount"
                       ? "border-brand-teal bg-brand-gradient-soft text-brand-800"
@@ -473,10 +530,14 @@ export default function AdminPointsPage() {
                 inputMode="numeric"
                 value={tierForm.discountValue}
                 onChange={(v) => setTierForm({ ...tierForm, discountValue: v })}
-                placeholder={tierForm.discountType === "percent" ? "เช่น 10" : "เช่น 50"}
+                placeholder={
+                  tierForm.discountType === "percent" ? "เช่น 10" : "เช่น 50"
+                }
                 isRequired
               />
-              {tierFormError && <p className="text-xs text-rose-500">{tierFormError}</p>}
+              {tierFormError && (
+                <p className="text-xs text-rose-500">{tierFormError}</p>
+              )}
               <Button fullWidth type="submit" isDisabled={tierSubmitting}>
                 {tierSubmitting ? "กำลังบันทึก…" : "บันทึก"}
               </Button>

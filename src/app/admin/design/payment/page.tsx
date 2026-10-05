@@ -85,7 +85,9 @@ export default function PaymentPreviewPage() {
               onClick={() => setOpen(demo)}
               className="flex w-full flex-col items-start gap-1 rounded-xl2 bg-white p-4 text-left ring-1 ring-surface-line transition hover:ring-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
             >
-              <span className="text-sm font-semibold text-brand-ink">{demo.label}</span>
+              <span className="text-sm font-semibold text-brand-ink">
+                {demo.label}
+              </span>
               <span className="text-xs text-slate-500">{demo.blurb}</span>
             </button>
           </li>
@@ -104,7 +106,10 @@ export default function PaymentPreviewPage() {
           summary={{
             total: 1590,
             items: [
-              { name: "Dentiste' The Iconic Smile — KENG x NAMPING EDITION", quantity: 1 },
+              {
+                name: "Dentiste' The Iconic Smile — KENG x NAMPING EDITION",
+                quantity: 1,
+              },
               { name: "Smooth E Baby Face Foam 1.5 oz", quantity: 2 },
             ],
           }}

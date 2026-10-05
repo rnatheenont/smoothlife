@@ -2,13 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import NextImage from "next/image";
-import { Alert, Button, Chip, Input, ToggleButton, ToggleButtonGroup } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Chip,
+  Input,
+  Spinner,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@heroui/react";
 import {
   ChevronLeft,
   ChevronRight,
   ImagePlus,
   Link2,
-  Loader2,
   RefreshCw,
   Star,
   Video,
@@ -74,7 +81,10 @@ export default function ProductMediaCard({ variantId, product }: Props) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [progress, setProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [overZone, setOverZone] = useState(false);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
   const [videoProgress, setVideoProgress] = useState<string | null>(null);
@@ -131,7 +141,11 @@ export default function ProductMediaCard({ variantId, product }: Props) {
    * Showing the new order and then failing silently would leave the card
    * describing a shop that does not look like that.
    */
-  type State = { useCustom: boolean; images: UploadedImage[]; videos: UploadedImage[] };
+  type State = {
+    useCustom: boolean;
+    images: UploadedImage[];
+    videos: UploadedImage[];
+  };
 
   const apply = useCallback(
     (change: (cur: State) => State) => {
@@ -163,7 +177,9 @@ export default function ProductMediaCard({ variantId, product }: Props) {
           setUseCustom(prev.useCustom);
           setImages(prev.images);
           setVideos(prev.videos);
-          setError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ กรุณาลองใหม่");
+          setError(
+            err instanceof Error ? err.message : "บันทึกไม่สำเร็จ กรุณาลองใหม่",
+          );
         } finally {
           pending.current -= 1;
           if (pending.current === 0) setSaving(false);
@@ -204,7 +220,8 @@ export default function ProductMediaCard({ variantId, product }: Props) {
           .join(", ")})`,
       );
     }
-    if (overflow > 0) skipped.push(`ข้าม ${overflow} รูป เพราะเกิน ${MAX_IMAGES} รูป`);
+    if (overflow > 0)
+      skipped.push(`ข้าม ${overflow} รูป เพราะเกิน ${MAX_IMAGES} รูป`);
     if (queue.length === 0) {
       setError(skipped.join(" · ") || "ไม่พบรูปในไฟล์ที่เลือก");
       return;
@@ -220,7 +237,8 @@ export default function ProductMediaCard({ variantId, product }: Props) {
         form.append("image", small);
         const res = await fetch(endpoint, { method: "POST", body: form });
         const data = await res.json().catch(() => null);
-        if (data?.ok && data.url) added.push({ url: data.url, path: data.path });
+        if (data?.ok && data.url)
+          added.push({ url: data.url, path: data.path });
         else failed.push(file.name);
       } catch {
         failed.push(file.name);
@@ -230,7 +248,10 @@ export default function ProductMediaCard({ variantId, product }: Props) {
     setProgress(null);
 
     const notes = [...skipped];
-    if (failed.length > 0) notes.push(`อัปโหลดไม่สำเร็จ ${failed.length} รูป (${failed.join(", ")})`);
+    if (failed.length > 0)
+      notes.push(
+        `อัปโหลดไม่สำเร็จ ${failed.length} รูป (${failed.join(", ")})`,
+      );
     if (added.length > 0) {
       await apply((cur) => {
         // Duplicate URLs would collide as React keys in the shop's gallery,
@@ -238,10 +259,10 @@ export default function ProductMediaCard({ variantId, product }: Props) {
         const existing = new Set(cur.images.map((i) => i.url));
         return {
           ...cur,
-          images: [...cur.images, ...added.filter((i) => !existing.has(i.url))].slice(
-            0,
-            MAX_IMAGES,
-          ),
+          images: [
+            ...cur.images,
+            ...added.filter((i) => !existing.has(i.url)),
+          ].slice(0, MAX_IMAGES),
         };
       });
     }
@@ -292,7 +313,10 @@ export default function ProductMediaCard({ variantId, product }: Props) {
       }
       await apply((cur) => ({
         ...cur,
-        videos: [...cur.videos, { url: ticket.url, path: ticket.path }].slice(0, MAX_VIDEOS),
+        videos: [...cur.videos, { url: ticket.url, path: ticket.path }].slice(
+          0,
+          MAX_VIDEOS,
+        ),
       }));
     } catch {
       setError("อัปโหลดวิดีโอไม่สำเร็จ กรุณาลองใหม่");
@@ -313,7 +337,9 @@ export default function ProductMediaCard({ variantId, product }: Props) {
       return;
     }
     if (!parseVideoUrl(url)) {
-      setError("ลิงก์นี้เล่นไม่ได้ — รองรับ YouTube, Vimeo, Facebook, TikTok และ Instagram");
+      setError(
+        "ลิงก์นี้เล่นไม่ได้ — รองรับ YouTube, Vimeo, Facebook, TikTok และ Instagram",
+      );
       return;
     }
     if (latest.current.videos.some((v) => v.url === url)) {
@@ -335,12 +361,21 @@ export default function ProductMediaCard({ variantId, product }: Props) {
   }
 
   function removeVideo(i: number) {
-    void apply((cur) => ({ ...cur, videos: cur.videos.filter((_, idx) => idx !== i) }));
+    void apply((cur) => ({
+      ...cur,
+      videos: cur.videos.filter((_, idx) => idx !== i),
+    }));
   }
 
   function move(from: number, to: number) {
     void apply((cur) => {
-      if (from === to || from < 0 || to < 0 || from >= cur.images.length || to >= cur.images.length)
+      if (
+        from === to ||
+        from < 0 ||
+        to < 0 ||
+        from >= cur.images.length ||
+        to >= cur.images.length
+      )
         return cur;
       const next = [...cur.images];
       const [item] = next.splice(from, 1);
@@ -350,7 +385,10 @@ export default function ProductMediaCard({ variantId, product }: Props) {
   }
 
   function remove(i: number) {
-    void apply((cur) => ({ ...cur, images: cur.images.filter((_, idx) => idx !== i) }));
+    void apply((cur) => ({
+      ...cur,
+      images: cur.images.filter((_, idx) => idx !== i),
+    }));
   }
 
   const shopify = resolveProductImages(product, null).images;
@@ -368,9 +406,14 @@ export default function ProductMediaCard({ variantId, product }: Props) {
   return (
     <section className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-bold text-brand-ink">รูปภาพและวิดีโอสินค้า</h2>
+        <h2 className="text-sm font-bold text-brand-ink">
+          รูปภาพและวิดีโอสินค้า
+        </h2>
         {!loading && (
-          <Chip size="sm" color={live.source === "custom" ? "success" : "default"}>
+          <Chip
+            size="sm"
+            color={live.source === "custom" ? "success" : "default"}
+          >
             ตอนนี้เว็บแสดง:{" "}
             {live.source === "custom"
               ? `รูปของเรา (${live.images.length} รูป)`
@@ -393,16 +436,14 @@ export default function ProductMediaCard({ variantId, product }: Props) {
               selectedKeys={[useCustom ? "custom" : "shopify"]}
               onSelectionChange={(keys) => {
                 const next = [...keys][0] === "custom";
-                if (next !== latest.current.useCustom) void apply((cur) => ({ ...cur, useCustom: next }));
+                if (next !== latest.current.useCustom)
+                  void apply((cur) => ({ ...cur, useCustom: next }));
               }}
             >
               <ToggleButton id="shopify">ใช้รูปจาก Shopify</ToggleButton>
               <ToggleButton id="custom">ใช้รูปของเรา</ToggleButton>
             </ToggleButtonGroup>
-            <span
-              aria-live="polite"
-              className="text-xs text-slate-500"
-            >
+            <span aria-live="polite" className="text-xs text-slate-500">
               {saving ? "กำลังบันทึก…" : saved ? "บันทึกแล้ว" : ""}
             </span>
           </div>
@@ -412,7 +453,8 @@ export default function ProductMediaCard({ variantId, product }: Props) {
               <Alert.Content>
                 <Alert.Title>ยังไม่มีรูปของเรา</Alert.Title>
                 <Alert.Description>
-                  เว็บจะแสดงรูปจาก Shopify ไปก่อน จนกว่าจะอัปโหลดรูปอย่างน้อย 1 รูป
+                  เว็บจะแสดงรูปจาก Shopify ไปก่อน จนกว่าจะอัปโหลดรูปอย่างน้อย 1
+                  รูป
                 </Alert.Description>
               </Alert.Content>
             </Alert>
@@ -432,7 +474,9 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                 รูปจาก Shopify ({shopify.length} รูป) — ดูอย่างเดียว
               </h3>
               {shopify.length === 0 ? (
-                <p className="mt-2 text-xs text-slate-400">สินค้านี้ไม่มีรูปใน Shopify</p>
+                <p className="mt-2 text-xs text-slate-400">
+                  สินค้านี้ไม่มีรูปใน Shopify
+                </p>
               ) : (
                 <ul className="mt-2 flex flex-wrap gap-2">
                   {shopify.map((url, i) => (
@@ -440,7 +484,13 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                       key={url}
                       className="relative size-20 overflow-hidden rounded-xl bg-surface-soft ring-1 ring-surface-line"
                     >
-                      <NextImage src={url} alt="" fill sizes="80px" className="object-cover" />
+                      <NextImage
+                        src={url}
+                        alt=""
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                      />
                       {i === 0 && <Badge>หลัก</Badge>}
                     </li>
                   ))}
@@ -501,7 +551,7 @@ export default function ProductMediaCard({ variantId, product }: Props) {
               >
                 {progress ? (
                   <p className="inline-flex items-center gap-2 text-sm text-slate-600">
-                    <Loader2 size={15} className="animate-spin" />
+                    <Spinner size="sm" color="current" />
                     กำลังอัปโหลด {progress.done + 1}/{progress.total} รูป…
                   </p>
                 ) : (
@@ -515,7 +565,8 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                       <ImagePlus size={15} /> เลือกรูป
                     </Button>
                     <span className="text-xs text-slate-500">
-                      หรือลากรูปมาวางที่นี่ · JPG, PNG, WebP · ย่อขนาดให้อัตโนมัติ
+                      หรือลากรูปมาวางที่นี่ · JPG, PNG, WebP ·
+                      ย่อขนาดให้อัตโนมัติ
                     </span>
                   </span>
                 )}
@@ -525,7 +576,9 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                 <Button
                   size="sm"
                   variant="secondary"
-                  isDisabled={videos.length >= MAX_VIDEOS || videoProgress !== null}
+                  isDisabled={
+                    videos.length >= MAX_VIDEOS || videoProgress !== null
+                  }
                   isPending={videoProgress !== null}
                   onPress={() => videoInput.current?.click()}
                 >
@@ -566,7 +619,7 @@ export default function ProductMediaCard({ variantId, product }: Props) {
 
               {videoProgress && (
                 <p className="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
-                  <Loader2 size={15} className="animate-spin" />
+                  <Spinner size="sm" color="current" />
                   กำลังอัปโหลด {videoProgress}…
                 </p>
               )}
@@ -593,7 +646,8 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                       }}
                       onDrop={(e) => {
                         e.preventDefault();
-                        if (dragFrom.current !== null) move(dragFrom.current, i);
+                        if (dragFrom.current !== null)
+                          move(dragFrom.current, i);
                         dragFrom.current = null;
                         setDropTarget(null);
                       }}
@@ -602,7 +656,10 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                         setDropTarget(null);
                       }}
                       className={
-                        "w-20 " + (dropTarget === i ? "opacity-60 ring-2 ring-brand-action rounded-xl" : "")
+                        "w-20 " +
+                        (dropTarget === i
+                          ? "opacity-60 ring-2 ring-brand-action rounded-xl"
+                          : "")
                       }
                     >
                       <a
@@ -612,7 +669,13 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                         title="เปิดรูปขนาดเต็ม"
                         className="relative block size-20 cursor-grab overflow-hidden rounded-xl bg-surface-soft ring-1 ring-surface-line"
                       >
-                        <NextImage src={img.url} alt="" fill sizes="80px" className="object-cover" />
+                        <NextImage
+                          src={img.url}
+                          alt=""
+                          fill
+                          sizes="80px"
+                          className="object-cover"
+                        />
                         {i === 0 && <Badge>หลัก</Badge>}
                         {i === 1 && <Badge>hover</Badge>}
                       </a>
@@ -667,7 +730,11 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <Video size={18} className="text-white/80" aria-hidden="true" />
+                            <Video
+                              size={18}
+                              className="text-white/80"
+                              aria-hidden="true"
+                            />
                           )}
                           <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1 text-[9px] font-semibold text-white">
                             {v.path ? "ไฟล์" : (parsed?.kind ?? "ลิงก์")}
@@ -688,7 +755,10 @@ export default function ProductMediaCard({ variantId, product }: Props) {
                           >
                             <ChevronRight size={13} />
                           </ThumbButton>
-                          <ThumbButton label="ลบคลิปนี้" onClick={() => removeVideo(i)}>
+                          <ThumbButton
+                            label="ลบคลิปนี้"
+                            onClick={() => removeVideo(i)}
+                          >
                             <X size={13} />
                           </ThumbButton>
                         </div>
@@ -751,7 +821,10 @@ function RebuildNotice() {
   // happens to re-render it.
   useEffect(() => {
     if (readyAt === null) return;
-    const id = setTimeout(() => setReadyAt(null), Math.max(0, readyAt - Date.now()));
+    const id = setTimeout(
+      () => setReadyAt(null),
+      Math.max(0, readyAt - Date.now()),
+    );
     return () => clearTimeout(id);
   }, [readyAt]);
 
@@ -759,7 +832,9 @@ function RebuildNotice() {
     setBusy(true);
     setNote(null);
     try {
-      const res = await fetch("/api/admin/product-content/rebuild", { method: "POST" });
+      const res = await fetch("/api/admin/product-content/rebuild", {
+        method: "POST",
+      });
       const data = await res.json().catch(() => null);
       setNote(
         data?.ok
@@ -777,7 +852,10 @@ function RebuildNotice() {
   const readyLabel =
     readyAt === null
       ? ""
-      : new Date(readyAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+      : new Date(readyAt).toLocaleTimeString("th-TH", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
 
   return (
     <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-surface-line pt-3">
@@ -794,7 +872,9 @@ function RebuildNotice() {
           onPress={rebuild}
         >
           <RefreshCw size={14} />
-          {readyAt === null ? "อัปเดตทั้งเว็บเดี๋ยวนี้" : `สั่งใหม่ได้ ${readyLabel}`}
+          {readyAt === null
+            ? "อัปเดตทั้งเว็บเดี๋ยวนี้"
+            : `สั่งใหม่ได้ ${readyLabel}`}
         </Button>
       )}
       {note && <span className="text-xs text-slate-600">{note}</span>}

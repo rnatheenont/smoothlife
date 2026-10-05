@@ -13,7 +13,6 @@ import {
   Receipt,
   ArrowRight,
   BookOpen,
-  Loader2,
   HelpCircle,
   RefreshCw,
   Truck,
@@ -29,7 +28,12 @@ import {
   isAllowed,
   useAdminAccess,
 } from "@/components/admin/nav-map";
-import { PageHeader, SectionLabel, StatCard } from "@/components/admin/layout-kit";
+import {
+  PageHeader,
+  SectionLabel,
+  StatCard,
+} from "@/components/admin/layout-kit";
+import { Spinner } from "@heroui/react";
 
 // Admin home. It used to redirect straight into the promotions screen, which
 // meant the answer to "what needs me today?" was: open all seven pages and
@@ -93,7 +97,8 @@ export default function AdminHomePage() {
 
   // Anything past this is "a lot" — the exact number changes nothing about
   // what the reader does next.
-  const show = (n: number | null) => (n === null ? "—" : n >= 100 ? "99+" : String(n));
+  const show = (n: number | null) =>
+    n === null ? "—" : n >= 100 ? "99+" : String(n);
 
   const needsAttention = [
     {
@@ -155,8 +160,20 @@ export default function AdminHomePage() {
       unit: "รายการ",
       href: "/admin/checkout-transactions",
     },
-    { icon: Zap, label: "Flash Sale กำลังขาย", value: stats.flashRunning, unit: "แคมเปญ", href: "/admin/flash-sale" },
-    { icon: Zap, label: "Flash Sale รอเริ่ม", value: stats.flashScheduled, unit: "แคมเปญ", href: "/admin/flash-sale" },
+    {
+      icon: Zap,
+      label: "Flash Sale กำลังขาย",
+      value: stats.flashRunning,
+      unit: "แคมเปญ",
+      href: "/admin/flash-sale",
+    },
+    {
+      icon: Zap,
+      label: "Flash Sale รอเริ่ม",
+      value: stats.flashScheduled,
+      unit: "แคมเปญ",
+      href: "/admin/flash-sale",
+    },
     {
       icon: Repeat,
       label: "สมาชิกที่ยังใช้งานอยู่",
@@ -200,12 +217,16 @@ export default function AdminHomePage() {
         {loading ? (
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-[76px] animate-pulse rounded-xl2 border border-slate-100 bg-slate-50/60" />
+              <div
+                key={i}
+                className="h-[76px] animate-pulse rounded-xl2 border border-slate-100 bg-slate-50/60"
+              />
             ))}
           </div>
         ) : urgent.length === 0 ? (
           <p className="flex items-center gap-2 rounded-xl2 border border-emerald-100 bg-emerald-50/50 p-4 text-sm font-medium text-emerald-800">
-            <CheckCircle2 size={16} className="shrink-0 text-emerald-600" /> ไม่มีอะไรค้าง — ทุกคิวเคลียร์หมดแล้ว
+            <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />{" "}
+            ไม่มีอะไรค้าง — ทุกคิวเคลียร์หมดแล้ว
           </p>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -228,7 +249,11 @@ export default function AdminHomePage() {
         {clear.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 px-1 text-xs text-slate-500">
             {clear.map((c) => (
-              <Link key={c.label} href={c.href} className="hover:text-brand-800 hover:underline">
+              <Link
+                key={c.label}
+                href={c.href}
+                className="hover:text-brand-800 hover:underline"
+              >
                 {c.label} 0
               </Link>
             ))}
@@ -245,7 +270,17 @@ export default function AdminHomePage() {
               href={c.href}
               icon={<c.icon size={13} className="text-slate-400" />}
               label={c.label}
-              value={loading ? <Loader2 size={18} className="animate-spin text-slate-300" /> : show(c.value)}
+              value={
+                loading ? (
+                  <Spinner
+                    size="md"
+                    color="current"
+                    className="text-slate-300"
+                  />
+                ) : (
+                  show(c.value)
+                )
+              }
               unit={c.unit}
             />
           ))}
@@ -273,12 +308,20 @@ export default function AdminHomePage() {
                   href={item.href}
                   className="group flex items-start gap-3 rounded-xl2 border border-slate-100 bg-white p-4 transition-colors hover:border-brand-teal/40"
                 >
-                  <span className={`grid size-9 shrink-0 place-items-center rounded-l ${TONE_TILE[group.tone]}`}>
+                  <span
+                    className={`grid size-9 shrink-0 place-items-center rounded-l ${TONE_TILE[group.tone]}`}
+                  >
                     <Icon size={16} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-brand-ink">{item.label}</span>
-                    {item.desc && <span className="mt-0.5 block text-xs text-slate-500">{item.desc}</span>}
+                    <span className="block text-sm font-semibold text-brand-ink">
+                      {item.label}
+                    </span>
+                    {item.desc && (
+                      <span className="mt-0.5 block text-xs text-slate-500">
+                        {item.desc}
+                      </span>
+                    )}
                   </span>
                   <ArrowRight
                     size={15}

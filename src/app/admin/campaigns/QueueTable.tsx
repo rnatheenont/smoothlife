@@ -2,13 +2,29 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, Check, Crown, ExternalLink, Loader2, Maximize2, RefreshCw, Trash2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Crown,
+  ExternalLink,
+  Maximize2,
+  RefreshCw,
+  Trash2,
+  X,
+} from "lucide-react";
 import { createPortal } from "react-dom";
 import { formatTHB } from "@/lib/format";
 import { Modal } from "@/components/ui";
 import { adminCards, adminTable } from "@/components/admin/layout-kit";
-import { AI_LABEL, ENTRY_STATUS, LINE_KIND, PAYMENT_STATUS, when, type QueueItem } from "./queue-vocab";
-import { Button } from "@heroui/react";
+import {
+  AI_LABEL,
+  ENTRY_STATUS,
+  LINE_KIND,
+  PAYMENT_STATUS,
+  when,
+  type QueueItem,
+} from "./queue-vocab";
+import { Button, Spinner } from "@heroui/react";
 
 // The queue as a list you can read down, with everything else a click away.
 //
@@ -53,9 +69,13 @@ const AI_DOT: Record<"ok" | "unclear" | "mismatch", string> = {
  * entries typed in by hand.
  */
 function paymentOf(item: QueueItem) {
-  const fromShop = item.claimedOrder?.found ? item.claimedOrder.financialStatus : null;
+  const fromShop = item.claimedOrder?.found
+    ? item.claimedOrder.financialStatus
+    : null;
   const status = item.paymentStatus ?? fromShop;
-  const hasOrder = Boolean(item.paymentStatus || item.claimedOrder?.found || !item.manual);
+  const hasOrder = Boolean(
+    item.paymentStatus || item.claimedOrder?.found || !item.manual,
+  );
   return { status, hasOrder, canApprove: hasOrder ? status === "PAID" : true };
 }
 
@@ -64,13 +84,20 @@ function PaymentChip({ item }: { item: QueueItem }) {
   if (!status) {
     return (
       <span className="text-[11px] text-slate-400">
-        {item.claimedOrder && !item.claimedOrder.found ? "ไม่พบคำสั่งซื้อนี้" : "อ่านไม่ได้"}
+        {item.claimedOrder && !item.claimedOrder.found
+          ? "ไม่พบคำสั่งซื้อนี้"
+          : "อ่านไม่ได้"}
       </span>
     );
   }
-  const [label, tone] = PAYMENT_STATUS[status] ?? ["—", "border-slate-200 bg-slate-50 text-slate-600"];
+  const [label, tone] = PAYMENT_STATUS[status] ?? [
+    "—",
+    "border-slate-200 bg-slate-50 text-slate-600",
+  ];
   return (
-    <span className={`inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-bold ${tone}`}>
+    <span
+      className={`inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-bold ${tone}`}
+    >
       {label}
     </span>
   );
@@ -78,7 +105,9 @@ function PaymentChip({ item }: { item: QueueItem }) {
 
 /** The order number, and a way into the order itself. */
 function OrderNumber({ item }: { item: QueueItem }) {
-  const shown = item.manual ? (item.declared.orderNumber ?? item.claimedOrder?.number ?? null) : item.orderNumber;
+  const shown = item.manual
+    ? (item.declared.orderNumber ?? item.claimedOrder?.number ?? null)
+    : item.orderNumber;
   const href = item.claimedOrder?.found ? item.claimedOrder.adminUrl : null;
   if (!shown) return <>—</>;
   // Only a link when there is an order to open. A number Shopify has never
@@ -86,7 +115,12 @@ function OrderNumber({ item }: { item: QueueItem }) {
   // dressing it as a link would promise a page that is not there.
   if (!href) return <>{shown}</>;
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-brand-800 underline">
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1 text-brand-800 underline"
+    >
       {shown}
       <ExternalLink size={12} />
     </a>
@@ -110,7 +144,8 @@ function ClaimWarning({ item }: { item: QueueItem }) {
       <p className="mt-3 flex items-start gap-2 rounded-l border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
         <AlertTriangle size={14} className="mt-0.5 shrink-0" />
         <span>
-          ไม่พบคำสั่งซื้อ <b>{item.claimedOrder.number}</b> ในร้าน — ตรวจจากรูปใบเสร็จเป็นหลัก
+          ไม่พบคำสั่งซื้อ <b>{item.claimedOrder.number}</b> ในร้าน —
+          ตรวจจากรูปใบเสร็จเป็นหลัก
         </span>
       </p>
     );
@@ -126,7 +161,13 @@ function ClaimWarning({ item }: { item: QueueItem }) {
             phone or a guest checkout can make wrong. */}
         <span>
           คำสั่งซื้อ <b>{item.claimedOrder.number}</b> อยู่ในชื่อคนอื่น
-          {item.claimedOrder.ownerLabel ? <> — <b>{item.claimedOrder.ownerLabel}</b></> : null} (เทียบจากบัญชีและเบอร์โทร)
+          {item.claimedOrder.ownerLabel ? (
+            <>
+              {" "}
+              — <b>{item.claimedOrder.ownerLabel}</b>
+            </>
+          ) : null}{" "}
+          (เทียบจากบัญชีและเบอร์โทร)
         </span>
       </p>
     );
@@ -137,7 +178,8 @@ function ClaimWarning({ item }: { item: QueueItem }) {
       <p className="mt-3 flex items-start gap-2 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px] text-slate-600">
         <AlertTriangle size={14} className="mt-0.5 shrink-0 text-slate-400" />
         <span>
-          ยืนยันไม่ได้ว่าคำสั่งซื้อ <b>{item.claimedOrder.number}</b> เป็นของลูกค้ารายนี้หรือไม่ (ไม่มีข้อมูลให้เทียบ)
+          ยืนยันไม่ได้ว่าคำสั่งซื้อ <b>{item.claimedOrder.number}</b>{" "}
+          เป็นของลูกค้ารายนี้หรือไม่ (ไม่มีข้อมูลให้เทียบ)
         </span>
       </p>
     );
@@ -160,7 +202,13 @@ function ClaimWarning({ item }: { item: QueueItem }) {
  * page of the shop. This one already handles Escape, the scroll lock, the
  * focus trap and returning focus to the thumbnail.
  */
-function ReceiptPhoto({ url, customer }: { url: string; customer: string | null }) {
+function ReceiptPhoto({
+  url,
+  customer,
+}: {
+  url: string;
+  customer: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const alt = `ใบเสร็จของ ${customer ?? "ลูกค้า"}`;
 
@@ -249,7 +297,10 @@ function DetailPanel({
   const open = Boolean(item);
 
   return createPortal(
-    <div className={`fixed inset-0 z-100 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
+    <div
+      className={`fixed inset-0 z-100 ${open ? "" : "pointer-events-none"}`}
+      aria-hidden={!open}
+    >
       <div
         className={`absolute inset-0 bg-black/40 transition-opacity ${open ? "opacity-100" : "opacity-0"}`}
         onClick={onClose}
@@ -266,10 +317,14 @@ function DetailPanel({
           <>
             <div className="flex items-start justify-between gap-3 border-b border-surface-line px-5 py-4">
               <div>
-                <p className="text-[15px] font-bold text-brand-ink">{item.customer ?? "—"}</p>
+                <p className="text-[15px] font-bold text-brand-ink">
+                  {item.customer ?? "—"}
+                </p>
                 <p className="mt-0.5 text-[13px] text-slate-500">
-                  {item.manual ? `${item.declared.orderNumber ?? "—"} · เคสพิเศษ` : (item.orderNumber ?? "—")} · ส่งเมื่อ{" "}
-                  {when(item.sentAt)}
+                  {item.manual
+                    ? `${item.declared.orderNumber ?? "—"} · เคสพิเศษ`
+                    : (item.orderNumber ?? "—")}{" "}
+                  · ส่งเมื่อ {when(item.sentAt)}
                 </p>
               </div>
               <button
@@ -301,15 +356,25 @@ function DetailPanel({
                     <dt className="text-slate-500">สถานะการชำระเงิน</dt>
                     <dd>
                       <PaymentChip item={item} />
-                      {(item.refunded > 0 || (item.claimedOrder?.found ? item.claimedOrder.refunded : 0) > 0) && (
+                      {(item.refunded > 0 ||
+                        (item.claimedOrder?.found
+                          ? item.claimedOrder.refunded
+                          : 0) > 0) && (
                         <span className="ms-2 text-[12px] font-semibold text-rose-700">
                           คืนแล้ว{" "}
-                          {formatTHB(item.refunded || (item.claimedOrder?.found ? item.claimedOrder.refunded : 0))}
+                          {formatTHB(
+                            item.refunded ||
+                              (item.claimedOrder?.found
+                                ? item.claimedOrder.refunded
+                                : 0),
+                          )}
                         </span>
                       )}
                     </dd>
                     <dt className="text-slate-500">เลขใบแจ้งหนี้ 2C2P</dt>
-                    <dd className="font-mono text-[12px] text-slate-500">{item.invoiceNo ?? "—"}</dd>
+                    <dd className="font-mono text-[12px] text-slate-500">
+                      {item.invoiceNo ?? "—"}
+                    </dd>
                     <dt className="text-slate-500">ชำระเมื่อ</dt>
                     {/* Same fallback the total below already makes: our own
                         2C2P row first, then the order in the shop. A receipt
@@ -324,10 +389,13 @@ function DetailPanel({
                     <dd className="text-brand-ink">
                       {item.paidAt ? (
                         when(item.paidAt)
-                      ) : item.claimedOrder?.found && item.claimedOrder.paidAt ? (
+                      ) : item.claimedOrder?.found &&
+                        item.claimedOrder.paidAt ? (
                         <>
                           {when(item.claimedOrder.paidAt)}{" "}
-                          <span className="text-[11px] text-slate-400">(จากคำสั่งซื้อในร้าน)</span>
+                          <span className="text-[11px] text-slate-400">
+                            (จากคำสั่งซื้อในร้าน)
+                          </span>
                         </>
                       ) : (
                         "—"
@@ -335,11 +403,18 @@ function DetailPanel({
                     </dd>
                     <dt className="text-slate-500">ยอดทั้งบิล</dt>
                     <dd className="text-brand-ink">
-                      {item.orderTotal !== null
-                        ? formatTHB(item.orderTotal)
-                        : item.claimedOrder?.found
-                          ? <>{formatTHB(item.claimedOrder.total)} <span className="text-[11px] text-slate-400">(จากคำสั่งซื้อในร้าน)</span></>
-                          : "—"}
+                      {item.orderTotal !== null ? (
+                        formatTHB(item.orderTotal)
+                      ) : item.claimedOrder?.found ? (
+                        <>
+                          {formatTHB(item.claimedOrder.total)}{" "}
+                          <span className="text-[11px] text-slate-400">
+                            (จากคำสั่งซื้อในร้าน)
+                          </span>
+                        </>
+                      ) : (
+                        "—"
+                      )}
                     </dd>
                     {/* One number, because two of them read as a fault. A
                         keychain set is counted as keychain and deliberately
@@ -352,17 +427,22 @@ function DetailPanel({
                         breakdown shows here when a bill really has both. */}
                     <dt className="text-slate-500">ยอดสินค้าที่ร่วมรายการ</dt>
                     <dd className="font-bold text-brand-ink">
-                      {formatTHB(item.dentisteAmount + item.keychainAmount + (item.vipAmount ?? 0))}
+                      {formatTHB(
+                        item.dentisteAmount +
+                          item.keychainAmount +
+                          (item.vipAmount ?? 0),
+                      )}
                       {item.dentisteAmount > 0 && item.keychainAmount > 0 && (
                         <span className="ms-2 text-[11px] font-normal text-slate-500">
-                          DENTISTE&apos; {formatTHB(item.dentisteAmount)} · Keychain{" "}
-                          {formatTHB(item.keychainAmount)}
+                          DENTISTE&apos; {formatTHB(item.dentisteAmount)} ·
+                          Keychain {formatTHB(item.keychainAmount)}
                         </span>
                       )}
                       {(item.vipAmount ?? 0) > 0 && (
                         <span className="mt-0.5 block text-[11.5px] font-semibold text-amber-800">
-                          นับสิทธิ์ {formatTHB(item.dentisteAmount + item.keychainAmount)} · เซ็ต VIP{" "}
-                          {formatTHB(item.vipAmount ?? 0)} ไม่นับ
+                          นับสิทธิ์{" "}
+                          {formatTHB(item.dentisteAmount + item.keychainAmount)}{" "}
+                          · เซ็ต VIP {formatTHB(item.vipAmount ?? 0)} ไม่นับ
                         </span>
                       )}
                     </dd>
@@ -370,7 +450,10 @@ function DetailPanel({
                     <dd className="text-brand-ink">
                       {item.contactName ?? "—"}
                       {item.contactPhone && (
-                        <a href={`tel:${item.contactPhone}`} className="ms-2 font-mono text-[12px] text-brand-800 underline">
+                        <a
+                          href={`tel:${item.contactPhone}`}
+                          className="ms-2 font-mono text-[12px] text-brand-800 underline"
+                        >
                           {item.contactPhone}
                         </a>
                       )}
@@ -393,7 +476,8 @@ function DetailPanel({
                     <p className="mt-3 flex items-start gap-2 rounded-l border border-amber-300 bg-amber-50 px-3 py-2 text-[12.5px] text-amber-900">
                       <Crown size={14} className="mt-0.5 shrink-0" />
                       <span>
-                        ลูกค้ามีสิทธิ <b>VIP EXCLUSIVE PRIVILEGES</b> — ซื้อเซ็ต Early Bird VIP 25 Set Only
+                        ลูกค้ามีสิทธิ <b>VIP EXCLUSIVE PRIVILEGES</b> — ซื้อเซ็ต
+                        Early Bird VIP 25 Set Only
                         <span className="mt-0.5 block text-amber-800">
                           เซ็ตนี้ไม่นับเป็นสิทธิ์ลุ้นรางวัล อนุมัติได้ตามปกติ
                         </span>
@@ -403,7 +487,10 @@ function DetailPanel({
 
                   <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-slate-600">
                     <span>
-                      ระบบคำนวณได้ <span className="font-bold text-brand-ink">{item.entries} สิทธิ์</span>
+                      ระบบคำนวณได้{" "}
+                      <span className="font-bold text-brand-ink">
+                        {item.entries} สิทธิ์
+                      </span>
                     </span>
                     <button
                       type="button"
@@ -422,13 +509,24 @@ function DetailPanel({
                       </p>
                       <ul className="divide-y divide-surface-line">
                         {item.lines.map((line, i) => (
-                          <li key={`${line.name}-${i}`} className="flex items-baseline gap-2 px-3 py-2 text-[12px]">
-                            <span className={`shrink-0 rounded-full px-1.5 py-0.5 font-semibold ${LINE_KIND[line.kind][1]}`}>
+                          <li
+                            key={`${line.name}-${i}`}
+                            className="flex items-baseline gap-2 px-3 py-2 text-[12px]"
+                          >
+                            <span
+                              className={`shrink-0 rounded-full px-1.5 py-0.5 font-semibold ${LINE_KIND[line.kind][1]}`}
+                            >
                               {LINE_KIND[line.kind][0]}
                             </span>
-                            <span className="min-w-0 flex-1 text-brand-ink">{line.name}</span>
-                            <span className="shrink-0 tabular-nums text-slate-500">×{line.quantity}</span>
-                            <span className="shrink-0 tabular-nums font-semibold text-brand-ink">{formatTHB(line.amount)}</span>
+                            <span className="min-w-0 flex-1 text-brand-ink">
+                              {line.name}
+                            </span>
+                            <span className="shrink-0 tabular-nums text-slate-500">
+                              ×{line.quantity}
+                            </span>
+                            <span className="shrink-0 tabular-nums font-semibold text-brand-ink">
+                              {formatTHB(line.amount)}
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -437,15 +535,20 @@ function DetailPanel({
 
                   <ClaimWarning item={item} />
 
-                  {(item.declared.orderNumber || item.declared.total !== null) && (
+                  {(item.declared.orderNumber ||
+                    item.declared.total !== null) && (
                     <div className="mt-4 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px]">
-                      <p className="font-semibold text-slate-500">ลูกค้ากรอกมาว่า</p>
+                      <p className="font-semibold text-slate-500">
+                        ลูกค้ากรอกมาว่า
+                      </p>
                       <p className="mt-1 text-brand-ink">
                         เลขคำสั่งซื้อ{" "}
                         <b
                           className={
-                            item.declared.orderNumber && item.orderNumber &&
-                            item.declared.orderNumber.replace(/\D/g, "") !== item.orderNumber.replace(/\D/g, "")
+                            item.declared.orderNumber &&
+                            item.orderNumber &&
+                            item.declared.orderNumber.replace(/\D/g, "") !==
+                              item.orderNumber.replace(/\D/g, "")
                               ? "text-rose-700"
                               : "text-brand-ink"
                           }
@@ -457,7 +560,10 @@ function DetailPanel({
                             {" · "}ยอดทั้งบิล{" "}
                             <b
                               className={
-                                item.orderTotal !== null && Math.abs(item.declared.total - item.orderTotal) > 0.5
+                                item.orderTotal !== null &&
+                                Math.abs(
+                                  item.declared.total - item.orderTotal,
+                                ) > 0.5
                                   ? "text-rose-700"
                                   : "text-brand-ink"
                               }
@@ -466,15 +572,26 @@ function DetailPanel({
                             </b>
                           </>
                         )}
-                        {item.declared.paidAt && <>{" · "}{when(item.declared.paidAt)}</>}
+                        {item.declared.paidAt && (
+                          <>
+                            {" · "}
+                            {when(item.declared.paidAt)}
+                          </>
+                        )}
                       </p>
                     </div>
                   )}
 
                   {item.aiCheck && (
-                    <div className={`mt-4 rounded-l border px-3 py-2 text-[12px] ${AI_LABEL[item.aiCheck.verdict][1]}`}>
-                      <p className="font-bold">AI ตรวจเบื้องต้น · {AI_LABEL[item.aiCheck.verdict][0]}</p>
-                      {item.aiCheck.message && <p className="mt-0.5">{item.aiCheck.message}</p>}
+                    <div
+                      className={`mt-4 rounded-l border px-3 py-2 text-[12px] ${AI_LABEL[item.aiCheck.verdict][1]}`}
+                    >
+                      <p className="font-bold">
+                        AI ตรวจเบื้องต้น · {AI_LABEL[item.aiCheck.verdict][0]}
+                      </p>
+                      {item.aiCheck.message && (
+                        <p className="mt-0.5">{item.aiCheck.message}</p>
+                      )}
                       {item.aiCheck.findings.length > 0 && (
                         <ul className="mt-1 list-inside list-disc opacity-80">
                           {item.aiCheck.findings.map((f) => (
@@ -493,9 +610,12 @@ function DetailPanel({
                 <>
                   <p className="mb-3 text-[12px] text-slate-500">
                     ตรวจแล้วเมื่อ {when(item.reviewedAt)}
-                    {(item.rejectReason || item.revokeReason) && <> · {item.rejectReason ?? item.revokeReason}</>}
+                    {(item.rejectReason || item.revokeReason) && (
+                      <> · {item.rejectReason ?? item.revokeReason}</>
+                    )}
                   </p>
-                  <Button variant="outline"
+                  <Button
+                    variant="outline"
                     isDisabled={busy === item.id}
                     onPress={() => onReopen(item)}
                     className="w-full"
@@ -503,50 +623,63 @@ function DetailPanel({
                     <RefreshCw size={15} /> ดึงกลับมาตรวจใหม่
                   </Button>
                   <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
-                    ใบเสร็จจะกลับไปอยู่ในคิวตรวจ และผลเดิมถูกบันทึกไว้ใน audit log —
-                    ถ้าประกาศผลไปแล้ว รายชื่อที่จับได้จะไม่เปลี่ยนตาม ต้องตัดสินใจแยก
+                    ใบเสร็จจะกลับไปอยู่ในคิวตรวจ และผลเดิมถูกบันทึกไว้ใน audit
+                    log — ถ้าประกาศผลไปแล้ว รายชื่อที่จับได้จะไม่เปลี่ยนตาม
+                    ต้องตัดสินใจแยก
                   </p>
                 </>
               ) : (
                 <>
-              {!paymentOf(item).canApprove && (
-                <p className="mb-3 flex items-start gap-1.5 rounded-l border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-                  <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-                  <span>
-                    อนุมัติไม่ได้ — คำสั่งซื้อนี้
-                    {paymentOf(item).status ? (
-                      <>
-                        {" "}อยู่ในสถานะ <b>{PAYMENT_STATUS[paymentOf(item).status!]?.[0] ?? paymentOf(item).status}</b>
-                      </>
-                    ) : (
-                      <> อ่านสถานะจาก Shopify ไม่ได้</>
-                    )}{" "}
-                    ไม่ใช่ <b>ชำระแล้ว (PAID)</b> — ตีกลับยังทำได้ตามปกติ
-                  </span>
-                </p>
-              )}
-              {paymentOf(item).canApprove && !paymentOf(item).hasOrder && (
-                <p className="mb-3 flex items-start gap-1.5 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px] text-slate-600">
-                  <AlertTriangle size={13} className="mt-0.5 shrink-0 text-slate-400" />
-                  ไม่พบคำสั่งซื้อนี้ในร้าน — อนุมัติได้ด้วยดุลพินิจของผู้ตรวจ และต้องระบุจำนวนสิทธิ์เอง
-                </p>
-              )}
-              <div className="flex gap-2">
-                <Button variant="primary"
-                  isDisabled={busy === item.id || !paymentOf(item).canApprove}
-                  onPress={() => onDecide(item, "approve")}
-                  className="flex-1"
-                >
-                  <Check size={15} /> อนุมัติ
-                </Button>
-                <Button variant="danger-soft"
-                  isDisabled={busy === item.id}
-                  onPress={() => onDecide(item, "reject")}
-                  
-                >
-                  <X size={15} /> ตีกลับ
-                </Button>
-              </div>
+                  {!paymentOf(item).canApprove && (
+                    <p className="mb-3 flex items-start gap-1.5 rounded-l border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+                      <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                      <span>
+                        อนุมัติไม่ได้ — คำสั่งซื้อนี้
+                        {paymentOf(item).status ? (
+                          <>
+                            {" "}
+                            อยู่ในสถานะ{" "}
+                            <b>
+                              {PAYMENT_STATUS[paymentOf(item).status!]?.[0] ??
+                                paymentOf(item).status}
+                            </b>
+                          </>
+                        ) : (
+                          <> อ่านสถานะจาก Shopify ไม่ได้</>
+                        )}{" "}
+                        ไม่ใช่ <b>ชำระแล้ว (PAID)</b> — ตีกลับยังทำได้ตามปกติ
+                      </span>
+                    </p>
+                  )}
+                  {paymentOf(item).canApprove && !paymentOf(item).hasOrder && (
+                    <p className="mb-3 flex items-start gap-1.5 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px] text-slate-600">
+                      <AlertTriangle
+                        size={13}
+                        className="mt-0.5 shrink-0 text-slate-400"
+                      />
+                      ไม่พบคำสั่งซื้อนี้ในร้าน —
+                      อนุมัติได้ด้วยดุลพินิจของผู้ตรวจ และต้องระบุจำนวนสิทธิ์เอง
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="primary"
+                      isDisabled={
+                        busy === item.id || !paymentOf(item).canApprove
+                      }
+                      onPress={() => onDecide(item, "approve")}
+                      className="flex-1"
+                    >
+                      <Check size={15} /> อนุมัติ
+                    </Button>
+                    <Button
+                      variant="danger-soft"
+                      isDisabled={busy === item.id}
+                      onPress={() => onDecide(item, "reject")}
+                    >
+                      <X size={15} /> ตีกลับ
+                    </Button>
+                  </div>
                 </>
               )}
 
@@ -557,20 +690,23 @@ function DetailPanel({
                 {confirming ? (
                   <div className="rounded-l border border-rose-200 bg-rose-50 p-3">
                     <p className="text-[12px] leading-relaxed text-rose-900">
-                      ลบใบเสร็จของ <b>{item.customer || "ลูกค้ารายนี้"}</b> ถาวร — รวมรูปใบเสร็จที่อัปโหลดไว้
-                      กู้คืนไม่ได้
+                      ลบใบเสร็จของ <b>{item.customer || "ลูกค้ารายนี้"}</b> ถาวร
+                      — รวมรูปใบเสร็จที่อัปโหลดไว้ กู้คืนไม่ได้
                     </p>
                     <div className="mt-2.5 flex gap-2">
-                      <Button variant="danger" size="sm"
+                      <Button
+                        variant="danger"
+                        size="sm"
                         isDisabled={busy === item.id}
                         onPress={() => onDelete(item)}
                         className="flex-1"
                       >
                         <Trash2 size={14} /> ลบถาวร
                       </Button>
-                      <Button variant="outline" size="sm"
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onPress={() => setConfirming(false)}
-                        
                       >
                         ยกเลิก
                       </Button>
@@ -592,7 +728,7 @@ function DetailPanel({
         )}
       </div>
     </div>,
-    host
+    host,
   );
 }
 
@@ -652,10 +788,18 @@ export default function QueueTable({
                     <span className="block truncate text-[13px] font-semibold text-brand-ink">
                       {item.customer ?? "—"}
                     </span>
-                    {busy === item.id && <Loader2 size={14} className="mt-0.5 shrink-0 animate-spin text-slate-400" />}
+                    {busy === item.id && (
+                      <Spinner
+                        size="sm"
+                        color="current"
+                        className="mt-0.5 shrink-0 text-slate-400"
+                      />
+                    )}
                   </span>
                   <span className="block truncate text-[11px] text-slate-400">
-                    {(item.manual ? item.declared.orderNumber : item.orderNumber) ?? "—"}
+                    {(item.manual
+                      ? item.declared.orderNumber
+                      : item.orderNumber) ?? "—"}
                     {item.invoiceNo ? ` · ${item.invoiceNo}` : ""}
                   </span>
 
@@ -677,7 +821,9 @@ export default function QueueTable({
                     )}
                     {item.aiCheck && (
                       <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
-                        <span className={`size-2 shrink-0 rounded-full ${AI_DOT[item.aiCheck.verdict]}`} />
+                        <span
+                          className={`size-2 shrink-0 rounded-full ${AI_DOT[item.aiCheck.verdict]}`}
+                        />
                         {AI_LABEL[item.aiCheck.verdict][0]}
                       </span>
                     )}
@@ -685,16 +831,26 @@ export default function QueueTable({
 
                   <span className="mt-2 flex flex-wrap items-baseline gap-x-2 text-[12px] text-slate-500">
                     <span className="text-[15px] font-bold tabular-nums text-brand-ink">
-                      {formatTHB(item.dentisteAmount + item.keychainAmount + (item.vipAmount ?? 0))}
+                      {formatTHB(
+                        item.dentisteAmount +
+                          item.keychainAmount +
+                          (item.vipAmount ?? 0),
+                      )}
                     </span>
                     <span>·</span>
-                    <span className="font-semibold text-brand-ink">{item.entries} สิทธิ์</span>
-                    <span className="ml-auto text-[11px] text-slate-400">{when(item.sentAt)}</span>
+                    <span className="font-semibold text-brand-ink">
+                      {item.entries} สิทธิ์
+                    </span>
+                    <span className="ml-auto text-[11px] text-slate-400">
+                      {when(item.sentAt)}
+                    </span>
                   </span>
 
                   {(item.vipAmount ?? 0) > 0 && (
                     <span className="mt-0.5 block text-[11px] font-semibold text-amber-800">
-                      นับสิทธิ์ {formatTHB(item.dentisteAmount + item.keychainAmount)} · เซ็ต VIP ไม่นับ
+                      นับสิทธิ์{" "}
+                      {formatTHB(item.dentisteAmount + item.keychainAmount)} ·
+                      เซ็ต VIP ไม่นับ
                     </span>
                   )}
                 </span>
@@ -737,7 +893,9 @@ export default function QueueTable({
           </thead>
           <tbody>
             {queue.map((item) => {
-              const dentisteLines = item.lines.filter((l) => l.kind !== "other");
+              const dentisteLines = item.lines.filter(
+                (l) => l.kind !== "other",
+              );
               return (
                 <tr
                   key={item.id}
@@ -759,18 +917,27 @@ export default function QueueTable({
                         <span className="size-9 shrink-0 rounded border border-surface-line bg-surface-soft" />
                       )}
                       <span className="min-w-0">
-                        <span className="block truncate font-semibold text-brand-ink">{item.customer ?? "—"}</span>
-                        {item.contactName && item.contactName !== item.customer && (
-                          <span className="block truncate text-[11px] text-slate-400">{item.contactName}</span>
-                        )}
+                        <span className="block truncate font-semibold text-brand-ink">
+                          {item.customer ?? "—"}
+                        </span>
+                        {item.contactName &&
+                          item.contactName !== item.customer && (
+                            <span className="block truncate text-[11px] text-slate-400">
+                              {item.contactName}
+                            </span>
+                          )}
                       </span>
                     </span>
                   </td>
                   <td className={adminTable.cell}>
                     <span className="font-semibold text-brand-ink">
-                      {item.manual ? (item.declared.orderNumber ?? "—") : (item.orderNumber ?? "—")}
+                      {item.manual
+                        ? (item.declared.orderNumber ?? "—")
+                        : (item.orderNumber ?? "—")}
                     </span>
-                    <span className="block font-mono text-[11px] text-slate-400">{item.invoiceNo ?? ""}</span>
+                    <span className="block font-mono text-[11px] text-slate-400">
+                      {item.invoiceNo ?? ""}
+                    </span>
                   </td>
                   <td className={adminTable.cell}>
                     <PaymentChip item={item} />
@@ -795,30 +962,43 @@ export default function QueueTable({
                         the money had been missed. What counts moves to the
                         line under it, and only appears when the two differ. */}
                     <span className="font-semibold tabular-nums text-brand-ink">
-                      {formatTHB(item.dentisteAmount + item.keychainAmount + (item.vipAmount ?? 0))}
+                      {formatTHB(
+                        item.dentisteAmount +
+                          item.keychainAmount +
+                          (item.vipAmount ?? 0),
+                      )}
                     </span>
                     {(item.vipAmount ?? 0) > 0 && (
                       <span className="block whitespace-nowrap text-[11px] font-semibold text-amber-800">
-                        นับสิทธิ์ {formatTHB(item.dentisteAmount + item.keychainAmount)} · เซ็ต VIP ไม่นับ
+                        นับสิทธิ์{" "}
+                        {formatTHB(item.dentisteAmount + item.keychainAmount)} ·
+                        เซ็ต VIP ไม่นับ
                       </span>
                     )}
                     {dentisteLines.length > 0 && (
                       <span className="block text-[11px] text-slate-400">
-                        {dentisteLines.length} รายการ · {dentisteLines.reduce((n, l) => n + l.quantity, 0)} ชิ้น
+                        {dentisteLines.length} รายการ ·{" "}
+                        {dentisteLines.reduce((n, l) => n + l.quantity, 0)} ชิ้น
                       </span>
                     )}
                   </td>
                   <td className={`${adminTable.cell} text-right`}>
-                    <span className="font-bold tabular-nums text-brand-ink">{item.entries}</span>
+                    <span className="font-bold tabular-nums text-brand-ink">
+                      {item.entries}
+                    </span>
                   </td>
                   <td className={adminTable.cell}>
                     {item.aiCheck ? (
                       <span className="flex items-center gap-1.5 whitespace-nowrap text-[12px] text-slate-600">
-                        <span className={`size-2 shrink-0 rounded-full ${AI_DOT[item.aiCheck.verdict]}`} />
+                        <span
+                          className={`size-2 shrink-0 rounded-full ${AI_DOT[item.aiCheck.verdict]}`}
+                        />
                         {AI_LABEL[item.aiCheck.verdict][0]}
                       </span>
                     ) : (
-                      <span className="text-[11px] text-slate-400">ไม่ได้ตรวจ</span>
+                      <span className="text-[11px] text-slate-400">
+                        ไม่ได้ตรวจ
+                      </span>
                     )}
                   </td>
                   {decided && (
@@ -838,9 +1018,17 @@ export default function QueueTable({
                       widen it — nowrap alone left an 89px pill in a 44px
                       cell. The header below carries the width; this keeps the
                       pill on one line inside it. */}
-                  <td className={`${adminTable.cell} whitespace-nowrap text-right`}>
+                  <td
+                    className={`${adminTable.cell} whitespace-nowrap text-right`}
+                  >
                     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                      {busy === item.id && <Loader2 size={14} className="animate-spin text-slate-400" />}
+                      {busy === item.id && (
+                        <Spinner
+                          size="sm"
+                          color="current"
+                          className="text-slate-400"
+                        />
+                      )}
                       <span className="whitespace-nowrap rounded-full border border-surface-line px-3 py-1 text-[12px] font-semibold text-brand-800">
                         ดูรายละเอียด
                       </span>

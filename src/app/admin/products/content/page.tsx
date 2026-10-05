@@ -3,15 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FileEdit, CheckCircle2, Circle } from "lucide-react";
-import {
-  PageHeader,
-  adminTable,
-} from "@/components/admin/layout-kit";
+
+import { PageHeader, adminTable } from "@/components/admin/layout-kit";
 import { products } from "@/data/products";
 import { stableContentVariantId } from "@/lib/product-content";
 import AdminSelect from "@/components/admin/AdminSelect";
 import AdminSearch from "@/components/admin/AdminSearch";
+import { FileEdit, CheckCircle2, Circle } from "lucide-react";
 
 // Every product, searchable by SKU first (what the team actually recognises
 // — see the comment on ProductVariant.sku) or by name, with how far each
@@ -55,17 +53,26 @@ type ImageStatus = { useCustom: boolean; count: number; videoCount: number };
 function imageLabel(s: ImageStatus | undefined) {
   // Clips only play when the switch is on, so they are counted as live by the
   // same test the pictures are and simply added to whichever label wins.
-  const clips = s?.useCustom && s.videoCount > 0 ? ` +${s.videoCount} วิดีโอ` : "";
+  const clips =
+    s?.useCustom && s.videoCount > 0 ? ` +${s.videoCount} วิดีโอ` : "";
   if (s?.useCustom && s.count > 0)
-    return { text: `ของเรา (${s.count})${clips}`, className: "text-emerald-700 bg-emerald-50" };
+    return {
+      text: `ของเรา (${s.count})${clips}`,
+      className: "text-emerald-700 bg-emerald-50",
+    };
   if (s && s.count > 0)
-    return { text: `อัปไว้ ${s.count} — ยังไม่เปิด`, className: "text-amber-700 bg-amber-50" };
+    return {
+      text: `อัปไว้ ${s.count} — ยังไม่เปิด`,
+      className: "text-amber-700 bg-amber-50",
+    };
   return { text: `Shopify${clips}`, className: "text-slate-500 bg-slate-50" };
 }
 
 export default function ProductContentListPage() {
   const [overrides, setOverrides] = useState<Record<string, OverrideRow>>({});
-  const [imageStatus, setImageStatus] = useState<Record<string, ImageStatus>>({});
+  const [imageStatus, setImageStatus] = useState<Record<string, ImageStatus>>(
+    {},
+  );
   const [customImagesOnly, setCustomImagesOnly] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState("");
@@ -162,7 +169,8 @@ export default function ProductContentListPage() {
   const shown = filtered.slice(0, 200);
 
   const customImageCount = inBrand.filter(
-    (r) => r.images?.useCustom && (r.images.count > 0 || r.images.videoCount > 0),
+    (r) =>
+      r.images?.useCustom && (r.images.count > 0 || r.images.videoCount > 0),
   ).length;
 
   const counts = inBrand.reduce(
@@ -209,7 +217,10 @@ export default function ProductContentListPage() {
           value={brand}
           onChange={setBrand}
           options={[
-            { value: "all", label: `ทุกแบรนด์ (${rows.length.toLocaleString("th-TH")})` },
+            {
+              value: "all",
+              label: `ทุกแบรนด์ (${rows.length.toLocaleString("th-TH")})`,
+            },
             ...brandOptions.map(([name, n]) => ({
               value: name,
               label: `${name} (${n.toLocaleString("th-TH")})`,
@@ -276,51 +287,53 @@ export default function ProductContentListPage() {
             </tr>
           </thead>
           <tbody>
-            {shown.map(({ product: p, contentVariantId, sku, status, images }) => {
-              const St = STATUS_LABEL[status];
-              const img = imageLabel(images);
-              return (
-                <tr key={contentVariantId} className={adminTable.row}>
-                  <td className={adminTable.cell}>
-                    <Link
-                      href={`/admin/products/content/${encodeURIComponent(contentVariantId)}`}
-                      className="flex items-center gap-2.5 hover:text-brand-800"
-                    >
-                      <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-surface-soft ring-1 ring-surface-line">
-                        {p.image && (
-                          <Image
-                            src={p.image}
-                            alt=""
-                            fill
-                            sizes="36px"
-                            className="object-cover"
-                          />
-                        )}
+            {shown.map(
+              ({ product: p, contentVariantId, sku, status, images }) => {
+                const St = STATUS_LABEL[status];
+                const img = imageLabel(images);
+                return (
+                  <tr key={contentVariantId} className={adminTable.row}>
+                    <td className={adminTable.cell}>
+                      <Link
+                        href={`/admin/products/content/${encodeURIComponent(contentVariantId)}`}
+                        className="flex items-center gap-2.5 hover:text-brand-800"
+                      >
+                        <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-surface-soft ring-1 ring-surface-line">
+                          {p.image && (
+                            <Image
+                              src={p.image}
+                              alt=""
+                              fill
+                              sizes="36px"
+                              className="object-cover"
+                            />
+                          )}
+                        </span>
+                        <span className="min-w-0 truncate font-medium text-brand-ink">
+                          {p.name}
+                        </span>
+                      </Link>
+                    </td>
+                    <td className={adminTable.mono}>{sku ?? "—"}</td>
+                    <td className={adminTable.cell}>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${St.className}`}
+                      >
+                        <St.icon size={12} aria-hidden="true" />
+                        {St.label}
                       </span>
-                      <span className="min-w-0 truncate font-medium text-brand-ink">
-                        {p.name}
+                    </td>
+                    <td className={adminTable.cell}>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${img.className}`}
+                      >
+                        {img.text}
                       </span>
-                    </Link>
-                  </td>
-                  <td className={adminTable.mono}>{sku ?? "—"}</td>
-                  <td className={adminTable.cell}>
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${St.className}`}
-                    >
-                      <St.icon size={12} aria-hidden="true" />
-                      {St.label}
-                    </span>
-                  </td>
-                  <td className={adminTable.cell}>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${img.className}`}
-                    >
-                      {img.text}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
+                    </td>
+                  </tr>
+                );
+              },
+            )}
             {loaded && shown.length === 0 && (
               <tr>
                 <td

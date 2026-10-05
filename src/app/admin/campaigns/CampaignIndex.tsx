@@ -1,8 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowUpRight, ChevronRight, Eye, EyeOff, Loader2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { Panel, adminCards, adminTable } from "@/components/admin/layout-kit";
+import { Spinner } from "@heroui/react";
 
 // Every campaign, before any one of them.
 //
@@ -26,43 +35,64 @@ export type CampaignRow = {
 
 const day = (iso: string | null | undefined) =>
   iso
-    ? new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", timeZone: "Asia/Bangkok" })
+    ? new Date(iso).toLocaleDateString("th-TH", {
+        day: "numeric",
+        month: "short",
+        year: "2-digit",
+        timeZone: "Asia/Bangkok",
+      })
     : "—";
 
 /** Open, not yet open, or finished — from the dates the customer's page uses. */
 function phaseOf(row: CampaignRow): { label: string; className: string } {
   // Not a phase of the schedule, but the first thing to know about a row: the
   // dates of a campaign whose link does not answer are hypothetical.
-  if (row.published === false) return { label: "ยังไม่เผยแพร่", className: "bg-slate-100 text-slate-600" };
+  if (row.published === false)
+    return { label: "ยังไม่เผยแพร่", className: "bg-slate-100 text-slate-600" };
   const now = Date.now();
   const opens = row.opensAt ? Date.parse(row.opensAt) : NaN;
   const closes = row.closesAt ? Date.parse(row.closesAt) : NaN;
-  if (Number.isFinite(opens) && now < opens) return { label: "ยังไม่เปิด", className: "bg-amber-50 text-amber-800" };
-  if (Number.isFinite(closes) && now > closes) return { label: "ปิดรับแล้ว", className: "bg-slate-100 text-slate-600" };
+  if (Number.isFinite(opens) && now < opens)
+    return { label: "ยังไม่เปิด", className: "bg-amber-50 text-amber-800" };
+  if (Number.isFinite(closes) && now > closes)
+    return { label: "ปิดรับแล้ว", className: "bg-slate-100 text-slate-600" };
   return { label: "เปิดรับอยู่", className: "bg-emerald-50 text-emerald-800" };
 }
 
 /** Where opening a campaign lands: its queue, or the form that sets it up. */
 export type CampaignTab = "queue" | "settings";
 
-export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: CampaignTab) => void }) {
+export default function CampaignIndex({
+  onOpen,
+}: {
+  onOpen: (key: string, tab?: CampaignTab) => void;
+}) {
   const [rows, setRows] = useState<CampaignRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Where the menu goes, not just which row opened it: the table scrolls
   // sideways, and an absolutely-positioned menu inside a scrolling box is a
   // menu that box cuts off. Anchored to the button and rendered fixed.
-  const [menu, setMenu] = useState<{ key: string; top: number; right: number } | null>(null);
+  const [menu, setMenu] = useState<{
+    key: string;
+    top: number;
+    right: number;
+  } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/receipts/campaigns", { cache: "no-store" });
+      const res = await fetch("/api/admin/receipts/campaigns", {
+        cache: "no-store",
+      });
       const json = await res.json();
-      if (!json?.ok) throw new Error(json?.error || "โหลดรายการกิจกรรมไม่สำเร็จ");
+      if (!json?.ok)
+        throw new Error(json?.error || "โหลดรายการกิจกรรมไม่สำเร็จ");
       setRows(json.campaigns as CampaignRow[]);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "โหลดรายการกิจกรรมไม่สำเร็จ");
+      setError(
+        err instanceof Error ? err.message : "โหลดรายการกิจกรรมไม่สำเร็จ",
+      );
     }
   }, []);
 
@@ -100,13 +130,21 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: 
   // The server refuses to delete a campaign anybody has entered; this asks
   // first anyway, because the ones it will delete are gone for good.
   async function remove(row: CampaignRow) {
-    if (!window.confirm(`ลบ "${row.name}" ทิ้ง?\n\nลบแล้วกู้คืนไม่ได้ (กิจกรรมที่มีใบเสร็จของลูกค้าแล้วจะลบไม่ได้)`)) return;
+    if (
+      !window.confirm(
+        `ลบ "${row.name}" ทิ้ง?\n\nลบแล้วกู้คืนไม่ได้ (กิจกรรมที่มีใบเสร็จของลูกค้าแล้วจะลบไม่ได้)`,
+      )
+    )
+      return;
     setMenu(null);
     setBusy(row.key);
     try {
-      const res = await fetch(`/api/admin/receipts/campaigns?campaign=${encodeURIComponent(row.key)}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/admin/receipts/campaigns?campaign=${encodeURIComponent(row.key)}`,
+        {
+          method: "DELETE",
+        },
+      );
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "ลบไม่สำเร็จ");
       await load();
@@ -117,11 +155,16 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: 
     }
   }
 
-  if (error) return <p className="rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{error}</p>;
+  if (error)
+    return (
+      <p className="rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
+        {error}
+      </p>
+    );
   if (!rows)
     return (
       <div className="flex justify-center py-12 text-slate-400">
-        <Loader2 size={22} className="animate-spin" />
+        <Spinner size="md" color="current" />
       </div>
     );
 
@@ -129,79 +172,83 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: 
    *  card, because a phone needs to publish and delete a campaign too. */
   function RowMenu({ row }: { row: CampaignRow }) {
     return (
-          <span className="relative inline-flex items-center gap-1">
+      <span className="relative inline-flex items-center gap-1">
+        <button
+          type="button"
+          aria-label={`อื่นๆ สำหรับ ${row.name}`}
+          aria-expanded={menu?.key === row.key}
+          onClick={(e) => {
+            if (menu?.key === row.key) return setMenu(null);
+            const r = e.currentTarget.getBoundingClientRect();
+            setMenu({
+              key: row.key,
+              top: r.bottom + 6,
+              right: window.innerWidth - r.right,
+            });
+          }}
+          disabled={busy === row.key}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
+        >
+          {busy === row.key ? (
+            <Spinner size="sm" color="current" />
+          ) : (
+            <MoreHorizontal size={16} aria-hidden />
+          )}
+        </button>
+        <ChevronRight size={16} className="text-slate-300" aria-hidden />
+        {menu?.key === row.key && (
+          <>
+            {/* Anywhere else closes it — a menu that only shuts
+                    by pressing its own button is one you fight. */}
             <button
               type="button"
-              aria-label={`อื่นๆ สำหรับ ${row.name}`}
-              aria-expanded={menu?.key === row.key}
-              onClick={(e) => {
-                if (menu?.key === row.key) return setMenu(null);
-                const r = e.currentTarget.getBoundingClientRect();
-                setMenu({ key: row.key, top: r.bottom + 6, right: window.innerWidth - r.right });
-              }}
-              disabled={busy === row.key}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-surface-soft hover:text-brand-ink disabled:opacity-40"
+              aria-label="ปิดเมนู"
+              onClick={() => setMenu(null)}
+              className="fixed inset-0 z-20 cursor-default"
+            />
+            <div
+              style={{ top: menu.top, right: menu.right }}
+              className="fixed z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg"
             >
-              {busy === row.key ? (
-                <Loader2 size={15} className="animate-spin" />
-              ) : (
-                <MoreHorizontal size={16} aria-hidden />
-              )}
-            </button>
-            <ChevronRight size={16} className="text-slate-300" aria-hidden />
-            {menu?.key === row.key && (
-              <>
-                {/* Anywhere else closes it — a menu that only shuts
-                    by pressing its own button is one you fight. */}
-                <button
-                  type="button"
-                  aria-label="ปิดเมนู"
-                  onClick={() => setMenu(null)}
-                  className="fixed inset-0 z-20 cursor-default"
-                />
-                <div
-                  style={{ top: menu.top, right: menu.right }}
-                  className="fixed z-30 w-56 overflow-hidden rounded-l border border-surface-line bg-white py-1 text-left shadow-lg"
-                >
-                  {/* The same form that creates one — the schedule,
+              {/* The same form that creates one — the schedule,
                       the wording and the arithmetic all live in it,
                       so there is nothing smaller worth offering. */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenu(null);
-                      onOpen(row.key, "settings");
-                    }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
-                  >
-                    <Pencil size={14} aria-hidden /> แก้ไขกิจกรรม
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => togglePublished(row)}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
-                  >
-                    {row.published === false ? (
-                      <>
-                        <Eye size={14} aria-hidden /> เผยแพร่กิจกรรม
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff size={14} aria-hidden /> ปิดเผยแพร่
-                      </>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => remove(row)}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-rose-700 hover:bg-rose-50"
-                  >
-                    <Trash2 size={14} aria-hidden /> ลบกิจกรรม
-                  </button>
-                </div>
-              </>
-            )}
-          </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenu(null);
+                  onOpen(row.key, "settings");
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
+              >
+                <Pencil size={14} aria-hidden /> แก้ไขกิจกรรม
+              </button>
+              <button
+                type="button"
+                onClick={() => togglePublished(row)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-brand-ink hover:bg-surface-soft"
+              >
+                {row.published === false ? (
+                  <>
+                    <Eye size={14} aria-hidden /> เผยแพร่กิจกรรม
+                  </>
+                ) : (
+                  <>
+                    <EyeOff size={14} aria-hidden /> ปิดเผยแพร่
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => remove(row)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-rose-700 hover:bg-rose-50"
+              >
+                <Trash2 size={14} aria-hidden /> ลบกิจกรรม
+              </button>
+            </div>
+          </>
+        )}
+      </span>
     );
   }
 
@@ -223,7 +270,9 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: 
                 >
                   {row.name}
                 </button>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${phase.className}`}>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${phase.className}`}
+                >
                   {phase.label}
                 </span>
               </div>
@@ -245,17 +294,23 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: 
                 <dl className="flex gap-4 text-[11px] text-slate-500">
                   <div>
                     <dt>รอตรวจ</dt>
-                    <dd className={`text-[15px] font-bold tabular-nums ${row.pending ? "text-brand-ink" : "text-slate-300"}`}>
+                    <dd
+                      className={`text-[15px] font-bold tabular-nums ${row.pending ? "text-brand-ink" : "text-slate-300"}`}
+                    >
                       {row.pending ?? 0}
                     </dd>
                   </div>
                   <div>
                     <dt>อนุมัติแล้ว</dt>
-                    <dd className="text-[15px] font-bold tabular-nums text-slate-600">{row.approved ?? 0}</dd>
+                    <dd className="text-[15px] font-bold tabular-nums text-slate-600">
+                      {row.approved ?? 0}
+                    </dd>
                   </div>
                   <div>
                     <dt>ผู้ร่วมสนุก</dt>
-                    <dd className="text-[15px] font-bold tabular-nums text-slate-600">{row.entrants ?? 0}</dd>
+                    <dd className="text-[15px] font-bold tabular-nums text-slate-600">
+                      {row.entrants ?? 0}
+                    </dd>
                   </div>
                 </dl>
                 <RowMenu row={row} />
@@ -269,9 +324,9 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: 
         <table className={adminTable.table}>
           <thead className={adminTable.thead}>
             <tr>
-              <th >กิจกรรม</th>
-              <th >สถานะ</th>
-              <th >ช่วงรับใบเสร็จ</th>
+              <th>กิจกรรม</th>
+              <th>สถานะ</th>
+              <th>ช่วงรับใบเสร็จ</th>
               <th className="text-right">รอตรวจ</th>
               <th className="text-right">อนุมัติแล้ว</th>
               <th className="text-right">ผู้ร่วมสนุก</th>
@@ -288,7 +343,9 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: 
                   className={`${adminTable.row} cursor-pointer hover:bg-surface-soft`}
                 >
                   <td className={adminTable.cell}>
-                    <span className="block font-bold text-brand-ink">{row.name}</span>
+                    <span className="block font-bold text-brand-ink">
+                      {row.name}
+                    </span>
                     {/* The link as the customer will type it — the one field
                         that cannot be changed once a poster is printed. */}
                     <a
@@ -298,15 +355,20 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: 
                       onClick={(e) => e.stopPropagation()}
                       className="mt-0.5 inline-flex items-center gap-1 text-[12px] text-slate-500 hover:text-brand-ink hover:underline"
                     >
-                      /campaigns/{row.key} <ArrowUpRight size={12} aria-hidden />
+                      /campaigns/{row.key}{" "}
+                      <ArrowUpRight size={12} aria-hidden />
                     </a>
                   </td>
                   <td className={adminTable.cell}>
-                    <span className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${phase.className}`}>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${phase.className}`}
+                    >
                       {phase.label}
                     </span>
                   </td>
-                  <td className={`${adminTable.cell} text-[13px] text-slate-600`}>
+                  <td
+                    className={`${adminTable.cell} text-[13px] text-slate-600`}
+                  >
                     {day(row.opensAt)} – {day(row.closesAt)}
                   </td>
                   {/* The number that decides where to go first, so it is the
@@ -320,13 +382,20 @@ export default function CampaignIndex({ onOpen }: { onOpen: (key: string, tab?: 
                       {row.pending ?? 0}
                     </span>
                   </td>
-                  <td className={`${adminTable.cell} text-right text-[13px] tabular-nums text-slate-600`}>
+                  <td
+                    className={`${adminTable.cell} text-right text-[13px] tabular-nums text-slate-600`}
+                  >
                     {row.approved ?? 0}
                   </td>
-                  <td className={`${adminTable.cell} text-right text-[13px] tabular-nums text-slate-600`}>
+                  <td
+                    className={`${adminTable.cell} text-right text-[13px] tabular-nums text-slate-600`}
+                  >
                     {row.entrants ?? 0}
                   </td>
-                  <td className={`${adminTable.cell} text-right`} onClick={(e) => e.stopPropagation()}>
+                  <td
+                    className={`${adminTable.cell} text-right`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <RowMenu row={row} />
                   </td>
                 </tr>

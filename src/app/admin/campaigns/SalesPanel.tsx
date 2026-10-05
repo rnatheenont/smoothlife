@@ -12,14 +12,21 @@
 // On a phone the table becomes a list of cards — a five-column table on a
 // 375px screen is a horizontal scrollbar hiding the two columns that matter.
 import { useMemo, useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { Panel, adminTable } from "@/components/admin/layout-kit";
 import { when } from "./queue-vocab";
 import { formatTHB } from "@/lib/format";
+import { Spinner } from "@heroui/react";
 
 export type SaleItem = { title: string; quantity: number; amount: number };
-export type ReceiptState = "approved" | "pending_review" | "rejected" | "revoked";
-export type SaleReceipt = { state: ReceiptState; at: string; who: string | null; count: number };
+export type ReceiptState =
+  "approved" | "pending_review" | "rejected" | "revoked";
+export type SaleReceipt = {
+  state: ReceiptState;
+  at: string;
+  who: string | null;
+  count: number;
+};
 
 /** The claim on a bill, as the person chasing unclaimed ones needs to read it. */
 const RECEIPT_CHIP: Record<ReceiptState, [string, string]> = {
@@ -68,12 +75,17 @@ const pill =
 
 /** The claim chip, at the one size it is drawn in both layouts. */
 function ReceiptChip({ receipt }: { receipt: SaleReceipt | null }) {
-  if (!receipt) return <span className="text-[12px] text-slate-400">ยังไม่ยื่น</span>;
+  if (!receipt)
+    return <span className="text-[12px] text-slate-400">ยังไม่ยื่น</span>;
   const [label, tone] = RECEIPT_CHIP[receipt.state];
   return (
-    <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${tone}`}>
+    <span
+      className={`inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${tone}`}
+    >
       {label}
-      {receipt.count > 1 && <span className="ml-1 opacity-60">×{receipt.count}</span>}
+      {receipt.count > 1 && (
+        <span className="ml-1 opacity-60">×{receipt.count}</span>
+      )}
     </span>
   );
 }
@@ -104,7 +116,10 @@ export default function SalesPanel({
 
   const shown = useMemo(() => {
     let rows = sales?.orders ?? [];
-    if (state !== "all") rows = rows.filter((o) => (state === "none" ? !o.receipt : o.receipt?.state === state));
+    if (state !== "all")
+      rows = rows.filter((o) =>
+        state === "none" ? !o.receipt : o.receipt?.state === state,
+      );
     // Bills that earn nothing never appear here. This tab is read to chase
     // entries and a bill worth none is not a lead — the VIP sets the rules
     // exclude, and the odd order under the ฿690 step. The line under the
@@ -115,7 +130,11 @@ export default function SalesPanel({
       // Name first, because that is what the team is handed — "ลูกค้าชื่อ …
       // ซื้อหรือยัง" — but the order number and the email match too, since
       // those are the other two things a customer gives when they write in.
-      rows = rows.filter((o) => [o.customer, o.email, o.orderName].some((v) => v?.toLowerCase().includes(needle)));
+      rows = rows.filter((o) =>
+        [o.customer, o.email, o.orderName].some((v) =>
+          v?.toLowerCase().includes(needle),
+        ),
+      );
     }
     return rows;
   }, [sales, needle, state]);
@@ -130,7 +149,8 @@ export default function SalesPanel({
   const counts = useMemo(() => {
     const rows = (sales?.orders ?? []).filter((o) => o.entries > 0);
     const of = (k: ReceiptState | "none") =>
-      rows.filter((o) => (k === "none" ? !o.receipt : o.receipt?.state === k)).length;
+      rows.filter((o) => (k === "none" ? !o.receipt : o.receipt?.state === k))
+        .length;
     return {
       all: rows.length,
       approved: of("approved"),
@@ -159,24 +179,41 @@ export default function SalesPanel({
     <Panel
       title="ยอดขาย DENTISTE'"
       toolbar={
-        <button type="button" onClick={onRefresh} disabled={busy} className={pill}>
-          {busy ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <RefreshCw size={13} aria-hidden />}
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={busy}
+          className={pill}
+        >
+          {busy ? (
+            <Spinner size="sm" color="current" aria-hidden="true" />
+          ) : (
+            <RefreshCw size={13} aria-hidden />
+          )}
           รีเฟรช
         </button>
       }
     >
       <p className="max-w-4xl px-3 pt-3 text-[12px] leading-relaxed text-slate-500">
-        คำสั่งซื้อที่ <b>ชำระเงินสำเร็จ</b> ตั้งแต่ {sales ? sales.since.split("-").reverse().join("/") : "28/09/2026"}{" "}
+        คำสั่งซื้อที่ <b>ชำระเงินสำเร็จ</b> ตั้งแต่{" "}
+        {sales ? sales.since.split("-").reverse().join("/") : "28/09/2026"}{" "}
         ดึงตรงจาก Shopify · นับเฉพาะยอดของแบรนด์ DENTISTE&apos; ในแต่ละออร์เดอร์
-        (ออร์เดอร์ที่มีแบรนด์อื่นปนจะนับแค่ส่วนของ DENTISTE&apos;) · หักส่วนลดและของแถมออกแล้ว ·
-        แสดงเฉพาะบิลที่ได้สิทธิ์ ยอดตั้งแต่ {sales ? formatTHB(sales.totals.threshold) : "฿690"} ขึ้นไป
-        {sales && sales.totals.noEntry > 0 && ` (ซ่อนไว้ ${sales.totals.noEntry} บิล — รวมเซ็ต VIP ที่กติกาไม่นับสิทธิ์)`}
+        (ออร์เดอร์ที่มีแบรนด์อื่นปนจะนับแค่ส่วนของ DENTISTE&apos;) ·
+        หักส่วนลดและของแถมออกแล้ว · แสดงเฉพาะบิลที่ได้สิทธิ์ ยอดตั้งแต่{" "}
+        {sales ? formatTHB(sales.totals.threshold) : "฿690"} ขึ้นไป
+        {sales &&
+          sales.totals.noEntry > 0 &&
+          ` (ซ่อนไว้ ${sales.totals.noEntry} บิล — รวมเซ็ต VIP ที่กติกาไม่นับสิทธิ์)`}
       </p>
 
-      {error && <p className="mx-3 mt-3 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{error}</p>}
+      {error && (
+        <p className="mx-3 mt-3 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
+          {error}
+        </p>
+      )}
       {!sales && !error && (
         <div className="flex justify-center py-12 text-slate-400">
-          <Loader2 size={22} className="animate-spin" />
+          <Spinner size="md" color="current" />
         </div>
       )}
 
@@ -196,7 +233,11 @@ export default function SalesPanel({
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setState(key === "all" ? "all" : (key as ReceiptState | "none"))}
+                  onClick={() =>
+                    setState(
+                      key === "all" ? "all" : (key as ReceiptState | "none"),
+                    )
+                  }
                   aria-pressed={state === key}
                   className={`shrink-0 rounded-full px-3 py-2 text-[12px] font-semibold transition-colors ${
                     state === key
@@ -205,13 +246,14 @@ export default function SalesPanel({
                   }`}
                 >
                   {label}
-                  <span className={`ml-1.5 tabular-nums ${state === key ? "text-white/60" : "text-slate-400"}`}>
+                  <span
+                    className={`ml-1.5 tabular-nums ${state === key ? "text-white/60" : "text-slate-400"}`}
+                  >
                     {counts[key]}
                   </span>
                 </button>
               ))}
             </div>
-
           </div>
 
           {/* One strip rather than four floating cards: these four numbers are
@@ -225,8 +267,12 @@ export default function SalesPanel({
                   i < 2 ? "border-b border-surface-line" : ""
                 } ${i < 3 ? "md:border-r md:border-surface-line" : "md:border-r-0"} md:border-b-0`}
               >
-                <p className="text-[11px] font-medium text-slate-500">{label}</p>
-                <p className="mt-0.5 text-xl font-bold tabular-nums text-brand-ink">{value}</p>
+                <p className="text-[11px] font-medium text-slate-500">
+                  {label}
+                </p>
+                <p className="mt-0.5 text-xl font-bold tabular-nums text-brand-ink">
+                  {value}
+                </p>
               </div>
             ))}
           </div>
@@ -249,20 +295,39 @@ export default function SalesPanel({
                   <ReceiptChip receipt={o.receipt} />
                 </div>
 
-                <p className="mt-1.5 text-[13px] font-semibold text-brand-ink">{o.customer ?? "—"}</p>
-                {o.email && <p className="text-[11px] text-slate-400">{o.email}</p>}
+                <p className="mt-1.5 text-[13px] font-semibold text-brand-ink">
+                  {o.customer ?? "—"}
+                </p>
+                {o.email && (
+                  <p className="text-[11px] text-slate-400">{o.email}</p>
+                )}
 
                 <p className="mt-1.5 line-clamp-2 text-[12px] text-slate-600">
-                  {o.items.map((it) => `${it.title}${it.quantity > 1 ? ` ×${it.quantity}` : ""}`).join(" · ")}
+                  {o.items
+                    .map(
+                      (it) =>
+                        `${it.title}${it.quantity > 1 ? ` ×${it.quantity}` : ""}`,
+                    )
+                    .join(" · ")}
                 </p>
 
                 <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12px] text-slate-500">
-                  <span className="text-[15px] font-bold tabular-nums text-brand-ink">{formatTHB(o.amount)}</span>
+                  <span className="text-[15px] font-bold tabular-nums text-brand-ink">
+                    {formatTHB(o.amount)}
+                  </span>
                   <span>·</span>
-                  <span className={o.entries > 0 ? "font-semibold text-brand-ink" : "text-slate-400"}>
+                  <span
+                    className={
+                      o.entries > 0
+                        ? "font-semibold text-brand-ink"
+                        : "text-slate-400"
+                    }
+                  >
                     {o.entries > 0 ? `${o.entries} สิทธิ์` : "ไม่ได้สิทธิ์"}
                   </span>
-                  <span className="ml-auto text-[11px] text-slate-400">{when(o.paidAt)}</span>
+                  <span className="ml-auto text-[11px] text-slate-400">
+                    {when(o.paidAt)}
+                  </span>
                 </div>
               </li>
             ))}
@@ -275,7 +340,9 @@ export default function SalesPanel({
                   <th>คำสั่งซื้อ</th>
                   <th>ลูกค้า</th>
                   <th>สินค้า DENTISTE&apos;</th>
-                  <th className="whitespace-nowrap text-right">ยอด DENTISTE&apos;</th>
+                  <th className="whitespace-nowrap text-right">
+                    ยอด DENTISTE&apos;
+                  </th>
                   <th className="whitespace-nowrap text-right">สิทธิ์</th>
                   <th className="whitespace-nowrap">ใบเสร็จ</th>
                   <th className="whitespace-nowrap">ชำระเมื่อ</th>
@@ -295,22 +362,39 @@ export default function SalesPanel({
                       </a>
                     </td>
                     <td className={adminTable.cell}>
-                      <span className="font-semibold text-brand-ink">{o.customer ?? "—"}</span>
-                      {o.email && <span className="block text-[11px] text-slate-400">{o.email}</span>}
+                      <span className="font-semibold text-brand-ink">
+                        {o.customer ?? "—"}
+                      </span>
+                      {o.email && (
+                        <span className="block text-[11px] text-slate-400">
+                          {o.email}
+                        </span>
+                      )}
                     </td>
                     <td className={adminTable.cell}>
                       {o.items.map((it, i) => (
                         // Two lines is enough to tell these products apart;
                         // the rest is on hover rather than in a row four
                         // lines tall.
-                        <span key={i} title={it.title} className="line-clamp-2 block text-[12px] text-slate-600">
+                        <span
+                          key={i}
+                          title={it.title}
+                          className="line-clamp-2 block text-[12px] text-slate-600"
+                        >
                           {it.title}
-                          {it.quantity > 1 && <span className="text-slate-400"> ×{it.quantity}</span>}
+                          {it.quantity > 1 && (
+                            <span className="text-slate-400">
+                              {" "}
+                              ×{it.quantity}
+                            </span>
+                          )}
                         </span>
                       ))}
                     </td>
                     <td className={`${adminTable.mono} text-right`}>
-                      <span className="font-semibold text-brand-ink">{formatTHB(o.amount)}</span>
+                      <span className="font-semibold text-brand-ink">
+                        {formatTHB(o.amount)}
+                      </span>
                       {/* Said out loud only when they differ, so the number
                           above is never mistaken for the whole bill. */}
                       {Math.abs(o.orderTotal - o.amount) >= 0.5 && (
@@ -321,14 +405,20 @@ export default function SalesPanel({
                     </td>
                     <td className={`${adminTable.mono} text-right`}>
                       {o.entries > 0 ? (
-                        <span className="font-semibold text-brand-ink">{o.entries}</span>
+                        <span className="font-semibold text-brand-ink">
+                          {o.entries}
+                        </span>
                       ) : (
                         <span className="text-slate-300">—</span>
                       )}
                     </td>
                     <td className={adminTable.cell}>
                       <ReceiptChip receipt={o.receipt} />
-                      {o.receipt && <span className="mt-0.5 block text-[11px] text-slate-400">{when(o.receipt.at)}</span>}
+                      {o.receipt && (
+                        <span className="mt-0.5 block text-[11px] text-slate-400">
+                          {when(o.receipt.at)}
+                        </span>
+                      )}
                     </td>
                     <td className={adminTable.muted}>{when(o.paidAt)}</td>
                   </tr>
@@ -339,7 +429,9 @@ export default function SalesPanel({
 
           {shown.length === 0 && (
             <p className="border-t border-slate-100 px-3 py-8 text-center text-[13px] text-slate-500">
-              {needle ? `ไม่พบบิลที่ตรงกับ "${query.trim()}"` : "ไม่มีบิลในกลุ่มนี้"}
+              {needle
+                ? `ไม่พบบิลที่ตรงกับ "${query.trim()}"`
+                : "ไม่มีบิลในกลุ่มนี้"}
             </p>
           )}
         </>

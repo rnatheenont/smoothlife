@@ -30,7 +30,8 @@ type Layout = typeof DEFAULTS;
 /** A new width, or a function of the current one. */
 export type Width = number | ((prev: number) => number);
 
-const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+const clamp = (n: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, n));
 
 export function useInboxLayout() {
   // Starts at the defaults on both server and client, then reads the stored
@@ -45,7 +46,11 @@ export function useInboxLayout() {
       const saved = JSON.parse(raw) as Partial<Layout>;
       setLayout({
         list: clamp(Number(saved.list) || DEFAULTS.list, LIST_MIN, LIST_MAX),
-        panel: clamp(Number(saved.panel) || DEFAULTS.panel, PANEL_MIN, PANEL_MAX),
+        panel: clamp(
+          Number(saved.panel) || DEFAULTS.panel,
+          PANEL_MIN,
+          PANEL_MAX,
+        ),
         panelHidden: saved.panelHidden === true,
       });
     } catch {
@@ -94,7 +99,11 @@ export function useInboxLayout() {
     [save],
   );
   const togglePanel = useCallback(
-    () => save({ ...layoutRef.current, panelHidden: !layoutRef.current.panelHidden }),
+    () =>
+      save({
+        ...layoutRef.current,
+        panelHidden: !layoutRef.current.panelHidden,
+      }),
     [save],
   );
   const reset = useCallback(() => save(DEFAULTS), [save]);
@@ -139,7 +148,8 @@ export function ColumnResizer({
     setDragging(true);
 
     const move = (ev: PointerEvent) => {
-      const delta = edge === "right" ? ev.clientX - startX : startX - ev.clientX;
+      const delta =
+        edge === "right" ? ev.clientX - startX : startX - ev.clientX;
       onResize(Math.min(max, Math.max(min, startWidth + delta)));
     };
     const up = (ev: PointerEvent) => {

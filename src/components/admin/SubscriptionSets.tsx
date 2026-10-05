@@ -2,13 +2,26 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { AlertTriangle, Loader2, Minus, Package, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Minus,
+  Package,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { categories } from "@/data/categories";
-import { INTERVALS, STATUS_TH, type SubscriptionSetStatus } from "@/lib/subscription-sets";
+import {
+  INTERVALS,
+  STATUS_TH,
+  type SubscriptionSetStatus,
+} from "@/lib/subscription-sets";
 import { formatTHB } from "@/lib/format";
 import AdminSelect from "@/components/admin/AdminSelect";
-import { Button } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 import AdminField from "@/components/admin/AdminField";
 import AdminSearch from "@/components/admin/AdminSearch";
 
@@ -20,7 +33,11 @@ import AdminSearch from "@/components/admin/AdminSearch";
 // separately, and that a set with anything out of stock is not being sold —
 // a bundle is a promise about its contents.
 
-type Item = { product_slug: string; product_variant_id: string | null; quantity: number };
+type Item = {
+  product_slug: string;
+  product_variant_id: string | null;
+  quantity: number;
+};
 
 type Described = Item & {
   name: string;
@@ -52,7 +69,15 @@ type SetRow = {
   };
 };
 
-type Catalogue = { slug: string; name: string; brand: string; image: string; price: number; inStock: boolean; category: string };
+type Catalogue = {
+  slug: string;
+  name: string;
+  brand: string;
+  image: string;
+  price: number;
+  inStock: boolean;
+  category: string;
+};
 
 const STATUS_TONE: Record<SubscriptionSetStatus, string> = {
   active: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -60,12 +85,23 @@ const STATUS_TONE: Record<SubscriptionSetStatus, string> = {
   archived: "bg-slate-50 text-slate-400 ring-slate-200",
 };
 
-const EMPTY = { name: "", description: "", image_url: "", bundle_price: "", status: "draft" as SubscriptionSetStatus, interval_days: 30 };
+const EMPTY = {
+  name: "",
+  description: "",
+  image_url: "",
+  bundle_price: "",
+  status: "draft" as SubscriptionSetStatus,
+  interval_days: 30,
+};
 
 const field =
   "min-h-11 w-full rounded-xl2 border border-surface-line bg-white px-3 text-sm text-brand-ink focus:border-brand-800 focus:outline-none";
 
-export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[] }) {
+export default function SubscriptionSets({
+  catalogue,
+}: {
+  catalogue: Catalogue[];
+}) {
   const [sets, setSets] = useState<SetRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,9 +121,12 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/subscription-sets", { cache: "no-store" });
+      const res = await fetch("/api/admin/subscription-sets", {
+        cache: "no-store",
+      });
       const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || "โหลดรายการชุดไม่สำเร็จ");
+      if (!res.ok || !data.ok)
+        throw new Error(data.error || "โหลดรายการชุดไม่สำเร็จ");
       setSets(data.sets);
       setError(null);
     } catch (err) {
@@ -108,9 +147,15 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
       .catch(() => {});
   }, []);
 
-  const bySlug = useMemo(() => new Map(catalogue.map((p) => [p.slug, p])), [catalogue]);
+  const bySlug = useMemo(
+    () => new Map(catalogue.map((p) => [p.slug, p])),
+    [catalogue],
+  );
 
-  const chosen = useMemo(() => new Set(items.map((i) => i.product_slug)), [items]);
+  const chosen = useMemo(
+    () => new Set(items.map((i) => i.product_slug)),
+    [items],
+  );
 
   // Typing searches everything; an empty box offers what the shop already
   // treats as set material. Either way the list respects the category filter
@@ -118,7 +163,9 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
   const matches = useMemo(() => {
     const q = search.trim().toLowerCase();
     const pool = q
-      ? catalogue.filter((p) => `${p.name} ${p.brand} ${p.category}`.toLowerCase().includes(q))
+      ? catalogue.filter((p) =>
+          `${p.name} ${p.brand} ${p.category}`.toLowerCase().includes(q),
+        )
       : catalogue.filter((p) => suggested.includes(p.slug));
     return pool
       .filter((p) => !chosen.has(p.slug))
@@ -127,16 +174,30 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
   }, [catalogue, search, suggested, chosen, categoryFilter]);
 
   const addItem = (slug: string) => {
-    setItems((list) => (list.some((i) => i.product_slug === slug) ? list : [...list, { product_slug: slug, product_variant_id: null, quantity: 1 }]));
+    setItems((list) =>
+      list.some((i) => i.product_slug === slug)
+        ? list
+        : [
+            ...list,
+            { product_slug: slug, product_variant_id: null, quantity: 1 },
+          ],
+    );
     setSearch("");
   };
 
   // What the chosen products cost bought separately — the number the set's
   // price has to beat, shown as it is typed.
-  const separately = items.reduce((total, i) => total + (bySlug.get(i.product_slug)?.price ?? 0) * i.quantity, 0);
+  const separately = items.reduce(
+    (total, i) => total + (bySlug.get(i.product_slug)?.price ?? 0) * i.quantity,
+    0,
+  );
   const price = Number(form.bundle_price);
-  const savesBaht = Number.isFinite(price) && price > 0 && separately > price ? separately - price : 0;
-  const savesPercent = savesBaht > 0 ? Math.round((savesBaht / separately) * 100) : 0;
+  const savesBaht =
+    Number.isFinite(price) && price > 0 && separately > price
+      ? separately - price
+      : 0;
+  const savesPercent =
+    savesBaht > 0 ? Math.round((savesBaht / separately) * 100) : 0;
 
   const startCreate = () => {
     setEditingId(null);
@@ -165,11 +226,16 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(editingId ? `/api/admin/subscription-sets/${editingId}` : "/api/admin/subscription-sets", {
-        method: editingId ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, bundle_price: price, items }),
-      });
+      const res = await fetch(
+        editingId
+          ? `/api/admin/subscription-sets/${editingId}`
+          : "/api/admin/subscription-sets",
+        {
+          method: editingId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...form, bundle_price: price, items }),
+        },
+      );
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || "บันทึกไม่สำเร็จ");
       setOpen(false);
@@ -192,7 +258,9 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
 
   const remove = async (set: SetRow) => {
     if (!window.confirm(`ลบชุด "${set.name}"?`)) return;
-    const res = await fetch(`/api/admin/subscription-sets/${set.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/subscription-sets/${set.id}`, {
+      method: "DELETE",
+    });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) setError(data.error || "ลบไม่สำเร็จ");
     await load();
@@ -202,53 +270,80 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-slate-500">
-          ชุดที่ทีมจัดไว้ให้ลูกค้ากดสมัครทีเดียว — ตั้งราคาชุดให้ถูกกว่าซื้อแยก · ชุดที่มีสินค้าใดหมด จะไม่ถูกขายจนกว่าจะเติมของ
+          ชุดที่ทีมจัดไว้ให้ลูกค้ากดสมัครทีเดียว — ตั้งราคาชุดให้ถูกกว่าซื้อแยก
+          · ชุดที่มีสินค้าใดหมด จะไม่ถูกขายจนกว่าจะเติมของ
         </p>
-        <Button variant="primary"
-          onPress={startCreate}
-          
-        >
+        <Button variant="primary" onPress={startCreate}>
           <Plus size={15} /> สร้างชุดใหม่
         </Button>
       </div>
 
-      {error && <p className="mb-4 rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
+      {error && (
+        <p className="mb-4 rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </p>
+      )}
 
       {loading ? (
         <p className="py-10 text-center">
-          <Loader2 size={18} className="mx-auto animate-spin text-slate-300" />
+          <Spinner
+            size="md"
+            color="current"
+            className="mx-auto text-slate-300"
+          />
         </p>
       ) : sets.length === 0 ? (
         <div className="rounded-xl2 border border-dashed border-surface-line p-10 text-center">
           <Package size={22} className="mx-auto text-slate-300" />
           <p className="mt-2 text-sm text-slate-500">ยังไม่มีชุดที่จัดไว้</p>
-          <button type="button" onClick={startCreate} className="mt-2 text-sm font-semibold text-brand-800 hover:underline">
+          <button
+            type="button"
+            onClick={startCreate}
+            className="mt-2 text-sm font-semibold text-brand-800 hover:underline"
+          >
             + สร้างชุดแรก
           </button>
         </div>
       ) : (
         <ul className="flex flex-col gap-2">
           {sets.map((set) => (
-            <li key={set.id} className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
+            <li
+              key={set.id}
+              className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line"
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-brand-ink">{set.name}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${STATUS_TONE[set.status]}`}>
+                    <span className="font-semibold text-brand-ink">
+                      {set.name}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${STATUS_TONE[set.status]}`}
+                    >
                       {STATUS_TH[set.status]}
                     </span>
-                    <span className="rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-slate-500">ส่งทุก {set.interval_days} วัน</span>
+                    <span className="rounded-full bg-surface-soft px-2 py-0.5 text-[11px] text-slate-500">
+                      ส่งทุก {set.interval_days} วัน
+                    </span>
                   </p>
 
                   <p className="mt-1.5 flex flex-wrap items-baseline gap-2 text-sm">
-                    <span className="font-bold text-sale">{formatTHB(set.summary.bundle)}</span>
+                    <span className="font-bold text-sale">
+                      {formatTHB(set.summary.bundle)}
+                    </span>
                     {set.summary.saving > 0 && (
                       <>
-                        <span className="text-xs text-slate-400 line-through">{formatTHB(set.summary.separately)}</span>
-                        <span className="text-xs font-semibold text-emerald-700">ประหยัด {set.summary.savingPercent}%</span>
+                        <span className="text-xs text-slate-400 line-through">
+                          {formatTHB(set.summary.separately)}
+                        </span>
+                        <span className="text-xs font-semibold text-emerald-700">
+                          ประหยัด {set.summary.savingPercent}%
+                        </span>
                       </>
                     )}
-                    <span className="text-xs text-slate-400">· {set.summary.items.length} รายการในชุด</span>
+                    <span className="text-xs text-slate-400">
+                      · {set.summary.items.length} รายการในชุด
+                    </span>
                   </p>
 
                   <ul className="mt-2 flex flex-wrap gap-1.5">
@@ -256,16 +351,28 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
                       <li
                         key={item.product_slug}
                         className={`flex items-center gap-1.5 rounded-full py-0.5 pl-0.5 pr-2.5 text-[11px] ring-1 ${
-                          item.inStock ? "bg-surface-soft text-slate-600 ring-transparent" : "bg-amber-50 text-amber-800 ring-amber-200"
+                          item.inStock
+                            ? "bg-surface-soft text-slate-600 ring-transparent"
+                            : "bg-amber-50 text-amber-800 ring-amber-200"
                         }`}
                       >
                         {item.image && (
                           <span className="relative size-5 overflow-hidden rounded-full bg-white">
-                            <Image src={item.image} alt="" fill sizes="20px" className="object-cover" />
+                            <Image
+                              src={item.image}
+                              alt=""
+                              fill
+                              sizes="20px"
+                              className="object-cover"
+                            />
                           </span>
                         )}
                         <span className="max-w-40 truncate">{item.name}</span>
-                        {item.quantity > 1 && <span className="font-semibold">×{item.quantity}</span>}
+                        {item.quantity > 1 && (
+                          <span className="font-semibold">
+                            ×{item.quantity}
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -273,7 +380,11 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
                   {set.status === "active" && !set.summary.sellable && (
                     <p className="mt-2 flex items-center gap-1.5 rounded-xl2 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                       <AlertTriangle size={13} className="shrink-0" />
-                      ซ่อนจากหน้าร้านอยู่ — {set.summary.outOfStock.map((i) => i.name).join(", ")} หมดสต็อก
+                      ซ่อนจากหน้าร้านอยู่ —{" "}
+                      {set.summary.outOfStock
+                        .map((i) => i.name)
+                        .join(", ")}{" "}
+                      หมดสต็อก
                     </p>
                   )}
                 </div>
@@ -281,7 +392,12 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
                 <div className="flex shrink-0 items-center gap-1">
                   <button
                     type="button"
-                    onClick={() => setStatus(set, set.status === "active" ? "draft" : "active")}
+                    onClick={() =>
+                      setStatus(
+                        set,
+                        set.status === "active" ? "draft" : "active",
+                      )
+                    }
                     className="min-h-9 rounded-full px-3 text-sm font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft"
                   >
                     {set.status === "active" ? "หยุดขาย" : "เปิดขาย"}
@@ -308,7 +424,11 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
         </ul>
       )}
 
-      <FormDrawer open={open} title={editingId ? "แก้ไขชุด" : "สร้างชุดใหม่"} onClose={() => setOpen(false)}>
+      <FormDrawer
+        open={open}
+        title={editingId ? "แก้ไขชุด" : "สร้างชุดใหม่"}
+        onClose={() => setOpen(false)}
+      >
         <div className="flex flex-col gap-4">
           <AdminField
             label="ชื่อชุด"
@@ -328,7 +448,9 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
           />
 
           <div>
-            <p className="mb-1.5 text-sm font-semibold text-brand-ink">สินค้าในชุด ({items.length})</p>
+            <p className="mb-1.5 text-sm font-semibold text-brand-ink">
+              สินค้าในชุด ({items.length})
+            </p>
             <AdminSearch
               className="w-full"
               value={search}
@@ -354,7 +476,9 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
                   onClick={() => setCategoryFilter(c.slug)}
                   aria-pressed={categoryFilter === c.slug}
                   className={`min-h-8 rounded-full px-3 text-xs font-semibold transition ${
-                    categoryFilter === c.slug ? "bg-brand-800 text-white" : "bg-surface-soft text-slate-600 hover:text-brand-ink"
+                    categoryFilter === c.slug
+                      ? "bg-brand-800 text-white"
+                      : "bg-surface-soft text-slate-600 hover:text-brand-ink"
                   }`}
                 >
                   {c.nameTh}
@@ -383,16 +507,28 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
                         className="flex w-full items-center gap-2.5 rounded-xl2 p-2 text-left hover:bg-surface-soft disabled:opacity-40"
                       >
                         <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-white ring-1 ring-surface-line">
-                          <Image src={p.image} alt="" fill sizes="36px" className="object-contain p-0.5" />
+                          <Image
+                            src={p.image}
+                            alt=""
+                            fill
+                            sizes="36px"
+                            className="object-contain p-0.5"
+                          />
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="line-clamp-1 text-xs text-brand-ink">{p.name}</span>
+                          <span className="line-clamp-1 text-xs text-brand-ink">
+                            {p.name}
+                          </span>
                           <span className="text-[11px] text-slate-500">
                             {p.brand} · {formatTHB(p.price)}
                             {!p.inStock && " · สินค้าหมด"}
                           </span>
                         </span>
-                        {already && <span className="text-[11px] text-slate-400">อยู่ในชุดแล้ว</span>}
+                        {already && (
+                          <span className="text-[11px] text-slate-400">
+                            อยู่ในชุดแล้ว
+                          </span>
+                        )}
                       </button>
                     </li>
                   );
@@ -405,12 +541,25 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
                 {items.map((item) => {
                   const p = bySlug.get(item.product_slug);
                   return (
-                    <li key={item.product_slug} className="flex items-center gap-2 rounded-xl2 bg-surface-soft p-2">
+                    <li
+                      key={item.product_slug}
+                      className="flex items-center gap-2 rounded-xl2 bg-surface-soft p-2"
+                    >
                       <span className="relative size-9 shrink-0 overflow-hidden rounded-lg bg-white">
-                        {p?.image && <Image src={p.image} alt="" fill sizes="36px" className="object-contain p-0.5" />}
+                        {p?.image && (
+                          <Image
+                            src={p.image}
+                            alt=""
+                            fill
+                            sizes="36px"
+                            className="object-contain p-0.5"
+                          />
+                        )}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="line-clamp-1 text-xs text-brand-ink">{p?.name ?? item.product_slug}</span>
+                        <span className="line-clamp-1 text-xs text-brand-ink">
+                          {p?.name ?? item.product_slug}
+                        </span>
                         <span className="text-[11px] text-slate-500">
                           {formatTHB((p?.price ?? 0) * item.quantity)}
                           {p && !p.inStock && " · สินค้าหมด"}
@@ -422,20 +571,36 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
                           aria-label="ลดจำนวน"
                           onClick={() =>
                             setItems((list) =>
-                              list.map((i) => (i.product_slug === item.product_slug ? { ...i, quantity: Math.max(1, i.quantity - 1) } : i))
+                              list.map((i) =>
+                                i.product_slug === item.product_slug
+                                  ? {
+                                      ...i,
+                                      quantity: Math.max(1, i.quantity - 1),
+                                    }
+                                  : i,
+                              ),
                             )
                           }
                           className="grid size-8 place-items-center rounded-full bg-white text-slate-600"
                         >
                           <Minus size={13} />
                         </button>
-                        <span className="w-6 text-center text-sm font-semibold tabular-nums">{item.quantity}</span>
+                        <span className="w-6 text-center text-sm font-semibold tabular-nums">
+                          {item.quantity}
+                        </span>
                         <button
                           type="button"
                           aria-label="เพิ่มจำนวน"
                           onClick={() =>
                             setItems((list) =>
-                              list.map((i) => (i.product_slug === item.product_slug ? { ...i, quantity: Math.min(20, i.quantity + 1) } : i))
+                              list.map((i) =>
+                                i.product_slug === item.product_slug
+                                  ? {
+                                      ...i,
+                                      quantity: Math.min(20, i.quantity + 1),
+                                    }
+                                  : i,
+                              ),
                             )
                           }
                           className="grid size-8 place-items-center rounded-full bg-white text-slate-600"
@@ -445,7 +610,13 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
                         <button
                           type="button"
                           aria-label={`เอา ${p?.name ?? ""} ออกจากชุด`}
-                          onClick={() => setItems((list) => list.filter((i) => i.product_slug !== item.product_slug))}
+                          onClick={() =>
+                            setItems((list) =>
+                              list.filter(
+                                (i) => i.product_slug !== item.product_slug,
+                              ),
+                            )
+                          }
                           className="grid size-8 place-items-center rounded-full text-slate-400 hover:text-rose-600"
                         >
                           <Trash2 size={14} />
@@ -456,7 +627,11 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
                 })}
               </ul>
             )}
-            {items.length < 2 && <p className="mt-2 text-xs text-slate-500">ชุดต้องมีสินค้าอย่างน้อย 2 รายการ</p>}
+            {items.length < 2 && (
+              <p className="mt-2 text-xs text-slate-500">
+                ชุดต้องมีสินค้าอย่างน้อย 2 รายการ
+              </p>
+            )}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -471,16 +646,24 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
               />
             </div>
             <div>
-              <label htmlFor="set-interval" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+              <label
+                htmlFor="set-interval"
+                className="mb-1.5 block text-sm font-semibold text-brand-ink"
+              >
                 รอบจัดส่ง
               </label>
               <AdminSelect
                 label="รอบจัดส่ง"
                 value={String(form.interval_days)}
-                onChange={(v) => setForm((f) => ({ ...f, interval_days: Number(v) }))}
+                onChange={(v) =>
+                  setForm((f) => ({ ...f, interval_days: Number(v) }))
+                }
                 className="w-full"
                 triggerClassName="min-h-11 w-full rounded-xl2 text-sm font-normal"
-                options={INTERVALS.map((d) => ({ value: String(d), label: `ทุก ${d} วัน` }))}
+                options={INTERVALS.map((d) => ({
+                  value: String(d),
+                  label: `ทุก ${d} วัน`,
+                }))}
               />
             </div>
           </div>
@@ -489,14 +672,22 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
           <div className="rounded-xl2 bg-surface-soft p-3 text-sm">
             <p className="flex flex-wrap items-baseline justify-between gap-2">
               <span className="text-slate-600">ซื้อแยกรวม</span>
-              <span className="font-semibold text-brand-ink">{formatTHB(separately)}</span>
+              <span className="font-semibold text-brand-ink">
+                {formatTHB(separately)}
+              </span>
             </p>
             <p className="mt-1 flex flex-wrap items-baseline justify-between gap-2">
               <span className="text-slate-600">ราคาชุด</span>
-              <span className="font-bold text-sale">{price > 0 ? formatTHB(price) : "—"}</span>
+              <span className="font-bold text-sale">
+                {price > 0 ? formatTHB(price) : "—"}
+              </span>
             </p>
-            <p className={`mt-1 text-xs font-semibold ${savesBaht > 0 ? "text-emerald-700" : "text-slate-400"}`}>
-              {savesBaht > 0 ? `ลูกค้าประหยัด ${formatTHB(savesBaht)} (${savesPercent}%)` : "ตั้งราคาชุดให้ถูกกว่าซื้อแยก"}
+            <p
+              className={`mt-1 text-xs font-semibold ${savesBaht > 0 ? "text-emerald-700" : "text-slate-400"}`}
+            >
+              {savesBaht > 0
+                ? `ลูกค้าประหยัด ${formatTHB(savesBaht)} (${savesPercent}%)`
+                : "ตั้งราคาชุดให้ถูกกว่าซื้อแยก"}
             </p>
           </div>
 
@@ -510,7 +701,9 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
                   onClick={() => setForm((f) => ({ ...f, status: s }))}
                   aria-pressed={form.status === s}
                   className={`min-h-9 rounded-full px-4 text-sm font-semibold transition ${
-                    form.status === s ? "bg-white text-brand-ink shadow-card" : "text-slate-600 hover:text-brand-ink"
+                    form.status === s
+                      ? "bg-white text-brand-ink shadow-card"
+                      : "text-slate-600 hover:text-brand-ink"
                   }`}
                 >
                   {STATUS_TH[s]}
@@ -530,10 +723,16 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
             <button
               type="button"
               onClick={save}
-              disabled={saving || items.length < 2 || !form.name.trim() || !(price > 0)}
+              disabled={
+                saving || items.length < 2 || !form.name.trim() || !(price > 0)
+              }
               className="min-h-12 flex-1 rounded-full bg-brand-800 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {saving ? "กำลังบันทึก…" : editingId ? "บันทึกการแก้ไข" : "สร้างชุด"}
+              {saving
+                ? "กำลังบันทึก…"
+                : editingId
+                  ? "บันทึกการแก้ไข"
+                  : "สร้างชุด"}
             </button>
           </div>
         </div>

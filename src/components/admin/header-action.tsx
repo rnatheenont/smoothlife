@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Button } from "@heroui/react";
 
 // The primary action of an admin page ("สร้างแคมเปญใหม่", "เพิ่ม…") belongs in
@@ -8,9 +16,17 @@ import { Button } from "@heroui/react";
 // only the page itself knows what that action is and how to run it. So a page
 // registers one with useAdminAction, and the shell renders it in its header.
 
-export type AdminAction = { label: string; icon?: ReactNode; onClick: () => void; disabled?: boolean };
+export type AdminAction = {
+  label: string;
+  icon?: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+};
 
-const Ctx = createContext<{ action: AdminAction | null; setAction: (a: AdminAction | null) => void }>({
+const Ctx = createContext<{
+  action: AdminAction | null;
+  setAction: (a: AdminAction | null) => void;
+}>({
   action: null,
   setAction: () => {},
 });
@@ -54,7 +70,11 @@ export function AdminActionButton() {
   const { action } = useContext(Ctx);
   if (!action) return null;
   return (
-    <Button onPress={action.onClick} isDisabled={action.disabled} className="shrink-0">
+    <Button
+      onPress={action.onClick}
+      isDisabled={action.disabled}
+      className="shrink-0"
+    >
       {action.icon}
       {action.label}
     </Button>

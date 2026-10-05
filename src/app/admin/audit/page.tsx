@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@heroui/react";
-import { PageHeader, Panel, adminCards, adminTable } from "@/components/admin/layout-kit";
+import {
+  PageHeader,
+  Panel,
+  adminCards,
+  adminTable,
+} from "@/components/admin/layout-kit";
 import AdminSelect from "@/components/admin/AdminSelect";
 import AdminSearch from "@/components/admin/AdminSearch";
 
@@ -74,9 +79,13 @@ export default function AuditPage() {
       const params = new URLSearchParams();
       if (query) params.set("q", query);
       if (action) params.set("action", action);
-      const res = await fetch(`/api/admin/audit${params.size ? `?${params}` : ""}`, { cache: "no-store" });
+      const res = await fetch(
+        `/api/admin/audit${params.size ? `?${params}` : ""}`,
+        { cache: "no-store" },
+      );
       const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.error || "โหลดบันทึกไม่สำเร็จ");
+      if (!res.ok || !json.ok)
+        throw new Error(json.error || "โหลดบันทึกไม่สำเร็จ");
       setEntries(json.entries as Entry[]);
       setActions(json.actions as string[]);
       setTotal(json.total as number);
@@ -123,12 +132,15 @@ export default function AuditPage() {
         </Button>
 
         <span className="text-[12px] text-slate-500">
-          {total} รายการ{total > entries.length ? ` · แสดง ${entries.length} ล่าสุด` : ""}
+          {total} รายการ
+          {total > entries.length ? ` · แสดง ${entries.length} ล่าสุด` : ""}
         </span>
       </div>
 
       {error && (
-        <p className="mb-3 rounded-l border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-800">{error}</p>
+        <p className="mb-3 rounded-l border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-800">
+          {error}
+        </p>
       )}
 
       <Panel title="ล่าสุดก่อน">
@@ -142,8 +154,12 @@ export default function AuditPage() {
               {entries.map((e) => (
                 <li key={e.id} className={adminCards.item}>
                   <div className={adminCards.head}>
-                    <span className="text-[13px] font-bold text-brand-ink">{LABEL[e.action] ?? e.action}</span>
-                    <span className="text-[11px] text-slate-400">{when(e.at)}</span>
+                    <span className="text-[13px] font-bold text-brand-ink">
+                      {LABEL[e.action] ?? e.action}
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      {when(e.at)}
+                    </span>
                   </div>
                   <p className="mt-1 text-[12px] text-slate-500">
                     โดย {e.who ?? e.actor ?? "—"}
@@ -174,16 +190,26 @@ export default function AuditPage() {
                     <tr key={e.id} className={adminTable.row}>
                       <td className={adminTable.muted}>{when(e.at)}</td>
                       <td className={adminTable.cell}>
-                        <span className="font-semibold text-brand-ink">{LABEL[e.action] ?? e.action}</span>
+                        <span className="font-semibold text-brand-ink">
+                          {LABEL[e.action] ?? e.action}
+                        </span>
                         {LABEL[e.action] && (
-                          <span className="block font-mono text-[11px] text-slate-400">{e.action}</span>
+                          <span className="block font-mono text-[11px] text-slate-400">
+                            {e.action}
+                          </span>
                         )}
                       </td>
-                      <td className={adminTable.cell}>{e.who ?? e.actor ?? "—"}</td>
-                      <td className={adminTable.mono}>{e.target ? e.target.slice(0, 8) : "—"}</td>
+                      <td className={adminTable.cell}>
+                        {e.who ?? e.actor ?? "—"}
+                      </td>
+                      <td className={adminTable.mono}>
+                        {e.target ? e.target.slice(0, 8) : "—"}
+                      </td>
                       <td className="px-3 py-2 text-[11px] leading-5 text-slate-500">
                         <span className="block max-w-[420px] break-all">
-                          {e.detail && Object.keys(e.detail).length > 0 ? JSON.stringify(e.detail) : "—"}
+                          {e.detail && Object.keys(e.detail).length > 0
+                            ? JSON.stringify(e.detail)
+                            : "—"}
                         </span>
                       </td>
                     </tr>

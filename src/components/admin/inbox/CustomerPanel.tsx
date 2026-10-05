@@ -3,7 +3,6 @@
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 import {
-  Loader2,
   Sparkles,
   Flag,
   ThumbsUp,
@@ -13,7 +12,9 @@ import {
   Eye,
   Link2,
 } from "lucide-react";
-import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
+import SkinScanSummary, {
+  type AdminSkinScan,
+} from "@/components/admin/SkinScanSummary";
 import { Button, Spinner } from "@heroui/react";
 
 // The third column of the inbox.
@@ -64,7 +65,12 @@ export type Insight = {
   analyzedAt: string;
 };
 
-type OrderItem = { title: string; quantity: number; slug: string | null; imageUrl: string | null };
+type OrderItem = {
+  title: string;
+  quantity: number;
+  slug: string | null;
+  imageUrl: string | null;
+};
 type Order = {
   id: string;
   name: string;
@@ -80,15 +86,42 @@ type Order = {
 
 const baht = (n: number) => `฿${n.toLocaleString("th-TH")}`;
 
-const MOOD: Record<string, { label: string; emoji: string; className: string }> = {
-  happy: { label: "พอใจ", emoji: "🙂", className: "bg-emerald-50 text-emerald-700" },
-  neutral: { label: "ปกติ", emoji: "😐", className: "bg-slate-100 text-slate-600" },
-  confused: { label: "สับสน", emoji: "😕", className: "bg-amber-50 text-amber-700" },
-  annoyed: { label: "หงุดหงิด", emoji: "😒", className: "bg-orange-50 text-orange-700" },
-  angry: { label: "ไม่พอใจ", emoji: "😠", className: "bg-rose-50 text-rose-700" },
+const MOOD: Record<
+  string,
+  { label: string; emoji: string; className: string }
+> = {
+  happy: {
+    label: "พอใจ",
+    emoji: "🙂",
+    className: "bg-emerald-50 text-emerald-700",
+  },
+  neutral: {
+    label: "ปกติ",
+    emoji: "😐",
+    className: "bg-slate-100 text-slate-600",
+  },
+  confused: {
+    label: "สับสน",
+    emoji: "😕",
+    className: "bg-amber-50 text-amber-700",
+  },
+  annoyed: {
+    label: "หงุดหงิด",
+    emoji: "😒",
+    className: "bg-orange-50 text-orange-700",
+  },
+  angry: {
+    label: "ไม่พอใจ",
+    emoji: "😠",
+    className: "bg-rose-50 text-rose-700",
+  },
 };
 
-const CONFIDENCE: Record<string, string> = { low: "ต่ำ", medium: "กลาง", high: "สูง" };
+const CONFIDENCE: Record<string, string> = {
+  low: "ต่ำ",
+  medium: "กลาง",
+  high: "สูง",
+};
 
 /** Shopify's own words for where an order stands, in the words staff use. */
 const ORDER_STATUS: Record<string, string> = {
@@ -107,7 +140,11 @@ const FULFILMENT: Record<string, string> = {
 };
 
 const thaiDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" });
+  new Date(iso).toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: "2-digit",
+  });
 
 type Tab = "profile" | "orders" | "products";
 
@@ -137,7 +174,9 @@ export default function CustomerPanel({
   const [tab, setTab] = useState<Tab>("profile");
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
-  const [verdict, setVerdict] = useState<string | null>(insight?.staffVerdict ?? null);
+  const [verdict, setVerdict] = useState<string | null>(
+    insight?.staffVerdict ?? null,
+  );
   const [flagging, setFlagging] = useState(false);
 
   // Orders are a Shopify round trip, so they are fetched when the tab is
@@ -166,7 +205,9 @@ export default function CustomerPanel({
       .then((r) => r.json())
       .then((d) => {
         setOrders(d.ok ? (d.orders ?? []) : []);
-        setOrdersReason(d.ok ? (d.reason ?? null) : (d.error ?? "อ่านคำสั่งซื้อไม่สำเร็จ"));
+        setOrdersReason(
+          d.ok ? (d.reason ?? null) : (d.error ?? "อ่านคำสั่งซื้อไม่สำเร็จ"),
+        );
       })
       .catch(() => {
         setOrders([]);
@@ -179,7 +220,9 @@ export default function CustomerPanel({
     setAnalyzing(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/inbox/${conversationId}/analyze`, { method: "POST" });
+      const res = await fetch(`/api/admin/inbox/${conversationId}/analyze`, {
+        method: "POST",
+      });
       const data = await res.json();
       if (!data.ok) {
         setError(data.error || "วิเคราะห์ไม่สำเร็จ");
@@ -218,7 +261,11 @@ export default function CustomerPanel({
   const TABS: { id: Tab; label: string; count?: number }[] = [
     { id: "profile", label: "โปรไฟล์" },
     { id: "orders", label: "คำสั่งซื้อ", count: orders?.length },
-    { id: "products", label: "สินค้า", count: discussedSlugs.length + viewedSlugs.length },
+    {
+      id: "products",
+      label: "สินค้า",
+      count: discussedSlugs.length + viewedSlugs.length,
+    },
   ];
 
   return (
@@ -226,7 +273,9 @@ export default function CustomerPanel({
       {/* Always visible, whichever tab is open: switching to the order list
           should not cost sight of whose order list it is. */}
       <div>
-        <p className="font-semibold text-brand-ink">{customer?.name || "ไม่ระบุชื่อ"}</p>
+        <p className="font-semibold text-brand-ink">
+          {customer?.name || "ไม่ระบุชื่อ"}
+        </p>
         {customer?.email && <p className="text-slate-500">{customer.email}</p>}
         {customer?.phone && <p className="text-slate-500">{customer.phone}</p>}
         {!customer && <p className="text-slate-400">ยังไม่ได้ผูกบัญชี</p>}
@@ -244,12 +293,16 @@ export default function CustomerPanel({
             onClick={() => setTab(t.id)}
             className={clsx(
               "flex-1 rounded-md px-2 py-1.5 transition-colors",
-              tab === t.id ? "bg-white text-brand-ink shadow-card" : "text-slate-500 hover:text-brand-ink",
+              tab === t.id
+                ? "bg-white text-brand-ink shadow-card"
+                : "text-slate-500 hover:text-brand-ink",
             )}
           >
             {t.label}
             {typeof t.count === "number" && t.count > 0 && (
-              <span className="ml-1 text-[10px] font-normal text-slate-400">{t.count}</span>
+              <span className="ml-1 text-[10px] font-normal text-slate-400">
+                {t.count}
+              </span>
             )}
           </button>
         ))}
@@ -263,18 +316,36 @@ export default function CustomerPanel({
           <div className="rounded-lg border border-slate-100 bg-surface-soft p-2.5">
             <div className="flex items-center justify-between gap-2">
               <p className="inline-flex items-center gap-1.5 font-semibold text-brand-ink">
-                <Sparkles size={13} className="text-brand-emerald" aria-hidden="true" /> สรุปจากบอท
+                <Sparkles
+                  size={13}
+                  className="text-brand-emerald"
+                  aria-hidden="true"
+                />{" "}
+                สรุปจากบอท
               </p>
               {insight && (
-                <span className="text-[10px] text-slate-400">{thaiDate(insight.analyzedAt)}</span>
+                <span className="text-[10px] text-slate-400">
+                  {thaiDate(insight.analyzedAt)}
+                </span>
               )}
             </div>
 
             {!insight ? (
               <div className="mt-2">
-                <p className="mb-2 text-slate-500">ยังไม่เคยวิเคราะห์บทสนทนานี้</p>
-                <Button size="sm" variant="secondary" onPress={analyze} isPending={analyzing}>
-                  {analyzing ? <Spinner size="sm" color="current" /> : <Sparkles size={13} />}
+                <p className="mb-2 text-slate-500">
+                  ยังไม่เคยวิเคราะห์บทสนทนานี้
+                </p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={analyze}
+                  isPending={analyzing}
+                >
+                  {analyzing ? (
+                    <Spinner size="sm" color="current" />
+                  ) : (
+                    <Sparkles size={13} />
+                  )}
                   วิเคราะห์เลย
                 </Button>
               </div>
@@ -294,20 +365,34 @@ export default function CustomerPanel({
                   <span
                     className={clsx(
                       "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold",
-                      MOOD[insight.mood ?? "neutral"]?.className ?? MOOD.neutral.className,
+                      MOOD[insight.mood ?? "neutral"]?.className ??
+                        MOOD.neutral.className,
                     )}
                   >
-                    {MOOD[insight.mood ?? "neutral"]?.emoji} {MOOD[insight.mood ?? "neutral"]?.label}
+                    {MOOD[insight.mood ?? "neutral"]?.emoji}{" "}
+                    {MOOD[insight.mood ?? "neutral"]?.label}
                   </span>
                   <span className="text-[10px] text-slate-400">
                     ความมั่นใจ {CONFIDENCE[insight.confidence ?? "low"] ?? "—"}
                   </span>
                 </p>
-                {insight.reason && <p className="text-[11px] text-slate-400">{insight.reason}</p>}
+                {insight.reason && (
+                  <p className="text-[11px] text-slate-400">{insight.reason}</p>
+                )}
 
                 {insight.suggestUrgent && urgency !== "urgent" && (
-                  <Button size="sm" variant="secondary" onPress={flag} isPending={flagging} className="mt-1 self-start">
-                    {flagging ? <Spinner size="sm" color="current" /> : <Flag size={13} />}
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onPress={flag}
+                    isPending={flagging}
+                    className="mt-1 self-start"
+                  >
+                    {flagging ? (
+                      <Spinner size="sm" color="current" />
+                    ) : (
+                      <Flag size={13} />
+                    )}
                     ขึ้นธงด่วน
                   </Button>
                 )}
@@ -320,13 +405,17 @@ export default function CustomerPanel({
                 {/* Whether the reading was right, from the person who can tell.
                     Kept so "how often is it wrong" is answerable later. */}
                 <div className="mt-1.5 flex items-center gap-1.5 border-t border-slate-100 pt-1.5">
-                  <span className="text-[10px] text-slate-400">สรุปตรงไหม?</span>
+                  <span className="text-[10px] text-slate-400">
+                    สรุปตรงไหม?
+                  </span>
                   <button
                     onClick={() => sendVerdict("agree")}
                     aria-pressed={verdict === "agree"}
                     className={clsx(
                       "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]",
-                      verdict === "agree" ? "bg-emerald-50 text-emerald-700" : "text-slate-400 hover:text-brand-ink",
+                      verdict === "agree"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "text-slate-400 hover:text-brand-ink",
                     )}
                   >
                     <ThumbsUp size={11} /> ตรง
@@ -336,7 +425,9 @@ export default function CustomerPanel({
                     aria-pressed={verdict === "disagree"}
                     className={clsx(
                       "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]",
-                      verdict === "disagree" ? "bg-rose-50 text-rose-700" : "text-slate-400 hover:text-brand-ink",
+                      verdict === "disagree"
+                        ? "bg-rose-50 text-rose-700"
+                        : "text-slate-400 hover:text-brand-ink",
                     )}
                   >
                     <ThumbsDown size={11} /> ไม่ตรง
@@ -358,17 +449,27 @@ export default function CustomerPanel({
             <>
               <div className="rounded-lg bg-surface-soft p-2.5">
                 <p className="text-slate-500">
-                  ระดับ <span className="font-semibold text-brand-ink">{customer.tier || "—"}</span>
+                  ระดับ{" "}
+                  <span className="font-semibold text-brand-ink">
+                    {customer.tier || "—"}
+                  </span>
                 </p>
                 <p className="text-slate-500">
-                  แต้มคงเหลือ <span className="font-semibold text-brand-ink">{customer.points ?? "—"}</span>
+                  แต้มคงเหลือ{" "}
+                  <span className="font-semibold text-brand-ink">
+                    {customer.points ?? "—"}
+                  </span>
                 </p>
                 {customer.spend12mo !== null && (
-                  <p className="text-slate-500">ยอดซื้อ 12 เดือน {baht(customer.spend12mo)}</p>
+                  <p className="text-slate-500">
+                    ยอดซื้อ 12 เดือน {baht(customer.spend12mo)}
+                  </p>
                 )}
               </div>
               <div>
-                <p className="mb-1 font-semibold text-slate-500">สมาชิกรายเดือน</p>
+                <p className="mb-1 font-semibold text-slate-500">
+                  สมาชิกรายเดือน
+                </p>
                 {customer.subscriptions.length === 0 ? (
                   <p className="text-slate-400">—</p>
                 ) : (
@@ -387,7 +488,9 @@ export default function CustomerPanel({
               </div>
             </>
           ) : (
-            <p className="text-slate-400">ยังไม่รู้ว่าเป็นลูกค้าคนไหน (ยังไม่ได้ผูกบัญชี)</p>
+            <p className="text-slate-400">
+              ยังไม่รู้ว่าเป็นลูกค้าคนไหน (ยังไม่ได้ผูกบัญชี)
+            </p>
           )}
         </div>
       )}
@@ -396,12 +499,15 @@ export default function CustomerPanel({
         <div className="flex flex-col gap-2">
           {loadingOrders ? (
             <p className="inline-flex items-center gap-1.5 text-slate-400">
-              <Loader2 size={13} className="animate-spin" /> กำลังอ่านคำสั่งซื้อ…
+              <Spinner size="sm" color="current" /> กำลังอ่านคำสั่งซื้อ…
             </p>
           ) : orders && orders.length > 0 ? (
             <>
               {orders.map((o) => (
-                <div key={o.id} className="rounded-lg border border-slate-100 bg-white p-2.5">
+                <div
+                  key={o.id}
+                  className="rounded-lg border border-slate-100 bg-white p-2.5"
+                >
                   <div className="flex items-baseline justify-between gap-2">
                     {o.adminUrl ? (
                       <a
@@ -414,20 +520,30 @@ export default function CustomerPanel({
                         <ExternalLink size={11} aria-hidden="true" />
                       </a>
                     ) : (
-                      <span className="font-mono text-[12px] font-semibold text-brand-ink">{o.name}</span>
+                      <span className="font-mono text-[12px] font-semibold text-brand-ink">
+                        {o.name}
+                      </span>
                     )}
-                    <span className="text-[10px] text-slate-400">{thaiDate(o.createdAt)}</span>
+                    <span className="text-[10px] text-slate-400">
+                      {thaiDate(o.createdAt)}
+                    </span>
                   </div>
                   <p className="mt-0.5 flex flex-wrap gap-1.5 text-[10px]">
                     {o.cancelledAt ? (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">ยกเลิกแล้ว</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">
+                        ยกเลิกแล้ว
+                      </span>
                     ) : (
                       <>
                         <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">
-                          {ORDER_STATUS[o.financialStatus ?? ""] ?? o.financialStatus ?? "—"}
+                          {ORDER_STATUS[o.financialStatus ?? ""] ??
+                            o.financialStatus ??
+                            "—"}
                         </span>
                         <span className="rounded-full bg-sky-50 px-2 py-0.5 text-sky-700">
-                          {FULFILMENT[o.fulfillmentStatus ?? ""] ?? o.fulfillmentStatus ?? "—"}
+                          {FULFILMENT[o.fulfillmentStatus ?? ""] ??
+                            o.fulfillmentStatus ??
+                            "—"}
                         </span>
                       </>
                     )}
@@ -446,15 +562,25 @@ export default function CustomerPanel({
                           />
                         ) : (
                           <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-surface-soft">
-                            <Package size={13} className="text-slate-300" aria-hidden="true" />
+                            <Package
+                              size={13}
+                              className="text-slate-300"
+                              aria-hidden="true"
+                            />
                           </span>
                         )}
-                        <span className="min-w-0 flex-1 truncate text-slate-600">{it.title}</span>
-                        <span className="shrink-0 text-slate-400">×{it.quantity}</span>
+                        <span className="min-w-0 flex-1 truncate text-slate-600">
+                          {it.title}
+                        </span>
+                        <span className="shrink-0 text-slate-400">
+                          ×{it.quantity}
+                        </span>
                       </div>
                     ))}
                     {o.items.length > 3 && (
-                      <p className="text-[10px] text-slate-400">และอีก {o.items.length - 3} รายการ</p>
+                      <p className="text-[10px] text-slate-400">
+                        และอีก {o.items.length - 3} รายการ
+                      </p>
                     )}
                   </div>
                   <p className="mt-1.5 border-t border-slate-100 pt-1.5 text-right font-semibold text-brand-ink">
@@ -558,9 +684,13 @@ function ProductGroup({
                     {card.name}
                   </a>
                   <p className="mt-0.5 flex items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-brand-800">{baht(card.price)}</span>
+                    <span className="text-[11px] font-bold text-brand-800">
+                      {baht(card.price)}
+                    </span>
                     {card.inStock === false && (
-                      <span className="rounded-full bg-rose-50 px-1.5 text-[10px] text-rose-600">หมด</span>
+                      <span className="rounded-full bg-rose-50 px-1.5 text-[10px] text-rose-600">
+                        หมด
+                      </span>
                     )}
                   </p>
                 </div>

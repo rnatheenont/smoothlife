@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Loader2, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { Panel } from "@/components/admin/layout-kit";
 import AdminSelect from "@/components/admin/AdminSelect";
 import { Button, Checkbox, Input, Spinner, TextArea } from "@heroui/react";
@@ -155,7 +155,7 @@ export default function CampaignSettings({
     return (
       <Panel title="เงื่อนไขและข้อความบนหน้าแคมเปญ">
         <p className="flex items-center gap-2 px-3 py-6 text-[13px] text-slate-500">
-          <Loader2 size={15} className="animate-spin" /> กำลังโหลด
+          <Spinner size="sm" color="current" /> กำลังโหลด
         </p>
       </Panel>
     );

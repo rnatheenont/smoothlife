@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UserCog, Plus, Copy, Check, KeyRound, Ban, RotateCcw } from "lucide-react";
+import {
+  UserCog,
+  Plus,
+  Copy,
+  Check,
+  KeyRound,
+  Ban,
+  RotateCcw,
+} from "lucide-react";
 import { Badge, Field, Modal } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
@@ -54,7 +62,9 @@ function TempPasswordModal({
       description={`สำหรับ ${email} — เห็นได้แค่ครั้งนี้ครั้งเดียว`}
     >
       <div className="flex items-center gap-2 rounded-lg border border-dashed border-brand-teal/40 bg-brand-gradient-soft px-3 py-2.5">
-        <code className="min-w-0 flex-1 truncate text-sm font-semibold text-brand-ink">{tempPassword}</code>
+        <code className="min-w-0 flex-1 truncate text-sm font-semibold text-brand-ink">
+          {tempPassword}
+        </code>
         <button
           type="button"
           onClick={() => {
@@ -89,13 +99,19 @@ export default function AdminUsersPage() {
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const [tempPassword, setTempPassword] = useState<{ email: string; value: string } | null>(null);
+  const [tempPassword, setTempPassword] = useState<{
+    email: string;
+    value: string;
+  } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
     setError("");
-    const [meRes, usersRes] = await Promise.all([fetch("/api/admin/me"), fetch("/api/admin/users")]);
+    const [meRes, usersRes] = await Promise.all([
+      fetch("/api/admin/me"),
+      fetch("/api/admin/users"),
+    ]);
     const meData = await meRes.json().catch(() => null);
     setMe(meData?.user ?? null);
     const usersData = await usersRes.json().catch(() => null);
@@ -142,7 +158,10 @@ export default function AdminUsersPage() {
         return;
       }
       setCreateOpen(false);
-      setTempPassword({ email: data.user.email, value: data.user.tempPassword });
+      setTempPassword({
+        email: data.user.email,
+        value: data.user.tempPassword,
+      });
       load();
     } finally {
       setSubmitting(false);
@@ -164,10 +183,13 @@ export default function AdminUsersPage() {
       }
       if (patch.reset_password) {
         const target = users.find((u) => u.id === id);
-        if (target) setTempPassword({ email: target.email, value: data.tempPassword });
+        if (target)
+          setTempPassword({ email: target.email, value: data.tempPassword });
         return;
       }
-      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...data.user } : u)));
+      setUsers((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, ...data.user } : u)),
+      );
     } finally {
       setBusyId(null);
     }
@@ -188,7 +210,10 @@ export default function AdminUsersPage() {
           <p className="text-sm text-slate-500">{error}</p>
         </div>
       ) : (
-        <Panel title="บัญชีทั้งหมด" icon={<UserCog size={15} className="text-brand-600" />}>
+        <Panel
+          title="บัญชีทั้งหมด"
+          icon={<UserCog size={15} className="text-brand-600" />}
+        >
           {/* A table on a screen with room for one, because the questions
               asked here are comparisons — who has which permission, who has
               not signed in — and the controls were sitting wherever the name
@@ -213,7 +238,9 @@ export default function AdminUsersPage() {
                         <p className="flex flex-wrap items-center gap-1.5 font-semibold text-brand-ink">
                           {u.display_name}
                           {isSelf && <Badge tone="brand">คุณ</Badge>}
-                          {u.status === "suspended" && <Badge tone="danger">ระงับการใช้งาน</Badge>}
+                          {u.status === "suspended" && (
+                            <Badge tone="danger">ระงับการใช้งาน</Badge>
+                          )}
                         </p>
                         <p className="text-[12px] text-slate-400">{u.email}</p>
                       </td>
@@ -225,25 +252,41 @@ export default function AdminUsersPage() {
                           onChange={(v) => patchUser(u.id, { role_key: v })}
                           className="w-full"
                           triggerClassName="w-full"
-                          options={roles.map((r) => ({ value: r.key, label: r.label }))}
+                          options={roles.map((r) => ({
+                            value: r.key,
+                            label: r.label,
+                          }))}
                         />
                       </td>
-                      <td className={adminTable.muted}>{formatDate(u.last_login_at)}</td>
+                      <td className={adminTable.muted}>
+                        {formatDate(u.last_login_at)}
+                      </td>
                       <td className={adminTable.cell}>
                         <span className="flex flex-wrap justify-end gap-1.5">
                           <Button
                             variant="secondary"
                             size="sm"
                             isDisabled={busyId === u.id}
-                            onPress={() => patchUser(u.id, { reset_password: true })}
+                            onPress={() =>
+                              patchUser(u.id, { reset_password: true })
+                            }
                           >
                             <KeyRound size={13} /> ตั้งรหัสผ่านใหม่
                           </Button>
                           <Button
-                            variant={u.status === "active" ? "danger" : "secondary"}
+                            variant={
+                              u.status === "active" ? "danger" : "secondary"
+                            }
                             size="sm"
                             isDisabled={isSelf || busyId === u.id}
-                            onPress={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
+                            onPress={() =>
+                              patchUser(u.id, {
+                                status:
+                                  u.status === "active"
+                                    ? "suspended"
+                                    : "active",
+                              })
+                            }
                           >
                             {u.status === "active" ? (
                               <>
@@ -272,7 +315,9 @@ export default function AdminUsersPage() {
                   <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-brand-ink">
                     {u.display_name}
                     {isSelf && <Badge tone="brand">คุณ</Badge>}
-                    {u.status === "suspended" && <Badge tone="danger">ระงับการใช้งาน</Badge>}
+                    {u.status === "suspended" && (
+                      <Badge tone="danger">ระงับการใช้งาน</Badge>
+                    )}
                   </p>
                   <p className="mt-0.5 text-[11px] text-slate-400">
                     {u.email} · เข้าระบบล่าสุด {formatDate(u.last_login_at)}
@@ -284,7 +329,10 @@ export default function AdminUsersPage() {
                     onChange={(v) => patchUser(u.id, { role_key: v })}
                     className="mt-2 w-full"
                     triggerClassName="w-full"
-                    options={roles.map((r) => ({ value: r.key, label: r.label }))}
+                    options={roles.map((r) => ({
+                      value: r.key,
+                      label: r.label,
+                    }))}
                   />
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <Button
@@ -299,7 +347,12 @@ export default function AdminUsersPage() {
                       variant={u.status === "active" ? "danger" : "secondary"}
                       size="sm"
                       isDisabled={isSelf || busyId === u.id}
-                      onPress={() => patchUser(u.id, { status: u.status === "active" ? "suspended" : "active" })}
+                      onPress={() =>
+                        patchUser(u.id, {
+                          status:
+                            u.status === "active" ? "suspended" : "active",
+                        })
+                      }
                     >
                       {u.status === "active" ? (
                         <>
@@ -338,7 +391,9 @@ export default function AdminUsersPage() {
             label="ชื่อที่ใช้แสดงผล"
             required
             value={form.display_name}
-            onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, display_name: e.target.value }))
+            }
             placeholder="เช่น น้ำฝน (ทีมแชท)"
           />
           <div>

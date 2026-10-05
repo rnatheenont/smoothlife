@@ -253,12 +253,10 @@ export default function AdminCheckoutTransactionsPage() {
 
   useAdminAction({
     label: "รีเฟรชรายการซื้อ",
-    icon: (
-      <RefreshCw
-        size={15}
-        className={loading ? "animate-spin" : ""}
-        aria-hidden
-      />
+    icon: loading ? (
+      <Spinner size="sm" color="current" />
+    ) : (
+      <RefreshCw size={15} aria-hidden />
     ),
     onClick: load,
     disabled: loading,

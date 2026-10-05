@@ -25,7 +25,6 @@ import {
   type ReactNode,
 } from "react";
 import {
-  Loader2,
   Send,
   RefreshCw,
   CheckCheck,
@@ -395,12 +394,10 @@ export default function AdminInboxPage() {
 
   useAdminAction({
     label: "รีเฟรชกล่องข้อความ",
-    icon: (
-      <RefreshCw
-        size={15}
-        className={loadingList ? "animate-spin" : ""}
-        aria-hidden
-      />
+    icon: loadingList ? (
+      <Spinner size="sm" color="current" />
+    ) : (
+      <RefreshCw size={15} aria-hidden />
     ),
     onClick: () => loadList(),
     disabled: loadingList,
@@ -1018,7 +1015,7 @@ export default function AdminInboxPage() {
                     title="ส่งต่อเป็นเคสที่ต้องติดตามงาน (ร้องเรียน/คืนสินค้า)"
                   >
                     {filingCase ? (
-                      <Loader2 size={11} className="animate-spin" />
+                      <Spinner size="sm" color="current" className="size-3" />
                     ) : (
                       <ClipboardList size={11} />
                     )}
@@ -1177,9 +1174,10 @@ export default function AdminInboxPage() {
                                     className="mt-1.5 flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 hover:bg-surface-soft disabled:opacity-50"
                                   >
                                     {translating === m.id ? (
-                                      <Loader2
-                                        size={10}
-                                        className="animate-spin"
+                                      <Spinner
+                                        size="sm"
+                                        color="current"
+                                        className="size-3"
                                       />
                                     ) : (
                                       <Languages size={10} />
@@ -1223,9 +1221,10 @@ export default function AdminInboxPage() {
                                     } disabled:opacity-60`}
                                   >
                                     {promoting === m.id ? (
-                                      <Loader2
-                                        size={10}
-                                        className="animate-spin"
+                                      <Spinner
+                                        size="sm"
+                                        color="current"
+                                        className="size-3"
                                       />
                                     ) : promoted.includes(m.id) ? (
                                       <Check size={10} />
@@ -1259,7 +1258,7 @@ export default function AdminInboxPage() {
                     className="flex items-center gap-1 rounded-full border border-brand-teal/40 px-2.5 py-1 text-[11px] font-semibold text-brand-800 disabled:opacity-50"
                   >
                     {drafting ? (
-                      <Loader2 size={11} className="animate-spin" />
+                      <Spinner size="sm" color="current" className="size-3" />
                     ) : (
                       <Sparkles size={11} />
                     )}

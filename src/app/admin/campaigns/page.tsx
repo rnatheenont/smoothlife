@@ -10,7 +10,7 @@
 // order, and the photo is what says the order is really theirs.
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import {
   PageHeader,
   Panel,
@@ -521,7 +521,7 @@ export default function Page() {
       )}
       {!data && !error && (
         <div className="flex justify-center py-12 text-slate-400">
-          <Loader2 size={22} className="animate-spin" />
+          <Spinner size="md" color="current" />
         </div>
       )}
 

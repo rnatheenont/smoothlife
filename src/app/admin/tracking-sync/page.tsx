@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Info,
   Play,
-  Loader2,
   ExternalLink,
   PlugZap,
   KeyRound,
@@ -46,7 +45,12 @@ function baseOrderRef(row: TrackingSyncRow) {
   return /[a-z0-9]/.test(base) ? base : "";
 }
 
-type GroupedRow = { row: TrackingSyncRow; box: number; boxes: number; firstOfSet: boolean };
+type GroupedRow = {
+  row: TrackingSyncRow;
+  box: number;
+  boxes: number;
+  firstOfSet: boolean;
+};
 
 /**
  * Reorders the log so every box of one order sits together.
@@ -70,15 +74,30 @@ function groupParcels(rows: TrackingSyncRow[]): GroupedRow[] {
     else buckets.set(key, [row]);
   }
 
-  const newest = (list: TrackingSyncRow[]) => Math.max(...list.map((r) => new Date(r.received_at).getTime()));
+  const newest = (list: TrackingSyncRow[]) =>
+    Math.max(...list.map((r) => new Date(r.received_at).getTime()));
 
   return [...buckets.values()]
-    .map((list) => [...list].sort((a, b) => +new Date(b.received_at) - +new Date(a.received_at)))
+    .map((list) =>
+      [...list].sort(
+        (a, b) => +new Date(b.received_at) - +new Date(a.received_at),
+      ),
+    )
     .sort((a, b) => newest(b) - newest(a))
-    .flatMap((list) => list.map((row, i) => ({ row, box: i + 1, boxes: list.length, firstOfSet: i === 0 })));
+    .flatMap((list) =>
+      list.map((row, i) => ({
+        row,
+        box: i + 1,
+        boxes: list.length,
+        firstOfSet: i === 0,
+      })),
+    );
 }
 
-const ACTION: Record<string, { label: string; tone: "success" | "neutral" | "danger" | "warning" | "info" }> = {
+const ACTION: Record<
+  string,
+  { label: string; tone: "success" | "neutral" | "danger" | "warning" | "info" }
+> = {
   fill: { label: "พร้อมเติม", tone: "info" },
   "already-set": { label: "ตรงกันอยู่แล้ว", tone: "success" },
   conflict: { label: "ไม่ตรงกัน", tone: "danger" },
@@ -111,7 +130,8 @@ const RUN_ROW = new Set(["run-empty", "run-failed"]);
  */
 const FOLLOW_UP = /_F|ของส่งตาม/;
 const isFollowUp = (r: TrackingSyncRow) =>
-  r.action === "not-eligible" && FOLLOW_UP.test(`${r.order_ref} ${r.reason ?? ""}`);
+  r.action === "not-eligible" &&
+  FOLLOW_UP.test(`${r.order_ref} ${r.reason ?? ""}`);
 
 /** What a person decided about a row, in that person's words. */
 const RESOLUTION: Record<string, { done: string; by: string }> = {
@@ -177,10 +197,19 @@ function HealthTile({
   }[tone];
   return (
     <Card padded={false} className="flex min-w-0 items-start gap-3 p-4">
-      <span className={clsx("grid size-9 shrink-0 place-items-center rounded-l", ring)}>{icon}</span>
+      <span
+        className={clsx(
+          "grid size-9 shrink-0 place-items-center rounded-l",
+          ring,
+        )}
+      >
+        {icon}
+      </span>
       <div className="min-w-0">
         <p className="text-[11px] font-medium text-slate-500">{label}</p>
-        <p className="mt-0.5 truncate text-sm font-semibold text-brand-ink">{value}</p>
+        <p className="mt-0.5 truncate text-sm font-semibold text-brand-ink">
+          {value}
+        </p>
         {children}
       </div>
     </Card>
@@ -201,7 +230,8 @@ function WhoTag({ row }: { row: TrackingSyncRow }) {
   if (row.resolution)
     return (
       <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold text-brand-800">
-        <UserRound size={12} aria-hidden /> {RESOLUTION[row.resolution]?.by ?? "คนตัดสิน"}
+        <UserRound size={12} aria-hidden />{" "}
+        {RESOLUTION[row.resolution]?.by ?? "คนตัดสิน"}
       </span>
     );
   if (row.triggered_by === "admin")
@@ -223,7 +253,10 @@ function WhoTag({ row }: { row: TrackingSyncRow }) {
 }
 
 function ResultTag({ row }: { row: TrackingSyncRow }) {
-  const meta = ACTION[row.action] ?? { label: row.action, tone: "neutral" as const };
+  const meta = ACTION[row.action] ?? {
+    label: row.action,
+    tone: "neutral" as const,
+  };
   // "fill" is a decision, not an outcome, and one badge covered three of
   // them: a number written to Shopify, one held back by the hourly cap, and
   // one Shopify refused. Only the first is a success, so only the first is
@@ -245,7 +278,9 @@ function ResultTag({ row }: { row: TrackingSyncRow }) {
       {row.action === "conflict" && (row.seen_count ?? 1) > 1 && (
         <span
           className="mt-1 block text-[10px] text-slate-400"
-          title={row.last_seen_at ? `ล่าสุด ${fmt(row.last_seen_at)}` : undefined}
+          title={
+            row.last_seen_at ? `ล่าสุด ${fmt(row.last_seen_at)}` : undefined
+          }
         >
           เจอซ้ำ {row.seen_count} รอบ
         </span>
@@ -267,7 +302,9 @@ function Reason({ row }: { row: TrackingSyncRow }) {
           stores the same sentence in both columns, so printing both put every
           one of those rows on the page twice. */}
       {row.error && row.error.trim() !== (row.reason ?? "").trim() && (
-        <span className="mt-0.5 block text-[11px] text-rose-600">{row.error}</span>
+        <span className="mt-0.5 block text-[11px] text-rose-600">
+          {row.error}
+        </span>
       )}
     </>
   );
@@ -284,7 +321,10 @@ function RowActions({
   row: TrackingSyncRow;
   shopDomain: string | null;
   resolving: string | null;
-  onResolve: (row: TrackingSyncRow, resolution: "overwritten" | "ignored") => void;
+  onResolve: (
+    row: TrackingSyncRow,
+    resolution: "overwritten" | "ignored",
+  ) => void;
   onAttach: (row: TrackingSyncRow, decision: "attach" | "skip") => void;
 }) {
   // A mismatch used to end at its reason: the page named the problem and
@@ -335,7 +375,8 @@ function RowActions({
   if (row.resolved_at)
     return (
       <span className="block text-[11px] font-medium text-slate-400">
-        {RESOLUTION[row.resolution ?? ""]?.done ?? "จัดการแล้ว"} · {fmt(row.resolved_at)}
+        {RESOLUTION[row.resolution ?? ""]?.done ?? "จัดการแล้ว"} ·{" "}
+        {fmt(row.resolved_at)}
       </span>
     );
 
@@ -387,7 +428,9 @@ export default function AdminTrackingSyncPage() {
     setRunning(true);
     setRunResult(null);
     try {
-      const res = await fetch("/api/admin/tracking-sync/run", { method: "POST" });
+      const res = await fetch("/api/admin/tracking-sync/run", {
+        method: "POST",
+      });
       // A run that overruns Vercel's 60s limit comes back as an HTML error
       // page, and calling .json() on that surfaced a raw SyntaxError to staff
       // instead of saying what happened.
@@ -407,16 +450,26 @@ export default function AdminTrackingSyncPage() {
         setRunResult(`ไม่สำเร็จ: ${r.error ?? "ไม่ทราบสาเหตุ"}`);
       } else if (!r.found) {
         const d = r.diagnostics as
-          { pagesScanned?: number; candidates?: number; skipped?: number; ranOutOfTime?: boolean } | undefined;
+          | {
+              pagesScanned?: number;
+              candidates?: number;
+              skipped?: number;
+              ranOutOfTime?: boolean;
+            }
+          | undefined;
         setRunResult(
           `ไม่มีรายการใหม่ — อ่าน ${d?.pagesScanned ?? "?"} หน้า พบ ${d?.candidates ?? "?"} ออเดอร์ ` +
             `ข้ามที่ทำไปแล้ว ${d?.skipped ?? 0} รายการ` +
-            (d?.ranOutOfTime ? " (อ่านไม่ครบ เพราะใกล้หมดเวลา — กดอีกครั้งเพื่ออ่านต่อ)" : ""),
+            (d?.ranOutOfTime
+              ? " (อ่านไม่ครบ เพราะใกล้หมดเวลา — กดอีกครั้งเพื่ออ่านต่อ)"
+              : ""),
         );
       } else {
         setRunResult(
           `ดึงมา ${r.found} รายการ · เขียนลง Shopify ${r.applied ?? 0} · ต้องตรวจสอบ ${r.conflicts ?? 0}` +
-            (Number(r.unfinished) > 0 ? ` · เหลืออีก ${r.unfinished} รายการ กดอีกครั้งเพื่อทำต่อ` : ""),
+            (Number(r.unfinished) > 0
+              ? ` · เหลืออีก ${r.unfinished} รายการ กดอีกครั้งเพื่อทำต่อ`
+              : ""),
         );
       }
     } catch (err) {
@@ -430,7 +483,10 @@ export default function AdminTrackingSyncPage() {
 
   const [resolving, setResolving] = useState<string | null>(null);
 
-  async function resolve(row: TrackingSyncRow, resolution: "overwritten" | "ignored") {
+  async function resolve(
+    row: TrackingSyncRow,
+    resolution: "overwritten" | "ignored",
+  ) {
     const order = row.resolved_order_name || row.order_ref;
     const message =
       resolution === "overwritten"
@@ -496,12 +552,19 @@ export default function AdminTrackingSyncPage() {
 
   useAdminAction({
     label: running ? "กำลังดึง…" : "ดึงจาก soko เดี๋ยวนี้",
-    icon: running ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Play size={15} aria-hidden />,
+    icon: running ? (
+      <Spinner size="sm" color="current" aria-hidden="true" />
+    ) : (
+      <Play size={15} aria-hidden />
+    ),
     onClick: runNow,
     disabled: running || loading,
   });
 
-  const visible = useMemo(() => (data?.rows ?? []).filter((r) => showTests || !r.is_test), [data?.rows, showTests]);
+  const visible = useMemo(
+    () => (data?.rows ?? []).filter((r) => showTests || !r.is_test),
+    [data?.rows, showTests],
+  );
 
   // The chips count what the log actually holds, so a chip can never offer a
   // filter that turns the table empty.
@@ -511,23 +574,33 @@ export default function AdminTrackingSyncPage() {
     return acc;
   }, [visible]);
 
-  const openConflicts = useMemo(() => visible.filter((r) => r.action === "conflict" && !r.resolved_at), [visible]);
+  const openConflicts = useMemo(
+    () => visible.filter((r) => r.action === "conflict" && !r.resolved_at),
+    [visible],
+  );
 
-  const parcels = useMemo(() => visible.filter((r) => !RUN_ROW.has(r.action)), [visible]);
+  const parcels = useMemo(
+    () => visible.filter((r) => !RUN_ROW.has(r.action)),
+    [visible],
+  );
 
   // One entry per parcel: runs before 15 Sep logged the same follow-up on
   // every pass, and six rows for one box is not six decisions.
   const followUps = useMemo(() => {
     const seen = new Set<string>();
     return visible.filter((r) => {
-      if (!isFollowUp(r) || r.resolved_at || seen.has(r.tracking_number)) return false;
+      if (!isFollowUp(r) || r.resolved_at || seen.has(r.tracking_number))
+        return false;
       seen.add(r.tracking_number);
       return true;
     });
   }, [visible]);
 
   const grouped = useMemo(
-    () => groupParcels(filter ? visible.filter((r) => r.action === filter) : parcels),
+    () =>
+      groupParcels(
+        filter ? visible.filter((r) => r.action === filter) : parcels,
+      ),
     [visible, parcels, filter],
   );
 
@@ -542,7 +615,8 @@ export default function AdminTrackingSyncPage() {
           </h1>
           <p className="mt-0.5 text-body-xs text-slate-500">
             อ่านเลขพัสดุจาก soko แล้วเทียบกับออเดอร์ใน Shopify
-            {data?.connection.lastSuccessAt && ` · ดึงสำเร็จล่าสุด ${fmt(data.connection.lastSuccessAt)}`}
+            {data?.connection.lastSuccessAt &&
+              ` · ดึงสำเร็จล่าสุด ${fmt(data.connection.lastSuccessAt)}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -551,8 +625,18 @@ export default function AdminTrackingSyncPage() {
               CRON_SECRET is stored on Vercel as a sensitive value, so nobody
               can read it back — triggering a run by hand meant rotating it and
               redeploying. Staff are already signed in here; that is the key. */}
-          <Button variant="secondary" size="sm" onPress={load} isPending={loading}>
-            {loading ? <Spinner size="sm" color="current" /> : <RefreshCw size={13} />} รีเฟรช
+          <Button
+            variant="secondary"
+            size="sm"
+            onPress={load}
+            isPending={loading}
+          >
+            {loading ? (
+              <Spinner size="sm" color="current" />
+            ) : (
+              <RefreshCw size={13} />
+            )}{" "}
+            รีเฟรช
           </Button>
         </div>
       </header>
@@ -572,10 +656,17 @@ export default function AdminTrackingSyncPage() {
           icon={failing ? <AlertTriangle size={17} /> : <PlugZap size={17} />}
           label="การเชื่อมต่อ soko"
           tone={failing ? "bad" : "ok"}
-          value={failing ? `ล้มเหลวติดกัน ${data?.connection.consecutiveFailures} รอบ` : "ปกติ"}
+          value={
+            failing
+              ? `ล้มเหลวติดกัน ${data?.connection.consecutiveFailures} รอบ`
+              : "ปกติ"
+          }
         >
           <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
-            สำเร็จล่าสุด: {data?.connection.lastSuccessAt ? fmt(data.connection.lastSuccessAt) : "ยังไม่เคย"}
+            สำเร็จล่าสุด:{" "}
+            {data?.connection.lastSuccessAt
+              ? fmt(data.connection.lastSuccessAt)
+              : "ยังไม่เคย"}
             {data?.connection.lastFailureAt && (
               <>
                 <br />
@@ -584,12 +675,16 @@ export default function AdminTrackingSyncPage() {
             )}
           </p>
           {failing && data?.connection.lastFailureReason && (
-            <p className="mt-1 text-[11px] text-rose-700">{data.connection.lastFailureReason}</p>
+            <p className="mt-1 text-[11px] text-rose-700">
+              {data.connection.lastFailureReason}
+            </p>
           )}
         </HealthTile>
 
         <HealthTile
-          icon={dryRun ? <ShieldCheck size={17} /> : <AlertTriangle size={17} />}
+          icon={
+            dryRun ? <ShieldCheck size={17} /> : <AlertTriangle size={17} />
+          }
           label="โหมดการทำงาน"
           tone={dryRun ? "info" : "warn"}
           value={dryRun ? "ทดลอง (dry run)" : (data?.mode ?? "—")}
@@ -614,10 +709,18 @@ export default function AdminTrackingSyncPage() {
         >
           <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
             เขียนเลขพัสดุ:{" "}
-            {data?.canWrite ? <b className="text-brand-800">มี ✅</b> : <b className="text-rose-600">ยังไม่มี ❌</b>}
+            {data?.canWrite ? (
+              <b className="text-brand-800">มี ✅</b>
+            ) : (
+              <b className="text-rose-600">ยังไม่มี ❌</b>
+            )}
             <br />
             สั่ง fulfill เองได้:{" "}
-            {data?.canFulfil ? <b className="text-brand-800">มี ✅</b> : <b className="text-rose-600">ยังไม่มี ❌</b>}
+            {data?.canFulfil ? (
+              <b className="text-brand-800">มี ✅</b>
+            ) : (
+              <b className="text-rose-600">ยังไม่มี ❌</b>
+            )}
           </p>
         </HealthTile>
       </div>
@@ -629,7 +732,8 @@ export default function AdminTrackingSyncPage() {
         <section className="rounded-xl2 border border-rose-200 bg-rose-50/50 p-4">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <h2 className="flex items-center gap-1.5 text-sm font-bold text-rose-800">
-              <AlertTriangle size={15} /> ต้องตัดสิน {openConflicts.length} รายการ
+              <AlertTriangle size={15} /> ต้องตัดสิน {openConflicts.length}{" "}
+              รายการ
             </h2>
             {/* This used to say "check them all before turning on real
                 writing" regardless of mode — while the mode was already
@@ -660,16 +764,24 @@ export default function AdminTrackingSyncPage() {
                 {openConflicts.map((r) => (
                   <tr key={r.id} className={adminTable.row}>
                     <td className={adminTable.cell}>
-                      <span className="font-semibold text-brand-ink">{r.resolved_order_name || r.order_ref}</span>
+                      <span className="font-semibold text-brand-ink">
+                        {r.resolved_order_name || r.order_ref}
+                      </span>
                       {(r.seen_count ?? 1) > 1 && (
-                        <span className="mt-0.5 block text-[11px] text-slate-400">เจอซ้ำ {r.seen_count} รอบ</span>
+                        <span className="mt-0.5 block text-[11px] text-slate-400">
+                          เจอซ้ำ {r.seen_count} รอบ
+                        </span>
                       )}
                     </td>
                     <td className="px-3 py-2.5 font-mono text-[12px] text-rose-600">
                       {r.existing_numbers?.join(", ") || "—"}
                     </td>
-                    <td className="px-3 py-2.5 font-mono text-[12px] text-brand-800">{r.tracking_number}</td>
-                    <td className="px-3 py-2.5 text-[12px] leading-relaxed text-slate-500">{r.reason}</td>
+                    <td className="px-3 py-2.5 font-mono text-[12px] text-brand-800">
+                      {r.tracking_number}
+                    </td>
+                    <td className="px-3 py-2.5 text-[12px] leading-relaxed text-slate-500">
+                      {r.reason}
+                    </td>
                     <td className={adminTable.cell}>
                       <span className="flex flex-wrap items-center justify-end gap-1.5">
                         <RowActions
@@ -697,13 +809,19 @@ export default function AdminTrackingSyncPage() {
                   <p className="text-sm font-semibold text-brand-ink">
                     {r.resolved_order_name || r.order_ref}
                     {(r.seen_count ?? 1) > 1 && (
-                      <span className="ml-1.5 text-[10px] font-medium text-slate-400">เจอซ้ำ {r.seen_count} รอบ</span>
+                      <span className="ml-1.5 text-[10px] font-medium text-slate-400">
+                        เจอซ้ำ {r.seen_count} รอบ
+                      </span>
                     )}
                   </p>
                   <p className="mt-1 font-mono text-[11px] text-slate-500">
-                    ใน Shopify: <span className="text-rose-600">{r.existing_numbers?.join(", ") || "—"}</span>
+                    ใน Shopify:{" "}
+                    <span className="text-rose-600">
+                      {r.existing_numbers?.join(", ") || "—"}
+                    </span>
                     <br />
-                    soko ส่งมา: <span className="text-brand-800">{r.tracking_number}</span>
+                    soko ส่งมา:{" "}
+                    <span className="text-brand-800">{r.tracking_number}</span>
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-1.5">
@@ -733,8 +851,9 @@ export default function AdminTrackingSyncPage() {
               <PackagePlus size={15} /> ของส่งตาม {followUps.length} กล่อง
             </h2>
             <p className="text-[11px] leading-relaxed text-slate-600">
-              กล่องที่ส่งตามหลังออเดอร์ปิดไปแล้ว — กดต่อเลขเข้าออเดอร์ แล้วเลขนี้จะไปต่อท้ายเลขเดิมที่มีอยู่
-              ไม่มีอีเมลถึงลูกค้า (ต้องแจ้งเอง)
+              กล่องที่ส่งตามหลังออเดอร์ปิดไปแล้ว — กดต่อเลขเข้าออเดอร์
+              แล้วเลขนี้จะไปต่อท้ายเลขเดิมที่มีอยู่ ไม่มีอีเมลถึงลูกค้า
+              (ต้องแจ้งเอง)
             </p>
           </div>
 
@@ -753,10 +872,16 @@ export default function AdminTrackingSyncPage() {
                 {followUps.map((r) => (
                   <tr key={r.id} className={adminTable.row}>
                     <td className={adminTable.cell}>
-                      <span className="font-semibold text-brand-ink">{r.resolved_order_name || r.order_ref}</span>
+                      <span className="font-semibold text-brand-ink">
+                        {r.resolved_order_name || r.order_ref}
+                      </span>
                     </td>
-                    <td className="px-3 py-2.5 font-mono text-[12px] text-slate-400">{r.order_ref}</td>
-                    <td className="px-3 py-2.5 font-mono text-[12px] text-brand-800">{r.tracking_number}</td>
+                    <td className="px-3 py-2.5 font-mono text-[12px] text-slate-400">
+                      {r.order_ref}
+                    </td>
+                    <td className="px-3 py-2.5 font-mono text-[12px] text-brand-800">
+                      {r.tracking_number}
+                    </td>
                     <td className={adminTable.muted}>{fmt(r.received_at)}</td>
                     <td className={adminTable.cell}>
                       <span className="flex flex-wrap items-center justify-end gap-1.5">
@@ -784,10 +909,13 @@ export default function AdminTrackingSyncPage() {
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-brand-ink">
                     {r.resolved_order_name || r.order_ref}
-                    <span className="ml-1.5 font-mono text-[10px] font-medium text-slate-400">{r.order_ref}</span>
+                    <span className="ml-1.5 font-mono text-[10px] font-medium text-slate-400">
+                      {r.order_ref}
+                    </span>
                   </p>
                   <p className="mt-1 font-mono text-[11px] text-slate-500">
-                    เลขกล่องนี้: <span className="text-brand-800">{r.tracking_number}</span>
+                    เลขกล่องนี้:{" "}
+                    <span className="text-brand-800">{r.tracking_number}</span>
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-1.5">
@@ -814,7 +942,12 @@ export default function AdminTrackingSyncPage() {
               tiles that could only be read, and picking one out of the log
               meant scrolling past the rest. */}
           <div className="-mx-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-1 py-0.5">
-            <FilterChip active={!filter} count={parcels.length} label="พัสดุทั้งหมด" onClick={() => setFilter(null)} />
+            <FilterChip
+              active={!filter}
+              count={parcels.length}
+              label="พัสดุทั้งหมด"
+              onClick={() => setFilter(null)}
+            />
             {Object.keys(ACTION)
               .filter((key) => chipCounts[key])
               .map((key) => (
@@ -849,11 +982,18 @@ export default function AdminTrackingSyncPage() {
           <p className="flex flex-wrap items-start gap-1.5 p-4 text-body-xs text-slate-500">
             <Info size={13} className="mt-0.5 shrink-0 text-slate-400" />
             ยังไม่มีข้อมูลเข้ามา — ให้ระบบต้นทางยิง POST มาที่{" "}
-            <code className="rounded-sm bg-surface-soft px-1">/api/webhooks/tracking</code> พร้อม header{" "}
-            <code className="rounded-sm bg-surface-soft px-1">x-tracking-secret</code>
+            <code className="rounded-sm bg-surface-soft px-1">
+              /api/webhooks/tracking
+            </code>{" "}
+            พร้อม header{" "}
+            <code className="rounded-sm bg-surface-soft px-1">
+              x-tracking-secret
+            </code>
           </p>
         ) : !grouped.length ? (
-          <p className="py-10 text-center text-sm text-slate-400">ไม่มีรายการในตัวกรองนี้</p>
+          <p className="py-10 text-center text-sm text-slate-400">
+            ไม่มีรายการในตัวกรองนี้
+          </p>
         ) : (
           <>
             {/* Two renderings of one list. A six-column table does not fit a
@@ -899,8 +1039,14 @@ export default function AdminTrackingSyncPage() {
                       <td className="px-3 py-2.5">
                         {firstOfSet ? (
                           <>
-                            <span className="font-semibold text-brand-ink">{r.resolved_order_name || r.order_ref}</span>
-                            {!r.resolved_order_name && <span className="ml-1 text-[11px] text-slate-400">(ไม่พบ)</span>}
+                            <span className="font-semibold text-brand-ink">
+                              {r.resolved_order_name || r.order_ref}
+                            </span>
+                            {!r.resolved_order_name && (
+                              <span className="ml-1 text-[11px] text-slate-400">
+                                (ไม่พบ)
+                              </span>
+                            )}
                             {boxes > 1 && (
                               <span className="ml-1.5 whitespace-nowrap rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-800">
                                 {boxes} กล่อง
@@ -908,15 +1054,21 @@ export default function AdminTrackingSyncPage() {
                             )}
                           </>
                         ) : (
-                          <span className="text-[12px] text-slate-400">↳ กล่อง {box}</span>
+                          <span className="text-[12px] text-slate-400">
+                            ↳ กล่อง {box}
+                          </span>
                         )}
                         {/* The warehouse's own ref, shown only inside a set —
                             it is the only thing that tells the boxes apart. */}
                         {boxes > 1 && (
-                          <span className="mt-0.5 block font-mono text-[10px] text-slate-400">{r.order_ref}</span>
+                          <span className="mt-0.5 block font-mono text-[10px] text-slate-400">
+                            {r.order_ref}
+                          </span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 font-mono text-[12px] text-slate-700">{r.tracking_number}</td>
+                      <td className="px-3 py-2.5 font-mono text-[12px] text-slate-700">
+                        {r.tracking_number}
+                      </td>
                       <td className="px-3 py-2.5">
                         <WhoTag row={r} />
                       </td>
@@ -950,13 +1102,24 @@ export default function AdminTrackingSyncPage() {
 
             <ul className="divide-y divide-slate-100 md:hidden">
               {grouped.map(({ row: r, box, boxes, firstOfSet }) => (
-                <li key={r.id} className={clsx("p-3", boxes > 1 && "border-l-2 border-l-brand-teal/50 bg-brand-50/20")}>
+                <li
+                  key={r.id}
+                  className={clsx(
+                    "p-3",
+                    boxes > 1 &&
+                      "border-l-2 border-l-brand-teal/50 bg-brand-50/20",
+                  )}
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-brand-ink">
-                        {firstOfSet ? r.resolved_order_name || r.order_ref : `↳ กล่อง ${box}`}
+                        {firstOfSet
+                          ? r.resolved_order_name || r.order_ref
+                          : `↳ กล่อง ${box}`}
                         {firstOfSet && !r.resolved_order_name && (
-                          <span className="ml-1 text-[10px] font-normal text-slate-400">(ไม่พบ)</span>
+                          <span className="ml-1 text-[10px] font-normal text-slate-400">
+                            (ไม่พบ)
+                          </span>
                         )}
                         {firstOfSet && boxes > 1 && (
                           <span className="ml-1.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-800">
@@ -968,12 +1131,18 @@ export default function AdminTrackingSyncPage() {
                         {r.tracking_number}
                         {/* Inside a set, the warehouse's own ref is the only
                             thing that tells the boxes apart. */}
-                        {boxes > 1 && <span className="ml-1.5 text-[10px] text-slate-400">{r.order_ref}</span>}
+                        {boxes > 1 && (
+                          <span className="ml-1.5 text-[10px] text-slate-400">
+                            {r.order_ref}
+                          </span>
+                        )}
                       </p>
                     </div>
                     <div className="shrink-0 text-right">
                       <ResultTag row={r} />
-                      <p className="mt-1 text-[10px] text-slate-400">{fmt(r.received_at)}</p>
+                      <p className="mt-1 text-[10px] text-slate-400">
+                        {fmt(r.received_at)}
+                      </p>
                     </div>
                   </div>
                   <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
@@ -1023,9 +1192,18 @@ function FilterChip({
           : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
       )}
     >
-      {tone === "danger" && !active && <span className="size-1.5 rounded-full bg-rose-500" aria-hidden />}
+      {tone === "danger" && !active && (
+        <span className="size-1.5 rounded-full bg-rose-500" aria-hidden />
+      )}
       {label}
-      <span className={clsx("font-bold tabular-nums", active ? "text-brand-800" : "text-slate-400")}>{count}</span>
+      <span
+        className={clsx(
+          "font-bold tabular-nums",
+          active ? "text-brand-800" : "text-slate-400",
+        )}
+      >
+        {count}
+      </span>
     </button>
   );
 }

@@ -25,7 +25,14 @@ type GiftCardSummary = {
   } | null;
 };
 
-const EMPTY_FORM = { email: "", firstName: "", lastName: "", amount: "", note: "", expiresOn: "" };
+const EMPTY_FORM = {
+  email: "",
+  firstName: "",
+  lastName: "",
+  amount: "",
+  note: "",
+  expiresOn: "",
+};
 
 function formatTHB(amount: string | number) {
   return `฿${Number(amount).toLocaleString()}`;
@@ -37,7 +44,11 @@ export default function AdminGiftCardsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [issued, setIssued] = useState<{ code: string; balance: number; currencyCode: string } | null>(null);
+  const [issued, setIssued] = useState<{
+    code: string;
+    balance: number;
+    currencyCode: string;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
 
   async function loadHistory() {
@@ -65,7 +76,9 @@ export default function AdminGiftCardsPage() {
       setForm(EMPTY_FORM);
       setIssued(null);
       setError("");
-      document.getElementById("gift-card-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document
+        .getElementById("gift-card-form")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     },
     disabled: submitting,
   });
@@ -116,8 +129,13 @@ export default function AdminGiftCardsPage() {
         title="บัตรของขวัญ"
         subtitle={
           <>
-            ออกบัตรของขวัญจริงให้ลูกค้าและส่งอีเมลแจ้งทันที (ผ่าน Shopify) — ลูกค้าเองก็ซื้อได้ที่หน้าสินค้า{" "}
-            <a href="/product/smoothlife-gift-card" target="_blank" className="text-brand-800 underline">
+            ออกบัตรของขวัญจริงให้ลูกค้าและส่งอีเมลแจ้งทันที (ผ่าน Shopify) —
+            ลูกค้าเองก็ซื้อได้ที่หน้าสินค้า{" "}
+            <a
+              href="/product/smoothlife-gift-card"
+              target="_blank"
+              className="text-brand-800 underline"
+            >
               Smoothlife Gift Card
             </a>
           </>
@@ -185,13 +203,20 @@ export default function AdminGiftCardsPage() {
                 <Check size={13} /> ออกบัตรสำเร็จ ส่งอีเมลให้ลูกค้าแล้ว
               </p>
               <div className="flex items-center justify-between gap-2 bg-white rounded-lg px-3 py-2">
-                <span className="font-mono text-sm text-brand-ink tracking-wide">{issued.code}</span>
-                <button onClick={copyCode} className="flex items-center gap-1 text-xs text-slate-500 shrink-0">
+                <span className="font-mono text-sm text-brand-ink tracking-wide">
+                  {issued.code}
+                </span>
+                <button
+                  onClick={copyCode}
+                  className="flex items-center gap-1 text-xs text-slate-500 shrink-0"
+                >
                   <Copy size={12} /> {copied ? "คัดลอกแล้ว" : "คัดลอก"}
                 </button>
               </div>
               <p className="text-[11px] text-slate-500 mt-2">
-                มูลค่า {formatTHB(issued.balance)} — ระบบจะแสดงรหัสนี้ครั้งนี้ครั้งเดียวเท่านั้น กรุณาบันทึกไว้ถ้าจำเป็น
+                มูลค่า {formatTHB(issued.balance)} —
+                ระบบจะแสดงรหัสนี้ครั้งนี้ครั้งเดียวเท่านั้น
+                กรุณาบันทึกไว้ถ้าจำเป็น
               </p>
             </div>
           )}
@@ -199,9 +224,13 @@ export default function AdminGiftCardsPage() {
 
         <Panel title="ประวัติบัตรของขวัญล่าสุด" padded>
           {loadingHistory ? (
-            <p className="text-sm text-slate-400 text-center py-6">กำลังโหลด…</p>
+            <p className="text-sm text-slate-400 text-center py-6">
+              กำลังโหลด…
+            </p>
           ) : history.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-6">ยังไม่มีบัตรของขวัญ</p>
+            <p className="text-sm text-slate-400 text-center py-6">
+              ยังไม่มีบัตรของขวัญ
+            </p>
           ) : (
             <>
               {/* Four short columns, so the balances line up and "which of
@@ -221,21 +250,34 @@ export default function AdminGiftCardsPage() {
                   <tbody>
                     {history.map((g) => (
                       <tr key={g.id} className={adminTable.row}>
-                        <td className={adminTable.mono}>•••• {g.lastCharacters}</td>
+                        <td className={adminTable.mono}>
+                          •••• {g.lastCharacters}
+                        </td>
                         <td className={adminTable.cell}>
                           <span className="block">
-                            {[g.customer?.firstName, g.customer?.lastName].filter(Boolean).join(" ") || "ไม่ระบุชื่อ"}
+                            {[g.customer?.firstName, g.customer?.lastName]
+                              .filter(Boolean)
+                              .join(" ") || "ไม่ระบุชื่อ"}
                           </span>
                           {g.customer?.defaultEmailAddress?.emailAddress && (
                             <span className="block text-[11px] text-slate-400">
                               {g.customer.defaultEmailAddress.emailAddress}
                             </span>
                           )}
-                          {g.note && <span className="block text-[11px] text-slate-400">หมายเหตุ: {g.note}</span>}
+                          {g.note && (
+                            <span className="block text-[11px] text-slate-400">
+                              หมายเหตุ: {g.note}
+                            </span>
+                          )}
                         </td>
                         <td className="px-3 py-2.5 text-right tabular-nums">
-                          <span className="font-semibold text-brand-ink">{formatTHB(g.balance.amount)}</span>
-                          <span className="text-[11px] text-slate-400"> / {formatTHB(g.initialValue.amount)}</span>
+                          <span className="font-semibold text-brand-ink">
+                            {formatTHB(g.balance.amount)}
+                          </span>
+                          <span className="text-[11px] text-slate-400">
+                            {" "}
+                            / {formatTHB(g.initialValue.amount)}
+                          </span>
                         </td>
                         <td className={adminTable.cell}>
                           <Badge tone={g.enabled ? "brand" : "neutral"}>
@@ -250,17 +292,28 @@ export default function AdminGiftCardsPage() {
 
               <div className="grid items-start gap-2 md:hidden">
                 {history.map((g) => (
-                  <div key={g.id} className="rounded-xl2 border border-slate-100 bg-white p-3.5 shadow-card">
+                  <div
+                    key={g.id}
+                    className="rounded-xl2 border border-slate-100 bg-white p-3.5 shadow-card"
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-brand-ink font-mono">•••• {g.lastCharacters}</p>
+                        <p className="text-sm font-semibold text-brand-ink font-mono">
+                          •••• {g.lastCharacters}
+                        </p>
                         <p className="text-[11px] text-slate-400 mt-0.5">
-                          {[g.customer?.firstName, g.customer?.lastName].filter(Boolean).join(" ") || "ไม่ระบุชื่อ"}
+                          {[g.customer?.firstName, g.customer?.lastName]
+                            .filter(Boolean)
+                            .join(" ") || "ไม่ระบุชื่อ"}
                           {g.customer?.defaultEmailAddress?.emailAddress
                             ? ` · ${g.customer.defaultEmailAddress.emailAddress}`
                             : ""}
                         </p>
-                        {g.note && <p className="text-[11px] text-slate-400 mt-0.5">หมายเหตุ: {g.note}</p>}
+                        {g.note && (
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            หมายเหตุ: {g.note}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-bold text-brand-ink">
@@ -271,7 +324,9 @@ export default function AdminGiftCardsPage() {
                         </p>
                         <span
                           className={`inline-block text-[10px] font-bold rounded-full px-2 py-0.5 mt-1 ${
-                            g.enabled ? "bg-brand-gradient-soft text-brand-800" : "bg-slate-100 text-slate-400"
+                            g.enabled
+                              ? "bg-brand-gradient-soft text-brand-800"
+                              : "bg-slate-100 text-slate-400"
                           }`}
                         >
                           {g.enabled ? "ใช้งานได้" : "ปิดใช้งานแล้ว"}

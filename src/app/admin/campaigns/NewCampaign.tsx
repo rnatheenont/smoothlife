@@ -14,14 +14,19 @@ import AdminField from "@/components/admin/AdminField";
 
 const KEY_RE = /^[a-z0-9][a-z0-9-]{1,63}$/;
 
-export default function NewCampaign({ onCreated }: { onCreated: (key: string) => void }) {
+export default function NewCampaign({
+  onCreated,
+}: {
+  onCreated: (key: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [key, setKey] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const valid = name.trim().length >= 2 && KEY_RE.test(key.trim().toLowerCase());
+  const valid =
+    name.trim().length >= 2 && KEY_RE.test(key.trim().toLowerCase());
 
   async function create() {
     setSaving(true);
@@ -30,10 +35,14 @@ export default function NewCampaign({ onCreated }: { onCreated: (key: string) =>
       const res = await fetch("/api/admin/receipts/campaigns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), key: key.trim().toLowerCase() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          key: key.trim().toLowerCase(),
+        }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "สร้างกิจกรรมไม่สำเร็จ");
+      if (!res.ok || !json.ok)
+        throw new Error(json.error || "สร้างกิจกรรมไม่สำเร็จ");
       setOpen(false);
       setName("");
       setKey("");
@@ -54,10 +63,11 @@ export default function NewCampaign({ onCreated }: { onCreated: (key: string) =>
   // been pressed disappeared, and nothing visible took its place.
   return (
     <span className="relative inline-flex">
-      <Button variant="outline" size="sm"
+      <Button
+        variant="outline"
+        size="sm"
         onPress={() => setOpen((o) => !o)}
         aria-expanded={open}
-        
       >
         <Plus size={13} aria-hidden /> กิจกรรมใหม่
       </Button>
@@ -68,9 +78,12 @@ export default function NewCampaign({ onCreated }: { onCreated: (key: string) =>
           the window. Capped to the viewport for the widths in between. */}
       {open && (
         <div className="absolute start-0 top-full z-20 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] rounded-xl2 border border-surface-line bg-white p-4 text-left shadow-cardHover sm:start-auto sm:end-0">
-          <p className="text-[13px] font-bold text-brand-ink">สร้างกิจกรรมใหม่</p>
+          <p className="text-[13px] font-bold text-brand-ink">
+            สร้างกิจกรรมใหม่
+          </p>
           <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-            ตั้งชื่อกับลิงก์ก่อน แล้วค่อยแก้วันที่ เงื่อนไข และวิธีคำนวณสิทธิ์ในแท็บ &ldquo;เงื่อนไข&rdquo;
+            ตั้งชื่อกับลิงก์ก่อน แล้วค่อยแก้วันที่ เงื่อนไข
+            และวิธีคำนวณสิทธิ์ในแท็บ &ldquo;เงื่อนไข&rdquo;
           </p>
 
           <AdminField
@@ -95,10 +108,16 @@ export default function NewCampaign({ onCreated }: { onCreated: (key: string) =>
             /campaigns/{key.trim().toLowerCase() || "…"}
           </p>
 
-          {error && <p className="mt-2 text-[12px] font-semibold text-rose-700">{error}</p>}
+          {error && (
+            <p className="mt-2 text-[12px] font-semibold text-rose-700">
+              {error}
+            </p>
+          )}
 
           <div className="mt-4 flex gap-2">
-            <Button variant="primary" size="sm"
+            <Button
+              variant="primary"
+              size="sm"
               isPending={saving}
               isDisabled={!valid}
               onPress={create}
@@ -107,12 +126,13 @@ export default function NewCampaign({ onCreated }: { onCreated: (key: string) =>
               {saving && <Spinner size="sm" color="current" />}
               สร้างกิจกรรม
             </Button>
-            <Button variant="outline" size="sm"
+            <Button
+              variant="outline"
+              size="sm"
               onPress={() => {
                 setOpen(false);
                 setError(null);
               }}
-              
             >
               ยกเลิก
             </Button>

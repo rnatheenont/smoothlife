@@ -11,7 +11,11 @@ const MAX_RESULTS = 8;
 // Type-to-filter product picker for admin forms — forked from
 // SearchSuggestions.tsx's filter logic, but selects into a form field via
 // onSelect(slug) instead of navigating via <Link>.
-export default function ProductPicker({ onSelect }: { onSelect: (slug: string) => void }) {
+export default function ProductPicker({
+  onSelect,
+}: {
+  onSelect: (slug: string) => void;
+}) {
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
   const matches = q
@@ -19,7 +23,9 @@ export default function ProductPicker({ onSelect }: { onSelect: (slug: string) =
         .filter(
           (p) =>
             p.inStock &&
-            (p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q))
+            (p.name.toLowerCase().includes(q) ||
+              p.brand.toLowerCase().includes(q) ||
+              p.slug.toLowerCase().includes(q)),
         )
         .slice(0, MAX_RESULTS)
     : [];
@@ -45,13 +51,25 @@ export default function ProductPicker({ onSelect }: { onSelect: (slug: string) =
               className="flex w-full items-center gap-2.5 px-3 py-2 hover:bg-surface-soft transition-colors text-left"
             >
               <span className="relative h-9 w-9 shrink-0 rounded-lg overflow-hidden bg-surface-soft">
-                <Image src={p.image} alt={p.name} fill sizes="36px" className="object-cover" />
+                <Image
+                  src={p.image}
+                  alt={p.name}
+                  fill
+                  sizes="36px"
+                  className="object-cover"
+                />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-xs text-slate-400 truncate">{p.brand}</span>
-                <span className="block text-sm text-brand-ink line-clamp-1">{p.name}</span>
+                <span className="block text-xs text-slate-400 truncate">
+                  {p.brand}
+                </span>
+                <span className="block text-sm text-brand-ink line-clamp-1">
+                  {p.name}
+                </span>
               </span>
-              <span className="shrink-0 text-xs font-semibold text-slate-500">{formatTHB(p.price)}</span>
+              <span className="shrink-0 text-xs font-semibold text-slate-500">
+                {formatTHB(p.price)}
+              </span>
             </button>
           ))}
         </div>

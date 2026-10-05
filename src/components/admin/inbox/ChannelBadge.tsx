@@ -10,7 +10,15 @@ import { Globe, Facebook } from "lucide-react";
  */
 function LineGlyph({ size = 11 }: { size?: number }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/brand/line.svg" alt="" width={size} height={size} className="block" />;
+  return (
+    <img
+      src="/brand/line.svg"
+      alt=""
+      width={size}
+      height={size}
+      className="block"
+    />
+  );
 }
 
 // Declared here rather than inline in the map below, so each render reuses the
@@ -78,7 +86,9 @@ export default function ChannelBadge({
       aria-label={compact ? label : undefined}
       className={clsx(
         "inline-flex items-center text-[10px] font-bold ring-1 ring-inset",
-        compact ? `size-5 justify-center ${c?.shape ?? "rounded-full"}` : "gap-1 rounded-full px-2 py-0.5",
+        compact
+          ? `size-5 justify-center ${c?.shape ?? "rounded-full"}`
+          : "gap-1 rounded-full px-2 py-0.5",
         c?.className ?? "bg-slate-100 text-slate-600 ring-slate-200",
         className,
       )}

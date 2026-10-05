@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Loader2, Search } from "lucide-react";
-import { Input } from "@heroui/react";
+
+import { Input, Spinner } from "@heroui/react";
 import AdminSearch from "@/components/admin/AdminSearch";
+import { Search } from "lucide-react";
 
 // Choosing the gift from the shop's own free-gift shelf.
 //
@@ -71,8 +72,7 @@ export default function GiftPicker({
   if (!gifts) {
     return (
       <p className="flex items-center gap-2 py-3 text-xs text-slate-400">
-        <Loader2 size={14} className="animate-spin" /> กำลังโหลดของแถมจาก
-        Shopify…
+        <Spinner size="sm" color="current" /> กำลังโหลดของแถมจาก Shopify…
       </p>
     );
   }

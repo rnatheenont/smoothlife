@@ -49,7 +49,10 @@ function ResetForm() {
     return (
       <p className="text-center text-sm text-slate-500">
         ลิงก์ไม่ครบถ้วน กรุณาเปิดจากลิงก์ในอีเมลอีกครั้ง หรือ{" "}
-        <Link href="/admin" className="font-semibold text-brand-800 hover:underline">
+        <Link
+          href="/admin"
+          className="font-semibold text-brand-800 hover:underline"
+        >
           ขอลิงก์ใหม่
         </Link>
       </p>
@@ -106,9 +109,12 @@ export default function AdminResetPasswordPage() {
       <div className="relative hidden flex-col justify-between overflow-hidden bg-brand-gradient p-10 text-white lg:flex">
         <p className="text-lg font-bold">Smoothlife · หลังบ้าน</p>
         <div className="max-w-md">
-          <p className="text-3xl font-bold leading-snug">ตั้งรหัสผ่านใหม่ แล้วกลับเข้าทำงานต่อ</p>
+          <p className="text-3xl font-bold leading-snug">
+            ตั้งรหัสผ่านใหม่ แล้วกลับเข้าทำงานต่อ
+          </p>
           <p className="mt-3 text-sm leading-relaxed text-white/80">
-            ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุเองตามเวลาที่ตั้งไว้ — ถ้าหมดอายุแล้ว ขอลิงก์ใหม่จากหน้าเข้าสู่ระบบได้เลย
+            ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุเองตามเวลาที่ตั้งไว้ —
+            ถ้าหมดอายุแล้ว ขอลิงก์ใหม่จากหน้าเข้าสู่ระบบได้เลย
           </p>
         </div>
         <p className="text-xs text-white/70">{PASSWORD_REQUIREMENT_TH}</p>
@@ -120,10 +126,18 @@ export default function AdminResetPasswordPage() {
             <div className="mb-3 grid size-12 place-items-center rounded-full bg-brand-gradient-soft">
               <Lock size={20} className="text-brand-emerald" />
             </div>
-            <h1 className="text-lg font-bold text-brand-ink">ตั้งรหัสผ่านแอดมินใหม่</h1>
-            <p className="mt-1 text-xs text-slate-500 lg:hidden">Smoothlife · หลังบ้าน</p>
+            <h1 className="text-lg font-bold text-brand-ink">
+              ตั้งรหัสผ่านแอดมินใหม่
+            </h1>
+            <p className="mt-1 text-xs text-slate-500 lg:hidden">
+              Smoothlife · หลังบ้าน
+            </p>
           </div>
-          <Suspense fallback={<p className="text-center text-sm text-slate-400">กำลังโหลด…</p>}>
+          <Suspense
+            fallback={
+              <p className="text-center text-sm text-slate-400">กำลังโหลด…</p>
+            }
+          >
             <ResetForm />
           </Suspense>
         </div>
