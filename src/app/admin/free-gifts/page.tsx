@@ -24,6 +24,7 @@ import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, adminTable } from "@/components/admin/layout-kit";
 import GiftStockPanel from "./GiftStockPanel";
 import { Button } from "@heroui/react";
+import AdminField from "@/components/admin/AdminField";
 
 type AdminPromo = FreeGiftPromo & { id: string };
 
@@ -520,20 +521,19 @@ export default function AdminFreeGiftsPage() {
               {/* 1. ชื่อโปร */}
               <div>
                 <p className="text-xs font-bold text-brand-ink mb-2">1. ตั้งชื่อโปรโมชั่น</p>
-                <label className="block text-[11px] text-slate-400 mb-1">ชื่อที่ลูกค้าจะเห็น (ภาษาไทย)</label>
-                <input
+                <AdminField
+                  label="ชื่อที่ลูกค้าจะเห็น (ภาษาไทย)"
                   value={form.titleTh}
-                  onChange={(e) => setForm({ ...form, titleTh: e.target.value })}
+                  onChange={(v) => setForm({ ...form, titleTh: v })}
                   placeholder="เช่น ซื้อครบ 990 รับกระเป๋าฟรี"
-                  required
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm mb-2"
+                  isRequired
+                  className="mb-2"
                 />
-                <label className="block text-[11px] text-slate-400 mb-1">ชื่อภาษาอังกฤษ (ไม่บังคับ)</label>
-                <input
+                <AdminField
+                  label="ชื่อภาษาอังกฤษ (ไม่บังคับ)"
                   value={form.titleEn}
-                  onChange={(e) => setForm({ ...form, titleEn: e.target.value })}
+                  onChange={(v) => setForm({ ...form, titleEn: v })}
                   placeholder="เช่น Spend ฿990, get a free bag"
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                 />
               </div>
 
@@ -577,17 +577,15 @@ export default function AdminFreeGiftsPage() {
                 </div>
 
                 {form.kind === "spend" ? (
-                  <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">ยอดขั้นต่ำ (บาท)</label>
-                    <input
-                      type="number"
-                      value={form.minSubtotal}
-                      onChange={(e) => setForm({ ...form, minSubtotal: e.target.value })}
-                      placeholder="เช่น 990"
-                      required
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                    />
-                  </div>
+                  <AdminField
+                    label="ยอดขั้นต่ำ (บาท)"
+                    type="number"
+                    inputMode="numeric"
+                    value={form.minSubtotal}
+                    onChange={(v) => setForm({ ...form, minSubtotal: v })}
+                    placeholder="เช่น 990"
+                    isRequired
+                  />
                 ) : form.kind === "bxgy" ? (
                   <div className="space-y-2">
                     <label className="block text-[11px] text-slate-400">
@@ -626,14 +624,15 @@ export default function AdminFreeGiftsPage() {
                         }))
                       }
                     />
-                    <label className="block text-[11px] text-slate-400 mb-1 mt-2">จำนวนที่ต้องซื้อรวม (ชิ้น)</label>
-                    <input
+                    <AdminField
+                      label="จำนวนที่ต้องซื้อรวม (ชิ้น)"
                       type="number"
+                      inputMode="numeric"
                       value={form.buyQty}
-                      onChange={(e) => setForm({ ...form, buyQty: e.target.value })}
+                      onChange={(v) => setForm({ ...form, buyQty: v })}
                       placeholder="เช่น 2"
-                      required
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      isRequired
+                      className="mt-2"
                     />
                   </div>
                 ) : (
@@ -654,17 +653,18 @@ export default function AdminFreeGiftsPage() {
                             </button>
                           )}
                         </div>
-                        <input
+                        <AdminField
+                          label={`ยอดขั้นต่ำของระดับที่ ${i + 1} (บาท)`}
                           type="number"
+                          inputMode="numeric"
                           value={tier.minSubtotal}
-                          onChange={(e) => {
+                          onChange={(v) => {
                             const next = [...form.tiers];
-                            next[i] = { ...next[i], minSubtotal: e.target.value };
+                            next[i] = { ...next[i], minSubtotal: v };
                             setForm({ ...form, tiers: next });
                           }}
                           placeholder="ยอดขั้นต่ำของระดับนี้ (บาท)"
-                          required
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                          isRequired
                         />
                         {tier.giftVariantId ? (
                           <div className="flex items-center gap-2 rounded-lg bg-surface-soft p-1.5">
@@ -690,17 +690,18 @@ export default function AdminFreeGiftsPage() {
                             }}
                           />
                         )}
-                        <input
+                        <AdminField
+                          label={`จำนวนที่แถมในระดับที่ ${i + 1}`}
                           type="number"
+                          inputMode="numeric"
                           value={tier.giftQty}
-                          onChange={(e) => {
+                          onChange={(v) => {
                             const next = [...form.tiers];
-                            next[i] = { ...next[i], giftQty: e.target.value };
+                            next[i] = { ...next[i], giftQty: v };
                             setForm({ ...form, tiers: next });
                           }}
                           placeholder="จำนวนที่แถมในระดับนี้"
-                          required
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                          isRequired
                         />
                       </div>
                     ))}
@@ -743,13 +744,14 @@ export default function AdminFreeGiftsPage() {
                       }
                     />
                   )}
-                  <label className="block text-[11px] text-slate-400 mb-1 mt-2">จำนวนที่แถม (ชิ้น)</label>
-                  <input
+                  <AdminField
+                    label="จำนวนที่แถม (ชิ้น)"
                     type="number"
+                    inputMode="numeric"
                     value={form.giftQty}
-                    onChange={(e) => setForm({ ...form, giftQty: e.target.value })}
-                    required
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    onChange={(v) => setForm({ ...form, giftQty: v })}
+                    isRequired
+                    className="mt-2"
                   />
                 </div>
               )}
@@ -782,35 +784,24 @@ export default function AdminFreeGiftsPage() {
                 </button>
                 {showAdvanced && (
                   <div className="mt-2 space-y-2">
-                    <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">
-                        slug (รหัสอ้างอิงภายใน ไม่กรอก = สร้างให้อัตโนมัติ)
-                      </label>
-                      <input
-                        value={form.slug}
-                        onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}
-                        disabled={Boolean(editingId)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:bg-slate-50"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">วันเริ่ม (ไม่บังคับ)</label>
-                      <input
-                        type="date"
-                        value={form.starts}
-                        onChange={(e) => setForm({ ...form, starts: e.target.value })}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">วันหมดอายุ (ไม่บังคับ)</label>
-                      <input
-                        type="date"
-                        value={form.expires}
-                        onChange={(e) => setForm({ ...form, expires: e.target.value })}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                      />
-                    </div>
+                    <AdminField
+                      label="slug (รหัสอ้างอิงภายใน ไม่กรอก = สร้างให้อัตโนมัติ)"
+                      value={form.slug}
+                      onChange={(v) => setForm({ ...form, slug: slugify(v) })}
+                      isDisabled={Boolean(editingId)}
+                    />
+                    <AdminField
+                      label="วันเริ่ม (ไม่บังคับ)"
+                      type="date"
+                      value={form.starts}
+                      onChange={(v) => setForm({ ...form, starts: v })}
+                    />
+                    <AdminField
+                      label="วันหมดอายุ (ไม่บังคับ)"
+                      type="date"
+                      value={form.expires}
+                      onChange={(v) => setForm({ ...form, expires: v })}
+                    />
                   </div>
                 )}
               </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { Button } from "@heroui/react";
+import AdminField from "@/components/admin/AdminField";
 
 // Starting a campaign: a name to call it and a link to reach it.
 //
@@ -72,25 +73,22 @@ export default function NewCampaign({ onCreated }: { onCreated: (key: string) =>
             ตั้งชื่อกับลิงก์ก่อน แล้วค่อยแก้วันที่ เงื่อนไข และวิธีคำนวณสิทธิ์ในแท็บ &ldquo;เงื่อนไข&rdquo;
           </p>
 
-          <label className="mt-3 block">
-            <span className="text-[11px] font-semibold text-slate-500">ชื่อกิจกรรม</span>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="DENTISTE'S x SONGKRAN"
-              className="mt-1 w-full rounded-lg border border-surface-line px-3 py-2 text-[13px] text-brand-ink focus:border-brand-800 focus:outline-none"
-            />
-          </label>
+          <AdminField
+            label="ชื่อกิจกรรม"
+            value={name}
+            onChange={setName}
+            placeholder="DENTISTE'S x SONGKRAN"
+            className="mt-3"
+          />
 
-          <label className="mt-3 block">
-            <span className="text-[11px] font-semibold text-slate-500">ลิงก์ (เปลี่ยนทีหลังไม่ได้)</span>
-            <input
-              value={key}
-              onChange={(e) => setKey(e.target.value.toLowerCase())}
-              placeholder="dentiste-x-songkran"
-              className="mt-1 w-full rounded-lg border border-surface-line px-3 py-2 font-mono text-[13px] text-brand-ink focus:border-brand-800 focus:outline-none"
-            />
-          </label>
+          <AdminField
+            label="ลิงก์ (เปลี่ยนทีหลังไม่ได้)"
+            value={key}
+            onChange={(v) => setKey(v.toLowerCase())}
+            placeholder="dentiste-x-songkran"
+            className="mt-3"
+            controlClassName="font-mono"
+          />
           {/* Shown as the address it becomes, because that is the thing going on a
               poster and it cannot be changed once it has. */}
           <p className="mt-1.5 break-all font-mono text-[11px] text-slate-400">

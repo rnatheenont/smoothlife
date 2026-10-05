@@ -21,6 +21,8 @@ import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScan
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, SectionTitle, adminTable } from "@/components/admin/layout-kit";
 import { Button } from "@heroui/react";
+import AdminField from "@/components/admin/AdminField";
+import AdminSearch from "@/components/admin/AdminSearch";
 
 // Attaching a returning customer's purchase history to their login.
 //
@@ -283,12 +285,11 @@ export default function AdminCustomersPage() {
       />
 
       <form onSubmit={search} className="flex gap-2 max-w-xl">
-        <input
-          id="customer-search"
+        <AdminSearch
+          className="min-w-0 flex-1"
           value={term}
-          onChange={(e) => setTerm(e.target.value)}
+          onChange={setTerm}
           placeholder="อีเมล / เบอร์โทร / ชื่อลูกค้า"
-          className="flex-1 min-w-0 rounded-xl2 border border-slate-200 px-3 py-2 text-sm"
         />
         <Button type="submit" isDisabled={loading}>
           {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
@@ -842,11 +843,12 @@ export default function AdminCustomersPage() {
             บันทึกไว้ว่าตรวจจากอะไร (เช่น &quot;ลูกค้าแจ้งเลขออเดอร์ #4207 และชื่อ-ที่อยู่ตรงกัน&quot;)
             ทุกครั้งที่กดจะถูกบันทึกใน audit log
           </p>
-          <input
+          <AdminField
+            label="หลักฐานยืนยันตัวตน"
             value={note}
-            onChange={(e) => setNote(e.target.value)}
+            onChange={setNote}
             placeholder="ยืนยันตัวตนจากอะไร (จำเป็น)"
-            className="w-full rounded-xl2 border border-slate-200 px-3 py-2 text-sm"
+            isRequired
           />
           {account.shopify_customer_id && (
             <button

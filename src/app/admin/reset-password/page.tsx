@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Lock } from "lucide-react";
 import { PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 import { Button } from "@heroui/react";
+import AdminField from "@/components/admin/AdminField";
 
 // Where the emailed link lands. Rendered outside the admin gate (see
 // layout.tsx) — the reason someone is here is that they cannot get in.
@@ -69,31 +70,22 @@ function ResetForm() {
   return (
     <form onSubmit={submit} className="space-y-3">
       <div>
-        <label htmlFor="admin-new-password" className="mb-1.5 block text-sm font-semibold text-brand-ink">
-          รหัสผ่านใหม่
-        </label>
-        <input
-          id="admin-new-password"
+        <AdminField
+          label="รหัสผ่านใหม่"
           type="password"
           autoComplete="new-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-hidden focus:border-brand-teal"
-          autoFocus
+          onChange={setPassword}
         />
         <p className="mt-1 text-xs text-slate-400">{PASSWORD_REQUIREMENT_TH}</p>
       </div>
       <div>
-        <label htmlFor="admin-confirm-password" className="mb-1.5 block text-sm font-semibold text-brand-ink">
-          ยืนยันรหัสผ่านใหม่
-        </label>
-        <input
-          id="admin-confirm-password"
+        <AdminField
+          label="ยืนยันรหัสผ่านใหม่"
           type="password"
           autoComplete="new-password"
           value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-hidden focus:border-brand-teal"
+          onChange={setConfirm}
         />
       </div>
       {error && <p className="text-xs text-rose-500">{error}</p>}

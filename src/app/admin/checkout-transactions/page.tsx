@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
 import { Button } from "@heroui/react";
+import AdminField from "@/components/admin/AdminField";
 import {
   refundRouteFor,
   REFUND_ROUTE_LABEL,
@@ -183,11 +184,11 @@ function RefundControls({
         </div>
       )}
 
-      <input
+      <AdminField
+        label="หมายเหตุ"
         value={note}
-        onChange={(e) => setNote(e.target.value)}
+        onChange={setNote}
         placeholder="หมายเหตุ (ถ้ามี)"
-        className="w-full rounded-sm border border-slate-200 px-2 py-1"
       />
       {error && <p className="text-rose-600">{error}</p>}
       <div className="flex items-center gap-2">
