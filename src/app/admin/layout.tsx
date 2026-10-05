@@ -5,31 +5,32 @@ import Link from "next/link";
 import clsx from "clsx";
 import { usePathname } from "next/navigation";
 import {
-  ScrollText,
-  BookOpen,
-  Lock,
-  Gift,
-  SlidersHorizontal,
+  AlertTriangle,
   Award,
-  LogOut,
+  BookOpen,
   CreditCard,
-  MessageSquareText,
-  Repeat,
-  Receipt,
+  FileText,
+  Gift,
   Inbox,
   LayoutDashboard,
+  Lock,
+  LogOut,
   MessageCircle,
+  MessageSquareText,
   Palette,
   PanelLeftClose,
   PanelLeftOpen,
+  Receipt,
+  Repeat,
+  ScrollText,
   Search,
-  FileText,
+  SlidersHorizontal,
   Store,
-  Truck,
-  Users,
-  UserCog,
-  Zap,
   TrendingUp,
+  Truck,
+  UserCog,
+  Users,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -111,6 +112,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     messages: 0,
     urgent: 0,
   });
+  // Signed in with the shared password: there is no person behind this
+  // session, so nothing it saves can be attributed to anyone.
+  const [sharedLogin, setSharedLogin] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -149,6 +153,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       // `user` comes back null, and the header simply shows no name.
       const data = await res.json().catch(() => null);
       setMe(data?.user ?? null);
+      setSharedLogin(data?.shared === true);
       setPermissions(Array.isArray(data?.permissions) ? data.permissions : []);
     }
   }
@@ -416,12 +421,24 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                   ⌘K
                 </kbd>
               </button>
-              {/* A legacy shared-password session has no display_name — nothing
-                renders here rather than a placeholder like "แอดมิน". */}
               {me && (
                 <p className="hidden text-xs font-semibold text-slate-500 md:block">
                   {me.display_name}
                 </p>
+              )}
+              {/* Where a name would be. Shown at every width, unlike the name:
+                  what this says matters more than who is signed in, because
+                  everything saved from here is recorded as "ไม่ระบุ" and no
+                  later audit can work out who did it. */}
+              {sharedLogin && (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-200"
+                  title="เข้าระบบด้วยรหัสผ่านรวม ทุกอย่างที่แก้จากเครื่องนี้จะถูกบันทึกว่า “ไม่ระบุ” ไม่มีชื่อคนแก้ — ออกจากระบบแล้วเข้าใหม่ด้วยอีเมลของตัวเองเพื่อให้ชื่อติดไปกับงาน"
+                >
+                  <AlertTriangle size={12} aria-hidden="true" />
+                  <span className="hidden sm:inline">เข้าด้วยรหัสผ่านรวม</span>
+                  <span className="sm:hidden">รหัสรวม</span>
+                </span>
               )}
               <Link
                 href="/"
