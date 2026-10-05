@@ -15,6 +15,7 @@ import {
   findShopifyCustomerByEmail,
   findShopifyCustomerByPhone,
   getCustomerLinkState,
+  shopifyCustomerName,
   ShopifyCustomerAddress,
 } from "@/lib/shopify-admin";
 
@@ -114,10 +115,19 @@ export async function linkOrCreateShopifyCustomer(
   // A Shopify record already attached to a different account is not a match to
   // adopt: one of the two is wrong, and quietly showing the same orders to both
   // people is the worse way to find out which.
+  //
+  // The name survives this one discard, though. It was found by the
+  // customer's own email or proved phone, so it is their name whether or not
+  // the record is worth re-pointing at — and this is the branch that kept
+  // accounts on "สมาชิกใหม่" while their name sat in Shopify all along. It
+  // does not survive the ownership discard below: that record's name belongs
+  // to whoever owns it, which may well be somebody else.
+  let nameFromDiscarded: string | null = null;
   if (match && opts.replacingEmptyLink) {
     const state = await getCustomerLinkState(match.id);
     if (!state?.orders) {
       // Same emptiness, different id. Nothing to gain and a link to lose.
+      nameFromDiscarded = shopifyCustomerName(match);
       match = null;
     }
   }
@@ -157,7 +167,10 @@ export async function linkOrCreateShopifyCustomer(
       patch.phone = match.phone;
     }
 
-    const shopifyName = [match.firstName, match.lastName].filter(Boolean).join(" ").trim();
+    // Falls back to the name on their default address — see
+    // shopifyCustomerName. Half the accounts still showing the placeholder
+    // have a name there and nowhere else.
+    const shopifyName = shopifyCustomerName(match);
     if (shopifyName && (!opts.currentDisplayName || opts.currentDisplayName === PLACEHOLDER_NAME)) {
       result.displayName = shopifyName;
       patch.display_name = shopifyName;
@@ -178,6 +191,16 @@ export async function linkOrCreateShopifyCustomer(
       result.shopifyCustomerId = created.id;
       patch.shopify_customer_id = created.id;
     }
+  }
+
+  // Set whether or not a link was made: see nameFromDiscarded above.
+  if (
+    !patch.display_name &&
+    nameFromDiscarded &&
+    (!opts.currentDisplayName || opts.currentDisplayName === PLACEHOLDER_NAME)
+  ) {
+    result.displayName = nameFromDiscarded;
+    patch.display_name = nameFromDiscarded;
   }
 
   if (Object.keys(patch).length > 0) {
@@ -228,6 +251,32 @@ export async function ensureShopifyLink(
   return result;
 }
 
+/**
+ * Put a Shopify name on an account that has none, and say so.
+ *
+ * Only over the placeholder or an empty name — a name somebody typed is
+ * theirs, and Shopify does not get to overwrite it.
+ */
+async function adoptShopifyName(
+  uid: string,
+  currentDisplayName: string | null | undefined,
+  shopifyName: string | null
+): Promise<string | null> {
+  if (!shopifyName) return null;
+  if (currentDisplayName && currentDisplayName !== PLACEHOLDER_NAME) return null;
+  try {
+    await supabaseRest(`users?id=eq.${uid}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({ display_name: shopifyName }),
+    });
+    return shopifyName;
+  } catch (err) {
+    console.error("[link-shopify-customer] failed to adopt name", err);
+    return null;
+  }
+}
+
 async function ensureSmoothLifeLink(
   uid: string,
   opts: {
@@ -247,7 +296,14 @@ async function ensureSmoothLifeLink(
     // null means Shopify did not answer — leave a working link alone rather
     // than re-point on the strength of a failed request.
     if (state === null || (state.exists && state.orders > 0)) {
-      return { shopifyCustomerId: current, displayName: null, phone: null, addressSuggestion: null, takenByUserId: null };
+      // The link is fine and stays as it is, but the name might not be. This
+      // path used to return before anything could look: an account that
+      // signed up without a name and only later had something shipped kept
+      // saying "สมาชิกใหม่" for good, because every sign-in after the first
+      // order stopped here. The name is a separate question from which
+      // Shopify record to point at, and it is answerable right here.
+      const adopted = await adoptShopifyName(uid, opts.currentDisplayName, state?.name ?? null);
+      return { shopifyCustomerId: current, displayName: adopted, phone: null, addressSuggestion: null, takenByUserId: null };
     }
   }
 

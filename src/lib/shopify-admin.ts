@@ -164,6 +164,9 @@ export type ShopifyCustomerAddress = {
   province: string | null;
   zip: string | null;
   country: string | null;
+  /** Who the parcel is addressed to. Often the only place a customer's name
+   *  exists: checkout asks for it, the account signup form does not. */
+  name: string | null;
 };
 
 export type ShopifyCustomerMatch = {
@@ -174,7 +177,7 @@ export type ShopifyCustomerMatch = {
   defaultAddress: ShopifyCustomerAddress | null;
 };
 
-const CUSTOMER_FIELDS = `id firstName lastName phone defaultAddress { address1 address2 city province zip country }`;
+const CUSTOMER_FIELDS = `id firstName lastName phone defaultAddress { address1 address2 city province zip country name }`;
 
 // Looks up an existing Shopify customer by email so a new local signup can
 // link to their real purchase history immediately instead of waiting for
@@ -542,24 +545,69 @@ export async function getCustomerTotals(
 export async function getCustomerLinkState(
   shopifyCustomerId: string,
   store: StoreKey = "smoothlife",
-): Promise<{ exists: boolean; orders: number } | null> {
+): Promise<{ exists: boolean; orders: number; name: string | null } | null> {
   if (!storeConfigured(store)) return null;
   const gid = shopifyCustomerId.startsWith("gid://")
     ? shopifyCustomerId
     : `gid://shopify/Customer/${shopifyCustomerId}`;
   try {
-    const data = await adminGraphql<{ customer: { numberOfOrders: string } | null }>(
-      `query CustomerLinkState($id: ID!) { customer(id: $id) { numberOfOrders } }`,
+    // The name comes along because this is the one request every sign-in with
+    // a linked account already makes. An account whose name is still the
+    // placeholder can be fixed from it without a second round trip — and that
+    // matters most for the accounts this call returns early for, which are
+    // exactly the ones that have ordered and so have a name on file.
+    const data = await adminGraphql<{
+      customer: {
+        numberOfOrders: string;
+        firstName: string | null;
+        lastName: string | null;
+        defaultAddress: { name: string | null } | null;
+      } | null;
+    }>(
+      `query CustomerLinkState($id: ID!) {
+        customer(id: $id) {
+          numberOfOrders
+          firstName
+          lastName
+          defaultAddress { name }
+        }
+      }`,
       { id: gid },
       store,
     );
-    if (!data.customer) return { exists: false, orders: 0 };
+    if (!data.customer) return { exists: false, orders: 0, name: null };
     const n = Number(data.customer.numberOfOrders);
-    return { exists: true, orders: Number.isFinite(n) ? n : 0 };
+    return {
+      exists: true,
+      orders: Number.isFinite(n) ? n : 0,
+      name: shopifyCustomerName(data.customer),
+    };
   } catch (err) {
     console.error("[shopify-admin] getCustomerLinkState failed", err);
     return null;
   }
+}
+
+/**
+ * The name to show for a Shopify customer, or null if they have none.
+ *
+ * Their own first/last name first, then the name on their default address.
+ * Signing up on the web asks for an email and a code and nothing else, so for
+ * a lot of customers the only place their name was ever typed is the address
+ * they had something shipped to.
+ */
+export function shopifyCustomerName(customer: {
+  firstName?: string | null;
+  lastName?: string | null;
+  defaultAddress?: { name?: string | null } | null;
+}): string | null {
+  const own = [customer.firstName, customer.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  if (own) return own;
+  const addressed = (customer.defaultAddress?.name ?? "").trim();
+  return addressed || null;
 }
 
 /**
