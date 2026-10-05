@@ -21,6 +21,7 @@ import {
   Video,
   X,
 } from "lucide-react";
+import { useCatalogueRebuild } from "@/components/admin/use-catalogue-rebuild";
 import { resizeProductImage } from "@/lib/image-utils";
 import {
   MAX_IMAGES,
@@ -795,67 +796,9 @@ export default function ProductMediaCard({ variantId, product }: Props) {
  * showing the old photograph.
  */
 function RebuildNotice() {
-  const [configured, setConfigured] = useState(false);
-  // When the server will accept another request, or null when it will now.
-  const [readyAt, setReadyAt] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    fetch("/api/admin/product-content/rebuild")
-      .then((r) => r.json())
-      .then((d) => {
-        if (!alive || !d?.ok) return;
-        setConfigured(d.configured === true);
-        setReadyAt(coolingUntil(d.readyAt));
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  // The button re-enables itself when the wait is over, rather than reading
-  // the clock while rendering and then staying stale until something else
-  // happens to re-render it.
-  useEffect(() => {
-    if (readyAt === null) return;
-    const id = setTimeout(
-      () => setReadyAt(null),
-      Math.max(0, readyAt - Date.now()),
-    );
-    return () => clearTimeout(id);
-  }, [readyAt]);
-
-  async function rebuild() {
-    setBusy(true);
-    setNote(null);
-    try {
-      const res = await fetch("/api/admin/product-content/rebuild", {
-        method: "POST",
-      });
-      const data = await res.json().catch(() => null);
-      setNote(
-        data?.ok
-          ? "สั่งอัปเดตแล้ว — ใช้เวลาราว 3-5 นาที"
-          : data?.error || "สั่งอัปเดตไม่สำเร็จ",
-      );
-      setReadyAt(coolingUntil(data?.readyAt));
-    } catch {
-      setNote("สั่งอัปเดตไม่สำเร็จ กรุณาลองใหม่");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const readyLabel =
-    readyAt === null
-      ? ""
-      : new Date(readyAt).toLocaleTimeString("th-TH", {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+  // Shared with the console's home page — see use-catalogue-rebuild.ts for
+  // what a rebuild actually is and why it has a cooldown.
+  const rebuild = useCatalogueRebuild();
 
   return (
     <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-surface-line pt-3">
@@ -863,21 +806,23 @@ function RebuildNotice() {
         หน้าสินค้าและการ์ดสินค้าเปลี่ยนทันที ส่วนตะกร้า ค้นหา และแชท
         จะตามมาในรอบ build ถัดไป (ตี 3)
       </p>
-      {configured && (
+      {rebuild.available && (
         <Button
           size="sm"
           variant="tertiary"
-          isDisabled={busy || readyAt !== null}
-          isPending={busy}
-          onPress={rebuild}
+          isDisabled={rebuild.busy || rebuild.readyAt !== null}
+          isPending={rebuild.busy}
+          onPress={rebuild.trigger}
         >
           <RefreshCw size={14} />
-          {readyAt === null
+          {rebuild.readyAt === null
             ? "อัปเดตทั้งเว็บเดี๋ยวนี้"
-            : `สั่งใหม่ได้ ${readyLabel}`}
+            : `สั่งใหม่ได้ ${rebuild.readyLabel}`}
         </Button>
       )}
-      {note && <span className="text-xs text-slate-600">{note}</span>}
+      {rebuild.note && (
+        <span className="text-xs text-slate-600">{rebuild.note}</span>
+      )}
     </div>
   );
 }
@@ -915,11 +860,3 @@ function ThumbButton({
   );
 }
 
-/** A deadline still in the future, as a timestamp; null once it has passed.
- *  A build costs one of the day's hundred deployments, so the button waits
- *  rather than spending one on a click the server is going to refuse. */
-function coolingUntil(iso: string | null | undefined): number | null {
-  if (!iso) return null;
-  const at = Date.parse(iso);
-  return Number.isFinite(at) && at > Date.now() ? at : null;
-}

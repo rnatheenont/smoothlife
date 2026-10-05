@@ -69,6 +69,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Which screen asked, from a fixed list rather than free text — the row is
+  // written by whatever the browser sent, and "where did this deployment come
+  // from" is not a question worth letting a client answer in its own words.
+  const body = await req.json().catch(() => null);
+  const asked = (body as { reason?: unknown } | null)?.reason;
+  const reason = asked === "overview" ? "overview" : "product-images";
+
   // Written before the hook fires, not after: a hook that succeeds while the
   // response is lost would otherwise leave no record and no cooldown, and the
   // next click would spend another deployment for nothing.
@@ -77,7 +84,7 @@ export async function POST(req: NextRequest) {
     await supabaseRest("catalogue_rebuilds", {
       method: "POST",
       returning: false,
-      body: JSON.stringify({ triggered_by: session?.userId ?? null, reason: "product-images" }),
+      body: JSON.stringify({ triggered_by: session?.userId ?? null, reason }),
     }).catch(() => {});
   }
 
@@ -93,7 +100,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "เรียก deploy hook ไม่สำเร็จ" }, { status: 502 });
   }
 
-  return NextResponse.json({ ok: true, triggeredAt: new Date().toISOString() });
+  // `readyAt` on the success too, not only on the refusal: without it the
+  // button went straight back to enabled after a rebuild it had just started,
+  // and the next click's only answer was a 429.
+  const triggeredAt = new Date();
+  return NextResponse.json({
+    ok: true,
+    triggeredAt: triggeredAt.toISOString(),
+    readyAt: new Date(triggeredAt.getTime() + COOLDOWN_MINUTES * 60_000).toISOString(),
+  });
 }
 
 async function lastRebuild(): Promise<string | null> {

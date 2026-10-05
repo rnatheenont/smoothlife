@@ -33,7 +33,8 @@ import {
   SectionLabel,
   StatCard,
 } from "@/components/admin/layout-kit";
-import { Spinner } from "@heroui/react";
+import { useCatalogueRebuild } from "@/components/admin/use-catalogue-rebuild";
+import { Button, Spinner } from "@heroui/react";
 
 // Admin home. It used to redirect straight into the promotions screen, which
 // meant the answer to "what needs me today?" was: open all seven pages and
@@ -56,6 +57,20 @@ type Stats = {
   kbReviewDue: number | null;
 };
 
+// Bangkok time, like every other timestamp in this console.
+function whenRebuilt(iso: string): string {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "—";
+  return at.toLocaleString("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Bangkok",
+  });
+}
+
 const EMPTY: Stats = {
   waitingChats: null,
   pendingReviews: null,
@@ -74,6 +89,10 @@ const EMPTY: Stats = {
 export default function AdminHomePage() {
   const [stats, setStats] = useState<Stats>(EMPTY);
   const [loading, setLoading] = useState(true);
+  // Separate from the header's "รีเฟรชตัวเลข", which re-reads this page's own
+  // counters out of our database. This one goes and gets the catalogue from
+  // Shopify again, which costs a deployment — see use-catalogue-rebuild.ts.
+  const catalogue = useCatalogueRebuild("overview");
 
   const load = useCallback(() => {
     setLoading(true);
@@ -286,6 +305,51 @@ export default function AdminHomePage() {
           ))}
         </div>
       </section>
+
+      {catalogue.available && (
+        <section>
+          <SectionLabel className="mb-2">ข้อมูลสินค้าจาก Shopify</SectionLabel>
+          <div className="flex flex-col gap-3 rounded-xl2 border border-slate-100 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-brand-ink">
+                ดึงสินค้า ราคา สต็อก และรูปจาก Shopify ใหม่ทั้งเว็บ
+              </p>
+              {/* What it costs, where it is visible, and that waiting is
+                  usually the right answer — a button that spends one of the
+                  day's hundred deployments should say so before it is
+                  pressed, not after. */}
+              <p className="mt-0.5 text-xs text-slate-500">
+                ปกติเว็บดึงเองอยู่แล้วเมื่อแก้สินค้าใน Shopify (ไม่เกิน 10
+                นาที) และมีรอบประจำทุกวันตอนตี 3 — ปุ่มนี้ไว้ใช้ตอนรอไม่ได้
+                ใช้เวลาราว 3-5 นาที และนับเป็น 1 deploy จากโควตา 100 ครั้ง/วัน
+              </p>
+              {catalogue.lastTriggeredAt && (
+                <p className="mt-1 text-xs text-slate-400">
+                  สั่งจากปุ่มนี้ล่าสุด {whenRebuilt(catalogue.lastTriggeredAt)}
+                </p>
+              )}
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {catalogue.note && (
+                <span className="text-xs text-slate-600">
+                  {catalogue.note}
+                </span>
+              )}
+              <Button
+                variant="outline"
+                isDisabled={catalogue.busy || catalogue.readyAt !== null}
+                isPending={catalogue.busy}
+                onPress={catalogue.trigger}
+              >
+                <RefreshCw size={14} aria-hidden />
+                {catalogue.readyAt === null
+                  ? "ดึงข้อมูลจาก Shopify"
+                  : `สั่งใหม่ได้ ${catalogue.readyLabel}`}
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* The same groups as the menu on the left, in the same order, because
           a console that organises itself one way in the sidebar and another
