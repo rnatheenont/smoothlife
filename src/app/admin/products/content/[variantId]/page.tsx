@@ -24,6 +24,9 @@ import { products } from "@/data/products";
 import { Button, Checkbox, Input } from "@heroui/react";
 import {
   BLOCK_TYPES,
+  emptyBlock,
+  isBlockEmpty,
+  starterBlocks,
   FIXED_HEADING,
   isBlockComplete,
   parseVideoUrl,
@@ -35,27 +38,6 @@ import {
 // reorder, write both languages side by side. Saving as a draft never
 // touches the live page; publishing does, immediately (see the API route's
 // revalidateTag call).
-
-function emptyBlock(type: ContentBlock["type"]): ContentBlock {
-  switch (type) {
-    case "paragraph":
-      return { type, bodyTh: "", bodyEn: "" };
-    case "image_text":
-      return { type, imageUrl: "", bodyTh: "", bodyEn: "" };
-    case "bullet_list":
-      return { type, itemsTh: [], itemsEn: [] };
-    case "ingredients":
-    case "who_for":
-    case "how_to_use":
-      return { type, itemsTh: [], itemsEn: [] };
-    case "spec_table":
-      return { type, rows: [] };
-    case "image":
-      return { type, imageUrl: "" };
-    case "video":
-      return { type, videoUrl: "" };
-  }
-}
 
 function linesToItems(v: string): string[] {
   return v
@@ -83,6 +65,10 @@ export default function ProductContentEditPage() {
     product?.variants.find((v) => v.variantId === variantId)?.sku ?? null;
 
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
+  // Whether what is on screen is the starter scaffold rather than saved work.
+  // Nothing has been written to the database at this point — opening a product
+  // must not be the same as creating content for it.
+  const [scaffold, setScaffold] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<"draft" | "publish" | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -132,7 +118,15 @@ export default function ProductContentEditPage() {
   useEffect(() => {
     fetch(`/api/admin/product-content/${encodeURIComponent(variantId)}`)
       .then((r) => r.json())
-      .then((d) => setBlocks(d?.override?.blocks ?? []))
+      .then((d) => {
+        const saved = d?.override?.blocks;
+        if (Array.isArray(saved) && saved.length > 0) {
+          setBlocks(saved);
+          return;
+        }
+        setBlocks(starterBlocks());
+        setScaffold(true);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [variantId]);
@@ -202,6 +196,9 @@ export default function ProductContentEditPage() {
   // Both counts ignore parked blocks: they are not on the page, so they cannot
   // be wrong on it.
   const shownBlocks = blocks.filter((b) => !b.hidden);
+  // The scaffold is empty by definition; saying so the moment the page opens
+  // would make an untouched product look like a product with mistakes in it.
+  const untouched = scaffold && blocks.every(isBlockEmpty);
   const incompleteCount = shownBlocks.filter((b) => !isBlockComplete(b)).length;
   const unverifiedCount = shownBlocks.filter(
     (b) => b.hasVerifiedSource === false,
@@ -304,7 +301,14 @@ export default function ProductContentEditPage() {
                 {note}
               </p>
             )}
-            {(incompleteCount > 0 || unverifiedCount > 0) && (
+            {untouched && (
+              <p className="mb-3 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800">
+                สินค้านี้ยังไม่มีเนื้อหา — วางโครงไว้ให้แล้ว เติมในช่องได้เลย
+                บล็อกไหนไม่ใช้กดถังขยะลบทิ้งได้
+                และยังไม่มีอะไรถูกบันทึกจนกว่าจะกด “บันทึกร่าง” หรือ “เผยแพร่”
+              </p>
+            )}
+            {!untouched && (incompleteCount > 0 || unverifiedCount > 0) && (
               <p className="mb-3 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                 <span>
@@ -588,26 +592,32 @@ function BlockEditor({
             <button
               type="button"
               onClick={onMoveUp}
+              aria-label="ย้ายบล็อกนี้ขึ้น"
+              title="ย้ายขึ้น"
               className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-surface-soft"
             >
-              <ChevronUp size={14} />
+              <ChevronUp size={14} aria-hidden="true" />
             </button>
           )}
           {onMoveDown && (
             <button
               type="button"
               onClick={onMoveDown}
+              aria-label="ย้ายบล็อกนี้ลง"
+              title="ย้ายลง"
               className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-surface-soft"
             >
-              <ChevronDown size={14} />
+              <ChevronDown size={14} aria-hidden="true" />
             </button>
           )}
           <button
             type="button"
             onClick={onRemove}
+            aria-label="ลบบล็อกนี้"
+            title="ลบบล็อกนี้"
             className="grid size-7 place-items-center rounded-full text-rose-400 hover:bg-rose-50"
           >
-            <Trash2 size={14} />
+            <Trash2 size={14} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -866,9 +876,11 @@ function BlockEditor({
                       rows: block.rows.filter((_, idx) => idx !== ri),
                     } as Partial<ContentBlock>)
                   }
+                  aria-label="ลบแถวนี้"
+                  title="ลบแถวนี้"
                   className="grid size-9 place-items-center rounded-lg text-rose-400 hover:bg-rose-50"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={14} aria-hidden="true" />
                 </button>
               </div>
             ))}

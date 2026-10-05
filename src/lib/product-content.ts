@@ -172,8 +172,12 @@ const YOUTUBE_ID = /^[\w-]{6,20}$/;
 
 /** A Facebook link that actually points at a video rather than a photo or a
  *  profile — their player answers with an error page for the rest. */
-function isFacebookVideoPath(parts: string[], search: URLSearchParams): boolean {
-  if (parts.includes("videos") || parts[0] === "reel" || parts[0] === "watch") return true;
+function isFacebookVideoPath(
+  parts: string[],
+  search: URLSearchParams,
+): boolean {
+  if (parts.includes("videos") || parts[0] === "reel" || parts[0] === "watch")
+    return true;
   if (parts[0] === "share" && parts[1] === "v") return true;
   if (parts[0] === "video.php" || parts[0] === "watch.php") return true;
   return Boolean(search.get("v"));
@@ -192,7 +196,11 @@ export function parseVideoUrl(value: string): VideoSource | null {
   const host = url.hostname.replace(/^www\.|^m\./, "");
   const parts = url.pathname.split("/").filter(Boolean);
 
-  if (host === "youtu.be" || host === "youtube.com" || host === "youtube-nocookie.com") {
+  if (
+    host === "youtu.be" ||
+    host === "youtube.com" ||
+    host === "youtube-nocookie.com"
+  ) {
     const id =
       host === "youtu.be"
         ? parts[0]
@@ -214,15 +222,24 @@ export function parseVideoUrl(value: string): VideoSource | null {
   if (host === "vimeo.com" || host === "player.vimeo.com") {
     const id = (parts[0] === "video" ? parts[1] : parts[0]) ?? "";
     if (!/^\d{6,12}$/.test(id)) return null;
-    return { kind: "vimeo", src: `https://player.vimeo.com/video/${id}`, aspect: LANDSCAPE };
+    return {
+      kind: "vimeo",
+      src: `https://player.vimeo.com/video/${id}`,
+      aspect: LANDSCAPE,
+    };
   }
 
   // Social clips. Each of these is the platform's own embed address, built
   // from the link somebody copied out of the app — nothing is fetched here to
   // work out what the link points at, so a link whose shape says nothing about
   // a video is refused rather than framed and hoped for.
-  if (host === "facebook.com" || host === "web.facebook.com" || host === "fb.watch") {
-    if (host !== "fb.watch" && !isFacebookVideoPath(parts, url.searchParams)) return null;
+  if (
+    host === "facebook.com" ||
+    host === "web.facebook.com" ||
+    host === "fb.watch"
+  ) {
+    if (host !== "fb.watch" && !isFacebookVideoPath(parts, url.searchParams))
+      return null;
     // Facebook's player takes the whole original link as a parameter, so there
     // is no id to pull out — which is just as well, given how many shapes
     // their video URLs come in (/<page>/videos/<slug>, /watch/?v=, /reel/, a
@@ -239,18 +256,30 @@ export function parseVideoUrl(value: string): VideoSource | null {
 
   if (host === "tiktok.com") {
     const after = parts[parts.indexOf("video") + 1] ?? "";
-    const id = parts.includes("video") ? after : parts[0] === "embed" ? parts[parts.length - 1] : "";
+    const id = parts.includes("video")
+      ? after
+      : parts[0] === "embed"
+        ? parts[parts.length - 1]
+        : "";
     // A vt.tiktok.com / vm.tiktok.com short link hides the id behind a redirect
     // we would have to follow server-side, so it is refused with the same
     // message as any other link we cannot play.
     if (!/^\d{6,25}$/.test(id)) return null;
-    return { kind: "tiktok", src: `https://www.tiktok.com/embed/v2/${id}`, aspect: "9 / 16" };
+    return {
+      kind: "tiktok",
+      src: `https://www.tiktok.com/embed/v2/${id}`,
+      aspect: "9 / 16",
+    };
   }
 
   if (host === "instagram.com") {
     const kind = parts[0] === "reels" ? "reel" : parts[0];
     const code = parts[1] ?? "";
-    if (!["p", "reel", "tv"].includes(kind ?? "") || !/^[\w-]{5,30}$/.test(code)) return null;
+    if (
+      !["p", "reel", "tv"].includes(kind ?? "") ||
+      !/^[\w-]{5,30}$/.test(code)
+    )
+      return null;
     // Their embed adds a header and the caption under the video, so the frame
     // is taller than the clip itself.
     return {
@@ -320,6 +349,90 @@ export async function getProductContentOverride(
 /** A block is only worth showing/publishing once it actually has text in
  *  both languages — an admin mid-edit shouldn't be able to publish a block
  *  that's still half-written in one language. */
+/** A blank block of the given kind, ready to be typed into. */
+export function emptyBlock(type: ContentBlock["type"]): ContentBlock {
+  switch (type) {
+    case "paragraph":
+      return { type, bodyTh: "", bodyEn: "" };
+    case "image_text":
+      return { type, imageUrl: "", bodyTh: "", bodyEn: "" };
+    case "bullet_list":
+    case "ingredients":
+    case "who_for":
+    case "how_to_use":
+      return { type, itemsTh: [], itemsEn: [] };
+    case "spec_table":
+      return { type, rows: [] };
+    case "image":
+      return { type, imageUrl: "" };
+    case "video":
+      return { type, videoUrl: "" };
+  }
+}
+
+/**
+ * The shape a product write-up is expected to take, as empty blocks.
+ *
+ * A product nobody has written up yet opens with these already laid out, so
+ * the job is "fill in three boxes" rather than "decide what a product page
+ * should contain, then build it". They are ordinary blocks: delete the ones
+ * that do not apply, reorder them, add others.
+ *
+ * The three are what the write-ups that exist actually use — paragraph first
+ * (it opens 20 of the 20 products written so far), then a bullet list of
+ * selling points, then how-to-use. The spec table is deliberately not here:
+ * it is imported from Shopify rather than typed, so a product that has one
+ * already has it, and a product that does not is not waiting for somebody to
+ * type it by hand.
+ *
+ * A function, not a constant: these get edited in place the moment they are
+ * on screen, and a shared constant would carry one product's half-written
+ * copy to the next one.
+ */
+export function starterBlocks(): ContentBlock[] {
+  return [
+    {
+      ...emptyBlock("paragraph"),
+      headingTh: "คุณสมบัติ",
+      headingEn: "Properties",
+    },
+    {
+      ...emptyBlock("bullet_list"),
+      headingTh: "จุดเด่นของผลิตภัณฑ์",
+      headingEn: "Key features",
+    },
+    // Carries its own heading from FIXED_HEADING, so it needs none here.
+    emptyBlock("how_to_use"),
+  ] as ContentBlock[];
+}
+
+/** Nothing has been typed into it yet — the state a starter block is in until
+ *  somebody starts work. Media counts as written once it has a link. */
+export function isBlockEmpty(block: ContentBlock): boolean {
+  switch (block.type) {
+    case "paragraph":
+      return !block.bodyTh.trim() && !block.bodyEn.trim();
+    case "image_text":
+      return (
+        !block.imageUrl.trim() && !block.bodyTh.trim() && !block.bodyEn.trim()
+      );
+    case "bullet_list":
+    case "ingredients":
+    case "who_for":
+    case "how_to_use":
+      return (
+        block.itemsTh.every((s) => !s.trim()) &&
+        block.itemsEn.every((s) => !s.trim())
+      );
+    case "spec_table":
+      return block.rows.length === 0;
+    case "image":
+      return !block.imageUrl.trim();
+    case "video":
+      return !block.videoUrl.trim();
+  }
+}
+
 export function isBlockComplete(block: ContentBlock): boolean {
   switch (block.type) {
     case "paragraph":
