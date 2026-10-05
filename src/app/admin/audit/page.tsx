@@ -47,6 +47,7 @@ const LABEL: Record<string, string> = {
   "tracking.attach": "ผูกเลขพัสดุ",
   "tracking.ignore": "ข้ามรายการพัสดุ",
   "tracking.skip": "ข้ามรายการพัสดุ",
+  "admin-user.delete": "ลบบัญชีแอดมิน",
 };
 
 const when = (iso: string) =>
