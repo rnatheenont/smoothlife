@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Loader2, Plus, Trash2 } from "lucide-react";
 import { Panel } from "@/components/admin/layout-kit";
 import AdminSelect from "@/components/admin/AdminSelect";
-import { Button, Checkbox, Input, TextArea } from "@heroui/react";
+import { Button, Checkbox, Input, Spinner, TextArea } from "@heroui/react";
 import AdminSearch from "@/components/admin/AdminSearch";
 
 // The campaign's own words, edited here instead of in a source file.
@@ -737,8 +737,8 @@ export default function CampaignSettings({
       </Panel>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="primary" isDisabled={saving} onPress={save}>
-          {saving && <Loader2 size={15} className="animate-spin" />}
+        <Button variant="primary" isPending={saving} onPress={save}>
+          {saving && <Spinner size="sm" color="current" />}
           {saving ? "กำลังบันทึก…" : "บันทึกเงื่อนไข"}
         </Button>
         {notice && <span className="text-[13px] text-slate-600">{notice}</span>}

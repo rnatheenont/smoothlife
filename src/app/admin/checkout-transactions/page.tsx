@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import {
   CreditCard,
   Undo2,
-  Loader2,
   RefreshCw,
   ExternalLink,
   Copy,
@@ -14,7 +13,7 @@ import { formatTHB } from "@/lib/format";
 import { Badge } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
-import { Button, Checkbox } from "@heroui/react";
+import { Button, Checkbox, Spinner } from "@heroui/react";
 import AdminField from "@/components/admin/AdminField";
 import {
   refundRouteFor,
@@ -199,9 +198,10 @@ function RefundControls({
           variant="danger"
           size="sm"
           onPress={submit}
-          isDisabled={busy || (route === "portal" && !portalDone)}
+          isPending={busy}
+          isDisabled={route === "portal" && !portalDone}
         >
-          {busy && <Loader2 size={12} className="animate-spin" />}
+          {busy && <Spinner size="sm" color="current" />}
           {route === "portal"
             ? "บันทึกว่าคืนเงินแล้ว"
             : `คืนเงิน ${formatTHB(tx.amount)} ผ่าน Shopify`}

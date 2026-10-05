@@ -10,8 +10,14 @@
 // order, and the photo is what says the order is really theirs.
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, Check, Loader2, RefreshCw, Search, X } from "lucide-react";
-import { PageHeader, Panel, StatCard, adminCards, adminTable } from "@/components/admin/layout-kit";
+import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
+import {
+  PageHeader,
+  Panel,
+  StatCard,
+  adminCards,
+  adminTable,
+} from "@/components/admin/layout-kit";
 import CampaignIndex from "./CampaignIndex";
 import CampaignSettings from "./CampaignSettings";
 import NewCampaign from "./NewCampaign";
@@ -19,7 +25,7 @@ import QueueTable from "./QueueTable";
 import SalesPanel, { type Sales } from "./SalesPanel";
 import { when, type QueueItem } from "./queue-vocab";
 import { formatTHB } from "@/lib/format";
-import { Button } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 import AdminSearch from "@/components/admin/AdminSearch";
 
 type Vip = {
@@ -47,7 +53,13 @@ type Winner = {
   drawnAt: string;
 };
 type Data = {
-  counts: { pending: number; approved: number; rejected: number; entrants: number; tickets: number };
+  counts: {
+    pending: number;
+    approved: number;
+    rejected: number;
+    entrants: number;
+    tickets: number;
+  };
   queue: QueueItem[];
   pendingBeyondQueue: number;
   decided: QueueItem[];
@@ -68,7 +80,10 @@ const TABS = [
   ["settings", "เงื่อนไข"],
 ] as const;
 
-const PRIZE_LABEL = { vip: "VIP 25 รางวัล", lucky_fan: "Lucky Fan 25 รางวัล" } as const;
+const PRIZE_LABEL = {
+  vip: "VIP 25 รางวัล",
+  lucky_fan: "Lucky Fan 25 รางวัล",
+} as const;
 
 const WINNER_STATUS = {
   pending_confirm: "รอยืนยันสิทธิ์",
@@ -83,7 +98,9 @@ export default function Page() {
   // screen for all of them: the second campaign should need a row in a table,
   // not a copy of this page.
   const [campaign, setCampaign] = useState<string | null>(null);
-  const [campaigns, setCampaigns] = useState<{ key: string; name: string }[]>([]);
+  const [campaigns, setCampaigns] = useState<{ key: string; name: string }[]>(
+    [],
+  );
   // The campaign's own name, from the same row the customer's page reads, so
   // renaming it in the settings tab renames it here.
   const campaignName = campaigns.find((c) => c.key === campaign)?.name ?? null;
@@ -125,11 +142,15 @@ export default function Page() {
     if (!needleDigits) return false;
     return text.replace(/\D/g, "").includes(needleDigits);
   };
-  const vipShown = data?.vipBuyers.filter((v) => hit(v.customer, v.email, v.orderName)) ?? [];
-  const fanShown = data?.luckyFan.filter((f) => hit(f.customer, f.userId)) ?? [];
+  const vipShown =
+    data?.vipBuyers.filter((v) => hit(v.customer, v.email, v.orderName)) ?? [];
+  const fanShown =
+    data?.luckyFan.filter((f) => hit(f.customer, f.userId)) ?? [];
 
   // "" for the first campaign keeps the URL clean and the server defaulting.
-  const campaignQuery = campaign ? `?campaign=${encodeURIComponent(campaign)}` : "";
+  const campaignQuery = campaign
+    ? `?campaign=${encodeURIComponent(campaign)}`
+    : "";
 
   const load = useCallback(async () => {
     if (!campaign) return;
@@ -137,9 +158,13 @@ export default function Page() {
       const params = new URLSearchParams();
       if (campaign) params.set("campaign", campaign);
       if (query) params.set("q", query);
-      const res = await fetch(`/api/admin/receipts${params.size ? `?${params}` : ""}`, { cache: "no-store" });
+      const res = await fetch(
+        `/api/admin/receipts${params.size ? `?${params}` : ""}`,
+        { cache: "no-store" },
+      );
       const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.error || "โหลดข้อมูลไม่สำเร็จ");
+      if (!res.ok || !json.ok)
+        throw new Error(json.error || "โหลดข้อมูลไม่สำเร็จ");
       setData(json as Data);
       setError(null);
     } catch (err) {
@@ -169,9 +194,13 @@ export default function Page() {
   const loadSales = useCallback(async () => {
     setSalesBusy(true);
     try {
-      const res = await fetch(`/api/admin/campaigns/dentiste-sales${campaignQuery}`, { cache: "no-store" });
+      const res = await fetch(
+        `/api/admin/campaigns/dentiste-sales${campaignQuery}`,
+        { cache: "no-store" },
+      );
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "โหลดยอดขายไม่สำเร็จ");
+      if (!res.ok || !json.ok)
+        throw new Error(json.error || "โหลดยอดขายไม่สำเร็จ");
       setSales(json as Sales);
       setSalesError(null);
     } catch (err) {
@@ -183,16 +212,25 @@ export default function Page() {
 
   // Putting a decided receipt back in the queue, when the decision was wrong.
   async function reopen(item: QueueItem) {
-    if (!window.confirm(`ดึงใบเสร็จของ ${item.customer ?? "ลูกค้า"} กลับมาตรวจใหม่?`)) return;
+    if (
+      !window.confirm(
+        `ดึงใบเสร็จของ ${item.customer ?? "ลูกค้า"} กลับมาตรวจใหม่?`,
+      )
+    )
+      return;
     setBusy(item.id);
     try {
-      const res = await fetch(`/api/admin/receipts/${item.id}${campaignQuery}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reopen" }),
-      });
+      const res = await fetch(
+        `/api/admin/receipts/${item.id}${campaignQuery}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "reopen" }),
+        },
+      );
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "ดึงกลับไม่สำเร็จ");
+      if (!res.ok || !json.ok)
+        throw new Error(json.error || "ดึงกลับไม่สำเร็จ");
       await load();
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "ดึงกลับไม่สำเร็จ");
@@ -203,15 +241,27 @@ export default function Page() {
 
   // Confirming a prize for someone who replied, or marking one given up.
   // Forfeiting is what calls the next reserve up; nobody is renumbered.
-  async function decideWinner(w: Winner, action: "confirm" | "forfeit" | "reset") {
-    if (action === "forfeit" && !window.confirm(`ยืนยันว่าลำดับ ${w.rank} สละสิทธิ์? สิทธิ์จะตกไปที่ลำดับสำรองถัดไป`)) return;
+  async function decideWinner(
+    w: Winner,
+    action: "confirm" | "forfeit" | "reset",
+  ) {
+    if (
+      action === "forfeit" &&
+      !window.confirm(
+        `ยืนยันว่าลำดับ ${w.rank} สละสิทธิ์? สิทธิ์จะตกไปที่ลำดับสำรองถัดไป`,
+      )
+    )
+      return;
     setBusy(w.id);
     try {
-      const res = await fetch(`/api/admin/receipts/winners/${w.id}${campaignQuery}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
-      });
+      const res = await fetch(
+        `/api/admin/receipts/winners/${w.id}${campaignQuery}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action }),
+        },
+      );
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "บันทึกไม่สำเร็จ");
       await load();
@@ -226,13 +276,17 @@ export default function Page() {
   async function recalculate(item: QueueItem) {
     setBusy(item.id);
     try {
-      const res = await fetch(`/api/admin/receipts/${item.id}${campaignQuery}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "recalculate" }),
-      });
+      const res = await fetch(
+        `/api/admin/receipts/${item.id}${campaignQuery}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "recalculate" }),
+        },
+      );
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "คำนวณใหม่ไม่สำเร็จ");
+      if (!res.ok || !json.ok)
+        throw new Error(json.error || "คำนวณใหม่ไม่สำเร็จ");
       await load();
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "คำนวณใหม่ไม่สำเร็จ");
@@ -246,7 +300,10 @@ export default function Page() {
   async function removeEntry(item: QueueItem) {
     setBusy(item.id);
     try {
-      const res = await fetch(`/api/admin/receipts/${item.id}${campaignQuery}`, { method: "DELETE" });
+      const res = await fetch(
+        `/api/admin/receipts/${item.id}${campaignQuery}`,
+        { method: "DELETE" },
+      );
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "ลบไม่สำเร็จ");
       await load();
@@ -260,7 +317,10 @@ export default function Page() {
   async function decide(item: QueueItem, action: "approve" | "reject") {
     // A rejection is the only thing the customer can act on, and they are shown
     // this text word for word.
-    const reason = action === "reject" ? window.prompt("เหตุผลที่ตีกลับ (ลูกค้าจะเห็นข้อความนี้)")?.trim() : undefined;
+    const reason =
+      action === "reject"
+        ? window.prompt("เหตุผลที่ตีกลับ (ลูกค้าจะเห็นข้อความนี้)")?.trim()
+        : undefined;
     if (action === "reject" && (!reason || reason.length < 3)) return;
 
     let entries = item.entries;
@@ -272,7 +332,7 @@ export default function Page() {
           ? `เคสพิเศษ — ไม่มีคำสั่งซื้อในระบบให้คำนวณ\n\nตรวจใบเสร็จกับหลักฐานการชำระเงินแล้วระบุจำนวนสิทธิ์เอง` +
               `\nลูกค้าแจ้งยอด ${item.declared.total ?? "—"} บาท`
           : `จำนวนสิทธิ์สำหรับใบเสร็จนี้ (ระบบคำนวณได้ ${item.entries})`,
-        String(item.entries)
+        String(item.entries),
       );
       if (typed === null) return;
       const n = Number(typed);
@@ -282,11 +342,14 @@ export default function Page() {
 
     setBusy(item.id);
     try {
-      const res = await fetch(`/api/admin/receipts/${item.id}${campaignQuery}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, reason, entries }),
-      });
+      const res = await fetch(
+        `/api/admin/receipts/${item.id}${campaignQuery}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action, reason, entries }),
+        },
+      );
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "บันทึกไม่สำเร็จ");
       await load();
@@ -303,7 +366,12 @@ export default function Page() {
       // A draw cannot be taken back once it has been announced, and the reason
       // this asks rather than just doing it is that the next screen is what the
       // shop will publish.
-      if (!window.confirm(`จับสลาก ${label} ตอนนี้?\n\nผลจะถูกบันทึกถาวรและใช้ประกาศจริง จับซ้ำไม่ได้จนกว่าจะล้างผลเดิม`)) return;
+      if (
+        !window.confirm(
+          `จับสลาก ${label} ตอนนี้?\n\nผลจะถูกบันทึกถาวรและใช้ประกาศจริง จับซ้ำไม่ได้จนกว่าจะล้างผลเดิม`,
+        )
+      )
+        return;
     } else if (!window.confirm(`สรุปผล ${label} ตอนนี้?`)) return;
 
     setBusy(prizeType);
@@ -314,7 +382,8 @@ export default function Page() {
         body: JSON.stringify({ prizeType }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "จับสลากไม่สำเร็จ");
+      if (!res.ok || !json.ok)
+        throw new Error(json.error || "จับสลากไม่สำเร็จ");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "จับสลากไม่สำเร็จ");
@@ -324,10 +393,18 @@ export default function Page() {
   }
 
   async function clearDraw(prizeType: "vip" | "lucky_fan") {
-    if (!window.confirm(`ล้างผล ${PRIZE_LABEL[prizeType]} ทิ้ง?\n\nรายชื่อผู้ได้รับรางวัลทั้งหมดจะถูกลบ`)) return;
+    if (
+      !window.confirm(
+        `ล้างผล ${PRIZE_LABEL[prizeType]} ทิ้ง?\n\nรายชื่อผู้ได้รับรางวัลทั้งหมดจะถูกลบ`,
+      )
+    )
+      return;
     setBusy(prizeType);
     try {
-      const res = await fetch(`/api/admin/receipts/draw?prizeType=${prizeType}${campaign ? `&campaign=${encodeURIComponent(campaign)}` : ""}`, { method: "DELETE" });
+      const res = await fetch(
+        `/api/admin/receipts/draw?prizeType=${prizeType}${campaign ? `&campaign=${encodeURIComponent(campaign)}` : ""}`,
+        { method: "DELETE" },
+      );
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "ล้างผลไม่สำเร็จ");
       await load();
@@ -342,32 +419,36 @@ export default function Page() {
   function WinnerActions({ w }: { w: Winner }) {
     // Only the places actually holding a prize have anything to confirm; a
     // reserve has nothing to give up yet.
-    if (!w.holding) return <span className="text-[12px] text-slate-400">—</span>;
+    if (!w.holding)
+      return <span className="text-[12px] text-slate-400">—</span>;
     return (
       <span className="flex flex-wrap gap-1.5">
         {w.status !== "confirmed" && (
-          <Button variant="primary" size="sm"
+          <Button
+            variant="primary"
+            size="sm"
             isDisabled={busy === w.id}
             onPress={() => decideWinner(w, "confirm")}
-            
           >
             ยืนยันแล้ว
           </Button>
         )}
         {w.status !== "forfeited" && (
-          <Button variant="danger-soft" size="sm"
+          <Button
+            variant="danger-soft"
+            size="sm"
             isDisabled={busy === w.id}
             onPress={() => decideWinner(w, "forfeit")}
-            
           >
             สละสิทธิ์
           </Button>
         )}
         {w.status !== "pending_confirm" && (
-          <Button variant="outline" size="sm"
+          <Button
+            variant="outline"
+            size="sm"
             isDisabled={busy === w.id}
             onPress={() => decideWinner(w, "reset")}
-            
           >
             ย้อนกลับ
           </Button>
@@ -433,7 +514,11 @@ export default function Page() {
         }
       />
 
-      {error && <p className="mb-4 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{error}</p>}
+      {error && (
+        <p className="mb-4 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
+          {error}
+        </p>
+      )}
       {!data && !error && (
         <div className="flex justify-center py-12 text-slate-400">
           <Loader2 size={22} className="animate-spin" />
@@ -449,11 +534,17 @@ export default function Page() {
           <div className="mb-5 grid gap-3 xl:grid-cols-[3fr_2fr]">
             <div className="grid grid-cols-3 gap-3">
               <StatCard label="รอตรวจ" value={String(data.counts.pending)} />
-              <StatCard label="อนุมัติแล้ว" value={String(data.counts.approved)} />
+              <StatCard
+                label="อนุมัติแล้ว"
+                value={String(data.counts.approved)}
+              />
               <StatCard label="ตีกลับ" value={String(data.counts.rejected)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <StatCard label="ผู้ร่วมสนุก" value={String(data.counts.entrants)} />
+              <StatCard
+                label="ผู้ร่วมสนุก"
+                value={String(data.counts.entrants)}
+              />
               <StatCard label="สิทธิ์รวม" value={String(data.counts.tickets)} />
             </div>
           </div>
@@ -470,10 +561,17 @@ export default function Page() {
                   // Refetched when the console is switched to another
                   // campaign, since the claim column is matched against that
                   // campaign's receipts.
-                  if (key === "sales" && sales?.campaign !== campaign && !salesBusy) loadSales();
+                  if (
+                    key === "sales" &&
+                    sales?.campaign !== campaign &&
+                    !salesBusy
+                  )
+                    loadSales();
                 }}
                 className={`shrink-0 border-b-2 px-3 pb-2.5 pt-1 text-sm ${
-                  tab === key ? "border-brand-action font-bold text-brand-ink" : "border-transparent text-slate-500"
+                  tab === key
+                    ? "border-brand-action font-bold text-brand-ink"
+                    : "border-transparent text-slate-500"
                 }`}
               >
                 {label}
@@ -481,7 +579,11 @@ export default function Page() {
             ))}
           </div>
 
-          {(tab === "queue" || tab === "decided" || tab === "vip" || tab === "fan" || tab === "sales") && (
+          {(tab === "queue" ||
+            tab === "decided" ||
+            tab === "vip" ||
+            tab === "fan" ||
+            tab === "sales") && (
             <div className="mb-3 flex items-center gap-2">
               <AdminSearch
                 className="flex-1"
@@ -509,7 +611,9 @@ export default function Page() {
             <Panel title="คิวตรวจ — เก่าสุดก่อน">
               {data.queue.length === 0 ? (
                 <p className="px-3 py-6 text-[13px] text-slate-500">
-                  {query ? `ไม่พบใบเสร็จรอตรวจที่ตรงกับ “${query}”` : "ไม่มีใบเสร็จรอตรวจ"}
+                  {query
+                    ? `ไม่พบใบเสร็จรอตรวจที่ตรงกับ “${query}”`
+                    : "ไม่มีใบเสร็จรอตรวจ"}
                 </p>
               ) : (
                 <QueueTable
@@ -523,7 +627,8 @@ export default function Page() {
               )}
               {data.pendingBeyondQueue > 0 && (
                 <p className="px-3 pb-3 pt-2 text-[12px] text-slate-500">
-                  แสดง {data.queue.length} รายการแรก · ยังมีอีก {data.pendingBeyondQueue} รายการรอตรวจ
+                  แสดง {data.queue.length} รายการแรก · ยังมีอีก{" "}
+                  {data.pendingBeyondQueue} รายการรอตรวจ
                 </p>
               )}
             </Panel>
@@ -532,12 +637,14 @@ export default function Page() {
           {tab === "decided" && (
             <Panel title="ตรวจแล้ว — ล่าสุดก่อน">
               <p className="px-3 pt-3 text-[12px] text-slate-500">
-                เปิดรายการแล้วกด <b>ดึงกลับมาตรวจใหม่</b> ได้ถ้าตัดสินผิด — ใบเสร็จจะกลับไปอยู่ในคิวตรวจ
-                และผลเดิมถูกบันทึกไว้ใน audit log
+                เปิดรายการแล้วกด <b>ดึงกลับมาตรวจใหม่</b> ได้ถ้าตัดสินผิด —
+                ใบเสร็จจะกลับไปอยู่ในคิวตรวจ และผลเดิมถูกบันทึกไว้ใน audit log
               </p>
               {data.decided.length === 0 ? (
                 <p className="px-3 py-6 text-[13px] text-slate-500">
-                  {query ? `ไม่พบใบเสร็จที่ตรวจแล้วที่ตรงกับ “${query}”` : "ยังไม่มีใบเสร็จที่ตรวจแล้ว"}
+                  {query
+                    ? `ไม่พบใบเสร็จที่ตรวจแล้วที่ตรงกับ “${query}”`
+                    : "ยังไม่มีใบเสร็จที่ตรวจแล้ว"}
                 </p>
               ) : (
                 <div className="mt-2">
@@ -548,32 +655,41 @@ export default function Page() {
                     onDecide={decide}
                     onRecalculate={recalculate}
                     onReopen={reopen}
-                  onDelete={removeEntry}
+                    onDelete={removeEntry}
                   />
                 </div>
               )}
               {data.decidedTotal > data.decided.length && (
                 <p className="px-3 pb-3 pt-2 text-[12px] text-slate-500">
-                  แสดง {data.decided.length} รายการล่าสุด · ทั้งหมด {data.decidedTotal} รายการ
+                  แสดง {data.decided.length} รายการล่าสุด · ทั้งหมด{" "}
+                  {data.decidedTotal} รายการ
                 </p>
               )}
             </Panel>
           )}
 
           {tab === "sales" && (
-            <SalesPanel sales={sales} error={salesError} busy={salesBusy} query={query} onRefresh={loadSales} />
+            <SalesPanel
+              sales={sales}
+              error={salesError}
+              busy={salesBusy}
+              query={query}
+              onRefresh={loadSales}
+            />
           )}
 
           {tab === "vip" && (
             <Panel title="ผู้ซื้อเซ็ต VIP">
               <p className="px-3 pt-3 text-[12px] text-slate-500">
-                คนที่ซื้อ <b>[Pre-Order] Early Bird VIP 25 Set Only</b> และชำระเงินแล้ว เรียงตามเวลาที่ซื้อ ·
-                1–25 คือตัวจริง ที่เหลือคือสำรองตามลำดับ · ดึงจาก Shopify ทุกครั้งที่เปิดหน้านี้
+                คนที่ซื้อ <b>[Pre-Order] Early Bird VIP 25 Set Only</b>{" "}
+                และชำระเงินแล้ว เรียงตามเวลาที่ซื้อ · 1–25 คือตัวจริง
+                ที่เหลือคือสำรองตามลำดับ · ดึงจาก Shopify ทุกครั้งที่เปิดหน้านี้
                 {data.vipBuyers.length > 0 && (
                   <>
                     {" · "}
                     <b className="text-brand-ink">
-                      ซื้อแล้ว {data.vipBuyers.length} · เหลืออีก {data.vipSeatsLeft} ที่
+                      ซื้อแล้ว {data.vipBuyers.length} · เหลืออีก{" "}
+                      {data.vipSeatsLeft} ที่
                     </b>
                   </>
                 )}
@@ -586,7 +702,11 @@ export default function Page() {
                     <div className={adminCards.head}>
                       <span className="font-mono text-[13px] font-bold text-brand-ink">
                         #{v.rank}
-                        {v.reserve && <span className="ml-1 font-sans text-[11px] font-normal text-slate-400">สำรอง</span>}
+                        {v.reserve && (
+                          <span className="ml-1 font-sans text-[11px] font-normal text-slate-400">
+                            สำรอง
+                          </span>
+                        )}
                       </span>
                       <a
                         href={v.adminUrl}
@@ -595,20 +715,34 @@ export default function Page() {
                         className="font-mono text-[13px] font-semibold text-brand-800 underline"
                       >
                         {v.orderName}
-                        {v.quantity > 1 && <span className="ml-1 text-[11px] text-slate-400">×{v.quantity}</span>}
+                        {v.quantity > 1 && (
+                          <span className="ml-1 text-[11px] text-slate-400">
+                            ×{v.quantity}
+                          </span>
+                        )}
                       </a>
                     </div>
-                    <p className="mt-1.5 text-[13px] font-semibold text-brand-ink">{v.customer ?? "—"}</p>
-                    {v.email && <p className="text-[11px] text-slate-400">{v.email}</p>}
+                    <p className="mt-1.5 text-[13px] font-semibold text-brand-ink">
+                      {v.customer ?? "—"}
+                    </p>
+                    {v.email && (
+                      <p className="text-[11px] text-slate-400">{v.email}</p>
+                    )}
                     <div className={adminCards.foot}>
-                      <span className="text-[15px] font-bold tabular-nums text-brand-ink">{formatTHB(v.total)}</span>
-                      <span className="ml-auto text-[11px] text-slate-400">{when(v.paidAt)}</span>
+                      <span className="text-[15px] font-bold tabular-nums text-brand-ink">
+                        {formatTHB(v.total)}
+                      </span>
+                      <span className="ml-auto text-[11px] text-slate-400">
+                        {when(v.paidAt)}
+                      </span>
                     </div>
                   </li>
                 ))}
               </ul>
 
-              <div className={`mt-4 ${adminCards.forTable} ${adminTable.scroll}`}>
+              <div
+                className={`mt-4 ${adminCards.forTable} ${adminTable.scroll}`}
+              >
                 <table className={adminTable.table}>
                   <thead className={adminTable.thead}>
                     <tr>
@@ -624,11 +758,21 @@ export default function Page() {
                       <tr key={v.orderName} className={adminTable.row}>
                         <td className={adminTable.mono}>
                           {v.rank}
-                          {v.reserve && <span className="ml-1 text-[11px] text-slate-400">สำรอง</span>}
+                          {v.reserve && (
+                            <span className="ml-1 text-[11px] text-slate-400">
+                              สำรอง
+                            </span>
+                          )}
                         </td>
                         <td className={adminTable.cell}>
-                          <span className="font-semibold text-brand-ink">{v.customer ?? "—"}</span>
-                          {v.email && <span className="block text-[11px] text-slate-400">{v.email}</span>}
+                          <span className="font-semibold text-brand-ink">
+                            {v.customer ?? "—"}
+                          </span>
+                          {v.email && (
+                            <span className="block text-[11px] text-slate-400">
+                              {v.email}
+                            </span>
+                          )}
                         </td>
                         <td className={adminTable.cell}>
                           <a
@@ -640,10 +784,14 @@ export default function Page() {
                             {v.orderName}
                           </a>
                           {v.quantity > 1 && (
-                            <span className="ml-1.5 text-[11px] text-slate-400">×{v.quantity}</span>
+                            <span className="ml-1.5 text-[11px] text-slate-400">
+                              ×{v.quantity}
+                            </span>
                           )}
                         </td>
-                        <td className={`${adminTable.mono} text-right`}>{formatTHB(v.total)}</td>
+                        <td className={`${adminTable.mono} text-right`}>
+                          {formatTHB(v.total)}
+                        </td>
                         <td className={adminTable.muted}>{when(v.paidAt)}</td>
                       </tr>
                     ))}
@@ -668,23 +816,28 @@ export default function Page() {
                   <Panel key={prize} title={PRIZE_LABEL[prize]}>
                     <div className="flex flex-wrap items-center gap-2 px-3 pt-3">
                       {drawn.length === 0 ? (
-                        <Button variant="primary" size="sm"
-                          isDisabled={busy === prize}
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          isPending={busy === prize}
                           onPress={() => draw(prize)}
-                          
                         >
-                          {busy === prize && <Loader2 size={14} className="animate-spin" />}
+                          {busy === prize && (
+                            <Spinner size="sm" color="current" />
+                          )}
                           {prize === "vip" ? "สรุปผล VIP" : "จับสลาก Lucky Fan"}
                         </Button>
                       ) : (
                         <>
                           <span className="text-[13px] text-slate-600">
-                            ประกาศผลแล้วเมื่อ {when(drawn[0].drawnAt)} · ยืนยันสิทธิ์ภายใน {when(drawn[0].confirmDeadline)}
+                            ประกาศผลแล้วเมื่อ {when(drawn[0].drawnAt)} ·
+                            ยืนยันสิทธิ์ภายใน {when(drawn[0].confirmDeadline)}
                           </span>
-                          <Button variant="danger-soft" size="sm"
+                          <Button
+                            variant="danger-soft"
+                            size="sm"
                             isDisabled={busy === prize}
                             onPress={() => clearDraw(prize)}
-                            
                           >
                             ล้างผล
                           </Button>
@@ -704,12 +857,18 @@ export default function Page() {
                               <span className="font-mono text-[13px] font-bold text-brand-ink">
                                 #{w.rank}
                                 {!w.holding && (
-                                  <span className="ml-1 font-sans text-[11px] font-normal text-slate-400">สำรอง</span>
+                                  <span className="ml-1 font-sans text-[11px] font-normal text-slate-400">
+                                    สำรอง
+                                  </span>
                                 )}
                               </span>
-                              <span className="text-[12px] text-slate-500">{WINNER_STATUS[w.status]}</span>
+                              <span className="text-[12px] text-slate-500">
+                                {WINNER_STATUS[w.status]}
+                              </span>
                             </div>
-                            <p className="mt-1.5 text-[13px] font-semibold text-brand-ink">{w.customer ?? "—"}</p>
+                            <p className="mt-1.5 text-[13px] font-semibold text-brand-ink">
+                              {w.customer ?? "—"}
+                            </p>
                             <div className="mt-2">
                               <WinnerActions w={w} />
                             </div>
@@ -718,7 +877,9 @@ export default function Page() {
                       </ul>
                     )}
                     {drawn.length > 0 && (
-                      <div className={`mt-2 ${adminCards.forTable} ${adminTable.scroll}`}>
+                      <div
+                        className={`mt-2 ${adminCards.forTable} ${adminTable.scroll}`}
+                      >
                         <table className={adminTable.table}>
                           <thead className={adminTable.thead}>
                             <tr>
@@ -733,10 +894,18 @@ export default function Page() {
                               <tr key={w.id} className={adminTable.row}>
                                 <td className={adminTable.mono}>
                                   {w.rank}
-                                  {!w.holding && <span className="ml-1 text-[11px] text-slate-400">สำรอง</span>}
+                                  {!w.holding && (
+                                    <span className="ml-1 text-[11px] text-slate-400">
+                                      สำรอง
+                                    </span>
+                                  )}
                                 </td>
-                                <td className={adminTable.cell}>{w.customer ?? "—"}</td>
-                                <td className={adminTable.muted}>{WINNER_STATUS[w.status]}</td>
+                                <td className={adminTable.cell}>
+                                  {w.customer ?? "—"}
+                                </td>
+                                <td className={adminTable.muted}>
+                                  {WINNER_STATUS[w.status]}
+                                </td>
                                 <td className={adminTable.cell}>
                                   <WinnerActions w={w} />
                                 </td>
@@ -755,20 +924,30 @@ export default function Page() {
           {tab === "fan" && (
             <Panel title="สิทธิ์ Lucky Fan">
               <p className="px-3 pt-3 text-[12px] text-slate-500">
-                ดูเพื่อความโปร่งใส ไม่ใช่การตัดสิน — ผู้ชนะมาจากการสุ่มถ่วงน้ำหนักตามจำนวนสิทธิ์
+                ดูเพื่อความโปร่งใส ไม่ใช่การตัดสิน —
+                ผู้ชนะมาจากการสุ่มถ่วงน้ำหนักตามจำนวนสิทธิ์
               </p>
               {/* Two columns is a list, not a table, once the screen is a
                   phone: the name on the left and the number on the right. */}
               <ul className={`mt-4 ${adminCards.list}`}>
                 {fanShown.map((f) => (
-                  <li key={f.userId} className={`${adminCards.item} flex items-center justify-between gap-3`}>
-                    <span className="text-[13px] text-brand-ink">{f.customer ?? f.userId.slice(0, 8)}</span>
-                    <span className="font-mono text-[13px] font-bold tabular-nums text-brand-ink">{f.entries}</span>
+                  <li
+                    key={f.userId}
+                    className={`${adminCards.item} flex items-center justify-between gap-3`}
+                  >
+                    <span className="text-[13px] text-brand-ink">
+                      {f.customer ?? f.userId.slice(0, 8)}
+                    </span>
+                    <span className="font-mono text-[13px] font-bold tabular-nums text-brand-ink">
+                      {f.entries}
+                    </span>
                   </li>
                 ))}
               </ul>
 
-              <div className={`mt-4 ${adminCards.forTable} ${adminTable.scroll}`}>
+              <div
+                className={`mt-4 ${adminCards.forTable} ${adminTable.scroll}`}
+              >
                 <table className={adminTable.table}>
                   <thead className={adminTable.thead}>
                     <tr>
@@ -779,7 +958,9 @@ export default function Page() {
                   <tbody>
                     {fanShown.map((f) => (
                       <tr key={f.userId} className={adminTable.row}>
-                        <td className={adminTable.cell}>{f.customer ?? f.userId.slice(0, 8)}</td>
+                        <td className={adminTable.cell}>
+                          {f.customer ?? f.userId.slice(0, 8)}
+                        </td>
                         <td className={adminTable.mono}>{f.entries}</td>
                       </tr>
                     ))}
@@ -788,7 +969,9 @@ export default function Page() {
               </div>
               {fanShown.length === 0 && (
                 <p className="px-3 pb-3 text-[13px] text-slate-500">
-                  {query ? `ไม่พบลูกค้าที่ตรงกับ “${query}”` : "ยังไม่มีสิทธิ์สะสม"}
+                  {query
+                    ? `ไม่พบลูกค้าที่ตรงกับ “${query}”`
+                    : "ยังไม่มีสิทธิ์สะสม"}
                 </p>
               )}
             </Panel>

@@ -50,7 +50,7 @@ import { splitMarker } from "@/lib/chat-markers";
 import { isTranscriptDump } from "@/lib/inbox-transcript";
 import { resizeForUpload, type ResizedImage } from "@/lib/image-utils";
 import { useAdminAction } from "@/components/admin/header-action";
-import { Button, TextArea } from "@heroui/react";
+import { Button, Spinner, TextArea } from "@heroui/react";
 
 // Unified inbox (plan §7.2): conversation list, thread, customer panel.
 // Only the web channel exists so far — LINE and Facebook adapters write into
@@ -1466,15 +1466,13 @@ export default function AdminInboxPage() {
                   <Button
                     className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-lg p-0"
                     onPress={send}
+                    isPending={sending || checkingTranslation}
                     isDisabled={
-                      sending ||
-                      checkingTranslation ||
-                      !!pendingTranslation ||
-                      (!reply.trim() && !attachment)
+                      !!pendingTranslation || (!reply.trim() && !attachment)
                     }
                   >
                     {sending || checkingTranslation ? (
-                      <Loader2 size={15} className="animate-spin" />
+                      <Spinner size="sm" color="current" />
                     ) : (
                       <Send size={15} />
                     )}

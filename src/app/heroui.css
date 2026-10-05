@@ -46,3 +46,9 @@
 
 /* Search boxes across the console: icon, field and clear button as one. */
 @import "@heroui/styles/components/input-group.css" layer(components);
+
+/* The busy mark inside a button — one component at one size, inheriting the
+   button's own colour, in place of sixteen hand-sized Loader2 icons. (Motion
+   was never the problem: the global prefers-reduced-motion rule in globals.css
+   already stops every animation on the site, this one included.) */
+@import "@heroui/styles/components/spinner.css" layer(components);

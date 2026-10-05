@@ -17,10 +17,16 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { Badge, Card } from "@/components/ui";
-import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
+import SkinScanSummary, {
+  type AdminSkinScan,
+} from "@/components/admin/SkinScanSummary";
 import { useAdminAction } from "@/components/admin/header-action";
-import { PageHeader, SectionTitle, adminTable } from "@/components/admin/layout-kit";
-import { Button } from "@heroui/react";
+import {
+  PageHeader,
+  SectionTitle,
+  adminTable,
+} from "@/components/admin/layout-kit";
+import { Button, Spinner } from "@heroui/react";
 import AdminField from "@/components/admin/AdminField";
 import AdminSearch from "@/components/admin/AdminSearch";
 
@@ -78,7 +84,11 @@ type Health = {
   duplicates: { phone: string; accounts: HealthAccount[] }[];
 };
 
-const STORE_NAME: Record<string, string> = { smoothlife: "Smooth Life", smoothe: "Smooth E", dentiste: "Dentiste" };
+const STORE_NAME: Record<string, string> = {
+  smoothlife: "Smooth Life",
+  smoothe: "Smooth E",
+  dentiste: "Dentiste",
+};
 
 const PROVIDER_LABEL: Record<string, string> = {
   email: "อีเมล",
@@ -90,7 +100,11 @@ const PROVIDER_LABEL: Record<string, string> = {
 
 function fmtDate(iso: string | null) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" });
+  return new Date(iso).toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: "2-digit",
+  });
 }
 
 function shortId(gid: string | null) {
@@ -104,11 +118,18 @@ export default function AdminCustomersPage() {
   const [accounts, setAccounts] = useState<Account[] | null>(null);
   const [shopify, setShopify] = useState<Candidate[]>([]);
   /** Stores the last search could look in — see the search API. */
-  const [searched, setSearched] = useState<{ store: string; label: string; connected: boolean }[]>([]);
+  const [searched, setSearched] = useState<
+    { store: string; label: string; connected: boolean }[]
+  >([]);
   /** Pairs the server can prove belong together — see lib/account-match.ts. */
-  const [proven, setProven] = useState<{ userId: string; store: string; shopifyCustomerId: string; reason: string }[]>(
-    [],
-  );
+  const [proven, setProven] = useState<
+    {
+      userId: string;
+      store: string;
+      shopifyCustomerId: string;
+      reason: string;
+    }[]
+  >([]);
   const [health, setHealth] = useState<Health | null>(null);
   const [checking, setChecking] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -134,7 +155,9 @@ export default function AdminCustomersPage() {
     label: "ค้นหาลูกค้า",
     icon: <Search size={15} aria-hidden />,
     onClick: () => {
-      const el = document.getElementById("customer-search") as HTMLInputElement | null;
+      const el = document.getElementById(
+        "customer-search",
+      ) as HTMLInputElement | null;
       el?.focus();
       el?.select();
     },
@@ -150,7 +173,9 @@ export default function AdminCustomersPage() {
     setError("");
     setDone("");
     try {
-      const res = await fetch(`/api/admin/customers/search?q=${encodeURIComponent(term.trim())}`);
+      const res = await fetch(
+        `/api/admin/customers/search?q=${encodeURIComponent(term.trim())}`,
+      );
       const json = await res.json();
       if (!json.ok) {
         setError(json.error || "ค้นหาไม่สำเร็จ");
@@ -168,7 +193,11 @@ export default function AdminCustomersPage() {
     }
   }
 
-  async function link(shopifyCustomerId: string | null, auto = false, store: Candidate["store"] = "smoothlife") {
+  async function link(
+    shopifyCustomerId: string | null,
+    auto = false,
+    store: Candidate["store"] = "smoothlife",
+  ) {
     if (!selected) return;
     setBusy(shopifyCustomerId || "unlink");
     setError("");
@@ -193,15 +222,22 @@ export default function AdminCustomersPage() {
       setAccounts((list) =>
         (list || []).map((a) => {
           if (a.id !== selected) return a;
-          if (store === "smoothlife") return { ...a, shopify_customer_id: json.shopifyCustomerId };
+          if (store === "smoothlife")
+            return { ...a, shopify_customer_id: json.shopifyCustomerId };
           const rest = (a.storeLinks || []).filter((l) => l.store !== store);
           return {
             ...a,
-            storeLinks: json.shopifyCustomerId ? [...rest, { store, shopifyCustomerId: json.shopifyCustomerId }] : rest,
+            storeLinks: json.shopifyCustomerId
+              ? [...rest, { store, shopifyCustomerId: json.shopifyCustomerId }]
+              : rest,
           };
         }),
       );
-      setDone(shopifyCustomerId ? "ผูกบัญชีเรียบร้อย — ลูกค้ารีเฟรชหน้าคำสั่งซื้อจะเห็นทันที" : "ปลดการผูกเรียบร้อย");
+      setDone(
+        shopifyCustomerId
+          ? "ผูกบัญชีเรียบร้อย — ลูกค้ารีเฟรชหน้าคำสั่งซื้อจะเห็นทันที"
+          : "ปลดการผูกเรียบร้อย",
+      );
       setNote("");
     } finally {
       setBusy("");
@@ -255,7 +291,9 @@ export default function AdminCustomersPage() {
         setError(json.error || "รวมบัญชีไม่สำเร็จ");
         return;
       }
-      setDone("รวมบัญชีเรียบร้อย — ลูกค้าล็อกอินช่องทางไหนก็เข้าบัญชีเดียวกันแล้ว");
+      setDone(
+        "รวมบัญชีเรียบร้อย — ลูกค้าล็อกอินช่องทางไหนก็เข้าบัญชีเดียวกันแล้ว",
+      );
       setNote("");
       await search();
     } finally {
@@ -265,11 +303,20 @@ export default function AdminCustomersPage() {
 
   const account = accounts?.find((a) => a.id === selected) || null;
   const provenFor = (c: Candidate) =>
-    proven.find((p) => p.userId === selected && p.store === c.store && p.shopifyCustomerId === c.id) || null;
+    proven.find(
+      (p) =>
+        p.userId === selected &&
+        p.store === c.store &&
+        p.shopifyCustomerId === c.id,
+    ) || null;
   const linkedTo = (c: Candidate) =>
     c.store === "smoothlife"
       ? account?.shopify_customer_id === c.id
-      : Boolean(account?.storeLinks?.some((l) => l.store === c.store && l.shopifyCustomerId === c.id));
+      : Boolean(
+          account?.storeLinks?.some(
+            (l) => l.store === c.store && l.shopifyCustomerId === c.id,
+          ),
+        );
 
   return (
     <div className="space-y-5">
@@ -278,7 +325,8 @@ export default function AdminCustomersPage() {
         title="ลูกค้า & บัญชีผู้ใช้"
         subtitle={
           <span className="block max-w-3xl">
-            ใช้เมื่อลูกค้าเคยซื้อด้วยอีเมล/เบอร์เดิม แล้วมาสมัครสมาชิกด้วยอีเมลใหม่ จนออเดอร์เก่าไม่ขึ้นในบัญชี — ค้นหา
+            ใช้เมื่อลูกค้าเคยซื้อด้วยอีเมล/เบอร์เดิม
+            แล้วมาสมัครสมาชิกด้วยอีเมลใหม่ จนออเดอร์เก่าไม่ขึ้นในบัญชี — ค้นหา
             เลือกบัญชีเว็บ แล้วกดผูกกับใบ Shopify ที่มีประวัติการซื้ออยู่
           </span>
         }
@@ -291,8 +339,12 @@ export default function AdminCustomersPage() {
           onChange={setTerm}
           placeholder="อีเมล / เบอร์โทร / ชื่อลูกค้า"
         />
-        <Button type="submit" isDisabled={loading}>
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+        <Button type="submit" isPending={loading}>
+          {loading ? (
+            <Spinner size="sm" color="current" />
+          ) : (
+            <Search size={14} />
+          )}
           ค้นหา
         </Button>
       </form>
@@ -314,12 +366,24 @@ export default function AdminCustomersPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="flex items-center gap-1.5 text-sm font-bold text-brand-ink">
-              <Stethoscope size={14} className="text-brand-emerald" /> ตรวจสุขภาพการผูกบัญชี
+              <Stethoscope size={14} className="text-brand-emerald" />{" "}
+              ตรวจสุขภาพการผูกบัญชี
             </h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">หาบัญชีที่มองไม่เห็นออเดอร์ตัวเอง โดยไม่ต้องรอลูกค้าทัก</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              หาบัญชีที่มองไม่เห็นออเดอร์ตัวเอง โดยไม่ต้องรอลูกค้าทัก
+            </p>
           </div>
-          <Button size="sm" variant="secondary" onPress={runHealthCheck} isDisabled={checking}>
-            {checking ? <Loader2 size={13} className="animate-spin" /> : <Stethoscope size={13} />}
+          <Button
+            size="sm"
+            variant="secondary"
+            onPress={runHealthCheck}
+            isPending={checking}
+          >
+            {checking ? (
+              <Spinner size="sm" color="current" />
+            ) : (
+              <Stethoscope size={13} />
+            )}
             ตรวจเลย
           </Button>
         </div>
@@ -329,30 +393,52 @@ export default function AdminCustomersPage() {
             <div className="flex flex-wrap gap-1.5">
               <Badge tone="neutral">ตรวจ {health.checked} บัญชี</Badge>
               <Badge tone="success">ปกติ {health.healthy}</Badge>
-              {health.dangling.length > 0 && <Badge tone="danger">ใบถูกลบ {health.dangling.length}</Badge>}
-              {health.empty.length > 0 && <Badge tone="warning">ใบไม่มีออเดอร์ {health.empty.length}</Badge>}
-              {health.unlinked.length > 0 && <Badge tone="warning">ยังไม่ผูก {health.unlinked.length}</Badge>}
-              {health.duplicates.length > 0 && <Badge tone="info">เบอร์ซ้ำ {health.duplicates.length} กลุ่ม</Badge>}
-              {health.unknown > 0 && <Badge tone="neutral">เช็คไม่ได้ {health.unknown}</Badge>}
+              {health.dangling.length > 0 && (
+                <Badge tone="danger">ใบถูกลบ {health.dangling.length}</Badge>
+              )}
+              {health.empty.length > 0 && (
+                <Badge tone="warning">
+                  ใบไม่มีออเดอร์ {health.empty.length}
+                </Badge>
+              )}
+              {health.unlinked.length > 0 && (
+                <Badge tone="warning">ยังไม่ผูก {health.unlinked.length}</Badge>
+              )}
+              {health.duplicates.length > 0 && (
+                <Badge tone="info">
+                  เบอร์ซ้ำ {health.duplicates.length} กลุ่ม
+                </Badge>
+              )}
+              {health.unknown > 0 && (
+                <Badge tone="neutral">เช็คไม่ได้ {health.unknown}</Badge>
+              )}
             </div>
 
             {[
               {
                 rows: health.dangling,
-                title: "ผูกกับใบ Shopify ที่ถูกลบไปแล้ว — นับว่าผูกแล้วแต่ไม่มีอะไรให้ดู",
+                title:
+                  "ผูกกับใบ Shopify ที่ถูกลบไปแล้ว — นับว่าผูกแล้วแต่ไม่มีอะไรให้ดู",
                 tone: "text-rose-700",
               },
               {
                 rows: health.empty,
-                title: "ผูกกับใบที่ไม่มีออเดอร์ — ถ้าลูกค้าเคยซื้อ ประวัติอยู่อีกใบ",
+                title:
+                  "ผูกกับใบที่ไม่มีออเดอร์ — ถ้าลูกค้าเคยซื้อ ประวัติอยู่อีกใบ",
                 tone: "text-amber-700",
               },
-              { rows: health.unlinked, title: "ยังไม่ได้ผูกกับใบ Shopify", tone: "text-amber-700" },
+              {
+                rows: health.unlinked,
+                title: "ยังไม่ได้ผูกกับใบ Shopify",
+                tone: "text-amber-700",
+              },
             ]
               .filter((g) => g.rows.length > 0)
               .map((g) => (
                 <div key={g.title}>
-                  <p className={clsx("text-[11px] font-semibold", g.tone)}>{g.title}</p>
+                  <p className={clsx("text-[11px] font-semibold", g.tone)}>
+                    {g.title}
+                  </p>
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     {g.rows.map((a) => (
                       <button
@@ -360,7 +446,8 @@ export default function AdminCustomersPage() {
                         onClick={() => inspect(a)}
                         className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] text-slate-600 hover:bg-slate-50"
                       >
-                        {a.name || "(ไม่มีชื่อ)"} · {a.contact || a.phone || a.id.slice(0, 8)}
+                        {a.name || "(ไม่มีชื่อ)"} ·{" "}
+                        {a.contact || a.phone || a.id.slice(0, 8)}
                       </button>
                     ))}
                   </div>
@@ -370,7 +457,8 @@ export default function AdminCustomersPage() {
             {health.duplicates.length > 0 && (
               <div>
                 <p className="text-[11px] font-semibold text-sky-700">
-                  เบอร์เดียวกันมีหลายบัญชี — มักเกิดจากลูกค้าสมัครใหม่เพราะบัญชีเดิมไม่ขึ้นออเดอร์
+                  เบอร์เดียวกันมีหลายบัญชี —
+                  มักเกิดจากลูกค้าสมัครใหม่เพราะบัญชีเดิมไม่ขึ้นออเดอร์
                 </p>
                 <div className="mt-1 flex flex-wrap gap-1.5">
                   {health.duplicates.map((d) => (
@@ -386,7 +474,11 @@ export default function AdminCustomersPage() {
               </div>
             )}
 
-            {health.capped && <p className="text-[11px] text-slate-400">แสดงเฉพาะ {health.checked} บัญชีล่าสุด</p>}
+            {health.capped && (
+              <p className="text-[11px] text-slate-400">
+                แสดงเฉพาะ {health.checked} บัญชีล่าสุด
+              </p>
+            )}
           </div>
         )}
       </Card>
@@ -394,11 +486,16 @@ export default function AdminCustomersPage() {
       {accounts && (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card className="p-4">
-            <SectionTitle className="mb-1">บัญชีในเว็บ ({accounts.length})</SectionTitle>
-            <p className="text-[11px] text-slate-400 mb-3">เลือกบัญชีที่ลูกค้าใช้ล็อกอินอยู่</p>
+            <SectionTitle className="mb-1">
+              บัญชีในเว็บ ({accounts.length})
+            </SectionTitle>
+            <p className="text-[11px] text-slate-400 mb-3">
+              เลือกบัญชีที่ลูกค้าใช้ล็อกอินอยู่
+            </p>
             {accounts.length === 0 && (
               <p className="text-xs text-slate-400">
-                ไม่พบบัญชีที่ตรงกับคำค้นนี้ — ถ้าค้นด้วยอีเมลเดิมของลูกค้า บัญชีในเว็บมักใช้คนละอีเมล
+                ไม่พบบัญชีที่ตรงกับคำค้นนี้ — ถ้าค้นด้วยอีเมลเดิมของลูกค้า
+                บัญชีในเว็บมักใช้คนละอีเมล
                 ลองค้นด้วยเบอร์โทรหรือชื่อที่ลูกค้าใช้สมัครแทน
               </p>
             )}
@@ -426,7 +523,8 @@ export default function AdminCustomersPage() {
                       className={clsx(
                         adminTable.row,
                         "cursor-pointer",
-                        selected === a.id && "bg-brand-gradient-soft hover:bg-brand-gradient-soft",
+                        selected === a.id &&
+                          "bg-brand-gradient-soft hover:bg-brand-gradient-soft",
                       )}
                     >
                       <td className={adminTable.cell}>
@@ -438,8 +536,12 @@ export default function AdminCustomersPage() {
                           {a.identities.map((i) => (
                             <span key={i.provider + i.uid}>
                               {PROVIDER_LABEL[i.provider] || i.provider}:{" "}
-                              {i.uid.length > 30 ? `${i.uid.slice(0, 12)}…` : i.uid}
-                              {i.provider === "email" && !i.verified && " (ยังไม่ยืนยัน)"}
+                              {i.uid.length > 30
+                                ? `${i.uid.slice(0, 12)}…`
+                                : i.uid}
+                              {i.provider === "email" &&
+                                !i.verified &&
+                                " (ยังไม่ยืนยัน)"}
                             </span>
                           ))}
                           <span>สมัคร {fmtDate(a.created_at)}</span>
@@ -447,7 +549,9 @@ export default function AdminCustomersPage() {
                       </td>
                       <td className={adminTable.cell}>
                         {a.shopify_customer_id ? (
-                          <Badge tone="success">ผูกแล้ว #{shortId(a.shopify_customer_id)}</Badge>
+                          <Badge tone="success">
+                            ผูกแล้ว #{shortId(a.shopify_customer_id)}
+                          </Badge>
                         ) : (
                           <Badge tone="warning">ยังไม่ผูก</Badge>
                         )}
@@ -455,7 +559,8 @@ export default function AdminCustomersPage() {
                           <span className="mt-1 flex flex-wrap gap-1">
                             {(a.storeLinks || []).map((l) => (
                               <Badge key={l.store} tone="info">
-                                {STORE_NAME[l.store] || l.store} #{shortId(l.shopifyCustomerId)}
+                                {STORE_NAME[l.store] || l.store} #
+                                {shortId(l.shopifyCustomerId)}
                               </Badge>
                             ))}
                           </span>
@@ -464,7 +569,9 @@ export default function AdminCustomersPage() {
                       <td className={adminTable.cell}>
                         <span className="flex flex-wrap items-center justify-end gap-1.5">
                           {selected === a.id ? (
-                            <span className="text-[11px] font-semibold text-brand-800">เลือกอยู่</span>
+                            <span className="text-[11px] font-semibold text-brand-800">
+                              เลือกอยู่
+                            </span>
                           ) : (
                             <button
                               type="button"
@@ -492,7 +599,11 @@ export default function AdminCustomersPage() {
                               }}
                               className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-white disabled:text-slate-300"
                             >
-                              {busy === a.id ? <Loader2 size={11} className="animate-spin" /> : <Merge size={11} />}
+                              {busy === a.id ? (
+                                <Loader2 size={11} className="animate-spin" />
+                              ) : (
+                                <Merge size={11} />
+                              )}
                               รวมเข้ากับที่เลือก
                             </button>
                           )}
@@ -521,7 +632,9 @@ export default function AdminCustomersPage() {
                       {a.display_name || "(ไม่มีชื่อ)"}
                     </span>
                     {a.shopify_customer_id ? (
-                      <Badge tone="success">ผูกแล้ว #{shortId(a.shopify_customer_id)}</Badge>
+                      <Badge tone="success">
+                        ผูกแล้ว #{shortId(a.shopify_customer_id)}
+                      </Badge>
                     ) : (
                       <Badge tone="warning">ยังไม่ผูก</Badge>
                     )}
@@ -530,7 +643,8 @@ export default function AdminCustomersPage() {
                     <div className="mt-1 flex flex-wrap gap-1">
                       {(a.storeLinks || []).map((l) => (
                         <Badge key={l.store} tone="info">
-                          {STORE_NAME[l.store] || l.store} #{shortId(l.shopifyCustomerId)}
+                          {STORE_NAME[l.store] || l.store} #
+                          {shortId(l.shopifyCustomerId)}
                         </Badge>
                       ))}
                     </div>
@@ -541,7 +655,9 @@ export default function AdminCustomersPage() {
                       <span key={i.provider + i.uid}>
                         {PROVIDER_LABEL[i.provider] || i.provider}:{" "}
                         {i.uid.length > 30 ? `${i.uid.slice(0, 12)}…` : i.uid}
-                        {i.provider === "email" && !i.verified && " (ยังไม่ยืนยัน)"}
+                        {i.provider === "email" &&
+                          !i.verified &&
+                          " (ยังไม่ยืนยัน)"}
                       </span>
                     ))}
                     <span>สมัคร {fmtDate(a.created_at)}</span>
@@ -571,7 +687,11 @@ export default function AdminCustomersPage() {
                           : "text-slate-600 hover:bg-white",
                       )}
                     >
-                      {busy === a.id ? <Loader2 size={11} className="animate-spin" /> : <Merge size={11} />}
+                      {busy === a.id ? (
+                        <Loader2 size={11} className="animate-spin" />
+                      ) : (
+                        <Merge size={11} />
+                      )}
                       รวมบัญชีนี้เข้ากับบัญชีที่เลือก
                     </span>
                   )}
@@ -581,10 +701,13 @@ export default function AdminCustomersPage() {
           </Card>
 
           <Card className="p-4">
-            <SectionTitle className="mb-1">ใบลูกค้าใน Shopify ({shopify.length})</SectionTitle>
+            <SectionTitle className="mb-1">
+              ใบลูกค้าใน Shopify ({shopify.length})
+            </SectionTitle>
             <p className="text-[11px] text-slate-400 mb-3">
-              ค้นจากทุกร้านที่เชื่อมไว้ (Smooth Life, Smooth E, Dentiste) — เลือกใบที่มีประวัติการซื้อ ดูจากจำนวนออเดอร์
-              ที่อยู่ และเบอร์ว่าตรงกับลูกค้าจริงไหม บัญชีหนึ่งผูกได้ร้านละหนึ่งใบ
+              ค้นจากทุกร้านที่เชื่อมไว้ (Smooth Life, Smooth E, Dentiste) —
+              เลือกใบที่มีประวัติการซื้อ ดูจากจำนวนออเดอร์ ที่อยู่
+              และเบอร์ว่าตรงกับลูกค้าจริงไหม บัญชีหนึ่งผูกได้ร้านละหนึ่งใบ
             </p>
             {searched.length > 0 && (
               <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px]">
@@ -594,7 +717,9 @@ export default function AdminCustomersPage() {
                     key={s.store}
                     className={clsx(
                       "rounded-full px-2 py-0.5 font-semibold",
-                      s.connected ? "bg-emerald-50 text-emerald-800" : "bg-slate-100 text-slate-500 line-through",
+                      s.connected
+                        ? "bg-emerald-50 text-emerald-800"
+                        : "bg-slate-100 text-slate-500 line-through",
                     )}
                     title={
                       s.connected
@@ -611,7 +736,8 @@ export default function AdminCustomersPage() {
             {shopify.length === 0 && (
               <p className="text-xs text-slate-400">
                 ไม่พบใบลูกค้าในร้านที่เชื่อมไว้
-                {searched.some((s) => !s.connected) && " — ร้านที่ขีดฆ่ายังไม่ได้ค้น ลูกค้าอาจอยู่ในร้านนั้น"}
+                {searched.some((s) => !s.connected) &&
+                  " — ร้านที่ขีดฆ่ายังไม่ได้ค้น ลูกค้าอาจอยู่ในร้านนั้น"}
               </p>
             )}
             {/* Same shape as the accounts beside it: the two lists are read
@@ -630,7 +756,13 @@ export default function AdminCustomersPage() {
                   {shopify.map((c) => {
                     const linkedHere = linkedTo(c);
                     return (
-                      <tr key={`${c.store}-${c.id}`} className={clsx(adminTable.row, linkedHere && "bg-emerald-50")}>
+                      <tr
+                        key={`${c.store}-${c.id}`}
+                        className={clsx(
+                          adminTable.row,
+                          linkedHere && "bg-emerald-50",
+                        )}
+                      >
                         <td className={adminTable.cell}>
                           <span className="flex min-w-0 items-center gap-1.5">
                             <span
@@ -650,9 +782,17 @@ export default function AdminCustomersPage() {
                             </span>
                           </span>
                           <span className="mt-0.5 block space-y-0.5 text-[11px] text-slate-500">
-                            {c.email && <span className="block">{c.email}</span>}
-                            {c.phone && <span className="block">{c.phone}</span>}
-                            {c.address && <span className="block truncate">{c.address}</span>}
+                            {c.email && (
+                              <span className="block">{c.email}</span>
+                            )}
+                            {c.phone && (
+                              <span className="block">{c.phone}</span>
+                            )}
+                            {c.address && (
+                              <span className="block truncate">
+                                {c.address}
+                              </span>
+                            )}
                             {/* Shopify only returns orders from the last 60
                                 days without the read_all_orders scope, so a
                                 blank date on a record that clearly has orders
@@ -661,8 +801,14 @@ export default function AdminCustomersPage() {
                                 record gets picked. */}
                             {provenFor(c) && (
                               <span className="flex items-start gap-1 text-emerald-700">
-                                <ShieldCheck size={11} className="mt-0.5 shrink-0" />
-                                <span>{provenFor(c)?.reason} — ผูกได้เลยโดยไม่ต้องกรอกเหตุผล</span>
+                                <ShieldCheck
+                                  size={11}
+                                  className="mt-0.5 shrink-0"
+                                />
+                                <span>
+                                  {provenFor(c)?.reason} —
+                                  ผูกได้เลยโดยไม่ต้องกรอกเหตุผล
+                                </span>
                               </span>
                             )}
                             <span className="block">
@@ -691,11 +837,14 @@ export default function AdminCustomersPage() {
                             ) : provenFor(c) ? (
                               <Button
                                 size="sm"
-                                isDisabled={!selected || busy !== ""}
+                                isPending={busy === c.id}
+                                isDisabled={
+                                  !selected || (busy !== "" && busy !== c.id)
+                                }
                                 onPress={() => link(c.id, true, c.store)}
                               >
                                 {busy === c.id ? (
-                                  <Loader2 size={13} className="animate-spin" />
+                                  <Spinner size="sm" color="current" />
                                 ) : (
                                   <ShieldCheck size={13} />
                                 )}
@@ -704,10 +853,19 @@ export default function AdminCustomersPage() {
                             ) : (
                               <Button
                                 size="sm"
-                                isDisabled={!selected || busy !== "" || note.trim().length < 3}
+                                isPending={busy === c.id}
+                                isDisabled={
+                                  !selected ||
+                                  (busy !== "" && busy !== c.id) ||
+                                  note.trim().length < 3
+                                }
                                 onPress={() => link(c.id, false, c.store)}
                               >
-                                {busy === c.id ? <Loader2 size={13} className="animate-spin" /> : <Link2 size={13} />}
+                                {busy === c.id ? (
+                                  <Spinner size="sm" color="current" />
+                                ) : (
+                                  <Link2 size={13} />
+                                )}
                                 ผูกกับบัญชีนี้
                               </Button>
                             )}
@@ -736,7 +894,9 @@ export default function AdminCustomersPage() {
                     key={`${c.store}-${c.id}`}
                     className={clsx(
                       "rounded-xl2 border px-3 py-2.5",
-                      linkedHere ? "border-emerald-300 bg-emerald-50" : "border-slate-200",
+                      linkedHere
+                        ? "border-emerald-300 bg-emerald-50"
+                        : "border-slate-200",
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -759,7 +919,8 @@ export default function AdminCustomersPage() {
                       </span>
                       <span className="flex items-center gap-1 text-[11px] font-semibold text-brand-800 shrink-0">
                         <ShoppingBag size={12} />
-                        {c.numberOfOrders} ออเดอร์ · ฿{Number(c.amountSpent).toLocaleString("th-TH")}
+                        {c.numberOfOrders} ออเดอร์ · ฿
+                        {Number(c.amountSpent).toLocaleString("th-TH")}
                       </span>
                     </div>
                     <div className="mt-1 space-y-0.5 text-[11px] text-slate-500">
@@ -774,7 +935,10 @@ export default function AdminCustomersPage() {
                       {provenFor(c) && (
                         <div className="flex items-start gap-1 text-emerald-700">
                           <ShieldCheck size={11} className="mt-0.5 shrink-0" />
-                          <span>{provenFor(c)?.reason} — ผูกได้เลยโดยไม่ต้องกรอกเหตุผล</span>
+                          <span>
+                            {provenFor(c)?.reason} —
+                            ผูกได้เลยโดยไม่ต้องกรอกเหตุผล
+                          </span>
                         </div>
                       )}
                       <div>
@@ -791,17 +955,37 @@ export default function AdminCustomersPage() {
                       {linkedHere ? (
                         <Badge tone="success">ผูกกับบัญชีนี้อยู่</Badge>
                       ) : provenFor(c) ? (
-                        <Button size="sm" isDisabled={!selected || busy !== ""} onPress={() => link(c.id, true, c.store)}>
-                          {busy === c.id ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
+                        <Button
+                          size="sm"
+                          isPending={busy === c.id}
+                          isDisabled={
+                            !selected || (busy !== "" && busy !== c.id)
+                          }
+                          onPress={() => link(c.id, true, c.store)}
+                        >
+                          {busy === c.id ? (
+                            <Spinner size="sm" color="current" />
+                          ) : (
+                            <ShieldCheck size={13} />
+                          )}
                           ผูกอัตโนมัติ
                         </Button>
                       ) : (
                         <Button
                           size="sm"
-                          isDisabled={!selected || busy !== "" || note.trim().length < 3}
+                          isPending={busy === c.id}
+                          isDisabled={
+                            !selected ||
+                            (busy !== "" && busy !== c.id) ||
+                            note.trim().length < 3
+                          }
                           onPress={() => link(c.id, false, c.store)}
                         >
-                          {busy === c.id ? <Loader2 size={13} className="animate-spin" /> : <Link2 size={13} />}
+                          {busy === c.id ? (
+                            <Spinner size="sm" color="current" />
+                          ) : (
+                            <Link2 size={13} />
+                          )}
                           ผูกกับบัญชีนี้
                         </Button>
                       )}
@@ -839,8 +1023,9 @@ export default function AdminCustomersPage() {
         <Card className="p-4 max-w-2xl">
           <SectionTitle className="mb-1">ยืนยันตัวตนก่อนผูก</SectionTitle>
           <p className="text-[11px] text-slate-500 mb-3">
-            การผูกทำให้ลูกค้าเห็นออเดอร์ ที่อยู่ และเบอร์ในใบนั้นทั้งหมด — ผูกผิดใบคือเปิดข้อมูลของคนอื่น
-            บันทึกไว้ว่าตรวจจากอะไร (เช่น &quot;ลูกค้าแจ้งเลขออเดอร์ #4207 และชื่อ-ที่อยู่ตรงกัน&quot;)
+            การผูกทำให้ลูกค้าเห็นออเดอร์ ที่อยู่ และเบอร์ในใบนั้นทั้งหมด —
+            ผูกผิดใบคือเปิดข้อมูลของคนอื่น บันทึกไว้ว่าตรวจจากอะไร (เช่น
+            &quot;ลูกค้าแจ้งเลขออเดอร์ #4207 และชื่อ-ที่อยู่ตรงกัน&quot;)
             ทุกครั้งที่กดจะถูกบันทึกใน audit log
           </p>
           <AdminField
@@ -856,7 +1041,11 @@ export default function AdminCustomersPage() {
               disabled={busy !== "" || note.trim().length < 3}
               className="mt-3 flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700 disabled:opacity-40"
             >
-              {busy === "unlink" ? <Loader2 size={12} className="animate-spin" /> : <Unlink size={12} />}
+              {busy === "unlink" ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <Unlink size={12} />
+              )}
               ปลดการผูกบัญชีนี้
             </button>
           )}

@@ -14,7 +14,7 @@ import {
   Link2,
 } from "lucide-react";
 import SkinScanSummary, { type AdminSkinScan } from "@/components/admin/SkinScanSummary";
-import { Button } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 
 // The third column of the inbox.
 //
@@ -273,8 +273,8 @@ export default function CustomerPanel({
             {!insight ? (
               <div className="mt-2">
                 <p className="mb-2 text-slate-500">ยังไม่เคยวิเคราะห์บทสนทนานี้</p>
-                <Button size="sm" variant="secondary" onPress={analyze} isDisabled={analyzing}>
-                  {analyzing ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                <Button size="sm" variant="secondary" onPress={analyze} isPending={analyzing}>
+                  {analyzing ? <Spinner size="sm" color="current" /> : <Sparkles size={13} />}
                   วิเคราะห์เลย
                 </Button>
               </div>
@@ -306,8 +306,8 @@ export default function CustomerPanel({
                 {insight.reason && <p className="text-[11px] text-slate-400">{insight.reason}</p>}
 
                 {insight.suggestUrgent && urgency !== "urgent" && (
-                  <Button size="sm" variant="secondary" onPress={flag} isDisabled={flagging} className="mt-1 self-start">
-                    {flagging ? <Loader2 size={13} className="animate-spin" /> : <Flag size={13} />}
+                  <Button size="sm" variant="secondary" onPress={flag} isPending={flagging} className="mt-1 self-start">
+                    {flagging ? <Spinner size="sm" color="current" /> : <Flag size={13} />}
                     ขึ้นธงด่วน
                   </Button>
                 )}

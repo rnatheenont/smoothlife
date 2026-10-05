@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Plus } from "lucide-react";
-import { Button } from "@heroui/react";
+import { Plus } from "lucide-react";
+import { Button, Spinner } from "@heroui/react";
 import AdminField from "@/components/admin/AdminField";
 
 // Starting a campaign: a name to call it and a link to reach it.
@@ -99,11 +99,12 @@ export default function NewCampaign({ onCreated }: { onCreated: (key: string) =>
 
           <div className="mt-4 flex gap-2">
             <Button variant="primary" size="sm"
-              isDisabled={!valid || saving}
+              isPending={saving}
+              isDisabled={!valid}
               onPress={create}
               className="flex-1"
             >
-              {saving && <Loader2 size={13} className="animate-spin" />}
+              {saving && <Spinner size="sm" color="current" />}
               สร้างกิจกรรม
             </Button>
             <Button variant="outline" size="sm"

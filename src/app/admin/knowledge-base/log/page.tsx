@@ -15,7 +15,7 @@ import {
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader } from "@/components/admin/layout-kit";
 import type { AiLogRow } from "@/app/api/admin/kb/logs/route";
-import { Button, TextArea } from "@heroui/react";
+import { Button, Spinner, TextArea } from "@heroui/react";
 
 // Admin → ฐานความรู้ AI → Log. Every answer the assistant gave from the
 // knowledge base, with the articles behind it. A question with no article is
@@ -272,10 +272,11 @@ export default function AdminAiLogPage() {
                       <Button
                         variant="primary"
                         onPress={() => saveCorrection(r)}
-                        isDisabled={savingCorrection || !correction.trim()}
+                        isPending={savingCorrection}
+                        isDisabled={!correction.trim()}
                       >
                         {savingCorrection ? (
-                          <Loader2 size={13} className="animate-spin" />
+                          <Spinner size="sm" color="current" />
                         ) : (
                           <Check size={13} />
                         )}

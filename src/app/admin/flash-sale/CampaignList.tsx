@@ -13,7 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Eye, EyeOff, Loader2, MoreHorizontal, Pencil, PlayCircle, Radio, RefreshCw, Trash2 } from "lucide-react";
 import { Panel, adminCards, adminTable } from "@/components/admin/layout-kit";
-import { Button } from "@heroui/react";
+import { Button, Spinner } from "@heroui/react";
 
 /** The whole DTO: the edit form is handed the campaign exactly as it is stored. */
 type Campaign = {
@@ -282,10 +282,10 @@ export default function CampaignList() {
       toolbar={
         <Button variant="outline" size="sm"
           onPress={load}
-          isDisabled={loading}
+          isPending={loading}
           className="ms-auto"
         >
-          <RefreshCw size={13} className={loading ? "animate-spin" : ""} aria-hidden /> รีเฟรช
+          {loading ? <Spinner size="sm" color="current" /> : <RefreshCw size={13} aria-hidden />} รีเฟรช
         </Button>
       }
     >
