@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Eye, EyeOff, Loader2, MoreHorizontal, Pencil, PlayCircle, Radio, RefreshCw, Trash2 } from "lucide-react";
 import { Panel, adminCards, adminTable } from "@/components/admin/layout-kit";
+import { Button } from "@heroui/react";
 
 /** The whole DTO: the edit form is handed the campaign exactly as it is stored. */
 type Campaign = {
@@ -279,14 +280,13 @@ export default function CampaignList() {
     <Panel
       title="แคมเปญที่สร้างไว้"
       toolbar={
-        <button
-          type="button"
-          onClick={load}
-          disabled={loading}
-          className="ms-auto inline-flex items-center gap-1.5 rounded-full border border-surface-line px-3 py-1.5 text-[12px] font-semibold text-brand-ink hover:bg-surface-soft disabled:opacity-50"
+        <Button variant="outline" size="sm"
+          onPress={load}
+          isDisabled={loading}
+          className="ms-auto"
         >
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} aria-hidden /> รีเฟรช
-        </button>
+        </Button>
       }
     >
       {error && <p className="m-3 rounded-l bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{error}</p>}

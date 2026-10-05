@@ -23,6 +23,7 @@ import GiftPicker, { giftName, type GiftChoice } from "@/components/admin/GiftPi
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, adminTable } from "@/components/admin/layout-kit";
 import GiftStockPanel from "./GiftStockPanel";
+import { Button } from "@heroui/react";
 
 type AdminPromo = FreeGiftPromo & { id: string };
 
@@ -484,14 +485,18 @@ export default function AdminFreeGiftsPage() {
                     >
                       แก้ไข
                     </button>
-                    <button
-                      onClick={() => remove(p.id)}
-                      disabled={p.active || busyId === p.id}
-                      title={p.active ? "ปิดใช้งานก่อนถึงจะลบได้" : "ลบโปรโมชั่นนี้"}
-                      className="flex items-center gap-1 rounded-full border border-rose-200 text-rose-500 text-xs font-semibold px-3 py-1.5 disabled:opacity-30"
-                    >
-                      <Trash2 size={12} /> ลบ
-                    </button>
+                    {/* The hint sits on a wrapper: a disabled button does not
+                        fire the hover events its own title would need. */}
+                    <span title={p.active ? "ปิดใช้งานก่อนถึงจะลบได้" : "ลบโปรโมชั่นนี้"}>
+                      <Button
+                        variant="danger-soft"
+                        size="sm"
+                        onPress={() => remove(p.id)}
+                        isDisabled={p.active || busyId === p.id}
+                      >
+                        <Trash2 size={12} /> ลบ
+                      </Button>
+                    </span>
                   </div>
                 </div>
               );

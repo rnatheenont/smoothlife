@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { MessageSquareText, Star, Check, X, RefreshCw } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader } from "@/components/admin/layout-kit";
+import { Button } from "@heroui/react";
 
 type PendingReview = {
   id: string;
@@ -144,13 +145,13 @@ export default function AdminReviewsPage() {
                 >
                   <Check size={14} /> อนุมัติ
                 </button>
-                <button
-                  onClick={() => act(r.id, "reject")}
-                  disabled={busyId === r.id}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-full border border-rose-200 py-2 text-xs font-semibold text-rose-500 disabled:opacity-50"
+                <Button variant="danger-soft" size="sm"
+                  onPress={() => act(r.id, "reject")}
+                  isDisabled={busyId === r.id}
+                  className="flex-1"
                 >
                   <X size={14} /> ปฏิเสธ
-                </button>
+                </Button>
               </div>
             </div>
           ))}

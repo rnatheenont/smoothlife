@@ -19,6 +19,7 @@ import QueueTable from "./QueueTable";
 import SalesPanel, { type Sales } from "./SalesPanel";
 import { when, type QueueItem } from "./queue-vocab";
 import { formatTHB } from "@/lib/format";
+import { Button } from "@heroui/react";
 
 type Vip = {
   rank: number;
@@ -344,34 +345,31 @@ export default function Page() {
     return (
       <span className="flex flex-wrap gap-1.5">
         {w.status !== "confirmed" && (
-          <button
-            type="button"
-            disabled={busy === w.id}
-            onClick={() => decideWinner(w, "confirm")}
-            className="min-h-9 rounded-full bg-brand-800 px-3 text-[12px] font-semibold text-white disabled:opacity-50"
+          <Button variant="primary" size="sm"
+            isDisabled={busy === w.id}
+            onPress={() => decideWinner(w, "confirm")}
+            
           >
             ยืนยันแล้ว
-          </button>
+          </Button>
         )}
         {w.status !== "forfeited" && (
-          <button
-            type="button"
-            disabled={busy === w.id}
-            onClick={() => decideWinner(w, "forfeit")}
-            className="min-h-9 rounded-full border border-rose-200 px-3 text-[12px] font-semibold text-rose-700 disabled:opacity-50"
+          <Button variant="danger-soft" size="sm"
+            isDisabled={busy === w.id}
+            onPress={() => decideWinner(w, "forfeit")}
+            
           >
             สละสิทธิ์
-          </button>
+          </Button>
         )}
         {w.status !== "pending_confirm" && (
-          <button
-            type="button"
-            disabled={busy === w.id}
-            onClick={() => decideWinner(w, "reset")}
-            className="min-h-9 rounded-full border border-surface-line px-3 text-[12px] font-semibold text-slate-600 disabled:opacity-50"
+          <Button variant="outline" size="sm"
+            isDisabled={busy === w.id}
+            onPress={() => decideWinner(w, "reset")}
+            
           >
             ย้อนกลับ
-          </button>
+          </Button>
         )}
       </span>
     );
@@ -682,28 +680,26 @@ export default function Page() {
                   <Panel key={prize} title={PRIZE_LABEL[prize]}>
                     <div className="flex flex-wrap items-center gap-2 px-3 pt-3">
                       {drawn.length === 0 ? (
-                        <button
-                          type="button"
-                          disabled={busy === prize}
-                          onClick={() => draw(prize)}
-                          className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-800 px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+                        <Button variant="primary" size="sm"
+                          isDisabled={busy === prize}
+                          onPress={() => draw(prize)}
+                          
                         >
                           {busy === prize && <Loader2 size={14} className="animate-spin" />}
                           {prize === "vip" ? "สรุปผล VIP" : "จับสลาก Lucky Fan"}
-                        </button>
+                        </Button>
                       ) : (
                         <>
                           <span className="text-[13px] text-slate-600">
                             ประกาศผลแล้วเมื่อ {when(drawn[0].drawnAt)} · ยืนยันสิทธิ์ภายใน {when(drawn[0].confirmDeadline)}
                           </span>
-                          <button
-                            type="button"
-                            disabled={busy === prize}
-                            onClick={() => clearDraw(prize)}
-                            className="inline-flex min-h-9 items-center rounded-full border border-rose-200 px-4 text-[13px] font-semibold text-rose-700 disabled:opacity-50"
+                          <Button variant="danger-soft" size="sm"
+                            isDisabled={busy === prize}
+                            onPress={() => clearDraw(prize)}
+                            
                           >
                             ล้างผล
-                          </button>
+                          </Button>
                         </>
                       )}
                     </div>

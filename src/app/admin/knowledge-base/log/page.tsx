@@ -6,6 +6,7 @@ import { ArrowLeft, BookOpen, Check, Loader2, MessageSquare, PencilLine, Plus, R
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader } from "@/components/admin/layout-kit";
 import type { AiLogRow } from "@/app/api/admin/kb/logs/route";
+import { Button } from "@heroui/react";
 
 // Admin → ฐานความรู้ AI → Log. Every answer the assistant gave from the
 // knowledge base, with the articles behind it. A question with no article is
@@ -215,15 +216,14 @@ export default function AdminAiLogPage() {
                       placeholder="เขียนคำตอบที่อยากให้ AI ใช้ตอบคำถามแบบนี้ครั้งหน้า"
                     />
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => saveCorrection(r)}
-                        disabled={savingCorrection || !correction.trim()}
-                        className="flex min-h-9 items-center gap-1.5 rounded-full bg-brand-800 px-4 text-sm font-semibold text-white disabled:opacity-50"
+                      <Button variant="primary"
+                        onPress={() => saveCorrection(r)}
+                        isDisabled={savingCorrection || !correction.trim()}
+                        
                       >
                         {savingCorrection ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                         บันทึกคำแก้เป็นความรู้ใหม่
-                      </button>
+                      </Button>
                       <span className="text-[11px] text-slate-500">
                         บันทึกเป็นฉบับร่างในฐานความรู้ ต้องกดเผยแพร่ก่อน AI จึงจะใช้ตอบ
                       </span>

@@ -8,6 +8,7 @@ import { formatTHB } from "@/lib/format";
 import { Modal } from "@/components/ui";
 import { adminCards, adminTable } from "@/components/admin/layout-kit";
 import { AI_LABEL, ENTRY_STATUS, LINE_KIND, PAYMENT_STATUS, when, type QueueItem } from "./queue-vocab";
+import { Button } from "@heroui/react";
 
 // The queue as a list you can read down, with everything else a click away.
 //
@@ -494,14 +495,13 @@ function DetailPanel({
                     ตรวจแล้วเมื่อ {when(item.reviewedAt)}
                     {(item.rejectReason || item.revokeReason) && <> · {item.rejectReason ?? item.revokeReason}</>}
                   </p>
-                  <button
-                    type="button"
-                    disabled={busy === item.id}
-                    onClick={() => onReopen(item)}
-                    className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-surface-line px-4 text-[14px] font-semibold text-brand-800 hover:bg-surface-soft disabled:opacity-50"
+                  <Button variant="outline"
+                    isDisabled={busy === item.id}
+                    onPress={() => onReopen(item)}
+                    className="w-full"
                   >
                     <RefreshCw size={15} /> ดึงกลับมาตรวจใหม่
-                  </button>
+                  </Button>
                   <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
                     ใบเสร็จจะกลับไปอยู่ในคิวตรวจ และผลเดิมถูกบันทึกไว้ใน audit log —
                     ถ้าประกาศผลไปแล้ว รายชื่อที่จับได้จะไม่เปลี่ยนตาม ต้องตัดสินใจแยก
@@ -532,22 +532,20 @@ function DetailPanel({
                 </p>
               )}
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={busy === item.id || !paymentOf(item).canApprove}
-                  onClick={() => onDecide(item, "approve")}
-                  className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-full bg-brand-800 px-4 text-[14px] font-semibold text-white disabled:opacity-50"
+                <Button variant="primary"
+                  isDisabled={busy === item.id || !paymentOf(item).canApprove}
+                  onPress={() => onDecide(item, "approve")}
+                  className="flex-1"
                 >
                   <Check size={15} /> อนุมัติ
-                </button>
-                <button
-                  type="button"
-                  disabled={busy === item.id}
-                  onClick={() => onDecide(item, "reject")}
-                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-rose-200 px-5 text-[14px] font-semibold text-rose-700 disabled:opacity-50"
+                </Button>
+                <Button variant="danger-soft"
+                  isDisabled={busy === item.id}
+                  onPress={() => onDecide(item, "reject")}
+                  
                 >
                   <X size={15} /> ตีกลับ
-                </button>
+                </Button>
               </div>
                 </>
               )}
@@ -563,21 +561,19 @@ function DetailPanel({
                       กู้คืนไม่ได้
                     </p>
                     <div className="mt-2.5 flex gap-2">
-                      <button
-                        type="button"
-                        disabled={busy === item.id}
-                        onClick={() => onDelete(item)}
-                        className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-rose-600 px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+                      <Button variant="danger" size="sm"
+                        isDisabled={busy === item.id}
+                        onPress={() => onDelete(item)}
+                        className="flex-1"
                       >
                         <Trash2 size={14} /> ลบถาวร
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirming(false)}
-                        className="inline-flex min-h-9 items-center justify-center rounded-full border border-surface-line px-4 text-[13px] font-semibold text-slate-600"
+                      </Button>
+                      <Button variant="outline" size="sm"
+                        onPress={() => setConfirming(false)}
+                        
                       >
                         ยกเลิก
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (

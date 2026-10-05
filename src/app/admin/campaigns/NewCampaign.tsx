@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Plus } from "lucide-react";
+import { Button } from "@heroui/react";
 
 // Starting a campaign: a name to call it and a link to reach it.
 //
@@ -52,14 +53,13 @@ export default function NewCampaign({ onCreated }: { onCreated: (key: string) =>
   // been pressed disappeared, and nothing visible took its place.
   return (
     <span className="relative inline-flex">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
+      <Button variant="outline" size="sm"
+        onPress={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 rounded-full border border-surface-line px-3 py-1.5 text-[12px] font-semibold text-brand-ink hover:bg-surface-soft"
+        
       >
         <Plus size={13} aria-hidden /> กิจกรรมใหม่
-      </button>
+      </Button>
 
       {/* Hangs off the button's near edge on a phone and its far edge from
           `sm` up: the header wraps on a narrow screen and puts the button on
@@ -100,25 +100,23 @@ export default function NewCampaign({ onCreated }: { onCreated: (key: string) =>
           {error && <p className="mt-2 text-[12px] font-semibold text-rose-700">{error}</p>}
 
           <div className="mt-4 flex gap-2">
-            <button
-              type="button"
-              disabled={!valid || saving}
-              onClick={create}
-              className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-brand-800 text-[13px] font-semibold text-white disabled:opacity-50"
+            <Button variant="primary" size="sm"
+              isDisabled={!valid || saving}
+              onPress={create}
+              className="flex-1"
             >
               {saving && <Loader2 size={13} className="animate-spin" />}
               สร้างกิจกรรม
-            </button>
-            <button
-              type="button"
-              onClick={() => {
+            </Button>
+            <Button variant="outline" size="sm"
+              onPress={() => {
                 setOpen(false);
                 setError(null);
               }}
-              className="min-h-9 rounded-full border border-surface-line px-4 text-[13px] font-semibold text-slate-600"
+              
             >
               ยกเลิก
-            </button>
+            </Button>
           </div>
         </div>
       )}

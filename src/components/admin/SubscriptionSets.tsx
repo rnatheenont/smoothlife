@@ -8,6 +8,7 @@ import { categories } from "@/data/categories";
 import { INTERVALS, STATUS_TH, type SubscriptionSetStatus } from "@/lib/subscription-sets";
 import { formatTHB } from "@/lib/format";
 import AdminSelect from "@/components/admin/AdminSelect";
+import { Button } from "@heroui/react";
 
 // Admin → สินค้าสมัครสมาชิก → ชุดที่จัดไว้แล้ว. The shop assembles a bundle,
 // prices it, and sells it as one subscription.
@@ -201,13 +202,12 @@ export default function SubscriptionSets({ catalogue }: { catalogue: Catalogue[]
         <p className="text-xs text-slate-500">
           ชุดที่ทีมจัดไว้ให้ลูกค้ากดสมัครทีเดียว — ตั้งราคาชุดให้ถูกกว่าซื้อแยก · ชุดที่มีสินค้าใดหมด จะไม่ถูกขายจนกว่าจะเติมของ
         </p>
-        <button
-          type="button"
-          onClick={startCreate}
-          className="flex min-h-10 items-center gap-1.5 rounded-full bg-brand-800 px-4 text-sm font-semibold text-white"
+        <Button variant="primary"
+          onPress={startCreate}
+          
         >
           <Plus size={15} /> สร้างชุดใหม่
-        </button>
+        </Button>
       </div>
 
       {error && <p className="mb-4 rounded-xl2 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}

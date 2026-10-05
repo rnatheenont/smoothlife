@@ -14,6 +14,7 @@ import { formatTHB } from "@/lib/format";
 import { Badge } from "@/components/ui";
 import { useAdminAction } from "@/components/admin/header-action";
 import { PageHeader, Panel, adminTable } from "@/components/admin/layout-kit";
+import { Button } from "@heroui/react";
 import {
   refundRouteFor,
   REFUND_ROUTE_LABEL,
@@ -190,16 +191,16 @@ function RefundControls({
       />
       {error && <p className="text-rose-600">{error}</p>}
       <div className="flex items-center gap-2">
-        <button
-          onClick={submit}
-          disabled={busy || (route === "portal" && !portalDone)}
-          className="flex items-center gap-1 rounded-full bg-rose-600 px-3 py-1.5 font-semibold text-white disabled:opacity-50"
+        <Button variant="danger" size="sm"
+          onPress={submit}
+          isDisabled={busy || (route === "portal" && !portalDone)}
+          
         >
           {busy && <Loader2 size={12} className="animate-spin" />}
           {route === "portal"
             ? "บันทึกว่าคืนเงินแล้ว"
             : `คืนเงิน ${formatTHB(tx.amount)} ผ่าน Shopify`}
-        </button>
+        </Button>
         <button onClick={() => setOpen(false)} className="text-slate-400">
           ยกเลิก
         </button>

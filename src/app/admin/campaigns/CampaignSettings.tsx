@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Loader2, Plus, Trash2 } from "lucide-react";
 import { Panel } from "@/components/admin/layout-kit";
 import AdminSelect from "@/components/admin/AdminSelect";
+import { Button } from "@heroui/react";
 
 // The campaign's own words, edited here instead of in a source file.
 //
@@ -565,25 +566,23 @@ export default function CampaignSettings({ campaignQuery = "" }: { campaignQuery
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={() => set("terms", [...content.terms, ""])}
-          className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-surface-line px-4 text-[13px] font-semibold text-brand-800 hover:bg-surface-soft"
+        <Button variant="outline" size="sm"
+          onPress={() => set("terms", [...content.terms, ""])}
+          className="mt-3"
         >
           <Plus size={15} /> เพิ่มเงื่อนไข
-        </button>
+        </Button>
       </Panel>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={save}
-          className="inline-flex min-h-10 items-center gap-2 rounded-full bg-brand-800 px-6 text-[14px] font-semibold text-white disabled:opacity-50"
+        <Button variant="primary"
+          isDisabled={saving}
+          onPress={save}
+          
         >
           {saving && <Loader2 size={15} className="animate-spin" />}
           {saving ? "กำลังบันทึก…" : "บันทึกเงื่อนไข"}
-        </button>
+        </Button>
         {notice && <span className="text-[13px] text-slate-600">{notice}</span>}
       </div>
     </div>
