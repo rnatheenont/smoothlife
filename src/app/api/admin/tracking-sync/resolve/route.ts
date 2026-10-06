@@ -72,14 +72,21 @@ export async function POST(req: NextRequest) {
       );
     }
     const order = await getOrderForTrackingSync(row.resolved_order_name || row.order_ref);
+    // Returned here rather than through `error` below: that path answers 502,
+    // which would tell anyone watching that Shopify is broken when what
+    // actually happened is that this order must not be shipped against.
+    // Overwriting is still a write, and the same rule applies to it — a
+    // mismatch settled days later may be settled onto an order that has
+    // since been refunded or cancelled.
     const blocked = order ? trackingBlockReason(order) : null;
+    if (order && blocked) {
+      return NextResponse.json(
+        { ok: false, error: `เขียนทับไม่ได้ — ${blocked} (ออเดอร์ ${order.name})` },
+        { status: 409 },
+      );
+    }
     if (!order) {
       error = "ไม่พบออเดอร์นี้ใน Shopify แล้ว";
-    } else if (blocked) {
-      // Overwriting is still a write, and the same rule applies to it: a
-      // mismatch settled days later may be settled onto an order that has
-      // since been refunded or cancelled.
-      error = `เขียนทับไม่ได้ — ${blocked} (ออเดอร์ ${order.name})`;
     } else if (order.fulfillmentNumbers.length > 1) {
       // The write replaces the whole set, and which of several numbers is the
       // wrong one is not something this page knows. Refusing keeps the other
