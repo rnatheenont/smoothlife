@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { getOwnAccessScopes } from "@/lib/shopify-admin";
+import { getOwnAccessScopes, orderStatusByName } from "@/lib/shopify-admin";
+import { trackingBlockReason } from "@/lib/tracking-sync";
 
 // What the tracking sync has been told and what it decided. During dry-run
 // this is the whole product: the mismatches are the thing worth looking at,
@@ -76,6 +77,22 @@ export async function GET(req: NextRequest) {
   // needs a scope the read-only work never did.
   const own = await getOwnAccessScopes();
 
+  // Where each still-open parcel's order stands right now — refunded,
+  // expired, cancelled — so the queue can say why a number cannot be attached
+  // before somebody presses the button rather than after. Only the rows that
+  // still have a decision waiting on them, which is a couple of orders, not
+  // the two hundred rows below.
+  const pending = rows.filter(
+    (r) => !r.resolved_at && (r.action === "conflict" || r.action === "not-eligible"),
+  );
+  const statuses = await orderStatusByName(
+    pending.map((r) => r.resolved_order_name || r.order_ref),
+  );
+  const orders: Record<string, { financialStatus: string | null; cancelled: boolean; blockReason: string | null }> = {};
+  for (const [name, status] of statuses) {
+    orders[name] = { ...status, blockReason: trackingBlockReason(status) };
+  }
+
   return NextResponse.json({
     ok: true,
     mode: process.env.TRACKING_SYNC_MODE || "dry-run",
@@ -99,6 +116,9 @@ export async function GET(req: NextRequest) {
       consecutiveFailures,
     },
     testRowCount: rows.length - real.length,
+    // Keyed without the "#", the way Shopify answers. An order missing from
+    // here is one we could not read, not one that is fine.
+    orders,
     rows,
   });
 }

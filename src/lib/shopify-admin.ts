@@ -1291,6 +1291,60 @@ export async function getCustomerOrderDetail(
  * Exact match only — `name:` is a filter, not a search, so "#4196" finds
  * #4196 or nothing. The sync must never act on a near-miss.
  */
+/**
+ * Payment and cancellation for a handful of orders, by order name.
+ *
+ * For the tracking queue, which is a list of order *names* — and which wants
+ * to say why a parcel cannot be attached before somebody presses the button,
+ * not after. One request for the whole visible queue rather than
+ * getOrderForTrackingSync per row: that one also fetches fulfillments and
+ * open fulfillment orders, which this has no use for.
+ *
+ * An order that cannot be read is simply absent from the map. The screen says
+ * nothing about it rather than inventing a status, and the write routes ask
+ * again for themselves — this is for showing, never for deciding.
+ */
+export async function orderStatusByName(
+  names: string[],
+): Promise<Map<string, { financialStatus: string | null; cancelled: boolean }>> {
+  const out = new Map<string, { financialStatus: string | null; cancelled: boolean }>();
+  const wanted = [
+    ...new Set(
+      names
+        .map((n) => n.trim().replace(/^#/, ""))
+        .filter((n) => /^[A-Za-z0-9._-]{1,32}$/.test(n)),
+    ),
+  ];
+  if (!wanted.length || !shopifyAdminConfigured()) return out;
+
+  for (let i = 0; i < wanted.length; i += 25) {
+    const chunk = wanted.slice(i, i + 25);
+    try {
+      const data = await adminGraphql<{
+        orders: { edges: { node: { name: string; displayFinancialStatus: string | null; cancelledAt: string | null } }[] };
+      }>(
+        `query TrackingQueueStatuses($q: String!, $first: Int!) {
+          orders(first: $first, query: $q) {
+            edges { node { name displayFinancialStatus cancelledAt } }
+          }
+        }`,
+        { q: chunk.map((n) => `name:${n}`).join(" OR "), first: chunk.length * 2 },
+      );
+      for (const edge of data.orders.edges ?? []) {
+        const node = edge.node;
+        if (!node?.name) continue;
+        out.set(node.name.replace(/^#/, ""), {
+          financialStatus: node.displayFinancialStatus,
+          cancelled: Boolean(node.cancelledAt),
+        });
+      }
+    } catch (err) {
+      console.error("[shopify-admin] orderStatusByName failed", err);
+    }
+  }
+  return out;
+}
+
 export async function getOrderForTrackingSync(orderName: string): Promise<{
   id: string;
   name: string;

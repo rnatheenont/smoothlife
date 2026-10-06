@@ -14,6 +14,8 @@ import {
   KeyRound,
   Boxes,
   Bot,
+  Check,
+  Copy,
   UserRound,
   PackagePlus,
 } from "lucide-react";
@@ -163,8 +165,62 @@ type Payload = {
     consecutiveFailures: number;
   };
   testRowCount: number;
+  /** Where each still-open parcel's order stands in Shopify right now, keyed
+   *  by order name without the "#". Missing means we could not read it. */
+  orders: Record<
+    string,
+    { financialStatus: string | null; cancelled: boolean; blockReason: string | null }
+  >;
   rows: TrackingSyncRow[];
 };
+
+/** The payment words Shopify uses, in the words the desk uses. */
+const PAYMENT_LABEL: Record<string, string> = {
+  PAID: "จ่ายแล้ว",
+  PARTIALLY_PAID: "จ่ายบางส่วน",
+  PENDING: "รอชำระ",
+  EXPIRED: "หมดอายุ",
+  VOIDED: "ยกเลิกการชำระ",
+  REFUNDED: "คืนเงินแล้ว",
+  PARTIALLY_REFUNDED: "คืนเงินบางส่วน",
+  AUTHORIZED: "กันวงเงินไว้",
+  UNPAID: "ยังไม่จ่าย",
+};
+
+/** The order a row's number would be written to, as Shopify has it now. */
+function orderStatusOf(
+  row: TrackingSyncRow,
+  orders: Payload["orders"] | undefined,
+): { financialStatus: string | null; cancelled: boolean; blockReason: string | null } | null {
+  const name = (row.resolved_order_name || row.order_ref).trim().replace(/^#/, "");
+  return orders?.[name] ?? null;
+}
+
+/** What the row says about its order: cancelled first, because a cancelled
+ *  order can still read "จ่ายแล้ว" until somebody refunds it. */
+function OrderStatusChip({
+  status,
+}: {
+  status: { financialStatus: string | null; cancelled: boolean; blockReason: string | null };
+}) {
+  const label = status.cancelled
+    ? "ยกเลิกแล้ว"
+    : (PAYMENT_LABEL[(status.financialStatus ?? "").toUpperCase()] ??
+      status.financialStatus ??
+      "ไม่ทราบสถานะ");
+  return (
+    <span
+      className={
+        "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold " +
+        (status.blockReason
+          ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
+          : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200")
+      }
+    >
+      {label}
+    </span>
+  );
+}
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString("th-TH", {
@@ -173,6 +229,81 @@ function fmt(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+/** The order number, as a way into Shopify.
+ *
+ *  Every row here is about an order somebody is about to go and look at, and
+ *  the number was plain text — so looking meant retyping it into Shopify's
+ *  search. Same URL the "ค้นหาใน Shopify" button already used. */
+function OrderLink({
+  name,
+  shopDomain,
+  className,
+}: {
+  name: string;
+  shopDomain: string | null;
+  className?: string;
+}) {
+  const label = name || "—";
+  if (!shopDomain || !name) return <span className={className}>{label}</span>;
+  return (
+    <a
+      href={`https://admin.shopify.com/store/${shopDomain}/orders?query=${encodeURIComponent(name.replace(/^#/, ""))}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={`เปิด ${label} ใน Shopify`}
+      className={clsx(
+        "underline decoration-slate-300 decoration-dotted underline-offset-2 hover:decoration-brand-800",
+        className,
+      )}
+    >
+      {label}
+    </a>
+  );
+}
+
+/** A tracking number that copies itself.
+ *
+ *  These get pasted into the courier's site, into chat with a customer, into
+ *  soko — and selecting twelve characters out of a table row by hand is the
+ *  kind of small friction that happens two hundred times a month. */
+function CopyNumber({ value, className }: { value: string; className?: string }) {
+  const [copied, setCopied] = useState(false);
+  if (!value) return <span className={className}>—</span>;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        // Nothing to fall back to if the browser refuses, so say so rather
+        // than showing "คัดลอกแล้ว" over an empty clipboard.
+        navigator.clipboard
+          .writeText(value)
+          .then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          })
+          .catch(() => window.prompt("คัดลอกเลขนี้", value));
+      }}
+      title="คลิกเพื่อคัดลอก"
+      className={clsx(
+        "group inline-flex items-center gap-1 rounded hover:bg-surface-soft",
+        className,
+      )}
+    >
+      {value}
+      {copied ? (
+        <Check size={11} className="text-emerald-600" aria-hidden="true" />
+      ) : (
+        <Copy
+          size={11}
+          className="text-slate-300 group-hover:text-slate-500"
+          aria-hidden="true"
+        />
+      )}
+      <span className="sr-only">{copied ? "คัดลอกแล้ว" : "คัดลอก"}</span>
+    </button>
+  );
 }
 
 /** One line of the health strip: same shape whatever it is reporting. */
@@ -317,6 +448,7 @@ function RowActions({
   resolving,
   onResolve,
   onAttach,
+  orderStatus,
 }: {
   row: TrackingSyncRow;
   shopDomain: string | null;
@@ -326,16 +458,28 @@ function RowActions({
     resolution: "overwritten" | "ignored",
   ) => void;
   onAttach: (row: TrackingSyncRow, decision: "attach" | "skip") => void;
+  /** Where this row's order stands now, or null if Shopify could not be read. */
+  orderStatus: {
+    financialStatus: string | null;
+    cancelled: boolean;
+    blockReason: string | null;
+  } | null;
 }) {
+  // The write routes refuse a cancelled or unpaid order anyway. Saying so on
+  // the button is the difference between a rule and a dead end: the person
+  // reads why before they click, instead of after.
+  const blocked = orderStatus?.blockReason ?? null;
   // A mismatch used to end at its reason: the page named the problem and
   // offered nothing to do about it, so settling one meant opening Shopify and
   // keying the number in — the manual step this replaces.
   if (row.action === "conflict" && !row.resolved_at)
     return (
       <span className="flex flex-wrap items-center gap-1.5">
+        {orderStatus && <OrderStatusChip status={orderStatus} />}
         <button
           onClick={() => onResolve(row, "overwritten")}
-          disabled={resolving === row.id}
+          disabled={resolving === row.id || Boolean(blocked)}
+          title={blocked ?? undefined}
           className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
         >
           ใช้เลขใหม่ทับ
@@ -355,9 +499,11 @@ function RowActions({
   if (isFollowUp(row) && !row.resolved_at)
     return (
       <span className="flex flex-wrap items-center gap-1.5">
+        {orderStatus && <OrderStatusChip status={orderStatus} />}
         <button
           onClick={() => onAttach(row, "attach")}
-          disabled={resolving === row.id}
+          disabled={resolving === row.id || Boolean(blocked)}
+          title={blocked ?? undefined}
           className="rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-800 hover:bg-brand-100 disabled:opacity-50"
         >
           ต่อเลขเข้าออเดอร์
@@ -764,9 +910,11 @@ export default function AdminTrackingSyncPage() {
                 {openConflicts.map((r) => (
                   <tr key={r.id} className={adminTable.row}>
                     <td className={adminTable.cell}>
-                      <span className="font-semibold text-brand-ink">
-                        {r.resolved_order_name || r.order_ref}
-                      </span>
+                      <OrderLink
+                        name={r.resolved_order_name || r.order_ref}
+                        shopDomain={data?.shopDomain ?? null}
+                        className="font-semibold text-brand-ink"
+                      />
                       {(r.seen_count ?? 1) > 1 && (
                         <span className="mt-0.5 block text-[11px] text-slate-400">
                           เจอซ้ำ {r.seen_count} รอบ
@@ -777,7 +925,7 @@ export default function AdminTrackingSyncPage() {
                       {r.existing_numbers?.join(", ") || "—"}
                     </td>
                     <td className="px-3 py-2.5 font-mono text-[12px] text-brand-800">
-                      {r.tracking_number}
+                      <CopyNumber value={r.tracking_number} />
                     </td>
                     <td className="px-3 py-2.5 text-[12px] leading-relaxed text-slate-500">
                       {r.reason}
@@ -790,6 +938,7 @@ export default function AdminTrackingSyncPage() {
                           resolving={resolving}
                           onResolve={resolve}
                           onAttach={attach}
+                          orderStatus={orderStatusOf(r, data?.orders)}
                         />
                       </span>
                     </td>
@@ -807,7 +956,10 @@ export default function AdminTrackingSyncPage() {
               >
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-brand-ink">
-                    {r.resolved_order_name || r.order_ref}
+                    <OrderLink
+                      name={r.resolved_order_name || r.order_ref}
+                      shopDomain={data?.shopDomain ?? null}
+                    />
                     {(r.seen_count ?? 1) > 1 && (
                       <span className="ml-1.5 text-[10px] font-medium text-slate-400">
                         เจอซ้ำ {r.seen_count} รอบ
@@ -821,7 +973,7 @@ export default function AdminTrackingSyncPage() {
                     </span>
                     <br />
                     soko ส่งมา:{" "}
-                    <span className="text-brand-800">{r.tracking_number}</span>
+                    <CopyNumber value={r.tracking_number} className="text-brand-800" />
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-1.5">
@@ -831,6 +983,7 @@ export default function AdminTrackingSyncPage() {
                     resolving={resolving}
                     onResolve={resolve}
                     onAttach={attach}
+                          orderStatus={orderStatusOf(r, data?.orders)}
                   />
                 </div>
               </li>
@@ -872,15 +1025,17 @@ export default function AdminTrackingSyncPage() {
                 {followUps.map((r) => (
                   <tr key={r.id} className={adminTable.row}>
                     <td className={adminTable.cell}>
-                      <span className="font-semibold text-brand-ink">
-                        {r.resolved_order_name || r.order_ref}
-                      </span>
+                      <OrderLink
+                        name={r.resolved_order_name || r.order_ref}
+                        shopDomain={data?.shopDomain ?? null}
+                        className="font-semibold text-brand-ink"
+                      />
                     </td>
                     <td className="px-3 py-2.5 font-mono text-[12px] text-slate-400">
                       {r.order_ref}
                     </td>
                     <td className="px-3 py-2.5 font-mono text-[12px] text-brand-800">
-                      {r.tracking_number}
+                      <CopyNumber value={r.tracking_number} />
                     </td>
                     <td className={adminTable.muted}>{fmt(r.received_at)}</td>
                     <td className={adminTable.cell}>
@@ -891,6 +1046,7 @@ export default function AdminTrackingSyncPage() {
                           resolving={resolving}
                           onResolve={resolve}
                           onAttach={attach}
+                          orderStatus={orderStatusOf(r, data?.orders)}
                         />
                       </span>
                     </td>
@@ -908,14 +1064,17 @@ export default function AdminTrackingSyncPage() {
               >
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-brand-ink">
-                    {r.resolved_order_name || r.order_ref}
+                    <OrderLink
+                      name={r.resolved_order_name || r.order_ref}
+                      shopDomain={data?.shopDomain ?? null}
+                    />
                     <span className="ml-1.5 font-mono text-[10px] font-medium text-slate-400">
                       {r.order_ref}
                     </span>
                   </p>
                   <p className="mt-1 font-mono text-[11px] text-slate-500">
                     เลขกล่องนี้:{" "}
-                    <span className="text-brand-800">{r.tracking_number}</span>
+                    <CopyNumber value={r.tracking_number} className="text-brand-800" />
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-1.5">
@@ -925,6 +1084,7 @@ export default function AdminTrackingSyncPage() {
                     resolving={resolving}
                     onResolve={resolve}
                     onAttach={attach}
+                          orderStatus={orderStatusOf(r, data?.orders)}
                   />
                 </div>
               </li>
@@ -1039,9 +1199,11 @@ export default function AdminTrackingSyncPage() {
                       <td className="px-3 py-2.5">
                         {firstOfSet ? (
                           <>
-                            <span className="font-semibold text-brand-ink">
-                              {r.resolved_order_name || r.order_ref}
-                            </span>
+                            <OrderLink
+                              name={r.resolved_order_name || r.order_ref}
+                              shopDomain={data.shopDomain}
+                              className="font-semibold text-brand-ink"
+                            />
                             {!r.resolved_order_name && (
                               <span className="ml-1 text-[11px] text-slate-400">
                                 (ไม่พบ)
@@ -1067,7 +1229,7 @@ export default function AdminTrackingSyncPage() {
                         )}
                       </td>
                       <td className="px-3 py-2.5 font-mono text-[12px] text-slate-700">
-                        {r.tracking_number}
+                        <CopyNumber value={r.tracking_number} />
                       </td>
                       <td className="px-3 py-2.5">
                         <WhoTag row={r} />
@@ -1091,6 +1253,7 @@ export default function AdminTrackingSyncPage() {
                             resolving={resolving}
                             onResolve={resolve}
                             onAttach={attach}
+                          orderStatus={orderStatusOf(r, data?.orders)}
                           />
                         </span>
                       </td>
@@ -1113,9 +1276,14 @@ export default function AdminTrackingSyncPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-brand-ink">
-                        {firstOfSet
-                          ? r.resolved_order_name || r.order_ref
-                          : `↳ กล่อง ${box}`}
+                        {firstOfSet ? (
+                          <OrderLink
+                            name={r.resolved_order_name || r.order_ref}
+                            shopDomain={data.shopDomain}
+                          />
+                        ) : (
+                          `↳ กล่อง ${box}`
+                        )}
                         {firstOfSet && !r.resolved_order_name && (
                           <span className="ml-1 text-[10px] font-normal text-slate-400">
                             (ไม่พบ)
@@ -1128,7 +1296,7 @@ export default function AdminTrackingSyncPage() {
                         )}
                       </p>
                       <p className="mt-0.5 font-mono text-[11px] text-slate-500">
-                        {r.tracking_number}
+                        <CopyNumber value={r.tracking_number} />
                         {/* Inside a set, the warehouse's own ref is the only
                             thing that tells the boxes apart. */}
                         {boxes > 1 && (
@@ -1156,6 +1324,7 @@ export default function AdminTrackingSyncPage() {
                       resolving={resolving}
                       onResolve={resolve}
                       onAttach={attach}
+                          orderStatus={orderStatusOf(r, data?.orders)}
                     />
                   </div>
                 </li>
