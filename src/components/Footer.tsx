@@ -268,40 +268,44 @@ export default function Footer() {
             เชื่อมต่อแบบเข้ารหัส SSL ทุกขั้นตอน
           </p>
         </div>
-      </div>
 
-      <div className="relative isolate overflow-hidden border-t border-surface-line bg-white/60">
-        {/* The name, oversized and running off both edges, in the empty band
-            the mascot's clearance already leaves at the bottom of the page.
-            Decoration only: aria-hidden, unselectable, and faint enough
-            (brand green at 7%) that the line of text above keeps its own
-            contrast wherever the letters pass behind it. */}
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 -bottom-[0.18em] -z-10 select-none text-center font-extrabold leading-none tracking-tight whitespace-nowrap text-brand-800/[0.07] [font-size:clamp(5rem,20vw,18rem)]"
-        >
-          Smoothlife
-        </span>
-        {/* Bottom padding, not a right-hand gutter: the QuickChat mascot is a
-            fixed 64px (96px from lg) button that sits 60px up on phones and 12px
-            up on desktop, and it can be dragged to either side — so the only
-            clearance that holds is vertical. Measured: it covers the bottom
-            124px of the viewport below lg (the layout already contributes a
-            60px spacer there) and 108px from lg. */}
-        <div className="container-page relative flex flex-col items-center justify-between gap-2 pt-4 pb-[calc(5rem+env(safe-area-inset-bottom))] text-xs text-slate-600 sm:flex-row lg:pb-32">
+        {/* Copyright and the legal links sit up here with the payment row
+            rather than in a strip of their own. Down there they were a line of
+            text alone on a band, and the band only exists to hold the
+            mascot's clearance — which does not need a sentence in it. */}
+        <div className="mt-4 flex flex-col items-center justify-between gap-2 text-xs text-slate-600 sm:flex-row">
           <span>© 2026 Smoothlife.com</span>
           <div className="flex items-center gap-1">
-            <Link href="/privacy" className={`${linkClass} px-2 py-2 text-xs`}>
+            <Link href="/privacy" className={`${linkClass} px-2 py-1 text-xs`}>
               นโยบายความเป็นส่วนตัว
             </Link>
             <span aria-hidden className="text-slate-300">
               ·
             </span>
-            <Link href="/terms" className={`${linkClass} px-2 py-2 text-xs`}>
+            <Link href="/terms" className={`${linkClass} px-2 py-1 text-xs`}>
               เงื่อนไขการใช้บริการ
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* The name, oversized and running off both edges, filling the band the
+          mascot's clearance already leaves at the bottom of the page.
+          Decoration only: aria-hidden and unselectable.
+
+          The height is that clearance: the QuickChat mascot is a fixed 64px
+          (96px from lg) button sitting 60px up on phones and 12px up on
+          desktop, and it can be dragged to either side — so the only
+          clearance that holds is vertical. Measured: it covers the bottom
+          124px of the viewport below lg (the layout already contributes a
+          60px spacer there) and 108px from lg. */}
+      <div
+        aria-hidden
+        className="relative overflow-hidden border-t border-surface-line bg-white/60 h-[calc(5rem+env(safe-area-inset-bottom))] lg:h-32"
+      >
+        <span className="pointer-events-none absolute inset-x-0 -bottom-[0.18em] select-none text-center font-extrabold leading-none tracking-tight whitespace-nowrap text-brand-800/[0.07] [font-size:clamp(5rem,20vw,18rem)]">
+          Smoothlife
+        </span>
       </div>
     </footer>
   );
