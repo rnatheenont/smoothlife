@@ -40,7 +40,7 @@ export default function StoresPage() {
             <p className="font-semibold text-brand-ink">Facebook</p>
             <p>
               <a
-                href="https://www.facebook.com/smoothlifeoffcial"
+                href="https://www.facebook.com/smoothlifeofficial"
                 target="_blank"
                 rel="noreferrer noopener"
                 className="underline underline-offset-2 hover:text-brand-800"

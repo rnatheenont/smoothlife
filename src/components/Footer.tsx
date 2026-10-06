@@ -64,7 +64,7 @@ const columns: Col[] = [
 // listed honestly as the three that are actually answered.
 const TEL_DISPLAY = "085-489-0549";
 const TEL_HREF = "tel:0854890549";
-const FACEBOOK_URL = "https://www.facebook.com/smoothlifeoffcial";
+const FACEBOOK_URL = "https://www.facebook.com/smoothlifeofficial";
 const LINE_HANDLE = "@smoothlifeofficial";
 const LINE_URL = "https://line.me/R/ti/p/@smoothlifeofficial";
 const HOURS = "ทุกวัน 09:00–18:00 น.";

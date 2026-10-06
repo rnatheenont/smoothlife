@@ -20,7 +20,7 @@ export default function ContactPage() {
           <span className="text-xs font-medium">โทรหาเรา</span>
         </a>
         <a
-          href="https://www.facebook.com/smoothlifeoffcial"
+          href="https://www.facebook.com/smoothlifeofficial"
           target="_blank"
           rel="noreferrer noopener"
           className="flex flex-col items-center gap-1.5 rounded-xl2 p-4 shadow-card"

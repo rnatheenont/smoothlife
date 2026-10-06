@@ -38,7 +38,7 @@ const CUSTOMER_SERVICE: [string, string][] = [
 ];
 
 const SOCIAL: [string, string, ReactNode][] = [
-  ["Facebook", "https://www.facebook.com/smoothlifeoffcial/", <Facebook key="f" size={20} />],
+  ["Facebook", "https://www.facebook.com/smoothlifeofficial/", <Facebook key="f" size={20} />],
   ["Instagram", "https://www.instagram.com/smoothlife_official", <Instagram key="i" size={20} />],
   ["TikTok", "https://www.tiktok.com/@smoothlife_pharmacy", <TikTok key="t" />],
   ["LINE", "https://shop.line.me/@smoothlifeofficial", <Line key="l" />],
