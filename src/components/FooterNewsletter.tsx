@@ -47,12 +47,12 @@ export default function FooterNewsletter() {
         // Announced, not just shown: the form is replaced on success, and a
         // screen reader user gets no other signal that it worked.
         role="status"
-        className="flex items-start gap-1.5 text-sm font-medium text-white"
+        className="flex items-start gap-1.5 text-sm font-medium text-brand-800"
       >
-        <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-brand-teal" aria-hidden />
+        <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-brand-emerald" aria-hidden />
         <span>
           สมัครรับข่าวสารสำเร็จแล้วค่ะ
-          <span className="mt-0.5 block text-xs font-normal text-white/70">
+          <span className="mt-0.5 block text-xs font-normal text-slate-600">
             ทีมงานได้รับอีเมลของคุณแล้ว เดี๋ยวติดต่อกลับไปนะคะ
           </span>
         </span>
@@ -75,15 +75,15 @@ export default function FooterNewsletter() {
             blocks an empty submit — but a lone optional newsletter box in a
             footer has no second field to be marked apart from, and a red *
             there reads as a warning rather than as "this one is needed". */}
-        <Label className="text-sm font-semibold text-white after:content-none">
+        <Label className="text-sm font-semibold text-brand-ink after:content-none">
           รับข่าวโปรโมชั่นและสินค้าใหม่ก่อนใคร
         </Label>
-        <Description className="text-xs text-white/60">ส่งเดือนละครั้ง ยกเลิกได้ทุกเมื่อ</Description>
+        <Description className="text-xs text-slate-600">ส่งเดือนละครั้ง ยกเลิกได้ทุกเมื่อ</Description>
         <div className="mt-3 flex items-center gap-2">
           <Input
             placeholder="อีเมลของคุณ"
             autoComplete="email"
-            className="h-11 min-w-0 flex-1 rounded-full border border-white/20 bg-white/10 px-4 text-sm text-white placeholder:text-white/50"
+            className="h-11 min-w-0 flex-1 rounded-full border border-surface-line bg-white px-4 text-sm text-brand-ink placeholder:text-slate-400"
           />
           <Button
             type="submit"
@@ -98,7 +98,7 @@ export default function FooterNewsletter() {
             <Send size={16} aria-hidden />
           </Button>
         </div>
-        <FieldError className="mt-1.5 block text-xs text-rose-200">{error}</FieldError>
+        <FieldError className="mt-1.5 block text-xs text-rose-700">{error}</FieldError>
       </TextField>
     </form>
   );
