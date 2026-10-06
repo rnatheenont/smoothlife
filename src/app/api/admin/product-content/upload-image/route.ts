@@ -41,7 +41,11 @@ export async function POST(req: NextRequest) {
         : "image/jpeg";
 
   try {
-    const url = await uploadPublicImage({
+    // Destructured: uploadPublicImage answers { url, path }, and sending the
+    // whole object back as `url` put an object where the editor expected a
+    // string — the block's preview then died on imageUrl.trim() and took the
+    // whole editor down with it, every time anyone used this button.
+    const { url } = await uploadPublicImage({
       folder: "product-content",
       bytes: await file.arrayBuffer(),
       contentType,
