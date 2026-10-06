@@ -30,6 +30,37 @@ function normalise(n: string) {
   return n.trim().toUpperCase().replace(/\s+/g, "");
 }
 
+/** The payment states a parcel may be shipped against. */
+const SHIPPABLE = new Set(["PAID", "PARTIALLY_PAID"]);
+
+/**
+ * Why this order must not be given a tracking number, or null if it may.
+ *
+ * A tracking number is a promise that something is on its way, and Shopify
+ * emails it to the customer. Putting one on an order that was never paid for
+ * — expired, voided, refunded — tells them a parcel is coming that nobody
+ * sent. #4326 sat in this queue for exactly that reason: soko had a number
+ * for it while the payment had expired.
+ *
+ * Shared by all three writers — the automatic sync through decide() below,
+ * and the two buttons on the tracking screen, which until now asked nothing
+ * about payment at all and would write whatever an admin clicked.
+ *
+ * A null status means Shopify did not tell us, not that the order is unpaid,
+ * so it passes: the same rule the automatic sync has always used, and the
+ * screen shows the status beside the button either way.
+ */
+export function trackingBlockReason(order: {
+  financialStatus: string | null;
+  cancelled: boolean;
+}): string | null {
+  if (order.cancelled) return "ออเดอร์ถูกยกเลิกแล้ว";
+  if (order.financialStatus && !SHIPPABLE.has(order.financialStatus.toUpperCase())) {
+    return `สถานะการชำระเงินคือ ${order.financialStatus}`;
+  }
+  return null;
+}
+
 export function decide(
   order: OrderForSync | null,
   incoming: string,
@@ -55,12 +86,8 @@ export function decide(
     return { action: "not-eligible", reason: "ของส่งตาม (_F) — ไม่ใส่ให้ตามที่ตั้งค่าไว้" };
   }
 
-  if (order.cancelled) {
-    return { action: "not-eligible", reason: "ออเดอร์ถูกยกเลิกแล้ว" };
-  }
-  if (order.financialStatus && !["PAID", "PARTIALLY_PAID"].includes(order.financialStatus)) {
-    return { action: "not-eligible", reason: `สถานะการชำระเงินคือ ${order.financialStatus}` };
-  }
+  const blocked = trackingBlockReason(order);
+  if (blocked) return { action: "not-eligible", reason: blocked };
 
   const existing = order.shipments.map((s) => normalise(s.number)).filter(Boolean);
 

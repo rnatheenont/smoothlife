@@ -3,6 +3,7 @@ import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { getOrderForTrackingSync, setFulfillmentTracking } from "@/lib/shopify-admin";
 import { trackingMode } from "@/lib/tracking-apply";
+import { trackingBlockReason } from "@/lib/tracking-sync";
 
 // A follow-up parcel, settled by a person.
 //
@@ -75,6 +76,17 @@ export async function POST(req: NextRequest) {
     }
     const order = await getOrderForTrackingSync(row.resolved_order_name || row.order_ref);
     if (!order) return NextResponse.json({ ok: false, error: "ไม่พบออเดอร์นี้ใน Shopify แล้ว" }, { status: 502 });
+    // Asked here and not only when the row was logged: the queue is worked
+    // by hand days later, and an order can be refunded or cancelled in
+    // between. The same rule the automatic sync applies — a number on an
+    // unpaid order tells the customer a parcel is coming that nobody sent.
+    const blocked = trackingBlockReason(order);
+    if (blocked) {
+      return NextResponse.json(
+        { ok: false, error: `ใส่เลขให้ไม่ได้ — ${blocked} (ออเดอร์ ${order.name})` },
+        { status: 409 },
+      );
+    }
     if (!order.fulfillmentId) {
       return NextResponse.json(
         { ok: false, error: "ออเดอร์นี้ยังไม่มี fulfillment — ต้อง fulfill ใน Shopify ก่อน" },
