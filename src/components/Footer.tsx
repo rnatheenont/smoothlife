@@ -301,9 +301,12 @@ export default function Footer() {
           60px spacer there) and 108px from lg. */}
       <div
         aria-hidden
-        className="relative overflow-hidden border-t border-surface-line bg-white/60 h-[calc(5rem+env(safe-area-inset-bottom))] lg:h-32"
+        className="relative overflow-hidden border-t border-surface-line bg-white/60 h-[clamp(6rem,14vw,12rem)] lg:h-[clamp(8rem,14vw,12rem)]"
       >
-        <span className="pointer-events-none absolute inset-x-0 -bottom-[0.18em] select-none text-center font-extrabold leading-none tracking-tight whitespace-nowrap text-brand-800/[0.07] [font-size:clamp(5rem,20vw,18rem)]">
+        {/* Sitting on the bottom edge rather than hanging off it, so the whole
+            word reads instead of its lower half. Only the descender of the "f"
+            crosses the edge. */}
+        <span className="pointer-events-none absolute inset-x-0 -bottom-[0.06em] select-none text-center font-extrabold leading-none tracking-tight whitespace-nowrap text-brand-800/[0.07] [font-size:clamp(4rem,15vw,13rem)]">
           Smoothlife
         </span>
       </div>
