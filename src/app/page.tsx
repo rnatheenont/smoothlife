@@ -1,7 +1,7 @@
 import Link from "next/link";
 import clsx from "clsx";
 import Image from "next/image";
-import { ShieldCheck, Truck, Award, MessageCircle, Clock, ChevronRight, Repeat, PercentCircle, LayoutGrid } from "lucide-react";
+import { ShieldCheck, Truck, Award, MessageCircle, ChevronRight, Repeat, PercentCircle, LayoutGrid } from "lucide-react";
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
 import { categories, categoryImage, concerns, concernImage } from "@/data/categories";
@@ -13,7 +13,8 @@ import { formatTHB } from "@/lib/format";
 import { heroBanners } from "@/data/heroBanners";
 import { getLiveHeroBanners } from "@/lib/shopify-admin";
 import { getStorefrontHeroBanners } from "@/lib/storefront-banners";
-import { getStoreArticles, storeArticleHref, thaiDate } from "@/lib/storefront-articles";
+import { getStoreArticles, storeArticleHref } from "@/lib/storefront-articles";
+import KnowledgeArcGallery, { type ArcItem } from "@/components/home/KnowledgeArcGallery";
 import HeroCarousel from "@/components/HeroCarousel";
 import DealOfTheDayCard from "@/components/DealOfTheDayCard";
 import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
@@ -37,14 +38,6 @@ export function generateMetadata() {
 // automatically, without a code change or redeploy on this side.
 export const revalidate = 1800;
 
-const articleCategoryLabel: Record<string, string> = {
-  guide: "คู่มือ",
-  ingredient: "ส่วนผสม",
-  routine: "รูทีน",
-  qa: "ถาม-ตอบ",
-  video: "วิดีโอ",
-};
-
 export default async function HomePage() {
   // The slides the team publishes on www.smoothlife.com, read off that page;
   // the theme-file route is the backup, the static list the last resort.
@@ -67,24 +60,18 @@ export default async function HomePage() {
     .slice(0, 8);
   // The newest posts from the Shopify blog (see storefront-articles.ts), dated;
   // the static guides only if that feed can't be read.
-  const featuredArticles = liveArticles
-    ? liveArticles.slice(0, 3).map((a) => ({
+  const featuredArticles: ArcItem[] = liveArticles
+    ? liveArticles.slice(0, 12).map((a) => ({
         key: a.handle,
         href: storeArticleHref(a),
         title: a.title,
-        excerpt: a.excerpt,
         image: a.image,
-        readMins: a.readMins,
-        label: thaiDate(a.publishedAt),
       }))
-    : articles.slice(0, 3).map((a) => ({
+    : articles.slice(0, 12).map((a) => ({
         key: a.slug,
         href: `/knowledge/article/${a.slug}`,
         title: a.title,
-        excerpt: a.excerpt,
         image: a.image as string | null,
-        readMins: a.readMins,
-        label: articleCategoryLabel[a.category] || a.category,
       }));
 
   // Real product-video clips (Firework CDN, provided directly — not scraped).
@@ -408,59 +395,38 @@ export default async function HomePage() {
 
       {/* Wellness / knowledge teaser — kept last: bottom-funnel content for
           people still researching rather than ready to buy or subscribe. */}
-      <section className="bg-brand-gradient-soft py-7 md:py-14 lg:py-16">
-        <ScrollReveal className="container-page">
-          <SectionHeading title="ความรู้เรื่องผิวและสุขภาพ" subtitle="Learn About Wellness" href="/knowledge" />
+      {/* Centred story header over a drifting arc of covers, after the
+          "Great talent. Easier to find." block on fastwork.co/for-business. */}
+      <section className="overflow-hidden bg-white pt-10 pb-12 md:pt-16 md:pb-16 lg:pt-20">
+        <ScrollReveal className="container-page text-center">
+          <p className="text-[13px] font-medium tracking-[0.04em] text-slate-500">บทความและความรู้</p>
+          <h2 className="mt-2 text-[26px] font-medium leading-[1.4] tracking-[-0.01em] text-[#0a0a0a] md:text-[40px]">
+            {/* Brand gradient on the site's own face. inline-block with
+                padding: a clipped gradient stops at the box, and Thai tone
+                marks and vowels above/below reach past it. */}
+            <span className="inline-block bg-brand-gradient bg-clip-text px-0.5 pb-1 font-bold text-transparent">
+              ความรู้
+            </span>{" "}
+            เรื่องผิวและสุขภาพ
+          </h2>
+          {/* Thai has no spaces between words, so the browser may break mid-
+              phrase; each phrase is kept whole and the line breaks between them. */}
+          <p className="mx-auto mt-2 max-w-[28rem] text-sm leading-relaxed text-slate-500 md:text-base">
+            <span className="inline-block">อ่านเรื่องผิว ฟัน และสุขภาพแบบเข้าใจง่าย</span>{" "}
+            <span className="inline-block">เลือกเรื่องที่สนใจ แล้วนำไปใช้ได้จริงในทุกวัน</span>
+          </p>
         </ScrollReveal>
-        {/* Horizontal swipe on mobile (native scroll-snap, no slider JS)
-            instead of 3 full-width cards stacked one under another —
-            desktop keeps the 3-column grid since there's room for all of
-            them at once. */}
-        {/* container-page's padding is correctly respected once this
-            becomes a grid at sm+, but is silently ignored at the leading
-            edge while it's a flex+overflow-x-auto row on mobile (a real
-            browser quirk, confirmed) — the sm:hidden spacers below give
-            mobile its gutter explicitly instead of fighting that. */}
-        <StaggerGrid className="container-page flex sm:grid overflow-x-auto snap-x snap-mandatory scrollbar-none sm:overflow-visible gap-4 md:gap-5 sm:grid-cols-3">
-          <div className="shrink-0 w-0 sm:hidden snap-start" aria-hidden />
-          {featuredArticles.map((a) => (
-            <Link
-              key={a.key}
-              href={a.href}
-              className="group flex shrink-0 w-[78%] sm:w-auto snap-start flex-col rounded-xl2 bg-white overflow-hidden shadow-card hover:shadow-cardHover transition-shadow"
-            >
-              <div className="relative aspect-video bg-surface-mist">
-                {a.image && (
-                  <Image
-                    src={a.image}
-                    alt=""
-                    fill
-                    sizes="(max-width: 640px) 100vw, 33vw"
-                    className="object-cover transition-transform duration-500"
-                  />
-                )}
-              </div>
-              {/* Column with the footer pushed down, so "อ่านต่อ" lines up
-                  across cards whose excerpts wrap to different lengths. */}
-              <div className="flex flex-1 flex-col p-4">
-                <span className="self-start rounded-full bg-surface-mist px-2 py-0.5 text-[11px] font-semibold text-brand-800">
-                  {a.label}
-                </span>
-                <h3 className="font-bold text-sm text-brand-ink mt-2 line-clamp-2">{a.title}</h3>
-                <p className="text-xs text-slate-500 mt-1 line-clamp-2">{a.excerpt}</p>
-                <div className="mt-auto flex items-center justify-between pt-3">
-                  <span className="flex items-center gap-1 text-[11px] text-slate-500">
-                    <Clock size={11} /> {a.readMins} นาที
-                  </span>
-                  <span className="flex items-center gap-0.5 text-xs font-semibold text-brand-800">
-                    อ่านต่อ <ChevronRight size={13} />
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
-          <div className="shrink-0 w-0 sm:hidden snap-start" aria-hidden />
-        </StaggerGrid>
+        <div className="mt-4 md:mt-8">
+          <KnowledgeArcGallery items={featuredArticles} />
+        </div>
+        <div className="mt-2 flex justify-center">
+          <Link
+            href="/knowledge"
+            className="inline-flex min-h-11 items-center gap-1 rounded-full bg-[#0a0a0a] px-6 text-sm font-semibold text-white transition-colors hover:bg-black/80"
+          >
+            ดูบทความทั้งหมด <ChevronRight size={15} />
+          </Link>
+        </div>
       </section>
     </div>
   );
