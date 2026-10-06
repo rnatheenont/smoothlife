@@ -99,7 +99,15 @@ export async function GET(req: NextRequest) {
     const origin: "escalation" | "chat" = c.subject ? "escalation" : "chat";
     return {
       ...c,
-      customerName: (c.user_id && names.get(c.user_id)) || null,
+      // A newsletter signup has no account behind it most of the time, and
+      // the list falls back to the channel key — which read as
+      // "newsletter:q" in the inbox. The address is the only thing known
+      // about this person and the only way to answer them, so it is the name.
+      customerName:
+        (c.user_id && names.get(c.user_id)) ||
+        (c.channel_user_id.startsWith("newsletter:")
+          ? c.channel_user_id.slice("newsletter:".length)
+          : null),
       customerAvatar: (c.user_id && avatars.get(c.user_id)) || null,
       preview: previews.get(c.id) ?? null,
       unread: n,

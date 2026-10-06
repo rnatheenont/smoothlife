@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MessageCircle, Phone, Mail, CheckCircle2 } from "lucide-react";
+import { MessageCircle, Phone, Facebook, CheckCircle2 } from "lucide-react";
 import DemoBadge from "@/components/DemoBadge";
 import { Button } from "@/components/ui";
 
@@ -12,16 +12,21 @@ export default function ContactPage() {
   return (
     <div className="container-page py-8 md:py-10 max-w-lg mx-auto">
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">แชทและติดต่อเรา</h1>
-      <p className="text-sm text-slate-500 mb-6">ทีมบริการลูกค้าพร้อมช่วยเหลือคุณทุกวัน 9:00-20:00 น.</p>
+      <p className="text-sm text-slate-500 mb-6">ทีมบริการลูกค้าพร้อมช่วยเหลือคุณทุกวัน 09:00-18:00 น.</p>
 
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <a href="tel:020000000" className="flex flex-col items-center gap-1.5 rounded-xl2 p-4 shadow-card">
+        <a href="tel:0854890549" className="flex flex-col items-center gap-1.5 rounded-xl2 p-4 shadow-card">
           <Phone size={18} className="text-brand-emerald" />
           <span className="text-xs font-medium">โทรหาเรา</span>
         </a>
-        <a href="mailto:support@smoothlife.com" className="flex flex-col items-center gap-1.5 rounded-xl2 p-4 shadow-card">
-          <Mail size={18} className="text-brand-emerald" />
-          <span className="text-xs font-medium">อีเมล</span>
+        <a
+          href="https://www.facebook.com/smoothlifeoffcial"
+          target="_blank"
+          rel="noreferrer noopener"
+          className="flex flex-col items-center gap-1.5 rounded-xl2 p-4 shadow-card"
+        >
+          <Facebook size={18} className="text-brand-emerald" />
+          <span className="text-xs font-medium">Facebook</span>
         </a>
         <div className="flex flex-col items-center gap-1.5 rounded-xl2 p-4 shadow-card">
           <MessageCircle size={18} className="text-brand-emerald" />

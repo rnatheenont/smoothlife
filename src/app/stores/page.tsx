@@ -34,11 +34,20 @@ export default function StoresPage() {
         <div className="grid sm:grid-cols-3 gap-4 text-sm text-slate-600">
           <div>
             <p className="font-semibold text-brand-ink">โทรศัพท์</p>
-            <p>02-000-0000 (ทุกวัน 9:00-20:00)</p>
+            <p>085-489-0549 (ทุกวัน 09:00-18:00)</p>
           </div>
           <div>
-            <p className="font-semibold text-brand-ink">อีเมล</p>
-            <p>support@smoothlife.com</p>
+            <p className="font-semibold text-brand-ink">Facebook</p>
+            <p>
+              <a
+                href="https://www.facebook.com/smoothlifeoffcial"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="underline underline-offset-2 hover:text-brand-800"
+              >
+                ทักแชท Facebook
+              </a>
+            </p>
           </div>
           <div>
             <p className="font-semibold text-brand-ink">LINE Official</p>
