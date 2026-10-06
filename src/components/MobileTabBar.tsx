@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Home, LayoutGrid, ScanFace, ShoppingBag, User } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useCart } from "@/lib/cart-context";
+import { useBottomNavShown, resetBottomNav } from "@/lib/bottom-nav-visibility";
 
 const tabs = [
   { href: "/", icon: Home, th: "หน้าแรก", en: "Home" },
@@ -15,81 +16,16 @@ const tabs = [
   { href: "/account", icon: User, th: "บัญชี", en: "Account" },
 ];
 
-/** Below this, the bar always shows: at the top of a page there is nothing to
- *  have scrolled away from, and a short page would otherwise be able to leave
- *  it hidden with no way to bring it back. */
-const ALWAYS_SHOW_ABOVE = 80;
-/** Ignore movement smaller than this. iOS rubber-banding and a trackpad's
- *  tail-off both produce a stream of 1-2px events in alternating directions,
- *  which without a floor makes the bar flicker. */
-const DIRECTION_THRESHOLD = 8;
-
-/**
- * Hidden while you read down the page, back as soon as you head up.
- *
- * Five tabs across the bottom of a phone is a lot of a small screen to spend
- * on navigation nobody is using while they scroll a product list.
- */
-function useHideOnScrollDown(pathname: string): boolean {
-  const [shown, setShown] = useState(true);
-  const lastY = useRef(0);
-  const ticking = useRef(false);
-
-  // Re-armed on every navigation: a new page starts with the bar showing, and
-  // the jump there is not a scroll the reader performed — left alone, the
-  // remembered position would be the old page's and the first swipe on the
-  // new one would be measured against it.
-  //
-  // Adjusted during render rather than in an effect, which is React's own
-  // answer for "reset state when a prop changes" and saves the extra paint an
-  // effect would cost here.
-  const [seenPath, setSeenPath] = useState(pathname);
-  if (pathname !== seenPath) {
-    setSeenPath(pathname);
-    setShown(true);
-    // The remembered position is deliberately not touched here — a ref must
-    // not be written during render. It is one gesture stale at worst, and the
-    // first scroll event resets it.
-  }
-
-  useEffect(() => {
-    lastY.current = window.scrollY;
-
-    function evaluate() {
-      ticking.current = false;
-      const y = window.scrollY;
-      const delta = y - lastY.current;
-      if (y < ALWAYS_SHOW_ABOVE) {
-        lastY.current = y;
-        setShown(true);
-        return;
-      }
-      if (Math.abs(delta) < DIRECTION_THRESHOLD) return;
-      lastY.current = y;
-      // Down the page hides it, back up shows it.
-      setShown(delta < 0);
-    }
-
-    function onScroll() {
-      // One read per frame: scroll fires far more often than the screen draws,
-      // and reading scrollY is a layout read.
-      if (ticking.current) return;
-      ticking.current = true;
-      requestAnimationFrame(evaluate);
-    }
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  return shown;
-}
-
 export default function MobileTabBar() {
   const pathname = usePathname() || "/";
   const { t } = useLang();
   const { count } = useCart();
-  const shown = useHideOnScrollDown(pathname);
+  const shown = useBottomNavShown();
+
+  // A new page starts with the bar showing — see resetBottomNav.
+  useEffect(() => {
+    resetBottomNav();
+  }, [pathname]);
 
   function active(href: string) {
     if (href === "/") return pathname === "/";
