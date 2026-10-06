@@ -16,6 +16,7 @@ import {
   Bot,
   Check,
   Copy,
+  X,
   UserRound,
   PackagePlus,
 } from "lucide-react";
@@ -269,21 +270,43 @@ function OrderLink({
  *  soko — and selecting twelve characters out of a table row by hand is the
  *  kind of small friction that happens two hundred times a month. */
 function CopyNumber({ value, className }: { value: string; className?: string }) {
-  const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+
+  /** The older path, for when the Clipboard API refuses — an insecure origin,
+   *  a permission the browser will not grant. Never a prompt() dialog: that
+   *  blocks the whole page, which is worse than not copying. */
+  function copyFallback(text: string): boolean {
+    try {
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.setAttribute("readonly", "");
+      el.style.cssText = "position:fixed;top:-100px;opacity:0";
+      document.body.appendChild(el);
+      el.select();
+      const ok = document.execCommand("copy");
+      el.remove();
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+
   if (!value) return <span className={className}>—</span>;
   return (
     <button
       type="button"
-      onClick={() => {
-        // Nothing to fall back to if the browser refuses, so say so rather
-        // than showing "คัดลอกแล้ว" over an empty clipboard.
-        navigator.clipboard
-          .writeText(value)
-          .then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-          })
-          .catch(() => window.prompt("คัดลอกเลขนี้", value));
+      onClick={async () => {
+        let ok = false;
+        try {
+          await navigator.clipboard.writeText(value);
+          ok = true;
+        } catch {
+          ok = copyFallback(value);
+        }
+        // Said out loud either way: "คัดลอกแล้ว" over an empty clipboard is
+        // the one outcome worth avoiding.
+        setState(ok ? "copied" : "failed");
+        setTimeout(() => setState("idle"), 1500);
       }}
       title="คลิกเพื่อคัดลอก"
       className={clsx(
@@ -292,8 +315,10 @@ function CopyNumber({ value, className }: { value: string; className?: string })
       )}
     >
       {value}
-      {copied ? (
+      {state === "copied" ? (
         <Check size={11} className="text-emerald-600" aria-hidden="true" />
+      ) : state === "failed" ? (
+        <X size={11} className="text-rose-500" aria-hidden="true" />
       ) : (
         <Copy
           size={11}
@@ -301,7 +326,13 @@ function CopyNumber({ value, className }: { value: string; className?: string })
           aria-hidden="true"
         />
       )}
-      <span className="sr-only">{copied ? "คัดลอกแล้ว" : "คัดลอก"}</span>
+      <span className="sr-only">
+        {state === "copied"
+          ? "คัดลอกแล้ว"
+          : state === "failed"
+            ? "คัดลอกไม่ได้"
+            : "คัดลอก"}
+      </span>
     </button>
   );
 }
