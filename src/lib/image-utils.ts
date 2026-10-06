@@ -60,7 +60,7 @@ export function resizeForAvatar(file: Blob): Promise<ResizedImage> {
 }
 
 // ---------------------------------------------------------------------------
-// Product photography, on its way to our own storage.
+// Pictures an admin chooses, on their way to our own storage.
 //
 // Different job from the three above: those produce a data URL for an API
 // payload or for localStorage, this produces a file to upload and then serve
@@ -71,8 +71,12 @@ export function resizeForAvatar(file: Blob): Promise<ResizedImage> {
 // the same order of magnitude while still being sharp on a retina PDP.
 //
 // It also keeps the shop from ever hitting Vercel's 4.5 MB request body limit,
-// which the upload route's own 5 MB check sits just above and would therefore
+// which the upload routes' own 5 MB check sits just above and would therefore
 // never get to explain.
+//
+// Not for everything an admin uploads: a LINE rich-menu image and a chat photo
+// that may be pushed to LINE both have to stay JPEG or PNG, because LINE does
+// not take WebP. Those two call sites say so where they are.
 
 const PRODUCT_MAX_DIM = 1200;
 const PRODUCT_QUALITY = 0.8;
@@ -101,7 +105,7 @@ function toBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promi
 }
 
 /**
- * Shrink one chosen photograph to something worth serving.
+ * Shrink one chosen picture to something worth serving, and make it WebP.
  *
  * `createImageBitmap` with `imageOrientation: "from-image"` is what applies
  * the EXIF rotation a phone camera writes; without it a portrait photo taken
@@ -112,7 +116,7 @@ function toBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promi
  * only degrades to a white-matted JPEG if the browser cannot write WebP at
  * all — otherwise a transparent logo would come back with a black box.
  */
-export async function resizeProductImage(file: File): Promise<File> {
+export async function resizeUploadImage(file: File): Promise<File> {
   const transparent = file.type === "image/png" || file.type === "image/webp";
   const webp = supportsWebp();
   const type = webp ? "image/webp" : transparent ? "image/png" : "image/jpeg";

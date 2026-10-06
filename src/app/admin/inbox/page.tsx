@@ -1431,6 +1431,10 @@ export default function AdminInboxPage() {
                       e.target.value = "";
                       if (!file) return;
                       try {
+                        // JPEG, not WebP like the other admin uploads: this
+                        // photo can be pushed to the customer on LINE
+                        // (line-push.ts), and LINE's image message takes only
+                        // JPEG or PNG.
                         setAttachment(await resizeForUpload(file));
                       } catch {
                         setError("อ่านไฟล์รูปไม่สำเร็จ");

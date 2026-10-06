@@ -22,7 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { useCatalogueRebuild } from "@/components/admin/use-catalogue-rebuild";
-import { resizeProductImage } from "@/lib/image-utils";
+import { resizeUploadImage } from "@/lib/image-utils";
 import {
   MAX_IMAGES,
   resolveProductImages,
@@ -233,7 +233,7 @@ export default function ProductMediaCard({ variantId, product }: Props) {
     const failed: string[] = [];
     for (const file of queue) {
       try {
-        const small = await resizeProductImage(file);
+        const small = await resizeUploadImage(file);
         const form = new FormData();
         form.append("image", small);
         const res = await fetch(endpoint, { method: "POST", body: form });

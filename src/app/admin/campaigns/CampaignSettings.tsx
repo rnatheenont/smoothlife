@@ -6,6 +6,7 @@ import { Panel } from "@/components/admin/layout-kit";
 import AdminSelect from "@/components/admin/AdminSelect";
 import { Button, Checkbox, Input, Spinner, TextArea } from "@heroui/react";
 import AdminSearch from "@/components/admin/AdminSearch";
+import { resizeUploadImage } from "@/lib/image-utils";
 
 // The campaign's own words, edited here instead of in a source file.
 //
@@ -125,8 +126,11 @@ export default function CampaignSettings({
     setUploading(index);
     setNotice(null);
     try {
+      // Same treatment as every other admin upload — see image-utils.ts. A
+      // campaign step's artwork is shown to every visitor of the campaign
+      // page, and nothing resizes it after this point.
       const body = new FormData();
-      body.append("image", file);
+      body.append("image", await resizeUploadImage(file).catch(() => file));
       const res = await fetch("/api/admin/receipts/upload-image", {
         method: "POST",
         body,

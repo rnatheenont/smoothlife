@@ -22,6 +22,7 @@ import {
 import ProductMediaCard from "@/components/admin/products/ProductMediaCard";
 import { products } from "@/data/products";
 import { Button, Checkbox, Input } from "@heroui/react";
+import { resizeUploadImage } from "@/lib/image-utils";
 import {
   BLOCK_TYPES,
   emptyBlock,
@@ -482,8 +483,12 @@ function ImageField({
     setBusy(true);
     setError(null);
     try {
+      // Shrunk and turned into WebP here, before it leaves the machine: the
+      // site serves uploads exactly as they arrive (images.unoptimized), so a
+      // phone photo put in a content block is a phone photo every shopper
+      // downloads. Falls back to the original if the browser cannot do it.
       const form = new FormData();
-      form.append("image", file);
+      form.append("image", await resizeUploadImage(file).catch(() => file));
       const res = await fetch("/api/admin/product-content/upload-image", {
         method: "POST",
         body: form,

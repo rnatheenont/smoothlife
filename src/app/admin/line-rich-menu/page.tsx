@@ -221,6 +221,10 @@ export default function AdminLineRichMenuPage() {
             </p>
             <input
               ref={fileRef}
+              // Not run through resizeUploadImage like the other admin
+              // uploads: LINE takes only JPEG or PNG for a rich menu, at the
+              // exact canvas size it was designed against, so both the format
+              // change and the resize would break it.
               type="file"
               accept="image/png,image/jpeg"
               disabled={!status?.configured || installing}
