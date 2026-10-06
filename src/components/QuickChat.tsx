@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  PointerEvent as ReactPointerEvent,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,6 +15,7 @@ import { RotateCcw, X, Headset, Maximize2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
+import { useBottomNavShown } from "@/lib/bottom-nav-visibility";
 import { getProductBySlug } from "@/data/products";
 import { PHOTO_MARKER } from "@/lib/chat-image-store";
 import { useChatSession } from "@/lib/use-chat-session";
@@ -29,6 +37,22 @@ const CHAT_BADGE_PHRASES: [string, string][] = [
 const CHAT_BADGE_INTERVAL_MS = 11000;
 const CHAT_BADGE_FADE_MS = 175;
 
+// What the launcher has to clear at the bottom of a phone screen. Both are
+// the bars' measured heights rather than guesses — MobileTabBar renders 55px
+// and MobileStickyBar 65px.
+const TAB_BAR_H = 55;
+const BUY_BAR_H = 65;
+// Above the tab bar on its own the launcher keeps a small gap; sitting on the
+// buy bar it goes flush, because that bar carries its own bottom padding.
+// Both work out to the offsets that shipped before (60px and 120px) — only
+// the two tab-bar-hidden cases below are new.
+const GAP_ABOVE_TAB_BAR = 5;
+// Nothing underneath at all, so it keeps the same 12px the desktop launcher
+// gets from lg:bottom-3 instead of sitting on the very edge of the screen.
+const FLOOR_GAP = 12;
+// The launcher is h-16 on mobile; the panel opens directly above it.
+const LAUNCHER_H = 64;
+
 export default function QuickChat() {
   const { lang, t } = useLang();
   const { user } = useAuth();
@@ -41,6 +65,16 @@ export default function QuickChat() {
   // The panel's own chrome needs four of them; ChatConversation reads the
   // rest off the session object it is handed.
   const { messages, reset, hasProfile, escalating, setNoteOpen, unread } = session;
+
+  // That stack is not fixed: the tab bar slides away as you read down the
+  // page and the buy bar appears only once a product page scrolls past its
+  // own button, so the launcher has to follow both or it is left hovering
+  // with a strip of page showing underneath it.
+  const navShown = useBottomNavShown();
+  const stack = (navShown ? TAB_BAR_H : 0) + (stickyBarVisible ? BUY_BAR_H : 0);
+  const launcherBottom =
+    stack === 0 ? FLOOR_GAP : stack + (stickyBarVisible ? 0 : GAP_ABOVE_TAB_BAR);
+  const panelBottom = launcherBottom + LAUNCHER_H;
 
   const [badgeIndex, setBadgeIndex] = useState(0);
   const [badgeFading, setBadgeFading] = useState(false);
@@ -189,15 +223,17 @@ export default function QuickChat() {
     <>
       <div
         ref={containerRef}
-        className={`fixed ${
-          stickyBarVisible
-            ? "bottom-[calc(120px+env(safe-area-inset-bottom))]"
-            : "bottom-[calc(60px+env(safe-area-inset-bottom))]"
-        } lg:bottom-3 right-4 lg:right-5 z-80 inline-flex transition-[bottom]`}
+        className="fixed bottom-[var(--qc-bottom)] lg:bottom-3 right-4 lg:right-5 z-80 inline-flex"
         style={{
-          transform: `translate(${dragPos.x}px, ${dragPos.y}px)`,
-          transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-        }}
+            "--qc-bottom": `calc(${launcherBottom}px + env(safe-area-inset-bottom))`,
+            transform: `translate(${dragPos.x}px, ${dragPos.y}px)`,
+            // bottom has to ride along in here. An inline transition replaces
+            // the class one outright, so the transition-[bottom] utility this
+            // element used to carry never actually ran.
+            transition: isDragging
+              ? "none"
+              : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), bottom 0.2s",
+          } as CSSProperties}
       >
         <button
           onPointerDown={handleLauncherPointerDown}
@@ -260,11 +296,13 @@ export default function QuickChat() {
 
       {open && (
         <div
-          className={`fixed ${
-            stickyBarVisible
-              ? "bottom-[calc(184px+env(safe-area-inset-bottom))] h-[min(760px,calc(100dvh-184px-env(safe-area-inset-bottom)-16px))]"
-              : "bottom-[calc(124px+env(safe-area-inset-bottom))] h-[min(760px,calc(100dvh-124px-env(safe-area-inset-bottom)-16px))]"
-          } lg:bottom-[88px] right-4 sm:right-5 z-80 w-[calc(100vw-2rem)] sm:w-[390px] lg:h-[min(760px,82dvh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp transition-[bottom,height]`}
+          className="fixed bottom-[var(--qc-bottom)] h-[var(--qc-height)] lg:bottom-[88px] right-4 sm:right-5 z-80 w-[calc(100vw-2rem)] sm:w-[390px] lg:h-[min(760px,82dvh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp transition-[bottom,height]"
+          style={
+            {
+              "--qc-bottom": `calc(${panelBottom}px + env(safe-area-inset-bottom))`,
+              "--qc-height": `min(760px, calc(100dvh - ${panelBottom}px - env(safe-area-inset-bottom) - 16px))`,
+            } as CSSProperties
+          }
         >
           <div className="flex items-center justify-between gap-3 bg-brand-ink px-4 py-3">
             <div className="flex items-center gap-2.5 text-white min-w-0">
