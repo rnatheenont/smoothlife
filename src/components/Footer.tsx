@@ -160,7 +160,10 @@ function ContactBlock() {
 
 export default function Footer() {
   return (
-    <footer className="mt-16 border-t border-surface-line bg-surface-soft">
+    // No top margin: the page background is white, so 64px of it showed as a
+    // blank band between a tinted section and the footer. The footer has its
+    // own border, background and padding to separate itself with.
+    <footer className="border-t border-surface-line bg-surface-soft">
       <div className="container-page py-10 md:py-14">
         {/* The wordmark and what the shop is, then everything else in a row
             beside it — the arrangement the reference uses, and the one that
