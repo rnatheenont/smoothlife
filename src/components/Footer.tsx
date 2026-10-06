@@ -1,6 +1,8 @@
 import Link from "next/link";
+import type { ComponentType } from "react";
 import {
   Facebook,
+  Instagram,
   MessageCircle,
   Phone,
   Clock,
@@ -11,6 +13,7 @@ import {
 } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 import FooterNewsletter from "@/components/FooterNewsletter";
+import { TikTokMark, LineMark } from "@/components/SocialMarks";
 
 // Server component. Only the newsletter form holds state, and it lives in its
 // own client file.
@@ -64,13 +67,27 @@ const columns: Col[] = [
 const TEL_DISPLAY = "085-489-0549";
 const TEL_HREF = "tel:0854890549";
 const FACEBOOK_URL = "https://www.facebook.com/smoothlifeofficial";
+const INSTAGRAM_URL = "https://www.instagram.com/smoothlife_official";
+const TIKTOK_URL = "https://www.tiktok.com/@smoothlife_pharmacy";
 const LINE_HANDLE = "@smoothlifeofficial";
+// Two different LINE links on purpose: the icon row is "follow us", and goes
+// to the shop page; the contact block is "talk to us", and adds the OA as a
+// friend so there is somewhere to type.
+const LINE_SHOP_URL = "https://shop.line.me/@smoothlifeofficial";
 const LINE_URL = "https://line.me/R/ti/p/@smoothlifeofficial";
 const HOURS = "ทุกวัน 09:00–18:00 น.";
 
-const socials = [
+// The four the shop actually posts on. Same list and same links as the
+// campaign pages' footer (see campaign/StoreChrome.tsx).
+const socials: {
+  label: string;
+  href: string;
+  Icon: ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
+}[] = [
   { label: "Facebook", href: FACEBOOK_URL, Icon: Facebook },
-  { label: `LINE Official ${LINE_HANDLE}`, href: LINE_URL, Icon: MessageCircle },
+  { label: "Instagram", href: INSTAGRAM_URL, Icon: Instagram },
+  { label: "TikTok", href: TIKTOK_URL, Icon: TikTokMark },
+  { label: `LINE ${LINE_HANDLE}`, href: LINE_SHOP_URL, Icon: LineMark },
 ];
 
 // Only what checkout actually accepts (2C2P: card + PromptPay QR). No badge
