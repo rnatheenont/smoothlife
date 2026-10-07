@@ -1,4 +1,5 @@
-// The sky behind the hero band.
+// The sky behind a band: the home hero, and the banner at the top of /shop.
+//
 //
 // Drawn rather than photographed: a photograph of a sky is a megabyte at the
 // top of every visit, cannot follow the brand's colours, and cannot loop. Each

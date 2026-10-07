@@ -10,7 +10,7 @@ import { getProductBySlug } from "@/data/products";
 import { interestsFromProducts, pickSuggestions } from "@/lib/chat-suggestions";
 import { resizeForUpload } from "@/lib/image-utils";
 import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
-import SkyClouds from "@/components/home/SkyClouds";
+import SkyClouds from "@/components/SkyClouds";
 import SmoothieMascot from "@/components/home/SmoothieMascot";
 
 // The first thing on the page is a question, not a banner.

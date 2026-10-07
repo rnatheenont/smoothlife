@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { BadgeCheck, RotateCcw, Truck } from "lucide-react";
+import SkyClouds from "@/components/SkyClouds";
 
 // The banner at the top of the shop: what you are looking at, and the three
 // promises that answer "why buy here" before the grid starts. The promises are
@@ -23,7 +24,13 @@ export default function ShopHero({
   image?: string;
 }) {
   return (
-    <section className="relative mb-6 overflow-hidden rounded-[20px] bg-[linear-gradient(110deg,#DFF3EB_0%,#EFF9F5_55%,#E4F4EE_100%)]">
+    // The same sky the home page opens with. The banner used to be a flat
+    // mint wash, which said "a panel goes here" and nothing else; arriving on
+    // /shop from the home page now lands under the same weather. isolate so
+    // the clouds, which sit on a negative z, stay inside this box rather than
+    // sliding behind the page.
+    <section className="relative isolate mb-6 overflow-hidden rounded-[20px] bg-[linear-gradient(180deg,#cfe9f8_0%,#e4f3fb_52%,#f7fcfe_100%)]">
+      <SkyClouds />
       <div className="relative flex items-center gap-4 p-5 md:p-8">
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-medium tracking-[0.3em] text-brand-800">{eyebrow}</p>
@@ -37,7 +44,7 @@ export default function ShopHero({
           </span>
         )}
 
-        <ul className="hidden shrink-0 gap-2 rounded-2xl bg-white/80 p-3 backdrop-blur-sm sm:flex">
+        <ul className="hidden shrink-0 gap-2 rounded-2xl bg-white/80 p-3 shadow-xs backdrop-blur-md sm:flex">
           {PROMISES.map((p) => (
             <li key={p.title} className="flex w-20 flex-col items-center gap-1 px-1 text-center lg:w-24">
               <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">

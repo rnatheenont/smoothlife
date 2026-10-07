@@ -1,6 +1,7 @@
 import type { ReactNode, SVGProps } from "react";
 
-// The nine marks in the category row under the hero.
+// The marks in the category rows — nine under the home hero, seven at the
+// top of /shop.
 //
 // Drawn here rather than shipped as files because they are two-tone: a dark
 // outline that takes the text colour and a mint blob behind it that takes the
@@ -141,6 +142,54 @@ export function FirstAidIcon({ blobClassName, ...props }: IconProps) {
       <path d="M12 15h24a3 3 0 0 1 3 3v16a3 3 0 0 1-3 3H12a3 3 0 0 1-3-3V18a3 3 0 0 1 3-3Z" />
       {/* cross */}
       <path d="M21 20h6v4h4v6h-4v4h-6v-4h-4v-6h4v-4Z" />
+    </Icon>
+  );
+}
+
+export function PersonalCareIcon({ blobClassName, ...props }: IconProps) {
+  return (
+    <Icon {...props}>
+      <Blob cx={31} cy={31} r={7} className={blobClassName} />
+      {/* roll-on: dome cap, shoulder, body */}
+      <path d="M14 15a5 5 0 0 1 10 0" />
+      <path d="M14 15h10v3a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-3Z" />
+      <path d="M15 20h8a2 2 0 0 1 2 2v14a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V22a2 2 0 0 1 2-2Z" />
+      {/* soap bar, with the two bubbles that say it lathers */}
+      <path d="M30 29h8a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z" />
+      <circle cx={33} cy={21} r={3} />
+      <circle cx={39} cy={24} r={2} />
+    </Icon>
+  );
+}
+
+export function BodyCareIcon({ blobClassName, ...props }: IconProps) {
+  return (
+    <Icon {...props}>
+      <Blob cx={34} cy={20} r={6} className={blobClassName} />
+      {/* A tube, not a bottle: the hair mark next to it is a bottle, and at
+          44px the only thing telling the two apart is the crimped foot a
+          tube gets as it empties and the flat shoulder above it. */}
+      <path d="M19 10h4v3h-4z" />
+      <path d="M17 13h8a1 1 0 0 1 1 1v20a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2V14a1 1 0 0 1 1-1Z" />
+      <path d="M15 36h12" strokeWidth={2.4} />
+      {/* A dab of it, and the skin it is going on. The two strokes are what
+          make this mark unlike every other one in the row. */}
+      <path d="M31.5 16.5c2-2.6 5.3-2.3 6.6 0 1.1 2 .1 4.2-2.2 5.1-2 .7-4 .2-4.9-1.3-.7-1.2-.5-2.7.5-3.8Z" />
+      <path d="M28 29c3.3-3.4 8.7-3.4 12 0" />
+      <path d="M28 36c3.3-3.4 8.7-3.4 12 0" />
+    </Icon>
+  );
+}
+
+/** Not a category: the "everything" tile that opens each row. */
+export function AllCategoriesIcon({ blobClassName, ...props }: IconProps) {
+  return (
+    <Icon {...props}>
+      <Blob cx={32} cy={32} r={7} className={blobClassName} />
+      <rect x={9} y={9} width={14} height={14} rx={4} />
+      <rect x={27} y={9} width={14} height={14} rx={4} />
+      <rect x={9} y={27} width={14} height={14} rx={4} />
+      <rect x={27} y={27} width={14} height={14} rx={4} />
     </Icon>
   );
 }
