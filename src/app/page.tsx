@@ -35,7 +35,7 @@ export function generateMetadata() {
 export const revalidate = 1800;
 
 /** How many products sit under a chosen article. */
-const ARTICLE_SHELF = 6;
+const ARTICLE_SHELF = 10;
 
 export default async function HomePage() {
   // The slides the team publishes on www.smoothlife.com, read off that page;

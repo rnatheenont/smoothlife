@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getProductBySlug } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
+import { useRailFade } from "@/lib/use-rail-fade";
 
 export type ArcItem = {
   key: string;
@@ -46,6 +47,7 @@ function cardImage(url: string): string {
 export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const rail = useRailFade();
   // Opens on the first post that actually has something to show, so the shelf
   // is not empty on arrival.
   const [activeKey, setActiveKey] = useState(
@@ -272,11 +274,13 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
           <ul // -m-2 p-2: overflow-x-auto clips on both axes, so without room
                   // inside it the cards' shadows and rounded corners were being
                   // sliced flat against the top and bottom of the rail.
+                  ref={rail.ref}
+                  style={rail.style}
                   className="-m-2 flex snap-x snap-mandatory gap-3 overflow-x-auto p-2 scrollbar-none md:gap-4">
             {shelf.map((p) => (
               <li
                 key={p.slug}
-                className="w-[calc((100%-1.5rem)/2.5)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-4rem)/4.5)]"
+                className="w-[calc((100%-1.5rem)/2.5)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-6rem)/6.5)]"
               >
                 <ProductCard product={p} />
               </li>

@@ -7,6 +7,7 @@ import { ChevronRight } from "lucide-react";
 import type { Brand } from "@/data/types";
 import { brandProducts } from "@/data/brands";
 import ProductCard from "@/components/ProductCard";
+import { useRailFade } from "@/lib/use-rail-fade";
 
 // Nine brands in circles, and underneath them what the one you picked sells.
 //
@@ -32,9 +33,9 @@ const FEATURED = [
   "vichy",
 ];
 
-/** Six in the rail, four and a half of them in view: the half card says
- *  there is more, and now there genuinely is. */
-const SHOWN = 6;
+/** Ten in the rail, six of them whole and a seventh fading out at the edge:
+ *  the fade only means anything while there is still something behind it. */
+const SHOWN = 10;
 
 export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
   // Named order first, then whatever is left over if one of them is ever
@@ -48,6 +49,7 @@ export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
     return [...picked, ...fill];
   }, [brands]);
 
+  const rail = useRailFade();
   const [active, setActive] = useState(0);
   const brand = row[active];
 
@@ -141,14 +143,16 @@ export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
               <ul // -m-2 p-2: overflow-x-auto clips on both axes, so without room
                   // inside it the cards' shadows and rounded corners were being
                   // sliced flat against the top and bottom of the rail.
+                  ref={rail.ref}
+                  style={rail.style}
                   className="-m-2 flex snap-x snap-mandatory gap-3 overflow-x-auto p-2 scrollbar-none md:gap-4">
                 {shelf.map((p) => (
                   <li
                     key={p.slug}
                     // Two and a half on a phone, three and a half on a
-                    // tablet, four and a half on a desktop — the half is the
-                    // part that says the rail keeps going.
-                    className="w-[calc((100%-1.5rem)/2.5)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-4rem)/4.5)]"
+                    // tablet, six and a half on a desktop — the part-card is
+                    // what says the rail keeps going.
+                    className="w-[calc((100%-1.5rem)/2.5)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-6rem)/6.5)]"
                   >
                     <ProductCard product={p} />
                   </li>
