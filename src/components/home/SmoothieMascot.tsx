@@ -3,39 +3,64 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
-// The mascot, watching the cursor.
+// The mascot, watching the cursor — eyes first, head second.
 //
-// The artwork is a flat PNG, so there are no pupils to rotate. Two things
-// stand in for it and together read as looking: the whole head leans a few
-// pixels towards the pointer, and a highlight inside each eye leans further,
-// which is the same trick a cartoonist uses to point a gaze.
+// The artwork is a flat PNG, so the eyes in it cannot move. They are covered
+// instead and redrawn: a patch of the face's own colour hides each painted
+// eye, and a black oval of the same shape is drawn on top of it and shifted
+// towards the pointer. This character's eyes are solid black with no whites,
+// so moving the whole oval is what "looking" looks like for it.
 //
-// The eye positions are measured off the file rather than eyeballed — the
-// two largest dark blobs in public/mascot/smoothie-new.png, as fractions of
-// its 1254px square. The box this renders into has to stay square for those
-// fractions to land, which is what object-contain on a square source gives.
+// Three numbers decide whether that reads or falls apart, and all three are
+// measured off the file rather than guessed:
 //
-// Nothing moves without a real mouse: a touch screen has no cursor to
-// follow, and someone who asked for less motion has asked for this too.
+//  - where the eyes are — the two largest dark blobs in the 1254px square,
+//    as fractions of it;
+//  - how big they are — so the drawn oval matches the one being covered;
+//  - what colour to cover them with — sampled from a ring just outside each
+//    eye. The face is shaded, so the two eyes sit on noticeably different
+//    skin (#ecc09d on the left, #fbd1b2 on the right) and one flat tone for
+//    both would show as a patch.
+//
+// The patch is a radial gradient that fades to the same colour at zero alpha
+// rather than a hard-edged ellipse: a soft edge disappears into the shading
+// around it, where a crisp one would read as a sticker.
+//
+// The box this renders into has to stay square for those fractions to land,
+// which is what object-contain on a square source gives.
 
-const EYES = [
-  { x: 40.4, y: 55.3 },
-  { x: 65.2, y: 54.3 },
+type Eye = {
+  /** Centre, as a % of the box. */
+  cx: number;
+  cy: number;
+  /** Size, as a % of the box. */
+  w: number;
+  h: number;
+  /** The face immediately around this eye. */
+  skin: string;
+};
+
+const EYES: Eye[] = [
+  { cx: 40.4, cy: 55.3, w: 5.9, h: 8.5, skin: "236,192,157" },
+  { cx: 65.2, cy: 54.3, w: 5.7, h: 8.1, skin: "251,209,178" },
 ];
-/** Highlight diameter, as a % of the box. The eye is 5.8% wide and 8.3%
- *  tall, so this leaves room to move without sliding off the black. */
-const GLINT = 2;
-/** How far the highlight travels inside the eye, as a % of the box. */
-const GLINT_X = 1.2;
-const GLINT_Y = 1.5;
-/** How far the head itself leans, in px. More than this and it stops being
- *  a glance and starts being a lunge. */
-const HEAD_X = 8;
-const HEAD_Y = 5;
+
+/** The cover, relative to the eye it hides. Bigger than the eye in both
+ *  directions so the fade starts clear of it. */
+const PATCH_W = 1.9;
+const PATCH_H = 1.65;
+
+/** How far the eyes travel, and then the head, as fractions of the box. The
+ *  eyes carry most of it — a head that leans as far as the eyes look is a
+ *  character lunging at the cursor rather than glancing at it. */
+const EYE_X = 0.013;
+const EYE_Y = 0.011;
+const HEAD_X = 0.02;
+const HEAD_Y = 0.013;
 
 export default function SmoothieMascot({ className }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [gaze, setGaze] = useState({ x: 0, y: 0 });
+  const [gaze, setGaze] = useState({ x: 0, y: 0, size: 0 });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -59,7 +84,13 @@ export default function SmoothieMascot({ className }: { className?: string }) {
       // looking as far as it can.
       const span = Math.max(r.width, 1);
       const clamp = (n: number) => Math.max(-1, Math.min(1, n));
-      setGaze({ x: clamp((point.x - cx) / span), y: clamp((point.y - cy) / span) });
+      setGaze({
+        x: clamp((point.x - cx) / span),
+        y: clamp((point.y - cy) / span),
+        // Carried along so the offsets below can be in real pixels and still
+        // hold if the box is ever given another size.
+        size: r.width,
+      });
     }
 
     function onMove(e: PointerEvent) {
@@ -76,6 +107,9 @@ export default function SmoothieMascot({ className }: { className?: string }) {
     };
   }, []);
 
+  const eyeX = gaze.x * EYE_X * gaze.size;
+  const eyeY = gaze.y * EYE_Y * gaze.size;
+
   return (
     // Two nested transforms rather than one: the bob is a CSS animation on
     // `transform`, and an inline transform on the same element would replace
@@ -84,7 +118,9 @@ export default function SmoothieMascot({ className }: { className?: string }) {
       <div className="h-full w-full origin-bottom animate-headBob">
         <div
           className="relative h-full w-full transition-transform duration-200 ease-out"
-          style={{ transform: `translate(${gaze.x * HEAD_X}px, ${gaze.y * HEAD_Y}px)` }}
+          style={{
+            transform: `translate(${gaze.x * HEAD_X * gaze.size}px, ${gaze.y * HEAD_Y * gaze.size}px)`,
+          }}
         >
           {/* The character in the design is a full-body one in a lab coat
               that public/mascot does not have — every file there is a head.
@@ -97,26 +133,33 @@ export default function SmoothieMascot({ className }: { className?: string }) {
             sizes="320px"
             className="object-contain object-bottom"
           />
-          <span
-            aria-hidden="true"
-            className="absolute inset-0 transition-transform duration-200 ease-out"
-            style={{ transform: `translate(${gaze.x * GLINT_X}%, ${gaze.y * GLINT_Y}%)` }}
-          >
-            {EYES.map((eye) => (
+          {EYES.map((eye) => (
+            <span
+              key={eye.cx}
+              aria-hidden="true"
+              className="absolute"
+              style={{
+                left: `${eye.cx - (eye.w * PATCH_W) / 2}%`,
+                top: `${eye.cy - (eye.h * PATCH_H) / 2}%`,
+                width: `${eye.w * PATCH_W}%`,
+                height: `${eye.h * PATCH_H}%`,
+                background: `radial-gradient(farthest-side, rgb(${eye.skin}) 62%, rgba(${eye.skin},0) 100%)`,
+              }}
+            >
               <span
-                key={eye.x}
-                className="absolute rounded-full bg-white/90"
+                className="absolute left-1/2 top-1/2 rounded-full bg-[#17110d] transition-transform duration-200 ease-out"
                 style={{
-                  left: `${eye.x - GLINT / 2}%`,
-                  // A touch above the middle of the eye, where a highlight
-                  // falls when the light is in front and above.
-                  top: `${eye.y - GLINT / 2 - 1.4}%`,
-                  width: `${GLINT}%`,
-                  height: `${GLINT}%`,
+                  width: `${100 / PATCH_W}%`,
+                  height: `${100 / PATCH_H}%`,
+                  transform: `translate(calc(-50% + ${eyeX}px), calc(-50% + ${eyeY}px))`,
                 }}
-              />
-            ))}
-          </span>
+              >
+                {/* The catchlight rides on the eye, which is what stops the
+                    oval reading as a hole punched in the face. */}
+                <span className="absolute left-[20%] top-[14%] h-[22%] w-[30%] rounded-full bg-white/90" />
+              </span>
+            </span>
+          ))}
         </div>
       </div>
     </div>
