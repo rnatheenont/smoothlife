@@ -12,6 +12,7 @@ import {
   Sparkles,
   LayoutGrid,
   Heart,
+  Droplets,
   Search,
   BookOpen,
   ShieldCheck,
@@ -23,7 +24,7 @@ import {
   Users,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useCart } from "@/lib/cart-context";
+import { useCart, useWishlist } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
 import { tierBadge, tierCard } from "@/lib/tier";
 import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
@@ -63,10 +64,15 @@ const navLinks = [
   { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: LayoutGrid },
   { href: "/brands", th: "แบรนด์ทั้งหมด", en: "All brands", icon: Tag },
   { href: "/promotions", th: "โปรโมชั่น", en: "Promotions", icon: Percent },
-  { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern", icon: Heart },
+  // Droplets rather than a heart: the heart belongs to the wishlist below,
+  // and two hearts in one list is a list that has to be read twice.
+  { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern", icon: Droplets },
   { href: "/subscription", th: "เซ็ตสมาชิก", en: "Member sets", icon: Repeat },
   { href: "/ai-assistant", th: "ผู้ช่วย AI", en: "AI Assistant", icon: Sparkles },
   { href: "/knowledge", th: "ความรู้ความงาม", en: "Beauty Knowledge", icon: BookOpen },
+  // The heart from the header, now that the header has a magnifier where it
+  // used to be. It keeps its count, which was the whole point of the badge.
+  { href: "/account/wishlist", th: "รายการโปรด", en: "Wishlist", icon: Heart },
   { href: "/account/referral", th: "โปรแกรม Affiliate", en: "Affiliate program", icon: Users },
   { href: "/about", th: "ทำไมต้อง Smooth Life", en: "Why Smooth Life", icon: ShieldCheck },
   { href: "/help", th: "ช่วยเหลือ", en: "Help", icon: HelpCircle },
@@ -78,6 +84,7 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
   const [scrolled, setScrolled] = useState(false);
   const lastScrollY = useRef(0);
   const { user } = useAuth();
+  const { slugs: wishlistSlugs } = useWishlist();
   const { count } = useCart();
   const { t } = useLang();
 
@@ -389,6 +396,11 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
                       <l.icon size={15} />
                     </span>
                     {t(l.th, l.en)}
+                    {l.href === "/account/wishlist" && wishlistSlugs.length > 0 && (
+                      <span className="ml-auto grid h-5 min-w-[20px] place-items-center rounded-full bg-brand-sky px-1.5 text-[11px] font-bold text-white">
+                        {wishlistSlugs.length}
+                      </span>
+                    )}
                   </Link>
                 ))}
               </div>
