@@ -64,7 +64,7 @@ export default function CategoryIconRow() {
               ) : (
                 <span className="grid h-[68px] w-[68px] place-items-center rounded-full border border-slate-200/80 bg-white text-brand-1000 transition-all duration-300 group-hover:border-brand-200 group-hover:shadow-card group-active:scale-95 lg:h-[88px] lg:w-[88px]">
                   {s.Icon && (
-                    <s.Icon className="h-9 w-9 lg:h-11 lg:w-11" blobClassName="text-brand-200/70" />
+                    <s.Icon className="h-[42px] w-[42px] lg:h-14 lg:w-14" blobClassName="text-brand-200/70" />
                   )}
                 </span>
               )}
