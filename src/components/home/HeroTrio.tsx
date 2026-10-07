@@ -83,6 +83,9 @@ export default function HeroTrio({ banners }: { banners: HeroBanner[] }) {
 
   const track = slides ? [...banners, ...banners, ...banners] : banners;
   const step = 100 / PER_VIEW;
+  // Of the three on screen, the middle one is the campaign being shown; the
+  // other two are what it came from and what it is going to.
+  const middle = slides ? index + 1 : 1;
 
   return (
     <div
@@ -98,16 +101,32 @@ export default function HeroTrio({ banners }: { banners: HeroBanner[] }) {
             first and last images still sit flush with the page, and by a
             little more top and bottom so hover shadows are not sliced off by
             the same overflow that hides the queue. */}
-        <div className="-mx-2.5 -my-3 overflow-hidden py-3">
+        <div className="-mx-2.5 -my-7 overflow-hidden py-7">
           <ul
-            className="flex"
+            className="flex items-center"
             style={{
               transform: `translateX(-${(slides ? index : 0) * step}%)`,
               transition: animate ? `transform ${SLIDE_MS}ms cubic-bezier(0.4,0,0.2,1)` : "none",
             }}
           >
             {track.map((b, i) => (
-              <li key={`${i}-${b.slug}`} className="w-1/3 shrink-0 px-2.5">
+              // Every tile is the same third of the track, so one step is
+              // always one tile; what makes the middle one bigger is a scale
+              // on top of that, which costs the row nothing in arithmetic.
+              // 1.14 and 0.9 are as far apart as they go before the tiles
+              // touch: the middle grows 42px towards its neighbour, the
+              // neighbour backs off 28px, and the 20px between them has 11px
+              // left. The scale rides the same clock as the slide, so a tile
+              // grows into the middle as it arrives rather than after.
+              <li
+                key={`${i}-${b.slug}`}
+                className="w-1/3 shrink-0 px-2.5"
+                style={{
+                  transform: `scale(${i === middle ? 1.14 : 0.9})`,
+                  zIndex: i === middle ? 1 : 0,
+                  transition: animate ? `transform ${SLIDE_MS}ms cubic-bezier(0.4,0,0.2,1)` : "none",
+                }}
+              >
                 <Link
                   href={b.href}
                   className="relative block aspect-video overflow-hidden rounded-2xl bg-surface-soft transition-shadow duration-300 hover:shadow-cardHover"
@@ -116,7 +135,7 @@ export default function HeroTrio({ banners }: { banners: HeroBanner[] }) {
                     src={b.image}
                     alt={b.title ?? ""}
                     fill
-                    sizes="(max-width:1512px) 33vw, 490px"
+                    sizes="(max-width:1512px) 38vw, 560px"
                     className="object-cover"
                   />
                 </Link>
