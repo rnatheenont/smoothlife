@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { concerns, concernImage } from "@/data/categories";
+import { products } from "@/data/products";
+import ProductCard from "@/components/ProductCard";
 
 // Shop by concern, as a fanned-out stack rather than a row of equal tiles.
 //
@@ -17,8 +19,15 @@ import { concerns, concernImage } from "@/data/categories";
 // reachable only by first scrolling it to the centre. The ones that have
 // faded out are the exception: they are inert and out of the tab order,
 // because a link nobody can see is not a shortcut, it is a trap.
+//
+// A click on a card off to one side brings it to the middle instead of
+// following its link: with the shelf underneath reading from whatever is in
+// the middle, a side card is a thing to choose, and only the one already
+// chosen is a thing to open.
 
 const SWIPE_THRESHOLD = 40;
+/** Enough to fill a row on a wide screen without the shelf scrolling. */
+const SHOWN = 5;
 
 /** Where a card sits, given how far it is from the one in the middle. */
 function placement(offset: number) {
@@ -35,6 +44,16 @@ export default function ConcernCoverflow() {
   const dragX = useRef<number | null>(null);
   const count = concerns.length;
   const current = concerns[active];
+
+  // In stock and with a picture: a shelf of grey placeholders under the name
+  // of somebody's skin problem says less about it than showing nothing.
+  const shelf = useMemo(
+    () =>
+      products
+        .filter((p) => p.concerns.includes(current.slug) && p.inStock && p.image)
+        .slice(0, SHOWN),
+    [current.slug]
+  );
 
   // Shortest way round, so stepping off either end wraps instead of flying
   // the whole stack across the screen.
@@ -80,6 +99,11 @@ export default function ConcernCoverflow() {
             <Link
               key={c.slug}
               href={`/concern/${c.slug}`}
+              onClick={(e) => {
+                if (i === active) return;
+                e.preventDefault();
+                setActive(i);
+              }}
               aria-hidden={!p.shown}
               tabIndex={p.shown ? undefined : -1}
               style={{
@@ -118,6 +142,39 @@ export default function ConcernCoverflow() {
         >
           <ChevronRight size={20} />
         </button>
+      </div>
+
+      {/* The shelf the middle card is pointing at. Same panel as the brand
+          row's, for the same reason: the question "what do you sell for
+          this" is answered on the page that asked it. */}
+      <div className="mx-auto mt-6 max-w-[1512px] px-4 md:px-6">
+        <div className="rounded-2xl bg-white p-4 shadow-card md:p-6">
+          {shelf.length > 0 ? (
+            <>
+              <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none md:grid md:grid-cols-3 md:gap-4 md:overflow-visible lg:grid-cols-5">
+                {shelf.map((p) => (
+                  <li key={p.slug} className="w-[62%] shrink-0 snap-start sm:w-[42%] md:w-auto">
+                    <ProductCard product={p} />
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href={`/concern/${current.slug}`}
+                className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-800 transition-colors hover:text-brand-600"
+              >
+                ดูทั้งหมดสำหรับ{current.nameTh}
+                <ChevronRight size={16} />
+              </Link>
+            </>
+          ) : (
+            <p className="py-6 text-center text-sm text-slate-500">
+              ตอนนี้สินค้าสำหรับ{current.nameTh}หมดชั่วคราว{" "}
+              <Link href={`/concern/${current.slug}`} className="font-semibold text-brand-800">
+                ดูหน้าปัญหาผิวนี้
+              </Link>
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="mt-6 flex justify-center gap-2">
