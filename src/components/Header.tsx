@@ -12,6 +12,7 @@ import {
   Sparkles,
   LayoutGrid,
   Heart,
+  Search,
   BookOpen,
   ShieldCheck,
   HelpCircle,
@@ -22,7 +23,7 @@ import {
   Users,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useCart, useWishlist } from "@/lib/cart-context";
+import { useCart } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
 import { tierBadge, tierCard } from "@/lib/tier";
 import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
@@ -78,7 +79,6 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
   const lastScrollY = useRef(0);
   const { user } = useAuth();
   const { count } = useCart();
-  const { slugs: wishlistSlugs } = useWishlist();
   const { t } = useLang();
 
   // lock background scroll while the mobile drawer is open
@@ -265,21 +265,17 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
               </Link>
             </>
           )}
+          {/* Phones get search here instead of a row of its own: a field
+              that is always open costs 54px of every screen to save one tap,
+              and the tap it saves is not the one most visits start with.
+              From md up the field is in the logo row already, so this would
+              only be a second way to reach the same thing. */}
           <Link
-            href="/account/wishlist"
-            aria-label="รายการโปรด"
-            className="-m-3 p-3 text-slate-500 lg:hidden"
+            href="/search"
+            aria-label="ค้นหาสินค้า"
+            className="-m-3 p-3 text-slate-500 md:hidden"
           >
-            {/* The count hangs off the heart, not off the new padding, so it
-                stays on the icon rather than drifting into the row. */}
-            <span className="relative block">
-              <Heart size={22} />
-              {wishlistSlugs.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-brand-sky px-1 text-[9px] font-bold text-white">
-                  {wishlistSlugs.length}
-                </span>
-              )}
-            </span>
+            <Search size={22} />
           </Link>
           <div className="lg:hidden">
             <NotificationBell />
@@ -302,20 +298,6 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
               </span>
             )}
           </Link>
-        </div>
-      </div>
-
-      {/* Mobile-only inline search row — replaces the old icon-only "/search"
-          link with a real search bar (same reusable HeaderSearch used on
-          desktop). Location + wishlist + notifications all live in the logo
-          row above instead of here. */}
-      <div className="md:hidden mx-auto max-w-[1512px] px-4 pb-1.5">
-        <div className="flex items-center gap-2">
-          <HeaderSearch
-            placeholder="ค้นหาสินค้า, ยี่ห้อ…"
-            inputClassName="h-11 w-full rounded-[14px] border-0 bg-slate-100 pl-4 pr-11 text-[14px]! text-slate-900 outline-hidden placeholder:text-slate-500 focus:bg-slate-100/80 transition-colors"
-            buttonClassName="absolute right-1.5 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-brand-ink text-white"
-          />
         </div>
       </div>
 
