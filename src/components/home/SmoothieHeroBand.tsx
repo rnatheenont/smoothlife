@@ -146,11 +146,25 @@ export default function SmoothieHeroBand() {
     // page.
     <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#cbe8f7_0%,#e2f3fb_40%,#f5fbfe_72%,#ffffff_100%)]">
       <SkyClouds />
+      {/* The wordmark drifts left on a loop rather than sitting still.
+          Two identical copies inside a track as wide as they are, moving
+          exactly -50%: the second copy is where the first was when the
+          animation restarts, so there is no seam to see. One pass takes 45
+          seconds — slow enough to be weather rather than a thing going past. */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 select-none whitespace-nowrap font-bold leading-none tracking-tight text-white/55 text-[clamp(7rem,27vw,17rem)]"
+        className="pointer-events-none absolute inset-y-0 left-0 -z-10 flex w-full items-center overflow-hidden select-none"
       >
-        Smoothlife.com
+        <span className="flex w-max animate-marquee" style={{ animationDuration: "45s" }}>
+          {[0, 1].map((copy) => (
+            <span
+              key={copy}
+              className="whitespace-nowrap pr-[0.25em] font-bold leading-none tracking-tight text-white/55 text-[clamp(7rem,27vw,17rem)]"
+            >
+              Smoothlife.com
+            </span>
+          ))}
+        </span>
       </span>
 
       {/* The heading is centred on the band, not on the space left over
