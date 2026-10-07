@@ -46,54 +46,58 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
   const activeCategory = categories.find((c) => c.slug === searchParams.category);
 
   return (
-    <div className="container-page py-5 md:py-8">
+    <>
+      {/* Outside the container on purpose: the banner is full-bleed and
+          carries its own. */}
       <ShopHero
         title={activeCategory ? activeCategory.nameTh : "สินค้าทั้งหมด"}
         subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
         image={activeCategory ? categoryImage(activeCategory.slug) : undefined}
       />
 
-      <CategoryCircles current={searchParams} />
+      <div className="container-page py-5 md:py-8">
+        <CategoryCircles current={searchParams} />
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-        <ShopFilters current={searchParams} counts={filterCounts()} mobileExtra={<SortSelect current={searchParams} />} />
+        <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+          <ShopFilters current={searchParams} counts={filterCounts()} mobileExtra={<SortSelect current={searchParams} />} />
 
-        <div className="min-w-0 flex-1">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-base font-bold text-brand-ink md:text-lg">
-              {activeCategory ? activeCategory.nameTh : "สินค้าทั้งหมด"}{" "}
-              <span className="text-sm font-medium text-slate-500">{allItems.length.toLocaleString("th-TH")} รายการ</span>
-            </h2>
-            <div className="hidden items-center gap-2 lg:flex">
-              <SortSelect current={searchParams} />
-              <ViewToggle current={searchParams} />
+          <div className="min-w-0 flex-1">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-base font-bold text-brand-ink md:text-lg">
+                {activeCategory ? activeCategory.nameTh : "สินค้าทั้งหมด"}{" "}
+                <span className="text-sm font-medium text-slate-500">{allItems.length.toLocaleString("th-TH")} รายการ</span>
+              </h2>
+              <div className="hidden items-center gap-2 lg:flex">
+                <SortSelect current={searchParams} />
+                <ViewToggle current={searchParams} />
+              </div>
             </div>
+
+            {items.length === 0 ? (
+              <div className="rounded-xl2 bg-white py-20 text-center text-slate-500 shadow-card">
+                <p>ไม่พบสินค้าที่ตรงกับตัวกรองของคุณ</p>
+              </div>
+            ) : (
+              <>
+                {isList ? (
+                  <div className="flex flex-col gap-3">
+                    {items.map((p) => (
+                      <ProductRow key={p.slug} product={p} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4">
+                    {items.map((p) => (
+                      <ProductCard key={p.slug} product={p} />
+                    ))}
+                  </div>
+                )}
+                <Pagination current={searchParams} page={page} totalPages={totalPages} />
+              </>
+            )}
           </div>
-
-          {items.length === 0 ? (
-            <div className="rounded-xl2 bg-white py-20 text-center text-slate-500 shadow-card">
-              <p>ไม่พบสินค้าที่ตรงกับตัวกรองของคุณ</p>
-            </div>
-          ) : (
-            <>
-              {isList ? (
-                <div className="flex flex-col gap-3">
-                  {items.map((p) => (
-                    <ProductRow key={p.slug} product={p} />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4">
-                  {items.map((p) => (
-                    <ProductCard key={p.slug} product={p} />
-                  ))}
-                </div>
-              )}
-              <Pagination current={searchParams} page={page} totalPages={totalPages} />
-            </>
-          )}
         </div>
       </div>
-    </div>
+    </>
   );
 }

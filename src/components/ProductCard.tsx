@@ -26,14 +26,21 @@ const badgeLabel: Record<string, string> = {
 };
 
 // What is left for the photo's corner once the discount has moved down to
-// the price, where the number it is a percentage of actually is. "Sale" is
-// still dropped: it says the same thing as that chip, one line lower and
-// less precisely. A live free-gift promoChip (widget #5, "Promotion badge")
-// comes first within the same 2-chip cap — an existing chip may get squeezed
-// out on a heavily-badged product, an accepted trade to keep the corner from
-// looking like a sweet shop again.
+// the price, where the number it is a percentage of actually is.
+//
+// Three never make it onto the card. "Sale" says the same thing as that
+// chip, one line lower and less precisely. "มาใหม่" is true of most of the
+// catalogue at any given moment, so it stopped distinguishing anything.
+// "เซต" is already in the product's own name on every set we sell.
+//
+// A live free-gift promoChip (widget #5, "Promotion badge") comes first
+// within the same 2-chip cap — an existing chip may get squeezed out on a
+// heavily-badged product, an accepted trade to keep the corner from looking
+// like a sweet shop again.
+const HIDDEN_ON_CARD = ["Sale", "New", "Bundle"];
+
 function cardBadgeChips(badges: string[] | undefined, promoChip?: string | null) {
-  const rest = (badges ?? []).filter((b) => b !== "Sale");
+  const rest = (badges ?? []).filter((b) => !HIDDEN_ON_CARD.includes(b));
   return (promoChip ? [promoChip, ...rest] : rest).slice(0, 2);
 }
 

@@ -29,9 +29,12 @@ export default function ShopHero({
     // /shop from the home page now lands under the same weather. isolate so
     // the clouds, which sit on a negative z, stay inside this box rather than
     // sliding behind the page.
-    <section className="relative isolate mb-6 overflow-hidden rounded-[20px] bg-[linear-gradient(180deg,#cfe9f8_0%,#e4f3fb_52%,#f7fcfe_100%)]">
+    // Full-bleed: the sky is weather, and weather does not stop at a
+    // 1280px card with rounded corners. The content inside still lines up
+    // with the rest of the page, because the container is on the inner row.
+    <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#cfe9f8_0%,#e4f3fb_52%,#f7fcfe_100%)]">
       <SkyClouds />
-      <div className="relative flex items-center gap-4 p-5 md:p-8">
+      <div className="container-page relative flex items-center gap-4 py-7 md:py-10">
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-medium tracking-[0.3em] text-brand-800">{eyebrow}</p>
           <h1 className="mt-1.5 text-2xl font-extrabold text-brand-1000 md:text-4xl">{title}</h1>
@@ -44,14 +47,14 @@ export default function ShopHero({
           </span>
         )}
 
-        <ul className="hidden shrink-0 gap-2 rounded-2xl bg-white/80 p-3 shadow-xs backdrop-blur-md sm:flex">
+        <ul className="hidden shrink-0 gap-2 rounded-2xl bg-white/80 p-4 shadow-xs backdrop-blur-md sm:flex">
           {PROMISES.map((p) => (
-            <li key={p.title} className="flex w-20 flex-col items-center gap-1 px-1 text-center lg:w-24">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">
-                <p.icon size={18} strokeWidth={1.7} aria-hidden="true" />
+            <li key={p.title} className="flex w-24 flex-col items-center gap-1.5 px-1 text-center lg:w-28">
+              <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">
+                <p.icon size={26} strokeWidth={2} aria-hidden="true" />
               </span>
-              <span className="text-[11px] font-bold leading-tight text-brand-1000">{p.title}</span>
-              <span className="text-[10px] leading-tight text-slate-500">{p.sub}</span>
+              <span className="text-xs font-bold leading-tight text-brand-1000 lg:text-[13px]">{p.title}</span>
+              <span className="text-[11px] leading-tight text-slate-500">{p.sub}</span>
             </li>
           ))}
         </ul>

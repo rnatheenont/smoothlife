@@ -70,13 +70,18 @@ export default function CategoryCircles({ current }: { current: ShopSearchParams
               className={clsx(
                 "grid h-16 w-16 place-items-center rounded-full transition-all duration-300 group-active:scale-95 md:h-[72px] md:w-[72px]",
                 active
-                  ? "border border-brand-600 bg-brand-gradient-soft text-brand-900"
+                  ? "border border-brand-600 bg-brand-gradient-soft text-brand-1000"
                   : "border border-slate-200/80 bg-white text-brand-1000 group-hover:border-brand-200 group-hover:shadow-card"
               )}
             >
+              {/* brand-200 and brand-400, because those are the two mints
+                  the palette actually defines. A `text-brand-300` here fell
+                  through to the inherited near-black and printed the blob as
+                  a dark dot inside the mark — a colour class that does not
+                  exist is not a no-op. */}
               <item.Icon
                 className="h-10 w-10 md:h-11 md:w-11"
-                blobClassName={active ? "text-brand-300/60" : "text-brand-200/70"}
+                blobClassName={active ? "text-brand-400/45" : "text-brand-200/70"}
               />
             </span>
             <span
