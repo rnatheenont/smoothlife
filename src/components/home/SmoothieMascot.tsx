@@ -50,6 +50,12 @@ const EYES: Eye[] = [
 const PATCH_W = 1.9;
 const PATCH_H = 1.65;
 
+/** The mouth it opens into when the pointer is on it, as a % of the box.
+ *  Wider and taller than the painted smile (4.6% x 1.5%, centred on 52.4%,
+ *  61.7%), which is why no patch is needed here: a filled shape that covers
+ *  the thin dark curve outright is its own cover. */
+const MOUTH = { left: 47.6, top: 61.2, width: 9.6, height: 5.6 };
+
 /** How far the eyes travel, and then the head, as fractions of the box. The
  *  eyes carry most of it — a head that leans as far as the eyes look is a
  *  character lunging at the cursor rather than glancing at it. */
@@ -61,6 +67,7 @@ const HEAD_Y = 0.013;
 export default function SmoothieMascot({ className }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [gaze, setGaze] = useState({ x: 0, y: 0, size: 0 });
+  const [smiling, setSmiling] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -114,7 +121,12 @@ export default function SmoothieMascot({ className }: { className?: string }) {
     // Two nested transforms rather than one: the bob is a CSS animation on
     // `transform`, and an inline transform on the same element would replace
     // it outright.
-    <div ref={ref} className={className}>
+    <div
+      ref={ref}
+      className={className}
+      onPointerEnter={() => setSmiling(true)}
+      onPointerLeave={() => setSmiling(false)}
+    >
       <div className="h-full w-full origin-bottom animate-headBob">
         <div
           className="relative h-full w-full transition-transform duration-200 ease-out"
@@ -147,11 +159,20 @@ export default function SmoothieMascot({ className }: { className?: string }) {
               }}
             >
               <span
-                className="absolute left-1/2 top-1/2 rounded-full bg-[#17110d] transition-transform duration-200 ease-out"
+                // border-radius 50%, not rounded-full: a 9999px radius on a
+                // box taller than it is wide clamps to half the width and
+                // gives a capsule with straight sides, which is a pill, not
+                // an eye.
+                className="absolute left-1/2 top-1/2 bg-[#17110d] transition-transform duration-200 ease-out"
                 style={{
                   width: `${100 / PATCH_W}%`,
                   height: `${100 / PATCH_H}%`,
-                  transform: `translate(calc(-50% + ${eyeX}px), calc(-50% + ${eyeY}px))`,
+                  borderRadius: "50%",
+                  // Narrowed a little while it smiles: eyes that stay wide
+                  // open under a grin read as a mask rather than a mood.
+                  transform: `translate(calc(-50% + ${eyeX}px), calc(-50% + ${eyeY}px)) scaleY(${
+                    smiling ? 0.88 : 1
+                  })`,
                 }}
               >
                 {/* The catchlight rides on the eye, which is what stops the
@@ -160,6 +181,26 @@ export default function SmoothieMascot({ className }: { className?: string }) {
               </span>
             </span>
           ))}
+
+          {/* The smile opens downwards from a flat top, so it grows out of
+              the painted mouth rather than appearing on top of it. */}
+          <span
+            aria-hidden="true"
+            className="absolute overflow-hidden bg-[#241a14] transition-all duration-300 ease-out"
+            style={{
+              left: `${MOUTH.left}%`,
+              top: `${MOUTH.top}%`,
+              width: `${MOUTH.width}%`,
+              height: smiling ? `${MOUTH.height}%` : "0%",
+              opacity: smiling ? 1 : 0,
+              borderRadius: "0 0 50% 50% / 0 0 100% 100%",
+            }}
+          >
+            <span
+              className="absolute bottom-[6%] left-1/2 h-[46%] w-[48%] -translate-x-1/2 bg-[#f4808a]"
+              style={{ borderRadius: "50%" }}
+            />
+          </span>
         </div>
       </div>
     </div>

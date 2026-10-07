@@ -269,7 +269,7 @@ export default function SmoothieHeroBand() {
             1200px, and 86px at xl. Narrower than that it was sitting across
             the word "Smoothie", and a mascot small enough to clear it at
             768px is a thumbnail. */}
-        <SmoothieMascot className="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-[300px] xl:block" />
+        <SmoothieMascot className="absolute bottom-0 right-6 hidden h-[300px] w-[300px] xl:block" />
       </div>
     </section>
   );
