@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, Plus, Check, Flame } from "lucide-react";
+import { Heart, Check, Flame } from "lucide-react";
 import { Product } from "@/data/types";
 import { formatTHB } from "@/lib/format";
 import StarRating from "./StarRating";
@@ -70,7 +70,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const promoChip = isInActivePromo ? ((settings.promotion_badge.config.labelTh as string) || "ของแถม") : null;
   const isWished = has(product.slug);
   const [added, setAdded] = useState(false);
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const showSold = (product.sold ?? 0) > SHOW_SOLD_ABOVE;
   const discount = product.compareAtPrice
     ? Math.round(100 - (product.price / product.compareAtPrice) * 100)
@@ -98,14 +98,6 @@ export default function ProductCard({ product }: { product: Product }) {
   // breath of shadow, which is one treatment, not a border and a shadow both.
   return (
     <div className="group relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 md:rounded-xl2 md:hover:shadow-cardHover">
-      <button
-        onClick={() => toggle(product.slug)}
-        aria-label={isWished ? "เอาออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}
-        aria-pressed={isWished}
-        className="absolute right-2.5 top-2.5 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/90 ring-1 ring-surface-line transition-colors hover:bg-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
-      >
-        <Heart size={16} className={isWished ? "fill-sale text-sale" : "text-slate-500"} />
-      </button>
       {/* The photo fills the square edge to edge, in its own colours. The
           mist well with multiply blending tinted every packshot green-grey
           and shrank it inside padding. No zoom on hover — the card lifting
@@ -139,39 +131,48 @@ export default function ProductCard({ product }: { product: Product }) {
         )}
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-3 md:p-4">
-        <span translate="no" className="truncate text-xs font-medium text-slate-500">{product.brand}</span>
+        {/* Brand leads the card now, the way it does in the design: on a
+            shelf of five bottles the vendor is what tells them apart faster
+            than the first forty characters of five similar names. */}
+        <span translate="no" className="truncate text-[13px] font-bold uppercase text-brand-ink">
+          {product.brand}
+        </span>
         <Link href={`/product/${product.slug}`}>
-          <h3 translate="no" className="line-clamp-2 min-h-10 text-sm font-medium leading-snug text-brand-ink transition-colors hover:text-brand-800">
+          <h3 translate="no" className="line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-slate-500 transition-colors hover:text-brand-800">
             {product.name}
           </h3>
         </Link>
-        {product.reviewCount > 0 ? (
-          <div className="flex items-center gap-1.5">
-            <StarRating rating={product.rating} size={12} />
-            <span className="text-[11px] text-slate-500">({product.reviewCount})</span>
-          </div>
-        ) : (
-          <p className="text-[11px] text-slate-500 line-clamp-1">{product.shortDesc}</p>
+        {lowStock && (
+          <p className="text-[11px] font-semibold text-amber-700">เหลือเพียง {defaultVariant.quantity} ชิ้น</p>
         )}
-        {/* Sold and stock share one line: they answer the same question —
-            "is this popular, and will it still be here" — and two short lines
-            cost the card height it does not have.
+        {/* Price on the left, proof on the right — money and reputation are
+            the two things being weighed, so they sit on one line facing each
+            other rather than stacked down the card.
             Sold is real: units counted at build time from paid orders net of
             refunds (fetchUnitsSold in scripts/fetch-products.js), and shown
             only once something has sold — "ขายแล้ว 0 ชิ้น" is a reason not to
             buy, and inventing a number is not an option. */}
-        {(showSold || lowStock) && (
-          // Stock on the left where the eye starts, sold count pushed to the
-          // right edge — two separate facts, so they sit apart rather than
-          // being run together with a separator.
-          // Wraps on the narrowest cards (two-up on a phone) instead of
-          // overflowing; ml-auto keeps the sold count on the right either way.
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
-            {lowStock && (
-              <span className="font-semibold text-amber-700">เหลือเพียง {defaultVariant.quantity} ชิ้น</span>
+        <div className="mt-auto flex items-end justify-between gap-2 pt-1.5">
+          <div className="min-w-0">
+            {hasMultiplePrices && <span className="block text-[11px] text-slate-500">เริ่มต้น</span>}
+            <span className="block text-base font-bold tabular-nums text-brand-800 md:text-[17px]">
+              {formatTHB(product.price)}
+            </span>
+            {product.compareAtPrice && (
+              <span className="block text-[11px] tabular-nums text-slate-400 line-through">
+                {formatTHB(product.compareAtPrice)}
+              </span>
+            )}
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-0.5">
+            {product.reviewCount > 0 && (
+              <span className="flex items-center gap-1">
+                <StarRating rating={product.rating} size={12} />
+                <span className="text-[11px] text-slate-500">({product.reviewCount})</span>
+              </span>
             )}
             {showSold && (
-              <span translate="no" className="ml-auto flex shrink-0 items-center gap-1 text-slate-500">
+              <span translate="no" className="flex items-center gap-1 text-[11px] text-slate-500">
                 <Flame size={11} className="shrink-0 text-orange-500" />
                 {lang === "en" ? (
                   <>
@@ -184,34 +185,37 @@ export default function ProductCard({ product }: { product: Product }) {
                 )}
               </span>
             )}
-          </p>
-        )}
-        {/* Price and the add button share one row: the full-width button
-            under every card turned a grid of products into a grid of green
-            bars, and it was the tallest thing on the card. */}
-        <div className="mt-auto flex items-end justify-between gap-2 pt-1">
-          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-            {hasMultiplePrices && <span className="text-xs text-slate-500">เริ่มต้น</span>}
-            <span className="text-base font-bold tabular-nums text-brand-ink">{formatTHB(product.price)}</span>
-            {product.compareAtPrice && (
-              <span className="text-xs tabular-nums text-slate-500 line-through">{formatTHB(product.compareAtPrice)}</span>
-            )}
           </div>
+        </div>
+        {/* The buy row. This used to be a 36px round + beside the price,
+            deliberately, because a full-width green bar under every card
+            turned a grid of products into a grid of green bars — the design
+            asks for the bar, so the card keeps the colour to one element and
+            the wishlist heart comes down off the photo to share the row
+            rather than adding a third accent on the image. */}
+        <div className="flex items-center gap-2 pt-2">
+          <button
+            onClick={() => toggle(product.slug)}
+            aria-label={isWished ? "เอาออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}
+            aria-pressed={isWished}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 transition-colors hover:text-sale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 md:h-10 md:w-10"
+          >
+            <Heart size={20} className={isWished ? "fill-sale text-sale" : "text-brand-800"} />
+          </button>
           {soldOut ? (
-            <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500">
+            <span className="flex h-9 flex-1 items-center justify-center rounded-full bg-slate-100 text-[13px] font-semibold text-slate-500 md:h-10">
               สินค้าหมด
             </span>
           ) : (
             <button
               onClick={handleAdd}
-              aria-label={added ? "เพิ่มลงตะกร้าแล้ว" : `เพิ่ม ${product.name} ลงตะกร้า`}
-              title={added ? "เพิ่มแล้ว" : "เพิ่มลงตะกร้า"}
               className={clsx(
-                "grid h-9 w-9 shrink-0 place-items-center rounded-full text-white shadow-card transition hover:shadow-cardHover active:scale-90",
-                added ? "bg-brand-emerald" : "bg-brand-gradient hover:brightness-105"
+                "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full text-[13px] font-bold text-white transition active:scale-[0.97] md:h-10 md:text-sm",
+                added ? "bg-brand-emerald" : "bg-brand-action hover:bg-brand-action-hover"
               )}
             >
-              {added ? <Check size={17} strokeWidth={2.75} /> : <Plus size={18} strokeWidth={2.75} />}
+              {added && <Check size={16} strokeWidth={2.75} />}
+              {added ? t("เพิ่มแล้ว", "Added") : t("ใส่ตะกร้า", "Add to cart")}
             </button>
           )}
         </div>

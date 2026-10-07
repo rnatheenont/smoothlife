@@ -17,6 +17,7 @@ import KnowledgeArcGallery, { type ArcItem } from "@/components/home/KnowledgeAr
 import HeroCarousel from "@/components/HeroCarousel";
 import CategoryIconRow from "@/components/home/CategoryIconRow";
 import SmoothieHeroBand from "@/components/home/SmoothieHeroBand";
+import HeroTrio from "@/components/home/HeroTrio";
 import ConcernCoverflow from "@/components/home/ConcernCoverflow";
 import DealOfTheDayCard from "@/components/DealOfTheDayCard";
 import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
@@ -127,7 +128,12 @@ export default async function HomePage() {
           จากแบรนด์ที่วางขายจริงในไทย ของแท้ 100% มี อย. ส่งฟรีทั่วไทยไม่มีขั้นต่ำ และสะสมคะแนนได้ทุกการช้อป
         </h1>
         <SmoothieHeroBand />
-        <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
+        {/* Three across on a wide screen, one full-bleed slide on a phone —
+            two components rather than one with a mode, see HeroTrio. */}
+        <HeroTrio banners={liveHeroBanners ?? heroBanners} />
+        <div className="lg:hidden">
+          <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
+        </div>
       </section>
 
       {/* The nine round shortcuts from the design, standing in for both
