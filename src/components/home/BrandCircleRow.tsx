@@ -128,14 +128,24 @@ export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
         aria-labelledby={`brand-tab-${brand.slug}`}
         className="mx-auto max-w-[1512px] px-4 md:px-6"
       >
-        <div className="rounded-2xl bg-white p-4 shadow-card md:p-6">
+        <div className="rounded-2xl bg-white p-3 shadow-card md:p-6">
           {shelf.length > 0 ? (
             <>
               {/* A rail on a phone, five across on a desktop — the same shape
                   every other shelf on this page takes. */}
-              <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none md:grid md:grid-cols-3 md:gap-4 md:overflow-visible lg:grid-cols-5">
+              {/* A rail at every width, and on a wide screen it is cut to
+                  show four and a half: the half card is what says there is
+                  more to the right, where five that fit exactly says there
+                  is not. */}
+              <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none md:gap-4">
                 {shelf.map((p) => (
-                  <li key={p.slug} className="w-[62%] shrink-0 snap-start sm:w-[42%] md:w-auto">
+                  <li
+                    key={p.slug}
+                    // Two and a half on a phone, three and a half on a
+                    // tablet, four and a half on a desktop — the half is the
+                    // part that says the rail keeps going.
+                    className="w-[calc((100%-1.5rem)/2.5)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-4rem)/4.5)]"
+                  >
                     <ProductCard product={p} />
                   </li>
                 ))}

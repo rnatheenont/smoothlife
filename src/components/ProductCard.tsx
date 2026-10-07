@@ -97,7 +97,7 @@ export default function ProductCard({ product }: { product: Product }) {
   // was no telling where one product ended. shadow-card is a hairline and a
   // breath of shadow, which is one treatment, not a border and a shadow both.
   return (
-    <div className="group relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 md:rounded-xl2 md:hover:shadow-cardHover">
+    <div className="@container group relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 md:rounded-xl2 md:hover:shadow-cardHover">
       {/* The photo fills the square edge to edge, in its own colours. The
           mist well with multiply blending tinted every packshot green-grey
           and shrank it inside padding. No zoom on hover — the card lifting
@@ -149,7 +149,12 @@ export default function ProductCard({ product }: { product: Product }) {
             refunds (fetchUnitsSold in scripts/fetch-products.js), and shown
             only once something has sold — "ขายแล้ว 0 ชิ้น" is a reason not to
             buy, and inventing a number is not an option. */}
-        <div className="mt-auto flex items-end justify-between gap-2 pt-1.5">
+        {/* Price and proof face each other on a card with room for it, and
+            stack when there is not. Three to a row on a phone leaves about
+            115px, where the price and the star rating were printing on top
+            of each other — a container query, not a breakpoint, because the
+            same card is wide on /shop at that same screen width. */}
+        <div className="mt-auto flex flex-col items-start gap-1 pt-1.5 @[9rem]:flex-row @[9rem]:items-end @[9rem]:justify-between @[9rem]:gap-2">
           <div className="min-w-0">
             {hasMultiplePrices && <span className="block text-[11px] text-slate-500">เริ่มต้น</span>}
             <span className="block text-base font-bold tabular-nums text-brand-800 md:text-[17px]">
@@ -172,7 +177,7 @@ export default function ProductCard({ product }: { product: Product }) {
               </span>
             )}
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-0.5">
+          <div className="flex shrink-0 flex-col items-start gap-0.5 @[9rem]:items-end">
             {product.reviewCount > 0 && (
               <span className="flex items-center gap-1">
                 <StarRating rating={product.rating} size={12} />
@@ -218,7 +223,7 @@ export default function ProductCard({ product }: { product: Product }) {
             <button
               onClick={handleAdd}
               className={clsx(
-                "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full text-[13px] font-bold text-white transition active:scale-[0.97] md:h-10 md:text-sm",
+                "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full px-1 text-[11px] font-bold text-white transition active:scale-[0.97] @[9rem]:text-[13px] md:h-10 md:text-sm",
                 // The drifting gradient needs a background wider than the
                 // button (bg-[length:200%_100%]) or there is nowhere for the
                 // position to travel. Confirmation stays flat: "เพิ่มแล้ว" is
