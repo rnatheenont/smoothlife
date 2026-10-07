@@ -167,18 +167,23 @@ export default function ProductCard({ product }: { product: Product }) {
           {/* Price and proof face each other on a card with room for it, and
               stack when there is not. A container query, not a breakpoint: the
               same card is 136px in a shelf and 229px in the /shop grid at the
-              same screen width. 13rem is where both halves actually fit — the
-              price with its discount chip needs about 92px and the stars with
-              their review count about 100px, and below that the chip printed
-              straight over the first star. */}
-          <div className="mt-auto flex flex-col items-start gap-1 pt-1.5 @[13rem]:flex-row @[13rem]:items-end @[13rem]:justify-between @[13rem]:gap-2">
+              same screen width.
+
+              10rem is where both halves fit side by side. The price with its
+              discount chip measures 76px at its widest and the score with its
+              review count 60px, which with the 4px gap is 140px of the 142px
+              a 166px card has inside its padding. Two pixels is not a margin
+              to trust, so the line the chip sits on wraps rather than pushes:
+              a longer price makes the card a line taller instead of printing
+              the chip over the star, which is what five stars did here. */}
+          <div className="mt-auto flex flex-col items-start gap-1 pt-1.5 @[10rem]:flex-row @[10rem]:items-end @[10rem]:justify-between @[13rem]:gap-2">
             <div className="min-w-0">
               {hasMultiplePrices && <span className="block text-[11px] text-slate-500">เริ่มต้น</span>}
               <span className="block text-base font-bold tabular-nums text-brand-800 md:text-[17px]">
                 {formatTHB(product.price)}
               </span>
               {product.compareAtPrice && (
-                <span className="flex items-center gap-1.5">
+                <span className="flex flex-wrap items-center gap-1 @[13rem]:gap-1.5">
                   <span className="text-[11px] tabular-nums text-slate-400 line-through">
                     {formatTHB(product.compareAtPrice)}
                   </span>
@@ -187,14 +192,14 @@ export default function ProductCard({ product }: { product: Product }) {
                     // moved next to the price it is taken from — in the photo's
                     // corner it was a number with nothing beside it to be a
                     // percentage of.
-                    <span className="rounded-full bg-sale px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                    <span className="rounded-full bg-sale px-1 py-0.5 text-[10px] font-bold leading-none text-white @[13rem]:px-1.5">
                       -{discount}%
                     </span>
                   )}
                 </span>
               )}
             </div>
-            <div className="flex shrink-0 flex-col items-start gap-0.5 @[13rem]:items-end">
+            <div className="flex shrink-0 flex-col items-start gap-0.5 @[10rem]:items-end">
               {product.reviewCount > 0 && (
                 // One star and the score, not five stars. Five of them is a
                 // picture of a scale, and on a card a third of a phone wide
