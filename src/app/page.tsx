@@ -4,7 +4,6 @@ import Image from "next/image";
 import { ShieldCheck, Truck, Award, MessageCircle, ChevronRight, Repeat, PercentCircle } from "lucide-react";
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
-import { concerns, concernImage } from "@/data/categories";
 import { brands } from "@/data/brands";
 import { promotions } from "@/data/promotions";
 import { articles } from "@/data/articles";
@@ -17,13 +16,15 @@ import { getStoreArticles, storeArticleHref } from "@/lib/storefront-articles";
 import KnowledgeArcGallery, { type ArcItem } from "@/components/home/KnowledgeArcGallery";
 import HeroCarousel from "@/components/HeroCarousel";
 import CategoryIconRow from "@/components/home/CategoryIconRow";
+import SmoothieHeroBand from "@/components/home/SmoothieHeroBand";
+import ConcernCoverflow from "@/components/home/ConcernCoverflow";
 import DealOfTheDayCard from "@/components/DealOfTheDayCard";
 import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
 import SectionHeading from "@/components/SectionHeading";
 import ScrollReveal from "@/components/ScrollReveal";
 import StaggerGrid from "@/components/StaggerGrid";
 import ScaleReveal from "@/components/ScaleReveal";
-import BrandMarquee from "@/components/BrandMarquee";
+import BrandCircleRow from "@/components/home/BrandCircleRow";
 import ProductTabs from "@/components/ProductTabs";
 import PromoPair from "@/components/home/PromoPair";
 import SubscriptionBanner from "@/components/home/SubscriptionBanner";
@@ -125,6 +126,7 @@ export default async function HomePage() {
           Smoothlife — ของดีที่ใช้ได้จริง คัดมาให้แล้ว: สกินแคร์ อาหารเสริม ดูแลช่องปากและเส้นผม
           จากแบรนด์ที่วางขายจริงในไทย ของแท้ 100% มี อย. ส่งฟรีทั่วไทยไม่มีขั้นต่ำ และสะสมคะแนนได้ทุกการช้อป
         </h1>
+        <SmoothieHeroBand />
         <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
       </section>
 
@@ -263,39 +265,8 @@ export default async function HomePage() {
 
       {/* Shop by concern — the other way in, for somebody who knows what is
           bothering them but not what to buy for it. After the deals because
-          browsing by problem is slower than being shown a price.
-          Both this and Categories are entry
-          points into the catalogue (browse by type vs. browse by problem),
-          so grouping them together strengthens the "ways to start shopping"
-          cluster right after the hero, instead of splitting it far apart
-          from Categories with unrelated content in between. */}
-      <section className="py-7 md:py-14 lg:py-16">
-        <ScrollReveal className="container-page">
-          <SectionHeading title="ช้อปตามปัญหาผิวที่กังวล" subtitle="Shop by Concern" href="/concern" />
-        </ScrollReveal>
-        <StaggerGrid className="container-page flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none md:grid md:grid-cols-3 lg:grid-cols-6 md:gap-4 md:overflow-visible">
-          {concerns.map((c) => (
-            <Link
-              key={c.slug}
-              href={`/concern/${c.slug}`}
-              className="group w-[38%] shrink-0 snap-start transition-transform active:scale-[0.98] sm:w-[28%] md:w-auto md:active:scale-100"
-            >
-              {/* The photo fills the tile in its own colours — no tinted well
-                  or blend, same as the product cards. */}
-              <div className="relative aspect-square overflow-hidden rounded-xl2 bg-white ring-1 ring-surface-line transition-shadow group-hover:ring-brand-800/30">
-                <Image
-                  src={concernImage(c.slug)}
-                  alt=""
-                  fill
-                  sizes="(max-width:768px) 50vw, 16vw"
-                  className="object-cover"
-                />
-              </div>
-              <p className="mt-2 line-clamp-2 text-sm font-semibold text-brand-ink group-hover:text-brand-800">{c.nameTh}</p>
-            </Link>
-          ))}
-        </StaggerGrid>
-      </section>
+          browsing by problem is slower than being shown a price. */}
+      <ConcernCoverflow />
 
       {/* Membership, in one place: subscribe, then the rewards and shipping
           pair right under it. Three separate pitches for the same
@@ -323,18 +294,16 @@ export default async function HomePage() {
 
       {/* Brands, then the reading: the two things that say who we are rather
           than what to buy today, closing the page together.
-          Scrolling logo wall at every breakpoint. Used to be
-          a static desktop grid capped at the first 10 brands, but the
-          catalogue now spans dozens of real vendors (see brands.ts), so a
-          fixed grid either got enormous or hid most of them; the marquee
-          scales to any count without bloating page height and actually
-          shows the full range of brands we carry. */}
+          Nine circles rather than the scrolling logo wall that was here. The
+          wall existed so that none of the dozens of real vendors in
+          brands.ts were hidden; with nine on show, the heading's "ดูทั้งหมด"
+          link into /brands is the only route to the rest, so it stays. */}
       <section className="py-5 md:py-8 lg:py-10 overflow-hidden">
         <ScrollReveal className="container-page">
           <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
         </ScrollReveal>
         <ScrollReveal>
-          <BrandMarquee brands={brands} />
+          <BrandCircleRow brands={brands} />
         </ScrollReveal>
       </section>
 
