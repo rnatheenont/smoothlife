@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, Repeat, PercentCircle } from "lucide-react";
 import { products } from "@/data/products";
-import { Product } from "@/data/types";
 import { brands } from "@/data/brands";
 import { articles } from "@/data/articles";
 import { formatTHB } from "@/lib/format";
@@ -15,14 +14,12 @@ import HeroCarousel from "@/components/HeroCarousel";
 import CategoryIconRow from "@/components/home/CategoryIconRow";
 import SmoothieHeroBand from "@/components/home/SmoothieHeroBand";
 import HeroTrio from "@/components/home/HeroTrio";
-import PromoStrip from "@/components/home/PromoStrip";
 import ConcernCoverflow from "@/components/home/ConcernCoverflow";
 import DealOfTheDayCard from "@/components/DealOfTheDayCard";
 import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
 import SectionHeading from "@/components/SectionHeading";
 import ScrollReveal from "@/components/ScrollReveal";
 import BrandCircleRow from "@/components/home/BrandCircleRow";
-import ProductTabs from "@/components/ProductTabs";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 import { pageMetadata } from "@/lib/site-pages";
 
@@ -42,21 +39,6 @@ export default async function HomePage() {
   // the theme-file route is the backup, the static list the last resort.
   const [storefrontBanners, liveArticles] = await Promise.all([getStorefrontHeroBanners(), getStoreArticles()]);
   const liveHeroBanners = storefrontBanners ?? (await getLiveHeroBanners());
-  const bestSellers = products.filter((p) => p.inStock && p.badges?.includes("Bestseller")).slice(0, 8);
-  const newArrivals = products
-    .filter((p) => p.inStock && p.badges?.includes("New"))
-    .concat(products.filter((p) => p.inStock).slice(0, 4))
-    .slice(0, 8);
-  const onSale = products.filter((p) => p.inStock && p.badges?.includes("Sale")).slice(0, 8);
-  // This catalogue sync doesn't carry review/rating data (every product
-  // comes through as rating 0 / reviewCount 0), so "trending" can't be
-  // ranked by popularity — discount depth is the real, non-fabricated
-  // signal we do have, so bigger price cuts rank first instead.
-  const discountPct = (p: Product) => (p.compareAtPrice ? 1 - p.price / p.compareAtPrice : 0);
-  const bundles = products
-    .filter((p) => p.inStock && p.badges?.includes("Bundle"))
-    .sort((a, b) => discountPct(b) - discountPct(a))
-    .slice(0, 8);
   // The newest posts from the Shopify blog (see storefront-articles.ts), dated;
   // the static guides only if that feed can't be read.
   // The shelf under each cover is the catalogue of whichever brand the post
@@ -147,32 +129,12 @@ export default async function HomePage() {
           follow it. Full-bleed: it carries its own tint. */}
       <CategoryIconRow />
 
-      {/* The wide deal strip the design puts between the shortcuts and the
-          first shelf. */}
-      <PromoStrip />
-
-      {/* Products — one tabbed section instead of four near-identical
-          stacked carousels (Best Sellers / On Sale / New / Bundles), so
-          browsing all of them costs one tap instead of a long scroll. */}
-      <ProductTabs
-        tabs={[
-          { label: "ขายดี", products: bestSellers },
-          { label: "ลดราคา", products: onSale },
-          { label: "มาใหม่", products: newArrivals },
-          { label: "เซ็ตสุดคุ้ม", products: bundles },
-        ]}
-      />
-
-
 
       {/* Free-gift promos — real active promos, rendered only when the
           respective widgets are toggled on (both default off). No py here:
           each card owns its own vertical margin so a disabled/empty widget
           (the default) collapses to zero height instead of leaving a big
-          blank padded gap with nothing in it. Kept next to ProductTabs
-          since it's the same "deals" cluster — the four campaign tiles that
-          used to head it are gone, replaced by the wide PromoStrip up under
-          the category row, which carries the same four promotions. */}
+          blank padded gap with nothing in it. */}
       <section className="container-page">
         <DealOfTheDayCard />
       </section>
