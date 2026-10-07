@@ -115,8 +115,12 @@ export default async function HomePage() {
           readers, which by then were the only readers it still worked for. */}
       {/* The pad under the banners is the section's, not the category
           row's: the row carries its own tint full-bleed, so space added
-          there would be a taller band of colour rather than air. */}
-      <section className="relative bg-white pb-6 lg:pb-12">
+          there would be a taller band of colour rather than air.
+          
+          None of it on a phone: the pagination dots are 44px tall there so
+          a thumb can hit them, and that row is already all the separation
+          the banners need. */}
+      <section className="relative bg-white lg:pb-12">
         <h1 className="sr-only">
           Smoothlife — ของดีที่ใช้ได้จริง คัดมาให้แล้ว: สกินแคร์ อาหารเสริม ดูแลช่องปากและเส้นผม
           จากแบรนด์ที่วางขายจริงในไทย ของแท้ 100% มี อย. ส่งฟรีทั่วไทยไม่มีขั้นต่ำ และสะสมคะแนนได้ทุกการช้อป

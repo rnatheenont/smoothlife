@@ -202,14 +202,19 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
       {/* Wider than the 1280 the page body sits in: the design puts the
           logo and the cart near the edges of a 1512 screen, so the bar has
           its own bed rather than container-page's. */}
-      <div className="mx-auto flex max-w-[1512px] items-center gap-3 px-4 py-2 md:gap-6 md:px-6 lg:py-2.5">
+      {/* A phone gets three columns — menu, logo, actions — because the
+          design centres the wordmark and the two sides are not the same
+          width. From md the row goes back to a flex line with the search
+          field taking the middle. The search field is display:none below md,
+          so it is not a column there. */}
+      <div className="mx-auto grid max-w-[1512px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-2 md:flex md:gap-6 md:px-6 lg:py-2.5">
         {/* -m-2.5 p-2.5: 44px of thumb around a 24px icon, without the
             padding pushing anything in the row along. */}
-        <button className="-m-2.5 shrink-0 p-2.5 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
+        <button className="-m-2.5 shrink-0 justify-self-start p-2.5 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
           <Menu size={24} />
         </button>
 
-        <Link href="/" aria-label="Smoothlife.com หน้าแรก" className="shrink-0">
+        <Link href="/" aria-label="Smoothlife.com หน้าแรก" className="shrink-0 justify-self-center">
           <BrandLogo priority className="h-6 md:h-7 lg:h-10" />
         </Link>
 
@@ -226,13 +231,10 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
           />
         </div>
 
-        <div className="ml-auto flex items-center gap-3 md:gap-5 shrink-0">
-          {/* Mobile keeps the outline-circle trigger so it sits quietly with
-              the icons beside it; desktop gets the labelled one. Same menu
-              behind both. */}
-          <div className="lg:hidden shrink-0">
-            <LanguageSwitch variant="icon" />
-          </div>
+        <div className="flex shrink-0 items-center justify-self-end gap-3 md:ml-auto md:gap-5">
+          {/* Desktop only. Below lg the drawer carries its own language
+              switch, and a second one in the bar was a third icon competing
+              with the two that actually move people around the shop. */}
           <div className="hidden lg:block">
             <LanguageSwitch variant="code" />
           </div>
