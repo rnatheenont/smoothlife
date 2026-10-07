@@ -185,6 +185,7 @@
   --animate-tabPop: tabPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-headBob: headBob 6s ease-in-out infinite;
   --animate-gradientPan: gradientPan 6s ease-in-out infinite;
+  --animate-driftSlow: driftSlow 40s ease-in-out infinite;
 
   @keyframes fadeUp {
     0% {
@@ -256,6 +257,21 @@
      up-and-down, which on a head reads as a balloon; the tilt is what makes
      it a head, and the four uneven stops are what keep it from reading as a
      metronome. */
+  /* A wash of colour that never settles. Translating in percentages keeps
+     each disc's path proportional to its own size, so one set of numbers
+     works for all three whatever the band's shape. */
+  @keyframes driftSlow {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(8%, -6%) scale(1.1);
+    }
+    66% {
+      transform: translate(-7%, 7%) scale(0.94);
+    }
+  }
   /* A gradient that drifts instead of sitting still. Needs the element to
      carry a background wider than itself (bg-[length:200%_100%]) — with the
      default 100% there is nowhere for the position to travel to. */

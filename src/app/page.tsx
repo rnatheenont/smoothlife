@@ -22,6 +22,7 @@ import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
 import SectionHeading from "@/components/SectionHeading";
 import ScrollReveal from "@/components/ScrollReveal";
 import BrandCircleRow from "@/components/home/BrandCircleRow";
+import AuroraBackdrop from "@/components/home/AuroraBackdrop";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 import { pageMetadata } from "@/lib/site-pages";
 
@@ -170,7 +171,8 @@ export default async function HomePage() {
           wall existed so that none of the dozens of real vendors in
           brands.ts were hidden; with nine on show, the heading's "ดูทั้งหมด"
           link into /brands is the only route to the rest, so it stays. */}
-      <section className="py-5 md:py-8 lg:py-10 overflow-hidden">
+      <section className="relative isolate overflow-hidden bg-[#f6fcfb] py-5 md:py-8 lg:py-10">
+        <AuroraBackdrop />
         <ScrollReveal className="container-page">
           <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
         </ScrollReveal>
