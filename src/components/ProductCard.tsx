@@ -161,9 +161,6 @@ export default function ProductCard({ product }: { product: Product }) {
               {product.name}
             </h3>
           </Link>
-          {lowStock && (
-            <p className="text-[11px] font-semibold text-amber-700">เหลือเพียง {defaultVariant.quantity} ชิ้น</p>
-          )}
           {/* Price on the left, proof on the right — money and reputation are
               the two things being weighed, so they sit on one line facing each
               other rather than stacked down the card.
@@ -206,6 +203,10 @@ export default function ProductCard({ product }: { product: Product }) {
                 </span>
               )}
             </div>
+            {/* Score, then what is left, then how many have gone: all three
+                are reasons to buy or to hurry, so they stack in the same
+                column facing the price rather than taking a full line each
+                across the card. */}
             <div className="flex shrink-0 flex-col items-start gap-0.5 @[10rem]:items-end">
               {product.reviewCount > 0 && (
                 // One star and the score, not five stars. Five of them is a
@@ -216,6 +217,11 @@ export default function ProductCard({ product }: { product: Product }) {
                 <span translate="no" className="flex items-center gap-1 text-[11px] tabular-nums text-slate-500">
                   <Star size={11} className="shrink-0 fill-amber-400 text-amber-400" />
                   <span className="font-semibold text-slate-700">{product.rating.toFixed(1)}</span>({product.reviewCount})
+                </span>
+              )}
+              {lowStock && (
+                <span className="whitespace-nowrap text-[11px] font-semibold text-amber-700">
+                  เหลือเพียง {defaultVariant.quantity} ชิ้น
                 </span>
               )}
               {showSold && (
