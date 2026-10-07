@@ -184,7 +184,10 @@ export default function ConcernCoverflow() {
       {/* The shelf the middle card is pointing at. Same panel as the brand
           row's, for the same reason: the question "what do you sell for
           this" is answered on the page that asked it. */}
-      <div className="mx-auto mt-6 max-w-[1512px] px-4 md:px-6">
+      {/* mt-10, not mt-6: the coverflow card ends in a hard photographic
+          edge and the shelf starts with a row of white cards the same width,
+          so 24px of air read as the two touching. */}
+      <div className="mx-auto mt-10 max-w-[1512px] px-4 md:px-6">
                   {shelf.length > 0 ? (
             <>
               {/* A rail at every width, and on a wide screen it is cut to

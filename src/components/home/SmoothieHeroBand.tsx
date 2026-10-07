@@ -167,7 +167,7 @@ export default function SmoothieHeroBand() {
               tallest of them from the first paint and nothing below it ever
               moves. Only the line on show is readable; the rest are hidden
               from assistive tech rather than announced on a timer. */}
-          <h2 className="mt-2 grid text-[22px] font-bold leading-tight text-brand-ink md:text-[34px] lg:text-[42px]">
+          <h2 className="mt-2 grid text-[26px] font-bold leading-tight text-brand-ink md:text-[34px] lg:text-[42px]">
             {headlines.map((h, i) => (
               <span
                 key={h.pre + h.post}
