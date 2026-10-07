@@ -615,6 +615,54 @@
   color: transparent;
 }
 
+/* The hero carousel is a coverflow on a phone and a cross-fade on a desktop:
+   the campaign in the middle at full size with the one before and the one
+   after peeking in from the edges, or all of them stacked and faded. The
+   split is here rather than in the component because a branch on a media
+   query read in an effect paints the wrong layout for a frame on every
+   phone, and this carousel is the first thing on the page. The per-slide
+   numbers arrive as custom properties. */
+.hero-slide {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70%;
+  transform: translate(-50%, -50%) translateX(var(--x)) scale(var(--s));
+  opacity: var(--o);
+  z-index: var(--z);
+  transition:
+    transform 520ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 520ms ease-out;
+  box-shadow: 0 10px 30px rgba(9, 81, 74, 0.18);
+}
+
+@media (min-width: 768px) {
+  .hero-slide {
+    /* `inset: 0` already resets left and top; setting them to auto after it
+       leaves the slide anchored to the right edge with nothing to size it,
+       which collapsed every slide to zero width. */
+    inset: 0;
+    width: auto;
+    transform: none;
+    opacity: var(--fade);
+    z-index: auto;
+    transition: opacity 700ms ease-out;
+    box-shadow: none;
+  }
+}
+
+/* Drives the progress fill in the carousel's pagination dots. Global rather
+   than scoped to the component: the dot sets the animation from an inline
+   style, which cannot name a keyframe that styled-jsx has renamed. */
+@keyframes heroFill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
 .container-page {
   max-width: 1280px;
   margin-left: auto;

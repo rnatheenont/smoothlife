@@ -35,6 +35,31 @@ const MOBILE_QUERY = "(max-width: 767px)";
 const CROP_LIMIT_VERTICAL = 0.06;
 const CROP_LIMIT_HORIZONTAL = 0.1;
 
+// Where each slide sits on a phone, as a coverflow: the campaign in the
+// middle at full size with the one before and the one after peeking in from
+// the edges. A full-bleed slide that changed by itself gave no sign there was
+// anything either side of it until it had already gone; a card with its
+// neighbours showing says how many there are and which way they run, and it
+// is the same language the social clips further down the page speak.
+//
+// x is a percentage of the card's own width, so the whole thing scales with
+// the screen. 90% puts a neighbour's inner edge exactly where the middle
+// card's outer edge is, which leaves about 55px of it showing on a 375px
+// phone — enough to read as a card, not enough to compete.
+function coverflow(i: number, index: number, count: number) {
+  let d = i - index;
+  if (d > count / 2) d -= count;
+  if (d < -count / 2) d += count;
+  const side = Math.sign(d);
+  const dist = Math.abs(d);
+  if (dist === 0) return { x: 0, scale: 1, z: 30, opacity: 1 };
+  if (dist === 1) return { x: side * 90, scale: 0.86, z: 20, opacity: 0.6 };
+  // Everything further out is parked off to its side and invisible, so a
+  // slide arrives from the direction it is coming from rather than fading up
+  // in place.
+  return { x: side * 150, scale: 0.76, z: 10, opacity: 0 };
+}
+
 function useIsMobile() {
   // Three states, not two. Server-rendered as unknown and settled on mount: a
   // phone loads the wide crop for a moment, which is the cost of not shipping
@@ -70,7 +95,11 @@ export default function HeroCarousel({
   const everySlideHasMobileCrop = heroBanners.every((b) =>
     Boolean(b.mobileImage),
   );
-  const mobileAspect = everySlideHasMobileCrop ? "aspect-square" : "aspect-4/3";
+  // On a phone the card is 70% of the stage, so the stage has to be taller
+  // than the card is wide by exactly that much — 10/7 of a square card,
+  // 40/21 of a 4:3 one.
+  const mobileCardAspect = everySlideHasMobileCrop ? "aspect-square" : "aspect-4/3";
+  const mobileAspect = everySlideHasMobileCrop ? "aspect-10/7" : "aspect-40/21";
 
   // The frame is now the full width of the window, and its proportions change
   // with it once max-h starts clamping the height, so whether a given slide
@@ -180,11 +209,17 @@ export default function HeroCarousel({
               href={banner.href}
               aria-hidden={i !== index}
               tabIndex={i === index ? 0 : -1}
-              className="absolute inset-0 transition-opacity duration-700 ease-out"
-              style={{
-                opacity: i === index ? 1 : 0,
-                pointerEvents: i === index ? "auto" : "none",
-              }}
+              className={`hero-slide ${mobileCardAspect} md:aspect-auto overflow-hidden rounded-2xl md:rounded-none`}
+              style={
+                {
+                  "--x": `${coverflow(i, index, heroBanners.length).x}%`,
+                  "--s": coverflow(i, index, heroBanners.length).scale,
+                  "--z": coverflow(i, index, heroBanners.length).z,
+                  "--o": coverflow(i, index, heroBanners.length).opacity,
+                  "--fade": i === index ? 1 : 0,
+                  pointerEvents: i === index ? "auto" : "none",
+                } as React.CSSProperties
+              }
             >
               {/* The banner's own colours, blurred, behind it — what fills the
               frame for any slide the frame cannot crop to fit (see fitFor).
@@ -210,7 +245,7 @@ export default function HeroCarousel({
                 alt={banner.title ?? ""}
                 fill
                 priority={i === 0}
-                sizes="100vw"
+                sizes="(max-width:767px) 72vw, 100vw"
                 onLoad={(e) => noteArt(banner.slug, e.currentTarget)}
                 className={fitFor(banner.slug)}
               />
@@ -282,16 +317,6 @@ export default function HeroCarousel({
               )}
             </button>
           ))}
-          <style jsx>{`
-            @keyframes heroFill {
-              from {
-                width: 0%;
-              }
-              to {
-                width: 100%;
-              }
-            }
-          `}</style>
         </div>
       )}
     </div>
