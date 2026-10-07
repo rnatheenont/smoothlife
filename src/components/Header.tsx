@@ -33,6 +33,7 @@ import HeaderSearch from "@/components/HeaderSearch";
 import { Avatar, Button } from "@/components/ui";
 import BrandLogo from "@/components/BrandLogo";
 import { formatTHB } from "@/lib/format";
+import { SALE_HREF } from "@/lib/sale-destination";
 import type { TickerProduct } from "@/lib/ticker-products";
 
 import MegaMenu from "@/components/nav/MegaMenu";
@@ -48,10 +49,6 @@ const deskNav = [
   { href: "/knowledge", th: "บทความ", en: "Articles" },
   { href: "/promotions", th: "โปรโมชั่น", en: "Promotions" },
 ];
-
-/** Where every "Sale" in this header points. Same collection as the home
- *  page's Sale disc — one sale, one destination. */
-const SALE_HREF = "/collections/sale-up-to-50-off";
 
 const deskUtilityNav = [
   { href: "/help", th: "คำถามที่พบบ่อย", en: "FAQ" },
@@ -139,13 +136,11 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
             {/* Sits outside the moving track, pinned to the left edge: the
                 point of it is that it is always there to be pressed, and a
                 shortcut that is only on screen for four seconds out of every
-                seventy is not a shortcut. Red because red is this site's one
-                word for money off — the same chip the product cards wear. */}
+                seventy is not a shortcut. */}
             <Link
               href={SALE_HREF}
-              className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-sale px-3.5 text-[12.5px] font-bold text-white shadow-xs transition-transform hover:scale-105 active:scale-95"
+              className="flex h-8 shrink-0 items-center rounded-full bg-brand-gradient bg-[length:200%_100%] px-4 text-[12.5px] font-bold text-white shadow-xs transition-transform animate-gradientPan hover:scale-105 active:scale-95"
             >
-              <Tag size={13} strokeWidth={2.5} />
               Sale
             </Link>
             {/* Paused under the pointer: every chip is a link, and a link that
@@ -182,6 +177,14 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
                       <span translate="no" className="text-[13px] font-bold tabular-nums text-brand-800">
                         {formatTHB(p.price)}
                       </span>
+                      {p.compareAtPrice && (
+                        <span
+                          translate="no"
+                          className="text-[11px] tabular-nums text-slate-400 line-through"
+                        >
+                          {formatTHB(p.compareAtPrice)}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
