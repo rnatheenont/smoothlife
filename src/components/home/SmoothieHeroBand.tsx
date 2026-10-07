@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { ImagePlus, Loader2, Sparkles } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
+import { useRecentlyViewed } from "@/lib/recently-viewed-context";
+import { getProductBySlug } from "@/data/products";
+import { interestsFromProducts, pickSuggestions } from "@/lib/chat-suggestions";
+import { resizeForUpload } from "@/lib/image-utils";
+import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
 
 // The first thing on the page is a question, not a banner.
 //
@@ -20,15 +25,66 @@ import { useLang } from "@/lib/lang-context";
 // heading is noise, and a cursor dragging across the headline should not
 // highlight a word nobody can see.
 
+/** Bumped after each mount — see the `seed` note inside the component. */
+let visitSeed = 0;
+
 export default function SmoothieHeroBand() {
   const [q, setQ] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const { slugs: recentSlugs } = useRecentlyViewed();
+
+  // Rotates between visits so coming back to the home page does not open on
+  // the same three lines somebody already decided not to tap. The counter
+  // lives outside React and is read once, at first render: it is 0 on the
+  // server and 0 on the client's first paint, so hydration agrees, and the
+  // step happens after the paint rather than as a second render of it.
+  const [seed] = useState(() => visitSeed);
+  useEffect(() => {
+    visitSeed += 1;
+  }, []);
+
+  const suggestions = useMemo(() => {
+    const seen = recentSlugs
+      .map((slug) => getProductBySlug(slug))
+      .filter((p): p is NonNullable<typeof p> => Boolean(p));
+    const { categories, concerns } = interestsFromProducts(seen);
+    return pickSuggestions({ lang, categories, concerns, seed, count: 3 });
+  }, [lang, recentSlugs, seed]);
+
+  function go(text: string, photo = false) {
+    const params = new URLSearchParams();
+    if (text) params.set("q", text);
+    if (photo) params.set("photo", "1");
+    const qs = params.toString();
+    router.push(qs ? `/chat?${qs}` : "/chat");
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    const text = q.trim();
-    router.push(text ? `/chat?q=${encodeURIComponent(text)}` : "/chat");
+    go(q.trim());
+  }
+
+  // The photo is shrunk here rather than in the chat so that what crosses
+  // into sessionStorage is the ~1024px version, not a 6MB camera original
+  // that would blow the quota on the way.
+  async function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPhotoError(null);
+    setUploading(true);
+    try {
+      const resized = await resizeForUpload(file);
+      sessionStorage.setItem(HERO_PHOTO_KEY, resized.dataUrl);
+      go(q.trim(), true);
+    } catch {
+      setUploading(false);
+      setPhotoError(t("ไม่สามารถอ่านรูปนี้ได้ ลองใหม่อีกครั้ง", "Couldn't read that photo, please try again."));
+    }
   }
 
   return (
@@ -68,16 +124,62 @@ export default function SmoothieHeroBand() {
               type="text"
               autoComplete="off"
               placeholder={t("วันนี้คุณรู้สึกยังไง", "How are you feeling today?")}
-              className="h-12 w-full rounded-full border border-slate-200 bg-white pl-5 pr-14 text-sm text-brand-ink shadow-xs outline-hidden transition-colors placeholder:text-slate-400 focus:border-brand-teal md:h-14 md:text-base"
+              className="h-12 w-full rounded-full border border-slate-200 bg-white pl-5 pr-24 text-sm text-brand-ink shadow-xs outline-hidden transition-colors placeholder:text-slate-400 focus:border-brand-teal md:h-14 md:text-base"
             />
-            <button
-              type="submit"
-              aria-label={t("ถามน้อง Smoothie", "Ask Smoothie")}
-              className="absolute right-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-brand-teal transition-colors hover:bg-brand-50 md:right-2 md:h-11 md:w-11"
-            >
-              <Sparkles size={22} className="fill-current" />
-            </button>
+            {/* Two buttons share the right edge: the photo first because it
+                is the longer road (pick, shrink, hand over), then send. */}
+            <span className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center md:right-2">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={pickPhoto}
+              />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                aria-label={t("ส่งรูปให้น้อง Smoothie ดู", "Send Smoothie a photo")}
+                className="grid h-9 w-9 place-items-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-brand-800 disabled:opacity-60 md:h-11 md:w-11"
+              >
+                {uploading ? <Loader2 size={20} className="animate-spin" /> : <ImagePlus size={20} />}
+              </button>
+              <button
+                type="submit"
+                aria-label={t("ถามน้อง Smoothie", "Ask Smoothie")}
+                className="grid h-9 w-9 place-items-center rounded-full text-brand-teal transition-colors hover:bg-brand-50 md:h-11 md:w-11"
+              >
+                <Sparkles size={22} className="fill-current" />
+              </button>
+            </span>
           </form>
+
+          {photoError && (
+            <p role="alert" className="mt-2 text-xs text-sale">
+              {photoError}
+            </p>
+          )}
+
+          {/* Starter questions, picked from what this visitor has been
+              looking at — the same pool and the same rules the chat panel
+              uses, so tapping one is the conversation already started rather
+              than a different set of canned lines. */}
+          {suggestions.length > 0 && (
+            <ul className="mt-4 flex flex-wrap justify-center gap-2">
+              {suggestions.map((s) => (
+                <li key={s}>
+                  <button
+                    type="button"
+                    onClick={() => go(s)}
+                    className="rounded-full border border-slate-200 bg-white/80 px-3.5 py-2 text-xs text-slate-600 transition-colors hover:border-brand-teal hover:text-brand-800 md:text-[13px]"
+                  >
+                    {s}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* xl and up, because that is where it fits beside the question

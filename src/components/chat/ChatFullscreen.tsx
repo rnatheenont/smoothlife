@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useChatSession } from "@/lib/use-chat-session";
+import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
 import ChatConversation from "@/components/chat/ChatConversation";
 
 // The same conversation as the corner widget, on a page of its own.
@@ -20,22 +21,47 @@ export default function ChatFullscreen() {
   const { t } = useLang();
   const router = useRouter();
   const session = useChatSession({ active: true });
-  const { messages, reset, hasProfile, send, historyLoaded } = session;
+  const { messages, reset, hasProfile, send, setInput, handleImagePick, historyLoaded } = session;
   const seeded = useRef(false);
 
-  // A question typed into the home page's hero band arrives as ?q=, and is
-  // sent as the first message so nobody has to type it twice. It waits for
-  // the stored history so it lands after the conversation so far rather than
-  // ahead of it, and the parameter is dropped once used — a reload should not
-  // ask the same thing again.
+  // What the home page's hero band hands over: a question as ?q=, a photo as
+  // ?photo=1 plus a data URL parked in sessionStorage (see chat-handoff).
+  // Waits for the stored history so it lands after the conversation so far
+  // rather than ahead of it, and clears both the parameters and the slot once
+  // used — a reload should not ask the same thing or re-attach the same
+  // picture again.
+  //
+  // A question on its own is sent straight away. A question *with* a photo is
+  // put in the composer instead: the photo has a consent prompt in front of
+  // it, so sending the text now would split one message into two and leave
+  // the picture behind.
   useEffect(() => {
     if (seeded.current || !historyLoaded) return;
-    const q = new URLSearchParams(window.location.search).get("q")?.trim();
-    if (!q) return;
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q")?.trim();
+    const wantsPhoto = params.get("photo") === "1";
+    if (!q && !wantsPhoto) return;
     seeded.current = true;
     window.history.replaceState(null, "", "/chat");
-    send(q);
-  }, [historyLoaded, send]);
+
+    let dataUrl: string | null = null;
+    if (wantsPhoto) {
+      try {
+        dataUrl = sessionStorage.getItem(HERO_PHOTO_KEY);
+        sessionStorage.removeItem(HERO_PHOTO_KEY);
+      } catch {}
+    }
+
+    if (dataUrl) {
+      if (q) setInput(q);
+      fetch(dataUrl)
+        .then((r) => r.blob())
+        .then((b) => handleImagePick(new File([b], "photo.jpg", { type: b.type || "image/jpeg" })))
+        .catch(() => {});
+    } else if (q) {
+      send(q);
+    }
+  }, [historyLoaded, send, setInput, handleImagePick]);
 
   function leave() {
     // Going "back" is what the header arrow means when there is somewhere to
