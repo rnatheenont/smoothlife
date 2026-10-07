@@ -87,7 +87,7 @@ export default function SmoothieHeroBand() {
             1200px, and 86px at xl. Narrower than that it was sitting across
             the word "Smoothie", and a mascot small enough to clear it at
             768px is a thumbnail. */}
-        <div className="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-[300px] xl:block">
+        <div className="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-[300px] origin-bottom animate-headBob xl:block">
           {/* The character in the design is a full-body one in a lab coat
               that public/mascot does not have — every file there is a head.
               This is the same head the chat widget uses, so at least it is
