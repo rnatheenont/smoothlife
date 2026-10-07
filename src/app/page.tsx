@@ -18,6 +18,7 @@ import HeroCarousel from "@/components/HeroCarousel";
 import CategoryIconRow from "@/components/home/CategoryIconRow";
 import SmoothieHeroBand from "@/components/home/SmoothieHeroBand";
 import HeroTrio from "@/components/home/HeroTrio";
+import PromoStrip from "@/components/home/PromoStrip";
 import ConcernCoverflow from "@/components/home/ConcernCoverflow";
 import DealOfTheDayCard from "@/components/DealOfTheDayCard";
 import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
@@ -140,6 +141,10 @@ export default async function HomePage() {
           the mobile packshot strip and the desktop tile grid that used to
           follow it. Full-bleed: it carries its own tint. */}
       <CategoryIconRow />
+
+      {/* The wide deal strip the design puts between the shortcuts and the
+          first shelf. */}
+      <PromoStrip />
 
       {/* Products — one tabbed section instead of four near-identical
           stacked carousels (Best Sellers / On Sale / New / Bundles), so
