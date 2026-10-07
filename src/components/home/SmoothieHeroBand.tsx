@@ -80,10 +80,14 @@ export default function SmoothieHeroBand() {
           </form>
         </div>
 
-        {/* Below md the mascot would have to share about 200px with a 28px
-            headline, so it steps out rather than being shrunk to a thumbnail
-            or laid over the words. */}
-        <div className="pointer-events-none absolute bottom-0 right-4 hidden h-[240px] w-[240px] md:block md:right-6 lg:h-[300px] lg:w-[300px]">
+        {/* xl and up, because that is where it fits beside the question
+            rather than on top of it. The heading is centred on the band and
+            the mascot is pinned to the right edge, so the gap between them is
+            (width/2 - half the heading) - 300 - 24: positive from about
+            1200px, and 86px at xl. Narrower than that it was sitting across
+            the word "Smoothie", and a mascot small enough to clear it at
+            768px is a thumbnail. */}
+        <div className="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-[300px] xl:block">
           {/* The character in the design is a full-body one in a lab coat
               that public/mascot does not have — every file there is a head.
               This is the same head the chat widget uses, so at least it is
