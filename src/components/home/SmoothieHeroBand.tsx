@@ -10,6 +10,7 @@ import { getProductBySlug } from "@/data/products";
 import { interestsFromProducts, pickSuggestions } from "@/lib/chat-suggestions";
 import { resizeForUpload } from "@/lib/image-utils";
 import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
+import SkyClouds from "@/components/home/SkyClouds";
 
 // The first thing on the page is a question, not a banner.
 //
@@ -138,10 +139,15 @@ export default function SmoothieHeroBand() {
   }
 
   return (
-    <section className="relative isolate overflow-hidden bg-white">
+    // Pale at the top and white by the bottom edge, so the banner row that
+    // follows meets it without a seam. isolate keeps the sky and the wordmark
+    // — both on negative z — above this background rather than behind the
+    // page.
+    <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#cbe8f7_0%,#e2f3fb_40%,#f5fbfe_72%,#ffffff_100%)]">
+      <SkyClouds />
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 select-none whitespace-nowrap font-bold leading-none tracking-tight text-[#dff0ea] text-[clamp(7rem,27vw,17rem)]"
+        className="pointer-events-none absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 select-none whitespace-nowrap font-bold leading-none tracking-tight text-white/55 text-[clamp(7rem,27vw,17rem)]"
       >
         Smoothlife.com
       </span>
