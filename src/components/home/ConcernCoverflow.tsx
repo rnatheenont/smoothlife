@@ -191,6 +191,10 @@ export default function ConcernCoverflow() {
                   // sliced flat against the top and bottom of the rail.
                   ref={rail.ref}
                   style={rail.style}
+                  // A phone has no hover to pause on: a thumb dragging the
+                  // shelf sideways is the signal there, and it is the same
+                  // signal as any other — hand the carousel over for good.
+                  onScroll={() => setEngaged(true)}
                   className="-m-2 flex snap-x snap-mandatory gap-3 overflow-x-auto p-2 scrollbar-none md:gap-4">
                 {shelf.map((p) => (
                   <li
