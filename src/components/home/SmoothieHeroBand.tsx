@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Loader2, Sparkles } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
@@ -11,6 +10,7 @@ import { interestsFromProducts, pickSuggestions } from "@/lib/chat-suggestions";
 import { resizeForUpload } from "@/lib/image-utils";
 import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
 import SkyClouds from "@/components/home/SkyClouds";
+import SmoothieMascot from "@/components/home/SmoothieMascot";
 
 // The first thing on the page is a question, not a banner.
 //
@@ -269,19 +269,7 @@ export default function SmoothieHeroBand() {
             1200px, and 86px at xl. Narrower than that it was sitting across
             the word "Smoothie", and a mascot small enough to clear it at
             768px is a thumbnail. */}
-        <div className="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-[300px] origin-bottom animate-headBob xl:block">
-          {/* The character in the design is a full-body one in a lab coat
-              that public/mascot does not have — every file there is a head.
-              This is the same head the chat widget uses, so at least it is
-              the mascot the shopper meets next. */}
-          <Image
-            src="/mascot/smoothie-new.png"
-            alt=""
-            fill
-            sizes="320px"
-            className="object-contain object-bottom"
-          />
-        </div>
+        <SmoothieMascot className="pointer-events-none absolute bottom-0 right-6 hidden h-[300px] w-[300px] xl:block" />
       </div>
     </section>
   );
