@@ -20,8 +20,9 @@ const FADE = 56;
 /** Scroll positions this close to an end count as being at it. */
 const EPSILON = 4;
 
-/** Pass a ref when the rail already has one of its own (ProductTabs keeps
- *  one for its arrows and progress bar); otherwise take the one returned. */
+/** Pass a ref when the rail already has one of its own — for arrows, a
+ *  progress bar, anything that needs to scroll it; otherwise take the one
+ *  returned. */
 export function useRailFade<T extends HTMLElement = HTMLUListElement>(
   external?: RefObject<T | null>
 ) {

@@ -187,6 +187,9 @@
   --animate-gradientPan: gradientPan 6s ease-in-out infinite;
   --animate-driftSlow: driftSlow 40s ease-in-out infinite;
   --animate-floatUp: floatUp 22s linear infinite;
+  --animate-haloA: haloA 6s ease-in-out infinite;
+  --animate-haloB: haloB 5s ease-in-out infinite;
+  --animate-haloC: haloC 4s ease-in-out infinite;
 
   @keyframes fadeUp {
     0% {
@@ -306,6 +309,38 @@
     }
     50% {
       background-position: 100% 50%;
+    }
+  }
+  /* Three lights travelling under the rim of the AI field, each on its own
+     clock so the ring never repeats a pattern you can follow. The rails are
+     the width of the field, so a percentage here is a percentage of the
+     field however wide it happens to be — translate, not `left`, so the
+     browser moves a layer instead of laying the field out again every frame. */
+  @keyframes haloA {
+    0%,
+    100% {
+      transform: translateX(-5%);
+    }
+    50% {
+      transform: translateX(75%);
+    }
+  }
+  @keyframes haloB {
+    0%,
+    100% {
+      transform: translateX(65%);
+    }
+    50% {
+      transform: translateX(10%);
+    }
+  }
+  @keyframes haloC {
+    0%,
+    100% {
+      transform: translateX(25%);
+    }
+    50% {
+      transform: translateX(55%);
     }
   }
   @keyframes headBob {

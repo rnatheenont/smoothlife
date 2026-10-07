@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Loader2, Sparkles } from "lucide-react";
+import HaloField from "@/components/home/HaloField";
 import { useLang } from "@/lib/lang-context";
 import { useRecentlyViewed } from "@/lib/recently-viewed-context";
 import { getProductBySlug } from "@/data/products";
@@ -195,20 +196,24 @@ export default function SmoothieHeroBand() {
             <label htmlFor="smoothie-hero-ask" className="sr-only">
               {t("ถามน้อง Smoothie", "Ask Smoothie")}
             </label>
-            <input
-              id="smoothie-hero-ask"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onFocus={() => setTyping(true)}
-              onBlur={() => setTyping(false)}
-              type="text"
-              autoComplete="off"
-              placeholder={t("วันนี้คุณรู้สึกยังไง", "How are you feeling today?")}
-              className="h-12 w-full rounded-full border border-slate-200 bg-white pl-5 pr-24 text-sm text-brand-ink shadow-xs outline-hidden transition-colors placeholder:text-slate-400 focus:border-brand-teal md:h-14 md:text-base"
-            />
+            <HaloField focused={typing}>
+              <input
+                id="smoothie-hero-ask"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onFocus={() => setTyping(true)}
+                onBlur={() => setTyping(false)}
+                type="text"
+                autoComplete="off"
+                placeholder={t("วันนี้คุณรู้สึกยังไง", "How are you feeling today?")}
+                // Opaque, and above the lights: the ring works by letting only
+                // the one pixel around this box show through.
+                className="relative block h-12 w-full rounded-full bg-white pl-5 pr-24 text-sm text-brand-ink shadow-xs outline-hidden placeholder:text-slate-400 md:h-14 md:text-base"
+              />
+            </HaloField>
             {/* Two buttons share the right edge: the photo first because it
                 is the longer road (pick, shrink, hand over), then send. */}
-            <span className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center md:right-2">
+            <span className="absolute right-1.5 top-1/2 z-10 flex -translate-y-1/2 items-center md:right-2">
               <input
                 ref={fileRef}
                 type="file"
