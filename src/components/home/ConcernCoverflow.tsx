@@ -143,7 +143,7 @@ export default function ConcernCoverflow() {
                 zIndex: p.z,
                 opacity: p.opacity,
               }}
-              className="absolute left-1/2 top-1/2 block aspect-[6/5] w-[min(74vw,400px)] overflow-hidden rounded-[22px] bg-white shadow-card transition-[transform,opacity] duration-500 ease-out motion-reduce:transition-none"
+              className="absolute left-1/2 top-1/2 block aspect-[6/5] w-[min(72vw,400px)] overflow-hidden rounded-[22px] bg-white shadow-card transition-[transform,opacity] duration-500 ease-out motion-reduce:transition-none md:w-[min(74vw,400px)]"
             >
               <Image
                 src={concernImage(c.slug)}
@@ -162,7 +162,12 @@ export default function ConcernCoverflow() {
           type="button"
           onClick={take(() => step(-1))}
           aria-label="ปัญหาผิวก่อนหน้า"
-          className="absolute left-3 top-1/2 z-40 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-ink shadow-card transition-colors hover:bg-white md:left-8 lg:left-16"
+          // On a phone the arrow and the card were both as far out as they
+          // could go and still landed on each other — 40px of button from
+          // 12px in, against a card starting at 49px. A size smaller, two
+          // pixels further out and a slightly narrower card puts 8px of air
+          // between them on each side.
+          className="absolute left-2 top-1/2 z-40 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-ink shadow-card transition-colors hover:bg-white md:left-8 md:h-10 md:w-10 lg:left-16"
         >
           <ChevronLeft size={20} />
         </button>
@@ -170,7 +175,7 @@ export default function ConcernCoverflow() {
           type="button"
           onClick={take(() => step(1))}
           aria-label="ปัญหาผิวถัดไป"
-          className="absolute right-3 top-1/2 z-40 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-ink shadow-card transition-colors hover:bg-white md:right-8 lg:right-16"
+          className="absolute right-2 top-1/2 z-40 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-ink shadow-card transition-colors hover:bg-white md:right-8 md:h-10 md:w-10 lg:right-16"
         >
           <ChevronRight size={20} />
         </button>
@@ -202,7 +207,7 @@ export default function ConcernCoverflow() {
                     // Two and a half on a phone, three and a half on a
                     // tablet, six and a half on a desktop — the part-card is
                     // what says the rail keeps going.
-                    className="w-[calc((100%-1.5rem)/2.5)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-6rem)/6.5)]"
+                    className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-6rem)/6.5)]"
                   >
                     <ProductCard product={p} />
                   </li>

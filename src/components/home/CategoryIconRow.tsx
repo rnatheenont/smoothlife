@@ -50,12 +50,15 @@ export default function CategoryIconRow() {
           than wrapping: a second line of two or three orphans is worse than a
           row that visibly continues, and the first card peeking in from the
           right is what tells a thumb there is more. */}
-      <ul className="mx-auto flex max-w-[1512px] gap-5 overflow-x-auto scroll-smooth px-4 py-5 scrollbar-none md:px-6 lg:justify-center lg:gap-[clamp(1rem,2.6vw,2.4rem)] lg:overflow-visible">
+      <ul className="mx-auto flex max-w-[1512px] gap-3 overflow-x-auto scroll-smooth px-4 py-5 scrollbar-none md:gap-5 md:px-6 lg:justify-center lg:gap-[clamp(1rem,2.6vw,2.4rem)] lg:overflow-visible">
         {shortcuts.map((s) => (
           <li key={s.href} className="shrink-0">
             <Link
               href={s.href}
-              className="group flex w-[86px] flex-col items-center gap-2.5 lg:w-[100px]"
+              // 72px on a phone against a 68px disc: the tile was 86px wide
+              // and the gap 20px, which put 38px of nothing between two
+              // discs — a row that read as scattered rather than as a set.
+              className="group flex w-[72px] flex-col items-center gap-2.5 md:w-[86px] lg:w-[100px]"
             >
               {s.word ? (
                 <span className="grid h-[68px] w-[68px] place-items-center rounded-full bg-brand-gradient bg-[length:200%_100%] text-[21px] font-semibold text-white shadow-[0_6px_16px_rgba(0,168,123,0.28)] transition-transform duration-300 animate-gradientPan group-hover:scale-105 group-active:scale-95 lg:h-[88px] lg:w-[88px] lg:text-[27px]">
