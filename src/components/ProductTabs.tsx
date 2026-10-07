@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRailFade } from "@/lib/use-rail-fade";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Product } from "@/data/types";
@@ -16,6 +17,9 @@ export default function ProductTabs({ tabs }: { tabs: ProductTab[] }) {
   const nonEmpty = tabs.filter((t) => t.products.length > 0);
   const [active, setActive] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  // The seventh card dissolves at the edge rather than being sliced — same
+  // treatment as the brand, concern and article shelves.
+  const rail = useRailFade(scrollerRef);
   const [progress, setProgress] = useState(0);
   if (nonEmpty.length === 0) return null;
   const current = nonEmpty[Math.min(active, nonEmpty.length - 1)];
@@ -75,6 +79,7 @@ export default function ProductTabs({ tabs }: { tabs: ProductTab[] }) {
           key={current.label}
           ref={scrollerRef}
           onScroll={updateProgress}
+          style={rail.style}
           className="flex items-stretch gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none px-4 pb-1 scroll-pl-4 md:-mx-2 md:-my-2 md:gap-6 md:px-2 md:py-2 md:scroll-pl-2"
         >
           {current.products.map((p) => (

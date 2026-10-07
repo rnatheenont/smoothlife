@@ -151,8 +151,7 @@ export default function ConcernCoverflow() {
           row's, for the same reason: the question "what do you sell for
           this" is answered on the page that asked it. */}
       <div className="mx-auto mt-6 max-w-[1512px] px-4 md:px-6">
-        <div className="rounded-2xl bg-white p-3 shadow-card md:p-6">
-          {shelf.length > 0 ? (
+                  {shelf.length > 0 ? (
             <>
               {/* A rail at every width, and on a wide screen it is cut to
                   show four and a half: the half card is what says there is
@@ -192,7 +191,6 @@ export default function ConcernCoverflow() {
               </Link>
             </p>
           )}
-        </div>
       </div>
 
       <div className="mt-6 flex justify-center gap-2">

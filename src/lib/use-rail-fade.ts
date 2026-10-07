@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, RefObject } from "react";
 
 // A horizontal rail whose cut-off card fades out instead of being sliced.
 //
@@ -20,8 +20,13 @@ const FADE = 56;
 /** Scroll positions this close to an end count as being at it. */
 const EPSILON = 4;
 
-export function useRailFade() {
-  const ref = useRef<HTMLUListElement>(null);
+/** Pass a ref when the rail already has one of its own (ProductTabs keeps
+ *  one for its arrows and progress bar); otherwise take the one returned. */
+export function useRailFade<T extends HTMLElement = HTMLUListElement>(
+  external?: RefObject<T | null>
+) {
+  const own = useRef<T>(null);
+  const ref = external ?? own;
   const [edges, setEdges] = useState({ start: false, end: false });
 
   const sync = useCallback(() => {
@@ -30,22 +35,35 @@ export function useRailFade() {
     const max = el.scrollWidth - el.clientWidth;
     const next = { start: el.scrollLeft > EPSILON, end: el.scrollLeft < max - EPSILON };
     setEdges((prev) => (prev.start === next.start && prev.end === next.end ? prev : next));
-  }, []);
+  }, [ref]);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     el.addEventListener("scroll", sync, { passive: true });
-    // The observer fires once when it starts watching, which is also the
-    // first measurement — so nothing has to call sync() from the effect body
-    // and set state during the render that scheduled it.
     const ro = new ResizeObserver(sync);
     ro.observe(el);
     return () => {
       el.removeEventListener("scroll", sync);
       ro.disconnect();
     };
-  }, [sync]);
+  }, [ref, sync]);
+
+  // Measured again after every render, on the next frame.
+  //
+  // A ResizeObserver on the rail is not enough on its own: what decides
+  // whether there is anything to fade towards is scrollWidth, and that
+  // changes when the cards inside change — picking another brand, another
+  // concern, another tab — while the rail's own box stays exactly the size
+  // it was. Without this the fade stayed off on a shelf that was plainly
+  // overflowing.
+  //
+  // Cheap to do unconditionally: one frame, and sync only sets state when
+  // the answer actually changed, so it settles immediately.
+  useEffect(() => {
+    const frame = requestAnimationFrame(sync);
+    return () => cancelAnimationFrame(frame);
+  });
 
   const left = edges.start ? FADE : 0;
   const right = edges.end ? FADE : 0;

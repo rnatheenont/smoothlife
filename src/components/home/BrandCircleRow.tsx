@@ -111,15 +111,6 @@ export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
                   {b.name}
                 </span>
               </button>
-              {/* The notch belongs to the circle, not to the panel: kept here
-                  it stays under whichever one is chosen without anything
-                  having to measure where that is. */}
-              <span
-                aria-hidden="true"
-                className={`mx-auto mt-3 block h-0 w-0 border-x-[10px] border-b-[10px] border-x-transparent border-b-white transition-opacity duration-200 ${
-                  on ? "opacity-100" : "opacity-0"
-                }`}
-              />
             </li>
           );
         })}
@@ -131,8 +122,7 @@ export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
         aria-labelledby={`brand-tab-${brand.slug}`}
         className="mx-auto max-w-[1512px] px-4 md:px-6"
       >
-        <div className="rounded-2xl bg-white p-3 shadow-card md:p-6">
-          {shelf.length > 0 ? (
+                  {shelf.length > 0 ? (
             <>
               {/* A rail on a phone, five across on a desktop — the same shape
                   every other shelf on this page takes. */}
@@ -174,7 +164,6 @@ export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
               </Link>
             </p>
           )}
-        </div>
       </div>
     </div>
   );

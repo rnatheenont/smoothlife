@@ -270,8 +270,7 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
         broken, where no panel just says this one has nothing to sell. */}
     {shelf.length > 0 && active && (
       <div className="mx-auto mt-6 max-w-[1512px] px-4 md:px-6">
-        <div className="rounded-2xl bg-white p-3 shadow-card md:p-6">
-          <ul // -m-2 p-2: overflow-x-auto clips on both axes, so without room
+                  <ul // -m-2 p-2: overflow-x-auto clips on both axes, so without room
                   // inside it the cards' shadows and rounded corners were being
                   // sliced flat against the top and bottom of the rail.
                   ref={rail.ref}
@@ -293,7 +292,6 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
             อ่านบทความนี้
             <ChevronRight size={16} />
           </Link>
-        </div>
       </div>
     )}
     </>
