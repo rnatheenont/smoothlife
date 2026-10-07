@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Loader2, Sparkles } from "lucide-react";
-import HaloField from "@/components/home/HaloField";
+import { HaloField } from "@/components/Halo";
 import { useLang } from "@/lib/lang-context";
 import { useRecentlyViewed } from "@/lib/recently-viewed-context";
 import { getProductBySlug } from "@/data/products";
