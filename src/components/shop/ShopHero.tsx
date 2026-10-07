@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { BadgeCheck, RotateCcw, Truck } from "lucide-react";
 import SkyClouds from "@/components/SkyClouds";
 
@@ -16,12 +15,10 @@ export default function ShopHero({
   eyebrow = "PRODUCTS",
   title,
   subtitle,
-  image,
 }: {
   eyebrow?: string;
   title: string;
   subtitle: string;
-  image?: string;
 }) {
   return (
     // The same sky the home page opens with. The banner used to be a flat
@@ -40,12 +37,6 @@ export default function ShopHero({
           <h1 className="mt-1.5 text-2xl font-extrabold text-brand-1000 md:text-4xl">{title}</h1>
           <p className="mt-1.5 text-sm text-slate-600 md:text-base">{subtitle}</p>
         </div>
-
-        {image && (
-          <span className="relative hidden h-32 w-48 shrink-0 md:block lg:h-40 lg:w-64">
-            <Image src={image} alt="" fill sizes="256px" className="object-contain mix-blend-multiply" />
-          </span>
-        )}
 
         <ul className="hidden shrink-0 gap-2 rounded-2xl bg-white/80 p-4 shadow-xs backdrop-blur-md sm:flex">
           {PROMISES.map((p) => (
