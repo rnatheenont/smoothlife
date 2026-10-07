@@ -1,11 +1,10 @@
 "use client";
 
-import SectionHeading from "@/components/SectionHeading";
-
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Play, Volume2, VolumeX, ShoppingBag, Check } from "lucide-react";
+import SocialBubbles from "@/components/home/SocialBubbles";
 import { Product } from "@/data/types";
 import { useCart } from "@/lib/cart-context";
 
@@ -83,7 +82,7 @@ function ClipCard({
   return (
     <div
       ref={cardRef}
-      className="w-[220px] shrink-0 snap-center overflow-hidden rounded-2xl bg-white shadow-card md:w-[calc((100%-3rem)/3)] lg:w-[calc((100%-6rem)/5)]"
+      className="overflow-hidden rounded-2xl bg-white shadow-card"
     >
       <div
         role="button"
@@ -126,6 +125,11 @@ function ClipCard({
         </button>
       </div>
 
+      {/* Only the clip that is playing carries its product. On the cards
+          either side it would be a line of unreadable text under a shrunken,
+          half-faded video — the design shows those as plain frames, and that
+          is also what they are good for. */}
+      {active && (
       <div className="flex items-center gap-2 border-t border-slate-100 pl-3 pr-2 py-2">
         <Link
           href={clip.product ? `/product/${clip.product.slug}` : "/shop"}
@@ -154,161 +158,130 @@ function ClipCard({
           </button>
         )}
       </div>
+      )}
     </div>
   );
 }
 
+
+const SWIPE_THRESHOLD = 40;
+
+/** Where a card sits, given how far it is from the one in the middle. No
+ *  rotation here, unlike the concern stack: these are phone-shaped videos
+ *  and tilting them reads as a broken screen rather than as depth. */
+function placement(offset: number) {
+  const side = Math.sign(offset);
+  const distance = Math.abs(offset);
+  if (distance === 0) return { x: 0, scale: 1, z: 30, opacity: 1, shown: true };
+  if (distance === 1) return { x: side * 92, scale: 0.78, z: 20, opacity: 0.55, shown: true };
+  if (distance === 2) return { x: side * 168, scale: 0.66, z: 10, opacity: 0.3, shown: true };
+  return { x: side * 230, scale: 0.6, z: 0, opacity: 0, shown: false };
+}
+
 export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: SocialClip[]; initialIndex?: number }) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [progress, setProgress] = useState(0);
-  const [activeIndex, setActiveIndex] = useState(() =>
+  const [active, setActive] = useState(() =>
     clips.length && initialIndex >= 0 ? initialIndex % clips.length : 0
   );
+  const dragX = useRef<number | null>(null);
+  const count = clips.length;
 
-  function updateProgress() {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    setProgress(max > 0 ? el.scrollLeft / max : 0);
+  // Shortest way round, so stepping off either end wraps instead of flying
+  // the whole stack across the screen.
+  function offsetOf(i: number) {
+    let d = i - active;
+    if (d > count / 2) d -= count;
+    if (d < -count / 2) d += count;
+    return d;
+  }
+  const step = (d: number) => setActive((i) => (i + d + count) % count);
+
+  function onPointerDown(e: ReactPointerEvent) {
+    dragX.current = e.clientX;
+  }
+  function onPointerUp(e: ReactPointerEvent) {
+    const from = dragX.current;
+    dragX.current = null;
+    if (from === null) return;
+    const dx = e.clientX - from;
+    if (Math.abs(dx) >= SWIPE_THRESHOLD) step(dx < 0 ? 1 : -1);
   }
 
-  // Programmatic scrollIntoView (below) fires the same intersection
-  // observer that's meant to detect the *visitor's own* drag/swipe — mid-
-  // animation, a different card can briefly cross the 0.6 threshold and
-  // overrule the index goTo() just set, flipping playback to the wrong
-  // clip a few hundred ms later. Suppress the observer for the duration
-  // of any programmatic scroll so only genuine user scrolling can steer it.
-  const suppressObserverRef = useRef(false);
-  const suppressTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  // Single source of truth for "which card plays" — both the auto-advance
-  // on video end and the prev/next buttons go through this, so they can
-  // never fall out of sync with each other.
-  const goTo = useCallback(
-    (index: number) => {
-      if (clips.length === 0) return;
-      const clamped = (index + clips.length) % clips.length;
-      setActiveIndex(clamped);
-      suppressObserverRef.current = true;
-      clearTimeout(suppressTimerRef.current);
-      suppressTimerRef.current = setTimeout(() => {
-        suppressObserverRef.current = false;
-      }, 700);
-      // scrollIntoView's block:"nearest" can still drag the whole *page*
-      // vertically if the card isn't fully in view when auto-advance fires
-      // (e.g. the section is only partly scrolled into view) — scrolling the
-      // carousel's own scrollLeft directly touches only that one element,
-      // never the document, so autoplay can never yank the page around.
-      const scroller = scrollerRef.current;
-      const card = cardRefs.current[clamped];
-      if (scroller && card) {
-        const scrollerRect = scroller.getBoundingClientRect();
-        const cardRect = card.getBoundingClientRect();
-        const delta = cardRect.left + cardRect.width / 2 - (scrollerRect.left + scrollerRect.width / 2);
-        scroller.scrollTo({ left: scroller.scrollLeft + delta, behavior: "smooth" });
-      }
-    },
-    [clips.length]
-  );
-
-  // Land directly on the initial card (no smooth-scroll animation playing
-  // out as the page loads) — same centering math as goTo, just instant.
-  useEffect(() => {
-    suppressObserverRef.current = true;
-    const scroller = scrollerRef.current;
-    const card = cardRefs.current[activeIndex];
-    if (scroller && card) {
-      const scrollerRect = scroller.getBoundingClientRect();
-      const cardRect = card.getBoundingClientRect();
-      const delta = cardRect.left + cardRect.width / 2 - (scrollerRect.left + scrollerRect.width / 2);
-      scroller.scrollTo({ left: scroller.scrollLeft + delta, behavior: "auto" });
-    }
-    clearTimeout(suppressTimerRef.current);
-    suppressTimerRef.current = setTimeout(() => {
-      suppressObserverRef.current = false;
-    }, 700);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Also detect manual drag/swipe/scroll (not just programmatic goTo calls)
-  // so whichever card the visitor scrolls to becomes the one that plays.
-  useEffect(() => {
-    const root = scrollerRef.current;
-    if (!root || clips.length === 0) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (suppressObserverRef.current) return;
-        const mostVisible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (!mostVisible) return;
-        const idx = cardRefs.current.indexOf(mostVisible.target as HTMLDivElement);
-        if (idx !== -1) setActiveIndex(idx);
-      },
-      { root, threshold: [0.6] }
-    );
-    cardRefs.current.forEach((card) => card && observer.observe(card));
-    return () => observer.disconnect();
-  }, [clips.length]);
-
-  if (clips.length === 0) return null;
+  if (count === 0) return null;
 
   return (
-    <section className="py-7 md:py-14 lg:py-16 overflow-hidden">
-      {/* Same heading as every other section — left-aligned, one weight —
-          so the page reads as one voice rather than a stack of templates. */}
-      <div className="container-page">
-        <SectionHeading title="กระแสฮอตบนโซเชียล" />
-      </div>
-      {/* Phones: one clip centred with its neighbours peeking in. Tablet and
-          up: the row sits in the same 1280px column as the heading and the
-          controls, whole clips only (3 on tablet, 5 on desktop), matching
-          the product row above. The -m/p-2 pair keeps card shadows from
-          being clipped by the scroller without moving the alignment. */}
-      <div className="md:mx-auto md:max-w-[1280px] md:px-6">
+    <section className="relative isolate overflow-hidden py-7 md:py-14 lg:py-16">
+      <SocialBubbles />
+
+      {/* Centred, unlike the other section headings: this stack is centred
+          on the page and a heading hanging off to the left of it reads as
+          belonging to something else. */}
+      <h2 className="container-page text-center text-xl font-bold text-brand-ink md:text-2xl">
+        กระแสฮอตบนโซเชียล
+      </h2>
+
       <div
-        ref={scrollerRef}
-        onScroll={updateProgress}
-        className="flex gap-4 overflow-x-auto scrollbar-none snap-x px-[calc((100%-220px)/2)] md:-mx-2 md:-my-2 md:gap-6 md:px-2 md:py-2"
+        className="relative mx-auto mt-6 h-[520px] w-full max-w-[1512px] touch-pan-y select-none md:mt-9 md:h-[600px]"
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => (dragX.current = null)}
       >
-        {clips.map((clip, i) => (
-          <ClipCard
+        {clips.map((clip, i) => {
+          const p = placement(offsetOf(i));
+          return (
+            <div
+              key={i}
+              aria-hidden={!p.shown}
+              style={{
+                transform: `translate(-50%, -50%) translate(${p.x}%, 0) scale(${p.scale})`,
+                zIndex: p.z,
+                opacity: p.opacity,
+              }}
+              className="absolute left-1/2 top-1/2 w-[min(64vw,300px)] transition-[transform,opacity] duration-500 ease-out motion-reduce:transition-none"
+            >
+              <ClipCard
+                clip={clip}
+                active={i === active}
+                onEnded={() => step(1)}
+                onSelect={() => setActive(i)}
+                cardRef={() => {}}
+              />
+            </div>
+          );
+        })}
+
+        {/* Outside the stack, so a press never lands on whichever card
+            happens to be underneath them. */}
+        <button
+          type="button"
+          onClick={() => step(-1)}
+          aria-label="คลิปก่อนหน้า"
+          className="absolute left-3 top-1/2 z-40 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-ink shadow-card transition-colors hover:bg-white md:left-8 lg:left-16"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <button
+          type="button"
+          onClick={() => step(1)}
+          aria-label="คลิปถัดไป"
+          className="absolute right-3 top-1/2 z-40 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-ink shadow-card transition-colors hover:bg-white md:right-8 lg:right-16"
+        >
+          <ChevronRight size={20} />
+        </button>
+      </div>
+
+      <div className="mt-6 flex justify-center gap-2">
+        {clips.map((_, i) => (
+          <button
             key={i}
-            clip={clip}
-            active={i === activeIndex}
-            onEnded={() => goTo(i + 1)}
-            onSelect={() => goTo(i)}
-            cardRef={(el) => {
-              cardRefs.current[i] = el;
-            }}
+            type="button"
+            onClick={() => setActive(i)}
+            aria-label={`คลิปที่ ${i + 1}`}
+            aria-current={i === active || undefined}
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              i === active ? "w-7 bg-brand-teal" : "w-4 bg-slate-300 hover:bg-slate-400"
+            }`}
           />
         ))}
-      </div>
-      </div>
-      <div className="mt-5 flex items-center gap-4 px-4 md:mx-auto md:max-w-[1280px] md:px-6">
-        <div className="h-[2px] flex-1 overflow-hidden rounded-full bg-slate-200">
-          <div
-            className="h-full rounded-full bg-brand-emerald transition-[width]"
-            style={{ width: `${Math.max(8, progress * 100)}%` }}
-          />
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            onClick={() => goTo(activeIndex - 1)}
-            aria-label="ก่อนหน้า"
-            className="grid h-8 w-8 place-items-center rounded-full border border-slate-200 hover:border-brand-teal transition-colors"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            onClick={() => goTo(activeIndex + 1)}
-            aria-label="ถัดไป"
-            className="grid h-8 w-8 place-items-center rounded-full border border-slate-200 hover:border-brand-teal transition-colors"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
       </div>
     </section>
   );

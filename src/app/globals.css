@@ -186,6 +186,7 @@
   --animate-headBob: headBob 6s ease-in-out infinite;
   --animate-gradientPan: gradientPan 6s ease-in-out infinite;
   --animate-driftSlow: driftSlow 40s ease-in-out infinite;
+  --animate-floatUp: floatUp 22s linear infinite;
 
   @keyframes fadeUp {
     0% {
@@ -257,6 +258,29 @@
      up-and-down, which on a head reads as a balloon; the tilt is what makes
      it a head, and the four uneven stops are what keep it from reading as a
      metronome. */
+  /* A reaction rising up the side of a live video: in from below, leaning
+     as it climbs, gone before it reaches the top. --sway is set per heart so
+     no two take the same path. */
+  @keyframes floatUp {
+    0% {
+      transform: translate(0, 40px) scale(0.6);
+      opacity: 0;
+    }
+    18% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      /* A touch further than the band is tall, so a heart is always out of
+         sight by the time it reaches the top edge rather than being clipped
+         in mid-air. Not a vh: the band is a fixed height, and on a tall
+         window a vh would carry them past it while still fully opaque. */
+      transform: translate(var(--sway, 0px), -780px) scale(1);
+      opacity: 0;
+    }
+  }
   /* A wash of colour that never settles. Translating in percentages keeps
      each disc's path proportional to its own size, so one set of numbers
      works for all three whatever the band's shape. */
