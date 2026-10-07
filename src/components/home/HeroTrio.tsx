@@ -167,16 +167,21 @@ export default function HeroTrio({ banners }: { banners: HeroBanner[] }) {
       </div>
 
       {slides && (
-        // One dot per banner now that the step is one banner. The lit dot is
-        // the leftmost of the three on screen.
-        <div className="mt-4 flex justify-center gap-2">
+        // One dot per banner now that the step is one banner, and the lit one
+        // is the banner in the middle — that is the one being shown; the
+        // other two on screen are where it came from and where it is going.
+        //
+        // mt-9, not mt-4, because the middle tile is scaled up and the row's
+        // layout box is not: it hangs about 18px below where the row ends on
+        // paper, and at mt-4 it was printing over the dots.
+        <div className="mt-9 flex justify-center gap-2">
           {banners.map((b, i) => {
-            const active = (((index % n) + n) % n) === i;
+            const active = ((((index + 1) % n) + n) % n) === i;
             return (
               <button
                 key={b.slug}
                 type="button"
-                onClick={() => setIndex(n + i)}
+                onClick={() => setIndex(n + i - 1)}
                 aria-label={`แบนเนอร์ที่ ${i + 1}`}
                 aria-current={active || undefined}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
