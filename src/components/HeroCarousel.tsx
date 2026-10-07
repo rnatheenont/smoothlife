@@ -190,7 +190,10 @@ export default function HeroCarousel({
     // every slide fills the width with nothing trimmed off it. Past that a
     // cap stops a very large monitor from opening on a thousand pixels of
     // banner and no shop.
-    <div>
+    // isolate: the slides carry z-indexes of their own for the coverflow,
+    // and without a stacking context here they compete with the rest of the
+    // page — the hero band's search results opened underneath them.
+    <div className="isolate">
       <div
         ref={frameRef}
         // The frame's own colour from md up only. It is there for a slide

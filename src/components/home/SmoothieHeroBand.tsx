@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Loader2, Sparkles } from "lucide-react";
 import { HaloField } from "@/components/Halo";
+import SearchSuggestions from "@/components/SearchSuggestions";
 import { useLang } from "@/lib/lang-context";
 import { useRecentlyViewed } from "@/lib/recently-viewed-context";
 import { getProductBySlug } from "@/data/products";
@@ -90,6 +91,21 @@ export default function SmoothieHeroBand() {
   // rather than the old one sinking back down past the new one.
   const [{ cur, prev }, setLine] = useState({ cur: 0, prev: -1 });
   const [typing, setTyping] = useState(false);
+  // The field asks the AI a question on submit, but what people type into it
+  // is very often a product or a brand. One character in, the shop answers
+  // that reading too — without taking the question away, which is still what
+  // Enter sends.
+  const [showHits, setShowHits] = useState(false);
+  const askRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (!showHits) return;
+    function outside(e: MouseEvent) {
+      if (askRef.current && !askRef.current.contains(e.target as Node)) setShowHits(false);
+    }
+    document.addEventListener("mousedown", outside);
+    return () => document.removeEventListener("mousedown", outside);
+  }, [showHits]);
   useEffect(() => {
     if (typing) return;
     const timer = setInterval(
@@ -117,6 +133,7 @@ export default function SmoothieHeroBand() {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    setShowHits(false);
     go(q.trim());
   }
 
@@ -144,7 +161,15 @@ export default function SmoothieHeroBand() {
     // follows meets it without a seam. isolate keeps the sky and the wordmark
     // — both on negative z — above this background rather than behind the
     // page.
-    <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#cbe8f7_0%,#e2f3fb_40%,#f5fbfe_72%,#ffffff_100%)]">
+    // overflow-x-clip, not overflow-hidden: the sky and the drifting
+    // wordmark still may not widen the page, but the search results under
+    // the field have to be able to hang below the band. `hidden` on one axis
+    // forces the other to clip too; `clip` does not.
+    // z-20 so the results can hang over the banner row below. The band is
+    // `isolate`, so its own sky and wordmark stay on their negative layers
+    // inside it; what this lifts is the band as a whole, above a carousel
+    // whose cards carry z-indexes of their own. Still under the header.
+    <section className="relative isolate z-20 overflow-x-clip bg-[linear-gradient(180deg,#cbe8f7_0%,#e2f3fb_40%,#f5fbfe_72%,#ffffff_100%)]">
       <SkyClouds />
       {/* The wordmark drifts left on a loop rather than sitting still.
           Two identical copies inside a track as wide as they are, moving
@@ -206,7 +231,7 @@ export default function SmoothieHeroBand() {
             ))}
           </h2>
 
-          <form onSubmit={submit} className="relative mx-auto mt-5 w-full max-w-[460px] md:mt-7">
+          <form ref={askRef} onSubmit={submit} className="relative z-20 mx-auto mt-5 w-full max-w-[460px] md:mt-7">
             <label htmlFor="smoothie-hero-ask" className="sr-only">
               {t("ถามน้อง Smoothie", "Ask Smoothie")}
             </label>
@@ -214,8 +239,14 @@ export default function SmoothieHeroBand() {
               <input
                 id="smoothie-hero-ask"
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
-                onFocus={() => setTyping(true)}
+                onChange={(e) => {
+                  setQ(e.target.value);
+                  setShowHits(true);
+                }}
+                onFocus={() => {
+                  setTyping(true);
+                  if (q.trim()) setShowHits(true);
+                }}
                 onBlur={() => setTyping(false)}
                 type="text"
                 autoComplete="off"
@@ -252,6 +283,18 @@ export default function SmoothieHeroBand() {
                 <Sparkles size={22} className="fill-current" />
               </button>
             </span>
+            {showHits && (
+              <SearchSuggestions
+                query={q}
+                // Four, not six: this field sits halfway down the band, and
+                // six results opened past the bottom of a 860px window.
+                limit={4}
+                onSelect={() => {
+                  setShowHits(false);
+                  setQ("");
+                }}
+              />
+            )}
           </form>
 
           {photoError && (
