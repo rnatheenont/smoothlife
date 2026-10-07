@@ -196,7 +196,9 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
           logo and the cart near the edges of a 1512 screen, so the bar has
           its own bed rather than container-page's. */}
       <div className="mx-auto flex max-w-[1512px] items-center gap-3 px-4 py-2 md:gap-6 md:px-6 lg:py-2.5">
-        <button className="lg:hidden shrink-0" onClick={() => setOpen(true)} aria-label="Open menu">
+        {/* -m-2.5 p-2.5: 44px of thumb around a 24px icon, without the
+            padding pushing anything in the row along. */}
+        <button className="-m-2.5 shrink-0 p-2.5 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
           <Menu size={24} />
         </button>
 
@@ -266,14 +268,18 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
           <Link
             href="/account/wishlist"
             aria-label="รายการโปรด"
-            className="relative lg:hidden text-slate-500"
+            className="-m-3 p-3 text-slate-500 lg:hidden"
           >
-            <Heart size={22} />
-            {wishlistSlugs.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-brand-sky px-1 text-[9px] font-bold text-white">
-                {wishlistSlugs.length}
-              </span>
-            )}
+            {/* The count hangs off the heart, not off the new padding, so it
+                stays on the icon rather than drifting into the row. */}
+            <span className="relative block">
+              <Heart size={22} />
+              {wishlistSlugs.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-brand-sky px-1 text-[9px] font-bold text-white">
+                  {wishlistSlugs.length}
+                </span>
+              )}
+            </span>
           </Link>
           <div className="lg:hidden">
             <NotificationBell />

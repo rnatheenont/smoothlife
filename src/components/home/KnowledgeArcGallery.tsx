@@ -29,6 +29,9 @@ export type ArcItem = {
 // selection, the unselected ones are things to pick, not things to open.
 
 const SPEED = 28; // px per second of auto-drift
+const ARC_FADE =
+  "linear-gradient(to right, transparent 0, #000 var(--arc-fade), #000 calc(100% - var(--arc-fade)), transparent 100%)";
+
 const MIN_CARDS = 9; // enough to fill a 1920px row with no gap at the seam
 const DRAG_THRESHOLD = 6; // px before a press becomes a drag (and not a click)
 
@@ -222,7 +225,15 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
     <div
       ref={stageRef}
       // pan-y: a sideways swipe moves the row, an up/down swipe still scrolls the page.
-      className="relative h-[230px] cursor-grab touch-pan-y select-none overflow-hidden opacity-0 transition-opacity duration-500 active:cursor-grabbing sm:h-[340px]"
+      className="relative h-[230px] cursor-grab touch-pan-y select-none overflow-hidden opacity-0 transition-opacity duration-500 active:cursor-grabbing sm:h-[340px] [--arc-fade:40px] md:[--arc-fade:72px]"
+      // The row never ends, so both edges are always a card cut in half. On
+      // a wide screen that card is far from the eye and the cut passes for
+      // the row continuing; on a phone, where only about one and a half
+      // cards fit, it was a headline sliced mid-word at both edges. A
+      // gradient mask says "this carries on" instead of "this is broken",
+      // and it is narrower on a phone because 72px of fade out of 375 would
+      // be most of the card that is actually readable.
+      style={{ maskImage: ARC_FADE, WebkitMaskImage: ARC_FADE }}
     >
       {cards.map((a, i) => {
         const repeat = a.copy > 0;

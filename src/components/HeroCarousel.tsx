@@ -292,29 +292,35 @@ export default function HeroCarousel({
           right where the dots want to be. On the page below it obscures
           nothing and can take its colours from the page. */}
       {heroBanners.length > 1 && (
-        <div className="flex items-center justify-center gap-1.5 py-3">
+        // The dot you see is 20x6; the button around it is 44 tall, because
+        // a thumb cannot be asked to find six pixels. The padding is on the
+        // button rather than on the row, which is where it was before — a
+        // row's padding makes the row taller and the target no bigger.
+        <div className="flex items-center justify-center gap-0.5">
           {heroBanners.map((b, i) => (
             <button
               key={b.slug}
               onClick={() => showAt(i)}
               aria-label={`ไปที่แบนเนอร์ ${i + 1}`}
-              className="relative h-1.5 w-5 overflow-hidden rounded-full bg-slate-200"
+              className="grid h-11 w-6 place-items-center"
             >
-              {i === index && (
-                <span
-                  key={`${b.slug}-${paused}`}
-                  className="absolute inset-y-0 left-0 rounded-full bg-brand-gradient"
-                  style={{
-                    animation: paused
-                      ? "none"
-                      : `heroFill ${AUTO_ROTATE_MS}ms linear forwards`,
-                    width: paused ? "100%" : undefined,
-                  }}
-                />
-              )}
-              {i < index && (
-                <span className="absolute inset-0 rounded-full bg-brand-gradient" />
-              )}
+              <span className="relative block h-1.5 w-5 overflow-hidden rounded-full bg-slate-200">
+                {i === index && (
+                  <span
+                    key={`${b.slug}-${paused}`}
+                    className="absolute inset-y-0 left-0 rounded-full bg-brand-gradient"
+                    style={{
+                      animation: paused
+                        ? "none"
+                        : `heroFill ${AUTO_ROTATE_MS}ms linear forwards`,
+                      width: paused ? "100%" : undefined,
+                    }}
+                  />
+                )}
+                {i < index && (
+                  <span className="absolute inset-0 rounded-full bg-brand-gradient" />
+                )}
+              </span>
             </button>
           ))}
         </div>
