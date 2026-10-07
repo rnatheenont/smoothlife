@@ -155,10 +155,10 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
                   <span className="relative block h-7 w-7 shrink-0 overflow-hidden rounded-full bg-slate-100">
                     <Image src={p.image} alt="" fill sizes="28px" className="object-cover" />
                   </span>
-                  <span translate="no" className="max-w-[190px] truncate text-[11px] font-medium text-slate-600">
+                  <span translate="no" className="max-w-[210px] truncate text-[12.5px] font-medium text-slate-600">
                     {p.name}
                   </span>
-                  <span translate="no" className="text-[11px] font-bold tabular-nums text-brand-800">
+                  <span translate="no" className="text-[13px] font-bold tabular-nums text-brand-800">
                     {formatTHB(p.price)}
                   </span>
                 </Link>
