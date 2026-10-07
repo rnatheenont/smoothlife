@@ -219,7 +219,13 @@ export default function ProductCard({ product }: { product: Product }) {
               onClick={handleAdd}
               className={clsx(
                 "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full text-[13px] font-bold text-white transition active:scale-[0.97] md:h-10 md:text-sm",
-                added ? "bg-brand-emerald" : "bg-brand-action hover:bg-brand-action-hover"
+                // The drifting gradient needs a background wider than the
+                // button (bg-[length:200%_100%]) or there is nowhere for the
+                // position to travel. Confirmation stays flat: "เพิ่มแล้ว" is
+                // a state, and a state that keeps moving reads as still busy.
+                added
+                  ? "bg-brand-emerald"
+                  : "animate-gradientPan bg-brand-gradient bg-[length:200%_100%] hover:brightness-105"
               )}
             >
               {added && <Check size={16} strokeWidth={2.75} />}
