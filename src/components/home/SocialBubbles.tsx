@@ -7,7 +7,8 @@
 //
 // Kept to the edges of the band on purpose. The stack of clips sits in the
 // middle and a heart crossing a face is a distraction, not an atmosphere, so
-// every one of them starts in the outer fifth of the width.
+// every one of them starts in the outer fifth or so of the width — which is
+// also what lets there be eighteen of them without the section looking busy.
 //
 // Decoration: aria-hidden, pointer-events-none, and each heart animates only
 // its own transform and opacity, so the lot of them cost a composited layer
@@ -27,14 +28,26 @@ type Heart = {
 };
 
 const HEARTS: Heart[] = [
-  { left: 4, size: 26, seconds: 19, delay: 0, sway: 26, colour: "rgba(0,179,155,0.30)" },
-  { left: 11, size: 16, seconds: 25, delay: 6, sway: -18, colour: "rgba(244,128,138,0.26)" },
-  { left: 17, size: 20, seconds: 22, delay: 12, sway: 14, colour: "rgba(0,174,239,0.24)" },
-  { left: 7, size: 13, seconds: 28, delay: 17, sway: -22, colour: "rgba(0,168,123,0.22)" },
-  { left: 83, size: 22, seconds: 21, delay: 3, sway: -24, colour: "rgba(244,128,138,0.28)" },
-  { left: 90, size: 15, seconds: 26, delay: 9, sway: 18, colour: "rgba(0,179,155,0.24)" },
-  { left: 95, size: 19, seconds: 23, delay: 15, sway: -12, colour: "rgba(0,174,239,0.22)" },
-  { left: 78, size: 12, seconds: 30, delay: 20, sway: 20, colour: "rgba(0,168,123,0.20)" },
+  // Left edge.
+  { left: 2, size: 26, seconds: 19, delay: 0, sway: 26, colour: "rgba(0,179,155,0.30)" },
+  { left: 6, size: 14, seconds: 27, delay: 11, sway: -20, colour: "rgba(0,168,123,0.22)" },
+  { left: 9, size: 18, seconds: 23, delay: 4, sway: 16, colour: "rgba(244,128,138,0.26)" },
+  { left: 12, size: 11, seconds: 31, delay: 19, sway: -14, colour: "rgba(0,174,239,0.20)" },
+  { left: 15, size: 22, seconds: 21, delay: 8, sway: 22, colour: "rgba(0,179,155,0.26)" },
+  { left: 18, size: 13, seconds: 29, delay: 15, sway: -24, colour: "rgba(244,128,138,0.20)" },
+  { left: 4, size: 19, seconds: 25, delay: 22, sway: 12, colour: "rgba(0,174,239,0.24)" },
+  { left: 21, size: 16, seconds: 33, delay: 6, sway: -18, colour: "rgba(0,168,123,0.18)" },
+  { left: 11, size: 24, seconds: 18, delay: 26, sway: -10, colour: "rgba(244,128,138,0.24)" },
+  // Right edge.
+  { left: 97, size: 23, seconds: 20, delay: 2, sway: -26, colour: "rgba(244,128,138,0.28)" },
+  { left: 93, size: 15, seconds: 26, delay: 13, sway: 18, colour: "rgba(0,179,155,0.24)" },
+  { left: 89, size: 20, seconds: 22, delay: 7, sway: -14, colour: "rgba(0,174,239,0.22)" },
+  { left: 86, size: 12, seconds: 30, delay: 20, sway: 22, colour: "rgba(0,168,123,0.20)" },
+  { left: 83, size: 25, seconds: 19, delay: 10, sway: -20, colour: "rgba(0,179,155,0.28)" },
+  { left: 80, size: 14, seconds: 28, delay: 17, sway: 15, colour: "rgba(244,128,138,0.22)" },
+  { left: 95, size: 17, seconds: 24, delay: 24, sway: 20, colour: "rgba(0,168,123,0.24)" },
+  { left: 77, size: 18, seconds: 32, delay: 5, sway: -16, colour: "rgba(0,174,239,0.18)" },
+  { left: 91, size: 21, seconds: 17, delay: 28, sway: 11, colour: "rgba(244,128,138,0.26)" },
 ];
 
 export default function SocialBubbles() {
@@ -42,7 +55,7 @@ export default function SocialBubbles() {
     <span aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
       {HEARTS.map((h) => (
         <span
-          key={`${h.left}-${h.size}`}
+          key={`${h.left}-${h.delay}`}
           className="absolute bottom-0 block animate-floatUp"
           style={{
             left: `${h.left}%`,
