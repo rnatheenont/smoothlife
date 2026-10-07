@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   ShoppingBag,
+  ShoppingCart,
   User,
   Menu,
   X,
@@ -16,6 +17,9 @@ import {
   HelpCircle,
   ChevronRight,
   Repeat,
+  Tag,
+  Percent,
+  Users,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useCart, useWishlist } from "@/lib/cart-context";
@@ -31,12 +35,35 @@ import BrandLogo from "@/components/BrandLogo";
 import MegaMenu from "@/components/nav/MegaMenu";
 import MobileShopMenu from "@/components/nav/MobileShopMenu";
 
+// The bar under the search box, on a screen with room for it. Five shop
+// links on the left — the first one opens the shop panel — and two support
+// links pushed over to the right.
+const deskNav = [
+  { href: "/brands", th: "แบรนด์ทั้งหมด", en: "All brands", mega: true },
+  { href: "/shop", th: "สินค้าแนะนำ", en: "Recommended" },
+  { href: "/subscription", th: "เซ็ตสมาชิก", en: "Member sets" },
+  { href: "/knowledge", th: "บทความ", en: "Articles" },
+  { href: "/promotions", th: "โปรโมชั่น", en: "Promotions" },
+];
+
+const deskUtilityNav = [
+  { href: "/help", th: "คำถามที่พบบ่อย", en: "FAQ" },
+  { href: "/account/referral", th: "โปรแกรม Affiliate", en: "Affiliate program" },
+];
+
+// The drawer keeps its own, longer list. The desktop bar above is what the
+// design specifies and it drops four destinations (ปัญหาผิว, ผู้ช่วย AI,
+// เกี่ยวกับเรา, ช่วยเหลือ as a section) that have nowhere else to go on a
+// phone — so the drawer is a superset rather than a copy of it.
 const navLinks = [
   { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: LayoutGrid },
+  { href: "/brands", th: "แบรนด์ทั้งหมด", en: "All brands", icon: Tag },
+  { href: "/promotions", th: "โปรโมชั่น", en: "Promotions", icon: Percent },
   { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern", icon: Heart },
-  { href: "/subscription", th: "สมัครสมาชิก", en: "Subscription", icon: Repeat },
+  { href: "/subscription", th: "เซ็ตสมาชิก", en: "Member sets", icon: Repeat },
   { href: "/ai-assistant", th: "ผู้ช่วย AI", en: "AI Assistant", icon: Sparkles },
   { href: "/knowledge", th: "ความรู้ความงาม", en: "Beauty Knowledge", icon: BookOpen },
+  { href: "/account/referral", th: "โปรแกรม Affiliate", en: "Affiliate program", icon: Users },
   { href: "/about", th: "ทำไมต้อง Smooth Life", en: "Why Smooth Life", icon: ShieldCheck },
   { href: "/help", th: "ช่วยเหลือ", en: "Help", icon: HelpCircle },
 ];
@@ -80,7 +107,7 @@ export default function Header() {
   return (
     <>
     <header
-      className={`sticky top-0 z-40 bg-white/95 backdrop-blur-sm pt-[env(safe-area-inset-top)] transition-transform duration-300 lg:translate-y-0! lg:border-b lg:border-slate-100 ${
+      className={`sticky top-0 z-40 bg-white/95 backdrop-blur-sm pt-[env(safe-area-inset-top)] transition-transform duration-300 lg:translate-y-0! lg:border-b lg:border-slate-200 ${
         hideHeader && !open ? "-translate-y-full" : "translate-y-0"
       } ${scrolled ? "border-b border-slate-100" : "border-b border-transparent"}`}
     >
@@ -127,20 +154,28 @@ export default function Header() {
           ))}
         </div>
       </div>
-      <div className="container-page flex items-center gap-3 md:gap-6 py-2 lg:py-3">
+      {/* Wider than the 1280 the page body sits in: the design puts the
+          logo and the cart near the edges of a 1512 screen, so the bar has
+          its own bed rather than container-page's. */}
+      <div className="mx-auto flex max-w-[1512px] items-center gap-3 px-4 py-2 md:gap-6 md:px-6 lg:py-2.5">
         <button className="lg:hidden shrink-0" onClick={() => setOpen(true)} aria-label="Open menu">
           <Menu size={24} />
         </button>
 
         <Link href="/" aria-label="Smoothlife.com หน้าแรก" className="shrink-0">
-          <BrandLogo priority className="h-6 md:h-7" />
+          <BrandLogo priority className="h-6 md:h-7 lg:h-10" />
         </Link>
 
-        <div className="hidden md:flex flex-1 max-w-xl">
+        {/* A plain grey field with the magnifier inside it, per the design —
+            the gradient pill that used to sit on the right read as the page's
+            primary button when it is only a submit for something already
+            typed. */}
+        <div className="hidden md:flex flex-1 lg:max-w-[700px]">
           <HeaderSearch
-            placeholder="ค้นหาสินค้า, ยี่ห้อ, หรือปัญหาผิวที่กังวล…"
-            inputClassName="w-full rounded-full border border-slate-200 bg-surface-soft py-2.5 pl-4 pr-11 text-sm outline-hidden focus:border-brand-teal transition-colors"
-            buttonClassName="absolute right-1.5 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full bg-brand-gradient text-white"
+            placeholder="ค้นหาสินค้าหรือแบรนด์…"
+            inputClassName="h-11 w-full rounded-full border border-transparent bg-slate-100 pl-5 pr-12 text-sm text-brand-ink outline-hidden transition-colors placeholder:text-slate-500 focus:border-brand-teal focus:bg-white lg:h-12"
+            buttonClassName="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full text-slate-700 transition-colors hover:text-brand-800"
+            buttonSize={19}
           />
         </div>
 
@@ -152,7 +187,7 @@ export default function Header() {
             <LanguageSwitch variant="icon" />
           </div>
           <div className="hidden lg:block">
-            <LanguageSwitch />
+            <LanguageSwitch variant="code" />
           </div>
           {user ? (
             <Link
@@ -178,12 +213,15 @@ export default function Header() {
             </Link>
           ) : (
             <>
-              <Link href="/ai-assistant" className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-brand-800">
+              <Link href="/ai-assistant" className="hidden sm:flex lg:hidden items-center gap-1.5 text-xs font-semibold text-brand-800">
                 <Sparkles size={14} /> น้อง Smoothie
               </Link>
-              <Link href="/account/login" className="hidden lg:flex items-center gap-1.5" aria-label="Account">
-                <User size={22} />
-                <span className="hidden lg:inline text-sm font-medium">เข้าสู่ระบบ</span>
+              <Link
+                href="/account/login"
+                className="hidden h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-brand-ink transition-colors hover:border-brand-teal lg:flex"
+              >
+                <User size={19} />
+                เข้าสู่ระบบ/ลงทะเบียน
               </Link>
             </>
           )}
@@ -205,12 +243,16 @@ export default function Header() {
           <div className="hidden lg:block">
             <NotificationBell />
           </div>
-          <Link href="/cart" className="relative hidden lg:block" aria-label="Cart">
-            <ShoppingBag size={22} />
+          <Link
+            href="/cart"
+            className="relative hidden h-11 w-11 place-items-center rounded-full bg-slate-100 text-brand-ink transition-colors hover:bg-brand-50 hover:text-brand-800 lg:grid"
+            aria-label="ตะกร้าสินค้า"
+          >
+            <ShoppingCart size={21} />
             {count > 0 && (
               <span
                 key={count}
-                className="absolute -top-2 -right-2 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-sky px-1 text-[10px] font-bold text-white animate-pop"
+                className="absolute -top-1 -right-1 grid h-[19px] min-w-[19px] place-items-center rounded-full bg-brand-teal px-1 text-[10px] font-bold text-white animate-pop"
               >
                 {count}
               </span>
@@ -223,7 +265,7 @@ export default function Header() {
           link with a real search bar (same reusable HeaderSearch used on
           desktop). Location + wishlist + notifications all live in the logo
           row above instead of here. */}
-      <div className="md:hidden container-page pb-1.5">
+      <div className="md:hidden mx-auto max-w-[1512px] px-4 pb-1.5">
         <div className="flex items-center gap-2">
           <HeaderSearch
             placeholder="ค้นหาสินค้า, ยี่ห้อ…"
@@ -235,16 +277,25 @@ export default function Header() {
 
       {/* relative: the mega panel hangs off this bar, edge to edge. */}
       <nav className="relative hidden lg:block border-t border-slate-100">
-        <div className="container-page flex items-center gap-7 py-2.5 text-sm font-medium text-slate-600">
-          {navLinks.map((l) =>
-            l.href === "/shop" ? (
+        <div className="mx-auto flex max-w-[1512px] items-center gap-8 px-6 py-2.5 text-[15px] font-medium text-slate-700">
+          {deskNav.map((l) =>
+            l.mega ? (
               <MegaMenu key={l.href} label={t(l.th, l.en)} href={l.href} />
             ) : (
-              <Link key={l.href} href={l.href} className="hover:text-brand-800 transition-colors">
+              <Link key={l.href} href={l.href} className="transition-colors hover:text-brand-800">
                 {t(l.th, l.en)}
               </Link>
             )
           )}
+          {/* Support, not shopping — so it sits apart from the five above
+              rather than sixth and seventh in the same run. */}
+          <div className="ml-auto flex items-center gap-8">
+            {deskUtilityNav.map((l) => (
+              <Link key={l.href} href={l.href} className="transition-colors hover:text-brand-800">
+                {t(l.th, l.en)}
+              </Link>
+            ))}
+          </div>
         </div>
       </nav>
     </header>

@@ -1,10 +1,10 @@
 import Link from "next/link";
 import clsx from "clsx";
 import Image from "next/image";
-import { ShieldCheck, Truck, Award, MessageCircle, ChevronRight, Repeat, PercentCircle, LayoutGrid } from "lucide-react";
+import { ShieldCheck, Truck, Award, MessageCircle, ChevronRight, Repeat, PercentCircle } from "lucide-react";
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
-import { categories, categoryImage, concerns, concernImage } from "@/data/categories";
+import { concerns, concernImage } from "@/data/categories";
 import { brands } from "@/data/brands";
 import { promotions } from "@/data/promotions";
 import { articles } from "@/data/articles";
@@ -16,11 +16,11 @@ import { getStorefrontHeroBanners } from "@/lib/storefront-banners";
 import { getStoreArticles, storeArticleHref } from "@/lib/storefront-articles";
 import KnowledgeArcGallery, { type ArcItem } from "@/components/home/KnowledgeArcGallery";
 import HeroCarousel from "@/components/HeroCarousel";
+import CategoryIconRow from "@/components/home/CategoryIconRow";
 import DealOfTheDayCard from "@/components/DealOfTheDayCard";
 import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
 import SectionHeading from "@/components/SectionHeading";
 import ScrollReveal from "@/components/ScrollReveal";
-import StaggerReveal from "@/components/StaggerReveal";
 import StaggerGrid from "@/components/StaggerGrid";
 import ScaleReveal from "@/components/ScaleReveal";
 import BrandMarquee from "@/components/BrandMarquee";
@@ -126,67 +126,12 @@ export default async function HomePage() {
           จากแบรนด์ที่วางขายจริงในไทย ของแท้ 100% มี อย. ส่งฟรีทั่วไทยไม่มีขั้นต่ำ และสะสมคะแนนได้ทุกการช้อป
         </h1>
         <HeroCarousel banners={liveHeroBanners ?? heroBanners} />
-
-        {/* Mobile-only quick category row — the same real categories the
-            Categories section below lists in full, as one scrolling row so
-            a sixth category never leaves an orphan on its own line.
-            "ทั้งหมด" closes the row into /shop. Same square tiles as the
-            desktop section, for the same reason: the artwork is packshots,
-            and a circle cuts the ends off every one of them. */}
-        <StaggerReveal className="mt-4 flex gap-4 overflow-x-auto px-4 pb-1 scrollbar-none md:hidden">
-            {categories.map((c) => (
-              <Link
-                key={c.slug}
-                href={`/shop/${c.slug}`}
-                className="flex w-[76px] shrink-0 flex-col items-center gap-1.5 transition-transform active:scale-95"
-              >
-                <span className="relative h-[76px] w-[76px] overflow-hidden rounded-xl2 bg-surface-mist ring-1 ring-surface-line">
-                  <Image src={categoryImage(c.slug)} alt="" fill sizes="76px" className="object-cover" />
-                </span>
-                <span className="line-clamp-2 text-center text-[11px] font-medium leading-tight text-brand-ink">{c.nameTh}</span>
-              </Link>
-            ))}
-            <Link href="/shop" className="flex w-[76px] shrink-0 flex-col items-center gap-1.5 transition-transform active:scale-95">
-              <span className="grid h-[76px] w-[76px] place-items-center rounded-xl2 bg-surface-mist text-brand-800 ring-1 ring-surface-line">
-                <LayoutGrid size={24} aria-hidden="true" />
-              </span>
-              <span className="text-center text-[11px] font-medium text-brand-ink">ทั้งหมด</span>
-            </Link>
-        </StaggerReveal>
       </section>
 
-      {/* Categories — hidden on mobile, where the quick category row under
-          the banner already shows these same categories. Desktop gets it in
-          the same place in the order (before the products), so both screens
-          read categories → products like the mockup. */}
-      <section className="hidden md:block md:pb-4 md:pt-14">
-        <ScrollReveal className="container-page">
-          <SectionHeading title="ช้อปตามหมวดหมู่" subtitle="Product Categories" href="/shop" />
-        </ScrollReveal>
-        {/* Square tiles rather than the small circles this used to be. The
-            artwork is packshots — groups of bottles and boxes, wide and flat
-            — and a circle crops the sides off every one of them, which is why
-            the row read as six pale smudges. A tile gives the packshot its
-            own shape and about four times the area at the same row height. */}
-        <StaggerGrid className="container-page grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-5">
-          {categories.map((c) => (
-            <Link key={c.slug} href={`/shop/${c.slug}`} className="group flex flex-col gap-2.5">
-              <div className="relative aspect-square overflow-hidden rounded-xl2 bg-surface-mist ring-1 ring-surface-line transition-all duration-300 group-hover:ring-brand-action/40 group-hover:shadow-card">
-                <Image
-                  src={categoryImage(c.slug)}
-                  alt=""
-                  fill
-                  sizes="(max-width:768px) 33vw, 16vw"
-                  className="object-cover transition-transform duration-500 group-hover:scale-[1.06]"
-                />
-              </div>
-              <span className="text-center text-xs font-semibold text-brand-ink transition-colors group-hover:text-brand-800 md:text-sm">
-                {c.nameTh}
-              </span>
-            </Link>
-          ))}
-        </StaggerGrid>
-      </section>
+      {/* The nine round shortcuts from the design, standing in for both
+          the mobile packshot strip and the desktop tile grid that used to
+          follow it. Full-bleed: it carries its own tint. */}
+      <CategoryIconRow />
 
       {/* Products — one tabbed section instead of four near-identical
           stacked carousels (Best Sellers / On Sale / New / Bundles), so

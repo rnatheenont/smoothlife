@@ -18,6 +18,9 @@ const LANGS: { code: Lang; native: string; hint: string }[] = [
  *
  * `variant="icon"` is the mobile header's form: an outline circle matching the
  * cart and bell beside it, since a coloured pill read as too heavy there.
+ * `variant="code"` is the desktop bar's: the same outline as the sign-in
+ * button next to it, carrying the two-letter code rather than the language's
+ * own name, which is what the design asks for and what fits beside it.
  * Both open the same menu, so the choice looks and behaves the same on every
  * screen — and a third language is one more row rather than a redesign.
  */
@@ -27,7 +30,7 @@ export default function LanguageSwitch({
   align = "right",
 }: {
   compact?: boolean;
-  variant?: "pill" | "icon";
+  variant?: "pill" | "icon" | "code";
   align?: "left" | "right";
 }) {
   const { lang, setLang, translating } = useLang();
@@ -67,7 +70,27 @@ export default function LanguageSwitch({
     // English reader two options called "Thai" and "English" in English — and
     // a Thai reader the reverse — which is exactly the case it exists to avoid.
     <div ref={rootRef} className="relative inline-block" translate="no">
-      {variant === "icon" ? (
+      {variant === "code" ? (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          disabled={translating}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-controls={menuId}
+          aria-label={`ภาษา: ${current.native}`}
+          className={clsx(
+            "flex h-11 items-center gap-1.5 rounded-full border bg-white pl-5 pr-4 text-sm font-medium uppercase text-brand-ink transition-colors disabled:opacity-60",
+            open ? "border-brand-teal" : "border-slate-200 hover:border-brand-teal"
+          )}
+        >
+          {translating ? <Loader2 size={15} className="animate-spin" /> : current.code}
+          <ChevronDown
+            size={16}
+            className={clsx("text-slate-500 transition-transform duration-200", open && "rotate-180")}
+          />
+        </button>
+      ) : variant === "icon" ? (
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
