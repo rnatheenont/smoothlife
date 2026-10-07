@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -27,6 +27,9 @@ import { useRailFade } from "@/lib/use-rail-fade";
 // chosen is a thing to open.
 
 const SWIPE_THRESHOLD = 40;
+/** How long each card holds the middle before the stack moves on. Long
+ *  enough to read the name under it and glance at the shelf. */
+const AUTO_MS = 5500;
 /** Ten in the rail, six of them whole and a seventh fading out at the edge:
  *  the fade only means anything while there is still something behind it. */
 const SHOWN = 10;
@@ -36,8 +39,8 @@ function placement(offset: number) {
   const side = Math.sign(offset);
   const distance = Math.abs(offset);
   if (distance === 0) return { x: 0, y: 0, scale: 1, rotate: 0, z: 30, opacity: 1, shown: true };
-  if (distance === 1) return { x: side * 62, y: 4, scale: 0.84, rotate: side * 8, z: 20, opacity: 1, shown: true };
-  if (distance === 2) return { x: side * 112, y: 14, scale: 0.68, rotate: side * 13, z: 10, opacity: 0.6, shown: true };
+  if (distance === 1) return { x: side * 62, y: 4, scale: 0.84, rotate: side * 8, z: 20, opacity: 0.45, shown: true };
+  if (distance === 2) return { x: side * 112, y: 14, scale: 0.68, rotate: side * 13, z: 10, opacity: 0.22, shown: true };
   return { x: side * 150, y: 22, scale: 0.6, rotate: side * 16, z: 0, opacity: 0, shown: false };
 }
 
@@ -68,6 +71,26 @@ export default function ConcernCoverflow() {
   }
   const step = (d: number) => setActive((i) => (i + d + count) % count);
 
+  // Moves on by itself until somebody takes hold of it, and then stops for
+  // good. The shelf underneath reads from whatever is in the middle, so a
+  // stack that kept turning would swap the products out from under the
+  // person who had just stopped to look at them.
+  const [engaged, setEngaged] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  useEffect(() => {
+    if (engaged || hovered) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = setInterval(() => setActive((i) => (i + 1) % count), AUTO_MS);
+    return () => clearInterval(timer);
+  }, [engaged, hovered, count]);
+
+  /** Every manual control goes through here, so none of them forgets to
+   *  stop the carousel. */
+  const take = (fn: () => void) => () => {
+    setEngaged(true);
+    fn();
+  };
+
   function onPointerDown(e: ReactPointerEvent) {
     dragX.current = e.clientX;
   }
@@ -76,7 +99,10 @@ export default function ConcernCoverflow() {
     dragX.current = null;
     if (from === null) return;
     const dx = e.clientX - from;
-    if (Math.abs(dx) >= SWIPE_THRESHOLD) step(dx < 0 ? 1 : -1);
+    if (Math.abs(dx) >= SWIPE_THRESHOLD) {
+      setEngaged(true);
+      step(dx < 0 ? 1 : -1);
+    }
   }
 
   return (
@@ -93,6 +119,8 @@ export default function ConcernCoverflow() {
       <div
         className="relative mx-auto mt-7 h-[230px] w-full max-w-[1512px] touch-pan-y select-none md:mt-10 md:h-[330px] lg:h-[380px]"
         onPointerDown={onPointerDown}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         onPointerUp={onPointerUp}
         onPointerCancel={() => (dragX.current = null)}
       >
@@ -105,6 +133,7 @@ export default function ConcernCoverflow() {
               onClick={(e) => {
                 if (i === active) return;
                 e.preventDefault();
+                setEngaged(true);
                 setActive(i);
               }}
               aria-hidden={!p.shown}
@@ -131,7 +160,7 @@ export default function ConcernCoverflow() {
             card happens to be underneath them. */}
         <button
           type="button"
-          onClick={() => step(-1)}
+          onClick={take(() => step(-1))}
           aria-label="ปัญหาผิวก่อนหน้า"
           className="absolute left-3 top-1/2 z-40 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-ink shadow-card transition-colors hover:bg-white md:left-8 lg:left-16"
         >
@@ -139,7 +168,7 @@ export default function ConcernCoverflow() {
         </button>
         <button
           type="button"
-          onClick={() => step(1)}
+          onClick={take(() => step(1))}
           aria-label="ปัญหาผิวถัดไป"
           className="absolute right-3 top-1/2 z-40 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-ink shadow-card transition-colors hover:bg-white md:right-8 lg:right-16"
         >
@@ -198,7 +227,7 @@ export default function ConcernCoverflow() {
           <button
             key={c.slug}
             type="button"
-            onClick={() => setActive(i)}
+            onClick={take(() => setActive(i))}
             aria-label={c.nameTh}
             aria-current={i === active || undefined}
             className={`h-1.5 rounded-full transition-all duration-300 ${
