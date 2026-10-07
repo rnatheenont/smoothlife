@@ -25,16 +25,16 @@ const badgeLabel: Record<string, string> = {
   Gift: "ของแถม",
 };
 
-// A discount % and a "Sale" badge say the same thing, so the discount
-// chip (more specific) replaces "Sale" rather than stacking on top of
-// it — keeps the corner to at most 2 chips instead of 3 crowded pills. A
-// live free-gift promoChip (widget #5, "Promotion badge") takes priority
-// within that same 2-chip cap — an existing chip may get squeezed out on a
-// heavily-badged product, an accepted trade to preserve the density rule.
-function cardBadgeChips(badges: string[] | undefined, discount: number, promoChip?: string | null) {
-  const rest = (badges ?? []).filter((b) => b !== "Sale").slice(0, 2);
-  const chips = discount > 0 ? [`-${discount}%`, ...rest] : rest;
-  return (promoChip ? [promoChip, ...chips] : chips).slice(0, 2);
+// What is left for the photo's corner once the discount has moved down to
+// the price, where the number it is a percentage of actually is. "Sale" is
+// still dropped: it says the same thing as that chip, one line lower and
+// less precisely. A live free-gift promoChip (widget #5, "Promotion badge")
+// comes first within the same 2-chip cap — an existing chip may get squeezed
+// out on a heavily-badged product, an accepted trade to keep the corner from
+// looking like a sweet shop again.
+function cardBadgeChips(badges: string[] | undefined, promoChip?: string | null) {
+  const rest = (badges ?? []).filter((b) => b !== "Sale");
+  return (promoChip ? [promoChip, ...rest] : rest).slice(0, 2);
 }
 
 /**
@@ -116,13 +116,10 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
         ) : (
           <div className="absolute left-2 top-2 flex flex-wrap gap-1 max-w-[calc(100%-3rem)]">
-            {cardBadgeChips(product.badges, discount, promoChip).map((label) => (
+            {cardBadgeChips(product.badges, promoChip).map((label) => (
               <span
                 key={label}
-                className={clsx(
-                  "rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                  label.startsWith("-") ? "bg-sale text-white" : "bg-white/95 text-brand-ink ring-1 ring-surface-line"
-                )}
+                className="rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-brand-ink ring-1 ring-surface-line"
               >
                 {badgeLabel[label] ?? label}
               </span>
@@ -159,8 +156,19 @@ export default function ProductCard({ product }: { product: Product }) {
               {formatTHB(product.price)}
             </span>
             {product.compareAtPrice && (
-              <span className="block text-[11px] tabular-nums text-slate-400 line-through">
-                {formatTHB(product.compareAtPrice)}
+              <span className="flex items-center gap-1.5">
+                <span className="text-[11px] tabular-nums text-slate-400 line-through">
+                  {formatTHB(product.compareAtPrice)}
+                </span>
+                {discount > 0 && (
+                  // Red stays the card's one word for money off, it has just
+                  // moved next to the price it is taken from — in the photo's
+                  // corner it was a number with nothing beside it to be a
+                  // percentage of.
+                  <span className="rounded-full bg-sale px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                    -{discount}%
+                  </span>
+                )}
               </span>
             )}
           </div>
