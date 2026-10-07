@@ -193,7 +193,12 @@ export default function HeroCarousel({
     <div>
       <div
         ref={frameRef}
-        className={`group relative w-full ${mobileAspect} md:aspect-100/53 2xl:max-h-[820px] overflow-hidden select-none touch-pan-y bg-surface-soft`}
+        // The frame's own colour from md up only. It is there for a slide
+        // that cannot be cropped to fill the box, where it shows as a
+        // letterbox — but the phone layout is a coverflow whose cards cover
+        // 70% of the frame, so down there it was simply a grey band around
+        // them.
+        className={`group relative w-full ${mobileAspect} md:aspect-100/53 2xl:max-h-[820px] overflow-hidden select-none touch-pan-y md:bg-surface-soft`}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onMouseEnter={() => setPaused(true)}
