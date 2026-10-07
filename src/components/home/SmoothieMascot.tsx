@@ -238,25 +238,45 @@ export default function SmoothieMascot({ className }: { className?: string }) {
             </span>
           ))}
 
-          {/* The smile opens downwards from a flat top, so it grows out of
-              the painted mouth rather than appearing on top of it. */}
-          <span
+          {/* Drawn rather than built out of a CSS box. A box can only give
+              this shape a dead-straight top and two sharp corners where that
+              line meets the curve, and on a face made of soft painted edges
+              those corners are the thing that reads as stuck on. The path
+              below lifts the corners and lets the upper lip sag between them,
+              which is the difference between a smile and an O.
+
+              It grows from the top edge rather than from nothing, so the
+              mouth opens where the painted one already is. */}
+          <svg
             aria-hidden="true"
-            className="absolute overflow-hidden bg-[#241a14] transition-all duration-300 ease-out"
+            viewBox="0 0 100 58"
+            preserveAspectRatio="none"
+            className="absolute origin-top transition-[transform,opacity] duration-300 ease-out"
             style={{
               left: `${MOUTH.left}%`,
               top: `${MOUTH.top}%`,
               width: `${MOUTH.width}%`,
-              height: smiling ? `${MOUTH.height}%` : "0%",
+              height: `${MOUTH.height}%`,
+              transform: `scaleY(${smiling ? 1 : 0})`,
               opacity: smiling ? 1 : 0,
-              borderRadius: "0 0 50% 50% / 0 0 100% 100%",
             }}
           >
-            <span
-              className="absolute bottom-[6%] left-1/2 h-[46%] w-[48%] -translate-x-1/2 bg-[#f4808a]"
-              style={{ borderRadius: "50%" }}
+            <defs>
+              <clipPath id="smoothie-smile">
+                <path d="M4 8 Q50 22 96 8 C96 44 74 56 50 56 C26 56 4 44 4 8 Z" />
+              </clipPath>
+            </defs>
+            {/* The stroke is the same colour as the fill and only there to
+                round the two corners off — linejoin does the work. */}
+            <path
+              d="M4 8 Q50 22 96 8 C96 44 74 56 50 56 C26 56 4 44 4 8 Z"
+              fill="#241a14"
+              stroke="#241a14"
+              strokeWidth="5"
+              strokeLinejoin="round"
             />
-          </span>
+            <ellipse cx="50" cy="56" rx="23" ry="15" fill="#f4808a" clipPath="url(#smoothie-smile)" />
+          </svg>
         </div>
       </div>
     </div>
