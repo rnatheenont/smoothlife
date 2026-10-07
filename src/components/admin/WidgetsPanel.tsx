@@ -24,6 +24,8 @@ const DESCRIPTIONS: Record<string, string> = {
   floating_button: "ปุ่มลอยลากได้ แจ้งเตือนเมื่อมีของแถมให้รับ",
   congrats_bar: "แถบแจ้งเตือนด้านบนเมื่อปลดล็อกของแถม",
   gifts_on_slide_cart: "แสดงรายการของแถมที่ได้รับในตะกร้าแบบเลื่อน",
+  flash_sale_bar: "แถบเขียวนับถอยหลังใต้แถวหมวดหมู่ พร้อมโค้ดส่วนลด (หน้าแรก)",
+  flash_sale_shelf: "แบนเนอร์แคมเปญ + ชั้นวางสินค้าจาก collection ที่เลือก (หน้าแรก)",
 };
 
 const CONFIG_LABELS: Record<string, string> = {
@@ -36,6 +38,13 @@ const CONFIG_LABELS: Record<string, string> = {
   autoCloseMs: "ปิดอัตโนมัติหลัง (มิลลิวินาที, 0 = ไม่ปิดเอง)",
   messageTh: "ข้อความ",
   durationMs: "แสดงนานกี่มิลลิวินาที",
+  subtitleTh: "ข้อความบรรทัดรอง",
+  endsAt: "หมดเวลาเมื่อ (เช่น 2026-10-15T23:59:00+07:00)",
+  code: "โค้ดส่วนลด",
+  href: "ลิงก์ปลายทาง (เช่น /collections/smooth-sale)",
+  image: "ลิงก์รูปแบนเนอร์ (1512x260)",
+  collection: "handle ของ collection (เช่น sale-up-to-50-off)",
+  titleTh: "หัวข้อบนแบนเนอร์ (ใช้เมื่อไม่ได้ใส่รูป)",
 };
 
 function PreviewMock({ widgetKey }: { widgetKey: string }) {
@@ -53,6 +62,25 @@ function PreviewMock({ widgetKey }: { widgetKey: string }) {
               {i < 3 && <div className="h-0.5 flex-1 bg-slate-200 mx-1" />}
             </div>
           ))}
+        </div>
+      );
+    case "flash_sale_bar":
+      return (
+        <div className="flex items-center justify-between rounded-lg bg-[linear-gradient(90deg,#0b6b4f,#1bb57a)] px-2 py-1.5 text-white">
+          <span className="text-[10px] font-extrabold italic leading-none">Flash Sale</span>
+          <span className="text-[10px] font-bold tabular-nums">02 : 11 : 40 : 09</span>
+          <span className="rounded-full bg-white px-1.5 py-0.5 text-[9px] font-bold text-brand-800">Code</span>
+        </div>
+      );
+    case "flash_sale_shelf":
+      return (
+        <div className="space-y-1">
+          <div className="h-6 rounded bg-brand-gradient" />
+          <div className="flex gap-1">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-8 flex-1 rounded bg-slate-100 ring-1 ring-surface-line" />
+            ))}
+          </div>
         </div>
       );
     case "deal_of_day":

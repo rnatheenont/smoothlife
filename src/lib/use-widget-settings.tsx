@@ -12,7 +12,9 @@ export type WidgetKey =
   | "popup"
   | "floating_button"
   | "congrats_bar"
-  | "gifts_on_slide_cart";
+  | "gifts_on_slide_cart"
+  | "flash_sale_bar"
+  | "flash_sale_shelf";
 
 export type WidgetSettings = Record<WidgetKey, { enabled: boolean; config: Record<string, unknown> }>;
 
@@ -27,6 +29,8 @@ const DEFAULT_SETTINGS: WidgetSettings = {
   floating_button: { enabled: false, config: {} },
   congrats_bar: { enabled: false, config: {} },
   gifts_on_slide_cart: { enabled: false, config: {} },
+  flash_sale_bar: { enabled: false, config: {} },
+  flash_sale_shelf: { enabled: false, config: {} },
 };
 
 type ContextValue = { settings: WidgetSettings; loaded: boolean };

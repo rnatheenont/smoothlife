@@ -12,6 +12,8 @@ import KnowledgeArcGallery, { type ArcItem } from "@/components/home/KnowledgeAr
 import { articleProductSlugs } from "@/lib/article-products";
 import HeroCarousel from "@/components/HeroCarousel";
 import CategoryIconRow from "@/components/home/CategoryIconRow";
+import FlashSaleBar from "@/components/home/FlashSaleBar";
+import FlashSaleShelf from "@/components/home/FlashSaleShelf";
 import SmoothieHeroBand from "@/components/home/SmoothieHeroBand";
 import HeroTrio from "@/components/home/HeroTrio";
 import ConcernCoverflow from "@/components/home/ConcernCoverflow";
@@ -128,6 +130,11 @@ export default async function HomePage() {
           the mobile packshot strip and the desktop tile grid that used to
           follow it. Full-bleed: it carries its own tint. */}
       <CategoryIconRow />
+
+      {/* Both draw themselves from widgets the admin edits, and render
+          nothing at all until one is switched on — see WidgetsPanel. */}
+      <FlashSaleBar />
+      <FlashSaleShelf />
 
 
       {/* Free-gift promos — real active promos, rendered only when the

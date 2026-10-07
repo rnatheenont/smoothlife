@@ -14,6 +14,8 @@ const DEFAULTS: WidgetRow[] = [
   { key: "floating_button", label_th: "ปุ่มลอย", enabled: false, config: {} },
   { key: "congrats_bar", label_th: "แถบแสดงความยินดี", enabled: false, config: {} },
   { key: "gifts_on_slide_cart", label_th: "ของแถมในตะกร้าเลื่อน", enabled: false, config: {} },
+  { key: "flash_sale_bar", label_th: "แถบ Flash Sale นับถอยหลัง", enabled: false, config: {} },
+  { key: "flash_sale_shelf", label_th: "แบนเนอร์ Flash Sale + ชั้นวางสินค้า", enabled: false, config: {} },
 ];
 
 // No dynamic API is used here, so Next.js would otherwise treat this as a
