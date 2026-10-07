@@ -32,20 +32,21 @@ let visitSeed = 0;
 //
 // Split into three parts rather than one string so the mascot's name stays
 // the coloured anchor wherever it falls in the sentence — and so the spacing
-// around it can be exact: Thai does not put a space between its own words,
-// but it does put one either side of a Latin one, so the gaps are baked into
-// these strings rather than added by the markup.
+// around it can be exact. The gaps are baked into these strings rather than
+// added by the markup, including the one in front of "น้อง": Thai would not
+// normally space its own words, but at display size the name reads as a name
+// rather than as the tail of the verb in front of it.
 //
 // Every line is one line at every width this band is used at; nothing here
 // may wrap, or the band changes height five times a minute.
 type HeadLine = { pre: string; mark: string; post: string };
 
 const HEADLINES_TH: HeadLine[] = [
-  { pre: "คุยกับ", mark: "น้อง Smoothie", post: "" },
-  { pre: "ให้", mark: "น้อง Smoothie", post: " ช่วยเลือก" },
-  { pre: "เล่าให้", mark: "น้อง Smoothie", post: " ฟัง" },
-  { pre: "ส่งรูปให้", mark: "น้อง Smoothie", post: " ดู" },
-  { pre: "ถาม", mark: "น้อง Smoothie", post: " ก่อนซื้อ" },
+  { pre: "คุยกับ ", mark: "น้อง Smoothie", post: "" },
+  { pre: "ให้ ", mark: "น้อง Smoothie", post: " ช่วยเลือก" },
+  { pre: "เล่าให้ ", mark: "น้อง Smoothie", post: " ฟัง" },
+  { pre: "ส่งรูปให้ ", mark: "น้อง Smoothie", post: " ดู" },
+  { pre: "ถาม ", mark: "น้อง Smoothie", post: " ก่อนซื้อ" },
 ];
 
 const HEADLINES_EN: HeadLine[] = [
