@@ -50,6 +50,12 @@ const EYES: Eye[] = [
 const PATCH_W = 1.9;
 const PATCH_H = 1.65;
 
+/** The drawn eye, relative to the painted one it replaces. Over 1 because
+ *  the measurements are of the original art and the brief was for bigger
+ *  eyes; it only ever helps the cover, which is sized against the smaller
+ *  shape underneath. */
+const EYE_SCALE = 1.2;
+
 /** A blink: how long the eye stays shut, and the gap before the next one.
  *  A real blink is about a tenth of a second — anything slower reads as a
  *  slow wink. The gap is random so the face never looks metronomic, and one
@@ -205,8 +211,8 @@ export default function SmoothieMascot({ className }: { className?: string }) {
               <span
                 className="absolute left-1/2 top-1/2 transition-transform duration-200 ease-out"
                 style={{
-                  width: `${100 / PATCH_W}%`,
-                  height: `${100 / PATCH_H}%`,
+                  width: `${(100 / PATCH_W) * EYE_SCALE}%`,
+                  height: `${(100 / PATCH_H) * EYE_SCALE}%`,
                   transform: `translate(calc(-50% + ${eyeX}px), calc(-50% + ${eyeY}px))`,
                 }}
               >
