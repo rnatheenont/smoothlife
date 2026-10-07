@@ -127,7 +127,7 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
           goes in it may as well be the shop. */}
       {ticker.length > 0 && (
         <div
-          className={`overflow-hidden bg-brand-gradient transition-all duration-300 lg:max-h-16 lg:opacity-100 ${
+          className={`overflow-hidden bg-slate-100 transition-all duration-300 lg:max-h-16 lg:opacity-100 ${
             scrolled ? "max-h-0 opacity-0" : "max-h-16 opacity-100"
           }`}
         >
@@ -148,15 +148,17 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
                   href={`/product/${p.slug}`}
                   aria-hidden={copy || undefined}
                   tabIndex={copy ? -1 : undefined}
-                  className="flex shrink-0 items-center gap-2 rounded-full bg-white/15 py-1 pl-1 pr-3 text-white transition-colors hover:bg-white/25"
+                  className="flex shrink-0 items-center gap-2 rounded-full bg-white py-1 pl-1 pr-3 ring-1 ring-slate-200/80 transition-colors hover:ring-brand-teal"
                 >
-                  <span className="relative block h-7 w-7 shrink-0 overflow-hidden rounded-full bg-white">
+                  {/* The packshots are products on white, so the thumbnail needs a
+                      slot of its own or it dissolves into the card around it. */}
+                  <span className="relative block h-7 w-7 shrink-0 overflow-hidden rounded-full bg-slate-100">
                     <Image src={p.image} alt="" fill sizes="28px" className="object-cover" />
                   </span>
-                  <span translate="no" className="max-w-[190px] truncate text-[11px] font-medium">
+                  <span translate="no" className="max-w-[190px] truncate text-[11px] font-medium text-slate-600">
                     {p.name}
                   </span>
-                  <span translate="no" className="text-[11px] font-bold tabular-nums">
+                  <span translate="no" className="text-[11px] font-bold tabular-nums text-brand-800">
                     {formatTHB(p.price)}
                   </span>
                 </Link>
