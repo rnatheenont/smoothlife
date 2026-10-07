@@ -4,7 +4,6 @@ import { products } from "@/data/products";
 import { Product } from "@/data/types";
 import { brands } from "@/data/brands";
 import { articles } from "@/data/articles";
-import { subscriptionPlans } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
 import { heroBanners } from "@/data/heroBanners";
 import { getLiveHeroBanners } from "@/lib/shopify-admin";
@@ -21,11 +20,8 @@ import DealOfTheDayCard from "@/components/DealOfTheDayCard";
 import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
 import SectionHeading from "@/components/SectionHeading";
 import ScrollReveal from "@/components/ScrollReveal";
-import ScaleReveal from "@/components/ScaleReveal";
 import BrandCircleRow from "@/components/home/BrandCircleRow";
 import ProductTabs from "@/components/ProductTabs";
-import PromoPair from "@/components/home/PromoPair";
-import SubscriptionBanner from "@/components/home/SubscriptionBanner";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 import { pageMetadata } from "@/lib/site-pages";
 
@@ -176,20 +172,6 @@ export default async function HomePage() {
           browsing by problem is slower than being shown a price. */}
       <ConcernCoverflow />
 
-      {/* Membership, in one place: subscribe, then the rewards and shipping
-          pair right under it. Three separate pitches for the same
-          relationship used to be spread across the page with other things in
-          between. Committing to a
-          recurring plan is a bigger ask than a one-off purchase, so it
-          converts better after the catalogue, social proof, and brand story
-          above have already built trust, rather than pitching it early. */}
-      <section className="container-page py-8 md:py-16 lg:py-24">
-        <ScaleReveal>
-          <SubscriptionBanner />
-        </ScaleReveal>
-      </section>
-
-      <PromoPair />
 
       {/* What other people say — kept near the end, where it answers "is
           this shop any good" for whoever is still reading. Video
