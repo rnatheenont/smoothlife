@@ -16,37 +16,42 @@ type Topic = Category | Concern | "general";
 type Question = { topic: Topic; th: string; en: string };
 
 const POOL: Question[] = [
+  // Kept short on purpose. These are chips, not sentences: a tap target the
+  // width of the screen reads as a paragraph someone has to finish before
+  // deciding, and three of them stacked pushed the banners off a phone. The
+  // question only has to be recognisable — the chat has the rest of it.
+  //
   // — by concern: the sharpest signal, so these are weighted highest —
-  { topic: "acne", th: "สิวขึ้นช่วงนี้ ควรเริ่มดูแลยังไงดี", en: "I'm breaking out — where should I start?" },
-  { topic: "acne", th: "รอยสิวจางช้า มีตัวช่วยไหม", en: "What helps acne marks fade faster?" },
-  { topic: "dryness", th: "ผิวแห้งลอก ควรใช้อะไรก่อน-หลัง", en: "My skin is dry and flaky — what order do I use things?" },
-  { topic: "dryness", th: "มอยส์เจอไรเซอร์แบบไหนเหมาะกับผิวแห้ง", en: "Which moisturiser suits dry skin?" },
-  { topic: "dark-spots", th: "จุดด่างดำกับรอยแดง ต่างกันยังไง ดูแลต่างกันไหม", en: "Dark spots vs. red marks — treated differently?" },
-  { topic: "dark-spots", th: "อยากให้ผิวดูกระจ่างขึ้น เริ่มจากอะไรดี", en: "I want brighter skin — where do I begin?" },
-  { topic: "aging", th: "เริ่มใช้เรตินอลตอนไหนดี และเริ่มยังไงไม่ให้ผิวพัง", en: "When and how should I start retinol safely?" },
-  { topic: "aging", th: "ริ้วรอยรอบดวงตา ดูแลยังไงได้บ้าง", en: "How do I look after fine lines around my eyes?" },
-  { topic: "hair-scalp", th: "ผมร่วงเยอะช่วงนี้ เกิดจากอะไรได้บ้าง", en: "I'm shedding a lot of hair — what causes that?" },
-  { topic: "hair-scalp", th: "หนังศีรษะมันแต่ปลายผมแห้ง ควรสระยังไง", en: "Oily scalp but dry ends — how should I wash?" },
-  { topic: "sleep-stress", th: "นอนไม่ค่อยหลับ มีอาหารเสริมช่วยได้ไหม", en: "Any supplements that help me sleep?" },
-  { topic: "sleep-stress", th: "ช่วงเครียด ๆ ควรเสริมอะไรให้ร่างกาย", en: "What should I take when I'm stressed?" },
+  { topic: "acne", th: "สิวขึ้น เริ่มยังไงดี", en: "Breaking out — where to start?" },
+  { topic: "acne", th: "รอยสิวจางช้า ทำไงดี", en: "Acne marks fading slowly" },
+  { topic: "dryness", th: "ผิวแห้งลอก ใช้อะไรดี", en: "Dry, flaky skin — what to use?" },
+  { topic: "dryness", th: "มอยส์เจอไรเซอร์ตัวไหนดี", en: "Which moisturiser?" },
+  { topic: "dark-spots", th: "จุดด่างดำ ดูแลยังไง", en: "How to treat dark spots" },
+  { topic: "dark-spots", th: "อยากผิวกระจ่างใส", en: "I want brighter skin" },
+  { topic: "aging", th: "เริ่มเรตินอลยังไงดี", en: "How do I start retinol?" },
+  { topic: "aging", th: "ริ้วรอยรอบดวงตา", en: "Fine lines around my eyes" },
+  { topic: "hair-scalp", th: "ผมร่วงเยอะ เพราะอะไร", en: "Why am I shedding hair?" },
+  { topic: "hair-scalp", th: "หนังศีรษะมัน ปลายแห้ง", en: "Oily scalp, dry ends" },
+  { topic: "sleep-stress", th: "นอนไม่หลับ กินอะไรดี", en: "Can't sleep — what helps?" },
+  { topic: "sleep-stress", th: "ช่วงนี้เครียด กินอะไรดี", en: "Stressed — what should I take?" },
 
   // — by category: what section of the shop they've been in —
-  { topic: "skincare", th: "ช่วยจัดรูทีนเช้าแบบง่าย ๆ ให้หน่อย", en: "Build me a simple morning routine" },
-  { topic: "skincare", th: "ใช้วิตามินซีคู่กับเรตินอลได้ไหม", en: "Can I use vitamin C with retinol?" },
-  { topic: "skincare", th: "เซรั่มตัวไหนเหมาะกับฉันที่สุด", en: "Which serum suits me best?" },
-  { topic: "oral-care", th: "ยาสีฟันแบบไหนเหมาะกับเหงือกอักเสบ", en: "Which toothpaste is right for sore gums?" },
-  { topic: "oral-care", th: "กลิ่นปากตอนเช้า แก้ยังไงได้บ้าง", en: "How do I deal with morning breath?" },
-  { topic: "hair-care", th: "แชมพูแบบไหนเหมาะกับผมทำสี", en: "Which shampoo suits colour-treated hair?" },
-  { topic: "wellness", th: "วิตามินตัวไหนควรกินคู่กัน กินพร้อมกันได้ไหม", en: "Which vitamins can I take together?" },
-  { topic: "wellness", th: "อาหารเสริมควรกินก่อนหรือหลังอาหาร", en: "Before or after meals — when do I take supplements?" },
-  { topic: "body-care", th: "ผิวกายแห้งคัน ควรทาอะไร", en: "Dry, itchy body skin — what should I use?" },
-  { topic: "personal-care", th: "เลือกของใช้ส่วนตัวยังไงให้เหมาะกับผิวบอบบาง", en: "Choosing personal care for sensitive skin?" },
+  { topic: "skincare", th: "จัดรูทีนเช้าให้หน่อย", en: "Build me a morning routine" },
+  { topic: "skincare", th: "วิตซีคู่เรตินอลได้ไหม", en: "Vitamin C with retinol?" },
+  { topic: "skincare", th: "เซรั่มตัวไหนเหมาะกับฉัน", en: "Which serum suits me?" },
+  { topic: "oral-care", th: "เหงือกอักเสบ ใช้อะไรดี", en: "Sore gums — what helps?" },
+  { topic: "oral-care", th: "กลิ่นปากตอนเช้า แก้ยังไง", en: "How to fix morning breath" },
+  { topic: "hair-care", th: "ผมทำสี ใช้แชมพูไหนดี", en: "Shampoo for coloured hair" },
+  { topic: "wellness", th: "วิตามินตัวไหนกินคู่กันได้", en: "Which vitamins go together?" },
+  { topic: "wellness", th: "อาหารเสริมกินตอนไหนดี", en: "When do I take supplements?" },
+  { topic: "body-care", th: "ผิวกายแห้งคัน ทาอะไรดี", en: "Dry, itchy body skin" },
+  { topic: "personal-care", th: "ผิวบอบบาง เลือกยังไงดี", en: "Choosing for sensitive skin" },
 
   // — general: always eligible, so there is something to ask on a first visit —
-  { topic: "general", th: "มีโปรโมชั่นอะไรน่าสนใจตอนนี้บ้าง", en: "What promotions are running right now?" },
-  { topic: "general", th: "ช่วยเลือกของขวัญให้หน่อย งบไม่เกิน 1,000", en: "Help me pick a gift under ฿1,000" },
-  { topic: "general", th: "สั่งของแล้วกี่วันถึง ส่งฟรีไหม", en: "How long is delivery, and is it free?" },
-  { topic: "general", th: "สมัครสมาชิกแล้วได้อะไรบ้าง", en: "What do I get as a member?" },
+  { topic: "general", th: "ตอนนี้มีโปรอะไรบ้าง", en: "What promotions are on?" },
+  { topic: "general", th: "เลือกของขวัญ งบ 1,000", en: "Pick a gift under ฿1,000" },
+  { topic: "general", th: "ส่งกี่วัน ส่งฟรีไหม", en: "Delivery time and cost?" },
+  { topic: "general", th: "สมาชิกได้อะไรบ้าง", en: "What do members get?" },
 ];
 
 const SCORE: Record<"concern" | "category" | "general", number> = {

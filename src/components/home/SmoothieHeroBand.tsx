@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ImagePlus, Loader2, Sparkles } from "lucide-react";
 import { HaloField } from "@/components/Halo";
 import SearchSuggestions from "@/components/SearchSuggestions";
+import clsx from "clsx";
 import { useLang } from "@/lib/lang-context";
 import { useRecentlyViewed } from "@/lib/recently-viewed-context";
 import { getProductBySlug } from "@/data/products";
@@ -165,11 +166,17 @@ export default function SmoothieHeroBand() {
     // wordmark still may not widen the page, but the search results under
     // the field have to be able to hang below the band. `hidden` on one axis
     // forces the other to clip too; `clip` does not.
-    // z-20 so the results can hang over the banner row below. The band is
-    // `isolate`, so its own sky and wordmark stay on their negative layers
-    // inside it; what this lifts is the band as a whole, above a carousel
-    // whose cards carry z-indexes of their own. Still under the header.
-    <section className="relative isolate z-20 overflow-x-clip bg-[linear-gradient(180deg,#cbe8f7_0%,#e2f3fb_40%,#f5fbfe_72%,#ffffff_100%)]">
+    // The band lifts above the banner row only while results are open, so
+    // they can hang over it. It cannot stay lifted: the middle banner below
+    // is scaled up and overhangs its own row by about 18px, and a band
+    // parked on top of that clipped the top off it. `isolate` keeps the sky
+    // and the wordmark on their negative layers inside the band either way.
+    <section
+      className={clsx(
+        "relative isolate overflow-x-clip bg-[linear-gradient(180deg,#cbe8f7_0%,#e2f3fb_40%,#f5fbfe_72%,#ffffff_100%)]",
+        showHits && "z-20"
+      )}
+    >
       <SkyClouds />
       {/* The wordmark drifts left on a loop rather than sitting still.
           Two identical copies inside a track as wide as they are, moving
