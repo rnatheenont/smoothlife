@@ -40,8 +40,13 @@ export default function SmoothieHeroBand() {
         Smoothlife.com
       </span>
 
-      <div className="mx-auto flex max-w-[1512px] items-end gap-6 px-4 md:px-6">
-        <div className="flex-1 py-10 text-center md:py-14 lg:py-16">
+      {/* The heading is centred on the band, not on the space left over
+          beside the mascot — as a flex sibling the mascot took 320px out of
+          the row and pushed the whole question a third of that to the left of
+          the page's own centre line. It is positioned instead, so it sits
+          beside the question without being measured into it. */}
+      <div className="relative mx-auto flex max-w-[1512px] flex-col justify-center px-4 md:min-h-[360px] md:px-6 lg:min-h-[403px]">
+        <div className="mx-auto w-full max-w-[560px] py-10 text-center md:py-0">
           <p className="text-sm text-slate-500 md:text-base lg:text-lg">
             {t("ผู้ช่วยหาสินค้าที่ใช่สำหรับคุณ", "Your personal product finder")}
           </p>
@@ -78,7 +83,7 @@ export default function SmoothieHeroBand() {
         {/* Below md the mascot would have to share about 200px with a 28px
             headline, so it steps out rather than being shrunk to a thumbnail
             or laid over the words. */}
-        <div className="relative hidden h-[260px] w-[260px] shrink-0 self-end md:block lg:h-[320px] lg:w-[320px]">
+        <div className="pointer-events-none absolute bottom-0 right-4 hidden h-[240px] w-[240px] md:block md:right-6 lg:h-[300px] lg:w-[300px]">
           {/* The character in the design is a full-body one in a lab coat
               that public/mascot does not have — every file there is a head.
               This is the same head the chat widget uses, so at least it is
