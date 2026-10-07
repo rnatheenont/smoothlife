@@ -225,7 +225,12 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
         // at any size — but a phone is only about one and a half cards wide,
         // so the full spread left a 60px sliver of each neighbour where a
         // desktop shows most of one.
-        className="relative mx-auto mt-6 h-[520px] w-full max-w-[1512px] touch-pan-y select-none [--spread:0.74] md:mt-9 md:h-[600px] md:[--spread:1]"
+        // The stage is as tall as the clip in it, worked out from the same
+        // number the clip's width comes from. It used to be a flat 520px
+        // while the clip sized itself off the viewport, so on a 375px phone
+        // there were 24px of nothing and on a 441px one the clip grew 25px
+        // out of the top of the stage and sat on the heading.
+        className="relative mx-auto mt-8 h-[calc(min(64vw,300px)*16/9+70px)] w-full max-w-[1512px] touch-pan-y select-none [--spread:0.74] md:mt-10 md:[--spread:1]"
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onPointerCancel={() => (dragX.current = null)}
@@ -277,7 +282,7 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
         </button>
       </div>
 
-      <div className="mt-6 flex justify-center gap-2">
+      <div className="mt-8 flex justify-center gap-2">
         {clips.map((_, i) => (
           <button
             key={i}
