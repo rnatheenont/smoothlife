@@ -26,8 +26,9 @@ import ProductCard from "@/components/ProductCard";
 // chosen is a thing to open.
 
 const SWIPE_THRESHOLD = 40;
-/** Enough to fill a row on a wide screen without the shelf scrolling. */
-const SHOWN = 5;
+/** Six in the rail, four and a half of them in view: the half card says
+ *  there is more, and now there genuinely is. */
+const SHOWN = 6;
 
 /** Where a card sits, given how far it is from the one in the middle. */
 function placement(offset: number) {

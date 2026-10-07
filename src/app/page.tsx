@@ -10,6 +10,7 @@ import { getLiveHeroBanners } from "@/lib/shopify-admin";
 import { getStorefrontHeroBanners } from "@/lib/storefront-banners";
 import { getStoreArticles, storeArticleHref } from "@/lib/storefront-articles";
 import KnowledgeArcGallery, { type ArcItem } from "@/components/home/KnowledgeArcGallery";
+import { articleProductSlugs } from "@/lib/article-products";
 import HeroCarousel from "@/components/HeroCarousel";
 import CategoryIconRow from "@/components/home/CategoryIconRow";
 import SmoothieHeroBand from "@/components/home/SmoothieHeroBand";
@@ -33,6 +34,9 @@ export function generateMetadata() {
 // automatically, without a code change or redeploy on this side.
 export const revalidate = 1800;
 
+/** How many products sit under a chosen article. */
+const ARTICLE_SHELF = 6;
+
 export default async function HomePage() {
   // The slides the team publishes on www.smoothlife.com, read off that page;
   // the theme-file route is the backup, the static list the last resort.
@@ -55,18 +59,27 @@ export default async function HomePage() {
     .slice(0, 8);
   // The newest posts from the Shopify blog (see storefront-articles.ts), dated;
   // the static guides only if that feed can't be read.
+  // The shelf under each cover is the catalogue of whichever brand the post
+  // talks about, read out of its own writing — see lib/article-products. Done
+  // here, on the server, because it reads the whole post body and only the
+  // handful of resulting slugs need to cross into the browser.
   const featuredArticles: ArcItem[] = liveArticles
     ? liveArticles.slice(0, 12).map((a) => ({
         key: a.handle,
         href: storeArticleHref(a),
         title: a.title,
         image: a.image,
+        productSlugs: articleProductSlugs(`${a.title} ${a.excerpt} ${a.html}`, ARTICLE_SHELF),
       }))
     : articles.slice(0, 12).map((a) => ({
         key: a.slug,
         href: `/knowledge/article/${a.slug}`,
         title: a.title,
         image: a.image as string | null,
+        productSlugs: articleProductSlugs(
+          `${a.title} ${a.excerpt} ${a.body.join(" ")}`,
+          ARTICLE_SHELF
+        ),
       }));
 
   // Real product-video clips (Firework CDN, provided directly — not scraped).

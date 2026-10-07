@@ -32,8 +32,9 @@ const FEATURED = [
   "vichy",
 ];
 
-/** Enough to fill a row on a wide screen without the panel scrolling. */
-const SHOWN = 5;
+/** Six in the rail, four and a half of them in view: the half card says
+ *  there is more, and now there genuinely is. */
+const SHOWN = 6;
 
 export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
   // Named order first, then whatever is left over if one of them is ever

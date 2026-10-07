@@ -2,14 +2,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { ChevronRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { getProductBySlug } from "@/data/products";
+import ProductCard from "@/components/ProductCard";
 
-export type ArcItem = { key: string; href: string; title: string; image: string | null };
+export type ArcItem = {
+  key: string;
+  href: string;
+  title: string;
+  image: string | null;
+  /** What the brand this post talks about sells — see lib/article-products.
+   *  Empty when the post names no brand, and then it gets no shelf. */
+  productSlugs: string[];
+};
 
 // Article covers laid along a gentle arc that drifts sideways, after the
 // "circular gallery" on fastwork.co/for-business. Theirs is a WebGL canvas;
 // this is ordinary DOM so every card stays a real link — focusable, crawlable,
 // and with Thai titles rendered as text rather than painted into a texture.
+//
+// A click on a cover that is not the chosen one chooses it and shows what the
+// post is about underneath; a click on the chosen one opens the post. Same
+// rule as the concern carousel: once something below is reading from a
+// selection, the unselected ones are things to pick, not things to open.
 
 const SPEED = 28; // px per second of auto-drift
 const MIN_CARDS = 9; // enough to fill a 1920px row with no gap at the seam
@@ -30,6 +46,15 @@ function cardImage(url: string): string {
 export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  // Opens on the first post that actually has something to show, so the shelf
+  // is not empty on arrival.
+  const [activeKey, setActiveKey] = useState(
+    () => items.find((i) => i.productSlugs.length > 0)?.key ?? items[0]?.key
+  );
+  const active = items.find((i) => i.key === activeKey) ?? items[0];
+  const shelf = (active?.productSlugs ?? [])
+    .map((slug) => getProductBySlug(slug))
+    .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
   // Repeated until the row is long enough to loop without a visible seam; the
   // repeats are hidden from assistive tech and the tab order.
@@ -191,6 +216,7 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
   if (cards.length === 0) return null;
 
   return (
+    <>
     <div
       ref={stageRef}
       // pan-y: a sideways swipe moves the row, an up/down swipe still scrolls the page.
@@ -208,8 +234,16 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
             draggable={false}
             aria-hidden={repeat || undefined}
             tabIndex={repeat ? -1 : undefined}
+            aria-current={a.key === activeKey ? "true" : undefined}
             title={a.title}
-            className="absolute left-0 top-5 block aspect-[16/10] w-[200px] origin-center overflow-hidden rounded-2xl bg-surface-mist shadow-[0_14px_32px_-14px_rgba(15,23,42,0.45)] ring-1 ring-black/5 outline-none will-change-transform focus-visible:ring-2 focus-visible:ring-brand-800 sm:w-[280px]"
+            onClick={(e) => {
+              if (a.key === activeKey) return;
+              e.preventDefault();
+              setActiveKey(a.key);
+            }}
+            className={`absolute left-0 top-5 block aspect-[16/10] w-[200px] origin-center overflow-hidden rounded-2xl bg-surface-mist shadow-[0_14px_32px_-14px_rgba(15,23,42,0.45)] outline-none will-change-transform focus-visible:ring-2 focus-visible:ring-brand-800 sm:w-[280px] ${
+              a.key === activeKey ? "ring-2 ring-brand-teal" : "ring-1 ring-black/5"
+            }`}
           >
             {a.image && (
               <Image
@@ -228,5 +262,33 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
         );
       })}
     </div>
+
+    {/* What the chosen post's brand sells. Hidden outright when the post
+        names no brand: an empty panel under an article says the feature is
+        broken, where no panel just says this one has nothing to sell. */}
+    {shelf.length > 0 && active && (
+      <div className="mx-auto mt-6 max-w-[1512px] px-4 md:px-6">
+        <div className="rounded-2xl bg-white p-3 shadow-card md:p-6">
+          <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none md:gap-4">
+            {shelf.map((p) => (
+              <li
+                key={p.slug}
+                className="w-[calc((100%-1.5rem)/2.5)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-4rem)/4.5)]"
+              >
+                <ProductCard product={p} />
+              </li>
+            ))}
+          </ul>
+          <Link
+            href={active.href}
+            className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-800 transition-colors hover:text-brand-600"
+          >
+            อ่านบทความนี้
+            <ChevronRight size={16} />
+          </Link>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
