@@ -1,6 +1,5 @@
 import Link from "next/link";
-import clsx from "clsx";
-import { ShieldCheck, Truck, Award, MessageCircle, ChevronRight, Repeat, PercentCircle } from "lucide-react";
+import { ChevronRight, Repeat, PercentCircle } from "lucide-react";
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
 import { brands } from "@/data/brands";
@@ -155,57 +154,6 @@ export default async function HomePage() {
         ]}
       />
 
-      {/* Trust strip — now after the first shelf of products rather than
-          above it. Four promises mean nothing to somebody who has not yet
-          seen anything they want; they mean a good deal to somebody who has
-          just found it and is deciding whether to buy it here.
-          Four promises, and each one is now a link to the page
-          that explains it — a shopper who reads "คืนสินค้าได้" and wants the
-          conditions had nowhere to go from here.
-
-          No tinted pills: four identical filled boxes made the row read as
-          decoration, and the fill was doing no work that a hairline between
-          columns doesn't do better. The sub-line carries the condition that
-          actually answers the doubt ("ไม่มียอดขั้นต่ำ") rather than restating
-          the title ("ทุกออเดอร์"). */}
-      <section className="border-y border-surface-line bg-white/70">
-        <div className="container-page">
-          <ul className="grid grid-cols-2 md:grid-cols-4">
-            {[
-              { icon: Truck, title: "ส่งฟรีทั่วไทย", sub: "ไม่มียอดขั้นต่ำ", href: "/help/delivery" },
-              { icon: ShieldCheck, title: "ของแท้ 100%", sub: "นำเข้าตรง มี อย.", href: "/about" },
-              { icon: MessageCircle, title: "ให้คำปรึกษาฟรี", sub: "ตอบโดยผู้เชี่ยวชาญ", href: "/help/contact" },
-              { icon: Award, title: "คืนสินค้าได้", sub: "ภายใน 14 วัน", href: "/help/delivery" },
-            ].map((f, i) => (
-              <li
-                key={f.title}
-                className={clsx(
-                  "border-surface-line",
-                  // Hairlines between columns only, so the row reads as one
-                  // band: every tile gets a left rule except the first in its
-                  // row, and the two-column layout needs a rule under the top
-                  // pair as well.
-                  i % 2 === 1 && "border-l md:border-l",
-                  i % 2 === 0 && "md:border-l",
-                  i === 0 && "md:border-l-0",
-                  i < 2 && "border-b md:border-b-0"
-                )}
-              >
-                <Link
-                  href={f.href}
-                  className="flex h-full items-center gap-3 px-3 py-4 transition-colors hover:bg-surface-mist focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-teal md:justify-center md:gap-3.5 md:px-5 md:py-5"
-                >
-                  <f.icon size={22} strokeWidth={1.75} className="shrink-0 text-brand-emerald" aria-hidden="true" />
-                  <span className="min-w-0">
-                    <span className="block truncate text-xs font-bold text-brand-ink md:text-sm">{f.title}</span>
-                    <span className="block truncate text-[11px] text-slate-500 md:text-xs">{f.sub}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
 
 
       {/* Free-gift promos — real active promos, rendered only when the
