@@ -1,11 +1,9 @@
 import Link from "next/link";
 import clsx from "clsx";
-import Image from "next/image";
 import { ShieldCheck, Truck, Award, MessageCircle, ChevronRight, Repeat, PercentCircle } from "lucide-react";
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
 import { brands } from "@/data/brands";
-import { promotions } from "@/data/promotions";
 import { articles } from "@/data/articles";
 import { subscriptionPlans } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
@@ -24,7 +22,6 @@ import DealOfTheDayCard from "@/components/DealOfTheDayCard";
 import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
 import SectionHeading from "@/components/SectionHeading";
 import ScrollReveal from "@/components/ScrollReveal";
-import StaggerGrid from "@/components/StaggerGrid";
 import ScaleReveal from "@/components/ScaleReveal";
 import BrandCircleRow from "@/components/home/BrandCircleRow";
 import ProductTabs from "@/components/ProductTabs";
@@ -210,63 +207,15 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Promotions, and the deals that follow it, are one block of the page
-          now: campaign tiles, then the day's deal and any free-gift offer.
-          Was the first section after Trust strip (filling the
-          slot the mobile-only "today's deals" slider used to occupy);
-          Categories now leads instead, so this follows it. */}
-      <section className="py-8 md:py-16 lg:py-24">
-        {/* The same Thai heading on every screen. Mobile used to get an
-            English caps eyebrow in its place — shouting in the one language
-            the page is not written in. */}
-        <ScrollReveal className="container-page">
-          <SectionHeading title="โปรโมชั่นและดีลเด็ด" subtitle="New, Best Sellers and Promotions" href="/promotions" />
-        </ScrollReveal>
-        {/* A rail on a phone, a grid on a desktop.
-            Four tiles stacked two-by-two is a screen and a half of scrolling
-            to see four things; swiping through them sideways is how every app
-            on the same phone shows the same content, and it costs no height
-            at all. snap-mandatory so a half-shown tile settles rather than
-            hanging in the gutter. */}
-        <StaggerGrid
-          className="container-page flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none md:grid md:grid-cols-4 md:gap-4 md:overflow-visible"
-          stagger={0.1}
-        >
-          {promotions.map((promo) => (
-            <Link
-              key={promo.slug}
-              href={`/promotions#${promo.slug}`}
-              className="group relative aspect-4/3 w-[72%] shrink-0 snap-start overflow-hidden rounded-surface transition-transform active:scale-[0.98] sm:w-[45%] md:w-auto md:active:scale-100"
-            >
-              <Image
-                src={promo.image}
-                alt={promo.title}
-                fill
-                className="object-cover transition-transform duration-500"
-              />
-              {/* The banners are shot with the caption's space left clear, and that
-                  space is already a deep teal — so the scrim only has to lift
-                  contrast, not manufacture it. Tinted to the photographs' own
-                  colour rather than black, which greyed them. */}
-              <div className="absolute inset-0 bg-linear-to-t from-[#0d3436]/75 via-[#0d3436]/20 via-45% to-transparent" />
-              <div className="absolute bottom-0 left-0 p-3 md:p-4 text-white">
-                <span className="rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold text-brand-800">
-                  {promo.badge}
-                </span>
-                <h3 className="mt-1 text-sm font-bold [text-shadow:0_1px_2px_rgb(0_0_0/0.45)] md:text-base">{promo.title}</h3>
-                <p className="text-[11px] text-white/90 [text-shadow:0_1px_2px_rgb(0_0_0/0.45)] md:text-xs">{promo.subtitle}</p>
-              </div>
-            </Link>
-          ))}
-        </StaggerGrid>
-      </section>
 
       {/* Free-gift promos — real active promos, rendered only when the
           respective widgets are toggled on (both default off). No py here:
           each card owns its own vertical margin so a disabled/empty widget
           (the default) collapses to zero height instead of leaving a big
-          blank padded gap with nothing in it. Kept right next to
-          Promotions/ProductTabs since it's the same "deals" cluster. */}
+          blank padded gap with nothing in it. Kept next to ProductTabs
+          since it's the same "deals" cluster — the four campaign tiles that
+          used to head it are gone, replaced by the wide PromoStrip up under
+          the category row, which carries the same four promotions. */}
       <section className="container-page">
         <DealOfTheDayCard />
       </section>
