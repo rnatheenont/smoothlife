@@ -251,13 +251,19 @@ export default function SmoothieHeroBand() {
               uses, so tapping one is the conversation already started rather
               than a different set of canned lines. */}
           {suggestions.length > 0 && (
-            <ul className="mt-4 flex flex-wrap justify-center gap-2">
+            // One line that scrolls on a phone, three wrapped lines
+            // anywhere wider. Each of these questions is a full sentence, so
+            // on a 375px screen every one of them took a line of its own and
+            // the three together pushed the banners below the fold. A rail
+            // says the same thing in a third of the height and reads as
+            // something to flick through rather than a list to read.
+            <ul className="scrollbar-none -mx-4 mt-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:justify-center md:overflow-visible md:px-0">
               {suggestions.map((s) => (
-                <li key={s}>
+                <li key={s} className="shrink-0 snap-start">
                   <button
                     type="button"
                     onClick={() => go(s)}
-                    className="rounded-full border border-slate-200 bg-white/80 px-3.5 py-2 text-xs text-slate-600 transition-colors hover:border-brand-teal hover:text-brand-800 md:text-[13px]"
+                    className="whitespace-nowrap rounded-full border border-slate-200 bg-white/80 px-3.5 py-2 text-xs text-slate-600 transition-colors hover:border-brand-teal hover:text-brand-800 md:whitespace-normal md:text-[13px]"
                   >
                     {s}
                   </button>
