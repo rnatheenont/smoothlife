@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, ScanFace, ShoppingBag, User } from "lucide-react";
+import { Home, LayoutGrid, ScanFace, ShoppingCart, User } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useCart } from "@/lib/cart-context";
 import { useBottomNavShown, resetBottomNav } from "@/lib/bottom-nav-visibility";
@@ -12,7 +12,7 @@ const tabs = [
   { href: "/", icon: Home, th: "หน้าแรก", en: "Home" },
   { href: "/shop", icon: LayoutGrid, th: "ช้อป", en: "Shop" },
   { href: "/advisor", icon: ScanFace, th: "ประเมินผิว", en: "Skin Check" },
-  { href: "/cart", icon: ShoppingBag, th: "ตะกร้า", en: "Cart" },
+  { href: "/cart", icon: ShoppingCart, th: "ตะกร้า", en: "Cart" },
   { href: "/account", icon: User, th: "บัญชี", en: "Account" },
 ];
 

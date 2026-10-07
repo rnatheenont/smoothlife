@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Play, Volume2, VolumeX, ShoppingBag, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Volume2, VolumeX, ShoppingCart, Check } from "lucide-react";
 import SocialBubbles from "@/components/home/SocialBubbles";
 import { Product } from "@/data/types";
 import { useCart } from "@/lib/cart-context";
@@ -154,7 +154,7 @@ function ClipCard({
               added ? "bg-brand-emerald text-white" : "bg-brand-gradient text-white hover:opacity-90"
             }`}
           >
-            {added ? <Check size={15} /> : <ShoppingBag size={15} />}
+            {added ? <Check size={15} /> : <ShoppingCart size={15} />}
           </button>
         )}
       </div>

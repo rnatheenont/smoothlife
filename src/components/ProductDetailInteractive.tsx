@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   Heart,
-  ShoppingBag,
+  ShoppingCart,
   Minus,
   Plus,
   Truck,
@@ -723,7 +723,7 @@ export default function ProductDetailInteractive({
                   {added ? (
                     <CheckCircle2 size={16} />
                   ) : (
-                    <ShoppingBag size={16} />
+                    <ShoppingCart size={16} />
                   )}
                   {added
                     ? "เพิ่มลงตะกร้าแล้ว"
@@ -1226,7 +1226,7 @@ export default function ProductDetailInteractive({
           disabled={!selectedVariant.inStock}
           className="shrink-0 text-xs active:scale-95"
         >
-          {added ? <CheckCircle2 size={15} /> : <ShoppingBag size={15} />}
+          {added ? <CheckCircle2 size={15} /> : <ShoppingCart size={15} />}
           {added
             ? "เพิ่มแล้ว"
             : selectedVariant.inStock

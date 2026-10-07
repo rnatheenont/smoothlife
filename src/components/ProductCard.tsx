@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, Check, Flame } from "lucide-react";
+import { Heart, Check, Flame, ShoppingCart } from "lucide-react";
 import { Product } from "@/data/types";
 import { formatTHB } from "@/lib/format";
 import StarRating from "./StarRating";
@@ -150,11 +150,13 @@ export default function ProductCard({ product }: { product: Product }) {
             only once something has sold — "ขายแล้ว 0 ชิ้น" is a reason not to
             buy, and inventing a number is not an option. */}
         {/* Price and proof face each other on a card with room for it, and
-            stack when there is not. Three to a row on a phone leaves about
-            115px, where the price and the star rating were printing on top
-            of each other — a container query, not a breakpoint, because the
-            same card is wide on /shop at that same screen width. */}
-        <div className="mt-auto flex flex-col items-start gap-1 pt-1.5 @[9rem]:flex-row @[9rem]:items-end @[9rem]:justify-between @[9rem]:gap-2">
+            stack when there is not. A container query, not a breakpoint: the
+            same card is 136px in a shelf and 229px in the /shop grid at the
+            same screen width. 13rem is where both halves actually fit — the
+            price with its discount chip needs about 92px and the stars with
+            their review count about 100px, and below that the chip printed
+            straight over the first star. */}
+        <div className="mt-auto flex flex-col items-start gap-1 pt-1.5 @[13rem]:flex-row @[13rem]:items-end @[13rem]:justify-between @[13rem]:gap-2">
           <div className="min-w-0">
             {hasMultiplePrices && <span className="block text-[11px] text-slate-500">เริ่มต้น</span>}
             <span className="block text-base font-bold tabular-nums text-brand-800 md:text-[17px]">
@@ -177,7 +179,7 @@ export default function ProductCard({ product }: { product: Product }) {
               </span>
             )}
           </div>
-          <div className="flex shrink-0 flex-col items-start gap-0.5 @[9rem]:items-end">
+          <div className="flex shrink-0 flex-col items-start gap-0.5 @[13rem]:items-end">
             {product.reviewCount > 0 && (
               <span className="flex items-center gap-1">
                 <StarRating rating={product.rating} size={12} />
@@ -222,6 +224,9 @@ export default function ProductCard({ product }: { product: Product }) {
           ) : (
             <button
               onClick={handleAdd}
+              // The label is a trolley below md, so the button needs the words
+              // back for anyone who cannot see the icon.
+              aria-label={added ? t("เพิ่มแล้ว", "Added") : t("ใส่ตะกร้า", "Add to cart")}
               className={clsx(
                 "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full px-1 text-[11px] font-bold text-white transition active:scale-[0.97] @[9rem]:text-[13px] md:h-10 md:text-sm",
                 // The drifting gradient needs a background wider than the
@@ -233,8 +238,13 @@ export default function ProductCard({ product }: { product: Product }) {
                   : "animate-gradientPan bg-brand-gradient bg-[length:200%_100%] hover:brightness-105"
               )}
             >
-              {added && <Check size={16} strokeWidth={2.75} />}
-              {added ? t("เพิ่มแล้ว", "Added") : t("ใส่ตะกร้า", "Add to cart")}
+              {added ? <Check size={16} strokeWidth={2.75} /> : <ShoppingCart size={17} className="md:hidden" />}
+              {/* On a phone the card is a third of the width it is on a
+                  desktop, so the words were down to 11px to fit. The trolley
+                  says the same thing at a size that can actually be hit. */}
+              <span className="hidden md:inline">
+                {added ? t("เพิ่มแล้ว", "Added") : t("ใส่ตะกร้า", "Add to cart")}
+              </span>
             </button>
           )}
         </div>
