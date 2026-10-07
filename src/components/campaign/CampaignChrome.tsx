@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { StoreHeader, StoreFooter } from "@/components/campaign/StoreChrome";
 import { SiteShell } from "@/components/SiteChrome";
+import { tickerProducts } from "@/lib/ticker-products";
 import { StorefrontWidgets } from "@/components/Providers";
 
 // Chrome for the account pages that sit in the middle of a campaign sign-up.
@@ -53,7 +54,7 @@ export default function CampaignChrome({ campaign, children }: { campaign: boole
   }
   return (
     <>
-      <SiteShell>{children}</SiteShell>
+      <SiteShell ticker={tickerProducts()}>{children}</SiteShell>
       <StorefrontWidgets />
     </>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -31,6 +32,8 @@ import NotificationBell from "@/components/NotificationBell";
 import HeaderSearch from "@/components/HeaderSearch";
 import { Avatar, Button } from "@/components/ui";
 import BrandLogo from "@/components/BrandLogo";
+import { formatTHB } from "@/lib/format";
+import type { TickerProduct } from "@/lib/ticker-products";
 
 import MegaMenu from "@/components/nav/MegaMenu";
 import MobileShopMenu from "@/components/nav/MobileShopMenu";
@@ -68,7 +71,7 @@ const navLinks = [
   { href: "/help", th: "ช่วยเหลือ", en: "Help", icon: HelpCircle },
 ];
 
-export default function Header() {
+export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
   const [open, setOpen] = useState(false);
   const [hideHeader, setHideHeader] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -111,49 +114,57 @@ export default function Header() {
         hideHeader && !open ? "-translate-y-full" : "translate-y-0"
       } ${scrolled ? "border-b border-slate-100" : "border-b border-transparent"}`}
     >
-      {/* The ticker belongs to the top of the page, not to the app bar.
+      {/* The strip belongs to the top of the page, not to the app bar.
           The header already hides on the way down and comes back on the way
-          up — but it was coming back with the promo line attached, so a
-          scroll-up gave back three stacked rows when what was wanted was the
-          search box. It now folds away as soon as the page moves and unfolds
-          only back at the very top, which is where a shop's announcements
-          make sense anyway. Desktop keeps it throughout: there is room. */}
-      <div
-        className={`bg-brand-gradient text-white text-[11px] md:text-xs overflow-hidden whitespace-nowrap transition-all duration-300 lg:max-h-10 lg:py-1.5 lg:opacity-100 ${
-          scrolled ? "max-h-0 py-0 opacity-0" : "max-h-10 py-1.5 opacity-100"
-        }`}
-      >
-        {/* Repeated enough times that each half of the track comfortably
-            exceeds any realistic viewport width — with just one repeat the
-            track was narrower than the banner itself, so the loop showed a
-            blank gap (or the two copies butting together with no visible
-            breathing room) instead of a continuous ticker. Same fix as the
-            brand-logo marquee's desktop gap bug. */}
-        <div className="hidden sm:flex w-max animate-marquee gap-16" style={{ animationDuration: "40s" }}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <span key={`a-${i}`} className="shrink-0" aria-hidden={i > 0 || undefined}>
-              ส่งฟรีทั่วไทย • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี
-            </span>
-          ))}
-          {Array.from({ length: 8 }).map((_, i) => (
-            <span key={`b-${i}`} className="shrink-0" aria-hidden="true">
-              ส่งฟรีทั่วไทย • ของแท้ 100% มีอย. • สมัครสมาชิกวันนี้รับ 100 คะแนนฟรี
-            </span>
-          ))}
+          up — but it was coming back with this attached, so a scroll-up gave
+          back three stacked rows when what was wanted was the search box. It
+          folds away as soon as the page moves and unfolds only back at the
+          very top. Desktop keeps it throughout: there is room.
+
+          It carries products now rather than three marketing claims on a
+          loop. The claims are still made, with links behind them, in the
+          trust strip on the home page; this band is on every page, so what
+          goes in it may as well be the shop. */}
+      {ticker.length > 0 && (
+        <div
+          className={`overflow-hidden bg-brand-gradient transition-all duration-300 lg:max-h-16 lg:opacity-100 ${
+            scrolled ? "max-h-0 opacity-0" : "max-h-16 opacity-100"
+          }`}
+        >
+          {/* Paused under the pointer: every chip is a link, and a link that
+              is still moving when it is clicked is a link that gets missed.
+              The second copy of the list is what closes the loop — it is the
+              same fourteen products, so it is hidden from assistive tech and
+              taken out of the tab order rather than read out twice. */}
+          <div
+            className="flex w-max animate-marquee gap-2 py-1.5 hover:[animation-play-state:paused]"
+            style={{ animationDuration: "70s" }}
+          >
+            {[...ticker, ...ticker].map((p, i) => {
+              const copy = i >= ticker.length;
+              return (
+                <Link
+                  key={`${p.slug}-${i}`}
+                  href={`/product/${p.slug}`}
+                  aria-hidden={copy || undefined}
+                  tabIndex={copy ? -1 : undefined}
+                  className="flex shrink-0 items-center gap-2 rounded-full bg-white/15 py-1 pl-1 pr-3 text-white transition-colors hover:bg-white/25"
+                >
+                  <span className="relative block h-7 w-7 shrink-0 overflow-hidden rounded-full bg-white">
+                    <Image src={p.image} alt="" fill sizes="28px" className="object-cover" />
+                  </span>
+                  <span translate="no" className="max-w-[190px] truncate text-[11px] font-medium">
+                    {p.name}
+                  </span>
+                  <span translate="no" className="text-[11px] font-bold tabular-nums">
+                    {formatTHB(p.price)}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-        <div className="flex sm:hidden w-max animate-marquee gap-16" style={{ animationDuration: "24s" }}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <span key={`a-${i}`} className="shrink-0" aria-hidden={i > 0 || undefined}>
-              ส่งฟรีทั่วไทย • ของแท้ 100% • สมัครรับ 100 คะแนน
-            </span>
-          ))}
-          {Array.from({ length: 8 }).map((_, i) => (
-            <span key={`b-${i}`} className="shrink-0" aria-hidden="true">
-              ส่งฟรีทั่วไทย • ของแท้ 100% • สมัครรับ 100 คะแนน
-            </span>
-          ))}
-        </div>
-      </div>
+      )}
       {/* Wider than the 1280 the page body sits in: the design puts the
           logo and the cart near the edges of a 1512 screen, so the bar has
           its own bed rather than container-page's. */}

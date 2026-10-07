@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Header from "@/components/Header";
+import type { TickerProduct } from "@/lib/ticker-products";
 import Footer from "@/components/Footer";
 
 // The back office is its own application: it brings its own header, its own
@@ -35,10 +36,10 @@ const isUnder = (pathname: string | null, base: string) =>
   pathname === base || Boolean(pathname?.startsWith(`${base}/`));
 
 /** This site's own header and footer, for whoever still wants them. */
-export function SiteShell({ children }: { children: ReactNode }) {
+export function SiteShell({ children, ticker = [] }: { children: ReactNode; ticker?: TickerProduct[] }) {
   return (
     <>
-      <Header />
+      <Header ticker={ticker} />
       <main className="flex-1">{children}</main>
       <Footer />
       <div className="h-[60px] lg:hidden" aria-hidden />
@@ -46,8 +47,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
   );
 }
 
-export default function SiteChrome({ children }: { children: ReactNode }) {
+export default function SiteChrome({ children, ticker }: { children: ReactNode; ticker: TickerProduct[] }) {
   const pathname = usePathname();
   if (BARE.some((p) => isUnder(pathname, p))) return <>{children}</>;
-  return <SiteShell>{children}</SiteShell>;
+  return <SiteShell ticker={ticker}>{children}</SiteShell>;
 }

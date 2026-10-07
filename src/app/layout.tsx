@@ -3,6 +3,7 @@ import { Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import SiteChrome from "@/components/SiteChrome";
+import { tickerProducts } from "@/lib/ticker-products";
 import { organizationJsonLd, websiteJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { SITE_URL } from "@/lib/site-url";
 // Shared with /lib/site-pages so the home page and the tab title can never
@@ -91,7 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteJsonLd()) }} />
         <Providers>
-          <SiteChrome>{children}</SiteChrome>
+          <SiteChrome ticker={tickerProducts()}>{children}</SiteChrome>
         </Providers>
         <Analytics />
         <SpeedInsights />

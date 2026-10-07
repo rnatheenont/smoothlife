@@ -3,6 +3,7 @@ import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server
 import { UUID_RE } from "@/lib/flash-sale";
 import { StoreHeader, StoreFooter } from "@/components/campaign/StoreChrome";
 import { SiteShell } from "@/components/SiteChrome";
+import { tickerProducts } from "@/lib/ticker-products";
 import { StorefrontWidgets } from "@/components/Providers";
 import AutoShopifySignIn from "@/components/AutoShopifySignIn";
 
@@ -58,7 +59,7 @@ export default async function FlashSaleCampaignLayout({
   }
   return (
     <>
-      <SiteShell>{children}</SiteShell>
+      <SiteShell ticker={tickerProducts()}>{children}</SiteShell>
       <StorefrontWidgets />
     </>
   );
