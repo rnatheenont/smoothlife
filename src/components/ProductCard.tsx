@@ -3,10 +3,9 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, Check, Flame, ShoppingCart } from "lucide-react";
+import { Heart, Check, Flame, ShoppingCart, Star } from "lucide-react";
 import { Product } from "@/data/types";
 import { formatTHB } from "@/lib/format";
-import StarRating from "./StarRating";
 import { useCart, useWishlist } from "@/lib/cart-context";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
 import clsx from "clsx";
@@ -71,6 +70,9 @@ export default function ProductCard({ product }: { product: Product }) {
   const promoChip = isInActivePromo ? ((settings.promotion_badge.config.labelTh as string) || "ของแถม") : null;
   const isWished = has(product.slug);
   const [added, setAdded] = useState(false);
+  // Counts the times this card has been saved, so the animation can be
+  // restarted by remounting rather than by waiting for it to finish.
+  const [beat, setBeat] = useState(0);
   const { lang, t } = useLang();
   const showSold = (product.sold ?? 0) > SHOW_SOLD_ABOVE;
   const discount = product.compareAtPrice
@@ -81,6 +83,12 @@ export default function ProductCard({ product }: { product: Product }) {
   const lowStock =
     typeof defaultVariant?.quantity === "number" && defaultVariant.quantity > 0 && defaultVariant.quantity <= 10;
   const soldOut = !product.inStock;
+
+  function handleWish() {
+    const saving = !isWished;
+    toggle(product.slug);
+    if (saving) setBeat((b) => b + 1);
+  }
 
   function handleAdd() {
     if (soldOut) return;
@@ -188,9 +196,14 @@ export default function ProductCard({ product }: { product: Product }) {
             </div>
             <div className="flex shrink-0 flex-col items-start gap-0.5 @[13rem]:items-end">
               {product.reviewCount > 0 && (
-                <span className="flex items-center gap-1">
-                  <StarRating rating={product.rating} size={12} />
-                  <span className="text-[11px] text-slate-500">({product.reviewCount})</span>
+                // One star and the score, not five stars. Five of them is a
+                // picture of a scale, and on a card a third of a phone wide
+                // it was a picture 70px long that still needed the count
+                // written beside it to mean anything. "4.8 (399)" is the same
+                // sentence in a third of the room.
+                <span translate="no" className="flex items-center gap-1 text-[11px] tabular-nums text-slate-500">
+                  <Star size={11} className="shrink-0 fill-amber-400 text-amber-400" />
+                  <span className="font-semibold text-slate-700">{product.rating.toFixed(1)}</span>({product.reviewCount})
                 </span>
               )}
               {showSold && (
@@ -217,12 +230,24 @@ export default function ProductCard({ product }: { product: Product }) {
               rather than adding a third accent on the image. */}
           <div className="flex items-center gap-2 pt-2">
             <button
-              onClick={() => toggle(product.slug)}
+              onClick={handleWish}
               aria-label={isWished ? "เอาออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}
               aria-pressed={isWished}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 transition-colors hover:text-sale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 md:h-10 md:w-10"
+              className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 transition-colors hover:text-sale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 md:h-10 md:w-10"
             >
-              <Heart size={20} className={isWished ? "fill-sale text-sale" : "text-brand-800"} />
+              {/* Keyed on the count: a CSS animation only plays when the
+                  element is new, and saving the same card twice has to look
+                  the same both times. */}
+              {beat > 0 && (
+                <span
+                  key={`ring-${beat}`}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 animate-heartRing rounded-full border-2 border-sale"
+                />
+              )}
+              <span key={`heart-${beat}`} className={clsx(beat > 0 && "animate-heartPop")}>
+                <Heart size={20} className={isWished ? "fill-sale text-sale" : "text-brand-800"} />
+              </span>
             </button>
             {soldOut ? (
               <span className="flex h-9 flex-1 items-center justify-center rounded-full bg-slate-100 text-[13px] font-semibold text-slate-500 md:h-10">
