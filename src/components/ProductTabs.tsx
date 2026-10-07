@@ -65,10 +65,11 @@ export default function ProductTabs({ tabs }: { tabs: ProductTab[] }) {
         </div>
       </ScrollReveal>
       {/* Phones: the row bleeds off the right edge, so a half-visible card
-          says "swipe". Tablet and up: the row sits inside the same 1280px
-          column as the heading and the arrows below, showing whole cards
-          only (3 on tablet, 6 on desktop) — the arrows and progress bar carry
-          the "more" cue there instead of a card sliced at the screen edge. */}
+          says "swipe". Tablet: three whole cards inside the same 1280px
+          column as the heading, with the arrows and progress bar below
+          carrying the "more" cue. Desktop: six and a half, so the sliced
+          card says it too — the same language the brand, concern and article
+          shelves use, and there are eight per tab to scroll to. */}
       <div className="md:mx-auto md:max-w-[1280px] md:px-6">
         <div
           key={current.label}
@@ -79,7 +80,7 @@ export default function ProductTabs({ tabs }: { tabs: ProductTab[] }) {
           {current.products.map((p) => (
             <div
               key={p.slug}
-              className="w-[45vw] shrink-0 snap-start sm:w-56 md:w-[calc((100%-3rem)/3)] lg:w-[calc((100%-7.5rem)/6)]"
+              className="w-[45vw] shrink-0 snap-start sm:w-56 md:w-[calc((100%-3rem)/3)] lg:w-[calc((100%-9rem)/6.5)]"
             >
               <ProductCard product={p} />
             </div>

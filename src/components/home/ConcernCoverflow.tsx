@@ -156,7 +156,10 @@ export default function ConcernCoverflow() {
                   show four and a half: the half card is what says there is
                   more to the right, where five that fit exactly says there
                   is not. */}
-              <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-none md:gap-4">
+              <ul // -m-2 p-2: overflow-x-auto clips on both axes, so without room
+                  // inside it the cards' shadows and rounded corners were being
+                  // sliced flat against the top and bottom of the rail.
+                  className="-m-2 flex snap-x snap-mandatory gap-3 overflow-x-auto p-2 scrollbar-none md:gap-4">
                 {shelf.map((p) => (
                   <li
                     key={p.slug}
