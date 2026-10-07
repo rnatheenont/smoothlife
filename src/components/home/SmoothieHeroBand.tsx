@@ -28,6 +28,36 @@ import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
 /** Bumped after each mount — see the `seed` note inside the component. */
 let visitSeed = 0;
 
+// The headline is an invitation that keeps rephrasing itself.
+//
+// Split into three parts rather than one string so the mascot's name stays
+// the coloured anchor wherever it falls in the sentence — and so the spacing
+// around it can be exact: Thai does not put a space between its own words,
+// but it does put one either side of a Latin one, so the gaps are baked into
+// these strings rather than added by the markup.
+//
+// Every line is one line at every width this band is used at; nothing here
+// may wrap, or the band changes height five times a minute.
+type HeadLine = { pre: string; mark: string; post: string };
+
+const HEADLINES_TH: HeadLine[] = [
+  { pre: "คุยกับ", mark: "น้อง Smoothie", post: "" },
+  { pre: "ให้", mark: "น้อง Smoothie", post: " ช่วยเลือก" },
+  { pre: "เล่าให้", mark: "น้อง Smoothie", post: " ฟัง" },
+  { pre: "ส่งรูปให้", mark: "น้อง Smoothie", post: " ดู" },
+  { pre: "ถาม", mark: "น้อง Smoothie", post: " ก่อนซื้อ" },
+];
+
+const HEADLINES_EN: HeadLine[] = [
+  { pre: "Chat with ", mark: "Smoothie", post: "" },
+  { pre: "Let ", mark: "Smoothie", post: " pick for you" },
+  { pre: "Tell ", mark: "Smoothie", post: " what's up" },
+  { pre: "Show ", mark: "Smoothie", post: " a photo" },
+  { pre: "Ask ", mark: "Smoothie", post: " before you buy" },
+];
+
+const HEADLINE_MS = 3800;
+
 export default function SmoothieHeroBand() {
   const [q, setQ] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -46,6 +76,25 @@ export default function SmoothieHeroBand() {
   useEffect(() => {
     visitSeed += 1;
   }, []);
+
+  // The headline always opens on the first line — the one with the plain
+  // invitation — and only then starts moving. It holds still while somebody
+  // is typing: a sentence rearranging itself above the box you are writing
+  // in is the one moment it is not charming.
+  const headlines = lang === "en" ? HEADLINES_EN : HEADLINES_TH;
+  // Which line is showing and which one just left, so they can move the same
+  // way: the new one rises into place and the old one keeps rising out of it,
+  // rather than the old one sinking back down past the new one.
+  const [{ cur, prev }, setLine] = useState({ cur: 0, prev: -1 });
+  const [typing, setTyping] = useState(false);
+  useEffect(() => {
+    if (typing) return;
+    const timer = setInterval(
+      () => setLine((n) => ({ prev: n.cur, cur: (n.cur + 1) % headlines.length })),
+      HEADLINE_MS
+    );
+    return () => clearInterval(timer);
+  }, [typing, headlines.length]);
 
   const suggestions = useMemo(() => {
     const seen = recentSlugs
@@ -102,15 +151,37 @@ export default function SmoothieHeroBand() {
           the page's own centre line. It is positioned instead, so it sits
           beside the question without being measured into it. */}
       <div className="relative mx-auto flex max-w-[1512px] flex-col justify-center px-4 md:min-h-[360px] md:px-6 lg:min-h-[403px]">
-        <div className="mx-auto w-full max-w-[560px] py-10 text-center md:py-0">
+        <div className="mx-auto w-full max-w-[720px] py-10 text-center md:py-0">
           <p className="text-sm text-slate-500 md:text-base lg:text-lg">
             {t("ผู้ช่วยหาสินค้าที่ใช่สำหรับคุณ", "Your personal product finder")}
           </p>
-          <h2 className="mt-2 text-[28px] font-bold leading-tight text-brand-ink md:text-[40px] lg:text-[48px]">
-            {t("คุยกับน้อง", "Chat with")}{" "}
-            <span translate="no" className="text-brand-teal">
-              Smoothie
-            </span>
+          {/* All five stacked in one grid cell, so the band's height is the
+              tallest of them from the first paint and nothing below it ever
+              moves. Only the line on show is readable; the rest are hidden
+              from assistive tech rather than announced on a timer. */}
+          <h2 className="mt-2 grid text-[22px] font-bold leading-tight text-brand-ink md:text-[34px] lg:text-[42px]">
+            {headlines.map((h, i) => (
+              <span
+                key={h.pre + h.post}
+                aria-hidden={i !== cur || undefined}
+                // translate, not transform: Tailwind v4 writes translate-y-*
+                // to the `translate` property, and a transition that only
+                // lists `transform` leaves the slide to snap.
+                className={`col-start-1 row-start-1 whitespace-nowrap transition-[opacity,translate,filter] duration-500 ease-out ${
+                  i === cur
+                    ? "opacity-100 blur-0 translate-y-0"
+                    : i === prev
+                      ? "pointer-events-none opacity-0 blur-[3px] -translate-y-3"
+                      : "pointer-events-none opacity-0 blur-[3px] translate-y-3"
+                }`}
+              >
+                {h.pre}
+                <span translate="no" className="text-brand-teal">
+                  {h.mark}
+                </span>
+                {h.post}
+              </span>
+            ))}
           </h2>
 
           <form onSubmit={submit} className="relative mx-auto mt-5 w-full max-w-[460px] md:mt-7">
@@ -121,6 +192,8 @@ export default function SmoothieHeroBand() {
               id="smoothie-hero-ask"
               value={q}
               onChange={(e) => setQ(e.target.value)}
+              onFocus={() => setTyping(true)}
+              onBlur={() => setTyping(false)}
               type="text"
               autoComplete="off"
               placeholder={t("วันนี้คุณรู้สึกยังไง", "How are you feeling today?")}
