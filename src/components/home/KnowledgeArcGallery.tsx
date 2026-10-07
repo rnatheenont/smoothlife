@@ -280,7 +280,11 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
         names no brand: an empty panel under an article says the feature is
         broken, where no panel just says this one has nothing to sell. */}
     {shelf.length > 0 && active && (
-      <div className="mx-auto mt-6 max-w-[1512px] px-4 md:px-6">
+      // mt-10 to match the other two shelves on the page: whatever is above
+      // a product shelf ends in a hard edge, and the shelf starts with a row
+      // of white cards, so they need the same air between them wherever that
+      // pairing happens.
+      <div className="mx-auto mt-10 max-w-[1512px] px-4 md:px-6">
                   <ul // -m-2 p-2: overflow-x-auto clips on both axes, so without room
                   // inside it the cards' shadows and rounded corners were being
                   // sliced flat against the top and bottom of the rail.

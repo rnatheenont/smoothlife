@@ -122,7 +122,7 @@ export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
         aria-labelledby={`brand-tab-${brand.slug}`}
         // mt-8: the little notch used to hold the shelf off the brand names;
         // with it gone the cards were sitting on top of the labels.
-        className="mx-auto mt-8 max-w-[1512px] px-4 md:px-6"
+        className="mx-auto mt-10 max-w-[1512px] px-4 md:px-6"
       >
                   {shelf.length > 0 ? (
             <>
