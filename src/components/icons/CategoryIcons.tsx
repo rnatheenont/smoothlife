@@ -204,3 +204,15 @@ export function TopBrandIcon({ blobClassName, ...props }: IconProps) {
     </Icon>
   );
 }
+
+/** The shop's own six categories, by slug. Every row of categories on the
+ *  site draws from this one map so a mark never means two different things
+ *  in two places. */
+export const CATEGORY_ICON: Record<string, typeof SkincareIcon> = {
+  skincare: SkincareIcon,
+  "oral-care": OralCareIcon,
+  "hair-care": HairCareIcon,
+  "personal-care": PersonalCareIcon,
+  wellness: WellnessIcon,
+  "body-care": BodyCareIcon,
+};

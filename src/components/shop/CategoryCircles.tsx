@@ -2,15 +2,7 @@
 
 import Link from "next/link";
 import clsx from "clsx";
-import {
-  AllCategoriesIcon,
-  BodyCareIcon,
-  HairCareIcon,
-  OralCareIcon,
-  PersonalCareIcon,
-  SkincareIcon,
-  WellnessIcon,
-} from "@/components/icons/CategoryIcons";
+import { AllCategoriesIcon, CATEGORY_ICON, SkincareIcon } from "@/components/icons/CategoryIcons";
 import { categories } from "@/data/categories";
 import type { ShopSearchParams } from "@/lib/filter-products";
 
@@ -23,14 +15,6 @@ import type { ShopSearchParams } from "@/lib/filter-products";
 // at 64px, turned it into a line of pale smudges with no two alike. These are
 // the same drawn marks the home page uses, for the same reason: a mark is the
 // same mark every time and is still legible at 44px.
-const ICONS: Record<string, typeof SkincareIcon> = {
-  skincare: SkincareIcon,
-  "oral-care": OralCareIcon,
-  "hair-care": HairCareIcon,
-  "personal-care": PersonalCareIcon,
-  wellness: WellnessIcon,
-  "body-care": BodyCareIcon,
-};
 
 export default function CategoryCircles({ current }: { current: ShopSearchParams }) {
   function hrefFor(slug: string | null) {
@@ -48,7 +32,7 @@ export default function CategoryCircles({ current }: { current: ShopSearchParams
     ...categories.map((c) => ({
       slug: c.slug as string,
       label: c.nameTh,
-      Icon: ICONS[c.slug] ?? AllCategoriesIcon,
+      Icon: CATEGORY_ICON[c.slug] ?? AllCategoriesIcon,
     })),
   ];
 

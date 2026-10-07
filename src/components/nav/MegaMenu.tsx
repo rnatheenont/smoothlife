@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { menuCategories } from "@/data/nav-menu";
-import { categoryImage } from "@/data/categories";
+import { CATEGORY_ICON } from "@/components/icons/CategoryIcons";
 
 // The shop menu, on a screen with a pointer.
 //
@@ -142,14 +142,20 @@ export default function MegaMenu({
                       }`}
                     >
                       <span className="flex items-center gap-2.5">
-                        <span className="relative size-7 shrink-0 overflow-hidden rounded-full bg-surface-soft">
-                          <Image
-                            src={categoryImage(c.slug)}
-                            alt=""
-                            fill
-                            sizes="28px"
-                            className="object-cover"
-                          />
+                        {/* The same drawn marks the home and /shop rows use.
+                            These were packshots of whatever each category
+                            sold best that week, which at 28px is a pale
+                            smudge and a different smudge every rebuild. */}
+                        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white ring-1 ring-slate-100">
+                          {(() => {
+                            const Icon = CATEGORY_ICON[c.slug];
+                            return Icon ? (
+                              <Icon
+                                className="size-5 text-brand-1000"
+                                blobClassName={on ? "text-brand-400/45" : "text-brand-200/70"}
+                              />
+                            ) : null;
+                          })()}
                         </span>
                         {c.label}
                       </span>
@@ -230,13 +236,11 @@ export default function MegaMenu({
                   shape the artwork already is, and it ends at 146px, or 176
                   on a large monitor where the rail can afford to be wider.
 
-                  Six brands rather than eight is what pays for that. Two
-                  columns cannot grow wider than the rail, and four rows of a
-                  square tile would make the panel taller than a laptop
-                  screen; three rows of a big tile take the same room four
-                  rows of a small one did. "ดูแบรนด์ทั้งหมด" below carries
-                  the rest. */}
-              <ul className="mt-3 grid grid-cols-2 gap-2">
+                  Three across rather than two. A square tile at two across
+                  was 146px of mostly white around a logo; at three it is
+                  about 95px, which is as big as these marks need to be read,
+                  and the six brands fit in two rows instead of three. */}
+              <ul className="mt-3 grid grid-cols-3 gap-2">
                 {active?.brands.map((b) => (
                   <li key={b.slug}>
                     <Link
@@ -251,7 +255,7 @@ export default function MegaMenu({
                             src={b.image}
                             alt={b.name}
                             fill
-                            sizes="200px"
+                            sizes="120px"
                             className="object-contain p-1"
                           />
                         </span>
