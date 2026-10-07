@@ -81,7 +81,7 @@ export default function FlashSaleShelf() {
             {shelf.map((p) => (
               <li
                 key={p.slug}
-                className="w-[calc((100%-1.5rem)/2.5)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-6rem)/6.5)]"
+                className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-6rem)/6.5)]"
               >
                 <ProductCard product={p} />
               </li>
