@@ -49,6 +49,10 @@ const deskNav = [
   { href: "/promotions", th: "โปรโมชั่น", en: "Promotions" },
 ];
 
+/** Where every "Sale" in this header points. Same collection as the home
+ *  page's Sale disc — one sale, one destination. */
+const SALE_HREF = "/collections/sale-up-to-50-off";
+
 const deskUtilityNav = [
   { href: "/help", th: "คำถามที่พบบ่อย", en: "FAQ" },
   { href: "/account/referral", th: "โปรแกรม Affiliate", en: "Affiliate program" },
@@ -131,39 +135,58 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
             scrolled ? "max-h-0 opacity-0" : "max-h-16 opacity-100"
           }`}
         >
-          {/* Paused under the pointer: every chip is a link, and a link that
-              is still moving when it is clicked is a link that gets missed.
-              The second copy of the list is what closes the loop — it is the
-              same fourteen products, so it is hidden from assistive tech and
-              taken out of the tab order rather than read out twice. */}
-          <div
-            className="flex w-max animate-marquee gap-2 py-1.5 hover:[animation-play-state:paused]"
-            style={{ animationDuration: "70s" }}
-          >
-            {[...ticker, ...ticker].map((p, i) => {
-              const copy = i >= ticker.length;
-              return (
-                <Link
-                  key={`${p.slug}-${i}`}
-                  href={`/product/${p.slug}`}
-                  aria-hidden={copy || undefined}
-                  tabIndex={copy ? -1 : undefined}
-                  className="flex shrink-0 items-center gap-2 rounded-full bg-white py-1 pl-1 pr-3 ring-1 ring-slate-200/80 transition-colors hover:ring-brand-teal"
-                >
-                  {/* The packshots are products on white, so the thumbnail needs a
-                      slot of its own or it dissolves into the card around it. */}
-                  <span className="relative block h-7 w-7 shrink-0 overflow-hidden rounded-full bg-slate-100">
-                    <Image src={p.image} alt="" fill sizes="28px" className="object-cover" />
-                  </span>
-                  <span translate="no" className="max-w-[210px] truncate text-[12.5px] font-medium text-slate-600">
-                    {p.name}
-                  </span>
-                  <span translate="no" className="text-[13px] font-bold tabular-nums text-brand-800">
-                    {formatTHB(p.price)}
-                  </span>
-                </Link>
-              );
-            })}
+          <div className="flex items-center gap-2 py-1.5 pl-3 pr-0">
+            {/* Sits outside the moving track, pinned to the left edge: the
+                point of it is that it is always there to be pressed, and a
+                shortcut that is only on screen for four seconds out of every
+                seventy is not a shortcut. Red because red is this site's one
+                word for money off — the same chip the product cards wear. */}
+            <Link
+              href={SALE_HREF}
+              className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-sale px-3.5 text-[12.5px] font-bold text-white shadow-xs transition-transform hover:scale-105 active:scale-95"
+            >
+              <Tag size={13} strokeWidth={2.5} />
+              Sale
+            </Link>
+            {/* Paused under the pointer: every chip is a link, and a link that
+                is still moving when it is clicked is a link that gets missed.
+                The second copy of the list is what closes the loop — it is the
+                same fourteen products, so it is hidden from assistive tech and
+                taken out of the tab order rather than read out twice. */}
+            {/* Faded at the left edge so a chip leaving the track dissolves
+                instead of being sliced mid-word against the Sale tag. */}
+            <div className="min-w-0 flex-1 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_28px)]">
+              <div
+                className="flex w-max animate-marquee gap-2 hover:[animation-play-state:paused]"
+                style={{ animationDuration: "70s" }}
+              >
+                {[...ticker, ...ticker].map((p, i) => {
+                  const copy = i >= ticker.length;
+                  return (
+                    <Link
+                      key={`${p.slug}-${i}`}
+                      href={`/product/${p.slug}`}
+                      aria-hidden={copy || undefined}
+                      tabIndex={copy ? -1 : undefined}
+                      className="flex shrink-0 items-center gap-2 rounded-full bg-white py-1 pl-1 pr-3 ring-1 ring-slate-200/80 transition-colors hover:ring-brand-teal"
+                    >
+                      {/* The packshots are products on white, so the thumbnail
+                          needs a slot of its own or it dissolves into the card
+                          around it. */}
+                      <span className="relative block h-7 w-7 shrink-0 overflow-hidden rounded-full bg-slate-100">
+                        <Image src={p.image} alt="" fill sizes="28px" className="object-cover" />
+                      </span>
+                      <span translate="no" className="max-w-[210px] truncate text-[12.5px] font-medium text-slate-600">
+                        {p.name}
+                      </span>
+                      <span translate="no" className="text-[13px] font-bold tabular-nums text-brand-800">
+                        {formatTHB(p.price)}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
