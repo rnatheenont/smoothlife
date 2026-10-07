@@ -220,7 +220,12 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
       </h2>
 
       <div
-        className="relative mx-auto mt-6 h-[520px] w-full max-w-[1512px] touch-pan-y select-none md:mt-9 md:h-[600px]"
+        // --spread pulls the neighbours in on a narrow screen. The offsets
+        // below are percentages of a card's own width, which holds its shape
+        // at any size — but a phone is only about one and a half cards wide,
+        // so the full spread left a 60px sliver of each neighbour where a
+        // desktop shows most of one.
+        className="relative mx-auto mt-6 h-[520px] w-full max-w-[1512px] touch-pan-y select-none [--spread:0.74] md:mt-9 md:h-[600px] md:[--spread:1]"
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onPointerCancel={() => (dragX.current = null)}
@@ -232,7 +237,7 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
               key={i}
               aria-hidden={!p.shown}
               style={{
-                transform: `translate(-50%, -50%) translate(${p.x}%, 0) scale(${p.scale})`,
+                transform: `translate(-50%, -50%) translate(calc(${p.x}% * var(--spread)), 0) scale(${p.scale})`,
                 zIndex: p.z,
                 opacity: p.opacity,
               }}
@@ -255,7 +260,10 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
           type="button"
           onClick={() => step(-1)}
           aria-label="คลิปก่อนหน้า"
-          className="absolute left-3 top-1/2 z-40 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-ink shadow-card transition-colors hover:bg-white md:left-8 lg:left-16"
+          // Hidden on a phone: there is no room for them beside the stack,
+          // so they end up sitting on the clips — and a thumb there swipes
+          // rather than aims at a 40px target.
+          className="absolute left-3 top-1/2 z-40 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-ink shadow-card transition-colors hover:bg-white md:left-8 md:grid lg:left-16"
         >
           <ChevronLeft size={20} />
         </button>
@@ -263,7 +271,7 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
           type="button"
           onClick={() => step(1)}
           aria-label="คลิปถัดไป"
-          className="absolute right-3 top-1/2 z-40 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-ink shadow-card transition-colors hover:bg-white md:right-8 lg:right-16"
+          className="absolute right-3 top-1/2 z-40 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-brand-ink shadow-card transition-colors hover:bg-white md:right-8 md:grid lg:right-16"
         >
           <ChevronRight size={20} />
         </button>
