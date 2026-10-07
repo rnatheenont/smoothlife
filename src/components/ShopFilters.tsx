@@ -5,7 +5,7 @@ import { categories, concerns } from "@/data/categories";
 import { houseBrands, otherBrands } from "@/data/brands";
 import { PROMO_FILTERS, ShopSearchParams } from "@/lib/filter-products";
 import { SlidersHorizontal, Check, X, ChevronDown, Search, Star } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import clsx from "clsx";
 
 // Fewer than this and there's nothing to collapse — the toggle would just
@@ -26,6 +26,19 @@ export default function ShopFilters({
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Lock the page while the sheet is up. Without it the page carried on
+  // scrolling behind a sheet that covers the whole screen, so closing it put
+  // you somewhere you never chose to be — and overscroll-contain on the list
+  // inside stops a flick past the last brand from doing the same thing.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen]);
   const [showAllBrands, setShowAllBrands] = useState(false);
   const [brandQuery, setBrandQuery] = useState("");
   // Price boxes are typed into, so they hold their own value until applied —
@@ -427,7 +440,7 @@ export default function ShopFilters({
                 <X size={16} />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto px-5">{mobileContent}</div>
+            <div className="flex-1 overflow-y-auto overscroll-contain px-5">{mobileContent}</div>
             <div className="p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shrink-0">
               <button
                 onClick={() => setMobileOpen(false)}
