@@ -1,29 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { ArrowUp } from "lucide-react";
+import { useQuickChat } from "@/lib/quickchat-context";
 
 // A way back to the top of a long page.
 //
-// Rendered inside QuickChat's own container rather than pinned to a corner of
-// its own. The chat launcher can be dragged anywhere on screen, so a second
-// button at a fixed corner either ends up far away from it or lands on top of
-// it; parented to it, this rides along with the drag, the snap to an edge,
-// and the way the launcher lifts over the tab bar and the buy bar — none of
-// which has to be repeated here.
+// On the left. The right-hand corner belongs to the chat launcher, and it
+// is not just the launcher that is there: the mascot's speech bubble rises
+// out of its top, and the whole thing can be dragged anywhere on screen. A
+// second round button in that corner either sits under the bubble or walks
+// away from the launcher the moment someone moves it. Its own corner, with
+// nothing in it, is the one place neither can happen.
 //
-// Beside the launcher, not above it: above is where the mascot's speech
-// bubble goes, and that bubble was landing on this button. Sharing a bottom
-// edge with the launcher also makes the two read as a pair standing on the
-// same line.
+// It still stacks on the same bars the launcher does, so the two sit level
+// at opposite ends of the screen.
 
 /** Roughly a screen and a half down: far enough that scrolling back by hand
  *  is a real chore, and not so soon that it appears while someone is still
  *  reading the first screen. */
 const SHOW_AFTER = 900;
 
-export default function BackToTop({ side = "right" }: { side?: "left" | "right" }) {
+/** MobileTabBar's measured height, and MobileStickyBar's. Kept in step with
+ *  the same numbers in QuickChat. */
+const TAB_BAR_H = 55;
+const BUY_BAR_H = 65;
+const GAP = 12;
+
+export default function BackToTop() {
   const [shown, setShown] = useState(false);
+  const { stickyBarVisible } = useQuickChat();
 
   useEffect(() => {
     let ticking = false;
@@ -42,6 +48,8 @@ export default function BackToTop({ side = "right" }: { side?: "left" | "right" 
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const bottom = TAB_BAR_H + (stickyBarVisible ? BUY_BAR_H : 0) + GAP;
+
   return (
     <button
       type="button"
@@ -50,13 +58,13 @@ export default function BackToTop({ side = "right" }: { side?: "left" | "right" 
       // Hidden from the keyboard while it is faded out, so nobody can tab to
       // a button that is not on screen.
       inert={!shown}
-      // Outside the container's own box (right-full / left-full), so the
-      // launcher never shifts sideways when this appears — on whichever side
-      // keeps it on screen once the launcher has been snapped to an edge,
-      // which is the same flip the speech bubble makes.
-      className={`absolute bottom-0 grid size-11 place-items-center rounded-full border border-slate-200 bg-white/90 text-brand-800 shadow-card backdrop-blur-md transition duration-200 active:scale-90 ${
-        side === "left" ? "left-full ml-2" : "right-full mr-2"
-      } ${shown ? "opacity-100" : "pointer-events-none opacity-0"}`}
+      // Through a variable rather than straight onto `bottom`, so the
+      // lg:bottom-3 below can still win on desktop — an inline bottom would
+      // beat any class, and there is no tab bar up there to clear.
+      style={{ "--btt-bottom": `calc(${bottom}px + env(safe-area-inset-bottom))` } as CSSProperties}
+      className={`fixed bottom-[var(--btt-bottom)] left-4 z-80 grid size-11 place-items-center rounded-full border border-slate-200 bg-white/90 text-brand-800 shadow-card backdrop-blur-md transition duration-200 active:scale-90 lg:bottom-3 lg:left-5 ${
+        shown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
+      }`}
     >
       <ArrowUp size={19} strokeWidth={2.2} aria-hidden />
     </button>

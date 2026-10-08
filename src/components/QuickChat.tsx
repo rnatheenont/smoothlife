@@ -15,7 +15,6 @@ import { RotateCcw, X, Headset, Maximize2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
-import BackToTop from "@/components/BackToTop";
 import { getProductBySlug } from "@/data/products";
 import { PHOTO_MARKER } from "@/lib/chat-image-store";
 import { useChatSession } from "@/lib/use-chat-session";
@@ -228,10 +227,6 @@ export default function QuickChat() {
               : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), bottom 0.2s",
           } as CSSProperties}
       >
-        {/* Rides along with every move this container makes. Hidden while
-            the panel is open: the launcher is a small X then, and the panel
-            is covering the page this would scroll. */}
-        {!open && <BackToTop side={snapSide === "left" ? "left" : "right"} />}
         <button
           onPointerDown={handleLauncherPointerDown}
           onPointerMove={handleLauncherPointerMove}
