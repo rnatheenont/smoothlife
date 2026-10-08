@@ -42,13 +42,22 @@ export async function GET(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: true, conversations: [] });
 
   const status = req.nextUrl.searchParams.get("status");
-  const statusFilter =
-    status && status !== "all" ? `&status=eq.${pgValue(status)}` : "";
 
+  // Read unfiltered and filter below, rather than asking the database for one
+  // status at a time.
+  //
+  // The counts on the tabs are the reason. They were worked out from whatever
+  // this query returned, so the moment somebody clicked "รอตอบ" the other
+  // three tabs reported zero — turning every one of them into the thing the
+  // badge exists to prevent: a place you have to click to find out whether
+  // anything is in it. Same for the unread badge in the header, which is
+  // about the whole inbox, not about the tab you happen to be on.
   const conversations = await supabaseRest<InboxListRow[]>(
-    `conversations?select=*${statusFilter}&order=last_message_at.desc&limit=100`
+    `conversations?select=*&order=last_message_at.desc&limit=200`
   );
-  if (conversations.length === 0) return NextResponse.json({ ok: true, conversations: [] });
+  if (conversations.length === 0) {
+    return NextResponse.json({ ok: true, conversations: [], counts: {} });
+  }
 
   // Two extra round trips for the whole page rather than one per row — the
   // list is the screen staff keep open all day, so an N+1 here would be felt.
@@ -70,7 +79,7 @@ export async function GET(req: NextRequest) {
     { conversation_id: string; content: string; created_at: string; sender_type: string }[]
   >(
     `conversation_messages?conversation_id=in.(${conversations.map((c) => pgValue(c.id)).join(",")})` +
-      `&is_draft=eq.false&select=conversation_id,content,created_at,sender_type&order=created_at.desc&limit=400`
+      `&is_draft=eq.false&select=conversation_id,content,created_at,sender_type&order=created_at.desc&limit=800`
   );
   for (const m of latest) {
     // Ordered newest-first, so the first one seen per thread is the latest.
@@ -91,7 +100,7 @@ export async function GET(req: NextRequest) {
     unread.set(m.conversation_id, (unread.get(m.conversation_id) ?? 0) + 1);
   }
 
-  const items = conversations.map<InboxListItem>((c) => {
+  const all = conversations.map<InboxListItem>((c) => {
     const n = unread.get(c.id) ?? 0;
     // A conversation Smoothie handed over was, by definition, something she
     // could not answer — that is a different thing from someone chatting to
@@ -116,18 +125,22 @@ export async function GET(req: NextRequest) {
     };
   });
 
+  // Counted over everything, so a tab badge says what is in that tab whether
+  // or not you are standing in it.
+  const counts = {
+    waiting_human: all.filter((c) => c.status === "waiting_human").length,
+    assigned: all.filter((c) => c.status === "assigned").length,
+    ai_handling: all.filter((c) => c.status === "ai_handling").length,
+    resolved: all.filter((c) => c.status === "resolved").length,
+    unread: all.reduce((sum, i) => sum + i.unread, 0),
+  };
+
+  const items = status && status !== "all" ? all.filter((c) => c.status === status) : all;
+
   // Sorted by what needs a person soonest rather than by what moved last: a
   // thread the bot is happily handling would otherwise sit above a customer
   // who has been waiting since this morning.
   items.sort((a, b) => b.priority - a.priority || b.last_message_at.localeCompare(a.last_message_at));
-
-  const counts = {
-    waiting_human: conversations.filter((c) => c.status === "waiting_human").length,
-    assigned: conversations.filter((c) => c.status === "assigned").length,
-    ai_handling: conversations.filter((c) => c.status === "ai_handling").length,
-    resolved: conversations.filter((c) => c.status === "resolved").length,
-    unread: items.reduce((sum, i) => sum + i.unread, 0),
-  };
 
   return NextResponse.json({ ok: true, conversations: items, counts });
 }
