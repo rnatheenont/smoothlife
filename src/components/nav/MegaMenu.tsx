@@ -125,7 +125,16 @@ export default function MegaMenu({
           // page covering it. The inset hairline is the lit top edge that
           // makes glass look like glass; without it the panel is just a
           // translucent rectangle.
-          className="absolute inset-x-0 top-full z-50 max-h-[80vh] overflow-y-auto border-t border-white/60 bg-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_24px_60px_-28px_rgba(0,53,41,0.45)] backdrop-blur-2xl backdrop-saturate-150 animate-fadeUp"
+          //
+          // Blurred far past the point where anything behind is legible, on
+          // purpose. What sits under this panel is the hero — photographs
+          // with dark areas and type of their own — and at a gentler blur
+          // their edges read as contrast behind the menu's own text. At
+          // 72px nothing survives but colour, so the page still shows
+          // through as light and tint while every line on top stays
+          // readable. brightness lifts whatever dark frame lands behind it
+          // so the near-black labels keep their contrast.
+          className="absolute inset-x-0 top-full z-50 max-h-[80vh] overflow-y-auto border-t border-white/60 bg-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_24px_60px_-28px_rgba(0,53,41,0.45)] backdrop-blur-[72px] backdrop-brightness-125 backdrop-saturate-150 animate-fadeUp"
         >
           <div className="container-page grid gap-0 py-6 md:grid-cols-[230px_1fr_340px] 2xl:grid-cols-[230px_1fr_400px]">
             {/* Categories. Pointing at one changes the two panels beside it —
