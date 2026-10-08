@@ -252,10 +252,28 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
 
       {/* Centred, unlike the other section headings: this stack is centred
           on the page and a heading hanging off to the left of it reads as
-          belonging to something else. */}
-      <h2 className="container-page text-center text-xl font-bold text-brand-ink md:text-2xl">
-        กระแสฮอตบนโซเชียล
-      </h2>
+          belonging to something else. The eyebrow / gradient headline /
+          two-line standfirst is the same build as the knowledge section's
+          header, so the two centred blocks on this page are one thing seen
+          twice rather than two headings that happen to be in the middle. */}
+      <div className="container-page text-center">
+        <p className="text-[13px] font-medium tracking-[0.04em] text-slate-500">คลิปจากโซเชียล</p>
+        <h2 className="mt-2 text-[26px] font-medium leading-[1.4] tracking-[-0.01em] text-[#0a0a0a] md:text-[40px]">
+          {/* Brand gradient on the site's own face. inline-block with
+              padding: a clipped gradient stops at the box, and Thai tone
+              marks and vowels above/below reach past it. */}
+          <span className="inline-block bg-brand-gradient bg-clip-text px-0.5 pb-1 font-bold text-transparent">
+            กระแสฮอต
+          </span>{" "}
+          บนโซเชียล
+        </h2>
+        {/* Thai has no spaces between words, so the browser may break mid-
+            phrase; each phrase is kept whole and the line breaks between them. */}
+        <p className="mx-auto mt-2 max-w-[28rem] text-sm leading-relaxed text-slate-500 md:text-base">
+          <span className="inline-block">ดูคลิปรีวิวสินค้าที่คนกำลังพูดถึง</span>{" "}
+          <span className="inline-block">ถูกใจชิ้นไหน กดใส่ตะกร้าได้จากในคลิปเลย</span>
+        </p>
+      </div>
 
       <div
         // --spread pulls the neighbours in on a narrow screen. The offsets
