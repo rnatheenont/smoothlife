@@ -120,8 +120,22 @@ export default function NotificationBell() {
                     key={n.id}
                     type="button"
                     onClick={() => handleRowClick(n)}
-                    className={`w-full flex items-start gap-2.5 px-4 py-3 text-left border-b border-slate-50 last:border-0 hover:bg-surface-soft transition-colors ${
-                      unread ? "bg-brand-gradient-soft/40" : ""
+                    // bg-brand-50, not bg-brand-gradient-soft/40: that
+                    // utility is a background-IMAGE and Tailwind's /nn
+                    // modifier only thins a COLOUR, so the class compiled to
+                    // no background at all — measured, background-image:
+                    // none. An unread row has looked exactly like a read one
+                    // except for the weight of its title for as long as this
+                    // has been here.
+                    //
+                    // A flat colour rather than the gradient for a second
+                    // reason: hover sets a background-colour, and an image
+                    // would paint straight over it, leaving unread rows with
+                    // no hover at all. Unread hovers one step deeper instead
+                    // of going grey, so the row does not stop looking unread
+                    // under the pointer.
+                    className={`w-full flex items-start gap-2.5 px-4 py-3 text-left border-b border-slate-50 last:border-0 transition-colors ${
+                      unread ? "bg-brand-50 hover:bg-brand-100" : "hover:bg-surface-soft"
                     }`}
                   >
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">
