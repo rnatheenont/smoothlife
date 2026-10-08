@@ -98,8 +98,16 @@ export default function HeroCarousel({
   // On a phone the card is 70% of the stage, so the stage has to be taller
   // than the card is wide by exactly that much — 10/7 of a square card,
   // 40/21 of a 4:3 one.
+  //
+  // "Exactly" was the problem: at those ratios the card's top and bottom sat
+  // flush on the stage's own edges, and the stage clips, so the card's
+  // outline was shaved off along both and its shadow with it. The stage is
+  // now about 6.5% of the page width taller than the card — roughly 13px on
+  // a 392px phone, and it scales with the screen rather than being a
+  // constant that only looks right on one — which leaves the card a visible
+  // edge above and below, the same as it has always had at its sides.
   const mobileCardAspect = everySlideHasMobileCrop ? "aspect-square" : "aspect-4/3";
-  const mobileAspect = everySlideHasMobileCrop ? "aspect-10/7" : "aspect-40/21";
+  const mobileAspect = everySlideHasMobileCrop ? "aspect-[10/7.65]" : "aspect-[40/23.6]";
 
   // The frame is now the full width of the window, and its proportions change
   // with it once max-h starts clamping the height, so whether a given slide
@@ -201,7 +209,12 @@ export default function HeroCarousel({
         // letterbox — but the phone layout is a coverflow whose cards cover
         // 70% of the frame, so down there it was simply a grey band around
         // them.
-        className={`group relative w-full ${mobileAspect} md:aspect-100/53 2xl:max-h-[820px] overflow-hidden select-none touch-pan-y md:bg-surface-soft`}
+        // overflow-x-clip, not overflow-hidden: the slides either side are
+        // parked far outside the stage horizontally and have to be cut off,
+        // but hiding one axis makes the browser clip the other too, and what
+        // hangs over the top and bottom here is the card's own soft shadow.
+        // `clip` on one axis leaves the other genuinely visible.
+        className={`group relative w-full ${mobileAspect} md:aspect-100/53 2xl:max-h-[820px] overflow-x-clip select-none touch-pan-y md:bg-surface-soft`}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onMouseEnter={() => setPaused(true)}
