@@ -13,3 +13,4 @@ src/data/collections.generated.ts
 
 # Generated at build by scripts/copy-mediapipe.js
 /public/mediapipe
+product-content-todo.csv

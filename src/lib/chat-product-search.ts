@@ -14,7 +14,7 @@
 
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Product } from "@/data/types";
-import { getProductContentOverride, productContentForPrompt } from "@/lib/product-content";
+import { getPublishedProductContent, productContentForPrompt } from "@/lib/product-content";
 import { products, getProductBySlug } from "@/data/products";
 import { categories, concerns as siteConcerns } from "@/data/categories";
 import classesJson from "@/data/skin-product-classes.json";
@@ -209,8 +209,16 @@ async function productDetails(slug: string) {
 
   // What the team wrote for this product's own page. The catalogue fields
   // below are generated; this is the part a person checked.
-  const override = await getProductContentOverride(p.variantId).catch(() => null);
-  const written = override?.published ? productContentForPrompt(override.blocks) : "";
+  //
+  // The same call the product page makes, including every one of the
+  // product's variant ids. The row is keyed on one variant and a product's
+  // sizes come and go, so looking only at the default one would have left
+  // the assistant blind to copy the customer can see on screen — the exact
+  // gap this was added to close.
+  const blocks = await getPublishedProductContent(p.slug, [
+    ...new Set([p.variantId, ...(p.variants?.map((v) => v.variantId) ?? [])]),
+  ]).catch(() => null);
+  const written = blocks ? productContentForPrompt(blocks) : "";
   const sizes =
     p.variants.length > 1 ? p.variants.map((v) => `  - ${v.size || "Default"}: ฿${v.price}`).join("\n") : "";
   const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}…` : s);
