@@ -104,7 +104,13 @@ function RealSubscriptionCard({
   }
 
   return (
-    <div className="rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft/40 p-4 shadow-card">
+    // bg-brand-gradient-soft with no /40 on it: that utility is a
+    // background-IMAGE, and Tailwind's /nn modifier only thins a COLOUR, so
+    // the class it had compiled to no background at all. The teal hairline
+    // was doing all the work of marking this card as a subscription, and the
+    // wash behind it has never been there. (Last of three — the cart's rows
+    // and the notification list had the same class.)
+    <div className="rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-4 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5 mb-1">
