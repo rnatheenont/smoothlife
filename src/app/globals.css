@@ -193,6 +193,7 @@
   --animate-heartPop: heartPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
   --animate-heartRing: heartRing 0.55s ease-out forwards;
   --animate-scanSweep: scanSweep 2.6s ease-in-out infinite;
+  --animate-iconBob: iconBob 0.6s ease-out;
 
   @keyframes fadeUp {
     0% {
@@ -387,6 +388,28 @@
     }
     74% {
       transform: translateY(-7px) rotate(-1.2deg);
+    }
+  }
+  /* The nudge a category icon gives when the pointer lands on it. One pass,
+     not a loop: it is an answer to the pointer arriving, and nine marks
+     wobbling away under the hero would be a row that cannot keep still.
+     Lift and tilt together, because a mark that only moves up reads as the
+     whole tile shifting rather than the drawing reacting. */
+  @keyframes iconBob {
+    0% {
+      transform: translateY(0) rotate(0deg);
+    }
+    30% {
+      transform: translateY(-5px) rotate(-6deg);
+    }
+    55% {
+      transform: translateY(0) rotate(3deg);
+    }
+    75% {
+      transform: translateY(-2px) rotate(-1.5deg);
+    }
+    100% {
+      transform: translateY(0) rotate(0deg);
     }
   }
   /* The beam in the skin-check tab's icon. Travels in SVG user units, so
