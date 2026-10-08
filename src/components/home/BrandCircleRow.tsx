@@ -69,7 +69,21 @@ export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
       <ul
         role="tablist"
         aria-label="แบรนด์ที่คุณไว้วางใจ"
-        className="mx-auto flex max-w-[1512px] gap-5 overflow-x-auto px-4 pt-2 scrollbar-none md:px-6 lg:justify-center lg:gap-[clamp(1rem,2.4vw,2.1rem)] lg:overflow-visible"
+        // The tile is 96px around an 88px circle, so the label has somewhere
+        // to go — which means 8px of the space between two circles is
+        // already spoken for before the gap is counted. At gap-5 that came
+        // to 28px of nothing between them and the row read as scattered
+        // rather than as one set, the same way the category row did at the
+        // same distance. 10px here puts the circles 18px apart, in step with
+        // the 16px of that row above it.
+        // The row stops scrolling and centres itself at xl, not lg. Nine
+        // 116px circles need 1208px with the smallest gap the clamp allows,
+        // and at lg the page has 976 — so `lg:overflow-visible` took the
+        // scrollbar away from a row that still did not fit: measured at
+        // 1024px, the first circle sat at x=-76 and the last ended at 1100,
+        // with no way to reach either. (The same mistake the category row
+        // above it was making, fixed the same way.)
+        className="mx-auto flex max-w-[1512px] gap-2.5 overflow-x-auto px-4 pt-2 scrollbar-none md:px-6 xl:justify-center xl:gap-[clamp(0.75rem,1.6vw,1.5rem)] xl:overflow-visible"
       >
         {row.map((b, i) => {
           const on = i === active;
