@@ -124,7 +124,16 @@ const APPLE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_APPLE_SIGNIN_ENABLED);
 // Same pattern for Google Sign-In (Google Cloud OAuth client).
 const GOOGLE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_GOOGLE_SIGNIN_ENABLED);
 
-export default function LoginContent() {
+export default function LoginContent({
+  variant = "page",
+  returnTo: returnToProp,
+}: {
+  /** "page" wears the split-screen shell; "modal" is just the column, because
+   *  the dialog around it is already the frame. */
+  variant?: "page" | "modal";
+  /** Set by the dialog, which has no query string of its own to read. */
+  returnTo?: string;
+} = {}) {
   // Phone OTP and LINE are the primary methods (matches the homepage promise
   // "เข้าสู่ระบบด้วย OTP หรือ LINE" and how Thai users expect Shopee/Lazada-style
   // sites to work) — email+password starts one tap further in, not as the
@@ -134,7 +143,7 @@ export default function LoginContent() {
   const { registerWithEmail, confirmRegisterUpdate, loginWithEmail, completePhoneLogin } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get("returnTo") || "/account";
+  const returnTo = returnToProp || searchParams.get("returnTo") || "/account";
   const lineError = searchParams.get("error");
 
   // Password state
@@ -356,11 +365,14 @@ export default function LoginContent() {
     }
   }
 
-  return (
-    <LoginShell>
+  const body = (
+    <>
       {/* The shop's name, for the phone layout only — on a wide screen the
-          panel to the left is already saying it, and twice is once too many. */}
-      <p className="mb-6 text-sm font-semibold text-brand-800 lg:hidden">Smoothlife.com</p>
+          panel to the left is already saying it, and twice is once too many.
+          The dialog has its own frame and does not need it at all. */}
+      {variant === "page" && (
+        <p className="mb-6 text-sm font-semibold text-brand-800 lg:hidden">Smoothlife.com</p>
+      )}
       <div className="mb-7">
         <h1 className="text-[28px] font-bold leading-tight text-brand-ink md:text-[32px]">
           {view === "password" && mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
@@ -782,6 +794,8 @@ export default function LoginContent() {
           )}
         </div>
       )}
-    </LoginShell>
+    </>
   );
+
+  return variant === "modal" ? body : <LoginShell>{body}</LoginShell>;
 }

@@ -52,3 +52,9 @@
    was never the problem: the global prefers-reduced-motion rule in globals.css
    already stops every animation on the site, this one included.) */
 @import "@heroui/styles/components/spinner.css" layer(components);
+
+/* The sign-in dialog on the storefront (every page, from the header). The
+   close button is its own component in HeroUI, and without it the X inside
+   the dialog has no styles of its own to sit in. */
+@import "@heroui/styles/components/close-button.css" layer(components);
+@import "@heroui/styles/components/modal.css" layer(components);

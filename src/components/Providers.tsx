@@ -6,11 +6,13 @@ import { AuthProvider } from "@/lib/auth-context";
 import { CartProvider, WishlistProvider } from "@/lib/cart-context";
 import { LangProvider } from "@/lib/lang-context";
 import { QuickChatProvider } from "@/lib/quickchat-context";
+import { LoginModalProvider } from "@/lib/login-modal-context";
 import { RecentlyViewedProvider } from "@/lib/recently-viewed-context";
 import { WidgetSettingsProvider } from "@/lib/use-widget-settings";
 import QuickChat from "@/components/QuickChat";
 import MobileTabBar from "@/components/MobileTabBar";
 import BackToTop from "@/components/BackToTop";
+import LoginModal from "@/components/account/LoginModal";
 import PwaRegister from "@/components/PwaRegister";
 import InstallPrompt from "@/components/InstallPrompt";
 import GiftUnlockPopup from "@/components/GiftUnlockPopup";
@@ -48,6 +50,7 @@ export function StorefrontWidgets() {
       <QuickChat />
       <MobileTabBar />
       <BackToTop />
+      <LoginModal />
       <PwaRegister />
       <InstallPrompt />
       <GiftUnlockPopup />
@@ -66,8 +69,10 @@ export default function Providers({ children }: { children: ReactNode }) {
             <RecentlyViewedProvider>
               <WidgetSettingsProvider>
                 <QuickChatProvider>
-                  {children}
-                  <StorefrontWidgets />
+                  <LoginModalProvider>
+                    {children}
+                    <StorefrontWidgets />
+                  </LoginModalProvider>
                 </QuickChatProvider>
               </WidgetSettingsProvider>
             </RecentlyViewedProvider>

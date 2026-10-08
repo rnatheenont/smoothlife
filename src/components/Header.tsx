@@ -26,6 +26,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { useCart, useWishlist } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
+import { useLoginModal } from "@/lib/login-modal-context";
 import { tierBadge, tierCard } from "@/lib/tier";
 import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 import LanguageSwitch from "@/components/LanguageSwitch";
@@ -84,6 +85,7 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
   const [scrolled, setScrolled] = useState(false);
   const lastScrollY = useRef(0);
   const { user } = useAuth();
+  const { open: openLogin } = useLoginModal();
   const { slugs: wishlistSlugs } = useWishlist();
   const { count } = useCart();
   const { t } = useLang();
@@ -265,13 +267,14 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
               <Link href="/ai-assistant" className="hidden sm:flex lg:hidden items-center gap-1.5 text-xs font-semibold text-brand-800">
                 <Sparkles size={14} /> น้อง Smoothie
               </Link>
-              <Link
-                href="/account/login"
+              <button
+                type="button"
+                onClick={() => openLogin()}
                 className="hidden h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-brand-ink transition-colors hover:border-brand-teal lg:flex"
               >
                 <User size={19} />
                 เข้าสู่ระบบ/ลงทะเบียน
-              </Link>
+              </button>
             </>
           )}
           {/* Phones get search here instead of a row of its own: a field
@@ -374,7 +377,18 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
                   <ChevronRight size={16} className="text-slate-300 shrink-0" />
                 </Link>
               ) : (
-                <Button href="/account/login" size="lg" fullWidth onClick={() => setOpen(false)} className="shadow-card">
+                <Button
+                  size="lg"
+                  fullWidth
+                  onClick={() => {
+                    // The drawer goes first: two layers over the page at
+                    // once is one too many, and the dialog is the one being
+                    // asked for.
+                    setOpen(false);
+                    openLogin();
+                  }}
+                  className="shadow-card"
+                >
                   <User size={16} />
                   {t("เข้าสู่ระบบ / สมัครสมาชิก", "Sign in / Sign up")}
                 </Button>
