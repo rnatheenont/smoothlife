@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { Brand } from "@/data/types";
 import { brandProducts } from "@/data/brands";
 import ProductCard from "@/components/ProductCard";
-import { useRailFade } from "@/lib/use-rail-fade";
 
 // Nine brands in circles, and underneath them what the one you picked sells.
 //
@@ -49,7 +48,10 @@ export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
     return [...picked, ...fill];
   }, [brands]);
 
-  const rail = useRailFade();
+  // A plain ref. The rails used to carry a gradient mask that faded the
+  // cut-off card at each end; it is gone at every width now, so there is
+  // nothing left for a hook to hold but this.
+  const railRef = useRef<HTMLUListElement>(null);
   const [active, setActive] = useState(0);
   const brand = row[active];
 
@@ -135,8 +137,7 @@ export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
               <ul // -m-2 p-2: overflow-x-auto clips on both axes, so without room
                   // inside it the cards' shadows and rounded corners were being
                   // sliced flat against the top and bottom of the rail.
-                  ref={rail.ref}
-                  style={rail.style}
+                  ref={railRef}
                   className="-m-2 flex snap-x snap-mandatory gap-3 overflow-x-auto p-2 scrollbar-none md:gap-4">
                 {shelf.map((p) => (
                   <li

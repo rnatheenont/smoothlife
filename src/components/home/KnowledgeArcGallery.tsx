@@ -6,7 +6,6 @@ import { ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getProductBySlug } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
-import { useRailFade } from "@/lib/use-rail-fade";
 
 export type ArcItem = {
   key: string;
@@ -50,7 +49,10 @@ function cardImage(url: string): string {
 export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLAnchorElement | null)[]>([]);
-  const rail = useRailFade();
+  // A plain ref. The rails used to carry a gradient mask that faded the
+  // cut-off card at each end; it is gone at every width now, so there is
+  // nothing left for a hook to hold but this.
+  const railRef = useRef<HTMLUListElement>(null);
   // Opens on the first post that actually has something to show, so the shelf
   // is not empty on arrival.
   const [activeKey, setActiveKey] = useState(
@@ -288,8 +290,7 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
                   <ul // -m-2 p-2: overflow-x-auto clips on both axes, so without room
                   // inside it the cards' shadows and rounded corners were being
                   // sliced flat against the top and bottom of the rail.
-                  ref={rail.ref}
-                  style={rail.style}
+                  ref={railRef}
                   className="-m-2 flex snap-x snap-mandatory gap-3 overflow-x-auto p-2 scrollbar-none md:gap-4">
             {shelf.map((p) => (
               <li

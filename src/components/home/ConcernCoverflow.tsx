@@ -7,7 +7,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { concerns, concernImage } from "@/data/categories";
 import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
-import { useRailFade } from "@/lib/use-rail-fade";
 
 // Shop by concern, as a fanned-out stack rather than a row of equal tiles.
 //
@@ -45,7 +44,10 @@ function placement(offset: number) {
 }
 
 export default function ConcernCoverflow() {
-  const rail = useRailFade();
+  // A plain ref. The rails used to carry a gradient mask that faded the
+  // cut-off card at each end; it is gone at every width now, so there is
+  // nothing left for a hook to hold but this.
+  const railRef = useRef<HTMLUListElement>(null);
   const [active, setActive] = useState(0);
   const dragX = useRef<number | null>(null);
   const count = concerns.length;
@@ -197,8 +199,7 @@ export default function ConcernCoverflow() {
               <ul // -m-2 p-2: overflow-x-auto clips on both axes, so without room
                   // inside it the cards' shadows and rounded corners were being
                   // sliced flat against the top and bottom of the rail.
-                  ref={rail.ref}
-                  style={rail.style}
+                  ref={railRef}
                   // A phone has no hover to pause on: a thumb dragging the
                   // shelf sideways is the signal there, and it is the same
                   // signal as any other — hand the carousel over for good.
