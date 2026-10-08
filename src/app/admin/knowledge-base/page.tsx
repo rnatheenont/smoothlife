@@ -63,6 +63,10 @@ export default function AdminKnowledgeBasePage() {
   const [categoryFilter, setCategoryFilter] = useState<KbCategory | "all">(
     "all",
   );
+  // Two halves of the same job — what the assistant may answer from, and
+  // what it must refuse — so they are two tabs rather than one stacked on
+  // top of the other.
+  const [tab, setTab] = useState<"articles" | "blocked">("articles");
   const [confirming, setConfirming] = useState<string | null>(null);
   const [source, setSource] = useState<"curated" | "shopify_sync" | "all">(
     "curated",
@@ -116,11 +120,15 @@ export default function AdminKnowledgeBasePage() {
     setOpen(true);
   }, []);
 
-  useAdminAction({
-    label: "เพิ่มความรู้ใหม่",
-    icon: <Plus size={15} aria-hidden />,
-    onClick: startCreate,
-  });
+  // Unregistered on the other tab: a top-right "เพิ่มความรู้ใหม่" that opens
+  // the article drawer while the screen is showing refusal rules is a button
+  // that does something other than what the page in front of you is about.
+  // That tab carries its own.
+  useAdminAction(
+    tab === "articles"
+      ? { label: "เพิ่มความรู้ใหม่", icon: <Plus size={15} aria-hidden />, onClick: startCreate }
+      : null
+  );
 
   const startEdit = (a: KbArticle) => {
     setEditingId(a.id);
@@ -401,11 +409,30 @@ export default function AdminKnowledgeBasePage() {
         }
       />
 
-      {/* Above the articles on purpose: what the assistant must not say is a
-          stronger rule than anything in the list below it, and reads oddly
-          as a footnote to a list of things it may say. */}
-      <BlockedTopicsPanel />
+      <div className="mb-4 flex items-center gap-1 border-b border-surface-line">
+        {([
+          { key: "articles", label: "บทความที่ตอบได้" },
+          { key: "blocked", label: "เรื่องที่ห้าม AI ตอบ" },
+        ] as const).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            aria-current={tab === t.key ? "page" : undefined}
+            className={`-mb-px flex h-11 items-center border-b-2 px-4 text-sm font-semibold transition-colors ${
+              tab === t.key
+                ? "border-brand-emerald text-brand-ink"
+                : "border-transparent text-slate-500 hover:text-brand-ink"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
+      {tab === "blocked" && <BlockedTopicsPanel />}
+
+      {tab === "articles" && (
+      <>
       {!embeddings && (
         <p className="mb-4 rounded-xl2 bg-surface-soft px-3 py-2 text-xs leading-relaxed text-slate-500">
           ตอนนี้ค้นหาด้วยการจับคู่ข้อความ · ถ้าเพิ่มค่า{" "}
@@ -795,6 +822,8 @@ export default function AdminKnowledgeBasePage() {
           )}
         </div>
       </Card>
+      </>
+      )}
 
       <FormDrawer
         open={open}

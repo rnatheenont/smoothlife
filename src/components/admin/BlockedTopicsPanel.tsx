@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Ban, Loader2, Plus, Trash2 } from "lucide-react";
 import { Input, TextArea } from "@heroui/react";
+import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { DEFAULT_BLOCKED_REPLY, type KbBlockedTopic } from "@/lib/kb-blocked-topics";
 
 // The other half of the knowledge base: what the assistant must NOT answer.
@@ -81,7 +82,7 @@ export default function BlockedTopicsPanel() {
   const live = rows.filter((r) => r.enabled).length;
 
   return (
-    <section className="mb-6 rounded-xl2 border border-rose-100 bg-rose-50/40 p-4 shadow-card">
+    <section>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-sm font-bold text-brand-ink">
@@ -94,52 +95,61 @@ export default function BlockedTopicsPanel() {
           </p>
         </div>
         <button
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpen(true)}
           className="flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white hover:bg-rose-700"
         >
           <Plus size={15} /> เพิ่มเรื่องที่ห้ามตอบ
         </button>
       </div>
 
-      {open && (
-        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-rose-100 bg-white p-4">
+      {/* The same drawer the articles use, with the same label-above-field
+          pattern: two forms on one screen that fill in the same kind of thing
+          should not be two different shapes. */}
+      <FormDrawer open={open} title="เพิ่มเรื่องที่ห้ามตอบ" onClose={() => setOpen(false)}>
+        <div className="flex flex-col gap-4">
           <div>
-            <label className="text-xs font-semibold text-slate-600">เรื่องที่ห้ามตอบ</label>
+            <label htmlFor="bt-topic" className="mb-1.5 block text-sm font-semibold text-brand-ink">
+              เรื่องที่ห้ามตอบ
+            </label>
             <Input
-              className="mt-1"
-              placeholder="เช่น ให้คำแนะนำทางการแพทย์ / วินิจฉัยโรค"
+              fullWidth
+              id="bt-topic"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
+              placeholder="เช่น ให้คำแนะนำทางการแพทย์ วินิจฉัยโรค"
             />
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+              เขียนเป็นเรื่อง ไม่ใช่คำค้น — AI อ่านเข้าใจเอง ลูกค้าถามด้วยคำไหนก็ครอบคลุม
+            </p>
           </div>
           <div>
-            <label className="text-xs font-semibold text-slate-600">
+            <label htmlFor="bt-reply" className="mb-1.5 block text-sm font-semibold text-brand-ink">
               ให้ตอบแทนว่าอะไร <span className="font-normal text-slate-400">(เว้นว่างได้)</span>
             </label>
             <TextArea
-              className="mt-1"
-              rows={2}
-              placeholder={DEFAULT_BLOCKED_REPLY}
+              fullWidth
+              id="bt-reply"
+              rows={3}
               value={reply}
               onChange={(e) => setReply(e.target.value)}
+              placeholder={DEFAULT_BLOCKED_REPLY}
             />
-            <p className="mt-1 text-[11px] text-slate-400">
-              ถ้าเว้นว่าง จะใช้ว่า “{DEFAULT_BLOCKED_REPLY}” — AI จะพูดด้วยสำนวนของตัวเองและแปลเป็นภาษาที่ลูกค้าใช้ให้เอง
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+              ถ้าเว้นว่าง จะใช้ว่า “{DEFAULT_BLOCKED_REPLY}” — AI จะพูดด้วยสำนวนของตัวเอง
+              และแปลเป็นภาษาที่ลูกค้าใช้ให้เอง ไม่ได้อ่านออกมาตรงๆ
             </p>
           </div>
-          {error && <p className="text-xs text-rose-600">{error}</p>}
-          <div>
-            <button
-              onClick={add}
-              disabled={busy === "add" || !topic.trim()}
-              className="flex h-11 items-center gap-1.5 rounded-full bg-rose-600 px-5 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {busy === "add" ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-              เพิ่ม
-            </button>
-          </div>
+          {error && <p className="text-sm text-rose-600">{error}</p>}
+          <button
+            onClick={add}
+            disabled={busy === "add" || !topic.trim()}
+            className="flex h-11 items-center justify-center gap-1.5 rounded-full bg-rose-600 px-5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {busy === "add" ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+            เพิ่มเรื่องที่ห้ามตอบ
+          </button>
         </div>
-      )}
+      </FormDrawer>
 
       {loading ? (
         <p className="mt-3 text-xs text-slate-400">กำลังโหลด…</p>
