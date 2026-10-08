@@ -33,14 +33,24 @@ const AUTO_MS = 5500;
  *  the fade only means anything while there is still something behind it. */
 const SHOWN = 10;
 
-/** Where a card sits, given how far it is from the one in the middle. */
+/** Where a card sits, given how far it is from the one in the middle.
+ *
+ *  `veil` is how much white is laid over the card's picture, and it is what
+ *  holds a side card back instead of the element's own opacity. A
+ *  translucent element lets whatever is behind it through, and what is
+ *  behind one of these is the next card along: the stack showed one photo
+ *  through another, and the far card's edge cut across the near one's face.
+ *  A white layer on top dims the picture by the same amount while the card
+ *  itself stays solid, so each one covers the one behind it. */
 function placement(offset: number) {
   const side = Math.sign(offset);
   const distance = Math.abs(offset);
-  if (distance === 0) return { x: 0, y: 0, scale: 1, rotate: 0, z: 30, opacity: 1, shown: true };
-  if (distance === 1) return { x: side * 62, y: 4, scale: 0.84, rotate: side * 8, z: 20, opacity: 0.45, shown: true };
-  if (distance === 2) return { x: side * 112, y: 14, scale: 0.68, rotate: side * 13, z: 10, opacity: 0.22, shown: true };
-  return { x: side * 150, y: 22, scale: 0.6, rotate: side * 16, z: 0, opacity: 0, shown: false };
+  if (distance === 0) return { x: 0, y: 0, scale: 1, rotate: 0, z: 30, veil: 0, shown: true };
+  if (distance === 1) return { x: side * 62, y: 4, scale: 0.84, rotate: side * 8, z: 20, veil: 0.55, shown: true };
+  if (distance === 2) return { x: side * 112, y: 14, scale: 0.68, rotate: side * 13, z: 10, veil: 0.78, shown: true };
+  // Out of the stack altogether: this one does fade, because there is
+  // nothing left behind it to show through.
+  return { x: side * 150, y: 22, scale: 0.6, rotate: side * 16, z: 0, veil: 0.78, shown: false };
 }
 
 export default function ConcernCoverflow() {
@@ -143,7 +153,7 @@ export default function ConcernCoverflow() {
               style={{
                 transform: `translate(-50%, -50%) translate(${p.x}%, ${p.y}%) rotate(${p.rotate}deg) scale(${p.scale})`,
                 zIndex: p.z,
-                opacity: p.opacity,
+                opacity: p.shown ? 1 : 0,
               }}
               className="absolute left-1/2 top-1/2 block aspect-[6/5] w-[min(72vw,400px)] overflow-hidden rounded-[22px] bg-white shadow-card transition-[transform,opacity] duration-500 ease-out motion-reduce:transition-none md:w-[min(74vw,400px)]"
             >
@@ -153,6 +163,13 @@ export default function ConcernCoverflow() {
                 fill
                 sizes="(max-width:768px) 74vw, 400px"
                 className="object-cover"
+              />
+              {/* What dims a side card. Inside the card, over the picture,
+                  so the card itself never turns translucent. */}
+              <span
+                aria-hidden
+                style={{ opacity: p.veil }}
+                className="pointer-events-none absolute inset-0 bg-white transition-opacity duration-500 ease-out motion-reduce:transition-none"
               />
             </Link>
           );
