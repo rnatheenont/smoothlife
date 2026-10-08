@@ -206,14 +206,22 @@ const SWIPE_THRESHOLD = 40;
 
 /** Where a card sits, given how far it is from the one in the middle. No
  *  rotation here, unlike the concern stack: these are phone-shaped videos
- *  and tilting them reads as a broken screen rather than as depth. */
+ *  and tilting them reads as a broken screen rather than as depth.
+ *
+ *  `veil` is how much white is laid over the card, and it is what holds a
+ *  side card back instead of the element's own opacity — same reason as the
+ *  concern stack. A translucent card lets the next card through it, and two
+ *  faces at different scales showing through each other is the one thing a
+ *  row of videos must not do. */
 function placement(offset: number) {
   const side = Math.sign(offset);
   const distance = Math.abs(offset);
-  if (distance === 0) return { x: 0, scale: 1, z: 30, opacity: 1, shown: true };
-  if (distance === 1) return { x: side * 92, scale: 0.78, z: 20, opacity: 0.55, shown: true };
-  if (distance === 2) return { x: side * 168, scale: 0.66, z: 10, opacity: 0.3, shown: true };
-  return { x: side * 230, scale: 0.6, z: 0, opacity: 0, shown: false };
+  if (distance === 0) return { x: 0, scale: 1, z: 30, veil: 0, shown: true };
+  if (distance === 1) return { x: side * 92, scale: 0.78, z: 20, veil: 0.45, shown: true };
+  if (distance === 2) return { x: side * 168, scale: 0.66, z: 10, veil: 0.7, shown: true };
+  // Out of the stack: this one does fade, because there is nothing left
+  // behind it to show through.
+  return { x: side * 230, scale: 0.6, z: 0, veil: 0.7, shown: false };
 }
 
 export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: SocialClip[]; initialIndex?: number }) {
@@ -300,7 +308,7 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
               style={{
                 transform: `translate(-50%, -50%) translate(calc(${p.x}% * var(--spread)), 0) scale(${p.scale})`,
                 zIndex: p.z,
-                opacity: p.opacity,
+                opacity: p.shown ? 1 : 0,
               }}
               className="absolute left-1/2 top-1/2 w-[min(64vw,300px)] transition-[transform,opacity] duration-500 ease-out motion-reduce:transition-none"
             >
@@ -310,6 +318,15 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
                 onEnded={() => step(1)}
                 onSelect={() => setActive(i)}
                 cardRef={() => {}}
+              />
+              {/* What dims a side card. Over the card, not instead of it, so
+                  the card itself never turns translucent. rounded-2xl to
+                  match ClipCard's own corners — a square sheet of white over
+                  a rounded card shows as four bright corners. */}
+              <span
+                aria-hidden
+                style={{ opacity: p.veil }}
+                className="pointer-events-none absolute inset-0 rounded-2xl bg-white transition-opacity duration-500 ease-out motion-reduce:transition-none"
               />
             </div>
           );
