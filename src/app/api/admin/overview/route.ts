@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
+import { businessDateNow } from "@/lib/checkin";
 
 // Numbers for the admin home screen. Every one of these is something that
 // either needs a person to act (a waiting chat, a review queue) or answers
@@ -36,9 +37,14 @@ export async function GET(req: NextRequest) {
   }
   if (!supabaseConfigured()) return NextResponse.json({ ok: true, stats: {} });
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const since = todayStart.toISOString();
+  // Midnight in Bangkok, not on the server. Vercel runs in UTC, so
+  // setHours(0,0,0,0) started "today" at 07:00 in the shop's own timezone:
+  // every order taken between midnight and seven in the morning — which for
+  // a Thai shop is a real part of the night — was counted into yesterday,
+  // and yesterday's evening was counted into today. businessDateNow() is the
+  // same day boundary the check-in system already uses, so "today" means one
+  // thing across the admin rather than two.
+  const since = new Date(`${businessDateNow()}T00:00:00+07:00`).toISOString();
 
   // `limit` caps each read: the home screen only needs to say "9+" once a
   // queue is long, and nobody acts differently on 40 versus 400 waiting chats.

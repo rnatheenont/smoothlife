@@ -222,6 +222,12 @@ export default function AdminHomePage() {
   // with something in them are shown full size; the rest say so in one line.
   const urgent = needsAttention.filter((c) => (c.value ?? 0) > 0);
   const clear = needsAttention.filter((c) => c.value === 0);
+  // A count that failed to load is null, and null is neither > 0 nor === 0 —
+  // so those cards used to fall out of both lists and vanish from the page
+  // entirely. That is the exact thing the note below the lists says must not
+  // happen: "nothing waiting" and "we could not check" are different answers,
+  // and a card that disappears gives neither.
+  const unknown = needsAttention.filter((c) => c.value === null);
 
   return (
     <div className="flex flex-col gap-5">
@@ -265,7 +271,7 @@ export default function AdminHomePage() {
         {/* The cleared ones, kept visible: "no pending reviews" and "the
             review count failed to load" are different answers, and a card
             that disappears cannot tell them apart. */}
-        {clear.length > 0 && (
+        {(clear.length > 0 || unknown.length > 0) && (
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 px-1 text-xs text-slate-500">
             {clear.map((c) => (
               <Link
@@ -274,6 +280,16 @@ export default function AdminHomePage() {
                 className="hover:text-brand-800 hover:underline"
               >
                 {c.label} 0
+              </Link>
+            ))}
+            {unknown.map((c) => (
+              <Link
+                key={c.label}
+                href={c.href}
+                title="อ่านค่านี้ไม่สำเร็จ ลองรีเฟรชอีกครั้ง"
+                className="text-amber-700 hover:underline"
+              >
+                {c.label} — เช็กไม่ได้
               </Link>
             ))}
           </div>
