@@ -25,6 +25,8 @@ export default function CartPage() {
   const { lang, t } = useLang();
   const totals = useOrderTotals();
   const checkoutButtonRef = useRef<HTMLElement>(null);
+  // What the tab bar's badge counts, said out loud next to the title.
+  const itemCount = lines.reduce((n, l) => n + l.qty, 0);
   const bundleSuggestions = suggestBundlesForCart(lines.filter((l) => !l.isGift).map((l) => l.slug));
   // Subscribe-added lines never merge with a normal line of the same
   // product (see cart-context's sameLine) — grouped into their own section
@@ -55,9 +57,11 @@ export default function CartPage() {
     return (
       <div
         key={`${line.variantId}-${line.isGift ? line.giftPromoSlug : line.subscribeMonths ?? "normal"}`}
-        className={`flex gap-4 rounded-xl2 border p-3 md:p-4 shadow-card ${
-          plan ? "border-brand-teal/30 bg-brand-gradient-soft/30" : "border-slate-100"
-        }`}
+        // A row in a sheet, not a card of its own. Five bordered cards
+        // stacked inside a page that already has its own frame is three
+        // frames deep, and on a phone it reads as five separate things
+        // rather than one list of what you are buying.
+        className={`flex gap-3.5 px-4 py-4 ${plan ? "bg-brand-gradient-soft/30" : ""}`}
       >
         <Link href={`/product/${line.slug}`} className="relative h-20 w-20 md:h-24 md:w-24 shrink-0 self-center rounded-lg overflow-hidden bg-surface-soft">
           <Image src={line.image} alt={line.name} fill className="object-cover" />
@@ -80,10 +84,13 @@ export default function CartPage() {
             {!line.isGift && (
               <button
                 onClick={() => removeItem(line.variantId, line.subscribeMonths)}
-                className="shrink-0 text-slate-500 hover:text-rose-500"
-                aria-label="Remove"
+                // -mr-2 -mt-2: the 44px of target it needs reaches back
+                // over the row's own padding instead of pushing the name
+                // in by that much.
+                className="-mr-2 -mt-2 grid size-11 shrink-0 place-items-center text-slate-400 transition-colors hover:text-rose-500"
+                aria-label={t("ลบออกจากตะกร้า", "Remove from cart")}
               >
-                <Trash2 size={16} />
+                <Trash2 size={17} />
               </button>
             )}
           </div>
@@ -117,18 +124,25 @@ export default function CartPage() {
               <span className="text-xs text-slate-500">{t("จำนวน", "Qty")} {line.qty}</span>
             ) : (
               <div>
-                <div className="flex items-center border border-slate-200 rounded-full">
-                  <button onClick={() => updateQty(line.variantId, line.qty - 1, line.subscribeMonths)} className="p-2" aria-label="Decrease">
-                    <Minus size={12} />
+                {/* 28px before, on the two controls a cart screen exists
+                    for. A thumb is told to find 44, and these are the ones
+                    tapped over and over. */}
+                <div className="inline-flex items-center rounded-full border border-slate-200">
+                  <button
+                    onClick={() => updateQty(line.variantId, line.qty - 1, line.subscribeMonths)}
+                    className="grid size-11 place-items-center rounded-full text-brand-ink active:scale-90"
+                    aria-label={t("ลดจำนวน", "Decrease quantity")}
+                  >
+                    <Minus size={15} />
                   </button>
-                  <span className="w-6 text-center text-xs font-semibold">{line.qty}</span>
+                  <span className="w-7 text-center text-sm font-semibold tabular-nums">{line.qty}</span>
                   <button
                     onClick={() => updateQty(line.variantId, line.qty + 1, line.subscribeMonths)}
                     disabled={typeof line.stock === "number" && line.qty >= line.stock}
-                    className="p-2 disabled:opacity-30 disabled:pointer-events-none"
-                    aria-label="Increase"
+                    className="grid size-11 place-items-center rounded-full text-brand-ink active:scale-90 disabled:opacity-30 disabled:pointer-events-none"
+                    aria-label={t("เพิ่มจำนวน", "Increase quantity")}
                   >
-                    <Plus size={12} />
+                    <Plus size={15} />
                   </button>
                 </div>
                 {typeof line.stock === "number" && line.qty >= line.stock && (
@@ -158,26 +172,37 @@ export default function CartPage() {
   }
 
   return (
-    <div className="container-page py-8 md:py-10">
-      <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-6">{t("ตะกร้าสินค้า", "Shopping cart")}</h1>
+    // Tinted ground with white sheets laid on it. On a phone this is what
+    // separates a list from the page holding it, and it is why a cart in an
+    // app reads as a stack of things you are buying rather than as a web
+    // page about them. Desktop keeps its own white, where the two-column
+    // layout is already doing that job.
+    <div className="bg-surface-soft lg:bg-transparent">
+    <div className="container-page py-5 md:py-10">
+      <h1 className="mb-4 text-xl font-bold text-brand-ink md:mb-6 md:text-3xl">
+        {t("ตะกร้าสินค้า", "Shopping cart")}{" "}
+        <span className="text-base font-medium text-slate-500 md:text-lg">({itemCount})</span>
+      </h1>
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 flex flex-col gap-4">
           {subscribeLines.length > 0 && (
-            <div>
-              <h2 className="flex items-center gap-1.5 text-sm font-bold text-brand-ink mb-2">
+            <section className="overflow-hidden rounded-2xl bg-white shadow-card">
+              <h2 className="flex items-center gap-1.5 border-b border-slate-100 px-4 py-3 text-sm font-bold text-brand-ink">
                 <Repeat size={14} className="text-brand-emerald" /> {t("สมัครรับประจำ", "Subscription")}
               </h2>
-              <div className="flex flex-col gap-3">{subscribeLines.map(renderLine)}</div>
-            </div>
+              <div className="divide-y divide-slate-100">{subscribeLines.map(renderLine)}</div>
+            </section>
           )}
 
           {normalLines.length > 0 && (
-            <div className={subscribeLines.length > 0 ? "mt-2" : undefined}>
+            <section className="overflow-hidden rounded-2xl bg-white shadow-card">
               {subscribeLines.length > 0 && (
-                <h2 className="text-sm font-bold text-brand-ink mb-2">{t("ซื้อปกติ", "One-time purchase")}</h2>
+                <h2 className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-brand-ink">
+                  {t("ซื้อปกติ", "One-time purchase")}
+                </h2>
               )}
-              <div className="flex flex-col gap-3">{normalLines.map(renderLine)}</div>
-            </div>
+              <div className="divide-y divide-slate-100">{normalLines.map(renderLine)}</div>
+            </section>
           )}
 
           <CouponPicker />
@@ -199,7 +224,7 @@ export default function CartPage() {
         </div>
 
         <div className="flex flex-col gap-4 h-fit lg:sticky lg:top-[152px]">
-          <div className="rounded-xl2 p-5 shadow-card">
+          <div className="rounded-2xl bg-white p-5 shadow-card">
             <h2 className="font-bold text-brand-ink mb-4">{t("สรุปคำสั่งซื้อ", "Order summary")}</h2>
             <div className="flex justify-between text-sm text-slate-600 mb-2">
               <span>{t("ยอดรวมสินค้า", "Subtotal")}</span>
@@ -279,7 +304,7 @@ export default function CartPage() {
             ) : (
               <Link
                 href="/account/login?returnTo=/cart"
-                className="mt-4 block text-center rounded-full bg-white border border-amber-300 text-xs font-semibold text-brand-dark py-2.5"
+                className="mt-4 grid h-11 place-items-center rounded-full border border-amber-300 bg-white text-xs font-semibold text-brand-dark"
               >
                 {t("เข้าสู่ระบบเพื่อสะสมคะแนน", "Sign in to collect points")}
               </Link>
@@ -289,14 +314,17 @@ export default function CartPage() {
       </div>
 
       <MobileStickyBar hideWhenVisible={checkoutButtonRef}>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs text-slate-500">{t("ยอดรวมทั้งหมด", "Total")}</p>
-          <p className="text-sm font-bold text-brand-ink">{formatTHB(totals.total)}</p>
+        <div className="min-w-0 shrink-0">
+          <p className="text-[11px] text-slate-500">{t("ยอดรวมทั้งหมด", "Total")}</p>
+          <p className="text-base font-bold leading-tight text-brand-ink">{formatTHB(totals.total)}</p>
         </div>
-        <Button href="/checkout" className="shrink-0 text-xs active:scale-95">
-          {t("ดำเนินการชำระเงิน", "Proceed to checkout")}
+        {/* The one thing this screen is for, at the size that says so: it
+            was a 36px button sharing the row with the total. */}
+        <Button href="/checkout" size="lg" className="min-w-0 flex-1 active:scale-95">
+          {t("ดำเนินการชำระเงิน", "Checkout")}
         </Button>
       </MobileStickyBar>
+    </div>
     </div>
   );
 }

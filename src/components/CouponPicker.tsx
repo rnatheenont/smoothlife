@@ -93,7 +93,7 @@ export default function CouponPicker() {
           <button
             type="submit"
             disabled={couponPending}
-            className="rounded-lg bg-surface-muted px-4 text-sm font-semibold text-brand-dark disabled:opacity-60 flex items-center gap-1.5"
+            className="flex h-11 items-center gap-1.5 rounded-lg bg-surface-muted px-4 text-sm font-semibold text-brand-dark disabled:opacity-60"
           >
             {couponPending && <Loader2 size={13} className="animate-spin" />}
             {t("ใช้โค้ด", "Apply")}
