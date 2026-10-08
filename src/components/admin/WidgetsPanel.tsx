@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, Sliders, Eye, RefreshCw } from "lucide-react";
+import { ChevronDown, Sliders, Eye, RefreshCw, Upload, Loader2 } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { Input } from "@heroui/react";
 
@@ -45,7 +45,22 @@ const CONFIG_LABELS: Record<string, string> = {
   image: "ลิงก์รูปแบนเนอร์ (1512x260)",
   collection: "handle ของ collection (เช่น sale-up-to-50-off)",
   titleTh: "หัวข้อบนแบนเนอร์ (ใช้เมื่อไม่ได้ใส่รูป)",
+  colorFrom: "สีซ้ายของแถบ",
+  colorTo: "สีขวาของแถบ",
 };
+
+// Fields a widget can have, whether or not the stored row happens to carry
+// them yet. The form used to be built from the saved config alone, so a key
+// added in code was invisible until someone wrote it into the database by
+// hand — which is a deploy that silently does nothing.
+const CONFIG_FIELDS: Record<string, string[]> = {
+  flash_sale_bar: ["titleTh", "subtitleTh", "endsAt", "code", "href", "colorFrom", "colorTo"],
+  flash_sale_shelf: ["titleTh", "image", "href", "collection"],
+};
+
+/** Rendered as a colour well rather than a text box. */
+const COLOR_FIELDS = new Set(["colorFrom", "colorTo", "color"]);
+const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 function PreviewMock({ widgetKey }: { widgetKey: string }) {
   switch (widgetKey) {
@@ -154,6 +169,8 @@ export default function WidgetsPanel() {
     {},
   );
   const [saving, setSaving] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);
 
   async function load() {
@@ -195,12 +212,38 @@ export default function WidgetsPanel() {
     }
   }
 
+  function fieldsFor(w: WidgetRow) {
+    const seen = new Set(Object.keys(w.config));
+    for (const k of CONFIG_FIELDS[w.key] ?? []) seen.add(k);
+    return [...seen];
+  }
+
   function openCustomize(w: WidgetRow) {
     setOpenKey(openKey === w.key ? null : w.key);
     if (!drafts[w.key]) {
       const draft: Record<string, string> = {};
-      for (const [k, v] of Object.entries(w.config)) draft[k] = String(v);
+      for (const k of fieldsFor(w)) draft[k] = w.config[k] === undefined ? "" : String(w.config[k]);
       setDrafts((prev) => ({ ...prev, [w.key]: draft }));
+    }
+  }
+
+  async function uploadBanner(widgetKey: string, field: string, file: File) {
+    setUploading(widgetKey);
+    setUploadError(null);
+    try {
+      const body = new FormData();
+      body.append("image", file);
+      const res = await fetch("/api/admin/flash-sale/upload-image", { method: "POST", body });
+      const json = (await res.json().catch(() => null)) as { ok?: boolean; url?: string; error?: string } | null;
+      if (!res.ok || !json?.ok || !json.url) {
+        setUploadError(json?.error ?? "อัปโหลดรูปไม่สำเร็จ");
+        return;
+      }
+      setDrafts((prev) => ({ ...prev, [widgetKey]: { ...prev[widgetKey], [field]: json.url! } }));
+    } catch {
+      setUploadError("อัปโหลดรูปไม่สำเร็จ");
+    } finally {
+      setUploading(null);
     }
   }
 
@@ -209,6 +252,9 @@ export default function WidgetsPanel() {
     const draft = drafts[w.key] ?? {};
     const config: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(draft)) {
+      // A field left blank is a field the widget should fall back on, not an
+      // empty string to render.
+      if (v === "" && w.config[k] === undefined) continue;
       const num = Number(v);
       config[k] =
         v !== "" && !isNaN(num) && /^-?\d+(\.\d+)?$/.test(v) ? num : v;
@@ -280,28 +326,85 @@ export default function WidgetsPanel() {
 
           {openKey === w.key && (
             <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-              {Object.keys(w.config).length === 0 ? (
+              {fieldsFor(w).length === 0 ? (
                 <p className="text-[11px] text-slate-400">
                   widget นี้ไม่มีตัวเลือกให้ปรับแต่ง
                 </p>
               ) : (
-                Object.keys(w.config).map((k) => (
-                  <div key={k}>
-                    <label className="block text-[11px] text-slate-400 mb-1">
-                      {CONFIG_LABELS[k] ?? k}
-                    </label>
-                    <Input
-                      fullWidth
-                      value={drafts[w.key]?.[k] ?? ""}
-                      onChange={(e) =>
-                        setDrafts((prev) => ({
-                          ...prev,
-                          [w.key]: { ...prev[w.key], [k]: e.target.value },
-                        }))
-                      }
-                    />
-                  </div>
-                ))
+                fieldsFor(w).map((k) => {
+                  const value = drafts[w.key]?.[k] ?? "";
+                  const set = (next: string) =>
+                    setDrafts((prev) => ({ ...prev, [w.key]: { ...prev[w.key], [k]: next } }));
+                  return (
+                    <div key={k}>
+                      <label className="block text-[11px] text-slate-400 mb-1">
+                        {CONFIG_LABELS[k] ?? k}
+                      </label>
+
+                      {COLOR_FIELDS.has(k) ? (
+                        // The well and the hex sit side by side: one to pick
+                        // with, one to paste a brand colour into.
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            aria-label={CONFIG_LABELS[k] ?? k}
+                            value={HEX.test(value) ? value : "#0b6b4f"}
+                            onChange={(e) => set(e.target.value)}
+                            className="h-9 w-12 shrink-0 cursor-pointer rounded-lg border border-slate-200 bg-white p-1"
+                          />
+                          <Input fullWidth placeholder="#0b6b4f" value={value} onChange={(e) => set(e.target.value)} />
+                        </div>
+                      ) : k === "image" ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              fullWidth
+                              placeholder="วางลิงก์รูป หรือกดอัปโหลด"
+                              value={value}
+                              onChange={(e) => set(e.target.value)}
+                            />
+                            <label className="flex h-9 shrink-0 cursor-pointer items-center gap-1 rounded-full border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:border-brand-teal hover:text-brand-800">
+                              {uploading === w.key ? (
+                                <Loader2 size={13} className="animate-spin" />
+                              ) : (
+                                <Upload size={13} />
+                              )}
+                              อัปโหลด
+                              <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp"
+                                className="sr-only"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  e.target.value = "";
+                                  if (file) uploadBanner(w.key, k, file);
+                                }}
+                              />
+                            </label>
+                          </div>
+                          {uploadError && <p className="text-[11px] text-rose-600">{uploadError}</p>}
+                          {/* The banner as the page will draw it — 1512x260,
+                              the shape the shelf crops to — so a wrong crop is
+                              caught here rather than on the live home page. */}
+                          {value ? (
+                            <div className="overflow-hidden rounded-lg border border-slate-100">
+                              {/* A plain img on purpose: next/image refuses a
+                                  host that is not in remotePatterns, and an
+                                  admin pasting a link from anywhere would
+                                  take the whole panel down with it. */}
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={value} alt="" className="aspect-[1512/260] w-full bg-slate-50 object-cover" />
+                            </div>
+                          ) : (
+                            <p className="text-[11px] text-slate-400">ยังไม่มีรูป — แบนเนอร์จะใช้หัวข้อบนพื้นไล่สีแทน</p>
+                          )}
+                        </div>
+                      ) : (
+                        <Input fullWidth value={value} onChange={(e) => set(e.target.value)} />
+                      )}
+                    </div>
+                  );
+                })
               )}
               <button
                 onClick={() => saveConfig(w)}
