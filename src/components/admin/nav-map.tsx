@@ -16,7 +16,6 @@ import {
   SlidersHorizontal,
   Repeat,
   BookOpen,
-  MessageCircleQuestion,
   Search,
   FileText,
   TrendingUp,
@@ -192,13 +191,6 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "ฐานความรู้ AI",
         icon: BookOpen,
         desc: "คำตอบที่อนุมัติแล้วให้ AI ใช้ตอบลูกค้า",
-        permission: "kb.draft",
-      },
-      {
-        href: "/admin/chat-suggestions",
-        label: "คำถามแนะนำ AI",
-        icon: MessageCircleQuestion,
-        desc: "คำถามที่ขึ้นใต้ช่องถาม AI ตอนลูกค้าพิมพ์",
         permission: "kb.draft",
       },
       {

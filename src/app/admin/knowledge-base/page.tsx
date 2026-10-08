@@ -20,6 +20,7 @@ import { isReviewDue, reviewLabel } from "@/lib/kb-review";
 import AdminSelect from "@/components/admin/AdminSelect";
 import AdminSearch from "@/components/admin/AdminSearch";
 import BlockedTopicsPanel from "@/components/admin/BlockedTopicsPanel";
+import ChatSuggestionsPanel from "@/components/admin/ChatSuggestionsPanel";
 import { Input, Spinner, TextArea } from "@heroui/react";
 
 // Admin → ฐานความรู้ AI. The articles the chat assistant is allowed to answer
@@ -66,7 +67,7 @@ export default function AdminKnowledgeBasePage() {
   // Two halves of the same job — what the assistant may answer from, and
   // what it must refuse — so they are two tabs rather than one stacked on
   // top of the other.
-  const [tab, setTab] = useState<"articles" | "blocked">("articles");
+  const [tab, setTab] = useState<"articles" | "blocked" | "suggestions">("articles");
   const [confirming, setConfirming] = useState<string | null>(null);
   const [truncated, setTruncated] = useState(false);
 
@@ -345,6 +346,7 @@ export default function AdminKnowledgeBasePage() {
         {([
           { key: "articles", label: "บทความที่ตอบได้" },
           { key: "blocked", label: "เรื่องที่ห้าม AI ตอบ" },
+          { key: "suggestions", label: "คำถามแนะนำ" },
         ] as const).map((t) => (
           <button
             key={t.key}
@@ -362,6 +364,7 @@ export default function AdminKnowledgeBasePage() {
       </div>
 
       {tab === "blocked" && <BlockedTopicsPanel />}
+      {tab === "suggestions" && <ChatSuggestionsPanel />}
 
       {tab === "articles" && (
       <>
