@@ -375,11 +375,15 @@ export default function LoginContent({
       )}
       <div className="mb-7">
         <h1 className="text-[28px] font-bold leading-tight text-brand-ink md:text-[32px]">
-          {view === "password" && mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
+          {view === "password" && mode === "register"
+            ? "สมัครสมาชิก"
+            : view === "start"
+            ? "เข้าสู่ระบบ / สมัครสมาชิก"
+            : "เข้าสู่ระบบ"}
         </h1>
         {view === "start" && (
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            กรอกเบอร์โทรเพื่อรับรหัส OTP หรือเลือกวิธีอื่นด้านล่าง
+            กรอกเบอร์โทรเพื่อรับรหัส OTP — ถ้ายังไม่มีบัญชี ระบบจะสมัครให้อัตโนมัติ
           </p>
         )}
         {view === "password" && (
@@ -500,6 +504,23 @@ export default function LoginContent({
               label="อีเมลและรหัสผ่าน"
             />
           </div>
+
+          {/* Signing up had no door of its own. Phone and email OTP both
+              create the account on first use, so most people never need one
+              — but nothing said so, and the only place the word "สมัคร"
+              appeared was a grey toggle two taps in, behind a button that
+              says "อีเมลและรหัสผ่าน". Someone who has never bought here
+              before has no reason to press that. */}
+          <button
+            type="button"
+            onClick={() => {
+              setMode("register");
+              setView("password");
+            }}
+            className="mt-1 grid h-11 place-items-center text-sm text-slate-500 transition-colors hover:text-brand-ink"
+          >
+            ยังไม่มีบัญชี? <span className="font-bold text-brand-ink">สมัครสมาชิก</span>
+          </button>
         </div>
       )}
 
