@@ -25,7 +25,7 @@ const DESCRIPTIONS: Record<string, string> = {
   congrats_bar: "แถบแจ้งเตือนด้านบนเมื่อปลดล็อกของแถม",
   gifts_on_slide_cart: "แสดงรายการของแถมที่ได้รับในตะกร้าแบบเลื่อน",
   flash_sale_bar: "แถบเขียวนับถอยหลังใต้แถวหมวดหมู่ พร้อมโค้ดส่วนลด (หน้าแรก)",
-  flash_sale_shelf: "แบนเนอร์แคมเปญ + ชั้นวางสินค้าจาก collection ที่เลือก (หน้าแรก)",
+  flash_sale_shelf: "แถบ Flash Sale สีแดง: นับถอยหลัง + ชั้นวางสินค้าจาก collection ที่เลือก (หน้าแรก)",
 };
 
 const CONFIG_LABELS: Record<string, string> = {
@@ -55,7 +55,7 @@ const CONFIG_LABELS: Record<string, string> = {
 // hand — which is a deploy that silently does nothing.
 const CONFIG_FIELDS: Record<string, string[]> = {
   flash_sale_bar: ["titleTh", "subtitleTh", "endsAt", "code", "href", "colorFrom", "colorTo"],
-  flash_sale_shelf: ["titleTh", "image", "href", "collection"],
+  flash_sale_shelf: ["titleTh", "endsAt", "href", "collection"],
 };
 
 /** Rendered as a colour well rather than a text box. */
