@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getCollectionByHandle, getCollectionProducts } from "@/data/collections";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
-import { useRailFade } from "@/lib/use-rail-fade";
 import FlashSaleCard from "@/components/home/FlashSaleCard";
 
 // The flash sale band: the campaign on the left, what is on sale on the right.
@@ -56,7 +55,9 @@ function Box({ children }: { children: React.ReactNode }) {
 
 export default function FlashSaleShelf() {
   const { settings, loaded } = useWidgetSettings();
-  const rail = useRailFade();
+  // A plain ref, not useRailFade: the band wanted the fade removed, and the
+  // hook's only other job here was holding this.
+  const railRef = useRef<HTMLUListElement>(null);
   const widget = settings.flash_sale_shelf;
   const cfg = widget.config as {
     href?: string;
@@ -104,7 +105,7 @@ export default function FlashSaleShelf() {
               "repeating-linear-gradient(115deg, rgba(255,255,255,0.045) 0 22px, transparent 22px 54px), radial-gradient(120% 95% at 42% 38%, #d8261a 0%, #a81a13 48%, #5f0d0a 100%)",
           }}
         >
-          <div className="grid gap-4 p-4 md:p-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
+          <div className="grid items-center gap-4 p-4 md:p-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
             {/* The campaign. A row on a phone — lockup and clock side by side
                 — because stacked it filled the screen before a single product
                 appeared. */}
@@ -154,20 +155,22 @@ export default function FlashSaleShelf() {
             {/* What is on sale. */}
             <div className="relative min-w-0">
               <ul
-                ref={rail.ref}
-                style={rail.style}
+                ref={railRef}
                 className="-m-2 flex snap-x snap-mandatory gap-3 overflow-x-auto p-2 scrollbar-none md:gap-4"
               >
                 {shelf.map((p) => (
                   <li
                     key={p.slug}
-                    className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] xl:w-[calc((100%-3rem)/4)]"
+                    // Five across on a wide screen: at four the row ended
+                    // well short of the band's right edge and the campaign
+                    // beside it looked like it had run out of things to sell.
+                    className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] xl:w-[calc((100%-4rem)/5)]"
                   >
                     <FlashSaleCard product={p} />
                   </li>
                 ))}
               </ul>
-              <RailArrows railRef={rail.ref} />
+              <RailArrows railRef={railRef} />
             </div>
           </div>
 
@@ -201,7 +204,7 @@ function RailArrows({ railRef }: { railRef: React.RefObject<HTMLUListElement | n
         type="button"
         onClick={() => scrollBy(-1)}
         aria-label="สินค้าก่อนหน้า"
-        className="absolute -left-1 top-1/2 z-20 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-brand-sky text-white shadow-card transition-[filter] hover:brightness-110 md:grid"
+        className="absolute -left-1 top-1/2 z-20 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-white text-slate-500 shadow-card transition-colors hover:text-brand-800 md:grid"
       >
         <ChevronLeft size={20} />
       </button>
@@ -209,7 +212,7 @@ function RailArrows({ railRef }: { railRef: React.RefObject<HTMLUListElement | n
         type="button"
         onClick={() => scrollBy(1)}
         aria-label="สินค้าถัดไป"
-        className="absolute -right-1 top-1/2 z-20 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-brand-sky text-white shadow-card transition-[filter] hover:brightness-110 md:grid"
+        className="absolute -right-1 top-1/2 z-20 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-white text-slate-500 shadow-card transition-colors hover:text-brand-800 md:grid"
       >
         <ChevronRight size={20} />
       </button>
