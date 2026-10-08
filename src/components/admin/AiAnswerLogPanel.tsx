@@ -11,6 +11,9 @@ import {
 } from "lucide-react";
 import type { AiLogRow } from "@/app/api/admin/kb/logs/route";
 import { Button, Spinner, TextArea } from "@heroui/react";
+import AdminSearch from "@/components/admin/AdminSearch";
+import AdminSelect from "@/components/admin/AdminSelect";
+import { Card } from "@/components/ui";
 
 // Admin → ฐานความรู้ AI → Log. Every answer the assistant gave from the
 // knowledge base, with the articles behind it. A question with no article is
@@ -34,6 +37,7 @@ const stamp = (iso: string) =>
 
 export default function AiAnswerLogPanel() {
   const [rows, setRows] = useState<AiLogRow[]>([]);
+  const [query, setQuery] = useState("");
   const [titles, setTitles] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState<"all" | "answered" | "unanswered">(
     "all",
@@ -48,6 +52,14 @@ export default function AiAnswerLogPanel() {
   const [correction, setCorrection] = useState("");
   const [savingCorrection, setSavingCorrection] = useState(false);
   const [corrected, setCorrected] = useState<string[]>([]);
+
+  // Filters the page that is loaded, not the whole log — the list is paged
+  // on the server, and the placeholder says so rather than implying a search
+  // across everything.
+  const q = query.trim().toLowerCase();
+  const shown = q
+    ? rows.filter((r) => `${r.question} ${r.ai_answer ?? ""}`.toLowerCase().includes(q))
+    : rows;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -127,34 +139,44 @@ export default function AiAnswerLogPanel() {
         </p>
       )}
 
-      {/* bg-white: surface-muted is the canvas colour now. */}
-      {/* Swipes rather than wraps: at 375px "ตอบจากความรู้" broke across two
-          lines inside its own pill. */}
-      <div className="-mx-1 flex gap-1 self-start overflow-x-auto px-1 sm:mx-0 sm:inline-flex sm:rounded-full sm:bg-white sm:p-1 sm:shadow-card">
-        {(["all", "answered", "unanswered"] as const).map((f) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => {
-              setFilter(f);
-              setPage(0);
-            }}
-            aria-pressed={filter === f}
-            className={`min-h-9 shrink-0 whitespace-nowrap rounded-full bg-white px-4 text-sm font-semibold shadow-card transition sm:bg-transparent sm:shadow-none ${
-              filter === f
-                ? "bg-brand-gradient-soft text-brand-800"
-                : "text-slate-600 hover:text-brand-ink"
-            }`}
-          >
-            {f === "all"
-              ? "ทั้งหมด"
-              : f === "answered"
-                ? "ตอบจากความรู้"
-                : "ยังไม่มีความรู้รองรับ"}
-          </button>
-        ))}
-      </div>
+      {/* Same chrome as the other three tabs: one row of named controls at
+          the top of one panel, rather than a floating group of pills above a
+          loose grid. The rows below stay cards and not a table — a question,
+          an answer and a correction are paragraphs, and a 200-character
+          answer in a table cell is the one shape this content cannot take. */}
+      <Card padded={false} className="overflow-hidden">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+          <AdminSearch
+            className="min-w-[14rem] flex-1 basis-56"
+            value={query}
+            onChange={setQuery}
+            label="ค้นหาใน log"
+            placeholder="ค้นในหน้านี้ — คำถามหรือคำตอบ"
+          />
+          <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
+            แสดง
+            <AdminSelect
+              label="สถานะคำตอบ"
+              value={filter}
+              onChange={(v) => {
+                setFilter(v as typeof filter);
+                setPage(0);
+              }}
+              options={[
+                { value: "all", label: "ทั้งหมด" },
+                { value: "answered", label: "ตอบจากความรู้" },
+                { value: "unanswered", label: "ยังไม่มีความรู้รองรับ" },
+              ]}
+            />
+          </label>
+          {q && (
+            <span className="text-[11px] text-slate-400">
+              เจอ {shown.length} จาก {rows.length} รายการในหน้านี้
+            </span>
+          )}
+        </div>
 
+        <div className="p-3">
       {loading ? (
         <p className="py-10 text-center">
           <Spinner
@@ -163,18 +185,20 @@ export default function AiAnswerLogPanel() {
             className="mx-auto text-slate-300"
           />
         </p>
-      ) : rows.length === 0 ? (
+      ) : shown.length === 0 ? (
         <div className="rounded-xl2 border border-dashed border-surface-line p-10 text-center text-sm text-slate-500">
-          {filter === "unanswered"
-            ? "ไม่มีคำถามที่ตอบไม่ได้ในช่วงนี้"
-            : "ยังไม่มีการตอบจากฐานความรู้"}
+          {q
+            ? `ไม่พบรายการที่ตรงกับ “${query.trim()}” ในหน้านี้`
+            : filter === "unanswered"
+              ? "ไม่มีคำถามที่ตอบไม่ได้ในช่วงนี้"
+              : "ยังไม่มีการตอบจากฐานความรู้"}
         </div>
       ) : (
         /* Two to a row. Full width on a question-and-answer log means very
            long lines unless the cards divide it — a column of 200-character
            lines is harder to read than the 1100px it replaced. */
         <ul className="grid items-start gap-2 xl:grid-cols-2">
-          {rows.map((r) => {
+          {shown.map((r) => {
             const unanswered = r.matched_article_ids.length === 0;
             return (
               <li
@@ -290,7 +314,7 @@ export default function AiAnswerLogPanel() {
       )}
 
       {(page > 0 || hasMore) && (
-        <div className="mt-4 flex items-center justify-center gap-2">
+        <div className="mt-3 flex items-center justify-center gap-2 border-t border-slate-100 pt-3">
           <button
             type="button"
             onClick={() => setPage((p) => Math.max(0, p - 1))}
@@ -310,6 +334,8 @@ export default function AiAnswerLogPanel() {
           </button>
         </div>
       )}
+        </div>
+      </Card>
     </div>
   );
 }
