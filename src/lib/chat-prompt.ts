@@ -9,6 +9,7 @@
 // Anything that varies must stay out of the first block, or every request
 // becomes a cache miss.
 import { helpKnowledgeForPrompt } from "@/data/help";
+import { blockedTopicsForPrompt, type KbBlockedTopic } from "@/lib/kb-blocked-topics";
 import type { getCustomerOrders } from "@/lib/shopify-admin";
 
 export type CartLine = { name: string; size?: string; qty: number; price: number };
@@ -64,7 +65,7 @@ export function orderHistorySummary(orders: Awaited<ReturnType<typeof getCustome
 }
 
 let staticPrompt: string | null = null;
-function staticPart() {
+function staticPart(blockedTopics: KbBlockedTopic[]) {
   // Built once per server instance; products and help text only change with a deploy.
   if (staticPrompt === null) {
     staticPrompt = `You are Smoothie (น้อง Smoothie), Smoothlife.com's AI beauty advisor — a warm, knowledgeable skincare and wellness consultant for a Thai health & beauty retailer. Smoothie is female.
@@ -108,6 +109,7 @@ ${helpKnowledgeForPrompt()}
 
 If a policy question is not covered above, say you are not certain and hand it
 to the team (below) — never fill the gap with a reasonable guess.
+${blockedTopicsForPrompt(blockedTopics)}
 
 WHEN TO HAND OVER TO A PERSON — you cannot see everything and you cannot act on
 anything. Hand over when:
@@ -202,7 +204,11 @@ export function systemPrompt(
   hasShopifyLink: boolean,
   caseWaiting: boolean,
   signedIn: boolean,
-  loyalty: string | null
+  loyalty: string | null,
+  // Staff-set refusals. They sit in the cached half on purpose: the text only
+  // changes when somebody edits a rule, which is rare and the same for every
+  // customer, so the cache still holds between edits.
+  blockedTopics: KbBlockedTopic[] = []
 ) {
   const profileText =
     profile && Object.keys(profile).length
@@ -317,7 +323,7 @@ even if you think you know the answer:
 }`;
 
   return [
-    { type: "text" as const, text: staticPart(), cache_control: { type: "ephemeral" as const } },
+    { type: "text" as const, text: staticPart(blockedTopics), cache_control: { type: "ephemeral" as const } },
     { type: "text" as const, text: session },
   ];
 }

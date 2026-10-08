@@ -19,6 +19,7 @@ import { slugifyThai } from "@/lib/kb-public";
 import { isReviewDue, reviewLabel } from "@/lib/kb-review";
 import AdminSelect from "@/components/admin/AdminSelect";
 import AdminSearch from "@/components/admin/AdminSearch";
+import BlockedTopicsPanel from "@/components/admin/BlockedTopicsPanel";
 import { Input, Spinner, TextArea } from "@heroui/react";
 
 // Admin → ฐานความรู้ AI. The articles the chat assistant is allowed to answer
@@ -399,6 +400,11 @@ export default function AdminKnowledgeBasePage() {
           </Link>
         }
       />
+
+      {/* Above the articles on purpose: what the assistant must not say is a
+          stronger rule than anything in the list below it, and reads oddly
+          as a footnote to a list of things it may say. */}
+      <BlockedTopicsPanel />
 
       {!embeddings && (
         <p className="mb-4 rounded-xl2 bg-surface-soft px-3 py-2 text-xs leading-relaxed text-slate-500">

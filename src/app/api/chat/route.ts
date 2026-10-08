@@ -13,6 +13,7 @@ import {
 import { getCustomerOrders, shopifyAdminConfigured } from "@/lib/shopify-admin";
 import { contentForTranscript } from "@/lib/chat-markers";
 import { systemPrompt, orderHistorySummary, type CartLine, type ViewingProduct } from "@/lib/chat-prompt";
+import { activeBlockedTopics } from "@/lib/kb-blocked-topics";
 import { loyaltySummaryForPrompt } from "@/lib/loyalty-prompt";
 import { CHAT_TOOLS, runChatTool } from "@/lib/chat-product-search";
 import { KB_TOOL, runKbTool } from "@/lib/chat-kb-tool";
@@ -399,6 +400,10 @@ export async function POST(req: NextRequest) {
 
   const client = new Anthropic({ apiKey: key });
   const encoder = new TextEncoder();
+  // Read every turn rather than cached in the module: switching a rule off is
+  // something staff do because something is going wrong right now, and a
+  // process that keeps refusing for another ten minutes is not off.
+  const blockedTopics = await activeBlockedTopics();
   const system = systemPrompt(
     profile,
     lang,
@@ -410,7 +415,8 @@ export async function POST(req: NextRequest) {
     hasShopifyLink,
     caseWaiting,
     Boolean(uid),
-    loyalty
+    loyalty,
+    blockedTopics
   );
 
   // What the customer just asked, for the AI answer log.

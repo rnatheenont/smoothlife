@@ -95,6 +95,10 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   // Reading the base is part of drafting for it; changing what it says is
   // not — support can look up what the assistant is allowed to answer
   // without being able to rewrite it.
+  // Reading the refusal rules is a draft-level job; changing one changes what
+  // the assistant says to every customer at once, which is publishing.
+  { prefix: "/api/admin/kb/blocked-topics", permission: "kb.draft", methods: READ },
+  { prefix: "/api/admin/kb/blocked-topics", permission: "kb.publish" },
   { prefix: "/api/admin/kb/articles", permission: "kb.draft", methods: READ },
   { prefix: "/api/admin/kb/articles", permission: "kb.publish" },
   { prefix: "/api/admin/kb/reindex", permission: "kb.publish" },
