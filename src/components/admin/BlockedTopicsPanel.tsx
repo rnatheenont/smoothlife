@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Ban, Loader2, Plus, Trash2 } from "lucide-react";
+import { Ban, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Input, TextArea } from "@heroui/react";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { adminTable } from "@/components/admin/layout-kit";
@@ -25,6 +25,10 @@ export default function BlockedTopicsPanel() {
   const [rows, setRows] = useState<KbBlockedTopic[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  // Set while editing an existing rule; null while writing a new one. The
+  // drawer is the same either way — a rule is a rule whether it is five
+  // seconds or five months old.
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [topic, setTopic] = useState("");
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -46,24 +50,43 @@ export default function BlockedTopicsPanel() {
     load();
   }, []);
 
-  async function add() {
+  function startCreate() {
+    setEditingId(null);
+    setTopic("");
+    setReply("");
+    setError(null);
+    setOpen(true);
+  }
+
+  function startEdit(row: KbBlockedTopic) {
+    setEditingId(row.id);
+    setTopic(row.topic);
+    setReply(row.reply ?? "");
+    setError(null);
+    setOpen(true);
+  }
+
+  async function save() {
     const t = topic.trim();
     if (!t) return;
-    setBusy("add");
+    setBusy("save");
     setError(null);
     const res = await fetch("/api/admin/kb/blocked-topics", {
-      method: "POST",
+      method: editingId ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic: t, reply: reply.trim() }),
+      body: JSON.stringify(
+        editingId ? { id: editingId, topic: t, reply: reply.trim() } : { topic: t, reply: reply.trim() }
+      ),
     });
     const json = await res.json();
     setBusy(null);
     if (!json.ok) {
-      setError(json.error ?? "เพิ่มไม่สำเร็จ");
+      setError(json.error ?? "บันทึกไม่สำเร็จ");
       return;
     }
     setTopic("");
     setReply("");
+    setEditingId(null);
     setOpen(false);
     load();
   }
@@ -103,7 +126,7 @@ export default function BlockedTopicsPanel() {
           </p>
         </div>
         <button
-          onClick={() => setOpen(true)}
+          onClick={startCreate}
           className="flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white hover:bg-rose-700"
         >
           <Plus size={15} /> เพิ่มเรื่องที่ห้ามตอบ
@@ -113,7 +136,11 @@ export default function BlockedTopicsPanel() {
       {/* The same drawer the articles use, with the same label-above-field
           pattern: two forms on one screen that fill in the same kind of thing
           should not be two different shapes. */}
-      <FormDrawer open={open} title="เพิ่มเรื่องที่ห้ามตอบ" onClose={() => setOpen(false)}>
+      <FormDrawer
+        open={open}
+        title={editingId ? "แก้ไขเรื่องที่ห้ามตอบ" : "เพิ่มเรื่องที่ห้ามตอบ"}
+        onClose={() => setOpen(false)}
+      >
         <div className="flex flex-col gap-4">
           <div>
             <label htmlFor="bt-topic" className="mb-1.5 block text-sm font-semibold text-brand-ink">
@@ -149,12 +176,12 @@ export default function BlockedTopicsPanel() {
           </div>
           {error && <p className="text-sm text-rose-600">{error}</p>}
           <button
-            onClick={add}
-            disabled={busy === "add" || !topic.trim()}
+            onClick={save}
+            disabled={busy === "save" || !topic.trim()}
             className="flex h-11 items-center justify-center gap-1.5 rounded-full bg-rose-600 px-5 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {busy === "add" ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-            เพิ่มเรื่องที่ห้ามตอบ
+            {busy === "save" ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+            {editingId ? "บันทึกการแก้ไข" : "เพิ่มเรื่องที่ห้ามตอบ"}
           </button>
         </div>
       </FormDrawer>
@@ -218,6 +245,12 @@ export default function BlockedTopicsPanel() {
                     <td className={adminTable.muted}>{thaiDateTime(row.updated_at)}</td>
                     <td className={`${adminTable.cell} text-right`}>
                       <button
+                        onClick={() => startEdit(row)}
+                        className="mr-1 inline-flex h-11 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-semibold text-brand-800 hover:bg-surface-soft"
+                      >
+                        <Pencil size={13} /> แก้ไข
+                      </button>
+                      <button
                         onClick={() => remove(row)}
                         disabled={busy === row.id}
                         aria-label="ลบกฎนี้"
@@ -260,6 +293,13 @@ export default function BlockedTopicsPanel() {
                     ตอบแทนว่า: {row.reply?.trim() || DEFAULT_BLOCKED_REPLY}
                   </p>
                 </div>
+                <button
+                  onClick={() => startEdit(row)}
+                  aria-label="แก้ไขกฎนี้"
+                  className="-mt-1 grid size-11 shrink-0 place-items-center text-slate-400 transition-colors hover:text-brand-800"
+                >
+                  <Pencil size={15} />
+                </button>
                 <button
                   onClick={() => remove(row)}
                   disabled={busy === row.id}

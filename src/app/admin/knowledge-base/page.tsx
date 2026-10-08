@@ -116,15 +116,9 @@ export default function AdminKnowledgeBasePage() {
     setOpen(true);
   }, []);
 
-  // Unregistered on the other tab: a top-right "เพิ่มความรู้ใหม่" that opens
-  // the article drawer while the screen is showing refusal rules is a button
-  // that does something other than what the page in front of you is about.
-  // That tab carries its own.
-  useAdminAction(
-    tab === "articles"
-      ? { label: "เพิ่มความรู้ใหม่", icon: <Plus size={15} aria-hidden />, onClick: startCreate }
-      : null
-  );
+  // No page-level action: all three tabs carry their own buttons now, in
+  // their own headers, where it is obvious which list they act on.
+  useAdminAction(null);
 
   const startEdit = (a: KbArticle) => {
     setEditingId(a.id);
@@ -325,13 +319,7 @@ export default function AdminKnowledgeBasePage() {
         className="mb-4"
         icon={<BookOpen size={20} className="text-brand-emerald" />}
         title="ฐานความรู้ AI"
-        subtitle={
-          <>
-            น้อง Smoothie ตอบลูกค้าได้เฉพาะจากบทความที่{" "}
-            <strong>เผยแพร่แล้ว</strong> ในหน้านี้เท่านั้น — เรื่องไหนไม่มีในนี้
-            ระบบจะส่งต่อให้ทีมงานตอบ ไม่เดาคำตอบเอง
-          </>
-        }
+        subtitle="สิ่งที่น้อง Smoothie ตอบได้ สิ่งที่ห้ามตอบ และคำถามที่ชวนให้ลูกค้าถาม"
         actions={
           <Link
             href="/admin/knowledge-base/log"
@@ -368,8 +356,54 @@ export default function AdminKnowledgeBasePage() {
 
       {tab === "articles" && (
       <>
+      {/* Same header shape as the other two tabs: what this list is, one line
+          on what it does, and the jobs that act on it, over on the right.
+          The tools used to sit inside the panel next to the search box, so a
+          filter and "import the whole help centre" shared a row. */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-sm font-bold text-brand-ink">บทความที่ตอบได้</h2>
+          <p className="mt-1 max-w-[62ch] text-xs leading-relaxed text-slate-500">
+            น้อง Smoothie ตอบลูกค้าได้เฉพาะจากบทความที่ <strong>เผยแพร่แล้ว</strong> ในนี้เท่านั้น —
+            เรื่องไหนไม่มี ระบบจะส่งต่อให้ทีมงานตอบ ไม่เดาคำตอบเอง
+            {!truncated && (
+              <> · ตอนนี้เผยแพร่ {counts.published ?? 0} จาก {articles.length} บทความ</>
+            )}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={seedStarters}
+            disabled={seeding}
+            title="นำศูนย์ช่วยเหลือ และวิธีใช้งานสแกนผิว/ช้อปตามปัญหาผิว เข้าฐานความรู้ — บทความวิธีใช้งานจะอัปเดตตามต้นฉบับในโค้ด ส่วนบทความศูนย์ช่วยเหลือที่นำเข้าแล้วจะไม่ถูกเขียนทับ"
+            className="flex h-11 items-center rounded-full border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:border-brand-teal hover:text-brand-800 disabled:opacity-50"
+          >
+            {seeding ? "กำลังนำเข้า…" : "นำเข้าบทความตั้งต้น"}
+          </button>
+          {embeddings && (
+            <button
+              type="button"
+              onClick={reindexAll}
+              disabled={indexing}
+              title="สร้าง embedding ให้บทความที่ยังไม่มี (หลังเพิ่ม VOYAGE_API_KEY)"
+              className="flex h-11 items-center rounded-full border border-slate-200 px-4 text-sm font-semibold text-slate-600 hover:border-brand-teal hover:text-brand-800 disabled:opacity-50"
+            >
+              {indexing ? "กำลังสร้าง embedding…" : "สร้าง embedding ที่ยังขาด"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={startCreate}
+            className="flex h-11 items-center gap-1.5 rounded-full bg-brand-gradient px-4 text-sm font-semibold text-white"
+          >
+            <Plus size={15} /> เพิ่มความรู้ใหม่
+          </button>
+        </div>
+      </div>
+
       {!embeddings && (
-        <p className="mb-4 rounded-xl2 bg-surface-soft px-3 py-2 text-xs leading-relaxed text-slate-500">
+        <p className="mt-4 rounded-xl2 bg-surface-soft px-3 py-2 text-xs leading-relaxed text-slate-500">
           ตอนนี้ค้นหาด้วยการจับคู่ข้อความ · ถ้าเพิ่มค่า{" "}
           <code className="rounded-sm bg-white px-1">VOYAGE_API_KEY</code> ใน
           Vercel ระบบจะเปลี่ยนไปค้นแบบเข้าใจความหมาย (ฝังเวกเตอร์)
@@ -403,35 +437,6 @@ export default function AdminKnowledgeBasePage() {
               label="ค้นหาบทความ"
               placeholder="ค้นหาหัวข้อหรือเนื้อหา"
             />
-            {/* Run now and then, not while reading: grouped, quiet, and out
-                of the way of the filters. */}
-            <span className="ml-auto flex flex-wrap items-center gap-1.5">
-              <span className="mr-0.5 text-[11px] text-slate-400">
-                เครื่องมือ
-              </span>
-              <button
-                type="button"
-                onClick={seedStarters}
-                disabled={seeding}
-                title="นำศูนย์ช่วยเหลือ และวิธีใช้งานสแกนผิว/ช้อปตามปัญหาผิว เข้าฐานความรู้ — บทความวิธีใช้งานจะอัปเดตตามต้นฉบับในโค้ด ส่วนบทความศูนย์ช่วยเหลือที่นำเข้าแล้วจะไม่ถูกเขียนทับ"
-                className="rounded-full px-3 py-1.5 text-xs font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
-              >
-                {seeding ? "กำลังนำเข้า…" : "นำเข้าบทความตั้งต้น"}
-              </button>
-              {embeddings && (
-                <button
-                  type="button"
-                  onClick={reindexAll}
-                  disabled={indexing}
-                  title="สร้าง embedding ให้บทความที่ยังไม่มี (หลังเพิ่ม VOYAGE_API_KEY)"
-                  className="rounded-full px-3 py-1.5 text-xs font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
-                >
-                  {indexing
-                    ? "กำลังสร้าง embedding…"
-                    : "สร้าง embedding ที่ยังขาด"}
-                </button>
-              )}
-            </span>
           </div>
 
           {/* Three axes, three named controls. As chips they were three rows

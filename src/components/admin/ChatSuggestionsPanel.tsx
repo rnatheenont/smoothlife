@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Input } from "@heroui/react";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { adminTable } from "@/components/admin/layout-kit";
@@ -32,6 +32,8 @@ export default function ChatSuggestionsPanel() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  // Set while editing an existing question; null while writing a new one.
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,23 +55,38 @@ export default function ChatSuggestionsPanel() {
     load();
   }, []);
 
-  async function add() {
+  function startCreate() {
+    setEditingId(null);
+    setDraft("");
+    setError(null);
+    setOpen(true);
+  }
+
+  function startEdit(row: Row) {
+    setEditingId(row.id);
+    setDraft(row.text);
+    setError(null);
+    setOpen(true);
+  }
+
+  async function save() {
     const text = draft.trim();
     if (!text) return;
-    setBusy("add");
+    setBusy("save");
     setError(null);
     const res = await fetch("/api/admin/chat-suggestions", {
-      method: "POST",
+      method: editingId ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify(editingId ? { id: editingId, text } : { text }),
     });
     const json = await res.json();
     setBusy(null);
     if (!json.ok) {
-      setError(json.error ?? "เพิ่มคำถามไม่สำเร็จ");
+      setError(json.error ?? "บันทึกไม่สำเร็จ");
       return;
     }
     setDraft("");
+    setEditingId(null);
     setOpen(false);
     load();
   }
@@ -135,7 +152,7 @@ export default function ChatSuggestionsPanel() {
             ดึงคำถามยอดฮิตจากแชท
           </button>
           <button
-            onClick={() => setOpen(true)}
+            onClick={startCreate}
             className="flex h-11 items-center gap-1.5 rounded-full bg-brand-gradient px-4 text-sm font-semibold text-white"
           >
             <Plus size={15} /> เพิ่มคำถาม
@@ -148,7 +165,11 @@ export default function ChatSuggestionsPanel() {
 
       {/* The same drawer and the same label-above-field pattern as the other
           two tabs — three forms on one screen should be one shape. */}
-      <FormDrawer open={open} title="เพิ่มคำถามแนะนำ" onClose={() => setOpen(false)}>
+      <FormDrawer
+        open={open}
+        title={editingId ? "แก้ไขคำถามแนะนำ" : "เพิ่มคำถามแนะนำ"}
+        onClose={() => setOpen(false)}
+      >
         <div className="flex flex-col gap-4">
           <div>
             <label htmlFor="cs-text" className="mb-1.5 block text-sm font-semibold text-brand-ink">
@@ -161,7 +182,7 @@ export default function ChatSuggestionsPanel() {
               onChange={(e) => setDraft(e.target.value)}
               placeholder="เช่น ผิวมันเลือกครีมยังไง"
               onKeyDown={(e) => {
-                if (e.key === "Enter") add();
+                if (e.key === "Enter") save();
               }}
             />
             <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
@@ -170,12 +191,12 @@ export default function ChatSuggestionsPanel() {
           </div>
           {error && <p className="text-sm text-rose-600">{error}</p>}
           <button
-            onClick={add}
-            disabled={busy === "add" || !draft.trim()}
+            onClick={save}
+            disabled={busy === "save" || !draft.trim()}
             className="flex h-11 items-center justify-center gap-1.5 rounded-full bg-brand-gradient px-5 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {busy === "add" ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-            เพิ่มคำถาม
+            {busy === "save" ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+            {editingId ? "บันทึกการแก้ไข" : "เพิ่มคำถาม"}
           </button>
         </div>
       </FormDrawer>
@@ -226,6 +247,12 @@ export default function ChatSuggestionsPanel() {
                     </td>
                     <td className={`${adminTable.cell} text-right`}>
                       <button
+                        onClick={() => startEdit(row)}
+                        className="mr-1 inline-flex h-11 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-semibold text-brand-800 hover:bg-surface-soft"
+                      >
+                        <Pencil size={13} /> แก้ไข
+                      </button>
+                      <button
                         onClick={() => remove(row)}
                         disabled={busy === row.id}
                         aria-label="ลบคำถามนี้"
@@ -266,6 +293,13 @@ export default function ChatSuggestionsPanel() {
                 <span className="shrink-0 text-[11px] text-slate-400">
                   {row.source === "auto" ? `จากแชท · ${row.asked_count}` : "เขียนเอง"}
                 </span>
+                <button
+                  onClick={() => startEdit(row)}
+                  aria-label="แก้ไขคำถามนี้"
+                  className="grid size-11 shrink-0 place-items-center text-slate-400 transition-colors hover:text-brand-800"
+                >
+                  <Pencil size={15} />
+                </button>
                 <button
                   onClick={() => remove(row)}
                   disabled={busy === row.id}
