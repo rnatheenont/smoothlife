@@ -294,8 +294,17 @@ export default function CartPage() {
               <span>{t("ยอดรวมทั้งหมด", "Total")}</span>
               <span>{formatTHB(totals.total)}</span>
             </div>
-            <Button ref={checkoutButtonRef} href="/checkout" size="lg" fullWidth>
-              {t("ดำเนินการชำระเงิน", "Proceed to checkout")}
+            {/* Ordering needs an account, so a guest is asked here rather
+                than walked to a checkout that would only turn them back. */}
+            <Button
+              ref={checkoutButtonRef}
+              size="lg"
+              fullWidth
+              {...(user
+                ? { href: "/checkout" }
+                : { type: "button" as const, onClick: () => openLogin("/checkout") })}
+            >
+              {user ? t("ดำเนินการชำระเงิน", "Proceed to checkout") : t("เข้าสู่ระบบเพื่อสั่งซื้อ", "Sign in to order")}
             </Button>
           </div>
 
@@ -359,8 +368,14 @@ export default function CartPage() {
         </div>
         {/* The one thing this screen is for, at the size that says so: it
             was a 36px button sharing the row with the total. */}
-        <Button href="/checkout" size="lg" className="min-w-0 flex-1 active:scale-95">
-          {t("ดำเนินการชำระเงิน", "Checkout")}
+        <Button
+          size="lg"
+          className="min-w-0 flex-1 active:scale-95"
+          {...(user
+            ? { href: "/checkout" }
+            : { type: "button" as const, onClick: () => openLogin("/checkout") })}
+        >
+          {user ? t("ดำเนินการชำระเงิน", "Checkout") : t("เข้าสู่ระบบเพื่อสั่งซื้อ", "Sign in to order")}
         </Button>
       </MobileStickyBar>
     </div>

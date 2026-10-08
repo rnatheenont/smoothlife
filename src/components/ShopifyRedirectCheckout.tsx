@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { thProvinceCode, splitRecipientName } from "@/lib/shopify-th-address";
 import Link from "next/link";
-import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle, MapPin, Receipt, ChevronLeft } from "lucide-react";
+import { ShieldCheck, Ticket, Award, Loader2, AlertTriangle, MapPin, Receipt, ChevronLeft, Lock } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
@@ -138,25 +138,31 @@ export default function ShopifyRedirectCheckout() {
       >
         <ChevronLeft size={15} aria-hidden /> กลับไปแก้ไขตะกร้า
       </Link>
-      {!user && (
-        <div className="mb-6 flex items-center justify-between gap-3 rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-4 text-sm">
-          <span className="text-slate-600">
-            สั่งซื้อแบบไม่ต้องสมัครสมาชิกได้เลย — แต่จะไม่ได้แต้มสะสมและสิทธิ์สมาชิกจนกว่าจะสมัคร
+      {!user ? (
+        // Ordering requires an account. The gate lives here rather than in a
+        // redirect so the cart is still behind it when the dialog closes —
+        // and so the reason is on screen, instead of a bounce back to a page
+        // they just came from.
+        <div className="mx-auto max-w-[420px] rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-6 text-center shadow-card">
+          <span className="mx-auto grid size-12 place-items-center rounded-full bg-white/70 text-brand-800">
+            <Lock size={22} aria-hidden />
           </span>
-          {/* Opens the dialog rather than navigating: this is the last
-              screen before paying, and sending somebody off it to answer who
-              they are is how a cart gets abandoned. 32px before, too, on a
-              button sat next to three lines of text. */}
-          <Button
-            type="button"
-            size="sm"
-            className="h-11 shrink-0 whitespace-nowrap"
-            onClick={() => openLogin("/checkout")}
-          >
-            เข้าสู่ระบบ
+          <h2 className="mt-3 text-base font-bold text-brand-ink">เข้าสู่ระบบก่อนสั่งซื้อ</h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+            เพื่อให้ติดตามพัสดุ เก็บประวัติการสั่งซื้อ และสะสมแต้มของคำสั่งซื้อนี้ได้
+            ถ้ายังไม่มีบัญชี กรอกเบอร์โทรรับ OTP ระบบจะสมัครให้อัตโนมัติ
+          </p>
+          <Button type="button" size="lg" fullWidth className="mt-5" onClick={() => openLogin("/checkout")}>
+            เข้าสู่ระบบ / สมัครสมาชิก
           </Button>
+          <Link
+            href="/cart"
+            className="mt-1 inline-flex h-11 items-center px-2 text-sm font-medium text-slate-500 transition-colors hover:text-brand-800"
+          >
+            กลับไปที่ตะกร้า
+          </Link>
         </div>
-      )}
+      ) : (
       <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 flex flex-col gap-6">
           <div className="rounded-xl2 p-5 shadow-card">
@@ -332,6 +338,7 @@ export default function ShopifyRedirectCheckout() {
           </Button>
         </MobileStickyBar>
       </form>
+      )}
     </div>
   );
 }
