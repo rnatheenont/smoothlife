@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, Phone, MessageCircle, Lock, User as UserIcon, AlertTriangle, ArrowLeft, Apple, Eye, EyeOff } from "lucide-react";
+import { Mail, Phone, Lock, User as UserIcon, AlertTriangle, ArrowLeft, Apple, Eye, EyeOff } from "lucide-react";
 
 // Google's real 4-color "G" mark, not a generic glyph.
 function GoogleIcon({ size = 22 }: { size?: number }) {
@@ -91,6 +91,7 @@ import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-
 import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
 import DemoBadge from "./DemoBadge";
 import LoginShell from "@/components/account/LoginShell";
+import LineIcon from "@/components/icons/LineIcon";
 import PasswordChecklist from "./PasswordChecklist";
 import { Button } from "@/components/ui";
 import { SHOPIFY_EMAIL_LOGIN, shopifyAuthStartPath } from "@/lib/shopify-email-login";
@@ -451,7 +452,7 @@ export default function LoginContent() {
           <div className="flex flex-col gap-2.5">
             <AltButton
               href={`/api/auth/line/start?returnTo=${encodeURIComponent(returnTo)}`}
-              icon={<MessageCircle size={19} className="text-[#06C755]" />}
+              icon={<LineIcon size={20} />}
               label="LINE"
             />
             {SHOPIFY_EMAIL_LOGIN ? (
