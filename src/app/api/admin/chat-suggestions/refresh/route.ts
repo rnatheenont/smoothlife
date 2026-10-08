@@ -22,6 +22,8 @@ const MIN_LEN = 8;
 const MAX_LEN = 60;
 /** Below this it is one person's question, not a common one. */
 const MIN_ASKS = 2;
+/** Attachment and system markers the chat writes into the message body. */
+const MARKER = /\[\[[^\]]+\]\]/;
 
 type Msg = { content: string };
 
@@ -51,6 +53,11 @@ export async function POST(req: NextRequest) {
   for (const r of rows) {
     const text = (r.content ?? "").replace(/\s+/g, " ").trim();
     if (text.length < MIN_LEN || text.length > MAX_LEN) continue;
+    // "[[PHOTO]] …" and anything else in double brackets is a marker the
+    // chat puts in for an attachment, not something a customer typed. It was
+    // the most-counted line in the history by a distance, and it is not a
+    // question anyone can be offered.
+    if (MARKER.test(text)) continue;
     const key = text.toLowerCase();
     const seen = counts.get(key);
     if (seen) seen.n += 1;
