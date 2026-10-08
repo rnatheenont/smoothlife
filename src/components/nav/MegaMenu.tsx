@@ -119,7 +119,13 @@ export default function MegaMenu({
       {open && (
         <div
           id={panelId}
-          className="absolute inset-x-0 top-full z-50 max-h-[80vh] overflow-y-auto border-t border-slate-100 bg-white shadow-[0_18px_40px_-24px_rgba(0,53,41,0.35)] animate-fadeUp"
+          // Frosted rather than solid: the panel hangs over the page, and
+          // letting the page come through it — blurred and brightened —
+          // keeps it reading as a layer above the shop instead of a second
+          // page covering it. The inset hairline is the lit top edge that
+          // makes glass look like glass; without it the panel is just a
+          // translucent rectangle.
+          className="absolute inset-x-0 top-full z-50 max-h-[80vh] overflow-y-auto border-t border-white/60 bg-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_24px_60px_-28px_rgba(0,53,41,0.45)] backdrop-blur-2xl backdrop-saturate-150 animate-fadeUp"
         >
           <div className="container-page grid gap-0 py-6 md:grid-cols-[230px_1fr_340px] 2xl:grid-cols-[230px_1fr_400px]">
             {/* Categories. Pointing at one changes the two panels beside it —
@@ -146,12 +152,12 @@ export default function MegaMenu({
                             These were packshots of whatever each category
                             sold best that week, which at 28px is a pale
                             smudge and a different smudge every rebuild. */}
-                        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white ring-1 ring-slate-100">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/80 ring-1 ring-slate-200/70">
                           {(() => {
                             const Icon = CATEGORY_ICON[c.slug];
                             return Icon ? (
                               <Icon
-                                className="size-5 text-brand-1000"
+                                className="size-7 text-brand-1000"
                                 blobClassName={on ? "text-brand-400/45" : "text-brand-200/70"}
                               />
                             ) : null;
