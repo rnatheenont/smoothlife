@@ -10,6 +10,7 @@ import { SubscriptionPlan } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
 import StarRating from "./StarRating";
 import { useAuth } from "@/lib/auth-context";
+import { useLoginModal } from "@/lib/login-modal-context";
 import { subscribeBuyNow } from "@/lib/subscribe-checkout";
 import clsx from "clsx";
 
@@ -33,6 +34,7 @@ export default function SubscriptionPicker({
   const [selectedMonths, setSelectedMonths] = useState(initial.months);
   const plan = plans.find((p) => p.months === selectedMonths) ?? popular;
   const { user } = useAuth();
+  const { open: openLogin } = useLoginModal();
   const router = useRouter();
   const [submittingSlug, setSubmittingSlug] = useState<string | null>(null);
   const [errorSlug, setErrorSlug] = useState<{ slug: string; message: string } | null>(null);
@@ -72,8 +74,11 @@ export default function SubscriptionPicker({
   // Real recurring billing — same one-lump-sum-per-term model as the
   // product page / set page, just triggered from this quick-pick grid.
   async function handleRealSubscribe(product: Product) {
-    if (!user) {
-      router.push(`/account/login?returnTo=${encodeURIComponent("/subscription")}`);
+      // The dialog, not the login page: these all interrupt something the
+      // shopper is in the middle of choosing, and the page they were on is
+      // the thing they come back to.
+      if (!user) {
+      openLogin("/subscription");
       return;
     }
     if (!agreedSlugs.has(product.slug)) return;

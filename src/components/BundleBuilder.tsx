@@ -9,6 +9,7 @@ import { SubscriptionPlan, BUNDLE_MIN_ITEMS, BUNDLE_MAX_ITEMS, BUNDLE_DISCOUNT_P
 import { categories } from "@/data/categories";
 import { formatTHB } from "@/lib/format";
 import { useAuth } from "@/lib/auth-context";
+import { useLoginModal } from "@/lib/login-modal-context";
 import clsx from "clsx";
 import { Button } from "@/components/ui";
 
@@ -25,6 +26,7 @@ export default function BundleBuilder({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const { user } = useAuth();
+  const { open: openLogin } = useLoginModal();
   const router = useRouter();
   const [agreedRecurringCharge, setAgreedRecurringCharge] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -51,8 +53,11 @@ export default function BundleBuilder({
   const meetsMin = selected.size >= BUNDLE_MIN_ITEMS;
 
   async function handleRealSubscribe() {
+      // The dialog, not the login page: these all interrupt something the
+      // shopper is in the middle of choosing, and the page they were on is
+      // the thing they come back to.
     if (!user) {
-      router.push(`/account/login?returnTo=${encodeURIComponent("/subscription/build")}`);
+      openLogin("/subscription/build");
       return;
     }
     if (!meetsMin || !agreedRecurringCharge) return;

@@ -7,6 +7,7 @@ import { Info, MessageCircle, RotateCcw } from "lucide-react";
 import MiniProductCard from "@/components/skin-coach/MiniProductCard";
 import { useQuickChat } from "@/lib/quickchat-context";
 import { useAuth } from "@/lib/auth-context";
+import { useLoginModal } from "@/lib/login-modal-context";
 import ShareCard from "@/components/skin-coach/ShareCard";
 import RewardClaim from "@/components/skin-coach/RewardClaim";
 import ScanHistory, { formatScanDate, gapBetween, useScanHistory } from "@/components/skin-coach/ScanHistory";
@@ -174,6 +175,7 @@ export default function ResultsView({
   onRestart: () => void;
 }) {
   const { openWithProfile } = useQuickChat();
+  const { open: openLogin } = useLoginModal();
   const history = useScanHistory();
   const { refreshUser } = useAuth();
   const [saved, setSaved] = useState<string | null>(null);
@@ -527,9 +529,13 @@ export default function ResultsView({
         <h2 className="text-base font-bold text-brand-ink">ติดตามผิวของคุณ</h2>
         {!history.signedIn ? (
           <p className="mt-1 text-sm text-slate-600">
-            <Link href="/account/login?returnTo=/skin-coach" className="font-semibold text-brand-800 underline">
+            <button
+              type="button"
+              onClick={() => openLogin("/skin-coach")}
+              className="font-semibold text-brand-800 underline"
+            >
               เข้าสู่ระบบ
-            </Link>{" "}
+            </button>{" "}
             เพื่อบันทึกผลนี้ แล้วสแกนซ้ำใน 4–6 สัปดาห์เพื่อดูว่าผิวเปลี่ยนไปอย่างไร
           </p>
         ) : saved ? (

@@ -40,6 +40,7 @@ import FreeGiftProgress from "./FreeGiftProgress";
 import SubscriptionTermsInfo from "./SubscriptionTermsInfo";
 import { useCart, useWishlist } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
+import { useLoginModal } from "@/lib/login-modal-context";
 import { useQuickChat } from "@/lib/quickchat-context";
 import { Button } from "@/components/ui";
 
@@ -190,6 +191,7 @@ export default function ProductDetailInteractive({
   const [subscribeMonths, setSubscribeMonths] = useState(popularPlan.months);
   const { toggle, has } = useWishlist();
   const { user } = useAuth();
+  const { open: openLogin } = useLoginModal();
   const { setOpen: setChatOpen } = useQuickChat();
   const router = useRouter();
   const activeSlide = slides[activeIndex] || slides[0];
@@ -289,8 +291,11 @@ export default function ProductDetailInteractive({
   const [questionError, setQuestionError] = useState<string | null>(null);
 
   function requireLoginThen(action: () => void) {
+      // The dialog, not the login page: these all interrupt something the
+      // shopper is in the middle of choosing, and the page they were on is
+      // the thing they come back to.
     if (!user) {
-      router.push(`/account/login?returnTo=/product/${product.slug}`);
+      openLogin(`/product/${product.slug}`);
       return;
     }
     action();

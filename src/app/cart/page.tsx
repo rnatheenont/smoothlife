@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Minus, Plus, Trash2, Award, Ticket, Repeat, Gift } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
+import { useLoginModal } from "@/lib/login-modal-context";
 import { useLang } from "@/lib/lang-context";
 import { useOrderTotals } from "@/lib/use-order-totals";
 import { formatTHB } from "@/lib/format";
@@ -22,6 +23,7 @@ import ProductCard from "@/components/ProductCard";
 
 export default function CartPage() {
   const { lines, updateQty, removeItem, changeVariant } = useCart();
+  const { open: openLogin } = useLoginModal();
   const { user } = useAuth();
   const { lang, t } = useLang();
   const totals = useOrderTotals();
@@ -336,12 +338,15 @@ export default function CartPage() {
                 )}
               </div>
             ) : (
-              <Link
-                href="/account/login?returnTo=/cart"
-                className="mt-4 grid h-11 place-items-center rounded-full border border-amber-300 bg-white text-xs font-semibold text-brand-dark"
+              <button
+                type="button"
+                onClick={() => openLogin("/cart")}
+                // The dialog rather than the page: nobody clicking this has
+                // finished with their cart.
+                className="mt-4 grid h-11 w-full place-items-center rounded-full border border-amber-300 bg-white text-xs font-semibold text-brand-dark"
               >
                 {t("เข้าสู่ระบบเพื่อสะสมคะแนน", "Sign in to collect points")}
-              </Link>
+              </button>
             )}
           </div>
         </div>

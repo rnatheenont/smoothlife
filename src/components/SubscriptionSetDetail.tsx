@@ -10,6 +10,7 @@ import { Product } from "@/data/types";
 import { SubscriptionSet, SubscriptionPlan } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
 import { useAuth } from "@/lib/auth-context";
+import { useLoginModal } from "@/lib/login-modal-context";
 import { subscribeBuyNow } from "@/lib/subscribe-checkout";
 import { Button } from "@/components/ui";
 
@@ -43,6 +44,7 @@ export default function SubscriptionSetDetail({
   const [selectedMonths, setSelectedMonths] = useState(popular.months);
   const plan = plans.find((p) => p.months === selectedMonths) ?? popular;
   const { user } = useAuth();
+  const { open: openLogin } = useLoginModal();
   const router = useRouter();
 
   // A curated set is priced by the shop; the catalogue sum is only what it is
@@ -84,10 +86,11 @@ export default function SubscriptionSetDetail({
   // (see ProductDetailInteractive.handleRealSubscribe). Requires a saved
   // default shipping address, same as the single-product flow.
   async function handleRealSubscribe() {
+      // The dialog, not the login page: these all interrupt something the
+      // shopper is in the middle of choosing, and the page they were on is
+      // the thing they come back to.
     if (!user) {
-      router.push(
-        `/account/login?returnTo=${encodeURIComponent(curated ? `/subscription/set/${curated.id}` : `/subscription/${set.slug}`)}`
-      );
+      openLogin(curated ? `/subscription/set/${curated.id}` : `/subscription/${set.slug}`);
       return;
     }
     if (!agreedRecurringCharge) return;

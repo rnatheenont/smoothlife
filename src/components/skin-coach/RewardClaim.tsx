@@ -4,12 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { Gift, Copy, Check, Loader2, Award } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useLoginModal } from "@/lib/login-modal-context";
 import { useCart } from "@/lib/cart-context";
 import { discountForScore, SKIN_COACH_POINTS_REWARD } from "@/lib/skin-coach";
 import { Button } from "@/components/ui";
 
 export default function RewardClaim({ score }: { score: number }) {
   const { user, refreshUser } = useAuth();
+  const { open: openLogin } = useLoginModal();
   const { setCouponCode } = useCart();
   const [code, setCode] = useState<string | null>(null);
   const [pointsAwarded, setPointsAwarded] = useState<number | null>(null);
@@ -65,7 +67,7 @@ export default function RewardClaim({ score }: { score: number }) {
         <Gift size={20} className="mx-auto text-amber-500 mb-2" />
         <p className="text-sm text-brand-ink font-semibold mb-1">เข้าสู่ระบบเพื่อรับคูปองส่วนลด</p>
         <p className="text-xs text-slate-500 mb-3">ทำกิจกรรมสแกนผิวครบแล้ว รับส่วนลดได้ทันทีหลังเข้าสู่ระบบ</p>
-        <Button className="text-xs" href="/account/login?returnTo=/skin-coach">
+        <Button type="button" className="h-11 text-xs" onClick={() => openLogin("/skin-coach")}>
           เข้าสู่ระบบ / สมัครสมาชิก
         </Button>
       </div>
