@@ -31,10 +31,10 @@ const FLASH_RED = "#e8201a";
  *  there; the CSS frame below stands in when it is not, so a missing asset
  *  costs the card its polish rather than its picture. */
 const FRAME_SRC = "/flash-sale/frame.png";
-/** How much of the frame's width is border, measured off the artwork. The
- *  photo is inset by this so the border sits on its edge rather than beside
- *  it. */
-const FRAME_INSET = "4.6%";
+/** The frame's border measures 17px of its 474, i.e. 3.6%. The photo is
+ *  inset by a shade less than that so the border sits ON its edge: a hair of
+ *  overlap is invisible, a hair of gap is a white line all the way round. */
+const FRAME_INSET = "3.4%";
 
 export default function FlashSaleCard({ product }: { product: Product }) {
   const { addItem } = useCart();

@@ -114,8 +114,8 @@ export default function FlashSaleShelf() {
                   <Image
                     src={LOCKUP_SRC}
                     alt={title}
-                    width={372}
-                    height={190}
+                    width={377}
+                    height={208}
                     className="h-auto w-[140px] md:w-[190px] lg:w-[250px]"
                     onError={() => setArt((a) => ({ ...a, lockup: false }))}
                   />
@@ -143,8 +143,8 @@ export default function FlashSaleShelf() {
                   src={MASCOT_SRC}
                   alt=""
                   aria-hidden
-                  width={500}
-                  height={440}
+                  width={483}
+                  height={426}
                   className="hidden h-auto w-[230px] lg:block xl:w-[290px]"
                   onError={() => setArt((a) => ({ ...a, mascot: false }))}
                 />
