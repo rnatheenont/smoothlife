@@ -29,6 +29,36 @@ function GoogleIcon({ size = 22 }: { size?: number }) {
     </svg>
   );
 }
+// One way in, as a button: same height, same shape, its name next to its
+// mark. Rendered as a link when the destination is a real URL, because a
+// sign-in that leaves the site should be something you can open in a new tab
+// or see the address of before you commit to it.
+function AltButton({
+  href,
+  onClick,
+  icon,
+  label,
+}: {
+  href?: string;
+  onClick?: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  const className =
+    "flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white text-sm font-semibold text-brand-ink transition-colors hover:border-brand-teal/40 hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800";
+  return href ? (
+    <a href={href} className={className}>
+      {icon}
+      {label}
+    </a>
+  ) : (
+    <button type="button" onClick={onClick} className={className}>
+      {icon}
+      {label}
+    </button>
+  );
+}
+
 // Required before any flow that can create a new account — register,
 // phone OTP, and email OTP (the latter two double as signup on first use).
 function TermsCheckbox({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
@@ -60,6 +90,7 @@ import { useAuth } from "@/lib/auth-context";
 import { isPasswordStrongEnough, PASSWORD_REQUIREMENT_TH } from "@/lib/password-policy";
 import { firebaseConfigured, getFirebaseAuth, toE164Thai } from "@/lib/firebase-client";
 import DemoBadge from "./DemoBadge";
+import LoginShell from "@/components/account/LoginShell";
 import PasswordChecklist from "./PasswordChecklist";
 import { Button } from "@/components/ui";
 import { SHOPIFY_EMAIL_LOGIN, shopifyAuthStartPath } from "@/lib/shopify-email-login";
@@ -276,6 +307,7 @@ export default function LoginContent() {
       const confirmation = await signInWithPhoneNumber(auth, toE164Thai(phone), recaptchaVerifierRef.current);
       confirmationResultRef.current = confirmation;
       setOtpSent(true);
+      setView("phone-otp");
     } catch (err) {
       console.error("[otp] send failed", err);
       setOtpError("ส่งรหัส OTP ไม่สำเร็จ กรุณาตรวจสอบเบอร์โทรศัพท์แล้วลองใหม่อีกครั้ง");
@@ -324,12 +356,19 @@ export default function LoginContent() {
   }
 
   return (
-    <div className="container-page min-h-[80vh] flex items-center justify-center py-10 md:py-16">
-    <div className="w-full max-w-md rounded-2xl bg-white shadow-card p-6 md:p-8">
-      <div className="mb-7 text-center">
-        <h1 className="text-3xl font-extrabold text-brand-ink">
+    <LoginShell>
+      {/* The shop's name, for the phone layout only — on a wide screen the
+          panel to the left is already saying it, and twice is once too many. */}
+      <p className="mb-6 text-sm font-semibold text-brand-800 lg:hidden">Smoothlife.com</p>
+      <div className="mb-7">
+        <h1 className="text-[28px] font-bold leading-tight text-brand-ink md:text-[32px]">
           {view === "password" && mode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
         </h1>
+        {view === "start" && (
+          <p className="mt-2 text-sm leading-relaxed text-slate-500">
+            กรอกเบอร์โทรเพื่อรับรหัส OTP หรือเลือกวิธีอื่นด้านล่าง
+          </p>
+        )}
         {view === "password" && (
           <button onClick={() => setMode(mode === "register" ? "login" : "register")} className="text-sm text-slate-500 mt-1.5">
             {mode === "register" ? (
@@ -362,87 +401,95 @@ export default function LoginContent() {
       )}
 
       {view === "start" && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {!firebaseConfigured() && (
             <DemoBadge text="ระบบ OTP เบอร์โทรยังไม่ได้ตั้งค่า Firebase — ใช้ LINE หรืออีเมลแทนได้ค่ะ" />
           )}
-          <Button size="lg" onClick={() => setView("phone-otp")} disabled={!firebaseConfigured()}>
-            <Phone size={18} /> เข้าสู่ระบบด้วยเบอร์โทร (OTP)
-          </Button>
-          <a
-            href={`/api/auth/line/start?returnTo=${encodeURIComponent(returnTo)}`}
-            className="flex items-center justify-center gap-2 rounded-full bg-[#06C755] text-white font-bold py-3.5 text-sm hover:opacity-90 transition-opacity"
-          >
-            <MessageCircle size={18} className="text-white" /> เข้าสู่ระบบด้วย LINE
-          </a>
 
-          {/* Shopify sends the code, so this goes straight to their page and
-              a customer already signed in at smoothlife.com comes back signed
-              in here without typing anything. That is a front-door way in, not
-              something to hide behind an icon — the icon row below is for the
-              ones that are genuinely secondary. */}
-          {SHOPIFY_EMAIL_LOGIN && (
+          {/* The number is asked for here rather than behind a button that
+              only reveals this same field. It is how most people here sign
+              in, and making the commonest path the one that costs an extra
+              tap is backwards. */}
+          <div id="recaptcha-container" key={recaptchaKey} />
+          <form onSubmit={handleSendOtp} className="flex flex-col gap-3">
+            <label htmlFor="login-phone" className="text-xs font-semibold text-slate-500">
+              เบอร์โทรศัพท์
+            </label>
+            <input
+              id="login-phone"
+              disabled={!firebaseConfigured()}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="08X-XXX-XXXX"
+              autoComplete="tel"
+              inputMode="tel"
+              className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40 disabled:opacity-50"
+            />
+            <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
+            {otpError && <p className="text-xs text-rose-700">{otpError}</p>}
             <Button
+              type="submit"
               size="lg"
-              variant="secondary"
-              onClick={() => (window.location.href = shopifyAuthStartPath({ intent: "login", returnTo }))}
+              loading={otpSending}
+              disabled={!firebaseConfigured() || !agreedTerms}
             >
-              <Mail size={18} /> เข้าสู่ระบบด้วยอีเมล
+              {otpSending ? "กำลังส่งรหัส…" : "ส่งรหัส OTP"}
             </Button>
-          )}
+          </form>
 
-          <div className="flex items-center gap-3 mt-1">
+          <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-slate-200" />
-            <span className="text-xs text-slate-500">หรือ</span>
+            <span className="text-xs text-slate-500">หรือเข้าสู่ระบบด้วย</span>
             <div className="h-px flex-1 bg-slate-200" />
           </div>
 
-          <div className="flex items-center justify-center gap-3.5">
-            {/* Two doors to the same room is how people end up trying both.
-                With the button above present, this one goes. */}
-            {!SHOPIFY_EMAIL_LOGIN && (
-              <button
+          {/* Every other way in is the same button at the same height with
+              its name on it. They were a row of bare circles, which asks
+              someone to recognise four marks to find the one door they have
+              a key to — and says nothing at all for a mark they do not
+              know. The password link under them was 16px tall. */}
+          <div className="flex flex-col gap-2.5">
+            <AltButton
+              href={`/api/auth/line/start?returnTo=${encodeURIComponent(returnTo)}`}
+              icon={<MessageCircle size={19} className="text-[#06C755]" />}
+              label="LINE"
+            />
+            {SHOPIFY_EMAIL_LOGIN ? (
+              <AltButton
+                onClick={() => (window.location.href = shopifyAuthStartPath({ intent: "login", returnTo }))}
+                icon={<Mail size={19} className="text-slate-500" />}
+                label="อีเมล"
+              />
+            ) : (
+              <AltButton
                 onClick={() => setView("email-otp")}
-                aria-label="อีเมล OTP"
-                title="อีเมล OTP"
-                className="relative grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-surface-soft hover:border-brand-teal/30 hover:text-brand-800 transition-colors"
-              >
-                <Mail size={22} />
-                <span className="absolute -bottom-1.5 rounded-full bg-brand-emerald px-1.5 py-px text-[9px] font-bold leading-none text-white shadow-xs">
-                  OTP
-                </span>
-              </button>
+                icon={<Mail size={19} className="text-slate-500" />}
+                label="อีเมล (รับรหัส OTP)"
+              />
             )}
             {GOOGLE_CONFIGURED && (
-              <button
+              <AltButton
                 onClick={() => (window.location.href = `/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`)}
-                aria-label="Google"
-                title="Google"
-                className="grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 hover:bg-surface-soft hover:border-brand-teal/30 transition-colors"
-              >
-                <GoogleIcon size={22} />
-              </button>
+                icon={<GoogleIcon size={19} />}
+                label="Google"
+              />
             )}
             {APPLE_CONFIGURED && (
-              <button
+              <AltButton
                 onClick={() => (window.location.href = `/api/auth/apple/start?returnTo=${encodeURIComponent(returnTo)}`)}
-                aria-label="Apple"
-                title="Apple"
-                className="grid h-14 w-14 place-items-center rounded-full bg-white border border-slate-200 text-slate-900 hover:bg-surface-soft hover:border-brand-teal/30 transition-colors"
-              >
-                <Apple size={22} fill="currentColor" />
-              </button>
+                icon={<Apple size={19} fill="currentColor" className="text-slate-900" />}
+                label="Apple"
+              />
             )}
+            <AltButton
+              onClick={() => setView("password")}
+              icon={<Lock size={19} className="text-slate-500" />}
+              label="อีเมลและรหัสผ่าน"
+            />
           </div>
-
-          <button
-            onClick={() => setView("password")}
-            className="text-center text-xs text-slate-500 mt-1 hover:text-slate-600"
-          >
-            {SHOPIFY_EMAIL_LOGIN ? "เข้าสู่ระบบด้วยรหัสผ่าน" : "เข้าสู่ระบบด้วยอีเมล"}
-          </button>
         </div>
       )}
+
 
       {view === "password" && (
         <div className="flex flex-col gap-5">
@@ -648,8 +695,17 @@ export default function LoginContent() {
                   setOtpInput("");
                   setOtpError("");
                   confirmationResultRef.current = null;
+                  // The field is back on the start view now, and the
+                  // reCAPTCHA container goes with it: a verifier still
+                  // pointing at the node this view is about to unmount
+                  // cannot be reused, so it is dropped here rather than
+                  // left to fail on the next send.
+                  recaptchaVerifierRef.current?.clear();
+                  recaptchaVerifierRef.current = null;
+                  setRecaptchaKey((k) => k + 1);
+                  setView("start");
                 }}
-                className="text-xs text-slate-500"
+                className="min-h-11 text-xs text-slate-500"
               >
                 เปลี่ยนเบอร์โทรศัพท์
               </button>
@@ -725,7 +781,6 @@ export default function LoginContent() {
           )}
         </div>
       )}
-    </div>
-    </div>
+    </LoginShell>
   );
 }
