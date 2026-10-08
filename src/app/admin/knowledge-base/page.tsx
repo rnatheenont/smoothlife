@@ -429,23 +429,23 @@ export default function AdminKnowledgeBasePage() {
           a filter and a "sync every product" button sat side by side. */}
       <Card padded={false} className="overflow-hidden">
         <div className="flex flex-col gap-2 border-b border-slate-100 p-3">
+          {/* One row, not two. The search box had the first line to itself
+              and the two menus sat under it, so the three controls that
+              narrow the same list read as two unrelated groups — and the
+              box stretched to a width nobody needs for a few words.
+              Three axes, three named controls, side by side.
+
+              (The counts live inside each menu: they used to come from two
+              different places, "จากสินค้า 941" being everything on the
+              server and "ทุกสถานะ 300" what it sent us.) */}
           <div className="flex flex-wrap items-center gap-2">
             <AdminSearch
-              className="min-w-[12rem] max-w-sm flex-1"
+              className="min-w-[14rem] flex-1 basis-56"
               value={query}
               onChange={setQuery}
               label="ค้นหาบทความ"
               placeholder="ค้นหาหัวข้อหรือเนื้อหา"
             />
-          </div>
-
-          {/* Three axes, three named controls. As chips they were three rows
-              of identical pills where nothing said which row meant what, and
-              the counts came from two different places: "จากสินค้า 941" is
-              everything on the server, "ทุกสถานะ 300" is what it sent us.
-              Counts now sit inside the menu they belong to, and vanish when
-              the list is truncated rather than contradicting the one above. */}
-          <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
               สถานะ
               <AdminSelect

@@ -5,6 +5,7 @@ import { Ban, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Input, TextArea } from "@heroui/react";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { adminTable } from "@/components/admin/layout-kit";
+import AdminSearch from "@/components/admin/AdminSearch";
 import { Card } from "@/components/ui";
 import { DEFAULT_BLOCKED_REPLY, type KbBlockedTopic } from "@/lib/kb-blocked-topics";
 
@@ -33,6 +34,7 @@ export default function BlockedTopicsPanel() {
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   async function load() {
     setLoading(true);
@@ -111,6 +113,12 @@ export default function BlockedTopicsPanel() {
   }
 
   const live = rows.filter((r) => r.enabled).length;
+  // Matched against the reply as well as the topic: "เรื่องไหนที่เราตอบว่า
+  // ให้ไปถามเภสัชกร" is a question somebody asks this list.
+  const q = query.trim().toLowerCase();
+  const shown = q
+    ? rows.filter((r) => `${r.topic} ${r.reply ?? ""}`.toLowerCase().includes(q))
+    : rows;
 
   return (
     <section>
@@ -194,11 +202,33 @@ export default function BlockedTopicsPanel() {
         </p>
       ) : (
         <Card padded={false} className="mt-4 overflow-hidden">
+          <div className="border-b border-slate-100 p-3">
+            <AdminSearch
+              className="min-w-[14rem] max-w-sm"
+              value={query}
+              onChange={setQuery}
+              label="ค้นหาเรื่องที่ห้ามตอบ"
+              placeholder="ค้นหาเรื่องหรือคำตอบ"
+            />
+            {q && (
+              <p className="mt-2 text-[11px] text-slate-400">
+                เจอ {shown.length} จาก {rows.length} เรื่อง
+              </p>
+            )}
+          </div>
+
+          {/* A table with a head and no rows under it looks like something
+              failed to load, not like a search that found nothing. */}
+          {shown.length === 0 && (
+            <p className="px-4 py-8 text-center text-sm text-slate-400">
+              ไม่พบ{"เรื่อง"}ที่ตรงกับ “{query.trim()}”
+            </p>
+          )}
           {/* The same table as the articles tab, because the questions asked
               of this list are the same kind: which ones are on, what will the
               customer hear, when did somebody last touch this. Below md each
               row becomes a card — four columns do not fit a phone. */}
-          <div className="hidden md:block">
+          <div className={shown.length === 0 ? "hidden" : "hidden md:block"}>
             <table className={adminTable.table}>
               <thead className={adminTable.thead}>
                 <tr>
@@ -210,7 +240,7 @@ export default function BlockedTopicsPanel() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {shown.map((row) => (
                   <tr key={row.id} className={`${adminTable.row} ${row.enabled ? "" : "opacity-55"}`}>
                     <td className={adminTable.cell}>
                       <span className="font-semibold text-brand-ink">{row.topic}</span>
@@ -266,7 +296,7 @@ export default function BlockedTopicsPanel() {
           </div>
 
           <ul className="flex flex-col gap-2 p-3 md:hidden">
-            {rows.map((row) => (
+            {shown.map((row) => (
               <li
                 key={row.id}
                 className={`flex items-start gap-3 rounded-xl border bg-white px-3.5 py-3 ${

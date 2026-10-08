@@ -5,6 +5,7 @@ import { Loader2, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Input } from "@heroui/react";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import { adminTable } from "@/components/admin/layout-kit";
+import AdminSearch from "@/components/admin/AdminSearch";
 import { Card } from "@/components/ui";
 
 // The questions offered under the AI field on the home page.
@@ -38,6 +39,7 @@ export default function ChatSuggestionsPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   async function load() {
     setLoading(true);
@@ -131,6 +133,10 @@ export default function ChatSuggestionsPanel() {
   }
 
   const live = rows.filter((r) => r.enabled).length;
+  // The list grows by thirty at a time whenever somebody presses "ดึงคำถาม
+  // ยอดฮิตจากแชท", and the question you want to check is rarely near the top.
+  const q = query.trim().toLowerCase();
+  const shown = q ? rows.filter((r) => r.text.toLowerCase().includes(q)) : rows;
 
   return (
     <section>
@@ -207,7 +213,29 @@ export default function ChatSuggestionsPanel() {
         <p className="mt-3 text-xs text-slate-400">ยังไม่มีคำถามแนะนำ</p>
       ) : (
         <Card padded={false} className="mt-4 overflow-hidden">
-          <div className="hidden md:block">
+          <div className="border-b border-slate-100 p-3">
+            <AdminSearch
+              className="min-w-[14rem] max-w-sm"
+              value={query}
+              onChange={setQuery}
+              label="ค้นหาคำถามแนะนำ"
+              placeholder="ค้นหาคำถาม"
+            />
+            {q && (
+              <p className="mt-2 text-[11px] text-slate-400">
+                เจอ {shown.length} จาก {rows.length} ข้อ
+              </p>
+            )}
+          </div>
+
+          {/* A table with a head and no rows under it looks like something
+              failed to load, not like a search that found nothing. */}
+          {shown.length === 0 && (
+            <p className="px-4 py-8 text-center text-sm text-slate-400">
+              ไม่พบ{"คำถาม"}ที่ตรงกับ “{query.trim()}”
+            </p>
+          )}
+          <div className={shown.length === 0 ? "hidden" : "hidden md:block"}>
             <table className={adminTable.table}>
               <thead className={adminTable.thead}>
                 <tr>
@@ -218,7 +246,7 @@ export default function ChatSuggestionsPanel() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {shown.map((row) => (
                   <tr key={row.id} className={`${adminTable.row} ${row.enabled ? "" : "opacity-55"}`}>
                     <td className={adminTable.cell}>
                       <span className="font-semibold text-brand-ink">{row.text}</span>
@@ -268,7 +296,7 @@ export default function ChatSuggestionsPanel() {
           </div>
 
           <ul className="flex flex-col gap-2 p-3 md:hidden">
-            {rows.map((row) => (
+            {shown.map((row) => (
               <li
                 key={row.id}
                 className={`flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-3.5 py-2.5 ${
