@@ -155,6 +155,11 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   { prefix: "/api/admin/flash-sale", permission: "flash_sale.manage" },
 
   { prefix: "/api/admin/free-gifts", permission: "free_gifts.manage" },
+  // The questions offered under the AI field on the home page. Writing the
+  // lines a shopper is nudged towards is the same job as drafting the
+  // knowledge base, so it answers to the same permission rather than to a
+  // new one nobody has been granted yet.
+  { prefix: "/api/admin/chat-suggestions", permission: "kb.draft" },
   {
     prefix: "/api/admin/subscription-sets",
     permission: "subscription_sets.manage",

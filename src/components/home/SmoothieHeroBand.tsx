@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Loader2, Sparkles } from "lucide-react";
 import { HaloField } from "@/components/Halo";
-import SearchSuggestions from "@/components/SearchSuggestions";
+import QuestionSuggestions from "@/components/home/QuestionSuggestions";
 import clsx from "clsx";
 import { useLang } from "@/lib/lang-context";
 import { useRecentlyViewed } from "@/lib/recently-viewed-context";
@@ -92,10 +92,10 @@ export default function SmoothieHeroBand() {
   // rather than the old one sinking back down past the new one.
   const [{ cur, prev }, setLine] = useState({ cur: 0, prev: -1 });
   const [typing, setTyping] = useState(false);
-  // The field asks the AI a question on submit, but what people type into it
-  // is very often a product or a brand. One character in, the shop answers
-  // that reading too — without taking the question away, which is still what
-  // Enter sends.
+  // One character in, the field starts offering questions it already knows
+  // how to answer — written by an admin, or taken from what customers have
+  // actually asked. It is a guide to the wording, not a search: Enter still
+  // sends whatever has been typed.
   const [showHits, setShowHits] = useState(false);
   const askRef = useRef<HTMLFormElement>(null);
 
@@ -291,14 +291,11 @@ export default function SmoothieHeroBand() {
               </button>
             </span>
             {showHits && (
-              <SearchSuggestions
+              <QuestionSuggestions
                 query={q}
-                // Four, not six: this field sits halfway down the band, and
-                // six results opened past the bottom of a 860px window.
-                limit={4}
-                onSelect={() => {
+                onPick={(text) => {
                   setShowHits(false);
-                  setQ("");
+                  go(text);
                 }}
               />
             )}
