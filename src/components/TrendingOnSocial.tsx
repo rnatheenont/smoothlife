@@ -29,6 +29,15 @@ function posterFrameSrc(url: string) {
 // same picture as the row below it, so the card reads as one thing), and
 // every clip's source carries a `#t=0.1` fragment, which asks the browser
 // to seek to a real frame and paint it.
+//
+// The `poster` attribute alone was still not enough on a phone's first
+// visit. A browser drops the poster the moment playback is asked for, not
+// when there is finally something to draw, so the card the row opens on —
+// the one that calls play() immediately, with nothing downloaded yet —
+// showed black for as long as the clip took to arrive over mobile data.
+// So the cover is also painted as a real element on top of the video and
+// taken away on `loadeddata`, which is the first moment the video has a
+// frame of its own to show.
 function ClipCard({
   clip,
   active,
@@ -44,6 +53,10 @@ function ClipCard({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  /** Whether the video has a frame of its own yet. Until it does, the cover
+   *  above it is the only thing standing between the reader and a black
+   *  rectangle. */
+  const [hasFrame, setHasFrame] = useState(false);
   const [muted, setMuted] = useState(true);
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
@@ -54,6 +67,20 @@ function ClipCard({
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }
+
+  // Not an onLoadedData prop: the element is in the server HTML and starts
+  // loading the moment the browser sees it, so on a cached clip the event has
+  // already been and gone by the time React commits and attaches a handler —
+  // and the cover would then never lift off a playing video. Reading
+  // readyState on mount catches that case; the listener catches the rest.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const mark = () => setHasFrame(true);
+    if (video.readyState >= 2) mark();
+    video.addEventListener("loadeddata", mark);
+    return () => video.removeEventListener("loadeddata", mark);
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -106,6 +133,17 @@ function ClipCard({
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
         />
+        {/* Same packshot as `poster`, but as an element this component owns,
+            so it stays put until the video can actually replace it. */}
+        {clip.product?.image && !hasFrame && (
+          <Image
+            src={clip.product.image}
+            alt=""
+            fill
+            sizes="(min-width: 768px) 320px, 70vw"
+            className="pointer-events-none object-cover"
+          />
+        )}
         {!isPlaying && (
           <span className="absolute inset-0 grid place-items-center bg-black/10">
             <span className="grid h-11 w-11 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm">
