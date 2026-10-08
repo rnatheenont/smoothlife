@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Ban, Loader2, Plus, Trash2 } from "lucide-react";
 import { Input, TextArea } from "@heroui/react";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
+import { adminTable } from "@/components/admin/layout-kit";
+import { Card } from "@/components/ui";
 import { DEFAULT_BLOCKED_REPLY, type KbBlockedTopic } from "@/lib/kb-blocked-topics";
 
 // The other half of the knowledge base: what the assistant must NOT answer.
@@ -12,6 +14,12 @@ import { DEFAULT_BLOCKED_REPLY, type KbBlockedTopic } from "@/lib/kb-blocked-top
 // refuse whatever it finds — and they go into every reply it writes, not only
 // the ones where something similar was retrieved, because a rule that applies
 // sometimes is not a rule.
+
+/** Same shape the articles table prints a date in. */
+function thaiDateTime(iso: string) {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" })} ${d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`;
+}
 
 export default function BlockedTopicsPanel() {
   const [rows, setRows] = useState<KbBlockedTopic[]>([]);
@@ -154,48 +162,118 @@ export default function BlockedTopicsPanel() {
       {loading ? (
         <p className="mt-3 text-xs text-slate-400">กำลังโหลด…</p>
       ) : rows.length === 0 ? (
-        <p className="mt-3 text-xs text-slate-400">ยังไม่มีเรื่องที่ห้ามตอบ — ตอนนี้ AI ตอบได้ทุกเรื่องที่มีในฐานความรู้</p>
+        <p className="mt-3 text-xs text-slate-400">
+          ยังไม่มีเรื่องที่ห้ามตอบ — ตอนนี้ AI ตอบได้ทุกเรื่องที่มีในฐานความรู้
+        </p>
       ) : (
-        <ul className="mt-4 flex flex-col gap-2">
-          {rows.map((row) => (
-            <li
-              key={row.id}
-              className={`flex items-start gap-3 rounded-xl border bg-white px-3.5 py-3 ${
-                row.enabled ? "border-rose-100" : "border-slate-100 opacity-60"
-              }`}
-            >
-              <button
-                onClick={() => toggle(row)}
-                disabled={busy === row.id}
-                aria-label={row.enabled ? "ปิดกฎนี้" : "เปิดกฎนี้"}
-                className={`relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors ${
-                  row.enabled ? "bg-rose-500" : "bg-slate-200"
+        <Card padded={false} className="mt-4 overflow-hidden">
+          {/* The same table as the articles tab, because the questions asked
+              of this list are the same kind: which ones are on, what will the
+              customer hear, when did somebody last touch this. Below md each
+              row becomes a card — four columns do not fit a phone. */}
+          <div className="hidden md:block">
+            <table className={adminTable.table}>
+              <thead className={adminTable.thead}>
+                <tr>
+                  <th>เรื่องที่ห้ามตอบ</th>
+                  <th>ให้ตอบแทนว่า</th>
+                  <th className="w-28">สถานะ</th>
+                  <th className="w-40">แก้ไขล่าสุด</th>
+                  <th className="w-20 text-right">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id} className={`${adminTable.row} ${row.enabled ? "" : "opacity-55"}`}>
+                    <td className={adminTable.cell}>
+                      <span className="font-semibold text-brand-ink">{row.topic}</span>
+                      {row.note && (
+                        <span className="mt-0.5 block text-[11px] text-slate-400">{row.note}</span>
+                      )}
+                    </td>
+                    <td className={`${adminTable.cell} text-slate-600`}>
+                      {row.reply?.trim() || (
+                        <span className="text-slate-400">{DEFAULT_BLOCKED_REPLY}</span>
+                      )}
+                    </td>
+                    <td className={adminTable.cell}>
+                      <button
+                        onClick={() => toggle(row)}
+                        disabled={busy === row.id}
+                        aria-label={row.enabled ? "ปิดกฎนี้" : "เปิดกฎนี้"}
+                        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+                          row.enabled ? "bg-rose-500" : "bg-slate-200"
+                        }`}
+                      >
+                        <span
+                          className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-xs transition-transform ${
+                            row.enabled ? "translate-x-4" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                      <span className="ml-2 align-middle text-[11px] font-semibold text-slate-500">
+                        {row.enabled ? "เปิดอยู่" : "ปิดอยู่"}
+                      </span>
+                    </td>
+                    <td className={adminTable.muted}>{thaiDateTime(row.updated_at)}</td>
+                    <td className={`${adminTable.cell} text-right`}>
+                      <button
+                        onClick={() => remove(row)}
+                        disabled={busy === row.id}
+                        aria-label="ลบกฎนี้"
+                        className="-mr-1 grid size-11 place-items-center text-slate-300 transition-colors hover:text-rose-600"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <ul className="flex flex-col gap-2 p-3 md:hidden">
+            {rows.map((row) => (
+              <li
+                key={row.id}
+                className={`flex items-start gap-3 rounded-xl border bg-white px-3.5 py-3 ${
+                  row.enabled ? "border-rose-100" : "border-slate-100 opacity-60"
                 }`}
               >
-                <span
-                  className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-xs transition-transform ${
-                    row.enabled ? "translate-x-4" : "translate-x-0"
+                <button
+                  onClick={() => toggle(row)}
+                  disabled={busy === row.id}
+                  aria-label={row.enabled ? "ปิดกฎนี้" : "เปิดกฎนี้"}
+                  className={`relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors ${
+                    row.enabled ? "bg-rose-500" : "bg-slate-200"
                   }`}
-                />
-              </button>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-brand-ink">{row.topic}</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-                  ตอบแทนว่า: {row.reply?.trim() || DEFAULT_BLOCKED_REPLY}
-                </p>
-              </div>
-              <button
-                onClick={() => remove(row)}
-                disabled={busy === row.id}
-                aria-label="ลบกฎนี้"
-                className="-mr-2 -mt-1 grid size-11 shrink-0 place-items-center text-slate-300 transition-colors hover:text-rose-600"
-              >
-                <Trash2 size={15} />
-              </button>
-            </li>
-          ))}
-        </ul>
+                >
+                  <span
+                    className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-xs transition-transform ${
+                      row.enabled ? "translate-x-4" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-brand-ink">{row.topic}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+                    ตอบแทนว่า: {row.reply?.trim() || DEFAULT_BLOCKED_REPLY}
+                  </p>
+                </div>
+                <button
+                  onClick={() => remove(row)}
+                  disabled={busy === row.id}
+                  aria-label="ลบกฎนี้"
+                  className="-mr-2 -mt-1 grid size-11 shrink-0 place-items-center text-slate-300 transition-colors hover:text-rose-600"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
+
     </section>
   );
 }
