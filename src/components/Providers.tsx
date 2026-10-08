@@ -10,6 +10,7 @@ import { RecentlyViewedProvider } from "@/lib/recently-viewed-context";
 import { WidgetSettingsProvider } from "@/lib/use-widget-settings";
 import QuickChat from "@/components/QuickChat";
 import MobileTabBar from "@/components/MobileTabBar";
+import BackToTop from "@/components/BackToTop";
 import PwaRegister from "@/components/PwaRegister";
 import InstallPrompt from "@/components/InstallPrompt";
 import GiftUnlockPopup from "@/components/GiftUnlockPopup";
@@ -46,6 +47,7 @@ export function StorefrontWidgets() {
       <AutoShopifySignIn />
       <QuickChat />
       <MobileTabBar />
+      <BackToTop />
       <PwaRegister />
       <InstallPrompt />
       <GiftUnlockPopup />

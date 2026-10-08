@@ -1,17 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, ScanFace, ShoppingCart, User } from "lucide-react";
+import { Home, LayoutGrid, ShoppingCart, User } from "lucide-react";
+import ScanFaceIcon from "@/components/icons/ScanFaceIcon";
 import { useLang } from "@/lib/lang-context";
 import { useCart } from "@/lib/cart-context";
-import { useBottomNavShown, resetBottomNav } from "@/lib/bottom-nav-visibility";
 
 const tabs = [
   { href: "/", icon: Home, th: "หน้าแรก", en: "Home" },
   { href: "/shop", icon: LayoutGrid, th: "ช้อป", en: "Shop" },
-  { href: "/advisor", icon: ScanFace, th: "ประเมินผิว", en: "Skin Check" },
+  { href: "/advisor", icon: ScanFaceIcon, th: "ประเมินผิว", en: "Skin Check" },
   { href: "/cart", icon: ShoppingCart, th: "ตะกร้า", en: "Cart" },
   { href: "/account", icon: User, th: "บัญชี", en: "Account" },
 ];
@@ -20,12 +19,6 @@ export default function MobileTabBar() {
   const pathname = usePathname() || "/";
   const { t } = useLang();
   const { count } = useCart();
-  const shown = useBottomNavShown();
-
-  // A new page starts with the bar showing — see resetBottomNav.
-  useEffect(() => {
-    resetBottomNav();
-  }, [pathname]);
 
   function active(href: string) {
     if (href === "/") return pathname === "/";
@@ -33,14 +26,12 @@ export default function MobileTabBar() {
   }
 
   return (
-    <nav
-      // inert while it is off-screen, so a keyboard cannot tab into a bar
-      // nobody can see.
-      inert={!shown}
-      className={`lg:hidden fixed bottom-0 inset-x-0 z-90 border-t border-slate-200 bg-white/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)] motion-safe:transition-transform motion-safe:duration-200 ${
-        shown ? "translate-y-0" : "translate-y-full"
-      }`}
-    >
+    // Always on screen. It used to slide away as you read down the page,
+    // which buys back 55px of a phone screen and costs the five things this
+    // shop is navigated by — the cart and its count among them. Hiding the
+    // way out of a page to make the page slightly taller is a bad trade on a
+    // storefront, and it made the bar feel like it was fighting the scroll.
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-90 border-t border-slate-200 bg-white/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
       <ul className="grid grid-cols-5">
         {tabs.map((tab) => {
           const on = active(tab.href);

@@ -15,7 +15,6 @@ import { RotateCcw, X, Headset, Maximize2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
-import { useBottomNavShown } from "@/lib/bottom-nav-visibility";
 import { getProductBySlug } from "@/data/products";
 import { PHOTO_MARKER } from "@/lib/chat-image-store";
 import { useChatSession } from "@/lib/use-chat-session";
@@ -44,12 +43,8 @@ const TAB_BAR_H = 55;
 const BUY_BAR_H = 65;
 // Above the tab bar on its own the launcher keeps a small gap; sitting on the
 // buy bar it goes flush, because that bar carries its own bottom padding.
-// Both work out to the offsets that shipped before (60px and 120px) — only
-// the two tab-bar-hidden cases below are new.
+// The two work out to 60px and 120px.
 const GAP_ABOVE_TAB_BAR = 5;
-// Nothing underneath at all, so it keeps the same 12px the desktop launcher
-// gets from lg:bottom-3 instead of sitting on the very edge of the screen.
-const FLOOR_GAP = 12;
 // The launcher is h-16 on mobile; the panel opens directly above it.
 const LAUNCHER_H = 64;
 
@@ -66,14 +61,11 @@ export default function QuickChat() {
   // rest off the session object it is handed.
   const { messages, reset, hasProfile, escalating, setNoteOpen, unread } = session;
 
-  // That stack is not fixed: the tab bar slides away as you read down the
-  // page and the buy bar appears only once a product page scrolls past its
-  // own button, so the launcher has to follow both or it is left hovering
-  // with a strip of page showing underneath it.
-  const navShown = useBottomNavShown();
-  const stack = (navShown ? TAB_BAR_H : 0) + (stickyBarVisible ? BUY_BAR_H : 0);
-  const launcherBottom =
-    stack === 0 ? FLOOR_GAP : stack + (stickyBarVisible ? 0 : GAP_ABOVE_TAB_BAR);
+  // The tab bar is always there; the buy bar appears only once a product
+  // page scrolls past its own button, so the launcher still has to follow
+  // that one or it is left hovering with a strip of page underneath it.
+  const stack = TAB_BAR_H + (stickyBarVisible ? BUY_BAR_H : 0);
+  const launcherBottom = stack + (stickyBarVisible ? 0 : GAP_ABOVE_TAB_BAR);
   const panelBottom = launcherBottom + LAUNCHER_H;
 
   const [badgeIndex, setBadgeIndex] = useState(0);
