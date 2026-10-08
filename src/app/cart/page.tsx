@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Minus, Plus, Trash2, Award, Ticket, Repeat } from "lucide-react";
+import { Minus, Plus, Trash2, Award, Ticket, Repeat, Gift } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
@@ -11,6 +11,7 @@ import { useOrderTotals } from "@/lib/use-order-totals";
 import { formatTHB } from "@/lib/format";
 import { suggestBundlesForCart } from "@/lib/bundle-suggest";
 import { pointsForAmount } from "@/data/coupons";
+import { getProductBySlug } from "@/data/products";
 import { subscriptionPlans } from "@/data/subscriptions";
 import CouponPicker from "@/components/CouponPicker";
 import { Button } from "@/components/ui";
@@ -54,6 +55,11 @@ export default function CartPage() {
 
   function renderLine(line: (typeof lines)[number]) {
     const plan = line.subscribeMonths ? subscriptionPlans.find((p) => p.months === line.subscribeMonths) : null;
+    // What the gift would have cost. The line itself carries price 0, so the
+    // only place the number survives is the catalogue — and only for gifts
+    // that are in it: the ones off Shopify's unlisted free-gift shelf have a
+    // variant id where a slug would be, and no price to find.
+    const giftWorth = line.isGift ? getProductBySlug(line.slug)?.price ?? 0 : 0;
     return (
       <div
         key={`${line.variantId}-${line.isGift ? line.giftPromoSlug : line.subscribeMonths ?? "normal"}`}
@@ -61,20 +67,36 @@ export default function CartPage() {
         // stacked inside a page that already has its own frame is three
         // frames deep, and on a phone it reads as five separate things
         // rather than one list of what you are buying.
-        className={`flex gap-3.5 px-4 py-4 ${plan ? "bg-brand-gradient-soft/30" : ""}`}
+        // bg-brand-gradient-soft, with no opacity modifier on it: that
+        // utility is a background-IMAGE, and Tailwind's /nn modifier only
+        // knows how to thin a colour — `bg-brand-gradient-soft/30` compiles
+        // to no background at all. Measured: background-image "none". The
+        // subscription row had been carrying that class, and that tint, for
+        // as long as it has existed.
+        className={`relative flex gap-3.5 px-4 py-4 ${
+          line.isGift || plan ? "bg-brand-gradient-soft" : ""
+        }`}
       >
+        {/* A gift is the one row in here nobody is paying for, and it was
+            reading as just another line with the word "ฟรี" where a price
+            goes. The stripe is what makes it findable while scrolling past
+            the things that do cost money. */}
+        {line.isGift && <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-brand-gradient" />}
         <Link href={`/product/${line.slug}`} className="relative h-20 w-20 md:h-24 md:w-24 shrink-0 self-center rounded-lg overflow-hidden bg-surface-soft">
           <Image src={line.image} alt={line.name} fill className="object-cover" />
         </Link>
         <div className="flex-1 min-w-0 flex flex-col">
+          {/* Above the name, not after it: the name is clamped to two lines,
+              so a badge trailing it was the first thing to be cut off on a
+              phone — on exactly the row it was there to mark. */}
+          {line.isGift && (
+            <span className="mb-1 inline-flex w-fit items-center gap-1 rounded-full bg-brand-gradient px-2 py-0.5 text-[10px] font-bold text-white">
+              <Gift size={10} aria-hidden /> {t("ของแถมฟรี", "Free gift")}
+            </span>
+          )}
           <div translate="no" className="flex items-start justify-between gap-2">
             <Link href={`/product/${line.slug}`} className="text-sm font-medium text-brand-ink line-clamp-2 hover:text-brand-800">
               {line.name}
-              {line.isGift && (
-                <span className="ml-1.5 inline-block align-middle text-[10px] font-semibold text-brand-800 bg-brand-gradient-soft rounded-sm px-1.5 py-0.5">
-                  {t("ของแถม", "Free gift")}
-                </span>
-              )}
               {plan && (
                 <span className="ml-1.5 inline-flex items-center gap-1 align-middle text-[10px] font-semibold text-white bg-brand-gradient rounded-full px-2 py-0.5">
                   <Repeat size={9} /> ทุก {plan.months} เดือน -{plan.discountPct}%
@@ -113,7 +135,19 @@ export default function CartPage() {
             ))}
 
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="font-bold text-brand-ink">{line.isGift ? t("ฟรี", "Free") : formatTHB(line.price)}</span>
+            <span
+              className={
+                line.isGift ? "brand-text-gradient text-base font-extrabold" : "font-bold text-brand-ink"
+              }
+            >
+              {line.isGift ? t("ฟรี", "Free") : formatTHB(line.price)}
+            </span>
+            {/* The gift's own price, struck through: "free" says what you
+                pay, this says what it is worth, and the second one is the
+                reason the first is worth reading. */}
+            {line.isGift && giftWorth > 0 && (
+              <span className="text-xs text-slate-500 line-through">{formatTHB(giftWorth)}</span>
+            )}
             {line.compareAtPrice && (
               <span className="text-xs text-slate-500 line-through">{formatTHB(line.compareAtPrice)}</span>
             )}
