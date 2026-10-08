@@ -105,7 +105,11 @@ export default function FlashSaleShelf() {
               "repeating-linear-gradient(115deg, rgba(255,255,255,0.045) 0 22px, transparent 22px 54px), radial-gradient(120% 95% at 42% 38%, #d8261a 0%, #a81a13 48%, #5f0d0a 100%)",
           }}
         >
-          <div className="grid items-center gap-4 p-4 md:p-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
+          {/* The gap between the campaign and the rail, and the padding on
+              the right, are both widened from lg so the arrows have somewhere
+              of their own to stand. At the design's offsets they sat on the
+              first card's badge and the last card's edge. */}
+          <div className="grid items-center gap-4 p-4 md:p-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:gap-14 lg:pr-14 xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
             {/* The campaign. A row on a phone — lockup and clock side by side
                 — because stacked it filled the screen before a single product
                 appeared. */}
@@ -186,9 +190,14 @@ export default function FlashSaleShelf() {
   );
 }
 
-/** Scrolls the rail by about a screenful. Left off a phone: there is no room
- *  for them beside the cards, so they end up sitting on one — and a thumb
- *  there drags rather than aims at a 40px target. */
+/** Scrolls the rail by about a screenful. From lg only, which is where the
+ *  band has gutters wide enough to hold them: below that there is no room
+ *  beside the cards, so they would end up sitting on one — and a thumb there
+ *  drags rather than aims at a 40px target.
+ *
+ *  52px out, not 44: the rail carries `-m-2 p-2` so its cards start 8px
+ *  outside this wrapper, and at 44 the buttons still clipped the first and
+ *  last card by four pixels. */
 function RailArrows({ railRef }: { railRef: React.RefObject<HTMLUListElement | null> }) {
   const busy = useRef(false);
   function scrollBy(dir: 1 | -1) {
@@ -204,7 +213,7 @@ function RailArrows({ railRef }: { railRef: React.RefObject<HTMLUListElement | n
         type="button"
         onClick={() => scrollBy(-1)}
         aria-label="สินค้าก่อนหน้า"
-        className="absolute -left-1 top-1/2 z-20 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-white text-slate-500 shadow-card transition-colors hover:text-brand-800 md:grid"
+        className="absolute -left-13 top-1/2 z-20 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-white text-slate-500 shadow-card transition-colors hover:text-brand-800 lg:grid"
       >
         <ChevronLeft size={20} />
       </button>
@@ -212,7 +221,7 @@ function RailArrows({ railRef }: { railRef: React.RefObject<HTMLUListElement | n
         type="button"
         onClick={() => scrollBy(1)}
         aria-label="สินค้าถัดไป"
-        className="absolute -right-1 top-1/2 z-20 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-white text-slate-500 shadow-card transition-colors hover:text-brand-800 md:grid"
+        className="absolute -right-13 top-1/2 z-20 hidden size-10 -translate-y-1/2 place-items-center rounded-full bg-white text-slate-500 shadow-card transition-colors hover:text-brand-800 lg:grid"
       >
         <ChevronRight size={20} />
       </button>

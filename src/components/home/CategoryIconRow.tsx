@@ -50,7 +50,12 @@ export default function CategoryIconRow() {
           than wrapping: a second line of two or three orphans is worse than a
           row that visibly continues, and the first card peeking in from the
           right is what tells a thumb there is more. */}
-      <ul className="mx-auto flex max-w-[1512px] gap-3 overflow-x-auto scroll-smooth px-4 py-5 scrollbar-none md:gap-5 md:px-6 lg:justify-center lg:gap-[clamp(1rem,2.6vw,2.4rem)] lg:overflow-visible">
+      <ul // The row stops scrolling and centres itself at xl, not lg. Nine
+          // 100px tiles with the smallest gap the clamp allows need 1028px,
+          // and at lg the page has 976 — so `lg:overflow-visible` took the
+          // scrollbar away from a row that still did not fit and pushed the
+          // whole page sideways instead.
+          className="mx-auto flex max-w-[1512px] gap-3 overflow-x-auto scroll-smooth px-4 py-5 scrollbar-none md:gap-5 md:px-6 xl:justify-center xl:gap-[clamp(1rem,2.6vw,2.4rem)] xl:overflow-visible">
         {shortcuts.map((s) => (
           <li key={s.href} className="shrink-0">
             <Link
@@ -58,7 +63,7 @@ export default function CategoryIconRow() {
               // 72px on a phone against a 68px disc: the tile was 86px wide
               // and the gap 20px, which put 38px of nothing between two
               // discs — a row that read as scattered rather than as a set.
-              className="group flex w-[72px] flex-col items-center gap-2.5 md:w-[86px] lg:w-[100px]"
+              className="group flex w-[72px] flex-col items-center gap-2.5 md:w-[86px] xl:w-[100px]"
             >
               {s.word ? (
                 <span className="grid h-[68px] w-[68px] place-items-center rounded-full bg-brand-gradient bg-[length:200%_100%] text-[21px] font-semibold text-white shadow-[0_6px_16px_rgba(0,168,123,0.28)] transition-transform duration-300 animate-gradientPan group-hover:scale-105 group-active:scale-95 lg:h-[88px] lg:w-[88px] lg:text-[27px]">
