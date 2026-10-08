@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { BookOpen, MessageSquare, Pencil, Plus, Trash2, X } from "lucide-react";
+import { BookOpen, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { Card } from "@/components/ui";
 import { PageHeader, adminTable } from "@/components/admin/layout-kit";
@@ -21,6 +20,7 @@ import AdminSelect from "@/components/admin/AdminSelect";
 import AdminSearch from "@/components/admin/AdminSearch";
 import BlockedTopicsPanel from "@/components/admin/BlockedTopicsPanel";
 import ChatSuggestionsPanel from "@/components/admin/ChatSuggestionsPanel";
+import AiAnswerLogPanel from "@/components/admin/AiAnswerLogPanel";
 import { Input, Spinner, TextArea } from "@heroui/react";
 
 // Admin → ฐานความรู้ AI. The articles the chat assistant is allowed to answer
@@ -67,7 +67,7 @@ export default function AdminKnowledgeBasePage() {
   // Two halves of the same job — what the assistant may answer from, and
   // what it must refuse — so they are two tabs rather than one stacked on
   // top of the other.
-  const [tab, setTab] = useState<"articles" | "blocked" | "suggestions">("articles");
+  const [tab, setTab] = useState<"articles" | "blocked" | "suggestions" | "log">("articles");
   const [confirming, setConfirming] = useState<string | null>(null);
   const [truncated, setTruncated] = useState(false);
 
@@ -320,14 +320,6 @@ export default function AdminKnowledgeBasePage() {
         icon={<BookOpen size={20} className="text-brand-emerald" />}
         title="ฐานความรู้ AI"
         subtitle="สิ่งที่น้อง Smoothie ตอบได้ สิ่งที่ห้ามตอบ และคำถามที่ชวนให้ลูกค้าถาม"
-        actions={
-          <Link
-            href="/admin/knowledge-base/log"
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-brand-800 hover:bg-slate-50"
-          >
-            <MessageSquare size={14} /> log คำตอบของ AI
-          </Link>
-        }
       />
 
       <div className="mb-4 flex items-center gap-1 border-b border-surface-line">
@@ -335,6 +327,7 @@ export default function AdminKnowledgeBasePage() {
           { key: "articles", label: "บทความที่ตอบได้" },
           { key: "blocked", label: "เรื่องที่ห้าม AI ตอบ" },
           { key: "suggestions", label: "คำถามแนะนำ" },
+          { key: "log", label: "log คำตอบของ AI" },
         ] as const).map((t) => (
           <button
             key={t.key}
@@ -353,6 +346,7 @@ export default function AdminKnowledgeBasePage() {
 
       {tab === "blocked" && <BlockedTopicsPanel />}
       {tab === "suggestions" && <ChatSuggestionsPanel />}
+      {tab === "log" && <AiAnswerLogPanel />}
 
       {tab === "articles" && (
       <>
