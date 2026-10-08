@@ -2,16 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  BookOpen,
-  Check,
-  PencilLine,
-  Plus,
-  RefreshCw,
-} from "lucide-react";
+import { BookOpen, Check, Eye, Plus, RefreshCw } from "lucide-react";
 import type { AiLogRow } from "@/app/api/admin/kb/logs/route";
 import { Button, Spinner, TextArea } from "@heroui/react";
 import AdminSearch from "@/components/admin/AdminSearch";
+import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
+import { adminTable } from "@/components/admin/layout-kit";
 import AdminSelect from "@/components/admin/AdminSelect";
 import { Card } from "@/components/ui";
 
@@ -38,6 +34,9 @@ const stamp = (iso: string) =>
 export default function AiAnswerLogPanel() {
   const [rows, setRows] = useState<AiLogRow[]>([]);
   const [query, setQuery] = useState("");
+  // The row being read in full. The table shows one line of each answer; the
+  // whole thing, its sources and the box for fixing it live in here.
+  const [detail, setDetail] = useState<AiLogRow | null>(null);
   const [titles, setTitles] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState<"all" | "answered" | "unanswered">(
     "all",
@@ -48,7 +47,6 @@ export default function AiAnswerLogPanel() {
   const [error, setError] = useState<string | null>(null);
   // Correcting an answer: which row is open, what has been typed, and which
   // rows were saved in this session.
-  const [correctingId, setCorrectingId] = useState<string | null>(null);
   const [correction, setCorrection] = useState("");
   const [savingCorrection, setSavingCorrection] = useState(false);
   const [corrected, setCorrected] = useState<string[]>([]);
@@ -60,6 +58,11 @@ export default function AiAnswerLogPanel() {
   const shown = q
     ? rows.filter((r) => `${r.question} ${r.ai_answer ?? ""}`.toLowerCase().includes(q))
     : rows;
+
+  function openDetail(r: AiLogRow) {
+    setDetail(r);
+    setCorrection(r.ai_answer ?? "");
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,8 +102,10 @@ export default function AiAnswerLogPanel() {
       if (!res.ok || !data.ok)
         throw new Error(data.error || "บันทึกคำแก้ไม่สำเร็จ");
       setCorrected((ids) => [...ids, row.id]);
-      setCorrectingId(null);
       setCorrection("");
+      // Close the drawer: what it was open to do is done, and the row it
+      // came from now says so.
+      setDetail(null);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "บันทึกคำแก้ไม่สำเร็จ");
@@ -194,123 +199,105 @@ export default function AiAnswerLogPanel() {
               : "ยังไม่มีการตอบจากฐานความรู้"}
         </div>
       ) : (
-        /* Two to a row. Full width on a question-and-answer log means very
-           long lines unless the cards divide it — a column of 200-character
-           lines is harder to read than the 1100px it replaced. */
-        <ul className="grid items-start gap-2 xl:grid-cols-2">
-          {shown.map((r) => {
-            const unanswered = r.matched_article_ids.length === 0;
-            return (
-              <li
-                key={r.id}
-                className={`rounded-xl2 bg-white p-4 ring-1 ${unanswered ? "ring-amber-200" : "ring-surface-line"}`}
-              >
-                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
-                  <span>{stamp(r.created_at)}</span>
-                  <span>· {CHANNEL_TH[r.channel] ?? r.channel}</span>
-                  {unanswered && (
-                    <span className="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">
-                      ยังไม่มีความรู้รองรับ
-                    </span>
-                  )}
-                </div>
-
-                <p className="mt-2 text-sm font-semibold text-brand-ink">
-                  {r.question}
-                </p>
-                {r.ai_answer && (
-                  <p className="mt-1.5 line-clamp-4 whitespace-pre-wrap text-sm text-slate-600">
-                    {r.ai_answer}
-                  </p>
-                )}
-
-                {(r.staff_correction || corrected.includes(r.id)) && (
-                  <p className="mt-2 rounded-xl2 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                    <span className="font-semibold">
-                      คำตอบที่ถูกต้อง (ทีมงานแก้):
-                    </span>{" "}
-                    {r.staff_correction}
-                  </p>
-                )}
-
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                  {r.matched_article_ids.map((id) => (
-                    <Link
-                      key={id}
-                      href="/admin/knowledge-base"
-                      className="flex items-center gap-1 rounded-full bg-surface-soft px-2.5 py-1 text-[11px] text-slate-600 hover:text-brand-ink"
-                    >
-                      <BookOpen size={11} />{" "}
-                      {titles[id] ?? "บทความที่ถูกลบไปแล้ว"}
-                    </Link>
-                  ))}
-                  {!r.staff_correction && !corrected.includes(r.id) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCorrectingId(correctingId === r.id ? null : r.id);
-                        setCorrection(r.ai_answer ?? "");
-                      }}
-                      className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-surface-line hover:bg-surface-soft"
-                    >
-                      <PencilLine size={11} />{" "}
-                      {correctingId === r.id
-                        ? "ปิดช่องแก้"
-                        : "ตอบแบบนี้ไม่ถูก — แก้คำตอบ"}
-                    </button>
-                  )}
-                  {unanswered && (
-                    <Link
-                      href={`/admin/knowledge-base?new=${encodeURIComponent(r.question)}`}
-                      className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft"
-                    >
-                      <Plus size={11} /> เขียนความรู้จากคำถามนี้
-                    </Link>
-                  )}
-                </div>
-
-                {correctingId === r.id && (
-                  <div className="mt-2.5 rounded-xl2 bg-surface-soft p-3">
-                    <label
-                      htmlFor={`fix-${r.id}`}
-                      className="mb-1.5 block text-xs font-semibold text-brand-ink"
-                    >
-                      คำตอบที่ถูกต้องสำหรับคำถามนี้
-                    </label>
-                    <TextArea
-                      fullWidth
-                      aria-label="เขียนคำตอบที่อยากให้ AI ใช้ตอบคำถามแบบนี้ครั้งหน้า"
-                      id={`fix-${r.id}`}
-                      value={correction}
-                      onChange={(e) => setCorrection(e.target.value)}
-                      rows={4}
-                      placeholder="เขียนคำตอบที่อยากให้ AI ใช้ตอบคำถามแบบนี้ครั้งหน้า"
-                    />
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <Button
-                        variant="primary"
-                        onPress={() => saveCorrection(r)}
-                        isPending={savingCorrection}
-                        isDisabled={!correction.trim()}
-                      >
-                        {savingCorrection ? (
-                          <Spinner size="sm" color="current" />
-                        ) : (
-                          <Check size={13} />
+        <>
+          {/* A table, like the other three tabs. The answer is clamped to one
+              line here and read in full in the drawer: a log is scanned for
+              the one row worth opening — which question, was it answered,
+              has somebody already fixed it — and four lines of answer per
+              row turns that scan into scrolling. */}
+          <div className="hidden md:block">
+            <table className={adminTable.table}>
+              <thead className={adminTable.thead}>
+                <tr>
+                  <th className="w-36">เวลา</th>
+                  <th>คำถาม</th>
+                  <th>คำตอบของ AI</th>
+                  <th className="w-40">อ้างอิง</th>
+                  <th className="w-20 text-right">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((r) => {
+                  const unanswered = r.matched_article_ids.length === 0;
+                  const fixed = Boolean(r.staff_correction) || corrected.includes(r.id);
+                  return (
+                    <tr key={r.id} className={adminTable.row}>
+                      <td className={adminTable.muted}>
+                        {stamp(r.created_at)}
+                        <span className="mt-0.5 block">{CHANNEL_TH[r.channel] ?? r.channel}</span>
+                      </td>
+                      <td className={adminTable.cell}>
+                        <span className="line-clamp-1 font-semibold text-brand-ink">{r.question}</span>
+                      </td>
+                      <td className={adminTable.cell}>
+                        <span className="line-clamp-1 text-slate-600">{r.ai_answer || "—"}</span>
+                        {fixed && (
+                          <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+                            <Check size={11} /> ทีมงานแก้คำตอบแล้ว
+                          </span>
                         )}
-                        บันทึกคำแก้เป็นความรู้ใหม่
-                      </Button>
-                      <span className="text-[11px] text-slate-500">
-                        บันทึกเป็นฉบับร่างในฐานความรู้ ต้องกดเผยแพร่ก่อน AI
-                        จึงจะใช้ตอบ
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                      </td>
+                      <td className={adminTable.cell}>
+                        {unanswered ? (
+                          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                            ยังไม่มีความรู้รองรับ
+                          </span>
+                        ) : (
+                          <span className="line-clamp-2 text-[12px] text-slate-500">
+                            {r.matched_article_ids
+                              .map((id) => titles[id] ?? "บทความที่ถูกลบไปแล้ว")
+                              .join(", ")}
+                          </span>
+                        )}
+                      </td>
+                      <td className={`${adminTable.cell} text-right`}>
+                        <button
+                          type="button"
+                          onClick={() => openDetail(r)}
+                          className="inline-flex h-11 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-semibold text-brand-800 hover:bg-surface-soft"
+                        >
+                          <Eye size={13} /> ดู
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Below md the same row is a card, same as the other tabs. */}
+          <ul className="flex flex-col gap-2 md:hidden">
+            {shown.map((r) => {
+              const unanswered = r.matched_article_ids.length === 0;
+              return (
+                <li key={r.id}>
+                  <button
+                    type="button"
+                    onClick={() => openDetail(r)}
+                    className={`w-full rounded-xl2 bg-white p-3.5 text-left ring-1 ${unanswered ? "ring-amber-200" : "ring-surface-line"}`}
+                  >
+                    <span className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                      <span>{stamp(r.created_at)}</span>
+                      <span>· {CHANNEL_TH[r.channel] ?? r.channel}</span>
+                      {unanswered && (
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">
+                          ยังไม่มีความรู้รองรับ
+                        </span>
+                      )}
+                    </span>
+                    <span className="mt-1.5 line-clamp-1 block text-sm font-semibold text-brand-ink">
+                      {r.question}
+                    </span>
+                    <span className="mt-0.5 line-clamp-1 block text-sm text-slate-600">
+                      {r.ai_answer || "—"}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
 
       {(page > 0 || hasMore) && (
@@ -336,6 +323,99 @@ export default function AiAnswerLogPanel() {
       )}
         </div>
       </Card>
+
+      {/* The same drawer the other tabs edit in. Everything the card used to
+          show at once is here, where there is room for it. */}
+      <FormDrawer open={Boolean(detail)} title="คำตอบของ AI" onClose={() => setDetail(null)}>
+        {detail && (
+          <div className="flex flex-col gap-4">
+            <p className="text-xs text-slate-400">
+              {stamp(detail.created_at)} · {CHANNEL_TH[detail.channel] ?? detail.channel}
+            </p>
+
+            <div>
+              <p className="mb-1.5 text-sm font-semibold text-brand-ink">คำถามของลูกค้า</p>
+              <p className="rounded-xl2 bg-surface-soft p-3 text-sm text-brand-ink">{detail.question}</p>
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-semibold text-brand-ink">คำตอบของ AI</p>
+              <p className="whitespace-pre-wrap rounded-xl2 bg-surface-soft p-3 text-sm text-slate-700">
+                {detail.ai_answer || "— ไม่มีคำตอบบันทึกไว้"}
+              </p>
+            </div>
+
+            {(detail.staff_correction || corrected.includes(detail.id)) && (
+              <div>
+                <p className="mb-1.5 text-sm font-semibold text-emerald-800">คำตอบที่ถูกต้อง (ทีมงานแก้)</p>
+                <p className="whitespace-pre-wrap rounded-xl2 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  {detail.staff_correction}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <p className="mb-1.5 text-sm font-semibold text-brand-ink">บทความที่ใช้อ้างอิง</p>
+              {detail.matched_article_ids.length === 0 ? (
+                <p className="rounded-xl2 bg-amber-50 p-3 text-sm text-amber-800">
+                  ยังไม่มีความรู้รองรับคำถามนี้ — คำถามแบบนี้คือรายการที่ควรเขียนบทความเพิ่ม
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {detail.matched_article_ids.map((id) => (
+                    <span
+                      key={id}
+                      className="flex items-center gap-1 rounded-full bg-surface-soft px-2.5 py-1 text-[11px] text-slate-600"
+                    >
+                      <BookOpen size={11} /> {titles[id] ?? "บทความที่ถูกลบไปแล้ว"}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {!detail.staff_correction && !corrected.includes(detail.id) && (
+              <div className="rounded-xl2 bg-surface-soft p-3">
+                <label htmlFor={`fix-${detail.id}`} className="mb-1.5 block text-sm font-semibold text-brand-ink">
+                  ตอบแบบนี้ไม่ถูก — เขียนคำตอบที่ถูกต้อง
+                </label>
+                <TextArea
+                  fullWidth
+                  id={`fix-${detail.id}`}
+                  aria-label="เขียนคำตอบที่อยากให้ AI ใช้ตอบคำถามแบบนี้ครั้งหน้า"
+                  value={correction}
+                  onChange={(e) => setCorrection(e.target.value)}
+                  rows={5}
+                  placeholder="เขียนคำตอบที่อยากให้ AI ใช้ตอบคำถามแบบนี้ครั้งหน้า"
+                />
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="primary"
+                    onPress={() => saveCorrection(detail)}
+                    isPending={savingCorrection}
+                    isDisabled={!correction.trim()}
+                  >
+                    {savingCorrection ? <Spinner size="sm" color="current" /> : <Check size={13} />}
+                    บันทึกคำแก้เป็นความรู้ใหม่
+                  </Button>
+                  <span className="text-[11px] text-slate-500">
+                    บันทึกเป็นฉบับร่างในฐานความรู้ ต้องกดเผยแพร่ก่อน AI จึงจะใช้ตอบ
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {detail.matched_article_ids.length === 0 && (
+              <Link
+                href={`/admin/knowledge-base?new=${encodeURIComponent(detail.question)}`}
+                className="flex h-11 items-center justify-center gap-1.5 rounded-full bg-brand-gradient px-5 text-sm font-semibold text-white"
+              >
+                <Plus size={15} /> เขียนความรู้จากคำถามนี้
+              </Link>
+            )}
+          </div>
+        )}
+      </FormDrawer>
     </div>
   );
 }
