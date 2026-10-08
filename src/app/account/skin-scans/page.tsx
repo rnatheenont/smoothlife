@@ -93,7 +93,7 @@ function SkinScansContent() {
         </div>
         <Link
           href="/skin-coach"
-          className="flex items-center gap-1.5 rounded-full bg-brand-gradient px-4 py-2.5 text-sm font-semibold text-white shadow-xs"
+          className="flex h-11 items-center gap-1.5 rounded-full bg-brand-gradient px-4 py-2.5 text-sm font-semibold text-white shadow-xs"
         >
           <Camera size={15} aria-hidden="true" /> สแกนผิวใหม่
         </Link>
@@ -112,7 +112,7 @@ function SkinScansContent() {
           <p className="mx-auto mt-1 max-w-sm text-xs text-slate-600">
             สแกนผิวแล้วกด &quot;บันทึกผล&quot; ในหน้าผลลัพธ์ ผลจะมาอยู่ที่นี่ให้กลับมาดูและเทียบได้ทุกครั้ง
           </p>
-          <Link href="/skin-coach" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-800">
+          <Link href="/skin-coach" className="mt-4 inline-flex h-11 items-center gap-1.5 text-sm font-semibold text-brand-800">
             <Camera size={14} aria-hidden="true" /> เริ่มสแกนผิว
           </Link>
         </div>

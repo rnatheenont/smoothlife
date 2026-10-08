@@ -145,7 +145,9 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
                 type="button"
                 onClick={() => setStage(key)}
                 aria-current={stage === key ? "true" : undefined}
-                className={`shrink-0 whitespace-nowrap border-b-2 px-3 pb-2.5 pt-1 text-sm transition-colors ${
+                // h-11: these seven are how the order list is filtered, and a
+                // 36px tab is below what a thumb is asked to find.
+                className={`flex h-11 shrink-0 items-center whitespace-nowrap border-b-2 px-3 text-sm transition-colors ${
                   stage === key
                     ? "border-brand-action font-bold text-brand-ink"
                     : "border-transparent font-medium text-slate-500 hover:text-brand-ink"
@@ -168,7 +170,7 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
           <div className="rounded-xl2 border border-amber-200 bg-amber-50 p-5 text-sm text-slate-700 leading-relaxed">
             บัญชีของคุณยังไม่ได้เชื่อมกับระบบคำสั่งซื้อของ Shopify ค่ะ (มักเกิดขึ้นเมื่อสมัครสมาชิกด้วยอีเมล/เบอร์ที่ไม่ตรงกับตอนสั่งซื้อ)
             <div className="mt-3">
-              <Button size="sm" onClick={handleRetryLink} disabled={linking}>
+              <Button size="sm" className="h-11" onClick={handleRetryLink} disabled={linking}>
                 <RefreshCw size={13} className={linking ? "animate-spin" : ""} />
                 {linking ? "กำลังเชื่อมบัญชี…" : "ลองเชื่อมบัญชีอีกครั้ง"}
               </Button>

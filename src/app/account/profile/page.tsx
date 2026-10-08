@@ -129,7 +129,11 @@ function ProfileContent() {
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarBusy}
               aria-label="เปลี่ยนรูปโปรไฟล์"
-              className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-white text-brand-800 border border-slate-200 shadow-xs disabled:opacity-60"
+              // The disc that is drawn stays 24px — it sits on the corner of
+              // an avatar and a bigger one would cover the face. The target
+              // around it is 44px, reaching outward where there is nothing
+              // else to hit.
+              className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border border-slate-200 bg-white text-brand-800 shadow-xs after:absolute after:-inset-2.5 after:content-[''] disabled:opacity-60"
             >
               <Camera size={12} />
             </button>
@@ -257,7 +261,7 @@ function EmailLinkCard() {
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="text-xs font-semibold text-brand-800 shrink-0"
+            className="inline-flex h-11 shrink-0 items-center text-xs font-semibold text-brand-800"
           >
             เปลี่ยนอีเมล
           </button>
@@ -479,7 +483,7 @@ function PhoneChangeCard() {
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="text-xs font-semibold text-brand-800 shrink-0"
+            className="inline-flex h-11 shrink-0 items-center text-xs font-semibold text-brand-800"
           >
             เปลี่ยนเบอร์โทร
           </button>

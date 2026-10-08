@@ -74,7 +74,7 @@ export default function SubscriptionTermsInfo({
       <div className="rounded-xl2 border border-slate-100 bg-surface-soft/60 p-3.5">
         <button
           onClick={() => setOpen((o) => !o)}
-          className="flex w-full items-center justify-between text-sm font-semibold text-brand-ink"
+          className="flex min-h-11 w-full items-center justify-between text-sm font-semibold text-brand-ink"
         >
           เงื่อนไขการสมัครสมาชิก — ตัดรอบ / จัดส่ง / ส่วนลด
           <ChevronDown size={16} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />

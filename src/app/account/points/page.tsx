@@ -150,7 +150,7 @@ function PointsContent() {
 
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-bold text-brand-ink">ระดับสมาชิกและสิทธิพิเศษ</h2>
-        <Link href="/loyalty" className="text-xs font-semibold text-brand-800">
+        <Link href="/loyalty" className="inline-flex h-11 items-center text-xs font-semibold text-brand-800">
           ดูตารางเปรียบเทียบทั้งหมด
         </Link>
       </div>
