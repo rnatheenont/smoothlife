@@ -35,11 +35,11 @@ const MIN_CARDS = 9; // enough to fill a 1920px row with no gap at the seam
 const DRAG_THRESHOLD = 6; // px before a press becomes a drag (and not a click)
 
 // Covers come from Shopify's CDN, which resizes on request. Cards are at most
-// 280px wide, so 560 covers 2x screens at about 40% of the 900px original.
+// 380px wide, so 760 covers 2x screens at about 85% of the 900px original.
 function cardImage(url: string): string {
   try {
     const u = new URL(url);
-    if (u.pathname.includes("/cdn/shop/") || u.hostname === "cdn.shopify.com") u.searchParams.set("width", "560");
+    if (u.pathname.includes("/cdn/shop/") || u.hostname === "cdn.shopify.com") u.searchParams.set("width", "760");
     return u.toString();
   } catch {
     return url;
@@ -227,7 +227,10 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
     <div
       ref={stageRef}
       // pan-y: a sideways swipe moves the row, an up/down swipe still scrolls the page.
-      className="relative h-[230px] cursor-grab touch-pan-y select-none overflow-hidden opacity-0 transition-opacity duration-500 active:cursor-grabbing sm:h-[340px] [--arc-fade:40px] md:[--arc-fade:72px]"
+      // Height is the card plus how far the arc drops it: with R = 2W the
+      // card at the edge of the stage falls about W/16, which on a 1920px
+      // screen is 120px under a 237px card and the 20px it starts at.
+      className="relative h-[250px] cursor-grab touch-pan-y select-none overflow-hidden opacity-0 transition-opacity duration-500 active:cursor-grabbing sm:h-[400px] lg:h-[440px] [--arc-fade:40px] md:[--arc-fade:72px]"
       // The row never ends, so both edges are always a card cut in half. On
       // a wide screen that card is far from the eye and the cut passes for
       // the row continuing; on a phone, where only about one and a half
@@ -256,7 +259,7 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
               e.preventDefault();
               setActiveKey(a.key);
             }}
-            className={`absolute left-0 top-5 block aspect-[16/10] w-[200px] origin-center overflow-hidden rounded-2xl bg-surface-mist shadow-[0_14px_32px_-14px_rgba(15,23,42,0.45)] outline-none will-change-transform focus-visible:ring-2 focus-visible:ring-brand-800 sm:w-[280px] ${
+            className={`absolute left-0 top-5 block aspect-[16/10] w-[230px] origin-center overflow-hidden rounded-2xl bg-surface-mist shadow-[0_14px_32px_-14px_rgba(15,23,42,0.45)] outline-none will-change-transform focus-visible:ring-2 focus-visible:ring-brand-800 sm:w-[320px] lg:w-[380px] ${
               a.key === activeKey ? "ring-2 ring-brand-teal" : "ring-1 ring-black/5"
             }`}
           >
@@ -265,12 +268,12 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
                 src={cardImage(a.image)}
                 alt=""
                 fill
-                sizes="280px"
+                sizes="(min-width: 1024px) 380px, (min-width: 640px) 320px, 230px"
                 draggable={false}
                 className="pointer-events-none object-cover"
               />
             )}
-            <span className="absolute bottom-2.5 left-2.5 max-w-[85%] truncate rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-800 shadow-sm backdrop-blur-sm sm:text-[12px]">
+            <span className="absolute bottom-3 left-3 max-w-[85%] truncate rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-800 shadow-sm backdrop-blur-sm sm:text-[13px] sm:px-3.5 sm:py-1.5">
               {a.title}
             </span>
           </Link>
@@ -291,7 +294,13 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
                   // inside it the cards' shadows and rounded corners were being
                   // sliced flat against the top and bottom of the rail.
                   ref={railRef}
-                  className="-m-2 flex snap-x snap-mandatory gap-3 overflow-x-auto p-2 scrollbar-none md:gap-4">
+                  // safe center, not plain center: a post with enough products
+                  // to overflow the rail would have its first card pushed off
+                  // the left edge with no way to scroll back to it. `safe`
+                  // falls back to flex-start exactly in that case, so a short
+                  // shelf sits in the middle and a long one still starts at
+                  // the left and scrolls.
+                  className="-m-2 flex snap-x snap-mandatory gap-3 overflow-x-auto p-2 [justify-content:safe_center] scrollbar-none md:gap-4">
             {shelf.map((p) => (
               <li
                 key={p.slug}
