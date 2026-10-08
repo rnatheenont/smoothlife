@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, Loader2, AlertTriangle, MapPin, QrCode, CreditCard, Award, Ticket } from "lucide-react";
+import { ShieldCheck, Loader2, AlertTriangle, MapPin, QrCode, CreditCard, Award, Ticket, ChevronLeft } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
@@ -15,6 +15,7 @@ import type { AddressRow } from "@/app/api/account/addresses/route";
 import MobileStickyBar from "@/components/MobileStickyBar";
 import CouponPicker from "@/components/CouponPicker";
 import { Button } from "@/components/ui";
+import { useLoginModal } from "@/lib/login-modal-context";
 
 // Paid directly through 2C2P (card + QR PromptPay) — the customer never
 // leaves smoothlife.com for a Shopify-hosted checkout page. Real Shopify
@@ -24,6 +25,7 @@ import { Button } from "@/components/ui";
 export default function CustomCheckout() {
   const { lines, couponQuote, clear } = useCart();
   const { user } = useAuth();
+  const { open: openLogin } = useLoginModal();
   const { lang } = useLang();
   // Deliberately not useOrderTotals() here — that hook also layers in the
   // referral-cookie discount and the subscribe-flow's own SUB3/6/12 codes,
@@ -114,13 +116,31 @@ export default function CustomCheckout() {
 
   return (
     <div className="container-page py-8 md:py-10">
-      <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">ดำเนินการชำระเงิน</h1>
+      <h1 className="text-2xl md:text-3xl font-bold text-brand-ink">ดำเนินการชำระเงิน</h1>
+      {/* The way back. Changing your mind about a quantity on the last screen
+          is ordinary, and without this the only route to it is the browser's
+          own back button or the tab bar — neither of which says it is safe. */}
+      <Link
+        href="/cart"
+        className="mb-2 -ml-1 inline-flex h-11 items-center gap-1 px-1 text-sm font-medium text-slate-500 transition-colors hover:text-brand-800"
+      >
+        <ChevronLeft size={15} aria-hidden /> กลับไปแก้ไขตะกร้า
+      </Link>
       {!user && (
         <div className="mb-6 flex items-center justify-between gap-3 rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-4 text-sm">
           <span className="text-slate-600">
             สั่งซื้อแบบไม่ต้องสมัครสมาชิกได้เลย — แต่จะไม่ได้แต้มสะสมและสิทธิ์สมาชิกจนกว่าจะสมัคร
           </span>
-          <Button size="sm" className="shrink-0 whitespace-nowrap" href="/account/login?returnTo=/checkout">
+          {/* Opens the dialog rather than navigating: this is the last
+              screen before paying, and sending somebody off it to answer who
+              they are is how a cart gets abandoned. 32px before, too, on a
+              button sat next to three lines of text. */}
+          <Button
+            type="button"
+            size="sm"
+            className="h-11 shrink-0 whitespace-nowrap"
+            onClick={() => openLogin("/checkout")}
+          >
             เข้าสู่ระบบ
           </Button>
         </div>
@@ -208,11 +228,19 @@ export default function CustomCheckout() {
         </div>
 
         <MobileStickyBar hideWhenVisible={submitButtonRef}>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-slate-500">ยอดรวมทั้งหมด</p>
-            <p className="text-sm font-bold text-brand-ink">{formatTHB(total)}</p>
+          <div className="min-w-0 shrink-0">
+            <p className="text-[11px] text-slate-500">ยอดรวมทั้งหมด</p>
+            <p className="text-base font-bold leading-tight text-brand-ink">{formatTHB(total)}</p>
           </div>
-          <Button className="text-xs shrink-0 active:scale-95 transition-transform" type="submit" disabled={submitting || !addressReady || lines.length === 0}>
+          {/* The only action on the screen, at the size that says so — it was
+              a 36px button sharing the row with the total. Same bar as the
+              cart's, so the two screens hand over to each other. */}
+          <Button
+            size="lg"
+            className="min-w-0 flex-1 active:scale-95"
+            type="submit"
+            disabled={submitting || !addressReady || lines.length === 0}
+          >
             {submitting && <Loader2 size={14} className="animate-spin" />}
             {submitting ? "กำลังไป…" : "ชำระเงิน"}
           </Button>
