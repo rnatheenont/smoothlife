@@ -52,8 +52,17 @@ export default function RewardsOverviewCard() {
   async function load() {
     try {
       const res = await fetch("/api/checkin");
-      const json = await res.json();
-      setData(json);
+      // Only a 200 carries a status payload. A 401 — which is what a stale
+      // or cleared session cookie produces, while the browser still has a
+      // user in context — answers with {ok:false,error} instead, and
+      // storing that as if it were the status is what put an object with no
+      // `recovery` on it into state.
+      if (!res.ok) return;
+      setData(await res.json());
+    } catch {
+      // Offline or a bad payload: the card falls back to what the user
+      // object already knows, which is the whole point of the fallback on
+      // pointBalance below.
     } finally {
       setLoading(false);
     }
@@ -83,7 +92,12 @@ export default function RewardsOverviewCard() {
   const badge = tierBadge[user.tier];
   const card = tierCard[user.tier];
   const TierIcon = badge.icon;
-  const pointBalance = data?.recovery.pointBalance ?? user.points;
+  // data?.recovery?.pointBalance, with the second ?. earned the hard way:
+  // the optional chain used to stop after `data`, so the moment the fetch
+  // answered with anything that was not a status payload, this read
+  // .pointBalance off undefined and the error boundary took the entire
+  // account page down — not this card, the page.
+  const pointBalance = data?.recovery?.pointBalance ?? user.points;
   const spend = user.tierSpend ?? 0;
   const progress = loyaltyTierProgress(spend, user.tierOrders ?? 0);
   const topThreshold = TIER_CRITERIA[TIER_CRITERIA.length - 1].minSpend;
@@ -155,7 +169,7 @@ export default function RewardsOverviewCard() {
             </span>
             <span className="text-sm text-slate-500">แต้มสะสม</span>
           </p>
-          <Link href="/account/points" className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-brand-800">
+          <Link href="/account/points" className="-mr-2 flex h-11 items-center pr-2 shrink-0 gap-0.5 text-xs font-semibold text-brand-800">
             ดูทั้งหมด <ChevronRight size={12} />
           </Link>
         </div>

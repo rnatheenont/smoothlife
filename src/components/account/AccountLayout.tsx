@@ -150,7 +150,9 @@ function AccountShell({ children }: { children: ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold whitespace-nowrap transition-colors ${
+                    // h-11: this strip is how the whole account area is
+                    // navigated on a phone, and every chip in it was 34px.
+                    className={`flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-xs font-semibold whitespace-nowrap transition-colors ${
                       active ? "border-brand-action bg-brand-action text-white" : "border-surface-line text-slate-600"
                     }`}
                     aria-current={active ? "page" : undefined}

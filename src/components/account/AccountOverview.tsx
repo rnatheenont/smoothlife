@@ -151,7 +151,12 @@ export default function AccountOverview() {
         <div className="rounded-xl2 bg-white shadow-card lg:hidden">
           <div className="flex items-center justify-between border-b border-surface-line px-4 py-3">
             <h2 className="text-sm font-bold text-brand-ink">การซื้อของฉัน</h2>
-            <Link href="/account/orders" className="flex items-center gap-0.5 text-xs font-semibold text-brand-800">
+            {/* -mr-2 pr-2: the 44px it needs reaches into the row's own
+                padding rather than pushing the heading across. */}
+            <Link
+              href="/account/orders"
+              className="-mr-2 flex h-11 items-center gap-0.5 pr-2 text-xs font-semibold text-brand-800"
+            >
               ดูประวัติการซื้อ <ChevronRight size={14} />
             </Link>
           </div>
