@@ -20,6 +20,13 @@ const FADE = 56;
 /** Scroll positions this close to an end count as being at it. */
 const EPSILON = 4;
 
+/** Where the fade starts applying. Below this the rail is a thumb-driven
+ *  shelf two cards wide, and fading a third of the card you are dragging
+ *  towards reads as the card being broken rather than as a hint. The flash
+ *  sale band, which has no fade at any width, is what the phone shelves are
+ *  matched to here. */
+const FADE_FROM = "(min-width: 768px)";
+
 /** Pass a ref when the rail already has one of its own — for arrows, a
  *  progress bar, anything that needs to scroll it; otherwise take the one
  *  returned. */
@@ -29,6 +36,17 @@ export function useRailFade<T extends HTMLElement = HTMLUListElement>(
   const own = useRef<T>(null);
   const ref = external ?? own;
   const [edges, setEdges] = useState({ start: false, end: false });
+  // Server-rendered as false and settled on mount: a mask that appears a
+  // frame late costs nothing, where one that disappears would flash.
+  const [faded, setFaded] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia(FADE_FROM);
+    const sync = () => setFaded(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const sync = useCallback(() => {
     const el = ref.current;
@@ -69,7 +87,7 @@ export function useRailFade<T extends HTMLElement = HTMLUListElement>(
   const left = edges.start ? FADE : 0;
   const right = edges.end ? FADE : 0;
   const image = `linear-gradient(to right, transparent 0, #000 ${left}px, #000 calc(100% - ${right}px), transparent 100%)`;
-  const style: CSSProperties = { maskImage: image, WebkitMaskImage: image };
+  const style: CSSProperties = faded ? { maskImage: image, WebkitMaskImage: image } : {};
 
   return { ref, style };
 }
