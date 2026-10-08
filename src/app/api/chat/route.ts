@@ -471,7 +471,7 @@ export async function POST(req: NextRequest) {
               .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
               .map(async (b) => {
                 if (b.name !== KB_TOOL.name) {
-                  return { type: "tool_result" as const, tool_use_id: b.id, content: runChatTool(b.name, b.input) };
+                  return { type: "tool_result" as const, tool_use_id: b.id, content: await runChatTool(b.name, b.input) };
                 }
                 const result = await runKbTool(b.input);
                 kbMatches.push(...result.matches.map((m) => m.article_id));

@@ -622,3 +622,50 @@ export async function getPublishedProductContent(
     return null;
   }
 }
+
+/**
+ * The blocks a person wrote for this product, as plain text for the chat
+ * assistant.
+ *
+ * This is the content the product page actually shows, and until now the
+ * assistant could not see a word of it: get_product_details answered from
+ * the catalogue fields alone, so anything the team wrote by hand — the real
+ * "how to use", the ingredient notes, who it suits — was invisible to the
+ * one part of the shop that gets asked about it most.
+ *
+ * Thai only. The assistant is told to answer in the customer's language and
+ * translates as it goes, so sending both copies would double the tokens to
+ * say the same thing twice.
+ */
+export function productContentForPrompt(blocks: ContentBlock[]): string {
+  const out: string[] = [];
+  for (const b of blocks) {
+    if (b.hidden) continue;
+    const heading = "headingTh" in b ? b.headingTh?.trim() : undefined;
+    const label = (fallback: string) => heading || FIXED_HEADING[b.type]?.th || fallback;
+    switch (b.type) {
+      case "paragraph":
+      case "image_text":
+        if (b.bodyTh?.trim()) out.push(`${heading ? `${heading}: ` : ""}${b.bodyTh.trim()}`);
+        break;
+      case "bullet_list":
+        if (b.itemsTh?.length) out.push(`${label("รายละเอียด")}: ${b.itemsTh.join("; ")}`);
+        break;
+      case "ingredients":
+      case "who_for":
+      case "how_to_use":
+        if (b.itemsTh?.length) out.push(`${label(b.type)}: ${b.itemsTh.join("; ")}`);
+        break;
+      case "spec_table":
+        if (b.rows?.length) {
+          out.push(`ข้อมูลจำเพาะ: ${b.rows.map((r) => `${r.labelTh} ${r.valueTh}`).join("; ")}`);
+        }
+        break;
+      // image and video carry no text worth the tokens — a caption without
+      // the picture it belongs to is a sentence about nothing.
+      default:
+        break;
+    }
+  }
+  return out.join("\n");
+}

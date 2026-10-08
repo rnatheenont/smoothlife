@@ -11,7 +11,10 @@ import { pgValue, supabaseRest } from "@/lib/supabase-server";
 
 export type KbStatus = "draft" | "published" | "needs_review" | "archived";
 export type KbCategory = "faq" | "policy" | "product" | "ingredient" | "loyalty" | "shipping" | "payment";
-export type KbSource = "manual" | "shopify_sync" | "chat_promoted";
+// "shopify_sync" is gone: the catalogue used to be copied in as one article
+// per product, and the assistant now reads a product's own page content
+// through get_product_details instead of a second copy of it.
+export type KbSource = "manual" | "chat_promoted";
 
 export type KbArticle = {
   id: string;
@@ -296,4 +299,41 @@ export async function logAiAnswer(entry: {
     // Logging must never cost the customer their answer.
     console.error("[kb] logging the answer failed", err);
   }
+}
+
+/**
+ * Articles whose chunks have no embedding yet — everything written before an
+ * embedding provider was configured. Reindexing rewrites them with one, so the
+ * search quietly upgrades itself instead of waiting for someone to press a
+ * button in an admin screen they may never open.
+ */
+export async function backfillEmbeddings(budgetMs = 60_000): Promise<{ indexed: number; remaining: number }> {
+  if (!process.env.VOYAGE_API_KEY) return { indexed: 0, remaining: 0 };
+
+  // The team's own articles first, always. They are the ones customers
+  // paraphrase ("ส่งของถึงมือกี่วัน" for "ใช้เวลาจัดส่งกี่วัน"). There used to
+  // be two thousand catalogue chunks queued ahead of them; those are gone, so
+  // what is left is only what a person wrote.
+  const pending = await supabaseRest<{ article_id: string }[]>(
+    "kb_chunks?embedding=is.null&select=article_id,kb_articles!inner(id)&kb_articles.status=eq.published&limit=3000"
+  ).catch((): { article_id: string }[] => []);
+
+  const ids = [...new Set(pending.map((c) => c.article_id))];
+  if (ids.length === 0) return { indexed: 0, remaining: 0 };
+
+  const started = Date.now();
+  let indexed = 0;
+  // Twenty at a time: one embedding request per round, which is what the
+  // provider's per-minute limit actually counts.
+  for (let i = 0; i < ids.length; i += 20) {
+    if (Date.now() - started > budgetMs) break;
+    const slice = ids.slice(i, i + 20);
+    const articles = await supabaseRest<Pick<KbArticle, "id" | "title" | "content">[]>(
+      `kb_articles?id=in.(${slice.map(pgValue).join(",")})&select=id,title,content`
+    );
+    const result = await reindexArticles(articles);
+    if (!result.embedded) break; // rate-limited or down; tomorrow's run continues
+    indexed += articles.length;
+  }
+  return { indexed, remaining: Math.max(0, ids.length - indexed) };
 }

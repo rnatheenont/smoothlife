@@ -14,6 +14,7 @@
 
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Product } from "@/data/types";
+import { getProductContentOverride, productContentForPrompt } from "@/lib/product-content";
 import { products, getProductBySlug } from "@/data/products";
 import { categories, concerns as siteConcerns } from "@/data/categories";
 import classesJson from "@/data/skin-product-classes.json";
@@ -202,9 +203,14 @@ function resultLine(p: Product) {
   return `${p.slug} | ${p.name.slice(0, 110)} | ${p.brand} | ${priceText(p)} | ${p.category}${kind} | ${stockText(p)}${short}`;
 }
 
-function productDetails(slug: string) {
+async function productDetails(slug: string) {
   const p = getProductBySlug(slug);
   if (!p) return `No product with slug "${slug}". Use a slug exactly as search_products returned it.`;
+
+  // What the team wrote for this product's own page. The catalogue fields
+  // below are generated; this is the part a person checked.
+  const override = await getProductContentOverride(p.variantId).catch(() => null);
+  const written = override?.published ? productContentForPrompt(override.blocks) : "";
   const sizes =
     p.variants.length > 1 ? p.variants.map((v) => `  - ${v.size || "Default"}: ฿${v.price}`).join("\n") : "";
   const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}…` : s);
@@ -215,6 +221,7 @@ function productDetails(slug: string) {
     p.ingredients ? `ingredients: ${clip(p.ingredients, 400)}` : "",
     p.whoFor ? `who it's for: ${clip(p.whoFor, 200)}` : "",
     sizes ? `sizes:\n${sizes}` : "",
+    written ? `from the product page (written by the team):\n${written}` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -261,7 +268,7 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
 ];
 
 /** Runs one tool call from the model and returns the text to send back. */
-export function runChatTool(name: string, input: unknown): string {
+export async function runChatTool(name: string, input: unknown): Promise<string> {
   const args = (input && typeof input === "object" ? input : {}) as Record<string, unknown>;
   if (name === "search_products") {
     const found = searchProducts({
@@ -276,7 +283,7 @@ export function runChatTool(name: string, input: unknown): string {
     return found.map(resultLine).join("\n");
   }
   if (name === "get_product_details") {
-    return productDetails(typeof args.slug === "string" ? args.slug : "");
+    return await productDetails(typeof args.slug === "string" ? args.slug : "");
   }
   return `Unknown tool ${name}.`;
 }

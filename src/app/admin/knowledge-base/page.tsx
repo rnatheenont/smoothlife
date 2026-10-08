@@ -68,10 +68,6 @@ export default function AdminKnowledgeBasePage() {
   // top of the other.
   const [tab, setTab] = useState<"articles" | "blocked">("articles");
   const [confirming, setConfirming] = useState<string | null>(null);
-  const [source, setSource] = useState<"curated" | "shopify_sync" | "all">(
-    "curated",
-  );
-  const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
   const [truncated, setTruncated] = useState(false);
 
   const [open, setOpen] = useState(false);
@@ -82,14 +78,13 @@ export default function AdminKnowledgeBasePage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/kb/articles?source=${source}`, {
+      const res = await fetch("/api/admin/kb/articles", {
         cache: "no-store",
       });
       const data = await res.json();
       if (!res.ok || !data.ok)
         throw new Error(data.error || "โหลดฐานความรู้ไม่สำเร็จ");
       setArticles(data.articles);
-      setSourceCounts(data.sourceCounts ?? {});
       setTruncated(Boolean(data.truncated));
       setEmbeddings(data.embeddings);
       setError(null);
@@ -98,7 +93,7 @@ export default function AdminKnowledgeBasePage() {
     } finally {
       setLoading(false);
     }
-  }, [source]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -178,61 +173,8 @@ export default function AdminKnowledgeBasePage() {
     }
   };
 
-  const [syncing, setSyncing] = useState(false);
   const [syncNote, setSyncNote] = useState<string | null>(null);
-  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/admin/kb/sync-products")
-      .then((r) => r.json())
-      .then((d) => d.ok && setLastSyncAt(d.lastSyncAt))
-      .catch(() => {});
-  }, []);
-
-  // The catalogue is rebuilt from Shopify when a product changes, and a cron
-  // pulls it in every morning — this is the "now" button.
-  const syncProducts = async () => {
-    setSyncing(true);
-    setSyncNote(null);
-    setError(null);
-    try {
-      // The catalogue is walked in slices; keep asking for the next one.
-      const totals = { created: 0, updated: 0, unchanged: 0, archived: 0 };
-      let offset: number | null = 0;
-      let lastAt: string | null = null;
-      while (offset !== null) {
-        const res = await fetch("/api/admin/kb/sync-products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ offset }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.ok)
-          throw new Error(data.error || "ซิงก์ไม่สำเร็จ");
-        totals.created += data.created;
-        totals.updated += data.updated;
-        totals.unchanged += data.unchanged;
-        totals.archived += data.archived;
-        lastAt = data.lastSyncAt;
-        offset = data.nextOffset;
-        setSyncNote(
-          `กำลังซิงก์… เพิ่มใหม่ ${totals.created} · อัปเดต ${totals.updated} · เหมือนเดิม ${totals.unchanged}`,
-        );
-      }
-      setSyncNote(
-        `เพิ่มใหม่ ${totals.created} · อัปเดต ${totals.updated} · เหมือนเดิม ${totals.unchanged}${totals.archived ? ` · เก็บเข้าคลัง ${totals.archived}` : ""}`,
-      );
-      setLastSyncAt(lastAt);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "ซิงก์ไม่สำเร็จ");
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   const [indexing, setIndexing] = useState(false);
-  // Only needed once, when an embedding provider is added after the fact.
   const reindexAll = async () => {
     setIndexing(true);
     setSyncNote(null);
@@ -355,10 +297,6 @@ export default function AdminKnowledgeBasePage() {
 
   /** Every filter that is not at its default, with the way to switch it off. */
   const activeFilters = [
-    source !== "all" && {
-      label: `แหล่งที่มา: ${source === "curated" ? "ทีมเขียนเอง" : "จากสินค้า"}`,
-      clear: () => setSource("all"),
-    },
     statusFilter !== "all" && {
       label: `สถานะ: ${statusFilter === "review_due" ? "ถึงรอบรีวิว" : STATUS_TH[statusFilter]}`,
       clear: () => setStatusFilter("all"),
@@ -391,12 +329,6 @@ export default function AdminKnowledgeBasePage() {
             น้อง Smoothie ตอบลูกค้าได้เฉพาะจากบทความที่{" "}
             <strong>เผยแพร่แล้ว</strong> ในหน้านี้เท่านั้น — เรื่องไหนไม่มีในนี้
             ระบบจะส่งต่อให้ทีมงานตอบ ไม่เดาคำตอบเอง
-            {lastSyncAt && (
-              <span className="mt-0.5 block text-slate-400">
-                ซิงก์ข้อมูลสินค้าล่าสุด {thaiDate(lastSyncAt)} ·
-                ระบบซิงก์ให้เองทุกเช้า
-              </span>
-            )}
           </>
         }
         actions={
@@ -476,15 +408,6 @@ export default function AdminKnowledgeBasePage() {
               </span>
               <button
                 type="button"
-                onClick={syncProducts}
-                disabled={syncing}
-                title="ดึงคำอธิบาย ส่วนผสม วิธีใช้ และราคา จากแคตตาล็อกสินค้าเข้าฐานความรู้"
-                className="rounded-full px-3 py-1.5 text-xs font-semibold text-brand-800 ring-1 ring-surface-line hover:bg-surface-soft disabled:opacity-60"
-              >
-                {syncing ? "กำลังซิงก์สินค้า…" : "ซิงก์ข้อมูลสินค้า"}
-              </button>
-              <button
-                type="button"
                 onClick={seedStarters}
                 disabled={seeding}
                 title="นำศูนย์ช่วยเหลือ และวิธีใช้งานสแกนผิว/ช้อปตามปัญหาผิว เข้าฐานความรู้ — บทความวิธีใช้งานจะอัปเดตตามต้นฉบับในโค้ด ส่วนบทความศูนย์ช่วยเหลือที่นำเข้าแล้วจะไม่ถูกเขียนทับ"
@@ -515,26 +438,6 @@ export default function AdminKnowledgeBasePage() {
               Counts now sit inside the menu they belong to, and vanish when
               the list is truncated rather than contradicting the one above. */}
           <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
-              แหล่งที่มา
-              <AdminSelect
-                label="ที่มา"
-                value={source}
-                onChange={(v) => setSource(v as typeof source)}
-                options={[
-                  { value: "all", label: "ทั้งหมด" },
-                  {
-                    value: "curated",
-                    label: `ทีมเขียนเอง (${(sourceCounts.manual ?? 0) + (sourceCounts.chat_promoted ?? 0)})`,
-                  },
-                  {
-                    value: "shopify_sync",
-                    label: `จากสินค้า (${sourceCounts.shopify_sync ?? 0})`,
-                  },
-                ]}
-              />
-            </label>
-
             <label className="flex items-center gap-1.5 text-[11px] text-slate-500">
               สถานะ
               <AdminSelect
@@ -598,7 +501,6 @@ export default function AdminKnowledgeBasePage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setSource("all");
                       setStatusFilter("all");
                       setCategoryFilter("all");
                       setQuery("");

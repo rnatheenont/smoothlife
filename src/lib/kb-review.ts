@@ -25,7 +25,7 @@ const DAY = 24 * 60 * 60 * 1000;
 
 /** Product articles are rewritten from the catalogue daily; they review themselves. */
 export function reviewable(article: Pick<KbArticle, "source" | "status">) {
-  return article.status === "published" && article.source !== "shopify_sync";
+  return article.status === "published";
 }
 
 export function reviewDueAt(article: Pick<KbArticle, "category" | "last_reviewed_at" | "created_at">): number {

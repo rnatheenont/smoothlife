@@ -26,14 +26,12 @@ export async function POST(req: NextRequest) {
 
   // Only what is missing: an article whose chunks already carry embeddings
   // does not need paying for again.
-  // Team-written articles before catalogue ones — see backfillEmbeddings.
   const pending = await supabaseRest<{ article_id: string; kb_articles: { source: string } }[]>(
     "kb_chunks?embedding=is.null&select=article_id,kb_articles!inner(source)&kb_articles.status=eq.published&limit=5000"
   );
   const ids = [
     ...new Set(
       [...pending]
-        .sort((a, b) => Number(a.kb_articles?.source === "shopify_sync") - Number(b.kb_articles?.source === "shopify_sync"))
         .map((c) => c.article_id)
     ),
   ];
