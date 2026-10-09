@@ -22,6 +22,19 @@
   they are gone.
 */
 @theme static {
+  /* 1800px — one step past Tailwind's 2xl (96rem), for the product grids on
+     wide monitors.
+
+     Two traps here, both of which silently produce a rule that exists, matches
+     the viewport, and still loses:
+     1. An inline min-[1800px] variant sorts before every named one, so
+        min-[1800px]:grid-cols-6 lost to 2xl:grid-cols-5.
+     2. Declared as 1800px it sorts before sm (40rem) — Tailwind orders
+        breakpoints by raw value and cannot compare px against rem. It has to
+        be rem to land after 2xl.
+     Both measured as 5 columns at 1850px before this was written in rem. */
+  --breakpoint-3xl: 112.5rem;
+
   --color-brand-50: #ebf8f4;
   --color-brand-100: #d1efe7;
   --color-brand-200: #9edecd;

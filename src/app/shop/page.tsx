@@ -85,7 +85,7 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4 2xl:grid-cols-5 min-[1800px]:grid-cols-6">
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
                     {/* The column count climbs with the width rather than the
                         cards growing: a 400px-wide product card is a worse use
                         of a big monitor than two more products on screen. */}
