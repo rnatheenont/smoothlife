@@ -116,9 +116,43 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Publishes how much room the bar is taking right now, so anything that
+  // wants to stick directly beneath it can say top-(--app-header-h) instead
+  // of hard-coding a number that is wrong on half the breakpoints.
+  //
+  // It has to be live rather than a constant: the bar is three different
+  // heights (phone, phone with the promo strip unfolded, desktop with the nav
+  // row), and on a phone it slides away entirely on the way down the page —
+  // at which point the right offset is 0, not its height, or a sticky element
+  // below it would float with a gap where the bar used to be.
+  const headerRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const publish = () => {
+      const hidden = hideHeader && !open;
+      document.documentElement.style.setProperty("--app-header-h", `${hidden ? 0 : el.offsetHeight}px`);
+    };
+    publish();
+    // Both, deliberately. The observer catches the bar changing height in
+    // place — the promo strip folding away on the first scroll. It was not
+    // firing for a viewport resize that changed the same height, so a phone
+    // turned sideways kept the offset from the layout it had before.
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    window.addEventListener("resize", publish);
+    window.addEventListener("orientationchange", publish);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", publish);
+      window.removeEventListener("orientationchange", publish);
+    };
+  }, [hideHeader, open]);
+
   return (
     <>
     <header
+      ref={headerRef}
       className={`sticky top-0 z-40 bg-white/95 backdrop-blur-sm pt-[env(safe-area-inset-top)] transition-transform duration-300 lg:translate-y-0! lg:border-b lg:border-slate-200 ${
         hideHeader && !open ? "-translate-y-full" : "translate-y-0"
       } ${scrolled ? "border-b border-slate-100" : "border-b border-transparent"}`}

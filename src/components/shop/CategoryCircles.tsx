@@ -39,7 +39,23 @@ export default function CategoryCircles({ current }: { current: ShopSearchParams
   return (
     <nav
       aria-label="หมวดหมู่สินค้า"
-      className="scrollbar-none -mx-4 mb-6 flex gap-4 overflow-x-auto px-4 md:mx-0 md:gap-5 md:px-0"
+      // Sticks directly under the app bar so the category you are in, and the
+      // one you want next, stay reachable however far down the grid you are —
+      // 53 products is a lot of scrolling back. transition-[top] matches the
+      // bar's own 300ms slide, so the two move as one piece rather than the
+      // row snapping up a beat early.
+      //
+      // The background is not decoration: without it the product grid scrolls
+      // through the circles. -mx-4/px-4 already let it bleed past the page
+      // gutter on a phone, which is what keeps the bleed looking deliberate
+      // once it is opaque.
+      //
+      // lg:static puts it back the way it was on desktop. The filter sidebar
+      // is already sticky from lg, at its own offset, and a second pinned bar
+      // across the top would have been sitting on the sidebar's first rows —
+      // two things competing for the same corner. Below lg there is no
+      // sidebar, which is exactly where pinning the categories pays.
+      className="scrollbar-none sticky top-(--app-header-h) z-30 -mx-4 mb-6 flex gap-4 overflow-x-auto bg-white/95 px-4 py-3 backdrop-blur-sm transition-[top] duration-300 md:-mx-6 md:gap-5 md:px-6 lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none"
     >
       {items.map((item) => {
         const active = (current.category ?? null) === item.slug;

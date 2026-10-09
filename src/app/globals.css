@@ -731,6 +731,11 @@
    1512 header sitting over 1280 content. */
 :root {
   --page-max: 1512px;
+  /* Overwritten by Header on every resize and every show/hide. The 0 here is
+     what server-rendered HTML and a JS-less page get: a sticky bar flush with
+     the top, which is wrong by the height of the bar for one frame and never
+     wrong in a way that hides content. */
+  --app-header-h: 0px;
 }
 
 .container-page {
