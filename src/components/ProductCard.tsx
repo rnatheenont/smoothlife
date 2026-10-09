@@ -278,13 +278,22 @@ export default function ProductCard({ product }: { product: Product }) {
                 // back for anyone who cannot see the icon.
                 aria-label={added ? t("เพิ่มแล้ว", "Added") : t("ใส่ตะกร้า", "Add to cart")}
                 className={clsx(
-                  "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full px-1 text-[11px] font-bold text-white transition active:scale-[0.97] @[9rem]:text-[13px] md:h-10 md:ml-auto md:flex-none md:px-5 md:text-sm",
-                  // From md the button is only as wide as its words and sits
-                  // at the end of the row, so the green reads as one control
-                  // rather than a bar under every card. Below md it keeps
-                  // flex-1: there the label is a trolley icon, and a pill
-                  // shrunk to one icon would be a small target on the card
-                  // size where the thumb actually has least room.
+                  "ml-auto flex h-9 items-center justify-center gap-1.5 rounded-full px-4 text-[11px] font-bold text-white transition active:scale-[0.97] @[9rem]:text-[13px] md:h-10 md:min-w-28 md:px-5 md:text-sm",
+                  // Only as wide as its label, at the end of the row, so the
+                  // green reads as one control rather than a bar under every
+                  // card in the grid — the same reason the wishlist heart was
+                  // brought down here instead of sitting on the photo.
+                  //
+                  // px-4 rather than the px-1 this had while it was stretching:
+                  // below md the label is a trolley icon alone, and without
+                  // padding the pill would collapse to about 25px on the card
+                  // size where the thumb has least room to begin with. With it
+                  // the target is 49×36.
+                  //
+                  // md:min-w-28 holds one width across both states. Sized to
+                  // its label, the button grew 21px the moment it turned into
+                  // "เพิ่มแล้ว", which shifted the pill sideways just as the
+                  // eye went to read it. flex-1 used to hide that.
                   // The drifting gradient needs a background wider than the
                   // button (bg-[length:200%_100%]) or there is nowhere for the
                   // position to travel. Confirmation stays flat: "เพิ่มแล้ว" is
