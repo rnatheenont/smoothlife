@@ -194,7 +194,12 @@ export default function FlashSaleCard({ product }: { product: Product }) {
               onClick={handleAdd}
               aria-label={added ? t("เพิ่มแล้ว", "Added") : t("ใส่ตะกร้า", "Add to cart")}
               className={clsx(
-                "flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full px-1 text-[12px] font-bold text-white transition active:scale-[0.97] md:h-9 md:text-[13px]",
+                "ml-auto flex h-8 items-center justify-center gap-1.5 rounded-full px-4 text-[12px] font-bold text-white transition active:scale-[0.97] md:h-9 md:min-w-27 md:px-5 md:text-[13px]",
+                // Same shape as the button on ProductCard: as wide as its
+                // label, at the end of the row, and a floor on that width so
+                // the pill does not step sideways when it becomes "เพิ่มแล้ว".
+                // See the note there for why the padding is px-4 and not px-1
+                // once the button stops stretching.
                 added ? "bg-brand-emerald" : "bg-brand-emerald hover:brightness-105"
               )}
             >
