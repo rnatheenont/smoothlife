@@ -85,7 +85,10 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4 2xl:grid-cols-5">
+                    {/* Five per row only from 2xl. This page gives 256px to the
+                        filter sidebar, so at 1280 five columns would leave 179px
+                        cards — narrower than the two-column phone layout. */}
                     {items.map((p) => (
                       <ProductCard key={p.slug} product={p} />
                     ))}
