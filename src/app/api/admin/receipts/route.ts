@@ -270,7 +270,12 @@ export async function GET(req: NextRequest) {
 
   const contactHits = new Map<string, ContactOrders>();
   const needContact = new Map<string, EntryRow>();
-  for (const r of queuePage) {
+  // Both pages, not just the queue. A decided row was falling through to the
+  // ok:false fallback below, so the panel told the reviewer the lookup had
+  // failed and to refresh — for a question nobody had asked. Revisiting a
+  // decision is exactly when these candidates are wanted, and the per-contact
+  // de-duplication and the cap of 20 still hold across the two pages.
+  for (const r of [...queuePage, ...decidedPage]) {
     const c = claimedOrderOf(r);
     if (!c || c.found) continue;
     const key = contactKey(r);

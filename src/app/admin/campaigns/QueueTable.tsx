@@ -194,14 +194,55 @@ function ContactOrders({ item }: { item: QueueItem }) {
   const sameDay = (iso: string | null) =>
     Boolean(iso && item.declared.paidAt && iso.slice(0, 10) === item.declared.paidAt.slice(0, 10));
 
+  /**
+   * How much of the number the customer typed is in this order's own number.
+   *
+   * They copy whatever the slip shows them, and the slip is not always the
+   * shop's order name: the one that started this showed a 2C2P invoice,
+   * 2610002021242, against orders the shop calls #4418. Comparing the two as
+   * strings answers "no" to a question nobody asked. The longest run of
+   * digits the two share answers the one that matters — is the shop's number
+   * buried in what they wrote — and a short run is no evidence at all, so
+   * three digits is the floor.
+   */
+  const claimDigits = (item.declared.orderNumber ?? "").replace(/\D/g, "");
+  const sharedRun = (name: string) => {
+    const a = claimDigits;
+    const b = name.replace(/\D/g, "");
+    if (!a || !b) return 0;
+    let best = 0;
+    for (let i = 0; i < b.length; i++) {
+      for (let j = i + best + 1; j <= b.length; j++) {
+        if (a.includes(b.slice(i, j))) best = j - i;
+        else break;
+      }
+    }
+    return best;
+  };
+  // A run only counts when it is the shop's *whole* number sitting inside
+  // what they typed, or long enough that coincidence is out. Shopify names
+  // orders here with four digits (#4418) and the claim was thirteen long, so
+  // "three digits in common" picks a stranger's order roughly whenever it is
+  // asked: #2242 shares 2-2-4 with 2610002021242 and means nothing by it.
+  const scored = orders.map((o) => {
+    const run = sharedRun(o.name);
+    const len = o.name.replace(/\D/g, "").length;
+    return { o, run, strong: run >= 3 && (run === len || run >= 6) };
+  });
+  const best = scored.filter((s) => s.strong).sort((x, y) => y.run - x.run)[0];
+  const nearestName = best?.o.name ?? null;
+  // Closest first, so the one worth opening is the one at the top.
+  const ranked = [...scored].sort((x, y) => y.run - x.run).map((s) => s.o);
+
   return (
     <div className="mt-3 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px]">
       <p className="font-semibold text-slate-500">
         คำสั่งซื้อในร้านที่ผูกกับเบอร์หรืออีเมลนี้{who ? <> ({who})</> : null}
       </p>
       <ul className="mt-1.5 space-y-1">
-        {orders.map((o) => {
-          const hit = sameTotal(o.total) || sameDay(o.paidAt);
+        {ranked.map((o) => {
+          const nearest = o.name === nearestName;
+          const hit = sameTotal(o.total) || sameDay(o.paidAt) || nearest;
           return (
             <li
               key={o.name}
@@ -228,6 +269,7 @@ function ContactOrders({ item }: { item: QueueItem }) {
               {o.refunded > 0 && <span className="text-rose-700">คืนแล้ว {formatTHB(o.refunded)}</span>}
               {sameTotal(o.total) && <span className="font-bold">ยอดตรงกับที่ลูกค้าแจ้ง</span>}
               {sameDay(o.paidAt) && <span className="font-bold">วันตรงกับที่ลูกค้าแจ้ง</span>}
+              {nearest && <span className="font-bold">เลขใกล้เคียงที่ลูกค้ากรอก</span>}
             </li>
           );
         })}
@@ -1005,6 +1047,20 @@ export default function QueueTable({
               const dentisteLines = item.lines.filter(
                 (l) => l.kind !== "other",
               );
+              const billTotal =
+                item.dentisteAmount +
+                item.keychainAmount +
+                (item.vipAmount ?? 0);
+              // The customer's figure, and only when nothing of ours stands
+              // behind it: the shop has no order under that number, or there
+              // is no order at all (a receipt sent by hand). A row the shop
+              // *does* know keeps showing ฿0 if that is what it was worth.
+              const declaredOnly =
+                item.orderTotal === null ||
+                item.claimedOrder?.found === false ||
+                item.manual === true
+                  ? item.declared.total
+                  : null;
               return (
                 <tr
                   key={item.id}
@@ -1070,13 +1126,27 @@ export default function QueueTable({
                         row read ฿0 beside a ฿55,000 purchase and looked like
                         the money had been missed. What counts moves to the
                         line under it, and only appears when the two differ. */}
-                    <span className="font-semibold tabular-nums text-brand-ink">
-                      {formatTHB(
-                        item.dentisteAmount +
-                          item.keychainAmount +
-                          (item.vipAmount ?? 0),
-                      )}
-                    </span>
+                    {billTotal === 0 && declaredOnly !== null ? (
+                      // Every figure above is read off the shop's copy of the
+                      // order, so a receipt whose number the shop has never
+                      // seen totalled ฿0 — which reads as "this purchase was
+                      // worth nothing" rather than "we have no record of it".
+                      // The customer's own figure is all there is, and it is
+                      // written in the colour the row's other unverified
+                      // claims use, never as the black confirmed number.
+                      <>
+                        <span className="font-semibold tabular-nums text-amber-800">
+                          {formatTHB(declaredOnly)}
+                        </span>
+                        <span className="block whitespace-nowrap text-[11px] font-semibold text-amber-800">
+                          ลูกค้าแจ้ง · ยังไม่ยืนยัน
+                        </span>
+                      </>
+                    ) : (
+                      <span className="font-semibold tabular-nums text-brand-ink">
+                        {formatTHB(billTotal)}
+                      </span>
+                    )}
                     {(item.vipAmount ?? 0) > 0 && (
                       <span className="block whitespace-nowrap text-[11px] font-semibold text-amber-800">
                         นับสิทธิ์{" "}
