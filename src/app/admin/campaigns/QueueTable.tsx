@@ -164,6 +164,53 @@ function OrderNumber({ item }: { item: QueueItem }) {
  * not a match: the same ฿735 twice in a month is ordinary, and which order
  * the photo actually shows is still theirs to say.
  */
+/**
+ * Correcting the number the customer typed.
+ *
+ * Only shown when it found nothing, because that is the only time it is in
+ * doubt — a claim the shop recognised needs no second opinion. Saving runs
+ * the recalculation, so the amount and the entries follow from it rather
+ * than waiting on a second button nobody would know to press.
+ */
+function OrderNumberFix({
+  item,
+  busy,
+  onSave,
+}: {
+  item: QueueItem;
+  busy: boolean;
+  onSave: (orderNumber: string) => void;
+}) {
+  const typed = item.declared.orderNumber ?? item.claimedOrder?.number ?? "";
+  const [value, setValue] = useState(typed);
+  if (!item.claimedOrder || item.claimedOrder.found) return null;
+
+  const changed = value.trim() !== "" && value.trim() !== typed.trim();
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2 rounded-l border border-surface-line bg-white px-3 py-2 text-[12px]">
+      <span className="text-slate-500">แก้เลขคำสั่งซื้อ</span>
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={typed || "เช่น 4418"}
+        className="min-w-0 flex-1 rounded-lg border border-surface-line px-2 py-1 font-mono text-[12px] text-brand-ink focus:border-brand-800 focus:outline-none"
+      />
+      <button
+        type="button"
+        disabled={!changed || busy}
+        onClick={() => onSave(value.trim())}
+        className="shrink-0 rounded-full bg-brand-800 px-3 py-1 text-[12px] font-semibold text-white disabled:opacity-40"
+      >
+        บันทึกแล้วคำนวณใหม่
+      </button>
+      <span className="w-full text-[11px] text-slate-500">
+        ลูกค้ากรอก <span className="font-mono">{typed || "—"}</span> ·
+        คำที่ลูกค้าเขียนยังเก็บไว้ การแก้นี้บันทึกใน audit log
+      </span>
+    </div>
+  );
+}
+
 function ContactOrders({ item }: { item: QueueItem }) {
   if (!item.contactOrders) return null;
 
@@ -409,6 +456,7 @@ function DetailPanel({
   onClose,
   onDecide,
   onRecalculate,
+  onSetOrderNumber,
   onReopen,
   onDelete,
 }: {
@@ -417,6 +465,7 @@ function DetailPanel({
   onClose: () => void;
   onDecide: (item: QueueItem, action: "approve" | "reject") => void;
   onRecalculate: (item: QueueItem) => void;
+  onSetOrderNumber: (item: QueueItem, orderNumber: string) => void;
   onReopen: (item: QueueItem) => void;
   onDelete: (item: QueueItem) => void;
 }) {
@@ -679,6 +728,11 @@ function DetailPanel({
                   )}
 
                   <ClaimWarning item={item} />
+                  <OrderNumberFix
+                    item={item}
+                    busy={busy === item.id}
+                    onSave={(n) => onSetOrderNumber(item, n)}
+                  />
                   <ContactOrders item={item} />
 
                   {(item.declared.orderNumber ||
@@ -889,6 +943,7 @@ export default function QueueTable({
   decided = false,
   onDecide,
   onRecalculate,
+  onSetOrderNumber,
   onReopen,
   onDelete,
 }: {
@@ -898,6 +953,7 @@ export default function QueueTable({
   decided?: boolean;
   onDecide: (item: QueueItem, action: "approve" | "reject") => void;
   onRecalculate: (item: QueueItem) => void;
+  onSetOrderNumber: (item: QueueItem, orderNumber: string) => void;
   onReopen: (item: QueueItem) => void;
   onDelete: (item: QueueItem) => void;
 }) {
@@ -1226,6 +1282,7 @@ export default function QueueTable({
         onClose={() => setOpenId(null)}
         onDecide={onDecide}
         onRecalculate={onRecalculate}
+        onSetOrderNumber={onSetOrderNumber}
         onReopen={onReopen}
         onDelete={onDelete}
       />

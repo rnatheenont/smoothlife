@@ -203,7 +203,7 @@ export async function GET(req: NextRequest) {
   const claimed = await ordersByName(
     [...queuePage, ...decidedPage]
       .filter((r) => !r.payment_transaction_id)
-      .map((r) => r.declared_order_number ?? r.manual_receipt_no)
+      .map((r) => r.manual_receipt_no ?? r.declared_order_number)
   ).catch(() => new Map());
 
   /**
@@ -221,14 +221,14 @@ export async function GET(req: NextRequest) {
     if (r.payment_transactions?.line_items) {
       return amountsFromLineItems(r.payment_transactions.line_items, rules).lines;
     }
-    const key = normalizeOrderName(r.declared_order_number ?? r.manual_receipt_no);
+    const key = normalizeOrderName(r.manual_receipt_no ?? r.declared_order_number);
     const order = key ? claimed.get(key) : null;
     return order ? amountsFromLineItems(order.lineItems, rules).lines : [];
   };
 
   const claimedOrderOf = (r: EntryRow) => {
     if (r.payment_transaction_id) return null;
-    const key = normalizeOrderName(r.declared_order_number ?? r.manual_receipt_no);
+    const key = normalizeOrderName(r.manual_receipt_no ?? r.declared_order_number);
     if (!key) return null;
     const order = claimed.get(key);
     if (!order) return { found: false as const, number: `#${key}` };

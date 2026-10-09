@@ -295,6 +295,31 @@ export default function Page() {
     }
   }
 
+  /**
+   * Correct the order number on a claim, then recompute from it.
+   *
+   * The customer's own words stay on the record; this writes the reviewer's
+   * reading alongside. The server does the lookup, so a number that still
+   * finds nothing comes back as an error rather than a silent save.
+   */
+  async function setOrderNumber(item: QueueItem, orderNumber: string) {
+    setBusy(item.id);
+    try {
+      const res = await fetch(`/api/admin/receipts/${item.id}${campaignQuery}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "order-number", orderNumber }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "แก้เลขคำสั่งซื้อไม่สำเร็จ");
+      await load();
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "แก้เลขคำสั่งซื้อไม่สำเร็จ");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   // Permanent, so it takes the photos with it — see the DELETE handler. The
   // confirmation is in the panel, beside the receipt it is about to destroy.
   async function removeEntry(item: QueueItem) {
@@ -621,6 +646,7 @@ export default function Page() {
                   busy={busy}
                   onDecide={decide}
                   onRecalculate={recalculate}
+                  onSetOrderNumber={setOrderNumber}
                   onReopen={reopen}
                   onDelete={removeEntry}
                 />
@@ -654,6 +680,7 @@ export default function Page() {
                     decided
                     onDecide={decide}
                     onRecalculate={recalculate}
+                    onSetOrderNumber={setOrderNumber}
                     onReopen={reopen}
                     onDelete={removeEntry}
                   />

@@ -185,6 +185,74 @@ async function reopen(CAMPAIGN: string, id: string, token: string | undefined) {
   return NextResponse.json({ ok: true });
 }
 
+/**
+ * The number on the receipt, as a reviewer reads it.
+ *
+ * Customers copy whatever their slip shows. One wrote 2610002021242 — the
+ * 2C2P invoice — for an order the shop calls #4418, so the lookup found
+ * nothing, the amount totalled ฿0 and the entries could not be computed. The
+ * photo was legible the whole time; only the number was in the wrong
+ * alphabet, and nobody could correct it.
+ *
+ * It writes manual_receipt_no rather than editing what the customer said:
+ * their words stay on the record beside the correction, which is what makes
+ * the audit trail worth keeping. Then it recalculates, because a number
+ * nobody acts on is just another thing to remember to press.
+ */
+async function setOrderNumber(
+  CAMPAIGN: string,
+  id: string,
+  token: string | undefined,
+  raw: unknown,
+) {
+  const typed = typeof raw === "string" ? raw.trim().slice(0, 64) : "";
+  // Digits are what the lookup normalises to, so a value with none of them
+  // can only ever find nothing — better to say so than to save it and let
+  // the recalculation below report a failure it was handed.
+  if (!/\d/.test(typed)) {
+    return NextResponse.json(
+      { ok: false, error: "กรุณาใส่เลขคำสั่งซื้อ (ต้องมีตัวเลข)" },
+      { status: 400 },
+    );
+  }
+
+  const [entry] = await supabaseRest<
+    { id: string; manual_receipt_no: string | null; declared_order_number: string | null }[]
+  >(
+    `receipt_campaign_entries?id=eq.${pgValue(id)}&campaign_key=eq.${pgValue(CAMPAIGN)}` +
+      `&select=id,manual_receipt_no,declared_order_number&limit=1`,
+  ).catch(() => []);
+  if (!entry) {
+    return NextResponse.json({ ok: false, error: "ไม่พบใบเสร็จรายการนี้" }, { status: 404 });
+  }
+
+  await supabaseRest(`receipt_campaign_entries?id=eq.${pgValue(id)}`, {
+    method: "PATCH",
+    returning: false,
+    body: JSON.stringify({ manual_receipt_no: typed }),
+  });
+
+  await supabaseRest("admin_audit_log", {
+    method: "POST",
+    returning: false,
+    body: JSON.stringify({
+      admin_user_id: getAdminSession(token)?.userId ?? null,
+      action: "receipt.order_number",
+      target: id,
+      detail: {
+        campaign: CAMPAIGN,
+        from: entry.manual_receipt_no,
+        to: typed,
+        customerTyped: entry.declared_order_number,
+      },
+    }),
+  }).catch(() => {});
+
+  // Straight into the recalculation, which does the looking up: it reads
+  // manual_receipt_no first, so it sees the number just written.
+  return recalculate(CAMPAIGN, id, token);
+}
+
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const CAMPAIGN = campaignOf(req);
   const { id } = await props.params;
@@ -201,9 +269,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const action = body?.action;
   if (action === "recalculate") return recalculate(CAMPAIGN, id, token);
   if (action === "reopen") return reopen(CAMPAIGN, id, token);
+  if (action === "order-number") return setOrderNumber(CAMPAIGN, id, token, body?.orderNumber);
   if (action !== "approve" && action !== "reject") {
     return NextResponse.json(
-      { ok: false, error: "action ต้องเป็น approve, reject, recalculate หรือ reopen" },
+      { ok: false, error: "action ต้องเป็น approve, reject, recalculate, reopen หรือ order-number" },
       { status: 400 }
     );
   }
