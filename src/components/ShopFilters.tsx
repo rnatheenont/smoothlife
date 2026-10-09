@@ -3,7 +3,7 @@
 import { useRouter, usePathname } from "next/navigation";
 import { concerns } from "@/data/categories";
 import { houseBrands, otherBrands } from "@/data/brands";
-import { PROMO_FILTERS, ShopSearchParams } from "@/lib/filter-products";
+import { multi, PROMO_FILTERS, RATING_STEPS, type FilterCounts, ShopSearchParams } from "@/lib/filter-products";
 import { SlidersHorizontal, Check, X, ChevronDown, Search, Star } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import clsx from "clsx";
@@ -12,16 +12,26 @@ import clsx from "clsx";
 // be a "show more" button that reveals one extra row.
 const VISIBLE_BRANDS = 10;
 
-export type FilterCounts = { brand: Record<string, number> };
+/** The number beside an option: what ticking it would leave you with, given
+ *  everything already ticked. Zero is shown rather than hidden — it says the
+ *  option exists and something else you chose rules it out, which is not the
+ *  same message as the option being missing. */
+function OptionCount({ n }: { n: number }) {
+  return <span className={clsx("text-xs tabular-nums", n === 0 ? "text-slate-300" : "text-slate-400")}>({n})</span>;
+}
 
 export default function ShopFilters({
   current,
   mobileExtra,
   counts,
+  resultCount,
 }: {
   current: ShopSearchParams;
   mobileExtra?: ReactNode;
   counts?: FilterCounts;
+  /** How many products the filters currently leave, for the sheet's own
+   *  button — so the sheet answers "and how many is that?" without closing. */
+  resultCount?: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -48,7 +58,10 @@ export default function ShopFilters({
   // A brand filter reached directly by URL (not by clicking the toggle
   // first) should never be hidden behind a collapsed "show more" — force
   // the full list open whenever the active selection lives past the fold.
-  const selectedBrandIndex = current.brand ? otherBrands.findIndex((b) => b.slug === current.brand) : -1;
+  const selectedBrandIndex = Math.max(
+    -1,
+    ...multi(current.brand).map((slug) => otherBrands.findIndex((b) => b.slug === slug))
+  );
   const brandsExpanded = showAllBrands || (selectedBrandIndex >= 0 && selectedBrandIndex >= VISIBLE_BRANDS);
   const visibleOtherBrands =
     brandsExpanded || otherBrands.length <= VISIBLE_BRANDS ? otherBrands : otherBrands.slice(0, VISIBLE_BRANDS);
@@ -75,10 +88,21 @@ export default function ShopFilters({
     router.push(`/shop?${params.toString()}`);
   }
 
-  const activePromos = (current.promo ?? "").split(",").filter(Boolean);
+  // Brand, concern and promo all hold a comma-separated list now. Brand and
+  // concern used to hold one value, so picking a second silently dropped the
+  // first — with 52 brands on the site, "Smooth E and Eucerin" is an ordinary
+  // thing to want and there was no way to ask for it.
+  const activeBrands = multi(current.brand);
+  const activeConcerns = multi(current.concern);
+  const activePromos = multi(current.promo);
+
+  function toggleIn(param: "brand" | "concern" | "promo", value: string) {
+    const list = multi(current[param]);
+    const next = list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+    updateParams({ [param]: next.join(",") || null });
+  }
   function togglePromo(key: string) {
-    const next = activePromos.includes(key) ? activePromos.filter((k) => k !== key) : [...activePromos, key];
-    updateParams({ promo: next.join(",") || null });
+    toggleIn("promo", key);
   }
 
   function clearSecondaryFilters() {
@@ -108,11 +132,11 @@ export default function ShopFilters({
         </label>
         <div className="flex flex-col gap-0.5">
           {houseBrands.map((b) => {
-            const selected = current.brand === b.slug;
+            const selected = activeBrands.includes(b.slug);
             return (
               <button
                 key={b.slug}
-                onClick={() => updateParam("brand", selected ? null : b.slug)}
+                onClick={() => toggleIn("brand", b.slug)}
                 className={clsx(
                   "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-bold transition-colors",
                   selected ? "bg-brand-gradient-soft text-brand-800" : "text-brand-ink hover:bg-surface-soft"
@@ -127,9 +151,7 @@ export default function ShopFilters({
                   {selected && <Check size={10} className="text-white" strokeWidth={3} />}
                 </span>
                 <span translate="no" className="flex-1">{b.name}</span>
-                {counts?.brand[b.slug] ? (
-                  <span className="text-xs tabular-nums text-slate-400">({counts.brand[b.slug]})</span>
-                ) : null}
+                {counts ? <OptionCount n={counts.brand[b.slug] ?? 0} /> : null}
               </button>
             );
           })}
@@ -138,11 +160,11 @@ export default function ShopFilters({
             {visibleOtherBrands
               .filter((b) => !brandQuery || b.name.toLowerCase().includes(brandQuery.toLowerCase()))
               .map((b) => {
-              const selected = current.brand === b.slug;
+              const selected = activeBrands.includes(b.slug);
               return (
                 <button
                   key={b.slug}
-                  onClick={() => updateParam("brand", selected ? null : b.slug)}
+                  onClick={() => toggleIn("brand", b.slug)}
                   className={clsx(
                     "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm shrink-0 transition-colors",
                     selected ? "bg-brand-gradient-soft font-semibold text-brand-800" : "text-slate-600 hover:bg-surface-soft"
@@ -157,9 +179,7 @@ export default function ShopFilters({
                     {selected && <Check size={10} className="text-white" strokeWidth={3} />}
                   </span>
                   <span translate="no" className="flex-1">{b.name}</span>
-                  {counts?.brand[b.slug] ? (
-                    <span className="text-xs tabular-nums text-slate-400">({counts.brand[b.slug]})</span>
-                  ) : null}
+                  {counts ? <OptionCount n={counts.brand[b.slug] ?? 0} /> : null}
                 </button>
               );
             })}
@@ -232,7 +252,8 @@ export default function ShopFilters({
                 >
                   {on && <Check size={10} className="text-white" strokeWidth={3} />}
                 </span>
-                {f.label}
+                <span className="flex-1">{f.label}</span>
+                {counts ? <OptionCount n={counts.promo[f.key] ?? 0} /> : null}
               </button>
             );
           })}
@@ -242,7 +263,7 @@ export default function ShopFilters({
       <div>
         <h4 className="text-sm font-bold text-brand-ink mb-3">คะแนนสินค้า</h4>
         <div className="flex flex-col gap-0.5">
-          {[4.5, 4, 3.5].map((min) => {
+          {RATING_STEPS.map((min) => {
             const on = current.rating === String(min);
             return (
               <button
@@ -262,7 +283,8 @@ export default function ShopFilters({
                     />
                   ))}
                 </span>
-                {min} ขึ้นไป
+                <span className="flex-1">{min} ขึ้นไป</span>
+                {counts ? <OptionCount n={counts.rating[String(min)] ?? 0} /> : null}
               </button>
             );
           })}
@@ -272,20 +294,30 @@ export default function ShopFilters({
       <div>
         <h4 className="text-sm font-bold text-brand-ink mb-3">ปัญหาผิวที่กังวล</h4>
         <div className="flex flex-col gap-0.5">
-          {concerns.map((c) => (
-            <button
-              key={c.slug}
-              onClick={() => updateParam("concern", current.concern === c.slug ? null : c.slug)}
-              className={clsx(
-                "rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
-                current.concern === c.slug
-                  ? "bg-brand-gradient-soft font-semibold text-brand-800"
-                  : "text-slate-600 hover:bg-surface-soft"
-              )}
-            >
-              {c.nameTh}
-            </button>
-          ))}
+          {concerns.map((c) => {
+            const on = activeConcerns.includes(c.slug);
+            return (
+              <button
+                key={c.slug}
+                onClick={() => toggleIn("concern", c.slug)}
+                className={clsx(
+                  "flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
+                  on ? "bg-brand-gradient-soft font-semibold text-brand-800" : "text-slate-600 hover:bg-surface-soft"
+                )}
+              >
+                <span
+                  className={clsx(
+                    "grid h-4 w-4 shrink-0 place-items-center rounded-sm border-2 transition-colors",
+                    on ? "border-brand-emerald bg-brand-emerald" : "border-slate-300"
+                  )}
+                >
+                  {on && <Check size={10} className="text-white" strokeWidth={3} />}
+                </span>
+                <span className="flex-1">{c.nameTh}</span>
+                {counts ? <OptionCount n={counts.concern[c.slug] ?? 0} /> : null}
+              </button>
+            );
+          })}
         </div>
       </div>
       {(current.category || current.brand || current.concern || current.promo || current.rating || current.minPrice || current.maxPrice) && (
@@ -306,7 +338,20 @@ export default function ShopFilters({
   // Mobile filter sheet: category now lives in its own always-visible chip
   // row on the page (rendered directly below, before the sheet trigger), so
   // this sheet only holds the secondary filters — brand and concern.
-  const activeSecondaryCount = Number(Boolean(current.brand)) + Number(Boolean(current.concern));
+  // Values, not dimensions: three brands and a concern reads as "4", which is
+  // what a shopper would say if asked how many filters they had on.
+  const activeSecondaryCount = activeBrands.length + activeConcerns.length;
+
+  // What the badge on the "ตัวกรอง" button counts. Wider than the sheet's own
+  // tally, because the button speaks for every filter in force — a price
+  // range set on desktop and carried to a phone by the URL was invisible
+  // here, and an unexplained short list is how a shopper decides the shop is
+  // out of stock.
+  const appliedCount =
+    activeSecondaryCount +
+    activePromos.length +
+    (current.rating ? 1 : 0) +
+    (current.minPrice || current.maxPrice ? 1 : 0);
 
   const mobileContent = (
     <div className="flex flex-col gap-7">
@@ -314,17 +359,20 @@ export default function ShopFilters({
         <h4 className="text-xs font-bold text-slate-500 mb-3">แบรนด์ในเครือ · Life So Smooth</h4>
         <div className="flex flex-col rounded-xl border border-brand-emerald/30 mb-4">
           {houseBrands.map((b) => {
-            const selected = current.brand === b.slug;
+            const selected = activeBrands.includes(b.slug);
             return (
               <button
                 key={b.slug}
-                onClick={() => updateParam("brand", selected ? null : b.slug)}
+                onClick={() => toggleIn("brand", b.slug)}
                 className={`flex items-center justify-between px-3.5 py-3 text-sm text-left font-bold border-b border-slate-50 last:border-0 ${
                   selected ? "text-brand-800 bg-brand-gradient-soft" : "text-brand-ink"
                 }`}
               >
-                <span translate="no">{b.name}</span>
-                {selected && <Check size={16} className="text-brand-emerald shrink-0" />}
+                <span translate="no" className="flex-1">{b.name}</span>
+                <span className="flex shrink-0 items-center gap-2">
+                  {counts ? <OptionCount n={counts.brand[b.slug] ?? 0} /> : null}
+                  {selected && <Check size={16} className="text-brand-emerald" />}
+                </span>
               </button>
             );
           })}
@@ -332,17 +380,20 @@ export default function ShopFilters({
         <h4 className="text-xs font-bold text-slate-500 mb-3">แบรนด์อื่นๆ</h4>
         <div className="flex flex-col rounded-xl border border-slate-100">
           {otherBrands.map((b) => {
-            const selected = current.brand === b.slug;
+            const selected = activeBrands.includes(b.slug);
             return (
               <button
                 key={b.slug}
-                onClick={() => updateParam("brand", selected ? null : b.slug)}
+                onClick={() => toggleIn("brand", b.slug)}
                 className={`flex items-center justify-between px-3.5 py-3 text-sm text-left border-b border-slate-50 last:border-0 ${
                   selected ? "font-semibold text-brand-800 bg-brand-gradient-soft" : "text-slate-600"
                 }`}
               >
-                <span translate="no">{b.name}</span>
-                {selected && <Check size={16} className="text-brand-emerald shrink-0" />}
+                <span translate="no" className="flex-1">{b.name}</span>
+                <span className="flex shrink-0 items-center gap-2">
+                  {counts ? <OptionCount n={counts.brand[b.slug] ?? 0} /> : null}
+                  {selected && <Check size={16} className="text-brand-emerald" />}
+                </span>
               </button>
             );
           })}
@@ -351,17 +402,25 @@ export default function ShopFilters({
       <div>
         <h4 className="text-xs font-bold text-slate-500 mb-3">ปัญหาผิวที่กังวล</h4>
         <div className="flex flex-wrap gap-2">
-          {concerns.map((c) => (
-            <button
-              key={c.slug}
-              onClick={() => updateParam("concern", current.concern === c.slug ? null : c.slug)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                current.concern === c.slug ? "bg-brand-gradient text-white" : "bg-surface-soft text-slate-600"
-              }`}
-            >
-              {c.nameTh}
-            </button>
-          ))}
+          {concerns.map((c) => {
+            const on = activeConcerns.includes(c.slug);
+            return (
+              <button
+                key={c.slug}
+                onClick={() => toggleIn("concern", c.slug)}
+                className={`flex h-11 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition-colors ${
+                  on ? "bg-brand-gradient text-white" : "bg-surface-soft text-slate-600"
+                }`}
+              >
+                {c.nameTh}
+                {counts ? (
+                  <span className={clsx("text-xs tabular-nums", on ? "text-white/75" : "text-slate-400")}>
+                    ({counts.concern[c.slug] ?? 0})
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </div>
       {activeSecondaryCount > 0 && (
@@ -384,9 +443,9 @@ export default function ShopFilters({
             className="relative h-10 w-full flex items-center justify-center gap-2 rounded-full border border-slate-200 px-4 text-sm font-medium active:scale-95 transition-transform"
           >
             <SlidersHorizontal size={15} /> ตัวกรอง
-            {activeSecondaryCount > 0 && (
-              <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-brand-gradient text-[10px] font-bold text-white">
-                {activeSecondaryCount}
+            {appliedCount > 0 && (
+              <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-gradient px-1 text-[10px] font-bold text-white">
+                {appliedCount}
               </span>
             )}
           </button>
@@ -413,11 +472,18 @@ export default function ShopFilters({
             </div>
             <div className="flex-1 overflow-y-auto overscroll-contain px-5">{mobileContent}</div>
             <div className="p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shrink-0">
+              {/* The count belongs on the button, not only behind it. Filters
+                  here apply the moment they are tapped, so this number is the
+                  real answer to "how many did that leave me", and a shopper
+                  who sees 3 can take a filter back off without closing the
+                  sheet to find out. */}
               <button
                 onClick={() => setMobileOpen(false)}
-                className="w-full rounded-full bg-brand-gradient text-white font-semibold py-3 text-sm shadow-card"
+                className="w-full rounded-full bg-brand-gradient py-3 text-sm font-semibold text-white shadow-card"
               >
-                ดูสินค้า
+                {typeof resultCount === "number"
+                  ? `ดูสินค้า ${resultCount.toLocaleString("th-TH")} รายการ`
+                  : "ดูสินค้า"}
               </button>
             </div>
           </div>

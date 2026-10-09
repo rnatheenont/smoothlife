@@ -1,10 +1,10 @@
 import { categories } from "@/data/categories";
-import { products } from "@/data/products";
-import { brands, brandSlugAliases, slugifyVendor } from "@/data/brands";
-import { filterProducts, PAGE_SIZE, ShopSearchParams } from "@/lib/filter-products";
+import { filterCounts, filterProducts, PAGE_SIZE, ShopSearchParams } from "@/lib/filter-products";
 import ProductCard from "@/components/ProductCard";
-import ShopFilters, { type FilterCounts } from "@/components/ShopFilters";
+import ShopFilters from "@/components/ShopFilters";
+import ActiveFilterChips from "@/components/shop/ActiveFilterChips";
 import SortSelect from "@/components/SortSelect";
+import SortChips from "@/components/shop/SortChips";
 import Pagination from "@/components/Pagination";
 import ShopHero from "@/components/shop/ShopHero";
 import CategoryCircles from "@/components/shop/CategoryCircles";
@@ -19,20 +19,6 @@ export function generateMetadata() {
   return pageMetadata("shop");
 }
 
-// How many buyable products sit behind each category and brand, counted once
-// from the catalogue rather than per request: the numbers beside a filter say
-// what it holds, not what the current filters have left of it (a count that
-// changed as you ticked boxes would read as stock disappearing).
-function filterCounts(): FilterCounts {
-  const inStock = products.filter((p) => p.inStock);
-  const brand: Record<string, number> = {};
-  for (const b of brands) {
-    const slugs = brandSlugAliases(b);
-    brand[b.slug] = inStock.filter((p) => slugs.includes(slugifyVendor(p.brand))).length;
-  }
-  return { brand };
-}
-
 export default async function ShopPage(props: { searchParams: Promise<ShopSearchParams> }) {
   const searchParams = await props.searchParams;
   const allItems = filterProducts(searchParams);
@@ -41,6 +27,9 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
   const items = await withCustomImages(allItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
   const isList = searchParams.view === "list";
   const activeCategory = categories.find((c) => c.slug === searchParams.category);
+  // Counted per request and against the filters already on, so the number
+  // beside an option is what ticking it would actually leave you with.
+  const counts = filterCounts(searchParams);
 
   return (
     <>
@@ -56,7 +45,12 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
         <CategoryCircles current={searchParams} />
 
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-          <ShopFilters current={searchParams} counts={filterCounts()} mobileExtra={<SortSelect current={searchParams} />} />
+          <ShopFilters
+            current={searchParams}
+            counts={counts}
+            resultCount={allItems.length}
+            mobileExtra={<SortSelect current={searchParams} />}
+          />
 
           <div className="min-w-0 flex-1">
             <div className="mb-4 flex items-center justify-between gap-3">
@@ -64,11 +58,13 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
                 {activeCategory ? activeCategory.nameTh : "สินค้าทั้งหมด"}{" "}
                 <span className="text-sm font-medium text-slate-500">{allItems.length.toLocaleString("th-TH")} รายการ</span>
               </h2>
-              <div className="hidden items-center gap-2 lg:flex">
-                <SortSelect current={searchParams} />
+              <div className="hidden items-center gap-3 lg:flex">
+                <SortChips current={searchParams} />
                 <ViewToggle current={searchParams} />
               </div>
             </div>
+
+            <ActiveFilterChips current={searchParams} />
 
             {items.length === 0 ? (
               <div className="rounded-xl2 bg-white py-20 text-center text-slate-500 shadow-card">
