@@ -204,7 +204,7 @@ export default function SmoothieHeroBand() {
           the row and pushed the whole question a third of that to the left of
           the page's own centre line. It is positioned instead, so it sits
           beside the question without being measured into it. */}
-      <div className="relative mx-auto flex max-w-[1512px] flex-col justify-center px-4 md:min-h-[360px] md:px-6 lg:min-h-[403px]">
+      <div className="container-page relative flex flex-col justify-center md:min-h-[360px] lg:min-h-[403px]">
         <div className="mx-auto w-full max-w-[720px] py-10 text-center md:py-0">
           <p className="text-sm text-slate-500 md:text-base lg:text-lg">
             {t("ผู้ช่วยหาสินค้าที่ใช่สำหรับคุณ", "Your personal product finder")}

@@ -93,7 +93,7 @@ export default function HeroTrio({ banners }: { banners: HeroBanner[] }) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="group relative mx-auto max-w-[1512px] px-4 md:px-6">
+      <div className="container-page group relative">
         {/* The gap is half of it on each side of every tile, so a tile is
             exactly a third of the track and one step is one tile — a `gap`
             between them would make the step a third plus a gap, and the row

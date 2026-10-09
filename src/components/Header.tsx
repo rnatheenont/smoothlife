@@ -201,15 +201,18 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
           </div>
         </div>
       )}
-      {/* Wider than the 1280 the page body sits in: the design puts the
-          logo and the cart near the edges of a 1512 screen, so the bar has
-          its own bed rather than container-page's. */}
+      {/* container-page, the same bed the page body sits in. The bar used to
+          have its own wider one (1512) so the logo and cart sat near the edges
+          of a large screen — but that put the logo 92px to the left of the
+          content underneath it at any width above 1280, which read as two
+          layouts stacked rather than one. Using the class instead of repeating
+          its numbers means the two cannot drift apart again. */}
       {/* A phone gets three columns — menu, logo, actions — because the
           design centres the wordmark and the two sides are not the same
           width. From md the row goes back to a flex line with the search
           field taking the middle. The search field is display:none below md,
           so it is not a column there. */}
-      <div className="mx-auto grid max-w-[1512px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-2 md:flex md:gap-6 md:px-6 lg:py-2.5">
+      <div className="container-page grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-2 md:flex md:gap-6 lg:py-2.5">
         {/* -m-2.5 p-2.5: 44px of thumb around a 24px icon, without the
             padding pushing anything in the row along. */}
         <button className="-m-2.5 shrink-0 justify-self-start p-2.5 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
@@ -315,7 +318,7 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
 
       {/* relative: the mega panel hangs off this bar, edge to edge. */}
       <nav className="relative hidden lg:block border-t border-slate-100">
-        <div className="mx-auto flex max-w-[1512px] items-center gap-8 px-6 py-2.5 text-[15px] font-medium text-slate-700">
+        <div className="container-page flex items-center gap-8 py-2.5 text-[15px] font-medium text-slate-700">
           {deskNav.map((l) =>
             l.mega ? (
               <MegaMenu key={l.href} label={t(l.th, l.en)} href={l.href} />

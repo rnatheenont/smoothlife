@@ -129,7 +129,7 @@ export default function ConcernCoverflow() {
       </div>
 
       <div
-        className="relative mx-auto mt-7 h-[230px] w-full max-w-[1512px] touch-pan-y select-none md:mt-10 md:h-[330px] lg:h-[380px]"
+        className="relative mx-auto mt-7 h-[230px] w-full max-w-[1280px] touch-pan-y select-none md:mt-10 md:h-[330px] lg:h-[380px]"
         onPointerDown={onPointerDown}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -206,7 +206,7 @@ export default function ConcernCoverflow() {
       {/* mt-10, not mt-6: the coverflow card ends in a hard photographic
           edge and the shelf starts with a row of white cards the same width,
           so 24px of air read as the two touching. */}
-      <div className="mx-auto mt-10 max-w-[1512px] px-4 md:px-6">
+      <div className="container-page mt-10">
                   {shelf.length > 0 ? (
             <>
               {/* A rail at every width, and on a wide screen it is cut to

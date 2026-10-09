@@ -55,7 +55,7 @@ export default function CategoryIconRow() {
           // and at lg the page has 976 — so `lg:overflow-visible` took the
           // scrollbar away from a row that still did not fit and pushed the
           // whole page sideways instead.
-          className="mx-auto flex max-w-[1512px] gap-3 overflow-x-auto scroll-smooth px-4 py-5 scrollbar-none md:gap-5 md:px-6 xl:justify-center xl:gap-[clamp(1rem,2.6vw,2.4rem)] xl:overflow-visible">
+          className="container-page flex gap-3 overflow-x-auto scroll-smooth py-5 scrollbar-none md:gap-5 xl:justify-center xl:gap-[clamp(1rem,2.6vw,2.4rem)] xl:overflow-visible">
         {shortcuts.map((s) => (
           <li key={s.href} className="shrink-0">
             <Link

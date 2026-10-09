@@ -105,7 +105,7 @@ export default function FlashSaleBar() {
       // decision an admin can make in a second, three is a gradient editor.
       style={{ background: `linear-gradient(90deg, ${from} 0%, ${to} 100%)` }}
     >
-      <div className="mx-auto flex max-w-[1512px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 md:flex-nowrap md:px-6 md:py-4">
+      <div className="container-page flex flex-wrap items-center gap-x-6 gap-y-3 py-3 md:flex-nowrap md:py-4">
         <Link href={href} className="shrink-0 leading-tight">
           <span className="block text-lg font-extrabold italic md:text-2xl">{title}</span>
           <span className="block text-xs italic opacity-90 md:text-sm">{subtitle}</span>

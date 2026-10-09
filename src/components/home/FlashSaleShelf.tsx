@@ -95,7 +95,7 @@ export default function FlashSaleShelf() {
 
   return (
     <section className="py-6 md:py-8">
-      <div className="mx-auto max-w-[1512px] px-4 md:px-6">
+      <div className="container-page">
         <div
           className="relative overflow-hidden rounded-[20px]"
           // Deep red, brightest where the campaign stands and falling away to

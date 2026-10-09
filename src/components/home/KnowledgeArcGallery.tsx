@@ -289,7 +289,7 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
       // a product shelf ends in a hard edge, and the shelf starts with a row
       // of white cards, so they need the same air between them wherever that
       // pairing happens.
-      <div className="mx-auto mt-10 max-w-[1512px] px-4 md:px-6">
+      <div className="container-page mt-10">
                   <ul // -m-2 p-2: overflow-x-auto clips on both axes, so without room
                   // inside it the cards' shadows and rounded corners were being
                   // sliced flat against the top and bottom of the rail.

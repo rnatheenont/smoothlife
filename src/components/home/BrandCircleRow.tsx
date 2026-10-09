@@ -83,7 +83,7 @@ export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
         // 1024px, the first circle sat at x=-76 and the last ended at 1100,
         // with no way to reach either. (The same mistake the category row
         // above it was making, fixed the same way.)
-        className="mx-auto flex max-w-[1512px] gap-2.5 overflow-x-auto px-4 pt-2 scrollbar-none md:px-6 xl:justify-center xl:gap-[clamp(0.75rem,1.6vw,1.5rem)] xl:overflow-visible"
+        className="container-page flex gap-2.5 overflow-x-auto pt-2 scrollbar-none xl:justify-center xl:gap-[clamp(0.75rem,1.6vw,1.5rem)] xl:overflow-visible"
       >
         {row.map((b, i) => {
           const on = i === active;
@@ -138,7 +138,7 @@ export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
         aria-labelledby={`brand-tab-${brand.slug}`}
         // mt-8: the little notch used to hold the shelf off the brand names;
         // with it gone the cards were sitting on top of the labels.
-        className="mx-auto mt-10 max-w-[1512px] px-4 md:px-6"
+        className="container-page mt-10"
       >
                   {shelf.length > 0 ? (
             <>
