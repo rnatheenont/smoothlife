@@ -164,7 +164,12 @@ function ContactBlock() {
             className="shrink-0 text-brand-emerald"
             aria-hidden
           />
-          <span>LINE {LINE_HANDLE}</span>
+          {/* The column above is sized to fit the handle, so these two are
+              only a backstop: a flex child will not shrink below its longest
+              unbreakable word, which is how the overflow happened in the first
+              place. Keeping them means a narrower column wraps instead of
+              scrolling the page sideways again. */}
+          <span className="min-w-0 break-words">LINE {LINE_HANDLE}</span>
         </a>
       </li>
       <li className="flex items-center gap-2.5 py-1 text-sm text-slate-600">
@@ -216,8 +221,16 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Link columns + contact — desktop */}
-          <div className="hidden md:grid md:grid-cols-4 md:gap-8">
+          {/* Link columns + contact — desktop.
+
+              Contact gets a wider column than the three link lists rather than
+              an equal quarter: the link lists hold short Thai labels, contact
+              holds a phone number and a 19-character LINE handle with nowhere
+              to break. On four equal columns that came to 124px each, and the
+              handle alone needs ~127px — so it pushed past the viewport and
+              gave every page a 4px horizontal scrollbar between 1024px and
+              about 1200px. */}
+          <div className="hidden md:grid md:grid-cols-[1fr_1fr_1fr_1.5fr] md:gap-8">
             {columns.map((col) => (
               <nav key={col.title} aria-label={col.title}>
                 <h2 className={headingClass}>{col.title}</h2>

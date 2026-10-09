@@ -735,6 +735,35 @@
   }
 }
 
+/* For pages whose job is to show as many products at once as the screen can
+   hold — the shop listing, brand pages, search results. 1280px caps those at
+   four cards with a third of a wide monitor left empty on each side, which
+   reads as a narrow site rather than a deliberate measure. Reading pages keep
+   container-page: a 1280px cap is a line length there, not wasted room.
+
+   Same gutters as container-page up to 1280px, so the two line up on a laptop
+   and only diverge where there is spare width to use. */
+.container-wide {
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 768px) {
+  .container-wide {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-wide {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }

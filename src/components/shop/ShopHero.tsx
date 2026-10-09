@@ -31,7 +31,7 @@ export default function ShopHero({
     // with the rest of the page, because the container is on the inner row.
     <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#cfe9f8_0%,#e4f3fb_52%,#f7fcfe_100%)]">
       <SkyClouds />
-      <div className="container-page relative flex items-center gap-4 py-7 md:py-10">
+      <div className="container-wide relative flex items-center gap-4 py-7 md:py-10">
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-medium tracking-[0.3em] text-brand-800">{eyebrow}</p>
           <h1 className="mt-1.5 text-2xl font-extrabold text-brand-1000 md:text-4xl">{title}</h1>
