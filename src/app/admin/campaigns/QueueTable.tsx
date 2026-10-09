@@ -118,16 +118,24 @@ function PaymentChip({ item }: { item: QueueItem }) {
 }
 
 /** The order number, and a way into the order itself. */
-function OrderNumber({ item }: { item: QueueItem }) {
-  // The shop's own name for the order, once there is one. This used to show
-  // what the customer typed even after the claim had been matched, so the
-  // field read 2610002021242 — their 2C2P invoice — while the link beside it
-  // opened #4408. The label has to be the thing the link goes to; what they
-  // wrote is still on the screen, under ลูกค้ากรอกมาว่า.
+/**
+ * What to call this claim's order, in one place.
+ *
+ * The shop's own name for it once there is one, and only then what the
+ * customer typed. Three screens worked this out separately — the panel, the
+ * table cell and the card — and all three preferred the customer's number, so
+ * a matched claim went on reading 2610002021242 (their 2C2P invoice) in a
+ * column of #4418s, next to a link that opened #4408. Fixing one of them left
+ * the other two saying something else about the same row.
+ */
+export function orderNumberOf(item: QueueItem): string | null {
+  if (!item.manual) return item.orderNumber;
   const matched = item.claimedOrder?.found ? item.claimedOrder.number : null;
-  const shown = item.manual
-    ? (matched ?? item.declared.orderNumber ?? item.claimedOrder?.number ?? null)
-    : item.orderNumber;
+  return matched ?? item.declared.orderNumber ?? item.claimedOrder?.number ?? null;
+}
+
+function OrderNumber({ item }: { item: QueueItem }) {
+  const shown = orderNumberOf(item);
   const href = item.claimedOrder?.found ? item.claimedOrder.adminUrl : null;
   if (!shown) return <>—</>;
   // Only a link when there is an order to open. A number Shopify has never
@@ -521,10 +529,9 @@ function DetailPanel({
                   {item.customer ?? "—"}
                 </p>
                 <p className="mt-0.5 text-[13px] text-slate-500">
-                  {item.manual
-                    ? `${item.declared.orderNumber ?? "—"} · เคสพิเศษ`
-                    : (item.orderNumber ?? "—")}{" "}
-                  · ส่งเมื่อ {when(item.sentAt)}
+                  {orderNumberOf(item) ?? "—"}
+                  {item.manual ? " · เคสพิเศษ" : ""} · ส่งเมื่อ{" "}
+                  {when(item.sentAt)}
                 </p>
               </div>
               <button
@@ -1010,9 +1017,7 @@ export default function QueueTable({
                     )}
                   </span>
                   <span className="block truncate text-[11px] text-slate-400">
-                    {(item.manual
-                      ? item.declared.orderNumber
-                      : item.orderNumber) ?? "—"}
+                    {orderNumberOf(item) ?? "—"}
                     {item.invoiceNo ? ` · ${item.invoiceNo}` : ""}
                   </span>
 
@@ -1157,10 +1162,13 @@ export default function QueueTable({
                     </span>
                   </td>
                   <td className={adminTable.cell}>
+                    {/* Same rule as the panel's OrderNumber, which this cell
+                        had its own copy of and so went on showing the 2C2P
+                        invoice after the claim was matched: one row reading
+                        2610002021242 down a column of #4418s, the only number
+                        in it that was not an order number. */}
                     <span className="font-semibold text-brand-ink">
-                      {item.manual
-                        ? (item.declared.orderNumber ?? "—")
-                        : (item.orderNumber ?? "—")}
+                      {orderNumberOf(item) ?? "—"}
                     </span>
                     <span className="block font-mono text-[11px] text-slate-400">
                       {item.invoiceNo ?? ""}

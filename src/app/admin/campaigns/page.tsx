@@ -352,8 +352,12 @@ export default function Page() {
     if (action === "approve") {
       // A manual receipt has no order to compute from, so the prompt says so
       // rather than offering a zero that looks like an answer.
+      // It is the missing order that makes that true, not the manual flag:
+      // a reviewer can correct the number now, and once the shop recognises
+      // it the figures are as real as any other row's.
+      const unmatched = item.manual && !item.claimedOrder?.found;
       const typed = window.prompt(
-        item.manual
+        unmatched
           ? `เคสพิเศษ — ไม่มีคำสั่งซื้อในระบบให้คำนวณ\n\nตรวจใบเสร็จกับหลักฐานการชำระเงินแล้วระบุจำนวนสิทธิ์เอง` +
               `\nลูกค้าแจ้งยอด ${item.declared.total ?? "—"} บาท`
           : `จำนวนสิทธิ์สำหรับใบเสร็จนี้ (ระบบคำนวณได้ ${item.entries})`,
