@@ -25,15 +25,12 @@ export function generateMetadata() {
 // changed as you ticked boxes would read as stock disappearing).
 function filterCounts(): FilterCounts {
   const inStock = products.filter((p) => p.inStock);
-  const category: Record<string, number> = {};
-  for (const c of categories) category[c.slug] = inStock.filter((p) => p.category === c.slug).length;
-
   const brand: Record<string, number> = {};
   for (const b of brands) {
     const slugs = brandSlugAliases(b);
     brand[b.slug] = inStock.filter((p) => slugs.includes(slugifyVendor(p.brand))).length;
   }
-  return { category, brand };
+  return { brand };
 }
 
 export default async function ShopPage(props: { searchParams: Promise<ShopSearchParams> }) {
@@ -52,6 +49,7 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
       <ShopHero
         title={activeCategory ? activeCategory.nameTh : "สินค้าทั้งหมด"}
         subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
+        categorySlug={activeCategory?.slug}
       />
 
       <div className="container-page py-5 md:py-8">

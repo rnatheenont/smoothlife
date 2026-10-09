@@ -1,25 +1,29 @@
-import { BadgeCheck, RotateCcw, Truck } from "lucide-react";
 import SkyClouds from "@/components/SkyClouds";
+import { CATEGORY_ICON } from "@/components/icons/CategoryIcons";
 
-// The banner at the top of the shop: what you are looking at, and the three
-// promises that answer "why buy here" before the grid starts. The promises are
-// the store's real policy (data/help.ts) — 1–3 business days, returns within
-// 14 days, not the 7 the layout sketch showed.
-const PROMISES = [
-  { icon: BadgeCheck, title: "ของแท้", sub: "100%" },
-  { icon: Truck, title: "จัดส่งเร็ว", sub: "1-3 วัน" },
-  { icon: RotateCcw, title: "คืนสินค้าได้", sub: "ภายใน 14 วัน" },
-];
+// The banner at the top of the shop: what you are looking at, and — once a
+// category is chosen — that category's own mark, drawn large and faint on the
+// right.
+//
+// The right side used to hold three promise cards (genuine goods, 1–3 day
+// delivery, 14-day returns). They answered "why buy here" on every category
+// in the same words, which is a job for the page footer and the help pages
+// that already carry the policy, not for the one piece of furniture that
+// should tell you where you are.
 
 export default function ShopHero({
   eyebrow = "PRODUCTS",
   title,
   subtitle,
+  categorySlug,
 }: {
   eyebrow?: string;
   title: string;
   subtitle: string;
+  /** The category being browsed, when one is. Picks the mark on the right. */
+  categorySlug?: string;
 }) {
+  const Mark = categorySlug ? CATEGORY_ICON[categorySlug] : undefined;
   return (
     // The same sky the home page opens with. The banner used to be a flat
     // mint wash, which said "a panel goes here" and nothing else; arriving on
@@ -38,17 +42,20 @@ export default function ShopHero({
           <p className="mt-1.5 text-sm text-slate-600 md:text-base">{subtitle}</p>
         </div>
 
-        <ul className="hidden shrink-0 gap-2 rounded-2xl bg-white/80 p-4 shadow-xs backdrop-blur-md sm:flex">
-          {PROMISES.map((p) => (
-            <li key={p.title} className="flex w-24 flex-col items-center gap-1.5 px-1 text-center lg:w-28">
-              <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">
-                <p.icon size={26} strokeWidth={2} aria-hidden="true" />
-              </span>
-              <span className="text-xs font-bold leading-tight text-brand-1000 lg:text-[13px]">{p.title}</span>
-              <span className="text-[11px] leading-tight text-slate-500">{p.sub}</span>
-            </li>
-          ))}
-        </ul>
+        {/* Decoration, so aria-hidden and no label: the heading beside it
+            already names the category, and a screen reader does not need to
+            hear it twice. Faint enough to read as part of the sky rather than
+            a control someone might try to press — hence pointer-events-none
+            too. Smaller on a phone, where the heading has to wrap inside what
+            is left of 343px. */}
+        {Mark && (
+          <Mark
+            key={categorySlug}
+            aria-hidden="true"
+            className="pointer-events-none h-20 w-20 shrink-0 animate-fadeUp text-brand-800/20 sm:h-32 sm:w-32 md:h-44 md:w-44"
+            blobClassName="text-brand-400/25"
+          />
+        )}
       </div>
     </section>
   );

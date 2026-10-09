@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { categories, concerns } from "@/data/categories";
+import { concerns } from "@/data/categories";
 import { houseBrands, otherBrands } from "@/data/brands";
 import { PROMO_FILTERS, ShopSearchParams } from "@/lib/filter-products";
 import { SlidersHorizontal, Check, X, ChevronDown, Search, Star } from "lucide-react";
@@ -12,7 +12,7 @@ import clsx from "clsx";
 // be a "show more" button that reveals one extra row.
 const VISIBLE_BRANDS = 10;
 
-export type FilterCounts = { category: Record<string, number>; brand: Record<string, number> };
+export type FilterCounts = { brand: Record<string, number> };
 
 export default function ShopFilters({
   current,
@@ -91,39 +91,10 @@ export default function ShopFilters({
 
   const content = (
     <div className="flex flex-col gap-6">
-      <div>
-        <h4 className="text-sm font-bold text-brand-ink mb-3">หมวดหมู่</h4>
-        <div className="flex flex-col gap-0.5">
-          <button
-            onClick={() => updateParam("category", null)}
-            className={clsx(
-              "rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
-              !current.category ? "bg-brand-gradient-soft font-semibold text-brand-800" : "text-slate-600 hover:bg-surface-soft"
-            )}
-          >
-            ทั้งหมด
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c.slug}
-              onClick={() => updateParam("category", c.slug)}
-              className={clsx(
-                "rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
-                current.category === c.slug
-                  ? "bg-brand-gradient-soft font-semibold text-brand-800"
-                  : "text-slate-600 hover:bg-surface-soft"
-              )}
-            >
-              <span className="flex items-center justify-between gap-2">
-                {c.nameTh}
-                {counts?.category[c.slug] ? (
-                  <span className="text-xs tabular-nums text-slate-400">({counts.category[c.slug]})</span>
-                ) : null}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* No category list here. The circle row at the top of the page is the
+          category control on every screen size, and a second list in the
+          sidebar meant two controls for one choice sitting 200px apart, each
+          having to mirror the other's state. */}
       <div>
         <h4 className="text-sm font-bold text-brand-ink mb-3">แบรนด์</h4>
         <label className="mb-2 flex items-center gap-2 rounded-lg border border-surface-line px-2.5 py-1.5">
