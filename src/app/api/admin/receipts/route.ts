@@ -4,7 +4,14 @@ import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { signedReceiptUrl } from "@/lib/receipt-photos";
 import { amountsFromLineItems, holdsPrize, vipVariantIds, type LineItem } from "@/lib/receipt-campaign";
 import { loadCampaignContent } from "@/lib/receipt-campaign-content";
-import { orderPaymentByGid, ordersByName, normalizeOrderName, ordersWithVariant } from "@/lib/shopify-admin";
+import {
+  orderPaymentByGid,
+  ordersByName,
+  ordersByContact,
+  normalizeOrderName,
+  ordersWithVariant,
+  type ContactOrders,
+} from "@/lib/shopify-admin";
 import { campaignKeyFrom } from "@/lib/receipt-campaign-keys";
 
 // The review queue, the VIP order, and what Lucky Fan has to draw from.
@@ -42,7 +49,13 @@ type EntryRow = {
   reject_reason: string | null;
   reviewed_at: string | null;
   created_at: string;
-  ai_check: { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] } | null;
+  ai_check: {
+    verdict: "ok" | "unclear" | "mismatch";
+    message: string;
+    findings: string[];
+    /** Missing on rows written before the field existed — derived below. */
+    comparedAgainst?: "shop" | "customer" | "none";
+  } | null;
   users: { display_name: string | null; shopify_customer_id?: string | null; phone?: string | null } | null;
   contact_name?: string | null;
   contact_phone?: string | null;
@@ -240,7 +253,43 @@ export async function GET(req: NextRequest) {
     };
   };
 
-  const asRow = async (r: EntryRow) => ({
+  /**
+   * That customer's orders in the shop, for the claims whose number found none.
+   *
+   * The reviewer was being handed a photo and told to use their judgement,
+   * with no way to see whether this person had bought anything at all. They
+   * had typed a phone number and an email into the form; the shop can be
+   * asked about those. What comes back is a list to compare against, not an
+   * answer — deciding which order (if any) the photo shows stays theirs.
+   *
+   * Only for receipts still waiting on a decision, and one request per distinct
+   * contact: a page of fifty must not become fifty calls to Shopify.
+   */
+  const contactKey = (r: EntryRow) =>
+    `${(r.contact_phone ?? r.users?.phone ?? "").replace(/\D/g, "")}|${(r.contact_email ?? "").trim().toLowerCase()}`;
+
+  const contactHits = new Map<string, ContactOrders>();
+  const needContact = new Map<string, EntryRow>();
+  for (const r of queuePage) {
+    const c = claimedOrderOf(r);
+    if (!c || c.found) continue;
+    const key = contactKey(r);
+    if (key !== "|" && !needContact.has(key)) needContact.set(key, r);
+  }
+  await Promise.all(
+    [...needContact.values()].slice(0, 20).map(async (r) => {
+      const hits = await ordersByContact({
+        phone: r.contact_phone ?? r.users?.phone,
+        email: r.contact_email,
+        limit: 10,
+      }).catch(() => ({ ok: false, orders: [] }) as ContactOrders);
+      contactHits.set(contactKey(r), hits);
+    })
+  );
+
+  const asRow = async (r: EntryRow) => {
+    const claimedOrder = claimedOrderOf(r);
+    return {
       id: r.id,
       status: r.status,
       reviewedAt: r.reviewed_at ?? null,
@@ -291,9 +340,29 @@ export async function GET(req: NextRequest) {
         total: r.declared_total === null || r.declared_total === undefined ? null : Number(r.declared_total),
       },
       photoUrl: await signedReceiptUrl(r.receipt_photo_path),
-      aiCheck: r.ai_check,
-      claimedOrder: claimedOrderOf(r),
-  });
+      // Rows checked before `comparedAgainst` existed can still be placed
+      // exactly: at submit the model was given shop data if and only if an
+      // order was linked, and `payment_transaction_id` is that same
+      // `order ? order.id : null`. Without this every old row would wear the
+      // cautious wording, including the ones that really were verified.
+      aiCheck: r.ai_check
+        ? {
+            ...r.ai_check,
+            comparedAgainst:
+              r.ai_check.comparedAgainst ?? (r.payment_transaction_id ? "shop" : "customer"),
+          }
+        : null,
+      claimedOrder,
+      // Candidates, not a verdict. ok:true with an empty list = we asked and
+      // the shop has nothing under that phone or email, which is itself worth
+      // knowing; ok:false = the question never got an answer, which must not
+      // be shown as one; null = we did not ask, the number found its order.
+      contactOrders:
+        claimedOrder && !claimedOrder.found
+          ? (contactHits.get(contactKey(r)) ?? { ok: false, orders: [] })
+          : null,
+    };
+  };
 
   const [queue, decided] = await Promise.all([
     Promise.all(queuePage.map(asRow)),

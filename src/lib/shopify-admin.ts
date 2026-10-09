@@ -3099,6 +3099,124 @@ export async function ordersByName(names: (string | null | undefined)[]): Promis
   return out;
 }
 
+/**
+ * Thai mobile numbers, in every shape Shopify might have stored one.
+ *
+ * The customer types 0945696922 into our form. Shopify holds whatever the
+ * checkout captured: +66945696922, 66945696922, 094-569-6922. Searching for
+ * only the typed form finds none of them, which is indistinguishable from
+ * "this person has never bought anything".
+ */
+function phoneForms(phone: string | null | undefined): string[] {
+  const d = (phone ?? "").replace(/\D/g, "");
+  if (d.length < 9) return [];
+  const local = d.startsWith("66") ? `0${d.slice(2)}` : d.startsWith("0") ? d : `0${d}`;
+  const intl = `+66${local.slice(1)}`;
+  return [...new Set([local, intl, intl.slice(1)])];
+}
+
+/**
+ * Every order in the shop that carries this phone number or email address.
+ *
+ * For the receipt whose order number finds nothing. The number printed on a
+ * picking slip is not a Shopify order name and never matches one, so the
+ * screen said "ไม่พบคำสั่งซื้อในร้าน" and left the reviewer with a photo and
+ * their own judgement — while the customer's real orders sat in the shop under
+ * the contact details they had typed on the very same form.
+ *
+ * This does not decide anything. It puts that person's orders on the screen so
+ * the reviewer can see for themselves whether one of them is the ฿735 on 6 Oct
+ * that the photo shows. Matching a receipt to an order is a judgement; finding
+ * the candidates to judge between is not, and it was the part being skipped.
+ */
+/**
+ * Only the fields the reviewer's comparison list draws.
+ *
+ * Deliberately not OrderByName: that type grows as other callers need more
+ * of an order (it gained required lineItems for the entry arithmetic), and
+ * this list would then have to fetch data it never shows.
+ */
+export type ContactOrder = {
+  id: string;
+  name: string;
+  adminUrl: string;
+  financialStatus: string | null;
+  total: number;
+  refunded: number;
+  paidAt: string | null;
+  customerLabel: string | null;
+};
+
+export type ContactOrders = { ok: boolean; orders: ContactOrder[] };
+
+export async function ordersByContact(opts: {
+  phone?: string | null;
+  email?: string | null;
+  limit?: number;
+}): Promise<ContactOrders> {
+  // ok:false is not the same answer as an empty list, and the difference is
+  // the whole value of this. "We asked the shop and this person has bought
+  // nothing" is evidence a reviewer will act on; "the request failed" wearing
+  // that sentence is the same false confidence this feature exists to remove.
+  if (!shopifyAdminConfigured()) return { ok: false, orders: [] };
+  const terms: string[] = [];
+  const email = (opts.email ?? "").trim().toLowerCase();
+  // Quote-and-escape: an address with a space or a stray quote in it would
+  // otherwise change the shape of the query rather than be searched for.
+  if (email.includes("@")) terms.push(`email:"${email.replace(/["\\]/g, "")}"`);
+  for (const p of phoneForms(opts.phone)) terms.push(`phone:"${p}"`);
+  // Nothing to search on is a real, final answer: no contact details were given.
+  if (!terms.length) return { ok: true, orders: [] };
+
+  try {
+    const data = await adminGraphql<{
+      orders: {
+        nodes: {
+          id: string;
+          name: string;
+          processedAt: string | null;
+          displayFinancialStatus: string | null;
+          totalPriceSet: { shopMoney: { amount: string } } | null;
+          totalRefundedSet: { shopMoney: { amount: string } } | null;
+          customer: { id: string; displayName: string | null; email: string | null; phone: string | null } | null;
+        }[];
+      };
+    }>(
+      `query OrdersByContact($q: String!, $n: Int!) {
+        orders(first: $n, query: $q, sortKey: PROCESSED_AT, reverse: true) {
+          nodes {
+            id
+            name
+            processedAt
+            displayFinancialStatus
+            totalPriceSet { shopMoney { amount } }
+            totalRefundedSet { shopMoney { amount } }
+            customer { id displayName email phone }
+          }
+        }
+      }`,
+      { q: terms.join(" OR "), n: Math.min(opts.limit ?? 10, 25) },
+    );
+    const orders = (data.orders?.nodes ?? []).map((node) => {
+      if (node.name) orderNameCache.set(node.id, node.name);
+      return {
+        id: node.id,
+        name: node.name,
+        adminUrl: `https://admin.shopify.com/store/${STORES.smoothlife.adminHandle}/orders/${node.id.split("/").pop()}`,
+        financialStatus: node.displayFinancialStatus,
+        total: Number(node.totalPriceSet?.shopMoney?.amount ?? 0) || 0,
+        refunded: Number(node.totalRefundedSet?.shopMoney?.amount ?? 0) || 0,
+        paidAt: node.processedAt,
+        customerLabel: node.customer?.displayName ?? null,
+      };
+    });
+    return { ok: true, orders };
+  } catch (err) {
+    console.error("[shopify-admin] ordersByContact failed", err);
+    return { ok: false, orders: [] };
+  }
+}
+
 /** "#4305", "4305", " 4305 " — the digits are the part that identifies it. */
 export function normalizeOrderName(name: string | null | undefined): string | null {
   const digits = (name ?? "").replace(/\D/g, "");

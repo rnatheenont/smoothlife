@@ -481,9 +481,12 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
     bytes,
     contentType: photo.type,
     // With no order, the photo is checked against what the customer typed —
-    // which is the comparison a reviewer would make first anyway.
+    // which is the comparison a reviewer would make first anyway. What matters
+    // is that `facts` says so: the same comparison reported as "ตรงกับระบบ" is
+    // a reviewer being told the shop confirmed something it never saw.
     order: order
       ? {
+          facts: "shop",
           orderNumber: await orderNameByGid(order.shopify_order_id),
           invoiceNo: order.invoice_no,
           total: Number(order.amount),
@@ -491,6 +494,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
           items: (order.line_items ?? []).map((li) => `variant ${li.variantId} x${li.quantity}`),
         }
       : {
+          facts: "customer",
           orderNumber: declaredOrderNumber,
           invoiceNo: null,
           total: declaredTotal ?? 0,

@@ -26,6 +26,15 @@ const MAX_TOKENS = 2000;
 export type ReceiptCheck = {
   /** ok: matches. unclear: cannot tell. mismatch: shows something else. */
   verdict: "ok" | "unclear" | "mismatch";
+  /**
+   * What the photo was held up against, carried so the screen can say it.
+   *
+   * "shop" is the order row; "customer" is the numbers they typed into the
+   * form themselves. A verdict of "ok" means something quite different in the
+   * two cases and the reviewer is the one who has to know which — see the
+   * note on `facts` in OrderFacts.
+   */
+  comparedAgainst: FactSource;
   /** One line for the customer, in Thai, saying what to do about it. */
   message: string;
   /** What the model could and could not make out, for the reviewer. */
@@ -43,7 +52,28 @@ export type ReceiptCheck = {
   model: string;
 };
 
+/**
+ * Where the numbers beside the photo came from.
+ *
+ *  - "shop"     the order row: independent of anything the customer typed.
+ *  - "customer" what they wrote on the form. Nothing confirms it yet.
+ *  - "none"     no order known; read the picture, judge nothing.
+ *
+ * This used to be implicit, and the prompt called every case
+ * "ข้อมูลคำสั่งซื้อที่ระบบรู้". On a receipt with no matching order that
+ * heading was false: the model was handed the customer's own typed numbers
+ * under the shop's name, found that the photo agreed with them — of course it
+ * did, they were copied off it — and wrote "ตรงกับระบบ" in a panel a reviewer
+ * reads as independent confirmation before releasing a ฿55,000 prize.
+ *
+ * It was not the model inventing anything. It was answering the question it
+ * was given, which was the wrong question with a misleading label on it.
+ */
+export type FactSource = "shop" | "customer" | "none";
+
 export type OrderFacts = {
+  /** Where orderNumber/total/paidAt below came from. Never assume "shop". */
+  facts: FactSource;
   orderNumber: string | null;
   invoiceNo: string | null;
   total: number;
@@ -55,7 +85,15 @@ const SYSTEM = `คุณคือผู้ช่วยตรวจใบเส�
 
 ลูกค้าจะอัปโหลด "ภาพหน้าจออีเมลยืนยันคำสั่งซื้อ" ที่ร้านส่งให้ (มีโลโก้ Smoothlife.com, คำว่า ORDER #, รายการสินค้า, ยอดรวม) บางคนอาจอัปโหลดใบเสร็จกระดาษ สลิปโอนเงิน ภาพหน้าจอตะกร้า หรือภาพที่ไม่เกี่ยวข้องมาแทน
 
-งานของคุณคือ "เทียบ" ภาพกับข้อมูลคำสั่งซื้อที่ระบบรู้อยู่แล้ว ไม่ใช่ "อ่านยอดเงินมาใช้" — ระบบคำนวณสิทธิ์จากฐานข้อมูลเองอยู่แล้ว
+งานของคุณคือ "เทียบ" ภาพกับตัวเลขที่แนบมาให้ ไม่ใช่ "อ่านยอดเงินมาใช้" — ระบบคำนวณสิทธิ์จากฐานข้อมูลเองอยู่แล้ว
+
+สำคัญที่สุด — ข้อความที่แนบมาจะบอกเสมอว่าตัวเลขชุดนั้น "มาจากไหน" มีสามแบบ และคำตอบของคุณต้องเปลี่ยนตามนั้น:
+
+1. มาจากฐานข้อมูลร้าน — เป็นหลักฐานอิสระ ใช้คำว่า "ตรงกับระบบ" ได้
+2. มาจากที่ลูกค้ากรอกเอง — ยังไม่มีอะไรยืนยัน ลูกค้าคัดตัวเลขมาจากรูปใบเดียวกันนี้เอง
+   การที่รูปตรงกับที่เขากรอกจึง **ไม่ได้แปลว่าถูกต้อง** มันแปลว่าเขากรอกตรงกับรูปเท่านั้น
+   ห้ามใช้คำว่า "ระบบ" "ฐานข้อมูล" หรือ "ยืนยันแล้ว" เด็ดขาด ให้ใช้ "ตรงกับที่ลูกค้ากรอก"
+3. ไม่มีตัวเลขให้เทียบเลย — อ่านจากภาพอย่างเดียว ห้ามตัดสินว่าตรงหรือไม่ตรงกับอะไรทั้งสิ้น
 
 ตอบเป็น JSON อย่างเดียว ไม่มีข้อความอื่น เรียงลำดับคีย์ตามนี้:
 {
@@ -79,12 +117,58 @@ const SYSTEM = `คุณคือผู้ช่วยตรวจใบเส�
 - เดือนภาษาไทยย่อ เช่น "23 ก.ย." ให้แปลงเป็นเลขเดือน และถ้าไม่มีปีให้ใช้ปีปัจจุบัน
 - ถ้าเห็นแต่เวลา (เช่น "17:04") โดยไม่มีวันที่ที่ไหนเลยในภาพ ให้ใส่ null — อย่าเดาวันที่จากเวลา
 
-เกณฑ์:
-- "ok" = เป็นอีเมลยืนยันคำสั่งซื้อของ Smoothlife.com และเลขคำสั่งซื้อตรงกับที่ระบบแจ้ง
+เกณฑ์ — ต่างกันตามที่มาของตัวเลขข้างบน:
+- "ok" = เป็นอีเมลยืนยันคำสั่งซื้อของ Smoothlife.com และเลขคำสั่งซื้อตรงกับตัวเลขที่แนบมา
+  ถ้าตัวเลขมาจากที่ลูกค้ากรอกเอง (แบบ 2) "ok" แปลว่า "รูปตรงกับที่เขากรอก" เท่านั้น
+  ไม่ได้แปลว่าคำสั่งซื้อมีจริง และถ้าไม่มีตัวเลขให้เทียบ (แบบ 3) ห้ามตอบ "ok"
 - "unclear" = อ่านไม่ออก ภาพเบลอ มืด ถ่ายไม่ครบ หรือไม่เห็นเลขคำสั่งซื้อ
 - "mismatch" = อ่านออกชัดเจนแต่เป็นคนละคำสั่งซื้อ คนละร้าน หรือไม่ใช่ใบเสร็จเลย
 
+ถ้าภาพไม่ใช่อีเมลยืนยันคำสั่งซื้อ แต่เป็นเอกสารภายในร้าน (ใบปิ๊กสินค้า/picking slip, ใบจัดของ,
+ใบส่งของ) หรือสลิปโอนเงิน ให้พูดเรื่องนี้เป็น findings ข้อแรกเสมอ — ผู้ตรวจต้องเห็นก่อนเรื่องอื่น
+
 ถ้าไม่แน่ใจให้ตอบ "unclear" เสมอ อย่าเดาว่า "mismatch" เพราะการปฏิเสธผิดทำให้ลูกค้าเสียสิทธิ์`;
+
+/**
+ * The numbers beside the photo, under a heading that says where they are from.
+ *
+ * The heading is the whole point. One line of text decides whether the reply
+ * comes back saying "ตรงกับระบบ" — a sentence a reviewer acts on — or "ตรงกับ
+ * ที่ลูกค้ากรอก", which is the same observation without the authority it has
+ * not earned.
+ */
+function factsBlock(o: OrderFacts): string {
+  if (o.facts === "none") {
+    return [
+      "ที่มาของตัวเลข: ไม่มี — ยังไม่ทราบว่าภาพนี้เป็นคำสั่งซื้อไหน",
+      "",
+      "อ่านข้อมูลจากภาพอย่างเดียว ห้ามตัดสินว่าตรงหรือไม่ตรงกับอะไร",
+    ].join("\n");
+  }
+  const head =
+    o.facts === "shop"
+      ? [
+          "ที่มาของตัวเลข: ฐานข้อมูลคำสั่งซื้อของร้าน (หลักฐานอิสระ ไม่ได้มาจากลูกค้า)",
+          "ข้อมูลคำสั่งซื้อที่ระบบรู้:",
+        ]
+      : [
+          "ที่มาของตัวเลข: ลูกค้ากรอกเอง — ระบบยังหาคำสั่งซื้อนี้ไม่เจอ",
+          "ตัวเลขชุดนี้ยังไม่มีอะไรยืนยัน และลูกค้าน่าจะคัดมาจากรูปใบเดียวกันนี้",
+          "ข้อมูลที่ลูกค้ากรอกมา:",
+        ];
+  return [
+    ...head,
+    `- เลขคำสั่งซื้อ: ${o.orderNumber ?? "(ไม่มี)"}`,
+    `- เลขใบแจ้งหนี้ 2C2P: ${o.invoiceNo ?? "(ไม่มี)"}`,
+    `- ยอดรวม: ${o.total} บาท`,
+    `- ชำระเมื่อ: ${o.paidAt ?? "(ไม่ทราบ)"}`,
+    `- สินค้า: ${o.items.slice(0, 8).join(", ") || "(ไม่ทราบ)"}`,
+    "",
+    o.facts === "shop"
+      ? "ภาพนี้ตรงกับคำสั่งซื้อข้างบนหรือไม่"
+      : "ภาพนี้ตรงกับที่ลูกค้ากรอกข้างบนหรือไม่ (ย้ำ: ห้ามเรียกตัวเลขชุดนี้ว่า 'ระบบ')",
+  ].join("\n");
+}
 
 /** Only what the API accepts; anything else was rejected before reaching here. */
 type ImageMedia = "image/jpeg" | "image/png" | "image/webp";
@@ -138,7 +222,8 @@ function salvageRead(body: string): ReceiptCheck["read"] | null {
     : null;
 }
 
-function parse(text: string): Omit<ReceiptCheck, "checkedAt" | "model"> | null {
+/** The model's own words. Where the facts came from is the caller's to say. */
+function parse(text: string): Omit<ReceiptCheck, "checkedAt" | "model" | "comparedAgainst"> | null {
   // The model is asked for bare JSON; a stray ```json fence is the one
   // deviation worth surviving rather than throwing the whole reading away.
   const body = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
@@ -216,16 +301,7 @@ export async function checkReceiptPhoto(opts: {
             },
             {
               type: "text",
-              text: [
-                "ข้อมูลคำสั่งซื้อที่ระบบรู้:",
-                `- เลขคำสั่งซื้อ: ${opts.order.orderNumber ?? "(ไม่มี)"}`,
-                `- เลขใบแจ้งหนี้ 2C2P: ${opts.order.invoiceNo ?? "(ไม่มี)"}`,
-                `- ยอดรวม: ${opts.order.total} บาท`,
-                `- ชำระเมื่อ: ${opts.order.paidAt ?? "(ไม่ทราบ)"}`,
-                `- สินค้า: ${opts.order.items.slice(0, 8).join(", ") || "(ไม่ทราบ)"}`,
-                "",
-                "ภาพนี้ตรงกับคำสั่งซื้อข้างบนหรือไม่",
-              ].join("\n"),
+              text: factsBlock(opts.order),
             },
           ],
         },
@@ -244,7 +320,16 @@ export async function checkReceiptPhoto(opts: {
     }).catch(() => {});
 
     if (!parsed) return null;
-    return { ...parsed, checkedAt: new Date().toISOString(), model: MODEL };
+    // "ok" ของการเทียบกับคำที่ลูกค้าพิมพ์เอง ไม่ใช่ "ok" แบบเดียวกับที่เทียบกับ
+    // ฐานข้อมูล และไม่มีอะไรให้ "ok" ได้เลยเมื่อไม่มีตัวเลขให้เทียบ
+    const verdict = opts.order.facts === "none" && parsed.verdict === "ok" ? "unclear" : parsed.verdict;
+    return {
+      ...parsed,
+      verdict,
+      comparedAgainst: opts.order.facts,
+      checkedAt: new Date().toISOString(),
+      model: MODEL,
+    };
   } catch (err) {
     console.error("[receipt-vision] check failed", err);
     void logAiUsage({

@@ -82,6 +82,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ campaign
     bytes,
     contentType: photo.type,
     order: {
+      // No order picked yet means nothing to compare against — say so rather
+      // than sending empty fields under a heading that claims otherwise.
+      facts: order ? "shop" : "none",
       orderNumber: order ? nameOf(order) : null,
       invoiceNo: order?.invoice_no ?? null,
       total: order ? Number(order.amount) : 0,

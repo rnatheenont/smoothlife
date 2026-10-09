@@ -17,7 +17,7 @@ import { formatTHB } from "@/lib/format";
 import { Modal } from "@/components/ui";
 import { adminCards, adminTable } from "@/components/admin/layout-kit";
 import {
-  AI_LABEL,
+  aiLabelOf,
   ENTRY_STATUS,
   LINE_KIND,
   PAYMENT_STATUS,
@@ -44,6 +44,20 @@ const AI_DOT: Record<"ok" | "unclear" | "mismatch", string> = {
   ok: "bg-emerald-500",
   unclear: "bg-amber-500",
   mismatch: "bg-rose-500",
+};
+
+/** Green only for a photo matched against the shop's record — see aiLabelOf. */
+function aiDotOf(check: NonNullable<QueueItem["aiCheck"]>): string {
+  return check.verdict === "ok" && check.comparedAgainst !== "shop"
+    ? "bg-amber-500"
+    : AI_DOT[check.verdict];
+}
+
+/** What the model was given to compare the photo with, said plainly. */
+const AI_BASIS: Record<"shop" | "customer" | "none", string | null> = {
+  shop: null, // the ordinary case; saying it would just be noise
+  customer: "เทียบกับตัวเลขที่ลูกค้ากรอกเองเท่านั้น ไม่ใช่กับข้อมูลในร้าน",
+  none: "ยังไม่มีคำสั่งซื้อให้เทียบตอนตรวจ อ่านจากรูปอย่างเดียว",
 };
 
 /**
@@ -136,6 +150,95 @@ function OrderNumber({ item }: { item: QueueItem }) {
  * entries somebody else earned, and nothing else on this screen would have
  * said so.
  */
+/**
+ * That customer's orders in the shop, for the reviewer to compare against.
+ *
+ * Shown only where the number on the claim found nothing — the case the
+ * screen used to close with "ตรวจจากรูปใบเสร็จเป็นหลัก", which asked a person
+ * to decide on a photo alone while the shop could have been asked about the
+ * phone number and email sitting two lines above.
+ *
+ * It marks the rows whose total or date agrees with what the customer wrote,
+ * because that is the comparison the reviewer is here to make and scanning a
+ * column of baht for it by eye is how the wrong row gets picked. A mark is
+ * not a match: the same ฿735 twice in a month is ordinary, and which order
+ * the photo actually shows is still theirs to say.
+ */
+function ContactOrders({ item }: { item: QueueItem }) {
+  if (!item.contactOrders) return null;
+
+  const who = [item.contactPhone, item.contactEmail].filter(Boolean).join(" · ");
+  const { ok, orders } = item.contactOrders;
+
+  // The lookup never answered. Saying "ไม่พบคำสั่งซื้อ" here would be the
+  // screen inventing a fact out of its own failure.
+  if (!ok) {
+    return (
+      <p className="mt-3 flex items-start gap-2 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px] text-slate-600">
+        <AlertTriangle size={14} className="mt-0.5 shrink-0 text-slate-400" />
+        <span>ค้นคำสั่งซื้อจากเบอร์และอีเมลไม่สำเร็จ — ยังไม่รู้ว่าลูกค้ามีคำสั่งซื้อหรือไม่ ลองรีเฟรชอีกครั้ง</span>
+      </p>
+    );
+  }
+
+  if (orders.length === 0) {
+    return (
+      <p className="mt-3 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px] text-slate-600">
+        ค้นด้วยเบอร์และอีเมลของลูกค้าแล้ว{who ? <> ({who})</> : null} — ไม่พบคำสั่งซื้อใดในร้าน
+      </p>
+    );
+  }
+
+  const sameTotal = (t: number) =>
+    item.declared.total !== null && Math.abs(t - item.declared.total) <= 0.5;
+  const sameDay = (iso: string | null) =>
+    Boolean(iso && item.declared.paidAt && iso.slice(0, 10) === item.declared.paidAt.slice(0, 10));
+
+  return (
+    <div className="mt-3 rounded-l border border-surface-line bg-surface-soft px-3 py-2 text-[12px]">
+      <p className="font-semibold text-slate-500">
+        คำสั่งซื้อในร้านที่ผูกกับเบอร์หรืออีเมลนี้{who ? <> ({who})</> : null}
+      </p>
+      <ul className="mt-1.5 space-y-1">
+        {orders.map((o) => {
+          const hit = sameTotal(o.total) || sameDay(o.paidAt);
+          return (
+            <li
+              key={o.name}
+              className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded px-1.5 py-1 ${
+                hit ? "bg-emerald-50 text-emerald-900" : "text-brand-ink"
+              }`}
+            >
+              <a
+                href={o.adminUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 font-bold underline"
+              >
+                {o.name}
+                <ExternalLink size={11} />
+              </a>
+              <span className="tabular-nums">{formatTHB(o.total)}</span>
+              {o.paidAt && <span className="text-slate-500">{when(o.paidAt)}</span>}
+              {o.financialStatus && (
+                <span className="text-[11px] text-slate-500">
+                  {PAYMENT_STATUS[o.financialStatus]?.[0] ?? o.financialStatus}
+                </span>
+              )}
+              {o.refunded > 0 && <span className="text-rose-700">คืนแล้ว {formatTHB(o.refunded)}</span>}
+              {sameTotal(o.total) && <span className="font-bold">ยอดตรงกับที่ลูกค้าแจ้ง</span>}
+              {sameDay(o.paidAt) && <span className="font-bold">วันตรงกับที่ลูกค้าแจ้ง</span>}
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-1.5 text-[11px] text-slate-500">
+        รายการนี้เป็นตัวเลือกให้เทียบ ไม่ใช่คำตอบ — ระบบไม่ได้บอกว่าใบเสร็จตรงกับอันไหน
+      </p>
+    </div>
+  );
+}
+
 function ClaimWarning({ item }: { item: QueueItem }) {
   if (!item.claimedOrder) return null;
 
@@ -534,6 +637,7 @@ function DetailPanel({
                   )}
 
                   <ClaimWarning item={item} />
+                  <ContactOrders item={item} />
 
                   {(item.declared.orderNumber ||
                     item.declared.total !== null) && (
@@ -584,11 +688,16 @@ function DetailPanel({
 
                   {item.aiCheck && (
                     <div
-                      className={`mt-4 rounded-l border px-3 py-2 text-[12px] ${AI_LABEL[item.aiCheck.verdict][1]}`}
+                      className={`mt-4 rounded-l border px-3 py-2 text-[12px] ${aiLabelOf(item.aiCheck)[1]}`}
                     >
                       <p className="font-bold">
-                        AI ตรวจเบื้องต้น · {AI_LABEL[item.aiCheck.verdict][0]}
+                        AI ตรวจเบื้องต้น · {aiLabelOf(item.aiCheck)[0]}
                       </p>
+                      {AI_BASIS[item.aiCheck.comparedAgainst ?? "customer"] && (
+                        <p className="mt-0.5 font-semibold opacity-90">
+                          {AI_BASIS[item.aiCheck.comparedAgainst ?? "customer"]}
+                        </p>
+                      )}
                       {item.aiCheck.message && (
                         <p className="mt-0.5">{item.aiCheck.message}</p>
                       )}
@@ -822,9 +931,9 @@ export default function QueueTable({
                     {item.aiCheck && (
                       <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
                         <span
-                          className={`size-2 shrink-0 rounded-full ${AI_DOT[item.aiCheck.verdict]}`}
+                          className={`size-2 shrink-0 rounded-full ${aiDotOf(item.aiCheck)}`}
                         />
-                        {AI_LABEL[item.aiCheck.verdict][0]}
+                        {aiLabelOf(item.aiCheck)[0]}
                       </span>
                     )}
                   </span>
@@ -991,9 +1100,9 @@ export default function QueueTable({
                     {item.aiCheck ? (
                       <span className="flex items-center gap-1.5 whitespace-nowrap text-[12px] text-slate-600">
                         <span
-                          className={`size-2 shrink-0 rounded-full ${AI_DOT[item.aiCheck.verdict]}`}
+                          className={`size-2 shrink-0 rounded-full ${aiDotOf(item.aiCheck)}`}
                         />
-                        {AI_LABEL[item.aiCheck.verdict][0]}
+                        {aiLabelOf(item.aiCheck)[0]}
                       </span>
                     ) : (
                       <span className="text-[11px] text-slate-400">
