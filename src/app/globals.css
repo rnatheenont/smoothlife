@@ -720,8 +720,21 @@
   }
 }
 
+/* The width of the site, in one place.
+
+   Everything that defines a page edge reads this: the header bar, the nav
+   row, every section of the home page, the listing pages, the footer. It is
+   a custom property rather than a number in the class so that the handful of
+   elements that cannot use .container-page — full-bleed carousel stages that
+   carry no padding of their own — can still track it instead of repeating
+   the figure and drifting out of step, which is how the site ended up with a
+   1512 header sitting over 1280 content. */
+:root {
+  --page-max: 1512px;
+}
+
 .container-page {
-  max-width: 1280px;
+  max-width: var(--page-max);
   margin-left: auto;
   margin-right: auto;
   padding-left: 1rem;

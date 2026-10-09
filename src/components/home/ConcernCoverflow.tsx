@@ -129,7 +129,7 @@ export default function ConcernCoverflow() {
       </div>
 
       <div
-        className="relative mx-auto mt-7 h-[230px] w-full max-w-[1280px] touch-pan-y select-none md:mt-10 md:h-[330px] lg:h-[380px]"
+        className="relative mx-auto mt-7 h-[230px] w-full max-w-(--page-max) touch-pan-y select-none md:mt-10 md:h-[330px] lg:h-[380px]"
         onPointerDown={onPointerDown}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}

@@ -294,7 +294,7 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
         // while the clip sized itself off the viewport, so on a 375px phone
         // there were 24px of nothing and on a 441px one the clip grew 25px
         // out of the top of the stage and sat on the heading.
-        className="relative mx-auto mt-8 h-[calc(min(64vw,300px)*16/9+70px)] w-full max-w-[1280px] touch-pan-y select-none [--spread:0.74] md:mt-10 md:[--spread:1]"
+        className="relative mx-auto mt-8 h-[calc(min(64vw,300px)*16/9+70px)] w-full max-w-(--page-max) touch-pan-y select-none [--spread:0.74] md:mt-10 md:[--spread:1]"
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onPointerCancel={() => (dragX.current = null)}
