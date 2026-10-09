@@ -19,6 +19,9 @@ export type ConversationRow = {
   subject: string | null;
   last_message_at: string;
   created_at: string;
+  /** When staff last opened the thread; null when nobody has. Drives the
+   *  unread count in the inbox list. */
+  staff_read_at: string | null;
 };
 
 /**
@@ -78,18 +81,33 @@ export async function openConversation(opts: {
     return updated ?? existing;
   }
 
-  const [created] = await supabaseRest<ConversationRow[]>("conversations", {
-    method: "POST",
-    body: JSON.stringify({
-      channel: opts.channel,
-      channel_user_id: opts.channelUserId,
-      user_id: opts.userId ?? null,
-      status: opts.status ?? "ai_handling",
-      urgency: opts.urgency ?? "normal",
-      subject: opts.subject ?? null,
-    }),
-  });
-  return created ?? null;
+  // The read above and this insert are two statements with nothing holding
+  // the gap between them, so two deliveries arriving together both see "no
+  // open case" and both insert. A partial unique index on
+  // (channel, channel_user_id) where status <> 'resolved' makes the second
+  // one fail instead of succeeding, and losing that race is not an error —
+  // it means somebody else just created the row we were about to.
+  try {
+    const [created] = await supabaseRest<ConversationRow[]>("conversations", {
+      method: "POST",
+      body: JSON.stringify({
+        channel: opts.channel,
+        channel_user_id: opts.channelUserId,
+        user_id: opts.userId ?? null,
+        status: opts.status ?? "ai_handling",
+        urgency: opts.urgency ?? "normal",
+        subject: opts.subject ?? null,
+      }),
+    });
+    return created ?? null;
+  } catch (err) {
+    const [raced] = await supabaseRest<ConversationRow[]>(
+      `conversations?channel=eq.${pgValue(opts.channel)}&channel_user_id=eq.${pgValue(opts.channelUserId)}` +
+        `&status=neq.resolved&select=*&order=last_message_at.desc&limit=1`
+    ).catch((): ConversationRow[] => []);
+    if (raced) return raced;
+    throw err;
+  }
 }
 
 export async function appendMessage(opts: {

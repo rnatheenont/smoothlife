@@ -3,6 +3,8 @@ import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { getProductBySlug } from "@/data/products";
 import { translateForCustomer } from "@/lib/reply-translate";
+import { renderProductMarkers } from "@/lib/channels/markers";
+import { resolveFromCatalog } from "@/lib/channels/catalog";
 import { appendMessage, transcriptKeyFor, ConversationRow } from "@/lib/conversations";
 import { clearInboxAlert } from "@/lib/inbox-alert";
 import { lineImageMessage, lineTextMessage, linePushConfigured, pushLineMessages, type LineMessage } from "@/lib/line-push";
@@ -343,7 +345,32 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       }
       messages.push(lineImageMessage(url));
     }
-    if (content) messages.push(lineTextMessage(delivered ?? content));
+    // [[slug]] is a marker the web chat draws as a card. LINE has no such
+    // thing, and was sending the marker itself — the customer read the slug.
+    // Links are allowed here, so it becomes the product's name and its page.
+    //
+    // The rendered text is also what gets recorded as delivered, so the
+    // thread shows staff what the customer actually received rather than
+    // what they typed.
+    if (content) {
+      const body = renderProductMarkers(delivered ?? content, {
+        allowsLinks: true,
+        resolve: resolveFromCatalog,
+      });
+      if (body) {
+        messages.push(lineTextMessage(body));
+        if (body !== content) delivered = body;
+      }
+    }
+    // Only an unmatched marker was typed, and it resolved to nothing: there
+    // is no message to push, and pushing an empty list would either fail at
+    // LINE or quietly record a reply that never existed.
+    if (messages.length === 0) {
+      return NextResponse.json(
+        { ok: false, error: "ข้อความนี้มีแต่สินค้าที่หาไม่เจอในแคตตาล็อก — ตรวจสินค้าที่แทรกอีกครั้ง" },
+        { status: 422 }
+      );
+    }
 
     const sent = await pushLineMessages(conversation.channel_user_id, messages);
     if (!sent) {

@@ -160,7 +160,11 @@ function scoreOf(c: InboxListRow, unread: number, origin: "escalation" | "chat")
     (c.status === "waiting_human" ? 1000 : 0) +
     (c.status === "assigned" ? 500 : 0) +
     (origin === "escalation" ? 100 : 0) +
-    (c.urgency === "high" ? 200 : 0) +
+    // "urgent", not "high" — the column's own check constraint allows
+    // 'normal' and 'urgent' only, so this comparison was never true and an
+    // urgent case has been sorting exactly like a normal one since the day
+    // the priority score was written.
+    (c.urgency === "urgent" ? 200 : 0) +
     Math.min(unread, 10) * 20 +
     (unread > 0 ? Math.min(waitingHours, 48) : 0)
   );

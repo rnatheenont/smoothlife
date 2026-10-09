@@ -52,8 +52,10 @@ import { useAdminAction } from "@/components/admin/header-action";
 import { Button, Spinner, TextArea } from "@heroui/react";
 
 // Unified inbox (plan §7.2): conversation list, thread, customer panel.
-// Only the web channel exists so far — LINE and Facebook adapters write into
-// the same tables, so they will appear here without this screen changing.
+// Web and LINE both write into these tables through the same two functions
+// in lib/conversations.ts, and a new channel is an adapter that calls them —
+// which is why marketplace chats will appear here without this screen being
+// rewritten for them.
 
 type Message = {
   id: string;

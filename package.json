@@ -8,7 +8,8 @@
     "prebuild": "node scripts/check-admin-permissions.mjs && node scripts/copy-mediapipe.js && node scripts/fetch-products.js",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
