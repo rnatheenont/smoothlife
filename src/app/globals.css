@@ -22,19 +22,6 @@
   they are gone.
 */
 @theme static {
-  /* 1800px — one step past Tailwind's 2xl (96rem), for the product grids on
-     wide monitors.
-
-     Two traps here, both of which silently produce a rule that exists, matches
-     the viewport, and still loses:
-     1. An inline min-[1800px] variant sorts before every named one, so
-        min-[1800px]:grid-cols-6 lost to 2xl:grid-cols-5.
-     2. Declared as 1800px it sorts before sm (40rem) — Tailwind orders
-        breakpoints by raw value and cannot compare px against rem. It has to
-        be rem to land after 2xl.
-     Both measured as 5 columns at 1850px before this was written in rem. */
-  --breakpoint-3xl: 112.5rem;
-
   --color-brand-50: #ebf8f4;
   --color-brand-100: #d1efe7;
   --color-brand-200: #9edecd;
@@ -745,35 +732,6 @@
   .container-page {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
-  }
-}
-
-/* For pages whose job is to show as many products at once as the screen can
-   hold — the shop listing, brand pages, search results. 1280px caps those at
-   four cards with a third of a wide monitor left empty on each side, which
-   reads as a narrow site rather than a deliberate measure. Reading pages keep
-   container-page: a 1280px cap is a line length there, not wasted room.
-
-   Same gutters as container-page up to 1280px, so the two line up on a laptop
-   and only diverge where there is spare width to use. */
-.container-wide {
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-@media (min-width: 768px) {
-  .container-wide {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-}
-
-@media (min-width: 1280px) {
-  .container-wide {
-    padding-left: 2.5rem;
-    padding-right: 2.5rem;
   }
 }
 

@@ -74,7 +74,7 @@ export default function SearchContent() {
     .slice(0, 8);
 
   return (
-    <div className="container-wide py-6 md:py-10">
+    <div className="container-page py-6 md:py-10">
       <div className="relative mb-6 md:max-w-xl">
         <SearchIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
@@ -118,7 +118,7 @@ export default function SearchContent() {
 
           <div className="mt-8">
             <h2 className="font-bold text-brand-ink mb-3">สินค้าแนะนำ</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-7">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
               {recommendedProducts.map((p) => (
                 <ProductCard key={p.slug} product={p} />
               ))}
@@ -140,7 +140,7 @@ export default function SearchContent() {
 
           <div>
             <h2 className="font-bold text-brand-ink mb-3">สินค้าแนะนำ</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-7">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
               {recommendedProducts.map((p) => (
                 <ProductCard key={p.slug} product={p} />
               ))}
@@ -165,7 +165,7 @@ export default function SearchContent() {
       {matchedProducts.length > 0 && (
         <div className="mt-8">
           <h2 className="font-bold text-brand-ink mb-3">สินค้า ({matchedProducts.length})</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-7">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
             {matchedProducts.map((p) => (
               <ProductCard key={p.slug} product={p} />
             ))}

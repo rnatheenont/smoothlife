@@ -79,7 +79,7 @@ export default async function BrandHubPage(props: { params: Promise<{ slug: stri
   ];
 
   return (
-    <div className="container-wide py-6 md:py-10">
+    <div className="container-page py-6 md:py-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -210,7 +210,7 @@ export default async function BrandHubPage(props: { params: Promise<{ slug: stri
             สินค้า<span translate="no">{brand.name}</span>ที่มีคนรีวิวมากที่สุด
           </h2>
           <p className="mb-4 text-xs text-slate-500">เรียงจากจำนวนรีวิวจริงของผู้ซื้อบนเว็บไซต์</p>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-7">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
             {bestsellers.map((p) => (
               <ProductCard key={p.slug} product={p} />
             ))}
@@ -233,7 +233,7 @@ export default async function BrandHubPage(props: { params: Promise<{ slug: stri
               </Link>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-7">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
             {group.items.slice(0, PER_GROUP).map((p) => (
               <ProductCard key={p.slug} product={p} />
             ))}

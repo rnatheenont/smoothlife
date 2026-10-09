@@ -54,7 +54,7 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
         subtitle="ดูแลตัวเองได้ง่าย ๆ ในทุกวัน"
       />
 
-      <div className="container-wide py-5 md:py-8">
+      <div className="container-page py-5 md:py-8">
         <CategoryCircles current={searchParams} />
 
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
@@ -85,10 +85,7 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
-                    {/* The column count climbs with the width rather than the
-                        cards growing: a 400px-wide product card is a worse use
-                        of a big monitor than two more products on screen. */}
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4">
                     {items.map((p) => (
                       <ProductCard key={p.slug} product={p} />
                     ))}
