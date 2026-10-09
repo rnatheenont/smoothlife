@@ -309,7 +309,13 @@ export async function GET(req: NextRequest) {
       // Straight from Shopify, not from our own "the card cleared" row.
       paymentStatus: payments.get(r.payment_transactions?.shopify_order_id ?? "")?.financialStatus ?? null,
       refunded: payments.get(r.payment_transactions?.shopify_order_id ?? "")?.refunded ?? 0,
-      invoiceNo: r.payment_transactions?.invoice_no ?? r.manual_receipt_no,
+      // Our 2C2P row's invoice number, or nothing. It used to fall back to
+      // manual_receipt_no, which was tolerable while that column only ever
+      // held the number the customer typed — but a reviewer can correct it
+      // now, so the fallback put a Shopify order name (#4408) in a field
+      // labelled "เลขใบแจ้งหนี้ 2C2P". A dash is the honest answer when we
+      // took no payment for the order.
+      invoiceNo: r.payment_transactions?.invoice_no ?? null,
       paidAt: r.payment_transactions?.confirmed_at ?? null,
       orderTotal: r.payment_transactions ? Number(r.payment_transactions.amount) : null,
       dentisteAmount: Number(r.dentiste_net_amount),

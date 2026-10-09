@@ -119,8 +119,14 @@ function PaymentChip({ item }: { item: QueueItem }) {
 
 /** The order number, and a way into the order itself. */
 function OrderNumber({ item }: { item: QueueItem }) {
+  // The shop's own name for the order, once there is one. This used to show
+  // what the customer typed even after the claim had been matched, so the
+  // field read 2610002021242 — their 2C2P invoice — while the link beside it
+  // opened #4408. The label has to be the thing the link goes to; what they
+  // wrote is still on the screen, under ลูกค้ากรอกมาว่า.
+  const matched = item.claimedOrder?.found ? item.claimedOrder.number : null;
   const shown = item.manual
-    ? (item.declared.orderNumber ?? item.claimedOrder?.number ?? null)
+    ? (matched ?? item.declared.orderNumber ?? item.claimedOrder?.number ?? null)
     : item.orderNumber;
   const href = item.claimedOrder?.found ? item.claimedOrder.adminUrl : null;
   if (!shown) return <>—</>;
