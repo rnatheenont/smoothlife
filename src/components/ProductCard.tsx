@@ -5,7 +5,7 @@ import Image from "next/image";
 import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
 import { Heart, Check, Flame, ShoppingCart, Star } from "lucide-react";
-import { Product } from "@/data/types";
+import type { ProductCardData } from "@/data/card";
 import { formatTHB } from "@/lib/format";
 import { useCart, useWishlist } from "@/lib/cart-context";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
@@ -62,7 +62,7 @@ function formatSold(n: number, lang: string) {
   return `${trim(n / 10000)}หมื่น`;
 }
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({ product }: { product: ProductCardData }) {
   const { addItem, giftPromos } = useCart();
   const { settings } = useWidgetSettings();
   const { toggle, has } = useWishlist();
@@ -86,10 +86,11 @@ export default function ProductCard({ product }: { product: Product }) {
   const discount = product.compareAtPrice
     ? Math.round(100 - (product.price / product.compareAtPrice) * 100)
     : 0;
-  const hasMultiplePrices = product.variants.length > 1 && product.variants.some((v) => v.price !== product.price);
-  const defaultVariant = product.variants.find((v) => v.variantId === product.variantId);
-  const lowStock =
-    typeof defaultVariant?.quantity === "number" && defaultVariant.quantity > 0 && defaultVariant.quantity <= 10;
+  // Both of these were worked out here from the whole variants array, which
+  // is why the whole array had to be shipped. They are answers now; see
+  // toCardData.
+  const hasMultiplePrices = product.multiplePrices;
+  const lowStock = product.quantity !== null && product.quantity > 0 && product.quantity <= 10;
   const soldOut = !product.inStock;
 
   function handleWish() {
@@ -239,7 +240,7 @@ export default function ProductCard({ product }: { product: Product }) {
               )}
               {lowStock && (
                 <span className="whitespace-nowrap text-[11px] font-semibold text-amber-700">
-                  เหลือเพียง {defaultVariant.quantity} ชิ้น
+                  เหลือเพียง {product.quantity} ชิ้น
                 </span>
               )}
               {showSold && (

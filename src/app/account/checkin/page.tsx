@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { products } from "@/data/products";
 import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 import { Button } from "@/components/ui";
+import { toCardData } from "@/data/card";
 
 type DayInfo = {
   date: string;
@@ -407,7 +408,7 @@ function CheckinContent() {
           <h2 className="font-bold text-brand-ink mb-3">สินค้าขายดี ระหว่างรอครบรอบ</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {bestSellers.map((p) => (
-              <ProductCard key={p.slug} product={p} />
+              <ProductCard key={p.slug} product={toCardData(p)} />
             ))}
           </div>
         </div>

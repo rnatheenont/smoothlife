@@ -7,6 +7,7 @@ import { useQuickChat } from "@/lib/quickchat-context";
 import { recommendOralCareSet } from "@/lib/oral-care";
 import { formatTHB } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
+import { toCardData } from "@/data/card";
 
 const CONCERN_OPTIONS = ["กลิ่นปาก", "เสียวฟัน", "ฟันเหลือง", "เหงือกอักเสบ", "ฟันผุบ่อย"];
 const USING_OPTIONS = ["ยาสีฟัน", "น้ำยาบ้วนปาก", "ไหมขัดฟัน", "แปรงไฟฟ้า", "ไม่แน่ใจ"];
@@ -74,7 +75,7 @@ export default function OralCareAdvisorQuiz() {
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mb-6">
               {recommended.map((p) => (
-                <ProductCard key={p.slug} product={p} />
+                <ProductCard key={p.slug} product={toCardData(p)} />
               ))}
             </div>
 

@@ -4,6 +4,7 @@ import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { pageMetadata } from "@/lib/site-pages";
 import { withCustomImages } from "@/lib/product-images";
+import { toCardData } from "@/data/card";
 
 export function generateMetadata() {
   return pageMetadata("promotions");
@@ -41,7 +42,7 @@ export default async function PromotionsPage() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
               {display.map((p) => (
-                <ProductCard key={p.slug} product={p} />
+                <ProductCard key={p.slug} product={toCardData(p)} />
               ))}
             </div>
           </section>

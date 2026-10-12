@@ -5,6 +5,7 @@ import { products } from "@/data/products";
 import { withCustomImages } from "@/lib/product-images";
 import type { Product } from "@/data/types";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
+import { toCardData } from "@/data/card";
 
 // A shelf of products, chosen either by hand or by rule.
 //
@@ -81,7 +82,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Pro
       )}
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4">
         {items.map((product) => (
-          <ProductCard key={product.slug} product={product} />
+          <ProductCard key={product.slug} product={toCardData(product)} />
         ))}
       </div>
     </section>

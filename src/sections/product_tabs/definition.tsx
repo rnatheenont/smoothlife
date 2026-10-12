@@ -5,6 +5,7 @@ import { products } from "@/data/products";
 import { withCustomImages } from "@/lib/product-images";
 import type { Product } from "@/data/types";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
+import { toCardData } from "@/data/card";
 
 // Several shelves behind one row of tabs.
 //
@@ -66,7 +67,7 @@ function Component({ settings, data }: SectionProps<Settings, Data>) {
   const panels = tabs.map((t) => (
     <div key={t.label} className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 xl:grid-cols-4">
       {t.items.map((product) => (
-        <ProductCard key={product.slug} product={product} />
+        <ProductCard key={product.slug} product={toCardData(product)} />
       ))}
     </div>
   ));

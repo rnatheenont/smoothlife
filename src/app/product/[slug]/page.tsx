@@ -21,6 +21,7 @@ import { productJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { canonicalSlugFor } from "@/lib/product-canonical";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import { getPublishedProductContent } from "@/lib/product-content";
+import { toCardData } from "@/data/card";
 import {
   customVideosFor,
   withCustomImages,
@@ -203,7 +204,7 @@ export default async function ProductPage(props: {
           />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
             {related.map((p) => (
-              <ProductCard key={p.slug} product={p} />
+              <ProductCard key={p.slug} product={toCardData(p)} />
             ))}
           </div>
         </div>

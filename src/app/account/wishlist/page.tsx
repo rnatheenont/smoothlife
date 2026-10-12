@@ -6,6 +6,7 @@ import { useWishlist } from "@/lib/cart-context";
 import { products } from "@/data/products";
 import AccountLayout from "@/components/account/AccountLayout";
 import ProductCard from "@/components/ProductCard";
+import { toCardData } from "@/data/card";
 
 function WishlistContent() {
   const { slugs } = useWishlist();
@@ -28,7 +29,7 @@ function WishlistContent() {
       <h1 className="text-2xl font-bold text-brand-ink mb-6">รายการโปรดและรูทีนที่บันทึกไว้</h1>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
         {items.map((p) => (
-          <ProductCard key={p.slug} product={p} />
+          <ProductCard key={p.slug} product={toCardData(p)} />
         ))}
       </div>
     </div>

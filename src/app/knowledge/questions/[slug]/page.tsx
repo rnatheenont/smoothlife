@@ -12,6 +12,7 @@ import {
 } from "@/lib/kb-public";
 import { thaiDate } from "@/lib/storefront-articles";
 import { withCustomImages } from "@/lib/product-images";
+import { toCardData } from "@/data/card";
 
 // One question, one page — the answer the team wrote, and the products it is
 // about. Refreshed on a quarter-hour; the knowledge base changes when someone
@@ -110,7 +111,7 @@ export default async function PublicQuestionPage(props: { params: Promise<{ slug
           <h2 className="mb-4 text-lg font-bold text-brand-ink md:text-xl">สินค้าที่เกี่ยวข้อง</h2>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
             {products.slice(0, 4).map((p) => (
-              <ProductCard key={p.slug} product={p} />
+              <ProductCard key={p.slug} product={toCardData(p)} />
             ))}
           </div>
         </section>

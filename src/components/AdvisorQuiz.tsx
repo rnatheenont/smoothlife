@@ -8,6 +8,7 @@ import { concerns } from "@/data/categories";
 import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { useQuickChat } from "@/lib/quickchat-context";
+import { toCardData } from "@/data/card";
 
 const steps = [
   {
@@ -103,7 +104,7 @@ export default function AdvisorQuiz() {
         <h3 className="font-bold text-brand-ink mb-4">สินค้าที่แนะนำสำหรับคุณ</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mb-10">
           {recommended.map((p) => (
-            <ProductCard key={p.slug} product={p} />
+            <ProductCard key={p.slug} product={toCardData(p)} />
           ))}
         </div>
 

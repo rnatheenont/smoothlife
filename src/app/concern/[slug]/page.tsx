@@ -7,6 +7,7 @@ import { sortSoldOutLast } from "@/lib/filter-products";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import { withCustomImages } from "@/lib/product-images";
+import { toCardData } from "@/data/card";
 
 export function generateStaticParams() {
   return concerns.map((c) => ({ slug: c.slug }));
@@ -86,7 +87,7 @@ export default async function ConcernDetailPage(props: { params: Promise<{ slug:
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
           {items.map((p) => (
-            <ProductCard key={p.slug} product={p} />
+            <ProductCard key={p.slug} product={toCardData(p)} />
           ))}
         </div>
       )}

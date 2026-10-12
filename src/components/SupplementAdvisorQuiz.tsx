@@ -9,6 +9,7 @@ import { recommendSupplementPlan, PREGNANT_OR_BREASTFEEDING } from "@/lib/supple
 import { formatTHB } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
 import { Button } from "@/components/ui";
+import { toCardData } from "@/data/card";
 
 const GOAL_OPTIONS = ["ผิวสวย", "ผมแข็งแรง", "ภูมิคุ้มกัน", "ระบบขับถ่าย", "นอนหลับ", "พลังงาน", "ข้อกระดูก"];
 const AGE_OPTIONS = ["18-25", "26-35", "36-45", "46+"];
@@ -104,7 +105,7 @@ export default function SupplementAdvisorQuiz() {
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5 mb-6">
                   {items.map((p) => (
-                    <ProductCard key={p.slug} product={p} />
+                    <ProductCard key={p.slug} product={toCardData(p)} />
                   ))}
                 </div>
 

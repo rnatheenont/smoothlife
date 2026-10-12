@@ -4,6 +4,7 @@ import { useRecentlyViewed } from "@/lib/recently-viewed-context";
 import { getProductBySlug } from "@/data/products";
 import ProductCard from "./ProductCard";
 import SectionHeading from "./SectionHeading";
+import { toCardData } from "@/data/card";
 
 export default function RecentlyViewedSection({ excludeSlug }: { excludeSlug?: string }) {
   const { slugs } = useRecentlyViewed();
@@ -21,7 +22,7 @@ export default function RecentlyViewedSection({ excludeSlug }: { excludeSlug?: s
       <SectionHeading title="สินค้าที่เพิ่งดู" subtitle="Recently viewed" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
         {viewed.map((p) => (
-          <ProductCard key={p.slug} product={p} />
+          <ProductCard key={p.slug} product={toCardData(p)} />
         ))}
       </div>
     </div>

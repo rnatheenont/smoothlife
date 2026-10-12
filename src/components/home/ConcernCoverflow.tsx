@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { concerns, concernImage } from "@/data/categories";
 import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
+import { toCardData } from "@/data/card";
 
 // Shop by concern, as a fanned-out stack rather than a row of equal tiles.
 //
@@ -230,7 +231,7 @@ export default function ConcernCoverflow() {
                     // what says the rail keeps going.
                     className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-6rem)/6.5)]"
                   >
-                    <ProductCard product={p} />
+                    <ProductCard product={toCardData(p)} />
                   </li>
                 ))}
               </ul>

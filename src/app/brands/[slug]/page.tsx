@@ -15,6 +15,7 @@ import { PAGES_BRAND_ENABLED } from "@/lib/feature-flags";
 import { renderSections } from "@/lib/pages/render";
 import { publishedDoc } from "@/lib/pages/store";
 import { defaultBrandDoc } from "@/lib/pages/default-docs/brand";
+import { toCardData } from "@/data/card";
 
 // One page per brand.
 //
@@ -254,7 +255,7 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
           <p className="mb-4 text-xs text-slate-500">เรียงจากจำนวนรีวิวจริงของผู้ซื้อบนเว็บไซต์</p>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5">
             {bestsellers.map((p) => (
-              <ProductCard key={p.slug} product={p} />
+              <ProductCard key={p.slug} product={toCardData(p)} />
             ))}
           </div>
         </section>
@@ -277,7 +278,7 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5">
             {group.items.slice(0, PER_GROUP).map((p) => (
-              <ProductCard key={p.slug} product={p} />
+              <ProductCard key={p.slug} product={toCardData(p)} />
             ))}
           </div>
         </section>

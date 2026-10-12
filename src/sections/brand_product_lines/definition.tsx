@@ -4,6 +4,7 @@ import ProductCard from "@/components/ProductCard";
 import { BRAND_GRID, brandPageData, shelfCounts, shelfItemClass } from "@/lib/brand-page";
 import type { GroupedProducts } from "@/lib/brand-groups";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
+import { toCardData } from "@/data/card";
 
 // The brand's catalogue, sorted into the kinds of thing it sells.
 //
@@ -78,7 +79,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
           <div className={BRAND_GRID}>
             {group.items.slice(0, xl).map((p, i) => (
               <div key={p.slug} className={shelfItemClass(i, settings.rows)}>
-                <ProductCard product={p} />
+                <ProductCard product={toCardData(p)} />
               </div>
             ))}
           </div>

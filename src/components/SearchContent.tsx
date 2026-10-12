@@ -9,6 +9,7 @@ import { concerns } from "@/data/categories";
 import { articles } from "@/data/articles";
 import ProductCard from "@/components/ProductCard";
 import { sortSoldOutLast } from "@/lib/filter-products";
+import { toCardData } from "@/data/card";
 
 export default function SearchContent() {
   const searchParams = useSearchParams();
@@ -120,7 +121,7 @@ export default function SearchContent() {
             <h2 className="font-bold text-brand-ink mb-3">สินค้าแนะนำ</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5">
               {recommendedProducts.map((p) => (
-                <ProductCard key={p.slug} product={p} />
+                <ProductCard key={p.slug} product={toCardData(p)} />
               ))}
             </div>
           </div>
@@ -142,7 +143,7 @@ export default function SearchContent() {
             <h2 className="font-bold text-brand-ink mb-3">สินค้าแนะนำ</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5">
               {recommendedProducts.map((p) => (
-                <ProductCard key={p.slug} product={p} />
+                <ProductCard key={p.slug} product={toCardData(p)} />
               ))}
             </div>
           </div>
@@ -167,7 +168,7 @@ export default function SearchContent() {
           <h2 className="font-bold text-brand-ink mb-3">สินค้า ({matchedProducts.length})</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5">
             {matchedProducts.map((p) => (
-              <ProductCard key={p.slug} product={p} />
+              <ProductCard key={p.slug} product={toCardData(p)} />
             ))}
           </div>
         </div>

@@ -12,6 +12,7 @@ import ViewToggle from "@/components/shop/ViewToggle";
 import ProductRow from "@/components/shop/ProductRow";
 import { pageMetadata } from "@/lib/site-pages";
 import { withCustomImages } from "@/lib/product-images";
+import { toCardData } from "@/data/card";
 
 // Every ?brand=/?page=/?sort= filter combination renders this same route —
 // without a canonical they'd all index as separate near-duplicate pages.
@@ -84,7 +85,7 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
                         filter sidebar, so at 1280 five columns would leave 179px
                         cards — narrower than the two-column phone layout. */}
                     {items.map((p) => (
-                      <ProductCard key={p.slug} product={p} />
+                      <ProductCard key={p.slug} product={toCardData(p)} />
                     ))}
                   </div>
                 )}

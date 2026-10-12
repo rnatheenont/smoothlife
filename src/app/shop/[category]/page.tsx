@@ -13,6 +13,7 @@ import { notFound } from "next/navigation";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import { withCustomImages } from "@/lib/product-images";
+import { toCardData } from "@/data/card";
 
 const ADVISOR_ENTRY: Record<string, { href: string; title: string; subtitle: string }> = {
   "oral-care": {
@@ -109,7 +110,7 @@ export default async function CategoryPage(
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
               {items.map((p) => (
-                <ProductCard key={p.slug} product={p} />
+                <ProductCard key={p.slug} product={toCardData(p)} />
               ))}
             </div>
           )}

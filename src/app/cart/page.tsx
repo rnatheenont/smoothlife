@@ -20,6 +20,7 @@ import FreeGiftProgress from "@/components/FreeGiftProgress";
 import TieredRewardBox from "@/components/TieredRewardBox";
 import MobileStickyBar from "@/components/MobileStickyBar";
 import ProductCard from "@/components/ProductCard";
+import { toCardData } from "@/data/card";
 
 export default function CartPage() {
   const { lines, updateQty, removeItem, changeVariant } = useCart();
@@ -252,7 +253,7 @@ export default function CartPage() {
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {bundleSuggestions.map((p) => (
-                  <ProductCard key={p.slug} product={p} />
+                  <ProductCard key={p.slug} product={toCardData(p)} />
                 ))}
               </div>
             </div>
