@@ -11,6 +11,7 @@ import { SITE_URL } from "@/lib/site-url";
 import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site-pages";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import GoogleTagManager from "@/components/GoogleTagManager";
 import OldBrowserNotice from "@/components/OldBrowserNotice";
 
 // Noto Sans Thai, self-hosted through next/font so there is no request to
@@ -96,6 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Providers>
         <Analytics />
         <SpeedInsights />
+        <GoogleTagManager />
       </body>
     </html>
   );
