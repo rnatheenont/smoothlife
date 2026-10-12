@@ -29,8 +29,8 @@ const schema = z.object({
 
 type Data = { page: BrandPageData; heroSources: Record<string, string> | null; mobileSources: Record<string, string> | null };
 
-async function load(_settings: z.output<typeof schema>, ctx: { slug: string }): Promise<Data | null> {
-  const page = await brandPageData(ctx.slug);
+async function load(_settings: z.output<typeof schema>, ctx: { slug: string; draftProfile?: boolean }): Promise<Data | null> {
+  const page = await brandPageData(ctx.slug, ctx.draftProfile);
   if (!page) return null;
   const hero = page.profile?.hero_image ?? "";
   const mobile = page.profile?.hero_image_mobile ?? "";

@@ -13,8 +13,8 @@ const schema = z.object({});
 
 type Group = { key: string; label: string; count: number };
 
-async function load(_settings: z.output<typeof schema>, ctx: { slug: string }): Promise<Group[] | null> {
-  const page = await brandPageData(ctx.slug);
+async function load(_settings: z.output<typeof schema>, ctx: { slug: string; draftProfile?: boolean }): Promise<Group[] | null> {
+  const page = await brandPageData(ctx.slug, ctx.draftProfile);
   if (!page) return null;
   return page.groups.map((g) => ({ key: g.key, label: g.label, count: g.items.length }));
 }

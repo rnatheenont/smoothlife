@@ -31,8 +31,8 @@ const SMALL_BRAND = 8;
 
 type Data = { brandName: string; items: Product[]; curated: boolean };
 
-async function load(settings: z.output<typeof schema>, ctx: { slug: string }): Promise<Data | null> {
-  const page = await brandPageData(ctx.slug);
+async function load(settings: z.output<typeof schema>, ctx: { slug: string; draftProfile?: boolean }): Promise<Data | null> {
+  const page = await brandPageData(ctx.slug, ctx.draftProfile);
   if (!page) return null;
 
   // The widest row count, so the markup holds enough cards for a desktop and

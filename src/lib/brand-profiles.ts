@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { pgValue, supabaseConfigured, supabaseRestCached } from "@/lib/supabase-server";
+import { pgValue, supabaseConfigured, supabaseRest, supabaseRestCached } from "@/lib/supabase-server";
 
 // What the team writes about a brand, on top of what the catalogue says.
 //
@@ -69,15 +69,34 @@ export function isEmptyProfile(profile: BrandProfileInput | null): boolean {
  * throws — a brand page without its story is still a brand page, and a page
  * that 500s because a paragraph could not be fetched is not.
  */
-export async function getBrandProfile(slug: string): Promise<BrandProfile | null> {
+export async function getBrandProfile(slug: string, useDraft = false): Promise<BrandProfile | null> {
   if (!supabaseConfigured()) return null;
   try {
-    const rows = await supabaseRestCached<BrandProfile[]>(
-      `brand_profiles?select=${BRAND_PROFILE_COLUMNS}&slug=eq.${pgValue(slug)}&limit=1`,
-      { revalidate: 3600, tags: [brandProfileTag(slug), "brand-profiles"] }
-    );
+    // The draft is read fresh and never cached: it changes while somebody is
+    // typing, and the only thing that reads it is the admin preview, which
+    // is dynamic anyway. The published profile keeps its long cache.
+    const rows = useDraft
+      ? await supabaseRest<(BrandProfile & { draft: unknown })[]>(
+          `brand_profiles?select=${BRAND_PROFILE_COLUMNS},draft&slug=eq.${pgValue(slug)}&limit=1`
+        )
+      : await supabaseRestCached<BrandProfile[]>(
+          `brand_profiles?select=${BRAND_PROFILE_COLUMNS}&slug=eq.${pgValue(slug)}&limit=1`,
+          { revalidate: 3600, tags: [brandProfileTag(slug), "brand-profiles"] }
+        );
     const row = rows[0];
     if (!row) return null;
+
+    if (useDraft) {
+      const draft = (row as { draft?: unknown }).draft;
+      // A draft that no longer parses is ignored rather than shown: the
+      // preview exists to answer "does this look right", and drawing
+      // something the real page could never render answers a different
+      // question.
+      const parsedDraft = draft ? brandProfileSchema.safeParse(draft) : null;
+      if (parsedDraft?.success) {
+        return { ...parsedDraft.data, slug: row.slug, updated_by: row.updated_by, updated_at: row.updated_at };
+      }
+    }
     // Parsed on the way out as well as on the way in: a row edited by hand in
     // the dashboard should degrade to "no profile", not to a crash in a
     // component that trusted its shape.

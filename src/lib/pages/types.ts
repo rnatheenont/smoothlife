@@ -31,6 +31,10 @@ export type RenderCtx = {
    *  dates itself could render a clock ticking down to a start that the page
    *  around it has already passed. */
   times?: CampaignTimes;
+  /** Brand pages, admin preview only: draw the brand profile the team is
+   *  editing rather than the one that is live. Never true on a page a
+   *  customer can reach — the preview route is behind the admin cookie. */
+  draftProfile?: boolean;
   /** True inside the admin preview: sections that fail show a visible box
    *  instead of disappearing, because a section that silently vanishes while
    *  someone is editing it is a bug report nobody can write. */

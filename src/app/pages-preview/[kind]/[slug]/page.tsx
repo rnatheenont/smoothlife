@@ -23,6 +23,11 @@ import type { PageRow } from "@/lib/pages/store";
 // customer should not be shown our plumbing; here, a section that disappears
 // while you are editing it is a bug nobody can report.
 //
+// ?profile=draft draws a brand page from the profile the team is editing
+// rather than the one that is live, so "does this hero picture work" can be
+// answered before the answer is on the site. The draft lives in a column
+// nothing public reads, and this route is already behind the admin cookie.
+//
 // ?phase=teaser|live|extended|ended overrides the phase a campaign would be
 // in right now. Without it a campaign built in October can only ever be
 // previewed in its teaser phase, which is the one phase nobody is worried
@@ -49,10 +54,10 @@ function Notice({ children }: { children: React.ReactNode }) {
 
 export default async function PagePreview(props: {
   params: Promise<{ kind: string; slug: string }>;
-  searchParams: Promise<{ phase?: string }>;
+  searchParams: Promise<{ phase?: string; profile?: string }>;
 }) {
   const { kind: rawKind, slug } = await props.params;
-  const { phase: rawPhase } = await props.searchParams;
+  const { phase: rawPhase, profile: rawProfile } = await props.searchParams;
 
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;
   if (!verifyAdminToken(token)) return <Notice>ต้องเข้าสู่ระบบแอดมินก่อนจึงจะดูตัวอย่างได้</Notice>;
@@ -83,6 +88,8 @@ export default async function PagePreview(props: {
     now,
     phase,
     times: kind === "campaign" ? campaignTimesOf(page) : undefined,
+    // Only a brand page has a profile to draft, and only when asked for.
+    draftProfile: kind === "brand" && rawProfile === "draft",
     isPreview: true,
   });
 

@@ -28,11 +28,16 @@ export type BrandPageData = {
   profile: BrandProfile | null;
 };
 
-export const brandPageData = cache(async (slug: string): Promise<BrandPageData | null> => {
+/**
+ * `useDraft` is part of the cache key on purpose: the admin preview and the
+ * live page can both be rendered in one process, and a request that asked
+ * for the draft must never hand its answer to a request that did not.
+ */
+export const brandPageData = cache(async (slug: string, useDraft = false): Promise<BrandPageData | null> => {
   const facts = brandFacts(slug);
   if (!facts) return null;
 
-  const [items, profile] = await Promise.all([withCustomImages(facts.items), getBrandProfile(slug)]);
+  const [items, profile] = await Promise.all([withCustomImages(facts.items), getBrandProfile(slug, useDraft)]);
   return {
     brand: facts.brand,
     isHouse: isHouseBrand(facts.brand.slug),

@@ -70,6 +70,7 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ slug: str
     return NextResponse.json({ ok: false, error: "ข้อมูลไม่ครบหรือยาวเกินกำหนด" }, { status: 400 });
   }
   const profile = parsed.data;
+
   const issues = profileIssues(profile);
   if (issues.length) return NextResponse.json({ ok: false, error: issues.join(" · "), issues }, { status: 400 });
 
@@ -88,6 +89,11 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ slug: str
       featured_slugs: featured,
       updated_by: actor,
       updated_at: new Date().toISOString(),
+      // The draft is spent: what it was a draft of is now the live profile,
+      // and leaving it behind would make the next preview show something
+      // older than the page it is previewing.
+      draft: null,
+      draft_at: null,
     }),
   });
 

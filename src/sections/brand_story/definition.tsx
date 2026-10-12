@@ -21,8 +21,8 @@ const schema = z.object({
 
 type Data = { brandName: string; profile: BrandProfile | null };
 
-async function load(_settings: z.output<typeof schema>, ctx: { slug: string }): Promise<Data | null> {
-  const page = await brandPageData(ctx.slug);
+async function load(_settings: z.output<typeof schema>, ctx: { slug: string; draftProfile?: boolean }): Promise<Data | null> {
+  const page = await brandPageData(ctx.slug, ctx.draftProfile);
   return page ? { brandName: page.brand.name, profile: page.profile } : null;
 }
 
@@ -88,7 +88,7 @@ export const brandStory: SectionDefinition<typeof schema> = {
   maxPerPage: 1,
   load,
   check: async (_settings, ctx) => {
-    const page = await brandPageData(ctx.slug);
+    const page = await brandPageData(ctx.slug, ctx.draftProfile);
     const profile = page?.profile;
     if (!profile || (!profile.story.trim() && profile.usp.length === 0)) {
       return [{ level: "warning", message: "แบรนด์นี้ยังไม่ได้เขียนเรื่องราว/จุดเด่นในโปรไฟล์ section นี้จะไม่แสดง" }];

@@ -17,8 +17,8 @@ const LIST_FROM = 8;
 
 type Data = { brandName: string; items: { slug: string; name: string }[] };
 
-async function load(_settings: z.output<typeof schema>, ctx: { slug: string }): Promise<Data | null> {
-  const page = await brandPageData(ctx.slug);
+async function load(_settings: z.output<typeof schema>, ctx: { slug: string; draftProfile?: boolean }): Promise<Data | null> {
+  const page = await brandPageData(ctx.slug, ctx.draftProfile);
   if (!page) return null;
   return { brandName: page.brand.name, items: page.items.map((p) => ({ slug: p.slug, name: p.name })) };
 }

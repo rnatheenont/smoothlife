@@ -233,6 +233,10 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   // of the request is that the person making it cannot publish. Deciding on
   // the request stays on the pages endpoint, where pages.publish is required.
   { prefix: "/api/admin/page-review", permission: "pages.edit" },
+
+  // Parking a brand profile to look at it is editing, not publishing — and
+  // the person who cannot publish is the one who most needs to see it first.
+  { prefix: "/api/admin/brand-profile-draft", permission: "pages.edit" },
 ];
 
 /** The rule covering this request, or null when nothing covers it. */

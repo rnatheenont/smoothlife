@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, ArrowLeft, ArrowUp, ExternalLink, LayoutTemplate, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ExternalLink, Eye, LayoutTemplate, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/layout-kit";
 import { Card } from "@/components/ui";
@@ -58,6 +58,7 @@ export default function BrandProfileEditor(props: { params: Promise<{ slug: stri
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [productQuery, setProductQuery] = useState("");
+  const [previewing, setPreviewing] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -132,6 +133,32 @@ export default function BrandProfileEditor(props: { params: Promise<{ slug: stri
     }
   }
 
+  /**
+   * Park what is on screen and open it in the preview.
+   *
+   * The form is sent as it stands, unsaved and possibly incomplete — that is
+   * the state worth looking at. A new tab rather than this one, because the
+   * thing being previewed is still in the form behind it.
+   */
+  async function preview() {
+    setPreviewing(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/brand-profile-draft", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, profile }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error ?? "เปิดตัวอย่างไม่สำเร็จ");
+      window.open(`/pages-preview/brand/${slug}?profile=draft&v=${Date.now()}`, "_blank", "noopener");
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof Error ? err.message : "เปิดตัวอย่างไม่สำเร็จ" });
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
   async function useAuto() {
     if (!window.confirm("หยุดใช้หน้าที่จัดเอง แล้วกลับไปใช้หน้าอัตโนมัติ?\nหน้าที่จัดไว้ยังเก็บอยู่ กลับมาแก้ต่อได้จากเมนูหน้าเว็บ")) return;
     setMessage(null);
@@ -199,16 +226,26 @@ export default function BrandProfileEditor(props: { params: Promise<{ slug: stri
 
       <PageHeader
         title={brand.name}
-        subtitle="ข้อมูลส่วนนี้ขึ้นบนหน้าแบรนด์ทันทีที่บันทึก ทั้งหน้าอัตโนมัติและหน้าที่จัดเอง"
+        subtitle="ข้อมูลส่วนนี้ขึ้นบนหน้าแบรนด์ทันทีที่บันทึก ทั้งหน้าอัตโนมัติและหน้าที่จัดเอง · กด &quot;ดูตัวอย่างก่อนบันทึก&quot; เพื่อดูผลก่อน"
         actions={
-          <a
-            href={`/brands/${slug}`}
-            target="_blank"
-            rel="noreferrer"
-            className="flex h-11 items-center gap-2 rounded-full border border-slate-200 px-4 text-sm font-semibold text-brand-800"
-          >
-            <ExternalLink size={15} /> ดูหน้าแบรนด์
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => void preview()}
+              disabled={previewing}
+              className="flex h-11 items-center gap-2 rounded-full border border-slate-200 px-4 text-sm font-semibold text-brand-800 disabled:opacity-60"
+            >
+              {previewing ? <Loader2 size={15} className="animate-spin" /> : <Eye size={15} />}
+              ดูตัวอย่างก่อนบันทึก
+            </button>
+            <a
+              href={`/brands/${slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-11 items-center gap-2 rounded-full border border-slate-200 px-4 text-sm font-semibold text-brand-800"
+            >
+              <ExternalLink size={15} /> ดูหน้าแบรนด์
+            </a>
+          </div>
         }
       />
 
