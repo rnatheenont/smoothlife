@@ -1,32 +1,17 @@
-// Content-Security-Policy, in REPORT-ONLY mode: browsers load everything as
-// before and only report what this policy would have blocked, to
-// /api/csp-report (stored in the csp_reports table). Once a week or two of
-// real traffic shows no legitimate origin is missing, switch the header name
-// to Content-Security-Policy to enforce it.
+import { CSP, CSP_PAYMENT, CSP_HEADER, SEND_CSP, PAYMENT_PATHS } from "./csp.mjs";
+
+// The policy itself, and why each origin is in it, lives in ./csp.mjs.
 //
-// Origins, by what uses them:
-//   Shopify CDN, smoothlife.com CDN, Unsplash — product, banner and article images
-//   Supabase storage — signed URLs for skin-scan photos and chat attachments
-//   Google / LINE profile pictures — account avatars
-//   Firebase Auth + reCAPTCHA (Google) — phone-number OTP login
-//   LINE LIFF SDK — the in-LINE app at /liff
-//   2C2P — the payment page shown in an iframe
-//   Firework CDN — product videos
-//   YouTube (nocookie) / Vimeo / Facebook / TikTok / Instagram — videos in a
-//     product's own content blocks
-//   Shopify CDN / smoothlife.com / Supabase storage — video files in those
-//     same blocks, played in a <video> tag rather than a third-party player
-//   Vercel Analytics / Speed Insights
-//   Google Tag Manager — the team's container (NEXT_PUBLIC_GTM_ID). GTM
-//     loads gtm.js from googletagmanager.com and whatever tags the container
-//     holds; a GA4 tag then beacons to google-analytics.com and, for Thai
-//     traffic, the regional collector at region1.google-analytics.com. The
-//     1×1 pixel fallback and Google Ads conversion pings use googleadservices
-//     and doubleclick, which are listed under img-src rather than script-src
-//     because that is all they are allowed to be here.
-// 'unsafe-inline' scripts: Next.js inlines its bootstrap and JSON-LD; a nonce
-// would force every page dynamic and lose the edge cache. 'wasm-unsafe-eval':
-// the skin scan's MediaPipe runtime.
+// Two policies, never both on one page: Next sends every matching rule's
+// headers, and two Content-Security-Policy headers on one response are
+// intersected by the browser — the looser payment policy would have no effect
+// at all if the ordinary one still matched the same path. So the two sources
+// below are built from one list of payment paths and are exact opposites of
+// each other: every path gets one of them, and no path gets both.
+const PAYMENT_PREFIXES = PAYMENT_PATHS.map((p) => p.replace(/^\//, "")).join("|");
+const PAYMENT_SOURCE = `/:path((?:${PAYMENT_PREFIXES}).*)`;
+const ORDINARY_SOURCE = `/:path((?!${PAYMENT_PREFIXES}).*)`;
+
 const SUPABASE_ORIGIN = (() => {
   try {
     return new URL(process.env.SUPABASE_URL || "").origin;
@@ -34,27 +19,6 @@ const SUPABASE_ORIGIN = (() => {
     return "https://jazxokmkcuxvllpycdcd.supabase.co";
   }
 })();
-
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.google.com https://www.gstatic.com https://apis.google.com https://static.line-scdn.net https://va.vercel-scripts.com https://www.googletagmanager.com https://www.google-analytics.com",
-  "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: https://cdn.shopify.com https://www.smoothlife.com https://smoothlife.com https://images.unsplash.com ${SUPABASE_ORIGIN} https://*.googleusercontent.com https://profile.line-scdn.net https://*.line-scdn.net https://www.gstatic.com https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net`,
-  "font-src 'self' data:",
-  `connect-src 'self' ${SUPABASE_ORIGIN} https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://www.google.com https://api.line.me https://*.line-scdn.net https://liffsdk.line-scdn.net https://vitals.vercel-insights.com https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://stats.g.doubleclick.net`,
-  `media-src 'self' blob: https://*.fireworktv.com https://cdn.shopify.com https://www.smoothlife.com https://smoothlife.com ${SUPABASE_ORIGIN}`,
-  "worker-src 'self' blob:",
-  // googletagmanager: the <noscript> iframe, and GTM's own preview mode.
-  "frame-src 'self' https://www.googletagmanager.com https://*.2c2p.com https://www.google.com https://recaptcha.google.com https://*.firebaseapp.com https://www.youtube-nocookie.com https://player.vimeo.com https://www.facebook.com https://www.tiktok.com https://www.instagram.com",
-  "form-action 'self' https://*.2c2p.com https://access.line.me https://accounts.google.com https://appleid.apple.com https://shopify.com https://*.shopify.com",
-  "frame-ancestors 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  // report-uri only: Chrome ignores report-uri whenever report-to is also
-  // present, and its batched Reporting API delivery never arrived in testing,
-  // while report-uri is sent straight away by Chrome, Safari and Firefox.
-  "report-uri /api/csp-report",
-].join("; ");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -116,9 +80,14 @@ const nextConfig = {
           // page. Other sites framed here, and the microphone and location,
           // stay off.
           { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" },
-          { key: "Content-Security-Policy-Report-Only", value: CSP },
         ],
       },
+      ...(SEND_CSP
+        ? [
+            { source: ORDINARY_SOURCE, headers: [{ key: CSP_HEADER, value: CSP }] },
+            { source: PAYMENT_SOURCE, headers: [{ key: CSP_HEADER, value: CSP_PAYMENT }] },
+          ]
+        : []),
     ];
   },
 };
