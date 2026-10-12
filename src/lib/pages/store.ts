@@ -17,6 +17,8 @@ export type PageRow = {
   status: "draft" | "scheduled" | "published" | "ended" | "archived";
   draft_doc: unknown;
   draft_version: number;
+  draft_updated_by: string | null;
+  draft_updated_at: string;
   published_revision_id: string | null;
   campaign_teaser_at: string | null;
   campaign_live_at: string | null;

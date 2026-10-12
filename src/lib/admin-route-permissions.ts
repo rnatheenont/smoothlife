@@ -107,6 +107,15 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   // Page titles and descriptions, and the assistant that drafts them.
   { prefix: "/api/admin/seo", permission: "seo.manage" },
 
+  // Customize Page. Reading a draft and publishing it are different jobs:
+  // opening the editor to look at what is there should not require the right
+  // to change what every visitor sees. Saving a draft counts as editing, not
+  // publishing — a draft is not live, and making people wait for someone with
+  // publish rights before they can type is how drafts end up in a chat thread
+  // instead of in the tool.
+  { prefix: "/api/admin/pages", permission: "pages.edit", methods: ["GET", "PUT"] },
+  { prefix: "/api/admin/pages", permission: "pages.publish" },
+
   // The free-form product content blocks (ingredients, how-to-use, etc. in
   // both languages) that overlay the generated catalogue — same split as
   // everywhere else content gets written: reading what's there is lighter
