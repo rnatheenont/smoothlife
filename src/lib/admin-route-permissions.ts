@@ -121,6 +121,20 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
     permission: "product_content.manage",
   },
 
+  // Which shelf a product sits on inside its category. Same pair of
+  // permissions as the content blocks above, because it is the same job:
+  // reading the review queue is lighter than deciding what a customer will
+  // find when they open "กันแดด".
+  {
+    prefix: "/api/admin/product-subcategories",
+    permission: "product_content.view",
+    methods: READ,
+  },
+  {
+    prefix: "/api/admin/product-subcategories",
+    permission: "product_content.manage",
+  },
+
   // Above the broad inbox rule, which its path would otherwise match first.
   // Same permission as answering: whoever is on the receiving end of
   // "somebody is waiting" is who should point it at the right place.
