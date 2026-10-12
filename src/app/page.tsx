@@ -25,6 +25,10 @@ import BrandCircleRow from "@/components/home/BrandCircleRow";
 import AuroraBackdrop from "@/components/home/AuroraBackdrop";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 import { pageMetadata } from "@/lib/site-pages";
+import { PAGES_HOME_ENABLED } from "@/lib/feature-flags";
+import { renderSections } from "@/lib/pages/render";
+import { publishedDoc } from "@/lib/pages/store";
+import { defaultHomeDoc } from "@/lib/pages/default-docs/home";
 
 export function generateMetadata() {
   return pageMetadata("home");
@@ -37,7 +41,50 @@ export const revalidate = 1800;
 /** How many products sit under a chosen article. */
 const ARTICLE_SHELF = 10;
 
+/** The claim the page makes, for search engines and screen readers. It lives
+ *  at the root rather than inside a section because a page has one h1 and
+ *  sections are moveable — a heading that outranks the others should not be
+ *  something an admin can drag into the middle of the page or delete. */
+function HomeHeading() {
+  return (
+    <h1 className="sr-only">
+      Smoothlife — ของดีที่ใช้ได้จริง คัดมาให้แล้ว: สกินแคร์ อาหารเสริม ดูแลช่องปากและเส้นผม
+      จากแบรนด์ที่วางขายจริงในไทย ของแท้ 100% มี อย. ส่งฟรีทั่วไทยไม่มีขั้นต่ำ และสะสมคะแนนได้ทุกการช้อป
+    </h1>
+  );
+}
+
+/**
+ * The home page, assembled from the document the team edits.
+ *
+ * Three layers deep on purpose: the published document if there is one, the
+ * document built into the code if there is not, and the hand-written page
+ * below if the flag is off. The middle layer is what makes the first one safe
+ * to turn on — losing Supabase costs the shop its latest edits, not its home
+ * page.
+ */
+async function StoredHomePage() {
+  const doc = (await publishedDoc("home", "home")) ?? defaultHomeDoc();
+  const sections = await renderSections(doc, {
+    kind: "home",
+    slug: "home",
+    now: new Date(),
+    isPreview: false,
+  });
+  return (
+    <div className="bg-[#FAFAF8]">
+      <HomeHeading />
+      {sections}
+    </div>
+  );
+}
+
 export default async function HomePage() {
+  if (PAGES_HOME_ENABLED) return <StoredHomePage />;
+  return <LegacyHomePage />;
+}
+
+async function LegacyHomePage() {
   // The slides the team publishes on www.smoothlife.com, read off that page;
   // the theme-file route is the backup, the static list the last resort.
   const [storefrontBanners, liveArticles] = await Promise.all([getStorefrontHeroBanners(), getStoreArticles()]);
