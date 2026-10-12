@@ -4,6 +4,7 @@ import {
   addSection,
   moveSection,
   parseSlugList,
+  reorderSections,
   removeSection,
   toggleHidden,
   updateSettings,
@@ -93,4 +94,27 @@ test("a slug list survives however it was typed", () => {
   assert.deepEqual(parseSlugList("smooth-e,\n  eucerin\n\n"), ["smooth-e", "eucerin"]);
   assert.deepEqual(parseSlugList("   "), [], "blank is an empty list, not a list with a blank in it");
   assert.deepEqual(parseSlugList(""), []);
+});
+
+test("dragging a section lands it at the index it was dropped on", () => {
+  const d = doc("a", "b", "c", "d");
+  // first to third: the ones it passed shift up, they do not swap
+  assert.deepEqual(ids(reorderSections(d, 0, 2)), ["b", "c", "a", "d"]);
+  // and back the other way
+  assert.deepEqual(ids(reorderSections(d, 3, 0)), ["d", "a", "b", "c"]);
+});
+
+test("reordering is not swapping — the difference the arrows hide", () => {
+  const d = doc("a", "b", "c", "d");
+  // moveSection swaps with the neighbour; over one step the two agree
+  assert.deepEqual(ids(reorderSections(d, 0, 1)), ids(moveSection(d, "a", 1)));
+  // over three steps they do not, and reorder is the one a drag means
+  assert.deepEqual(ids(reorderSections(d, 0, 3)), ["b", "c", "d", "a"]);
+});
+
+test("a drop that landed nowhere changes nothing", () => {
+  const d = doc("a", "b", "c");
+  for (const [from, to] of [[-1, 1], [1, -1], [0, 9], [9, 0], [1, 1]] as const) {
+    assert.deepEqual(ids(reorderSections(d, from, to)), ["a", "b", "c"]);
+  }
 });

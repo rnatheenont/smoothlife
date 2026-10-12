@@ -32,12 +32,14 @@ import {
 
 import { Card } from "@/components/ui";
 import SectionForm from "@/components/admin/pages/SectionForm";
+import SectionList from "@/components/admin/pages/SectionList";
 import type { PageDoc } from "@/lib/pages/doc";
 import {
   addSection,
   moveSection,
   newSectionId,
   removeSection,
+  reorderSections,
   toggleHidden as toggleHiddenIn,
   updateSettings,
   parseSlugList,
@@ -46,6 +48,7 @@ import type { FieldDef } from "@/lib/pages/types";
 import { bangkokInputToIso, bangkokLabel, isoToBangkokInput } from "@/lib/pages/bangkok-time";
 import { PHASE_LABEL, PHASE_ORDER } from "@/lib/pages/campaign";
 import { campaignPhaseAt, type CampaignPhase } from "@/lib/pages/doc";
+import { PREVIEW_MESSAGE, type PreviewMessage } from "@/lib/pages/section-anchor";
 
 // The page editor.
 //
@@ -654,6 +657,47 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   const publicPath = publicPathOf(kind, slug);
 
   /**
+   * The two halves of click-to-select.
+   *
+   * Incoming: the preview says which section was pressed, and it becomes the
+   * selected one with its settings open — the same thing clicking the row in
+   * the list does, which is the point: two ways in, one result.
+   *
+   * Outgoing: whatever is selected gets outlined in the frame, however it was
+   * selected. Without that the editor would answer "which one is this?" only
+   * when the answer came from the frame in the first place.
+   *
+   * Origin is checked on both sides. Both ends are served by this app, so the
+   * test is an equality and anything else is dropped unread.
+   */
+  const previewFrameRef = useRef<HTMLIFrameElement | null>(null);
+
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data as PreviewMessage | undefined;
+      if (data?.source !== PREVIEW_MESSAGE || data.type !== "select") return;
+      setSelected(data.id);
+      setRail("section");
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  useEffect(() => {
+    const frame = previewFrameRef.current?.contentWindow;
+    if (!frame) return;
+    const message: PreviewMessage = { source: PREVIEW_MESSAGE, type: "highlight", id: selected };
+    // A frame that has not finished loading drops this; the next selection
+    // sends it again, and the frame outlines on its own click meanwhile.
+    try {
+      frame.postMessage(message, window.location.origin);
+    } catch {
+      // Cross-origin only happens if the preview is ever moved off this app.
+    }
+  }, [selected, previewNonce]);
+
+  /**
    * The size to render the preview at, and how much to shrink it to fit.
    *
    * Desktop is drawn at the width the site is actually designed for and
@@ -942,71 +986,19 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
             </div>
           )}
 
-          <ol className="p-2">
-            {doc.sections.map((section, i) => {
-              const def = byType.get(section.type);
-              const hidden = Boolean(section.common?.hidden);
-              const active = section.id === selected;
-              return (
-                <li key={section.id}>
-                  <div
-                    className={`flex items-center gap-1 rounded-lg px-2 py-1.5 ${active ? "bg-brand-gradient-soft" : "hover:bg-surface-soft"}`}
-                  >
-                    <button
-                      onClick={() => {
-                        setSelected(section.id);
-                        setRail("section");
-                      }}
-                      // min-h-9 to match the icon buttons beside it: measured
-                      // at 18px, and this is the primary target of the whole
-                      // list (WCAG 2.5.8 asks for 24).
-                      className="flex min-h-9 min-w-0 flex-1 flex-col justify-center text-left"
-                      aria-current={active ? "true" : undefined}
-                    >
-                      <span
-                        title={def?.label ?? section.type}
-                        className={`line-clamp-2 text-[13px] font-semibold ${hidden ? "text-slate-400 line-through" : "text-brand-ink"}`}
-                      >
-                        {def?.label ?? section.type}
-                      </span>
-                      {!def && <span className="block text-[11px] text-rose-600">ไม่รู้จัก section ชนิดนี้</span>}
-                    </button>
-                    <button
-                      onClick={() => move(section.id, -1)}
-                      disabled={i === 0}
-                      aria-label={`ย้าย ${def?.label ?? section.type} ขึ้น`}
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-brand-800 disabled:opacity-30"
-                    >
-                      <ArrowUp size={15} />
-                    </button>
-                    <button
-                      onClick={() => move(section.id, 1)}
-                      disabled={i === doc.sections.length - 1}
-                      aria-label={`ย้าย ${def?.label ?? section.type} ลง`}
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-brand-800 disabled:opacity-30"
-                    >
-                      <ArrowDown size={15} />
-                    </button>
-                    <button
-                      onClick={() => toggleHidden(section.id)}
-                      aria-label={hidden ? `แสดง ${def?.label}` : `ซ่อน ${def?.label}`}
-                      aria-pressed={hidden}
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-brand-800"
-                    >
-                      {hidden ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                    <button
-                      onClick={() => remove(section.id)}
-                      aria-label={`ลบ ${def?.label ?? section.type}`}
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-rose-600"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+          <SectionList
+            sections={doc.sections}
+            byType={byType}
+            selected={selected}
+            onSelect={(id) => {
+              setSelected(id);
+              setRail("section");
+            }}
+            onReorder={(from, to) => edit(reorderSections(doc, from, to))}
+            onMove={move}
+            onToggleHidden={toggleHidden}
+            onRemove={remove}
+          />
         </Card>
 
         <Card padded={false} className="overflow-hidden">
@@ -1180,6 +1172,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
             >
               <iframe
                 key={previewNonce}
+                ref={previewFrameRef}
                 src={`/pages-preview/${kind}/${slug}?v=${previewNonce}${
                   kind === "campaign" && previewPhase !== "now" ? `&phase=${previewPhase}` : ""
                 }`}

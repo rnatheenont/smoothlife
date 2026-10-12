@@ -40,6 +40,28 @@ export function moveSection(doc: PageDoc, id: string, delta: number): PageDoc {
   return withSections(doc, sections);
 }
 
+/**
+ * Moves a section to a position, the way dragging one does.
+ *
+ * Not the same operation as moveSection: that one *swaps* with its
+ * neighbour, which is right for a one-step arrow and wrong for a drag —
+ * dropping the first section onto the fifth should leave the ones in between
+ * shifted up by one, not have the fifth jump to the top.
+ *
+ * Out-of-range indexes return the document untouched rather than clamping,
+ * because every caller is a pointer that has been dropped somewhere, and a
+ * drop that landed nowhere should do nothing rather than something nearby.
+ */
+export function reorderSections(doc: PageDoc, from: number, to: number): PageDoc {
+  const last = doc.sections.length - 1;
+  if (from < 0 || from > last || to < 0 || to > last || from === to) return doc;
+
+  const sections = [...doc.sections];
+  const [moved] = sections.splice(from, 1);
+  sections.splice(to, 0, moved);
+  return withSections(doc, sections);
+}
+
 /** Hides or shows a section. Hidden sections stay in the document, which is
  *  the difference between this and deleting one — the settings survive. */
 export function toggleHidden(doc: PageDoc, id: string): PageDoc {

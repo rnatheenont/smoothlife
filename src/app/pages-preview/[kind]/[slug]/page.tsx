@@ -9,6 +9,7 @@ import { campaignTimesOf } from "@/lib/pages/admin";
 import { themeVars, type CampaignTheme } from "@/lib/pages/theme";
 import type { PageKind } from "@/lib/pages/types";
 import type { PageRow } from "@/lib/pages/store";
+import PreviewSelect from "@/components/admin/pages/PreviewSelect";
 
 // The draft, drawn exactly the way the live page draws it.
 //
@@ -93,6 +94,10 @@ export default async function PagePreview(props: {
     isPreview: true,
   });
 
+  // Click-to-select lives in the frame, because the frame is the only thing
+  // that knows where the sections are on screen.
+  const picker = <PreviewSelect />;
+
   if (kind === "campaign") {
     // Wrapped exactly as /sale/[slug] wraps it, colours included. A preview
     // that renders in the site's own green while the campaign is pink is a
@@ -105,11 +110,17 @@ export default async function PagePreview(props: {
         style={themeVars(page.campaign_theme as CampaignTheme | null)}
       >
         {sections}
+        {picker}
       </main>
     );
   }
 
   // The same canvas the home page paints on, so what is in the frame is what
   // would be on the site.
-  return <div className="bg-[#FAFAF8]">{sections}</div>;
+  return (
+    <div className="bg-[#FAFAF8]">
+      {sections}
+      {picker}
+    </div>
+  );
 }
