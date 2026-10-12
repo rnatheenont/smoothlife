@@ -6,7 +6,8 @@ import { nextPhaseBoundaryAfter, validateCampaignTimes, type CampaignTimes } fro
 import { checkTheme, type CampaignTheme } from "./theme";
 import { pageTag, type PageRow } from "./store";
 import { SECTION_REGISTRY } from "@/sections/registry";
-import type { PageKind } from "./types";
+import { campaignPhaseAt } from "./doc";
+import type { AnySectionDefinition, PageKind, RenderCtx } from "./types";
 
 // Everything the admin side does to a page: open it, save a draft, publish
 // it, put a previous version back.
@@ -115,6 +116,65 @@ export function validateForPublish(doc: PageDoc, page?: PageRow): string[] {
   return issues;
 }
 
+export type PublishIssues = { errors: string[]; warnings: string[] };
+
+/**
+ * Everything the publish checklist has to say: the structural rules above,
+ * plus every section's own `check`.
+ *
+ * The per-section checks are the half that can only be answered against the
+ * world — "does this discount code still exist", "are any of these products
+ * actually in stock", "is there a mobile banner". They are declared on the
+ * definitions and were, until now, never run: the type invited them, nothing
+ * called them, and a dozen sections had written checks that did nothing. This
+ * is where they run.
+ *
+ * Errors block publishing. Warnings are read and then published past. The
+ * split is the point — a checklist where everything is equally alarming is a
+ * checklist people learn to click through, and then the one real error goes
+ * through with the rest.
+ *
+ * A check that throws becomes a warning rather than taking the publish down.
+ * It is asking a question about the outside world, and the outside world is
+ * allowed to be unreachable.
+ */
+export async function collectPublishIssues(doc: PageDoc, page?: PageRow): Promise<PublishIssues> {
+  const errors = validateForPublish(doc, page);
+  const warnings: string[] = [];
+
+  const ctx: RenderCtx = {
+    kind: page?.kind ?? "page",
+    slug: page?.slug ?? "",
+    now: new Date(),
+    phase: page?.kind === "campaign" ? campaignPhaseAt(campaignTimesOf(page), new Date()) : undefined,
+    times: page?.kind === "campaign" ? campaignTimesOf(page) : undefined,
+    isPreview: false,
+  };
+
+  await Promise.all(
+    doc.sections.map(async (section) => {
+      const def = SECTION_REGISTRY[section.type] as AnySectionDefinition | undefined;
+      if (!def?.check) return;
+
+      // A section whose settings do not parse is already an error above; its
+      // check would only be guessing at what they meant.
+      const parsed = def.schema.safeParse(section.settings);
+      if (!parsed.success) return;
+
+      try {
+        for (const issue of await def.check(parsed.data, ctx)) {
+          (issue.level === "error" ? errors : warnings).push(`${def.label}: ${issue.message}`);
+        }
+      } catch (err) {
+        console.error(`[pages] check for section ${section.id} (${section.type}) threw`, err);
+        warnings.push(`${def.label}: ตรวจไม่สำเร็จ — ลองดูด้วยตาก่อนเผยแพร่`);
+      }
+    })
+  );
+
+  return { errors, warnings };
+}
+
 /**
  * Writes the draft, refusing if someone else has written since you read.
  *
@@ -176,8 +236,8 @@ export async function publish(opts: {
   actor: string;
 }): Promise<{ ok: true; number: number } | { ok: false; issues: string[] }> {
   const doc = migrateDoc(opts.page.draft_doc);
-  const issues = validateForPublish(doc, opts.page);
-  if (issues.length) return { ok: false, issues };
+  const { errors } = await collectPublishIssues(doc, opts.page);
+  if (errors.length) return { ok: false, issues: errors };
 
   const [last] = await supabaseRest<{ number: number }[]>(
     `page_revisions?select=number&page_id=eq.${pgValue(opts.page.id)}&order=number.desc&limit=1`

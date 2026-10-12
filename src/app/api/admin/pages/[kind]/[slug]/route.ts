@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import {
+  collectPublishIssues,
   campaignTimesOf,
   nextBoundaryFor,
   openPage,
   publish,
   rollback,
   saveDraft,
-  validateForPublish,
 } from "@/lib/pages/admin";
 import { migrateDoc } from "@/lib/pages/doc";
 import { validateCampaignTimes } from "@/lib/pages/campaign";
@@ -65,6 +65,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ kind: str
   );
 
   const doc = migrateDoc(page.draft_doc);
+  // Run the whole checklist here, including each section's own check, so the
+  // editor says the same thing the publish attempt will say rather than the
+  // person finding out on the press.
+  const checklist = await collectPublishIssues(doc, page);
+
   return NextResponse.json({
     ok: true,
     page: {
@@ -99,7 +104,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ kind: str
       fields: def.fields,
     })),
     revisions,
-    issues: validateForPublish(doc, page),
+    // Errors block the publish button; warnings are only read.
+    issues: checklist.errors,
+    warnings: checklist.warnings,
   });
 }
 
@@ -227,6 +234,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ kind: st
     // accent and sees the old one for the next half hour.
     revalidateTag(pageTag(page.kind, page.slug), { expire: 0 });
     revalidateTag("pages", { expire: 0 });
+    // The home page's campaign_slot reads this row, so it is stale now too —
+    // both when the takeover is switched on and when it is switched off.
+    revalidateTag(pageTag("home", "home"), { expire: 0 });
 
     await audit(
       "page.campaign",

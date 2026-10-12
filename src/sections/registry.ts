@@ -21,6 +21,10 @@ import { voucherStrip } from "./voucher_strip/definition";
 import { categoryJumpTabs } from "./category_jump_tabs/definition";
 import { productTabs } from "./product_tabs/definition";
 import { campaignTerms } from "./campaign_terms/definition";
+import { campaignSlot } from "./campaign_slot/definition";
+import { dealTiers } from "./deal_tiers/definition";
+import { hotspotImage } from "./hotspot_image/definition";
+import { nextCampaign } from "./next_campaign/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -64,6 +68,14 @@ const ALL: AnySectionDefinition[] = [
   categoryJumpTabs,
   productTabs,
   campaignTerms,
+  dealTiers,
+  hotspotImage,
+  nextCampaign,
+
+  // Reads which campaign to show from the database rather than from its own
+  // settings, which is what lets it sit on the home page out of season and
+  // render nothing.
+  campaignSlot,
 ];
 
 export const SECTION_REGISTRY: Record<string, AnySectionDefinition> = Object.fromEntries(

@@ -3,6 +3,7 @@ import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-aut
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { migrateDoc, SCHEMA_VERSION } from "@/lib/pages/doc";
 import { newSectionId } from "@/lib/pages/edit";
+import { CAMPAIGN_TEMPLATES } from "@/lib/pages/default-docs/campaign-templates";
 import type { PageKind } from "@/lib/pages/types";
 
 // Saved arrangements of sections, and starting a page from one.
@@ -37,9 +38,55 @@ function reissueIds(doc: unknown) {
   };
 }
 
+/**
+ * Puts the ready-made campaign templates in the database if they are not
+ * there yet.
+ *
+ * Seeded on first read rather than in a migration, for the same reason the
+ * home page is: the documents are assembled from the section definitions in
+ * the code, so SQL cannot build them and a copy pasted into a migration would
+ * be a second source of truth that drifts the moment a default changes.
+ *
+ * Matched by name. A system template someone has since edited is left alone —
+ * re-seeding over the top of it would quietly undo their work every time an
+ * admin opened the editor.
+ */
+async function seedSystemTemplates() {
+  const existing = await supabaseRest<{ name: string }[]>(
+    "page_templates?select=name&is_system=is.true&limit=50"
+  );
+  const have = new Set(existing.map((row) => row.name));
+  const missing = CAMPAIGN_TEMPLATES.filter((t) => !have.has(t.name));
+  if (missing.length === 0) return;
+
+  await supabaseRest("page_templates", {
+    method: "POST",
+    returning: false,
+    body: JSON.stringify(
+      missing.map((t) => ({
+        scope: "page",
+        kind: "campaign",
+        name: t.name,
+        description: t.description,
+        doc: t.doc,
+        is_system: true,
+        created_by: "system",
+      }))
+    ),
+  });
+}
+
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) return unauthorized();
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "not configured" }, { status: 503 });
+
+  try {
+    await seedSystemTemplates();
+  } catch (err) {
+    // A missing ready-made template is a missing convenience. The list of
+    // templates the team saved themselves still has to come back.
+    console.error("[pages] could not seed the system templates", err);
+  }
 
   const kind = req.nextUrl.searchParams.get("kind");
   const where = kind ? `&or=(kind.is.null,kind.eq.${encodeURIComponent(kind)})` : "";

@@ -224,7 +224,12 @@ export async function takeoverCampaigns(): Promise<
 > {
   if (!supabaseConfigured()) return [];
   try {
-    const rows = await supabaseRest<
+    // Cached under the shared tag, because this is read from the home page —
+    // the busiest page on the site — and it is a list that changes when a
+    // campaign is published, not between one visitor and the next. The tag is
+    // cleared on publish, and the scheduler clears it when a takeover
+    // campaign changes phase, which is the only other way the answer moves.
+    const rows = await supabaseRestCached<
       {
         slug: string;
         title: string;
@@ -236,7 +241,8 @@ export async function takeoverCampaigns(): Promise<
       }[]
     >(
       `pages?select=slug,title,campaign_teaser_at,campaign_live_at,campaign_extended_at,campaign_ends_at,campaign_theme` +
-        `&kind=eq.campaign&status=eq.published&takeover_home=is.true&order=campaign_live_at&limit=5`
+        `&kind=eq.campaign&status=eq.published&takeover_home=is.true&order=campaign_live_at&limit=5`,
+      { revalidate: CAMPAIGN_POINTER_TTL, tags: ["pages"] }
     );
     return rows.map((row) => ({
       slug: row.slug,

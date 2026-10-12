@@ -136,6 +136,10 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   const [library, setLibrary] = useState<LibraryEntry[]>([]);
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [issues, setIssues] = useState<string[]>([]);
+  /** Warnings from the sections' own checks — "this product sold out", "no
+   *  mobile banner". They need the catalogue and the database, so they can
+   *  only come from the server. */
+  const [sectionWarnings, setSectionWarnings] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -172,14 +176,16 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
 
   const loadTemplates = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/pages/templates");
+      // Scoped to this kind of page: a campaign template dropped onto a
+      // plain page would bring sections that have no phase to read.
+      const res = await fetch(`/api/admin/pages/templates?kind=${encodeURIComponent(kind)}`);
       const data = await res.json();
       if (res.ok && data.ok) setTemplates(data.templates);
     } catch {
       // A template list that failed to load is a missing convenience, not a
       // broken editor — the page itself is already on screen.
     }
-  }, []);
+  }, [kind]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -192,6 +198,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
       setLibrary(data.library);
       setRevisions(data.revisions);
       setIssues(data.issues ?? []);
+      setSectionWarnings(data.warnings ?? []);
       versionRef.current = data.page.draftVersion;
       setSelected((cur) => cur ?? data.doc.sections[0]?.id ?? null);
       setPublishAt(isoToBangkokInput(data.page.publishAt));
@@ -503,12 +510,15 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
     }
   }
 
-  /** Things worth a second look that are not wrong. Errors come from the
-   *  server (validateForPublish) because they decide whether publishing is
-   *  allowed; these are read off the document here because they only need to
-   *  be seen, and seeing them should not cost a round trip. */
+  /** Things worth a second look that are not wrong.
+   *
+   *  Two sources, deliberately. The ones about the document itself are read
+   *  off the document here, because seeing them should not cost a round trip.
+   *  The ones about the world — a hand-picked product that sold out, a
+   *  discount code that expired — can only come from the server, and arrive
+   *  with the rest of the checklist. */
   const warnings = useMemo(() => {
-    const out: string[] = [];
+    const out: string[] = [...sectionWarnings];
     const sections = doc?.sections ?? [];
     const hidden = sections.filter((s) => s.common?.hidden).length;
     if (hidden > 0) out.push(`มี section ที่ซ่อนอยู่ ${hidden} อัน — จะไม่ขึ้นบนหน้าจริง`);
@@ -518,7 +528,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
     const scheduled = sections.filter((s) => s.common?.visibleFrom || s.common?.visibleUntil).length;
     if (scheduled > 0) out.push(`มี section ที่ตั้งเวลาไว้ ${scheduled} อัน — ตรวจวันเวลาอีกครั้ง`);
     return out;
-  }, [doc]);
+  }, [doc, sectionWarnings]);
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
@@ -571,6 +581,9 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
       {message && !conflict && <p className="text-sm text-slate-600">{message}</p>}
 
       {issues.length > 0 && (
+        // Errors only. Warnings live in the publish dialog, where they are
+        // read at the moment they matter — a permanent amber box above the
+        // editor is a box that stops being read by Wednesday.
         <div className="rounded-xl2 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           <p className="flex items-center gap-1.5 font-semibold">
             <TriangleAlert size={15} /> ยังเผยแพร่ไม่ได้

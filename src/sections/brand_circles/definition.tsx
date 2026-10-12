@@ -71,7 +71,9 @@ export const brandCircles: SectionDefinition<typeof schema> = {
     { key: "href", type: "text", label: "ลิงก์ \"ดูทั้งหมด\"" },
     { key: "brandSlugs", type: "brand_slugs", label: "แบรนด์ที่จะแสดง", max: 12, help: "เรียงตามลำดับที่อยากให้เห็น" },
   ],
-  enabledOn: ["home", "page"],
+  // Campaigns too: "แบรนด์ที่ร่วมแคมเปญ" is this same row of logos,
+  // and a second near-identical section would be two things to keep in step.
+  enabledOn: ["home", "page", "campaign"],
   maxPerPage: 1,
   Component,
 };

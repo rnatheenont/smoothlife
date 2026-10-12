@@ -43,9 +43,17 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-function clear(page: Pick<PageRow, "kind" | "slug">) {
+function clear(page: Pick<PageRow, "kind" | "slug"> & { takeover_home?: boolean }) {
   revalidateTag(pageTag(page.kind, page.slug), { expire: 0 });
   revalidateTag("pages", { expire: 0 });
+
+  // A campaign that takes over the home page is also part of the home page:
+  // the campaign_slot section there shows it, and the slot's wording changes
+  // with the phase. Clearing only the campaign's own tag would leave the home
+  // page advertising a teaser for a sale that started an hour ago.
+  if (page.kind === "campaign" && page.takeover_home) {
+    revalidateTag(pageTag("home", "home"), { expire: 0 });
+  }
 }
 
 export async function GET(req: NextRequest) {
