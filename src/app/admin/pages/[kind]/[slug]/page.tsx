@@ -13,8 +13,12 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  Maximize2,
+  Minimize2,
   Megaphone,
   Monitor,
+  PanelRightClose,
+  PanelRightOpen,
   Plus,
   RefreshCw,
   BookmarkPlus,
@@ -38,7 +42,6 @@ import DiffPanel from "@/components/admin/pages/DiffPanel";
 import type { PageDoc } from "@/lib/pages/doc";
 import {
   addSection,
-  moveSection,
   newSectionId,
   removeSection,
   reorderSections,
@@ -167,9 +170,23 @@ const DEVICES = {
   mobile: { label: "มือถือ", width: 390, height: 844, fixedHeight: true },
   tablet: { label: "แท็บเล็ต", width: 820, height: 1180, fixedHeight: true },
   desktop: { label: "คอมพิวเตอร์", width: 1280, height: 0, fixedHeight: false },
+  /** Whatever width the person typed. Three presets cover the usual
+   *  questions; this covers the one they did not — "how does it look on the
+   *  old iPad the shop uses at the counter", and every width in between. */
+  custom: { label: "กำหนดเอง", width: 1024, height: 0, fixedHeight: false },
 } as const;
 
 type DeviceKey = keyof typeof DEVICES;
+
+/** Widths worth one tap, from the real spread of devices on this shop. */
+const WIDTH_PRESETS = [360, 414, 768, 1024, 1366, 1512, 1920];
+const MIN_WIDTH = 280;
+const MAX_WIDTH = 2560;
+
+/** What the preview remembers between visits. Per browser, per person — a
+ *  convenience, not state anything depends on, so localStorage is the right
+ *  place and a failure to read it is simply the default. */
+const PREVIEW_PREFS = "sl.pages.preview";
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "ร่าง",
@@ -231,6 +248,12 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   const [camp, setCamp] = useState<CampaignForm>(EMPTY_CAMPAIGN);
   const [savingCampaign, setSavingCampaign] = useState(false);
   const [previewPhase, setPreviewPhase] = useState<CampaignPhase | "now">("now");
+  const [customWidth, setCustomWidth] = useState<number>(DEVICES.custom.width);
+  /** The settings rail folds away when the preview needs the room. */
+  const [railOpen, setRailOpen] = useState(true);
+  /** "fit" shrinks to the space; a number is a fixed zoom the person chose. */
+  const [zoom, setZoom] = useState<"fit" | number>("fit");
+  const [expanded, setExpanded] = useState(false);
   /** Which half of the right rail is showing. Picking a section switches back
    *  to its settings by itself — having to click the tab after clicking the
    *  section would be two clicks for one intention. */
@@ -384,6 +407,76 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
     });
   }, [edit]);
 
+  // Esc leaves the expanded preview. Anything that covers the screen has to
+  // have the key that every other overlay on this site answers to.
+  useEffect(() => {
+    if (!expanded) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setExpanded(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expanded]);
+
+  /**
+   * What the preview looked like last time.
+   *
+   * localStorage, because it is a per-person convenience and nothing depends
+   * on it: a browser that refuses to store it simply opens on the defaults.
+   * Every read and write is wrapped — a private window throws on access
+   * rather than returning null.
+   */
+  /**
+   * Writing must wait for reading, and the flag has to be state, not a ref.
+   *
+   * With a ref the writer still ran in the same commit as the reader — while
+   * the restored values were only queued — so it saved the defaults over the
+   * stored preferences. React then re-ran the reader (effects are invoked
+   * twice in development), which read back the defaults it had just written
+   * and applied those instead. The setting appeared not to persist at all.
+   *
+   * As state, the writer's first run is in the render *after* the restore
+   * landed, so there is no window in which it can save the defaults.
+   * Both versions were tried against a reload; only this one survives it.
+   */
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+
+  useEffect(() => {
+    // Reading this during render instead would be a hydration mismatch: the
+    // server has no localStorage, so its HTML would always carry the defaults
+    // and the client's first render would not. An effect is the only correct
+    // place, which is why the rule is turned off for these four lines.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(PREVIEW_PREFS) ?? "null");
+      // Note the shape of this: nothing returns early, because the flag at
+      // the end has to be set even when there was nothing stored — otherwise
+      // a browser opening the editor for the first time would never start
+      // saving.
+      if (saved && typeof saved === "object") {
+        if (saved.device in DEVICES) setDevice(saved.device);
+        if (Number.isFinite(saved.customWidth)) {
+          setCustomWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(saved.customWidth))));
+        }
+        if (saved.zoom === "fit" || Number.isFinite(saved.zoom)) setZoom(saved.zoom);
+        if (typeof saved.railOpen === "boolean") setRailOpen(saved.railOpen);
+      }
+    } catch {
+      // No stored preference, or no storage at all. The defaults are fine.
+    }
+    setPrefsLoaded(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
+
+  useEffect(() => {
+    if (!prefsLoaded) return;
+    try {
+      window.localStorage.setItem(PREVIEW_PREFS, JSON.stringify({ device, customWidth, zoom, railOpen }));
+    } catch {
+      // Storage full or blocked; the editor works the same either way.
+    }
+  }, [prefsLoaded, device, customWidth, zoom, railOpen]);
+
   // Ctrl/Cmd+Z, except while typing. A text box has its own undo and taking
   // it over would mean a mistyped word costs you the last section you moved.
   useEffect(() => {
@@ -424,9 +517,6 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   // tested — an off-by-one that drops the last section or a delete that takes
   // the wrong one are quiet mistakes, and quiet mistakes belong in tests
   // rather than in a button handler.
-  function move(id: string, delta: number) {
-    if (doc) edit(moveSection(doc, id, delta));
-  }
 
   function toggleHidden(id: string) {
     if (doc) edit(toggleHiddenIn(doc, id));
@@ -799,24 +889,30 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
 
   const frame = useMemo(() => {
     const spec = DEVICES[device];
+    const width = device === "custom" ? customWidth : spec.width;
+
     // Shrunk to fit in both directions, never enlarged: a phone frame blown
     // up to fill a wide column would be showing 390px of page at 200%, which
     // tells you nothing true about the phone.
-    const byWidth = (box.width > 0 ? box.width : spec.width) / spec.width;
+    const byWidth = (box.width > 0 ? box.width : width) / width;
     const byHeight = spec.fixedHeight && box.height > 0 ? box.height / spec.height : Infinity;
-    const scale = Math.min(1, byWidth, byHeight);
+    const fitted = Math.min(1, byWidth, byHeight);
 
-    // A desktop has no real height, so it is as tall as the space it is drawn
-    // in divided by the scale — shrinking it to fit sideways should not also
-    // turn it into a letterbox.
+    // "พอดีช่อง" is the default and the right answer most of the time. A
+    // fixed zoom is for the other times: reading the small print at 100%, or
+    // standing back from a long page at 50%. When it makes the frame wider
+    // than the space, the space scrolls rather than the frame shrinking back
+    // — otherwise the setting would quietly undo itself.
+    const scale = zoom === "fit" ? fitted : zoom;
+
     const height = spec.fixedHeight
       ? spec.height
       : box.height > 0
         ? Math.round(box.height / scale)
         : 820;
 
-    return { width: spec.width, height, scale };
-  }, [device, box]);
+    return { width, height, scale, fitted };
+  }, [device, customWidth, zoom, box]);
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
@@ -1046,7 +1142,11 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
           the thing you came here to use — was a short window at the top of a
           very long column. Those panels now live behind a tab on the right,
           which is where this editor already had empty space. */}
-      <div className="grid gap-3 lg:grid-cols-[19rem_minmax(0,1fr)] 2xl:grid-cols-[19rem_minmax(0,1fr)_21rem]">
+      <div
+        className={`grid gap-3 lg:grid-cols-[19rem_minmax(0,1fr)] ${
+          railOpen ? "2xl:grid-cols-[19rem_minmax(0,1fr)_21rem]" : "2xl:grid-cols-[19rem_minmax(0,1fr)]"
+        }`}
+      >
         {/* Left: what the page is made of, and nothing else. Sticky and
             scrolling on its own so a twenty-section page does not push the
             preview off the screen. */}
@@ -1092,25 +1192,80 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
               setRail("section");
             }}
             onReorder={(from, to) => edit(reorderSections(doc, from, to))}
-            onMove={move}
             onToggleHidden={toggleHidden}
             onRemove={remove}
           />
         </Card>
 
-        <Card padded={false} className="overflow-hidden">
+        {/* Expanded, the preview leaves the grid and takes the window. Fixed
+            rather than full-screen API: the editor's own toolbar stays
+            reachable above it, and Esc closes it the way every overlay on
+            this site does. */}
+        <Card
+          padded={false}
+          className={
+            expanded
+              ? "fixed inset-3 z-50 flex flex-col overflow-hidden shadow-xl"
+              : "overflow-hidden"
+          }
+        >
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <h2 className="flex min-w-0 items-baseline gap-2 text-sm font-bold text-brand-ink">
-              ตัวอย่างร่าง
-              {/* The size being shown, and how much it is shrunk to fit —
-                  without it, "why is the text so small" has no answer on
-                  screen. */}
-              <span className="shrink-0 font-mono text-[11px] font-normal text-slate-400">
-                {frame.width}
-                {DEVICES[device].fixedHeight ? `×${frame.height}` : ""}
-                {frame.scale < 0.995 ? ` · ${Math.round(frame.scale * 100)}%` : ""}
-              </span>
-            </h2>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+              <h2 className="text-sm font-bold text-brand-ink">ตัวอย่างร่าง</h2>
+
+              {/* The width is a field, not a readout. Three presets answer the
+                  usual questions; the shop also gets visitors on an 820 tablet
+                  at the counter and a 1920 monitor in the office, and before
+                  this there was no way to look at either. */}
+              <label className="flex items-center gap-1 text-[11px] text-slate-400">
+                <input
+                  type="number"
+                  value={frame.width}
+                  min={MIN_WIDTH}
+                  max={MAX_WIDTH}
+                  step={10}
+                  aria-label="ความกว้างของหน้าจอที่จะดู (พิกเซล)"
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    if (!Number.isFinite(next)) return;
+                    setDevice("custom");
+                    setCustomWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(next))));
+                  }}
+                  list="preview-widths"
+                  className="h-8 w-20 rounded-md border border-slate-200 px-1.5 text-center font-mono text-[12px] text-brand-ink outline-hidden focus-visible:border-brand-teal"
+                />
+                px
+              </label>
+              <datalist id="preview-widths">
+                {WIDTH_PRESETS.map((w) => (
+                  <option key={w} value={w} />
+                ))}
+              </datalist>
+
+              <label className="flex items-center gap-1 text-[11px] text-slate-400">
+                {/* appearance-none and w-auto: a native select is as wide as
+                    its longest option plus room for the system arrow, so this
+                    one sat in a box far wider than the words inside it. With
+                    the chrome off it is the width of what it says. */}
+                <select
+                  value={zoom === "fit" ? "fit" : String(zoom)}
+                  onChange={(e) => setZoom(e.target.value === "fit" ? "fit" : Number(e.target.value))}
+                  aria-label="ขนาดที่แสดง"
+                  className="h-8 w-auto appearance-none rounded-md border border-slate-200 px-2 text-center text-[12px] text-brand-ink outline-hidden hover:border-slate-300 focus-visible:border-brand-teal"
+                >
+                  <option value="fit">พอดี {Math.round(frame.fitted * 100)}%</option>
+                  {[0.5, 0.75, 1].map((z) => (
+                    <option key={z} value={z}>
+                      {z * 100}%
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {DEVICES[device].fixedHeight && (
+                <span className="font-mono text-[11px] text-slate-400">สูง {frame.height}</span>
+              )}
+            </div>
             <div className="flex items-center gap-1">
           {kind === "campaign" && (
                 /* "ดูในช่วง" — the question worth answering before publishing
@@ -1152,6 +1307,24 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                 );
               })}
               <button
+                onClick={() => setExpanded((v) => !v)}
+                aria-pressed={expanded}
+                aria-label={expanded ? "ย่อกรอบตัวอย่างกลับ" : "ขยายกรอบตัวอย่างเต็มจอ"}
+                title={expanded ? "ย่อกลับ (Esc)" : "ขยายเต็มจอ"}
+                className="grid h-10 w-10 place-items-center rounded-lg text-slate-400 hover:text-brand-800"
+              >
+                {expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
+              <button
+                onClick={() => setRailOpen((v) => !v)}
+                aria-pressed={!railOpen}
+                aria-label={railOpen ? "ซ่อนแผงตั้งค่าทางขวา" : "แสดงแผงตั้งค่าทางขวา"}
+                title={railOpen ? "ซ่อนแผงขวา" : "แสดงแผงขวา"}
+                className="hidden h-10 w-10 place-items-center rounded-lg text-slate-400 hover:text-brand-800 2xl:grid"
+              >
+                {railOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+              </button>
+              <button
                 onClick={() => setPreviewNonce((n) => n + 1)}
                 aria-label="โหลดตัวอย่างใหม่"
                 className="grid h-10 w-10 place-items-center rounded-lg text-slate-400 hover:text-brand-800"
@@ -1162,7 +1335,9 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
           </div>
           <div
             ref={setPreviewBox}
-            className="flex h-[calc(100vh-11rem)] min-h-[32rem] justify-center overflow-hidden bg-slate-100 p-3"
+            className={`flex justify-center bg-slate-100 p-3 ${
+              expanded ? "min-h-0 flex-1 overflow-auto" : "h-[calc(100vh-11rem)] min-h-[32rem] overflow-hidden"
+            } ${zoom === "fit" ? "" : "overflow-auto"}`}
           >
             {/* The frame renders the saved draft, so it is one save behind
                 whatever is being typed. The badge in the toolbar says when
@@ -1214,7 +1389,9 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
             to a quarter size — a preview you cannot read is not a preview. */}
         <Card
           padded={false}
-          className="lg:col-span-2 2xl:col-span-1 2xl:sticky 2xl:top-20 2xl:max-h-[calc(100vh-7rem)] 2xl:overflow-y-auto"
+          className={`lg:col-span-2 2xl:col-span-1 2xl:sticky 2xl:top-20 2xl:max-h-[calc(100vh-7rem)] 2xl:overflow-y-auto ${
+            railOpen ? "" : "2xl:hidden"
+          }`}
         >
           <div role="tablist" aria-label="แผงตั้งค่า" className="flex border-b border-slate-100">
             {(

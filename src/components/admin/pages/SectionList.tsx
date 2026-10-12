@@ -12,18 +12,17 @@ import {
 import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowDown, ArrowUp, Eye, EyeOff, GripVertical, Trash2 } from "lucide-react";
+import { Eye, EyeOff, GripVertical, Trash2 } from "lucide-react";
 import type { SectionInstance } from "@/lib/pages/doc";
 
 // The list of what a page is made of, in the order it is made of it.
 //
-// Dragging and the arrow buttons both stay. They are not redundant: a drag is
-// the fast way to move something six places, and the arrows are the only way
-// to do it from a keyboard without learning a key sequence, on a touch screen
-// where a long-press scroll fights the drag, and when the list is taller than
-// the window. dnd-kit's keyboard sensor covers the first of those properly —
-// space to pick up, arrows to move, space to drop — and the buttons cover the
-// rest.
+// Dragging is the only way to reorder now; the up/down buttons are gone. That
+// is safe because the handle itself is keyboard-operable — Tab to it, Space
+// to pick the section up, arrows to move it, Space to drop — so nothing has
+// been taken away from anyone who cannot use a pointer. It did cost four
+// buttons' worth of width in a rail where the section names were the thing
+// being squeezed.
 //
 // The handle is its own control rather than the whole row, because the row is
 // a button: making all of it draggable means every attempt to select a
@@ -37,7 +36,6 @@ export default function SectionList({
   selected,
   onSelect,
   onReorder,
-  onMove,
   onToggleHidden,
   onRemove,
 }: {
@@ -46,7 +44,6 @@ export default function SectionList({
   selected: string | null;
   onSelect: (id: string) => void;
   onReorder: (from: number, to: number) => void;
-  onMove: (id: string, delta: number) => void;
   onToggleHidden: (id: string) => void;
   onRemove: (id: string) => void;
 }) {
@@ -86,11 +83,7 @@ export default function SectionList({
               label={byType.get(section.type)?.label ?? section.type}
               known={byType.has(section.type)}
               active={section.id === selected}
-              first={i === 0}
-              last={i === sections.length - 1}
               onSelect={() => onSelect(section.id)}
-              onUp={() => onMove(section.id, -1)}
-              onDown={() => onMove(section.id, 1)}
               onToggleHidden={() => onToggleHidden(section.id)}
               onRemove={() => onRemove(section.id)}
             />
@@ -106,11 +99,7 @@ function Row({
   label,
   known,
   active,
-  first,
-  last,
   onSelect,
-  onUp,
-  onDown,
   onToggleHidden,
   onRemove,
 }: {
@@ -118,11 +107,7 @@ function Row({
   label: string;
   known: boolean;
   active: boolean;
-  first: boolean;
-  last: boolean;
   onSelect: () => void;
-  onUp: () => void;
-  onDown: () => void;
   onToggleHidden: () => void;
   onRemove: () => void;
 }) {
@@ -160,22 +145,6 @@ function Row({
             {label}
           </span>
           {!known && <span className="block text-[11px] text-rose-600">ไม่รู้จัก section ชนิดนี้</span>}
-        </button>
-        <button
-          onClick={onUp}
-          disabled={first}
-          aria-label={`ย้าย ${label} ขึ้น`}
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-brand-800 disabled:opacity-30"
-        >
-          <ArrowUp size={15} />
-        </button>
-        <button
-          onClick={onDown}
-          disabled={last}
-          aria-label={`ย้าย ${label} ลง`}
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-brand-800 disabled:opacity-30"
-        >
-          <ArrowDown size={15} />
         </button>
         <button
           onClick={onToggleHidden}
