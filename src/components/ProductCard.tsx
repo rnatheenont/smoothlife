@@ -251,7 +251,7 @@ export default function ProductCard({ product }: { product: Product }) {
               onClick={handleWish}
               aria-label={isWished ? "เอาออกจากรายการโปรด" : "เพิ่มในรายการโปรด"}
               aria-pressed={isWished}
-              className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 transition-colors hover:text-sale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 md:h-10 md:w-10"
+              className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 transition-colors hover:text-sale focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 @[14rem]:h-10 @[14rem]:w-10"
             >
               {/* Keyed on the count: a CSS animation only plays when the
                   element is new, and saving the same card twice has to look
@@ -268,7 +268,7 @@ export default function ProductCard({ product }: { product: Product }) {
               </span>
             </button>
             {soldOut ? (
-              <span className="flex h-9 flex-1 items-center justify-center rounded-full bg-slate-100 text-[13px] font-semibold text-slate-500 md:h-10">
+              <span className="flex h-9 flex-1 items-center justify-center rounded-full bg-slate-100 text-[13px] font-semibold text-slate-500 @[14rem]:h-10">
                 สินค้าหมด
               </span>
             ) : (
@@ -278,22 +278,33 @@ export default function ProductCard({ product }: { product: Product }) {
                 // back for anyone who cannot see the icon.
                 aria-label={added ? t("เพิ่มแล้ว", "Added") : t("ใส่ตะกร้า", "Add to cart")}
                 className={clsx(
-                  "ml-auto flex h-9 items-center justify-center gap-1.5 rounded-full px-4 text-[11px] font-bold text-white transition active:scale-[0.97] @[9rem]:text-[13px] md:h-10 md:min-w-28 md:px-5 md:text-sm",
+                  "ml-auto flex h-9 items-center justify-center gap-1.5 rounded-full px-4 text-[11px] font-bold text-white transition active:scale-[0.97] @[9rem]:text-[13px] @[14rem]:h-10 @[14rem]:min-w-28 @[14rem]:px-5 @[14rem]:text-sm",
+                  // Sized by the card, not by the window.
+                  //
+                  // This used to switch on md:, and the card is not the window:
+                  // the same 248px card showed a trolley on a 540px screen and
+                  // the words on a 1280px one, and a seven-column grid on a
+                  // wide desktop gave 190px cards that were handed the full
+                  // "ใส่ตะกร้า" pill plus a 40px heart and had nowhere to put
+                  // them. Measured both ways before changing it. The card is
+                  // already a @container — everything else in it had moved to
+                  // container queries and this row had been left behind.
+                  //
                   // Only as wide as its label, at the end of the row, so the
                   // green reads as one control rather than a bar under every
                   // card in the grid — the same reason the wishlist heart was
                   // brought down here instead of sitting on the photo.
                   //
                   // px-4 rather than the px-1 this had while it was stretching:
-                  // below md the label is a trolley icon alone, and without
-                  // padding the pill would collapse to about 25px on the card
-                  // size where the thumb has least room to begin with. With it
-                  // the target is 49×36.
+                  // on a narrow card the label is a trolley icon alone, and
+                  // without padding the pill would collapse to about 25px on
+                  // the card size where the thumb has least room to begin
+                  // with. With it the target is 49×36.
                   //
-                  // md:min-w-28 holds one width across both states. Sized to
-                  // its label, the button grew 21px the moment it turned into
-                  // "เพิ่มแล้ว", which shifted the pill sideways just as the
-                  // eye went to read it. flex-1 used to hide that.
+                  // min-w-28 from 14rem holds one width across both states.
+                  // Sized to its label, the button grew 21px the moment it
+                  // turned into "เพิ่มแล้ว", which shifted the pill sideways
+                  // just as the eye went to read it. flex-1 used to hide that.
                   // The drifting gradient needs a background wider than the
                   // button (bg-[length:200%_100%]) or there is nowhere for the
                   // position to travel. Confirmation stays flat: "เพิ่มแล้ว" is
@@ -303,11 +314,13 @@ export default function ProductCard({ product }: { product: Product }) {
                     : "animate-gradientPan bg-brand-gradient bg-[length:200%_100%] hover:brightness-105"
                 )}
               >
-                {added ? <Check size={16} strokeWidth={2.75} /> : <ShoppingCart size={17} className="md:hidden" />}
-                {/* On a phone the card is a third of the width it is on a
-                    desktop, so the words were down to 11px to fit. The trolley
-                    says the same thing at a size that can actually be hit. */}
-                <span className="hidden md:inline">
+                {added ? <Check size={16} strokeWidth={2.75} /> : <ShoppingCart size={17} className="@[11rem]:hidden" />}
+                {/* 11rem is where the words start fitting: the row is the
+                    heart (36) plus this pill, and "ใส่ตะกร้า" at 13px inside
+                    px-4 is about 94px — 165px of row inside a 176px card.
+                    Below that the trolley says the same thing at a size that
+                    can actually be hit. */}
+                <span className="hidden @[11rem]:inline">
                   {added ? t("เพิ่มแล้ว", "Added") : t("ใส่ตะกร้า", "Add to cart")}
                 </span>
               </button>
