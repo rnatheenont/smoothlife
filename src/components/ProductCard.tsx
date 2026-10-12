@@ -119,7 +119,15 @@ export default function ProductCard({ product }: { product: Product }) {
     // trace, so the rim is a pixel and a half of padding on a box around it.
     <div className="@container group relative h-full rounded-[17.5px]" style={{ padding: RIM }}>
       <HaloRing radius="rounded-[17.5px]" />
-      <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 md:rounded-xl2 md:hover:shadow-cardHover">
+      {/* The lift on hover has no size condition: Tailwind v4 already scopes
+          hover: to @media (hover: hover) — checked in the compiled CSS, the
+          rule sits inside that query — so the md: it used to carry was
+          standing in for "has a mouse" and getting it wrong on every tablet.
+
+          The md:rounded-xl2 that was here is gone rather than converted:
+          --radius-xl2 is 1rem and the base class is rounded-[16px], so it had
+          been setting 16px to 16px since the day it was written. */}
+      <div className="relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 hover:shadow-cardHover">
         {/* The photo fills the square edge to edge, in its own colours. The
             mist well with multiply blending tinted every packshot green-grey
             and shrank it inside padding. No zoom on hover — the card lifting
@@ -149,7 +157,10 @@ export default function ProductCard({ product }: { product: Product }) {
             </div>
           )}
         </Link>
-        <div className="flex flex-1 flex-col gap-1.5 p-3 md:p-4">
+        {/* Padding follows the card. At p-4 a 166px card has 134px of usable
+            width for a two-line product name; at p-3 a 250px card looks
+            under-set. Neither has anything to do with the window. */}
+        <div className="flex flex-1 flex-col gap-1.5 p-3 @[13rem]:p-4">
           {/* Brand leads the card now, the way it does in the design: on a
               shelf of five bottles the vendor is what tells them apart faster
               than the first forty characters of five similar names. */}
@@ -183,7 +194,10 @@ export default function ProductCard({ product }: { product: Product }) {
           <div className="mt-auto flex flex-col items-start gap-1 pt-1.5 @[10rem]:flex-row @[10rem]:items-end @[10rem]:justify-between @[13rem]:gap-2">
             <div className="min-w-0">
               {hasMultiplePrices && <span className="block text-[11px] text-slate-500">เริ่มต้น</span>}
-              <span className="block text-base font-bold tabular-nums text-brand-800 md:text-[17px]">
+              {/* 13rem is where this card already loosens everything else —
+                  the badge padding and the row gaps above use the same line,
+                  so the price steps up with them rather than on its own. */}
+              <span className="block text-base font-bold tabular-nums text-brand-800 @[13rem]:text-[17px]">
                 {formatTHB(product.price)}
               </span>
               {product.compareAtPrice && (
