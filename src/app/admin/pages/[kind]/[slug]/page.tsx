@@ -1112,93 +1112,6 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
               </span>
             </h2>
             <div className="flex items-center gap-1">
-              {/* The hand-off. Everyone who can open this screen can ask for a
-              look; only the publish button beside it decides whether they
-              can also act on the answer, and that gate is the permission
-              system's, not this panel's. */}
-          <div className="border-t border-slate-100 px-4 py-3">
-            <h3 className="text-[12px] font-bold text-slate-500">ขออนุมัติก่อนเผยแพร่</h3>
-
-            {page.review.state === "requested" ? (
-              <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] leading-relaxed text-amber-900">
-                <p className="font-semibold">รออนุมัติอยู่</p>
-                <p className="mt-0.5">
-                  ขอโดย {page.review.by ?? "—"}
-                  {page.review.at ? ` · ${bangkokLabel(page.review.at)}` : ""}
-                </p>
-                {page.review.note && <p className="mt-1">หมายเหตุ: {page.review.note}</p>}
-                {/* Approving without being shown what is in it is a rubber
-                    stamp with a person attached. */}
-                <div className="mt-2 border-t border-amber-200 pt-2">
-                  <DiffPanel kind={kind} slug={slug} from="published" title="สิ่งที่จะเปลี่ยนถ้าอนุมัติ" />
-                </div>
-              </div>
-            ) : page.review.state === "changes" ? (
-              <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-[12px] leading-relaxed text-rose-800">
-                <p className="font-semibold">ถูกส่งกลับให้แก้</p>
-                <p className="mt-0.5">
-                  โดย {page.review.decidedBy ?? "—"}
-                  {page.review.decidedAt ? ` · ${bangkokLabel(page.review.decidedAt)}` : ""}
-                </p>
-                {page.review.reply && <p className="mt-1">สิ่งที่ต้องแก้: {page.review.reply}</p>}
-              </div>
-            ) : page.review.state === "approved" ? (
-              <p className="mt-2 text-[12px] leading-relaxed text-brand-800">
-                อนุมัติแล้วโดย {page.review.decidedBy ?? "—"}
-                {page.review.decidedAt ? ` · ${bangkokLabel(page.review.decidedAt)}` : ""}
-              </p>
-            ) : (
-              <p className="mt-2 text-[12px] leading-relaxed text-slate-400">ยังไม่ได้ขออนุมัติสำหรับร่างนี้</p>
-            )}
-
-            <textarea
-              value={reviewNote}
-              onChange={(e) => setReviewNote(e.target.value)}
-              rows={2}
-              maxLength={500}
-              placeholder={
-                page.review.state === "requested"
-                  ? "สิ่งที่อยากให้แก้ (ถ้าส่งกลับ)…"
-                  : "บอกคนอนุมัติว่าแก้อะไรไป (ไม่บังคับ)…"
-              }
-              aria-label="ข้อความถึงคนอนุมัติ"
-              className="mt-2 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-[13px] leading-relaxed outline-hidden focus-visible:border-brand-teal"
-            />
-
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button
-                onClick={() => void requestReview()}
-                disabled={reviewBusy || saveState === "conflict"}
-                className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full border border-slate-200 text-[13px] font-semibold text-brand-800 disabled:opacity-60"
-              >
-                {reviewBusy ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-                ขออนุมัติ
-              </button>
-              {page.review.state === "requested" && (
-                <>
-                  <button
-                    onClick={() => void decideReview("approved")}
-                    disabled={reviewBusy || issues.length > 0 || saveState === "dirty"}
-                    title={issues.length > 0 ? "ยังมีข้อที่ต้องแก้ก่อนเผยแพร่" : undefined}
-                    className="flex h-10 items-center justify-center gap-1.5 rounded-full bg-brand-gradient px-4 text-[13px] font-semibold text-white disabled:opacity-50"
-                  >
-                    <Check size={13} /> อนุมัติและเผยแพร่
-                  </button>
-                  <button
-                    onClick={() => void decideReview("changes")}
-                    disabled={reviewBusy}
-                    className="h-10 rounded-full border border-slate-200 px-4 text-[13px] font-semibold text-slate-600 disabled:opacity-60"
-                  >
-                    ส่งกลับให้แก้
-                  </button>
-                </>
-              )}
-            </div>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
-              ปุ่มอนุมัติขึ้นเฉพาะตอนมีคำขอค้างอยู่ · คนที่ไม่มีสิทธิ์เผยแพร่จะกดอนุมัติไม่ได้ ระบบจะปฏิเสธที่ฝั่งเซิร์ฟเวอร์
-            </p>
-          </div>
-
           {kind === "campaign" && (
                 /* "ดูในช่วง" — the question worth answering before publishing
                    is what the page looks like on the day and a week after,
@@ -1351,13 +1264,178 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
             </div>
           ) : (
             <div className="flex flex-col">
+          {/* Five things used to sit here in a row, all looking alike, in a
+              rail as wide as a phone. Named and folded instead: the titles
+              answer "what can I do here" at a glance, and opening one is a
+              click — less work than scrolling past four panels you did not
+              want. Ordered by how often each is reached for.
+
+              <details> rather than a toggle of our own: it opens without
+              JavaScript, it is a disclosure in the accessibility tree with
+              no aria- attributes to get wrong, and find-in-page opens it to
+              show a match. */}
+          {/* Open to begin with: "what is different from what customers
+              see" is the question you arrive with. */}
+          <details open className="border-t border-slate-100">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 hover:bg-surface-soft">
+              <span className="text-[13px] font-semibold text-brand-ink">สรุปสิ่งที่แก้ไว้</span>
+              <span className="shrink-0 text-[11px] text-slate-400">เทียบกับหน้าจริง</span>
+            </summary>
+            <div className="px-4 pb-3">
+              <DiffPanel kind={kind} slug={slug} from="published" title="ร่างนี้ต่างจากหน้าจริงตรงไหน" />
+            </div>
+          </details>
+
+          {/* The hand-off. Everyone who can open this screen can ask for a
+              look; only the publish button beside it decides whether they
+              can also act on the answer, and that gate is the permission
+              system's, not this panel's. */}
+          <details className="border-t border-slate-100">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 hover:bg-surface-soft">
+              <span className="text-[13px] font-semibold text-brand-ink">ขออนุมัติก่อนเผยแพร่</span>
+              <span className="shrink-0 text-[11px] text-slate-400">สำหรับคนที่เผยแพร่เองไม่ได้</span>
+            </summary>
+            <div className="px-4 pb-3">
+
+            {page.review.state === "requested" ? (
+              <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] leading-relaxed text-amber-900">
+                <p className="font-semibold">รออนุมัติอยู่</p>
+                <p className="mt-0.5">
+                  ขอโดย {page.review.by ?? "—"}
+                  {page.review.at ? ` · ${bangkokLabel(page.review.at)}` : ""}
+                </p>
+                {page.review.note && <p className="mt-1">หมายเหตุ: {page.review.note}</p>}
+            {/* Approving without being shown what is in it is a rubber
+                    stamp with a person attached. */}
+                <div className="mt-2 border-t border-amber-200 pt-2">
+                  <DiffPanel kind={kind} slug={slug} from="published" title="สิ่งที่จะเปลี่ยนถ้าอนุมัติ" />
+                </div>
+              </div>
+            ) : page.review.state === "changes" ? (
+              <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-[12px] leading-relaxed text-rose-800">
+                <p className="font-semibold">ถูกส่งกลับให้แก้</p>
+                <p className="mt-0.5">
+                  โดย {page.review.decidedBy ?? "—"}
+                  {page.review.decidedAt ? ` · ${bangkokLabel(page.review.decidedAt)}` : ""}
+                </p>
+                {page.review.reply && <p className="mt-1">สิ่งที่ต้องแก้: {page.review.reply}</p>}
+              </div>
+            ) : page.review.state === "approved" ? (
+              <p className="mt-2 text-[12px] leading-relaxed text-brand-800">
+                อนุมัติแล้วโดย {page.review.decidedBy ?? "—"}
+                {page.review.decidedAt ? ` · ${bangkokLabel(page.review.decidedAt)}` : ""}
+              </p>
+            ) : (
+              <p className="mt-2 text-[12px] leading-relaxed text-slate-400">ยังไม่ได้ขออนุมัติสำหรับร่างนี้</p>
+            )}
+
+            <textarea
+              value={reviewNote}
+              onChange={(e) => setReviewNote(e.target.value)}
+              rows={2}
+              maxLength={500}
+              placeholder={
+                page.review.state === "requested"
+                  ? "สิ่งที่อยากให้แก้ (ถ้าส่งกลับ)…"
+                  : "บอกคนอนุมัติว่าแก้อะไรไป (ไม่บังคับ)…"
+              }
+              aria-label="ข้อความถึงคนอนุมัติ"
+              className="mt-2 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-[13px] leading-relaxed outline-hidden focus-visible:border-brand-teal"
+            />
+
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                onClick={() => void requestReview()}
+                disabled={reviewBusy || saveState === "conflict"}
+                className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full border border-slate-200 text-[13px] font-semibold text-brand-800 disabled:opacity-60"
+              >
+                {reviewBusy ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                ขออนุมัติ
+              </button>
+              {page.review.state === "requested" && (
+                <>
+                  <button
+                    onClick={() => void decideReview("approved")}
+                    disabled={reviewBusy || issues.length > 0 || saveState === "dirty"}
+                    title={issues.length > 0 ? "ยังมีข้อที่ต้องแก้ก่อนเผยแพร่" : undefined}
+                    className="flex h-10 items-center justify-center gap-1.5 rounded-full bg-brand-gradient px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+                  >
+                    <Check size={13} /> อนุมัติและเผยแพร่
+                  </button>
+                  <button
+                    onClick={() => void decideReview("changes")}
+                    disabled={reviewBusy}
+                    className="h-10 rounded-full border border-slate-200 px-4 text-[13px] font-semibold text-slate-600 disabled:opacity-60"
+                  >
+                    ส่งกลับให้แก้
+                  </button>
+                </>
+              )}
+            </div>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+              ปุ่มอนุมัติขึ้นเฉพาะตอนมีคำขอค้างอยู่ · คนที่ไม่มีสิทธิ์เผยแพร่จะกดอนุมัติไม่ได้ ระบบจะปฏิเสธที่ฝั่งเซิร์ฟเวอร์
+            </p>
+          </div>
+            </details>
+
+          {/* Scheduling. Deliberately under the section list rather than in
+              the publish dialog: a time set on a page is a property of the
+              page, not of the one press of a button, and burying it in a
+              dialog is how it gets set once and then forgotten about. */}
+          <details className="border-t border-slate-100">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 hover:bg-surface-soft">
+              <span className="text-[13px] font-semibold text-brand-ink">ตั้งเวลาเผยแพร่</span>
+              <span className="shrink-0 text-[11px] text-slate-400">เวลาไทย</span>
+            </summary>
+            <div className="px-4 pb-3">
+            <div className="mt-2 flex flex-col gap-2">
+              <label className="text-[12px] text-slate-500">
+                เผยแพร่เมื่อ
+                <input
+                  type="datetime-local"
+                  value={publishAt}
+                  onChange={(e) => setPublishAt(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2.5 text-[13px] outline-hidden focus-visible:border-brand-teal"
+                />
+              </label>
+              <label className="text-[12px] text-slate-500">
+                ปิดหน้าเมื่อ
+                <input
+                  type="datetime-local"
+                  value={unpublishAt}
+                  onChange={(e) => setUnpublishAt(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2.5 text-[13px] outline-hidden focus-visible:border-brand-teal"
+                />
+              </label>
+              <button
+                onClick={() => void saveSchedule()}
+                disabled={scheduling}
+                className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-slate-200 text-[13px] font-semibold text-brand-800 disabled:opacity-60"
+              >
+                {scheduling ? <Loader2 size={13} className="animate-spin" /> : <Clock size={13} />}
+                บันทึกเวลา
+              </button>
+              {/* Said plainly, because "ตั้งเวลา 09:00" sounds like a promise
+                  of 09:00:00 and the checker runs once a minute. */}
+              <p className="text-[11px] leading-relaxed text-slate-400">
+                ระบบตรวจทุก 1 นาที — หน้าจะขึ้นภายใน 1 นาทีหลังเวลาที่ตั้งไว้
+                {page.publishAt && ` · ตั้งไว้ ${bangkokLabel(page.publishAt)}`}
+              </p>
+            </div>
+          </div>
+            </details>
+
           {kind === "campaign" && (
             /* A campaign's own settings: when it runs, what colour it is, and
                whether it takes over the home page. Together with the phase
                switcher over the preview, this is the whole of what makes a
                campaign page different from any other page. */
-            <div className="border-t border-slate-100 px-4 py-3">
-              <h3 className="text-[12px] font-bold text-slate-500">ช่วงเวลาแคมเปญ (เวลาไทย)</h3>
+            <details className="border-t border-slate-100">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 hover:bg-surface-soft">
+              <span className="text-[13px] font-semibold text-brand-ink">ช่วงเวลาและสีของแคมเปญ</span>
+              <span className="shrink-0 text-[11px] text-slate-400">เฉพาะเพจแคมเปญ</span>
+            </summary>
+            <div className="px-4 pb-3">
               <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {(
                   [
@@ -1469,56 +1547,19 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                 </p>
               )}
             </div>
+            </details>
           )}
-
-          {/* Scheduling. Deliberately under the section list rather than in
-              the publish dialog: a time set on a page is a property of the
-              page, not of the one press of a button, and burying it in a
-              dialog is how it gets set once and then forgotten about. */}
-          <div className="border-t border-slate-100 px-4 py-3">
-            <h3 className="text-[12px] font-bold text-slate-500">ตั้งเวลา (เวลาไทย)</h3>
-            <div className="mt-2 flex flex-col gap-2">
-              <label className="text-[12px] text-slate-500">
-                เผยแพร่เมื่อ
-                <input
-                  type="datetime-local"
-                  value={publishAt}
-                  onChange={(e) => setPublishAt(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2.5 text-[13px] outline-hidden focus-visible:border-brand-teal"
-                />
-              </label>
-              <label className="text-[12px] text-slate-500">
-                ปิดหน้าเมื่อ
-                <input
-                  type="datetime-local"
-                  value={unpublishAt}
-                  onChange={(e) => setUnpublishAt(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2.5 text-[13px] outline-hidden focus-visible:border-brand-teal"
-                />
-              </label>
-              <button
-                onClick={() => void saveSchedule()}
-                disabled={scheduling}
-                className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-slate-200 text-[13px] font-semibold text-brand-800 disabled:opacity-60"
-              >
-                {scheduling ? <Loader2 size={13} className="animate-spin" /> : <Clock size={13} />}
-                บันทึกเวลา
-              </button>
-              {/* Said plainly, because "ตั้งเวลา 09:00" sounds like a promise
-                  of 09:00:00 and the checker runs once a minute. */}
-              <p className="text-[11px] leading-relaxed text-slate-400">
-                ระบบตรวจทุก 1 นาที — หน้าจะขึ้นภายใน 1 นาทีหลังเวลาที่ตั้งไว้
-                {page.publishAt && ` · ตั้งไว้ ${bangkokLabel(page.publishAt)}`}
-              </p>
-            </div>
-          </div>
 
           {/* Templates and copies. A template is an arrangement of sections
               with the ids stripped; applying one replaces the draft and
               leaves the published page alone, which is why it needs no
               scarier warning than the one on the button. */}
-          <div className="border-t border-slate-100 px-4 py-3">
-            <h3 className="text-[12px] font-bold text-slate-500">template และสำเนา</h3>
+          <details className="border-t border-slate-100">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 hover:bg-surface-soft">
+              <span className="text-[13px] font-semibold text-brand-ink">template และทำสำเนา</span>
+              <span className="shrink-0 text-[11px] text-slate-400">ใช้โครงหน้านี้ซ้ำ</span>
+            </summary>
+            <div className="px-4 pb-3">
 
             <div className="mt-2 flex gap-2">
               <input
@@ -1600,13 +1641,15 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
               สำเนาเริ่มเป็นร่างเสมอ แม้ต้นฉบับจะเผยแพร่อยู่ — ลูกค้าจะไม่เห็นสองหน้าพร้อมกัน
             </p>
           </div>
+            </details>
 
           {revisions.length > 0 && (
-            <div className="border-t border-slate-100 px-4 py-3">
-              <h3 className="text-[12px] font-bold text-slate-500">เวอร์ชันที่เผยแพร่แล้ว</h3>
-              <div className="mt-2 rounded-lg bg-surface-soft px-3 py-2">
-                <DiffPanel kind={kind} slug={slug} from="published" title="ร่างนี้ต่างจากหน้าจริงตรงไหน" />
-              </div>
+            <details className="border-t border-slate-100">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 hover:bg-surface-soft">
+              <span className="text-[13px] font-semibold text-brand-ink">เวอร์ชันที่เผยแพร่แล้ว</span>
+              <span className="shrink-0 text-[11px] text-slate-400">ย้อนกลับได้</span>
+            </summary>
+            <div className="px-4 pb-3">
               <ul className="mt-2 flex flex-col gap-1">
                 {revisions.slice(0, 5).map((r) => {
                   const live = r.id === page.publishedRevisionId;
@@ -1631,6 +1674,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                 })}
               </ul>
             </div>
+            </details>
           )}
             </div>
           )}
