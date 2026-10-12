@@ -15,6 +15,13 @@ import { imageBanner } from "./image_banner/definition";
 import { productGrid } from "./product_grid/definition";
 import { uspIcons } from "./usp_icons/definition";
 import { spacer } from "./spacer/definition";
+import { brandHero } from "./brand_hero/definition";
+import { brandGroupTabs } from "./brand_group_tabs/definition";
+import { brandBestsellers } from "./brand_bestsellers/definition";
+import { brandStory } from "./brand_story/definition";
+import { brandProductLines } from "./brand_product_lines/definition";
+import { brandAllLinks } from "./brand_all_links/definition";
+import { brandCampaignBar } from "./brand_campaign_bar/definition";
 import { campaignHero } from "./campaign_hero/definition";
 import { countdownBanner } from "./countdown_banner/definition";
 import { voucherStrip } from "./voucher_strip/definition";
@@ -58,6 +65,17 @@ const ALL: AnySectionDefinition[] = [
   productGrid,
   uspIcons,
   spacer,
+
+  // Brand pages only. Each reads which brand from the page's own slug, so
+  // they mean nothing anywhere else — enabledOn keeps them out of every
+  // other library.
+  brandHero,
+  brandGroupTabs,
+  brandBestsellers,
+  brandStory,
+  brandProductLines,
+  brandAllLinks,
+  brandCampaignBar,
 
   // Campaign pages. The first four read the campaign's own phase or its four
   // dates (ctx.phase, ctx.times), which only a campaign page provides — put

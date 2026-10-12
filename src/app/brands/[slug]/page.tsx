@@ -11,6 +11,10 @@ import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import ProductCard from "@/components/ProductCard";
 import StarRating from "@/components/StarRating";
 import { withCustomImages } from "@/lib/product-images";
+import { PAGES_BRAND_ENABLED } from "@/lib/feature-flags";
+import { renderSections } from "@/lib/pages/render";
+import { publishedDoc } from "@/lib/pages/store";
+import { defaultBrandDoc } from "@/lib/pages/default-docs/brand";
 
 // One page per brand.
 //
@@ -55,9 +59,47 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   };
 }
 
+/**
+ * A brand page, assembled from a document.
+ *
+ * The brand's own published page if the team laid one out, otherwise the
+ * automatic brand template — which every brand has without anyone building
+ * it, and which is also what a page that cannot be read falls back to. The
+ * structured data stays here rather than in a section: it describes the
+ * brand, not the layout, and has to be on the page however it is arranged.
+ */
+async function StoredBrandPage({ slug }: { slug: string }) {
+  const facts = brandFacts(slug);
+  if (!facts) notFound();
+
+  const doc = (await publishedDoc("brand", slug)) ?? defaultBrandDoc();
+  const sections = await renderSections(doc, { kind: "brand", slug, now: new Date(), isPreview: false });
+
+  const breadcrumbItems = [
+    { label: "หน้าแรก", href: "/" },
+    { label: "แบรนด์ทั้งหมด", href: "/brands" },
+    { label: facts.brand.name },
+  ];
+  return (
+    <div className="py-6 md:py-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd(breadcrumbItems)) }}
+      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(brandJsonLd(facts.brand)) }} />
+      {sections}
+    </div>
+  );
+}
+
 export default async function BrandHubPage(props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
-  const facts = brandFacts(params.slug);
+  if (PAGES_BRAND_ENABLED) return <StoredBrandPage slug={params.slug} />;
+  return <LegacyBrandPage slug={params.slug} />;
+}
+
+async function LegacyBrandPage({ slug }: { slug: string }) {
+  const facts = brandFacts(slug);
   if (!facts) notFound();
 
   const { brand, reviews, rating, minPrice, categoryNames } = facts;

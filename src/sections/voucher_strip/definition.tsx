@@ -104,7 +104,9 @@ export const voucherStrip: SectionDefinition<typeof schema> = {
       help: 'แต่ละอัน: code, value, condition, expiresAt (ISO) เช่น [{"code":"SAVE100","value":"ลด 100 บาท","condition":"ซื้อครบ 990","expiresAt":""}]',
     },
   ],
-  enabledOn: ["campaign", "home", "page"],
+  // Brand pages too: §14.2 asks for a brand's own codes on its page, and
+  // this is the same row of cards with different codes in it.
+  enabledOn: ["campaign", "home", "page", "brand"],
   check: async (settings) => {
     const issues = [];
     if (settings.vouchers.length === 0) {

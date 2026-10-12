@@ -35,6 +35,7 @@ import {
   removeSection,
   toggleHidden as toggleHiddenIn,
   updateSettings,
+  parseSlugList,
 } from "@/lib/pages/edit";
 import type { FieldDef } from "@/lib/pages/types";
 import { bangkokInputToIso, bangkokLabel, isoToBangkokInput } from "@/lib/pages/bangkok-time";
@@ -95,6 +96,7 @@ type PageInfo = {
     extendedAt: string | null;
     endsAt: string | null;
     takeoverHome: boolean;
+    brands: string[];
     theme: { accent?: string; background?: string; badgeText?: string } | null;
   } | null;
 };
@@ -111,6 +113,7 @@ type CampaignForm = {
   background: string;
   badgeText: string;
   takeoverHome: boolean;
+  brands: string;
 };
 
 const EMPTY_CAMPAIGN: CampaignForm = {
@@ -122,6 +125,7 @@ const EMPTY_CAMPAIGN: CampaignForm = {
   background: "",
   badgeText: "",
   takeoverHome: false,
+  brands: "",
 };
 
 type SaveState = "idle" | "dirty" | "saving" | "saved" | "conflict" | "error";
@@ -215,6 +219,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
               background: c.theme?.background ?? "",
               badgeText: c.theme?.badgeText ?? "",
               takeoverHome: c.takeoverHome,
+              brands: (c.brands ?? []).join(", "),
             }
           : EMPTY_CAMPAIGN
       );
@@ -428,6 +433,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
             badgeText: camp.badgeText.trim() || undefined,
           },
           takeoverHome: camp.takeoverHome,
+          brands: parseSlugList(camp.brands),
         }),
       });
       const data = await res.json();
@@ -857,6 +863,22 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                   className="mt-0.5 h-4 w-4 shrink-0 accent-brand-800"
                 />
                 ให้แคมเปญนี้ขึ้นหน้าแรกตอนที่กำลังจัด (ต้องมี section &quot;ช่องแคมเปญ&quot; วางไว้ในหน้าแรกแล้ว)
+              </label>
+
+              <label className="mt-3 block text-[12px] text-slate-500">
+                แบรนด์ที่ร่วมแคมเปญ
+                <input
+                  value={camp.brands}
+                  onChange={(e) => setCamp((c) => ({ ...c, brands: e.target.value }))}
+                  placeholder="smooth-e, dentiste"
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2.5 text-[13px] outline-hidden focus-visible:border-brand-teal"
+                />
+                {/* Why this is worth filling in, since nothing on this page
+                    changes when you do. */}
+                <span className="mt-1 block text-[11px] leading-relaxed text-slate-400">
+                  หน้าของแบรนด์เหล่านี้จะขึ้นแถบ &quot;กำลังมีแคมเปญ&quot; ให้เอง · ใส่ slug คั่นด้วยจุลภาค ·
+                  ชื่อที่ไม่มีในร้านจะถูกตัดออกตอนบันทึก
+                </span>
               </label>
 
               <button

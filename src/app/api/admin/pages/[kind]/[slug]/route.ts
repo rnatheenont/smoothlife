@@ -14,6 +14,7 @@ import { migrateDoc } from "@/lib/pages/doc";
 import { validateCampaignTimes } from "@/lib/pages/campaign";
 import { checkTheme, type CampaignTheme } from "@/lib/pages/theme";
 import { pageTag } from "@/lib/pages/store";
+import { getBrand } from "@/data/brands";
 import { revalidateTag } from "next/cache";
 import { sectionsFor } from "@/sections/registry";
 import type { PageKind } from "@/lib/pages/types";
@@ -87,6 +88,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ kind: str
       campaign: {
         ...campaignTimesOf(page),
         takeoverHome: page.takeover_home === true,
+        brands: page.campaign_brands ?? [],
         theme: (page.campaign_theme as CampaignTheme | null) ?? null,
       },
     },
@@ -179,6 +181,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ kind: st
         };
         theme?: CampaignTheme | null;
         takeoverHome?: boolean;
+        brands?: string[];
       }
     | null;
 
@@ -207,6 +210,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ kind: st
       campaign_ends_at: times.endsAt ?? null,
       campaign_theme: theme,
       takeover_home: body.takeoverHome === true,
+      // Only brands the shop actually sells. A typo here would be a brand
+      // page that never shows the bar, with nothing anywhere saying why.
+      campaign_brands: (body.brands ?? []).filter((slug) => Boolean(getBrand(slug))),
     };
 
     // A live campaign whose dates moved needs its boundary recomputed now.
@@ -237,6 +243,11 @@ export async function POST(req: NextRequest, props: { params: Promise<{ kind: st
     // The home page's campaign_slot reads this row, so it is stale now too —
     // both when the takeover is switched on and when it is switched off.
     revalidateTag(pageTag("home", "home"), { expire: 0 });
+    // So are the brand pages on either side of the change: the ones joining
+    // the campaign and the ones dropped from it.
+    for (const slug of new Set([...(page.campaign_brands ?? []), ...(body.brands ?? [])])) {
+      revalidateTag(pageTag("brand", slug), { expire: 0 });
+    }
 
     await audit(
       "page.campaign",

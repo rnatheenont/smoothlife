@@ -30,6 +30,7 @@ export type PageRow = {
   campaign_ends_at: string | null;
   takeover_home: boolean;
   campaign_theme: unknown;
+  campaign_brands: string[] | null;
 };
 
 export function pageTag(kind: PageKind, slug: string) {
@@ -257,6 +258,50 @@ export async function takeoverCampaigns(): Promise<
     }));
   } catch (err) {
     console.error("[pages] could not list takeover campaigns", err);
+    return [];
+  }
+}
+
+/**
+ * The campaign a brand is currently part of, if any.
+ *
+ * Read by the bar on a brand page. Only a campaign that is published and
+ * names this brand (campaign_brands) counts — the phase is decided by the
+ * caller, which keeps that rule in one place rather than in two files that
+ * can disagree about what "on now" means.
+ */
+export async function campaignsForBrand(
+  brandSlug: string
+): Promise<{ slug: string; title: string; times: CampaignTimes }[]> {
+  if (!supabaseConfigured() || !brandSlug) return [];
+  try {
+    const rows = await supabaseRestCached<
+      {
+        slug: string;
+        title: string;
+        campaign_teaser_at: string | null;
+        campaign_live_at: string | null;
+        campaign_extended_at: string | null;
+        campaign_ends_at: string | null;
+      }[]
+    >(
+      `pages?select=slug,title,campaign_teaser_at,campaign_live_at,campaign_extended_at,campaign_ends_at` +
+        `&kind=eq.campaign&status=eq.published&campaign_brands=cs.{${encodeURIComponent(brandSlug)}}` +
+        `&order=campaign_live_at&limit=3`,
+      { revalidate: CAMPAIGN_POINTER_TTL, tags: ["pages"] }
+    );
+    return rows.map((row) => ({
+      slug: row.slug,
+      title: row.title,
+      times: {
+        teaserAt: row.campaign_teaser_at,
+        liveAt: row.campaign_live_at,
+        extendedAt: row.campaign_extended_at,
+        endsAt: row.campaign_ends_at,
+      },
+    }));
+  } catch (err) {
+    console.error(`[pages] could not read campaigns for brand ${brandSlug}`, err);
     return [];
   }
 }

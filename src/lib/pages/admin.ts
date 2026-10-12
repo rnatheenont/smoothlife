@@ -2,6 +2,8 @@ import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server
 import { revalidateTag } from "next/cache";
 import { migrateDoc, nextBoundaryAfter, SCHEMA_VERSION, type PageDoc } from "./doc";
 import { defaultHomeDoc } from "./default-docs/home";
+import { defaultBrandDoc } from "./default-docs/brand";
+import { getBrand } from "@/data/brands";
 import { nextPhaseBoundaryAfter, validateCampaignTimes, type CampaignTimes } from "./campaign";
 import { checkTheme, type CampaignTheme } from "./theme";
 import { pageTag, type PageRow } from "./store";
@@ -43,6 +45,16 @@ export type SaveResult =
  */
 const SEEDS: Partial<Record<PageKind, (slug: string) => { title: string; doc: PageDoc } | null>> = {
   home: (slug) => (slug === "home" ? { title: "หน้าแรก", doc: defaultHomeDoc() } : null),
+
+  // A brand page starts as the page that brand already has, so "lay this one
+  // out myself" begins from what is on the site rather than from a blank
+  // screen. Only a brand the shop actually sells: the null is what stops
+  // /admin/pages/brand/anything from conjuring a page for a slug nobody has
+  // heard of.
+  brand: (slug) => {
+    const brand = getBrand(slug);
+    return brand ? { title: `แบรนด์ ${brand.name}`, doc: defaultBrandDoc() } : null;
+  },
 };
 
 export async function openPage(kind: PageKind, slug: string, actor: string): Promise<PageRow | null> {

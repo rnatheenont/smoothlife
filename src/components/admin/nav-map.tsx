@@ -217,6 +217,13 @@ export const NAV_GROUPS: NavGroup[] = [
         permission: "pages.edit",
       },
       {
+        href: "/admin/brands",
+        label: "หน้าแบรนด์",
+        icon: Award,
+        desc: "รูปหัว เรื่องราว จุดเด่น และสินค้าแนะนำของแต่ละแบรนด์",
+        permission: "pages.edit",
+      },
+      {
         href: "/admin/products/subcategories",
         label: "หมวดย่อยของสินค้า",
         icon: LayoutList,

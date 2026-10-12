@@ -222,6 +222,12 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
     prefix: "/api/admin/register-catalogue-webhooks",
     permission: "system.setup",
   },
+
+  // Brand profiles (Customize Page, phase 5). Reading is part of editing a
+  // page; saving is publishing, because a profile has no draft — the hero
+  // picture and story appear on the brand's live page the moment they save.
+  { prefix: "/api/admin/brands", permission: "pages.edit", methods: READ },
+  { prefix: "/api/admin/brands", permission: "pages.publish" },
 ];
 
 /** The rule covering this request, or null when nothing covers it. */
