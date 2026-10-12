@@ -932,17 +932,23 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
           admin header takes is space the preview wants — and "เผยแพร่" has to
           be reachable at the bottom of a long section list, not only at the
           top. */}
-      <div className="sticky top-0 z-30 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl2 border border-surface-line bg-white/95 px-3 py-2.5 shadow-sm backdrop-blur">
+      <div className="sticky top-0 z-30 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl2 border border-surface-line bg-white/95 px-3 py-1.5 shadow-sm backdrop-blur">
         <Link
           href="/admin/pages"
           aria-label="กลับไปรายการหน้าเว็บ"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-surface-soft hover:text-brand-800"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-surface-soft hover:text-brand-800"
         >
           <ArrowLeft size={17} />
         </Link>
 
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-sm font-bold text-brand-ink">{page.title}</h1>
+        {/* The title and its line of detail sit side by side, not stacked:
+            two lines of Thai text are taller than every control next to them,
+            so stacking them — and not the buttons — is what set the height of
+            the bar. Beside each other, the bar is as tall as a button. The
+            detail truncates first, because the title is the part you look for
+            when you have several of these open. */}
+        <div className="flex min-w-0 flex-1 items-baseline gap-2">
+          <h1 className="shrink-0 truncate text-[13px] font-bold text-brand-ink">{page.title}</h1>
           <p className="truncate text-[11px] text-slate-500">
             <span className="font-semibold">{STATUS_LABEL[page.status] ?? page.status}</span> · {publicPath} · แก้ล่าสุดโดย{" "}
             {page.draftUpdatedBy ?? "—"}
@@ -956,14 +962,14 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
           disabled={history.length === 0}
           title="เลิกทำ (Ctrl+Z / Cmd+Z)"
           aria-label="เลิกทำ"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-surface-soft hover:text-brand-800 disabled:opacity-30"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-surface-soft hover:text-brand-800 disabled:opacity-30"
         >
           <Undo2 size={17} />
         </button>
 
         <Link
           href={`/admin/pages/${kind}/${slug}/stats`}
-          className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 px-3.5 text-[13px] font-semibold text-brand-800"
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 px-3 text-[13px] font-semibold text-brand-800"
         >
           <BarChart3 size={14} /> สถิติ
         </Link>
@@ -971,14 +977,14 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
           href={publicPath}
           target="_blank"
           rel="noreferrer"
-          className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 px-3.5 text-[13px] font-semibold text-brand-800"
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 px-3 text-[13px] font-semibold text-brand-800"
         >
           <ExternalLink size={14} /> ดูหน้าจริง
         </a>
         <button
           onClick={() => setConfirming(true)}
           disabled={publishing || saveState === "conflict"}
-          className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-brand-gradient px-5 text-sm font-semibold text-white disabled:opacity-60"
+          className="flex h-9 shrink-0 items-center gap-2 rounded-full bg-brand-gradient px-4 text-[13px] font-semibold text-white disabled:opacity-60"
         >
           {publishing ? <Loader2 size={15} className="animate-spin" /> : <Rocket size={15} />}
           เผยแพร่
@@ -1242,16 +1248,20 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                 ))}
               </datalist>
 
-              <label className="flex items-center gap-1 text-[11px] text-slate-400">
-                {/* appearance-none and w-auto: a native select is as wide as
-                    its longest option plus room for the system arrow, so this
-                    one sat in a box far wider than the words inside it. With
-                    the chrome off it is the width of what it says. */}
+              {/* A native select sizes itself from its longest option plus
+                  room for the system arrow; turning the arrow off with
+                  appearance-none does not take that room back, and the label
+                  changes with the window ("พอดี 77%"), so the words ran under
+                  the edge of the box. The span is what sets the width now —
+                  it is the text, so it cannot be too narrow for it — and the
+                  select lies on top of it, invisible, still a real select for
+                  the keyboard and for the menu. */}
+              <label className="relative flex items-center text-[11px] text-slate-400">
                 <select
                   value={zoom === "fit" ? "fit" : String(zoom)}
                   onChange={(e) => setZoom(e.target.value === "fit" ? "fit" : Number(e.target.value))}
                   aria-label="ขนาดที่แสดง"
-                  className="h-8 w-auto appearance-none rounded-md border border-slate-200 px-2 text-center text-[12px] text-brand-ink outline-hidden hover:border-slate-300 focus-visible:border-brand-teal"
+                  className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 >
                   <option value="fit">พอดี {Math.round(frame.fitted * 100)}%</option>
                   {[0.5, 0.75, 1].map((z) => (
@@ -1260,6 +1270,12 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                     </option>
                   ))}
                 </select>
+                <span
+                  aria-hidden
+                  className="pointer-events-none flex h-8 items-center whitespace-nowrap rounded-md border border-slate-200 px-2 text-[12px] text-brand-ink peer-hover:border-slate-300 peer-focus-visible:border-brand-teal"
+                >
+                  {zoom === "fit" ? `พอดี ${Math.round(frame.fitted * 100)}%` : `${zoom * 100}%`}
+                </span>
               </label>
 
               {DEVICES[device].fixedHeight && (
