@@ -64,6 +64,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ kind: str
       draftUpdatedBy: page.draft_updated_by,
       draftUpdatedAt: page.draft_updated_at,
       publishedRevisionId: page.published_revision_id,
+      publishAt: page.publish_at,
+      unpublishAt: page.unpublish_at,
     },
     doc,
     // The library panel only ever offers what this kind of page may hold, so
@@ -138,12 +140,50 @@ export async function POST(req: NextRequest, props: { params: Promise<{ kind: st
   if (!target) return NextResponse.json({ ok: false, error: "ไม่รู้จักประเภทเพจนี้" }, { status: 400 });
 
   const body = (await req.json().catch(() => null)) as
-    | { action?: "publish" | "rollback"; note?: string; revisionId?: string }
+    | {
+        action?: "publish" | "rollback" | "schedule";
+        note?: string;
+        revisionId?: string;
+        publishAt?: string | null;
+        unpublishAt?: string | null;
+      }
     | null;
 
   const page = await openPage(target.kind, target.slug, actorOf(token));
   if (!page) return NextResponse.json({ ok: false, error: "ไม่พบเพจนี้" }, { status: 404 });
   const actor = actorOf(token);
+
+  if (body?.action === "schedule") {
+    // Stored as the instants they are; the form collects them in Bangkok
+    // time and converts, because an admin typing "09:00" means nine in the
+    // morning here, not nine in UTC.
+    const publishAt = body.publishAt ?? null;
+    const unpublishAt = body.unpublishAt ?? null;
+    for (const [label, value] of [["เวลาเผยแพร่", publishAt], ["เวลาปิด", unpublishAt]] as const) {
+      if (value !== null && !Number.isFinite(Date.parse(value))) {
+        return NextResponse.json({ ok: false, error: `${label}ไม่ใช่วันเวลาที่อ่านได้` }, { status: 400 });
+      }
+    }
+    if (publishAt && unpublishAt && Date.parse(unpublishAt) <= Date.parse(publishAt)) {
+      return NextResponse.json({ ok: false, error: "เวลาปิดต้องหลังเวลาเผยแพร่" }, { status: 400 });
+    }
+
+    await supabaseRest(`pages?id=eq.${pgValue(page.id)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({
+        publish_at: publishAt,
+        unpublish_at: unpublishAt,
+        // Only a page that is not already live becomes "scheduled" — setting
+        // a future date on a published page means "take it down then", not
+        // "stop showing it until then".
+        ...(publishAt && page.status !== "published" ? { status: "scheduled" } : {}),
+        ...(!publishAt && page.status === "scheduled" ? { status: "draft" } : {}),
+      }),
+    });
+    await audit("page.schedule", page.id, `ตั้งเวลา เผยแพร่ ${publishAt ?? "—"} ปิด ${unpublishAt ?? "—"}`, actor);
+    return NextResponse.json({ ok: true });
+  }
 
   if (body?.action === "rollback") {
     if (!body.revisionId) return NextResponse.json({ ok: false, error: "ไม่ได้ระบุเวอร์ชัน" }, { status: 400 });
