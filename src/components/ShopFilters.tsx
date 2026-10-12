@@ -2,8 +2,8 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { concerns } from "@/data/categories";
-import { houseBrands, otherBrands } from "@/data/brands";
-import { multi, PROMO_FILTERS, RATING_STEPS, type FilterCounts, ShopSearchParams } from "@/lib/filter-products";
+import type { BrandOption } from "@/lib/brand-options";
+import { multi, PROMO_FILTERS, RATING_STEPS, type FilterCounts, ShopSearchParams } from "@/lib/shop-params";
 import { SlidersHorizontal, Check, X, ChevronDown, Search, Star } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import clsx from "clsx";
@@ -25,8 +25,14 @@ export default function ShopFilters({
   mobileExtra,
   counts,
   resultCount,
+  houseBrands,
+  otherBrands,
 }: {
   current: ShopSearchParams;
+  /** The shop's own brands, then the rest — from the server, because the
+   *  list is built by counting the catalogue (see lib/brand-options). */
+  houseBrands: BrandOption[];
+  otherBrands: BrandOption[];
   mobileExtra?: ReactNode;
   counts?: FilterCounts;
   /** How many products the filters currently leave, for the sheet's own

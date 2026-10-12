@@ -1,38 +1,13 @@
 import { products } from "@/data/products";
 import { Product } from "@/data/types";
 import { brands, brandSlugAliases, slugifyVendor } from "@/data/brands";
+import { multi, PAGE_SIZE, PROMO_FILTERS, RATING_STEPS, type FilterCounts, type ShopSearchParams } from "@/lib/shop-params";
 
-export type ShopSearchParams = {
-  category?: string;
-  brand?: string;
-  concern?: string;
-  sort?: string;
-  q?: string;
-  minPrice?: string;
-  maxPrice?: string;
-  /** Comma-separated: sale, bogo, bundle, bestseller, new. */
-  promo?: string;
-  /** Minimum star rating, as shown on the cards (4 = "4 ดาวขึ้นไป"). */
-  rating?: string;
-  /** "list" switches the grid to one row per product. */
-  view?: string;
-  page?: string;
-};
-
-// Promotion filters, each defined by something already true of a product —
-// no separate campaign list to keep in sync.
-export const PROMO_FILTERS: { key: string; label: string; match: (p: Product) => boolean }[] = [
-  { key: "sale", label: "สินค้าลดราคา", match: (p) => Boolean(p.compareAtPrice && p.compareAtPrice > p.price) },
-  { key: "bogo", label: "ซื้อ 1 แถม 1", match: (p) => Boolean(p.badges?.includes("BOGO")) || /1\s*แถม\s*1|buy\s*1\s*get\s*1/i.test(p.name) },
-  { key: "bundle", label: "เซ็ตสุดคุ้ม", match: (p) => Boolean(p.badges?.includes("Bundle")) },
-  { key: "bestseller", label: "สินค้าขายดี", match: (p) => Boolean(p.badges?.includes("Bestseller")) || p.reviewCount >= 200 },
-  { key: "new", label: "สินค้าใหม่", match: (p) => Boolean(p.badges?.includes("New")) },
-];
-
-export const PAGE_SIZE = 24;
-
-/** The star thresholds the filter offers, in the order it shows them. */
-export const RATING_STEPS = [4.5, 4, 3.5] as const;
+// The pure half of this module — what a shop URL means — lives in
+// shop-params.ts so the filter controls can read it without importing the
+// catalogue. Re-exported here so every existing caller keeps working.
+export { multi, PAGE_SIZE, PROMO_FILTERS, RATING_STEPS };
+export type { FilterCounts, ShopSearchParams };
 
 // Sold-out products are hidden from listings entirely rather than shown
 // disabled — a customer browsing /shop, a category, a concern, or search
@@ -87,9 +62,6 @@ function toFeaturedOrder(items: Product[]): Product[] {
 /** Reads a filter that may hold several values as "a,b,c". A single value
  *  still parses, so every link and bookmark written before these became
  *  multi-select keeps working. */
-export function multi(value: string | undefined): string[] {
-  return (value ?? "").split(",").map((v) => v.trim()).filter(Boolean);
-}
 
 /**
  * One filter dimension, as a predicate factory.
@@ -155,13 +127,6 @@ function matching(params: ShopSearchParams, except?: string): Product[] {
   return products.filter((p) => p.inStock && tests.every((t) => t(p)));
 }
 
-export type FilterCounts = {
-  brand: Record<string, number>;
-  concern: Record<string, number>;
-  promo: Record<string, number>;
-  /** Keyed by the minimum stars as a string, e.g. "4.5". */
-  rating: Record<string, number>;
-};
 
 /**
  * How many products each option would leave, counted against the filters that

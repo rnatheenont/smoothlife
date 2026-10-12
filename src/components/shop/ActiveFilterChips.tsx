@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { concerns } from "@/data/categories";
-import { brands } from "@/data/brands";
-import { multi, PROMO_FILTERS, type ShopSearchParams } from "@/lib/filter-products";
+
+import { multi, PROMO_FILTERS, type ShopSearchParams } from "@/lib/shop-params";
 
 // What is currently narrowing the list, spelled out above it.
 //
@@ -20,7 +20,15 @@ import { multi, PROMO_FILTERS, type ShopSearchParams } from "@/lib/filter-produc
 
 type Chip = { key: string; label: string; remove: Record<string, string | null> };
 
-export default function ActiveFilterChips({ current }: { current: ShopSearchParams }) {
+export default function ActiveFilterChips({
+  current,
+  brandNames,
+}: {
+  current: ShopSearchParams;
+  /** Slug to name, from the server — the brand list is built by counting the
+   *  catalogue, which is not something to import into a chip. */
+  brandNames: Record<string, string>;
+}) {
   const router = useRouter();
 
   function go(changes: Record<string, string | null>) {
@@ -50,7 +58,7 @@ export default function ActiveFilterChips({ current }: { current: ShopSearchPara
   }
 
   const chips: Chip[] = [
-    ...chipsFor("brand", (slug) => brands.find((b) => b.slug === slug)?.name),
+    ...chipsFor("brand", (slug) => brandNames[slug]),
     ...chipsFor("concern", (slug) => concerns.find((c) => c.slug === slug)?.nameTh),
     ...chipsFor("promo", (key) => PROMO_FILTERS.find((f) => f.key === key)?.label),
   ];

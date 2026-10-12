@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ArrowUpDown, ChevronDown } from "lucide-react";
-import { ShopSearchParams } from "@/lib/filter-products";
+import { ShopSearchParams } from "@/lib/shop-params";
 import { SORTS } from "@/components/shop/SortChips";
 
 export default function SortSelect({ current }: { current: ShopSearchParams }) {

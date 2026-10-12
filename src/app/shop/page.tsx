@@ -13,6 +13,7 @@ import ProductRow from "@/components/shop/ProductRow";
 import { pageMetadata } from "@/lib/site-pages";
 import { withCustomImages } from "@/lib/product-images";
 import { toCardData } from "@/data/card";
+import { brandNames, brandOptions } from "@/lib/brand-options";
 
 // Every ?brand=/?page=/?sort= filter combination renders this same route —
 // without a canonical they'd all index as separate near-duplicate pages.
@@ -47,6 +48,8 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
 
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
           <ShopFilters
+            houseBrands={brandOptions().house}
+            otherBrands={brandOptions().other}
             current={searchParams}
             counts={counts}
             resultCount={allItems.length}
@@ -65,7 +68,7 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
               </div>
             </div>
 
-            <ActiveFilterChips current={searchParams} />
+            <ActiveFilterChips current={searchParams} brandNames={brandNames()} />
 
             {items.length === 0 ? (
               <div className="rounded-xl2 bg-white py-20 text-center text-slate-500 shadow-card">

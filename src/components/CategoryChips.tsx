@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { categories } from "@/data/categories";
-import { ShopSearchParams } from "@/lib/filter-products";
+import { ShopSearchParams } from "@/lib/shop-params";
 
 // Mobile-only category chip row, split out of ShopFilters so callers can
 // position it independently of the rest of the filter UI (e.g. above the

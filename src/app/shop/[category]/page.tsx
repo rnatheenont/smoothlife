@@ -15,6 +15,7 @@ import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import { withCustomImages } from "@/lib/product-images";
 import { toCardData } from "@/data/card";
+import { brandNames, brandOptions } from "@/lib/brand-options";
 
 const ADVISOR_ENTRY: Record<string, { href: string; title: string; subtitle: string }> = {
   "oral-care": {
@@ -101,7 +102,12 @@ export default async function CategoryPage(
       )}
 
       <div className="flex flex-col lg:flex-row gap-8">
-        <ShopFilters current={current} mobileExtra={<SortSelect current={current} />} />
+        <ShopFilters
+          current={current}
+          houseBrands={brandOptions().house}
+          otherBrands={brandOptions().other}
+          mobileExtra={<SortSelect current={current} />}
+        />
         <div className="flex-1">
           <div className="hidden lg:flex items-center justify-end mb-4">
             <SortSelect current={current} />
