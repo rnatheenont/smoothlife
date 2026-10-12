@@ -8,10 +8,14 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  Monitor,
   Plus,
+  RefreshCw,
   Rocket,
+  Smartphone,
   Trash2,
   TriangleAlert,
+  Undo2,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/layout-kit";
@@ -88,6 +92,13 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   const [conflict, setConflict] = useState<{ by: string | null; at: string | null } | null>(null);
   const [adding, setAdding] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [device, setDevice] = useState<"mobile" | "desktop">("desktop");
+  const [confirming, setConfirming] = useState(false);
+  const [rollingBack, setRollingBack] = useState<string | null>(null);
+  // Bumped to reload the iframe. The preview renders the draft on the server,
+  // so it only changes once a save has landed — refreshing before that would
+  // show the version before the edit and look like the editor had lost it.
+  const [previewNonce, setPreviewNonce] = useState(0);
 
   // The version this editor read. Every save carries it, and the server
   // refuses a save that does not match — see saveDraft.
@@ -141,6 +152,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
         if (!res.ok || !data.ok) throw new Error(data?.error ?? "บันทึกไม่สำเร็จ");
         versionRef.current = data.version;
         setSaveState("saved");
+        setPreviewNonce((n) => n + 1);
       } catch (err) {
         setMessage(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
         setSaveState("error");
@@ -206,7 +218,28 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
     setAdding(false);
   }
 
+  async function rollbackTo(revisionId: string, number: number) {
+    setRollingBack(revisionId);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/pages/${kind}/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "rollback", revisionId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error ?? "ย้อนกลับไม่สำเร็จ");
+      setMessage(`หน้าเว็บกลับไปใช้เวอร์ชัน ${number} แล้ว — ร่างที่กำลังแก้อยู่ไม่ถูกแตะต้อง`);
+      await load();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "ย้อนกลับไม่สำเร็จ");
+    } finally {
+      setRollingBack(null);
+    }
+  }
+
   async function publishNow() {
+    setConfirming(false);
     setPublishing(true);
     setMessage(null);
     try {
@@ -229,6 +262,23 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
     }
   }
 
+  /** Things worth a second look that are not wrong. Errors come from the
+   *  server (validateForPublish) because they decide whether publishing is
+   *  allowed; these are read off the document here because they only need to
+   *  be seen, and seeing them should not cost a round trip. */
+  const warnings = useMemo(() => {
+    const out: string[] = [];
+    const sections = doc?.sections ?? [];
+    const hidden = sections.filter((s) => s.common?.hidden).length;
+    if (hidden > 0) out.push(`มี section ที่ซ่อนอยู่ ${hidden} อัน — จะไม่ขึ้นบนหน้าจริง`);
+    if (sections.length > 20) {
+      out.push(`หน้านี้มี ${sections.length} section — เกิน 20 อันจะถูกตัดออกตอนแสดงผล`);
+    }
+    const scheduled = sections.filter((s) => s.common?.visibleFrom || s.common?.visibleUntil).length;
+    if (scheduled > 0) out.push(`มี section ที่ตั้งเวลาไว้ ${scheduled} อัน — ตรวจวันเวลาอีกครั้ง`);
+    return out;
+  }, [doc]);
+
   const counts = useMemo(() => {
     const map = new Map<string, number>();
     for (const s of doc?.sections ?? []) map.set(s.type, (map.get(s.type) ?? 0) + 1);
@@ -249,7 +299,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
           <div className="flex items-center gap-3">
             <SaveBadge state={saveState} />
             <button
-              onClick={publishNow}
+              onClick={() => setConfirming(true)}
               disabled={publishing || saveState === "conflict"}
               className="flex h-11 items-center gap-2 rounded-full bg-brand-gradient px-5 text-sm font-semibold text-white disabled:opacity-60"
             >
@@ -292,7 +342,93 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+      {confirming && (
+        // The checklist before the page goes live. Errors from the server
+        // keep the button disabled; warnings only ask to be read. The split
+        // matters: a dialog where everything is equally alarming is a dialog
+        // people learn to click through.
+        <div className="fixed inset-0 z-100 grid place-items-center p-4">
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setConfirming(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="publish-title"
+            className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
+          >
+            <h2 id="publish-title" className="text-base font-bold text-brand-ink">
+              เผยแพร่หน้านี้?
+            </h2>
+            <p className="mt-1 text-[13px] text-slate-500">
+              ร่างปัจจุบันจะกลายเป็นหน้าที่ลูกค้าเห็น และถูกเก็บเป็นเวอร์ชันใหม่ ย้อนกลับได้ภายหลังด้วยปุ่มเดียว
+            </p>
+
+            <dl className="mt-4 flex flex-col gap-1.5 text-[13px]">
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate-500">section ที่จะขึ้นหน้าเว็บ</dt>
+                <dd className="font-semibold text-brand-ink">
+                  {(doc.sections.filter((s) => !s.common?.hidden) ?? []).length} อัน
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate-500">ร่างล่าสุดบันทึกเมื่อ</dt>
+                <dd className="font-semibold text-brand-ink">
+                  {new Date(page.draftUpdatedAt).toLocaleString("th-TH")}
+                </dd>
+              </div>
+            </dl>
+
+            {issues.length > 0 && (
+              <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-[13px] text-rose-800">
+                <p className="font-semibold">ต้องแก้ก่อนถึงจะเผยแพร่ได้</p>
+                <ul className="mt-1 list-disc pl-5">
+                  {issues.map((issue) => (
+                    <li key={issue}>{issue}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {warnings.length > 0 && (
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] text-amber-900">
+                <p className="font-semibold">ตรวจอีกครั้งก่อนไหม</p>
+                <ul className="mt-1 list-disc pl-5">
+                  {warnings.map((w) => (
+                    <li key={w}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {saveState === "dirty" && (
+              <p className="mt-3 text-[13px] text-amber-700">
+                ยังมีการแก้ที่ยังไม่ได้บันทึก — รอสักครู่ให้บันทึกเสร็จก่อนเผยแพร่
+              </p>
+            )}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setConfirming(false)}
+                className="h-11 rounded-full border border-slate-200 px-4 text-sm font-semibold text-slate-600"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={publishNow}
+                disabled={issues.length > 0 || saveState === "dirty" || saveState === "saving"}
+                className="h-11 rounded-full bg-brand-gradient px-5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                เผยแพร่เลย
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,20rem)_minmax(0,1fr)_minmax(0,22rem)]">
         <Card padded={false}>
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <h2 className="text-sm font-bold text-brand-ink">section ในหน้านี้ ({doc.sections.length})</h2>
@@ -389,17 +525,74 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
             <div className="border-t border-slate-100 px-4 py-3">
               <h3 className="text-[12px] font-bold text-slate-500">เวอร์ชันที่เผยแพร่แล้ว</h3>
               <ul className="mt-2 flex flex-col gap-1">
-                {revisions.slice(0, 5).map((r) => (
-                  <li key={r.id} className="text-[12px] text-slate-500">
-                    #{r.number} · {new Date(r.published_at).toLocaleString("th-TH")} · {r.published_by ?? "—"}
-                    {r.id === page.publishedRevisionId && (
-                      <span className="ml-1 font-semibold text-brand-800">(ใช้อยู่)</span>
-                    )}
-                  </li>
-                ))}
+                {revisions.slice(0, 5).map((r) => {
+                  const live = r.id === page.publishedRevisionId;
+                  return (
+                    <li key={r.id} className="flex items-center gap-2 text-[12px] text-slate-500">
+                      <span className="min-w-0 flex-1 truncate">
+                        #{r.number} · {new Date(r.published_at).toLocaleString("th-TH")} · {r.published_by ?? "—"}
+                        {live && <span className="ml-1 font-semibold text-brand-800">(ใช้อยู่)</span>}
+                      </span>
+                      {!live && (
+                        <button
+                          onClick={() => void rollbackTo(r.id, r.number)}
+                          disabled={rollingBack !== null}
+                          className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-slate-200 px-2.5 font-semibold text-brand-800 disabled:opacity-50"
+                        >
+                          {rollingBack === r.id ? <Loader2 size={12} className="animate-spin" /> : <Undo2 size={12} />}
+                          ใช้อันนี้
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
+        </Card>
+
+        <Card padded={false} className="overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <h2 className="text-sm font-bold text-brand-ink">ตัวอย่างร่าง</h2>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setDevice("mobile")}
+                aria-pressed={device === "mobile"}
+                aria-label="ดูแบบมือถือ"
+                className={`grid h-10 w-10 place-items-center rounded-lg ${device === "mobile" ? "bg-brand-gradient-soft text-brand-800" : "text-slate-400 hover:text-brand-800"}`}
+              >
+                <Smartphone size={16} />
+              </button>
+              <button
+                onClick={() => setDevice("desktop")}
+                aria-pressed={device === "desktop"}
+                aria-label="ดูแบบคอมพิวเตอร์"
+                className={`grid h-10 w-10 place-items-center rounded-lg ${device === "desktop" ? "bg-brand-gradient-soft text-brand-800" : "text-slate-400 hover:text-brand-800"}`}
+              >
+                <Monitor size={16} />
+              </button>
+              <button
+                onClick={() => setPreviewNonce((n) => n + 1)}
+                aria-label="โหลดตัวอย่างใหม่"
+                className="grid h-10 w-10 place-items-center rounded-lg text-slate-400 hover:text-brand-800"
+              >
+                <RefreshCw size={15} />
+              </button>
+            </div>
+          </div>
+          <div className="flex justify-center bg-slate-100 p-3">
+            {/* The frame renders the saved draft, so it is one save behind
+                whatever is being typed. The badge in the header says when
+                that save happened; without it a stale frame reads as the
+                editor having lost the edit. */}
+            <iframe
+              key={previewNonce}
+              src={`/pages-preview/${kind}/${slug}?v=${previewNonce}`}
+              title="ตัวอย่างร่างของหน้านี้"
+              className="h-[70vh] w-full rounded-lg border border-slate-200 bg-white"
+              style={device === "mobile" ? { width: 390, maxWidth: "100%" } : undefined}
+            />
+          </div>
         </Card>
 
         <Card>
