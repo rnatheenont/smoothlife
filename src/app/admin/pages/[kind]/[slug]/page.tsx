@@ -28,11 +28,13 @@ import {
   Trash2,
   TriangleAlert,
   Undo2,
+  X,
 } from "lucide-react";
 
 import { Card } from "@/components/ui";
 import SectionForm from "@/components/admin/pages/SectionForm";
 import SectionList from "@/components/admin/pages/SectionList";
+import DiffPanel from "@/components/admin/pages/DiffPanel";
 import type { PageDoc } from "@/lib/pages/doc";
 import {
   addSection,
@@ -188,6 +190,9 @@ function publicPathOf(kind: string, slug: string) {
 }
 
 const AUTOSAVE_MS = 1200;
+/** How far back undo reaches. Deep enough to walk out of a wrong turn,
+ *  shallow enough never to be why a tab feels heavy. */
+const UNDO_DEPTH = 20;
 
 export default function PageEditor(props: { params: Promise<{ kind: string; slug: string }> }) {
   const { kind, slug } = use(props.params);
@@ -230,6 +235,9 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
    *  to its settings by itself — having to click the tab after clicking the
    *  section would be two clicks for one intention. */
   const [rail, setRail] = useState<"section" | "page">("section");
+  const [history, setHistory] = useState<PageDoc[]>([]);
+  /** A thing that just happened and can be taken back, shown for a moment. */
+  const [toast, setToast] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState("");
   const [reviewBusy, setReviewBusy] = useState(false);
   const router = useRouter();
@@ -288,6 +296,10 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
       );
       setSaveState("idle");
       setConflict(null);
+      // The document on screen was replaced by one from the server, so the
+      // steps that led to the old one no longer lead anywhere.
+      setHistory([]);
+      setToast(null);
       void loadTemplates();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "โหลดเพจไม่สำเร็จ");
@@ -332,8 +344,27 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
 
   /** Every change goes through here: update what is on screen now, and queue
    *  the write. Typing should never wait for the network. */
+  /**
+   * Every change goes through here, and every change is undoable.
+   *
+   * The stack holds documents, not operations: a document is the whole truth
+   * about the page, so stepping back is one assignment and can never leave
+   * the editor in a state no sequence of edits could have produced. Twenty
+   * deep — enough to walk back out of a wrong turn, short enough that it is
+   * never the reason a tab gets heavy.
+   *
+   * `remember: false` is how undo itself applies a document: without it,
+   * undoing would push the thing being undone back onto the stack and the
+   * two most recent states would swap for ever.
+   */
   const edit = useCallback(
-    (next: PageDoc) => {
+    (next: PageDoc, options?: { remember?: boolean }) => {
+      if (options?.remember !== false) {
+        setDoc((current) => {
+          if (current) setHistory((past) => [...past, current].slice(-UNDO_DEPTH));
+          return current;
+        });
+      }
       setDoc(next);
       if (saveState === "conflict") return;
       setSaveState("dirty");
@@ -342,6 +373,34 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
     },
     [save, saveState]
   );
+
+  const undo = useCallback(() => {
+    setHistory((past) => {
+      const previous = past[past.length - 1];
+      if (!previous) return past;
+      edit(previous, { remember: false });
+      setToast(null);
+      return past.slice(0, -1);
+    });
+  }, [edit]);
+
+  // Ctrl/Cmd+Z, except while typing. A text box has its own undo and taking
+  // it over would mean a mistyped word costs you the last section you moved.
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "z" || event.shiftKey) return;
+      // instanceof rather than a cast: a keydown delivered to the window
+      // itself has the window as its target, which has no closest() — the
+      // cast said otherwise and the handler threw before it ever undid
+      // anything. Found by dispatching the shortcut in a test.
+      const target = event.target;
+      if (target instanceof Element && target.closest("input, textarea, select, [contenteditable='true']")) return;
+      event.preventDefault();
+      undo();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo]);
 
   // A draft in a closed tab is a draft nobody has. Flushing on the way out
   // covers the gap between the last keystroke and the autosave that had not
@@ -375,8 +434,13 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
 
   function remove(id: string) {
     if (!doc) return;
+    const label = byType.get(doc.sections.find((s) => s.id === id)?.type ?? "")?.label;
     edit(removeSection(doc, id));
     if (selected === id) setSelected(null);
+    // No confirmation dialog: deleting is cheap to undo and confirming every
+    // delete teaches people to dismiss dialogs. The offer to take it back is
+    // the safety, and it is one click rather than two.
+    setToast(label ? `ลบ "${label}" แล้ว` : "ลบ section แล้ว");
   }
 
   function add(entry: LibraryEntry) {
@@ -791,6 +855,16 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
 
         <SaveBadge state={saveState} />
 
+        <button
+          onClick={undo}
+          disabled={history.length === 0}
+          title="เลิกทำ (Ctrl+Z / Cmd+Z)"
+          aria-label="เลิกทำ"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-surface-soft hover:text-brand-800 disabled:opacity-30"
+        >
+          <Undo2 size={17} />
+        </button>
+
         <Link
           href={`/admin/pages/${kind}/${slug}/stats`}
           className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 px-3.5 text-[13px] font-semibold text-brand-800"
@@ -833,6 +907,29 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
       )}
 
       {message && !conflict && <p className="text-sm text-slate-600">{message}</p>}
+
+      {toast && (
+        /* Sits in the flow rather than floating over a corner: the editor is
+           a working screen, and something that covers part of it to tell you
+           what you already did is in the way. */
+        <div className="flex flex-wrap items-center gap-3 rounded-xl2 border border-slate-200 bg-white px-4 py-2.5 text-sm text-brand-ink shadow-sm">
+          <span className="min-w-0 flex-1">{toast}</span>
+          <button
+            onClick={undo}
+            disabled={history.length === 0}
+            className="flex h-9 items-center gap-1.5 rounded-full border border-slate-200 px-3.5 text-[13px] font-semibold text-brand-800 disabled:opacity-50"
+          >
+            <Undo2 size={13} /> เลิกทำ
+          </button>
+          <button
+            onClick={() => setToast(null)}
+            aria-label="ปิดข้อความนี้"
+            className="grid h-9 w-9 place-items-center rounded-full text-slate-400 hover:text-brand-800"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
 
       {issues.length > 0 && (
         // Errors only. Warnings live in the publish dialog, where they are
@@ -1030,6 +1127,11 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                   {page.review.at ? ` · ${bangkokLabel(page.review.at)}` : ""}
                 </p>
                 {page.review.note && <p className="mt-1">หมายเหตุ: {page.review.note}</p>}
+                {/* Approving without being shown what is in it is a rubber
+                    stamp with a person attached. */}
+                <div className="mt-2 border-t border-amber-200 pt-2">
+                  <DiffPanel kind={kind} slug={slug} from="published" title="สิ่งที่จะเปลี่ยนถ้าอนุมัติ" />
+                </div>
               </div>
             ) : page.review.state === "changes" ? (
               <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-[12px] leading-relaxed text-rose-800">
@@ -1502,6 +1604,9 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
           {revisions.length > 0 && (
             <div className="border-t border-slate-100 px-4 py-3">
               <h3 className="text-[12px] font-bold text-slate-500">เวอร์ชันที่เผยแพร่แล้ว</h3>
+              <div className="mt-2 rounded-lg bg-surface-soft px-3 py-2">
+                <DiffPanel kind={kind} slug={slug} from="published" title="ร่างนี้ต่างจากหน้าจริงตรงไหน" />
+              </div>
               <ul className="mt-2 flex flex-col gap-1">
                 {revisions.slice(0, 5).map((r) => {
                   const live = r.id === page.publishedRevisionId;
