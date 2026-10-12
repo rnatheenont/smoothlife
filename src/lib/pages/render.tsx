@@ -119,8 +119,15 @@ export async function renderSections(doc: unknown, ctx: RenderCtx) {
               of thing that silently compiles to nothing. */}
           <span
             id={raw.id}
-            // Read by SectionClicks to tell which section a press belongs to.
+            // Read by SectionClicks to tell which section a press belongs to,
+            // and what to call it when it reports one. The label and category
+            // live here rather than being looked up on the client because the
+            // registry is a server module — shipping it to the browser to
+            // name a section would be the whole section library in the bundle.
             data-section-anchor={raw.id}
+            data-section-label={def.label}
+            data-section-category={def.category}
+            data-section-index={index}
             aria-hidden="true"
             className="block"
             style={{ scrollMarginTop: "calc(var(--app-header-h, 0px) + 72px)" }}
