@@ -3,7 +3,7 @@ import { revalidateTag } from "next/cache";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { migrateDoc } from "@/lib/pages/doc";
-import { pageTag, type PageRow } from "@/lib/pages/store";
+import { pageTag, servedDoc, type PageRow } from "@/lib/pages/store";
 import { nextBoundaryFor, publish } from "@/lib/pages/admin";
 
 // Pages that were set to go live, or stop being live, at a time.
@@ -111,7 +111,13 @@ export async function GET(req: NextRequest) {
       `pages?select=*&status=eq.published&next_boundary_at=lte.${encodeURIComponent(nowIso)}&limit=50`
     );
     for (const page of crossed) {
-      const doc = migrateDoc(page.draft_doc);
+      // The published revision, not the draft. A draft that has been edited
+      // since — a section window moved, a timed section deleted — would give
+      // a boundary for a page nobody is looking at, and the live page would
+      // sit there with a banner that never appears or never goes away.
+      // Falling back to the draft when the revision cannot be read keeps the
+      // old behaviour rather than skipping the page entirely.
+      const doc = (await servedDoc(page)) ?? migrateDoc(page.draft_doc);
       await supabaseRest(`pages?id=eq.${pgValue(page.id)}`, {
         method: "PATCH",
         returning: false,

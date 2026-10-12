@@ -13,7 +13,7 @@ import {
 import { migrateDoc } from "@/lib/pages/doc";
 import { validateCampaignTimes } from "@/lib/pages/campaign";
 import { checkTheme, type CampaignTheme } from "@/lib/pages/theme";
-import { pageTag } from "@/lib/pages/store";
+import { pageTag, servedDoc } from "@/lib/pages/store";
 import { editorLink, notifyReview, reviewMessage } from "@/lib/pages/review";
 import { getBrand } from "@/data/brands";
 import { revalidateTag } from "next/cache";
@@ -283,7 +283,13 @@ export async function POST(req: NextRequest, props: { params: Promise<{ kind: st
         campaign_extended_at: times.extendedAt ?? null,
         campaign_ends_at: times.endsAt ?? null,
       };
-      updated.next_boundary_at = nextBoundaryFor(merged, migrateDoc(page.draft_doc), new Date());
+      // The published revision, not the draft — the same distinction as in
+      // the scheduler (bug B1). The dates being changed belong to the page
+      // that is live; the section windows that go with them have to come
+      // from the version that is live too, or a half-finished draft decides
+      // when the running campaign next re-renders.
+      const servedNow = (await servedDoc(page)) ?? migrateDoc(page.draft_doc);
+      updated.next_boundary_at = nextBoundaryFor(merged, servedNow, new Date());
     }
 
     await supabaseRest(`pages?id=eq.${pgValue(page.id)}`, {

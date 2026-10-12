@@ -133,6 +133,32 @@ export async function publishedDoc(kind: PageKind, slug: string): Promise<PageDo
 }
 
 /**
+ * The document a page is *currently serving*, read straight from the row.
+ *
+ * Uncached and taking the row it was given, because the one caller is the
+ * scheduler: it already holds the row, it runs once a minute, and it must
+ * never be handed a remembered answer when deciding what to re-render.
+ *
+ * The distinction this exists to keep is the whole of bug B1: `draft_doc` is
+ * what somebody is editing, `published_revision_id` points at what customers
+ * are looking at. Reading the draft to decide when the live page next
+ * changes means an admin with an unsaved rearrangement can stop a scheduled
+ * banner from ever appearing — and nothing anywhere would say why.
+ */
+export async function servedDoc(page: Pick<PageRow, "published_revision_id">): Promise<PageDoc | null> {
+  if (!page.published_revision_id) return null;
+  try {
+    const [revision] = await supabaseRest<{ doc: unknown }[]>(
+      `page_revisions?select=doc&id=eq.${encodeURIComponent(page.published_revision_id)}&limit=1`
+    );
+    return revision ? migrateDoc(revision.doc) : null;
+  } catch (err) {
+    console.error("[pages] could not read the published revision", err);
+    return null;
+  }
+}
+
+/**
  * A campaign page: its document and the four dates that decide its phase.
  *
  * One read rather than publishedDoc plus a second query, because the phase
