@@ -10,6 +10,11 @@ import { concernCoverflow } from "./concern_coverflow/definition";
 import { socialVideos } from "./social_videos/definition";
 import { brandCircles } from "./brand_circles/definition";
 import { articleGallery } from "./article_gallery/definition";
+import { richText } from "./rich_text/definition";
+import { imageBanner } from "./image_banner/definition";
+import { productGrid } from "./product_grid/definition";
+import { uspIcons } from "./usp_icons/definition";
+import { spacer } from "./spacer/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -34,6 +39,15 @@ const ALL: AnySectionDefinition[] = [
   socialVideos,
   brandCircles,
   articleGallery,
+
+  // The general-purpose ones. Everything above wraps a piece of the home page
+  // as it already was; these are the blocks a page built from scratch is made
+  // of, and they are the reason /p/ pages can be anything at all.
+  richText,
+  imageBanner,
+  productGrid,
+  uspIcons,
+  spacer,
 ];
 
 export const SECTION_REGISTRY: Record<string, AnySectionDefinition> = Object.fromEntries(
