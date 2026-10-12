@@ -234,5 +234,29 @@ export async function settleFlashSaleShopifyOrder(order: ShopifyPaidOrder): Prom
     console.error("[flash-sale/shopify] paid order has no live reservation — flagged for refund", reference, entryId);
     return { flashSale: true, result: "flagged_for_refund", entryId };
   }
+
+  // Shopify has already made the order; there is nothing for us to create.
+  //
+  // fs_confirm_payment writes "pending" for every payment because the 2C2P
+  // path has an order to build afterwards. Nothing flipped it for this path,
+  // so entries paid at Shopify's own checkout sat at "pending" for ever with
+  // an empty shopify_order_id — seven of the eight on the VIP set campaign.
+  //
+  // It read as a backlog that was not one, and it was load-bearing in a worse
+  // way: the admin "create the missing orders" button selects paid entries
+  // with no shopify_order_id, and only skipped these because their payment
+  // row happened to carry an order id. Recording it here removes that
+  // dependency, so the button cannot one day build a second order for a
+  // customer who has already paid.
+  await supabaseRest(`flash_sale_queue?id=eq.${pgValue(entryId)}`, {
+    method: "PATCH",
+    returning: false,
+    body: JSON.stringify({
+      shopify_order_id: reference,
+      shopify_sync_status: "synced",
+      updated_at: new Date().toISOString(),
+    }),
+  }).catch((err) => console.error("[flash-sale/shopify] could not record the order on the queue entry", err));
+
   return { flashSale: true, result: "confirmed", entryId };
 }
