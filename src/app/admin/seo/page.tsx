@@ -12,7 +12,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAdminAction } from "@/components/admin/header-action";
 import { categories, categoryImage, concerns } from "@/data/categories";
-import { products } from "@/data/products";
+// The full catalogue: this screen reads SEO fields, SKUs or the whole photo
+// gallery, which the card-sized one leaves out. Fine in an /admin chunk —
+// only the storefront must stay off it (see src/data/product-details.ts).
+import { productDetails as products } from "@/data/product-details";
 import { collections } from "@/data/collections";
 import { brands } from "@/data/brands";
 import { brandFacts, brandSeoDefaults } from "@/lib/brand-seo";

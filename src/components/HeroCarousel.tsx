@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -249,27 +248,42 @@ export default function HeroCarousel({
               Deliberately fetched small. It is going to be blurred beyond
               recognition, so a thumbnail's worth of pixels is plenty and the
               page does not download every banner twice at full size. */}
-              <Image
-                src={
-                  isMobile ? (banner.mobileImage ?? banner.image) : banner.image
-                }
-                alt=""
-                aria-hidden
-                fill
-                sizes="64px"
-                className="scale-110 object-cover blur-2xl"
-              />
-              <Image
-                src={
-                  isMobile ? (banner.mobileImage ?? banner.image) : banner.image
-                }
-                alt={banner.title ?? ""}
-                fill
-                priority={i === 0}
-                sizes="(max-width:767px) 72vw, 100vw"
-                onLoad={(e) => noteArt(banner.slug, e.currentTarget)}
-                className={fitFor(banner.slug)}
-              />
+              {/* <picture> rather than <Image>, so the browser chooses the
+              crop from the media query before any JavaScript runs. With
+              <Image> the choice waited for hydration (isMobile starts null),
+              so every phone first preloaded the 2000px desktop artwork
+              (~370 KB) as its "priority" image and then downloaded the phone
+              crop on top. The site runs with images.unoptimized, so <Image>
+              was adding nothing here but that preload. */}
+              <picture className="absolute inset-0 block">
+                {banner.mobileImage && <source media={MOBILE_QUERY} srcSet={banner.mobileImage} />}
+                { }
+                <img
+                  src={banner.image}
+                  alt=""
+                  loading={i === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl"
+                />
+              </picture>
+              <picture className="absolute inset-0 block">
+                {banner.mobileImage && <source media={MOBILE_QUERY} srcSet={banner.mobileImage} />}
+                { }
+                <img
+                  src={banner.image}
+                  alt={banner.title ?? ""}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  fetchPriority={i === 0 ? "high" : undefined}
+                  decoding="async"
+                  onLoad={(e) => noteArt(banner.slug, e.currentTarget)}
+                  // A cached image can finish before React attaches onLoad
+                  // during hydration; read it on mount too.
+                  ref={(el) => {
+                    if (el?.complete) noteArt(banner.slug, el);
+                  }}
+                  className={`absolute inset-0 h-full w-full ${fitFor(banner.slug)}`}
+                />
+              </picture>
               {/* A campaign whose artwork has also been supplied as its separate
               layers is rebuilt here with depth between them. Desktop only: it
               is a pointer-led effect, it costs a megabyte, and the phone crop

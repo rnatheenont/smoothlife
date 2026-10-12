@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { getProductBySlug, getRelatedProducts } from "@/data/products";
+import { getRelatedProducts } from "@/data/products";
+import { getProductDetail as getProductBySlug } from "@/data/product-details";
 import { categories } from "@/data/categories";
 import {
   supabaseRestCached,

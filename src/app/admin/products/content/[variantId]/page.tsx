@@ -20,7 +20,10 @@ import {
   EyeOff,
 } from "lucide-react";
 import ProductMediaCard from "@/components/admin/products/ProductMediaCard";
-import { products } from "@/data/products";
+// The full catalogue: this screen reads SEO fields, SKUs or the whole photo
+// gallery, which the card-sized one leaves out. Fine in an /admin chunk —
+// only the storefront must stay off it (see src/data/product-details.ts).
+import { productDetails as products } from "@/data/product-details";
 import { Button, Checkbox, Input } from "@heroui/react";
 import { resizeUploadImage } from "@/lib/image-utils";
 import {

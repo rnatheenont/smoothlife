@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { products } from "@/data/products";
+import { productDetails as products } from "@/data/product-details";
 import { logAiUsage } from "@/lib/ai-usage";
 import { BLOCK_TYPES, type ContentBlock } from "@/lib/product-content";
 

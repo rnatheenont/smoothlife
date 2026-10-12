@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
 import { Heart, Check, Flame, ShoppingCart, Star } from "lucide-react";
 import { Product } from "@/data/types";
@@ -134,7 +135,10 @@ export default function ProductCard({ product }: { product: Product }) {
             its shadow is enough to say it is clickable. */}
         <Link href={`/product/${product.slug}`} className="relative block aspect-square overflow-hidden bg-white">
           <Image
-            src={product.image}
+            // 560px: a card is drawn at most ~280px wide, so this is enough
+            // for a 2x screen. The catalogue URL asks for 700px, and with
+            // images.unoptimized that is what every card downloaded.
+            src={shopifyImage(product.image, 560)}
             alt={product.name}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"

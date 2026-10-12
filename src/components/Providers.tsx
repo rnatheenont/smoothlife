@@ -1,18 +1,18 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { AuthProvider } from "@/lib/auth-context";
 import { CartProvider, WishlistProvider } from "@/lib/cart-context";
 import { LangProvider } from "@/lib/lang-context";
 import { QuickChatProvider } from "@/lib/quickchat-context";
-import { LoginModalProvider } from "@/lib/login-modal-context";
+import { LoginModalProvider, useLoginModal } from "@/lib/login-modal-context";
 import { RecentlyViewedProvider } from "@/lib/recently-viewed-context";
 import { WidgetSettingsProvider } from "@/lib/use-widget-settings";
 import QuickChat from "@/components/QuickChat";
 import MobileTabBar from "@/components/MobileTabBar";
 import BackToTop from "@/components/BackToTop";
-import LoginModal from "@/components/account/LoginModal";
 import PwaRegister from "@/components/PwaRegister";
 import InstallPrompt from "@/components/InstallPrompt";
 import GiftUnlockPopup from "@/components/GiftUnlockPopup";
@@ -27,6 +27,23 @@ import AutoShopifySignIn from "@/components/AutoShopifySignIn";
 const BARE = ["/admin", "/chat", "/campaigns", "/flash-sale", "/account/complete-profile", "/account/login"];
 const isUnder = (pathname: string | null, base: string) =>
   pathname === base || Boolean(pathname?.startsWith(`${base}/`));
+
+// The sign-in dialog carries the Firebase SDK and HeroUI's modal (~200 KB
+// together), and almost nobody opens it on a given page view. It used to be
+// mounted on every page anyway, so every visitor downloaded it up front.
+// Now it is fetched the first time someone asks to sign in, and stays
+// mounted after that so a second open is instant.
+const LoginModal = dynamic(() => import("@/components/account/LoginModal"), { ssr: false });
+
+function LazyLoginModal() {
+  const { isOpen } = useLoginModal();
+  // Remembered during render rather than in an effect: once asked for, the
+  // dialog stays mounted, so its closing animation and a second open both
+  // work without fetching anything again.
+  const [wanted, setWanted] = useState(false);
+  if (isOpen && !wanted) setWanted(true);
+  return wanted ? <LoginModal /> : null;
+}
 
 export function StorefrontWidgets() {
   const pathname = usePathname();
@@ -50,7 +67,7 @@ export function StorefrontWidgets() {
       <QuickChat />
       <MobileTabBar />
       <BackToTop />
-      <LoginModal />
+      <LazyLoginModal />
       <PwaRegister />
       <InstallPrompt />
       <GiftUnlockPopup />

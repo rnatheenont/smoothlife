@@ -15,7 +15,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Product } from "@/data/types";
 import { getPublishedProductContent, productContentForPrompt } from "@/lib/product-content";
-import { products, getProductBySlug } from "@/data/products";
+import { productDetails as products, getProductDetail as getProductBySlug } from "@/data/product-details";
 import { categories, concerns as siteConcerns } from "@/data/categories";
 import classesJson from "@/data/skin-product-classes.json";
 

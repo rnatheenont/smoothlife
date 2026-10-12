@@ -32,9 +32,6 @@ export function getFirebaseAuth(): Auth {
 }
 
 // Thai mobile numbers only, for now — 08X-XXX-XXXX / 0891234567 -> +66891234567.
-export function toE164Thai(localPhone: string): string {
-  const digits = localPhone.replace(/\D/g, "");
-  if (digits.startsWith("0")) return "+66" + digits.slice(1);
-  if (digits.startsWith("66")) return "+" + digits;
-  return "+66" + digits;
-}
+// Moved to its own module so callers that only format a phone number do not
+// load Firebase. Re-exported for the sign-in flow, which needs both anyway.
+export { toE164Thai } from "@/lib/thai-phone";

@@ -148,5 +148,13 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: "/((?!_next/static|_next/image|favicon.ico).*)",
+  // Not on files. Everything this proxy does — the old-host redirect, the
+  // noindex header for *.vercel.app, the admin API gate and the first-touch
+  // attribution cookie — is about pages and API routes. Running it on every
+  // mascot PNG, font, model and icon cost one function invocation per file
+  // (Hobby's quota), held each one up behind it, and set an attribution
+  // cookie on image requests. Admin API paths have no file extension, so the
+  // gate still sees every one of them.
+  matcher:
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|webp|avif|gif|svg|ico|mp4|webm|woff2?|ttf|otf|wasm|task|tflite|bin|json|txt|xml|js|css|map)$).*)",
 };

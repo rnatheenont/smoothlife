@@ -41,12 +41,16 @@ function posterFrameSrc(url: string) {
 function ClipCard({
   clip,
   active,
+  inView,
   onEnded,
   onSelect,
   cardRef,
 }: {
   clip: SocialClip;
   active: boolean;
+  /** Whether the section is near the screen. Nothing is fetched or played
+   *  until it is — see TrendingOnSocial. */
+  inView: boolean;
   onEnded: () => void;
   onSelect: () => void;
   cardRef: (el: HTMLDivElement | null) => void;
@@ -85,14 +89,16 @@ function ClipCard({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    if (active) {
+    if (active && inView) {
       video.currentTime = 0;
       video.play().catch(() => {});
     } else {
       video.pause();
-      video.currentTime = 0;
+      // Rewound only when the card stops being the active one: scrolling the
+      // section out of view and back should carry on where it was.
+      if (!active) video.currentTime = 0;
     }
-  }, [active]);
+  }, [active, inView]);
 
   // Autoplay can be blocked by the browser (varies by device/network/policy),
   // which would otherwise leave the active card paused with no way to
@@ -123,12 +129,17 @@ function ClipCard({
       >
         <video
           ref={videoRef}
-          src={posterFrameSrc(clip.video)}
+          // No source at all until the section is near the screen. The row
+          // sits far down the home page, and with the source in the server
+          // HTML every phone started fetching all seven clips (~21 MB, one
+          // of them 10.7 MB) on arrival, for a section most visitors never
+          // reach. The packshot cover shows until then.
+          src={inView ? posterFrameSrc(clip.video) : undefined}
           poster={clip.product?.image}
           className="h-full w-full object-cover"
           playsInline
           muted={muted}
-          preload="metadata"
+          preload={active ? "auto" : "none"}
           onEnded={onEnded}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
@@ -231,6 +242,30 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
   const dragX = useRef<number | null>(null);
   const count = clips.length;
 
+  // Near the screen yet? 300px of lead so the active clip has begun loading
+  // by the time it is actually seen, and true for good once it has been —
+  // tearing the sources out again on scroll-away would throw away what was
+  // already downloaded.
+  const sectionRef = useRef<HTMLElement>(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = sectionRef.current;
+    // Every browser this site supports has IntersectionObserver; the
+    // section simply stays on its covers in one that does not.
+    if (!el || inView || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setInView(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "300px 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [inView]);
+
   // Shortest way round, so stepping off either end wraps instead of flying
   // the whole stack across the screen.
   function offsetOf(i: number) {
@@ -255,7 +290,7 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
   if (count === 0) return null;
 
   return (
-    <section className="relative isolate overflow-hidden py-7 md:py-14 lg:py-16">
+    <section ref={sectionRef} className="relative isolate overflow-hidden py-7 md:py-14 lg:py-16">
       <SocialBubbles />
 
       {/* Centred, unlike the other section headings: this stack is centred
@@ -315,6 +350,7 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
               <ClipCard
                 clip={clip}
                 active={i === active}
+                inView={inView}
                 onEnded={() => step(1)}
                 onSelect={() => setActive(i)}
                 cardRef={() => {}}

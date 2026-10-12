@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { getProductDetail } from "@/data/product-details";
 import Anthropic from "@anthropic-ai/sdk";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
@@ -210,6 +211,13 @@ export async function POST(req: NextRequest) {
   const cart = Array.isArray(body?.cart) ? body.cart : [];
   const anonId = typeof body?.anonId === "string" ? body.anonId : undefined;
   const rawViewing = body?.viewingProduct;
+  // The long fields (benefits, how to use, ingredients, who it's for) are not
+  // in the browser's copy of the catalogue any more — it is card-sized, see
+  // src/data/products.ts — so they are filled in here from the full one, by
+  // slug. Reading them on the server is also simply more trustworthy than
+  // whatever text a request carries.
+  const viewingDetail =
+    rawViewing && typeof rawViewing.slug === "string" ? getProductDetail(rawViewing.slug) : undefined;
   const viewingProduct: ViewingProduct | undefined =
     rawViewing && typeof rawViewing.slug === "string" && typeof rawViewing.name === "string"
       ? {
@@ -220,10 +228,10 @@ export async function POST(req: NextRequest) {
           compareAtPrice: typeof rawViewing.compareAtPrice === "number" ? rawViewing.compareAtPrice : undefined,
           category: typeof rawViewing.category === "string" ? rawViewing.category : "",
           concerns: Array.isArray(rawViewing.concerns) ? rawViewing.concerns : [],
-          benefits: Array.isArray(rawViewing.benefits) ? rawViewing.benefits : [],
-          howToUse: typeof rawViewing.howToUse === "string" ? rawViewing.howToUse : "",
-          ingredients: typeof rawViewing.ingredients === "string" ? rawViewing.ingredients : "",
-          whoFor: typeof rawViewing.whoFor === "string" ? rawViewing.whoFor : "",
+          benefits: viewingDetail?.benefits.length ? viewingDetail.benefits : Array.isArray(rawViewing.benefits) ? rawViewing.benefits : [],
+          howToUse: viewingDetail?.howToUse || (typeof rawViewing.howToUse === "string" ? rawViewing.howToUse : ""),
+          ingredients: viewingDetail?.ingredients || (typeof rawViewing.ingredients === "string" ? rawViewing.ingredients : ""),
+          whoFor: viewingDetail?.whoFor || (typeof rawViewing.whoFor === "string" ? rawViewing.whoFor : ""),
           sizes: Array.isArray(rawViewing.sizes) ? rawViewing.sizes : [],
         }
       : undefined;

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { shopifyImage } from "@/lib/shopify-image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { HeroBanner } from "@/data/heroBanners";
 
@@ -20,12 +20,14 @@ import type { HeroBanner } from "@/data/heroBanners";
 // keeps two of the three where they were, so the row reads as a queue moving
 // past rather than as three unrelated posters taking turns.
 //
-// Because it is hidden rather than unmounted below lg, none of these images
-// may be `priority`: next/image lazy-loads by default and a display:none
-// element never intersects, so a phone downloads none of them. An eager one
-// would be fetched on every phone to be shown on none of them.
+// It is hidden rather than unmounted below lg, so a phone must not fetch its
+// images — which is why each one is a <picture> whose only real source is
+// media-gated to lg (see the tile below).
 
 const PER_VIEW = 3;
+/** A transparent pixel, inline: what the <img> holds below lg, where the
+ *  row is hidden and nothing should be fetched. */
+const BLANK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 const AUTO_ROTATE_MS = 5000;
 const SLIDE_MS = 600;
 
@@ -86,6 +88,8 @@ export default function HeroTrio({ banners }: { banners: HeroBanner[] }) {
   // Of the three on screen, the middle one is the campaign being shown; the
   // other two are what it came from and what it is going to.
   const middle = slides ? index + 1 : 1;
+  // The tiles showing when the page first draws, plus one either side.
+  const onFirstScreen = (i: number) => (slides ? i >= n - 1 && i <= n + PER_VIEW : true);
 
   return (
     <div
@@ -131,13 +135,26 @@ export default function HeroTrio({ banners }: { banners: HeroBanner[] }) {
                   href={b.href}
                   className="relative block aspect-video overflow-hidden rounded-2xl bg-surface-soft transition-shadow duration-300 hover:shadow-cardHover"
                 >
-                  <Image
-                    src={b.image}
-                    alt={b.title ?? ""}
-                    fill
-                    sizes="(max-width:1512px) 38vw, 560px"
-                    className="object-cover"
-                  />
+                  {/* Desktop-only by construction: the <source> matches at
+                      lg and up, and below that the <img> has nothing but an
+                      inline 1x1 to load. That is what lets the three on screen
+                      load eagerly and first — they are the desktop page's
+                      largest paint — without a phone, where this row is
+                      hidden, fetching them. With next/image the only safe
+                      choice was lazy, so the desktop hero waited on the
+                      lazy-load observer. 1200px: a tile is at most ~560px. */}
+                  <picture>
+                    <source media="(min-width: 1024px)" srcSet={shopifyImage(b.image, 1200)} />
+                    { }
+                    <img
+                      src={BLANK}
+                      alt={b.title ?? ""}
+                      loading={onFirstScreen(i) ? "eager" : "lazy"}
+                      fetchPriority={onFirstScreen(i) ? "high" : undefined}
+                      decoding="async"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  </picture>
                 </Link>
               </li>
             ))}

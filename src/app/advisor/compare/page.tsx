@@ -1,4 +1,4 @@
-import { products } from "@/data/products";
+import { productDetails as products } from "@/data/product-details";
 import { formatTHB } from "@/lib/format";
 import StarRating from "@/components/StarRating";
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { shopifyImage } from "@/lib/shopify-image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -211,7 +212,7 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
                           needs a slot of its own or it dissolves into the card
                           around it. */}
                       <span className="relative block h-7 w-7 shrink-0 overflow-hidden rounded-full bg-slate-100">
-                        <Image src={p.image} alt="" fill sizes="28px" className="object-cover" />
+                        <Image src={shopifyImage(p.image, 96)} alt="" fill sizes="28px" className="object-cover" />
                       </span>
                       <span translate="no" className="max-w-[210px] truncate text-[12.5px] font-medium text-slate-600">
                         {p.name}

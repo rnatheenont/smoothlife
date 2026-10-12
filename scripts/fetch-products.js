@@ -17,6 +17,14 @@ const TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
 const API_VERSION = process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-10";
 const OUT = path.join(__dirname, "..", "src", "data", "products.generated.ts");
 const COLLECTIONS_OUT = path.join(__dirname, "..", "src", "data", "collections.generated.ts");
+// The same catalogue cut down to what a product card, the cart and search
+// need. This is the one browser code gets (see src/data/products.ts): the
+// full file is ~3 MB of descriptions, ingredient lists and photo galleries,
+// and every client component that imported it used to ship all of it to
+// every visitor on every page.
+const LITE_OUT = path.join(__dirname, "..", "src", "data", "products-lite.generated.ts");
+const EMPTY_LITE =
+  'import { Product } from "./types";\nexport const generatedProductsLite: Product[] = [];\n';
 const EMPTY_COLLECTIONS =
   'import { ShopifyCollection } from "./types";\nexport const generatedCollections: ShopifyCollection[] = [];\n';
 // Working snapshot consumed by scripts/fill-content-gaps.js — not checked
@@ -826,6 +834,81 @@ function serialise(list) {
   );
 }
 
+/**
+ * The card-sized catalogue.
+ *
+ * Keeps everything a card, the cart, search and the filters read; drops the
+ * long text (description, about, benefits, how-to-use, ingredients, who-for,
+ * SEO fields) and the photo gallery beyond the first two. The required text
+ * fields are written as empty values so the record still satisfies `Product`
+ * — code that needs the real text must read src/data/product-details.ts,
+ * which only server code may import.
+ *
+ * A product with a single variant does not repeat it: src/data/products.ts
+ * rebuilds that one variant from the top-level fields, which are the same
+ * numbers. That is a third of the file for nothing.
+ */
+const LITE_SHORT_DESC = 160;
+// Two prefixes that are on nearly every record. Gzip would squeeze them on
+// the wire anyway, but the browser still has to parse the expanded text;
+// src/data/products.ts puts them back. Keep the two lists in step.
+const LITE_IMG_PREFIX = "https://cdn.shopify.com/s/files/1/0663/8334/7863/files/";
+const LITE_GID_PREFIX = "gid://shopify/ProductVariant/";
+const liteImg = (u) => (u && u.startsWith(LITE_IMG_PREFIX) ? "~" + u.slice(LITE_IMG_PREFIX.length) : u);
+const liteGid = (id) => (id && id.startsWith(LITE_GID_PREFIX) ? "#" + id.slice(LITE_GID_PREFIX.length) : id);
+function serialiseLite(list) {
+  const rows = list.map((p) => {
+    const f = [];
+    f.push(`slug:"${esc(p.slug)}"`);
+    f.push(`variantId:"${esc(liteGid(p.variantId))}"`);
+    f.push(`name:"${esc(p.name)}"`);
+    f.push(`brand:"${esc(p.brand)}"`);
+    f.push(`category:"${p.category}"`);
+    f.push(`concerns:[${p.concerns.map((c) => `"${c}"`).join(",")}]`);
+    f.push(`price:${p.price}`);
+    if (p.compareAtPrice) f.push(`compareAtPrice:${p.compareAtPrice}`);
+    f.push(`image:"${esc(liteImg(p.image))}"`);
+    if (p.image2) f.push(`image2:"${esc(liteImg(p.image2))}"`);
+    f.push(`rating:${p.rating}`);
+    f.push(`reviewCount:${p.reviewCount}`);
+    if (p.sold) f.push(`sold:${p.sold}`);
+    if (p.badges.length) f.push(`badges:[${p.badges.map((b) => `"${b}"`).join(",")}]`);
+    const short = String(p.shortDesc || "");
+    f.push(`shortDesc:"${esc(short.length > LITE_SHORT_DESC ? short.slice(0, LITE_SHORT_DESC) + "…" : short)}"`);
+    f.push(`benefits:[],howToUse:"",ingredients:"",whoFor:""`);
+    f.push(`inStock:${p.inStock}`);
+    if (p.size) f.push(`size:"${esc(p.size)}"`);
+    if (p.variants.length > 1) {
+      const variantRows = p.variants.map((v) => {
+        const vf = [];
+        vf.push(`variantId:"${esc(liteGid(v.variantId))}"`);
+        vf.push(`size:"${esc(v.size)}"`);
+        vf.push(`price:${v.price}`);
+        if (v.compareAtPrice) vf.push(`compareAtPrice:${v.compareAtPrice}`);
+        vf.push(`inStock:${v.inStock}`);
+        if (typeof v.quantity === "number") vf.push(`quantity:${v.quantity}`);
+        if (v.image) vf.push(`image:"${esc(liteImg(v.image))}"`);
+        return "{" + vf.join(",") + "}";
+      });
+      f.push(`variants:[${variantRows.join(",")}]`);
+    } else {
+      // Rebuilt by src/data/products.ts from the fields above. Only a
+      // stock count, which the top level does not carry, travels with it.
+      const only = p.variants[0];
+      f.push(typeof only?.quantity === "number" ? `variants:[],q:${only.quantity}` : `variants:[]`);
+    }
+    return "{" + f.join(",") + "}";
+  });
+  return (
+    'import { Product } from "./types";\n' +
+    "// AUTO-GENERATED at build time from the Shopify Storefront API — do not edit.\n" +
+    "// The card-sized catalogue that browser code imports. See scripts/fetch-products.js.\n" +
+    "export const generatedProductsLite: (Product & { q?: number })[] = [\n" +
+    rows.join(",\n") +
+    "\n];\n"
+  );
+}
+
 /* ---------- units sold ---------- */
 
 // How many of each product have actually been sold, for the "ขายแล้ว" line on
@@ -953,6 +1036,7 @@ async function main() {
   applyContentCache(mapped);
   await applyImageOverrides(mapped);
   fs.writeFileSync(OUT, serialise(mapped), "utf8");
+  fs.writeFileSync(LITE_OUT, serialiseLite(mapped), "utf8");
   fs.writeFileSync(SNAPSHOT, JSON.stringify(mapped), "utf8");
   const byCat = {};
   for (const p of mapped) byCat[p.category] = (byCat[p.category] || 0) + 1;
@@ -986,7 +1070,7 @@ async function main() {
   }
 }
 
-module.exports = { sourceHash, CONTENT_CACHE, SNAPSHOT };
+module.exports = { sourceHash, CONTENT_CACHE, SNAPSHOT, serialiseLite, LITE_OUT };
 
 if (require.main === module) {
 main().catch((e) => {
@@ -999,6 +1083,7 @@ main().catch((e) => {
     );
   }
   if (!fs.existsSync(COLLECTIONS_OUT)) fs.writeFileSync(COLLECTIONS_OUT, EMPTY_COLLECTIONS, "utf8");
+  if (!fs.existsSync(LITE_OUT)) fs.writeFileSync(LITE_OUT, EMPTY_LITE, "utf8");
   process.exit(0);
 });
 }

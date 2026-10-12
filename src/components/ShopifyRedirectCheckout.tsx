@@ -10,7 +10,7 @@ import { useLang } from "@/lib/lang-context";
 import { useOrderTotals } from "@/lib/use-order-totals";
 import { formatTHB } from "@/lib/format";
 import { cartCreate, shopifyConfigured, type CartDeliveryAddressInput } from "@/lib/shopify";
-import { toE164Thai } from "@/lib/firebase-client";
+import { toE164Thai } from "@/lib/thai-phone";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 import type { TaxAddressRow } from "@/app/api/account/tax-addresses/route";
 import MobileStickyBar from "@/components/MobileStickyBar";

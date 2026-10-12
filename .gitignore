@@ -14,3 +14,6 @@ src/data/collections.generated.ts
 # Generated at build by scripts/copy-mediapipe.js
 /public/mediapipe
 product-content-todo.csv
+
+# Card-sized catalogue for browser code, written alongside products.generated.ts
+src/data/products-lite.generated.ts

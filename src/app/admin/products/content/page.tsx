@@ -5,7 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { PageHeader, adminTable } from "@/components/admin/layout-kit";
-import { products } from "@/data/products";
+// The full catalogue: this screen reads SEO fields, SKUs or the whole photo
+// gallery, which the card-sized one leaves out. Fine in an /admin chunk —
+// only the storefront must stay off it (see src/data/product-details.ts).
+import { productDetails as products } from "@/data/product-details";
 import { stableContentVariantId } from "@/lib/product-content";
 import AdminSelect from "@/components/admin/AdminSelect";
 import AdminSearch from "@/components/admin/AdminSearch";

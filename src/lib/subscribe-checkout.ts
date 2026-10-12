@@ -2,7 +2,7 @@
 
 import { cartCreate, shopifyConfigured, type CartDeliveryAddressInput } from "@/lib/shopify";
 import { thProvinceCode, splitRecipientName } from "@/lib/shopify-th-address";
-import { toE164Thai } from "@/lib/firebase-client";
+import { toE164Thai } from "@/lib/thai-phone";
 import type { AddressRow } from "@/app/api/account/addresses/route";
 
 // Mirrors the same Thai-address mapping used by /checkout — kept as its own

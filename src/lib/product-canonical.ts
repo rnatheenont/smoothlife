@@ -1,4 +1,4 @@
-import { products } from "@/data/products";
+import { productDetails as products } from "@/data/product-details";
 import type { Product } from "@/data/types";
 
 // Which product page Google should treat as the real one.
