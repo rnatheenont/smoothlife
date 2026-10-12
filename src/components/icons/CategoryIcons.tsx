@@ -216,3 +216,27 @@ export const CATEGORY_ICON: Record<string, typeof SkincareIcon> = {
   wellness: WellnessIcon,
   "body-care": BodyCareIcon,
 };
+
+/**
+ * Every mark, by a name that can live in a database.
+ *
+ * A section's settings are JSON, so a row in the shortcut strip cannot hold a
+ * React component — it holds one of these keys and the strip looks the mark
+ * up. Renaming a key orphans whatever is stored under the old one, so these
+ * are append-only in practice: add a mark, never rename one.
+ */
+export const ICON_BY_KEY: Record<string, typeof SkincareIcon> = {
+  skincare: SkincareIcon,
+  "oral-care": OralCareIcon,
+  wellness: WellnessIcon,
+  "hair-care": HairCareIcon,
+  "for-men": ForMenIcon,
+  accessories: AccessoriesIcon,
+  "first-aid": FirstAidIcon,
+  "personal-care": PersonalCareIcon,
+  "body-care": BodyCareIcon,
+  "all-categories": AllCategoriesIcon,
+  "top-brand": TopBrandIcon,
+};
+
+export const ICON_KEYS = Object.keys(ICON_BY_KEY);

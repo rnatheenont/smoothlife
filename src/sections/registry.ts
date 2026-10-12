@@ -1,7 +1,15 @@
 import type { AnySectionDefinition, PageKind } from "@/lib/pages/types";
 import { smoothieAsk } from "./smoothie_ask/definition";
-import { brandCircles } from "./brand_circles/definition";
+import { heroBannersSection } from "./hero_banners/definition";
+import { iconShortcuts } from "./icon_shortcuts/definition";
+import { flashSaleBar } from "./flash_sale_bar/definition";
+import { flashSaleShelf } from "./flash_sale_shelf/definition";
+import { dealOfDay } from "./deal_of_day/definition";
+import { freeGiftPromo } from "./free_gift_promo/definition";
+import { concernCoverflow } from "./concern_coverflow/definition";
 import { socialVideos } from "./social_videos/definition";
+import { brandCircles } from "./brand_circles/definition";
+import { articleGallery } from "./article_gallery/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -14,7 +22,19 @@ import { socialVideos } from "./social_videos/definition";
 // Removing an entry orphans every document that still uses it, so a type is
 // retired only after nothing references it.
 
-const ALL: AnySectionDefinition[] = [smoothieAsk, brandCircles, socialVideos];
+const ALL: AnySectionDefinition[] = [
+  smoothieAsk,
+  heroBannersSection,
+  iconShortcuts,
+  flashSaleBar,
+  flashSaleShelf,
+  dealOfDay,
+  freeGiftPromo,
+  concernCoverflow,
+  socialVideos,
+  brandCircles,
+  articleGallery,
+];
 
 export const SECTION_REGISTRY: Record<string, AnySectionDefinition> = Object.fromEntries(
   ALL.map((def) => [def.type, def])

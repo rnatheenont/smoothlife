@@ -22,6 +22,10 @@ const schema = z.object({
     )
     .min(1)
     .max(12),
+  /** Which clip the carousel opens on. The home page starts on the fourth
+   *  rather than the first, so the one worth seeing is the one in the middle
+   *  of the rail where the eye lands. */
+  startAt: z.number().int().min(0).max(11).default(0),
 });
 
 function Component({ settings }: SectionProps<z.output<typeof schema>>) {
@@ -31,7 +35,9 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
     // card attached, rather than taking the section down with it.
     product: c.productSlug ? products.find((p) => p.slug === c.productSlug) : undefined,
   }));
-  return <TrendingOnSocial clips={clips} />;
+  // A startAt past the end of a shortened list would open on nothing.
+  const startAt = Math.min(settings.startAt, Math.max(0, clips.length - 1));
+  return <TrendingOnSocial clips={clips} initialIndex={startAt} />;
 }
 
 export const socialVideos: SectionDefinition<typeof schema> = {
@@ -42,6 +48,7 @@ export const socialVideos: SectionDefinition<typeof schema> = {
   category: "content",
   schema,
   defaults: {
+    startAt: 3,
     clips: [
       {
         video: "https://cdn6.fireworktv.com/medias/2025/11/27/1764238313-wfckresm/transcoded/720/KRU20AOM20Formalab.mp4",
@@ -80,6 +87,7 @@ export const socialVideos: SectionDefinition<typeof schema> = {
       label: "คลิป",
       help: "ลิงก์วิดีโอและสินค้าในคลิป — ฟอร์มจริงมาในเฟสถัดไป",
     },
+    { key: "startAt", type: "number", label: "เปิดที่คลิปลำดับ (เริ่มจาก 0)", min: 0, max: 11 },
   ],
   enabledOn: ["home", "page", "campaign", "brand"],
   maxPerPage: 1,

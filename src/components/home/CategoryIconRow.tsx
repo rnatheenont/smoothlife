@@ -43,7 +43,7 @@ const shortcuts: Shortcut[] = [
   { href: "/collections/first-aid-smoothllife", label: "ปฐมพยาบาล", Icon: FirstAidIcon },
 ];
 
-export default function CategoryIconRow() {
+export default function CategoryIconRow({ items = shortcuts }: { items?: Shortcut[] }) {
   return (
     <nav aria-label="หมวดหมู่สินค้า" className="bg-[#f8fffe]">
       {/* Nine across needs about 1200px. Below that the row scrolls rather
@@ -56,7 +56,7 @@ export default function CategoryIconRow() {
           // scrollbar away from a row that still did not fit and pushed the
           // whole page sideways instead.
           className="container-page flex gap-3 overflow-x-auto scroll-smooth py-5 scrollbar-none md:gap-5 xl:justify-center xl:gap-[clamp(1rem,2.6vw,2.4rem)] xl:overflow-visible">
-        {shortcuts.map((s) => (
+        {items.map((s) => (
           <li key={s.href} className="shrink-0">
             <Link
               href={s.href}
