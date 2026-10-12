@@ -60,7 +60,7 @@ export const iconShortcuts: SectionDefinition<typeof schema> = {
   fields: [
     {
       key: "items",
-      type: "text",
+      type: "json",
       label: "ทางลัด",
       help: `ไอคอนที่เลือกได้: ${ICON_KEYS.join(", ")} — ฟอร์มจริงมาในเฟสถัดไป`,
     },

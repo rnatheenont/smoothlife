@@ -83,7 +83,7 @@ export const socialVideos: SectionDefinition<typeof schema> = {
   fields: [
     {
       key: "clips",
-      type: "text",
+      type: "json",
       label: "คลิป",
       help: "ลิงก์วิดีโอและสินค้าในคลิป — ฟอร์มจริงมาในเฟสถัดไป",
     },

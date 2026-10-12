@@ -9,6 +9,7 @@ import {
   FileText,
   Gift,
   Inbox,
+  Layout,
   LayoutDashboard,
   LayoutList,
   MessageCircle,
@@ -207,6 +208,13 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: FileText,
         desc: "รายละเอียดสินค้าแบบอิสระ 2 ภาษา",
         permission: "product_content.view",
+      },
+      {
+        href: "/admin/pages",
+        label: "หน้าเว็บ",
+        icon: Layout,
+        desc: "ประกอบหน้าแรกจาก section ที่เลือกได้",
+        permission: "pages.edit",
       },
       {
         href: "/admin/products/subcategories",

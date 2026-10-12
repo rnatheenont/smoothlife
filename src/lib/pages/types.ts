@@ -41,7 +41,15 @@ export type FieldDef =
   | { key: string; type: "image"; label: string; help?: string }
   | { key: string; type: "datetime"; label: string; help?: string }
   | { key: string; type: "product_slugs"; label: string; max?: number; help?: string }
-  | { key: string; type: "brand_slugs"; label: string; max?: number; help?: string };
+  | { key: string; type: "brand_slugs"; label: string; max?: number; help?: string }
+  /** Structured settings — a list of rows, a nested object — edited as JSON
+   *  until the section earns a purpose-built form. It is here because the
+   *  alternative was offering a plain text box for a list of objects, which
+   *  does not survive a round trip: the value comes back a string, the
+   *  section stops matching its schema, and it quietly vanishes from the
+   *  page. A control that destroys what it edits is worse than an honest
+   *  one that looks unfinished. */
+  | { key: string; type: "json"; label: string; help?: string };
 
 /** What a pre-publish check found. An error blocks publishing; a warning asks
  *  for a confirmation. */
