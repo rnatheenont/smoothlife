@@ -188,13 +188,26 @@ export default function SubcategoryReviewPage() {
           </p>
         ) : (
           <div className={`${adminTable.scroll} max-h-[62vh]`}>
-            <table className={adminTable.table}>
+            {/* table-fixed, or the product column never gives anything back.
+                `truncate` can only trim text inside a box with a width, and an
+                auto table hands a long cell whatever width it asks for — so a
+                90-character product name widened the table past the card,
+                squeezed the three columns on the right into slivers, and left
+                the whole thing scrolled sideways with the names cut off at the
+                start. Fixed widths on the right, the rest to the product. */}
+            <table className={`${adminTable.table} table-fixed`} style={{ minWidth: 820 }}>
               <thead className={adminTable.thead}>
                 <tr>
                   <th className="px-3 py-2.5">สินค้า</th>
-                  <th className="px-3 py-2.5 w-40">ระบบเดา</th>
-                  <th className="px-3 py-2.5 w-56">หมวดย่อย</th>
-                  <th className="px-3 py-2.5 w-24">สถานะ</th>
+                  <th className="whitespace-nowrap px-3 py-2.5" style={{ width: 150 }}>
+                    ระบบเดา
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2.5" style={{ width: 240 }}>
+                    หมวดย่อย
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2.5" style={{ width: 120 }}>
+                    สถานะ
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -217,7 +230,7 @@ export default function SubcategoryReviewPage() {
                         </div>
                       </div>
                     </td>
-                    <td className={adminTable.muted}>
+                    <td className={`${adminTable.muted} truncate`}>
                       {it.guess ? (
                         (shelves.find((s) => s.slug === it.guess)?.nameTh ?? it.guess)
                       ) : (
@@ -244,7 +257,7 @@ export default function SubcategoryReviewPage() {
                         ))}
                       </select>
                     </td>
-                    <td className={adminTable.cell}>
+                    <td className={`${adminTable.cell} whitespace-nowrap`}>
                       {savingSlug === it.slug ? (
                         <Loader2 size={15} className="animate-spin text-slate-400" />
                       ) : it.confirmed ? (
