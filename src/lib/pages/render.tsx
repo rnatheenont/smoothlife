@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { isVisible, migrateDoc, MAX_SECTIONS, type SectionInstance } from "./doc";
 import { SECTION_REGISTRY } from "@/sections/registry";
 import type { AnySectionDefinition, RenderCtx } from "./types";
@@ -102,9 +103,29 @@ export async function renderSections(doc: unknown, ctx: RenderCtx) {
 
       const Component = def.Component;
       return (
-        <SectionBoundary key={raw.id} id={raw.id} label={def.label} isPreview={ctx.isPreview}>
-          <Component settings={parsed.data} data={loaded.data} common={raw.common} index={index} ctx={ctx} />
-        </SectionBoundary>
+        <Fragment key={raw.id}>
+          {/* The section's own anchor, so anything on the page can jump to it
+              by the id the editor shows — the campaign jump tabs are built on
+              this. A zero-height element rather than a wrapper around the
+              section: a wrapper would change what counts as the first child
+              of every section on the site, and nothing here is worth that.
+
+              scroll-margin-top keeps the jumped-to heading out from under the
+              sticky header (--app-header-h, set by Header on every resize)
+              and from under a sticky jump bar if the page has one. Written as
+              a style rather than an arbitrary Tailwind value because a calc()
+              with a custom property inside a class name is exactly the sort
+              of thing that silently compiles to nothing. */}
+          <span
+            id={raw.id}
+            aria-hidden="true"
+            className="block"
+            style={{ scrollMarginTop: "calc(var(--app-header-h, 0px) + 72px)" }}
+          />
+          <SectionBoundary id={raw.id} label={def.label} isPreview={ctx.isPreview}>
+            <Component settings={parsed.data} data={loaded.data} common={raw.common} index={index} ctx={ctx} />
+          </SectionBoundary>
+        </Fragment>
       );
     })
   );

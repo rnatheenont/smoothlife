@@ -77,7 +77,14 @@ export default async function PagePreview(props: {
   const phase: CampaignPhase | undefined =
     kind === "campaign" ? (asked ?? campaignPhaseAt(campaignTimesOf(page), now)) : undefined;
 
-  const sections = await renderSections(doc, { kind, slug, now, phase, isPreview: true });
+  const sections = await renderSections(doc, {
+    kind,
+    slug,
+    now,
+    phase,
+    times: kind === "campaign" ? campaignTimesOf(page) : undefined,
+    isPreview: true,
+  });
 
   if (kind === "campaign") {
     // Wrapped exactly as /sale/[slug] wraps it, colours included. A preview

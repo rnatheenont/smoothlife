@@ -68,6 +68,7 @@ export default async function CampaignPage(props: { params: Promise<{ slug: stri
     slug,
     now: campaign.now,
     phase: campaign.phase,
+    times: campaign.times,
     isPreview: false,
   });
 

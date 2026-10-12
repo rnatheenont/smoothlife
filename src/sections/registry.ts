@@ -15,6 +15,12 @@ import { imageBanner } from "./image_banner/definition";
 import { productGrid } from "./product_grid/definition";
 import { uspIcons } from "./usp_icons/definition";
 import { spacer } from "./spacer/definition";
+import { campaignHero } from "./campaign_hero/definition";
+import { countdownBanner } from "./countdown_banner/definition";
+import { voucherStrip } from "./voucher_strip/definition";
+import { categoryJumpTabs } from "./category_jump_tabs/definition";
+import { productTabs } from "./product_tabs/definition";
+import { campaignTerms } from "./campaign_terms/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -48,6 +54,16 @@ const ALL: AnySectionDefinition[] = [
   productGrid,
   uspIcons,
   spacer,
+
+  // Campaign pages. The first four read the campaign's own phase or its four
+  // dates (ctx.phase, ctx.times), which only a campaign page provides — put
+  // one anywhere else and it would have nothing to count towards.
+  campaignHero,
+  countdownBanner,
+  voucherStrip,
+  categoryJumpTabs,
+  productTabs,
+  campaignTerms,
 ];
 
 export const SECTION_REGISTRY: Record<string, AnySectionDefinition> = Object.fromEntries(

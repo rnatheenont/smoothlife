@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { z } from "zod";
 import type { CampaignPhase, SectionCommon } from "./doc";
+import type { CampaignTimes } from "./campaign";
 
 // What a section is, from the system's point of view.
 //
@@ -23,6 +24,13 @@ export type RenderCtx = {
   now: Date;
   /** Campaign pages only. */
   phase?: CampaignPhase;
+  /** Campaign pages only: the four dates that decided the phase.
+   *
+   *  Handed down rather than looked up per section, because a countdown has
+   *  to agree with the phase it is counting towards. A section that read the
+   *  dates itself could render a clock ticking down to a start that the page
+   *  around it has already passed. */
+  times?: CampaignTimes;
   /** True inside the admin preview: sections that fail show a visible box
    *  instead of disappearing, because a section that silently vanishes while
    *  someone is editing it is a bug report nobody can write. */
