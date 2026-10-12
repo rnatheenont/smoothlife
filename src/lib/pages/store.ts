@@ -94,3 +94,31 @@ export async function publishedDoc(kind: PageKind, slug: string): Promise<PageDo
     return null;
   }
 }
+
+/** A page's admin title, for the browser tab and the sitemap. Null when the
+ *  page is not there or is not published — the caller shows a 404 rather
+ *  than a shell at a URL somebody shared. */
+export async function pageTitleOf(kind: PageKind, slug: string): Promise<string | null> {
+  if (!supabaseConfigured()) return null;
+  try {
+    const [row] = await supabaseRest<{ title: string; status: PageRow["status"] }[]>(
+      `pages?select=title,status&kind=eq.${encodeURIComponent(kind)}&slug=eq.${encodeURIComponent(slug)}&limit=1`
+    );
+    return row && row.status === "published" ? row.title : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Every published page of a kind, for the sitemap and the admin list. */
+export async function publishedPages(kind: PageKind): Promise<{ slug: string; title: string }[]> {
+  if (!supabaseConfigured()) return [];
+  try {
+    return await supabaseRest<{ slug: string; title: string }[]>(
+      `pages?select=slug,title&kind=eq.${encodeURIComponent(kind)}&status=eq.published&order=slug&limit=200`
+    );
+  } catch (err) {
+    console.error(`[pages] could not list published ${kind} pages`, err);
+    return [];
+  }
+}
