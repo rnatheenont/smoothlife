@@ -59,7 +59,7 @@ export default function SupplementAdvisorQuiz() {
     const total = items.reduce((sum, p) => sum + p.price, 0);
 
     function addAllToCart() {
-      items.forEach((p) => addItem(p.slug));
+      items.forEach((p) => addItem(p.slug, 1, p.variantId));
       setAdded(true);
       setTimeout(() => setAdded(false), 1800);
     }

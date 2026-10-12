@@ -107,7 +107,7 @@ export function ProductChip({ slug }: { slug: string }) {
       </div>
       <button
         onClick={() => {
-          addItem(product.slug, 1);
+          addItem(product.slug, 1, product.variantId);
           setAdded(true);
         }}
         aria-label={t("เพิ่มลงตะกร้า", "Add to cart")}

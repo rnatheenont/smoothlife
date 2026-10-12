@@ -51,7 +51,7 @@ export default function OralCareAdvisorQuiz() {
     const total = recommended.reduce((sum, p) => sum + p.price, 0);
 
     function addAllToCart() {
-      recommended.forEach((p) => addItem(p.slug));
+      recommended.forEach((p) => addItem(p.slug, 1, p.variantId));
       setAdded(true);
       setTimeout(() => setAdded(false), 1800);
     }

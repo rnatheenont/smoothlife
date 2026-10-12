@@ -124,7 +124,7 @@ export default function OrderDetailView({
                     variant="secondary"
                     size="sm"
                     className="shrink-0"
-                    onClick={() => addItem(product.slug, it.quantity)}
+                    onClick={() => addItem(product.slug, it.quantity, product.variantId)}
                   >
                     ซื้อซ้ำ
                   </Button>

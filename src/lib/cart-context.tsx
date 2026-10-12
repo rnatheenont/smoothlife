@@ -1,11 +1,39 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
-import { products } from "@/data/products";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { ProductVariant } from "@/data/types";
+import type { CartProduct } from "@/data/cart-product";
 import { useAuth } from "@/lib/auth-context";
 import { CartLine } from "@/data/coupons";
 import { evaluateActiveFreeGifts, FreeGiftPromo } from "@/data/free-gifts";
+import {
+  buildLines,
+  clampQty,
+  giftLineFrom,
+  reconcileItems,
+  sameLine as isSameLine,
+  stockOf,
+  subtotalOf,
+  type ProductsBySlug,
+} from "@/lib/cart-lines";
+
+// The cart no longer knows the catalogue.
+//
+// It used to import all ~1,000 products to turn {slug, variantId, qty} into
+// a row with a name and a price — and because this provider wraps every
+// page, that array was downloaded by every visitor on every visit for the
+// sake of the three products in their cart. Now it asks
+// /api/products/lite?slugs= for exactly those, keeps the answer in
+// localStorage so a reload paints the cart before the network replies, and
+// works out the rows in cart-lines.ts, where the arithmetic is tested.
+//
+// What a customer is charged does not come from here either way:
+// /api/checkout/init resolves every line's price from its variantId and
+// never trusts a number sent by a browser. A stale cached price can make
+// the cart show yesterday's total for a moment; it cannot charge it.
+
+/** Products the cart has fetched, kept across reloads. */
+const PRODUCTS_KEY = "sl_cart_products";
 
 type CartItem = {
   slug: string;
@@ -72,6 +100,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [couponPending, setCouponPending] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [giftPromos, setGiftPromos] = useState<FreeGiftPromo[]>([]);
+  const [bySlug, setBySlug] = useState<ProductsBySlug>({});
 
   useEffect(() => {
     fetch("/api/free-gifts")
@@ -82,24 +111,74 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
+      // A cart saved before per-variant support stored only {slug, qty}. The
+      // empty variantId is filled in by reconcileItems once the product
+      // arrives — it cannot be filled in here any more, because knowing a
+      // product's default variant is exactly what this file stopped
+      // carrying the catalogue for.
       const saved = JSON.parse(localStorage.getItem(CART_KEY) || "[]") as (CartItem & { variantId?: string })[];
-      // Carts saved before per-variant support only stored {slug, qty} — fill
-      // in each product's default variant so old carts keep working instead
-      // of silently losing their variantId (and thus their price/checkout line).
-      const migrated = saved
-        .map((i) => {
-          if (i.variantId) return i as CartItem;
-          const p = products.find((pr) => pr.slug === i.slug);
-          return p ? { slug: i.slug, variantId: p.variantId, qty: i.qty } : null;
-        })
-        .filter(Boolean) as CartItem[];
-      setItems(migrated);
+      setItems(
+        saved
+          .filter((i) => i && typeof i.slug === "string" && typeof i.qty === "number")
+          .map((i) => ({ slug: i.slug, variantId: i.variantId ?? "", qty: i.qty, subscribeMonths: i.subscribeMonths }))
+      );
       setCouponCodeState(localStorage.getItem(COUPON_KEY));
     } catch {
       setItems([]);
     }
+    try {
+      // Last visit's answer, so the cart draws before the network replies.
+      const cached = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || "{}") as ProductsBySlug;
+      if (cached && typeof cached === "object") setBySlug(cached);
+    } catch {}
     setHydrated(true);
   }, []);
+
+  // Every slug the cart needs to draw: what is in it, plus the products the
+  // live free-gift promos give away (a gift is a row too).
+  const neededSlugs = useMemo(() => {
+    const slugs = new Set(items.map((i) => i.slug));
+    for (const promo of giftPromos) {
+      if (promo.giftProductSlug) slugs.add(promo.giftProductSlug);
+      for (const tier of promo.tiers ?? []) if (tier.giftProductSlug) slugs.add(tier.giftProductSlug);
+    }
+    return [...slugs].sort();
+  }, [items, giftPromos]);
+
+  const slugKey = neededSlugs.join(",");
+
+  useEffect(() => {
+    if (!hydrated || !slugKey) return;
+    let cancelled = false;
+    fetch(`/api/products/lite?slugs=${encodeURIComponent(slugKey)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled || !Array.isArray(data?.products)) return;
+        setBySlug((prev) => {
+          const next: ProductsBySlug = { ...prev };
+          for (const p of data.products as CartProduct[]) next[p.slug] = p;
+          try {
+            localStorage.setItem(PRODUCTS_KEY, JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+      })
+      // Offline, or the route is down: the cart keeps drawing from the
+      // cached copy rather than emptying itself.
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, slugKey]);
+
+  // Fresh data can mean a size that no longer exists or a quantity the shop
+  // no longer has. Applied once per arrival; reconcileItems returns the very
+  // same array when there is nothing to repair, which is what keeps this
+  // from looping.
+  useEffect(() => {
+    if (!hydrated) return;
+    setItems((prev) => reconcileItems(prev, bySlug));
+  }, [bySlug, hydrated]);
 
   useEffect(() => {
     if (hydrated) localStorage.setItem(CART_KEY, JSON.stringify(items));
@@ -164,22 +243,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // share a variantId — subscribeMonths is part of a line's identity, not
   // just display metadata, precisely so the two stay visually and
   // functionally separate in the cart.
-  function sameLine(i: CartItem, variantId: string, subscribeMonths?: 3 | 6 | 12) {
-    return i.variantId === variantId && i.subscribeMonths === subscribeMonths;
-  }
+  const sameLine = isSameLine;
 
+  /**
+   * Adds a product to the cart.
+   *
+   * The variant: passed in by callers that know it (a product page where a
+   * size is selected, a card that carries its default variant). Left empty
+   * otherwise, and filled in from /api/products/lite on the next breath —
+   * this file cannot look up a default variant any more, and guessing one
+   * would be guessing which size someone is buying.
+   */
   function addItem(slug: string, qty = 1, variantId?: string, subscribeMonths?: 3 | 6 | 12) {
-    const p = products.find((pr) => pr.slug === slug);
-    const resolvedVariantId = variantId || p?.variantId;
-    if (!resolvedVariantId) return;
-    const stock = p?.variants.find((v) => v.variantId === resolvedVariantId)?.quantity;
+    const resolvedVariantId = variantId || bySlug[slug]?.variantId || "";
+    const stock = stockOf(bySlug[slug], resolvedVariantId);
     setItems((prev) => {
-      const existing = prev.find((i) => sameLine(i, resolvedVariantId, subscribeMonths));
+      const existing = prev.find((i) => i.slug === slug && sameLine(i, resolvedVariantId, subscribeMonths));
       const currentQty = existing?.qty ?? 0;
-      const nextQty = typeof stock === "number" ? Math.min(currentQty + qty, stock) : currentQty + qty;
+      const nextQty = clampQty(currentQty + qty, stock);
       if (nextQty <= 0) return prev;
       if (existing) {
-        return prev.map((i) => (sameLine(i, resolvedVariantId, subscribeMonths) ? { ...i, qty: nextQty } : i));
+        return prev.map((i) =>
+          i.slug === slug && sameLine(i, resolvedVariantId, subscribeMonths) ? { ...i, qty: nextQty } : i
+        );
       }
       return [...prev, { slug, variantId: resolvedVariantId, qty: nextQty, subscribeMonths }];
     });
@@ -192,9 +278,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) =>
       prev.map((i) => {
         if (!sameLine(i, variantId, subscribeMonths)) return i;
-        const p = products.find((pr) => pr.slug === i.slug);
-        const stock = p?.variants.find((v) => v.variantId === variantId)?.quantity;
-        return { ...i, qty: typeof stock === "number" ? Math.min(qty, stock) : qty };
+        return { ...i, qty: clampQty(qty, stockOf(bySlug[i.slug], variantId)) };
       })
     );
   }
@@ -217,31 +301,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setCouponCode(null);
   }
 
-  const lines = items
-    .map((i) => {
-      const p = products.find((pr) => pr.slug === i.slug);
-      if (!p) return null;
-      const v = p.variants.find((variant) => variant.variantId === i.variantId);
-      return {
-        slug: i.slug,
-        variantId: i.variantId,
-        qty: i.qty,
-        name: p.name,
-        price: v ? v.price : p.price,
-        image: p.image,
-        compareAtPrice: v ? v.compareAtPrice : p.compareAtPrice,
-        brand: p.brand,
-        category: p.category,
-        size: v ? v.size : p.size || "",
-        variants: p.variants,
-        stock: v?.quantity,
-        subscribeMonths: i.subscribeMonths,
-      };
-    })
-    .filter(Boolean) as CartContextValue["lines"];
+  const lines = buildLines(items, bySlug) as CartContextValue["lines"];
 
+  // The badge counts what is in the cart, not what has been drawn: it must
+  // not drop to zero while the products are still on their way.
   const count = items.reduce((sum, i) => sum + i.qty, 0);
-  const subtotal = lines.reduce((sum, l) => sum + l.price * l.qty, 0);
+  const subtotal = subtotalOf(lines);
 
   // Free-gift lines are fully derived from the real lines above — never
   // persisted, never independently addable/removable — so a gift always
@@ -254,25 +319,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     brand: l.brand,
     category: l.category as CartLine["category"],
   }));
-  function giftLineFor(gp: ReturnType<typeof products.find>, qty: number, giftPromoSlug: string) {
-    if (!gp) return null; // misconfigured slug — fail closed, don't crash the cart
-    return {
-      slug: gp.slug,
-      variantId: gp.variantId,
-      qty,
-      name: gp.name,
-      price: 0,
-      image: gp.image,
-      compareAtPrice: undefined,
-      brand: gp.brand,
-      category: gp.category,
-      size: gp.size || "",
-      variants: gp.variants,
-      stock: undefined,
-      isGift: true,
-      giftPromoSlug,
-    };
-  }
+  const giftLineFor = giftLineFrom;
   /** A gift that lives only on Shopify's free-gift shelf — UNLISTED, so absent from our catalogue. */
   function shopifyGiftLine(variantId: string, title: string | undefined, image: string | null | undefined, qty: number, giftPromoSlug: string) {
     return {
@@ -302,7 +349,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // collide on giftPromoSlug.
         return e.unlockedTiers.map((t) => {
           const key = `${e.promo.slug}::tier-${t.tierIndex}`;
-          const fromCatalogue = giftLineFor(products.find((pr) => pr.slug === t.giftProductSlug), t.giftQty, key);
+          const fromCatalogue = giftLineFor(bySlug[t.giftProductSlug ?? ""], t.giftQty, key);
           if (fromCatalogue) return fromCatalogue;
           return t.giftVariantId ? shopifyGiftLine(t.giftVariantId, t.giftTitle, t.giftImage, t.giftQty, key) : null;
         });
@@ -311,7 +358,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // catalogue — every one of them is UNLISTED there — so the promo carries
       // its name and picture and the line is built from those. The catalogue
       // lookup stays for promos written before the shelf existed.
-      const fromCatalogue = giftLineFor(products.find((pr) => pr.slug === e.promo.giftProductSlug), e.promo.giftQty, e.promo.slug);
+      const fromCatalogue = giftLineFor(bySlug[e.promo.giftProductSlug ?? ""], e.promo.giftQty, e.promo.slug);
       if (fromCatalogue) return [fromCatalogue];
       if (!e.promo.giftVariantId) return [];
       return [shopifyGiftLine(e.promo.giftVariantId, e.promo.giftTitle, e.promo.giftImage, e.promo.giftQty, e.promo.slug)];

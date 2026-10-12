@@ -67,7 +67,7 @@ function ClipCard({
 
   function handleAdd() {
     if (!clip.product) return;
-    addItem(clip.product.slug);
+    addItem(clip.product.slug, 1, clip.product.variantId);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }

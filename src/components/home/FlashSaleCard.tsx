@@ -62,7 +62,7 @@ export default function FlashSaleCard({ product }: { product: Product }) {
 
   function handleAdd() {
     if (soldOut) return;
-    addItem(product.slug);
+    addItem(product.slug, 1, product.variantId);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }

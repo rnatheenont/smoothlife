@@ -280,7 +280,7 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
                       </div>
                       {product && (
                         <button
-                          onClick={() => addItem(product.slug, it.quantity)}
+                          onClick={() => addItem(product.slug, it.quantity, product.variantId)}
                           className="shrink-0 text-[11px] font-semibold text-brand-800 border border-brand-emerald rounded-full px-3 py-1"
                         >
                           ซื้อซ้ำ

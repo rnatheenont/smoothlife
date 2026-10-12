@@ -67,7 +67,7 @@ export default function ProductRow({ product }: { product: Product }) {
             <button
               type="button"
               onClick={() => {
-                addItem(product.slug);
+                addItem(product.slug, 1, product.variantId);
                 setAdded(true);
                 setTimeout(() => setAdded(false), 1500);
               }}

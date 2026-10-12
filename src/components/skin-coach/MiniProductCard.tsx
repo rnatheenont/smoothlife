@@ -22,7 +22,7 @@ export default function MiniProductCard({ product, typeLabel }: { product: Produ
   const href = `/product/${product.slug}`;
 
   function add() {
-    addItem(product.slug);
+    addItem(product.slug, 1, product.variantId);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }

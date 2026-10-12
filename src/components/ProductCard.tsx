@@ -101,7 +101,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
 
   function handleAdd() {
     if (soldOut) return;
-    addItem(product.slug);
+    addItem(product.slug, 1, product.variantId);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }
