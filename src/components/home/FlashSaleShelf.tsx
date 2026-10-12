@@ -53,18 +53,22 @@ function Box({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function FlashSaleShelf() {
+export type FlashSaleShelfConfig = {
+  href?: string;
+  collection?: string;
+  titleTh?: string;
+  endsAt?: string;
+};
+
+// Settings from the page section when it has them, from the widget row when
+// it does not — see FlashSaleBar for why both ways exist for now.
+export default function FlashSaleShelf({ config }: { config?: FlashSaleShelfConfig }) {
   const { settings, loaded } = useWidgetSettings();
   // A plain ref, not useRailFade: the band wanted the fade removed, and the
   // hook's only other job here was holding this.
   const railRef = useRef<HTMLUListElement>(null);
   const widget = settings.flash_sale_shelf;
-  const cfg = widget.config as {
-    href?: string;
-    collection?: string;
-    titleTh?: string;
-    endsAt?: string;
-  };
+  const cfg = config ?? (widget.config as FlashSaleShelfConfig);
 
   // null = not counted yet, undefined = the deadline has passed.
   const [left, setLeft] = useState<Parts | null | undefined>(null);
@@ -85,7 +89,7 @@ export default function FlashSaleShelf() {
         .slice(0, SHOWN)
     : [];
 
-  if (!loaded || !widget.enabled) return null;
+  if (!config && (!loaded || !widget.enabled)) return null;
   // A flash sale band with nothing in it is an advert for an empty shelf.
   if (shelf.length === 0) return null;
 

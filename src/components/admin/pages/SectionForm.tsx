@@ -434,6 +434,40 @@ export default function SectionForm({
           );
         }
 
+        if (field.type === "color") {
+          // Anything that is not a plain hex is left in the text box and not
+          // written to the document: this value ends up in an inline style,
+          // and a box an admin types into is not a place to accept arbitrary
+          // CSS. The well below always shows something valid.
+          const text = typeof value === "string" ? value : "";
+          const well = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(text.trim()) ? text.trim() : "#ffffff";
+          return (
+            <div key={field.key}>
+              <label htmlFor={id} className={labelCls}>
+                {field.label}
+              </label>
+              <div className="mt-1.5 flex items-center gap-2">
+                <input
+                  type="color"
+                  value={well}
+                  aria-label={`${field.label} — เลือกจากจานสี`}
+                  onChange={(e) => set(field.key, e.target.value)}
+                  className="h-11 w-12 shrink-0 cursor-pointer rounded-lg border border-slate-200 bg-white p-1"
+                />
+                <input
+                  id={id}
+                  type="text"
+                  value={text}
+                  placeholder="#0b6b4f"
+                  onChange={(e) => set(field.key, e.target.value)}
+                  className={`${inputCls} mt-0 font-mono`}
+                />
+              </div>
+              {field.help && <p className={helpCls}>{field.help}</p>}
+            </div>
+          );
+        }
+
         if (field.type === "image") {
           return (
             <div key={field.key}>

@@ -39,6 +39,18 @@ const ORDER = [
   "article_gallery",
 ] as const;
 
+/**
+ * Sections a brand-new home page starts with hidden.
+ *
+ * These four used to be switched on and off by a row in free_gift_widgets,
+ * and every one of those rows ships off (see DEFAULT_SETTINGS in
+ * use-widget-settings). Now that the section's own eye icon is the switch,
+ * starting them visible would turn four promos on for anyone who seeds a
+ * home page — a flash sale with no deadline and a deal card nobody wrote.
+ * They are on the page, in the right order, waiting to be turned on.
+ */
+const HIDDEN_AT_FIRST = new Set(["flash_sale_bar", "flash_sale_shelf", "deal_of_day", "free_gift_promo"]);
+
 export function defaultHomeDoc(): PageDoc {
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -47,6 +59,7 @@ export function defaultHomeDoc(): PageDoc {
       type,
       v: SECTION_REGISTRY[type].version,
       settings: defaultsOf(type),
+      ...(HIDDEN_AT_FIRST.has(type) ? { common: { hidden: true } } : {}),
     })),
   };
 }

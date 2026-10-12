@@ -41,18 +41,24 @@ const hex = (value: unknown, fallback: string) =>
 const DIGIT_3D =
   "0 1px 0 rgba(0,0,0,0.22), 0 2px 0 rgba(0,0,0,0.18), 0 3px 0 rgba(0,0,0,0.12), 0 7px 16px rgba(0,0,0,0.35)";
 
-export default function FlashSaleBar() {
+export type FlashSaleBarConfig = {
+  titleTh?: string;
+  subtitleTh?: string;
+  endsAt?: string;
+  code?: string;
+  href?: string;
+  colorFrom?: string;
+  colorTo?: string;
+};
+
+// Given `config`, everything comes from the page section that drew it and
+// being on the page is what switches it on. Given nothing, it reads the
+// widget row the way it always has — which is the hard-coded home page,
+// still the live one until PAGES_HOME_ENABLED is switched on.
+export default function FlashSaleBar({ config }: { config?: FlashSaleBarConfig }) {
   const { settings, loaded } = useWidgetSettings();
   const widget = settings.flash_sale_bar;
-  const cfg = widget.config as {
-    titleTh?: string;
-    subtitleTh?: string;
-    endsAt?: string;
-    code?: string;
-    href?: string;
-    colorFrom?: string;
-    colorTo?: string;
-  };
+  const cfg = config ?? (widget.config as FlashSaleBarConfig);
 
   const [copied, setCopied] = useState(false);
 
@@ -86,7 +92,9 @@ export default function FlashSaleBar() {
 
   // Nothing is drawn until the settings have actually arrived, so a disabled
   // band never flashes up on its way to being hidden.
-  if (!loaded || !widget.enabled) return null;
+  if (!config && (!loaded || !widget.enabled)) return null;
+  // The band removes itself when the deadline passes, whichever source the
+  // deadline came from.
   if (cfg.endsAt && left === undefined) return null;
 
   const title = cfg.titleTh || "Flash Sale";

@@ -51,6 +51,10 @@ export type FieldDef =
   | { key: string; type: "toggle"; label: string; help?: string }
   | { key: string; type: "select"; label: string; options: [string, string][]; help?: string }
   | { key: string; type: "image"; label: string; help?: string }
+  /** A single colour, as a hex string. A well and a text box rather than one
+   *  or the other: the well is how you pick a colour, the text box is how you
+   *  paste the one from the campaign's artwork. */
+  | { key: string; type: "color"; label: string; help?: string }
   | { key: string; type: "datetime"; label: string; help?: string }
   | { key: string; type: "product_slugs"; label: string; max?: number; help?: string }
   /** A list of campaign banners: picture, phone picture, link, description.

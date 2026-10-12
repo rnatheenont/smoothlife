@@ -15,15 +15,20 @@ const KIND_BADGE: Record<string, { th: string; en: string }> = {
 // Mirrors src/data/promotions.ts's homepage banner card visual pattern
 // exactly, fed by real active free-gift promos instead of the static
 // hardcoded array.
-export default function FreeGiftPromoCard() {
+export type PromoCardConfig = { maxCards: number };
+
+export default function FreeGiftPromoCard({ config }: { config?: PromoCardConfig }) {
   const { giftPromos } = useCart();
   const { settings } = useWidgetSettings();
   const { lang } = useLang();
+  const widget = settings.promotion_card;
 
-  if (!settings.promotion_card.enabled) return null;
+  // Given settings by the page, the section's presence is what switches it
+  // on; otherwise the widget row decides, as it always did.
+  if (!config && !widget.enabled) return null;
   const active = giftPromos.filter((p) => p.active);
   if (active.length === 0) return null;
-  const maxCards = Number(settings.promotion_card.config.maxCards ?? 4);
+  const maxCards = Number(config?.maxCards ?? widget.config.maxCards ?? 4);
   const cards = active.slice(0, maxCards);
 
   return (

@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { ChevronDown, Sliders, Eye, RefreshCw, Upload, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useAdminAction } from "@/components/admin/header-action";
+import { WIDGETS_MOVED_TO_PAGES, widgetIsReadOnly } from "@/lib/pages/moved-widgets";
 import { Input } from "@heroui/react";
 
 type WidgetRow = {
@@ -293,6 +295,7 @@ export default function WidgetsPanel() {
             </div>
             <button
               onClick={() => toggle(w.key, !w.enabled)}
+              disabled={widgetIsReadOnly(w.key)}
               className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${w.enabled ? "bg-brand-gradient" : "bg-slate-200"}`}
               aria-label={w.enabled ? "ปิดใช้งาน" : "เปิดใช้งาน"}
             >
@@ -301,6 +304,21 @@ export default function WidgetsPanel() {
               />
             </button>
           </div>
+          {/* Moved, not broken: the row is still what this screen shows, so
+              it is left visible and inert rather than disappearing — a
+              setting that vanishes is a support ticket, and the row is the
+              only place that can say where it went. */}
+          {widgetIsReadOnly(w.key) && (
+            <p className="mt-2.5 rounded-lg bg-surface-mist px-2.5 py-2 text-[11px] leading-relaxed text-slate-500">
+              ย้ายไปตั้งค่าที่{" "}
+              <Link href="/admin/pages/home/home" className="font-semibold text-brand-800 hover:underline">
+                หน้าเว็บ → {WIDGETS_MOVED_TO_PAGES[w.key].page}
+              </Link>{" "}
+              แล้ว — เลือก section &ldquo;{WIDGETS_MOVED_TO_PAGES[w.key].section}&rdquo; · ปิด/เปิดใช้รูปตาของ section
+              นั้น · ค่าที่เห็นตรงนี้คือค่าเดิมก่อนย้าย เก็บไว้ดูอย่างเดียว
+            </p>
+          )}
+
           <div className="flex items-center gap-3 mt-2.5">
             <button
               onClick={() => openCustomize(w)}
@@ -406,13 +424,20 @@ export default function WidgetsPanel() {
                   );
                 })
               )}
-              <button
-                onClick={() => saveConfig(w)}
-                disabled={saving === w.key}
-                className="rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-1.5 disabled:opacity-50"
-              >
-                {saving === w.key ? "กำลังบันทึก…" : "บันทึกการปรับแต่ง"}
-              </button>
+              {/* No save button for a moved widget: the form above still
+                  shows what the row holds, which is useful for comparing
+                  against the section, but the row is not read by anything
+                  any more and a saved change here would look like it had
+                  taken effect. */}
+              {!widgetIsReadOnly(w.key) && (
+                <button
+                  onClick={() => saveConfig(w)}
+                  disabled={saving === w.key}
+                  className="rounded-full bg-brand-gradient text-white text-xs font-semibold px-4 py-1.5 disabled:opacity-50"
+                >
+                  {saving === w.key ? "กำลังบันทึก…" : "บันทึกการปรับแต่ง"}
+                </button>
+              )}
             </div>
           )}
 
