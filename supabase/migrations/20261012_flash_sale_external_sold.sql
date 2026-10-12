@@ -25,3 +25,17 @@ comment on column public.flash_sales.external_sold_count is
 -- ดูตัวฟังก์ชันเต็มได้จาก migration ที่ชื่อ flash_sale_external_sold_count,
 -- flash_sale_join_and_status_use_external_sold และ
 -- flash_sale_phase_counts_external_sold ใน Supabase
+
+-- ตัวตั้งเวลา: ให้คิวรู้ยอดหน้าร้านแม้ไม่มีใครเปิดหน้าขายอยู่
+--
+-- ใช้ pg_cron ของ Supabase ไม่ใช่ vercel.json เพราะแผน Hobby ให้ cron วันละครั้ง
+-- และการใส่เพิ่มในนั้นทำให้ deploy ไม่ได้เลย (เคยเจอมาแล้ว)
+--
+-- fs_sold_sync_tick() เช็กใน SQL ก่อนว่ามีแคมเปญไหนกำลังขายอยู่ไหม ไม่มีก็จบ
+-- ไม่ยิงออกไป — ไม่เปลืองโควตา Shopify กับคำถามที่ไม่มีผลอะไร
+--
+--   select cron.schedule('flash-sale-sold-sync', '*/2 * * * *',
+--                        'select public.fs_sold_sync_tick()');
+--
+-- ทุก 2 นาที: ถี่พอให้ช่องโหว่แคบ (แย่สุดคิวรู้ช้า 2 นาที) ห่างพอที่จะไม่เปลือง
+-- โควตา เพราะตัวอ่านยอดมีแคชของตัวเอง 60 วินาทีอยู่แล้ว
