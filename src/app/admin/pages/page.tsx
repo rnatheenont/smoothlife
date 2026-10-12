@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, Home, Loader2, Plus } from "lucide-react";
+import { BookOpen, FileText, Home, Loader2, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/layout-kit";
 import { Card } from "@/components/ui";
@@ -104,12 +104,20 @@ export default function AdminPagesIndex() {
         title="หน้าเว็บ"
         subtitle="ประกอบหน้าจาก section ที่เลือกได้ · แก้เป็นร่างก่อน แล้วค่อยเผยแพร่"
         actions={
+          <>
+            <Link
+              href="/admin/pages/help"
+              className="flex h-11 items-center gap-2 rounded-full border border-slate-200 px-4 text-sm font-semibold text-brand-800"
+            >
+              <BookOpen size={15} /> วิธีใช้
+            </Link>
           <button
             onClick={() => setAdding((v) => !v)}
             className="flex h-11 items-center gap-2 rounded-full border border-slate-200 px-4 text-sm font-semibold text-brand-800"
           >
             <Plus size={15} /> สร้างหน้าใหม่
           </button>
+          </>
         }
       />
 
