@@ -107,13 +107,21 @@ async function check(settings: Settings): Promise<CheckIssue[]> {
     if (slide.href.trim() && !slide.image.trim()) {
       issues.push({ level: "error", message: `สไลด์ ${n}: ยังไม่ได้เลือกรูป` });
     }
-    if (slide.image.trim() && !slide.title.trim()) {
-      issues.push({
-        level: "warning",
-        message: `สไลด์ ${n}: ยังไม่มีคำอธิบายภาพ — คนที่ใช้โปรแกรมอ่านหน้าจอจะไม่รู้ว่าเป็นรูปอะไร`,
-      });
-    }
   });
+
+  // One line for all of them, not one each: banners brought in from the shop
+  // arrive without descriptions — the slideshow there has none to give — so
+  // the usual case is every slide at once, and five copies of the same
+  // sentence is how a warning gets skipped past.
+  const noDescription = settings.slides
+    .map((slide, i) => (slide.image.trim() && !slide.title.trim() ? i + 1 : 0))
+    .filter(Boolean);
+  if (noDescription.length > 0) {
+    issues.push({
+      level: "warning",
+      message: `สไลด์ ${noDescription.join(", ")}: ยังไม่มีคำอธิบายภาพ — คนที่ใช้โปรแกรมอ่านหน้าจอจะไม่รู้ว่าเป็นรูปอะไร`,
+    });
+  }
 
   if (ownBanners(settings).length === 0) {
     issues.push({
@@ -146,6 +154,17 @@ export const heroBannersSection: SectionDefinition<typeof schema> = {
       label: "สไลด์ของเราเอง",
       max: 8,
       help: "ใช้เมื่อปิดการดึงอัตโนมัติ · เรียงจากบนลงล่างตามที่จะแสดง",
+      // Editing what the shop is showing starts by having it: the button
+      // copies the banners being pulled right now into the list, where the
+      // link, the order and the pictures are all editable. It also turns
+      // the automatic mode off, because a copy that the page ignores is
+      // the one thing more confusing than not being able to edit it.
+      importFrom: {
+        url: "/api/admin/hero-banners",
+        label: "ดึงแบนเนอร์ที่ใช้อยู่มาแก้",
+        also: { useStorefront: false },
+        help: "คัดลอกแบนเนอร์ชุดที่กำลังแสดงอยู่เข้ามาเป็นสไลด์ของเรา แล้วแก้รูป ลิงก์ และลำดับได้ · ตั้งแต่นั้นหน้านี้จะไม่เปลี่ยนตามหน้าร้านอีก จนกว่าจะเปิดสวิตช์กลับ",
+      },
     },
   ],
   enabledOn: ["home", "campaign"],

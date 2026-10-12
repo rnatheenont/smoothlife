@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Download, Loader2, Plus, Trash2 } from "lucide-react";
 import ImagePicker from "@/components/admin/pages/ImagePicker";
 import { parseSlugList } from "@/lib/pages/edit";
 import type { FieldDef } from "@/lib/pages/types";
@@ -111,17 +111,56 @@ function BannerListField({
   label,
   help,
   max,
+  importFrom,
   value,
   onChange,
 }: {
   label: string;
   help?: string;
   max?: number;
+  importFrom?: { url: string; label: string; help?: string; also?: Record<string, unknown> };
   value: unknown;
-  onChange: (next: BannerRow[]) => void;
+  onChange: (next: BannerRow[], also?: Record<string, unknown>) => void;
 }) {
   const rows = asRows(value);
   const full = typeof max === "number" && rows.length >= max;
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  /**
+   * Brings in the banners that are being pulled right now.
+   *
+   * Adds, never replaces: the rows already here were typed by someone, and
+   * a button that wipes them is a button nobody can press twice. Anything
+   * whose picture is already in the list is skipped, so pressing it again
+   * after adding one of your own does not produce the same banner twice.
+   */
+  async function runImport() {
+    if (!importFrom) return;
+    setImporting(true);
+    setImportError(null);
+    try {
+      const res = await fetch(importFrom.url);
+      const data = await res.json();
+      const incoming = asRows(data?.banners);
+      if (!res.ok || !data?.ok || incoming.length === 0) {
+        setImportError("ยังดึงแบนเนอร์ไม่ได้ — ลองใหม่อีกครั้ง");
+        return;
+      }
+      const have = new Set(rows.map((r) => r.image));
+      const added = incoming.filter((r) => r.image && !have.has(r.image));
+      if (added.length === 0) {
+        setImportError("แบนเนอร์ที่ดึงมาอยู่ในรายการนี้แล้วทั้งหมด");
+        return;
+      }
+      const next = [...rows, ...added];
+      onChange(typeof max === "number" ? next.slice(0, max) : next, importFrom.also);
+    } catch {
+      setImportError("ยังดึงแบนเนอร์ไม่ได้ — ลองใหม่อีกครั้ง");
+    } finally {
+      setImporting(false);
+    }
+  }
 
   function update(i: number, patch: Partial<BannerRow>) {
     onChange(rows.map((row, j) => (i === j ? { ...row, ...patch } : row)));
@@ -139,6 +178,25 @@ function BannerListField({
     <div>
       <span className={labelCls}>{label}</span>
       {help && <p className={helpCls}>{help}</p>}
+
+      {importFrom && !full && (
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={runImport}
+            disabled={importing}
+            className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-[13px] font-semibold text-brand-800 hover:border-brand-teal hover:bg-surface-soft disabled:opacity-50"
+          >
+            {importing ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+            {importFrom.label}
+          </button>
+          {importError ? (
+            <p className="mt-1 text-[12px] text-amber-700">{importError}</p>
+          ) : (
+            importFrom.help && <p className={helpCls}>{importFrom.help}</p>
+          )}
+        </div>
+      )}
 
       <div className="mt-2 flex flex-col gap-3">
         {rows.map((row, i) => (
@@ -366,8 +424,12 @@ export default function SectionForm({
               label={field.label}
               help={field.help}
               max={field.max}
+              importFrom={field.importFrom}
               value={value}
-              onChange={(rows) => set(field.key, rows)}
+              // One change, not two: importing also turns off the automatic
+              // mode, and writing the list and the toggle in separate calls
+              // would make the second one overwrite the first.
+              onChange={(rows, also) => onChange({ ...settings, ...(also ?? {}), [field.key]: rows })}
             />
           );
         }

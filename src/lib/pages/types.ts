@@ -57,7 +57,20 @@ export type FieldDef =
    *  Four fields that only mean anything together — a link belongs to the
    *  picture above it — so they are edited as rows rather than as four
    *  parallel lists that can fall out of step with each other. */
-  | { key: string; type: "banners"; label: string; max?: number; help?: string }
+  | {
+      key: string;
+      type: "banners";
+      label: string;
+      max?: number;
+      help?: string;
+      /** Offers a button that fills the list from somewhere that already
+       *  has banners — for hero_banners, whatever the shop is showing. The
+       *  url answers { banners: [{image, mobileImage, href, title}] }, and
+       *  `also` is applied to the section's other settings on success, so
+       *  importing can turn off the automatic mode the imported banners
+       *  came from in the same press. */
+      importFrom?: { url: string; label: string; help?: string; also?: Record<string, unknown> };
+    }
   | { key: string; type: "brand_slugs"; label: string; max?: number; help?: string }
   /** Structured settings — a list of rows, a nested object — edited as JSON
    *  until the section earns a purpose-built form. It is here because the

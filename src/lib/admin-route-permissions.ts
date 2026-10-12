@@ -116,6 +116,11 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   { prefix: "/api/admin/pages", permission: "pages.edit", methods: ["GET", "PUT"] },
   { prefix: "/api/admin/pages", permission: "pages.publish" },
 
+  // The banners the home page is pulling from the shop right now, read-only,
+  // so the editor can offer them as a starting point to edit. Reading them
+  // is part of laying out a page, and there is no write side.
+  { prefix: "/api/admin/hero-banners", permission: "pages.edit", methods: READ },
+
   // The picture library. Same permission as editing a page, because that is
   // what it is for — and uploading a picture nobody has placed yet changes
   // nothing a visitor can see.
