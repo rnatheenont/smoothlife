@@ -84,6 +84,10 @@ const FULL_WIDTH = [
   "/admin/products/content",
   "/admin/brand-insights",
   "/admin/tracking-sync",
+  // The page editor is three columns around a live preview of the site. At
+  // 1100px the preview is narrower than a phone and the rails have nowhere
+  // to go, which is the whole screen fighting its own container.
+  "/admin/pages",
 ];
 const WIDE_TABLE: string[] = [];
 

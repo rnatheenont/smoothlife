@@ -2,10 +2,13 @@
 
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowDown,
+  ArrowLeft,
   ArrowUp,
   Check,
+  ExternalLink,
   Eye,
   EyeOff,
   Loader2,
@@ -24,7 +27,6 @@ import {
   Undo2,
 } from "lucide-react";
 
-import { PageHeader } from "@/components/admin/layout-kit";
 import { Card } from "@/components/ui";
 import SectionForm from "@/components/admin/pages/SectionForm";
 import type { PageDoc } from "@/lib/pages/doc";
@@ -130,6 +132,24 @@ const EMPTY_CAMPAIGN: CampaignForm = {
 
 type SaveState = "idle" | "dirty" | "saving" | "saved" | "conflict" | "error";
 
+const STATUS_LABEL: Record<string, string> = {
+  draft: "ร่าง",
+  scheduled: "ตั้งเวลาไว้",
+  published: "เผยแพร่แล้ว",
+  ended: "จบแล้ว",
+  archived: "เก็บเข้ากรุ",
+};
+
+/** Where this page lives on the site. In the toolbar because "which page am
+ *  I editing" and "what is its address" are the same question to everybody
+ *  except the database. */
+function publicPathOf(kind: string, slug: string) {
+  if (kind === "home") return "/";
+  if (kind === "campaign") return `/sale/${slug}`;
+  if (kind === "brand") return `/brands/${slug}`;
+  return `/p/${slug}`;
+}
+
 const AUTOSAVE_MS = 1200;
 
 export default function PageEditor(props: { params: Promise<{ kind: string; slug: string }> }) {
@@ -169,6 +189,10 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   const [camp, setCamp] = useState<CampaignForm>(EMPTY_CAMPAIGN);
   const [savingCampaign, setSavingCampaign] = useState(false);
   const [previewPhase, setPreviewPhase] = useState<CampaignPhase | "now">("now");
+  /** Which half of the right rail is showing. Picking a section switches back
+   *  to its settings by itself — having to click the tab after clicking the
+   *  section would be two clicks for one intention. */
+  const [rail, setRail] = useState<"section" | "page">("section");
   const router = useRouter();
   const [publishAt, setPublishAt] = useState("");
   const [unpublishAt, setUnpublishAt] = useState("");
@@ -321,6 +345,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
     const id = newSectionId();
     edit(addSection(doc, entry, id));
     setSelected(id);
+    setRail("section");
     setAdding(false);
   }
 
@@ -536,6 +561,58 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
     return out;
   }, [doc, sectionWarnings]);
 
+  const publicPath = publicPathOf(kind, slug);
+
+  /**
+   * The size to render the preview at, and how much to shrink it to fit.
+   *
+   * Desktop is drawn at the width the site is actually designed for and
+   * scaled; a narrow iframe would make the page lay itself out as a tablet
+   * and the preview would be of a layout nobody sees.
+   *
+   * Measured with a ResizeObserver *and* a window resize listener. The
+   * observer alone is not enough here — it reports element size, and there
+   * are reflows where the box ends up the same size for a different reason —
+   * and this has bitten this codebase before with the sticky header height.
+   */
+  // A callback ref rather than useRef: this component returns early while it
+  // is loading, so the preview box does not exist yet when a mount effect
+  // runs — the effect would find null, give up, and never run again, leaving
+  // the scale stuck at 1 and the frame overflowing its column.
+  const [previewBox, setPreviewBox] = useState<HTMLDivElement | null>(null);
+  const [box, setBox] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const el = previewBox;
+    if (!el) return;
+    // minus the p-3 gutters on each side
+    const measure = () => setBox({ width: el.clientWidth - 24, height: el.clientHeight - 24 });
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, [previewBox]);
+
+  const frame = useMemo(() => {
+    // 1280 rather than the site's 1512 maximum: it is the narrowest width
+    // that still gets the desktop layout everywhere, so it wastes the least
+    // of the scale factor on margins the preview does not need to show.
+    const width = device === "mobile" ? 390 : 1280;
+    const scale = Math.min(1, (box.width > 0 ? box.width : width) / width);
+    // The frame is made as tall as the space it will be drawn in, divided by
+    // the scale — so shrinking it to fit horizontally does not also make it a
+    // letterbox. At 0.57 this renders about 1200px of page in 700px of screen,
+    // which is the point of scaling rather than narrowing.
+    const height = box.height > 0 ? Math.round(box.height / scale) : 820;
+    return { width, height, scale };
+  }, [device, box]);
+
   const counts = useMemo(() => {
     const map = new Map<string, number>();
     for (const s of doc?.sections ?? []) map.set(s.type, (map.get(s.type) ?? 0) + 1);
@@ -548,24 +625,48 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={page.title}
-        subtitle={`${page.kind}/${page.slug} · แก้ล่าสุดโดย ${page.draftUpdatedBy ?? "—"}`}
-        actions={
-          <div className="flex items-center gap-3">
-            <SaveBadge state={saveState} />
-            <button
-              onClick={() => setConfirming(true)}
-              disabled={publishing || saveState === "conflict"}
-              className="flex h-11 items-center gap-2 rounded-full bg-brand-gradient px-5 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {publishing ? <Loader2 size={15} className="animate-spin" /> : <Rocket size={15} />}
-              เผยแพร่
-            </button>
-          </div>
-        }
-      />
+    <div className="flex flex-col gap-3">
+      {/* One bar instead of a page header, and it follows you down the page.
+          The editor is the whole screen here, so the vertical space a normal
+          admin header takes is space the preview wants — and "เผยแพร่" has to
+          be reachable at the bottom of a long section list, not only at the
+          top. */}
+      <div className="sticky top-0 z-30 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl2 border border-surface-line bg-white/95 px-3 py-2.5 shadow-sm backdrop-blur">
+        <Link
+          href="/admin/pages"
+          aria-label="กลับไปรายการหน้าเว็บ"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-surface-soft hover:text-brand-800"
+        >
+          <ArrowLeft size={17} />
+        </Link>
+
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-sm font-bold text-brand-ink">{page.title}</h1>
+          <p className="truncate text-[11px] text-slate-500">
+            <span className="font-semibold">{STATUS_LABEL[page.status] ?? page.status}</span> · {publicPath} · แก้ล่าสุดโดย{" "}
+            {page.draftUpdatedBy ?? "—"}
+          </p>
+        </div>
+
+        <SaveBadge state={saveState} />
+
+        <a
+          href={publicPath}
+          target="_blank"
+          rel="noreferrer"
+          className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 px-3.5 text-[13px] font-semibold text-brand-800"
+        >
+          <ExternalLink size={14} /> ดูหน้าจริง
+        </a>
+        <button
+          onClick={() => setConfirming(true)}
+          disabled={publishing || saveState === "conflict"}
+          className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-brand-gradient px-5 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {publishing ? <Loader2 size={15} className="animate-spin" /> : <Rocket size={15} />}
+          เผยแพร่
+        </button>
+      </div>
 
       {conflict && (
         <div className="rounded-xl2 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -688,8 +789,24 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
         </div>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,20rem)_minmax(0,1fr)_minmax(0,22rem)]">
-        <Card padded={false}>
+      {/* Three rails around a live preview — the arrangement every
+          section-based editor converges on (Shopify, Wix, Squarespace,
+          Webflow, Framer all do this): what the page is made of on the left,
+          the page itself in the middle at the largest size the screen allows,
+          and the settings for whatever is selected on the right.
+
+          What changed from the first version: the preview used to be the
+          *narrowest* column, squeezed between a 20rem list and a 22rem form,
+          and the left rail also carried the schedule, the templates and the
+          version history stacked underneath the sections, so the list of sections —
+          the thing you came here to use — was a short window at the top of a
+          very long column. Those panels now live behind a tab on the right,
+          which is where this editor already had empty space. */}
+      <div className="grid gap-3 lg:grid-cols-[19rem_minmax(0,1fr)] 2xl:grid-cols-[19rem_minmax(0,1fr)_21rem]">
+        {/* Left: what the page is made of, and nothing else. Sticky and
+            scrolling on its own so a twenty-section page does not push the
+            preview off the screen. */}
+        <Card padded={false} className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <h2 className="text-sm font-bold text-brand-ink">section ในหน้านี้ ({doc.sections.length})</h2>
             <button
@@ -733,12 +850,19 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                     className={`flex items-center gap-1 rounded-lg px-2 py-1.5 ${active ? "bg-brand-gradient-soft" : "hover:bg-surface-soft"}`}
                   >
                     <button
-                      onClick={() => setSelected(section.id)}
-                      className="min-w-0 flex-1 text-left"
+                      onClick={() => {
+                        setSelected(section.id);
+                        setRail("section");
+                      }}
+                      // min-h-9 to match the icon buttons beside it: measured
+                      // at 18px, and this is the primary target of the whole
+                      // list (WCAG 2.5.8 asks for 24).
+                      className="flex min-h-9 min-w-0 flex-1 flex-col justify-center text-left"
                       aria-current={active ? "true" : undefined}
                     >
                       <span
-                        className={`block truncate text-[13px] font-semibold ${hidden ? "text-slate-400 line-through" : "text-brand-ink"}`}
+                        title={def?.label ?? section.type}
+                        className={`line-clamp-2 text-[13px] font-semibold ${hidden ? "text-slate-400 line-through" : "text-brand-ink"}`}
                       >
                         {def?.label ?? section.type}
                       </span>
@@ -748,7 +872,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                       onClick={() => move(section.id, -1)}
                       disabled={i === 0}
                       aria-label={`ย้าย ${def?.label ?? section.type} ขึ้น`}
-                      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-400 hover:text-brand-800 disabled:opacity-30"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-brand-800 disabled:opacity-30"
                     >
                       <ArrowUp size={15} />
                     </button>
@@ -756,7 +880,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                       onClick={() => move(section.id, 1)}
                       disabled={i === doc.sections.length - 1}
                       aria-label={`ย้าย ${def?.label ?? section.type} ลง`}
-                      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-400 hover:text-brand-800 disabled:opacity-30"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-brand-800 disabled:opacity-30"
                     >
                       <ArrowDown size={15} />
                     </button>
@@ -764,14 +888,14 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                       onClick={() => toggleHidden(section.id)}
                       aria-label={hidden ? `แสดง ${def?.label}` : `ซ่อน ${def?.label}`}
                       aria-pressed={hidden}
-                      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-400 hover:text-brand-800"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-brand-800"
                     >
                       {hidden ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                     <button
                       onClick={() => remove(section.id)}
                       aria-label={`ลบ ${def?.label ?? section.type}`}
-                      className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-400 hover:text-rose-600"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-rose-600"
                     >
                       <Trash2 size={15} />
                     </button>
@@ -780,7 +904,161 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
               );
             })}
           </ol>
+        </Card>
 
+        <Card padded={false} className="overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <h2 className="text-sm font-bold text-brand-ink">ตัวอย่างร่าง</h2>
+            <div className="flex items-center gap-1">
+              {kind === "campaign" && (
+                /* "ดูในช่วง" — the question worth answering before publishing
+                   is what the page looks like on the day and a week after,
+                   neither of which is today. */
+                <select
+                  value={previewPhase}
+                  onChange={(e) => {
+                    setPreviewPhase(e.target.value as CampaignPhase | "now");
+                    setPreviewNonce((n) => n + 1);
+                  }}
+                  aria-label="ดูตัวอย่างในช่วงไหน"
+                  className="mr-1 h-10 rounded-lg border border-slate-200 px-2 text-[12px] text-brand-800 outline-hidden focus-visible:border-brand-teal"
+                >
+                  <option value="now">ตามเวลาจริง</option>
+                  {PHASE_ORDER.map((phase) => (
+                    <option key={phase} value={phase}>
+                      ดูในช่วง: {PHASE_LABEL[phase]}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button
+                onClick={() => setDevice("mobile")}
+                aria-pressed={device === "mobile"}
+                aria-label="ดูแบบมือถือ"
+                className={`grid h-10 w-10 place-items-center rounded-lg ${device === "mobile" ? "bg-brand-gradient-soft text-brand-800" : "text-slate-400 hover:text-brand-800"}`}
+              >
+                <Smartphone size={16} />
+              </button>
+              <button
+                onClick={() => setDevice("desktop")}
+                aria-pressed={device === "desktop"}
+                aria-label="ดูแบบคอมพิวเตอร์"
+                className={`grid h-10 w-10 place-items-center rounded-lg ${device === "desktop" ? "bg-brand-gradient-soft text-brand-800" : "text-slate-400 hover:text-brand-800"}`}
+              >
+                <Monitor size={16} />
+              </button>
+              <button
+                onClick={() => setPreviewNonce((n) => n + 1)}
+                aria-label="โหลดตัวอย่างใหม่"
+                className="grid h-10 w-10 place-items-center rounded-lg text-slate-400 hover:text-brand-800"
+              >
+                <RefreshCw size={15} />
+              </button>
+            </div>
+          </div>
+          <div
+            ref={setPreviewBox}
+            className="flex h-[calc(100vh-11rem)] min-h-[32rem] justify-center overflow-hidden bg-slate-100 p-3"
+          >
+            {/* The frame renders the saved draft, so it is one save behind
+                whatever is being typed. The badge in the toolbar says when
+                that save happened; without it a stale frame reads as the
+                editor having lost the edit.
+
+                Tall by default: this is the page, and the question being
+                asked of it is almost always "how does it read as you scroll",
+                which a 70vh letterbox answers badly. */}
+            {/* Rendered at a real desktop width and scaled down to fit, not
+                rendered narrow. A 740px-wide frame makes the site lay itself
+                out as a tablet, so "ดูแบบคอมพิวเตอร์" would have been showing
+                a layout no desktop visitor ever sees — the one thing a
+                preview must not do. The phone size needs no scaling: 390px
+                fits as it is, at 1:1. */}
+            <div
+              style={{
+                width: frame.width * frame.scale,
+                height: frame.height * frame.scale,
+              }}
+              className="relative"
+            >
+              <iframe
+                key={previewNonce}
+                src={`/pages-preview/${kind}/${slug}?v=${previewNonce}${
+                  kind === "campaign" && previewPhase !== "now" ? `&phase=${previewPhase}` : ""
+                }`}
+                title="ตัวอย่างร่างของหน้านี้"
+                className="rounded-lg border border-slate-200 bg-white"
+                style={{
+                  width: frame.width,
+                  height: frame.height,
+                  transform: `scale(${frame.scale})`,
+                  transformOrigin: "top left",
+                }}
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Right: one rail, two things. The settings of the selected section
+            is what you want ninety percent of the time; everything about the
+            page as a whole — when it goes live, templates, versions — is a
+            tab away rather than a scroll away. */}
+        {/* Below 2xl this drops under the preview and runs the full width,
+            rather than becoming a third column. Measured at a 1280px window:
+            three columns left the preview 356px wide, which scales the page
+            to a quarter size — a preview you cannot read is not a preview. */}
+        <Card
+          padded={false}
+          className="lg:col-span-2 2xl:col-span-1 2xl:sticky 2xl:top-20 2xl:max-h-[calc(100vh-7rem)] 2xl:overflow-y-auto"
+        >
+          <div role="tablist" aria-label="แผงตั้งค่า" className="flex border-b border-slate-100">
+            {(
+              [
+                ["section", current && currentDef ? currentDef.label : "section ที่เลือก"],
+                ["page", "ตั้งค่าเพจ"],
+              ] as const
+            ).map(([key, label]) => {
+              const on = rail === key;
+              return (
+                <button
+                  key={key}
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setRail(key)}
+                  className={`min-w-0 flex-1 truncate border-b-2 px-3 py-3 text-[13px] font-semibold transition-colors ${
+                    on ? "border-brand-teal text-brand-800" : "border-transparent text-slate-500 hover:text-brand-800"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          {rail === "section" ? (
+            <div className="p-4">
+            {current && currentDef ? (
+              <>
+                <div className="mb-4 border-b border-slate-100 pb-3">
+                  <h2 className="text-sm font-bold text-brand-ink">{currentDef.label}</h2>
+                  <p className="mt-0.5 text-[12px] text-slate-500">{currentDef.description}</p>
+                </div>
+                <SectionForm
+                  fields={currentDef.fields}
+                  settings={(current.settings ?? {}) as Record<string, unknown>}
+                  onChange={(next) => edit(updateSettings(doc, current.id, next))}
+                />
+              </>
+            ) : current ? (
+              <p className="text-sm text-rose-600">
+                section ชนิด &quot;{current.type}&quot; ไม่อยู่ในคลังแล้ว — ลบออกหรือให้ dev เพิ่มกลับเข้ามา
+              </p>
+            ) : (
+              <p className="text-sm text-slate-500">เลือก section จากรายการทางซ้ายเพื่อแก้ไข</p>
+            )}
+            </div>
+          ) : (
+            <div className="flex flex-col">
           {kind === "campaign" && (
             /* A campaign's own settings: when it runs, what colour it is, and
                whether it takes over the home page. Together with the phase
@@ -1059,94 +1337,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
               </ul>
             </div>
           )}
-        </Card>
-
-        <Card padded={false} className="overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <h2 className="text-sm font-bold text-brand-ink">ตัวอย่างร่าง</h2>
-            <div className="flex items-center gap-1">
-              {kind === "campaign" && (
-                /* "ดูในช่วง" — the question worth answering before publishing
-                   is what the page looks like on the day and a week after,
-                   neither of which is today. */
-                <select
-                  value={previewPhase}
-                  onChange={(e) => {
-                    setPreviewPhase(e.target.value as CampaignPhase | "now");
-                    setPreviewNonce((n) => n + 1);
-                  }}
-                  aria-label="ดูตัวอย่างในช่วงไหน"
-                  className="mr-1 h-10 rounded-lg border border-slate-200 px-2 text-[12px] text-brand-800 outline-hidden focus-visible:border-brand-teal"
-                >
-                  <option value="now">ตามเวลาจริง</option>
-                  {PHASE_ORDER.map((phase) => (
-                    <option key={phase} value={phase}>
-                      ดูในช่วง: {PHASE_LABEL[phase]}
-                    </option>
-                  ))}
-                </select>
-              )}
-              <button
-                onClick={() => setDevice("mobile")}
-                aria-pressed={device === "mobile"}
-                aria-label="ดูแบบมือถือ"
-                className={`grid h-10 w-10 place-items-center rounded-lg ${device === "mobile" ? "bg-brand-gradient-soft text-brand-800" : "text-slate-400 hover:text-brand-800"}`}
-              >
-                <Smartphone size={16} />
-              </button>
-              <button
-                onClick={() => setDevice("desktop")}
-                aria-pressed={device === "desktop"}
-                aria-label="ดูแบบคอมพิวเตอร์"
-                className={`grid h-10 w-10 place-items-center rounded-lg ${device === "desktop" ? "bg-brand-gradient-soft text-brand-800" : "text-slate-400 hover:text-brand-800"}`}
-              >
-                <Monitor size={16} />
-              </button>
-              <button
-                onClick={() => setPreviewNonce((n) => n + 1)}
-                aria-label="โหลดตัวอย่างใหม่"
-                className="grid h-10 w-10 place-items-center rounded-lg text-slate-400 hover:text-brand-800"
-              >
-                <RefreshCw size={15} />
-              </button>
             </div>
-          </div>
-          <div className="flex justify-center bg-slate-100 p-3">
-            {/* The frame renders the saved draft, so it is one save behind
-                whatever is being typed. The badge in the header says when
-                that save happened; without it a stale frame reads as the
-                editor having lost the edit. */}
-            <iframe
-              key={previewNonce}
-              src={`/pages-preview/${kind}/${slug}?v=${previewNonce}${
-                kind === "campaign" && previewPhase !== "now" ? `&phase=${previewPhase}` : ""
-              }`}
-              title="ตัวอย่างร่างของหน้านี้"
-              className="h-[70vh] w-full rounded-lg border border-slate-200 bg-white"
-              style={device === "mobile" ? { width: 390, maxWidth: "100%" } : undefined}
-            />
-          </div>
-        </Card>
-
-        <Card>
-          {current && currentDef ? (
-            <>
-              <div className="mb-4 border-b border-slate-100 pb-3">
-                <h2 className="text-sm font-bold text-brand-ink">{currentDef.label}</h2>
-                <p className="mt-0.5 text-[12px] text-slate-500">{currentDef.description}</p>
-              </div>
-              <SectionForm
-                fields={currentDef.fields}
-                settings={(current.settings ?? {}) as Record<string, unknown>}
-                onChange={(next) => edit(updateSettings(doc, current.id, next))}
-              />
-            </>
-          ) : current ? (
-            <p className="text-sm text-rose-600">
-              section ชนิด &quot;{current.type}&quot; ไม่อยู่ในคลังแล้ว — ลบออกหรือให้ dev เพิ่มกลับเข้ามา
-            </p>
-          ) : (
-            <p className="text-sm text-slate-500">เลือก section จากรายการทางซ้ายเพื่อแก้ไข</p>
           )}
         </Card>
       </div>
