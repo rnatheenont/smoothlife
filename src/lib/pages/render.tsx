@@ -3,6 +3,7 @@ import { isVisible, migrateDoc, MAX_SECTIONS, type SectionInstance } from "./doc
 import { SECTION_REGISTRY } from "@/sections/registry";
 import type { AnySectionDefinition, RenderCtx } from "./types";
 import SectionBoundary from "./SectionBoundary";
+import SectionClicks from "@/components/pages/SectionClicks";
 
 // Turning a stored document into a page, without ever returning nothing.
 //
@@ -79,7 +80,7 @@ export async function renderSections(doc: unknown, ctx: RenderCtx) {
     // should render the page someone meant, shortened, not nothing at all.
     .slice(0, MAX_SECTIONS);
 
-  return Promise.all(
+  const drawn = await Promise.all(
     visible.map(async (raw, index) => {
       const def = SECTION_REGISTRY[raw.type] as AnySectionDefinition | undefined;
       if (!def) {
@@ -118,6 +119,8 @@ export async function renderSections(doc: unknown, ctx: RenderCtx) {
               of thing that silently compiles to nothing. */}
           <span
             id={raw.id}
+            // Read by SectionClicks to tell which section a press belongs to.
+            data-section-anchor={raw.id}
             aria-hidden="true"
             className="block"
             style={{ scrollMarginTop: "calc(var(--app-header-h, 0px) + 72px)" }}
@@ -129,4 +132,12 @@ export async function renderSections(doc: unknown, ctx: RenderCtx) {
       );
     })
   );
+
+  // The click counter rides along with the sections rather than being added
+  // by each page, so every page built from a document is measured and none
+  // of them has to remember to ask. Never in the editor's preview: an admin
+  // clicking through their own draft is not a customer pressing anything.
+  return ctx.isPreview
+    ? drawn
+    : [<SectionClicks key="section-clicks" kind={ctx.kind} slug={ctx.slug} />, ...drawn];
 }

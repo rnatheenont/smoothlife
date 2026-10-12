@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ArrowDown,
   ArrowLeft,
+  BarChart3,
   ArrowUp,
   Check,
   ExternalLink,
@@ -680,6 +681,12 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
 
         <SaveBadge state={saveState} />
 
+        <Link
+          href={`/admin/pages/${kind}/${slug}/stats`}
+          className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 px-3.5 text-[13px] font-semibold text-brand-800"
+        >
+          <BarChart3 size={14} /> สถิติ
+        </Link>
         <a
           href={publicPath}
           target="_blank"
