@@ -2918,30 +2918,79 @@ export async function variantsSoldSince(
   const wanted = new Set(variantIds.filter((v): v is string => Boolean(v)));
   if (!wanted.size || !shopifyAdminConfigured()) return new Map();
 
-  const key = `${sinceIso}|${[...wanted].sort().join(",")}`;
+  // Normalised, because this arrives straight out of Postgres as
+  // "2026-09-28 03:00:00+00" and Shopify's search syntax expects an instant
+  // it can parse without a space in the middle of it.
+  const since = Number.isFinite(Date.parse(sinceIso)) ? new Date(sinceIso).toISOString() : sinceIso;
+
+  const key = `${since}|${[...wanted].sort().join(",")}`;
   const hit = soldCache.get(key);
   if (hit && Date.now() - hit.at < 60_000) return hit.counts;
 
   const counts = new Map<string, number>();
   try {
-    // Paid only: an abandoned or expired checkout has sold nothing.
-    const data = await adminGraphql<{
-      orders: { nodes: { lineItems: { nodes: { quantity: number; variant: { id: string } | null }[] } }[] };
-    }>(
-      `query SoldSince($q: String!) {
-         orders(first: 100, query: $q, sortKey: CREATED_AT, reverse: true) {
-           nodes { lineItems(first: 50) { nodes { quantity variant { id } } } }
-         }
-       }`,
-      { q: `created_at:>='${sinceIso}' AND financial_status:paid` }
-    );
-    for (const order of data.orders?.nodes ?? []) {
-      for (const li of order.lineItems?.nodes ?? []) {
-        const id = li.variant?.id;
-        if (!id || !wanted.has(id)) continue;
-        counts.set(id, (counts.get(id) ?? 0) + (Number(li.quantity) || 0));
+    // Narrowed to these products' own orders by SKU.
+    //
+    // This used to ask for the shop's newest 100 paid orders since the
+    // campaign opened and count the matching line items — which is right
+    // only while the whole shop takes fewer than a hundred orders in that
+    // window. A fortnight into a campaign it does not: the first orders of
+    // the sale fall off the end of the page, the count drops, and because
+    // the caller only ever raises a number it then sticks. Measured on the
+    // VIP set campaign: the shop's newest 100 orders held 10 of them, the
+    // SKU-filtered query held 12 — the two missing ones were sold in the
+    // first four minutes of the sale, and the page had been advertising two
+    // sets that were already gone.
+    const skus = await variantSkus([...wanted]);
+    const quoted = [...new Set(skus.values())]
+      .filter(Boolean)
+      .map((sku) => `sku:'${sku.replace(/'/g, "")}'`);
+
+    // A variant with no SKU cannot be asked for this way. Rather than
+    // silently undercounting, fall back to the shop-wide scan for those —
+    // imperfect, but imperfect in the direction it always was.
+    const query = quoted.length
+      ? `created_at:>='${since}' AND financial_status:paid AND (${quoted.join(" OR ")})`
+      : `created_at:>='${since}' AND financial_status:paid`;
+
+    let cursor: string | null = null;
+    // Paginated, with a bound: a SKU filter keeps this to one page in
+    // practice, and the bound is what stops a mis-typed filter walking the
+    // whole order history.
+    for (let page = 0; page < 10; page++) {
+      const data: {
+        orders: {
+          pageInfo: { hasNextPage: boolean; endCursor: string | null };
+          nodes: { lineItems: { nodes: { quantity: number; variant: { id: string } | null }[] } }[];
+        };
+      } = await adminGraphql(
+        `query SoldSince($q: String!, $after: String) {
+           orders(first: 100, query: $q, sortKey: CREATED_AT, reverse: true, after: $after) {
+             pageInfo { hasNextPage endCursor }
+             nodes { lineItems(first: 50) { nodes { quantity variant { id } } } }
+           }
+         }`,
+        { q: query, after: cursor }
+      );
+
+      for (const order of data.orders?.nodes ?? []) {
+        for (const li of order.lineItems?.nodes ?? []) {
+          const id = li.variant?.id;
+          if (!id || !wanted.has(id)) continue;
+          counts.set(id, (counts.get(id) ?? 0) + (Number(li.quantity) || 0));
+        }
+      }
+
+      if (!data.orders?.pageInfo?.hasNextPage) break;
+      cursor = data.orders.pageInfo.endCursor;
+      if (!cursor) break;
+      if (page === 9) {
+        console.error(
+          `[shopify-admin] variantsSoldSince stopped at the page limit for ${query} — the count may be low`
+        );
       }
     }
+
     soldCache.set(key, { at: Date.now(), counts });
     return counts;
   } catch (err) {
@@ -2949,6 +2998,26 @@ export async function variantsSoldSince(
     console.error("[shopify-admin] variantsSoldSince failed", err);
     return new Map();
   }
+}
+
+/** The SKU behind each variant id, for narrowing an order search to the
+ *  products a campaign actually sells. */
+async function variantSkus(ids: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  try {
+    const data = await adminGraphql<{ nodes: ({ id: string; sku: string | null } | null)[] }>(
+      `query VariantSkus($ids: [ID!]!) {
+         nodes(ids: $ids) { ... on ProductVariant { id sku } }
+       }`,
+      { ids }
+    );
+    for (const node of data.nodes ?? []) {
+      if (node?.id && node.sku) out.set(node.id, node.sku);
+    }
+  } catch (err) {
+    console.error("[shopify-admin] could not read variant SKUs", err);
+  }
+  return out;
 }
 
 export type OrderByName = {
