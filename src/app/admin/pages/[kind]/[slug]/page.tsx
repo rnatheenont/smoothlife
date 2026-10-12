@@ -22,6 +22,7 @@ import {
   LayoutTemplate,
   Rocket,
   Smartphone,
+  Tablet,
   Trash2,
   TriangleAlert,
   Undo2,
@@ -132,6 +133,28 @@ const EMPTY_CAMPAIGN: CampaignForm = {
 
 type SaveState = "idle" | "dirty" | "saving" | "saved" | "conflict" | "error";
 
+/**
+ * The three sizes the preview offers, as real devices rather than as
+ * breakpoints.
+ *
+ * Widths are what the site is actually opened at — an iPhone 15 is 390pt
+ * wide and an iPad Air is 820pt portrait — not the Tailwind breakpoints
+ * either side of them. Previewing at exactly 768px would sit on the md
+ * boundary and show whichever side of it the browser rounds to, which is the
+ * one width worth never testing at.
+ *
+ * Phone and tablet carry their real screen height too, because the question
+ * being asked of them is "what does someone see before scrolling". A desktop
+ * has no single height, so it fills whatever space the editor has.
+ */
+const DEVICES = {
+  mobile: { label: "มือถือ", width: 390, height: 844, fixedHeight: true },
+  tablet: { label: "แท็บเล็ต", width: 820, height: 1180, fixedHeight: true },
+  desktop: { label: "คอมพิวเตอร์", width: 1280, height: 0, fixedHeight: false },
+} as const;
+
+type DeviceKey = keyof typeof DEVICES;
+
 const STATUS_LABEL: Record<string, string> = {
   draft: "ร่าง",
   scheduled: "ตั้งเวลาไว้",
@@ -171,7 +194,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   const [conflict, setConflict] = useState<{ by: string | null; at: string | null } | null>(null);
   const [adding, setAdding] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [device, setDevice] = useState<"mobile" | "desktop">("desktop");
+  const [device, setDevice] = useState<DeviceKey>("desktop");
   const [confirming, setConfirming] = useState(false);
   const [rollingBack, setRollingBack] = useState<string | null>(null);
   // Bumped to reload the iframe. The preview renders the draft on the server,
@@ -600,17 +623,24 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   }, [previewBox]);
 
   const frame = useMemo(() => {
-    // 1280 rather than the site's 1512 maximum: it is the narrowest width
-    // that still gets the desktop layout everywhere, so it wastes the least
-    // of the scale factor on margins the preview does not need to show.
-    const width = device === "mobile" ? 390 : 1280;
-    const scale = Math.min(1, (box.width > 0 ? box.width : width) / width);
-    // The frame is made as tall as the space it will be drawn in, divided by
-    // the scale — so shrinking it to fit horizontally does not also make it a
-    // letterbox. At 0.57 this renders about 1200px of page in 700px of screen,
-    // which is the point of scaling rather than narrowing.
-    const height = box.height > 0 ? Math.round(box.height / scale) : 820;
-    return { width, height, scale };
+    const spec = DEVICES[device];
+    // Shrunk to fit in both directions, never enlarged: a phone frame blown
+    // up to fill a wide column would be showing 390px of page at 200%, which
+    // tells you nothing true about the phone.
+    const byWidth = (box.width > 0 ? box.width : spec.width) / spec.width;
+    const byHeight = spec.fixedHeight && box.height > 0 ? box.height / spec.height : Infinity;
+    const scale = Math.min(1, byWidth, byHeight);
+
+    // A desktop has no real height, so it is as tall as the space it is drawn
+    // in divided by the scale — shrinking it to fit sideways should not also
+    // turn it into a letterbox.
+    const height = spec.fixedHeight
+      ? spec.height
+      : box.height > 0
+        ? Math.round(box.height / scale)
+        : 820;
+
+    return { width: spec.width, height, scale };
   }, [device, box]);
 
   const counts = useMemo(() => {
@@ -908,7 +938,17 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
 
         <Card padded={false} className="overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <h2 className="text-sm font-bold text-brand-ink">ตัวอย่างร่าง</h2>
+            <h2 className="flex min-w-0 items-baseline gap-2 text-sm font-bold text-brand-ink">
+              ตัวอย่างร่าง
+              {/* The size being shown, and how much it is shrunk to fit —
+                  without it, "why is the text so small" has no answer on
+                  screen. */}
+              <span className="shrink-0 font-mono text-[11px] font-normal text-slate-400">
+                {frame.width}
+                {DEVICES[device].fixedHeight ? `×${frame.height}` : ""}
+                {frame.scale < 0.995 ? ` · ${Math.round(frame.scale * 100)}%` : ""}
+              </span>
+            </h2>
             <div className="flex items-center gap-1">
               {kind === "campaign" && (
                 /* "ดูในช่วง" — the question worth answering before publishing
@@ -931,22 +971,24 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                   ))}
                 </select>
               )}
-              <button
-                onClick={() => setDevice("mobile")}
-                aria-pressed={device === "mobile"}
-                aria-label="ดูแบบมือถือ"
-                className={`grid h-10 w-10 place-items-center rounded-lg ${device === "mobile" ? "bg-brand-gradient-soft text-brand-800" : "text-slate-400 hover:text-brand-800"}`}
-              >
-                <Smartphone size={16} />
-              </button>
-              <button
-                onClick={() => setDevice("desktop")}
-                aria-pressed={device === "desktop"}
-                aria-label="ดูแบบคอมพิวเตอร์"
-                className={`grid h-10 w-10 place-items-center rounded-lg ${device === "desktop" ? "bg-brand-gradient-soft text-brand-800" : "text-slate-400 hover:text-brand-800"}`}
-              >
-                <Monitor size={16} />
-              </button>
+              {(Object.keys(DEVICES) as DeviceKey[]).map((key) => {
+                const on = device === key;
+                const Icon = key === "mobile" ? Smartphone : key === "tablet" ? Tablet : Monitor;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setDevice(key)}
+                    aria-pressed={on}
+                    aria-label={`ดูแบบ${DEVICES[key].label}`}
+                    title={`${DEVICES[key].label} · ${DEVICES[key].width}px`}
+                    className={`grid h-10 w-10 place-items-center rounded-lg ${
+                      on ? "bg-brand-gradient-soft text-brand-800" : "text-slate-400 hover:text-brand-800"
+                    }`}
+                  >
+                    <Icon size={16} />
+                  </button>
+                );
+              })}
               <button
                 onClick={() => setPreviewNonce((n) => n + 1)}
                 aria-label="โหลดตัวอย่างใหม่"
