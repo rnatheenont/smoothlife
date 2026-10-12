@@ -36,17 +36,26 @@ const FEATURED = [
  *  the fade only means anything while there is still something behind it. */
 const SHOWN = 10;
 
-export default function BrandCircleRow({ brands }: { brands: Brand[] }) {
+export default function BrandCircleRow({
+  brands,
+  featured = FEATURED,
+}: {
+  brands: Brand[];
+  /** Which brands lead the row, in order. Defaults to the list above, so
+   *  every existing caller keeps the row it had; the home page passes the
+   *  one stored on the page document instead. */
+  featured?: readonly string[];
+}) {
   // Named order first, then whatever is left over if one of them is ever
   // dropped from brands.ts — nine circles with a hole in the row is worse
   // than nine circles with a substitute in it.
   const row = useMemo(() => {
-    const picked = FEATURED.map((slug) => brands.find((b) => b.slug === slug)).filter(
+    const picked = featured.map((slug) => brands.find((b) => b.slug === slug)).filter(
       (b): b is Brand => Boolean(b)
     );
-    const fill = brands.filter((b) => !picked.includes(b)).slice(0, FEATURED.length - picked.length);
+    const fill = brands.filter((b) => !picked.includes(b)).slice(0, featured.length - picked.length);
     return [...picked, ...fill];
-  }, [brands]);
+  }, [brands, featured]);
 
   // A plain ref. The rails used to carry a gradient mask that faded the
   // cut-off card at each end; it is gone at every width now, so there is
