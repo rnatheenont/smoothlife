@@ -1,6 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { z } from "zod";
+import { srcSetFor } from "@/lib/media";
+import { mediaSourcesFor } from "@/lib/media-lookup";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // One picture, optionally a link.
@@ -30,7 +31,16 @@ const schema = z.object({
   ratio: z.enum(["16/9", "4/3", "3/1", "1/1"]).default("16/9"),
 });
 
-function Component({ settings, index }: SectionProps<z.output<typeof schema>>) {
+async function load(settings: z.output<typeof schema>) {
+  // The three stored widths for this picture, when it came from the library.
+  return settings.src ? mediaSourcesFor(settings.src) : null;
+}
+
+function Component({
+  settings,
+  data,
+  index,
+}: SectionProps<z.output<typeof schema>, Record<string, string> | null>) {
   if (!settings.src) return null;
 
   const picture = (
@@ -38,17 +48,24 @@ function Component({ settings, index }: SectionProps<z.output<typeof schema>>) {
       className={`relative w-full overflow-hidden ${settings.rounded && settings.width === "page" ? "rounded-xl2" : ""}`}
       style={{ aspectRatio: settings.ratio.replace("/", " / ") }}
     >
-      <Image
+      {/* A plain img, not next/image: the project runs with
+          images.unoptimized (Vercel's optimiser ran out of quota), so
+          next/image would serve the one file it was given and the three
+          widths the library stored would never be used. srcset is what
+          makes them worth storing — the browser picks, and a phone stops
+          downloading a banner drawn for a desktop. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={settings.src}
+        srcSet={srcSetFor(data ?? undefined)}
+        sizes={settings.width === "full" ? "100vw" : "(min-width: 1536px) 1512px, 100vw"}
         alt={settings.decorative ? "" : settings.alt}
-        fill
-        sizes="100vw"
         // The first section on a page is usually what the browser measures
         // the page's speed by; everything below it can wait until it is
         // nearly on screen.
-        priority={index === 0}
-        loading={index === 0 ? undefined : "lazy"}
-        className="object-cover"
+        loading={index === 0 ? "eager" : "lazy"}
+        fetchPriority={index === 0 ? "high" : undefined}
+        className="absolute inset-0 h-full w-full object-cover"
       />
     </div>
   );
@@ -91,6 +108,7 @@ export const imageBanner: SectionDefinition<typeof schema> = {
   ],
   enabledOn: ["home", "page", "campaign", "brand"],
   isLcpCandidate: true,
+  load,
   // Published without a picture the section would be an empty hole the height
   // of a banner, which is worse than it being absent.
   check: async (settings) =>

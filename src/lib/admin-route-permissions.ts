@@ -116,6 +116,11 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   { prefix: "/api/admin/pages", permission: "pages.edit", methods: ["GET", "PUT"] },
   { prefix: "/api/admin/pages", permission: "pages.publish" },
 
+  // The picture library. Same permission as editing a page, because that is
+  // what it is for — and uploading a picture nobody has placed yet changes
+  // nothing a visitor can see.
+  { prefix: "/api/admin/media", permission: "pages.edit" },
+
   // The free-form product content blocks (ingredients, how-to-use, etc. in
   // both languages) that overlay the generated catalogue — same split as
   // everywhere else content gets written: reading what's there is lighter

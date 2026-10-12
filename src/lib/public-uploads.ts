@@ -67,6 +67,21 @@ export async function uploadPublicImage(opts: {
   return { url: `${storageBase()}/storage/v1/object/public/${BUCKET}/${path}`, path };
 }
 
+/** Removes one object from the public bucket.
+ *
+ *  Only ever called after its row is gone: a file left behind costs a few
+ *  kilobytes, a row pointing at a file that is not there puts a broken
+ *  picture on a live page. */
+export async function deletePublicImage(path: string): Promise<void> {
+  const res = await fetch(`${storageBase()}/storage/v1/object/${BUCKET}/${path}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${serviceKey()}` },
+  });
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`storage delete failed: ${res.status}`);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Video, which cannot come through here at all.
 //

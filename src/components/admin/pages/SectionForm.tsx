@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ImagePicker from "@/components/admin/pages/ImagePicker";
 import { parseSlugList } from "@/lib/pages/edit";
 import type { FieldDef } from "@/lib/pages/types";
 
@@ -205,6 +206,26 @@ export default function SectionForm({
           );
         }
 
+        if (field.type === "image") {
+          return (
+            <div key={field.key}>
+              <span className={labelCls}>{field.label}</span>
+              <ImagePicker
+                value={typeof value === "string" ? value : ""}
+                onChange={(url) => set(field.key, url)}
+                // A picture that already has a description brings it with it.
+                // The alternative is asking the same question in every
+                // section that uses the same picture, and getting a blank
+                // answer in most of them.
+                onPickAlt={(alt) => {
+                  if (!settings.alt) onChange({ ...settings, [field.key]: settings[field.key], alt });
+                }}
+              />
+              {field.help && <p className={helpCls}>{field.help}</p>}
+            </div>
+          );
+        }
+
         return (
           <div key={field.key}>
             <label htmlFor={id} className={labelCls}>
@@ -229,10 +250,8 @@ export default function SectionForm({
               />
             )}
             {field.help && <p className={helpCls}>{field.help}</p>}
-            {(field.type === "image" || field.type === "datetime") && !field.help && (
-              <p className={helpCls}>
-                {field.type === "image" ? "วางลิงก์รูปไปก่อน — คลังรูปมาในเฟสถัดไป" : "รูปแบบ 2026-11-11T00:00:00+07:00"}
-              </p>
+            {field.type === "datetime" && !field.help && (
+              <p className={helpCls}>รูปแบบ 2026-11-11T00:00:00+07:00</p>
             )}
           </div>
         );
