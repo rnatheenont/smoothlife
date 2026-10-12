@@ -14,6 +14,7 @@ import { migrateDoc } from "@/lib/pages/doc";
 import { validateCampaignTimes } from "@/lib/pages/campaign";
 import { checkTheme, type CampaignTheme } from "@/lib/pages/theme";
 import { pageTag } from "@/lib/pages/store";
+import { editorLink, notifyReview, reviewMessage } from "@/lib/pages/review";
 import { getBrand } from "@/data/brands";
 import { revalidateTag } from "next/cache";
 import { sectionsFor } from "@/sections/registry";
@@ -85,6 +86,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ kind: str
       publishedRevisionId: page.published_revision_id,
       publishAt: page.publish_at,
       unpublishAt: page.unpublish_at,
+      review: {
+        state: page.review_state ?? "none",
+        note: page.review_note,
+        by: page.review_by,
+        at: page.review_at,
+        decidedBy: page.review_decided_by,
+        decidedAt: page.review_decided_at,
+        reply: page.review_reply,
+      },
       campaign: {
         ...campaignTimesOf(page),
         takeoverHome: page.takeover_home === true,
@@ -168,7 +178,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ kind: st
 
   const body = (await req.json().catch(() => null)) as
     | {
-        action?: "publish" | "rollback" | "schedule" | "campaign";
+        action?: "publish" | "rollback" | "schedule" | "campaign" | "review-decision";
         note?: string;
         revisionId?: string;
         publishAt?: string | null;
@@ -182,12 +192,59 @@ export async function POST(req: NextRequest, props: { params: Promise<{ kind: st
         theme?: CampaignTheme | null;
         takeoverHome?: boolean;
         brands?: string[];
+        /** review-decision */
+        decision?: "approved" | "changes";
+        reply?: string;
       }
     | null;
 
   const page = await openPage(target.kind, target.slug, actorOf(token));
   if (!page) return NextResponse.json({ ok: false, error: "ไม่พบเพจนี้" }, { status: 404 });
   const actor = actorOf(token);
+
+  // The decision. Approving publishes in the same step — an approval that
+  // leaves the page unpublished is a second thing to remember, and the thing
+  // being approved is the page going live.
+  if (body?.action === "review-decision") {
+    const decision = body.decision === "changes" ? "changes" : "approved";
+    const reply = (body.reply ?? "").slice(0, 500) || null;
+
+    if (decision === "changes") {
+      await supabaseRest(`pages?id=eq.${pgValue(page.id)}`, {
+        method: "PATCH",
+        returning: false,
+        body: JSON.stringify({
+          review_state: "changes",
+          review_decided_by: actor,
+          review_decided_at: new Date().toISOString(),
+          review_reply: reply,
+        }),
+      });
+      await audit("page.review.changes", page.id, `ขอให้แก้${reply ? ` · ${reply}` : ""}`, actor);
+      const sent = await notifyReview(
+        reviewMessage.changes(page.title, actor, reply ?? "", editorLink(page.kind, page.slug))
+      );
+      return NextResponse.json({ ok: true, notified: sent });
+    }
+
+    const result = await publish({ page, note: `อนุมัติโดย ${actor}`, actor });
+    if (result.ok === false) {
+      return NextResponse.json({ ok: false, error: result.issues.join(" · "), issues: result.issues }, { status: 400 });
+    }
+    await supabaseRest(`pages?id=eq.${pgValue(page.id)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({
+        review_state: "approved",
+        review_decided_by: actor,
+        review_decided_at: new Date().toISOString(),
+        review_reply: reply,
+      }),
+    });
+    await audit("page.review.approve", page.id, `อนุมัติและเผยแพร่เวอร์ชัน ${result.number}`, actor);
+    const sent = await notifyReview(reviewMessage.approved(page.title, actor, editorLink(page.kind, page.slug)));
+    return NextResponse.json({ ok: true, number: result.number, notified: sent });
+  }
 
   if (body?.action === "campaign") {
     if (page.kind !== "campaign") {
@@ -308,6 +365,16 @@ export async function POST(req: NextRequest, props: { params: Promise<{ kind: st
     return NextResponse.json({ ok: false, error: result.issues.join(" · "), issues: result.issues }, { status: 400 });
   }
   await audit("page.publish", page.id, `เผยแพร่เวอร์ชัน ${result.number}`, actor);
+  // Publishing directly settles any request that was open: the page is live,
+  // so nothing is waiting, and leaving "รออนุมัติ" on a published page would
+  // send somebody to approve what is already on the site.
+  if (page.review_state === "requested") {
+    await supabaseRest(`pages?id=eq.${pgValue(page.id)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify({ review_state: "approved", review_decided_by: actor, review_decided_at: new Date().toISOString() }),
+    });
+  }
   return NextResponse.json({ ok: true, number: result.number });
 }
 

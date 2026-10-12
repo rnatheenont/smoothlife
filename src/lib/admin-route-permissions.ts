@@ -228,6 +228,11 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   // picture and story appear on the brand's live page the moment they save.
   { prefix: "/api/admin/brands", permission: "pages.edit", methods: READ },
   { prefix: "/api/admin/brands", permission: "pages.publish" },
+
+  // Asking for a review is an editing act, not a publishing one — the point
+  // of the request is that the person making it cannot publish. Deciding on
+  // the request stays on the pages endpoint, where pages.publish is required.
+  { prefix: "/api/admin/page-review", permission: "pages.edit" },
 ];
 
 /** The rule covering this request, or null when nothing covers it. */

@@ -31,6 +31,13 @@ export type PageRow = {
   takeover_home: boolean;
   campaign_theme: unknown;
   campaign_brands: string[] | null;
+  review_state: "none" | "requested" | "approved" | "changes";
+  review_note: string | null;
+  review_by: string | null;
+  review_at: string | null;
+  review_decided_by: string | null;
+  review_decided_at: string | null;
+  review_reply: string | null;
 };
 
 export function pageTag(kind: PageKind, slug: string) {

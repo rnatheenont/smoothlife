@@ -22,6 +22,7 @@ import {
   Copy,
   LayoutTemplate,
   Rocket,
+  Send,
   Smartphone,
   Tablet,
   Trash2,
@@ -94,6 +95,15 @@ type PageInfo = {
   publishedRevisionId: string | null;
   publishAt: string | null;
   unpublishAt: string | null;
+  review: {
+    state: "none" | "requested" | "approved" | "changes";
+    note: string | null;
+    by: string | null;
+    at: string | null;
+    decidedBy: string | null;
+    decidedAt: string | null;
+    reply: string | null;
+  };
   campaign: {
     teaserAt: string | null;
     liveAt: string | null;
@@ -217,6 +227,8 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
    *  to its settings by itself — having to click the tab after clicking the
    *  section would be two clicks for one intention. */
   const [rail, setRail] = useState<"section" | "page">("section");
+  const [reviewNote, setReviewNote] = useState("");
+  const [reviewBusy, setReviewBusy] = useState(false);
   const router = useRouter();
   const [publishAt, setPublishAt] = useState("");
   const [unpublishAt, setUnpublishAt] = useState("");
@@ -458,6 +470,60 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "คัดลอกหน้าไม่สำเร็จ");
       setDuplicating(false);
+    }
+  }
+
+  async function requestReview() {
+    setReviewBusy(true);
+    setMessage(null);
+    try {
+      await flushDraft();
+      const res = await fetch("/api/admin/page-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind, slug, note: reviewNote }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error ?? "ขออนุมัติไม่สำเร็จ");
+      setReviewNote("");
+      // Says whether the ping actually went. "ส่งแล้ว" when nothing was sent
+      // is how a request sits unseen for a day.
+      setMessage(
+        data.notified
+          ? "ส่งคำขออนุมัติแล้ว และแจ้งทีมทาง LINE แล้ว"
+          : "บันทึกคำขออนุมัติแล้ว — ยังไม่ได้ตั้งค่าแจ้งเตือน LINE จึงต้องบอกคนอนุมัติเอง"
+      );
+      await load();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "ขออนุมัติไม่สำเร็จ");
+    } finally {
+      setReviewBusy(false);
+    }
+  }
+
+  async function decideReview(decision: "approved" | "changes") {
+    setReviewBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/pages/${kind}/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "review-decision", decision, reply: reviewNote }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error ?? "บันทึกผลไม่สำเร็จ");
+      setReviewNote("");
+      setMessage(
+        decision === "approved"
+          ? `อนุมัติและเผยแพร่เป็นเวอร์ชัน ${data.number} แล้ว`
+          : "ส่งกลับให้แก้แล้ว"
+      );
+      await load();
+      setPreviewNonce((n) => n + 1);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "บันทึกผลไม่สำเร็จ");
+    } finally {
+      setReviewBusy(false);
     }
   }
 
@@ -957,7 +1023,89 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
               </span>
             </h2>
             <div className="flex items-center gap-1">
-              {kind === "campaign" && (
+              {/* The hand-off. Everyone who can open this screen can ask for a
+              look; only the publish button beside it decides whether they
+              can also act on the answer, and that gate is the permission
+              system's, not this panel's. */}
+          <div className="border-t border-slate-100 px-4 py-3">
+            <h3 className="text-[12px] font-bold text-slate-500">ขออนุมัติก่อนเผยแพร่</h3>
+
+            {page.review.state === "requested" ? (
+              <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] leading-relaxed text-amber-900">
+                <p className="font-semibold">รออนุมัติอยู่</p>
+                <p className="mt-0.5">
+                  ขอโดย {page.review.by ?? "—"}
+                  {page.review.at ? ` · ${bangkokLabel(page.review.at)}` : ""}
+                </p>
+                {page.review.note && <p className="mt-1">หมายเหตุ: {page.review.note}</p>}
+              </div>
+            ) : page.review.state === "changes" ? (
+              <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-[12px] leading-relaxed text-rose-800">
+                <p className="font-semibold">ถูกส่งกลับให้แก้</p>
+                <p className="mt-0.5">
+                  โดย {page.review.decidedBy ?? "—"}
+                  {page.review.decidedAt ? ` · ${bangkokLabel(page.review.decidedAt)}` : ""}
+                </p>
+                {page.review.reply && <p className="mt-1">สิ่งที่ต้องแก้: {page.review.reply}</p>}
+              </div>
+            ) : page.review.state === "approved" ? (
+              <p className="mt-2 text-[12px] leading-relaxed text-brand-800">
+                อนุมัติแล้วโดย {page.review.decidedBy ?? "—"}
+                {page.review.decidedAt ? ` · ${bangkokLabel(page.review.decidedAt)}` : ""}
+              </p>
+            ) : (
+              <p className="mt-2 text-[12px] leading-relaxed text-slate-400">ยังไม่ได้ขออนุมัติสำหรับร่างนี้</p>
+            )}
+
+            <textarea
+              value={reviewNote}
+              onChange={(e) => setReviewNote(e.target.value)}
+              rows={2}
+              maxLength={500}
+              placeholder={
+                page.review.state === "requested"
+                  ? "สิ่งที่อยากให้แก้ (ถ้าส่งกลับ)…"
+                  : "บอกคนอนุมัติว่าแก้อะไรไป (ไม่บังคับ)…"
+              }
+              aria-label="ข้อความถึงคนอนุมัติ"
+              className="mt-2 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-[13px] leading-relaxed outline-hidden focus-visible:border-brand-teal"
+            />
+
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                onClick={() => void requestReview()}
+                disabled={reviewBusy || saveState === "conflict"}
+                className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full border border-slate-200 text-[13px] font-semibold text-brand-800 disabled:opacity-60"
+              >
+                {reviewBusy ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                ขออนุมัติ
+              </button>
+              {page.review.state === "requested" && (
+                <>
+                  <button
+                    onClick={() => void decideReview("approved")}
+                    disabled={reviewBusy || issues.length > 0 || saveState === "dirty"}
+                    title={issues.length > 0 ? "ยังมีข้อที่ต้องแก้ก่อนเผยแพร่" : undefined}
+                    className="flex h-10 items-center justify-center gap-1.5 rounded-full bg-brand-gradient px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+                  >
+                    <Check size={13} /> อนุมัติและเผยแพร่
+                  </button>
+                  <button
+                    onClick={() => void decideReview("changes")}
+                    disabled={reviewBusy}
+                    className="h-10 rounded-full border border-slate-200 px-4 text-[13px] font-semibold text-slate-600 disabled:opacity-60"
+                  >
+                    ส่งกลับให้แก้
+                  </button>
+                </>
+              )}
+            </div>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+              ปุ่มอนุมัติขึ้นเฉพาะตอนมีคำขอค้างอยู่ · คนที่ไม่มีสิทธิ์เผยแพร่จะกดอนุมัติไม่ได้ ระบบจะปฏิเสธที่ฝั่งเซิร์ฟเวอร์
+            </p>
+          </div>
+
+          {kind === "campaign" && (
                 /* "ดูในช่วง" — the question worth answering before publishing
                    is what the page looks like on the day and a week after,
                    neither of which is today. */
