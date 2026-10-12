@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Check, Plus } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
-import { getProductBySlug } from "@/data/products";
+import { useLiteProducts } from "@/lib/use-lite-products";
 import { formatTHB } from "@/lib/format";
 
 // How an assistant reply becomes what a customer actually sees — product
@@ -74,7 +74,13 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
 }
 
 export function ProductChip({ slug }: { slug: string }) {
-  const product = getProductBySlug(slug);
+  // One product, fetched: the assistant names a slug in its answer and the
+  // chip draws it. Looking it up meant the chat bubble — which is on every
+  // page — carried the whole catalogue. Nothing is drawn until it arrives,
+  // which is the same as what happens today for a slug the shop no longer
+  // sells.
+  const { products } = useLiteProducts([slug]);
+  const product = products[0];
   const { addItem } = useCart();
   const { t } = useLang();
   const [added, setAdded] = useState(false);

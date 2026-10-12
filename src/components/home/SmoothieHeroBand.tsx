@@ -8,7 +8,7 @@ import QuestionSuggestions from "@/components/home/QuestionSuggestions";
 import clsx from "clsx";
 import { useLang } from "@/lib/lang-context";
 import { useRecentlyViewed } from "@/lib/recently-viewed-context";
-import { getProductBySlug } from "@/data/products";
+import { useLiteProducts } from "@/lib/use-lite-products";
 import { interestsFromProducts, pickSuggestions } from "@/lib/chat-suggestions";
 import { resizeForUpload } from "@/lib/image-utils";
 import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
@@ -116,13 +116,16 @@ export default function SmoothieHeroBand() {
     return () => clearInterval(timer);
   }, [typing, headlines.length]);
 
+  // What this device looked at last, fetched rather than looked up: the
+  // lookup was an import of the whole catalogue, for the three suggestions
+  // under the search box. Until it arrives the suggestions are the general
+  // ones, which is also what a first-time visitor sees.
+  const { products: seen } = useLiteProducts(recentSlugs);
+
   const suggestions = useMemo(() => {
-    const seen = recentSlugs
-      .map((slug) => getProductBySlug(slug))
-      .filter((p): p is NonNullable<typeof p> => Boolean(p));
     const { categories, concerns } = interestsFromProducts(seen);
     return pickSuggestions({ lang, categories, concerns, seed, count: 3 });
-  }, [lang, recentSlugs, seed]);
+  }, [lang, seen, seed]);
 
   function go(text: string, photo = false) {
     const params = new URLSearchParams();

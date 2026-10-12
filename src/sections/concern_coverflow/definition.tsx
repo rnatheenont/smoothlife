@@ -1,5 +1,7 @@
 import { z } from "zod";
 import ConcernCoverflow from "@/components/home/ConcernCoverflow";
+import { concerns } from "@/data/categories";
+import { concernShelves } from "@/lib/article-products";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // Shop by concern — the other way in, for somebody who knows what is
@@ -8,8 +10,13 @@ import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 const schema = z.object({});
 
+/** Ten per concern, which is what the carousel shows before it scrolls. */
+const SHELF = 10;
+
 function Component(_props: SectionProps<z.output<typeof schema>>) {
-  return <ConcernCoverflow />;
+  // Picked here, on the server: the carousel used to filter the catalogue
+  // itself, which is why the catalogue was in the browser.
+  return <ConcernCoverflow byConcern={concernShelves(SHELF, [concerns[0].slug])} />;
 }
 
 export const concernCoverflow: SectionDefinition<typeof schema> = {

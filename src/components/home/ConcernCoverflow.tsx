@@ -5,9 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { concerns, concernImage } from "@/data/categories";
-import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
-import { toCardData } from "@/data/card";
+import type { ProductCardData } from "@/data/card";
+import { useShelf } from "@/lib/use-shelf";
 
 // Shop by concern, as a fanned-out stack rather than a row of equal tiles.
 //
@@ -54,7 +54,7 @@ function placement(offset: number) {
   return { x: side * 150, y: 22, scale: 0.6, rotate: side * 16, z: 0, veil: 0.78, shown: false };
 }
 
-export default function ConcernCoverflow() {
+export default function ConcernCoverflow({ byConcern }: { byConcern: Record<string, ProductCardData[]> }) {
   // A plain ref. The rails used to carry a gradient mask that faded the
   // cut-off card at each end; it is gone at every width now, so there is
   // nothing left for a hook to hold but this.
@@ -64,15 +64,11 @@ export default function ConcernCoverflow() {
   const count = concerns.length;
   const current = concerns[active];
 
-  // In stock and with a picture: a shelf of grey placeholders under the name
-  // of somebody's skin problem says less about it than showing nothing.
-  const shelf = useMemo(
-    () =>
-      products
-        .filter((p) => p.concerns.includes(current.slug) && p.inStock && p.image)
-        .slice(0, SHOWN),
-    [current.slug]
-  );
+  // Chosen on the server: in stock and with a picture, because a shelf of
+  // grey placeholders under the name of somebody's skin problem says less
+  // about it than showing nothing. Only the shelf that is on screen at the
+  // start arrives with the page; turning the stack asks for the next one.
+  const shelf = useShelf(`concern=${current.slug}`, byConcern[current.slug]);
 
   // Shortest way round, so stepping off either end wraps instead of flying
   // the whole stack across the screen.
@@ -231,7 +227,7 @@ export default function ConcernCoverflow() {
                     // what says the rail keeps going.
                     className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-6rem)/6.5)]"
                   >
-                    <ProductCard product={toCardData(p)} />
+                    <ProductCard product={p} />
                   </li>
                 ))}
               </ul>

@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { menuCategories } from "@/data/nav-menu";
+import type { MenuCategory } from "@/data/nav-menu";
 import { CATEGORY_ICON } from "@/components/icons/CategoryIcons";
 
 // The shop menu, on a screen with a pointer.
@@ -26,18 +26,21 @@ const CLOSE_DELAY = 120;
 export default function MegaMenu({
   label,
   href,
+  menu,
 }: {
   label: string;
   href: string;
+  /** Built on the server — see SiteShell for why it is not imported here. */
+  menu: MenuCategory[];
 }) {
   const [open, setOpen] = useState(false);
-  const [activeSlug, setActiveSlug] = useState(menuCategories[0]?.slug);
+  const [activeSlug, setActiveSlug] = useState(menu[0]?.slug);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
 
   const active =
-    menuCategories.find((c) => c.slug === activeSlug) ?? menuCategories[0];
+    menu.find((c) => c.slug === activeSlug) ?? menu[0];
 
   // A pointer that leaves for a moment on its way to the panel should not close
   // it; one that leaves for good should.
@@ -68,7 +71,7 @@ export default function MegaMenu({
 
   useEffect(() => () => cancelClose(), []);
 
-  if (menuCategories.length === 0) {
+  if (menu.length === 0) {
     return (
       <Link href={href} className="transition-colors hover:text-brand-800">
         {label}
@@ -141,7 +144,7 @@ export default function MegaMenu({
                 Etsy's idea, and the only way six categories and their contents
                 fit without becoming a wall. */}
             <ul className="border-slate-100 pe-4 md:border-e">
-              {menuCategories.map((c) => {
+              {menu.map((c) => {
                 const on = c.slug === active?.slug;
                 return (
                   <li key={c.slug}>

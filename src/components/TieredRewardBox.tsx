@@ -4,7 +4,6 @@ import { Check, Gift } from "lucide-react";
 import { useFreeGiftEvals } from "@/lib/use-free-gift-evals";
 import { useCart } from "@/lib/cart-context";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
-import { getProductBySlug } from "@/data/products";
 import { useLang } from "@/lib/lang-context";
 import { formatTHB } from "@/lib/format";
 
@@ -40,7 +39,7 @@ function ladderPercent(tiers: { minSubtotal: number }[], subtotal: number): numb
 export default function TieredRewardBox() {
   const { settings } = useWidgetSettings();
   const evals = useFreeGiftEvals();
-  const { lines } = useCart();
+  const { lines, productBySlug } = useCart();
   const { lang, t } = useLang();
 
   // The same number the eligibility maths uses: gifts already in the cart
@@ -71,7 +70,7 @@ export default function TieredRewardBox() {
             <div className="flex justify-between">
               {tiers.map((tier, i) => {
                 const unlocked = i < unlockedCount;
-                const gp = getProductBySlug(tier.giftProductSlug);
+                const gp = productBySlug(tier.giftProductSlug);
                 return (
                   <div key={i} className="flex flex-col items-center gap-1 text-center flex-1">
                     <div

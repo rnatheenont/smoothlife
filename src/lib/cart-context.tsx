@@ -83,6 +83,11 @@ type CartContextValue = {
   couponQuote: CouponQuote | null;
   couponPending: boolean;
   giftPromos: FreeGiftPromo[];
+  /** One of the products the cart has already fetched — the lines in it and
+   *  the gifts the live promos give away. The gift widgets draw a picture
+   *  and a name for those gifts; looking them up in the catalogue is what
+   *  put the catalogue in the browser. Undefined until the fetch lands. */
+  productBySlug: (slug: string) => CartProduct | undefined;
 };
 
 export type CouponQuote =
@@ -383,6 +388,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         couponQuote,
         couponPending,
         giftPromos,
+        productBySlug: (slug: string) => bySlug[slug],
       }}
     >
       {children}

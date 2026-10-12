@@ -1,6 +1,7 @@
 import { z } from "zod";
 import FlashSaleShelf from "@/components/home/FlashSaleShelf";
-import { getCollectionByHandle } from "@/data/collections";
+import { getCollectionByHandle, getCollectionProducts } from "@/data/collections";
+import { toCardData } from "@/data/card";
 import type { CheckIssue, SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // The flash-sale banner with a shelf of products under it.
@@ -21,8 +22,21 @@ const schema = z.object({
 
 type Settings = z.output<typeof schema>;
 
+/** Ten cards: what the rail shows before it scrolls. */
+const SHELF = 10;
+
 function Component({ settings }: SectionProps<Settings>) {
-  return <FlashSaleShelf config={settings} />;
+  // The collection is read here, on the server. The band used to do it
+  // itself, which meant the whole catalogue travelled to the browser for a
+  // shelf of ten.
+  const collection = settings.collection ? getCollectionByHandle(settings.collection) : undefined;
+  const shelf = collection
+    ? getCollectionProducts(collection)
+        .filter((p) => p.inStock && p.image)
+        .slice(0, SHELF)
+        .map(toCardData)
+    : [];
+  return <FlashSaleShelf config={settings} shelf={shelf} collectionTitle={collection?.title} />;
 }
 
 async function check(settings: Settings, ctx: { now: Date }): Promise<CheckIssue[]> {

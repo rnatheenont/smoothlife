@@ -5,7 +5,8 @@ import { useQuickChat } from "@/lib/quickchat-context";
 import { useCart } from "@/lib/cart-context";
 import { useRecentlyViewed } from "@/lib/recently-viewed-context";
 import { pickSuggestions, interestsFromProducts } from "@/lib/chat-suggestions";
-import { getProductBySlug } from "@/data/products";
+import type { Product } from "@/data/types";
+import { useLiteProducts } from "@/lib/use-lite-products";
 import { resizeForUpload, resizeForThumbnail, ResizedImage } from "@/lib/image-utils";
 import { rememberChatImage, attachStoredImages, clearChatImages } from "@/lib/chat-image-store";
 import { splitMarker, markerIndex, MARKER_OPENERS } from "@/lib/chat-markers";
@@ -20,7 +21,6 @@ import { hasStoredConsent, grantConsent } from "@/components/skin-coach/ConsentG
 // this came out of (fullscreen-chat-plan.md) for why that mattered enough to
 // refactor before adding the second surface.
 
-type Product = NonNullable<ReturnType<typeof getProductBySlug>>;
 
 export type ChatMsg = {
   role: "user" | "assistant";
@@ -116,14 +116,19 @@ export type ChatSessionOptions = {
    * whether arriving messages count as "seen".
    */
   active: boolean;
-  /** The product page the customer is on, if any — resolved by the caller
-   *  (from the URL on a normal page, or carried over some other way on a
-   *  page that isn't itself a product page) rather than by this hook, so it
-   *  stays usable from a route this hook knows nothing about. */
-  viewingProduct?: Product;
+  /** The product page the customer is on, if any — its slug, read from the
+   *  URL by the caller (or carried over some other way on a page that isn't
+   *  itself a product page) rather than by this hook, so it stays usable
+   *  from a route this hook knows nothing about.
+   *
+   *  A slug and not the product: what the assistant is told about it is
+   *  filled in on the server from the slug (see /api/chat), which is both
+   *  more trustworthy than text a browser sends and the reason the
+   *  catalogue no longer has to be in the browser. */
+  viewingSlug?: string;
 };
 
-export function useChatSession({ active, viewingProduct }: ChatSessionOptions) {
+export function useChatSession({ active, viewingSlug }: ChatSessionOptions) {
   const { lang, t } = useLang();
   const { user } = useAuth();
   const { profile } = useQuickChat();
@@ -428,17 +433,24 @@ export function useChatSession({ active, viewingProduct }: ChatSessionOptions) {
     if (active) setSuggestionSeed((n) => n + 1);
   }, [active]);
 
+  const { products: interestProducts } = useLiteProducts(
+    [viewingSlug, ...recentSlugs].filter((s): s is string => Boolean(s))
+  );
+
   const suggestions = useMemo(() => {
     // What they've been looking at, nearest first: the product page they're on
     // now, then the cart, then recently viewed.
+    // What they have been looking at, nearest first: the product page they
+    // are on now, then the cart, then recently viewed. The cart lines carry
+    // their own category, and the rest are fetched — the lookup this used to
+    // do was an import of the whole catalogue into the chat bubble.
     const seen = [
-      viewingProduct,
-      ...cartLines.map((l) => getProductBySlug(l.slug)),
-      ...recentSlugs.map((slug) => getProductBySlug(slug)),
-    ].filter((p): p is NonNullable<typeof p> => Boolean(p));
+      ...interestProducts,
+      ...cartLines.map((l) => ({ category: l.category as Product["category"], concerns: [] as Product["concerns"] })),
+    ];
     const { categories, concerns } = interestsFromProducts(seen);
     return pickSuggestions({ lang, categories, concerns, seed: suggestionSeed });
-  }, [lang, viewingProduct, cartLines, recentSlugs, suggestionSeed]);
+  }, [lang, interestProducts, cartLines, suggestionSeed]);
 
   async function handleImagePick(file: File) {
     setImageError(null);
@@ -540,22 +552,10 @@ export function useChatSession({ active, viewingProduct }: ChatSessionOptions) {
           lang,
           anonId: user ? undefined : getAnonId(),
           cart: cartLines.map((l) => ({ name: l.name, size: l.size, qty: l.qty, price: l.price })),
-          viewingProduct: viewingProduct
-            ? {
-                slug: viewingProduct.slug,
-                name: viewingProduct.name,
-                brand: viewingProduct.brand,
-                price: viewingProduct.price,
-                compareAtPrice: viewingProduct.compareAtPrice,
-                category: viewingProduct.category,
-                concerns: viewingProduct.concerns,
-                benefits: viewingProduct.benefits,
-                howToUse: viewingProduct.howToUse,
-                ingredients: viewingProduct.ingredients,
-                whoFor: viewingProduct.whoFor,
-                sizes: viewingProduct.variants.map((v) => ({ size: v.size, price: v.price })),
-              }
-            : undefined,
+          // Only the slug: /api/chat fills in the name, the price and the
+          // long text from the catalogue on the server, which it trusts and
+          // this request cannot be sure of.
+          viewingProduct: viewingSlug ? { slug: viewingSlug } : undefined,
           image: image ? { base64: image.base64, mediaType: image.mediaType } : undefined,
         }),
       });

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Header from "@/components/Header";
 import type { TickerProduct } from "@/lib/ticker-products";
+import type { MenuCategory } from "@/data/nav-menu";
 import Footer from "@/components/Footer";
 
 // The back office is its own application: it brings its own header, its own
@@ -36,10 +37,22 @@ const isUnder = (pathname: string | null, base: string) =>
   pathname === base || Boolean(pathname?.startsWith(`${base}/`));
 
 /** This site's own header and footer, for whoever still wants them. */
-export function SiteShell({ children, ticker = [] }: { children: ReactNode; ticker?: TickerProduct[] }) {
+export function SiteShell({
+  children,
+  ticker = [],
+  menu = [],
+}: {
+  children: ReactNode;
+  ticker?: TickerProduct[];
+  /** The shop menu, built on the server. It arrives as a prop rather than as
+   *  an import because building it reads the whole catalogue, and a client
+   *  component that imports it drags all ~1,000 products into the browser —
+   *  on every page, for a menu of six categories. */
+  menu?: MenuCategory[];
+}) {
   return (
     <>
-      <Header ticker={ticker} />
+      <Header ticker={ticker} menu={menu} />
       <main className="flex-1">{children}</main>
       <Footer />
       <div className="h-[60px] lg:hidden" aria-hidden />
@@ -47,8 +60,20 @@ export function SiteShell({ children, ticker = [] }: { children: ReactNode; tick
   );
 }
 
-export default function SiteChrome({ children, ticker }: { children: ReactNode; ticker: TickerProduct[] }) {
+export default function SiteChrome({
+  children,
+  ticker,
+  menu,
+}: {
+  children: ReactNode;
+  ticker: TickerProduct[];
+  menu: MenuCategory[];
+}) {
   const pathname = usePathname();
   if (BARE.some((p) => isUnder(pathname, p))) return <>{children}</>;
-  return <SiteShell ticker={ticker}>{children}</SiteShell>;
+  return (
+    <SiteShell ticker={ticker} menu={menu}>
+      {children}
+    </SiteShell>
+  );
 }

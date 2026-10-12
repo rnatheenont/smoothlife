@@ -41,6 +41,7 @@ import type { TickerProduct } from "@/lib/ticker-products";
 
 import MegaMenu from "@/components/nav/MegaMenu";
 import MobileShopMenu from "@/components/nav/MobileShopMenu";
+import type { MenuCategory } from "@/data/nav-menu";
 
 // The bar under the search box, on a screen with room for it. Five shop
 // links on the left — the first one opens the shop panel — and two support
@@ -80,7 +81,7 @@ const navLinks = [
   { href: "/help", th: "ช่วยเหลือ", en: "Help", icon: HelpCircle },
 ];
 
-export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
+export default function Header({ ticker = [], menu = [] }: { ticker?: TickerProduct[]; menu?: MenuCategory[] }) {
   const [open, setOpen] = useState(false);
   const [hideHeader, setHideHeader] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -356,7 +357,7 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
         <div className="container-page flex items-center gap-8 py-2.5 text-[15px] font-medium text-slate-700">
           {deskNav.map((l) =>
             l.mega ? (
-              <MegaMenu key={l.href} label={t(l.th, l.en)} href={l.href} />
+              <MegaMenu key={l.href} label={t(l.th, l.en)} href={l.href} menu={menu} />
             ) : (
               <Link key={l.href} href={l.href} className="transition-colors hover:text-brand-800">
                 {t(l.th, l.en)}
@@ -436,7 +437,7 @@ export default function Header({ ticker = [] }: { ticker?: TickerProduct[] }) {
             <div className="flex flex-1 flex-col gap-4 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
               <LanguageSwitch compact />
 
-              <MobileShopMenu onNavigate={() => setOpen(false)} />
+              <MobileShopMenu menu={menu} onNavigate={() => setOpen(false)} />
 
               <div className="flex flex-col gap-0.5">
                 {navLinks.map((l) => (

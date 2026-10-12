@@ -4,6 +4,7 @@ import AuroraBackdrop from "@/components/home/AuroraBackdrop";
 import SectionHeading from "@/components/SectionHeading";
 import ScrollReveal from "@/components/ScrollReveal";
 import { brands } from "@/data/brands";
+import { brandShelves } from "@/lib/article-products";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // The row of brand circles.
@@ -24,6 +25,9 @@ const schema = z.object({
   brandSlugs: z.array(z.string().min(1)).min(1).max(12),
 });
 
+/** Ten per brand, which is what the row shows under a circle. */
+const SHELF = 10;
+
 function Component({ settings }: SectionProps<z.output<typeof schema>>) {
   // The whole catalogue goes down, and the stored order decides who leads.
   // The component keeps its own rule for filling a gap, so a brand dropped
@@ -35,7 +39,7 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
         <SectionHeading title={settings.title} subtitle={settings.subtitle} href={settings.href || undefined} />
       </ScrollReveal>
       <ScrollReveal>
-        <BrandCircleRow brands={brands} featured={settings.brandSlugs} />
+        <BrandCircleRow brands={brands} featured={settings.brandSlugs} shelves={brandShelves(settings.brandSlugs.slice(0, 1), SHELF)} />
       </ScrollReveal>
     </section>
   );

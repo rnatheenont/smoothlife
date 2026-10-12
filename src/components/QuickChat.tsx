@@ -15,7 +15,7 @@ import { RotateCcw, X, Headset, Maximize2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
-import { getProductBySlug } from "@/data/products";
+
 import { PHOTO_MARKER } from "@/lib/chat-image-store";
 import { useChatSession } from "@/lib/use-chat-session";
 import ChatConversation from "@/components/chat/ChatConversation";
@@ -54,9 +54,8 @@ export default function QuickChat() {
   const { open, setOpen, stickyBarVisible } = useQuickChat();
   const pathname = usePathname();
   const viewingSlug = pathname?.match(/^\/product\/([a-z0-9-]+)/i)?.[1];
-  const viewingProduct = viewingSlug ? getProductBySlug(viewingSlug) : undefined;
 
-  const session = useChatSession({ active: open, viewingProduct });
+  const session = useChatSession({ active: open, viewingSlug });
   // The panel's own chrome needs four of them; ChatConversation reads the
   // rest off the session object it is handed.
   const { messages, reset, hasProfile, escalating, setNoteOpen, unread } = session;
@@ -306,7 +305,7 @@ export default function QuickChat() {
                   {t("คุยกับน้อง Smoothie", "Chat with Smoothie")}
                 </p>
                 <p className="text-[11px] text-white/60 leading-tight truncate">
-                  {viewingProduct
+                  {viewingSlug
                     ? t("กำลังดูสินค้านี้อยู่ ถามได้เลยค่ะ", "Viewing this product — ask away")
                     : hasProfile
                     ? t("อ่านโปรไฟล์ผิวของคุณแล้ว", "Using your skin profile")

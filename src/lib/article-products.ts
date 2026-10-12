@@ -1,4 +1,6 @@
 import { brands, brandProducts } from "@/data/brands";
+import { products } from "@/data/products";
+import { toCardData, type ProductCardData } from "@/data/card";
 
 // What to put under a blog post, when nothing in the data says.
 //
@@ -58,4 +60,57 @@ export function articleProductSlugs(text: string, limit: number): string[] {
     .filter((p) => p.inStock && p.image)
     .slice(0, limit)
     .map((p) => p.slug);
+}
+
+/**
+ * Cards for a list of slugs, in the catalogue's order.
+ *
+ * The shelves under the article arc and the "recently viewed" row are both
+ * a list of slugs that somebody then has to turn into cards; doing it in the
+ * browser is what an import of the catalogue buys, and doing it here costs
+ * nothing.
+ */
+export function cardsForSlugs(slugs: readonly string[]): ProductCardData[] {
+  if (slugs.length === 0) return [];
+  const wanted = new Set(slugs);
+  return products.filter((p) => wanted.has(p.slug)).map(toCardData);
+}
+
+
+/**
+ * The shelves under the concern carousel, one per concern.
+ *
+ * Here rather than in the carousel for the same reason as everything else in
+ * this file: picking ten products out of a thousand is a server's job, and
+ * doing it in the component is what put the thousand in the browser.
+ */
+export function concernShelves(limit: number, only?: readonly string[]): Record<string, ProductCardData[]> {
+  const byConcern: Record<string, ProductCardData[]> = {};
+  const wanted = only ? new Set(only) : null;
+  for (const p of products) {
+    if (!p.inStock || !p.image) continue;
+    for (const c of p.concerns) {
+      if (wanted && !wanted.has(c)) continue;
+      const shelf = (byConcern[c] ??= []);
+      if (shelf.length < limit) shelf.push(toCardData(p));
+    }
+  }
+  return byConcern;
+}
+
+/**
+ * What each of these brands sells, as cards — the shelf under the brand
+ * circles. Same reason as concernShelves: chosen on the server.
+ */
+export function brandShelves(slugs: readonly string[], limit: number): Record<string, ProductCardData[]> {
+  const shelves: Record<string, ProductCardData[]> = {};
+  for (const slug of slugs) {
+    const brand = brands.find((b) => b.slug === slug);
+    if (!brand) continue;
+    shelves[slug] = brandProducts(brand)
+      .filter((p) => p.inStock && p.image)
+      .slice(0, limit)
+      .map(toCardData);
+  }
+  return shelves;
 }

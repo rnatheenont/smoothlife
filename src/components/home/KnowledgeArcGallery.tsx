@@ -4,9 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { getProductBySlug } from "@/data/products";
+import type { ProductCardData } from "@/data/card";
+import { cardFromLite } from "@/data/cart-product";
+import { inSlugOrder, useLiteProducts } from "@/lib/use-lite-products";
 import ProductCard from "@/components/ProductCard";
-import { toCardData } from "@/data/card";
 
 export type ArcItem = {
   key: string;
@@ -16,6 +17,11 @@ export type ArcItem = {
   /** What the brand this post talks about sells — see lib/article-products.
    *  Empty when the post names no brand, and then it gets no shelf. */
   productSlugs: string[];
+  /** The cards for those slugs, sent with the page for the post that opens
+   *  first and left out for the rest: twelve posts' worth of cards is a
+   *  hundred and twenty of them in the HTML of a page everybody loads. The
+   *  others are fetched when the arc is turned to them. */
+  products?: ProductCardData[];
 };
 
 // Article covers laid along a gentle arc that drifts sideways, after the
@@ -60,9 +66,12 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
     () => items.find((i) => i.productSlugs.length > 0)?.key ?? items[0]?.key
   );
   const active = items.find((i) => i.key === activeKey) ?? items[0];
-  const shelf = (active?.productSlugs ?? [])
-    .map((slug) => getProductBySlug(slug))
-    .filter((p): p is NonNullable<typeof p> => Boolean(p));
+  // The first post's shelf comes with the page; any other is fetched the
+  // moment it becomes the open one.
+  const { products: fetchedShelf } = useLiteProducts(active?.products?.length ? [] : (active?.productSlugs ?? []));
+  const shelf = active?.products?.length
+    ? active.products
+    : inSlugOrder(fetchedShelf, active?.productSlugs ?? []).map(cardFromLite);
 
   // Repeated until the row is long enough to loop without a visible seam; the
   // repeats are hidden from assistive tech and the tab order.
@@ -307,7 +316,7 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
                 key={p.slug}
                 className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-6rem)/6.5)]"
               >
-                <ProductCard product={toCardData(p)} />
+                <ProductCard product={p} />
               </li>
             ))}
           </ul>

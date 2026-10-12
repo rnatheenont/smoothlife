@@ -1,5 +1,6 @@
 import { products } from "./products";
 import { categories, concerns } from "./categories";
+import { categoryImage } from "@/lib/category-image";
 import { brands, brandSlugAliases, slugifyVendor } from "./brands";
 import type { Category } from "./types";
 
@@ -115,7 +116,11 @@ function buildCategory(slug: Category): MenuCategory | null {
     slug,
     label: info.nameTh,
     href: `/shop/${slug}`,
-    image: info.image,
+    // The declared photo when there is one, else the best-reviewed thing in
+    // the category — the same rule the category pages use. Resolved here so
+    // the menu carries the answer and the components do not have to look at
+    // the catalogue for it.
+    image: categoryImage(slug),
     count: inCategory.length,
     groups,
     brands: topBrands,

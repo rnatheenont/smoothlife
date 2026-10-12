@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Check, Flame, Heart, ShoppingCart, Star } from "lucide-react";
 import clsx from "clsx";
-import { Product } from "@/data/types";
+import type { ProductCardData } from "@/data/card";
 import { formatTHB } from "@/lib/format";
 import { useCart, useWishlist } from "@/lib/cart-context";
 import { useLang } from "@/lib/lang-context";
@@ -36,7 +36,7 @@ const FRAME_SRC = "/flash-sale/frame.png";
  *  overlap is invisible, a hair of gap is a white line all the way round. */
 const FRAME_INSET = "3.4%";
 
-export default function FlashSaleCard({ product }: { product: Product }) {
+export default function FlashSaleCard({ product }: { product: ProductCardData }) {
   const { addItem } = useCart();
   const { toggle, has } = useWishlist();
   const { t } = useLang();
@@ -51,8 +51,7 @@ export default function FlashSaleCard({ product }: { product: Product }) {
     : 0;
 
   const sold = product.sold ?? 0;
-  const defaultVariant = product.variants.find((v) => v.variantId === product.variantId);
-  const remaining = typeof defaultVariant?.quantity === "number" ? defaultVariant.quantity : null;
+  const remaining = product.quantity;
   // Real arithmetic or nothing: a bar at a made-up percentage is a lie about
   // how much is left, which is the one thing this bar is for.
   const pct =

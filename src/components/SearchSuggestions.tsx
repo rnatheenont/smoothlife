@@ -1,10 +1,16 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { products } from "@/data/products";
-import { brands } from "@/data/brands";
+import type { ProductCardData } from "@/data/card";
 import { formatTHB } from "@/lib/format";
+
+type BrandHit = { slug: string; name: string; image: string; productCount: number };
+
+/** Long enough that a fast typist makes one request per word rather than
+ *  one per letter, short enough that the list feels live. */
+const DEBOUNCE_MS = 180;
 
 const MAX_RESULTS = 6;
 /** Two is enough to answer "do you carry this brand"; more and the brands
@@ -29,18 +35,48 @@ export default function SearchSuggestions({
    *  past the bottom of the window. */
   limit?: number;
 }) {
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
+  // The matching moved to /api/search/suggest. It is the same match on the
+  // same three fields; doing it here meant the whole catalogue had to be
+  // here, and the search box is in the header of every page.
+  const [brandHits, setBrandHits] = useState<BrandHit[]>([]);
+  const [matches, setMatches] = useState<ProductCardData[]>([]);
+  const [answered, setAnswered] = useState(false);
+  // Results for the query actually typed, never for a slower earlier one
+  // that came back late.
+  const latest = useRef(0);
+
+  useEffect(() => {
+    if (!q) {
+      setBrandHits([]);
+      setMatches([]);
+      setAnswered(false);
+      return;
+    }
+    const id = ++latest.current;
+    const timer = setTimeout(() => {
+      fetch(`/api/search/suggest?q=${encodeURIComponent(q)}&limit=${limit}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (id !== latest.current) return;
+          setBrandHits(Array.isArray(data?.brands) ? data.brands.slice(0, MAX_BRANDS) : []);
+          setMatches(Array.isArray(data?.products) ? data.products : []);
+          setAnswered(true);
+        })
+        .catch(() => {
+          if (id !== latest.current) return;
+          setBrandHits([]);
+          setMatches([]);
+          setAnswered(true);
+        });
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [q, limit]);
+
   if (!q) return null;
-
-  const brandHits = brands.filter((b) => b.name.toLowerCase().includes(q)).slice(0, MAX_BRANDS);
-
-  const matches = products
-    .filter(
-      (p) =>
-        p.inStock &&
-        (p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q) || p.shortDesc.toLowerCase().includes(q))
-    )
-    .slice(0, limit);
+  // Nothing at all until the first answer: an empty panel saying "ไม่พบ"
+  // while the request is still out is an answer the shop has not given yet.
+  if (!answered && matches.length === 0 && brandHits.length === 0) return null;
 
   return (
     <div className="absolute left-0 right-0 top-full mt-2 rounded-2xl bg-white shadow-cardHover overflow-hidden z-50 text-left">

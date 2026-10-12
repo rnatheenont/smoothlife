@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useCart } from "@/lib/cart-context";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
-import { getProductBySlug } from "@/data/products";
 import { useLang } from "@/lib/lang-context";
 
 const KIND_BADGE: Record<string, { th: string; en: string }> = {
@@ -18,7 +17,7 @@ const KIND_BADGE: Record<string, { th: string; en: string }> = {
 export type PromoCardConfig = { maxCards: number };
 
 export default function FreeGiftPromoCard({ config }: { config?: PromoCardConfig }) {
-  const { giftPromos } = useCart();
+  const { giftPromos, productBySlug } = useCart();
   const { settings } = useWidgetSettings();
   const { lang } = useLang();
   const widget = settings.promotion_card;
@@ -35,7 +34,7 @@ export default function FreeGiftPromoCard({ config }: { config?: PromoCardConfig
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 my-6 md:my-8">
       {cards.map((promo) => {
         const imgSlug = promo.kind === "tiered" ? promo.tiers?.[0]?.giftProductSlug : promo.giftProductSlug;
-        const product = imgSlug ? getProductBySlug(imgSlug) : undefined;
+        const product = imgSlug ? productBySlug(imgSlug) : undefined;
         const badge = KIND_BADGE[promo.kind] ?? KIND_BADGE.spend;
         return (
           <div key={promo.slug} className="relative rounded-xl2 overflow-hidden aspect-4/3 group shadow-card">

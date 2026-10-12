@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getCollectionByHandle, getCollectionProducts } from "@/data/collections";
+import type { ProductCardData } from "@/data/card";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
 import FlashSaleCard from "@/components/home/FlashSaleCard";
 
@@ -62,7 +62,19 @@ export type FlashSaleShelfConfig = {
 
 // Settings from the page section when it has them, from the widget row when
 // it does not — see FlashSaleBar for why both ways exist for now.
-export default function FlashSaleShelf({ config }: { config?: FlashSaleShelfConfig }) {
+export default function FlashSaleShelf({
+  config,
+  shelf: shelfFromPage,
+  collectionTitle,
+}: {
+  config?: FlashSaleShelfConfig;
+  /** The products on the shelf, chosen on the server. Reading the
+   *  collection here meant importing the catalogue into the browser for ten
+   *  cards; see use-lite-products for the same move elsewhere. */
+  shelf?: ProductCardData[];
+  /** The collection's own name, for the band's title when none is set. */
+  collectionTitle?: string;
+}) {
   const { settings, loaded } = useWidgetSettings();
   // A plain ref, not useRailFade: the band wanted the fade removed, and the
   // hook's only other job here was holding this.
@@ -82,19 +94,34 @@ export default function FlashSaleShelf({ config }: { config?: FlashSaleShelfConf
     return () => clearInterval(timer);
   }, [cfg.endsAt]);
 
-  const collection = cfg.collection ? getCollectionByHandle(cfg.collection) : undefined;
-  const shelf = collection
-    ? getCollectionProducts(collection)
-        .filter((p) => p.inStock && p.image)
-        .slice(0, SHOWN)
-    : [];
+  // Given the shelf, draw it. Given only a collection handle — which is how
+  // the hand-written home page still works, the handle living in a widget
+  // row the browser reads — ask for it.
+  const [fetched, setFetched] = useState<{ cards: ProductCardData[]; title?: string }>({ cards: [] });
+  const needsFetch = !shelfFromPage && Boolean(cfg.collection);
+  useEffect(() => {
+    if (!needsFetch || !cfg.collection) return;
+    let cancelled = false;
+    fetch(`/api/products/lite?collection=${encodeURIComponent(cfg.collection)}&limit=${SHOWN}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled || !Array.isArray(data?.cards)) return;
+        setFetched({ cards: data.cards, title: data.title ?? undefined });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [needsFetch, cfg.collection]);
+
+  const shelf = (shelfFromPage ?? fetched.cards).slice(0, SHOWN);
 
   if (!config && (!loaded || !widget.enabled)) return null;
   // A flash sale band with nothing in it is an advert for an empty shelf.
   if (shelf.length === 0) return null;
 
   const href = cfg.href || (cfg.collection ? `/collections/${cfg.collection}` : "/promotions");
-  const title = cfg.titleTh || collection?.title || "Flash Sale";
+  const title = cfg.titleTh || collectionTitle || fetched.title || "Flash Sale";
   const expired = Boolean(cfg.endsAt) && left === undefined;
 
   return (

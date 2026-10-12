@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getProductDetail } from "@/data/product-details";
+import { products } from "@/data/products";
 import Anthropic from "@anthropic-ai/sdk";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
@@ -216,23 +217,31 @@ export async function POST(req: NextRequest) {
   // src/data/products.ts — so they are filled in here from the full one, by
   // slug. Reading them on the server is also simply more trustworthy than
   // whatever text a request carries.
-  const viewingDetail =
-    rawViewing && typeof rawViewing.slug === "string" ? getProductDetail(rawViewing.slug) : undefined;
+  const viewingSlug = rawViewing && typeof rawViewing.slug === "string" ? rawViewing.slug : undefined;
+  const viewingDetail = viewingSlug ? getProductDetail(viewingSlug) : undefined;
+  // The browser sends a slug and nothing else now — it no longer has the
+  // catalogue to describe the product from. Everything the assistant is told
+  // about it is read here, which is also the version to trust.
+  const viewingCatalogue = viewingSlug ? products.find((p) => p.slug === viewingSlug) : undefined;
   const viewingProduct: ViewingProduct | undefined =
-    rawViewing && typeof rawViewing.slug === "string" && typeof rawViewing.name === "string"
+    viewingSlug && (viewingCatalogue || typeof rawViewing.name === "string")
       ? {
-          slug: rawViewing.slug,
-          name: rawViewing.name,
-          brand: typeof rawViewing.brand === "string" ? rawViewing.brand : "",
-          price: typeof rawViewing.price === "number" ? rawViewing.price : 0,
-          compareAtPrice: typeof rawViewing.compareAtPrice === "number" ? rawViewing.compareAtPrice : undefined,
-          category: typeof rawViewing.category === "string" ? rawViewing.category : "",
-          concerns: Array.isArray(rawViewing.concerns) ? rawViewing.concerns : [],
+          slug: viewingSlug,
+          name: viewingCatalogue?.name ?? (typeof rawViewing.name === "string" ? rawViewing.name : ""),
+          brand: viewingCatalogue?.brand ?? (typeof rawViewing.brand === "string" ? rawViewing.brand : ""),
+          price: viewingCatalogue?.price ?? (typeof rawViewing.price === "number" ? rawViewing.price : 0),
+          compareAtPrice:
+            viewingCatalogue?.compareAtPrice ??
+            (typeof rawViewing.compareAtPrice === "number" ? rawViewing.compareAtPrice : undefined),
+          category: viewingCatalogue?.category ?? (typeof rawViewing.category === "string" ? rawViewing.category : ""),
+          concerns: viewingCatalogue?.concerns ?? (Array.isArray(rawViewing.concerns) ? rawViewing.concerns : []),
           benefits: viewingDetail?.benefits.length ? viewingDetail.benefits : Array.isArray(rawViewing.benefits) ? rawViewing.benefits : [],
           howToUse: viewingDetail?.howToUse || (typeof rawViewing.howToUse === "string" ? rawViewing.howToUse : ""),
           ingredients: viewingDetail?.ingredients || (typeof rawViewing.ingredients === "string" ? rawViewing.ingredients : ""),
           whoFor: viewingDetail?.whoFor || (typeof rawViewing.whoFor === "string" ? rawViewing.whoFor : ""),
-          sizes: Array.isArray(rawViewing.sizes) ? rawViewing.sizes : [],
+          sizes:
+            viewingCatalogue?.variants.map((v) => ({ size: v.size, price: v.price })) ??
+            (Array.isArray(rawViewing.sizes) ? rawViewing.sizes : []),
         }
       : undefined;
   const key = process.env.ANTHROPIC_API_KEY;

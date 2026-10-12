@@ -5,9 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import type { Brand } from "@/data/types";
-import { brandProducts } from "@/data/brands";
+import { FEATURED_BRANDS } from "@/data/featured-brands";
+
 import ProductCard from "@/components/ProductCard";
-import { toCardData } from "@/data/card";
+import type { ProductCardData } from "@/data/card";
+import { useShelf } from "@/lib/use-shelf";
 
 // Nine brands in circles, and underneath them what the one you picked sells.
 //
@@ -21,17 +23,6 @@ import { toCardData } from "@/data/card";
 // was already on. The brand's own hub is still one tap away, from inside the
 // panel, for anyone who wants the full range.
 
-const FEATURED = [
-  "smooth-e",
-  "dentiste",
-  "janeke",
-  "eucerin",
-  "cerave",
-  "blackmores",
-  "mega",
-  "swisse",
-  "vichy",
-];
 
 /** Ten in the rail, six of them whole and a seventh fading out at the edge:
  *  the fade only means anything while there is still something behind it. */
@@ -39,9 +30,14 @@ const SHOWN = 10;
 
 export default function BrandCircleRow({
   brands,
-  featured = FEATURED,
+  shelves,
+  featured = FEATURED_BRANDS,
 }: {
   brands: Brand[];
+  /** What each brand sells, by brand slug, chosen on the server — picking
+   *  them here meant importing the catalogue into the browser for a shelf
+   *  of ten. A brand with no entry simply gets no shelf. */
+  shelves: Record<string, ProductCardData[]>;
   /** Which brands lead the row, in order. Defaults to the list above, so
    *  every existing caller keeps the row it had; the home page passes the
    *  one stored on the page document instead. */
@@ -67,10 +63,7 @@ export default function BrandCircleRow({
 
   // In stock and with a picture: a shelf of grey placeholders under a brand's
   // logo says less about it than showing nothing would.
-  const shelf = useMemo(
-    () => (brand ? brandProducts(brand).filter((p) => p.inStock && p.image).slice(0, SHOWN) : []),
-    [brand]
-  );
+  const shelf = useShelf(brand ? `brand=${brand.slug}` : null, brand ? shelves[brand.slug] : undefined);
 
   if (!brand) return null;
 
@@ -171,7 +164,7 @@ export default function BrandCircleRow({
                     // what says the rail keeps going.
                     className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start md:w-[calc((100%-3rem)/3.5)] lg:w-[calc((100%-6rem)/6.5)]"
                   >
-                    <ProductCard product={toCardData(p)} />
+                    <ProductCard product={p} />
                   </li>
                 ))}
               </ul>

@@ -4,8 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
-import { menuCategories } from "@/data/nav-menu";
-import { categoryImage } from "@/data/categories";
+import type { MenuCategory } from "@/data/nav-menu";
 
 // The same menu on a phone, which has no hover and no room for three columns.
 //
@@ -14,16 +13,16 @@ import { categoryImage } from "@/data/categories";
 // pattern — and the row itself stays a link, because somebody who wants the
 // whole category should not have to expand it first to find "ทั้งหมด".
 
-export default function MobileShopMenu({ onNavigate }: { onNavigate: () => void }) {
+export default function MobileShopMenu({ menu, onNavigate }: { menu: MenuCategory[]; onNavigate: () => void }) {
   const [openSlug, setOpenSlug] = useState<string | null>(null);
 
-  if (menuCategories.length === 0) return null;
+  if (menu.length === 0) return null;
 
   return (
     <div className="flex flex-col">
       <p className="px-2.5 pb-1.5 text-[11px] font-semibold text-slate-400">ช้อปตามหมวดหมู่</p>
       <ul className="flex flex-col">
-        {menuCategories.map((c) => {
+        {menu.map((c) => {
           const expanded = openSlug === c.slug;
           return (
             <li key={c.slug} className="border-b border-slate-100 last:border-b-0">
@@ -34,7 +33,7 @@ export default function MobileShopMenu({ onNavigate }: { onNavigate: () => void 
                   className="flex min-h-12 flex-1 items-center gap-3 rounded-xl px-2.5 text-sm font-medium text-slate-700"
                 >
                   <span className="relative size-8 shrink-0 overflow-hidden rounded-full bg-surface-soft">
-                    <Image src={categoryImage(c.slug)} alt="" fill sizes="32px" className="object-cover" />
+                    <Image src={c.image} alt="" fill sizes="32px" className="object-cover" />
                   </span>
                   {c.label}
                 </Link>

@@ -1,4 +1,3 @@
-import { products } from "./products";
 import { Category, CategoryInfo, Concern, ConcernInfo } from "./types";
 
 export const categories: CategoryInfo[] = [
@@ -102,22 +101,4 @@ export const concerns: ConcernInfo[] = [
 // So each concern owns one photograph, and that is the whole lookup.
 export function concernImage(slug: Concern): string {
   return concerns.find((c) => c.slug === slug)?.image || "";
-}
-
-/**
- * The picture that stands for a category.
- *
- * A curated shot wins where one exists (three of the six have one in
- * /public/categories). The rest take the photo of the best-reviewed thing
- * currently in stock in that category — computed rather than pasted in, so
- * the tile cannot end up showing a product the shop stopped carrying, and so
- * it follows the catalogue when a product is reclassified.
- */
-export function categoryImage(slug: Category): string {
-  const declared = categories.find((c) => c.slug === slug)?.image;
-  if (declared) return declared;
-  const best = products
-    .filter((p) => p.category === slug && p.inStock && p.image)
-    .sort((a, b) => b.reviewCount - a.reviewCount)[0];
-  return best?.image || "";
 }

@@ -9,7 +9,8 @@ import { getLiveHeroBanners } from "@/lib/shopify-admin";
 import { getStorefrontHeroBanners } from "@/lib/storefront-banners";
 import { getStoreArticles, storeArticleHref } from "@/lib/storefront-articles";
 import KnowledgeArcGallery, { type ArcItem } from "@/components/home/KnowledgeArcGallery";
-import { articleProductSlugs } from "@/lib/article-products";
+import { concerns } from "@/data/categories";
+import { articleProductSlugs, cardsForSlugs, brandShelves, concernShelves } from "@/lib/article-products";
 import HeroCarousel from "@/components/HeroCarousel";
 import CategoryIconRow from "@/components/home/CategoryIconRow";
 import FlashSaleBar from "@/components/home/FlashSaleBar";
@@ -22,6 +23,7 @@ import FreeGiftPromoCard from "@/components/FreeGiftPromoCard";
 import SectionHeading from "@/components/SectionHeading";
 import ScrollReveal from "@/components/ScrollReveal";
 import BrandCircleRow from "@/components/home/BrandCircleRow";
+import { FEATURED_BRANDS } from "@/data/featured-brands";
 import AuroraBackdrop from "@/components/home/AuroraBackdrop";
 import TrendingOnSocial, { SocialClip } from "@/components/TrendingOnSocial";
 import { pageMetadata } from "@/lib/site-pages";
@@ -95,7 +97,17 @@ async function LegacyHomePage() {
   // talks about, read out of its own writing — see lib/article-products. Done
   // here, on the server, because it reads the whole post body and only the
   // handful of resulting slugs need to cross into the browser.
-  const featuredArticles: ArcItem[] = liveArticles
+  // The post that opens first carries its shelf; the rest carry slugs and
+  // are fetched when the arc is turned to them (see KnowledgeArcGallery).
+  const withFirstShelf = (items: ArcItem[]): ArcItem[] => {
+    const first = items.findIndex((i) => i.productSlugs.length > 0);
+    if (first < 0) return items;
+    return items.map((item, i) =>
+      i === first ? { ...item, products: cardsForSlugs(item.productSlugs) } : item
+    );
+  };
+
+  const featuredArticles: ArcItem[] = withFirstShelf(liveArticles
     ? liveArticles.slice(0, 12).map((a) => ({
         key: a.handle,
         href: storeArticleHref(a),
@@ -112,7 +124,7 @@ async function LegacyHomePage() {
           `${a.title} ${a.excerpt} ${a.body.join(" ")}`,
           ARTICLE_SHELF
         ),
-      }));
+      })));
 
   // Real product-video clips (Firework CDN, provided directly — not scraped).
   // (A second clip, untitled/Thai-named, was pulled — its Firework CDN
@@ -207,7 +219,7 @@ async function LegacyHomePage() {
       {/* Shop by concern — the other way in, for somebody who knows what is
           bothering them but not what to buy for it. After the deals because
           browsing by problem is slower than being shown a price. */}
-      <ConcernCoverflow />
+      <ConcernCoverflow byConcern={concernShelves(10, [concerns[0].slug])} />
 
 
       {/* What other people say — kept near the end, where it answers "is
@@ -231,7 +243,7 @@ async function LegacyHomePage() {
           <SectionHeading title="แบรนด์ที่คุณไว้วางใจ" subtitle="Brands" href="/brands" />
         </ScrollReveal>
         <ScrollReveal>
-          <BrandCircleRow brands={brands} />
+          <BrandCircleRow brands={brands} shelves={brandShelves(FEATURED_BRANDS.slice(0, 1), 10)} />
         </ScrollReveal>
       </section>
 

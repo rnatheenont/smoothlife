@@ -4,7 +4,7 @@ import { z } from "zod";
 import KnowledgeArcGallery, { type ArcItem } from "@/components/home/KnowledgeArcGallery";
 import ScrollReveal from "@/components/ScrollReveal";
 import { articles } from "@/data/articles";
-import { articleProductSlugs } from "@/lib/article-products";
+import { articleProductSlugs, cardsForSlugs } from "@/lib/article-products";
 import { getStoreArticles, storeArticleHref } from "@/lib/storefront-articles";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
@@ -29,26 +29,37 @@ const schema = z.object({
   shelfSize: z.number().int().min(2).max(20).default(10),
 });
 
+/** The post that opens first carries its shelf; the rest carry slugs and are
+ *  fetched when the arc is turned to them. Twelve posts' worth of cards in
+ *  the HTML is a hundred and twenty nobody has asked to see. */
+function withFirstShelf(items: ArcItem[]): ArcItem[] {
+  const first = items.findIndex((i) => i.productSlugs.length > 0);
+  if (first < 0) return items;
+  return items.map((item, i) => (i === first ? { ...item, products: cardsForSlugs(item.productSlugs) } : item));
+}
+
 async function load(settings: z.output<typeof schema>): Promise<ArcItem[]> {
   const live = await getStoreArticles();
   if (live) {
-    return live.slice(0, settings.count).map((a) => ({
+    return withFirstShelf(live.slice(0, settings.count).map((a) => ({
       key: a.handle,
       href: storeArticleHref(a),
       title: a.title,
       image: a.image,
       productSlugs: articleProductSlugs(`${a.title} ${a.excerpt} ${a.html}`, settings.shelfSize),
-    }));
+    })));
   }
   // The Shopify blog could not be read — the guides in the repo say the same
   // things and are never unavailable.
-  return articles.slice(0, settings.count).map((a) => ({
+  return withFirstShelf(
+    articles.slice(0, settings.count).map((a) => ({
     key: a.slug,
     href: `/knowledge/article/${a.slug}`,
     title: a.title,
     image: a.image as string | null,
-    productSlugs: articleProductSlugs(`${a.title} ${a.excerpt} ${a.body.join(" ")}`, settings.shelfSize),
-  }));
+      productSlugs: articleProductSlugs(`${a.title} ${a.excerpt} ${a.body.join(" ")}`, settings.shelfSize),
+    }))
+  );
 }
 
 function Component({ settings, data }: SectionProps<z.output<typeof schema>, ArcItem[]>) {
