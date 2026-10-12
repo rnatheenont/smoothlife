@@ -1,8 +1,12 @@
 import { cookies } from "next/headers";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
+import { campaignPhaseAt, type CampaignPhase } from "@/lib/pages/doc";
 import { migrateDoc } from "@/lib/pages/doc";
 import { renderSections } from "@/lib/pages/render";
+import { PHASE_ORDER } from "@/lib/pages/campaign";
+import { campaignTimesOf } from "@/lib/pages/admin";
+import { themeVars, type CampaignTheme } from "@/lib/pages/theme";
 import type { PageKind } from "@/lib/pages/types";
 import type { PageRow } from "@/lib/pages/store";
 
@@ -18,6 +22,13 @@ import type { PageRow } from "@/lib/pages/store";
 // instead of silently vanishing. On the live page it vanishes, because a
 // customer should not be shown our plumbing; here, a section that disappears
 // while you are editing it is a bug nobody can report.
+//
+// ?phase=teaser|live|extended|ended overrides the phase a campaign would be
+// in right now. Without it a campaign built in October can only ever be
+// previewed in its teaser phase, which is the one phase nobody is worried
+// about — the questions worth answering before publishing are "what does
+// the sale look like on the day" and "what does someone arriving a week
+// late see".
 
 export const dynamic = "force-dynamic";
 
@@ -36,8 +47,12 @@ function Notice({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default async function PagePreview(props: { params: Promise<{ kind: string; slug: string }> }) {
+export default async function PagePreview(props: {
+  params: Promise<{ kind: string; slug: string }>;
+  searchParams: Promise<{ phase?: string }>;
+}) {
   const { kind: rawKind, slug } = await props.params;
+  const { phase: rawPhase } = await props.searchParams;
 
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;
   if (!verifyAdminToken(token)) return <Notice>ต้องเข้าสู่ระบบแอดมินก่อนจึงจะดูตัวอย่างได้</Notice>;
@@ -54,12 +69,31 @@ export default async function PagePreview(props: { params: Promise<{ kind: strin
   const doc = migrateDoc(page.draft_doc);
   if (doc.sections.length === 0) return <Notice>ร่างนี้ยังไม่มี section เลย</Notice>;
 
-  const sections = await renderSections(doc, {
-    kind,
-    slug,
-    now: new Date(),
-    isPreview: true,
-  });
+  const now = new Date();
+  // Only a campaign has phases, and only a phase this system knows about is
+  // honoured — an unrecognised value falls back to the real one rather than
+  // showing a page that could never exist.
+  const asked = PHASE_ORDER.find((candidate) => candidate === rawPhase);
+  const phase: CampaignPhase | undefined =
+    kind === "campaign" ? (asked ?? campaignPhaseAt(campaignTimesOf(page), now)) : undefined;
+
+  const sections = await renderSections(doc, { kind, slug, now, phase, isPreview: true });
+
+  if (kind === "campaign") {
+    // Wrapped exactly as /sale/[slug] wraps it, colours included. A preview
+    // that renders in the site's own green while the campaign is pink is a
+    // preview of something else.
+    return (
+      <main
+        data-campaign={slug}
+        data-phase={phase}
+        className="campaign-page min-h-dvh"
+        style={themeVars(page.campaign_theme as CampaignTheme | null)}
+      >
+        {sections}
+      </main>
+    );
+  }
 
   // The same canvas the home page paints on, so what is in the frame is what
   // would be on the site.

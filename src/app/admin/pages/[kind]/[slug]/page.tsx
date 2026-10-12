@@ -9,6 +9,7 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  Megaphone,
   Monitor,
   Plus,
   RefreshCw,
@@ -37,6 +38,8 @@ import {
 } from "@/lib/pages/edit";
 import type { FieldDef } from "@/lib/pages/types";
 import { bangkokInputToIso, bangkokLabel, isoToBangkokInput } from "@/lib/pages/bangkok-time";
+import { PHASE_LABEL, PHASE_ORDER } from "@/lib/pages/campaign";
+import { campaignPhaseAt, type CampaignPhase } from "@/lib/pages/doc";
 
 // The page editor.
 //
@@ -86,6 +89,39 @@ type PageInfo = {
   publishedRevisionId: string | null;
   publishAt: string | null;
   unpublishAt: string | null;
+  campaign: {
+    teaserAt: string | null;
+    liveAt: string | null;
+    extendedAt: string | null;
+    endsAt: string | null;
+    takeoverHome: boolean;
+    theme: { accent?: string; background?: string; badgeText?: string } | null;
+  } | null;
+};
+
+/** The campaign panel's own form state. The four dates are held as the
+ *  strings a datetime-local gives back and converted on save, so what is in
+ *  the box is always exactly what was typed. */
+type CampaignForm = {
+  teaserAt: string;
+  liveAt: string;
+  extendedAt: string;
+  endsAt: string;
+  accent: string;
+  background: string;
+  badgeText: string;
+  takeoverHome: boolean;
+};
+
+const EMPTY_CAMPAIGN: CampaignForm = {
+  teaserAt: "",
+  liveAt: "",
+  extendedAt: "",
+  endsAt: "",
+  accent: "",
+  background: "",
+  badgeText: "",
+  takeoverHome: false,
 };
 
 type SaveState = "idle" | "dirty" | "saving" | "saved" | "conflict" | "error";
@@ -122,6 +158,9 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   const [confirmApply, setConfirmApply] = useState<string | null>(null);
   const [duplicating, setDuplicating] = useState(false);
   const [copySlug, setCopySlug] = useState("");
+  const [camp, setCamp] = useState<CampaignForm>(EMPTY_CAMPAIGN);
+  const [savingCampaign, setSavingCampaign] = useState(false);
+  const [previewPhase, setPreviewPhase] = useState<CampaignPhase | "now">("now");
   const router = useRouter();
   const [publishAt, setPublishAt] = useState("");
   const [unpublishAt, setUnpublishAt] = useState("");
@@ -157,6 +196,21 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
       setSelected((cur) => cur ?? data.doc.sections[0]?.id ?? null);
       setPublishAt(isoToBangkokInput(data.page.publishAt));
       setUnpublishAt(isoToBangkokInput(data.page.unpublishAt));
+      const c = data.page.campaign;
+      setCamp(
+        c
+          ? {
+              teaserAt: isoToBangkokInput(c.teaserAt),
+              liveAt: isoToBangkokInput(c.liveAt),
+              extendedAt: isoToBangkokInput(c.extendedAt),
+              endsAt: isoToBangkokInput(c.endsAt),
+              accent: c.theme?.accent ?? "",
+              background: c.theme?.background ?? "",
+              badgeText: c.theme?.badgeText ?? "",
+              takeoverHome: c.takeoverHome,
+            }
+          : EMPTY_CAMPAIGN
+      );
       setSaveState("idle");
       setConflict(null);
       void loadTemplates();
@@ -327,6 +381,10 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
           action: "duplicate",
           fromKind: kind,
           fromSlug: slug,
+          // A copy of a campaign is a campaign, not a plain page — the server
+          // defaults to fromKind, but saying it here keeps the redirect below
+          // honest about where it is going.
+          kind,
           slug: copySlug,
           title: `${page?.title ?? slug} (สำเนา)`,
         }),
@@ -335,10 +393,45 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
       if (!res.ok || !data.ok) throw new Error(data?.error ?? "คัดลอกหน้าไม่สำเร็จ");
       // Straight to the copy: the reason for copying is to work on the copy,
       // and leaving the person on the original means finding it again.
-      router.push(`/admin/pages/page/${data.page.slug}`);
+      router.push(`/admin/pages/${data.page.kind}/${data.page.slug}`);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "คัดลอกหน้าไม่สำเร็จ");
       setDuplicating(false);
+    }
+  }
+
+  async function saveCampaign() {
+    setSavingCampaign(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/pages/${kind}/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "campaign",
+          times: {
+            teaserAt: bangkokInputToIso(camp.teaserAt),
+            liveAt: bangkokInputToIso(camp.liveAt),
+            extendedAt: bangkokInputToIso(camp.extendedAt),
+            endsAt: bangkokInputToIso(camp.endsAt),
+          },
+          theme: {
+            accent: camp.accent.trim() || undefined,
+            background: camp.background.trim() || undefined,
+            badgeText: camp.badgeText.trim() || undefined,
+          },
+          takeoverHome: camp.takeoverHome,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error ?? "บันทึกค่าแคมเปญไม่สำเร็จ");
+      setMessage("บันทึกค่าแคมเปญแล้ว");
+      await load();
+      setPreviewNonce((n) => n + 1);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "บันทึกค่าแคมเปญไม่สำเร็จ");
+    } finally {
+      setSavingCampaign(false);
     }
   }
 
@@ -669,6 +762,110 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
             })}
           </ol>
 
+          {kind === "campaign" && (
+            /* A campaign's own settings: when it runs, what colour it is, and
+               whether it takes over the home page. Together with the phase
+               switcher over the preview, this is the whole of what makes a
+               campaign page different from any other page. */
+            <div className="border-t border-slate-100 px-4 py-3">
+              <h3 className="text-[12px] font-bold text-slate-500">ช่วงเวลาแคมเปญ (เวลาไทย)</h3>
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {(
+                  [
+                    ["teaserAt", "ก่อนเริ่ม (teaser)"],
+                    ["liveAt", "วันงาน (live)"],
+                    ["extendedAt", "ขยายเวลา (ไม่บังคับ)"],
+                    ["endsAt", "จบแคมเปญ"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <label key={key} className="text-[12px] text-slate-500">
+                    {label}
+                    <input
+                      type="datetime-local"
+                      value={camp[key]}
+                      onChange={(e) => setCamp((c) => ({ ...c, [key]: e.target.value }))}
+                      className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2.5 text-[13px] outline-hidden focus-visible:border-brand-teal"
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <h3 className="mt-4 text-[12px] font-bold text-slate-500">สีของแคมเปญ</h3>
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
+                มีผลแค่ในหน้าแคมเปญนี้ ไม่แตะสีของเว็บส่วนอื่น · สีตัวอักษรบนสีหลักระบบเลือกให้เอง
+                (ขาวหรือเข้ม อันไหน contrast ดีกว่า) ถ้าไม่มีอันไหนถึง 4.5:1 จะเผยแพร่ไม่ได้
+              </p>
+              <div className="mt-2 flex flex-col gap-2">
+                {(
+                  [
+                    ["accent", "สีหลัก", "#E0245E"],
+                    ["background", "สีพื้นหลัง", "#FFF7F9"],
+                  ] as const
+                ).map(([key, label, placeholder]) => (
+                  <label key={key} className="flex items-center gap-2 text-[12px] text-slate-500">
+                    <span className="w-20 shrink-0">{label}</span>
+                    {/* Both controls edit one value: the swatch for picking,
+                        the text box because a brand colour arrives as a hex
+                        code in a message, not as a point on a gradient. */}
+                    <input
+                      type="color"
+                      value={/^#[0-9a-fA-F]{6}$/.test(camp[key]) ? camp[key] : "#ffffff"}
+                      onChange={(e) => setCamp((c) => ({ ...c, [key]: e.target.value.toUpperCase() }))}
+                      aria-label={`เลือก${label}`}
+                      className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-slate-200 bg-white p-1"
+                    />
+                    <input
+                      value={camp[key]}
+                      onChange={(e) => setCamp((c) => ({ ...c, [key]: e.target.value }))}
+                      placeholder={placeholder}
+                      aria-label={label}
+                      className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 px-2.5 font-mono text-[13px] outline-hidden focus-visible:border-brand-teal"
+                    />
+                  </label>
+                ))}
+                <label className="flex items-center gap-2 text-[12px] text-slate-500">
+                  <span className="w-20 shrink-0">ป้ายบนรูป</span>
+                  <input
+                    value={camp.badgeText}
+                    onChange={(e) => setCamp((c) => ({ ...c, badgeText: e.target.value }))}
+                    placeholder="11.11"
+                    aria-label="ข้อความบนป้ายสินค้า"
+                    maxLength={12}
+                    className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 px-2.5 text-[13px] outline-hidden focus-visible:border-brand-teal"
+                  />
+                </label>
+              </div>
+
+              <label className="mt-3 flex items-start gap-2 text-[12px] leading-relaxed text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={camp.takeoverHome}
+                  onChange={(e) => setCamp((c) => ({ ...c, takeoverHome: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-brand-800"
+                />
+                ให้แคมเปญนี้ขึ้นหน้าแรกตอนที่กำลังจัด (ต้องมี section &quot;ช่องแคมเปญ&quot; วางไว้ในหน้าแรกแล้ว)
+              </label>
+
+              <button
+                onClick={() => void saveCampaign()}
+                disabled={savingCampaign}
+                className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-full border border-slate-200 text-[13px] font-semibold text-brand-800 disabled:opacity-60"
+              >
+                {savingCampaign ? <Loader2 size={13} className="animate-spin" /> : <Megaphone size={13} />}
+                บันทึกค่าแคมเปญ
+              </button>
+              {page.campaign?.liveAt && (
+                <p className="mt-1.5 text-[11px] text-slate-400">
+                  ตอนนี้อยู่ช่วง{" "}
+                  <span className="font-semibold text-brand-800">
+                    {PHASE_LABEL[campaignPhaseAt(page.campaign, new Date())]}
+                  </span>{" "}
+                  · วันงาน {bangkokLabel(page.campaign.liveAt)}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Scheduling. Deliberately under the section list rather than in
               the publish dialog: a time set on a page is a property of the
               page, not of the one press of a button, and burying it in a
@@ -833,6 +1030,27 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <h2 className="text-sm font-bold text-brand-ink">ตัวอย่างร่าง</h2>
             <div className="flex items-center gap-1">
+              {kind === "campaign" && (
+                /* "ดูในช่วง" — the question worth answering before publishing
+                   is what the page looks like on the day and a week after,
+                   neither of which is today. */
+                <select
+                  value={previewPhase}
+                  onChange={(e) => {
+                    setPreviewPhase(e.target.value as CampaignPhase | "now");
+                    setPreviewNonce((n) => n + 1);
+                  }}
+                  aria-label="ดูตัวอย่างในช่วงไหน"
+                  className="mr-1 h-10 rounded-lg border border-slate-200 px-2 text-[12px] text-brand-800 outline-hidden focus-visible:border-brand-teal"
+                >
+                  <option value="now">ตามเวลาจริง</option>
+                  {PHASE_ORDER.map((phase) => (
+                    <option key={phase} value={phase}>
+                      ดูในช่วง: {PHASE_LABEL[phase]}
+                    </option>
+                  ))}
+                </select>
+              )}
               <button
                 onClick={() => setDevice("mobile")}
                 aria-pressed={device === "mobile"}
@@ -865,7 +1083,9 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                 editor having lost the edit. */}
             <iframe
               key={previewNonce}
-              src={`/pages-preview/${kind}/${slug}?v=${previewNonce}`}
+              src={`/pages-preview/${kind}/${slug}?v=${previewNonce}${
+                kind === "campaign" && previewPhase !== "now" ? `&phase=${previewPhase}` : ""
+              }`}
               title="ตัวอย่างร่างของหน้านี้"
               className="h-[70vh] w-full rounded-lg border border-slate-200 bg-white"
               style={device === "mobile" ? { width: 390, maxWidth: "100%" } : undefined}

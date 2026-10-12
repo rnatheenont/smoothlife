@@ -31,7 +31,18 @@ const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Addresses the site already uses for something else. A page at /p/admin is
  *  not a conflict today — /p/ has its own space — but a slug that reads like
  *  a system route invites someone to link to the wrong one. */
-const RESERVED = new Set(["admin", "api", "shop", "cart", "checkout", "chat", "search", "home", "p"]);
+const RESERVED = new Set(["admin", "api", "shop", "cart", "checkout", "chat", "search", "home", "p", "sale"]);
+
+/** The kinds that can be created from the admin. "home" is missing on
+ *  purpose — there is one home page and it seeds itself from the code. */
+const CREATABLE: PageKind[] = ["page", "campaign", "brand"];
+
+/** Where a page of each kind lives, for the error messages and the response. */
+const ADDRESS: Record<string, (slug: string) => string> = {
+  page: (slug) => `/p/${slug}`,
+  campaign: (slug) => `/sale/${slug}`,
+  brand: (slug) => `/brands/${slug}`,
+};
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
@@ -54,11 +65,28 @@ export async function POST(req: NextRequest) {
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "not configured" }, { status: 503 });
 
   const body = (await req.json().catch(() => null)) as
-    | { slug?: string; title?: string; action?: "duplicate"; fromKind?: PageKind; fromSlug?: string }
+    | {
+        slug?: string;
+        title?: string;
+        kind?: PageKind;
+        action?: "duplicate";
+        fromKind?: PageKind;
+        fromSlug?: string;
+      }
     | null;
   const slug = (body?.slug ?? "").trim().toLowerCase();
   const title = (body?.title ?? "").trim();
+  // A copy is the same kind as its original unless told otherwise, and
+  // anything else defaults to a plain page — which is what the create form
+  // sends and what every page made before campaigns existed was.
+  const kind = CREATABLE.find((k) => k === (body?.kind ?? body?.fromKind ?? "page"));
 
+  if (!kind) {
+    return NextResponse.json(
+      { ok: false, error: "สร้างได้เฉพาะหน้าเว็บ แคมเปญ และหน้าแบรนด์" },
+      { status: 400 }
+    );
+  }
   if (!title) return NextResponse.json({ ok: false, error: "ยังไม่ได้ตั้งชื่อหน้า" }, { status: 400 });
   if (!SLUG_RE.test(slug)) {
     return NextResponse.json(
@@ -70,10 +98,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: `"${slug}" เป็นที่อยู่ที่ระบบใช้อยู่แล้ว` }, { status: 400 });
   }
 
+  // Scoped to the kind: /p/11-11 and /sale/11-11 are different addresses, so
+  // a campaign is not blocked by a page that happens to share its slug.
   const [existing] = await supabaseRest<{ id: string }[]>(
-    `pages?select=id&kind=eq.page&slug=eq.${pgValue(slug)}&limit=1`
+    `pages?select=id&kind=eq.${pgValue(kind)}&slug=eq.${pgValue(slug)}&limit=1`
   );
-  if (existing) return NextResponse.json({ ok: false, error: "มีหน้าที่ใช้ที่อยู่นี้อยู่แล้ว" }, { status: 409 });
+  if (existing) {
+    return NextResponse.json(
+      { ok: false, error: `มีหน้าที่ใช้ที่อยู่ ${ADDRESS[kind](slug)} อยู่แล้ว` },
+      { status: 409 }
+    );
+  }
 
   const actor = getAdminSession(token)?.userId ?? "shared-login";
 
@@ -84,9 +119,11 @@ export async function POST(req: NextRequest) {
   // already working, and a copy that went live on creation would put two
   // versions of the same page in front of customers at once.
   let draftDoc: unknown = { schemaVersion: SCHEMA_VERSION, sections: [] };
+  let carried: Record<string, unknown> = {};
   if (body?.action === "duplicate") {
-    const [source] = await supabaseRest<{ draft_doc: unknown }[]>(
-      `pages?select=draft_doc&kind=eq.${pgValue(body.fromKind ?? "")}&slug=eq.${pgValue(body.fromSlug ?? "")}&limit=1`
+    const [source] = await supabaseRest<{ draft_doc: unknown; campaign_theme: unknown }[]>(
+      `pages?select=draft_doc,campaign_theme&kind=eq.${pgValue(body.fromKind ?? "")}` +
+        `&slug=eq.${pgValue(body.fromSlug ?? "")}&limit=1`
     );
     if (!source) return NextResponse.json({ ok: false, error: "ไม่พบหน้าต้นทางที่จะคัดลอก" }, { status: 404 });
     const migrated = migrateDoc(source.draft_doc);
@@ -96,18 +133,28 @@ export async function POST(req: NextRequest) {
       schemaVersion: SCHEMA_VERSION,
       sections: migrated.sections.map((section) => ({ ...section, id: newSectionId() })),
     };
+
+    // The colours come across; the dates deliberately do not.
+    //
+    // Copying a campaign is how next year's 11.11 gets made from this year's
+    // (plan §6.1 — the slug is reused on purpose). Carrying the dates over
+    // would create a campaign that is already in its "ended" phase on the
+    // day it is born, which looks exactly like a bug and is tedious to
+    // undo. The look is worth keeping; last November is not.
+    if (kind === "campaign") carried = { campaign_theme: source.campaign_theme ?? null, takeover_home: false };
   }
 
-  const [created] = await supabaseRest<{ id: string; slug: string }[]>("pages", {
+  const [created] = await supabaseRest<{ id: string; slug: string; kind: PageKind }[]>("pages", {
     method: "POST",
     body: JSON.stringify({
-      kind: "page",
+      kind,
       slug,
       title,
       status: "draft",
       // Empty unless this is a copy: the editor opens on the section library
       // and the first choice is the person's, not ours.
       draft_doc: draftDoc,
+      ...carried,
       draft_updated_by: actor,
       created_by: actor,
     }),

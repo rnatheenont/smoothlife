@@ -2,6 +2,8 @@ import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server
 import { revalidateTag } from "next/cache";
 import { migrateDoc, nextBoundaryAfter, SCHEMA_VERSION, type PageDoc } from "./doc";
 import { defaultHomeDoc } from "./default-docs/home";
+import { nextPhaseBoundaryAfter, validateCampaignTimes, type CampaignTimes } from "./campaign";
+import { checkTheme, type CampaignTheme } from "./theme";
 import { pageTag, type PageRow } from "./store";
 import { SECTION_REGISTRY } from "@/sections/registry";
 import type { PageKind } from "./types";
@@ -26,6 +28,22 @@ export type SaveResult =
  * in the code — SQL cannot build it, and a copy pasted into a migration would
  * be a second source of truth that drifts the moment a default changes.
  */
+/**
+ * Documents that can be conjured out of nothing, by page kind.
+ *
+ * A seed exists where the built-in version of the page lives in the code, so
+ * SQL could not have created it and a copy pasted into a migration would be a
+ * second source of truth that drifts the moment a default changes. Every other
+ * kind is created deliberately, through the create endpoint, with a title and
+ * an address somebody chose.
+ *
+ * A seed returns null when it does not recognise the slug — "the home page"
+ * is one page, not any page of kind home.
+ */
+const SEEDS: Partial<Record<PageKind, (slug: string) => { title: string; doc: PageDoc } | null>> = {
+  home: (slug) => (slug === "home" ? { title: "หน้าแรก", doc: defaultHomeDoc() } : null),
+};
+
 export async function openPage(kind: PageKind, slug: string, actor: string): Promise<PageRow | null> {
   if (!supabaseConfigured()) return null;
 
@@ -34,18 +52,17 @@ export async function openPage(kind: PageKind, slug: string, actor: string): Pro
   );
   if (existing) return existing;
 
-  // Only the home page can be conjured out of nothing; every other kind is
-  // created deliberately, with a title someone chose.
-  if (!(kind === "home" && slug === "home")) return null;
+  const seed = SEEDS[kind]?.(slug);
+  if (!seed) return null;
 
   const [created] = await supabaseRest<PageRow[]>("pages", {
     method: "POST",
     body: JSON.stringify({
       kind,
       slug,
-      title: "หน้าแรก",
+      title: seed.title,
       status: "draft",
-      draft_doc: defaultHomeDoc(),
+      draft_doc: seed.doc,
       draft_updated_by: actor,
       created_by: actor,
     }),
@@ -53,12 +70,31 @@ export async function openPage(kind: PageKind, slug: string, actor: string): Pro
   return created ?? null;
 }
 
-/** Problems that should stop a draft becoming the live page. */
-export function validateForPublish(doc: PageDoc): string[] {
+/**
+ * Problems that should stop a draft becoming the live page.
+ *
+ * `page` is optional because the editor asks this question about a document
+ * before anything has been decided about dates or colours. When it is given,
+ * the campaign rules apply too — and they are rules, not warnings: an accent
+ * that cannot carry readable text, or four dates in an order that silently
+ * skips a phase, are both things that cannot be seen by looking at the page
+ * in the editor on the day it is built.
+ */
+export function validateForPublish(doc: PageDoc, page?: PageRow): string[] {
   const issues: string[] = [];
   const seen = new Map<string, number>();
 
   if (doc.sections.length === 0) issues.push("เพจนี้ยังไม่มี section เลย");
+
+  if (page?.kind === "campaign") {
+    issues.push(...validateCampaignTimes(campaignTimesOf(page)));
+    issues.push(...checkTheme(page.campaign_theme as CampaignTheme | null));
+    // A campaign with no dates at all is "live" for ever (see campaignPhaseAt),
+    // which is almost never what somebody building a 11.11 page meant.
+    if (!page.campaign_live_at && !page.campaign_teaser_at) {
+      issues.push("ยังไม่ได้ตั้งวันเริ่มแคมเปญ — ถ้าไม่ตั้ง หน้านี้จะอยู่ในช่วง \"วันงาน\" ตลอดไป");
+    }
+  }
 
   for (const section of doc.sections) {
     const def = SECTION_REGISTRY[section.type];
@@ -140,7 +176,7 @@ export async function publish(opts: {
   actor: string;
 }): Promise<{ ok: true; number: number } | { ok: false; issues: string[] }> {
   const doc = migrateDoc(opts.page.draft_doc);
-  const issues = validateForPublish(doc);
+  const issues = validateForPublish(doc, opts.page);
   if (issues.length) return { ok: false, issues };
 
   const [last] = await supabaseRest<{ number: number }[]>(
@@ -187,6 +223,35 @@ export async function rollback(opts: {
   return { ok: true, number: revision.number };
 }
 
+/** The four campaign dates off a page row, in the shape the pure helpers
+ *  want. One place, so a renamed column is one edit. */
+export function campaignTimesOf(page: PageRow): CampaignTimes {
+  return {
+    teaserAt: page.campaign_teaser_at,
+    liveAt: page.campaign_live_at,
+    extendedAt: page.campaign_extended_at,
+    endsAt: page.campaign_ends_at,
+  };
+}
+
+/**
+ * When this page next renders differently: the earliest of its sections'
+ * own windows and, for a campaign, its next phase change.
+ *
+ * Both have to be in the same column because the scheduler finds work with
+ * one indexed comparison. Taking only the section boundaries would leave a
+ * campaign showing its teaser an hour into the sale — the phase is decided
+ * on the server, and nothing would have asked the server again.
+ */
+export function nextBoundaryFor(page: PageRow, doc: PageDoc, now: Date): string | null {
+  const candidates = [nextBoundaryAfter(doc, now)];
+  if (page.kind === "campaign") candidates.push(nextPhaseBoundaryAfter(campaignTimesOf(page), now));
+
+  const times = candidates.filter((value): value is string => value !== null).map((value) => Date.parse(value));
+  if (times.length === 0) return null;
+  return new Date(Math.min(...times)).toISOString();
+}
+
 /** Moves the published pointer and makes the change visible immediately. */
 async function pointAt(page: PageRow, revisionId: string, doc: PageDoc) {
   await supabaseRest(`pages?id=eq.${pgValue(page.id)}`, {
@@ -195,9 +260,10 @@ async function pointAt(page: PageRow, revisionId: string, doc: PageDoc) {
     body: JSON.stringify({
       published_revision_id: revisionId,
       status: "published",
-      // When the next scheduled section boundary is, so the cron job can find
-      // pages that need re-rendering with one indexed comparison.
-      next_boundary_at: nextBoundaryAfter(doc, new Date()),
+      // When this page next changes by itself — a section window opening or
+      // a campaign phase turning over — so the cron job can find the pages
+      // that need re-rendering with one indexed comparison.
+      next_boundary_at: nextBoundaryFor(page, doc, new Date()),
     }),
   });
 

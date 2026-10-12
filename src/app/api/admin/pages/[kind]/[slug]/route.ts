@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
-import { openPage, publish, rollback, saveDraft, validateForPublish } from "@/lib/pages/admin";
+import {
+  campaignTimesOf,
+  nextBoundaryFor,
+  openPage,
+  publish,
+  rollback,
+  saveDraft,
+  validateForPublish,
+} from "@/lib/pages/admin";
 import { migrateDoc } from "@/lib/pages/doc";
+import { validateCampaignTimes } from "@/lib/pages/campaign";
+import { checkTheme, type CampaignTheme } from "@/lib/pages/theme";
+import { pageTag } from "@/lib/pages/store";
+import { revalidateTag } from "next/cache";
 import { sectionsFor } from "@/sections/registry";
 import type { PageKind } from "@/lib/pages/types";
 
@@ -13,7 +25,8 @@ import type { PageKind } from "@/lib/pages/types";
 //        built-in document the first time it is opened.
 // PUT  — save the draft. Carries the version it was read at; a mismatch is a
 //        409 rather than a silent overwrite of somebody else's work.
-// POST — publish, or put a previous version back.
+// POST — publish, put a previous version back, set the schedule, or set a
+//        campaign's dates, colours and home-page takeover.
 
 const KINDS: PageKind[] = ["home", "page", "campaign", "brand"];
 
@@ -66,6 +79,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ kind: str
       publishedRevisionId: page.published_revision_id,
       publishAt: page.publish_at,
       unpublishAt: page.unpublish_at,
+      campaign: {
+        ...campaignTimesOf(page),
+        takeoverHome: page.takeover_home === true,
+        theme: (page.campaign_theme as CampaignTheme | null) ?? null,
+      },
     },
     doc,
     // The library panel only ever offers what this kind of page may hold, so
@@ -81,7 +99,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ kind: str
       fields: def.fields,
     })),
     revisions,
-    issues: validateForPublish(doc),
+    issues: validateForPublish(doc, page),
   });
 }
 
@@ -141,17 +159,84 @@ export async function POST(req: NextRequest, props: { params: Promise<{ kind: st
 
   const body = (await req.json().catch(() => null)) as
     | {
-        action?: "publish" | "rollback" | "schedule";
+        action?: "publish" | "rollback" | "schedule" | "campaign";
         note?: string;
         revisionId?: string;
         publishAt?: string | null;
         unpublishAt?: string | null;
+        times?: {
+          teaserAt?: string | null;
+          liveAt?: string | null;
+          extendedAt?: string | null;
+          endsAt?: string | null;
+        };
+        theme?: CampaignTheme | null;
+        takeoverHome?: boolean;
       }
     | null;
 
   const page = await openPage(target.kind, target.slug, actorOf(token));
   if (!page) return NextResponse.json({ ok: false, error: "ไม่พบเพจนี้" }, { status: 404 });
   const actor = actorOf(token);
+
+  if (body?.action === "campaign") {
+    if (page.kind !== "campaign") {
+      return NextResponse.json({ ok: false, error: "หน้านี้ไม่ใช่เพจแคมเปญ" }, { status: 400 });
+    }
+
+    const times = body.times ?? {};
+    const theme = body.theme ?? null;
+    // Refused here, not only in the publish checklist. These two mistakes are
+    // invisible on the page while you are building it — a theme is still a
+    // theme at 2:1 contrast, and dates in the wrong order still look like
+    // four dates — so the moment to say so is the moment they are typed.
+    const issues = [...validateCampaignTimes(times), ...checkTheme(theme)];
+    if (issues.length) return NextResponse.json({ ok: false, error: issues.join(" · "), issues }, { status: 400 });
+
+    const updated: Record<string, unknown> = {
+      campaign_teaser_at: times.teaserAt ?? null,
+      campaign_live_at: times.liveAt ?? null,
+      campaign_extended_at: times.extendedAt ?? null,
+      campaign_ends_at: times.endsAt ?? null,
+      campaign_theme: theme,
+      takeover_home: body.takeoverHome === true,
+    };
+
+    // A live campaign whose dates moved needs its boundary recomputed now.
+    // Without this the page would keep the boundary it was published with and
+    // simply never be told that the sale had started.
+    if (page.status === "published") {
+      const merged = {
+        ...page,
+        campaign_teaser_at: times.teaserAt ?? null,
+        campaign_live_at: times.liveAt ?? null,
+        campaign_extended_at: times.extendedAt ?? null,
+        campaign_ends_at: times.endsAt ?? null,
+      };
+      updated.next_boundary_at = nextBoundaryFor(merged, migrateDoc(page.draft_doc), new Date());
+    }
+
+    await supabaseRest(`pages?id=eq.${pgValue(page.id)}`, {
+      method: "PATCH",
+      returning: false,
+      body: JSON.stringify(updated),
+    });
+
+    // The colours and the phase are both baked into the cached page, so a
+    // change to either has to clear it — otherwise the admin saves a new
+    // accent and sees the old one for the next half hour.
+    revalidateTag(pageTag(page.kind, page.slug), { expire: 0 });
+    revalidateTag("pages", { expire: 0 });
+
+    await audit(
+      "page.campaign",
+      page.id,
+      `ตั้งค่าแคมเปญ เริ่ม ${times.liveAt ?? "—"} จบ ${times.endsAt ?? "—"}` +
+        `${body.takeoverHome ? " · ขึ้นหน้าแรก" : ""}`,
+      actor
+    );
+    return NextResponse.json({ ok: true });
+  }
 
   if (body?.action === "schedule") {
     // Stored as the instants they are; the form collects them in Bangkok

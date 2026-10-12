@@ -31,9 +31,19 @@ const STATUS_LABEL: Record<string, string> = {
   archived: "เก็บเข้ากรุ",
 };
 
+/** Where a page of each kind actually lives. The list shows it so nobody has
+ *  to remember that campaigns are under /sale and everything else is not. */
 function addressOf(page: { kind: string; slug: string }) {
-  return page.kind === "home" ? "/" : `/p/${page.slug}`;
+  if (page.kind === "home") return "/";
+  if (page.kind === "campaign") return `/sale/${page.slug}`;
+  if (page.kind === "brand") return `/brands/${page.slug}`;
+  return `/p/${page.slug}`;
 }
+
+const NEW_KINDS: [string, string, string][] = [
+  ["page", "หน้าเว็บ", "/p/"],
+  ["campaign", "แคมเปญ", "/sale/"],
+];
 
 export default function AdminPagesIndex() {
   const [pages, setPages] = useState<PageRow[]>([]);
@@ -42,6 +52,7 @@ export default function AdminPagesIndex() {
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
+  const [kind, setKind] = useState("page");
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -69,13 +80,14 @@ export default function AdminPagesIndex() {
       const res = await fetch("/api/admin/pages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, slug }),
+        body: JSON.stringify({ title, slug, kind }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data?.error ?? "สร้างหน้าไม่สำเร็จ");
       setAdding(false);
       setTitle("");
       setSlug("");
+      setKind("page");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "สร้างหน้าไม่สำเร็จ");
@@ -104,23 +116,39 @@ export default function AdminPagesIndex() {
       {adding && (
         <Card>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <label className="sm:w-36">
+              <span className="block text-[13px] font-semibold text-brand-ink">ประเภท</span>
+              <select
+                value={kind}
+                onChange={(e) => setKind(e.target.value)}
+                className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 px-2.5 text-sm outline-hidden focus-visible:border-brand-teal focus-visible:ring-2 focus-visible:ring-brand-teal/30"
+              >
+                {NEW_KINDS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="flex-1">
               <span className="block text-[13px] font-semibold text-brand-ink">ชื่อหน้า</span>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="เช่น เกี่ยวกับเรา"
+                placeholder={kind === "campaign" ? "เช่น 11.11 Mega Sale" : "เช่น เกี่ยวกับเรา"}
                 className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-hidden focus-visible:border-brand-teal focus-visible:ring-2 focus-visible:ring-brand-teal/30"
               />
             </label>
             <label className="flex-1">
               <span className="block text-[13px] font-semibold text-brand-ink">ที่อยู่หน้า</span>
               <span className="mt-1.5 flex h-11 items-center rounded-lg border border-slate-200 pl-3">
-                <span className="text-sm text-slate-400">/p/</span>
+                <span className="text-sm text-slate-400">
+                  {NEW_KINDS.find(([value]) => value === kind)?.[2] ?? "/p/"}
+                </span>
                 <input
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-                  placeholder="about-us"
+                  placeholder={kind === "campaign" ? "11-11" : "about-us"}
                   className="h-full flex-1 rounded-r-lg px-1 text-sm outline-hidden"
                 />
               </span>
@@ -135,6 +163,7 @@ export default function AdminPagesIndex() {
           </div>
           <p className="mt-2 text-[12px] text-slate-500">
             ที่อยู่ใช้ได้เฉพาะ a-z, 0-9 และขีดกลาง · เปลี่ยนทีหลังไม่ได้ เพราะลิงก์ที่แชร์ไปแล้วจะเสีย
+            {kind === "campaign" && " · แคมเปญประจำปีให้ใช้ที่อยู่เดิมทุกปี (เช่น 11-11) แล้วทำซ้ำจากของปีที่แล้ว ลิงก์โฆษณาเก่าและอันดับใน Google จะไม่หาย"}
           </p>
         </Card>
       )}

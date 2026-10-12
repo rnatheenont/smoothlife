@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
-import { migrateDoc, nextBoundaryAfter } from "@/lib/pages/doc";
+import { migrateDoc } from "@/lib/pages/doc";
 import { pageTag, type PageRow } from "@/lib/pages/store";
-import { publish } from "@/lib/pages/admin";
+import { nextBoundaryFor, publish } from "@/lib/pages/admin";
 
 // Pages that were set to go live, or stop being live, at a time.
 //
@@ -97,7 +97,8 @@ export async function GET(req: NextRequest) {
       ended.push(`${page.kind}/${page.slug}`);
     }
 
-    // 3. A section inside a live page crossed its own window.
+    // 3. A live page crossed one of its own boundaries — a section window
+    //    opening or closing, or a campaign turning over to its next phase.
     const crossed = await supabaseRest<PageRow[]>(
       `pages?select=*&status=eq.published&next_boundary_at=lte.${encodeURIComponent(nowIso)}&limit=50`
     );
@@ -108,7 +109,7 @@ export async function GET(req: NextRequest) {
         returning: false,
         // The next one *after* this instant, so the same crossing is not
         // found again a minute later and re-cleared for ever.
-        body: JSON.stringify({ next_boundary_at: nextBoundaryAfter(doc, now) }),
+        body: JSON.stringify({ next_boundary_at: nextBoundaryFor(page, doc, now) }),
       });
       clear(page);
       refreshed.push(`${page.kind}/${page.slug}`);

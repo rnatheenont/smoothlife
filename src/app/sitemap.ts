@@ -8,7 +8,7 @@ import { brandProducts, brands } from "@/data/brands";
 import { getPublicQuestions } from "@/lib/kb-public";
 
 import { SITE_URL } from "@/lib/site-url";
-import { publishedPages } from "@/lib/pages/store";
+import { indexableCampaigns, publishedPages } from "@/lib/pages/store";
 
 const STATIC_ROUTES = [
   "",
@@ -44,6 +44,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // address worth telling Google about.
   for (const page of await publishedPages("page")) {
     entries.push({ url: `${SITE_URL}/p/${page.slug}`, lastModified: now });
+  }
+
+  // Campaigns that have not finished. /sale/ is deliberately crawlable — the
+  // whole point of reusing one slug every year is that the page accumulates
+  // its own standing in search.
+  for (const campaign of await indexableCampaigns(now)) {
+    entries.push({ url: `${SITE_URL}/sale/${campaign.slug}`, lastModified: now });
   }
 
   for (const p of products) {

@@ -753,6 +753,21 @@
   }
 }
 
+/* Campaign colours, scoped to the campaign page and nowhere else.
+
+   The defaults are here so a section can write var(--cp-accent) plainly and
+   always get a colour; a campaign that chose one overrides these three from
+   an inline style on this same element (see lib/pages/theme.ts). Deliberately
+   not on :root — the lesson in the plan is that recolouring a whole site from
+   one accent makes every other page worse, so the campaign's colours cannot
+   reach past the campaign. */
+.campaign-page {
+  --cp-accent: var(--color-brand-800);
+  --cp-on-accent: #ffffff;
+  --cp-bg: #fafaf8;
+  background-color: var(--cp-bg);
+}
+
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
