@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
-import { SCHEMA_VERSION } from "@/lib/pages/doc";
+import { SCHEMA_VERSION, migrateDoc } from "@/lib/pages/doc";
+import { newSectionId } from "@/lib/pages/edit";
 import type { PageKind } from "@/lib/pages/types";
 
 // The list of pages, and making a new one.
@@ -52,7 +53,9 @@ export async function POST(req: NextRequest) {
   if (!verifyAdminToken(token)) return unauthorized();
   if (!supabaseConfigured()) return NextResponse.json({ ok: false, error: "not configured" }, { status: 503 });
 
-  const body = (await req.json().catch(() => null)) as { slug?: string; title?: string } | null;
+  const body = (await req.json().catch(() => null)) as
+    | { slug?: string; title?: string; action?: "duplicate"; fromKind?: PageKind; fromSlug?: string }
+    | null;
   const slug = (body?.slug ?? "").trim().toLowerCase();
   const title = (body?.title ?? "").trim();
 
@@ -73,6 +76,28 @@ export async function POST(req: NextRequest) {
   if (existing) return NextResponse.json({ ok: false, error: "มีหน้าที่ใช้ที่อยู่นี้อยู่แล้ว" }, { status: 409 });
 
   const actor = getAdminSession(token)?.userId ?? "shared-login";
+
+  // A copy of an existing page: same sections, new ids, nothing published.
+  //
+  // The copy starts as a draft even when the original is live. That is the
+  // point of copying — the usual reason is to try a change on a page that is
+  // already working, and a copy that went live on creation would put two
+  // versions of the same page in front of customers at once.
+  let draftDoc: unknown = { schemaVersion: SCHEMA_VERSION, sections: [] };
+  if (body?.action === "duplicate") {
+    const [source] = await supabaseRest<{ draft_doc: unknown }[]>(
+      `pages?select=draft_doc&kind=eq.${pgValue(body.fromKind ?? "")}&slug=eq.${pgValue(body.fromSlug ?? "")}&limit=1`
+    );
+    if (!source) return NextResponse.json({ ok: false, error: "ไม่พบหน้าต้นทางที่จะคัดลอก" }, { status: 404 });
+    const migrated = migrateDoc(source.draft_doc);
+    // Fresh ids: an id is what a preview link, an error report and the
+    // scheduler all point at, so two pages must never share one.
+    draftDoc = {
+      schemaVersion: SCHEMA_VERSION,
+      sections: migrated.sections.map((section) => ({ ...section, id: newSectionId() })),
+    };
+  }
+
   const [created] = await supabaseRest<{ id: string; slug: string }[]>("pages", {
     method: "POST",
     body: JSON.stringify({
@@ -80,9 +105,9 @@ export async function POST(req: NextRequest) {
       slug,
       title,
       status: "draft",
-      // Empty, not a template: the editor opens on the section library and
-      // the first choice is the person's, not ours.
-      draft_doc: { schemaVersion: SCHEMA_VERSION, sections: [] },
+      // Empty unless this is a copy: the editor opens on the section library
+      // and the first choice is the person's, not ours.
+      draft_doc: draftDoc,
       draft_updated_by: actor,
       created_by: actor,
     }),

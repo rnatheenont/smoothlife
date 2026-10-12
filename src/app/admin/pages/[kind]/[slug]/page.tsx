@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowDown,
   ArrowUp,
@@ -11,6 +12,10 @@ import {
   Monitor,
   Plus,
   RefreshCw,
+  BookmarkPlus,
+  Clock,
+  Copy,
+  LayoutTemplate,
   Rocket,
   Smartphone,
   Trash2,
@@ -31,6 +36,7 @@ import {
   updateSettings,
 } from "@/lib/pages/edit";
 import type { FieldDef } from "@/lib/pages/types";
+import { bangkokInputToIso, bangkokLabel, isoToBangkokInput } from "@/lib/pages/bangkok-time";
 
 // The page editor.
 //
@@ -53,6 +59,13 @@ type LibraryEntry = {
   fields: FieldDef[];
 };
 
+type TemplateRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+};
+
 type Revision = {
   id: string;
   number: number;
@@ -71,6 +84,8 @@ type PageInfo = {
   draftUpdatedBy: string | null;
   draftUpdatedAt: string;
   publishedRevisionId: string | null;
+  publishAt: string | null;
+  unpublishAt: string | null;
 };
 
 type SaveState = "idle" | "dirty" | "saving" | "saved" | "conflict" | "error";
@@ -99,11 +114,33 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   // so it only changes once a save has landed — refreshing before that would
   // show the version before the edit and look like the editor had lost it.
   const [previewNonce, setPreviewNonce] = useState(0);
+  const [scheduling, setScheduling] = useState(false);
+  const [templates, setTemplates] = useState<TemplateRow[]>([]);
+  const [templateName, setTemplateName] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [applying, setApplying] = useState<string | null>(null);
+  const [confirmApply, setConfirmApply] = useState<string | null>(null);
+  const [duplicating, setDuplicating] = useState(false);
+  const [copySlug, setCopySlug] = useState("");
+  const router = useRouter();
+  const [publishAt, setPublishAt] = useState("");
+  const [unpublishAt, setUnpublishAt] = useState("");
 
   // The version this editor read. Every save carries it, and the server
   // refuses a save that does not match — see saveDraft.
   const versionRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const loadTemplates = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/pages/templates");
+      const data = await res.json();
+      if (res.ok && data.ok) setTemplates(data.templates);
+    } catch {
+      // A template list that failed to load is a missing convenience, not a
+      // broken editor — the page itself is already on screen.
+    }
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -118,14 +155,17 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
       setIssues(data.issues ?? []);
       versionRef.current = data.page.draftVersion;
       setSelected((cur) => cur ?? data.doc.sections[0]?.id ?? null);
+      setPublishAt(isoToBangkokInput(data.page.publishAt));
+      setUnpublishAt(isoToBangkokInput(data.page.unpublishAt));
       setSaveState("idle");
       setConflict(null);
+      void loadTemplates();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "โหลดเพจไม่สำเร็จ");
     } finally {
       setLoading(false);
     }
-  }, [kind, slug]);
+  }, [kind, slug, loadTemplates]);
 
   useEffect(() => {
     void load();
@@ -216,6 +256,114 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
     edit(addSection(doc, entry, id));
     setSelected(id);
     setAdding(false);
+  }
+
+  /** Push the pending autosave through before an action that reads the draft
+   *  from the database. Without this, saving a template a second after an
+   *  edit stores the version without that edit. */
+  const flushDraft = useCallback(async () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (doc && (saveState === "dirty" || saveState === "error")) await save(doc);
+  }, [doc, save, saveState]);
+
+  async function saveAsTemplate() {
+    setSavingTemplate(true);
+    setMessage(null);
+    try {
+      await flushDraft();
+      const res = await fetch("/api/admin/pages/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save", fromKind: kind, fromSlug: slug, name: templateName }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error ?? "บันทึก template ไม่สำเร็จ");
+      setTemplateName("");
+      setMessage(`เก็บเป็น template "${data.template?.name ?? templateName}" แล้ว`);
+      await loadTemplates();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "บันทึก template ไม่สำเร็จ");
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
+
+  async function applyTemplate(templateId: string) {
+    setApplying(templateId);
+    setMessage(null);
+    try {
+      // The pending autosave is dropped on purpose: it carries the document
+      // this is about to replace, and letting it land after the template
+      // would undo the thing just asked for.
+      if (timerRef.current) clearTimeout(timerRef.current);
+      const res = await fetch("/api/admin/pages/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "apply", templateId, toKind: kind, toSlug: slug }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error ?? "ใช้ template ไม่สำเร็จ");
+      setSelected(null);
+      setConfirmApply(null);
+      setMessage("เปลี่ยนร่างเป็น template แล้ว — หน้าที่เผยแพร่อยู่ยังไม่เปลี่ยน");
+      await load();
+      setPreviewNonce((n) => n + 1);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "ใช้ template ไม่สำเร็จ");
+    } finally {
+      setApplying(null);
+    }
+  }
+
+  async function duplicatePage() {
+    setDuplicating(true);
+    setMessage(null);
+    try {
+      await flushDraft();
+      const res = await fetch("/api/admin/pages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "duplicate",
+          fromKind: kind,
+          fromSlug: slug,
+          slug: copySlug,
+          title: `${page?.title ?? slug} (สำเนา)`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error ?? "คัดลอกหน้าไม่สำเร็จ");
+      // Straight to the copy: the reason for copying is to work on the copy,
+      // and leaving the person on the original means finding it again.
+      router.push(`/admin/pages/page/${data.page.slug}`);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "คัดลอกหน้าไม่สำเร็จ");
+      setDuplicating(false);
+    }
+  }
+
+  async function saveSchedule() {
+    setScheduling(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/pages/${kind}/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "schedule",
+          publishAt: bangkokInputToIso(publishAt),
+          unpublishAt: bangkokInputToIso(unpublishAt),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data?.error ?? "ตั้งเวลาไม่สำเร็จ");
+      setMessage("บันทึกเวลาแล้ว");
+      await load();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "ตั้งเวลาไม่สำเร็จ");
+    } finally {
+      setScheduling(false);
+    }
   }
 
   async function rollbackTo(revisionId: string, number: number) {
@@ -520,6 +668,136 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
               );
             })}
           </ol>
+
+          {/* Scheduling. Deliberately under the section list rather than in
+              the publish dialog: a time set on a page is a property of the
+              page, not of the one press of a button, and burying it in a
+              dialog is how it gets set once and then forgotten about. */}
+          <div className="border-t border-slate-100 px-4 py-3">
+            <h3 className="text-[12px] font-bold text-slate-500">ตั้งเวลา (เวลาไทย)</h3>
+            <div className="mt-2 flex flex-col gap-2">
+              <label className="text-[12px] text-slate-500">
+                เผยแพร่เมื่อ
+                <input
+                  type="datetime-local"
+                  value={publishAt}
+                  onChange={(e) => setPublishAt(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2.5 text-[13px] outline-hidden focus-visible:border-brand-teal"
+                />
+              </label>
+              <label className="text-[12px] text-slate-500">
+                ปิดหน้าเมื่อ
+                <input
+                  type="datetime-local"
+                  value={unpublishAt}
+                  onChange={(e) => setUnpublishAt(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-2.5 text-[13px] outline-hidden focus-visible:border-brand-teal"
+                />
+              </label>
+              <button
+                onClick={() => void saveSchedule()}
+                disabled={scheduling}
+                className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-slate-200 text-[13px] font-semibold text-brand-800 disabled:opacity-60"
+              >
+                {scheduling ? <Loader2 size={13} className="animate-spin" /> : <Clock size={13} />}
+                บันทึกเวลา
+              </button>
+              {/* Said plainly, because "ตั้งเวลา 09:00" sounds like a promise
+                  of 09:00:00 and the checker runs once a minute. */}
+              <p className="text-[11px] leading-relaxed text-slate-400">
+                ระบบตรวจทุก 1 นาที — หน้าจะขึ้นภายใน 1 นาทีหลังเวลาที่ตั้งไว้
+                {page.publishAt && ` · ตั้งไว้ ${bangkokLabel(page.publishAt)}`}
+              </p>
+            </div>
+          </div>
+
+          {/* Templates and copies. A template is an arrangement of sections
+              with the ids stripped; applying one replaces the draft and
+              leaves the published page alone, which is why it needs no
+              scarier warning than the one on the button. */}
+          <div className="border-t border-slate-100 px-4 py-3">
+            <h3 className="text-[12px] font-bold text-slate-500">template และสำเนา</h3>
+
+            <div className="mt-2 flex gap-2">
+              <input
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="ชื่อ template ที่จะเก็บ…"
+                aria-label="ชื่อ template ที่จะเก็บจากหน้านี้"
+                className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 px-2.5 text-[13px] outline-hidden focus-visible:border-brand-teal"
+              />
+              <button
+                onClick={() => void saveAsTemplate()}
+                disabled={savingTemplate || !templateName.trim() || (doc?.sections.length ?? 0) === 0}
+                className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 px-3 text-[13px] font-semibold text-brand-800 disabled:opacity-50"
+              >
+                {savingTemplate ? <Loader2 size={13} className="animate-spin" /> : <BookmarkPlus size={13} />}
+                เก็บไว้
+              </button>
+            </div>
+
+            {templates.length > 0 && (
+              <ul className="mt-2 flex flex-col gap-1">
+                {templates.map((t) => (
+                  <li key={t.id} className="flex items-center gap-2 text-[12px] text-slate-500">
+                    <span className="min-w-0 flex-1 truncate">
+                      {t.name}
+                      {t.is_system && <span className="ml-1 text-slate-400">(ของระบบ)</span>}
+                    </span>
+                    {confirmApply === t.id ? (
+                      <>
+                        <button
+                          onClick={() => void applyTemplate(t.id)}
+                          disabled={applying !== null}
+                          className="flex h-9 shrink-0 items-center gap-1 rounded-full bg-brand-gradient px-2.5 font-semibold text-white disabled:opacity-50"
+                        >
+                          {applying === t.id && <Loader2 size={12} className="animate-spin" />}
+                          ทับร่างเดิม
+                        </button>
+                        <button
+                          onClick={() => setConfirmApply(null)}
+                          className="h-9 shrink-0 rounded-full px-2 font-semibold text-slate-500"
+                        >
+                          ยกเลิก
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmApply(t.id)}
+                        className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-slate-200 px-2.5 font-semibold text-brand-800"
+                      >
+                        <LayoutTemplate size={12} /> ใช้แบบนี้
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="mt-3 flex gap-2">
+              <span className="flex h-10 min-w-0 flex-1 items-center rounded-lg border border-slate-200 pl-2.5">
+                <span className="shrink-0 text-[13px] text-slate-400">/p/</span>
+                <input
+                  value={copySlug}
+                  onChange={(e) => setCopySlug(e.target.value)}
+                  placeholder="ที่อยู่ของสำเนา"
+                  aria-label="ที่อยู่ของหน้าสำเนา"
+                  className="h-full min-w-0 flex-1 rounded-r-lg px-1 text-[13px] outline-hidden"
+                />
+              </span>
+              <button
+                onClick={() => void duplicatePage()}
+                disabled={duplicating || !copySlug.trim()}
+                className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 px-3 text-[13px] font-semibold text-brand-800 disabled:opacity-50"
+              >
+                {duplicating ? <Loader2 size={13} className="animate-spin" /> : <Copy size={13} />}
+                ทำสำเนา
+              </button>
+            </div>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+              สำเนาเริ่มเป็นร่างเสมอ แม้ต้นฉบับจะเผยแพร่อยู่ — ลูกค้าจะไม่เห็นสองหน้าพร้อมกัน
+            </p>
+          </div>
 
           {revisions.length > 0 && (
             <div className="border-t border-slate-100 px-4 py-3">
