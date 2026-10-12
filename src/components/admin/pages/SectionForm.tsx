@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import ImagePicker from "@/components/admin/pages/ImagePicker";
 import { parseSlugList } from "@/lib/pages/edit";
 import type { FieldDef } from "@/lib/pages/types";
@@ -76,6 +77,158 @@ function JsonField({
         }`}
       />
       {error ? <p className="mt-1 text-[12px] text-amber-700">{error}</p> : help && <p className={helpCls}>{help}</p>}
+    </div>
+  );
+}
+
+/** One row of a banner list. Empty strings rather than undefined, so the
+ *  shape of a new row is the shape the schema expects. */
+export type BannerRow = { image: string; mobileImage: string; href: string; title: string };
+
+function asRows(value: unknown): BannerRow[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((row) => {
+    const r = (row ?? {}) as Record<string, unknown>;
+    return {
+      image: typeof r.image === "string" ? r.image : "",
+      mobileImage: typeof r.mobileImage === "string" ? r.mobileImage : "",
+      href: typeof r.href === "string" ? r.href : "",
+      title: typeof r.title === "string" ? r.title : "",
+    };
+  });
+}
+
+/**
+ * The banner list: a card per slide, in the order they appear on the page.
+ *
+ * Reordering is two buttons rather than a drag, unlike the section list on
+ * the left. A drag needs somewhere to drag within, and this panel is one
+ * column of cards that each hold a picture-picker which opens a dialog of
+ * its own; the buttons work the same for a mouse, a keyboard and a thumb,
+ * and there are rarely more than four of these.
+ */
+function BannerListField({
+  label,
+  help,
+  max,
+  value,
+  onChange,
+}: {
+  label: string;
+  help?: string;
+  max?: number;
+  value: unknown;
+  onChange: (next: BannerRow[]) => void;
+}) {
+  const rows = asRows(value);
+  const full = typeof max === "number" && rows.length >= max;
+
+  function update(i: number, patch: Partial<BannerRow>) {
+    onChange(rows.map((row, j) => (i === j ? { ...row, ...patch } : row)));
+  }
+
+  function move(i: number, delta: number) {
+    const to = i + delta;
+    if (to < 0 || to >= rows.length) return;
+    const next = [...rows];
+    [next[i], next[to]] = [next[to], next[i]];
+    onChange(next);
+  }
+
+  return (
+    <div>
+      <span className={labelCls}>{label}</span>
+      {help && <p className={helpCls}>{help}</p>}
+
+      <div className="mt-2 flex flex-col gap-3">
+        {rows.map((row, i) => (
+          <div key={i} className="rounded-xl2 border border-slate-200 bg-surface-mist/60 p-3">
+            <div className="mb-2 flex items-center gap-1">
+              <span className="flex-1 text-[12px] font-semibold text-brand-ink">สไลด์ {i + 1}</span>
+              <button
+                type="button"
+                onClick={() => move(i, -1)}
+                disabled={i === 0}
+                aria-label={`ย้ายสไลด์ ${i + 1} ขึ้น`}
+                className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-brand-800 disabled:opacity-30"
+              >
+                <ArrowUp size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => move(i, 1)}
+                disabled={i === rows.length - 1}
+                aria-label={`ย้ายสไลด์ ${i + 1} ลง`}
+                className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-brand-800 disabled:opacity-30"
+              >
+                <ArrowDown size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange(rows.filter((_, j) => j !== i))}
+                aria-label={`ลบสไลด์ ${i + 1}`}
+                className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+
+            <ImagePicker
+              value={row.image}
+              onChange={(url) => update(i, { image: url })}
+              // The picture's own description becomes the slide's, unless
+              // this slide already says something of its own.
+              onPickAlt={(alt) => update(i, { title: row.title || alt })}
+            />
+
+            <label className="mt-2.5 block text-[12px] font-semibold text-slate-600">ลิงก์เมื่อกด</label>
+            <input
+              type="text"
+              value={row.href}
+              onChange={(e) => update(i, { href: e.target.value })}
+              placeholder="/promotions หรือ /collections/sale"
+              className={`${inputCls} mt-1 h-10`}
+            />
+
+            <label className="mt-2.5 block text-[12px] font-semibold text-slate-600">คำอธิบายภาพ</label>
+            <input
+              type="text"
+              value={row.title}
+              onChange={(e) => update(i, { title: e.target.value })}
+              placeholder="เช่น Winter Festival ลด 50%"
+              className={`${inputCls} mt-1 h-10`}
+            />
+            <p className="mt-1 text-[11px] text-slate-500">
+              คนที่ใช้โปรแกรมอ่านหน้าจอได้ยินข้อความนี้แทนรูป และ Google ใช้มันด้วย
+            </p>
+
+            {/* Second picture, not a second slide: the wide artwork becomes a
+                thin strip on a phone, so a tall crop of the same campaign
+                goes here. Left empty, the phone shows the wide one. */}
+            <details className="mt-2.5">
+              <summary className="cursor-pointer text-[12px] font-semibold text-slate-600">
+                รูปสำหรับมือถือ (ไม่ใส่ก็ได้)
+              </summary>
+              <div className="mt-2">
+                <ImagePicker value={row.mobileImage} onChange={(url) => update(i, { mobileImage: url })} />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  รูปแนวตั้ง/จัตุรัสของแคมเปญเดียวกัน · ไม่ใส่ = ใช้รูปด้านบนทั้งสองขนาด
+                </p>
+              </div>
+            </details>
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onChange([...rows, { image: "", mobileImage: "", href: "", title: "" }])}
+        disabled={full}
+        className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 text-[13px] font-semibold text-brand-800 hover:border-brand-teal hover:bg-surface-soft disabled:opacity-40"
+      >
+        <Plus size={15} /> เพิ่มสไลด์
+      </button>
+      {full && <p className={helpCls}>ใส่ได้สูงสุด {max} สไลด์</p>}
     </div>
   );
 }
@@ -203,6 +356,19 @@ export default function SectionForm({
                 {list.length > 0 ? ` · ตอนนี้ ${list.length}` : ""}
               </p>
             </div>
+          );
+        }
+
+        if (field.type === "banners") {
+          return (
+            <BannerListField
+              key={field.key}
+              label={field.label}
+              help={field.help}
+              max={field.max}
+              value={value}
+              onChange={(rows) => set(field.key, rows)}
+            />
           );
         }
 

@@ -53,6 +53,11 @@ export type FieldDef =
   | { key: string; type: "image"; label: string; help?: string }
   | { key: string; type: "datetime"; label: string; help?: string }
   | { key: string; type: "product_slugs"; label: string; max?: number; help?: string }
+  /** A list of campaign banners: picture, phone picture, link, description.
+   *  Four fields that only mean anything together — a link belongs to the
+   *  picture above it — so they are edited as rows rather than as four
+   *  parallel lists that can fall out of step with each other. */
+  | { key: string; type: "banners"; label: string; max?: number; help?: string }
   | { key: string; type: "brand_slugs"; label: string; max?: number; help?: string }
   /** Structured settings — a list of rows, a nested object — edited as JSON
    *  until the section earns a purpose-built form. It is here because the
