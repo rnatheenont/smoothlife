@@ -4,6 +4,8 @@ import { migrateDoc, nextBoundaryAfter, SCHEMA_VERSION, type PageDoc } from "./d
 import { defaultHomeDoc } from "./default-docs/home";
 import { defaultBrandDoc } from "./default-docs/brand";
 import { getBrand } from "@/data/brands";
+import { GLOBALS, SYSTEM_PAGES, TEMPLATES } from "./system-pages";
+import { waveEnabled } from "@/lib/feature-flags";
 import { nextPhaseBoundaryAfter, validateCampaignTimes, type CampaignTimes } from "./campaign";
 import { checkTheme, type CampaignTheme } from "./theme";
 import { pageTag, type PageRow } from "./store";
@@ -55,7 +57,59 @@ const SEEDS: Partial<Record<PageKind, (slug: string) => { title: string; doc: Pa
     const brand = getBrand(slug);
     return brand ? { title: `แบรนด์ ${brand.name}`, doc: defaultBrandDoc() } : null;
   },
+
+  // The three kinds whose slugs are a closed list. Two conditions, and both
+  // are the same answer — a 404 — because they mean the same thing from the
+  // admin's side: there is nothing here to edit.
+  //
+  //   not in the registry → an address the shop does not serve
+  //   wave not switched on → the page is still served by its own code, and a
+  //     document edited now would be a draft of something nobody can see
+  //
+  // The second is what keeps a half-built wave out of the editor. It only
+  // guards *creating* the row: a page that was opened while its wave was on
+  // still opens after the wave is switched back off, which is what somebody
+  // turning a wave off in a hurry needs — their work is still there.
+  system: (slug) => {
+    const page = SYSTEM_PAGES[slug];
+    if (!page || !waveEnabled(page.wave)) return null;
+    return { title: page.title, doc: defaultDocFor("system", slug) };
+  },
+
+  template: (slug) => {
+    const template = TEMPLATES[slug];
+    if (!template || !waveEnabled(template.wave)) return null;
+    return { title: template.title, doc: defaultDocFor("template", slug) };
+  },
+
+  global: (slug) => {
+    const doc = GLOBALS[slug];
+    if (!doc || !waveEnabled(doc.wave)) return null;
+    return { title: doc.title, doc: defaultDocFor("global", slug) };
+  },
 };
+
+/**
+ * The layout a page of the new kinds starts from.
+ *
+ * Each one gets a default document that renders the page as it looks today —
+ * that is the whole method: move the page over without changing it, confirm
+ * it is the same, and only then let anybody edit it. Those documents are
+ * written per wave, so this map fills up as the waves are built, and a page
+ * whose wave has been switched on without one would be a blank page where a
+ * real one used to be.
+ *
+ * Which is why the fallback is an empty document rather than a guess: an
+ * empty one cannot be published (validateForPublish refuses it), so the
+ * mistake stops in the editor instead of on the shop.
+ */
+const DEFAULT_DOCS: Record<string, () => PageDoc> = {
+  // Filled in by E2 (wave 1), E7 (waves 2–3), E8 (wave 4) and E3 (wave 5).
+};
+
+function defaultDocFor(kind: PageKind, slug: string): PageDoc {
+  return DEFAULT_DOCS[`${kind}/${slug}`]?.() ?? { schemaVersion: SCHEMA_VERSION, sections: [] };
+}
 
 export async function openPage(kind: PageKind, slug: string, actor: string): Promise<PageRow | null> {
   if (!supabaseConfigured()) return null;

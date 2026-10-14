@@ -4,7 +4,7 @@ import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server
 import { migrateDoc } from "@/lib/pages/doc";
 import { SECTION_REGISTRY } from "@/sections/registry";
 import type { PageRow } from "@/lib/pages/store";
-import type { PageKind } from "@/lib/pages/types";
+import { PAGE_KINDS } from "@/lib/pages/system-pages";
 
 // How a page is doing: presses per section, by day.
 //
@@ -18,7 +18,7 @@ import type { PageKind } from "@/lib/pages/types";
 // happened, and a report that drops them is a report that says the page did
 // less than it did.
 
-const KINDS: PageKind[] = ["home", "page", "campaign", "brand"];
+const KINDS = PAGE_KINDS;
 const DAYS = 30;
 
 export async function GET(req: NextRequest, props: { params: Promise<{ kind: string; slug: string }> }) {

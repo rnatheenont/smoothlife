@@ -19,7 +19,7 @@ import { editorLink, notifyReview, reviewMessage } from "@/lib/pages/review";
 import { getBrand } from "@/data/brands";
 import { revalidateTag } from "next/cache";
 import { sectionsFor } from "@/sections/registry";
-import type { PageKind } from "@/lib/pages/types";
+import { PAGE_KINDS } from "@/lib/pages/system-pages";
 
 // One page, for the editor.
 //
@@ -31,7 +31,7 @@ import type { PageKind } from "@/lib/pages/types";
 // POST — publish, put a previous version back, set the schedule, or set a
 //        campaign's dates, colours and home-page takeover.
 
-const KINDS: PageKind[] = ["home", "page", "campaign", "brand"];
+const KINDS = PAGE_KINDS;
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });

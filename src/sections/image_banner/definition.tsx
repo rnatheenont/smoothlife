@@ -106,7 +106,7 @@ export const imageBanner: SectionDefinition<typeof schema> = {
     { key: "width", type: "select", label: "ความกว้าง", options: [["page", "เท่าเนื้อหา"], ["full", "เต็มจอ"]] },
     { key: "rounded", type: "toggle", label: "มุมมน" },
   ],
-  enabledOn: ["home", "page", "campaign", "brand"],
+  enabledOn: ["home", "page", "campaign", "brand", "system", "template"],
   isLcpCandidate: true,
   load,
   // Published without a picture the section would be an empty hole the height

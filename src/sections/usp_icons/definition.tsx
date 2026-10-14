@@ -74,6 +74,6 @@ export const uspIcons: SectionDefinition<typeof schema> = {
       options: [["page", "ตามพื้นหน้า"], ["white", "ขาว"], ["soft", "เขียวอ่อน"]],
     },
   ],
-  enabledOn: ["home", "page", "campaign", "brand"],
+  enabledOn: ["home", "page", "campaign", "brand", "system", "template"],
   Component,
 };

@@ -3,6 +3,7 @@ import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-aut
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { SCHEMA_VERSION, migrateDoc } from "@/lib/pages/doc";
 import { newSectionId } from "@/lib/pages/edit";
+import { reservedTopLevelSegments } from "@/lib/pages/system-pages";
 import type { PageKind } from "@/lib/pages/types";
 
 // The list of pages, and making a new one.
@@ -31,7 +32,21 @@ const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Addresses the site already uses for something else. A page at /p/admin is
  *  not a conflict today — /p/ has its own space — but a slug that reads like
  *  a system route invites someone to link to the wrong one. */
-const RESERVED = new Set(["admin", "api", "shop", "cart", "checkout", "chat", "search", "home", "p", "sale"]);
+// Addresses a /p/ page may not take. The hand-written half is the parts of
+// the site that are not pages at all (admin, api) plus the two prefixes the
+// page system itself owns; the rest comes from the system-page registry, so
+// adding a page to it closes that address in the same edit rather than in a
+// second one somebody has to remember.
+const RESERVED = new Set([
+  "admin",
+  "api",
+  "p",
+  "sale",
+  "home",
+  "checkout",
+  "chat",
+  ...reservedTopLevelSegments(),
+]);
 
 /** The kinds that can be created from the admin. "home" is missing on
  *  purpose — there is one home page and it seeds itself from the code. */

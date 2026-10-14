@@ -35,6 +35,6 @@ export const spacer: SectionDefinition<typeof schema> = {
     { key: "size", type: "select", label: "ความสูง", options: [["sm", "น้อย"], ["md", "กลาง"], ["lg", "มาก"]] },
     { key: "divider", type: "toggle", label: "ใส่เส้นคั่น" },
   ],
-  enabledOn: ["home", "page", "campaign", "brand"],
+  enabledOn: ["home", "page", "campaign", "brand", "system", "template"],
   Component,
 };

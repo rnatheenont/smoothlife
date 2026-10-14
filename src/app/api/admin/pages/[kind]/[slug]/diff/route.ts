@@ -4,7 +4,7 @@ import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server
 import { migrateDoc, type PageDoc } from "@/lib/pages/doc";
 import { diffDocs } from "@/lib/pages/diff";
 import { SECTION_REGISTRY } from "@/sections/registry";
-import type { PageKind } from "@/lib/pages/types";
+import { PAGE_KINDS } from "@/lib/pages/system-pages";
 
 // What changed, in words.
 //
@@ -19,7 +19,7 @@ import type { PageKind } from "@/lib/pages/types";
 // live version against the draft, which is the question an approver asks:
 // "what am I about to put on the site".
 
-const KINDS: PageKind[] = ["home", "page", "campaign", "brand"];
+const KINDS = PAGE_KINDS;
 
 const COMMON_LABEL: Record<string, string> = {
   hidden: "ซ่อน/แสดง",

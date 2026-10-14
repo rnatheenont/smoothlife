@@ -131,7 +131,7 @@ export const productGrid: SectionDefinition<typeof schema> = {
     },
     { key: "limit", type: "number", label: "แสดงกี่ชิ้น", min: 2, max: 24 },
   ],
-  enabledOn: ["home", "page", "campaign", "brand"],
+  enabledOn: ["home", "page", "campaign", "brand", "system", "template"],
   load,
   check: async (settings) => {
     const found = pick(settings).length;

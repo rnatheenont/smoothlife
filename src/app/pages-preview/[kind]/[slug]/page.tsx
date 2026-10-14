@@ -7,7 +7,7 @@ import { renderSections } from "@/lib/pages/render";
 import { PHASE_ORDER } from "@/lib/pages/campaign";
 import { campaignTimesOf } from "@/lib/pages/admin";
 import { themeVars, type CampaignTheme } from "@/lib/pages/theme";
-import type { PageKind } from "@/lib/pages/types";
+import { PAGE_KINDS } from "@/lib/pages/system-pages";
 import type { PageRow } from "@/lib/pages/store";
 import PreviewSelect from "@/components/admin/pages/PreviewSelect";
 
@@ -43,7 +43,7 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-const KINDS: PageKind[] = ["home", "page", "campaign", "brand"];
+const KINDS = PAGE_KINDS;
 
 function Notice({ children }: { children: React.ReactNode }) {
   return (

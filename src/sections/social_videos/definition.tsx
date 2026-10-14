@@ -89,7 +89,7 @@ export const socialVideos: SectionDefinition<typeof schema> = {
     },
     { key: "startAt", type: "number", label: "เปิดที่คลิปลำดับ (เริ่มจาก 0)", min: 0, max: 11 },
   ],
-  enabledOn: ["home", "page", "campaign", "brand"],
+  enabledOn: ["home", "page", "campaign", "brand", "system", "template"],
   maxPerPage: 1,
   Component,
 };
