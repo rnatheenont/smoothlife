@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { shopifyImage } from "@/lib/shopify-image";
 import Image from "next/image";
 import { ChevronLeft, Package, MapPin } from "lucide-react";
 import ShipmentTracker from "@/components/ShipmentTracker";
@@ -108,7 +109,7 @@ export default function OrderDetailView({
                       opens to recognise what they bought. */}
                   {it.imageUrl || product ? (
                     <Image
-                      src={it.imageUrl || product!.image}
+                      src={shopifyImage(it.imageUrl || product!.image, 112)}
                       alt={it.title}
                       fill
                       sizes="56px"

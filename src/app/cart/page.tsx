@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
 import Image from "next/image";
 import { Minus, Plus, Trash2, Award, Ticket, Repeat, Gift } from "lucide-react";
@@ -108,7 +109,7 @@ export default function CartPage() {
             the things that do cost money. */}
         {line.isGift && <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-brand-gradient" />}
         <Link href={`/product/${line.slug}`} className="relative h-20 w-20 md:h-24 md:w-24 shrink-0 self-center rounded-lg overflow-hidden bg-surface-soft">
-          <Image src={line.image} alt={line.name} fill className="object-cover" />
+          <Image src={shopifyImage(line.image, 128)} alt={line.name} fill sizes="64px" className="object-cover" />
         </Link>
         <div className="flex-1 min-w-0 flex flex-col">
           {/* Above the name, not after it: the name is clamped to two lines,

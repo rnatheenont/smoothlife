@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
 import Image from "next/image";
 import { Package, Loader2, Truck, RefreshCw, ChevronRight } from "lucide-react";
@@ -270,7 +271,7 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
                             opens to recognise what they bought. */}
                         {it.imageUrl || product ? (
                           <Image
-                            src={it.imageUrl || product!.image}
+                            src={shopifyImage(it.imageUrl || product!.image, 96)}
                             alt={it.title}
                             fill
                             sizes="56px"

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import Link from "next/link";
 import Countdown from "@/components/campaign/Countdown";
-import { mediaSourcesFor } from "@/lib/media-lookup";
+import { mediaAssetFor } from "@/lib/media-lookup";
 import { srcSetFor } from "@/lib/media";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
@@ -32,12 +32,13 @@ const schema = z.object({
 });
 
 type Settings = z.output<typeof schema>;
-type Data = { desktop?: Record<string, string> | null; mobile?: Record<string, string> | null };
+type Asset = Awaited<ReturnType<typeof mediaAssetFor>>;
+type Data = { desktop?: Asset; mobile?: Asset };
 
 async function load(settings: Settings): Promise<Data> {
   const [desktop, mobile] = await Promise.all([
-    settings.image ? mediaSourcesFor(settings.image) : null,
-    settings.imageMobile ? mediaSourcesFor(settings.imageMobile) : null,
+    settings.image ? mediaAssetFor(settings.image) : null,
+    settings.imageMobile ? mediaAssetFor(settings.imageMobile) : null,
   ]);
   return { desktop, mobile };
 }
@@ -75,7 +76,7 @@ function Component({ settings, data, index, ctx }: SectionProps<Settings, Data>)
           {settings.imageMobile && (
             <source
               media="(max-width: 767px)"
-              srcSet={srcSetFor(data?.mobile ?? undefined) ?? settings.imageMobile}
+              srcSet={srcSetFor(data?.mobile?.sources ?? undefined) ?? settings.imageMobile}
               sizes="100vw"
             />
           )}
@@ -86,13 +87,18 @@ function Component({ settings, data, index, ctx }: SectionProps<Settings, Data>)
               the rule does not fire inside <picture>.) */}
           <img
             src={settings.image}
-            srcSet={srcSetFor(data?.desktop ?? undefined)}
+            srcSet={srcSetFor(data?.desktop?.sources ?? undefined)}
             sizes="100vw"
             alt={settings.alt}
             // The first section on a campaign page is the largest image on
             // it, and the one the page is judged by.
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : undefined}
+            // The picture's own shape, so the page does not jump when the
+            // largest image on a campaign page arrives. The drawn size is
+            // still h-auto w-full.
+            width={data?.desktop?.width ?? undefined}
+            height={data?.desktop?.height ?? undefined}
             className="h-auto w-full"
           />
         </picture>

@@ -4,6 +4,8 @@
 @import './tailwind-v3-compat.css';
 
 @source '../**/*.{js,ts,jsx,tsx,mdx}';
+@source not '../app/admin/**';
+@source not '../components/admin/**';
 
 /* Dark styling only when something puts `.dark` on the page. HeroUI's own
    `dark:` variant also follows the OS setting; declared after it, this one

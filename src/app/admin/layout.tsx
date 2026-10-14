@@ -1,5 +1,8 @@
 "use client";
 
+// The console's own HeroUI component styles — see heroui-admin.css.
+import "./heroui-admin.css";
+
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";

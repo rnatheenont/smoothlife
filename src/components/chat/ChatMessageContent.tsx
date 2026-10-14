@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, ReactNode } from "react";
+import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
 import Image from "next/image";
 import { Check, Plus } from "lucide-react";
@@ -90,9 +91,10 @@ export function ProductChip({ slug }: { slug: string }) {
     <div className="my-2 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2 shadow-xs">
       <Link href={`/product/${product.slug}`} className="shrink-0 relative h-14 w-14 block">
         <Image
-          src={product.image}
+          src={shopifyImage(product.image, 112)}
           alt={product.name}
           fill
+          sizes="56px"
           className="rounded-lg object-cover bg-surface-soft"
         />
       </Link>

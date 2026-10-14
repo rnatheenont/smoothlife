@@ -1,0 +1,25 @@
+/*
+  HeroUI component CSS for the back office only (see src/app/heroui.css for
+  the storefront's).
+
+  These eleven components are used on /admin and nowhere else — the form
+  controls of the console. They were in the sheet every page loads, which
+  meant a shopper downloaded the styling for a multi-select menu, a switch
+  and a tooltip they could never see: about 45 KB of CSS, on every visit.
+
+  Anything used on both sides stays in the storefront sheet: a second copy
+  here would be bytes, not safety.
+*/
+@reference "../globals.css";
+
+@import "@heroui/styles/components/tooltip.css" layer(components);
+@import "@heroui/styles/components/toggle-button.css" layer(components);
+@import "@heroui/styles/components/toggle-button-group.css" layer(components);
+@import "@heroui/styles/components/popover.css" layer(components);
+@import "@heroui/styles/components/list-box.css" layer(components);
+@import "@heroui/styles/components/list-box-item.css" layer(components);
+@import "@heroui/styles/components/select.css" layer(components);
+@import "@heroui/styles/components/textarea.css" layer(components);
+@import "@heroui/styles/components/checkbox.css" layer(components);
+@import "@heroui/styles/components/switch.css" layer(components);
+@import "@heroui/styles/components/input-group.css" layer(components);

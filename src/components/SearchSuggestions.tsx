@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { shopifyImage } from "@/lib/shopify-image";
 import Image from "next/image";
 import Link from "next/link";
 import type { ProductCardData } from "@/data/card";
@@ -117,7 +118,7 @@ export default function SearchSuggestions({
                   className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-soft transition-colors"
                 >
                   <span className="relative h-11 w-11 shrink-0 rounded-lg overflow-hidden bg-surface-soft">
-                    <Image src={p.image} alt={p.name} fill sizes="44px" className="object-cover" />
+                    <Image src={shopifyImage(p.image, 88)} alt={p.name} fill sizes="44px" className="object-cover" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span translate="no" className="block text-xs font-semibold text-brand-800 truncate">{p.brand}</span>

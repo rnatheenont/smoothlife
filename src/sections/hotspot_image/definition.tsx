@@ -1,6 +1,6 @@
 import { z } from "zod";
 import Link from "next/link";
-import { mediaSourcesFor } from "@/lib/media-lookup";
+import { mediaAssetFor } from "@/lib/media-lookup";
 import { srcSetFor } from "@/lib/media";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
@@ -35,11 +35,13 @@ const schema = z.object({
 
 type Settings = z.output<typeof schema>;
 
+type Asset = Awaited<ReturnType<typeof mediaAssetFor>>;
+
 async function load(settings: Settings) {
-  return settings.image ? await mediaSourcesFor(settings.image) : null;
+  return settings.image ? await mediaAssetFor(settings.image) : null;
 }
 
-function Component({ settings, data }: SectionProps<Settings, Record<string, string> | null>) {
+function Component({ settings, data }: SectionProps<Settings, Asset>) {
   if (!settings.image || settings.spots.length === 0) return null;
 
   return (
@@ -51,10 +53,15 @@ function Component({ settings, data }: SectionProps<Settings, Record<string, str
             images project-wide; the library's widths are offered directly. */}
         <img
           src={settings.image}
-          srcSet={srcSetFor(data ?? undefined)}
+          srcSet={srcSetFor(data?.sources ?? undefined)}
           sizes="(min-width: 768px) 100vw, 100vw"
           alt={settings.alt}
           loading="lazy"
+          // The picture's own shape, so the page below it does not jump down
+          // when the file lands. Drawn size is unchanged — h-auto w-full
+          // still decides that.
+          width={data?.width ?? undefined}
+          height={data?.height ?? undefined}
           className="h-auto w-full"
         />
         {settings.spots.map((s) => (
