@@ -5,6 +5,7 @@ import { defaultHomeDoc } from "./default-docs/home";
 import { defaultBrandDoc } from "./default-docs/brand";
 import { SYSTEM_DEFAULT_DOCS } from "./default-docs/system";
 import { GLOBAL_DEFAULT_DOCS } from "./default-docs/global";
+import { TEMPLATE_DEFAULT_DOCS } from "./default-docs/template";
 import { getBrand } from "@/data/brands";
 import { GLOBALS, SYSTEM_PAGES, TEMPLATES } from "./system-pages";
 import { waveEnabled } from "@/lib/feature-flags";
@@ -110,6 +111,7 @@ export const DEFAULT_DOCS: Record<string, () => PageDoc> = {
   // filled in by E7 (waves 2–3), E8 (wave 4) and E3 (wave 5).
   ...Object.fromEntries(Object.entries(SYSTEM_DEFAULT_DOCS).map(([key, make]) => [`system/${key}`, make])),
   ...Object.fromEntries(Object.entries(GLOBAL_DEFAULT_DOCS).map(([key, make]) => [`global/${key}`, make])),
+  ...Object.fromEntries(Object.entries(TEMPLATE_DEFAULT_DOCS).map(([key, make]) => [`template/${key}`, make])),
 };
 
 function defaultDocFor(kind: PageKind, slug: string): PageDoc {

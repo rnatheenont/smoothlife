@@ -33,12 +33,20 @@ test("a step no page serves is skipped rather than guessed at", () => {
   ]);
 });
 
-test("a template's trail stops at its hub, because the item has no name here", () => {
-  assert.deepEqual(at("template", "product", { type: "product", slug: "anything" }), [
-    { label: "ช้อปทั้งหมด", href: "/shop" },
+test("a template's trail is its hub and then the item", () => {
+  assert.deepEqual(at("template", "product", { type: "product", slug: "anything", name: "เซรั่ม" }), [
+    { label: "ช้อป", href: "/shop" },
+    { label: "เซรั่ม" },
   ]);
-  assert.deepEqual(at("template", "article", { type: "article", handle: "x" }), [
+  assert.deepEqual(at("template", "article", { type: "article", handle: "x", name: "ไนอาซินาไมด์" }), [
     { label: "ความรู้เรื่องผิวและสุขภาพ", href: "/knowledge" },
+    { label: "ไนอาซินาไมด์" },
+  ]);
+});
+
+test("an item with no name gives the hub alone, not a trail ending in a blank", () => {
+  assert.deepEqual(at("template", "concern", { type: "concern", slug: "acne", name: "" }), [
+    { label: "ปัญหาผิวที่กังวล", href: "/concern" },
   ]);
 });
 

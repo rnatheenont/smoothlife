@@ -8,6 +8,8 @@ import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import { withCustomImages } from "@/lib/product-images";
 import { toCardData } from "@/data/card";
+import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
+import { TemplateBody } from "@/lib/pages/template-page";
 
 export function generateStaticParams() {
   return concerns.map((c) => ({ slug: c.slug }));
@@ -34,11 +36,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   };
 }
 
-export default async function ConcernDetailPage(props: { params: Promise<{ slug: string }> }) {
-  const params = await props.params;
-  const concern = concerns.find((c) => c.slug === params.slug);
-  if (!concern) notFound();
-
+async function ConcernDetailWritten({ concern }: { concern: (typeof concerns)[number] }) {
   const items = await withCustomImages(
     sortSoldOutLast(products.filter((p) => p.concerns.includes(concern.slug))),
   );
@@ -93,4 +91,25 @@ export default async function ConcernDetailPage(props: { params: Promise<{ slug:
       )}
     </div>
   );
+}
+
+/**
+ * The page, from the concern template when wave 2 is on and from the markup
+ * above when it is not.
+ *
+ * The concern is found here either way: that is how this route knows not to
+ * answer 404, and the template is handed the item it already found rather
+ * than looking it up a second time and getting a second chance to disagree.
+ */
+export default async function ConcernDetailPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
+  const concern = concerns.find((c) => c.slug === params.slug);
+  if (!concern) notFound();
+
+  if (PAGES_WAVE2_ENABLED) {
+    return (
+      <TemplateBody templateKey="concern" entity={{ type: "concern", slug: concern.slug, name: concern.nameTh }} />
+    );
+  }
+  return <ConcernDetailWritten concern={concern} />;
 }

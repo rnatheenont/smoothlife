@@ -100,9 +100,9 @@ const SYSTEM_LIST: SystemPage[] = [
 
   // Wave 2 — listing pages and hubs. Each of these keeps its machinery as a
   // locked section; what opens up is the copy around it.
-  { key: "shop", path: "/shop", title: "ช้อปทั้งหมด", group: "รายการสินค้า", wave: 2 },
+  { key: "shop", path: "/shop", title: "ช้อปทั้งหมด", crumb: "ช้อป", group: "รายการสินค้า", wave: 2 },
   { key: "collections", path: "/collections", title: "คอลเลกชันทั้งหมด", crumb: "คอลเลกชัน", group: "รายการสินค้า", wave: 2 },
-  { key: "concern-hub", path: "/concern", title: "ปัญหาผิวทั้งหมด", group: "รายการสินค้า", wave: 2 },
+  { key: "concern-hub", path: "/concern", title: "ปัญหาผิวทั้งหมด", crumb: "ปัญหาผิวที่กังวล", group: "รายการสินค้า", wave: 2 },
   { key: "brands", path: "/brands", title: "แบรนด์ทั้งหมด", group: "รายการสินค้า", wave: 2 },
   { key: "search", path: "/search", title: "ค้นหา", group: "รายการสินค้า", wave: 2 },
   { key: "knowledge", path: "/knowledge", title: "ความรู้", crumb: "ความรู้เรื่องผิวและสุขภาพ", group: "ความรู้", wave: 2 },
