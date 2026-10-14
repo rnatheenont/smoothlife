@@ -1,5 +1,15 @@
 import {
   Award,
+  BadgeCheck,
+  FlaskConical,
+  GraduationCap,
+  Handshake,
+  HeartHandshake,
+  HeartPulse,
+  PackageCheck,
+  Recycle,
+  Stethoscope,
+  Users2,
   BookOpen,
   Clock,
   Gift,
@@ -50,6 +60,20 @@ export const CONTENT_ICONS: Record<string, LucideIcon> = {
   gift: Gift,
   users: Users,
   microscope: Microscope,
+  // Added for the content pages moving into the system: these are the exact
+  // marks those pages already draw, so a page can move across without its
+  // icons changing. A near-enough icon would have been a visible edit nobody
+  // asked for.
+  "badge-check": BadgeCheck,
+  flask: FlaskConical,
+  "package-check": PackageCheck,
+  stethoscope: Stethoscope,
+  graduation: GraduationCap,
+  "heart-handshake": HeartHandshake,
+  handshake: Handshake,
+  recycle: Recycle,
+  "users-2": Users2,
+  "heart-pulse": HeartPulse,
 };
 
 export const CONTENT_ICON_KEYS = Object.keys(CONTENT_ICONS);

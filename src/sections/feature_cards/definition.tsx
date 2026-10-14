@@ -34,7 +34,7 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
   if (items.length === 0) return null;
 
   return (
-    <section className="container-page pb-10">
+    <section className="container-page pb-8 md:pb-10">
       {settings.heading && (
         <h2 className="mb-5 text-xl font-bold text-brand-ink md:text-2xl">{settings.heading}</h2>
       )}

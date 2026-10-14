@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { migrateDoc, nextBoundaryAfter, SCHEMA_VERSION, type PageDoc } from "./doc";
 import { defaultHomeDoc } from "./default-docs/home";
 import { defaultBrandDoc } from "./default-docs/brand";
+import { SYSTEM_DEFAULT_DOCS } from "./default-docs/system";
 import { getBrand } from "@/data/brands";
 import { GLOBALS, SYSTEM_PAGES, TEMPLATES } from "./system-pages";
 import { waveEnabled } from "@/lib/feature-flags";
@@ -104,7 +105,9 @@ const SEEDS: Partial<Record<PageKind, (slug: string) => { title: string; doc: Pa
  * mistake stops in the editor instead of on the shop.
  */
 const DEFAULT_DOCS: Record<string, () => PageDoc> = {
-  // Filled in by E2 (wave 1), E7 (waves 2–3), E8 (wave 4) and E3 (wave 5).
+  // Wave 1's pages, keyed the way the editor addresses them. The rest are
+  // filled in by E7 (waves 2–3), E8 (wave 4) and E3 (wave 5).
+  ...Object.fromEntries(Object.entries(SYSTEM_DEFAULT_DOCS).map(([key, make]) => [`system/${key}`, make])),
 };
 
 function defaultDocFor(kind: PageKind, slug: string): PageDoc {

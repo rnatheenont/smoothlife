@@ -37,7 +37,10 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
 
   return (
     <section className={BACKGROUND[settings.background] ?? ""}>
-      <div className="container-page py-8 md:py-10">
+      {/* Top padding only. The header's own mb-8 is the gap to whatever comes
+          next, and the page's bottom padding belongs to the last section —
+          the two together add up to exactly what ContentPage drew. */}
+      <div className="container-page pt-8 md:pt-10">
         <div className={`mb-8 max-w-2xl ${centered ? "mx-auto text-center" : ""}`}>
           {settings.eyebrow && <p className="mb-2 text-xs font-bold text-brand-800">{settings.eyebrow}</p>}
           {settings.title && (

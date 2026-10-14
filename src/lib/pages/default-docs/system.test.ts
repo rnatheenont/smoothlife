@@ -1,0 +1,49 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { SYSTEM_DEFAULT_DOCS } from "./system.ts";
+import { SYSTEM_PAGES } from "../system-pages.ts";
+
+// These documents are the pages themselves. The checks here are the ones that
+// would otherwise be found by looking at the live site: a document filed under
+// a page that does not exist, a page with two <h1>s or none, a section with no
+// id to point a preview click at.
+
+test("every default document belongs to a page in the registry", () => {
+  for (const key of Object.keys(SYSTEM_DEFAULT_DOCS)) {
+    assert.ok(SYSTEM_PAGES[key], `มีเอกสารตั้งต้นของ "${key}" แต่ไม่มีหน้านี้ในทะเบียน`);
+  }
+});
+
+test("each page owns exactly one h1 — the page_header", () => {
+  for (const [key, make] of Object.entries(SYSTEM_DEFAULT_DOCS)) {
+    const headers = make().sections.filter((s) => s.type === "page_header");
+    assert.equal(headers.length, 1, `"${key}" มี page_header ${headers.length} อัน`);
+  }
+});
+
+test("every section carries an id, and no two share one", () => {
+  for (const [key, make] of Object.entries(SYSTEM_DEFAULT_DOCS)) {
+    const ids = make().sections.map((s) => s.id);
+    assert.ok(ids.every(Boolean), `"${key}" มี section ที่ไม่มี id`);
+    assert.equal(new Set(ids).size, ids.length, `"${key}" มี id ซ้ำ`);
+  }
+});
+
+test("two calls give two documents, not one shared object", () => {
+  // The editor edits what it is given. A default that handed out the same
+  // object every time would let one page's edits appear on another.
+  const a = SYSTEM_DEFAULT_DOCS.about();
+  const b = SYSTEM_DEFAULT_DOCS.about();
+  assert.notEqual(a, b);
+  assert.notEqual(a.sections[0], b.sections[0]);
+  assert.deepEqual(a, b);
+});
+
+test("the pages of wave 1 that are written are the four about pages", () => {
+  assert.deepEqual(Object.keys(SYSTEM_DEFAULT_DOCS).sort(), [
+    "about",
+    "about-experts",
+    "about-quality",
+    "about-sustainability",
+  ]);
+});

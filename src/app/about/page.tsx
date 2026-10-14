@@ -1,3 +1,5 @@
+import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 import Link from "next/link";
 import { Heart, ShieldCheck, Users, Leaf } from "lucide-react";
 import ContentPage from "@/components/ContentPage";
@@ -7,7 +9,7 @@ export function generateMetadata() {
   return pageMetadata("about");
 }
 
-export default function AboutPage() {
+function AboutPageWritten() {
   return (
     <>
       <ContentPage
@@ -30,4 +32,18 @@ export default function AboutPage() {
       </div>
     </>
   );
+}
+
+/**
+ * The page, from its document when wave 1 is on and from the markup above
+ * when it is not.
+ *
+ * Both halves stay in the tree on purpose. The flag is the emergency switch:
+ * turning it off puts this page back on the next request with no deploy and
+ * nothing to roll back, and that is only true while the hand-written half is
+ * still here. It goes when the wave has been live long enough to trust.
+ */
+export default function AboutPage() {
+  if (PAGES_WAVE1_ENABLED) return <SystemPageBody pageKey="about" />;
+  return <AboutPageWritten />;
 }

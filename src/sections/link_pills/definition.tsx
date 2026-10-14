@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { z } from "zod";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
@@ -24,19 +23,21 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
   if (items.length === 0) return null;
 
   return (
-    <section className="container-page pb-10">
+    <section className="container-page pb-14">
       {settings.heading && (
         <h2 className="mb-4 text-xl font-bold text-brand-ink md:text-2xl">{settings.heading}</h2>
       )}
-      <ul className="flex flex-wrap gap-2.5">
+      <ul className="flex flex-wrap gap-3">
         {items.map((item, i) => (
           <li key={i}>
+            {/* The outlined pill the site already uses on /about — matched
+                rather than redesigned, so a page moving into the system does
+                not change on the day it moves. */}
             <Link
               href={item.href}
-              className="inline-flex items-center gap-1 rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-ink shadow-card transition-colors hover:text-brand-800"
+              className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-medium transition-colors hover:border-brand-teal"
             >
               {item.label}
-              <ChevronRight size={14} className="text-slate-400" />
             </Link>
           </li>
         ))}

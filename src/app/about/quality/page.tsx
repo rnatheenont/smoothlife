@@ -1,9 +1,11 @@
+import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 import { BadgeCheck, FlaskConical, PackageCheck, Truck } from "lucide-react";
 import ContentPage from "@/components/ContentPage";
 
 export const metadata = { title: "คุณภาพและมาตรฐาน | Smoothlife.com" };
 
-export default function QualityPage() {
+function QualityPageWritten() {
   return (
     <ContentPage
       eyebrow="Quality and Product Standards"
@@ -17,4 +19,18 @@ export default function QualityPage() {
       ]}
     />
   );
+}
+
+/**
+ * The page, from its document when wave 1 is on and from the markup above
+ * when it is not.
+ *
+ * Both halves stay in the tree on purpose. The flag is the emergency switch:
+ * turning it off puts this page back on the next request with no deploy and
+ * nothing to roll back, and that is only true while the hand-written half is
+ * still here. It goes when the wave has been live long enough to trust.
+ */
+export default function QualityPage() {
+  if (PAGES_WAVE1_ENABLED) return <SystemPageBody pageKey="about-quality" />;
+  return <QualityPageWritten />;
 }
