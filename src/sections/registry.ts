@@ -33,6 +33,14 @@ import { campaignSlot } from "./campaign_slot/definition";
 import { dealTiers } from "./deal_tiers/definition";
 import { hotspotImage } from "./hotspot_image/definition";
 import { nextCampaign } from "./next_campaign/definition";
+import { pageHeader } from "./page_header/definition";
+import { breadcrumb } from "./breadcrumb/definition";
+import { featureCards } from "./feature_cards/definition";
+import { linkPills } from "./link_pills/definition";
+import { faq } from "./faq/definition";
+import { legalDocument } from "./legal_document/definition";
+import { ctaCard } from "./cta_card/definition";
+import { toolCards } from "./tool_cards/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -57,6 +65,18 @@ const ALL: AnySectionDefinition[] = [
   socialVideos,
   brandCircles,
   articleGallery,
+
+  // The content sections, for the pages that are words rather than shelves.
+  // They arrived with the plan to bring /about, /help and the rest into the
+  // system; each one replaces a piece of markup that used to need a deploy.
+  pageHeader,
+  breadcrumb,
+  featureCards,
+  linkPills,
+  faq,
+  legalDocument,
+  ctaCard,
+  toolCards,
 
   // The general-purpose ones. Everything above wraps a piece of the home page
   // as it already was; these are the blocks a page built from scratch is made
