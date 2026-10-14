@@ -3,7 +3,14 @@ import { verifyAdminToken, getAdminSession, ADMIN_COOKIE } from "@/lib/admin-aut
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { SCHEMA_VERSION, migrateDoc } from "@/lib/pages/doc";
 import { newSectionId } from "@/lib/pages/edit";
-import { reservedTopLevelSegments } from "@/lib/pages/system-pages";
+import {
+  reservedTopLevelSegments,
+  SYSTEM_PAGE_LIST,
+  GLOBAL_LIST_ALL,
+  TEMPLATE_LIST_ALL,
+} from "@/lib/pages/system-pages";
+import { waveEnabled } from "@/lib/feature-flags";
+import { DEFAULT_DOCS } from "@/lib/pages/admin";
 import type { PageKind } from "@/lib/pages/types";
 
 // The list of pages, and making a new one.
@@ -71,7 +78,39 @@ export async function GET(req: NextRequest) {
     `pages?select=id,kind,slug,title,status,draft_updated_at,draft_updated_by,published_revision_id` +
       `&order=kind,slug&limit=200`
   );
-  return NextResponse.json({ ok: true, pages });
+  return NextResponse.json({ ok: true, pages, registry: openRegistry() });
+}
+
+/**
+ * The pages the shop already has that are ready to be edited.
+ *
+ * Decided here rather than in the browser because readiness is two things
+ * the server knows and the client does not: the wave has to be switched on,
+ * and a default document has to exist. A page offered without one opens an
+ * empty editor, and publishing that would replace a working page with
+ * nothing — which is worse than the page not being listed yet.
+ */
+function openRegistry() {
+  const ready = (kind: string, key: string) => Boolean(DEFAULT_DOCS[`${kind}/${key}`]);
+  return {
+    system: SYSTEM_PAGE_LIST.filter((p) => waveEnabled(p.wave) && ready("system", p.key)).map((p) => ({
+      key: p.key,
+      title: p.title,
+      group: p.group,
+      path: p.path,
+    })),
+    globals: GLOBAL_LIST_ALL.filter((g) => waveEnabled(g.wave) && ready("global", g.key)).map((g) => ({
+      key: g.key,
+      title: g.title,
+      shownOn: g.shownOn,
+    })),
+    templates: TEMPLATE_LIST_ALL.filter((t) => waveEnabled(t.wave) && ready("template", t.key)).map((t) => ({
+      key: t.key,
+      title: t.title,
+      scale: t.scale,
+      pattern: t.pattern,
+    })),
+  };
 }
 
 export async function POST(req: NextRequest) {

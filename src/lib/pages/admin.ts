@@ -105,7 +105,7 @@ const SEEDS: Partial<Record<PageKind, (slug: string) => { title: string; doc: Pa
  * empty one cannot be published (validateForPublish refuses it), so the
  * mistake stops in the editor instead of on the shop.
  */
-const DEFAULT_DOCS: Record<string, () => PageDoc> = {
+export const DEFAULT_DOCS: Record<string, () => PageDoc> = {
   // Wave 1's pages, keyed the way the editor addresses them. The rest are
   // filled in by E7 (waves 2–3), E8 (wave 4) and E3 (wave 5).
   ...Object.fromEntries(Object.entries(SYSTEM_DEFAULT_DOCS).map(([key, make]) => [`system/${key}`, make])),

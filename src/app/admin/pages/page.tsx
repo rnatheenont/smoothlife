@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, FileText, Home, Loader2, Plus } from "lucide-react";
+import { BookOpen, FileText, Globe, Home, Layers, Loader2, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/layout-kit";
 import { Card } from "@/components/ui";
@@ -40,6 +40,51 @@ function addressOf(page: { kind: string; slug: string }) {
   return `/p/${page.slug}`;
 }
 
+// The pages the shop already has, from the registry rather than from the
+// database: a system page has no row until somebody opens it, and listing it
+// only afterwards would hide every one of them on the day the wave is turned
+// on. Opening one seeds it, exactly as the home page does.
+//
+// Which of them are ready is the server's call — it depends on the wave
+// being switched on and on a default document existing, and only one of
+// those two is visible from the browser.
+type Registry = {
+  system: { key: string; title: string; group: string; path: string | null }[];
+  globals: { key: string; title: string; shownOn: string }[];
+  templates: { key: string; title: string; scale: string; pattern: string }[];
+};
+const EMPTY_REGISTRY: Registry = { system: [], globals: [], templates: [] };
+
+/** One row in the registry lists below. */
+function RegistryRow({
+  href,
+  icon,
+  title,
+  note,
+  address,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  note: string;
+  address: string;
+}) {
+  return (
+    <li>
+      <Link href={href} className="flex items-center gap-3.5 px-4 py-4 transition-colors hover:bg-surface-soft">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-brand-ink">{title}</span>
+          <span className="block text-[12px] text-slate-500">{note}</span>
+        </span>
+        <span className="shrink-0 text-[12px] text-slate-400">{address}</span>
+      </Link>
+    </li>
+  );
+}
+
 const NEW_KINDS: [string, string, string][] = [
   ["page", "หน้าเว็บ", "/p/"],
   ["campaign", "แคมเปญ", "/sale/"],
@@ -47,6 +92,7 @@ const NEW_KINDS: [string, string, string][] = [
 
 export default function AdminPagesIndex() {
   const [pages, setPages] = useState<PageRow[]>([]);
+  const [registry, setRegistry] = useState<Registry>(EMPTY_REGISTRY);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -62,6 +108,7 @@ export default function AdminPagesIndex() {
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data?.error ?? "โหลดรายการหน้าไม่สำเร็จ");
       setPages(data.pages);
+      setRegistry(data.registry ?? EMPTY_REGISTRY);
     } catch (err) {
       setError(err instanceof Error ? err.message : "โหลดรายการหน้าไม่สำเร็จ");
     } finally {
@@ -97,6 +144,12 @@ export default function AdminPagesIndex() {
   }
 
   const hasHome = pages.some((p) => p.kind === "home");
+  // Rows that already exist are shown in the list above; the registry lists
+  // below offer the rest, so nothing appears twice.
+  const existing = new Set(pages.map((p) => `${p.kind}/${p.slug}`));
+  const systemPages = registry.system.filter((p) => !existing.has(`system/${p.key}`));
+  const globals = registry.globals.filter((g) => !existing.has(`global/${g.key}`));
+  const templates = registry.templates.filter((t) => !existing.has(`template/${t.key}`));
 
   return (
     <div className="flex flex-col gap-5">
@@ -225,6 +278,72 @@ export default function AdminPagesIndex() {
           </ul>
         )}
       </Card>
+
+      {systemPages.length > 0 && (
+        <>
+          <PageHeader
+            title="หน้าของระบบ"
+            subtitle="หน้าที่ร้านมีอยู่แล้ว — ที่อยู่เปลี่ยนไม่ได้ ลบไม่ได้ แต่แก้เนื้อหาได้ · เปิดครั้งแรกเพื่อเริ่มแก้"
+          />
+          <Card padded={false}>
+            <ul className="divide-y divide-slate-100">
+              {systemPages.map((page) => (
+                <RegistryRow
+                  key={page.key}
+                  href={`/admin/pages/system/${page.key}`}
+                  icon={<FileText size={18} />}
+                  title={page.title}
+                  note={page.group}
+                  address={page.path ?? "หน้า 404"}
+                />
+              ))}
+            </ul>
+          </Card>
+        </>
+      )}
+
+      {globals.length > 0 && (
+        <>
+          <PageHeader title="ส่วนกลาง" subtitle="สิ่งที่อยู่ทุกหน้า — แก้ที่นี่ที่เดียวแล้วเปลี่ยนทั้งเว็บ" />
+          <Card padded={false}>
+            <ul className="divide-y divide-slate-100">
+              {globals.map((g) => (
+                <RegistryRow
+                  key={g.key}
+                  href={`/admin/pages/global/${g.key}`}
+                  icon={<Globe size={18} />}
+                  title={g.title}
+                  note={g.shownOn}
+                  address="ทุกหน้า"
+                />
+              ))}
+            </ul>
+          </Card>
+        </>
+      )}
+
+      {templates.length > 0 && (
+        <>
+          <PageHeader
+            title="เทมเพลต"
+            subtitle="แก้ครั้งเดียว มีผลกับทุกรายการของชนิดนั้น — การเปลี่ยนแปลงจะทยอยขึ้นทีละหน้าเมื่อมีลูกค้าเข้า"
+          />
+          <Card padded={false}>
+            <ul className="divide-y divide-slate-100">
+              {templates.map((t) => (
+                <RegistryRow
+                  key={t.key}
+                  href={`/admin/pages/template/${t.key}`}
+                  icon={<Layers size={18} />}
+                  title={t.title}
+                  note={t.scale}
+                  address={t.pattern}
+                />
+              ))}
+            </ul>
+          </Card>
+        </>
+      )}
 
       <p className="flex items-start gap-2 text-[13px] leading-relaxed text-slate-500">
         <FileText size={15} className="mt-0.5 shrink-0" />
