@@ -48,6 +48,9 @@ test("the pages of wave 1 written so far", () => {
     "about-experts",
     "about-quality",
     "about-sustainability",
+    "help",
+    "help-delivery",
+    "help-payment",
     "privacy",
     "terms",
   ]);

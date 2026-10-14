@@ -1,12 +1,16 @@
 import {
   Award,
   BadgeCheck,
+  Banknote,
+  CreditCard,
   FlaskConical,
   GraduationCap,
   Handshake,
   HeartHandshake,
   HeartPulse,
   PackageCheck,
+  PackageSearch,
+  QrCode,
   Recycle,
   Stethoscope,
   Users2,
@@ -74,6 +78,13 @@ export const CONTENT_ICONS: Record<string, LucideIcon> = {
   recycle: Recycle,
   "users-2": Users2,
   "heart-pulse": HeartPulse,
+  // Keyed the way src/data/help.ts already keys them, so the help topics
+  // carry their marks across without a translation table in between.
+  "package-search": PackageSearch,
+  "qr-code": QrCode,
+  "credit-card": CreditCard,
+  banknote: Banknote,
+  "message-circle": MessageCircle,
 };
 
 export const CONTENT_ICON_KEYS = Object.keys(CONTENT_ICONS);

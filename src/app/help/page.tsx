@@ -1,3 +1,5 @@
+import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 import Link from "next/link";
 import { MessageCircle, ChevronRight } from "lucide-react";
 import Faq from "@/components/Faq";
@@ -17,22 +19,9 @@ const topics = [
 
 const faqs = helpFaqs;
 
-export default function HelpPage() {
+function HelpPageWritten() {
   return (
     <div className="container-page py-8 md:py-10">
-      {/* The questions below are answered on this page, in full, where the
-          markup says they are — which is the condition for Google showing
-          them as an answer rather than ignoring the markup. */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdScript(faqPageJsonLd(faqs.map((f) => ({ question: f.q, answer: f.a })))) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: jsonLdScript(breadcrumbJsonLd([{ label: "หน้าแรก", href: "/" }, { label: "ศูนย์ช่วยเหลือ" }])),
-        }}
-      />
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">ศูนย์ช่วยเหลือ</h1>
       <p className="text-sm text-slate-500 mb-8">เรามีคำตอบให้ทุกคำถามของคุณ</p>
 
@@ -51,5 +40,35 @@ export default function HelpPage() {
       <h2 className="font-bold text-brand-ink mb-4">คำถามที่พบบ่อย</h2>
       <Faq items={faqs} />
     </div>
+  );
+}
+
+/**
+ * From the document when wave 1 is on, from the markup above when it is not.
+ *
+ * The two bits of structured data sit out here, outside the switch, because
+ * they belong to the route rather than to the page's contents: the FAQ one
+ * because the questions on this page come from the shared list either way,
+ * and the breadcrumb one because where /help sits in the site is not
+ * something an admin edits. Keeping them here also means neither is lost nor
+ * duplicated when the switch flips.
+ */
+export default function HelpPage() {
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdScript(faqPageJsonLd(faqs.map((f) => ({ question: f.q, answer: f.a })))),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdScript(breadcrumbJsonLd([{ label: "หน้าแรก", href: "/" }, { label: "ศูนย์ช่วยเหลือ" }])),
+        }}
+      />
+      {PAGES_WAVE1_ENABLED ? <SystemPageBody pageKey="help" /> : <HelpPageWritten />}
+    </>
   );
 }

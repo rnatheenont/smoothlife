@@ -1,7 +1,7 @@
+import { ChevronDown } from "lucide-react";
 import { z } from "zod";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 import { helpFaqs } from "@/data/help";
-import { jsonLdScript } from "@/lib/json-ld";
 
 // Questions and answers, from wherever the shop already keeps them.
 //
@@ -18,6 +18,11 @@ import { jsonLdScript } from "@/lib/json-ld";
 //
 // Drawn with <details>, so it opens and closes with no JavaScript at all.
 // An accordion is the one widget where that still works perfectly.
+//
+// No FAQPage structured data here. The page that holds the questions emits
+// it, because a page may carry two of these — a campaign's rules and the
+// shop's general questions — and two FAQPage blocks on one page is a page
+// that describes itself twice.
 
 const schema = z.object({
   heading: z.string().max(120).default(""),
@@ -32,32 +37,29 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
   const items = (settings.source === "help" ? helpFaqs : settings.items).filter((i) => i.q && i.a);
   if (items.length === 0) return null;
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: items.map((item) => ({
-      "@type": "Question",
-      name: item.q,
-      acceptedAnswer: { "@type": "Answer", text: item.a },
-    })),
-  };
-
   return (
-    <section className="container-page pb-10">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />
-      {settings.heading && (
-        <h2 className="mb-5 text-xl font-bold text-brand-ink md:text-2xl">{settings.heading}</h2>
-      )}
-      <div className="flex flex-col gap-2.5">
+    <section className="container-page pb-8 md:pb-10">
+      {settings.heading && <h2 className="mb-4 font-bold text-brand-ink">{settings.heading}</h2>}
+      {/* <details> rather than the click handler the site used before: it is
+          the same accordion with no JavaScript at all, `name` gives the
+          one-open-at-a-time behaviour natively, and the first one starts
+          open exactly as it did. */}
+      <div className="flex flex-col gap-2">
         {items.map((item, i) => (
-          <details key={i} className="group rounded-xl2 bg-white px-5 py-4 shadow-card">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-brand-ink">
-              {item.q}
-              {/* Drawn rather than an icon component: it has to rotate on the
-                  parent's open state, and that is one line of CSS here. */}
-              <span className="shrink-0 text-slate-300 transition-transform group-open:rotate-45">+</span>
+          <details
+            key={i}
+            name="faq"
+            open={i === 0}
+            className="group overflow-hidden rounded-xl border border-slate-100"
+          >
+            <summary className="flex w-full cursor-pointer list-none items-center justify-between gap-3 p-4 text-left">
+              <span className="text-sm font-semibold text-brand-ink">{item.q}</span>
+              <ChevronDown
+                size={16}
+                className="shrink-0 text-slate-400 transition-transform group-open:rotate-180"
+              />
             </summary>
-            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-600">{item.a}</p>
+            <div className="px-4 pb-4 text-sm text-slate-600">{item.a}</div>
           </details>
         ))}
       </div>

@@ -264,6 +264,55 @@ const terms = (): PageDoc =>
     "หากมีคำถามเกี่ยวกับเงื่อนไขการใช้บริการนี้ กรุณาติดต่อทีมงานผ่าน"
   );
 
+
+const helpDelivery = (): PageDoc =>
+  contentPage(
+    {
+      eyebrow: "Delivery and Returns",
+      title: "การจัดส่งและคืนสินค้า",
+      intro: "เราจัดส่งสินค้าอย่างรวดเร็วและปลอดภัยทั่วประเทศไทย พร้อมนโยบายคืนสินค้าที่เป็นธรรม",
+    },
+    [{"icon": "truck", "title": "ส่งฟรีทั่วไทย ทุกออเดอร์", "body": "จัดส่งฟรีทุกคำสั่งซื้อ ไม่มียอดขั้นต่ำ ทั่วประเทศ"}, {"icon": "clock", "title": "จัดส่งภายใน 1-3 วันทำการ", "body": "พื้นที่กรุงเทพฯ และปริมณฑลอาจได้รับสินค้าเร็วกว่ากำหนด"}, {"icon": "package-search", "title": "ติดตามพัสดุได้แบบเรียลไทม์", "body": "ดูสถานะคำสั่งซื้อได้ที่หน้าบัญชีของฉัน > คำสั่งซื้อและติดตามพัสดุ"}, {"icon": "rotate-ccw", "title": "คืนสินค้าได้ภายใน 14 วัน", "body": "หากสินค้าชำรุดหรือไม่ตรงตามที่สั่ง สามารถแจ้งคืนได้ภายใน 14 วันหลังได้รับสินค้า"}]
+  );
+
+const helpPayment = (): PageDoc =>
+  contentPage(
+    {
+      eyebrow: "Payment",
+      title: "ช่องทางการชำระเงิน",
+      intro: "เลือกวิธีการชำระเงินที่สะดวกและปลอดภัยที่สุดสำหรับคุณ",
+    },
+    [{"icon": "qr-code", "title": "PromptPay QR", "body": "สแกนจ่ายผ่านแอปธนาคารได้ทันที ยืนยันคำสั่งซื้อรวดเร็ว"}, {"icon": "credit-card", "title": "บัตรเครดิต/เดบิต", "body": "รองรับ Visa, Mastercard และ JCB พร้อมระบบเข้ารหัสความปลอดภัย"}, {"icon": "banknote", "title": "โอนเงินผ่านธนาคาร", "body": "โอนเงินและแนบสลิปเพื่อยืนยันคำสั่งซื้อผ่านระบบอัตโนมัติ"}, {"icon": "truck", "title": "เก็บเงินปลายทาง (COD)", "body": "ชำระเงินสดเมื่อได้รับสินค้า สำหรับพื้นที่ที่รองรับบริการ"}]
+  );
+
+/** The help centre's front door: the title, the three ways in, and the
+ *  questions. The cards are the same topics the sub-pages are built from,
+ *  written out here because the document is what the editor edits — a
+ *  document that read src/data/help.ts at render time would be a page the
+ *  admin could not change, wearing a section's clothes. */
+const help = (): PageDoc =>
+  doc([
+    {
+      type: "page_header",
+      v: 1,
+      settings: {
+        eyebrow: "",
+        title: "ศูนย์ช่วยเหลือ",
+        intro: "เรามีคำตอบให้ทุกคำถามของคุณ",
+        image: "",
+        align: "left",
+        background: "page",
+        layout: "document",
+      },
+    },
+    { type: "help_topics", v: 1, settings: { items: [{"icon": "truck", "label": "การจัดส่งและคืนสินค้า", "href": "/help/delivery"}, {"icon": "qr-code", "label": "การชำระเงิน", "href": "/help/payment"}, {"icon": "message-circle", "label": "แชทและติดต่อเรา", "href": "/help/contact"}] } },
+    {
+      type: "faq",
+      v: 1,
+      settings: { heading: "คำถามที่พบบ่อย", source: "help", items: [] },
+    },
+  ]);
+
 /**
  * The default document for a system page, or nothing.
  *
@@ -278,4 +327,7 @@ export const SYSTEM_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   "about-sustainability": aboutSustainability,
   privacy,
   terms,
+  help,
+  "help-delivery": helpDelivery,
+  "help-payment": helpPayment,
 };

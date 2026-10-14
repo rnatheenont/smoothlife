@@ -67,7 +67,7 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
             </h1>
           )}
           {settings.intro && (
-            <p className={`text-sm ${asDocument ? "text-slate-500" : "text-slate-600"}`}>{settings.intro}</p>
+            <p className={`text-sm ${asDocument ? "mb-8 text-slate-500" : "text-slate-600"}`}>{settings.intro}</p>
           )}
         </div>
         {settings.image && (

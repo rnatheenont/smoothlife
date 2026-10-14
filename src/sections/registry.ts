@@ -41,6 +41,7 @@ import { faq } from "./faq/definition";
 import { legalDocument } from "./legal_document/definition";
 import { ctaCard } from "./cta_card/definition";
 import { toolCards } from "./tool_cards/definition";
+import { helpTopicsSection } from "./help_topics/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -77,6 +78,7 @@ const ALL: AnySectionDefinition[] = [
   legalDocument,
   ctaCard,
   toolCards,
+  helpTopicsSection,
 
   // The general-purpose ones. Everything above wraps a piece of the home page
   // as it already was; these are the blocks a page built from scratch is made
