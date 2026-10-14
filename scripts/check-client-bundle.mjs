@@ -11,9 +11,8 @@
 //   forbidden — the full catalogue and the long product text. These are
 //               server-only by design, and one import is a 4 MB regression.
 //               Any hit fails the build.
-//   lite      — the card-sized catalogue. Being worked down to zero (see the
-//               performance plan, R3); the ratchet below stops it going back
-//               up while that is in progress.
+//   lite      — the card-sized catalogue and the collection lists. Both are
+//               at zero; the budget below is what stops them coming back.
 //
 // Run: node scripts/check-client-bundle.mjs [repo-root]
 
@@ -29,7 +28,9 @@ const src = path.join(root, "src");
 const LITE_BUDGET = 0;
 
 const FORBIDDEN = /products\.generated\.ts$|product-details\.ts$/;
-const LITE = /products-lite\.generated\.ts$/;
+// The card catalogue and the collection lists: ~650 KB and ~180 KB of data
+// that a page should be handed, not download.
+const LITE = /products-lite\.generated\.ts$|collections\.generated\.ts$/;
 
 const EXTS = [".ts", ".tsx", ".js", ".mjs", "/index.ts", "/index.tsx"];
 
@@ -110,10 +111,10 @@ if (forbidden.length) {
   process.exit(1);
 }
 
-console.log(`[client-bundle] client entries reaching the card catalogue: ${lite.length} (budget ${LITE_BUDGET})`);
+console.log(`[client-bundle] client entries reaching the catalogue or collections: ${lite.length} (budget ${LITE_BUDGET})`);
 if (process.env.SHOW_CHAINS) for (const c of lite) console.log("  " + c.join(" → "));
 if (lite.length > LITE_BUDGET) {
-  console.error("[client-bundle] the catalogue is back in the browser, through:");
+  console.error("[client-bundle] catalogue or collection data is back in the browser, through:");
   for (const c of lite) console.error(`  ${c.join(" → ")}`);
   console.error(`  Either pass the data in as props, fetch it from /api/products/lite,`);
   console.error(`  or — if this really is the right call — raise LITE_BUDGET in this file.`);

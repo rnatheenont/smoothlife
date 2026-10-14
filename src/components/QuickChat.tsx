@@ -8,18 +8,23 @@ import {
   type CSSProperties,
   PointerEvent as ReactPointerEvent,
 } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { RotateCcw, X, Headset, Maximize2 } from "lucide-react";
+import { X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
 
-import { PHOTO_MARKER } from "@/lib/chat-image-store";
-import { useChatSession } from "@/lib/use-chat-session";
-import ChatConversation from "@/components/chat/ChatConversation";
-import { Button } from "@/components/ui";
+import { useChatUnread } from "@/lib/use-chat-unread";
+
+// The panel — the conversation, its session hook, the streaming reader —
+// arrives when somebody opens the chat, not before. Everyone loads the
+// button; hardly anyone opens it.
+//
+// ssr: false because there is nothing to render on the server for a panel
+// that is closed, and loading: null because the panel animates itself in.
+const QuickChatPanel = dynamic(() => import("@/components/chat/QuickChatPanel"), { ssr: false, loading: () => null });
 
 // Rotates through the launcher badge so a first-time visitor sees both of
 // its jobs (product help + skin advice) without the badge ever growing a
@@ -55,10 +60,9 @@ export default function QuickChat() {
   const pathname = usePathname();
   const viewingSlug = pathname?.match(/^\/product\/([a-z0-9-]+)/i)?.[1];
 
-  const session = useChatSession({ active: open, viewingSlug });
-  // The panel's own chrome needs four of them; ChatConversation reads the
-  // rest off the session object it is handed.
-  const { messages, reset, hasProfile, escalating, setNoteOpen, unread } = session;
+  // The badge, without the conversation behind it: a small poll of its own
+  // that only runs for someone who has chatted before. See use-chat-unread.
+  const unread = useChatUnread(open);
 
   // The tab bar is always there; the buy bar appears only once a product
   // page scrolls past its own button, so the launcher still has to follow
@@ -285,78 +289,7 @@ export default function QuickChat() {
         </button>
       </div>
 
-      {open && (
-        <div
-          className="fixed bottom-[var(--qc-bottom)] h-[var(--qc-height)] lg:bottom-[88px] right-4 sm:right-5 z-80 w-[calc(100vw-2rem)] sm:w-[390px] lg:h-[min(760px,82dvh)] flex flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeUp transition-[bottom,height]"
-          style={
-            {
-              "--qc-bottom": `calc(${panelBottom}px + env(safe-area-inset-bottom))`,
-              "--qc-height": `min(760px, calc(100dvh - ${panelBottom}px - env(safe-area-inset-bottom) - 16px))`,
-            } as CSSProperties
-          }
-        >
-          <div className="flex items-center justify-between gap-3 bg-brand-ink px-4 py-3">
-            <div className="flex items-center gap-2.5 text-white min-w-0">
-              <span className="relative grid h-9 w-9 shrink-0 place-items-center">
-                <Image src="/mascot/smoothie-new.png" alt="" fill sizes="36px" className="object-contain" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-bold leading-tight truncate">
-                  {t("คุยกับน้อง Smoothie", "Chat with Smoothie")}
-                </p>
-                <p className="text-[11px] text-white/60 leading-tight truncate">
-                  {viewingSlug
-                    ? t("กำลังดูสินค้านี้อยู่ ถามได้เลยค่ะ", "Viewing this product — ask away")
-                    : hasProfile
-                    ? t("อ่านโปรไฟล์ผิวของคุณแล้ว", "Using your skin profile")
-                    : t("ถามอะไรก็ได้เกี่ยวกับผิว ผม หรือสุขภาพ", "Ask about skin, hair or wellness")}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              {messages.length > 0 && (
-                <button
-                  onClick={() => setNoteOpen((v) => !v)}
-                  disabled={escalating}
-                  aria-label={t("ฝากข้อความถึงแอดมิน", "Leave a message for our team")}
-                  className="grid h-7 w-7 place-items-center rounded-full text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-50"
-                >
-                  <Headset size={14} />
-                </button>
-              )}
-              {messages.length > 0 && (
-                <button
-                  onClick={reset}
-                  aria-label={t("เริ่มใหม่", "Reset")}
-                  className="grid h-7 w-7 place-items-center rounded-full text-white/60 hover:text-white hover:bg-white/10"
-                >
-                  <RotateCcw size={14} />
-                </button>
-              )}
-              {/* Same conversation, more room — /chat runs the same session
-                  hook, so the history is already there when it opens. */}
-              <Link
-                href="/chat"
-                onClick={() => setOpen(false)}
-                aria-label={t("ขยายเต็มจอ", "Open full screen")}
-                title={t("ขยายเต็มจอ", "Open full screen")}
-                className="grid h-7 w-7 place-items-center rounded-full text-white/60 hover:bg-white/10 hover:text-white"
-              >
-                <Maximize2 size={14} />
-              </Link>
-              <button
-                onClick={() => setOpen(false)}
-                aria-label={t("ปิด", "Close")}
-                className="grid h-7 w-7 place-items-center rounded-full text-white/60 hover:text-white hover:bg-white/10"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
-
-          <ChatConversation session={session} variant="widget" active={open} />
-        </div>
-      )}
+      {open && <QuickChatPanel panelBottom={panelBottom} viewingSlug={viewingSlug} onClose={() => setOpen(false)} />}
     </>
   );
 }

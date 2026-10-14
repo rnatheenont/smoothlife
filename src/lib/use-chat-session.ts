@@ -6,6 +6,7 @@ import { useCart } from "@/lib/cart-context";
 import { useRecentlyViewed } from "@/lib/recently-viewed-context";
 import { pickSuggestions, interestsFromProducts } from "@/lib/chat-suggestions";
 import type { Product } from "@/data/types";
+import { countUnread, getAnonId, markChatSeen, readChatSeen } from "@/lib/chat-identity";
 import { useLiteProducts } from "@/lib/use-lite-products";
 import { resizeForUpload, resizeForThumbnail, ResizedImage } from "@/lib/image-utils";
 import { rememberChatImage, attachStoredImages, clearChatImages } from "@/lib/chat-image-store";
@@ -36,38 +37,6 @@ export type ChatMsg = {
 // learned to strip [[ASK: ...]] still carry it — so clean the marker off for
 // display, and hand back the last reply's options so reopening the panel
 // restores the tappable answers instead of leaving dead bracket text.
-const CHAT_SEEN_KEY = "sl_chat_seen_at";
-
-function readChatSeen(): string | null {
-  try {
-    return localStorage.getItem(CHAT_SEEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function markChatSeen(latestAt: string | null | undefined) {
-  try {
-    localStorage.setItem(CHAT_SEEN_KEY, latestAt || new Date().toISOString());
-  } catch {}
-}
-
-function countUnread(
-  messages: { role: string; created_at?: string }[],
-  latestAt: string | null | undefined
-): number {
-  const seen = readChatSeen();
-  if (!seen) {
-    // First time this device has checked: the history so far is not news.
-    if (latestAt) markChatSeen(latestAt);
-    return 0;
-  }
-  const seenAt = Date.parse(seen);
-  return messages.filter(
-    (m) => m.role === "assistant" && m.created_at && Date.parse(m.created_at) > seenAt
-  ).length;
-}
-
 function hydrateHistory(
   raw: (ChatMsg & { from_staff?: boolean; created_at?: string; attachmentUrl?: string | null })[]
 ): { messages: ChatMsg[]; ask: string[] } {
@@ -93,19 +62,6 @@ function hydrateHistory(
 // A stable per-device id for guests so their chat history/rate-limit
 // tracking can be restored without requiring login — never sent for
 // logged-in users, who are identified by their real session instead.
-function getAnonId() {
-  try {
-    let id = localStorage.getItem("sl_chat_anon_id");
-    if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem("sl_chat_anon_id", id);
-    }
-    return id;
-  } catch {
-    return undefined;
-  }
-}
-
 export type ChatSessionOptions = {
   /**
    * Whether this surface is the one the customer is currently looking at —
