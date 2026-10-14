@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ProductCardData } from "@/data/card";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
 import FlashSaleCard from "@/components/home/FlashSaleCard";
+import { useSecond } from "@/lib/use-second";
 
 // The flash sale band: the campaign on the left, what is on sale on the right.
 //
@@ -88,13 +89,12 @@ export default function FlashSaleShelf({
   const [left, setLeft] = useState<Parts | null | undefined>(null);
   const [art, setArt] = useState({ lockup: true, mascot: true });
 
+  // One clock for the page rather than one per countdown — see use-second.
+  const second = useSecond();
   useEffect(() => {
     if (!cfg.endsAt) return;
-    const tick = () => setLeft(remaining(cfg.endsAt!) ?? undefined);
-    tick();
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [cfg.endsAt]);
+    setLeft(remaining(cfg.endsAt) ?? undefined);
+  }, [cfg.endsAt, second]);
 
   // Given the shelf, draw it. Given only a collection handle — which is how
   // the hand-written home page still works, the handle living in a widget

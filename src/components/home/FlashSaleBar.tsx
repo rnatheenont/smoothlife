@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import Link from "next/link";
 import { useWidgetSettings } from "@/lib/use-widget-settings";
+import { useSecond } from "@/lib/use-second";
 
 // The countdown band under the category row.
 //
@@ -82,13 +83,12 @@ export default function FlashSaleBar({ config }: { config?: FlashSaleBarConfig }
   // null = not counted yet (first render), undefined = the deadline is past.
   const [left, setLeft] = useState<Parts | null | undefined>(null);
 
+  // One clock for the page rather than one per countdown — see use-second.
+  const second = useSecond();
   useEffect(() => {
     if (!cfg.endsAt) return;
-    const tick = () => setLeft(remaining(cfg.endsAt!) ?? undefined);
-    tick();
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [cfg.endsAt]);
+    setLeft(remaining(cfg.endsAt) ?? undefined);
+  }, [cfg.endsAt, second]);
 
   // Nothing is drawn until the settings have actually arrived, so a disabled
   // band never flashes up on its way to being hidden.

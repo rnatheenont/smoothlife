@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { useInView, useTabVisible } from "@/lib/use-in-view";
 import { HeroBanner } from "@/data/heroBanners";
 import { hero3DSceneFor } from "@/data/hero-3d";
 
@@ -84,6 +85,15 @@ export default function HeroCarousel({
 }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Stopped on purpose, and stays stopped: hover is not a control a thumb
+  // or a keyboard has (WCAG 2.2.2).
+  const [userStopped, setUserStopped] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  // A carousel turning off screen, or in a tab nobody is looking at, is a
+  // timer and a repaint for nothing.
+  const inView = useInView(rootRef);
+  const tabVisible = useTabVisible();
+  const running = !paused && !userStopped && inView && tabVisible;
   const touchStartX = useRef<number | null>(null);
   const isMobile = useIsMobile();
 
@@ -163,12 +173,12 @@ export default function HeroCarousel({
   const [chosenAt, setChosenAt] = useState(0);
 
   useEffect(() => {
-    if (paused || heroBanners.length === 0) return;
+    if (!running || heroBanners.length === 0) return;
     const timer = setInterval(() => {
       setIndex((i) => (i + 1) % heroBanners.length);
     }, AUTO_ROTATE_MS);
     return () => clearInterval(timer);
-  }, [paused, heroBanners.length, chosenAt]);
+  }, [running, heroBanners.length, chosenAt]);
 
   if (heroBanners.length === 0) return null;
 
@@ -200,7 +210,7 @@ export default function HeroCarousel({
     // isolate: the slides carry z-indexes of their own for the coverflow,
     // and without a stacking context here they compete with the rest of the
     // page — the hero band's search results opened underneath them.
-    <div className="isolate">
+    <div ref={rootRef} className="isolate">
       <div
         ref={frameRef}
         // The frame's own colour from md up only. It is there for a slide
@@ -229,7 +239,13 @@ export default function HeroCarousel({
               href={banner.href}
               aria-hidden={i !== index}
               tabIndex={i === index ? 0 : -1}
-              className={`hero-slide ${mobileCardAspect} md:aspect-auto overflow-hidden rounded-2xl md:rounded-none`}
+              // bg: what the card is while the artwork is still arriving.
+              // It was white, so on a phone the first thing the page showed
+              // was an empty frame the size of the banner — the brightest
+              // thing on screen, in the place the shop puts its campaign.
+              // A soft tint reads as part of the design instead, and is
+              // covered completely the moment the image paints.
+              className={`hero-slide ${mobileCardAspect} md:aspect-auto overflow-hidden rounded-2xl bg-surface-mist md:rounded-none md:bg-transparent`}
               style={
                 {
                   "--x": `${coverflow(i, index, heroBanners.length).x}%`,
@@ -332,6 +348,15 @@ export default function HeroCarousel({
         // button rather than on the row, which is where it was before — a
         // row's padding makes the row taller and the target no bigger.
         <div className="flex items-center justify-center gap-0.5">
+          {/* The one control that works without a pointer. */}
+          <button
+            type="button"
+            onClick={() => setUserStopped((v) => !v)}
+            aria-label={userStopped ? "เล่นสไลด์อัตโนมัติต่อ" : "หยุดสไลด์อัตโนมัติ"}
+            className="grid h-11 w-8 place-items-center text-slate-400 transition-colors hover:text-brand-800"
+          >
+            {userStopped ? <Play size={13} aria-hidden="true" /> : <Pause size={13} aria-hidden="true" />}
+          </button>
           {heroBanners.map((b, i) => (
             <button
               key={b.slug}
@@ -342,13 +367,13 @@ export default function HeroCarousel({
               <span className="relative block h-1.5 w-5 overflow-hidden rounded-full bg-slate-200">
                 {i === index && (
                   <span
-                    key={`${b.slug}-${paused}`}
+                    key={`${b.slug}-${running}`}
                     className="absolute inset-y-0 left-0 rounded-full bg-brand-gradient"
                     style={{
-                      animation: paused
-                        ? "none"
-                        : `heroFill ${AUTO_ROTATE_MS}ms linear forwards`,
-                      width: paused ? "100%" : undefined,
+                      animation: running
+                        ? `heroFill ${AUTO_ROTATE_MS}ms linear forwards`
+                        : "none",
+                      width: running ? undefined : "100%",
                     }}
                   />
                 )}

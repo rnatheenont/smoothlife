@@ -183,7 +183,7 @@ export default function Header({ ticker = [], menu = [] }: { ticker?: TickerProd
                 seventy is not a shortcut. */}
             <Link
               href={SALE_HREF}
-              className="flex h-8 shrink-0 items-center rounded-full bg-brand-gradient bg-[length:200%_100%] px-4 text-[12.5px] font-bold text-white shadow-xs transition-transform animate-gradientPan hover:scale-105 active:scale-95"
+              className="flex h-8 shrink-0 items-center rounded-full bg-brand-gradient bg-[length:200%_100%] px-4 text-[12.5px] font-bold text-white shadow-xs transition-transform hover:animate-gradientPan hover:scale-105 active:scale-95"
             >
               Sale
             </Link>
