@@ -47,18 +47,32 @@ export function pageTag(kind: PageKind, slug: string) {
 /**
  * Why the two reads are cached differently.
  *
- * The pointer — which revision a page is currently publishing — is read
- * fresh every time. It is one indexed lookup on a tiny table, and caching it
- * caused a bug worth remembering: a page that does not exist yet answers
- * "no row", that answer got cached for thirty minutes, and the first publish
- * of a page was invisible for half an hour afterwards. A cache that
- * remembers absence is a cache that hides creation.
+ * The pointer — which revision a page is currently publishing — is cached
+ * briefly and under the page's own tag. It used to be read fresh every time,
+ * for a reason worth keeping in view: a page that does not exist yet answers
+ * "no row", and an unqualified cache of that answer hid the first publish of
+ * a page for as long as it lasted. A cache that remembers absence is a cache
+ * that hides creation.
+ *
+ * What makes it safe now is the tag, not the TTL. Publishing calls
+ * `revalidateTag(pageTag(kind, slug))`, so the remembered absence is thrown
+ * away by the very act that ends it; the minute is only the ceiling for
+ * anything that changes the row without going through publish.
+ *
+ * And it has to be cached, because an uncached read makes every page that
+ * does one dynamic. That is not a performance opinion — a statically
+ * generated route whose render reaches an uncached fetch fails outright, and
+ * on 14 October it took every product page on the shop down with it, through
+ * the 404 boundary they share.
  *
  * The document is cached hard, because page_revisions is append-only — there
  * is a trigger on the table that refuses UPDATE. A revision id always names
  * the same bytes, so this entry can never be wrong, only unused.
  */
 const REVISION_TTL = 86_400;
+/** The ceiling on how stale "which revision is live" can get when something
+ *  changes the row without publishing. Publishing itself clears it at once. */
+const POINTER_TTL = 60;
 
 /**
  * The lists that feed the sitemap are cached, and they have to be.
@@ -93,9 +107,10 @@ export async function publishedDoc(kind: PageKind, slug: string): Promise<PageDo
     // Two reads rather than a join: PostgREST cannot compare a column in one
     // table against a column in another, which is what "the revision this
     // page points at" is.
-    const pages = await supabaseRest<Pick<PageRow, "status" | "published_revision_id">[]>(
+    const pages = await supabaseRestCached<Pick<PageRow, "status" | "published_revision_id">[]>(
       `pages?select=status,published_revision_id` +
-        `&kind=eq.${encodeURIComponent(kind)}&slug=eq.${encodeURIComponent(slug)}&limit=1`
+        `&kind=eq.${encodeURIComponent(kind)}&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+      { revalidate: POINTER_TTL, tags: [pageTag(kind, slug), "pages"] }
     );
 
     const page = pages[0];
