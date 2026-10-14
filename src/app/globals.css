@@ -4,8 +4,16 @@
 @import './tailwind-v3-compat.css';
 
 @source '../**/*.{js,ts,jsx,tsx,mdx}';
-@source not '../app/admin/**';
-@source not '../components/admin/**';
+/* The console's files are scanned here too, and that is not an oversight.
+   Leaving them out made this sheet smaller and the console unstyled: a
+   utility only /admin uses — a negative offset on the inbox handle, a 2xl:
+   rule no shopper page has — was then generated nowhere. The console cannot
+   generate its own either, because its sheet reads this file's theme with
+   `@reference`, and that carries the exclusions along with the colours, so
+   an `@source` there is overruled before it runs.
+   Splitting the theme into a file both sheets can reference is what would
+   make the console self-sufficient; until that is done the shop carries the
+   console's utilities. */
 
 /* Dark styling only when something puts `.dark` on the page. HeroUI's own
    `dark:` variant also follows the OS setting; declared after it, this one
