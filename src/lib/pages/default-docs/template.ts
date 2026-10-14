@@ -42,8 +42,35 @@ const concern = (): PageDoc =>
     },
   ]);
 
+/**
+ * A collection page: back out, the trail, the collection, its products.
+ *
+ * The breadcrumb row is visible here because it always was — this is one of
+ * the two templates that drew one — and it brings the "กลับ" button with it.
+ * The two belong together: both answer "where am I and how do I get out", the
+ * button hides from lg where the trail is enough on its own, and splitting
+ * them would let somebody leave a back button on a page with no trail.
+ */
+const collection = (): PageDoc =>
+  doc([
+    {
+      type: "breadcrumb",
+      v: 1,
+      settings: {
+        showHome: true,
+        display: "row",
+        room: "page",
+        back: "above",
+        backHref: "/collections",
+      },
+    },
+    { type: "collection_header", v: 1, settings: { showDescription: true, countSuffix: "รายการ" } },
+    { type: "collection_products", v: 1, settings: {} },
+  ]);
+
 /** Keyed by the registry's template key. A template with no entry here is not
  *  offered in the admin yet. */
 export const TEMPLATE_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   concern,
+  collection,
 };
