@@ -1,4 +1,5 @@
 import type { AnySectionDefinition, PageKind } from "@/lib/pages/types";
+import type { SectionRules } from "@/lib/pages/edit";
 import { smoothieAsk } from "./smoothie_ask/definition";
 import { heroBannersSection } from "./hero_banners/definition";
 import { iconShortcuts } from "./icon_shortcuts/definition";
@@ -106,6 +107,29 @@ export const SECTION_LIST: AnySectionDefinition[] = ALL;
  *  panel in the editor. */
 export function sectionsFor(kind: PageKind): AnySectionDefinition[] {
   return ALL.filter((def) => def.enabledOn.includes(kind));
+}
+
+/**
+ * The locking rules, in the shape `edit.ts` asks for.
+ *
+ * It takes predicates rather than importing this file so that its tests can
+ * run without React; this is the other end of that arrangement — one object,
+ * built once, that the editor and the save route both pass in.
+ *
+ * A type the registry has never heard of is neither locked nor pinned: an
+ * unknown section is already dropped at render time, and treating it as
+ * locked here would make a document nobody can repair.
+ */
+export const SECTION_RULES: SectionRules = {
+  isLocked: (type) => Boolean(SECTION_REGISTRY[type]?.locked),
+  pinnedOf: (type) => SECTION_REGISTRY[type]?.pinned,
+};
+
+/** The locked sections a page of this kind cannot go live without. Used by
+ *  the publish check — a /shop with no listing is a page that looks finished
+ *  and sells nothing. */
+export function requiredSectionsFor(kind: PageKind): AnySectionDefinition[] {
+  return ALL.filter((def) => def.locked && def.enabledOn.includes(kind));
 }
 
 // A section whose defaults do not satisfy its own schema is a section the

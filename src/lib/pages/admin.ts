@@ -124,6 +124,42 @@ export function validateForPublish(doc: PageDoc, page?: PageRow): string[] {
     if (def.maxPerPage && count > def.maxPerPage) {
       issues.push(`"${def.label}" ใส่ได้สูงสุด ${def.maxPerPage} อันต่อหน้า`);
     }
+    // The last of the three gates. A hidden locked section is a page that
+    // looks finished in the editor and does nothing on the site: /shop with
+    // no filters, a product page with no buy button. The editor refuses to
+    // make one and the save route refuses to store one, so reaching here
+    // means the document came from somewhere else — which is exactly when a
+    // check is worth having.
+    if (def.locked && section.common?.hidden) {
+      issues.push(`"${def.label}" เป็นส่วนของระบบ ซ่อนไม่ได้ — ถ้าซ่อน หน้านี้จะใช้งานไม่ได้`);
+    }
+  }
+  return issues;
+}
+
+/**
+ * Locked sections the incoming draft has dropped or hidden.
+ *
+ * The second of the three gates, and the first that is actually a gate: the
+ * editor's guards make the right thing easy, this one makes the wrong thing
+ * impossible. It compares against what is already stored rather than against
+ * a list of what each page ought to have, because the question here is not
+ * "is this page well formed" but "did this save take something away that the
+ * page is not allowed to lose".
+ *
+ * Matched by id, not by type. Two sections of one locked type cannot exist
+ * (they carry maxPerPage: 1), but an id match also survives a type being
+ * renamed under a document, and says exactly which block went missing.
+ */
+export function lockedSectionsLost(previous: PageDoc, next: PageDoc): string[] {
+  const incoming = new Map(next.sections.map((s) => [s.id, s]));
+  const issues: string[] = [];
+  for (const was of previous.sections) {
+    const def = SECTION_REGISTRY[was.type];
+    if (!def?.locked) continue;
+    const now = incoming.get(was.id);
+    if (!now) issues.push(`"${def.label}" เป็นส่วนของระบบ ลบออกจากหน้านี้ไม่ได้`);
+    else if (now.common?.hidden) issues.push(`"${def.label}" เป็นส่วนของระบบ ซ่อนไม่ได้`);
   }
   return issues;
 }

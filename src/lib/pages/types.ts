@@ -12,7 +12,27 @@ import type { CampaignTimes } from "./campaign";
 // section cannot be added to the library and then be missing from the form,
 // or render settings it never declared.
 
-export type PageKind = "home" | "page" | "campaign" | "brand";
+export type PageKind = "home" | "page" | "campaign" | "brand" | "system" | "template" | "global";
+
+/**
+ * What a template page is currently drawing.
+ *
+ * One stored document serves every product, so the document cannot name the
+ * product — the request does. A section in a template reads the entity to
+ * find out which one it is on, the way a Shopify product.json does.
+ *
+ * `page`, `home`, `campaign` and `brand` never carry one: those pages are
+ * about themselves.
+ */
+export type EntityType = "product" | "category" | "collection" | "concern" | "article" | "question";
+
+export type EntityRef =
+  | { type: "product"; slug: string }
+  | { type: "category"; slug: string }
+  | { type: "collection"; handle: string }
+  | { type: "concern"; slug: string }
+  | { type: "article"; handle: string }
+  | { type: "question"; slug: string };
 
 /** Context handed to every section at render time. */
 export type RenderCtx = {
@@ -39,6 +59,10 @@ export type RenderCtx = {
    *  instead of disappearing, because a section that silently vanishes while
    *  someone is editing it is a bug report nobody can write. */
   isPreview: boolean;
+  /** Template pages only: the item this render is for. A section that needs
+   *  one declares `requiresEntity`, so a template section can never end up on
+   *  a page that has nothing to be about. */
+  entity?: EntityRef;
 };
 
 /** One field in the admin form. Kept deliberately small for now — the editor
@@ -107,6 +131,27 @@ export type SectionDefinition<S extends z.ZodTypeAny = z.ZodTypeAny> = {
   enabledOn: PageKind[];
   /** How many of these one page may hold. Absent means no limit. */
   maxPerPage?: number;
+  /** A section that wraps a piece of the shop rather than a piece of copy:
+   *  the filters and grid on /shop, the buy box on a product page.
+   *
+   *  It cannot be deleted, hidden or duplicated — the page stops working
+   *  without it — but it can be moved, because where the system sits on the
+   *  page is a layout decision and a safe one. Its settings are the words
+   *  around the machinery (a heading, an empty-results message), never the
+   *  machinery itself.
+   *
+   *  Enforced in three places on purpose: `edit.ts` so the editor cannot
+   *  produce such a document, the save route so a hand-written one is
+   *  refused, and `validateForPublish` so a page missing one cannot go live.
+   *  The first is not a gate — it is there so the right thing is the easy
+   *  thing; the other two are. */
+  locked?: boolean;
+  /** Keeps the section at the head or the foot of the page. Breadcrumbs
+   *  belong above everything; a page is not free to put them in the middle. */
+  pinned?: "top" | "bottom";
+  /** Entity types this section can draw. A section with this set is only
+   *  offered on templates for those types. */
+  requiresEntity?: EntityType[];
   /** True for the kind of section that would hold a page's largest image, so
    *  the renderer can give the first one priority and lazy-load the rest. */
   isLcpCandidate?: boolean;

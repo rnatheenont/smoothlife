@@ -118,3 +118,74 @@ test("a drop that landed nowhere changes nothing", () => {
     assert.deepEqual(ids(reorderSections(d, from, to)), ["a", "b", "c"]);
   }
 });
+
+// Locked and pinned sections.
+//
+// The rules are passed in as literals here, which is the point of taking
+// them as predicates: these run without the registry, so without React and
+// without a single section component being imported.
+
+/** A page whose first section is a pinned breadcrumb and whose "listing" is
+ *  the locked machinery of /shop. */
+const shopDoc = (): PageDoc => ({
+  schemaVersion: 1,
+  sections: [
+    { id: "crumb", type: "breadcrumb", settings: {} },
+    { id: "intro", type: "rich_text", settings: {} },
+    { id: "listing", type: "shop_listing", settings: {} },
+    { id: "foot", type: "cta_card", settings: {} },
+  ],
+});
+
+const rules = {
+  isLocked: (type: string) => type === "shop_listing",
+  pinnedOf: (type: string) => (type === "breadcrumb" ? ("top" as const) : undefined),
+};
+
+test("a locked section cannot be deleted", () => {
+  const d = shopDoc();
+  assert.equal(removeSection(d, "listing", rules), d);
+  assert.deepEqual(ids(removeSection(d, "intro", rules)), ["crumb", "listing", "foot"]);
+});
+
+test("a locked section cannot be hidden — the page stops working without it", () => {
+  const d = shopDoc();
+  assert.equal(toggleHidden(d, "listing", rules), d);
+  assert.equal(toggleHidden(d, "intro", rules).sections[1].common?.hidden, true);
+});
+
+test("a locked section still moves — where the machinery sits is a layout choice", () => {
+  assert.deepEqual(ids(reorderSections(shopDoc(), 2, 1, rules)), ["crumb", "listing", "intro", "foot"]);
+});
+
+test("a pinned section does not travel", () => {
+  const d = shopDoc();
+  assert.equal(reorderSections(d, 0, 2, rules), d);
+  assert.equal(moveSection(d, "crumb", 1, rules), d);
+});
+
+test("nothing is dropped above a section pinned to the top", () => {
+  const d = shopDoc();
+  assert.equal(reorderSections(d, 2, 0, rules), d);
+  assert.equal(moveSection(d, "intro", -1, rules), d);
+});
+
+test("a section pinned to the bottom holds the foot of the page", () => {
+  const d: PageDoc = {
+    schemaVersion: 1,
+    sections: [
+      { id: "a", type: "rich_text", settings: {} },
+      { id: "b", type: "rich_text", settings: {} },
+      { id: "legal", type: "campaign_terms", settings: {} },
+    ],
+  };
+  const r = { pinnedOf: (t: string) => (t === "campaign_terms" ? ("bottom" as const) : undefined) };
+  assert.equal(reorderSections(d, 0, 2, r), d);
+  assert.deepEqual(ids(reorderSections(d, 0, 1, r)), ["b", "a", "legal"]);
+});
+
+test("without rules a document behaves exactly as it did before locking existed", () => {
+  const d = shopDoc();
+  assert.deepEqual(ids(removeSection(d, "listing")), ["crumb", "intro", "foot"]);
+  assert.deepEqual(ids(reorderSections(d, 0, 3)), ["intro", "listing", "foot", "crumb"]);
+});

@@ -9,8 +9,9 @@ import {
   publish,
   rollback,
   saveDraft,
+  lockedSectionsLost,
 } from "@/lib/pages/admin";
-import { migrateDoc } from "@/lib/pages/doc";
+import { isPageDoc, migrateDoc } from "@/lib/pages/doc";
 import { validateCampaignTimes } from "@/lib/pages/campaign";
 import { checkTheme, type CampaignTheme } from "@/lib/pages/theme";
 import { pageTag, servedDoc } from "@/lib/pages/store";
@@ -112,6 +113,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ kind: str
       description: def.description,
       category: def.category,
       maxPerPage: def.maxPerPage ?? null,
+      // The editor needs these to draw the lock and to keep a pinned card
+      // out of the sortable list. It cannot import the registry — that is
+      // server code — so the flags travel with the library.
+      locked: def.locked ?? false,
+      pinned: def.pinned ?? null,
       defaults: def.defaults,
       fields: def.fields,
     })),
@@ -137,6 +143,14 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ kind: str
 
   const page = await openPage(target.kind, target.slug, actorOf(token));
   if (!page) return NextResponse.json({ ok: false, error: "ไม่พบเพจนี้" }, { status: 404 });
+
+  // A draft may not take away the machinery. The editor already refuses, so
+  // a document that gets this far was written by something else — a stale
+  // tab, a script, a hand-rolled request — and this is where that is caught.
+  if (isPageDoc(page.draft_doc) && isPageDoc(body.doc)) {
+    const lost = lockedSectionsLost(page.draft_doc, body.doc);
+    if (lost.length) return NextResponse.json({ ok: false, error: lost.join(" · ") }, { status: 400 });
+  }
 
   const result = await saveDraft({
     pageId: page.id,

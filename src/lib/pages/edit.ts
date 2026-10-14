@@ -1,5 +1,44 @@
 import type { PageDoc, SectionInstance } from "./doc";
 
+/**
+ * What this file is allowed to know about section types.
+ *
+ * A predicate rather than the registry itself, deliberately. The registry
+ * pulls in every section's definition, which pulls in every section's
+ * component, which is React and Shopify data — and this file's whole value is
+ * that its mistakes can be caught by a test that runs in milliseconds with no
+ * DOM and no network. Callers that have the registry pass these two in; the
+ * tests pass a literal.
+ *
+ * Both are optional, and a document with no rules behaves exactly as it did
+ * before locking existed.
+ */
+export type SectionRules = {
+  isLocked?: (type: string) => boolean;
+  pinnedOf?: (type: string) => "top" | "bottom" | undefined;
+};
+
+function lockedAt(doc: PageDoc, id: string, rules: SectionRules): boolean {
+  const section = doc.sections.find((s) => s.id === id);
+  return Boolean(section && rules.isLocked?.(section.type));
+}
+
+/** How many pinned sections are welded to each end right now.
+ *
+ *  Counted from the document rather than assumed, because a page can hold
+ *  more than one of them — a breadcrumb above a page header, both pinned to
+ *  the top — and because a document written before a section became pinned
+ *  may not have it at the end yet. What is counted is the run that is
+ *  already there; it is not this function's job to repair the rest. */
+function pinnedEnds(doc: PageDoc, rules: SectionRules): { top: number; bottom: number } {
+  const pin = (i: number) => rules.pinnedOf?.(doc.sections[i].type);
+  let top = 0;
+  while (top < doc.sections.length && pin(top) === "top") top += 1;
+  let bottom = 0;
+  while (bottom < doc.sections.length - top && pin(doc.sections.length - 1 - bottom) === "bottom") bottom += 1;
+  return { top, bottom };
+}
+
 // What the editor does to a document, as functions rather than as code inside
 // a button handler.
 //
@@ -29,11 +68,14 @@ function withSections(doc: PageDoc, sections: SectionInstance[]): PageDoc {
  * around: the person pressing "up" on the first section means "nothing left
  * to do", not "send it to the bottom".
  */
-export function moveSection(doc: PageDoc, id: string, delta: number): PageDoc {
+export function moveSection(doc: PageDoc, id: string, delta: number, rules: SectionRules = {}): PageDoc {
   const from = doc.sections.findIndex((s) => s.id === id);
   if (from < 0) return doc;
   const to = from + delta;
   if (to < 0 || to >= doc.sections.length) return doc;
+  if (rules.pinnedOf?.(doc.sections[from].type)) return doc;
+  const { top, bottom } = pinnedEnds(doc, rules);
+  if (to < top || to > doc.sections.length - 1 - bottom) return doc;
 
   const sections = [...doc.sections];
   [sections[from], sections[to]] = [sections[to], sections[from]];
@@ -52,9 +94,17 @@ export function moveSection(doc: PageDoc, id: string, delta: number): PageDoc {
  * because every caller is a pointer that has been dropped somewhere, and a
  * drop that landed nowhere should do nothing rather than something nearby.
  */
-export function reorderSections(doc: PageDoc, from: number, to: number): PageDoc {
+export function reorderSections(doc: PageDoc, from: number, to: number, rules: SectionRules = {}): PageDoc {
   const last = doc.sections.length - 1;
   if (from < 0 || from > last || to < 0 || to > last || from === to) return doc;
+
+  // A pinned section does not travel, and nothing travels past one. The
+  // editor draws these outside the sortable list so neither drop can be
+  // aimed in the first place; this is the same answer given again where it
+  // can be tested, for the documents that do not come from the editor.
+  if (rules.pinnedOf?.(doc.sections[from].type)) return doc;
+  const { top, bottom } = pinnedEnds(doc, rules);
+  if (to < top || to > last - bottom) return doc;
 
   const sections = [...doc.sections];
   const [moved] = sections.splice(from, 1);
@@ -64,14 +114,18 @@ export function reorderSections(doc: PageDoc, from: number, to: number): PageDoc
 
 /** Hides or shows a section. Hidden sections stay in the document, which is
  *  the difference between this and deleting one — the settings survive. */
-export function toggleHidden(doc: PageDoc, id: string): PageDoc {
+export function toggleHidden(doc: PageDoc, id: string, rules: SectionRules = {}): PageDoc {
+  // Hiding the buy box leaves a product page that cannot sell. The section
+  // stays.
+  if (lockedAt(doc, id, rules)) return doc;
   return withSections(
     doc,
     doc.sections.map((s) => (s.id === id ? { ...s, common: { ...s.common, hidden: !s.common?.hidden } } : s))
   );
 }
 
-export function removeSection(doc: PageDoc, id: string): PageDoc {
+export function removeSection(doc: PageDoc, id: string, rules: SectionRules = {}): PageDoc {
+  if (lockedAt(doc, id, rules)) return doc;
   return withSections(doc, doc.sections.filter((s) => s.id !== id));
 }
 

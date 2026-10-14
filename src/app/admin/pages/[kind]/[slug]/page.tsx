@@ -72,6 +72,11 @@ type LibraryEntry = {
   description: string;
   category: string;
   maxPerPage: number | null;
+  /** Wraps a piece of the shop rather than a piece of copy: cannot be
+   *  deleted or hidden, can still be moved. */
+  locked: boolean;
+  /** Welded to the head or the foot of the page. */
+  pinned: "top" | "bottom" | null;
   defaults: Record<string, unknown>;
   fields: FieldDef[];
 };
@@ -510,6 +515,15 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   }, []);
 
   const byType = useMemo(() => new Map(library.map((l) => [l.type, l])), [library]);
+  /** The same rules the save route and the publish check apply, so the
+   *  editor cannot produce a document the next step will refuse. */
+  const rules = useMemo(
+    () => ({
+      isLocked: (type: string) => Boolean(byType.get(type)?.locked),
+      pinnedOf: (type: string) => byType.get(type)?.pinned ?? undefined,
+    }),
+    [byType]
+  );
   const current = doc?.sections.find((s) => s.id === selected) ?? null;
   const currentDef = current ? byType.get(current.type) : null;
 
@@ -519,13 +533,13 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
   // rather than in a button handler.
 
   function toggleHidden(id: string) {
-    if (doc) edit(toggleHiddenIn(doc, id));
+    if (doc) edit(toggleHiddenIn(doc, id, rules));
   }
 
   function remove(id: string) {
     if (!doc) return;
     const label = byType.get(doc.sections.find((s) => s.id === id)?.type ?? "")?.label;
-    edit(removeSection(doc, id));
+    edit(removeSection(doc, id, rules));
     if (selected === id) setSelected(null);
     // No confirmation dialog: deleting is cheap to undo and confirming every
     // delete teaches people to dismiss dialogs. The offer to take it back is
@@ -1197,7 +1211,7 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
               setSelected(id);
               setRail("section");
             }}
-            onReorder={(from, to) => edit(reorderSections(doc, from, to))}
+            onReorder={(from, to) => edit(reorderSections(doc, from, to, rules))}
             onToggleHidden={toggleHidden}
             onRemove={remove}
           />
