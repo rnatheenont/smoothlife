@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Minus, Plus, Trash2, Award, Ticket, Repeat, Gift } from "lucide-react";
@@ -10,9 +10,8 @@ import { useLoginModal } from "@/lib/login-modal-context";
 import { useLang } from "@/lib/lang-context";
 import { useOrderTotals } from "@/lib/use-order-totals";
 import { formatTHB } from "@/lib/format";
-import { suggestBundlesForCart } from "@/lib/bundle-suggest";
+import type { ProductCardData } from "@/data/card";
 import { pointsForAmount } from "@/data/coupons";
-import { getProductBySlug } from "@/data/products";
 import { subscriptionPlans } from "@/data/subscriptions";
 import CouponPicker from "@/components/CouponPicker";
 import { Button } from "@/components/ui";
@@ -20,10 +19,9 @@ import FreeGiftProgress from "@/components/FreeGiftProgress";
 import TieredRewardBox from "@/components/TieredRewardBox";
 import MobileStickyBar from "@/components/MobileStickyBar";
 import ProductCard from "@/components/ProductCard";
-import { toCardData } from "@/data/card";
 
 export default function CartPage() {
-  const { lines, updateQty, removeItem, changeVariant } = useCart();
+  const { lines, updateQty, removeItem, changeVariant, productBySlug } = useCart();
   const { open: openLogin } = useLoginModal();
   const { user } = useAuth();
   const { lang, t } = useLang();
@@ -31,7 +29,31 @@ export default function CartPage() {
   const checkoutButtonRef = useRef<HTMLElement>(null);
   // What the tab bar's badge counts, said out loud next to the title.
   const itemCount = lines.reduce((n, l) => n + l.qty, 0);
-  const bundleSuggestions = suggestBundlesForCart(lines.filter((l) => !l.isGift).map((l) => l.slug));
+  // Suggestions for what is in the cart, from the server: the rule reads
+  // the catalogue, and the cart page was the last thing on the storefront
+  // importing it.
+  const cartSlugKey = lines
+    .filter((l) => !l.isGift)
+    .map((l) => l.slug)
+    .sort()
+    .join(",");
+  const [bundleSuggestions, setBundleSuggestions] = useState<ProductCardData[]>([]);
+  useEffect(() => {
+    if (!cartSlugKey) {
+      setBundleSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/products/lite?bundleFor=${encodeURIComponent(cartSlugKey)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && Array.isArray(d?.cards)) setBundleSuggestions(d.cards);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [cartSlugKey]);
   // Subscribe-added lines never merge with a normal line of the same
   // product (see cart-context's sameLine) — grouped into their own section
   // here so a customer can see at a glance which items are a recurring
@@ -62,7 +84,7 @@ export default function CartPage() {
     // only place the number survives is the catalogue — and only for gifts
     // that are in it: the ones off Shopify's unlisted free-gift shelf have a
     // variant id where a slug would be, and no price to find.
-    const giftWorth = line.isGift ? getProductBySlug(line.slug)?.price ?? 0 : 0;
+    const giftWorth = line.isGift ? (productBySlug(line.slug)?.price ?? 0) : 0;
     return (
       <div
         key={`${line.variantId}-${line.isGift ? line.giftPromoSlug : line.subscribeMonths ?? "normal"}`}
@@ -253,7 +275,7 @@ export default function CartPage() {
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {bundleSuggestions.map((p) => (
-                  <ProductCard key={p.slug} product={toCardData(p)} />
+                  <ProductCard key={p.slug} product={p} />
                 ))}
               </div>
             </div>

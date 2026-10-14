@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Package, Loader2, Truck, RefreshCw, ChevronRight } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { getProductBySlug } from "@/data/products";
+import { useLiteProducts } from "@/lib/use-lite-products";
 import { formatTHB } from "@/lib/format";
 import {
   orderStateBadge,
@@ -39,6 +39,12 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
   const [linked, setLinked] = useState(false);
   const [orders, setOrders] = useState<OrderWithTracking[]>([]);
   const [totals, setTotals] = useState<{ orders: number; spend: number; currency: string } | null>(null);
+  // The products in these orders, asked for by slug once the orders arrive.
+  // Looking them up meant importing the catalogue — ~1,000 products in the
+  // browser so that a "ซื้ออีกครั้ง" button knows which variant to add.
+  const orderSlugs = orders.flatMap((o) => o.items.map((it) => it.slug).filter((s): s is string => Boolean(s)));
+  const { products: orderProducts } = useLiteProducts(orderSlugs);
+  const bySlug = new Map(orderProducts.map((p) => [p.slug, p]));
   /** Orders Shopify counts but will not hand to this app — see the API route. */
   const [hidden, setHidden] = useState(0);
   const [error, setError] = useState(false);
@@ -254,7 +260,7 @@ export default function OrdersList({ embedded = false }: { embedded?: boolean })
 
               <div className="flex flex-col gap-2 mb-3">
                 {o.items.map((it, i) => {
-                  const product = it.slug ? getProductBySlug(it.slug) : undefined;
+                  const product = it.slug ? bySlug.get(it.slug) : undefined;
                   return (
                     <div key={i} className="flex items-center gap-2.5">
                       <div className="relative h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-surface-soft grid place-items-center">

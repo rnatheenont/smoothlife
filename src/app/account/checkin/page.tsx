@@ -6,10 +6,9 @@ import { Loader2, Gift, Coins, CheckCircle2, X, Sparkles, Flame, CalendarCheck }
 import AccountLayout from "@/components/account/AccountLayout";
 import ProductCard from "@/components/ProductCard";
 import { useAuth } from "@/lib/auth-context";
-import { products } from "@/data/products";
+import type { ProductCardData } from "@/data/card";
 import { REWARDS_ACTIVITIES_ENABLED } from "@/lib/feature-flags";
 import { Button } from "@/components/ui";
-import { toCardData } from "@/data/card";
 
 type DayInfo = {
   date: string;
@@ -55,6 +54,20 @@ function CheckinContent() {
   const [message, setMessage] = useState<string | null>(null);
   const [confirmDate, setConfirmDate] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<{ title: string; body: string; coupon?: string | null } | null>(null);
+  const [recommended, setRecommended] = useState<ProductCardData[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/products/lite?recommended=1&limit=4")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && Array.isArray(d?.cards)) setRecommended(d.cards);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function load() {
     try {
@@ -152,12 +165,10 @@ function CheckinContent() {
   // catalogue doesn't always have "Bestseller"-badged items in stock, so
   // fall through to Sale-badged, then any in-stock product, rather than
   // silently rendering an empty cross-sell section.
-  const bestSellers = products
-    .filter((p) => p.inStock && p.badges?.includes("Bestseller"))
-    .concat(products.filter((p) => p.inStock && p.badges?.includes("Sale")))
-    .concat(products.filter((p) => p.inStock))
-    .filter((p, i, arr) => arr.findIndex((x) => x.slug === p.slug) === i)
-    .slice(0, 4);
+  // The same cross-sell shelf /search shows when it has nothing of its own,
+  // from the server — picking it here meant importing the catalogue into a
+  // page about checking in.
+  const bestSellers = recommended;
 
   const nextRewardDay = !cycle ? null : !cycle.day3RewardClaimed ? 3 : !cycle.day7RewardClaimed ? 7 : null;
 
@@ -408,7 +419,7 @@ function CheckinContent() {
           <h2 className="font-bold text-brand-ink mb-3">สินค้าขายดี ระหว่างรอครบรอบ</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {bestSellers.map((p) => (
-              <ProductCard key={p.slug} product={toCardData(p)} />
+              <ProductCard key={p.slug} product={p} />
             ))}
           </div>
         </div>

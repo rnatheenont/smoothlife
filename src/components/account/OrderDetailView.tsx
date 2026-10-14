@@ -6,7 +6,7 @@ import { ChevronLeft, Package, MapPin } from "lucide-react";
 import ShipmentTracker from "@/components/ShipmentTracker";
 import { Button, Card } from "@/components/ui";
 import { useCart } from "@/lib/cart-context";
-import { getProductBySlug } from "@/data/products";
+import { useLiteProducts } from "@/lib/use-lite-products";
 import { formatTHB } from "@/lib/format";
 import { orderStateBadge, stillShipping, stalledOrder, financialText } from "@/lib/order-status";
 import type { ShopifyOrderDetail } from "@/lib/shopify-admin";
@@ -33,6 +33,11 @@ export default function OrderDetailView({
   order: ShopifyOrderDetail;
   tracking: ReturnType<typeof buildTracking>;
 }) {
+  // See OrdersList: the order's products by slug, rather than the catalogue.
+  const { products: orderProducts } = useLiteProducts(
+    order.items.map((it) => it.slug).filter((s): s is string => Boolean(s))
+  );
+  const bySlug = new Map(orderProducts.map((p) => [p.slug, p]));
   const { addItem } = useCart();
   const badge = orderStateBadge(order);
   // Same rule as the order list, from the same helper: the two screens must
@@ -93,7 +98,7 @@ export default function OrderDetailView({
         <h2 className="mb-3 text-sm font-bold text-brand-ink">รายการสินค้า</h2>
         <div className="flex flex-col gap-3">
           {order.items.map((it, i) => {
-            const product = it.slug ? getProductBySlug(it.slug) : undefined;
+            const product = it.slug ? bySlug.get(it.slug) : undefined;
             return (
               <div key={i} className="flex items-center gap-3">
                 <div className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-soft">

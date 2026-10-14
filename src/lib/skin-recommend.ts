@@ -31,19 +31,7 @@ type ProductClass = {
 };
 const CLASSES = classesJson as unknown as Record<string, ProductClass>;
 
-export const PRODUCT_TYPE_LABEL: Record<string, string> = {
-  cleanser: "ล้างหน้า",
-  makeup_remover: "คลีนซิ่ง",
-  toner: "โทนเนอร์",
-  exfoliant: "ผลัดเซลล์",
-  serum: "เซรั่ม",
-  moisturizer: "ครีมบำรุง",
-  sunscreen: "กันแดด",
-  spot_treatment: "แต้มเฉพาะจุด",
-  mask: "มาส์ก",
-  eye_care: "รอบดวงตา",
-  set: "เซ็ต",
-};
+export { PRODUCT_TYPE_LABEL } from "./product-type-label";
 
 const EYE_CONCERNS: ConcernMetric[] = ["darkCircles", "eyeBags"];
 

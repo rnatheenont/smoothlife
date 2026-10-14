@@ -4,12 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search as SearchIcon, X } from "lucide-react";
-import { products } from "@/data/products";
 import { concerns } from "@/data/categories";
 import { articles } from "@/data/articles";
 import ProductCard from "@/components/ProductCard";
-import { sortSoldOutLast } from "@/lib/filter-products";
-import { toCardData } from "@/data/card";
+import type { ProductCardData } from "@/data/card";
 
 export default function SearchContent() {
   const searchParams = useSearchParams();
@@ -59,20 +57,50 @@ export default function SearchContent() {
 
   const q = input.toLowerCase().trim();
 
-  const matchedProducts = q
-    ? sortSoldOutLast(products.filter((p) => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q)))
-    : [];
+  // Matching happens in /api/search/suggest — the same match on the same
+  // fields the box in the header uses, so the two agree — rather than over a
+  // catalogue the browser had to download to search.
+  const [matchedProducts, setMatchedProducts] = useState<ProductCardData[]>([]);
+  const latest = useRef(0);
+  useEffect(() => {
+    if (!q) {
+      setMatchedProducts([]);
+      return;
+    }
+    const id = ++latest.current;
+    const timer = setTimeout(() => {
+      fetch(`/api/search/suggest?q=${encodeURIComponent(q)}&limit=20`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (id === latest.current) setMatchedProducts(Array.isArray(data?.products) ? data.products : []);
+        })
+        .catch(() => {
+          if (id === latest.current) setMatchedProducts([]);
+        });
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [q]);
   const matchedConcerns = q ? concerns.filter((c) => c.nameTh.includes(q) || c.name.toLowerCase().includes(q)) : [];
   const matchedArticles = q ? articles.filter((a) => a.title.toLowerCase().includes(q) || a.excerpt.toLowerCase().includes(q)) : [];
 
   const noResults = q && matchedProducts.length === 0 && matchedConcerns.length === 0 && matchedArticles.length === 0;
 
-  const recommendedProducts = products
-    .filter((p) => p.inStock && p.badges?.includes("Bestseller"))
-    .concat(products.filter((p) => p.inStock && p.badges?.includes("Sale")))
-    .concat(products.filter((p) => p.inStock))
-    .filter((p, i, arr) => arr.findIndex((x) => x.slug === p.slug) === i)
-    .slice(0, 8);
+  // The shelf shown when there is nothing to show yet — same cascade as
+  // before (bestsellers, then sale, then anything in stock), worked out on
+  // the server now. See /api/products/lite?recommended=1.
+  const [recommendedProducts, setRecommendedProducts] = useState<ProductCardData[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/products/lite?recommended=1&limit=8")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data?.cards)) setRecommendedProducts(data.cards);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="container-page py-6 md:py-10">
@@ -121,7 +149,7 @@ export default function SearchContent() {
             <h2 className="font-bold text-brand-ink mb-3">สินค้าแนะนำ</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5">
               {recommendedProducts.map((p) => (
-                <ProductCard key={p.slug} product={toCardData(p)} />
+                <ProductCard key={p.slug} product={p} />
               ))}
             </div>
           </div>
@@ -143,7 +171,7 @@ export default function SearchContent() {
             <h2 className="font-bold text-brand-ink mb-3">สินค้าแนะนำ</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5">
               {recommendedProducts.map((p) => (
-                <ProductCard key={p.slug} product={toCardData(p)} />
+                <ProductCard key={p.slug} product={p} />
               ))}
             </div>
           </div>
@@ -168,7 +196,7 @@ export default function SearchContent() {
           <h2 className="font-bold text-brand-ink mb-3">สินค้า ({matchedProducts.length})</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5">
             {matchedProducts.map((p) => (
-              <ProductCard key={p.slug} product={toCardData(p)} />
+              <ProductCard key={p.slug} product={p} />
             ))}
           </div>
         </div>

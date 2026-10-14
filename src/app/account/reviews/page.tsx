@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star, MessageSquareText } from "lucide-react";
 import AccountLayout from "@/components/account/AccountLayout";
-import { getProductBySlug } from "@/data/products";
+import { useLiteProducts } from "@/lib/use-lite-products";
 
 type MyReviewRow = {
   id: string;
@@ -29,6 +29,10 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
 function ReviewsContent() {
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<MyReviewRow[]>([]);
+  // The products these reviews are about, by slug — see OrdersList for why
+  // this is a fetch and not a lookup.
+  const { products: reviewed } = useLiteProducts(reviews.map((r) => r.product_slug));
+  const bySlug = new Map(reviewed.map((p) => [p.slug, p]));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,7 +74,7 @@ function ReviewsContent() {
       ) : (
         <div className="space-y-3">
           {reviews.map((r) => {
-            const product = getProductBySlug(r.product_slug);
+            const product = bySlug.get(r.product_slug);
             const status = STATUS_LABELS[r.status] ?? { label: r.status, className: "bg-slate-100 text-slate-500" };
             return (
               <div key={r.id} className="rounded-xl2 bg-white p-4 shadow-card">

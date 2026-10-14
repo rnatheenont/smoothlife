@@ -7,7 +7,7 @@ import { Check, Search } from "lucide-react";
 import { formatTHB } from "@/lib/format";
 import { MAX_GROUP_PRODUCTS, SPECIAL_ACCENT_DEFAULT, type CampaignConfig, type DemoProduct } from "./campaign";
 import { fromLocalInput, toLocalInput } from "./scheduler";
-import { UNLIMITED_REQUEUE } from "@/lib/flash-sale-campaigns";
+import { UNLIMITED_REQUEUE } from "@/lib/flash-sale-limits";
 
 export type CatalogueItem = DemoProduct & {
   category: string;

@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sparkles, ArrowRight, RotateCcw } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useQuickChat } from "@/lib/quickchat-context";
-import { recommendOralCareSet } from "@/lib/oral-care";
+import type { ProductCardData } from "@/data/card";
 import { formatTHB } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
-import { toCardData } from "@/data/card";
 
 const CONCERN_OPTIONS = ["กลิ่นปาก", "เสียวฟัน", "ฟันเหลือง", "เหงือกอักเสบ", "ฟันผุบ่อย"];
 const USING_OPTIONS = ["ยาสีฟัน", "น้ำยาบ้วนปาก", "ไหมขัดฟัน", "แปรงไฟฟ้า", "ไม่แน่ใจ"];
@@ -23,6 +22,34 @@ export default function OralCareAdvisorQuiz() {
   const [added, setAdded] = useState(false);
 
   const done = setType !== null;
+
+  // The set is chosen by /api/advisor, where the ranking rules can read the
+  // catalogue without the catalogue having to be here. One request, when the
+  // last question is answered.
+  const [picks, setPicks] = useState<ProductCardData[]>([]);
+  useEffect(() => {
+    if (!done) {
+      setPicks([]);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/advisor", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "oral-care",
+        answers: { concerns: concern ? [concern] : [], using: using ? [using] : [], setType },
+      }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && Array.isArray(d?.cards)) setPicks(d.cards);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [done, concern, using, setType]);
 
   function chooseConcern(opt: string) {
     setConcern(opt);
@@ -43,11 +70,7 @@ export default function OralCareAdvisorQuiz() {
   }
 
   if (done) {
-    const recommended = recommendOralCareSet({
-      concerns: concern ? [concern] : [],
-      using: using ? [using] : [],
-      setType,
-    });
+    const recommended = picks;
     const total = recommended.reduce((sum, p) => sum + p.price, 0);
 
     function addAllToCart() {
@@ -75,7 +98,7 @@ export default function OralCareAdvisorQuiz() {
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mb-6">
               {recommended.map((p) => (
-                <ProductCard key={p.slug} product={toCardData(p)} />
+                <ProductCard key={p.slug} product={p} />
               ))}
             </div>
 

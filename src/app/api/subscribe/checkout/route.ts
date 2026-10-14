@@ -5,11 +5,11 @@ import { products } from "@/data/products";
 import {
   subscriptionPlans,
   subscriptionSets,
-  subscriptionSetProducts,
   BUNDLE_MIN_ITEMS,
   BUNDLE_MAX_ITEMS,
   BUNDLE_DISCOUNT_PCT,
 } from "@/data/subscriptions";
+import { subscriptionSetProducts } from "@/lib/subscription-catalogue";
 import { subscriptionBillingConfigured, createRecurringPaymentToken } from "@/lib/2c2p";
 import { getSetById } from "@/lib/subscription-sets";
 

@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { subscriptionSets, subscriptionSetProducts, subscriptionPlans } from "@/data/subscriptions";
+import { subscriptionSets, subscriptionPlans } from "@/data/subscriptions";
+import { subscriptionSetProducts } from "@/lib/subscription-catalogue";
 import { subscriptionBillingConfigured } from "@/lib/2c2p";
 import SubscriptionSetDetail from "@/components/SubscriptionSetDetail";
 

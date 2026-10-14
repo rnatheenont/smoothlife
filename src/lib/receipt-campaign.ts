@@ -20,9 +20,10 @@
 // never summed across them, which is also why nothing here adds up a
 // customer's receipts before dividing.
 import { products } from "@/data/products";
+import { GENERAL_THRESHOLD } from "./receipt-campaign-rules";
 import { brands, brandSlugAliases, slugifyVendor } from "@/data/brands";
 
-export const GENERAL_THRESHOLD = 690;
+export { GENERAL_THRESHOLD } from "./receipt-campaign-rules";
 export const KEYCHAIN_PRICE = 990;
 export const KEYCHAIN_ENTRIES = 3;
 

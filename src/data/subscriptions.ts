@@ -1,4 +1,3 @@
-import { products } from "./products";
 
 export type SubscriptionPlan = {
   months: 3 | 6 | 12;
@@ -25,17 +24,6 @@ export const subscriptionPlans: SubscriptionPlan[] = [
 export const BUNDLE_MIN_ITEMS = 3;
 export const BUNDLE_MAX_ITEMS = 6;
 export const BUNDLE_DISCOUNT_PCT = 10;
-
-// Curated for repeat-purchase categories (supplements/wellness, skincare
-// staples). This catalogue sync carries no review/rating data (every
-// product comes through as rating 0 / reviewCount 0), so products with a
-// merchandising badge (Bestseller/New/Sale/Bundle) — i.e. ones the store
-// itself is already promoting — are surfaced first, a real signal instead
-// of a no-op sort on all-zero fields.
-export const subscriptionProducts = products
-  .filter((p) => p.inStock && (p.category === "wellness" || p.category === "skincare"))
-  .sort((a, b) => (b.badges?.length ?? 0) - (a.badges?.length ?? 0))
-  .slice(0, 12);
 
 export type SubscriptionSet = {
   slug: string;
@@ -79,7 +67,3 @@ export const subscriptionSets: SubscriptionSet[] = [
     ],
   },
 ];
-
-export function subscriptionSetProducts(set: SubscriptionSet) {
-  return set.productSlugs.map((slug) => products.find((p) => p.slug === slug)).filter((p): p is (typeof products)[number] => !!p);
-}

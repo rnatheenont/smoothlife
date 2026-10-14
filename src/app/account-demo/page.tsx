@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { CheckCircle2, CreditCard, Package, RotateCcw, Truck, XCircle, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { products } from "@/data/products";
+import { useLiteProducts } from "@/lib/use-lite-products";
 import { formatTHB } from "@/lib/format";
 import { ORDER_STAGE_LABEL, type OrderStage } from "@/lib/order-status";
 import { DEMO, DEMO_ORDERS, STAGE_BADGE } from "./demo-data";
@@ -25,6 +25,11 @@ const TILES: { stage: OrderStage; icon: LucideIcon }[] = [
 
 export default function AccountDemoPage() {
   const [stage, setStage] = useState<OrderStage | "all">("all");
+  // The demo's orders name real products; this asks for those few rather
+  // than importing the catalogue into a page that shows four of them.
+  const { products: demoProducts } = useLiteProducts(DEMO_ORDERS.flatMap((o) => o.lines.map((l) => l.slug)));
+  const products = demoProducts;
+
   const counts = DEMO_ORDERS.reduce(
     (acc, o) => ({ ...acc, [o.stage]: (acc[o.stage] ?? 0) + 1 }),
     {} as Record<OrderStage, number>

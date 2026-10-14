@@ -1,5 +1,6 @@
 import { Product } from "@/data/types";
 import { products } from "@/data/products";
+import { PREGNANT_OR_BREASTFEEDING } from "./advisor-answers";
 
 // The catalogue's "wellness" category mixes real dietary supplements with a
 // lot of skincare (Smooth E, Smooth Life etc. are tagged wellness too), so
@@ -43,7 +44,7 @@ const GOAL_KEYWORDS: Record<SupplementGoal, RegExp> = {
 // catalogue has no not_suitable_for/pregnancy metafield to safely exclude
 // specific SKUs, so the responsible move is to recommend nothing at all
 // rather than guess.
-export const PREGNANT_OR_BREASTFEEDING = "กำลังตั้งครรภ์/ให้นมบุตร";
+export { PREGNANT_OR_BREASTFEEDING } from "./advisor-answers";
 
 function score(p: Product, goal: string): number {
   let s = 0;

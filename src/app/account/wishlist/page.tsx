@@ -3,14 +3,18 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useWishlist } from "@/lib/cart-context";
-import { products } from "@/data/products";
+import { cardFromLite } from "@/data/cart-product";
+import { useLiteProducts } from "@/lib/use-lite-products";
 import AccountLayout from "@/components/account/AccountLayout";
 import ProductCard from "@/components/ProductCard";
-import { toCardData } from "@/data/card";
 
 function WishlistContent() {
   const { slugs } = useWishlist();
-  const items = products.filter((p) => slugs.includes(p.slug));
+  // The list lives on this device and in the customer's account, not in the
+  // catalogue — so the catalogue is asked about exactly these slugs rather
+  // than shipped to the browser to be filtered.
+  const { products } = useLiteProducts(slugs);
+  const items = products;
 
   if (items.length === 0) {
     return (
@@ -29,7 +33,7 @@ function WishlistContent() {
       <h1 className="text-2xl font-bold text-brand-ink mb-6">รายการโปรดและรูทีนที่บันทึกไว้</h1>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
         {items.map((p) => (
-          <ProductCard key={p.slug} product={toCardData(p)} />
+          <ProductCard key={p.slug} product={cardFromLite(p)} />
         ))}
       </div>
     </div>

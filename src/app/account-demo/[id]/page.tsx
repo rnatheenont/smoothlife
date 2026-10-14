@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check, CreditCard, MapPin, PackageCheck, Star, Truck } from "lucide-react";
-import { products } from "@/data/products";
+import { useLiteProducts } from "@/lib/use-lite-products";
 import { formatTHB } from "@/lib/format";
 import { ORDER_STAGE_LABEL } from "@/lib/order-status";
 import { DEMO, DEMO_ORDERS, STAGE_BADGE } from "../demo-data";
@@ -24,6 +24,9 @@ const STEPS = [
 export default function DemoOrderPage(props: { params: Promise<{ id: string }> }) {
   const params = use(props.params);
   const order = DEMO_ORDERS.find((o) => o.id === params.id);
+  // Asked for before the missing-order check, because a hook cannot run
+  // after a return — the empty list is harmless when there is no order.
+  const { products } = useLiteProducts(order?.lines.map((l) => l.slug) ?? []);
   if (!order) notFound();
 
   const lines = order.lines

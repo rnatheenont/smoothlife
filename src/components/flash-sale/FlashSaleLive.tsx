@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Alert, Button, Card, Chip, ProgressBar, Spinner } from "@heroui/react";
 import { AlertTriangle, CheckCircle2, Clock, CreditCard, MessageCircle, RotateCcw, Timer, Users } from "lucide-react";
 import { formatTHB } from "@/lib/format";
-import { UNLIMITED_REQUEUE } from "@/lib/flash-sale-campaigns";
+import { UNLIMITED_REQUEUE } from "@/lib/flash-sale-limits";
 import type { FlashSaleStatus } from "@/lib/flash-sale";
 import CheckoutAddressPicker from "@/components/CheckoutAddressPicker";
 import MobileStickyBar from "@/components/MobileStickyBar";

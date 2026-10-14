@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, ArrowRight, RotateCcw } from "lucide-react";
 import { Concern } from "@/data/types";
 import { concerns } from "@/data/categories";
-import { products } from "@/data/products";
+import type { ProductCardData } from "@/data/card";
 import ProductCard from "@/components/ProductCard";
 import { useQuickChat } from "@/lib/quickchat-context";
-import { toCardData } from "@/data/card";
 
 const steps = [
   {
@@ -49,6 +48,25 @@ export default function AdvisorQuiz() {
     }
   }
 
+  // The shelf for the concern they chose, from the server. Filtering the
+  // catalogue here is what made a four-card answer cost ~650 KB.
+  const concernInfo = concerns.find((c) => c.nameTh === answers["concern"]);
+  const [picks, setPicks] = useState<ProductCardData[]>([]);
+  useEffect(() => {
+    if (!done) return;
+    let cancelled = false;
+    const query = concernInfo ? `concern=${encodeURIComponent(concernInfo.slug)}` : "recommended=1";
+    fetch(`/api/products/lite?${query}&limit=4`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && Array.isArray(d?.cards)) setPicks(d.cards);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [done, concernInfo]);
+
   function reset() {
     setAnswers({});
     setStep(0);
@@ -56,11 +74,7 @@ export default function AdvisorQuiz() {
   }
 
   if (done) {
-    const concernAnswer = answers["concern"];
-    const concernInfo = concerns.find((c) => c.nameTh === concernAnswer);
-    const recommended = concernInfo
-      ? products.filter((p) => p.concerns.includes(concernInfo.slug as Concern)).slice(0, 4)
-      : products.slice(0, 4);
+    const recommended = picks;
 
     return (
       <div>
@@ -79,7 +93,7 @@ export default function AdvisorQuiz() {
             ))}
           </div>
           <p className="text-sm text-slate-600">
-            จากคำตอบของคุณ เราแนะนำให้เน้นดูแลเรื่อง <strong>{concernAnswer || "สุขภาพผิวโดยรวม"}</strong> ด้วยรูทีน 3 ขั้นตอน:
+            จากคำตอบของคุณ เราแนะนำให้เน้นดูแลเรื่อง <strong>{answers["concern"] || "สุขภาพผิวโดยรวม"}</strong> ด้วยรูทีน 3 ขั้นตอน:
             ทำความสะอาดอย่างอ่อนโยน → ทรีทเมนต์เฉพาะจุด → มอยส์เจอร์ไรเซอร์และกันแดดทุกวัน
           </p>
           <div className="flex flex-wrap gap-3 mt-5">
@@ -104,7 +118,7 @@ export default function AdvisorQuiz() {
         <h3 className="font-bold text-brand-ink mb-4">สินค้าที่แนะนำสำหรับคุณ</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mb-10">
           {recommended.map((p) => (
-            <ProductCard key={p.slug} product={toCardData(p)} />
+            <ProductCard key={p.slug} product={p} />
           ))}
         </div>
 

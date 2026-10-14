@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, ArrowRight, RotateCcw, AlertTriangle } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useQuickChat } from "@/lib/quickchat-context";
-import { recommendSupplementPlan, PREGNANT_OR_BREASTFEEDING } from "@/lib/supplement-advisor";
+import { PREGNANT_OR_BREASTFEEDING } from "@/lib/advisor-answers";
+import type { ProductCardData } from "@/data/card";
 import { formatTHB } from "@/lib/format";
 import ProductCard from "@/components/ProductCard";
 import { Button } from "@/components/ui";
-import { toCardData } from "@/data/card";
 
 const GOAL_OPTIONS = ["ผิวสวย", "ผมแข็งแรง", "ภูมิคุ้มกัน", "ระบบขับถ่าย", "นอนหลับ", "พลังงาน", "ข้อกระดูก"];
 const AGE_OPTIONS = ["18-25", "26-35", "36-45", "46+"];
@@ -43,6 +43,28 @@ export default function SupplementAdvisorQuiz() {
     else setDone(true);
   }
 
+  // Worked out by /api/advisor — the ranking reads the catalogue, and the
+  // catalogue is not something a quiz should carry. PREGNANT_OR_BREASTFEEDING
+  // stays here because the warning it drives is shown before any request.
+  const [plan, setPlan] = useState<{ items: ProductCardData[]; blocked: boolean }>({ items: [], blocked: false });
+  useEffect(() => {
+    if (!done) return;
+    let cancelled = false;
+    fetch("/api/advisor", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "supplement", answers }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled) setPlan({ items: Array.isArray(d?.cards) ? d.cards : [], blocked: Boolean(d?.blocked) });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [done, answers]);
+
   function reset() {
     setStep(0);
     setAnswers({});
@@ -51,11 +73,7 @@ export default function SupplementAdvisorQuiz() {
   }
 
   if (done) {
-    const { items, blocked } = recommendSupplementPlan({
-      goal: answers.goal,
-      status: answers.status,
-      budget: answers.budget,
-    });
+    const { items, blocked } = plan;
     const total = items.reduce((sum, p) => sum + p.price, 0);
 
     function addAllToCart() {
@@ -105,7 +123,7 @@ export default function SupplementAdvisorQuiz() {
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5 mb-6">
                   {items.map((p) => (
-                    <ProductCard key={p.slug} product={toCardData(p)} />
+                    <ProductCard key={p.slug} product={p} />
                   ))}
                 </div>
 

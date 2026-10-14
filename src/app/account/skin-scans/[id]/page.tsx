@@ -13,7 +13,8 @@ import MiniProductCard from "@/components/skin-coach/MiniProductCard";
 import { formatScanDate, gapBetween } from "@/components/skin-coach/ScanHistory";
 import { CONCERN_DEFS, concernScore, healthBand, type ConcernMetric } from "@/lib/skin-analysis";
 import { ANGLES, ageComparison, type AgeRangeKey, type SkinTypeKey } from "@/lib/skin-coach";
-import { PRODUCT_TYPE_LABEL, recommendFor } from "@/lib/skin-recommend";
+import { PRODUCT_TYPE_LABEL } from "@/lib/product-type-label";
+import { useSkinPicks } from "@/lib/skin-picks";
 import {
   namedConcernLabels,
   scanAreas,
@@ -68,16 +69,15 @@ function ScanDetail() {
     load();
   }, [load]);
 
-  const picks = useMemo(() => {
-    if (!scan) return [];
-    const skinTypes = (scan.skin_type ?? "").split(",").filter(Boolean) as SkinTypeKey[];
-    const shown = new Set<string>();
-    return weakConcerns(scan, 3).map((concern) => {
-      const list = recommendFor(concern, { max: 3, exclude: shown, skinTypes });
-      list.forEach((r) => shown.add(r.product.slug));
-      return { concern, list };
-    });
-  }, [scan]);
+  // Chosen by /api/advisor — same ranking, same "one product, one finding"
+  // rule as the result screen, applied in one place (see lib/skin-picks).
+  const concernsToShow = useMemo(() => (scan ? weakConcerns(scan, 3) : []), [scan]);
+  const skinTypes = useMemo(
+    () => (scan?.skin_type ?? "").split(",").filter(Boolean),
+    [scan]
+  );
+  const picksByConcern = useSkinPicks(concernsToShow, skinTypes);
+  const picks = concernsToShow.map((concern) => ({ concern, list: picksByConcern[concern]?.picks ?? [] }));
 
   async function remove() {
     if (!scan) return;
@@ -243,7 +243,7 @@ function ScanDetail() {
                 <p className="text-sm font-semibold text-brand-ink">{CONCERN_DEFS[concern].label}</p>
                 <div className="scrollbar-none mt-2.5 flex snap-x gap-3 overflow-x-auto pb-2">
                   {list.map((r) => (
-                    <MiniProductCard key={r.product.slug} product={r.product} typeLabel={PRODUCT_TYPE_LABEL[r.type]} />
+                    <MiniProductCard key={r.card.slug} product={r.card} typeLabel={PRODUCT_TYPE_LABEL[r.type]} />
                   ))}
                 </div>
               </div>

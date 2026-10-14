@@ -3,11 +3,10 @@ import Link from "next/link";
 import { Repeat, Truck, ShieldCheck, CalendarClock, ChevronRight, PackagePlus } from "lucide-react";
 import {
   subscriptionPlans,
-  subscriptionProducts,
   subscriptionSets,
-  subscriptionSetProducts,
   BUNDLE_DISCOUNT_PCT,
 } from "@/data/subscriptions";
+import { subscriptionProducts, subscriptionSetProducts } from "@/lib/subscription-catalogue";
 import { formatTHB } from "@/lib/format";
 import { subscriptionBillingConfigured } from "@/lib/2c2p";
 import { getSellableSets } from "@/lib/subscription-sets";

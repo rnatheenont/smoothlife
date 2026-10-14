@@ -12,7 +12,7 @@ import Image from "next/image";
 import { AlertTriangle, Check, Clock, Crown, Gift, Loader2, Mail, Upload, X } from "lucide-react";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { formatTHB } from "@/lib/format";
-import { GENERAL_THRESHOLD } from "@/lib/receipt-campaign";
+import { GENERAL_THRESHOLD } from "@/lib/receipt-campaign-rules";
 import { shopifyAuthStartPath } from "@/lib/shopify-email-login";
 
 type AiCheck = { verdict: "ok" | "unclear" | "mismatch"; message: string; findings: string[] };

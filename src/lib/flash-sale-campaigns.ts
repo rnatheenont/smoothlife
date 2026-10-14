@@ -4,6 +4,7 @@
 // later caller agree on what a valid campaign is.
 import { getProductBySlug } from "@/data/products";
 import { publicStorageHost } from "@/lib/public-uploads";
+import { UNLIMITED_REQUEUE } from "./flash-sale-limits";
 
 /** Which sale page the campaign gets: the plain one, or the branded drop page. */
 export type CampaignKind = "regular" | "special";
@@ -144,7 +145,7 @@ const MAX_PRODUCTS = 12;
  * comparison, and every screen that shows the number knows this one means
  * "ไม่จำกัด".
  */
-export const UNLIMITED_REQUEUE = 9999;
+export { UNLIMITED_REQUEUE } from "./flash-sale-limits";
 
 /** A banner has to come from our own storefront, Shopify's CDN, or our own
  *  public upload bucket (see /api/admin/flash-sale/upload-image) — it is

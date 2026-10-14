@@ -3,6 +3,7 @@ import { products } from "@/data/products";
 import { getCollectionByHandle, getCollectionProducts } from "@/data/collections";
 import { brands, brandProducts } from "@/data/brands";
 import { toCardData } from "@/data/card";
+import { suggestBundlesForCart } from "@/lib/bundle-suggest";
 import { toLiteProduct } from "@/data/cart-product";
 
 // The handful of products a visitor actually has in their cart.
@@ -55,6 +56,36 @@ export async function GET(req: NextRequest) {
     const pool = brand ? brandProducts(brand) : products.filter((p) => p.concerns.includes(concern as never));
     const cards = pool
       .filter((p) => p.inStock && p.image)
+      .slice(0, limit)
+      .map(toCardData);
+    return NextResponse.json({ cards }, { headers: CACHE_HEADERS });
+  }
+
+  // "People who bought these also like" for a cart, by slug. Same rule as
+  // before (same-brand bundles and BOGO, not already in the cart); it reads
+  // the catalogue, which is why it could not stay in the cart page.
+  const bundleFor = req.nextUrl.searchParams.get("bundleFor");
+  if (bundleFor !== null) {
+    const slugs = bundleFor.split(",").map((s) => s.trim()).filter(Boolean).slice(0, MAX_SLUGS);
+    return NextResponse.json({ cards: suggestBundlesForCart(slugs).map(toCardData) }, { headers: CACHE_HEADERS });
+  }
+
+  // The cross-sell shelf that stands in when a page has nothing of its own
+  // to show — an empty search, a check-in page. Badged products first,
+  // because the shop is already promoting those, then anything in stock:
+  // the catalogue does not always have Bestsellers in stock and an empty
+  // shelf is worse than a plain one.
+  if (req.nextUrl.searchParams.get("recommended")) {
+    const limit = Math.min(Number(req.nextUrl.searchParams.get("limit")) || 8, MAX_SLUGS);
+    const inStock = products.filter((p) => p.inStock);
+    const ranked = [
+      ...inStock.filter((p) => p.badges?.includes("Bestseller")),
+      ...inStock.filter((p) => p.badges?.includes("Sale")),
+      ...inStock,
+    ];
+    const seen = new Set<string>();
+    const cards = ranked
+      .filter((p) => !seen.has(p.slug) && seen.add(p.slug))
       .slice(0, limit)
       .map(toCardData);
     return NextResponse.json({ cards }, { headers: CACHE_HEADERS });

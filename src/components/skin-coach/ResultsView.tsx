@@ -41,7 +41,8 @@ import {
   type ScanAnswers,
   type SkinCoachMetrics,
 } from "@/lib/skin-coach";
-import { PRODUCT_TYPE_LABEL, boughtCountFor, recommendFor, type Pick as RecPick } from "@/lib/skin-recommend";
+import { PRODUCT_TYPE_LABEL } from "@/lib/product-type-label";
+import { useSkinPicks, type SkinPick as RecPick } from "@/lib/skin-picks";
 import { Button } from "@/components/ui";
 
 // What each "เรื่องที่กังวล" choice asks the product picker for.
@@ -133,7 +134,7 @@ function MetricRow({ row }: { row: CareRow }) {
           )}
           <div className="scrollbar-none mt-2.5 flex snap-x gap-3 overflow-x-auto pb-2">
             {row.picks.map((r) => (
-              <MiniProductCard key={r.product.slug} product={r.product} typeLabel={PRODUCT_TYPE_LABEL[r.type]} />
+              <MiniProductCard key={r.card.slug} product={r.card} typeLabel={PRODUCT_TYPE_LABEL[r.type]} />
             ))}
           </div>
         </div>
@@ -260,13 +261,19 @@ export default function ResultsView({
 
   // One product, one finding: rows fill in page order and a pick already
   // shown above is skipped below, so no tube appears twice. Products from
-  // past orders are left out.
+  // past orders are left out. All of that happens in /api/advisor now — see
+  // lib/skin-picks — so the rule is applied in one place for both screens
+  // that show a scan.
+  const picksByConcern = useSkinPicks(
+    seeds.filter((s) => s.withPicks).map((s) => s.concern),
+    skinTypes,
+    [...bought]
+  );
   const rows: CareRow[] = [];
   {
-    const shown = new Set<string>(bought);
     for (const { withPicks, ...s } of seeds) {
-      const picks = withPicks ? recommendFor(s.concern, { max: 3, exclude: shown, skinTypes }) : [];
-      picks.forEach((r) => shown.add(r.product.slug));
+      const group = picksByConcern[s.concern];
+      const picks = withPicks ? (group?.picks ?? []) : [];
       const level = s.severity === null ? null : clarityLevel(s.severity);
       const names = named.get(s.concern);
       const reason = !withPicks
@@ -278,7 +285,7 @@ export default function ResultsView({
               ? `ดูแลต่อให้${s.label}อยู่ในระดับ "${level.label}"`
               : `แนะนำเพราะ${s.label}อยู่ในระดับ "${level.label}"`
             : null;
-      rows.push({ ...s, reason, picks, skipped: withPicks ? boughtCountFor(s.concern, bought) : 0 });
+      rows.push({ ...s, reason, picks, skipped: withPicks ? (group?.skipped ?? 0) : 0 });
     }
   }
 

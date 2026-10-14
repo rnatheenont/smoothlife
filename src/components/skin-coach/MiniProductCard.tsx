@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Check, Plus } from "lucide-react";
-import type { Product } from "@/data/types";
+import type { ProductCardData } from "@/data/card";
 import { formatTHB } from "@/lib/format";
 import { useCart } from "@/lib/cart-context";
 
@@ -14,11 +14,11 @@ import { useCart } from "@/lib/cart-context";
  * wishlist heart — right for browsing, too much for three picks tucked under
  * "สิว"; those details are one tap away on the product page.
  */
-export default function MiniProductCard({ product, typeLabel }: { product: Product; typeLabel?: string }) {
+export default function MiniProductCard({ product, typeLabel }: { product: ProductCardData; typeLabel?: string }) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
   const discount = product.compareAtPrice ? Math.round(100 - (product.price / product.compareAtPrice) * 100) : 0;
-  const fromPrice = product.variants.length > 1 && product.variants.some((v) => v.price !== product.price);
+  const fromPrice = product.multiplePrices;
   const href = `/product/${product.slug}`;
 
   function add() {
