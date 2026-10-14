@@ -1,3 +1,5 @@
+import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 export const metadata = { title: "เงื่อนไขการใช้บริการ | Smoothlife.com" };
 
 const sections = [
@@ -54,7 +56,7 @@ const sections = [
   },
 ];
 
-export default function TermsPage() {
+function TermsPageWritten() {
   return (
     <div className="container-page py-8 md:py-10 max-w-3xl">
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">เงื่อนไขการใช้บริการ</h1>
@@ -83,4 +85,11 @@ export default function TermsPage() {
       </p>
     </div>
   );
+}
+
+/** From the document when wave 1 is on, from the markup above when it is
+ *  not — see the about pages for why both halves stay. */
+export default function TermsPage() {
+  if (PAGES_WAVE1_ENABLED) return <SystemPageBody pageKey="terms" />;
+  return <TermsPageWritten />;
 }

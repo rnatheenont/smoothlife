@@ -39,11 +39,26 @@ test("two calls give two documents, not one shared object", () => {
   assert.deepEqual(a, b);
 });
 
-test("the pages of wave 1 that are written are the four about pages", () => {
+test("the pages of wave 1 written so far", () => {
+  // A list rather than a count, so adding a page is a deliberate edit here
+  // too — this file is the only place that says which pages have been
+  // checked against the originals.
   assert.deepEqual(Object.keys(SYSTEM_DEFAULT_DOCS).sort(), [
     "about",
     "about-experts",
     "about-quality",
     "about-sustainability",
+    "privacy",
+    "terms",
   ]);
+});
+
+test("a legal page keeps every clause of the page it replaces", () => {
+  // Counted rather than eyeballed: these documents were generated from the
+  // hand-written pages, and the failure mode of that is a clause lost in
+  // transit, which nobody notices until somebody needs that clause.
+  const headings = (key: string) =>
+    (SYSTEM_DEFAULT_DOCS[key]().sections[1].settings as { body: string }).body.match(/^## /gm) ?? [];
+  assert.equal(headings("privacy").length, 6);
+  assert.equal(headings("terms").length, 7);
 });

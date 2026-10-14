@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
-import { parseLegal, type LegalBlock } from "./parse";
+import { groupLegal, parseLegal, type LegalBlock } from "./parse";
 
 // A long document with headings: the privacy policy, the terms.
 //
@@ -20,23 +20,59 @@ import { parseLegal, type LegalBlock } from "./parse";
 // from a text box, which is how a policy page ends up carrying a script.
 
 const schema = z.object({
+  intro: z.string().max(600).default(""),
   body: z.string().max(60000).default(""),
   updatedAt: z.string().max(40).default(""),
   showToc: z.boolean().default(true),
+  /** The line at the foot of a policy that says where to ask about it. Its
+   *  own fields rather than part of the body, because it is the one piece of
+   *  a document like this that carries a link and is set in smaller type. */
+  footnote: z.string().max(300).default(""),
+  footnoteLinkLabel: z.string().max(60).default(""),
+  footnoteHref: z.string().default(""),
 });
 
+function Blocks({ blocks }: { blocks: LegalBlock[] }) {
+  return (
+    <>
+      {blocks.map((block, i) => {
+        if (block.kind === "ul")
+          return (
+            <ul key={i} className="space-y-2">
+              {block.items.map((item, j) => (
+                <li key={j} className="text-sm leading-relaxed text-slate-600">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          );
+        if (block.kind === "h3")
+          return (
+            <h3 key={i} id={block.id} className="mt-4 scroll-mt-24 font-bold text-brand-ink">
+              {block.text}
+            </h3>
+          );
+        return (
+          <p key={i} className="whitespace-pre-line text-sm leading-relaxed text-slate-600">
+            {block.text}
+          </p>
+        );
+      })}
+    </>
+  );
+}
+
 function Component({ settings }: SectionProps<z.output<typeof schema>>) {
-  const blocks = parseLegal(settings.body);
-  if (blocks.length === 0) return null;
+  const groups = groupLegal(parseLegal(settings.body));
+  if (groups.length === 0 && !settings.intro) return null;
   // Only the top level goes in the contents. A policy's sub-clauses are what
   // you read once you are in the right section, not how you find it.
-  const toc = blocks.filter((b): b is Extract<LegalBlock, { kind: "h2" }> => b.kind === "h2");
+  const toc = groups.map((g) => g.heading).filter((h): h is NonNullable<typeof h> => Boolean(h));
 
   return (
-    <section className="container-page pb-12">
-      {settings.updatedAt && (
-        <p className="mb-6 text-xs text-slate-500">ปรับปรุงล่าสุด {settings.updatedAt}</p>
-      )}
+    <section className="container-page pb-8 md:pb-10">
+      {settings.intro && <p className="mb-8 text-sm text-slate-500">{settings.intro}</p>}
+      {settings.updatedAt && <p className="mb-6 text-xs text-slate-500">ปรับปรุงล่าสุด {settings.updatedAt}</p>}
 
       {settings.showToc && toc.length > 1 && (
         <nav aria-label="สารบัญ" className="mb-8 rounded-xl2 bg-surface-soft p-5">
@@ -53,33 +89,34 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
         </nav>
       )}
 
-      <div className="max-w-[72ch]">
-        {blocks.map((block, i) => {
-          if (block.kind === "h2")
-            return (
+      <div className="flex flex-col gap-8">
+        {groups.map((group, i) => (
+          <div key={i}>
+            {group.heading && (
               // scroll-mt so a heading jumped to from the contents does not
               // land underneath the sticky header.
-              <h2
-                key={i}
-                id={block.id}
-                className="mt-8 scroll-mt-24 text-lg font-bold text-brand-ink first:mt-0 md:text-xl"
-              >
-                {block.text}
+              <h2 id={group.heading.id} className="mb-3 scroll-mt-24 font-bold text-brand-ink">
+                {group.heading.text}
               </h2>
-            );
-          if (block.kind === "h3")
-            return (
-              <h3 key={i} id={block.id} className="mt-5 scroll-mt-24 font-bold text-brand-ink">
-                {block.text}
-              </h3>
-            );
-          return (
-            <p key={i} className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-600">
-              {block.text}
-            </p>
-          );
-        })}
+            )}
+            <Blocks blocks={group.blocks} />
+          </div>
+        ))}
       </div>
+
+      {settings.footnote && (
+        <p className="mt-10 text-xs text-slate-500">
+          {settings.footnote}
+          {settings.footnoteLinkLabel && settings.footnoteHref && (
+            <>
+              {" "}
+              <a href={settings.footnoteHref} className="text-brand-800 hover:underline">
+                {settings.footnoteLinkLabel}
+              </a>
+            </>
+          )}
+        </p>
+      )}
     </section>
   );
 }
@@ -92,19 +129,27 @@ export const legalDocument: SectionDefinition<typeof schema> = {
   category: "content",
   schema,
   defaults: {
+    intro: "",
     body: "## หัวข้อแรก\n\nเนื้อหาของหัวข้อแรก\n\n## หัวข้อที่สอง\n\nเนื้อหาของหัวข้อที่สอง",
     updatedAt: "",
     showToc: true,
+    footnote: "",
+    footnoteLinkLabel: "",
+    footnoteHref: "",
   },
   fields: [
+    { key: "intro", type: "textarea", label: "คำนำใต้หัวข้อ" },
     {
       key: "body",
       type: "textarea",
       label: "เนื้อหา",
-      help: 'ขึ้นหัวข้อด้วย "## " และหัวข้อย่อยด้วย "### " · เว้นบรรทัดว่างเพื่อขึ้นย่อหน้าใหม่',
+      help: 'ขึ้นหัวข้อด้วย "## " หัวข้อย่อยด้วย "### " · ขึ้นต้นบรรทัดด้วย "- " เพื่อทำรายการ · เว้นบรรทัดว่างเพื่อขึ้นย่อหน้าใหม่',
     },
     { key: "updatedAt", type: "text", label: "ปรับปรุงล่าสุด", help: "เช่น 14 ตุลาคม 2569" },
     { key: "showToc", type: "toggle", label: "แสดงสารบัญ" },
+    { key: "footnote", type: "text", label: "บรรทัดปิดท้าย", help: "เช่น หากมีคำถามเกี่ยวกับนโยบายนี้ กรุณาติดต่อทีมงานผ่าน" },
+    { key: "footnoteLinkLabel", type: "text", label: "ข้อความลิงก์ปิดท้าย" },
+    { key: "footnoteHref", type: "text", label: "ลิงก์ปิดท้าย" },
   ],
   enabledOn: ["page", "system"],
   maxPerPage: 1,

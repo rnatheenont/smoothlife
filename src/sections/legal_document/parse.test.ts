@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseLegal } from "./parse.ts";
+import { groupLegal, parseLegal } from "./parse.ts";
 
 test("a heading loses its marker and keeps its words", () => {
   const [h] = parseLegal("## ข้อมูลที่เราเก็บ");
@@ -37,4 +37,31 @@ test("a line that only looks like a heading is not one", () => {
 test("an empty document has no blocks rather than one empty one", () => {
   assert.deepEqual(parseLegal(""), []);
   assert.deepEqual(parseLegal("\n\n   \n"), []);
+});
+
+test("a block of dashed lines is a list", () => {
+  const [block] = parseLegal("- ข้อแรก\n- ข้อสอง\n- ข้อสาม");
+  assert.equal(block.kind, "ul");
+  assert.deepEqual((block as { items: string[] }).items, ["ข้อแรก", "ข้อสอง", "ข้อสาม"]);
+});
+
+test("a paragraph that merely starts with a dash stays whole", () => {
+  const [block] = parseLegal("- ข้อแรก\nบรรทัดที่สองไม่ใช่รายการ");
+  assert.equal(block.kind, "p");
+  assert.ok(block.kind === "p" && block.text.includes("บรรทัดที่สองไม่ใช่รายการ"));
+});
+
+test("blocks are grouped under the heading above them", () => {
+  const groups = groupLegal(parseLegal("## หนึ่ง\n\nก\n\nข\n\n## สอง\n\nค"));
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0].heading?.text, "หนึ่ง");
+  assert.equal(groups[0].blocks.length, 2);
+  assert.equal(groups[1].blocks.length, 1);
+});
+
+test("text before the first heading is kept, not dropped", () => {
+  const groups = groupLegal(parseLegal("คำนำ\n\n## หัวข้อ\n\nเนื้อหา"));
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0].heading, undefined);
+  assert.equal(groups[0].blocks.length, 1);
 });

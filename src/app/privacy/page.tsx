@@ -1,3 +1,5 @@
+import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 export const metadata = { title: "นโยบายความเป็นส่วนตัว | Smoothlife.com" };
 
 const sections = [
@@ -52,7 +54,7 @@ const sections = [
   },
 ];
 
-export default function PrivacyPage() {
+function PrivacyPageWritten() {
   return (
     <div className="container-page py-8 md:py-10 max-w-3xl">
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">นโยบายความเป็นส่วนตัว</h1>
@@ -81,4 +83,11 @@ export default function PrivacyPage() {
       </p>
     </div>
   );
+}
+
+/** From the document when wave 1 is on, from the markup above when it is
+ *  not — see the about pages for why both halves stay. */
+export default function PrivacyPage() {
+  if (PAGES_WAVE1_ENABLED) return <SystemPageBody pageKey="privacy" />;
+  return <PrivacyPageWritten />;
 }
