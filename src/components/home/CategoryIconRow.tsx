@@ -66,7 +66,7 @@ export default function CategoryIconRow({ items = shortcuts }: { items?: Shortcu
               className="group flex w-[72px] flex-col items-center gap-2.5 md:w-[86px] xl:w-[100px]"
             >
               {s.word ? (
-                <span className="grid h-[68px] w-[68px] place-items-center rounded-full bg-brand-gradient bg-[length:200%_100%] text-[21px] font-semibold text-white shadow-[0_6px_16px_rgba(0,168,123,0.28)] transition-transform duration-300 animate-gradientPan group-hover:-translate-y-1 group-hover:scale-105 group-active:scale-95 lg:h-[88px] lg:w-[88px] lg:text-[27px]">
+                <span className="grid h-[68px] w-[68px] place-items-center rounded-full bg-brand-gradient bg-[length:200%_100%] text-[21px] font-semibold text-white shadow-[0_6px_16px_rgba(0,168,123,0.28)] transition-transform duration-300 group-hover:animate-gradientPan group-hover:-translate-y-1 group-hover:scale-105 group-active:scale-95 lg:h-[88px] lg:w-[88px] lg:text-[27px]">
                   {s.word}
                 </span>
               ) : (

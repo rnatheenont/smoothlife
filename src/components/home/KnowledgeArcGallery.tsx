@@ -123,6 +123,17 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
 
     let raf = 0;
     let last = performance.now();
+
+    /** Is there anything to move? Hovering and focus stop the drift but a
+     *  flick still has to coast to its stop, so they are not reasons to
+     *  stop the loop — being off screen, in a background tab, or simply at
+     *  rest are. */
+    const busy = () =>
+      s.drag ||
+      s.target !== null ||
+      Math.abs(s.velocity) > 5 ||
+      (!reduced && !s.hovered && !s.focused && s.visible && !document.hidden);
+
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
@@ -138,6 +149,17 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
         }
       }
       layout();
+      // The loop used to run forever: every frame, on every page view, it
+      // laid out every card whether or not the gallery was on screen or
+      // anything had moved. Now it stops when there is nothing to do and
+      // the next thing that happens starts it again.
+      raf = busy() ? requestAnimationFrame(tick) : 0;
+    };
+
+    /** Wakes the loop if it has stopped. Every input calls it. */
+    const wake = () => {
+      if (raf) return;
+      last = performance.now();
       raf = requestAnimationFrame(tick);
     };
 
@@ -150,6 +172,7 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
 
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0) return;
+      wake();
       // A drag released off the cards produces no click, so the flag it set
       // would otherwise swallow the next real one.
       s.suppressClick = false;
@@ -193,10 +216,14 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
       s.target = s.offset + (s.positions[i] + s.cardW / 2 - s.width / 2);
     };
     const onFocusOut = () => {
+      wake();
       s.focused = false;
     };
     const onEnter = () => (s.hovered = true);
-    const onLeave = () => (s.hovered = false);
+    const onLeave = () => {
+      s.hovered = false;
+      wake();
+    };
 
     stage.addEventListener("pointerdown", onDown);
     stage.addEventListener("pointermove", onMove);
@@ -209,14 +236,23 @@ export default function KnowledgeArcGallery({ items }: { items: ArcItem[] }) {
     stage.addEventListener("pointerleave", onLeave);
 
     // Off screen, or in a background tab, there is nothing to animate for.
-    const io = new IntersectionObserver(([entry]) => (s.visible = entry.isIntersecting));
+    const io = new IntersectionObserver(([entry]) => {
+      s.visible = entry.isIntersecting;
+      if (s.visible) wake();
+    });
     io.observe(stage);
+    const onVisibility = () => {
+      if (!document.hidden) wake();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     const ro = new ResizeObserver(layout);
     ro.observe(stage);
 
     return () => {
       cancelAnimationFrame(raf);
       io.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
       ro.disconnect();
       stage.removeEventListener("pointerdown", onDown);
       stage.removeEventListener("pointermove", onMove);

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { shopifyImage } from "@/lib/shopify-image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { useInView, useTabVisible } from "@/lib/use-in-view";
 import type { HeroBanner } from "@/data/heroBanners";
 
 // The campaign banners three across, on a screen wide enough to read three.
@@ -47,14 +48,23 @@ export default function HeroTrio({ banners }: { banners: HeroBanner[] }) {
   const [index, setIndex] = useState(n);
   const [animate, setAnimate] = useState(true);
   const [paused, setPaused] = useState(false);
+  // Stopped by the person, rather than by the pointer passing over: it stays
+  // stopped until they start it again. Content that moves on its own for
+  // more than five seconds needs a way to stop it that is not hovering
+  // (WCAG 2.2.2) — a keyboard and a thumb have no hover.
+  const [userStopped, setUserStopped] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Off screen or in a background tab, the row turning is work nobody sees.
+  const inView = useInView(rootRef);
+  const tabVisible = useTabVisible();
   const recentre = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    if (!slides || paused) return;
+    if (!slides || paused || userStopped || !inView || !tabVisible) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const timer = setInterval(() => setIndex((i) => i + 1), AUTO_ROTATE_MS);
     return () => clearInterval(timer);
-  }, [slides, paused]);
+  }, [slides, paused, userStopped, inView, tabVisible]);
 
   useEffect(() => {
     if (!slides) return;
@@ -93,6 +103,7 @@ export default function HeroTrio({ banners }: { banners: HeroBanner[] }) {
 
   return (
     <div
+      ref={rootRef}
       className="hidden lg:block"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -191,7 +202,19 @@ export default function HeroTrio({ banners }: { banners: HeroBanner[] }) {
         // mt-9, not mt-4, because the middle tile is scaled up and the row's
         // layout box is not: it hangs about 18px below where the row ends on
         // paper, and at mt-4 it was printing over the dots.
-        <div className="mt-9 flex justify-center gap-2">
+        <div className="mt-9 flex items-center justify-center gap-2">
+          {/* The stop button sits with the dots because that is where
+              someone looking for a control over this row already looks.
+              It is the only way to stop the row from a keyboard or a
+              touchscreen, where there is no hover to pause with. */}
+          <button
+            type="button"
+            onClick={() => setUserStopped((v) => !v)}
+            aria-label={userStopped ? "เล่นสไลด์อัตโนมัติต่อ" : "หยุดสไลด์อัตโนมัติ"}
+            className="mr-1 grid h-6 w-6 place-items-center rounded-full text-slate-400 transition-colors hover:bg-surface-soft hover:text-brand-800"
+          >
+            {userStopped ? <Play size={12} aria-hidden="true" /> : <Pause size={12} aria-hidden="true" />}
+          </button>
           {banners.map((b, i) => {
             const active = ((((index + 1) % n) + n) % n) === i;
             return (

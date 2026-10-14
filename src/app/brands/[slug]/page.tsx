@@ -9,6 +9,7 @@ import { brandFacts, brandSeoDefaults } from "@/lib/brand-seo";
 import { brandJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import ProductCard from "@/components/ProductCard";
+import MoreProducts from "@/components/brand/MoreProducts";
 import StarRating from "@/components/StarRating";
 import { withCustomImages } from "@/lib/product-images";
 import { PAGES_BRAND_ENABLED } from "@/lib/feature-flags";
@@ -28,6 +29,10 @@ import { toCardData } from "@/data/card";
 // by hand.
 
 const PER_GROUP = 8;
+
+/** Drawn into the page: one row on a desktop, two on a phone. The rest of
+ *  the shelf arrives when somebody asks for it — see MoreProducts. */
+const FIRST_ROW = 4;
 
 export function generateStaticParams() {
   return brands.map((b) => ({ slug: b.slug }));
@@ -277,10 +282,14 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
             )}
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5">
-            {group.items.slice(0, PER_GROUP).map((p) => (
+            {group.items.slice(0, FIRST_ROW).map((p) => (
               <ProductCard key={p.slug} product={toCardData(p)} />
             ))}
           </div>
+          <MoreProducts
+            slugs={group.items.slice(FIRST_ROW, PER_GROUP).map((p) => p.slug)}
+            label={`ดู${group.label}เพิ่ม`}
+          />
         </section>
       ))}
 

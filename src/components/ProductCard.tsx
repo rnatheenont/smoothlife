@@ -330,7 +330,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
                   // a state, and a state that keeps moving reads as still busy.
                   added
                     ? "bg-brand-emerald"
-                    : "animate-gradientPan bg-brand-gradient bg-[length:200%_100%] hover:brightness-105"
+                    : "bg-brand-gradient bg-[length:200%_100%] hover:animate-gradientPan hover:brightness-105"
                 )}
               >
                 {added ? <Check size={16} strokeWidth={2.75} /> : <ShoppingCart size={17} className="@[11rem]:hidden" />}

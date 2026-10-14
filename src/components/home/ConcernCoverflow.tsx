@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { concerns, concernImage } from "@/data/categories";
+import { useInView, useTabVisible } from "@/lib/use-in-view";
 import ProductCard from "@/components/ProductCard";
 import type { ProductCardData } from "@/data/card";
 import { useShelf } from "@/lib/use-shelf";
@@ -86,12 +87,19 @@ export default function ConcernCoverflow({ byConcern }: { byConcern: Record<stri
   // person who had just stopped to look at them.
   const [engaged, setEngaged] = useState(false);
   const [hovered, setHovered] = useState(false);
+  // Off screen, or in a tab nobody is looking at, the stack turning is a
+  // timer and a repaint for an audience of none. (Touching any control
+  // stops it for good — see `engaged` — which is the pause a keyboard and a
+  // thumb have.)
+  const sectionRef = useRef<HTMLElement>(null);
+  const inView = useInView(sectionRef);
+  const tabVisible = useTabVisible();
   useEffect(() => {
-    if (engaged || hovered) return;
+    if (engaged || hovered || !inView || !tabVisible) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const timer = setInterval(() => setActive((i) => (i + 1) % count), AUTO_MS);
     return () => clearInterval(timer);
-  }, [engaged, hovered, count]);
+  }, [engaged, hovered, inView, tabVisible, count]);
 
   /** Every manual control goes through here, so none of them forgets to
    *  stop the carousel. */
@@ -115,7 +123,7 @@ export default function ConcernCoverflow({ byConcern }: { byConcern: Record<stri
   }
 
   return (
-    <section className="overflow-hidden bg-brand-radial py-10 md:py-14 lg:py-16">
+    <section ref={sectionRef} className="overflow-hidden bg-brand-radial py-10 md:py-14 lg:py-16">
       <div className="container-page text-center">
         <p className="text-sm font-medium text-brand-ink md:text-lg">ปัญหาผิวที่กังวล</p>
         {/* aria-live so the name arriving with a new card is announced; the
