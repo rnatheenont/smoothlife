@@ -66,6 +66,7 @@ test("the pages written so far", () => {
     "offline",
     "privacy",
     "promotions",
+    "questions",
     "stores",
     "terms",
   ]);

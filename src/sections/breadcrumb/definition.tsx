@@ -22,6 +22,16 @@ const schema = z.object({
   /** Whether the first step says "หน้าแรก". Off for pages that are one step
    *  from home, where it would be the entire trail. */
   showHome: z.boolean().default(true),
+  /**
+   * The row, or only the data search engines read.
+   *
+   * "data_only" exists for pages that already declared a BreadcrumbList
+   * without ever showing a trail — /knowledge/questions is one. Showing the
+   * row there would be a change to the page on the day it moved into the
+   * system, and the trail is worth keeping either way: it is how a search
+   * result shows where a page sits.
+   */
+  display: z.enum(["row", "data_only"]).default("row"),
 });
 
 function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
@@ -43,9 +53,12 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
     })),
   };
 
+  const script = <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />;
+  if (settings.display === "data_only") return script;
+
   return (
     <nav aria-label="Breadcrumb" className="container-page pt-4">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />
+      {script}
       <ol className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-xs text-slate-500 scrollbar-none">
         {items.map((item, i) => (
           <li key={i} className="flex items-center gap-1.5">
@@ -68,11 +81,22 @@ export const breadcrumb: SectionDefinition<typeof schema> = {
   type: "breadcrumb",
   version: 1,
   label: "เส้นทางหน้า (breadcrumb)",
-  description: "แถวบอกตำแหน่งของหน้านี้ สร้างอัตโนมัติจากที่อยู่ — ตั้งได้แค่แสดงหรือซ่อน",
+  description: "แถวบอกตำแหน่งของหน้านี้ สร้างอัตโนมัติจากที่อยู่ — ตั้งได้แค่ว่าจะแสดงหรือส่งให้ search engine เท่านั้น",
   category: "layout",
   schema,
-  defaults: { showHome: true },
-  fields: [{ key: "showHome", type: "toggle", label: 'เริ่มด้วย "หน้าแรก"' }],
+  defaults: { showHome: true, display: "row" },
+  fields: [
+    { key: "showHome", type: "toggle", label: 'เริ่มด้วย "หน้าแรก"' },
+    {
+      key: "display",
+      type: "select",
+      label: "การแสดงผล",
+      options: [
+        ["row", "แสดงแถวเส้นทาง"],
+        ["data_only", "ไม่แสดง ส่งให้ search engine เท่านั้น"],
+      ],
+    },
+  ],
   enabledOn: ["system", "template"],
   maxPerPage: 1,
   pinned: "top",

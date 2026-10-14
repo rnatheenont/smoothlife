@@ -112,6 +112,35 @@ const knowledgeRoutines = (): PageDoc =>
 const knowledgeVideos = (): PageDoc =>
   guideIndex("Video and How-to", "วิดีโอสาธิตวิธีใช้ผลิตภัณฑ์อย่างถูกต้อง", "video");
 
+/**
+ * The question hub: the answers the team published, then the guides about
+ * them.
+ *
+ * The breadcrumb is here in "data_only" mode because the hand-written page
+ * declared a BreadcrumbList and never drew a trail. Keeping the data and not
+ * the row is what makes this page move into the system without moving on the
+ * screen; whoever wants the row can turn it on in the editor, as a decision
+ * rather than as a side effect of the move.
+ *
+ * One thing did change, and it is in the structured data rather than on the
+ * page: the middle step is now named from the registry ("ความรู้") instead of
+ * the longer label the old page typed in by hand. The trail is worked out
+ * from the page's address on purpose — see the note in the breadcrumb section
+ * about typed trails going stale — so this is the registry's title to edit,
+ * not the document's.
+ */
+const questions = (): PageDoc =>
+  doc([
+    { type: "breadcrumb", v: 1, settings: { showHome: true, display: "data_only" } },
+    listingHeader("คำถามที่พบบ่อย", "คำถามที่ลูกค้าถามเข้ามาจริง พร้อมคำตอบจากทีมงาน"),
+    { type: "question_list", v: 1, settings: {} },
+    {
+      type: "article_grid",
+      v: 1,
+      settings: { heading: "บทความตอบคำถาม", headingSize: "lg", source: "static", category: "qa", limit: 24, room: "end" },
+    },
+  ]);
+
 /** Merged into SYSTEM_DEFAULT_DOCS. Keyed by the registry's page key, and a
  *  page with no entry here is simply not offered in the admin yet. */
 export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
@@ -119,4 +148,5 @@ export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   "knowledge-ingredients": knowledgeIngredients,
   "knowledge-routines": knowledgeRoutines,
   "knowledge-videos": knowledgeVideos,
+  questions,
 };

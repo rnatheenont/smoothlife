@@ -5,6 +5,8 @@ import ArticleGrid from "@/components/ArticleGrid";
 import { breadcrumbJsonLd, faqPageJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { categoryLabel, excerptOf, getPublicQuestions } from "@/lib/kb-public";
 import { pageMetadata } from "@/lib/site-pages";
+import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 
 export const revalidate = 900;
 
@@ -12,7 +14,7 @@ export function generateMetadata() {
   return pageMetadata("knowledge-questions");
 }
 
-export default async function QuestionsPage() {
+async function QuestionsPageWritten() {
   const guides = articles.filter((a) => a.category === "qa");
   // Answers the team wrote for real customers, published one at a time from
   // /admin/knowledge-base. Empty until someone publishes the first one.
@@ -75,4 +77,14 @@ export default async function QuestionsPage() {
       )}
     </div>
   );
+}
+
+/**
+ * The page, from its document when wave 2 is on and from the markup above
+ * when it is not. Both halves stay in the tree on purpose — the flag is the
+ * emergency switch, and it only works while the hand-written half is here.
+ */
+export default async function QuestionsPage() {
+  if (PAGES_WAVE2_ENABLED) return <SystemPageBody pageKey="questions" />;
+  return <QuestionsPageWritten />;
 }
