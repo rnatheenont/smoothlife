@@ -24,8 +24,11 @@ test("the last step is never a link — you are already there", () => {
 test("a step no page serves is skipped rather than guessed at", () => {
   // /knowledge/questions exists; its parent /knowledge does too, so this is
   // the shape of a trail that walks a real tree.
+  // "ความรู้เรื่องผิวและสุขภาพ" rather than the admin list's "ความรู้": the
+  // registry entry carries a longer name for the trail, which is what this
+  // page's hand-written BreadcrumbList said before it moved into the system.
   assert.deepEqual(at("system", "questions"), [
-    { label: "ความรู้", href: "/knowledge" },
+    { label: "ความรู้เรื่องผิวและสุขภาพ", href: "/knowledge" },
     { label: "คำถามที่พบบ่อย" },
   ]);
 });
@@ -35,7 +38,7 @@ test("a template's trail stops at its hub, because the item has no name here", (
     { label: "ช้อปทั้งหมด", href: "/shop" },
   ]);
   assert.deepEqual(at("template", "article", { type: "article", handle: "x" }), [
-    { label: "ความรู้", href: "/knowledge" },
+    { label: "ความรู้เรื่องผิวและสุขภาพ", href: "/knowledge" },
   ]);
 });
 

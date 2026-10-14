@@ -2,12 +2,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { concerns, concernImage } from "@/data/categories";
 import { pageMetadata } from "@/lib/site-pages";
+import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 
 export function generateMetadata() {
   return pageMetadata("concern");
 }
 
-export default function ConcernHubPage() {
+function ConcernHubPageWritten() {
   return (
     <div className="container-page py-8 md:py-10">
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">ช้อปตามปัญหาผิวที่กังวล</h1>
@@ -32,4 +34,14 @@ export default function ConcernHubPage() {
       </div>
     </div>
   );
+}
+
+/**
+ * The page, from its document when wave 2 is on and from the markup above
+ * when it is not. Both halves stay in the tree on purpose — the flag is the
+ * emergency switch, and it only works while the hand-written half is here.
+ */
+export default function ConcernHubPage() {
+  if (PAGES_WAVE2_ENABLED) return <SystemPageBody pageKey="concern-hub" />;
+  return <ConcernHubPageWritten />;
 }

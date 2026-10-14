@@ -3,6 +3,8 @@ import Link from "next/link";
 import { collections } from "@/data/collections";
 import Breadcrumb from "@/components/Breadcrumb";
 import { pageMetadata } from "@/lib/site-pages";
+import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 
 export function generateMetadata() {
   return pageMetadata("collections");
@@ -11,7 +13,7 @@ export function generateMetadata() {
 // Index of the real Shopify collections. Sorted biggest-first because the
 // merchandising ones worth browsing (bundles, clearance, brand pages) carry far
 // more products than the long tail of one-off campaign groups.
-export default function CollectionsIndexPage() {
+function CollectionsIndexPageWritten() {
   const sorted = [...collections].sort((a, b) => b.productSlugs.length - a.productSlugs.length);
 
   return (
@@ -55,4 +57,14 @@ export default function CollectionsIndexPage() {
       )}
     </div>
   );
+}
+
+/**
+ * The page, from its document when wave 2 is on and from the markup above
+ * when it is not. Both halves stay in the tree on purpose — the flag is the
+ * emergency switch, and it only works while the hand-written half is here.
+ */
+export default function CollectionsIndexPage() {
+  if (PAGES_WAVE2_ENABLED) return <SystemPageBody pageKey="collections" />;
+  return <CollectionsIndexPageWritten />;
 }

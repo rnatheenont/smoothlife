@@ -44,7 +44,7 @@ const byPath = new Map(SYSTEM_PAGE_LIST.filter((p) => p.path).map((p) => [p.path
 export function crumbsFor(ctx: Pick<RenderCtx, "kind" | "slug" | "entity">): Crumb[] {
   if (ctx.kind === "template" && ctx.entity) {
     const parent = SYSTEM_PAGES[PARENT_OF[ctx.entity.type]];
-    return parent?.path ? [{ label: parent.title, href: parent.path }] : [];
+    return parent?.path ? [{ label: parent.crumb ?? parent.title, href: parent.path }] : [];
   }
 
   const page = ctx.kind === "system" ? SYSTEM_PAGES[ctx.slug] : undefined;
@@ -57,7 +57,8 @@ export function crumbsFor(ctx: Pick<RenderCtx, "kind" | "slug" | "entity">): Cru
     walked += `/${segment}`;
     const at = byPath.get(walked);
     if (!at) continue;
-    crumbs.push(walked === page.path ? { label: at.title } : { label: at.title, href: walked });
+    const label = at.crumb ?? at.title;
+    crumbs.push(walked === page.path ? { label } : { label, href: walked });
   }
   return crumbs;
 }
