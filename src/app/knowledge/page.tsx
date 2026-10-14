@@ -3,6 +3,8 @@ import { articles } from "@/data/articles";
 import ArticleGrid from "@/components/ArticleGrid";
 import { getStoreArticles, thaiDate } from "@/lib/storefront-articles";
 import { pageMetadata } from "@/lib/site-pages";
+import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 
 export function generateMetadata() {
   return pageMetadata("knowledge");
@@ -16,7 +18,7 @@ const sections = [
   { href: "/knowledge/videos", label: "Video and How-to" },
 ];
 
-export default async function KnowledgePage() {
+async function KnowledgePageWritten() {
   // Posts from the Shopify blog, newest first; the static guides stay below.
   const posts = await getStoreArticles();
   return (
@@ -51,4 +53,14 @@ export default async function KnowledgePage() {
       <ArticleGrid articles={articles} />
     </div>
   );
+}
+
+/**
+ * The page, from its document when wave 2 is on and from the markup above
+ * when it is not. Both halves stay in the tree on purpose — the flag is the
+ * emergency switch, and it only works while the hand-written half is here.
+ */
+export default async function KnowledgePage() {
+  if (PAGES_WAVE2_ENABLED) return <SystemPageBody pageKey="knowledge" />;
+  return <KnowledgePageWritten />;
 }

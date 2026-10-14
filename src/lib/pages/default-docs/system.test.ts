@@ -44,7 +44,7 @@ test("two calls give two documents, not one shared object", () => {
   assert.deepEqual(a, b);
 });
 
-test("the pages of wave 1 written so far", () => {
+test("the pages written so far", () => {
   // A list rather than a count, so adding a page is a deliberate edit here
   // too — this file is the only place that says which pages have been
   // checked against the originals.
@@ -57,6 +57,10 @@ test("the pages of wave 1 written so far", () => {
     "help",
     "help-delivery",
     "help-payment",
+    "knowledge",
+    "knowledge-ingredients",
+    "knowledge-routines",
+    "knowledge-videos",
     "loyalty",
     "not-found",
     "offline",

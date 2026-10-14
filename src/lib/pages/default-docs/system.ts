@@ -1,7 +1,9 @@
 // With the extension, so the unit test can load this file without a bundler
 // (tsconfig allows it; see src/sections/breadcrumb/trail.ts for the same
 // trade made for the same reason).
-import { SCHEMA_VERSION, type PageDoc } from "../doc.ts";
+import { type PageDoc } from "../doc.ts";
+import { doc } from "./build.ts";
+import { WAVE2_DEFAULT_DOCS } from "./system-wave2.ts";
 
 // The pages of wave 1, written as documents.
 //
@@ -14,20 +16,6 @@ import { SCHEMA_VERSION, type PageDoc } from "../doc.ts";
 //
 // So the rule while writing these: if something here differs from the
 // hand-written page, it is a mistake in here, not an improvement.
-
-/**
- * A document, with its sections numbered.
- *
- * Ids are the section's type and its position, assigned here rather than by a
- * counter that keeps climbing across calls. Two things depend on that: a
- * second call has to produce the same document as the first (a test says so),
- * and the ids are what a preview click and an error report point at — "the
- * second feature_cards" is worth reading in a log, "feature_cards-47" is not.
- */
-const doc = (sections: { type: string; v: number; settings: unknown }[]): PageDoc => ({
-  schemaVersion: SCHEMA_VERSION,
-  sections: sections.map((section, i) => ({ id: `${section.type}-${i + 1}`, ...section })),
-});
 
 type Card = { icon: string; title: string; body: string };
 
@@ -455,4 +443,5 @@ export const SYSTEM_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   "not-found": notFoundPage,
   stores,
   "ai-assistant": aiAssistant,
+  ...WAVE2_DEFAULT_DOCS,
 };

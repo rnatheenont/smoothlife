@@ -52,6 +52,7 @@ import { footerLinks } from "./footer_links/definition";
 import { announcementBar } from "./announcement_bar/definition";
 import { mobileTabsSection } from "./mobile_tabs/definition";
 import { headerLinksSection } from "./header_links/definition";
+import { articleGrid } from "./article_grid/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -99,6 +100,7 @@ const ALL: AnySectionDefinition[] = [
   announcementBar,
   mobileTabsSection,
   headerLinksSection,
+  articleGrid,
 
   // The general-purpose ones. Everything above wraps a piece of the home page
   // as it already was; these are the blocks a page built from scratch is made

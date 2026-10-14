@@ -16,14 +16,26 @@ const schema = z.object({
     .array(z.object({ label: z.string().max(60).default(""), href: z.string().default("") }))
     .max(12)
     .default([]),
+  /**
+   * How much room under the row.
+   *
+   * These pills do two different jobs on this site. At the foot of /about
+   * they are where to go next, with the end of the page under them; near the
+   * top of /knowledge they are the hub's own navigation, with the hub's
+   * content under them. Same pills, different gap — "end" is the original and
+   * stays the default so no page that already uses this moves.
+   */
+  room: z.enum(["end", "under_header"]).default("end"),
 });
+
+const ROOM: Record<string, string> = { end: "pb-14", under_header: "pb-8" };
 
 function Component({ settings }: SectionProps<z.output<typeof schema>>) {
   const items = settings.items.filter((i) => i.label && i.href);
   if (items.length === 0) return null;
 
   return (
-    <section className="container-page pb-14">
+    <section className={`container-page ${ROOM[settings.room] ?? ROOM.end}`}>
       {settings.heading && (
         <h2 className="mb-4 text-xl font-bold text-brand-ink md:text-2xl">{settings.heading}</h2>
       )}
@@ -55,6 +67,7 @@ export const linkPills: SectionDefinition<typeof schema> = {
   schema,
   defaults: {
     heading: "",
+    room: "end",
     items: [
       { label: "คุณภาพและมาตรฐาน", href: "/about/quality" },
       { label: "ทีมผู้เชี่ยวชาญ", href: "/about/experts" },
@@ -71,6 +84,15 @@ export const linkPills: SectionDefinition<typeof schema> = {
       columns: [
         { key: "label", label: "ข้อความ", half: true },
         { key: "href", label: "ลิงก์", half: true },
+      ],
+    },
+    {
+      key: "room",
+      type: "select",
+      label: "ระยะใต้แถวปุ่ม",
+      options: [
+        ["end", "บล็อกสุดท้ายของหน้า"],
+        ["under_header", "เป็นเมนูใต้หัวหน้า"],
       ],
     },
   ],
