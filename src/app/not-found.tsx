@@ -1,5 +1,5 @@
 import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
-import { SystemPageBody } from "@/lib/pages/system-page";
+import { SystemPageBodyFromCode } from "@/lib/pages/system-page";
 import Image from "next/image";
 import { Button } from "@/components/ui";
 
@@ -22,6 +22,6 @@ function NotFoundWritten() {
  *  a not-found page that answers "not found" is a loop, and this is also the
  *  page that gets shown when the database is the thing that is broken. */
 export default function NotFound() {
-  if (PAGES_WAVE1_ENABLED) return <SystemPageBody pageKey="not-found" fallback={<NotFoundWritten />} />;
+  if (PAGES_WAVE1_ENABLED) return <SystemPageBodyFromCode pageKey="not-found" fallback={<NotFoundWritten />} />;
   return <NotFoundWritten />;
 }

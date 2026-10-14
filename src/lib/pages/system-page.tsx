@@ -34,3 +34,27 @@ export async function SystemPageBody({ pageKey, fallback }: { pageKey: string; f
 
   return <>{await renderSections(doc, { kind: "system", slug: pageKey, now: new Date(), isPreview: false })}</>;
 }
+
+/**
+ * The same body, from the code's document only — no database.
+ *
+ * For the two pages that are rendered *inside* other routes: not-found is
+ * what every statically generated route falls back to, and offline is served
+ * from the install-time cache. Next counts a database read during their
+ * render as the page turning dynamic, and a statically generated route whose
+ * 404 boundary does that fails the whole route — which is how reading the
+ * stored 404 took every product page down with it.
+ *
+ * So these two are editable in the code and nowhere else. That is the trade
+ * the plan already called for ("404 must render even when the database is
+ * down"); what it did not say, and what cost a production outage to learn,
+ * is that reading it at all is the problem, not failing to read it.
+ */
+export async function SystemPageBodyFromCode({ pageKey, fallback }: { pageKey: string; fallback?: ReactNode }) {
+  const doc = SYSTEM_DEFAULT_DOCS[pageKey]?.();
+  if (!doc) {
+    if (fallback !== undefined) return <>{fallback}</>;
+    notFound();
+  }
+  return <>{await renderSections(doc, { kind: "system", slug: pageKey, now: new Date(), isPreview: false })}</>;
+}

@@ -1,5 +1,5 @@
 import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
-import { SystemPageBody } from "@/lib/pages/system-page";
+import { SystemPageBodyFromCode } from "@/lib/pages/system-page";
 import Link from "next/link";
 import { WifiOff } from "lucide-react";
 
@@ -33,6 +33,6 @@ function OfflinePageWritten() {
  *  document cannot be read, which on this page of all pages is the case
  *  worth handling: it is the page somebody sees when nothing is reachable. */
 export default function OfflinePage() {
-  if (PAGES_WAVE1_ENABLED) return <SystemPageBody pageKey="offline" fallback={<OfflinePageWritten />} />;
+  if (PAGES_WAVE1_ENABLED) return <SystemPageBodyFromCode pageKey="offline" fallback={<OfflinePageWritten />} />;
   return <OfflinePageWritten />;
 }
