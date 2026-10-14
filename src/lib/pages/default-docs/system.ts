@@ -391,6 +391,26 @@ const notFoundPage = (): PageDoc =>
     },
   ]);
 
+
+const stores = (): PageDoc =>
+  doc([
+    {
+      type: "page_header",
+      v: 1,
+      settings: {
+        eyebrow: "",
+        title: "สาขาและติดต่อเรา",
+        intro: "พบกับเราได้ที่สาขาทั่วประเทศ หรือติดต่อทีมงานผ่านช่องทางออนไลน์",
+        image: "",
+        align: "left",
+        background: "page",
+        layout: "document",
+      },
+    },
+    { type: "store_list", v: 1, settings: { items: [{"name": "Smooth Life Flagship — สยามพารากอน", "address": "991 ถ.พระราม 1 แขวงปทุมวัน เขตปทุมวัน กรุงเทพฯ 10330", "hours": "ทุกวัน 10:00 - 21:00", "phone": "02-123-4567"}, {"name": "Smooth Life — เซ็นทรัลเวิลด์", "address": "999/9 ถ.พระราม 1 แขวงปทุมวัน เขตปทุมวัน กรุงเทพฯ 10330", "hours": "ทุกวัน 10:00 - 22:00", "phone": "02-234-5678"}, {"name": "Smooth Life — เมกาบางนา", "address": "39 ถ.บางนา-ตราด กม.8 บางแก้ว บางพลี สมุทรปราการ 10540", "hours": "ทุกวัน 10:00 - 21:00", "phone": "02-345-6789"}, {"name": "Smooth Life — เซ็นทรัล เชียงใหม่ แอร์พอร์ต", "address": "2 ถ.มหิดล ต.หายยา อ.เมือง เชียงใหม่ 50100", "hours": "ทุกวัน 10:00 - 21:00", "phone": "05-312-3456"}] } },
+    { type: "contact_channels", v: 1, settings: { heading: "ติดต่อฝ่ายบริการลูกค้า", style: "cards" } },
+  ]);
+
 /**
  * The default document for a system page, or nothing.
  *
@@ -412,4 +432,5 @@ export const SYSTEM_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   loyalty,
   offline,
   "not-found": notFoundPage,
+  stores,
 };

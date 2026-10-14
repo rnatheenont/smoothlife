@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { CONTACT_DEFAULT } from "@/lib/pages/contact";
 import type { ReactNode } from "react";
 import { CircleUser, Facebook, Instagram } from "lucide-react";
 import BackToStore from "@/components/campaign/BackToStore";
@@ -38,11 +39,13 @@ const CUSTOMER_SERVICE: [string, string][] = [
   ["Shipping Policy", "/policies/shipping-policy"],
 ];
 
+// Same four the footer posts on, from the one contact record rather than a
+// second copy of the same URLs.
 const SOCIAL: [string, string, ReactNode][] = [
-  ["Facebook", "https://www.facebook.com/smoothlifeofficial/", <Facebook key="f" size={20} />],
-  ["Instagram", "https://www.instagram.com/smoothlife_official", <Instagram key="i" size={20} />],
-  ["TikTok", "https://www.tiktok.com/@smoothlife_pharmacy", <TikTokMark key="t" />],
-  ["LINE", "https://shop.line.me/@smoothlifeofficial", <LineMark key="l" />],
+  ["Facebook", CONTACT_DEFAULT.facebookUrl, <Facebook key="f" size={20} />],
+  ["Instagram", CONTACT_DEFAULT.instagramUrl, <Instagram key="i" size={20} />],
+  ["TikTok", CONTACT_DEFAULT.tiktokUrl, <TikTokMark key="t" />],
+  ["LINE", CONTACT_DEFAULT.lineShopUrl, <LineMark key="l" />],
 ];
 
 /**

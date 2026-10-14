@@ -1,3 +1,5 @@
+import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 import { MapPin, Phone, Clock } from "lucide-react";
 import { stores } from "@/data/stores";
 import { pageMetadata } from "@/lib/site-pages";
@@ -6,7 +8,7 @@ export function generateMetadata() {
   return pageMetadata("stores");
 }
 
-export default function StoresPage() {
+function StoresPageWritten() {
   return (
     <div className="container-page py-8 md:py-10">
       <h1 className="text-2xl md:text-3xl font-bold text-brand-ink mb-2">สาขาและติดต่อเรา</h1>
@@ -57,4 +59,10 @@ export default function StoresPage() {
       </div>
     </div>
   );
+}
+
+/** From the document when wave 1 is on — see the about pages. */
+export default function StoresPage() {
+  if (PAGES_WAVE1_ENABLED) return <SystemPageBody pageKey="stores" />;
+  return <StoresPageWritten />;
 }

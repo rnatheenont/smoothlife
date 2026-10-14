@@ -45,6 +45,9 @@ import { helpTopicsSection } from "./help_topics/definition";
 import { promoList } from "./promo_list/definition";
 import { tierCards } from "./tier_cards/definition";
 import { pageState } from "./page_state/definition";
+import { contactInfoSection } from "./contact_info/definition";
+import { contactChannels } from "./contact_channels/definition";
+import { storeList } from "./store_list/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -85,6 +88,9 @@ const ALL: AnySectionDefinition[] = [
   promoList,
   tierCards,
   pageState,
+  contactInfoSection,
+  contactChannels,
+  storeList,
 
   // The general-purpose ones. Everything above wraps a piece of the home page
   // as it already was; these are the blocks a page built from scratch is made

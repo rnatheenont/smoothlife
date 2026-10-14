@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CONTACT_DEFAULT } from "@/lib/pages/contact";
 import type { ComponentType } from "react";
 import {
   Facebook,
@@ -57,25 +58,31 @@ const columns: Col[] = [
   },
 ];
 
-// The real channels, from the team's contact sheet. Kept in sync with
-// /stores and /help/contact — the three places a customer can read a phone
-// number, and they must not disagree.
+// The real channels, from the global contact record — one copy for the whole
+// site now, instead of this file plus /stores plus /help/contact plus the
+// campaign chrome, kept in step by a comment asking people to remember.
 //
-// No Instagram here and no support@ address: an icon pointing at "#" and a
-// mailbox nobody has promised to read are worse than the channels being
-// listed honestly as the three that are actually answered.
-const TEL_DISPLAY = "085-489-0549";
-const TEL_HREF = "tel:0854890549";
-const FACEBOOK_URL = "https://www.facebook.com/smoothlifeofficial";
-const INSTAGRAM_URL = "https://www.instagram.com/smoothlife_official";
-const TIKTOK_URL = "https://www.tiktok.com/@smoothlife_pharmacy";
-const LINE_HANDLE = "@smoothlifeofficial";
+// Read from the constant rather than the stored document: the footer is on
+// every page, and a database round trip per page for a phone number that
+// changes twice a year is the wrong trade. The pages that already render
+// from documents read the live one through contact_channels.
+//
+// No Instagram in the contact block and no support@ address: an icon
+// pointing at "#" and a mailbox nobody has promised to read are worse than
+// the channels being listed honestly as the three that are actually
+// answered.
+const TEL_DISPLAY = CONTACT_DEFAULT.phoneDisplay;
+const TEL_HREF = CONTACT_DEFAULT.phoneHref;
+const FACEBOOK_URL = CONTACT_DEFAULT.facebookUrl;
+const INSTAGRAM_URL = CONTACT_DEFAULT.instagramUrl;
+const TIKTOK_URL = CONTACT_DEFAULT.tiktokUrl;
+const LINE_HANDLE = CONTACT_DEFAULT.lineHandle;
 // Two different LINE links on purpose: the icon row is "follow us", and goes
 // to the shop page; the contact block is "talk to us", and adds the OA as a
 // friend so there is somewhere to type.
-const LINE_SHOP_URL = "https://shop.line.me/@smoothlifeofficial";
-const LINE_URL = "https://line.me/R/ti/p/@smoothlifeofficial";
-const HOURS = "ทุกวัน 09:00–18:00 น.";
+const LINE_SHOP_URL = CONTACT_DEFAULT.lineShopUrl;
+const LINE_URL = CONTACT_DEFAULT.lineChatUrl;
+const HOURS = CONTACT_DEFAULT.hours;
 
 // The four the shop actually posts on. Same list and same links as the
 // campaign pages' footer (see campaign/StoreChrome.tsx).

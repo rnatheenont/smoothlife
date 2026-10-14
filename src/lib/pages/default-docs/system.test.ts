@@ -61,6 +61,7 @@ test("the pages of wave 1 written so far", () => {
     "offline",
     "privacy",
     "promotions",
+    "stores",
     "terms",
   ]);
 });
