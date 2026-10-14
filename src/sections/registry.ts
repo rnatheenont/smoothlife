@@ -65,6 +65,10 @@ import { routineSteps } from "./routine_steps/definition";
 import { concernProducts } from "./concern_products/definition";
 import { collectionHeader } from "./collection_header/definition";
 import { collectionProducts } from "./collection_products/definition";
+import { categoryChips } from "./category_chips/definition";
+import { categoryHeader } from "./category_header/definition";
+import { advisorEntry } from "./advisor_entry/definition";
+import { categoryListing } from "./category_listing/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -125,6 +129,10 @@ const ALL: AnySectionDefinition[] = [
   concernProducts,
   collectionHeader,
   collectionProducts,
+  categoryChips,
+  categoryHeader,
+  advisorEntry,
+  categoryListing,
 
   // The general-purpose ones. Everything above wraps a piece of the home page
   // as it already was; these are the blocks a page built from scratch is made
