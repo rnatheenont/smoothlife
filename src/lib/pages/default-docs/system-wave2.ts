@@ -194,6 +194,19 @@ const collectionsIndex = (): PageDoc =>
     },
   ]);
 
+/**
+ * /brands and /search: one locked block each, and nothing above it yet.
+ *
+ * A document with a single section it cannot remove looks like a waste of a
+ * document until you want the thing these pages have never had — a line of
+ * copy above the directory during a brand launch, a promo under the search
+ * box. That is what these two exist for; today they draw exactly what the
+ * routes drew.
+ */
+const brandsIndex = (): PageDoc => doc([{ type: "brand_directory", v: 1, settings: {} }]);
+
+const search = (): PageDoc => doc([{ type: "search_app", v: 1, settings: { loadingText: "กำลังโหลด…" } }]);
+
 /** Merged into SYSTEM_DEFAULT_DOCS. Keyed by the registry's page key, and a
  *  page with no entry here is simply not offered in the admin yet. */
 export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
@@ -204,4 +217,6 @@ export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   questions,
   "concern-hub": concernHub,
   collections: collectionsIndex,
+  brands: brandsIndex,
+  search,
 };

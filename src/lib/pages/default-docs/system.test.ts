@@ -17,7 +17,16 @@ test("every default document belongs to a page in the registry", () => {
 /** The sections that draw a page's h1. Most pages use page_header; a couple
  *  are one locked block that owns its own heading because the heading and
  *  the block are one layout. */
-const H1_SECTIONS = new Set(["page_header", "tier_cards", "page_state"]);
+const H1_SECTIONS = new Set([
+  "page_header",
+  "tier_cards",
+  "page_state",
+  // The two pages that are one application: the brand directory and the
+  // search page each draw their own heading, because the heading is part of
+  // the state the thing is in.
+  "brand_directory",
+  "search_app",
+]);
 
 test("each page owns exactly one h1", () => {
   for (const [key, make] of Object.entries(SYSTEM_DEFAULT_DOCS)) {
@@ -54,6 +63,7 @@ test("the pages written so far", () => {
     "about-quality",
     "about-sustainability",
     "ai-assistant",
+    "brands",
     "collections",
     "concern-hub",
     "help",
@@ -69,6 +79,7 @@ test("the pages written so far", () => {
     "privacy",
     "promotions",
     "questions",
+    "search",
     "stores",
     "terms",
   ]);
