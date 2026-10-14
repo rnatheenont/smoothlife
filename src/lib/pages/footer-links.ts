@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { publishedDoc } from "./store";
 
 // The footer's link columns.
 //
@@ -10,7 +9,12 @@ import { publishedDoc } from "./store";
 // they are also the part that goes stale, because a page can be added without
 // anybody remembering the footer.
 //
-// Server only: it reads the database. Nothing in the browser needs it.
+// Nothing here touches the database. That matters more than it looks: the
+// footer is rendered from SiteChrome, which is a client component, so
+// anything this file imports is shipped to every browser. The reader lives
+// in footer-links-server.ts and is called by the layout, which passes the
+// result down as a prop — the same arrangement the shop menu already uses,
+// and for the same reason.
 
 export const footerColumnsSchema = z.object({
   columns: z
@@ -65,30 +69,3 @@ export const FOOTER_COLUMNS_DEFAULT: FooterColumns = [
     ],
   },
 ];
-
-/**
- * The columns to draw.
- *
- * A column with no links, or a link with no address, is dropped rather than
- * drawn empty: the footer is the one component on the site that nobody looks
- * at while editing it, so a half-filled row would ship.
- *
- * Any failure — no document, wrong shape, database unreachable — falls back
- * to the built-in columns. The footer never renders without links.
- */
-export async function footerColumns(): Promise<FooterColumns> {
-  const doc = await publishedDoc("global", "footer");
-  const section = doc?.sections.find((s) => s.type === FOOTER_SECTION);
-  if (!section) return FOOTER_COLUMNS_DEFAULT;
-
-  const parsed = footerColumnsSchema.safeParse(section.settings);
-  if (!parsed.success) {
-    console.error("[footer] the stored columns do not fit — using the built-in ones");
-    return FOOTER_COLUMNS_DEFAULT;
-  }
-
-  const columns = parsed.data.columns
-    .map((col) => ({ ...col, links: col.links.filter((l) => l.href && l.label) }))
-    .filter((col) => col.title && col.links.length > 0);
-  return columns.length > 0 ? columns : FOOTER_COLUMNS_DEFAULT;
-}

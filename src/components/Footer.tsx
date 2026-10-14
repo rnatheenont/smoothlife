@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CONTACT_DEFAULT } from "@/lib/pages/contact";
-import { footerColumns, type FooterColumns } from "@/lib/pages/footer-links";
+import { FOOTER_COLUMNS_DEFAULT, type FooterColumns } from "@/lib/pages/footer-links";
 import type { ComponentType } from "react";
 import {
   Facebook,
@@ -25,10 +25,12 @@ import { TikTokMark, LineMark } from "@/components/SocialMarks";
 // reference the team picked, on the site's own pale surface rather than that
 // reference's dark band.
 
-// The link columns come from the global footer document, with the built-in
-// ones as the fallback — see src/lib/pages/footer-links.ts. They are the only
-// part of this footer an admin edits; the payment badges follow what checkout
-// accepts and the channels follow the contact record.
+// The link columns arrive as a prop, read on the server by the layout — the
+// same arrangement as the shop menu above, and for the same reason: this
+// component is reached through a client component, so anything it imports
+// ships to the browser, and a database client is the last thing that should.
+// The built-in columns are the default, so a Footer rendered with no props
+// is the footer the site has always had.
 
 // The real channels, from the global contact record — one copy for the whole
 // site now, instead of this file plus /stores plus /help/contact plus the
@@ -159,8 +161,7 @@ function ContactBlock() {
   );
 }
 
-export default async function Footer() {
-  const columns = await footerColumns();
+export default function Footer({ columns = FOOTER_COLUMNS_DEFAULT }: { columns?: FooterColumns }) {
   return (
     // No top margin: the page background is white, so 64px of it showed as a
     // blank band between a tinted section and the footer. The footer has its

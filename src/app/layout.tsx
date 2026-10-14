@@ -13,6 +13,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site-pages";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import GoogleTagManager from "@/components/GoogleTagManager";
+import { footerColumns } from "@/lib/pages/footer-links-server";
 import OldBrowserNotice from "@/components/OldBrowserNotice";
 
 // Noto Sans Thai, self-hosted through next/font so there is no request to
@@ -83,7 +84,11 @@ export const viewport: Viewport = {
   themeColor: "#00a87b",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Read here, on the server, and handed down — see SiteShell's note. The
+  // read is cached under the footer document's own tag, so this is one entry
+  // for the whole site rather than a query per page.
+  const footerCols = await footerColumns();
   return (
     <html lang="th" className={notoSansThai.variable}>
       <body className="min-h-screen flex flex-col antialiased font-sans">
@@ -94,7 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteJsonLd()) }} />
         <Providers>
-          <SiteChrome ticker={tickerProducts()} menu={menuCategories}>
+          <SiteChrome ticker={tickerProducts()} menu={menuCategories} footerColumns={footerCols}>
             {children}
           </SiteChrome>
         </Providers>
