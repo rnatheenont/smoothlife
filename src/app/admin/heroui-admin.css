@@ -10,7 +10,31 @@
   Anything used on both sides stays in the storefront sheet: a second copy
   here would be bytes, not safety.
 */
-@reference "../globals.css";
+/*
+  The console's own Tailwind utilities, from the shop's tokens.
+
+  globals.css no longer reads the console's files, so a utility only /admin
+  uses — the negative offset on the inbox handle, the 2xl: grid of the two
+  column editor — is generated here instead. The tokens come from theme.css,
+  which carries colours and breakpoints and no scanning rules; referencing
+  globals.css instead would bring its `@source not` lines along and silence
+  the two below.
+
+  Utilities only. Preflight, the tokens themselves and the shop's own classes
+  all arrive with globals.css in the root layout, which the console renders
+  inside, so a second copy of any of them would be weight with nothing to
+  show for it.
+*/
+@reference "tailwindcss";
+@reference "../theme.css";
+/* HeroUI's component CSS below is written in terms of its own utilities
+   (`bg-overlay`, `text-default-500`…), which arrive with its utilities sheet.
+   Referenced, not imported: the shop's sheet already emits them. */
+@reference "../heroui.css";
+
+@source '../../app/admin/**/*.{js,ts,jsx,tsx,mdx}';
+@source '../../components/admin/**/*.{js,ts,jsx,tsx,mdx}';
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
 
 @import "@heroui/styles/components/tooltip.css" layer(components);
 @import "@heroui/styles/components/toggle-button.css" layer(components);
