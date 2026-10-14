@@ -6,6 +6,8 @@ import {
 } from "@/data/brands";
 import { pageMetadata } from "@/lib/site-pages";
 import BrandsDirectory, { BrandEntry } from "./BrandsDirectory";
+import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 
 export function generateMetadata() {
   return pageMetadata("brands");
@@ -31,9 +33,19 @@ function entry(b: (typeof brands)[number]): BrandEntry {
   };
 }
 
-export default function BrandsPage() {
+function BrandsPageWritten() {
   const house = houseBrands.map(entry);
   const rest = brands.filter((b) => !isHouseBrand(b.slug)).map(entry);
 
   return <BrandsDirectory house={house} brands={rest} />;
+}
+
+/**
+ * The page, from its document when wave 2 is on and from the markup above
+ * when it is not. Both halves stay in the tree on purpose — the flag is the
+ * emergency switch, and it only works while the hand-written half is here.
+ */
+export default function BrandsPage() {
+  if (PAGES_WAVE2_ENABLED) return <SystemPageBody pageKey="brands" />;
+  return <BrandsPageWritten />;
 }

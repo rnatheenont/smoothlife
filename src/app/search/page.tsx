@@ -1,12 +1,13 @@
-"use client";
+import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
+import SearchWritten from "./SearchWritten";
 
-import { Suspense } from "react";
-import SearchContent from "@/components/SearchContent";
-
+/**
+ * The page, from its document when wave 2 is on and from SearchWritten when
+ * it is not. Both halves stay in the tree on purpose — the flag is the
+ * emergency switch, and it only works while the hand-written half is here.
+ */
 export default function SearchPage() {
-  return (
-    <Suspense fallback={<div className="container-page py-20 text-center text-slate-500">กำลังโหลด…</div>}>
-      <SearchContent />
-    </Suspense>
-  );
+  if (PAGES_WAVE2_ENABLED) return <SystemPageBody pageKey="search" />;
+  return <SearchWritten />;
 }

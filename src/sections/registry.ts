@@ -56,6 +56,8 @@ import { articleGrid } from "./article_grid/definition";
 import { questionList } from "./question_list/definition";
 import { concernTiles } from "./concern_tiles/definition";
 import { collectionTiles } from "./collection_tiles/definition";
+import { brandDirectory } from "./brand_directory/definition";
+import { searchApp } from "./search_app/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -107,6 +109,8 @@ const ALL: AnySectionDefinition[] = [
   questionList,
   concernTiles,
   collectionTiles,
+  brandDirectory,
+  searchApp,
 
   // The general-purpose ones. Everything above wraps a piece of the home page
   // as it already was; these are the blocks a page built from scratch is made
