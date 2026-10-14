@@ -26,13 +26,22 @@ export type PageKind = "home" | "page" | "campaign" | "brand" | "system" | "temp
  */
 export type EntityType = "product" | "category" | "collection" | "concern" | "article" | "question";
 
+/**
+ * The item a template page is drawing.
+ *
+ * `name` is what the item is called on the screen — the collection's title,
+ * the concern's Thai name. It is carried rather than looked up because the
+ * route has already found the item to know it exists at all, and because the
+ * breadcrumb needs it: a trail that stops at the hub puts the page in a
+ * section without ever saying which page it is.
+ */
 export type EntityRef =
-  | { type: "product"; slug: string }
-  | { type: "category"; slug: string }
-  | { type: "collection"; handle: string }
-  | { type: "concern"; slug: string }
-  | { type: "article"; handle: string }
-  | { type: "question"; slug: string };
+  | { type: "product"; slug: string; name: string }
+  | { type: "category"; slug: string; name: string }
+  | { type: "collection"; handle: string; name: string }
+  | { type: "concern"; slug: string; name: string }
+  | { type: "article"; handle: string; name: string }
+  | { type: "question"; slug: string; name: string };
 
 /** Context handed to every section at render time. */
 export type RenderCtx = {

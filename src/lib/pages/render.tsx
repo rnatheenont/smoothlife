@@ -14,7 +14,11 @@ import SectionClicks from "@/components/pages/SectionClicks";
 // where products get deleted — so every step here assumes its input is wrong
 // and decides what to drop rather than what to throw.
 
-type Skip = { id: string; type: string; reason: "unknown_type" | "invalid_settings" | "threw" };
+type Skip = {
+  id: string;
+  type: string;
+  reason: "unknown_type" | "invalid_settings" | "threw" | "no_entity";
+};
 
 function reportSkip(skip: Skip, ctx: RenderCtx) {
   // Production stays quiet in the page and loud in the log: a customer should
@@ -28,7 +32,9 @@ function PreviewSkip({ skip, label }: { skip: Skip; label: string }) {
       ? "ไม่รู้จักชนิดของ section นี้ — อาจถูกเลิกใช้ไปแล้ว"
       : skip.reason === "invalid_settings"
         ? "การตั้งค่าของ section นี้ไม่ครบหรือผิดรูปแบบ"
-        : "section นี้ทำงานผิดพลาดตอนแสดงผล";
+        : skip.reason === "no_entity"
+          ? "section นี้ต้องมีสินค้า/คอลเลกชัน/ปัญหาผิวให้วาด แต่หน้านี้ไม่มี"
+          : "section นี้ทำงานผิดพลาดตอนแสดงผล";
   return (
     <div className="container-page my-4">
       <div className="rounded-xl2 border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
@@ -88,6 +94,16 @@ export async function renderSections(doc: unknown, ctx: RenderCtx) {
         const skip: Skip = { id: raw.id, type: raw.type, reason: "unknown_type" };
         reportSkip(skip, ctx);
         return ctx.isPreview ? <PreviewSkip key={raw.id} skip={skip} label={raw.type} /> : null;
+      }
+
+      // A section built to draw one item cannot draw nothing. This is the
+      // only check here that is about the page rather than the section: a
+      // template section dropped onto a page with no item would otherwise
+      // read `ctx.entity!` and take the route down with it.
+      if (def.requiresEntity && (!ctx.entity || !def.requiresEntity.includes(ctx.entity.type))) {
+        const skip: Skip = { id: raw.id, type: raw.type, reason: "no_entity" };
+        reportSkip(skip, ctx);
+        return ctx.isPreview ? <PreviewSkip key={raw.id} skip={skip} label={def.label} /> : null;
       }
 
       const upgraded = def.migrate ? def.migrate(raw.settings, raw.v ?? def.version) : raw.settings;

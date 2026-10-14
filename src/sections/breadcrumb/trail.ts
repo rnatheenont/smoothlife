@@ -36,15 +36,19 @@ const byPath = new Map(SYSTEM_PAGE_LIST.filter((p) => p.path).map((p) => [p.path
  * segment no page serves is skipped rather than guessed at — an unlabelled
  * step is worse than one fewer step.
  *
- * For a template the item's own name is not known here (that needs a lookup
- * per item, which arrives with the template pages themselves), so the trail
- * stops at the hub: a true trail that is short, rather than one with a blank
- * on the end.
+ * For a template it is the hub the item belongs under, then the item. Two
+ * steps, not the item's whole address: /concern/acne sits under /concern and
+ * there is nothing in between. An item with no name gives the hub alone,
+ * because a trail ending in a blank is worse than one step shorter.
  */
 export function crumbsFor(ctx: Pick<RenderCtx, "kind" | "slug" | "entity">): Crumb[] {
   if (ctx.kind === "template" && ctx.entity) {
     const parent = SYSTEM_PAGES[PARENT_OF[ctx.entity.type]];
-    return parent?.path ? [{ label: parent.crumb ?? parent.title, href: parent.path }] : [];
+    const hub: Crumb[] = parent?.path ? [{ label: parent.crumb ?? parent.title, href: parent.path }] : [];
+    // The item itself, last and not a link — you are looking at it. Its name
+    // rides in on the EntityRef rather than being looked up here, so this
+    // stays a pure function of what it was handed.
+    return ctx.entity.name ? [...hub, { label: ctx.entity.name }] : hub;
   }
 
   const page = ctx.kind === "system" ? SYSTEM_PAGES[ctx.slug] : undefined;
