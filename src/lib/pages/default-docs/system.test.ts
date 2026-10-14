@@ -26,6 +26,9 @@ const H1_SECTIONS = new Set([
   // the state the thing is in.
   "brand_directory",
   "search_app",
+  // /shop's banner draws the h1 and changes it with the category being
+  // browsed, so the words cannot live in a header block above it.
+  "shop_hero",
 ]);
 
 test("each page owns exactly one h1", () => {
@@ -80,6 +83,7 @@ test("the pages written so far", () => {
     "promotions",
     "questions",
     "search",
+    "shop",
     "stores",
     "terms",
   ]);

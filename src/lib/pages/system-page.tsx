@@ -15,7 +15,16 @@ import { SYSTEM_DEFAULT_DOCS } from "./default-docs/system";
 // is therefore exactly the page it always was; the moment somebody publishes,
 // theirs wins. There is no third case where the page is blank.
 
-export async function SystemPageBody({ pageKey, fallback }: { pageKey: string; fallback?: ReactNode }) {
+export async function SystemPageBody({
+  pageKey,
+  fallback,
+  query,
+}: {
+  pageKey: string;
+  fallback?: ReactNode;
+  /** The route's own searchParams, for a page whose sections read them. */
+  query?: Record<string, string | undefined>;
+}) {
   const stored = await publishedDoc("system", pageKey);
   const doc = stored ?? SYSTEM_DEFAULT_DOCS[pageKey]?.();
   // A wave switched on for a page with no document would be a blank page
@@ -32,7 +41,9 @@ export async function SystemPageBody({ pageKey, fallback }: { pageKey: string; f
     notFound();
   }
 
-  return <>{await renderSections(doc, { kind: "system", slug: pageKey, now: new Date(), isPreview: false })}</>;
+  return (
+    <>{await renderSections(doc, { kind: "system", slug: pageKey, now: new Date(), isPreview: false, query })}</>
+  );
 }
 
 /**

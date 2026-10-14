@@ -14,6 +14,8 @@ import { pageMetadata } from "@/lib/site-pages";
 import { withCustomImages } from "@/lib/product-images";
 import { toCardData } from "@/data/card";
 import { brandNames, brandOptions } from "@/lib/brand-options";
+import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 
 // Every ?brand=/?page=/?sort= filter combination renders this same route —
 // without a canonical they'd all index as separate near-duplicate pages.
@@ -21,8 +23,7 @@ export function generateMetadata() {
   return pageMetadata("shop");
 }
 
-export default async function ShopPage(props: { searchParams: Promise<ShopSearchParams> }) {
-  const searchParams = await props.searchParams;
+async function ShopPageWritten({ searchParams }: { searchParams: ShopSearchParams }) {
   const allItems = filterProducts(searchParams);
   const totalPages = Math.max(1, Math.ceil(allItems.length / PAGE_SIZE));
   const page = Math.min(Math.max(1, Number(searchParams.page) || 1), totalPages);
@@ -100,4 +101,19 @@ export default async function ShopPage(props: { searchParams: Promise<ShopSearch
       </div>
     </>
   );
+}
+
+/**
+ * The page, from its document when wave 2 is on and from the markup above
+ * when it is not. Both halves stay in the tree on purpose — the flag is the
+ * emergency switch, and it only works while the hand-written half is here.
+ *
+ * The query string is read here and handed down either way: the document's
+ * sections cannot reach for it themselves (useSearchParams is a client hook
+ * and they render on the server), and the whole page is one reading of it.
+ */
+export default async function ShopPage(props: { searchParams: Promise<ShopSearchParams> }) {
+  const searchParams = await props.searchParams;
+  if (PAGES_WAVE2_ENABLED) return <SystemPageBody pageKey="shop" query={searchParams} />;
+  return <ShopPageWritten searchParams={searchParams} />;
 }

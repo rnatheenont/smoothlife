@@ -59,6 +59,17 @@ export type RenderCtx = {
    *  instead of disappearing, because a section that silently vanishes while
    *  someone is editing it is a bug report nobody can write. */
   isPreview: boolean;
+  /**
+   * The page's query string, for the sections that are built on it.
+   *
+   * Only /shop needs this today, and it needs all of it: the banner's title,
+   * the ringed category circle, the filters, the sort, the page number and
+   * the grid are all one reading of ?category=&brand=&sort=&page=. A section
+   * cannot reach for it on its own — useSearchParams is a client hook and
+   * this runs on the server — so the route hands it down, the same way the
+   * campaign dates are handed down rather than looked up per section.
+   */
+  query?: Record<string, string | undefined>;
   /** Template pages only: the item this render is for. A section that needs
    *  one declares `requiresEntity`, so a template section can never end up on
    *  a page that has nothing to be about. */
