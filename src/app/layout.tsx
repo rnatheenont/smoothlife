@@ -14,6 +14,9 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import GoogleTagManager from "@/components/GoogleTagManager";
 import { footerColumns } from "@/lib/pages/footer-links-server";
+import { announcement } from "@/lib/pages/announcement-server";
+import { announcementVisible } from "@/lib/pages/announcement";
+import AnnouncementBar from "@/components/AnnouncementBar";
 import OldBrowserNotice from "@/components/OldBrowserNotice";
 
 // Noto Sans Thai, self-hosted through next/font so there is no request to
@@ -89,6 +92,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // read is cached under the footer document's own tag, so this is one entry
   // for the whole site rather than a query per page.
   const footerCols = await footerColumns();
+  // Decided here, where the clock is the server's: a bar with a window has
+  // to agree with the HTML it was sent in.
+  const bar = await announcement();
+  const announcementNode = announcementVisible(bar, new Date()) ? <AnnouncementBar bar={bar} /> : null;
   return (
     <html lang="th" className={notoSansThai.variable}>
       <body className="min-h-screen flex flex-col antialiased font-sans">
@@ -99,7 +106,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteJsonLd()) }} />
         <Providers>
-          <SiteChrome ticker={tickerProducts()} menu={menuCategories} footerColumns={footerCols}>
+          <SiteChrome
+          ticker={tickerProducts()}
+          menu={menuCategories}
+          footerColumns={footerCols}
+          announcement={announcementNode}
+        >
             {children}
           </SiteChrome>
         </Providers>

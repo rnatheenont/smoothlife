@@ -1,6 +1,7 @@
 import { SCHEMA_VERSION, type PageDoc } from "../doc.ts";
 import { CONTACT_DEFAULT, CONTACT_SECTION } from "../contact.ts";
 import { FOOTER_COLUMNS_DEFAULT, FOOTER_SECTION } from "../footer-links.ts";
+import { ANNOUNCEMENT_DEFAULT, ANNOUNCEMENT_SECTION } from "../announcement.ts";
 
 // The documents behind the parts of the site that are on every page.
 //
@@ -32,7 +33,23 @@ const footer = (): PageDoc => ({
   ],
 });
 
+/** The announcement bar, switched off. Publishing it puts an empty, disabled
+ *  bar in the database and nothing on the screen — which is what makes it
+ *  safe to set up today and use in December. */
+const announcement = (): PageDoc => ({
+  schemaVersion: SCHEMA_VERSION,
+  sections: [
+    {
+      id: `${ANNOUNCEMENT_SECTION}-1`,
+      type: ANNOUNCEMENT_SECTION,
+      v: 1,
+      settings: { ...ANNOUNCEMENT_DEFAULT },
+    },
+  ],
+});
+
 export const GLOBAL_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   contact,
   footer,
+  announcement,
 };

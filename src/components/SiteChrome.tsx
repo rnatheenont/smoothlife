@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import type { TickerProduct } from "@/lib/ticker-products";
 import type { MenuCategory } from "@/data/nav-menu";
 import type { FooterColumns } from "@/lib/pages/footer-links";
+import type { ReactNode as AnnouncementSlot } from "react";
 import Footer from "@/components/Footer";
 
 // The back office is its own application: it brings its own header, its own
@@ -43,9 +44,15 @@ export function SiteShell({
   ticker = [],
   menu = [],
   footerColumns,
+  announcement,
 }: {
   children: ReactNode;
   ticker?: TickerProduct[];
+  /** The announcement bar, already decided and already rendered by the
+   *  layout. A node rather than its settings: whether it shows depends on
+   *  the clock, and that belongs on the server — a client component that
+   *  checks the time disagrees with the HTML it was sent. */
+  announcement?: AnnouncementSlot;
   /** The footer's link columns, read on the server. Same reason as `menu`. */
   footerColumns?: FooterColumns;
   /** The shop menu, built on the server. It arrives as a prop rather than as
@@ -56,6 +63,7 @@ export function SiteShell({
 }) {
   return (
     <>
+      {announcement}
       <Header ticker={ticker} menu={menu} />
       <main className="flex-1">{children}</main>
       <Footer columns={footerColumns} />
@@ -69,16 +77,18 @@ export default function SiteChrome({
   ticker,
   menu,
   footerColumns,
+  announcement,
 }: {
   children: ReactNode;
   ticker: TickerProduct[];
   menu: MenuCategory[];
   footerColumns?: FooterColumns;
+  announcement?: AnnouncementSlot;
 }) {
   const pathname = usePathname();
   if (BARE.some((p) => isUnder(pathname, p))) return <>{children}</>;
   return (
-    <SiteShell ticker={ticker} menu={menu} footerColumns={footerColumns}>
+    <SiteShell ticker={ticker} menu={menu} footerColumns={footerColumns} announcement={announcement}>
       {children}
     </SiteShell>
   );

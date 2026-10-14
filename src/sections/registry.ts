@@ -49,6 +49,7 @@ import { contactInfoSection } from "./contact_info/definition";
 import { contactChannels } from "./contact_channels/definition";
 import { storeList } from "./store_list/definition";
 import { footerLinks } from "./footer_links/definition";
+import { announcementBar } from "./announcement_bar/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -93,6 +94,7 @@ const ALL: AnySectionDefinition[] = [
   contactChannels,
   storeList,
   footerLinks,
+  announcementBar,
 
   // The general-purpose ones. Everything above wraps a piece of the home page
   // as it already was; these are the blocks a page built from scratch is made
