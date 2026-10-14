@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { isVisible, migrateDoc, MAX_SECTIONS, type SectionInstance } from "./doc";
+import { spacingClass } from "./spacing";
 import { SECTION_REGISTRY } from "@/sections/registry";
 import type { AnySectionDefinition, RenderCtx } from "./types";
 import SectionBoundary from "./SectionBoundary";
@@ -103,6 +104,7 @@ export async function renderSections(doc: unknown, ctx: RenderCtx) {
       }
 
       const Component = def.Component;
+      const spacing = spacingClass(raw.common);
       return (
         <Fragment key={raw.id}>
           {/* The section's own anchor, so anything on the page can jump to it
@@ -132,9 +134,16 @@ export async function renderSections(doc: unknown, ctx: RenderCtx) {
             className="block"
             style={{ scrollMarginTop: "calc(var(--app-header-h, 0px) + 72px)" }}
           />
-          <SectionBoundary id={raw.id} label={def.label} isPreview={ctx.isPreview}>
-            <Component settings={parsed.data} data={loaded.data} common={raw.common} index={index} ctx={ctx} />
-          </SectionBoundary>
+          {/* The spacing adjustment wraps rather than replaces: the section
+              keeps whatever room it was designed with, and this is the nudge
+              a particular page asked for. An unadjusted section gets no
+              wrapper class at all, so the markup of every page that has
+              never used it is unchanged. */}
+          <div className={spacing || undefined}>
+            <SectionBoundary id={raw.id} label={def.label} isPreview={ctx.isPreview}>
+              <Component settings={parsed.data} data={loaded.data} common={raw.common} index={index} ctx={ctx} />
+            </SectionBoundary>
+          </div>
         </Fragment>
       );
     })

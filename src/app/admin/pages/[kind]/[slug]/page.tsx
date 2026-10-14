@@ -37,6 +37,7 @@ import {
 
 import { Card } from "@/components/ui";
 import SectionForm from "@/components/admin/pages/SectionForm";
+import { SPACE_OPTIONS } from "@/lib/pages/spacing";
 import SectionList from "@/components/admin/pages/SectionList";
 import DiffPanel from "@/components/admin/pages/DiffPanel";
 import type { PageDoc } from "@/lib/pages/doc";
@@ -47,6 +48,7 @@ import {
   reorderSections,
   toggleHidden as toggleHiddenIn,
   updateSettings,
+  setSectionSpace,
   parseSlugList,
 } from "@/lib/pages/edit";
 import type { FieldDef } from "@/lib/pages/types";
@@ -1460,6 +1462,43 @@ export default function PageEditor(props: { params: Promise<{ kind: string; slug
                   settings={(current.settings ?? {}) as Record<string, unknown>}
                   onChange={(next) => edit(updateSettings(doc, current.id, next))}
                 />
+
+                {/* Spacing sits under the section's own settings, folded
+                    away: it is the thing you reach for after the words are
+                    right, not while writing them. It belongs to the section
+                    on this page rather than to the section library, which is
+                    why it is here and not a field in the definition. */}
+                <details className="mt-5 border-t border-slate-100 pt-3">
+                  <summary className="cursor-pointer list-none text-[13px] font-semibold text-brand-ink">
+                    ระยะห่างจากบล็อกอื่น
+                  </summary>
+                  <p className="mt-1 text-[12px] leading-relaxed text-slate-500">
+                    ปรับเฉพาะหน้านี้ ไม่กระทบ section เดียวกันบนหน้าอื่น
+                  </p>
+                  <div className="mt-2 grid grid-cols-2 gap-2.5">
+                    {([
+                      ["top", "ด้านบน"],
+                      ["bottom", "ด้านล่าง"],
+                    ] as const).map(([edge, label]) => (
+                      <label key={edge}>
+                        <span className="block text-[12px] font-medium text-slate-600">{label}</span>
+                        <select
+                          value={current.common?.space?.[edge] ?? "0"}
+                          onChange={(e) => {
+                            edit(setSectionSpace(doc, current.id, edge, e.target.value));
+                          }}
+                          className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 px-2.5 text-sm outline-hidden focus-visible:border-brand-teal focus-visible:ring-2 focus-visible:ring-brand-teal/30"
+                        >
+                          {SPACE_OPTIONS.map(([value, text]) => (
+                            <option key={value} value={value}>
+                              {text}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+                </details>
               </>
             ) : current ? (
               <p className="text-sm text-rose-600">

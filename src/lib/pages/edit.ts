@@ -124,6 +124,35 @@ export function toggleHidden(doc: PageDoc, id: string, rules: SectionRules = {})
   );
 }
 
+/**
+ * How much room this section takes, on this page.
+ *
+ * Here rather than in the button that changes it, for the same reason every
+ * other document operation is: "ปกติ" has to mean *absent*, not a stored
+ * "0", or a document picks up a settings object for every section somebody
+ * clicked through — and two documents that render identically stop comparing
+ * equal, which is what the editor uses to decide whether to autosave.
+ */
+export function setSectionSpace(
+  doc: PageDoc,
+  id: string,
+  edge: "top" | "bottom",
+  step: string | undefined
+): PageDoc {
+  return withSections(
+    doc,
+    doc.sections.map((s) => {
+      if (s.id !== id) return s;
+      const space = { ...s.common?.space, [edge]: step && step !== "0" ? step : undefined };
+      const kept = space.top || space.bottom ? space : undefined;
+      const common = { ...s.common, space: kept };
+      // An empty common object is noise in every diff and every revision.
+      const empty = Object.values(common).every((v) => v === undefined);
+      return { ...s, common: empty ? undefined : common };
+    })
+  );
+}
+
 export function removeSection(doc: PageDoc, id: string, rules: SectionRules = {}): PageDoc {
   if (lockedAt(doc, id, rules)) return doc;
   return withSections(doc, doc.sections.filter((s) => s.id !== id));

@@ -6,6 +6,7 @@ import {
   parseSlugList,
   reorderSections,
   removeSection,
+  setSectionSpace,
   toggleHidden,
   updateSettings,
 } from "./edit.ts";
@@ -188,4 +189,33 @@ test("without rules a document behaves exactly as it did before locking existed"
   const d = shopDoc();
   assert.deepEqual(ids(removeSection(d, "listing")), ["crumb", "intro", "foot"]);
   assert.deepEqual(ids(reorderSections(d, 0, 3)), ["intro", "listing", "foot", "crumb"]);
+});
+
+test("spacing is stored only when it is not ปกติ", () => {
+  const d = doc("a", "b");
+  // "ปกติ" leaves nothing behind — otherwise every section somebody clicked
+  // through picks up a settings object, and the editor's "has this changed"
+  // comparison starts saying yes when nothing changed.
+  assert.equal(setSectionSpace(d, "a", "top", "0").sections[0].common, undefined);
+  assert.deepEqual(setSectionSpace(d, "a", "top", "1").sections[0].common, { space: { top: "1" } });
+});
+
+test("setting one end back to ปกติ clears the whole thing when the other is unset", () => {
+  const once = setSectionSpace(doc("a"), "a", "bottom", "-2");
+  assert.deepEqual(once.sections[0].common?.space, { bottom: "-2" });
+  const back = setSectionSpace(once, "a", "bottom", "0");
+  assert.equal(back.sections[0].common, undefined);
+});
+
+test("spacing does not disturb hiding, and hiding does not disturb spacing", () => {
+  const spaced = setSectionSpace(doc("a"), "a", "top", "2");
+  const hidden = toggleHidden(spaced, "a");
+  assert.equal(hidden.sections[0].common?.hidden, true);
+  assert.deepEqual(hidden.sections[0].common?.space, { top: "2" });
+});
+
+test("only the section asked for is touched", () => {
+  const d = setSectionSpace(doc("a", "b"), "b", "top", "1");
+  assert.equal(d.sections[0].common, undefined);
+  assert.ok(d.sections[1].common?.space);
 });

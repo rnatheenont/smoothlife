@@ -22,9 +22,26 @@ export const MAX_SECTIONS = 20;
 
 export type CampaignPhase = "teaser" | "live" | "extended" | "ended";
 
+/**
+ * How much room a section takes above and below what it draws.
+ *
+ * Steps rather than pixels, and an adjustment rather than a replacement:
+ * every section already has spacing that suits it, and the page that needs
+ * tuning needs a nudge, not a new ruleset. "ปกติ" is what the section does
+ * on its own, which is why it is the default and why a document written
+ * before this existed is unaffected.
+ *
+ * It exists because the alternative was adding a layout option to a section
+ * every time one page wanted a little less room than another — which is how
+ * a section ends up with settings that only one page uses.
+ */
+export type SpaceStep = "-2" | "-1" | "0" | "1" | "2";
+
 export type SectionCommon = {
   /** Kept out of the page without being deleted, so it can come back. */
   hidden?: boolean;
+  /** Extra room above and below, in steps of 8px. Absent means "ปกติ". */
+  space?: { top?: SpaceStep; bottom?: SpaceStep };
   /** ISO instants. Absent means "no bound on that end". */
   visibleFrom?: string;
   visibleUntil?: string;
