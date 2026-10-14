@@ -63,6 +63,8 @@ import { shopListing } from "./shop_listing/definition";
 import { entityHeader } from "./entity_header/definition";
 import { routineSteps } from "./routine_steps/definition";
 import { concernProducts } from "./concern_products/definition";
+import { collectionHeader } from "./collection_header/definition";
+import { collectionProducts } from "./collection_products/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -121,6 +123,8 @@ const ALL: AnySectionDefinition[] = [
   entityHeader,
   routineSteps,
   concernProducts,
+  collectionHeader,
+  collectionProducts,
 
   // The general-purpose ones. Everything above wraps a piece of the home page
   // as it already was; these are the blocks a page built from scratch is made

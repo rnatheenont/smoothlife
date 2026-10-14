@@ -8,6 +8,8 @@ import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import { withCustomImages } from "@/lib/product-images";
 import { toCardData } from "@/data/card";
+import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
+import { TemplateBody } from "@/lib/pages/template-page";
 
 // One page per real Shopify collection. These are the merchandising groups the
 // marketing team actually maintains (clearance-sale, buy-1-get-1-free-deal,
@@ -40,11 +42,7 @@ export async function generateMetadata(props: { params: Promise<{ handle: string
   };
 }
 
-export default async function CollectionPage(props: { params: Promise<{ handle: string }> }) {
-  const params = await props.params;
-  const collection = getCollectionByHandle(params.handle);
-  if (!collection) notFound();
-
+async function CollectionPageWritten({ collection }: { collection: NonNullable<ReturnType<typeof getCollectionByHandle>> }) {
   const items = await withCustomImages(getCollectionProducts(collection));
 
   const breadcrumbItems = [
@@ -81,4 +79,25 @@ export default async function CollectionPage(props: { params: Promise<{ handle: 
       </div>
     </div>
   );
+}
+
+/**
+ * The page, from the collection template when wave 2 is on and from the
+ * markup above when it is not. The collection is found here either way —
+ * that is how this route knows not to answer 404.
+ */
+export default async function CollectionPage(props: { params: Promise<{ handle: string }> }) {
+  const params = await props.params;
+  const collection = getCollectionByHandle(params.handle);
+  if (!collection) notFound();
+
+  if (PAGES_WAVE2_ENABLED) {
+    return (
+      <TemplateBody
+        templateKey="collection"
+        entity={{ type: "collection", handle: collection.handle, name: collection.title }}
+      />
+    );
+  }
+  return <CollectionPageWritten collection={collection} />;
 }
