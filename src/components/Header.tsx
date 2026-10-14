@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { navIcon } from "@/components/icons/NavIcons";
+import { HEADER_LINKS_DEFAULT, type HeaderLinks } from "@/lib/pages/header-links";
 import Image from "next/image";
 import { shopifyImage } from "@/lib/shopify-image";
 import { useRouter } from "next/navigation";
@@ -43,45 +45,25 @@ import MegaMenu from "@/components/nav/MegaMenu";
 import MobileShopMenu from "@/components/nav/MobileShopMenu";
 import type { MenuCategory } from "@/data/nav-menu";
 
-// The bar under the search box, on a screen with room for it. Five shop
-// links on the left — the first one opens the shop panel — and two support
-// links pushed over to the right.
-const deskNav = [
-  { href: "/brands", th: "แบรนด์ทั้งหมด", en: "All brands", mega: true },
-  { href: "/shop", th: "สินค้าแนะนำ", en: "Recommended" },
-  { href: "/subscription", th: "เซ็ตสมาชิก", en: "Member sets" },
-  { href: "/knowledge", th: "บทความ", en: "Articles" },
-  { href: "/promotions", th: "โปรโมชั่น", en: "Promotions" },
-];
+// The three navigation lists arrive as a prop, read on the server by the
+// layout — the same arrangement as the shop menu below, and for the same
+// reason: this is a client component. The built-in lists are the default, so
+// a Header rendered with no links prop is the header the site has always had.
+//
+// The drawer stays a superset of the desktop bar rather than a copy: the bar
+// is what the design specifies and it drops four destinations that have
+// nowhere else to go on a phone.
 
-const deskUtilityNav = [
-  { href: "/help", th: "คำถามที่พบบ่อย", en: "FAQ" },
-  { href: "/account/referral", th: "โปรแกรม Affiliate", en: "Affiliate program" },
-];
-
-// The drawer keeps its own, longer list. The desktop bar above is what the
-// design specifies and it drops four destinations (ปัญหาผิว, ผู้ช่วย AI,
-// เกี่ยวกับเรา, ช่วยเหลือ as a section) that have nowhere else to go on a
-// phone — so the drawer is a superset rather than a copy of it.
-const navLinks = [
-  { href: "/shop", th: "ช้อปสินค้า", en: "Shop", icon: LayoutGrid },
-  { href: "/brands", th: "แบรนด์ทั้งหมด", en: "All brands", icon: Tag },
-  { href: "/promotions", th: "โปรโมชั่น", en: "Promotions", icon: Percent },
-  // Droplets rather than a heart: the heart belongs to the wishlist below,
-  // and two hearts in one list is a list that has to be read twice.
-  { href: "/concern", th: "เลือกตามปัญหาผิว", en: "Shop by Concern", icon: Droplets },
-  { href: "/subscription", th: "เซ็ตสมาชิก", en: "Member sets", icon: Repeat },
-  { href: "/ai-assistant", th: "ผู้ช่วย AI", en: "AI Assistant", icon: Sparkles },
-  { href: "/knowledge", th: "ความรู้ความงาม", en: "Beauty Knowledge", icon: BookOpen },
-  // The heart from the header, now that the header has a magnifier where it
-  // used to be. It keeps its count, which was the whole point of the badge.
-  { href: "/account/wishlist", th: "รายการโปรด", en: "Wishlist", icon: Heart },
-  { href: "/account/referral", th: "โปรแกรม Affiliate", en: "Affiliate program", icon: Users },
-  { href: "/about", th: "ทำไมต้อง Smooth Life", en: "Why Smooth Life", icon: ShieldCheck },
-  { href: "/help", th: "ช่วยเหลือ", en: "Help", icon: HelpCircle },
-];
-
-export default function Header({ ticker = [], menu = [] }: { ticker?: TickerProduct[]; menu?: MenuCategory[] }) {
+export default function Header({
+  ticker = [],
+  menu = [],
+  links = HEADER_LINKS_DEFAULT,
+}: {
+  ticker?: TickerProduct[];
+  menu?: MenuCategory[];
+  links?: HeaderLinks;
+}) {
+  const { desk: deskNav, deskUtility: deskUtilityNav, drawer: navLinks } = links;
   const [open, setOpen] = useState(false);
   const [hideHeader, setHideHeader] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -440,7 +422,9 @@ export default function Header({ ticker = [], menu = [] }: { ticker?: TickerProd
               <MobileShopMenu menu={menu} onNavigate={() => setOpen(false)} />
 
               <div className="flex flex-col gap-0.5">
-                {navLinks.map((l) => (
+                {navLinks.map((l) => {
+                  const Icon = navIcon(l.icon);
+                  return (
                   <Link
                     key={l.href}
                     href={l.href}
@@ -448,7 +432,7 @@ export default function Header({ ticker = [], menu = [] }: { ticker?: TickerProd
                     className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm font-medium text-slate-700 hover:bg-surface-soft transition-colors"
                   >
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">
-                      <l.icon size={15} />
+                      <Icon size={15} />
                     </span>
                     {t(l.th, l.en)}
                     {l.href === "/account/wishlist" && wishlistSlugs.length > 0 && (
@@ -457,7 +441,8 @@ export default function Header({ ticker = [], menu = [] }: { ticker?: TickerProd
                       </span>
                     )}
                   </Link>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

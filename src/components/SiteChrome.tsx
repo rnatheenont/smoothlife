@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import type { TickerProduct } from "@/lib/ticker-products";
 import type { MenuCategory } from "@/data/nav-menu";
 import type { FooterColumns } from "@/lib/pages/footer-links";
+import type { HeaderLinks } from "@/lib/pages/header-links";
 import type { ReactNode as AnnouncementSlot } from "react";
 import Footer from "@/components/Footer";
 
@@ -45,6 +46,7 @@ export function SiteShell({
   menu = [],
   footerColumns,
   announcement,
+  headerLinks,
 }: {
   children: ReactNode;
   ticker?: TickerProduct[];
@@ -55,6 +57,8 @@ export function SiteShell({
   announcement?: AnnouncementSlot;
   /** The footer's link columns, read on the server. Same reason as `menu`. */
   footerColumns?: FooterColumns;
+  /** The header's own navigation, read on the server. Same reason again. */
+  headerLinks?: HeaderLinks;
   /** The shop menu, built on the server. It arrives as a prop rather than as
    *  an import because building it reads the whole catalogue, and a client
    *  component that imports it drags all ~1,000 products into the browser —
@@ -78,17 +82,25 @@ export default function SiteChrome({
   menu,
   footerColumns,
   announcement,
+  headerLinks,
 }: {
   children: ReactNode;
   ticker: TickerProduct[];
   menu: MenuCategory[];
   footerColumns?: FooterColumns;
   announcement?: AnnouncementSlot;
+  headerLinks?: HeaderLinks;
 }) {
   const pathname = usePathname();
   if (BARE.some((p) => isUnder(pathname, p))) return <>{children}</>;
   return (
-    <SiteShell ticker={ticker} menu={menu} footerColumns={footerColumns} announcement={announcement}>
+    <SiteShell
+      ticker={ticker}
+      menu={menu}
+      footerColumns={footerColumns}
+      announcement={announcement}
+      headerLinks={headerLinks}
+    >
       {children}
     </SiteShell>
   );

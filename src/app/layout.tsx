@@ -16,6 +16,7 @@ import GoogleTagManager from "@/components/GoogleTagManager";
 import { footerColumns } from "@/lib/pages/footer-links-server";
 import { announcement } from "@/lib/pages/announcement-server";
 import { mobileTabs } from "@/lib/pages/mobile-tabs-server";
+import { headerLinks } from "@/lib/pages/header-links-server";
 import { announcementVisible } from "@/lib/pages/announcement";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import OldBrowserNotice from "@/components/OldBrowserNotice";
@@ -97,6 +98,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // to agree with the HTML it was sent in.
   const bar = await announcement();
   const tabs = await mobileTabs();
+  const navLinks = await headerLinks();
   const announcementNode = announcementVisible(bar, new Date()) ? <AnnouncementBar bar={bar} /> : null;
   return (
     <html lang="th" className={notoSansThai.variable}>
@@ -113,6 +115,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           menu={menuCategories}
           footerColumns={footerCols}
           announcement={announcementNode}
+          headerLinks={navLinks}
         >
             {children}
           </SiteChrome>

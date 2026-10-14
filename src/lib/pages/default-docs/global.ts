@@ -3,6 +3,7 @@ import { CONTACT_DEFAULT, CONTACT_SECTION } from "../contact.ts";
 import { FOOTER_COLUMNS_DEFAULT, FOOTER_SECTION } from "../footer-links.ts";
 import { ANNOUNCEMENT_DEFAULT, ANNOUNCEMENT_SECTION } from "../announcement.ts";
 import { MOBILE_TABS_DEFAULT, MOBILE_TABS_SECTION } from "../mobile-tabs.ts";
+import { HEADER_LINKS_DEFAULT, HEADER_SECTION } from "../header-links.ts";
 
 // The documents behind the parts of the site that are on every page.
 //
@@ -62,8 +63,22 @@ const mobileTabs = (): PageDoc => ({
   ],
 });
 
+/** The header's navigation as it is in the code today. */
+const header = (): PageDoc => ({
+  schemaVersion: SCHEMA_VERSION,
+  sections: [
+    {
+      id: `${HEADER_SECTION}-1`,
+      type: HEADER_SECTION,
+      v: 1,
+      settings: structuredClone(HEADER_LINKS_DEFAULT),
+    },
+  ],
+});
+
 export const GLOBAL_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   contact,
+  header,
   footer,
   announcement,
   mobile_tabs: mobileTabs,
