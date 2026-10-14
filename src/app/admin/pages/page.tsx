@@ -32,11 +32,24 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 /** Where a page of each kind actually lives. The list shows it so nobody has
- *  to remember that campaigns are under /sale and everything else is not. */
-function addressOf(page: { kind: string; slug: string }) {
+ *  to remember that campaigns are under /sale and everything else is not.
+ *
+ *  A system page's address is whatever its route is, so it comes from the
+ *  registry rather than from a pattern — before this read the registry, a
+ *  seeded /about row was listed as "/p/about", which is a different page
+ *  that may well exist. */
+function addressOf(page: { kind: string; slug: string }, registry: Registry) {
   if (page.kind === "home") return "/";
   if (page.kind === "campaign") return `/sale/${page.slug}`;
   if (page.kind === "brand") return `/brands/${page.slug}`;
+  if (page.kind === "system") {
+    const known = registry.system.find((p) => p.key === page.slug);
+    return known ? (known.path ?? "หน้า 404") : `/${page.slug}`;
+  }
+  if (page.kind === "global") return "ทุกหน้า";
+  if (page.kind === "template") {
+    return registry.templates.find((t) => t.key === page.slug)?.pattern ?? `ทุก${page.slug}`;
+  }
   return `/p/${page.slug}`;
 }
 
@@ -271,7 +284,7 @@ export default function AdminPagesIndex() {
                       {new Date(page.draft_updated_at).toLocaleString("th-TH")}
                     </span>
                   </span>
-                  <span className="shrink-0 text-[12px] text-slate-400">{addressOf(page)}</span>
+                  <span className="shrink-0 text-[12px] text-slate-400">{addressOf(page, registry)}</span>
                 </Link>
               </li>
             ))}
