@@ -2,6 +2,7 @@ import { SCHEMA_VERSION, type PageDoc } from "../doc.ts";
 import { CONTACT_DEFAULT, CONTACT_SECTION } from "../contact.ts";
 import { FOOTER_COLUMNS_DEFAULT, FOOTER_SECTION } from "../footer-links.ts";
 import { ANNOUNCEMENT_DEFAULT, ANNOUNCEMENT_SECTION } from "../announcement.ts";
+import { MOBILE_TABS_DEFAULT, MOBILE_TABS_SECTION } from "../mobile-tabs.ts";
 
 // The documents behind the parts of the site that are on every page.
 //
@@ -48,8 +49,22 @@ const announcement = (): PageDoc => ({
   ],
 });
 
+/** The five tabs the phone bar has today. */
+const mobileTabs = (): PageDoc => ({
+  schemaVersion: SCHEMA_VERSION,
+  sections: [
+    {
+      id: `${MOBILE_TABS_SECTION}-1`,
+      type: MOBILE_TABS_SECTION,
+      v: 1,
+      settings: { tabs: structuredClone(MOBILE_TABS_DEFAULT) },
+    },
+  ],
+});
+
 export const GLOBAL_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   contact,
   footer,
   announcement,
+  mobile_tabs: mobileTabs,
 };

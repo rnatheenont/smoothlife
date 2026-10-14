@@ -12,6 +12,7 @@ import { RecentlyViewedProvider } from "@/lib/recently-viewed-context";
 import { WidgetSettingsProvider } from "@/lib/use-widget-settings";
 import QuickChat from "@/components/QuickChat";
 import MobileTabBar from "@/components/MobileTabBar";
+import type { MobileTab } from "@/lib/pages/mobile-tabs";
 import BackToTop from "@/components/BackToTop";
 import PwaRegister from "@/components/PwaRegister";
 import InstallPrompt from "@/components/InstallPrompt";
@@ -45,7 +46,7 @@ function LazyLoginModal() {
   return wanted ? <LoginModal /> : null;
 }
 
-export function StorefrontWidgets() {
+export function StorefrontWidgets({ tabs }: { tabs?: MobileTab[] }) {
   const pathname = usePathname();
   // /chat is the same conversation at full size — the corner bubble on top of
   // it would be a second door into the room you are already standing in.
@@ -65,7 +66,7 @@ export function StorefrontWidgets() {
           kind of rude. */}
       <AutoShopifySignIn />
       <QuickChat />
-      <MobileTabBar />
+      <MobileTabBar tabs={tabs} />
       <BackToTop />
       <LazyLoginModal />
       <PwaRegister />
@@ -77,7 +78,7 @@ export function StorefrontWidgets() {
   );
 }
 
-export default function Providers({ children }: { children: ReactNode }) {
+export default function Providers({ children, tabs }: { children: ReactNode; tabs?: MobileTab[] }) {
   return (
     <LangProvider>
       <AuthProvider>
@@ -88,7 +89,7 @@ export default function Providers({ children }: { children: ReactNode }) {
                 <QuickChatProvider>
                   <LoginModalProvider>
                     {children}
-                    <StorefrontWidgets />
+                    <StorefrontWidgets tabs={tabs} />
                   </LoginModalProvider>
                 </QuickChatProvider>
               </WidgetSettingsProvider>

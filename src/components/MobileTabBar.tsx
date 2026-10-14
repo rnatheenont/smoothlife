@@ -2,20 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, ShoppingCart, User } from "lucide-react";
-import ScanFaceIcon from "@/components/icons/ScanFaceIcon";
+import { tabIcon } from "@/components/icons/TabIcons";
+import { MOBILE_TABS_DEFAULT, type MobileTab } from "@/lib/pages/mobile-tabs";
 import { useLang } from "@/lib/lang-context";
 import { useCart } from "@/lib/cart-context";
 
-const tabs = [
-  { href: "/", icon: Home, th: "หน้าแรก", en: "Home" },
-  { href: "/shop", icon: LayoutGrid, th: "ช้อป", en: "Shop" },
-  { href: "/advisor", icon: ScanFaceIcon, th: "ประเมินผิว", en: "Skin Check" },
-  { href: "/cart", icon: ShoppingCart, th: "ตะกร้า", en: "Cart" },
-  { href: "/account", icon: User, th: "บัญชี", en: "Account" },
-];
+// The tabs arrive as a prop, read on the server by the layout — the same
+// arrangement the footer's columns use, and for the same reason: this is a
+// client component, so anything it imports ships to every browser.
 
-export default function MobileTabBar() {
+export default function MobileTabBar({ tabs = MOBILE_TABS_DEFAULT }: { tabs?: MobileTab[] }) {
   const pathname = usePathname() || "/";
   const { t } = useLang();
   const { count } = useCart();
@@ -32,10 +28,14 @@ export default function MobileTabBar() {
     // way out of a page to make the page slightly taller is a bad trade on a
     // storefront, and it made the bar feel like it was fighting the scroll.
     <nav className="lg:hidden fixed bottom-0 inset-x-0 z-90 border-t border-slate-200 bg-white/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
-      <ul className="grid grid-cols-5">
+      {/* The column count is an inline style, not a Tailwind class: the
+          class would have to be built from a variable, and Tailwind only
+          generates the classes it can see written out. A grid-cols-${n} that
+          does not exist is a bar whose tabs all pile into one column. */}
+      <ul className="grid" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
         {tabs.map((tab) => {
           const on = active(tab.href);
-          const Icon = tab.icon;
+          const Icon = tabIcon(tab.icon);
           const isCart = tab.href === "/cart";
           const className = `relative flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition active:scale-90 active:opacity-60 w-full ${
             on ? "text-brand-800" : "text-slate-500"

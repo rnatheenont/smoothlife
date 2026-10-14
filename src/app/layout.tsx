@@ -15,6 +15,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import GoogleTagManager from "@/components/GoogleTagManager";
 import { footerColumns } from "@/lib/pages/footer-links-server";
 import { announcement } from "@/lib/pages/announcement-server";
+import { mobileTabs } from "@/lib/pages/mobile-tabs-server";
 import { announcementVisible } from "@/lib/pages/announcement";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import OldBrowserNotice from "@/components/OldBrowserNotice";
@@ -95,6 +96,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Decided here, where the clock is the server's: a bar with a window has
   // to agree with the HTML it was sent in.
   const bar = await announcement();
+  const tabs = await mobileTabs();
   const announcementNode = announcementVisible(bar, new Date()) ? <AnnouncementBar bar={bar} /> : null;
   return (
     <html lang="th" className={notoSansThai.variable}>
@@ -105,7 +107,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           dangerouslySetInnerHTML={{ __html: jsonLdScript(organizationJsonLd()) }}
         />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteJsonLd()) }} />
-        <Providers>
+        <Providers tabs={tabs}>
           <SiteChrome
           ticker={tickerProducts()}
           menu={menuCategories}
