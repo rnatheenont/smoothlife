@@ -91,7 +91,17 @@ export const faq: SectionDefinition<typeof schema> = {
       ],
       help: "เลือกชุดกลางแล้วแก้ที่เดียวจะเปลี่ยนทุกหน้าที่ใช้",
     },
-    { key: "items", type: "json", label: "คำถาม (เฉพาะโหมดพิมพ์เอง)", help: "แต่ละอัน: q, a" },
+    {
+      key: "items",
+      type: "list",
+      label: "คำถาม (เฉพาะโหมดพิมพ์เอง)",
+      item: "คำถาม",
+      max: 30,
+      columns: [
+        { key: "q", label: "คำถาม" },
+        { key: "a", label: "คำตอบ", type: "textarea" },
+      ],
+    },
   ],
   enabledOn: ["page", "campaign", "system", "template"],
   Component,

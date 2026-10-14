@@ -96,9 +96,16 @@ export const featureCards: SectionDefinition<typeof schema> = {
     },
     {
       key: "items",
-      type: "json",
+      type: "list",
       label: "การ์ด",
-      help: `แต่ละอัน: icon, title, body, href — ไอคอนที่เลือกได้: ${CONTENT_ICON_KEYS.join(", ")}`,
+      item: "การ์ด",
+      max: 12,
+      columns: [
+        { key: "icon", label: "ไอคอน", type: "select", options: CONTENT_ICON_KEYS.map((k) => [k, k] as [string, string]), half: true },
+        { key: "title", label: "หัวข้อ", half: true },
+        { key: "body", label: "คำอธิบาย", type: "textarea" },
+        { key: "href", label: "ลิงก์ (ไม่ใส่ก็ได้)" },
+      ],
     },
   ],
   enabledOn: ["page", "campaign", "brand", "system", "template"],

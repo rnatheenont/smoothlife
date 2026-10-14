@@ -20,9 +20,17 @@ export const mobileTabsSection: SectionDefinition<typeof mobileTabsSchema> = {
   fields: [
     {
       key: "tabs",
-      type: "json",
+      type: "list",
       label: "แท็บ",
-      help: `แต่ละแท็บ: icon, href, th, en — ไอคอนที่เลือกได้: ${TAB_ICON_KEYS.join(", ")} · ใส่น้อยกว่า 3 แท็บจะกลับไปใช้ชุดเดิม`,
+      item: "แท็บ",
+      max: 5,
+      help: "ใส่ได้ 3 ถึง 5 แท็บ · น้อยกว่า 3 จะกลับไปใช้ชุดเดิม",
+      columns: [
+        { key: "icon", label: "ไอคอน", type: "select", options: TAB_ICON_KEYS.map((k) => [k, k] as [string, string]), half: true },
+        { key: "href", label: "ลิงก์", half: true },
+        { key: "th", label: "ข้อความ (ไทย)", half: true },
+        { key: "en", label: "ข้อความ (อังกฤษ)", half: true },
+      ],
     },
   ],
   enabledOn: ["global"],

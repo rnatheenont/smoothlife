@@ -73,9 +73,15 @@ export const helpTopicsSection: SectionDefinition<typeof schema> = {
   fields: [
     {
       key: "items",
-      type: "json",
+      type: "list",
       label: "หัวข้อ",
-      help: `แต่ละอัน: icon, label, href — ไอคอนที่เลือกได้: ${CONTENT_ICON_KEYS.join(", ")}`,
+      item: "หัวข้อ",
+      max: 12,
+      columns: [
+        { key: "icon", label: "ไอคอน", type: "select", options: CONTENT_ICON_KEYS.map((k) => [k, k] as [string, string]), half: true },
+        { key: "label", label: "ข้อความ", half: true },
+        { key: "href", label: "ลิงก์" },
+      ],
     },
   ],
   enabledOn: ["page", "system"],

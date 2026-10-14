@@ -62,7 +62,17 @@ export const linkPills: SectionDefinition<typeof schema> = {
   },
   fields: [
     { key: "heading", type: "text", label: "หัวข้อกลุ่ม" },
-    { key: "items", type: "json", label: "ลิงก์", help: "แต่ละอัน: label, href" },
+    {
+      key: "items",
+      type: "list",
+      label: "ลิงก์",
+      item: "ปุ่ม",
+      max: 12,
+      columns: [
+        { key: "label", label: "ข้อความ", half: true },
+        { key: "href", label: "ลิงก์", half: true },
+      ],
+    },
   ],
   enabledOn: ["page", "campaign", "brand", "system", "template"],
   Component,

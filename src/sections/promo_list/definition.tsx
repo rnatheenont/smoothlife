@@ -109,9 +109,17 @@ export const promoList: SectionDefinition<typeof schema> = {
   fields: [
     {
       key: "items",
-      type: "json",
+      type: "list",
       label: "โปรโมชั่น",
-      help: "แต่ละอัน: slug (ใช้เป็นจุดลิงก์), badge (ป้ายที่ใช้หาสินค้า), title, subtitle, image",
+      item: "โปร",
+      max: 12,
+      columns: [
+        { key: "title", label: "หัวข้อบนแบนเนอร์", half: true },
+        { key: "badge", label: "ป้าย (ใช้หาสินค้า)", half: true },
+        { key: "subtitle", label: "คำโปรย" },
+        { key: "image", label: "แบนเนอร์", type: "image" },
+        { key: "slug", label: "จุดลิงก์ (เช่น buy-1-get-1-free-deal)" },
+      ],
     },
     { key: "perPromo", type: "number", label: "จำนวนสินค้าต่อโปร", min: 2, max: 8 },
   ],

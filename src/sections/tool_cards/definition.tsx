@@ -90,9 +90,16 @@ export const toolCards: SectionDefinition<typeof schema> = {
     { key: "heading", type: "text", label: "หัวข้อกลุ่ม" },
     {
       key: "items",
-      type: "json",
+      type: "list",
       label: "เครื่องมือ",
-      help: `แต่ละอัน: icon, title, subtitle, href — ไอคอนที่เลือกได้: ${CONTENT_ICON_KEYS.join(", ")}`,
+      item: "เครื่องมือ",
+      max: 10,
+      columns: [
+        { key: "icon", label: "ไอคอน", type: "select", options: CONTENT_ICON_KEYS.map((k) => [k, k] as [string, string]), half: true },
+        { key: "title", label: "ชื่อ", half: true },
+        { key: "subtitle", label: "คำอธิบาย", type: "textarea" },
+        { key: "href", label: "ลิงก์" },
+      ],
     },
   ],
   enabledOn: ["page", "system"],

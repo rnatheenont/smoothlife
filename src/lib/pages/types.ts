@@ -100,6 +100,37 @@ export type FieldDef =
       importFrom?: { url: string; label: string; help?: string; also?: Record<string, unknown> };
     }
   | { key: string; type: "brand_slugs"; label: string; max?: number; help?: string }
+  /**
+   * A list of rows, each row a handful of small fields.
+   *
+   * The honest alternative to `json` for the shape that is actually common:
+   * four branches, five tabs, three cards. An admin should not have to know
+   * where the commas go to add a shop, and a JSON box punishes a missing
+   * brace by dropping the whole section.
+   *
+   * `columns` declares what one row holds; the form draws a labelled input
+   * per column and the reordering, adding and deleting for free. Keep it to
+   * rows of short values — anything with its own layout earns a field type
+   * of its own, the way `banners` did.
+   */
+  | {
+      key: string;
+      type: "list";
+      label: string;
+      help?: string;
+      max?: number;
+      /** What one row is called, for the row heading and the add button. */
+      item: string;
+      columns: {
+        key: string;
+        label: string;
+        type?: "text" | "textarea" | "image" | "select";
+        options?: [string, string][];
+        placeholder?: string;
+        /** Narrow columns sit two to a line on a wide enough form. */
+        half?: boolean;
+      }[];
+    }
   /** Structured settings — a list of rows, a nested object — edited as JSON
    *  until the section earns a purpose-built form. It is here because the
    *  alternative was offering a plain text box for a list of objects, which

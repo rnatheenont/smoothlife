@@ -107,6 +107,159 @@ function asRows(value: unknown): BannerRow[] {
  * its own; the buttons work the same for a mouse, a keyboard and a thumb,
  * and there are rarely more than four of these.
  */
+
+/** One row of a `list` field, as plain objects. Anything that is not an
+ *  object is dropped rather than guessed at — a stored list that has been
+ *  hand-edited into the wrong shape should lose the broken row, not the
+ *  whole field. */
+function asListRows(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value)
+    ? value.filter((r): r is Record<string, unknown> => Boolean(r) && typeof r === "object" && !Array.isArray(r))
+    : [];
+}
+
+/**
+ * A list of rows, edited as rows.
+ *
+ * The replacement for a JSON box on the shape that is actually common — four
+ * branches, five tabs, three cards. The JSON box asked an admin to know
+ * where the commas go, and punished a missing brace by dropping the whole
+ * section from the page; this cannot be typed into an invalid state at all.
+ *
+ * Rows are added at the end and never silently reordered, because the order
+ * on screen is the order on the page.
+ */
+function ListField({
+  label,
+  help,
+  item,
+  columns,
+  max,
+  value,
+  onChange,
+}: {
+  label: string;
+  help?: string;
+  item: string;
+  columns: Extract<FieldDef, { type: "list" }>["columns"];
+  max?: number;
+  value: unknown;
+  onChange: (next: Record<string, unknown>[]) => void;
+}) {
+  const rows = asListRows(value);
+  const full = typeof max === "number" && rows.length >= max;
+
+  const setCell = (i: number, key: string, cell: unknown) =>
+    onChange(rows.map((row, j) => (j === i ? { ...row, [key]: cell } : row)));
+
+  const move = (i: number, delta: number) => {
+    const to = i + delta;
+    if (to < 0 || to >= rows.length) return;
+    const next = [...rows];
+    [next[i], next[to]] = [next[to], next[i]];
+    onChange(next);
+  };
+
+  return (
+    <div>
+      <span className={labelCls}>{label}</span>
+      {help && <p className={helpCls}>{help}</p>}
+
+      <div className="mt-2 flex flex-col gap-3">
+        {rows.map((row, i) => (
+          <div key={i} className="rounded-xl2 border border-slate-200 bg-surface-mist/60 p-3">
+            <div className="mb-2 flex items-center gap-1">
+              <span className="flex-1 text-[12px] font-semibold text-brand-ink">
+                {item} {i + 1}
+              </span>
+              <button
+                type="button"
+                onClick={() => move(i, -1)}
+                disabled={i === 0}
+                aria-label={`ย้าย${item} ${i + 1} ขึ้น`}
+                className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-brand-800 disabled:opacity-30"
+              >
+                <ArrowUp size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => move(i, 1)}
+                disabled={i === rows.length - 1}
+                aria-label={`ย้าย${item} ${i + 1} ลง`}
+                className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-white hover:text-brand-800 disabled:opacity-30"
+              >
+                <ArrowDown size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange(rows.filter((_, j) => j !== i))}
+                aria-label={`ลบ${item} ${i + 1}`}
+                className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              {columns.map((col) => {
+                const cell = row[col.key];
+                const text = typeof cell === "string" ? cell : cell == null ? "" : String(cell);
+                return (
+                  <label key={col.key} className={col.half ? "" : "col-span-2"}>
+                    <span className="block text-[12px] font-medium text-slate-600">{col.label}</span>
+                    {col.type === "select" ? (
+                      <select
+                        value={text}
+                        onChange={(e) => setCell(i, col.key, e.target.value)}
+                        className={inputCls}
+                      >
+                        <option value="">—</option>
+                        {(col.options ?? []).map(([v, l]) => (
+                          <option key={v} value={v}>
+                            {l}
+                          </option>
+                        ))}
+                      </select>
+                    ) : col.type === "image" ? (
+                      <ImagePicker value={text} onChange={(url) => setCell(i, col.key, url)} />
+                    ) : col.type === "textarea" ? (
+                      <textarea
+                        value={text}
+                        rows={3}
+                        placeholder={col.placeholder}
+                        onChange={(e) => setCell(i, col.key, e.target.value)}
+                        className={`${inputCls} h-auto py-2.5`}
+                      />
+                    ) : (
+                      <input
+                        value={text}
+                        placeholder={col.placeholder}
+                        onChange={(e) => setCell(i, col.key, e.target.value)}
+                        className={inputCls}
+                      />
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {!full && (
+        <button
+          type="button"
+          onClick={() => onChange([...rows, Object.fromEntries(columns.map((c) => [c.key, ""]))])}
+          className="mt-2 flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 text-[13px] font-semibold text-slate-500 hover:border-brand-teal hover:text-brand-800"
+        >
+          <Plus size={15} /> เพิ่ม{item}
+        </button>
+      )}
+      {full && <p className={helpCls}>ใส่ได้สูงสุด {max} รายการ</p>}
+    </div>
+  );
+}
+
 function BannerListField({
   label,
   help,
@@ -317,6 +470,21 @@ export default function SectionForm({
       {fields.map((field) => {
         const value = settings[field.key];
         const id = `f-${field.key}`;
+
+        if (field.type === "list") {
+          return (
+            <ListField
+              key={field.key}
+              label={field.label}
+              help={field.help}
+              item={field.item}
+              columns={field.columns}
+              max={field.max}
+              value={value}
+              onChange={(next) => set(field.key, next)}
+            />
+          );
+        }
 
         if (field.type === "json") {
           return (

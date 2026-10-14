@@ -25,8 +25,23 @@ const link = z.object({
 const drawerLink = link.extend({ icon: z.string().default("") });
 
 export const headerLinksSchema = z.object({
-  /** The row under the search box. The first entry opens the shop panel. */
-  desk: z.array(link.extend({ mega: z.boolean().default(false) })).max(8).default([]),
+  /** The row under the search box. The entry marked `mega` opens the shop
+   *  panel rather than navigating.
+   *
+   *  The flag is read loosely because the form that edits it is a dropdown,
+   *  and a dropdown's value is a string: "true" from the editor and `true`
+   *  from a document written before it both have to mean the same thing.
+   *  Without this the whole list fails to parse and the header silently
+   *  falls back to the built-in one — the worst kind of wrong, because the
+   *  page still looks fine. */
+  desk: z
+    .array(
+      link.extend({
+        mega: z.preprocess((v) => v === true || v === "true", z.boolean()).default(false),
+      })
+    )
+    .max(8)
+    .default([]),
   /** Pushed to the right of that row. */
   deskUtility: z.array(link).max(4).default([]),
   /** The drawer behind the hamburger. */

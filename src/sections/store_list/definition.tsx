@@ -66,7 +66,19 @@ export const storeList: SectionDefinition<typeof schema> = {
     items: [{ name: "สาขาใหม่", address: "", hours: "ทุกวัน 10:00 - 21:00", phone: "" }],
   },
   fields: [
-    { key: "items", type: "json", label: "สาขา", help: "แต่ละอัน: name, address, hours, phone" },
+    {
+      key: "items",
+      type: "list",
+      label: "สาขา",
+      item: "สาขา",
+      max: 40,
+      columns: [
+        { key: "name", label: "ชื่อสาขา" },
+        { key: "address", label: "ที่อยู่", type: "textarea" },
+        { key: "hours", label: "เวลาทำการ", half: true },
+        { key: "phone", label: "เบอร์โทรสาขา", half: true },
+      ],
+    },
   ],
   enabledOn: ["page", "system"],
   maxPerPage: 1,
