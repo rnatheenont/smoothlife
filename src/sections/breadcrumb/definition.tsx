@@ -32,7 +32,18 @@ const schema = z.object({
    * result shows where a page sits.
    */
   display: z.enum(["row", "data_only"]).default("row"),
+  /**
+   * How much room the row sits in.
+   *
+   * "compact" is the original: a thin strip above a header that pays for the
+   * page's own top padding. "page" is for a page where the breadcrumb *is*
+   * the top of the page — /collections starts with it — so it carries the
+   * page's top padding and the gap down to the title.
+   */
+  room: z.enum(["compact", "page"]).default("compact"),
 });
+
+const ROOM: Record<string, string> = { compact: "pt-4", page: "pt-6 pb-4 md:pt-8" };
 
 function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
   const trail = crumbsFor(ctx);
@@ -57,7 +68,7 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
   if (settings.display === "data_only") return script;
 
   return (
-    <nav aria-label="Breadcrumb" className="container-page pt-4">
+    <nav aria-label="Breadcrumb" className={`container-page ${ROOM[settings.room] ?? ROOM.compact}`}>
       {script}
       <ol className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-xs text-slate-500 scrollbar-none">
         {items.map((item, i) => (
@@ -84,9 +95,18 @@ export const breadcrumb: SectionDefinition<typeof schema> = {
   description: "แถวบอกตำแหน่งของหน้านี้ สร้างอัตโนมัติจากที่อยู่ — ตั้งได้แค่ว่าจะแสดงหรือส่งให้ search engine เท่านั้น",
   category: "layout",
   schema,
-  defaults: { showHome: true, display: "row" },
+  defaults: { showHome: true, display: "row", room: "compact" },
   fields: [
     { key: "showHome", type: "toggle", label: 'เริ่มด้วย "หน้าแรก"' },
+    {
+      key: "room",
+      type: "select",
+      label: "ระยะรอบแถว",
+      options: [
+        ["compact", "แถวบางเหนือหัวข้อ"],
+        ["page", "เป็นบล็อกบนสุดของหน้า"],
+      ],
+    },
     {
       key: "display",
       type: "select",

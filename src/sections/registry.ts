@@ -54,6 +54,8 @@ import { mobileTabsSection } from "./mobile_tabs/definition";
 import { headerLinksSection } from "./header_links/definition";
 import { articleGrid } from "./article_grid/definition";
 import { questionList } from "./question_list/definition";
+import { concernTiles } from "./concern_tiles/definition";
+import { collectionTiles } from "./collection_tiles/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -103,6 +105,8 @@ const ALL: AnySectionDefinition[] = [
   headerLinksSection,
   articleGrid,
   questionList,
+  concernTiles,
+  collectionTiles,
 
   // The general-purpose ones. Everything above wraps a piece of the home page
   // as it already was; these are the blocks a page built from scratch is made

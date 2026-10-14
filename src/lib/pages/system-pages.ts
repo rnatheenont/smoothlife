@@ -38,6 +38,17 @@ export type SystemPage = {
   path: string | null;
   /** What the admin list calls it. */
   title: string;
+  /**
+   * The shorter name for the breadcrumb, when the admin list's name is too
+   * long to stand in a trail.
+   *
+   * Two steps of the same trail reading "คอลเลกชันทั้งหมด" and then the same
+   * words again as the h1 is a trail that repeats the page instead of placing
+   * it. This is the one place to shorten it, so the trail stays worked out
+   * from the address — a trail typed into each page is a copy of the site's
+   * structure that nobody updates.
+   */
+  crumb?: string;
   /** How the admin list groups it. */
   group: string;
   wave: Wave;
@@ -90,11 +101,11 @@ const SYSTEM_LIST: SystemPage[] = [
   // Wave 2 — listing pages and hubs. Each of these keeps its machinery as a
   // locked section; what opens up is the copy around it.
   { key: "shop", path: "/shop", title: "ช้อปทั้งหมด", group: "รายการสินค้า", wave: 2 },
-  { key: "collections", path: "/collections", title: "คอลเลกชันทั้งหมด", group: "รายการสินค้า", wave: 2 },
+  { key: "collections", path: "/collections", title: "คอลเลกชันทั้งหมด", crumb: "คอลเลกชัน", group: "รายการสินค้า", wave: 2 },
   { key: "concern-hub", path: "/concern", title: "ปัญหาผิวทั้งหมด", group: "รายการสินค้า", wave: 2 },
   { key: "brands", path: "/brands", title: "แบรนด์ทั้งหมด", group: "รายการสินค้า", wave: 2 },
   { key: "search", path: "/search", title: "ค้นหา", group: "รายการสินค้า", wave: 2 },
-  { key: "knowledge", path: "/knowledge", title: "ความรู้", group: "ความรู้", wave: 2 },
+  { key: "knowledge", path: "/knowledge", title: "ความรู้", crumb: "ความรู้เรื่องผิวและสุขภาพ", group: "ความรู้", wave: 2 },
   { key: "knowledge-ingredients", path: "/knowledge/ingredients", title: "ส่วนผสม", group: "ความรู้", wave: 2 },
   { key: "knowledge-routines", path: "/knowledge/routines", title: "รูทีน", group: "ความรู้", wave: 2 },
   { key: "knowledge-videos", path: "/knowledge/videos", title: "วิดีโอ", group: "ความรู้", wave: 2 },

@@ -54,6 +54,8 @@ test("the pages written so far", () => {
     "about-quality",
     "about-sustainability",
     "ai-assistant",
+    "collections",
+    "concern-hub",
     "help",
     "help-delivery",
     "help-payment",

@@ -38,13 +38,44 @@ const schema = z.object({
    * `max-w-*` included. Those pages are full width today and this reproduces
    * that. Narrowing them is a change to the pages, not a fix to this file.
    */
-  layout: z.enum(["page", "document"]).default("page"),
+  layout: z.enum(["page", "document", "listing"]).default("page"),
+  /**
+   * Whether this header owns the top of the page.
+   *
+   * "page" is the top padding every content page has. "none" is for a page
+   * whose top is already paid for by something above — /collections has a
+   * breadcrumb row there, and two blocks each adding their own top padding
+   * would push the title down by the sum of both.
+   */
+  topRoom: z.enum(["page", "none"]).default("page"),
   /** A picture beside the title rather than under it — the mascot on the
    *  assistant page. Set, the header becomes a row; empty, nothing changes. */
   mascot: z.string().default(""),
   /** A mark before the eyebrow. Only drawn when there is an eyebrow to mark. */
   eyebrowIcon: z.string().default(""),
 });
+
+/**
+ * The three rhythms, as one table rather than three conditionals.
+ *
+ * "page" is ContentPage's: the header in its own 2xl column with room under
+ * it. "document" is the policy pages, where the title sits close to its
+ * summary and the summary is the quieter grey. "listing" is the hubs — the
+ * shop's indexes and the knowledge library — where the summary is one line
+ * of counted facts rather than a paragraph, so it sits closer still.
+ *
+ * Written out literally, and the reason is the same one as everywhere else in
+ * this codebase: a Tailwind class built at runtime is a class Tailwind never
+ * generated, and the result is a header with no spacing rather than the
+ * spacing that was asked for.
+ */
+const LAYOUT: Record<string, { wrap: string; h1: string; intro: string }> = {
+  page: { wrap: "mb-8 max-w-2xl", h1: "mb-3", intro: "text-slate-600" },
+  document: { wrap: "", h1: "mb-2", intro: "mb-8 text-slate-500" },
+  listing: { wrap: "", h1: "mb-1", intro: "mb-6 text-slate-500" },
+};
+
+const TOP_ROOM: Record<string, string> = { page: "pt-8 md:pt-10", none: "" };
 
 const BACKGROUND: Record<string, string> = {
   page: "",
@@ -54,7 +85,8 @@ const BACKGROUND: Record<string, string> = {
 
 function Component({ settings }: SectionProps<z.output<typeof schema>>) {
   const centered = settings.align === "center";
-  const asDocument = settings.layout === "document";
+  const rhythm = LAYOUT[settings.layout] ?? LAYOUT.page;
+  const top = TOP_ROOM[settings.topRoom] ?? TOP_ROOM.page;
   const EyebrowIcon = contentIcon(settings.eyebrowIcon);
   if (!settings.title && !settings.intro && !settings.image) return null;
 
@@ -64,7 +96,7 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
   if (settings.mascot) {
     return (
       <section className={BACKGROUND[settings.background] ?? ""}>
-        <div className="container-page max-w-3xl pt-8 md:pt-10">
+        <div className={`container-page max-w-3xl ${top}`.trimEnd()}>
           <div className="mb-8 flex items-center gap-4">
             <div className="relative h-14 w-14 shrink-0 md:h-16 md:w-16">
               <Image src={settings.mascot} alt="" fill sizes="64px" className="object-contain" priority />
@@ -91,18 +123,16 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
       {/* Top padding only. The header's own mb-8 is the gap to whatever comes
           next, and the page's bottom padding belongs to the last section —
           the two together add up to exactly what ContentPage drew. */}
-      <div className="container-page pt-8 md:pt-10">
-        <div
-          className={`${asDocument ? "" : "mb-8 max-w-2xl"} ${centered ? "mx-auto text-center" : ""}`.trim()}
-        >
+      <div className={`container-page ${top}`.trimEnd()}>
+        <div className={`${rhythm.wrap} ${centered ? "mx-auto text-center" : ""}`.trim()}>
           {settings.eyebrow && <p className="mb-2 text-xs font-bold text-brand-800">{settings.eyebrow}</p>}
           {settings.title && (
-            <h1 className={`text-2xl font-bold text-brand-ink md:text-3xl ${asDocument ? "mb-2" : "mb-3"}`}>
+            <h1 className={`text-2xl font-bold text-brand-ink md:text-3xl ${rhythm.h1}`}>
               {settings.title}
             </h1>
           )}
           {settings.intro && (
-            <p className={`text-sm ${asDocument ? "mb-8 text-slate-500" : "text-slate-600"}`}>{settings.intro}</p>
+            <p className={`text-sm ${rhythm.intro}`}>{settings.intro}</p>
           )}
         </div>
         {settings.image && (
@@ -132,6 +162,7 @@ export const pageHeader: SectionDefinition<typeof schema> = {
     align: "left",
     background: "page",
     layout: "page",
+    topRoom: "page",
     mascot: "",
     eyebrowIcon: "",
   },
@@ -149,7 +180,17 @@ export const pageHeader: SectionDefinition<typeof schema> = {
       label: "รูปแบบหน้า",
       options: [
         ["page", "หน้าทั่วไป (เนื้อหาเต็มความกว้าง)"],
-        ["document", "เอกสารยาว (คอลัมน์แคบ)"],
+        ["document", "เอกสารยาว"],
+        ["listing", "หน้ารายการ (คำโปรยชิดหัวข้อ)"],
+      ],
+    },
+    {
+      key: "topRoom",
+      type: "select",
+      label: "ระยะเหนือหัวข้อ",
+      options: [
+        ["page", "เว้นเป็นหัวของหน้า"],
+        ["none", "ไม่เว้น (มีบล็อกอยู่เหนือแล้ว)"],
       ],
     },
     {

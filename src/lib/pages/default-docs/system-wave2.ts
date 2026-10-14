@@ -23,7 +23,11 @@ import { doc } from "./build.ts";
  *  summary in the quieter grey with room under it, which is what these pages
  *  are already written as. "page" would set the summary a shade darker and in
  *  a narrower column — a visible change on the day the page moved. */
-const listingHeader = (title: string, intro: string) => ({
+const listingHeader = (
+  title: string,
+  intro: string,
+  over: { layout?: string; topRoom?: string } = {}
+) => ({
   type: "page_header",
   v: 1,
   settings: {
@@ -33,7 +37,8 @@ const listingHeader = (title: string, intro: string) => ({
     image: "",
     align: "left",
     background: "page",
-    layout: "document",
+    layout: over.layout ?? "document",
+    topRoom: over.topRoom ?? "page",
     mascot: "",
     eyebrowIcon: "",
   },
@@ -122,12 +127,11 @@ const knowledgeVideos = (): PageDoc =>
  * screen; whoever wants the row can turn it on in the editor, as a decision
  * rather than as a side effect of the move.
  *
- * One thing did change, and it is in the structured data rather than on the
- * page: the middle step is now named from the registry ("ความรู้") instead of
- * the longer label the old page typed in by hand. The trail is worked out
- * from the page's address on purpose — see the note in the breadcrumb section
- * about typed trails going stale — so this is the registry's title to edit,
- * not the document's.
+ * The middle step is named from the registry, which carries a `crumb` of
+ * "ความรู้เรื่องผิวและสุขภาพ" for /knowledge — the same words this page's
+ * hand-written BreadcrumbList used. The trail is worked out from the page's
+ * address on purpose (see the note in the breadcrumb section about typed
+ * trails going stale), so the place to change that name is the registry.
  */
 const questions = (): PageDoc =>
   doc([
@@ -141,6 +145,55 @@ const questions = (): PageDoc =>
     },
   ]);
 
+/** The concern hub: the header, then every concern as a picture. */
+const concernHub = (): PageDoc =>
+  doc([
+    listingHeader(
+      "ช้อปตามปัญหาผิวที่กังวล",
+      "เลือกดูผลิตภัณฑ์ที่ตรงกับความต้องการของผิวคุณ พร้อมคำแนะนำจากผู้เชี่ยวชาญ"
+    ),
+    {
+      type: "concern_tiles",
+      v: 1,
+      settings: {
+        showAdvisor: true,
+        advisorTitle: "ไม่แน่ใจว่าผิวคุณกังวลเรื่องอะไร?",
+        advisorCta: "ให้น้อง Smoothie ช่วยประเมิน →",
+        advisorHref: "/advisor",
+      },
+    },
+  ]);
+
+/**
+ * The collections index: the trail, the title, then the tiles.
+ *
+ * Three things about this one are unlike the pages before it, and all three
+ * come from the page as it is written today rather than from a preference.
+ *
+ * The breadcrumb is the top of the page, not a strip above a header, so it
+ * carries the page's top padding ("room": "page") and the header carries
+ * none. The header is the "listing" rhythm, where the line under the title
+ * sits 4px away instead of 8. And the line under the title is not in the
+ * header at all: it counts the collections, so it belongs to the block that
+ * has them — a header that said "72 คอลเลกชัน" would be a number frozen on
+ * the day somebody typed it.
+ *
+ * The last step reads "คอลเลกชัน", not the "คอลเลกชันทั้งหมด" the admin
+ * list calls this page: the registry entry carries a shorter `crumb` for the
+ * trail. Two steps of the same trail saying the same long words, and then
+ * the h1 saying them a third time, places nothing.
+ */
+const collectionsIndex = (): PageDoc =>
+  doc([
+    { type: "breadcrumb", v: 1, settings: { showHome: true, display: "row", room: "page" } },
+    listingHeader("คอลเลกชันทั้งหมด", "", { layout: "listing", topRoom: "none" }),
+    {
+      type: "collection_tiles",
+      v: 1,
+      settings: { countSuffix: "คอลเลกชัน อัปเดตตรงจากร้าน", emptyText: "ยังไม่มีคอลเลกชันในขณะนี้" },
+    },
+  ]);
+
 /** Merged into SYSTEM_DEFAULT_DOCS. Keyed by the registry's page key, and a
  *  page with no entry here is simply not offered in the admin yet. */
 export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
@@ -149,4 +202,6 @@ export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   "knowledge-routines": knowledgeRoutines,
   "knowledge-videos": knowledgeVideos,
   questions,
+  "concern-hub": concernHub,
+  collections: collectionsIndex,
 };
