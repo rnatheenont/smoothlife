@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CONTACT_DEFAULT } from "@/lib/pages/contact";
+import { footerColumns, type FooterColumns } from "@/lib/pages/footer-links";
 import type { ComponentType } from "react";
 import {
   Facebook,
@@ -24,39 +25,10 @@ import { TikTokMark, LineMark } from "@/components/SocialMarks";
 // reference the team picked, on the site's own pale surface rather than that
 // reference's dark band.
 
-type Col = { title: string; links: { href: string; label: string }[] };
-
-const columns: Col[] = [
-  {
-    title: "ช้อปปิ้ง",
-    links: [
-      { href: "/shop", label: "สินค้าทั้งหมด" },
-      { href: "/brands", label: "แบรนด์ทั้งหมด" },
-      { href: "/promotions", label: "โปรโมชั่น" },
-      { href: "/concern", label: "เลือกตามปัญหาผิว" },
-    ],
-  },
-  {
-    title: "ทำไมต้อง Smooth Life",
-    links: [
-      { href: "/about", label: "เกี่ยวกับเรา" },
-      { href: "/about/quality", label: "คุณภาพและมาตรฐาน" },
-      { href: "/about/experts", label: "ผู้เชี่ยวชาญและพาร์ทเนอร์" },
-      { href: "/about/sustainability", label: "ความรับผิดชอบต่อสังคม" },
-    ],
-  },
-  {
-    title: "ช่วยเหลือและบัญชี",
-    links: [
-      { href: "/help", label: "ศูนย์ช่วยเหลือ" },
-      { href: "/track", label: "ติดตามพัสดุ" },
-      { href: "/help/delivery", label: "การจัดส่งและคืนสินค้า" },
-      { href: "/help/payment", label: "การชำระเงิน" },
-      { href: "/loyalty", label: "สิทธิสมาชิก" },
-      { href: "/stores", label: "สาขาและติดต่อเรา" },
-    ],
-  },
-];
+// The link columns come from the global footer document, with the built-in
+// ones as the fallback — see src/lib/pages/footer-links.ts. They are the only
+// part of this footer an admin edits; the payment badges follow what checkout
+// accepts and the channels follow the contact record.
 
 // The real channels, from the global contact record — one copy for the whole
 // site now, instead of this file plus /stores plus /help/contact plus the
@@ -111,7 +83,7 @@ const linkClass =
 const headingClass =
   "mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500";
 
-function LinkList({ links }: { links: Col["links"] }) {
+function LinkList({ links }: { links: FooterColumns[number]["links"] }) {
   return (
     <ul className="space-y-1">
       {links.map((l) => (
@@ -187,7 +159,8 @@ function ContactBlock() {
   );
 }
 
-export default function Footer() {
+export default async function Footer() {
+  const columns = await footerColumns();
   return (
     // No top margin: the page background is white, so 64px of it showed as a
     // blank band between a tinted section and the footer. The footer has its

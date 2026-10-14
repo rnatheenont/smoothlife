@@ -1,5 +1,6 @@
 import { SCHEMA_VERSION, type PageDoc } from "../doc.ts";
 import { CONTACT_DEFAULT, CONTACT_SECTION } from "../contact.ts";
+import { FOOTER_COLUMNS_DEFAULT, FOOTER_SECTION } from "../footer-links.ts";
 
 // The documents behind the parts of the site that are on every page.
 //
@@ -16,6 +17,22 @@ const contact = (): PageDoc => ({
   sections: [{ id: `${CONTACT_SECTION}-1`, type: CONTACT_SECTION, v: 1, settings: { ...CONTACT_DEFAULT } }],
 });
 
+/** The footer's columns, as they are in the code today. Publishing it
+ *  unchanged changes nothing, which is what makes it safe to publish first
+ *  and edit afterwards. */
+const footer = (): PageDoc => ({
+  schemaVersion: SCHEMA_VERSION,
+  sections: [
+    {
+      id: `${FOOTER_SECTION}-1`,
+      type: FOOTER_SECTION,
+      v: 1,
+      settings: { columns: structuredClone(FOOTER_COLUMNS_DEFAULT) },
+    },
+  ],
+});
+
 export const GLOBAL_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   contact,
+  footer,
 };
