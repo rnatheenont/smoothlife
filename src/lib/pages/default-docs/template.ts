@@ -68,9 +68,61 @@ const collection = (): PageDoc =>
     { type: "collection_products", v: 1, settings: {} },
   ]);
 
+/**
+ * A category page: back out, the trail, the other categories, this one, the
+ * way in to an advisor, and the products.
+ *
+ * Six categories, one document. The advisor card is the editable part and the
+ * reason this template is worth having: the two entries that exist today are
+ * a map hard-coded in the route, so adding one for skincare is a deploy.
+ *
+ * The trail and the "กลับ" button share a line here — "beside" — which is
+ * what the hand-written page did, and the room above is the tighter one
+ * (12px on a phone against 40 on a desktop) for the same reason.
+ */
+const category = (): PageDoc =>
+  doc([
+    {
+      type: "breadcrumb",
+      v: 1,
+      settings: {
+        showHome: true,
+        display: "row",
+        room: "page_tight",
+        back: "beside",
+        backHref: "/shop",
+      },
+    },
+    { type: "category_chips", v: 1, settings: {} },
+    { type: "category_header", v: 1, settings: { countSuffix: "รายการ" } },
+    {
+      type: "advisor_entry",
+      v: 1,
+      settings: {
+        image: "/mascot/smoothie-hi.png",
+        items: [
+          {
+            category: "oral-care",
+            href: "/oral-care-advisor",
+            title: "ไม่รู้จะเริ่มจากตัวไหนดี?",
+            subtitle: "ตอบ 3 คำถาม ให้น้อง Smoothie จัดเซ็ตดูแลช่องปากที่ใช่สำหรับคุณ",
+          },
+          {
+            category: "wellness",
+            href: "/supplement-advisor",
+            title: "อาหารเสริมเยอะจนเลือกไม่ถูก?",
+            subtitle: "ตอบ 5 คำถาม ให้น้อง Smoothie ช่วยหาแพลนที่ตรงเป้าหมายและงบของคุณ",
+          },
+        ],
+      },
+    },
+    { type: "category_listing", v: 1, settings: { emptyText: "ไม่พบสินค้าในหมวดนี้" } },
+  ]);
+
 /** Keyed by the registry's template key. A template with no entry here is not
  *  offered in the admin yet. */
 export const TEMPLATE_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   concern,
   collection,
+  category,
 };

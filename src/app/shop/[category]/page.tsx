@@ -16,6 +16,8 @@ import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import { withCustomImages } from "@/lib/product-images";
 import { toCardData } from "@/data/card";
 import { brandNames, brandOptions } from "@/lib/brand-options";
+import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
+import { TemplateBody } from "@/lib/pages/template-page";
 
 const ADVISOR_ENTRY: Record<string, { href: string; title: string; subtitle: string }> = {
   "oral-care": {
@@ -55,17 +57,15 @@ export async function generateMetadata(props: { params: Promise<{ category: stri
   };
 }
 
-export default async function CategoryPage(
-  props: {
-    params: Promise<{ category: string }>;
-    searchParams: Promise<{ sort?: string; brand?: string; concern?: string }>;
-  }
-) {
-  const searchParams = await props.searchParams;
-  const params = await props.params;
-  const categoryInfo = categories.find((c) => c.slug === params.category);
-  if (!categoryInfo) notFound();
-
+async function CategoryPageWritten({
+  categoryInfo,
+  searchParams,
+  params,
+}: {
+  categoryInfo: (typeof categories)[number];
+  searchParams: { sort?: string; brand?: string; concern?: string };
+  params: { category: string };
+}) {
   const current = { ...searchParams, category: params.category };
   const items = await withCustomImages(filterProducts(current));
 
@@ -125,4 +125,33 @@ export default async function CategoryPage(
       </div>
     </div>
   );
+}
+
+/**
+ * The page, from the category template when wave 2 is on and from the markup
+ * above when it is not.
+ *
+ * The query string is read here and handed down either way: the sections
+ * render on the server and cannot reach for it themselves, and the filters,
+ * the sort, the count beside the name and the grid are all one reading of it.
+ */
+export default async function CategoryPage(props: {
+  params: Promise<{ category: string }>;
+  searchParams: Promise<{ sort?: string; brand?: string; concern?: string }>;
+}) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+  const categoryInfo = categories.find((c) => c.slug === params.category);
+  if (!categoryInfo) notFound();
+
+  if (PAGES_WAVE2_ENABLED) {
+    return (
+      <TemplateBody
+        templateKey="category"
+        entity={{ type: "category", slug: categoryInfo.slug, name: categoryInfo.nameTh }}
+        query={searchParams}
+      />
+    );
+  }
+  return <CategoryPageWritten categoryInfo={categoryInfo} searchParams={searchParams} params={params} />;
 }
