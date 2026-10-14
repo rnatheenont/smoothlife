@@ -1,3 +1,5 @@
+import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Sparkles } from "lucide-react";
@@ -27,7 +29,7 @@ const ADVISORS = [
   },
 ];
 
-export default function AiAssistantPage() {
+function AiAssistantPageWritten() {
   return (
     <div className="container-page py-8 md:py-10 max-w-3xl">
       <div className="flex items-center gap-4 mb-8">
@@ -60,4 +62,10 @@ export default function AiAssistantPage() {
       </div>
     </div>
   );
+}
+
+/** From the document when wave 1 is on — see the about pages. */
+export default function AiAssistantPage() {
+  if (PAGES_WAVE1_ENABLED) return <SystemPageBody pageKey="ai-assistant" />;
+  return <AiAssistantPageWritten />;
 }

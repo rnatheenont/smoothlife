@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { z } from "zod";
+import { CONTENT_ICON_KEYS, contentIcon } from "../shared/content-icons";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // The top of a content page: a line above, the page's name, a sentence under
@@ -38,6 +39,11 @@ const schema = z.object({
    * that. Narrowing them is a change to the pages, not a fix to this file.
    */
   layout: z.enum(["page", "document"]).default("page"),
+  /** A picture beside the title rather than under it — the mascot on the
+   *  assistant page. Set, the header becomes a row; empty, nothing changes. */
+  mascot: z.string().default(""),
+  /** A mark before the eyebrow. Only drawn when there is an eyebrow to mark. */
+  eyebrowIcon: z.string().default(""),
 });
 
 const BACKGROUND: Record<string, string> = {
@@ -49,7 +55,36 @@ const BACKGROUND: Record<string, string> = {
 function Component({ settings }: SectionProps<z.output<typeof schema>>) {
   const centered = settings.align === "center";
   const asDocument = settings.layout === "document";
+  const EyebrowIcon = contentIcon(settings.eyebrowIcon);
   if (!settings.title && !settings.intro && !settings.image) return null;
+
+  // With a mascot the header is a row: picture on the left, the three lines
+  // on the right. It is a different shape rather than an extra element, so
+  // it gets its own branch instead of a conditional inside the other one.
+  if (settings.mascot) {
+    return (
+      <section className={BACKGROUND[settings.background] ?? ""}>
+        <div className="container-page max-w-3xl pt-8 md:pt-10">
+          <div className="mb-8 flex items-center gap-4">
+            <div className="relative h-14 w-14 shrink-0 md:h-16 md:w-16">
+              <Image src={settings.mascot} alt="" fill sizes="64px" className="object-contain" priority />
+            </div>
+            <div>
+              {settings.eyebrow && (
+                <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-brand-800">
+                  {EyebrowIcon && <EyebrowIcon size={16} />} {settings.eyebrow}
+                </div>
+              )}
+              {settings.title && (
+                <h1 className="text-2xl font-bold text-brand-ink md:text-3xl">{settings.title}</h1>
+              )}
+              {settings.intro && <p className="mt-1 text-sm text-slate-500">{settings.intro}</p>}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={BACKGROUND[settings.background] ?? ""}>
@@ -97,12 +132,16 @@ export const pageHeader: SectionDefinition<typeof schema> = {
     align: "left",
     background: "page",
     layout: "page",
+    mascot: "",
+    eyebrowIcon: "",
   },
   fields: [
     { key: "eyebrow", type: "text", label: "คำนำหัวข้อ", help: "บรรทัดเล็กเหนือหัวข้อ" },
     { key: "title", type: "text", label: "หัวข้อหลัก (h1)", help: "ชื่อของหน้านี้ — มีได้หน้าละอันเดียว" },
     { key: "intro", type: "textarea", label: "คำโปรย" },
     { key: "image", type: "image", label: "รูปกว้างใต้หัวข้อ" },
+    { key: "mascot", type: "image", label: "รูปข้างหัวข้อ", help: "ใส่แล้วหัวหน้าจะเรียงเป็นแถว รูปอยู่ซ้าย" },
+    { key: "eyebrowIcon", type: "text", label: "ไอคอนหน้าคำนำ", help: `เลือกได้: ${CONTENT_ICON_KEYS.join(", ")}` },
     { key: "align", type: "select", label: "การจัดวาง", options: [["left", "ชิดซ้าย"], ["center", "กึ่งกลาง"]] },
     {
       key: "layout",

@@ -411,6 +411,27 @@ const stores = (): PageDoc =>
     { type: "contact_channels", v: 1, settings: { heading: "ติดต่อฝ่ายบริการลูกค้า", style: "cards" } },
   ]);
 
+
+const aiAssistant = (): PageDoc =>
+  doc([
+    {
+      type: "page_header",
+      v: 1,
+      settings: {
+        eyebrow: "ผู้ช่วย AI",
+        eyebrowIcon: "sparkles",
+        title: "เลือกแบบทดสอบที่ใช่สำหรับคุณ",
+        intro: "ให้น้อง Smoothie ช่วยแนะนำสินค้าที่ตรงกับความต้องการของคุณ",
+        image: "",
+        mascot: "/mascot/smoothie-hi.png",
+        align: "left",
+        background: "page",
+        layout: "page",
+      },
+    },
+    { type: "tool_cards", v: 1, settings: { heading: "", items: [{"icon": "", "title": "น้อง Smoothie", "subtitle": "ผู้ช่วย AI แนะนำสกินแคร์และวิเคราะห์ผิวให้คุณ", "href": "/advisor"}, {"icon": "", "title": "สแกนผิวกับน้อง Smoothie", "subtitle": "วิเคราะห์ผิวจากภาพถ่าย เพื่อความสวยงามเท่านั้น ไม่ใช่การวินิจฉัยทางการแพทย์", "href": "/skin-coach"}, {"icon": "", "title": "Oral Care Advisor", "subtitle": "ตอบ 3 คำถาม รับเซ็ตดูแลช่องปากที่ใช่สำหรับคุณ", "href": "/oral-care-advisor"}, {"icon": "", "title": "Supplement Advisor", "subtitle": "ตอบ 5 คำถาม รับแพลนอาหารเสริมที่ตรงเป้าหมายและงบของคุณ", "href": "/supplement-advisor"}] } },
+  ]);
+
 /**
  * The default document for a system page, or nothing.
  *
@@ -433,4 +454,5 @@ export const SYSTEM_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   offline,
   "not-found": notFoundPage,
   stores,
+  "ai-assistant": aiAssistant,
 };

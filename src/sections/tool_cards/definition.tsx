@@ -32,18 +32,21 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
   if (items.length === 0) return null;
 
   return (
-    <section className="container-page pb-10">
+    <section className="container-page pb-8 md:pb-10">
       {settings.heading && (
         <h2 className="mb-5 text-xl font-bold text-brand-ink md:text-2xl">{settings.heading}</h2>
       )}
-      <ul className="grid gap-4 md:grid-cols-2">
+      <ul className="grid gap-4 sm:grid-cols-2">
         {items.map((tool, i) => {
           const Icon = contentIcon(tool.icon);
           return (
             <li key={i}>
+              {/* The card the assistant page already draws — outlined, not
+                  filled, and the arrow nudges on hover. Matched rather than
+                  redesigned, for the same reason link_pills was. */}
               <Link
                 href={tool.href}
-                className="flex items-center gap-4 rounded-xl2 bg-white p-5 shadow-card transition-shadow hover:shadow-lg"
+                className="group flex items-center gap-4 rounded-xl2 border border-slate-100 p-5 shadow-card transition hover:border-brand-teal hover:shadow-cardHover"
               >
                 {Icon && (
                   <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-gradient-soft text-brand-800">
@@ -51,10 +54,15 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
                   </span>
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block font-bold text-brand-ink">{tool.title}</span>
-                  {tool.subtitle && <span className="mt-0.5 block text-sm text-slate-600">{tool.subtitle}</span>}
+                  <span className="block font-bold leading-tight text-brand-ink">{tool.title}</span>
+                  {tool.subtitle && (
+                    <span className="mt-1.5 block text-xs leading-relaxed text-slate-500">{tool.subtitle}</span>
+                  )}
                 </span>
-                <ChevronRight size={18} className="shrink-0 text-slate-300" />
+                <ChevronRight
+                  size={20}
+                  className="shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-emerald"
+                />
               </Link>
             </li>
           );
