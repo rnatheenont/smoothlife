@@ -1,3 +1,5 @@
+import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 import Image from "next/image";
 import { promotions } from "@/data/promotions";
 import { products } from "@/data/products";
@@ -10,7 +12,7 @@ export function generateMetadata() {
   return pageMetadata("promotions");
 }
 
-export default async function PromotionsPage() {
+async function PromotionsPageWritten() {
   // Resolved up front rather than inside the loop: one query for the whole
   // page instead of one per promotion.
   const sections = await Promise.all(
@@ -50,4 +52,10 @@ export default async function PromotionsPage() {
       })}
     </div>
   );
+}
+
+/** From the document when wave 1 is on — see the about pages. */
+export default function PromotionsPage() {
+  if (PAGES_WAVE1_ENABLED) return <SystemPageBody pageKey="promotions" />;
+  return <PromotionsPageWritten />;
 }

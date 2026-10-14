@@ -14,6 +14,7 @@ import {
   Recycle,
   Stethoscope,
   Users2,
+  WifiOff,
   BookOpen,
   Clock,
   Gift,
@@ -85,6 +86,7 @@ export const CONTENT_ICONS: Record<string, LucideIcon> = {
   "credit-card": CreditCard,
   banknote: Banknote,
   "message-circle": MessageCircle,
+  "wifi-off": WifiOff,
 };
 
 export const CONTENT_ICON_KEYS = Object.keys(CONTENT_ICONS);

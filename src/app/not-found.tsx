@@ -1,7 +1,9 @@
+import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 import Image from "next/image";
 import { Button } from "@/components/ui";
 
-export default function NotFound() {
+function NotFoundWritten() {
   return (
     <div className="container-page py-24 text-center">
       <span className="relative mx-auto block h-28 w-28">
@@ -14,4 +16,12 @@ export default function NotFound() {
       </Button>
     </div>
   );
+}
+
+/** From the document when wave 1 is on. The fallback is not optional here:
+ *  a not-found page that answers "not found" is a loop, and this is also the
+ *  page that gets shown when the database is the thing that is broken. */
+export default function NotFound() {
+  if (PAGES_WAVE1_ENABLED) return <SystemPageBody pageKey="not-found" fallback={<NotFoundWritten />} />;
+  return <NotFoundWritten />;
 }

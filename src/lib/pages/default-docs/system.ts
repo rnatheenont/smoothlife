@@ -313,6 +313,84 @@ const help = (): PageDoc =>
     },
   ]);
 
+
+const promotions = (): PageDoc =>
+  doc([
+    {
+      type: "page_header",
+      v: 1,
+      settings: {
+        eyebrow: "",
+        title: "New, Best Sellers and Promotions",
+        intro: "รวมโปรโมชั่นและดีลพิเศษประจำเดือนจาก Smooth Life",
+        image: "",
+        align: "left",
+        background: "page",
+        layout: "document",
+      },
+    },
+    { type: "promo_list", v: 1, settings: { perPromo: 4, items: [{"slug": "buy-1-get-1-free-deal", "badge": "BOGO", "title": "Buy 1 Get 1 Free", "subtitle": "ซื้อ 1 แถม 1 เฉพาะสินค้าคัดสรร", "image": "/promotions/buy-1-get-1-free-deal.jpg"}, {"slug": "bundel-set-smoothlife", "badge": "Bundle", "title": "Bundle Deal", "subtitle": "รวมเซ็ตคุ้มค่า ประหยัดกว่าซื้อแยก", "image": "/promotions/bundel-set-smoothlife.jpg"}, {"slug": "clearance-sale", "badge": "Sale", "title": "Clearance Sale", "subtitle": "ลดสูงสุด 70% สินค้าคัดสรรพิเศษ", "image": "/promotions/clearance-sale.jpg"}, {"slug": "special-promotion", "badge": "Promotion", "title": "Special Promotion", "subtitle": "โปรโมชั่นพิเศษประจำเดือน", "image": "/promotions/special-promotion.jpg"}] } },
+  ]);
+
+
+/** One locked section and nothing else: on this page the heading, the link
+ *  beside it and the table are one layout, so the section owns all three. */
+const loyalty = (): PageDoc =>
+  doc([
+    {
+      type: "tier_cards",
+      v: 1,
+      settings: {
+        title: "สิทธิสมาชิกแต่ละระดับ",
+        intro: "คำนวณจากยอดใช้จ่ายสะสม 12 เดือน (หรือจำนวนออเดอร์) อัปเดตอัตโนมัติทุกวัน",
+        linkLabel: "ไปที่บัญชี →",
+        linkHref: "/account",
+        rows: [{"label": "อัตราแต้มสะสม", "values": ["1 แต้ม / ฿1", "1 แต้ม / ฿1", "1 แต้ม / ฿1"]}, {"label": "แต้มจากรีวิวสินค้า", "values": ["+5 ถึง +30 แต้ม", "+5 ถึง +30 แต้ม", "+5 ถึง +30 แต้ม"]}, {"label": "คูปองแนะนำเพื่อน", "values": ["฿100 / เพื่อน 1 คน", "฿100 / เพื่อน 1 คน", "฿100 / เพื่อน 1 คน"]}, {"label": "โบนัสวันเกิด", "values": ["+100 แต้ม", "+200 แต้ม + ลด 10%", "+300 แต้ม + ลด 20%"]}, {"label": "อายุแต้มสะสม", "values": ["12 เดือน/ก้อน", "12 เดือน/ก้อน", "12 เดือน/ก้อน"]}],
+        footnote: "สิทธิ์บางอย่างต้องมีประวัติสั่งซื้อสินค้าจริงก่อนจึงจะได้รับ (เช่น โบนัสวันเกิด)",
+      },
+    },
+  ]);
+
+
+/** The page with no network. It fills the screen it is apologising for, and
+ *  everything on it works without the connection it is about. */
+const offline = (): PageDoc =>
+  doc([
+    {
+      type: "page_state",
+      v: 1,
+      settings: {
+        icon: "wifi-off",
+        image: "",
+        display: "",
+        title: "ตอนนี้ไม่ได้เชื่อมต่ออินเทอร์เน็ต",
+        body: "หน้านี้ต้องใช้เน็ตในการโหลดข้อมูลล่าสุด — ราคาและสต็อกเปลี่ยนได้ตลอด เราเลยไม่เก็บของเก่าไว้ให้ดู ลองเชื่อมต่อใหม่แล้วกดโหลดอีกครั้งได้เลยค่ะ",
+        button: "ลองใหม่อีกครั้ง",
+        href: "/",
+        fill: true,
+      },
+    },
+  ]);
+
+/** The page for an address the shop does not have. */
+const notFoundPage = (): PageDoc =>
+  doc([
+    {
+      type: "page_state",
+      v: 1,
+      settings: {
+        icon: "",
+        image: "/mascot/smoothie-say.png",
+        display: "404",
+        title: "ไม่พบหน้าที่คุณต้องการ",
+        body: "",
+        button: "กลับหน้าแรก",
+        href: "/",
+        fill: false,
+      },
+    },
+  ]);
+
 /**
  * The default document for a system page, or nothing.
  *
@@ -330,4 +408,8 @@ export const SYSTEM_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   help,
   "help-delivery": helpDelivery,
   "help-payment": helpPayment,
+  promotions,
+  loyalty,
+  offline,
+  "not-found": notFoundPage,
 };

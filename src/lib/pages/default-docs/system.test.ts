@@ -14,10 +14,15 @@ test("every default document belongs to a page in the registry", () => {
   }
 });
 
-test("each page owns exactly one h1 — the page_header", () => {
+/** The sections that draw a page's h1. Most pages use page_header; a couple
+ *  are one locked block that owns its own heading because the heading and
+ *  the block are one layout. */
+const H1_SECTIONS = new Set(["page_header", "tier_cards", "page_state"]);
+
+test("each page owns exactly one h1", () => {
   for (const [key, make] of Object.entries(SYSTEM_DEFAULT_DOCS)) {
-    const headers = make().sections.filter((s) => s.type === "page_header");
-    assert.equal(headers.length, 1, `"${key}" มี page_header ${headers.length} อัน`);
+    const headers = make().sections.filter((s) => H1_SECTIONS.has(s.type));
+    assert.equal(headers.length, 1, `"${key}" มี section ที่เป็นเจ้าของ h1 ${headers.length} อัน`);
   }
 });
 
@@ -51,7 +56,11 @@ test("the pages of wave 1 written so far", () => {
     "help",
     "help-delivery",
     "help-payment",
+    "loyalty",
+    "not-found",
+    "offline",
     "privacy",
+    "promotions",
     "terms",
   ]);
 });

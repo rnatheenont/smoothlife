@@ -1,3 +1,5 @@
+import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 import Link from "next/link";
 import { WifiOff } from "lucide-react";
 
@@ -6,7 +8,7 @@ export const metadata = { title: "ออฟไลน์ | Smoothlife.com" };
 // Where the app lands with no signal. Kept static and tiny: it is cached at
 // install time, so everything on it has to work without the network it is
 // apologising for.
-export default function OfflinePage() {
+function OfflinePageWritten() {
   return (
     <div className="container-page flex min-h-[60vh] flex-col items-center justify-center py-16 text-center">
       <span className="grid size-16 place-items-center rounded-full bg-surface-soft text-brand-800">
@@ -25,4 +27,12 @@ export default function OfflinePage() {
       </Link>
     </div>
   );
+}
+
+/** From the document when wave 1 is on — and from the markup above if the
+ *  document cannot be read, which on this page of all pages is the case
+ *  worth handling: it is the page somebody sees when nothing is reachable. */
+export default function OfflinePage() {
+  if (PAGES_WAVE1_ENABLED) return <SystemPageBody pageKey="offline" fallback={<OfflinePageWritten />} />;
+  return <OfflinePageWritten />;
 }

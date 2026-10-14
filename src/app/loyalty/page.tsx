@@ -1,3 +1,5 @@
+import { PAGES_WAVE1_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 import Link from "next/link";
 import { tierDisplayName, tierCard } from "@/lib/tier";
 import { TIER_CRITERIA } from "@/lib/loyalty-shared";
@@ -25,7 +27,7 @@ function entryLabel(min: number) {
   return min === 0 ? "สมัครวันนี้" : `฿${min.toLocaleString()}+ / 12 ด.`;
 }
 
-export default function LoyaltyPage() {
+function LoyaltyPageWritten() {
   const tiers = TIER_CRITERIA; // [Bronze, Silver, Gold] — display names via tierDisplayName
 
   return (
@@ -76,4 +78,10 @@ export default function LoyaltyPage() {
       </p>
     </div>
   );
+}
+
+/** From the document when wave 1 is on — see the about pages. */
+export default function LoyaltyPage() {
+  if (PAGES_WAVE1_ENABLED) return <SystemPageBody pageKey="loyalty" />;
+  return <LoyaltyPageWritten />;
 }
