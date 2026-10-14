@@ -207,6 +207,24 @@ const brandsIndex = (): PageDoc => doc([{ type: "brand_directory", v: 1, setting
 
 const search = (): PageDoc => doc([{ type: "search_app", v: 1, settings: { loadingText: "กำลังโหลด…" } }]);
 
+/**
+ * The shop: the banner, then everything else.
+ *
+ * Two blocks rather than three. The category row belongs inside the listing
+ * because it is sticky and a sticky element can only travel inside its own
+ * parent — see the note in the shop_listing section. Splitting it out would
+ * have made it stop pinning after 24 pixels.
+ */
+const shop = (): PageDoc =>
+  doc([
+    {
+      type: "shop_hero",
+      v: 1,
+      settings: { eyebrow: "PRODUCTS", title: "สินค้าทั้งหมด", subtitle: "ดูแลตัวเองได้ง่าย ๆ ในทุกวัน" },
+    },
+    { type: "shop_listing", v: 1, settings: {} },
+  ]);
+
 /** Merged into SYSTEM_DEFAULT_DOCS. Keyed by the registry's page key, and a
  *  page with no entry here is simply not offered in the admin yet. */
 export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
@@ -219,4 +237,5 @@ export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   collections: collectionsIndex,
   brands: brandsIndex,
   search,
+  shop,
 };
