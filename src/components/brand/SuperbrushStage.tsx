@@ -31,6 +31,8 @@ export type Colourway = {
   /** The wash behind the comb when this colourway is showing. */
   tint: string;
   image: string;
+  /** True when the photograph is masked and can sit on the arch unframed. */
+  cutout: boolean;
   price: number;
   soldOut: boolean;
 };
@@ -200,9 +202,11 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                     style={{
                       transform: `translate3d(0, ${lift * -70}px, 0) scale(${1 - lift * 0.06})`,
                     }}
-                    className={`absolute h-[68%] w-auto rounded-[2rem] bg-white/70 object-contain shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70 transition-opacity duration-500 ${
-                      on ? "opacity-100" : "opacity-0"
-                    }`}
+                    className={`absolute w-auto object-contain transition-opacity duration-500 ${
+                      c.cutout
+                        ? "h-[82%] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
+                        : "h-[68%] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
+                    } ${on ? "opacity-100" : "opacity-0"}`}
                   />
                 );
               }),

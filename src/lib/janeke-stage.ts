@@ -82,6 +82,21 @@ type Shelf = Pick<Product, "slug" | "name" | "price" | "image" | "inStock"> & {
 };
 
 /**
+ * The cut-outs exported from the shop's own Figma file, where the layer is
+ * named after the product it is a photograph of — so these three are the ones
+ * that can be attached without guessing which brush is which.
+ *
+ * The other eight cut-outs sit in the same folder, unused until somebody says
+ * which product each belongs to: a pink brush could be either of two pinks in
+ * this range, and the wrong photograph on a product is worse than a plain one.
+ */
+const CUTOUTS: Record<string, string> = {
+  "janeke-premium-gold-superbrush": "/brands/janeke/gold-black.webp",
+  "janeke-premium-silver-superbrush": "/brands/janeke/silver-black.webp",
+  "janeke-mac-tse-superbrush-maculata": "/brands/janeke/leopard-blue.webp",
+};
+
+/**
  * The photograph that can float.
  *
  * The stage puts the comb on a tinted arch with nothing behind it, so it wants
@@ -100,7 +115,8 @@ export function janekeModels(items: Shelf[]): StageModel[] {
   const out = new Map<string, StageModel>();
 
   for (const p of items) {
-    const image = floatable(p);
+    const cut = CUTOUTS[p.slug];
+    const image = cut ?? floatable(p);
     if (!image) continue;
     const spec = MODELS.find((m) => m.match(p.slug));
     if (!spec) continue;
@@ -115,6 +131,9 @@ export function janekeModels(items: Shelf[]): StageModel[] {
       swatch: colour?.swatch ?? DEFAULT_COLOUR.swatch,
       tint: colour?.tint ?? DEFAULT_COLOUR.tint,
       image,
+      // A cut-out floats; a square studio photograph gets a frame, or it reads
+      // as a white box somebody forgot to mask.
+      cutout: Boolean(cut),
       price: p.price,
       soldOut: p.inStock === false,
     };
