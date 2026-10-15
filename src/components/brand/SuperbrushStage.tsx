@@ -113,9 +113,11 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       setHeaderH(h);
       const w = window.innerWidth;
       // The dome's ratio by width, matching --dome-r below.
-      const ratio = w < 768 ? 1 : w < 1024 ? 2.2 : 3;
+      const ratio = w < 768 ? 1 : w < 1024 ? 1.6 : 1.8;
+      const domeW = w < 768 ? w : w < 1024 ? Math.min(w * 0.96, 1100) : Math.min(w * 0.92, 1360);
       // 230px covers the headline above the dome and the controls under it.
-      setPinned(w >= 768 && window.innerHeight - h >= w / ratio + 230);
+      // 150px covers the headline; the controls stand inside the dome now.
+      setPinned(w >= 768 && window.innerHeight - h >= domeW / ratio + 150);
     };
     read();
     window.addEventListener("resize", read);
@@ -169,13 +171,13 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
         // on a window too short to hold the headline, the dome and the
         // controls at once, the stage stops being sticky and simply scrolls —
         // better than a pinned block whose bottom row cannot be reached.
-        className={`[--dome-r:1] [--dome-h:calc(100vw/var(--dome-r))] md:flex md:flex-col md:justify-center md:[--dome-r:2.2] lg:[--dome-r:3] ${
+        className={`[--dome-r:1] [--dome-w:100vw] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:justify-center md:[--dome-r:1.6] md:[--dome-w:min(96vw,1100px)] lg:[--dome-r:1.8] lg:[--dome-w:min(92vw,1360px)] ${
           pinned
             ? "md:sticky md:top-[var(--stage-top)] md:h-[calc(100vh-var(--stage-top))] md:overflow-hidden"
             : ""
         }`}
       >
-        <header className="relative z-20 px-4 pt-6 text-center md:pt-0">
+        <header className="relative z-20 px-4 pb-2 pt-6 text-center md:pb-6 md:pt-14">
           <h1 className="font-serif text-[clamp(2rem,6vw,4.25rem)] italic leading-[1.05] text-brand-ink">
             {headline}
           </h1>
@@ -227,7 +229,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             style={{
               backgroundImage: `radial-gradient(120% 98% at 50% -8%, #ffffff 0%, ${current.tint} 46%, ${deepen(current.tint)} 100%)`,
             }}
-            className="absolute inset-x-0 bottom-0 mx-auto h-[var(--dome-h)] w-screen overflow-hidden rounded-t-full transition-colors duration-700"
+            className="absolute inset-x-0 bottom-0 mx-auto h-[var(--dome-h)] w-[var(--dome-w)] overflow-hidden rounded-t-full transition-colors duration-700"
           >
             {/* Flat, the way it is drawn: the dome is one colour and the cloud
                 bank is what takes it to white at the foot. A gradient to
@@ -236,7 +238,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             <span className="janeke-clouds inset-x-[-14%] bottom-[-4%] h-[88%]" />
             <span className="absolute inset-x-0 bottom-0 h-[18%] bg-linear-to-t from-white to-transparent" />
           </div>
-          <div className="relative flex h-[var(--dome-h)] w-full items-center justify-center">
+          <div className="relative mx-auto flex h-[var(--dome-h)] w-[var(--dome-w)] items-center justify-center">
             {/* The model's name at the crown of the dome, in the shop's serif.
                 It replaces the huge translucent wordmark that used to sit
                 behind the comb: the comb covered most of it, and the design
