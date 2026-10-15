@@ -214,8 +214,11 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                     }}
                     className={`absolute w-auto object-contain transition-opacity duration-500 ${
                       c.cutout
-                        ? "h-[82%] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
-                        : "h-[68%] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
+                        ? // About 60% of the stage, as drawn: the dome is most
+                          // of what you see and the comb sits in it, rather
+                          // than filling it.
+                          "h-[62%] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
+                        : "h-[54%] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
                     } ${on ? "opacity-100" : "opacity-0"}`}
                   />
                 );
