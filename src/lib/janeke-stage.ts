@@ -93,7 +93,11 @@ type Shelf = Pick<Product, "slug" | "name" | "price" | "image" | "inStock"> & {
 const CUTOUTS: Record<string, string> = {
   "janeke-premium-gold-superbrush": "/brands/janeke/gold-brown.webp",
   "janeke-premium-silver-superbrush": "/brands/janeke/silver-grey.webp",
+  // Both Maculatas, from one photograph: the two files the shop sent for them
+  // differ by 4.6/255 per pixel — they are the same leopard comb shot twice,
+  // so the slide for either is right.
   "janeke-mac-tse-superbrush-maculata": "/brands/janeke/leopard-lightblue.webp",
+  "janeke-mac-fux-superbrush-maculata": "/brands/janeke/leopard-lightblue.webp",
   // Colour names that belong to exactly one product in the range, so the
   // photograph can only be of that one: no other comb here is navy with a
   // light blue pad, or yellow with an orange one.
