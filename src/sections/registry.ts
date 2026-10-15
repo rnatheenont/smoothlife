@@ -81,6 +81,11 @@ import { accountReferral } from "./account_referral/definition";
 import { accountPoints } from "./account_points/definition";
 import { inkLinkCard } from "./ink_link_card/definition";
 import { advisorQuiz } from "./advisor_quiz/definition";
+import { subscriptionHero } from "./subscription_hero/definition";
+import { subscriptionTerms } from "./subscription_terms/definition";
+import { subscriptionSetsSection } from "./subscription_sets/definition";
+import { subscriptionPickerSection } from "./subscription_picker/definition";
+import { subscriptionBuild } from "./subscription_build/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -157,6 +162,11 @@ const ALL: AnySectionDefinition[] = [
   accountPoints,
   inkLinkCard,
   advisorQuiz,
+  subscriptionHero,
+  subscriptionTerms,
+  subscriptionSetsSection,
+  subscriptionPickerSection,
+  subscriptionBuild,
 
   // The general-purpose ones. Everything above wraps a piece of the home page
   // as it already was; these are the blocks a page built from scratch is made

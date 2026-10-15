@@ -13,6 +13,8 @@ import { getSellableSets } from "@/lib/subscription-sets";
 import SubscriptionPicker from "@/components/SubscriptionPicker";
 import SubscriptionTermsInfo from "@/components/SubscriptionTermsInfo";
 import { pageMetadata } from "@/lib/site-pages";
+import { PAGES_WAVE4_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 
 export function generateMetadata() {
   return pageMetadata("subscription");
@@ -28,12 +30,7 @@ const perks = [
   { icon: ShieldCheck, label: "ของแท้ 100% มีอย." },
 ];
 
-export default async function SubscriptionPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ plan?: string }>;
-}) {
-  const { plan: planParam } = await searchParams;
+async function SubscriptionPageWritten({ planParam }: { planParam?: string }) {
   const defaultMonths = Number(planParam) || undefined;
   const maxDiscount = Math.max(...subscriptionPlans.map((p) => p.discountPct));
   const billingEnabled = subscriptionBillingConfigured();
@@ -189,4 +186,22 @@ export default async function SubscriptionPage({
       )}
     </div>
   );
+}
+
+/**
+ * The page, from its document when wave 4 is on and from the markup above
+ * when it is not.
+ *
+ * ?plan=6 preselects a delivery cycle — the subscription emails link to it —
+ * so the query string is read here and handed down either way: the sections
+ * render on the server and cannot reach for it themselves.
+ */
+export default async function SubscriptionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
+  const { plan: planParam } = await searchParams;
+  if (PAGES_WAVE4_ENABLED) return <SystemPageBody pageKey="subscription" query={{ plan: planParam }} />;
+  return <SubscriptionPageWritten planParam={planParam} />;
 }
