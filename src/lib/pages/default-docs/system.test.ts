@@ -26,6 +26,8 @@ const H1_SECTIONS = new Set([
   // the state the thing is in.
   "brand_directory",
   "search_app",
+  // The cart draws its own "ตะกร้าสินค้า" heading as the page's h1.
+  "cart_app",
   // /shop's banner draws the h1 and changes it with the category being
   // browsed, so the words cannot live in a header block above it.
   "shop_hero",
@@ -67,6 +69,7 @@ test("the pages written so far", () => {
     "about-sustainability",
     "ai-assistant",
     "brands",
+    "cart",
     "collections",
     "concern-hub",
     "help",
