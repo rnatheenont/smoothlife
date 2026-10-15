@@ -22,6 +22,8 @@ import { canonicalSlugFor } from "@/lib/product-canonical";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import { getPublishedProductContent } from "@/lib/product-content";
 import { toCardData } from "@/data/card";
+import { PAGES_WAVE3_ENABLED } from "@/lib/feature-flags";
+import { TemplateBody } from "@/lib/pages/template-page";
 import {
   customVideosFor,
   withCustomImages,
@@ -125,13 +127,7 @@ async function getSubscribable(slug: string): Promise<boolean> {
   }
 }
 
-export default async function ProductPage(props: {
-  params: Promise<{ slug: string }>;
-}) {
-  const params = await props.params;
-  const found = getProductBySlug(params.slug);
-  if (!found) notFound();
-
+async function ProductPageWritten({ found }: { found: NonNullable<ReturnType<typeof getProductBySlug>> }) {
   // Our own photographs, if this product has any switched on — one query for
   // the product and the four related cards below it. Everything downstream
   // reads product.image as it always has.
@@ -213,4 +209,45 @@ export default async function ProductPage(props: {
       <RecentlyViewedSection excludeSlug={product.slug} />
     </div>
   );
+}
+
+/**
+ * The page, from the product template when wave 3 is on and from the markup
+ * above when it is not.
+ *
+ * The wrapper's padding is here rather than in the first and last sections,
+ * which is unlike the other templates and is explained where the document is
+ * written: the last two blocks on this page are allowed to be empty, and the
+ * bottom of the page must not go with them.
+ *
+ * The product is found here either way — that is how this route knows not to
+ * answer 404 — and its category rides along as the trail's middle step,
+ * because which category a product is in is a fact about the product.
+ */
+export default async function ProductPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
+  const found = getProductBySlug(params.slug);
+  if (!found) notFound();
+
+  if (PAGES_WAVE3_ENABLED) {
+    const categoryInfo = categories.find((c) => c.slug === found.category);
+    return (
+      // Vertical padding only — each section draws its own `container-page`,
+      // and nesting one inside another would double the page gutter.
+      <div className="pt-3 pb-8 md:py-10">
+        <TemplateBody
+          templateKey="product"
+          entity={{
+            type: "product",
+            slug: found.slug,
+            name: found.name,
+            under: categoryInfo
+              ? [{ label: categoryInfo.nameTh, href: `/shop/${categoryInfo.slug}` }]
+              : [],
+          }}
+        />
+      </div>
+    );
+  }
+  return <ProductPageWritten found={found} />;
 }

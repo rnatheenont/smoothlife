@@ -41,20 +41,16 @@ const byPath = new Map(SYSTEM_PAGE_LIST.filter((p) => p.path).map((p) => [p.path
  * there is nothing in between. An item with no name gives the hub alone,
  * because a trail ending in a blank is worse than one step shorter.
  */
-export function crumbsFor(ctx: Pick<RenderCtx, "kind" | "slug" | "entity">): Crumb[] {
-  if (ctx.kind === "template" && ctx.entity) {
-    const parent = SYSTEM_PAGES[PARENT_OF[ctx.entity.type]];
-    const hub: Crumb[] = parent?.path ? [{ label: parent.crumb ?? parent.title, href: parent.path }] : [];
-    // The item itself, last and not a link — you are looking at it. Its name
-    // rides in on the EntityRef rather than being looked up here, so this
-    // stays a pure function of what it was handed.
-    return ctx.entity.name ? [...hub, { label: ctx.entity.name }] : hub;
-  }
-
-  const page = ctx.kind === "system" ? SYSTEM_PAGES[ctx.slug] : undefined;
-  if (!page?.path) return [];
-
-  const segments = page.path.split("/").filter(Boolean);
+/**
+ * The steps of one system path, named by whichever registry entry serves each.
+ *
+ * A segment no page serves is skipped rather than guessed at — an unlabelled
+ * step is worse than one fewer step. `linkLast` is false when the path is the
+ * page being looked at, because the last step of your own trail is not
+ * somewhere to go.
+ */
+function walk(path: string, linkLast: boolean): Crumb[] {
+  const segments = path.split("/").filter(Boolean);
   const crumbs: Crumb[] = [];
   let walked = "";
   for (const segment of segments) {
@@ -62,7 +58,32 @@ export function crumbsFor(ctx: Pick<RenderCtx, "kind" | "slug" | "entity">): Cru
     const at = byPath.get(walked);
     if (!at) continue;
     const label = at.crumb ?? at.title;
-    crumbs.push(walked === page.path ? { label } : { label, href: walked });
+    crumbs.push(!linkLast && walked === path ? { label } : { label, href: walked });
   }
   return crumbs;
+}
+
+/**
+ * The steps above this page, and this page.
+ *
+ * For a system page the trail is its own address: /help/delivery walks /help
+ * first, and each step is named by whichever registry entry serves it.
+ *
+ * For a template it is the hub the item belongs under — walked the same way,
+ * so a hub that is itself nested contributes both its steps (/knowledge then
+ * /knowledge/questions) — then whatever the route says the item sits under,
+ * then the item. An item with no name gives the steps above it alone, because
+ * a trail ending in a blank is worse than one step shorter.
+ */
+export function crumbsFor(ctx: Pick<RenderCtx, "kind" | "slug" | "entity">): Crumb[] {
+  if (ctx.kind === "template" && ctx.entity) {
+    const parent = SYSTEM_PAGES[PARENT_OF[ctx.entity.type]];
+    const above = parent?.path ? walk(parent.path, true) : [];
+    const under = ctx.entity.under ?? [];
+    return ctx.entity.name ? [...above, ...under, { label: ctx.entity.name }] : [...above, ...under];
+  }
+
+  const page = ctx.kind === "system" ? SYSTEM_PAGES[ctx.slug] : undefined;
+  if (!page?.path) return [];
+  return walk(page.path, false);
 }

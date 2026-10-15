@@ -35,13 +35,27 @@ export type EntityType = "product" | "category" | "collection" | "concern" | "ar
  * breadcrumb needs it: a trail that stops at the hub puts the page in a
  * section without ever saying which page it is.
  */
+type EntityBase = {
+  name: string;
+  /**
+   * Steps between the hub and this item, when the item sits under something
+   * the registry cannot know about.
+   *
+   * A product's trail is หน้าแรก > ช้อป > its category > the product, and
+   * which category that is, is a fact about the product. The route has the
+   * item in hand already — that is how it knew not to answer 404 — so it
+   * says; nothing here guesses.
+   */
+  under?: { label: string; href: string }[];
+};
+
 export type EntityRef =
-  | { type: "product"; slug: string; name: string }
-  | { type: "category"; slug: string; name: string }
-  | { type: "collection"; handle: string; name: string }
-  | { type: "concern"; slug: string; name: string }
-  | { type: "article"; handle: string; name: string }
-  | { type: "question"; slug: string; name: string };
+  | ({ type: "product"; slug: string } & EntityBase)
+  | ({ type: "category"; slug: string } & EntityBase)
+  | ({ type: "collection"; handle: string } & EntityBase)
+  | ({ type: "concern"; slug: string } & EntityBase)
+  | ({ type: "article"; handle: string } & EntityBase)
+  | ({ type: "question"; slug: string } & EntityBase);
 
 /** Context handed to every section at render time. */
 export type RenderCtx = {

@@ -41,7 +41,7 @@ const schema = z.object({
    * the top of the page — /collections starts with it — so it carries the
    * page's top padding and the gap down to the title.
    */
-  room: z.enum(["compact", "page", "page_tight"]).default("compact"),
+  room: z.enum(["compact", "page", "page_tight", "none"]).default("compact"),
   /**
    * A "back" button with the trail.
    *
@@ -56,8 +56,15 @@ const schema = z.object({
    * "beside" puts the two on one line (the category pages).
    */
   back: z.enum(["none", "above", "beside"]).default("none"),
-  /** Where "back" goes when there is no history to go back to — a visit that
-   *  started on this page, from a shared link. */
+  /**
+   * Where "back" goes when there is no history to go back to — a visit that
+   * started on this page, from a shared link.
+   *
+   * Empty means "one step up the trail", which is the right answer often
+   * enough to be the default: a product's is its category, a collection
+   * page's is the collection index. Fill it in only to send people somewhere
+   * the trail does not go.
+   */
   backHref: z.string().default(""),
 });
 
@@ -65,6 +72,10 @@ const ROOM: Record<string, string> = {
   compact: "pt-4",
   page: "pt-6 pb-4 md:pt-8",
   page_tight: "pt-3 md:pt-10",
+  // For a page whose own top and bottom padding is on the wrapper the route
+  // draws, rather than on the first and last sections — see the note in the
+  // product template about why that page is built that way.
+  none: "",
 };
 
 function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
@@ -113,18 +124,22 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
   // element on the day the option arrives.
   if (settings.back === "none") {
     return (
-      <nav aria-label="Breadcrumb" className={`container-page ${room}`}>
+      <nav aria-label="Breadcrumb" className={`container-page ${room}`.trimEnd()}>
         {script}
         {list}
       </nav>
     );
   }
 
-  const back = <BackButton fallbackHref={settings.backHref || "/"} />;
+  // One step up the trail: the last step that is a link, which is the step
+  // before this page. Written as a fallback for the setting rather than
+  // instead of it, so a page that wants somewhere else still gets it.
+  const upOneStep = [...items].reverse().find((i) => i.href)?.href;
+  const back = <BackButton fallbackHref={settings.backHref || upOneStep || "/"} />;
 
   if (settings.back === "beside") {
     return (
-      <div className={`container-page ${room}`}>
+      <div className={`container-page ${room}`.trimEnd()}>
         {script}
         <div className="mb-4 flex items-center gap-3">
           {back}
@@ -137,7 +152,7 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
   }
 
   return (
-    <div className={`container-page ${room}`}>
+    <div className={`container-page ${room}`.trimEnd()}>
       {script}
       {back}
       <nav aria-label="Breadcrumb" className="min-w-0 overflow-x-auto scrollbar-none">
@@ -165,6 +180,7 @@ export const breadcrumb: SectionDefinition<typeof schema> = {
         ["compact", "แถวบางเหนือหัวข้อ"],
         ["page", "เป็นบล็อกบนสุดของหน้า"],
         ["page_tight", "บนสุดของหน้า แบบชิด"],
+        ["none", "ไม่เว้นเลย (หน้าเว้นระยะเอง)"],
       ],
     },
     {
