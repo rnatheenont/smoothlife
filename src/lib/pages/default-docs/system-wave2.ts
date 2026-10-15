@@ -225,6 +225,16 @@ const shop = (): PageDoc =>
     { type: "shop_listing", v: 1, settings: {} },
   ]);
 
+/**
+ * The cart: one locked block, and room around it.
+ *
+ * Wave 4 rather than wave 2, and it lives in this file because the file is
+ * where the documents that are "one locked app" already are — /brands and
+ * /search are the same shape. The wave comes from the registry, not from
+ * which file the document is written in.
+ */
+const cart = (): PageDoc => doc([{ type: "cart_app", v: 1, settings: {} }]);
+
 /** Merged into SYSTEM_DEFAULT_DOCS. Keyed by the registry's page key, and a
  *  page with no entry here is simply not offered in the admin yet. */
 export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
@@ -238,4 +248,5 @@ export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   brands: brandsIndex,
   search,
   shop,
+  cart,
 };
