@@ -425,49 +425,44 @@
 }
 
 /* The cloud bank inside the Janeke arch (SuperbrushStage).
-   Two layers that drift at different speeds, which is what makes a sky look
-   alive: the near bank crosses in 70 seconds, the far one in 160, so the gap
-   between them keeps changing and the eye never finds the repeat.
-   The movement is background-position across a repeating tile, never a
-   there-and-back transform — clouds do not sway, and a reversing animation is
-   the thing that gives a CSS sky away. */
+   The shop's own cloud artwork, mirrored once at build time so the tile joins
+   itself exactly — their image's two edges differ by about 39/255, which would
+   otherwise show a seam every time it repeated.
+   Two layers at different speeds is what makes a sky look alive: the near bank
+   crosses in 70 seconds, the far one in 170, so the gap between them keeps
+   changing and the eye never finds the repeat. The movement runs one way only
+   — clouds do not sway, and a there-and-back animation is the thing that gives
+   a fake sky away. */
 .janeke-clouds,
 .janeke-clouds-far {
   position: absolute;
+  background-image: url("/brands/janeke/clouds.webp");
   background-repeat: repeat-x;
+  background-position-y: bottom;
   will-change: background-position;
 }
 
 .janeke-clouds {
-  background-image:
-    radial-gradient(50% 42% at 14% 76%, #fff 0%, #fff 36%, rgba(255, 255, 255, 0) 72%),
-    radial-gradient(40% 32% at 38% 88%, #fff 0%, #fff 32%, rgba(255, 255, 255, 0) 70%),
-    radial-gradient(46% 34% at 66% 78%, #fff 0%, #fff 30%, rgba(255, 255, 255, 0) 70%),
-    radial-gradient(34% 26% at 88% 90%, #fff 0%, #fff 28%, rgba(255, 255, 255, 0) 72%);
-  background-size: 1100px 100%;
-  filter: blur(9px);
+  background-size: 1300px auto;
   animation: janeke-drift-near 70s linear infinite;
 }
 
+/* Further off: bigger, fainter, slower — the parallax that reads as depth. */
 .janeke-clouds-far {
-  background-image:
-    radial-gradient(42% 30% at 24% 62%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 72%),
-    radial-gradient(36% 24% at 58% 54%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 74%),
-    radial-gradient(30% 22% at 86% 66%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 74%);
-  background-size: 1450px 100%;
-  filter: blur(14px);
-  animation: janeke-drift-far 160s linear infinite;
+  background-size: 2100px auto;
+  opacity: 0.55;
+  animation: janeke-drift-far 170s linear infinite;
 }
 
-/* One tile exactly, so the loop has no seam. */
+/* Exactly one tile, so the loop has no jump. */
 @keyframes janeke-drift-near {
   from { background-position-x: 0; }
-  to { background-position-x: -1100px; }
+  to { background-position-x: -1300px; }
 }
 
 @keyframes janeke-drift-far {
   from { background-position-x: 0; }
-  to { background-position-x: -1450px; }
+  to { background-position-x: -2100px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
