@@ -188,7 +188,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
           <div
             aria-hidden
             style={{ backgroundColor: current.tint }}
-            className="absolute inset-x-0 bottom-0 mx-auto h-[62vh] w-screen overflow-hidden rounded-t-full transition-colors duration-700 md:h-[76vh]"
+            className="absolute inset-x-0 bottom-0 mx-auto h-[52vh] w-screen overflow-hidden rounded-t-full transition-colors duration-700 md:h-[62vh]"
           >
             {/* Flat, the way it is drawn: the dome is one colour and the cloud
                 bank is what takes it to white at the foot. A gradient to
