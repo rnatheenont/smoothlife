@@ -103,6 +103,14 @@ const CUTOUTS: Record<string, string> = {
   "new-janeke-superbrush-lillac": "/brands/janeke/lilac-white.webp",
   "new-janeke-superbrush-orange": "/brands/janeke/red-orange.webp",
   "new-janeke-superbrush-light-blue": "/brands/janeke/lightblue-solid.webp",
+  // Matched by comparing the dominant colours of each cut-out against the
+  // product's own catalogue photograph, not by reading the colour's name:
+  // this range calls a teal comb with a pink pad "Blue".
+  "new-janeke-small-superbrush-blue": "/brands/janeke/teal-pink.webp",
+  "new-janeke-small-superbrush-blue-pastel": "/brands/janeke/mint-white.webp",
+  "new-janeke-small-superbrush-green": "/brands/janeke/green-fuchsia.webp",
+  "new-janeke-small-superbrush-pink-pastel": "/brands/janeke/palepink-magenta-a.webp",
+  "new-janeke-superbrush-pink": "/brands/janeke/fuchsia-blue.webp",
 };
 
 /**

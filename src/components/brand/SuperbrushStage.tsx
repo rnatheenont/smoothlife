@@ -175,7 +175,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             }}
             className="absolute inset-x-0 bottom-0 mx-auto h-[62vh] w-[min(96vw,1180px)] overflow-hidden rounded-t-full transition-[background-image] duration-700 md:h-[70vh]"
           >
-            <span className="janeke-clouds absolute inset-x-[-12%] bottom-0 h-[62%]" />
+            <span className="janeke-clouds absolute inset-x-[-14%] bottom-[-4%] h-[78%]" />
           </div>
           {/* The model's name, behind everything, drifting as the page moves. */}
           <p
