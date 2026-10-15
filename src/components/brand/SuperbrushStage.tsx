@@ -188,7 +188,10 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       setDomeSm(null);
       // The dome's ratio by width, matching --dome-r below. Above md the
       // controls stand inside the dome, so only the headline is paid for.
-      const ratio = w < 1024 ? 1.6 : 1.8;
+      // 1.3 on a tablet rather than 1.6: held upright the screen runs out of
+      // width long before it runs out of height, and the flatter arc left a
+      // band of white above and below. A taller arc spends that height.
+      const ratio = w < 1024 ? 1.3 : 1.8;
       const byWidth = w < 1024 ? Math.min(w * 0.96, 1100) : w * 0.92;
       const byHeight = (avail - (head.current?.offsetHeight ?? HEADLINE)) * ratio;
       const domeW = Math.min(byWidth, byHeight * DOME_FILL);
@@ -259,7 +262,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
         // on a window too short to hold the headline, the dome and the
         // controls at once, the stage stops being sticky and simply scrolls —
         // better than a pinned block whose bottom row cannot be reached.
-        className={`[--dome-r:1] [--dome-w:var(--dome-w-sm,100vw)] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:[--dome-r:1.6] md:[--dome-w:min(96vw,1100px,var(--dome-max,1100px))] lg:[--dome-r:1.8] lg:[--dome-w:min(92vw,var(--dome-max,1360px))] ${
+        className={`[--dome-r:1] [--dome-w:var(--dome-w-sm,100vw)] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:[--dome-r:1.3] md:[--dome-w:min(96vw,1100px,var(--dome-max,1100px))] lg:[--dome-r:1.8] lg:[--dome-w:min(92vw,var(--dome-max,1360px))] ${
           pinned
             ? `sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-center pb-14 md:pb-0 ${top ? "md:justify-start" : "md:justify-center"}`
             : ""
