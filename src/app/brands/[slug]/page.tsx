@@ -9,7 +9,7 @@ import { brandFacts, brandSeoDefaults } from "@/lib/brand-seo";
 import { brandJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
 import ProductCard from "@/components/ProductCard";
-import MoreProducts from "@/components/brand/MoreProducts";
+import { shelfItemClass } from "@/lib/brand-page";
 import StarRating from "@/components/StarRating";
 import { withCustomImages } from "@/lib/product-images";
 import { PAGES_BRAND_ENABLED } from "@/lib/feature-flags";
@@ -37,8 +37,7 @@ const PER_GROUP = 8;
  *  row with empty columns beside it. */
 const PER_GROUP_XL = 10;
 
-/** Drawn into the page: one row on a desktop, two on a phone. The rest of
- *  the shelf arrives when somebody asks for it — see MoreProducts.
+/** One row, for the shelves that only show one.
  *
  *  The grid is four across from md and five from xl, so one count cannot
  *  fill the row at both widths. The page draws five and hides the fifth
@@ -339,20 +338,18 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
               </Link>
             )}
           </div>
+          {/* Both rows at once. They used to arrive behind a button, which
+              kept the HTML small but put a click between a shopper and the
+              rest of the shelf. shelfItemClass is the same per-width cut the
+              sections system uses: eight cards below xl, ten at xl, so both
+              rows are whole rows at every width. */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5">
-            {group.items.slice(0, FIRST_ROW_XL).map((p, i) => (
-              <div key={p.slug} className={firstRowClass(i)}>
+            {group.items.slice(0, PER_GROUP_XL).map((p, i) => (
+              <div key={p.slug} className={shelfItemClass(i, 2)}>
                 <ProductCard product={toCardData(p)} />
               </div>
             ))}
           </div>
-          <MoreProducts
-            slugs={group.items.slice(FIRST_ROW, PER_GROUP_XL).map((p) => p.slug)}
-            label={`ดู${group.label}เพิ่ม`}
-            // This shelf carries on from the row above, which draws four
-            // cards below xl and five at xl.
-            continuesRow
-          />
         </section>
       ))}
 
