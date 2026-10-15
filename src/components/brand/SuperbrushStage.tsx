@@ -162,14 +162,21 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
           onPointerCancel={() => (drag.current = null)}
           className="relative mt-4 touch-pan-y select-none outline-hidden md:mt-0 md:flex-1"
         >
-          {/* The arch, tinted by the colourway. */}
+          {/* The arch, tinted by the colourway, with the cloud bank sitting
+              inside it.
+              The clouds are drawn rather than photographed: a photograph of a
+              sky is one colour, and this arch is nine — white gradients sit on
+              any of them, cost nothing to download, and do not have to be
+              re-shot when a colour is added. */}
           <div
             aria-hidden
             style={{
               backgroundImage: `linear-gradient(to bottom, ${current.tint} 0%, ${current.tint} 38%, ${current.tint}00 92%)`,
             }}
-            className="absolute inset-x-0 bottom-0 mx-auto h-[62vh] w-[min(96vw,1180px)] rounded-t-full transition-[background-image] duration-700 md:h-[70vh]"
-          />
+            className="absolute inset-x-0 bottom-0 mx-auto h-[62vh] w-[min(96vw,1180px)] overflow-hidden rounded-t-full transition-[background-image] duration-700 md:h-[70vh]"
+          >
+            <span className="janeke-clouds absolute inset-x-[-12%] bottom-0 h-[62%]" />
+          </div>
           {/* The model's name, behind everything, drifting as the page moves. */}
           <p
             aria-hidden

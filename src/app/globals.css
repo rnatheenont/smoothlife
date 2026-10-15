@@ -423,3 +423,25 @@
   background-color: color-mix(in oklab, white 70%, transparent);
   border-color: color-mix(in oklab, white 50%, transparent);
 }
+
+/* The cloud bank inside the Janeke arch (SuperbrushStage).
+   Four soft white gradients rather than a photograph of a sky: the arch takes
+   the colour of whichever comb is showing, and white reads as cloud on all of
+   them. The drift is slow enough to notice only if you stay. */
+.janeke-clouds {
+  background-image:
+    radial-gradient(58% 46% at 18% 78%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(44% 34% at 58% 88%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 72%),
+    radial-gradient(64% 40% at 86% 74%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 74%),
+    radial-gradient(38% 28% at 40% 64%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 70%);
+  animation: janeke-drift 48s ease-in-out infinite alternate;
+}
+
+@keyframes janeke-drift {
+  from { transform: translate3d(-2.5%, 0, 0); }
+  to { transform: translate3d(2.5%, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .janeke-clouds { animation: none; }
+}
