@@ -11,6 +11,7 @@ import { subscriptionBillingConfigured } from "@/lib/2c2p";
 import type { ReviewRow } from "@/app/api/reviews/route";
 import type { QuestionRow } from "@/app/api/product-questions/route";
 import ProductDetailInteractive from "@/components/ProductDetailInteractive";
+import { brandHrefFor } from "@/data/brands";
 import ProductCard from "@/components/ProductCard";
 import SectionHeading from "@/components/SectionHeading";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -190,6 +191,7 @@ async function ProductPageWritten({ found }: { found: NonNullable<ReturnType<typ
         subscribable={subscribable}
         contentBlocks={contentBlocks}
         videos={videos}
+        brandHref={brandHrefFor(product.brand)}
       />
 
       {related.length > 0 && (

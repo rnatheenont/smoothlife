@@ -582,6 +582,28 @@ export function getBrand(slug: string): Brand | undefined {
   return brands.find((b) => b.slug === slug);
 }
 
+/**
+ * The brand hub a product's Shopify vendor belongs to, or null when the vendor
+ * has no page of its own.
+ *
+ * The vendor string is not the slug and cannot be turned into one: the shop
+ * sells "Dentiste thailand", whose hub is /brands/dentiste. The alias list is
+ * the only honest lookup, and it is the same one the shop filter and
+ * brandProducts use — so a link from a product can never land on a page that
+ * does not list that product.
+ */
+export function brandForVendor(vendor: string | null | undefined): Brand | null {
+  if (!vendor) return null;
+  const slug = slugifyVendor(vendor);
+  return brands.find((b) => brandSlugAliases(b).includes(slug)) ?? null;
+}
+
+/** The brand hub's URL for a vendor string, or null when there is no hub. */
+export function brandHrefFor(vendor: string | null | undefined): string | null {
+  const brand = brandForVendor(vendor);
+  return brand ? `/brands/${brand.slug}` : null;
+}
+
 /** Every catalogue item whose Shopify vendor belongs to this brand —
  *  matched through the same alias list the shop filter uses, so a brand hub
  *  and `/shop?brand=<slug>` can never disagree about what the brand sells. */

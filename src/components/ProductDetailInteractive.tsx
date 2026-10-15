@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
+import ProductShare from "@/components/ProductShare";
 import {
   Heart,
   ShoppingCart,
@@ -139,6 +141,7 @@ export default function ProductDetailInteractive({
   subscribable = false,
   contentBlocks = null,
   videos = [],
+  brandHref = null,
 }: {
   product: Product;
   related: Product[];
@@ -152,6 +155,9 @@ export default function ProductDetailInteractive({
    *  each one is and how to play it is parseVideoUrl's answer, same as in the
    *  written content blocks. */
   videos?: string[];
+  /** The brand's own page, when it has one. Resolved on the server: the
+   *  lookup needs the catalogue, which has no business in this bundle. */
+  brandHref?: string | null;
 }) {
   // Written content opens the page where somebody has written it. The tab that
   // used to sit here assembled the same ground out of catalogue fields
@@ -565,9 +571,19 @@ export default function ProductDetailInteractive({
         </div>
 
         <div>
-          <span translate="no" className="text-xs font-bold text-brand-800">
-            {product.brand}
-          </span>
+          {brandHref ? (
+            <Link
+              href={brandHref}
+              translate="no"
+              className="text-xs font-bold text-brand-800 underline-offset-2 hover:underline"
+            >
+              {product.brand}
+            </Link>
+          ) : (
+            <span translate="no" className="text-xs font-bold text-brand-800">
+              {product.brand}
+            </span>
+          )}
           <h1
             translate="no"
             className="text-2xl md:text-3xl font-bold text-brand-ink mt-1"
@@ -750,6 +766,7 @@ export default function ProductDetailInteractive({
                     }
                   />
                 </button>
+                <ProductShare name={product.name} />
               </div>
             ) : (
               <div className="mt-3 rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-4">

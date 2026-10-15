@@ -1,6 +1,7 @@
 import { z } from "zod";
 import ProductDetailInteractive from "@/components/ProductDetailInteractive";
 import TrackRecentlyViewed from "@/components/TrackRecentlyViewed";
+import { brandHrefFor } from "@/data/brands";
 import { getRelatedProducts } from "@/data/products";
 import { getProductDetail } from "@/data/product-details";
 import type { Product } from "@/data/types";
@@ -42,6 +43,8 @@ type Data = {
   subscribable: boolean;
   contentBlocks: Awaited<ReturnType<typeof getPublishedProductContent>>;
   videos: Awaited<ReturnType<typeof customVideosFor>>;
+  /** The brand hub this product belongs to, or null when it has none. */
+  brandHref: string | null;
   subscriptionBillingEnabled: boolean;
 };
 
@@ -123,6 +126,7 @@ async function load(
     subscribable,
     contentBlocks,
     videos,
+    brandHref: brandHrefFor(product.brand),
     subscriptionBillingEnabled: subscriptionBillingConfigured(),
   };
 }
@@ -146,6 +150,7 @@ function Component({ data }: SectionProps<z.output<typeof schema>, Data | null>)
         subscribable={data.subscribable}
         contentBlocks={data.contentBlocks}
         videos={data.videos}
+        brandHref={data.brandHref}
       />
     </section>
   );
