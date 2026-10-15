@@ -68,6 +68,10 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
   );
   const [pos, setPos] = useState(0);
   const [lift, setLift] = useState(0);
+  // The shop's header is sticky and its height changes with the viewport (a
+  // promo bar on a wide screen, two rows on a narrow one). A guessed offset is
+  // how the headline ended up underneath it, so the stage measures it.
+  const [headerH, setHeaderH] = useState(96);
   const stage = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; moved: boolean } | null>(null);
 
@@ -88,6 +92,13 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
     (model: number) => flat.findIndex((f) => f.model === model),
     [flat],
   );
+
+  useEffect(() => {
+    const read = () => setHeaderH(document.querySelector("header")?.offsetHeight ?? 96);
+    read();
+    window.addEventListener("resize", read);
+    return () => window.removeEventListener("resize", read);
+  }, []);
 
   // How far the comb has lifted: 0 at the top of the stage, 1 when the stage
   // is leaving. Read off the scroll position rather than animated on a timer,
@@ -124,9 +135,12 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       ref={stage}
       aria-roledescription="carousel"
       aria-label={`${headline} — เลือกสีและรุ่น`}
-      className="relative -mt-6 pt-2 md:-mt-10 md:h-[200vh] md:pt-0"
+      className="relative pt-2 md:h-[200vh] md:pt-0"
     >
-      <div className="md:sticky md:top-16 md:flex md:h-[calc(100vh-4rem)] md:flex-col md:justify-center md:overflow-hidden">
+      <div
+        style={{ "--stage-top": `${headerH}px` } as React.CSSProperties}
+        className="md:sticky md:top-[var(--stage-top)] md:flex md:h-[calc(100vh-var(--stage-top))] md:flex-col md:justify-center md:overflow-hidden"
+      >
         <header className="relative z-20 px-4 pt-6 text-center md:pt-0">
           <h1 className="font-serif text-[clamp(2rem,6vw,4.25rem)] italic leading-[1.05] text-brand-ink">
             {headline}

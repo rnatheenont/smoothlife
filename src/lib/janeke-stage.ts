@@ -145,6 +145,10 @@ const CUTOUTS: Record<string, string> = {
   "new-janeke-small-superbrush-pink-pastel": "/brands/janeke/palepink-magenta-a.webp",
   // The second of two near-identical pale pinks, told apart by the shop.
   "new-janeke-small-superbrush-lillac-fucsia": "/brands/janeke/palepink-magenta-b.webp",
+  // The full-size one is the same colourway as the Small — the shop's photos
+  // of the two agree on it (deep magenta pad, pale lilac body) — and a floating
+  // cut-out says nothing about size, so one photograph serves both.
+  "new-janeke-superbrush-lillac-fucsia": "/brands/janeke/palepink-magenta-b.webp",
   "new-janeke-superbrush-pink": "/brands/janeke/fuchsia-blue.webp",
   // Confirmed by the shop, and not guessable: the comb is teal with a yellow
   // pad and the range calls it Blue.
