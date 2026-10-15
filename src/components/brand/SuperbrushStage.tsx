@@ -320,7 +320,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                       // has turned a quarter turn and grown by half again.
                       // Lying down it is widest across, where the dome has the
                       // most room, so the growth has somewhere to go.
-                      transform: `translate3d(0, calc(${lift * -70}px - 3%), 0) rotate(${(lift * 90).toFixed(1)}deg) scale(${(1 + lift * 0.45).toFixed(3)})`,
+                      transform: `translate3d(0, calc(${lift * -70}px - 3%), 0) rotate(${(lift * 35).toFixed(1)}deg) scale(${(1 + lift * 0.2).toFixed(3)})`,
                     }}
                     className={`absolute flex h-full w-full items-center justify-center transition-opacity duration-500 ${
                       on ? "opacity-100" : "opacity-0"
