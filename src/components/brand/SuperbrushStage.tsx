@@ -72,6 +72,10 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
   // promo bar on a wide screen, two rows on a narrow one). A guessed offset is
   // how the headline ended up underneath it, so the stage measures it.
   const [headerH, setHeaderH] = useState(96);
+  // Whether the stage can be pinned to the screen at all. A fixed media query
+  // cannot answer this: the dome's height follows the window's *width*, so
+  // 900px of height is enough at 1200px wide and 130px short at 1700px wide.
+  const [pinned, setPinned] = useState(true);
   const stage = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; moved: boolean } | null>(null);
 
@@ -94,7 +98,15 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
   );
 
   useEffect(() => {
-    const read = () => setHeaderH(document.querySelector("header")?.offsetHeight ?? 96);
+    const read = () => {
+      const h = document.querySelector("header")?.offsetHeight ?? 96;
+      setHeaderH(h);
+      const w = window.innerWidth;
+      // The dome's ratio by width, matching --dome-r below.
+      const ratio = w < 768 ? 1 : w < 1024 ? 2.2 : 3;
+      // 230px covers the headline above the dome and the controls under it.
+      setPinned(w >= 768 && window.innerHeight - h >= w / ratio + 230);
+    };
     read();
     window.addEventListener("resize", read);
     return () => window.removeEventListener("resize", read);
@@ -135,17 +147,23 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       ref={stage}
       aria-roledescription="carousel"
       aria-label={`${headline} — เลือกสีและรุ่น`}
-      className="relative pt-2 md:h-[200vh] md:pt-0"
+      className={`relative pt-2 md:pt-0 ${pinned ? "md:h-[200vh]" : ""}`}
     >
       <div
         style={{ "--stage-top": `${headerH}px` } as React.CSSProperties}
-        // --dome-r is the arc's ratio and --dome-h its height. The height is
-        // the smaller of "what the ratio asks for" and "what is left on the
-        // screen after the headline and the controls" — so a short window
-        // shrinks the whole dome instead of flattening it, and the controls
-        // stop running off the bottom. 15rem is that headline-plus-controls
-        // allowance, measured from the rendered page.
-        className="[--dome-max:9999px] [--dome-r:1] [--dome-h:min(calc(100vw/var(--dome-r)),var(--dome-max))] md:sticky md:top-[var(--stage-top)] md:flex md:h-[calc(100vh-var(--stage-top))] md:flex-col md:justify-center md:overflow-hidden md:[--dome-max:calc(100vh-var(--stage-top)-15rem)] md:[--dome-r:2.2] lg:[--dome-r:3]"
+        // --dome-r is the arc's ratio and --dome-h its height, taken straight
+        // from the full width so the dome is always edge to edge and always
+        // the same arc.
+        //
+        // Pinning it to the screen is what has a height budget, not the dome:
+        // on a window too short to hold the headline, the dome and the
+        // controls at once, the stage stops being sticky and simply scrolls —
+        // better than a pinned block whose bottom row cannot be reached.
+        className={`[--dome-r:1] [--dome-h:calc(100vw/var(--dome-r))] md:flex md:flex-col md:justify-center md:[--dome-r:2.2] lg:[--dome-r:3] ${
+          pinned
+            ? "md:sticky md:top-[var(--stage-top)] md:h-[calc(100vh-var(--stage-top))] md:overflow-hidden"
+            : ""
+        }`}
       >
         <header className="relative z-20 px-4 pt-6 text-center md:pt-0">
           <h1 className="font-serif text-[clamp(2rem,6vw,4.25rem)] italic leading-[1.05] text-brand-ink">
@@ -197,7 +215,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
           <div
             aria-hidden
             style={{ backgroundColor: current.tint }}
-            className="absolute inset-x-0 bottom-0 mx-auto h-[var(--dome-h)] w-[calc(var(--dome-h)*var(--dome-r))] max-w-[100vw] overflow-hidden rounded-t-full transition-colors duration-700"
+            className="absolute inset-x-0 bottom-0 mx-auto h-[var(--dome-h)] w-screen overflow-hidden rounded-t-full transition-colors duration-700"
           >
             {/* Flat, the way it is drawn: the dome is one colour and the cloud
                 bank is what takes it to white at the foot. A gradient to
@@ -218,7 +236,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             {model.wordmark}
           </p>
 
-          <div className="relative mx-auto flex h-[var(--dome-h)] w-[calc(var(--dome-h)*var(--dome-r))] max-w-[100vw] items-center justify-center">
+          <div className="relative flex h-[var(--dome-h)] w-full items-center justify-center">
             {models.flatMap((m) =>
               m.items.map((c) => {
                 const on = c.slug === current.slug;
