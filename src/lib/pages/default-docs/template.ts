@@ -181,6 +181,39 @@ const article = (): PageDoc =>
     },
   ]);
 
+/**
+ * A question page: the way back, the answer, the products, the other answers.
+ *
+ * The trail is one step rather than a row — a pill reading "← คำถามที่พบบ่อย"
+ * — because the page's title is a sentence and a full trail beside it wraps.
+ * The BreadcrumbList still declares all four steps, which is what the
+ * hand-written page did too.
+ *
+ * Padding is on the route's wrapper for the same reason as the product page:
+ * the last two blocks are empty for an answer with no product tags, or when
+ * it is the only published answer, and the bottom of the page must not go
+ * with them.
+ */
+const question = (): PageDoc =>
+  doc([
+    {
+      type: "breadcrumb",
+      v: 1,
+      settings: { showHome: true, display: "back_link", room: "none", back: "none", backHref: "" },
+    },
+    {
+      type: "question_article",
+      v: 1,
+      settings: {
+        helpText: "ยังไม่ได้คำตอบที่ต้องการ?",
+        helpLinkLabel: "ทักทีมงานได้เลย",
+        helpHref: "/help/contact",
+      },
+    },
+    { type: "question_products", v: 1, settings: { heading: "สินค้าที่เกี่ยวข้อง", count: 4 } },
+    { type: "related_questions", v: 1, settings: { heading: "คำถามอื่นที่คนถามบ่อย", count: 6 } },
+  ]);
+
 /** Keyed by the registry's template key. A template with no entry here is not
  *  offered in the admin yet. */
 export const TEMPLATE_DEFAULT_DOCS: Record<string, () => PageDoc> = {
@@ -189,4 +222,5 @@ export const TEMPLATE_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   category,
   product,
   article,
+  question,
 };
