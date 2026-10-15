@@ -104,6 +104,11 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
   // cannot answer this: the dome's height follows the window's *width*, so
   // 900px of height is enough at 1200px wide and 130px short at 1700px wide.
   const [pinned, setPinned] = useState(true);
+  // On a phone the dome runs edge to edge, but a short screen cannot hold a
+  // full-width arc plus the headline and the controls. Shrinking it keeps the
+  // stage usable there; the arc keeps its ratio, so it only gets smaller,
+  // never flatter. Null means it stays full-bleed.
+  const [domeSm, setDomeSm] = useState<number | null>(null);
   const stage = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; moved: boolean } | null>(null);
 
@@ -130,14 +135,27 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       const h = document.querySelector("header")?.offsetHeight ?? 96;
       setHeaderH(h);
       const w = window.innerWidth;
-      // The dome's ratio by width, matching --dome-r below.
-      const ratio = w < 768 ? 1 : w < 1024 ? 1.6 : 1.8;
-      const domeW = w < 768 ? w : w < 1024 ? Math.min(w * 0.96, 1100) : Math.min(w * 0.92, 1360);
-      // Above md the controls stand inside the dome, so only the headline
-      // has to be paid for. On a phone they sit under the arc, so the budget
-      // has to cover both before the stage may pin.
-      const budget = w < 768 ? 330 : 150;
-      setPinned(window.innerHeight - h >= domeW / ratio + budget);
+      const avail = window.innerHeight - h;
+
+      if (w < 768) {
+        // The arc is a half circle here, so its height is its width. 330px is
+        // what the headline above it and the controls under it need, plus a
+        // gap so the headline never lands flush against the header; whatever
+        // is left over is how wide the dome may be.
+        const fit = Math.min(w, avail - 350);
+        setDomeSm(fit >= w ? null : fit);
+        // Under 60% of the screen the comb would be too small to shop from,
+        // so the stage gives up pinning and simply scrolls instead.
+        setPinned(fit >= w * 0.6);
+        return;
+      }
+
+      setDomeSm(null);
+      // The dome's ratio by width, matching --dome-r below. Above md the
+      // controls stand inside the dome, so only the headline is paid for.
+      const ratio = w < 1024 ? 1.6 : 1.8;
+      const domeW = w < 1024 ? Math.min(w * 0.96, 1100) : Math.min(w * 0.92, 1360);
+      setPinned(avail >= domeW / ratio + 150);
     };
     read();
     window.addEventListener("resize", read);
@@ -182,7 +200,12 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       className={`relative pt-2 md:pt-0 ${pinned ? "h-[180vh] md:h-[200vh]" : ""}`}
     >
       <div
-        style={{ "--stage-top": `${headerH}px` } as React.CSSProperties}
+        style={
+          {
+            "--stage-top": `${headerH}px`,
+            ...(domeSm ? { "--dome-w-sm": `${Math.round(domeSm)}px` } : {}),
+          } as React.CSSProperties
+        }
         // --dome-r is the arc's ratio and --dome-h its height, taken straight
         // from the full width so the dome is always edge to edge and always
         // the same arc.
@@ -191,7 +214,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
         // on a window too short to hold the headline, the dome and the
         // controls at once, the stage stops being sticky and simply scrolls —
         // better than a pinned block whose bottom row cannot be reached.
-        className={`[--dome-r:1] [--dome-w:100vw] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:justify-center md:[--dome-r:1.6] md:[--dome-w:min(96vw,1100px)] lg:[--dome-r:1.8] lg:[--dome-w:min(92vw,1360px)] ${
+        className={`[--dome-r:1] [--dome-w:var(--dome-w-sm,100vw)] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:justify-center md:[--dome-r:1.6] md:[--dome-w:min(96vw,1100px)] lg:[--dome-r:1.8] lg:[--dome-w:min(92vw,1360px)] ${
           pinned
             ? "sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-center pb-20 md:pb-0"
             : ""
@@ -273,7 +296,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                 transform: `translate3d(0, ${lift * -34}px, 0)`,
                 color: `${darker(current.swatch[0], current.swatch[1])}33`,
               }}
-              className="absolute inset-x-0 top-[40%] text-center font-serif text-[clamp(3rem,13vw,10rem)] italic leading-none transition-colors duration-700 md:top-[44%]"
+              className="absolute inset-x-0 top-[40%] text-center font-serif text-[clamp(2rem,calc(var(--dome-w)*0.13),10rem)] italic leading-none transition-colors duration-700 md:top-[44%]"
             >
               {model.wordmark}
             </p>
