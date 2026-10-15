@@ -96,7 +96,8 @@ const DOMES: Record<string, string> = {
   "gold-brown": "#e6d8d0",
   "green-fuchsia": "#feb9e5",
   "leopard-lightblue": "#b8eaff",
-  "lightblue-solid": "#bde7f9",
+  "leopard-magenta": "#f6c0e8",
+  "lightblue-solid": "#bfe9f8",
   "lilac-white": "#d6cceb",
   "mint-white": "#ccebe0",
   "navy-lightblue": "#b8eaff",
@@ -122,11 +123,10 @@ const DOMES: Record<string, string> = {
 const CUTOUTS: Record<string, string> = {
   "janeke-premium-gold-superbrush": "/brands/janeke/gold-brown.webp",
   "janeke-premium-silver-superbrush": "/brands/janeke/silver-grey.webp",
-  // Both Maculatas, from one photograph: the two files the shop sent for them
-  // differ by 4.6/255 per pixel — they are the same leopard comb shot twice,
-  // so the slide for either is right.
   "janeke-mac-tse-superbrush-maculata": "/brands/janeke/leopard-lightblue.webp",
-  "janeke-mac-fux-superbrush-maculata": "/brands/janeke/leopard-lightblue.webp",
+  // Fux is the leopard with the magenta pad, Tse the one with light blue —
+  // the new set has both, so the two no longer share a photograph.
+  "janeke-mac-fux-superbrush-maculata": "/brands/janeke/leopard-magenta.webp",
   // Colour names that belong to exactly one product in the range, so the
   // photograph can only be of that one: no other comb here is navy with a
   // light blue pad, or yellow with an orange one.
