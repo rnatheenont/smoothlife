@@ -235,6 +235,24 @@ const shop = (): PageDoc =>
  */
 const cart = (): PageDoc => doc([{ type: "cart_app", v: 1, settings: {} }]);
 
+/**
+ * The two account pages that take a marketing line.
+ *
+ * One locked block each, which looks like a waste of a document until the
+ * month somebody wants to say "ชวนเพื่อนเดือนนี้ได้คูปองเพิ่ม" above the
+ * share link, or what 500 points buys this month above the points table.
+ *
+ * /account/login is deliberately not here, and the reason is structural
+ * rather than a matter of time: its body swaps the entire site chrome when
+ * the visitor is on their way back to a campaign (CampaignChrome reads
+ * ?returnTo), which is not something a page built of sections inside the
+ * normal chrome can express. A promo block wrapped around a sign-in form is
+ * also the least useful slot in the set.
+ */
+const accountReferralPage = (): PageDoc => doc([{ type: "account_referral", v: 1, settings: {} }]);
+
+const accountPointsPage = (): PageDoc => doc([{ type: "account_points", v: 1, settings: {} }]);
+
 /** Merged into SYSTEM_DEFAULT_DOCS. Keyed by the registry's page key, and a
  *  page with no entry here is simply not offered in the admin yet. */
 export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
@@ -249,4 +267,6 @@ export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   search,
   shop,
   cart,
+  "account-referral": accountReferralPage,
+  "account-points": accountPointsPage,
 };
