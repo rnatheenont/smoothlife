@@ -201,9 +201,15 @@ export function janekeModels(items: Shelf[]): StageModel[] {
   const out = new Map<string, StageModel>();
 
   for (const p of items) {
+    // Only combs the shop has a masked photograph of. The two "classic"
+    // products had none and were showing a catalogue snapshot in a frame
+    // instead; the shop says those colours are not in the range, so the stage
+    // leaves them out rather than inventing a slide for them. They are still
+    // on the shelf below. Adding artwork to CUTOUTS is all it takes to bring
+    // a product back in.
     const cut = CUTOUTS[p.slug];
-    const image = cut ?? floatable(p);
-    if (!image) continue;
+    if (!cut) continue;
+    const image = cut;
     const spec = MODELS.find((m) => m.match(p.slug));
     if (!spec) continue;
 
