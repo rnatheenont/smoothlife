@@ -253,7 +253,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             <p
               aria-hidden
               style={{ transform: `translate3d(0, ${lift * -24}px, 0)` }}
-              className="absolute inset-x-0 top-[6%] z-10 text-center font-serif text-[clamp(2rem,6.4vw,5.25rem)] leading-none text-brand-ink md:top-[7%]"
+              className="absolute inset-x-0 top-[11%] z-10 text-center font-serif text-[clamp(2.4rem,8.2vw,6.7rem)] leading-none text-brand-ink md:top-[15%]"
             >
               {model.title}
             </p>
@@ -272,7 +272,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                   <span
                     key={c.slug}
                     style={{
-                      transform: `translate3d(0, calc(${lift * -70}px + 12%), 0) scale(${1 - lift * 0.06})`,
+                      transform: `translate3d(0, calc(${lift * -70}px + 13%), 0) scale(${1 - lift * 0.06})`,
                     }}
                     className={`absolute flex h-full w-full items-center justify-center transition-opacity duration-500 ${
                       on ? "opacity-100" : "opacity-0"
@@ -291,8 +291,8 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                           ? // About 60% of the stage, as drawn: the dome is most
                             // of what you see and the comb sits in it, rather
                             // than filling it.
-                            "h-[calc(var(--dome-h)*0.52)] md:h-[calc(var(--dome-h)*0.68)] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
-                          : "h-[calc(var(--dome-h)*0.46)] md:h-[calc(var(--dome-h)*0.6)] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
+                            "h-[calc(var(--dome-h)*0.5)] md:h-[calc(var(--dome-h)*0.63)] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
+                          : "h-[calc(var(--dome-h)*0.44)] md:h-[calc(var(--dome-h)*0.56)] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
                       }`}
                     />
                   </span>
@@ -306,7 +306,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             the cloud bank at the foot of the dome, which is where the design
             puts them. Lifted by a share of the dome's own height so they stay
             with it at every size. */}
-        <div className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:-mt-[calc(var(--dome-h)*0.14)] md:flex-row md:items-center md:justify-center md:gap-10">
+        <div className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:-mt-[calc(var(--dome-h)*0.27)] md:flex-row md:items-center md:justify-center md:gap-10">
           <div className="flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/90 p-1 shadow-[0_6px_18px_rgba(15,23,42,0.08)]">
             {model.items.map((c, i) => {
               const on = i === here.item;
