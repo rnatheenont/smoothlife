@@ -17,6 +17,8 @@ import { renderSections } from "@/lib/pages/render";
 import { publishedDoc } from "@/lib/pages/store";
 import { defaultBrandDoc } from "@/lib/pages/default-docs/brand";
 import { toCardData } from "@/data/card";
+import SuperbrushStage from "@/components/brand/SuperbrushStage";
+import { janekeModels } from "@/lib/janeke-stage";
 
 // One page per brand.
 //
@@ -98,10 +100,47 @@ async function StoredBrandPage({ slug }: { slug: string }) {
   );
 }
 
+/**
+ * Janeke's shelf is one product in twenty colours, which the standard grid
+ * shows as twenty near-identical cards. The stage puts one comb on screen at a
+ * time and makes the colour the thing you choose — the shelf still follows,
+ * for anyone who would rather scan a grid.
+ *
+ * Above whichever page body is in use, so it does not depend on the pages
+ * system being switched on.
+ */
+async function BrandStage({ slug }: { slug: string }) {
+  if (slug !== "janeke") return null;
+  const facts = brandFacts(slug);
+  if (!facts) return null;
+  const items = await withCustomImages(facts.items);
+  const models = janekeModels(items);
+  if (models.length === 0) return null;
+  const from = Math.min(...models.flatMap((m) => m.items.map((i) => i.price)));
+  return (
+    <SuperbrushStage
+      models={models}
+      headline="Find your perfect match"
+      intro={`เริ่มต้น ${formatTHB(from)} · เลือกสีที่ใช่ แล้วช้อปได้เลย`}
+      allHref="#shelf"
+    />
+  );
+}
+
 export default async function BrandHubPage(props: { params: Promise<{ slug: string }> }) {
   const params = await props.params;
-  if (PAGES_BRAND_ENABLED) return <StoredBrandPage slug={params.slug} />;
-  return <LegacyBrandPage slug={params.slug} />;
+  return (
+    <>
+      <BrandStage slug={params.slug} />
+      <div id="shelf">
+        {PAGES_BRAND_ENABLED ? (
+          <StoredBrandPage slug={params.slug} />
+        ) : (
+          <LegacyBrandPage slug={params.slug} />
+        )}
+      </div>
+    </>
+  );
 }
 
 async function LegacyBrandPage({ slug }: { slug: string }) {
