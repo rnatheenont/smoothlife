@@ -25,6 +25,9 @@ import { formatTHB } from "@/lib/format";
 
 export type Colourway = {
   slug: string;
+  /** The product's full name from the catalogue, which is what the shop sells
+   *  it as — "Small ฟ้าพาสเทล" was a label this component made up. */
+  name: string;
   /** The colour's own name, as the shop sells it — "Pink Pastel". */
   colour: string;
   /** Two stops, because these combs are two-tone: handle and pad. */
@@ -369,9 +372,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
           </div>
 
           <div className="text-center md:max-w-[22rem] md:text-left">
-            <p className="text-sm font-bold uppercase tracking-wide text-brand-ink">
-              {model.title} {current.colour}
-            </p>
+            <p className="text-sm font-bold text-brand-ink">{current.name}</p>
             <p className="mt-1 text-xs leading-relaxed text-slate-500">{model.blurb}</p>
             <div className="mt-2 flex items-center justify-center gap-3 md:justify-start">
               <span className="text-sm font-bold text-brand-ink">{formatTHB(current.price)}</span>

@@ -221,6 +221,10 @@ export function janekeModels(items: Shelf[]): StageModel[] {
     const pair = art ? DOMES[art] : undefined;
     const way: Colourway = {
       slug: p.slug,
+      // The product's own name, as the shop sells it. The "[NEW]" the import
+      // puts in front of every one of these is a merchandising flag, not part
+      // of the name.
+      name: p.name.replace(/^\s*\[new\]\s*/i, "").trim(),
       colour: colour?.th ?? (rest ? rest : DEFAULT_COLOUR.th),
       swatch: (art && SWATCHES[art]) ?? colour?.swatch ?? DEFAULT_COLOUR.swatch,
       // The photograph's own two dome colours where there is one; the colour
