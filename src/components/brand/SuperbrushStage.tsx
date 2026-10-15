@@ -306,8 +306,8 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                           ? // About 60% of the stage, as drawn: the dome is most
                             // of what you see and the comb sits in it, rather
                             // than filling it.
-                            "h-[calc(var(--dome-h)*0.58)] md:h-[calc(var(--dome-h)*0.72)] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
-                          : "h-[calc(var(--dome-h)*0.5)] md:h-[calc(var(--dome-h)*0.64)] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
+                            "h-[calc(var(--dome-h)*0.58)] md:h-[calc(var(--dome-h)*0.62)] lg:h-[calc(var(--dome-h)*0.72)] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
+                          : "h-[calc(var(--dome-h)*0.5)] md:h-[calc(var(--dome-h)*0.56)] lg:h-[calc(var(--dome-h)*0.64)] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
                       }`}
                     />
                   </span>
