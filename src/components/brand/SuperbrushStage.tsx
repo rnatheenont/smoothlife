@@ -254,7 +254,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             : ""
         }`}
       >
-        <header ref={head} className="relative z-20 px-4 pb-2 pt-6 text-center md:pb-3 md:pt-6">
+        <header ref={head} className="relative z-20 px-4 pb-2 pt-6 text-center md:pb-8 md:pt-6 lg:pb-12">
           <h1 className="font-serif text-[clamp(2rem,6vw,4.25rem)] italic leading-[1.05] text-brand-ink">
             {headline}
           </h1>
