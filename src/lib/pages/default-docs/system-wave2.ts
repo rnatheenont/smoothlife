@@ -1,6 +1,6 @@
 // With the extension, so the unit tests can load this file without a bundler.
 import { type PageDoc } from "../doc.ts";
-import { doc } from "./build.ts";
+import { doc, type DraftSection } from "./build.ts";
 
 // The pages of wave 2, written as documents.
 //
@@ -253,6 +253,87 @@ const accountReferralPage = (): PageDoc => doc([{ type: "account_referral", v: 1
 
 const accountPointsPage = (): PageDoc => doc([{ type: "account_points", v: 1, settings: {} }]);
 
+/**
+ * The three advisors.
+ *
+ * Same three blocks each: the mascot header, the quiz, and on /advisor a dark
+ * band that offers the camera scan instead. The questions are locked — they
+ * are the product — and everything written above them is now editable, which
+ * is the whole reason these pages are worth moving.
+ *
+ * The one adjusted gap is the header's `space.bottom`. The mascot header
+ * leaves 32px under its row and all three of these pages have always had 24,
+ * so it is pulled up one 8px step — the same nudge /knowledge needed, for the
+ * same reason, and visible in the editor as "ชิดขึ้น".
+ */
+const advisorHeader = (over: {
+  eyebrow: string;
+  title: string;
+  intro: string;
+  mascotSize?: string;
+}): DraftSection => ({
+  type: "page_header",
+  v: 1,
+  common: { space: { bottom: "-1" } },
+  settings: {
+    eyebrow: over.eyebrow,
+    title: over.title,
+    intro: over.intro,
+    image: "",
+    align: "left",
+    background: "page",
+    layout: "page",
+    topRoom: "page",
+    mascot: "/mascot/smoothie-hi.png",
+    mascotSize: over.mascotSize ?? "md",
+    eyebrowIcon: "sparkles",
+  },
+});
+
+const advisor = (): PageDoc =>
+  doc([
+    advisorHeader({
+      eyebrow: "Guided Assessment",
+      title: "น้อง Smoothie",
+      intro: "ผู้ช่วย AI ของ Smoothlife.com แนะนำสกินแคร์และวิเคราะห์ผิวให้คุณ",
+      mascotSize: "lg",
+    }),
+    {
+      type: "ink_link_card",
+      v: 1,
+      settings: {
+        title: "สแกนผิวสดด้วยกล้องหน้า",
+        body: "ระบบจับโครงหน้าแล้วถ่ายให้เอง 3 มุมในราว 10 วินาที บอกอายุผิว สิว รูขุมขน จุดด่างดำ ริ้วรอย พร้อมสินค้าที่ตรงกับผลของคุณ",
+        href: "/skin-coach",
+        icon: "camera",
+        image: "",
+        padding: "md",
+        room: "md",
+      },
+    },
+    { type: "advisor_quiz", v: 1, settings: { variant: "skin" } },
+  ]);
+
+const supplementAdvisor = (): PageDoc =>
+  doc([
+    advisorHeader({
+      eyebrow: "Supplement Advisor",
+      title: "หาอาหารเสริมที่ใช่สำหรับคุณ",
+      intro: "ตอบ 5 คำถาม รับแพลนดูแลตัวเองที่พอดีกับเป้าหมายและงบของคุณ",
+    }),
+    { type: "advisor_quiz", v: 1, settings: { variant: "supplement" } },
+  ]);
+
+const oralCareAdvisor = (): PageDoc =>
+  doc([
+    advisorHeader({
+      eyebrow: "Oral Care Advisor",
+      title: "เลือกชุดดูแลช่องปากที่ใช่สำหรับคุณ",
+      intro: "ตอบ 3 คำถาม รับเซ็ตแนะนำแบบพอดีตัวใน 30 วินาที",
+    }),
+    { type: "advisor_quiz", v: 1, settings: { variant: "oral_care" } },
+  ]);
+
 /** Merged into SYSTEM_DEFAULT_DOCS. Keyed by the registry's page key, and a
  *  page with no entry here is simply not offered in the admin yet. */
 export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
@@ -269,4 +350,7 @@ export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   cart,
   "account-referral": accountReferralPage,
   "account-points": accountPointsPage,
+  advisor,
+  "supplement-advisor": supplementAdvisor,
+  "oral-care-advisor": oralCareAdvisor,
 };

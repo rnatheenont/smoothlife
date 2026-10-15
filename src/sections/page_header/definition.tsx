@@ -51,6 +51,15 @@ const schema = z.object({
   /** A picture beside the title rather than under it — the mascot on the
    *  assistant page. Set, the header becomes a row; empty, nothing changes. */
   mascot: z.string().default(""),
+  /**
+   * How big the mascot is.
+   *
+   * Two sizes because the site has two: the assistant pages draw it at
+   * 56/64px beside a one-line title, and /advisor draws it at 64/80px because
+   * that page is the mascot's own front door. Not a free number — a mascot
+   * sized by hand per page is how a shop ends up with six of them.
+   */
+  mascotSize: z.enum(["md", "lg"]).default("md"),
   /** A mark before the eyebrow. Only drawn when there is an eyebrow to mark. */
   eyebrowIcon: z.string().default(""),
 });
@@ -94,12 +103,20 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
   // on the right. It is a different shape rather than an extra element, so
   // it gets its own branch instead of a conditional inside the other one.
   if (settings.mascot) {
+    const big = settings.mascotSize === "lg";
     return (
       <section className={BACKGROUND[settings.background] ?? ""}>
         <div className={`container-page max-w-3xl ${top}`.trimEnd()}>
           <div className="mb-8 flex items-center gap-4">
-            <div className="relative h-14 w-14 shrink-0 md:h-16 md:w-16">
-              <Image src={settings.mascot} alt="" fill sizes="64px" className="object-contain" priority />
+            <div className={`relative shrink-0 ${big ? "h-16 w-16 md:h-20 md:w-20" : "h-14 w-14 md:h-16 md:w-16"}`}>
+              <Image
+                src={settings.mascot}
+                alt=""
+                fill
+                sizes={big ? "80px" : "64px"}
+                className="object-contain"
+                priority
+              />
             </div>
             <div>
               {settings.eyebrow && (
@@ -164,6 +181,7 @@ export const pageHeader: SectionDefinition<typeof schema> = {
     layout: "page",
     topRoom: "page",
     mascot: "",
+    mascotSize: "md",
     eyebrowIcon: "",
   },
   fields: [
@@ -172,6 +190,15 @@ export const pageHeader: SectionDefinition<typeof schema> = {
     { key: "intro", type: "textarea", label: "คำโปรย" },
     { key: "image", type: "image", label: "รูปกว้างใต้หัวข้อ" },
     { key: "mascot", type: "image", label: "รูปข้างหัวข้อ", help: "ใส่แล้วหัวหน้าจะเรียงเป็นแถว รูปอยู่ซ้าย" },
+    {
+      key: "mascotSize",
+      type: "select",
+      label: "ขนาดรูปข้างหัวข้อ",
+      options: [
+        ["md", "ปกติ"],
+        ["lg", "ใหญ่"],
+      ],
+    },
     { key: "eyebrowIcon", type: "text", label: "ไอคอนหน้าคำนำ", help: `เลือกได้: ${CONTENT_ICON_KEYS.join(", ")}` },
     { key: "align", type: "select", label: "การจัดวาง", options: [["left", "ชิดซ้าย"], ["center", "กึ่งกลาง"]] },
     {

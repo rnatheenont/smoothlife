@@ -3,12 +3,14 @@ import Link from "next/link";
 import { Camera, ChevronRight, Sparkles } from "lucide-react";
 import AdvisorQuiz from "@/components/AdvisorQuiz";
 import { pageMetadata } from "@/lib/site-pages";
+import { PAGES_WAVE4_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 
 export function generateMetadata() {
   return pageMetadata("advisor");
 }
 
-export default function AdvisorPage() {
+function AdvisorPageWritten() {
   return (
     <div className="container-page py-8 md:py-10">
       <div className="flex items-center gap-4 mb-6">
@@ -44,4 +46,14 @@ export default function AdvisorPage() {
       <AdvisorQuiz />
     </div>
   );
+}
+
+/**
+ * The page, from its document when wave 4 is on and from the markup above
+ * when it is not. Both halves stay in the tree on purpose — the flag is the
+ * emergency switch, and it only works while the hand-written half is here.
+ */
+export default function AdvisorPage() {
+  if (PAGES_WAVE4_ENABLED) return <SystemPageBody pageKey="advisor" />;
+  return <AdvisorPageWritten />;
 }

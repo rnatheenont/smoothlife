@@ -79,6 +79,8 @@ import { relatedQuestions } from "./related_questions/definition";
 import { cartApp } from "./cart_app/definition";
 import { accountReferral } from "./account_referral/definition";
 import { accountPoints } from "./account_points/definition";
+import { inkLinkCard } from "./ink_link_card/definition";
+import { advisorQuiz } from "./advisor_quiz/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -153,6 +155,8 @@ const ALL: AnySectionDefinition[] = [
   cartApp,
   accountReferral,
   accountPoints,
+  inkLinkCard,
+  advisorQuiz,
 
   // The general-purpose ones. Everything above wraps a piece of the home page
   // as it already was; these are the blocks a page built from scratch is made

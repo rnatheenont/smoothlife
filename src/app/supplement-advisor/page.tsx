@@ -1,10 +1,12 @@
 import Image from "next/image";
 import { Sparkles } from "lucide-react";
 import SupplementAdvisorQuiz from "@/components/SupplementAdvisorQuiz";
+import { PAGES_WAVE4_ENABLED } from "@/lib/feature-flags";
+import { SystemPageBody } from "@/lib/pages/system-page";
 
 export const metadata = { title: "Supplement Advisor | Smoothlife.com" };
 
-export default function SupplementAdvisorPage() {
+function SupplementAdvisorPageWritten() {
   return (
     <div className="container-page py-8 md:py-10">
       <div className="flex items-center gap-4 mb-6">
@@ -23,4 +25,14 @@ export default function SupplementAdvisorPage() {
       <SupplementAdvisorQuiz />
     </div>
   );
+}
+
+/**
+ * The page, from its document when wave 4 is on and from the markup above
+ * when it is not. Both halves stay in the tree on purpose — the flag is the
+ * emergency switch, and it only works while the hand-written half is here.
+ */
+export default function SupplementAdvisorPage() {
+  if (PAGES_WAVE4_ENABLED) return <SystemPageBody pageKey="supplement-advisor" />;
+  return <SupplementAdvisorPageWritten />;
 }
