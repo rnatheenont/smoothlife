@@ -287,7 +287,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                   <span
                     key={c.slug}
                     style={{
-                      transform: `translate3d(0, calc(${lift * -70}px + 5%), 0) scale(${1 - lift * 0.06})`,
+                      transform: `translate3d(0, calc(${lift * -70}px - 3%), 0) scale(${1 - lift * 0.06})`,
                     }}
                     className={`absolute flex h-full w-full items-center justify-center transition-opacity duration-500 ${
                       on ? "opacity-100" : "opacity-0"
@@ -321,7 +321,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             the cloud bank at the foot of the dome, which is where the design
             puts them. Lifted by a share of the dome's own height so they stay
             with it at every size. */}
-        <div className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:-mt-[calc(var(--dome-h)*0.27)] md:flex-row md:items-center md:justify-center md:gap-10">
+        <div className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:-mt-[calc(var(--dome-h)*0.17)] md:flex-row md:items-center md:justify-center md:gap-10">
           <div className="flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/90 p-1 shadow-[0_6px_18px_rgba(15,23,42,0.08)]">
             {model.items.map((c, i) => {
               const on = i === here.item;
