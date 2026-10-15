@@ -487,6 +487,14 @@ export default function ProductDetailInteractive({
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         <div>
+          {/* Share rides over the photo at the top right, the corner Shopee
+              put it in and the one a shopper's thumb already goes to. It is a
+              sibling of the zoom button, not a child: a button inside a button
+              is not a thing, and a tap on it must not also open the lightbox. */}
+          <div className="relative">
+            <div className="absolute right-3 top-3 z-10">
+              <ProductShare name={product.name} overlay />
+            </div>
           {/* A button, not a div with a click handler, so the zoom is
               reachable from a keyboard and announced. The photo sits
               contained on the mist well like every card that led here. */}
@@ -516,12 +524,13 @@ export default function ProductDetailInteractive({
               />
               <span
                 aria-hidden="true"
-                className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-brand-ink ring-1 ring-surface-line"
+                className="absolute right-14 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-brand-ink ring-1 ring-surface-line"
               >
                 <Expand size={16} />
               </span>
             </button>
           )}
+          </div>
           {slides.length > 1 && (
             <div
               aria-hidden="true"
@@ -766,7 +775,6 @@ export default function ProductDetailInteractive({
                     }
                   />
                 </button>
-                <ProductShare name={product.name} />
               </div>
             ) : (
               <div className="mt-3 rounded-xl2 border border-brand-teal/30 bg-brand-gradient-soft p-4">
