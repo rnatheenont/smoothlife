@@ -72,6 +72,7 @@ import { categoryListing } from "./category_listing/definition";
 import { productDetail } from "./product_detail/definition";
 import { relatedProducts } from "./related_products/definition";
 import { recentlyViewed } from "./recently_viewed/definition";
+import { articlePage } from "./article_page/definition";
 
 // Every section the system knows how to render, by type.
 //
@@ -139,6 +140,7 @@ const ALL: AnySectionDefinition[] = [
   productDetail,
   relatedProducts,
   recentlyViewed,
+  articlePage,
 
   // The general-purpose ones. Everything above wraps a piece of the home page
   // as it already was; these are the blocks a page built from scratch is made

@@ -155,6 +155,32 @@ const product = (): PageDoc =>
     { type: "recently_viewed", v: 1, settings: {} },
   ]);
 
+/**
+ * An article page: one block, and the words in its rail.
+ *
+ * The thinnest template of the set, and honestly so — the page is a grid with
+ * a sticky rail, which cannot be cut into sections without the rail losing
+ * the thing that makes it a rail (see the note in the article_page section).
+ * What it gains is four sentences that used to be typed into a layout file.
+ */
+const article = (): PageDoc =>
+  doc([
+    {
+      type: "article_page",
+      v: 1,
+      settings: {
+        othersHeading: "บทความอื่น",
+        othersCount: 4,
+        othersCtaLabel: "ดูบทความทั้งหมด",
+        othersCtaHref: "/knowledge",
+        advisorTitle: "ยังไม่แน่ใจว่าเหมาะกับคุณไหม?",
+        advisorBody: "ถามน้อง Smoothie ช่วยเลือกผลิตภัณฑ์ให้ตรงกับปัญหาของคุณ",
+        advisorCtaLabel: "ปรึกษาน้อง Smoothie",
+        advisorCtaHref: "/advisor",
+      },
+    },
+  ]);
+
 /** Keyed by the registry's template key. A template with no entry here is not
  *  offered in the admin yet. */
 export const TEMPLATE_DEFAULT_DOCS: Record<string, () => PageDoc> = {
@@ -162,4 +188,5 @@ export const TEMPLATE_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   collection,
   category,
   product,
+  article,
 };
