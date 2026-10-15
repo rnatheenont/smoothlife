@@ -5,6 +5,7 @@ import Image from "next/image";
 import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
 import { Heart, Check, Flame, ShoppingCart, Star } from "lucide-react";
+import ProductShare from "@/components/ProductShare";
 import type { ProductCardData } from "@/data/card";
 import { formatTHB } from "@/lib/format";
 import { useCart, useWishlist } from "@/lib/cart-context";
@@ -286,6 +287,11 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
                 <Heart size={20} className={isWished ? "fill-sale text-sale" : "text-brand-800"} />
               </span>
             </button>
+            {/* Beside the heart rather than on the photograph: the row exists
+                precisely so the picture keeps one accent instead of three. It
+                stands down on the narrowest cards, where a third control
+                would crowd the price out. */}
+            <ProductShare name={product.name} path={`/product/${product.slug}`} variant="card" />
             {soldOut ? (
               <span className="flex h-9 flex-1 items-center justify-center rounded-full bg-slate-100 text-[13px] font-semibold text-slate-500 @[14rem]:h-10">
                 สินค้าหมด

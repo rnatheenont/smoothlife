@@ -28,19 +28,26 @@ function XIcon({ size = 20 }: { size?: number }) {
 
 export default function ProductShare({
   name,
-  overlay = false,
+  path,
+  variant = "default",
 }: {
   name: string;
-  /** Sitting on the photograph rather than in a row of outlined buttons. */
-  overlay?: boolean;
+  /** The product's own address. Omit on its own page, where the address in
+   *  the bar is already the right one; a card must say which product it is. */
+  path?: string;
+  /** "overlay" sits on a photograph, "card" sits in a product card's buy row. */
+  variant?: "default" | "overlay" | "card";
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   /** Set when every copy route failed, so the link can be selected by hand. */
   const [copyFailed, setCopyFailed] = useState(false);
 
-  /** Read at click time: the canonical URL is whatever the shopper is on. */
-  const url = () => (typeof window === "undefined" ? "" : window.location.href);
+  /** Read at click time, because the origin is only known in the browser. */
+  const url = () => {
+    if (typeof window === "undefined") return "";
+    return path ? new URL(path, window.location.origin).toString() : window.location.href;
+  };
   const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
   async function nativeShare() {
@@ -123,15 +130,20 @@ export default function ProductShare({
         type="button"
         onClick={openShare}
         className={
-          overlay
+          variant === "overlay"
             ? // The same disc the zoom hint wears, so the two read as one
               // pair of controls rather than two unrelated buttons.
               "grid h-9 w-9 place-items-center rounded-full bg-white/90 text-brand-ink ring-1 ring-surface-line transition-colors hover:bg-white"
-            : "grid h-11 w-11 shrink-0 place-items-center rounded-full border border-slate-200 text-slate-400 transition-colors hover:text-brand-ink"
+            : variant === "card"
+              ? // Matches the heart beside it exactly — same box, same grow at
+                // the same container width, no border of its own. A card is a
+                // crowded place and a third outline would be one too many.
+                "hidden h-8 w-8 shrink-0 place-items-center rounded-full text-brand-800 transition-colors hover:text-brand-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600 @[10rem]:grid @[14rem]:h-10 @[14rem]:w-10"
+              : "grid h-11 w-11 shrink-0 place-items-center rounded-full border border-slate-200 text-slate-400 transition-colors hover:text-brand-ink"
         }
         aria-label="แชร์สินค้านี้"
       >
-        <Share2 size={overlay ? 16 : 18} />
+        <Share2 size={variant === "overlay" ? 16 : variant === "card" ? 18 : 18} />
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} title="แชร์สินค้านี้" size="sm">
