@@ -350,11 +350,18 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
           </div>
         </div>
 
-        {/* Controls — swatches, dots, then the product, in one row standing on
+{/* Controls — swatches, dots, then the product, in one row standing on
             the cloud bank at the foot of the dome, which is where the design
             puts them. Lifted by a share of the dome's own height so they stay
-            with it at every size. */}
-        <div className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:-mt-[calc(var(--dome-h)*0.17)] md:flex-row md:items-center md:justify-center md:gap-10">
+            with it at every size.
+
+            The row spans the dome rather than a fixed 1180px, and spreads
+            rather than centres: bunched in the middle of a wide screen the
+            three groups read as one crowded blob with empty arc either side.
+            At 16% of the way up the arc is still 98% of its full width, so
+            90% of the dome keeps the row clear of the curve. `gap` is the
+            floor the spread may not close past on a narrow screen. */}
+        <div className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:-mt-[calc(var(--dome-h)*0.17)] md:max-w-[calc(var(--dome-w)*0.9)] md:flex-row md:items-center md:justify-between md:gap-6">
           <div className="flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/90 p-1 shadow-[0_6px_18px_rgba(15,23,42,0.08)]">
             {model.items.map((c, i) => {
               const on = i === here.item;
