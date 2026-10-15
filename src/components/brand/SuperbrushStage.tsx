@@ -212,7 +212,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
           }}
           onPointerUp={() => (drag.current = null)}
           onPointerCancel={() => (drag.current = null)}
-          className="relative mt-4 flex touch-pan-y select-none flex-col justify-end outline-hidden md:mt-0 md:flex-1"
+          className="relative mt-4 flex touch-pan-y select-none flex-col justify-end outline-hidden md:mt-0"
         >
           {/* The arch, tinted by the colourway, with the cloud bank sitting
               inside it.
@@ -252,7 +252,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             <p
               aria-hidden
               style={{ transform: `translate3d(0, ${lift * -24}px, 0)` }}
-              className="absolute inset-x-0 top-[11%] z-10 text-center font-serif text-[clamp(2rem,6.4vw,5.25rem)] leading-none text-brand-ink md:top-[13%]"
+              className="absolute inset-x-0 top-[6%] z-10 text-center font-serif text-[clamp(2rem,6.4vw,5.25rem)] leading-none text-brand-ink md:top-[7%]"
             >
               {model.title}
             </p>
@@ -271,7 +271,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                   <span
                     key={c.slug}
                     style={{
-                      transform: `translate3d(0, calc(${lift * -70}px + 7%), 0) scale(${1 - lift * 0.06})`,
+                      transform: `translate3d(0, calc(${lift * -70}px + 12%), 0) scale(${1 - lift * 0.06})`,
                     }}
                     className={`absolute flex h-full w-full items-center justify-center transition-opacity duration-500 ${
                       on ? "opacity-100" : "opacity-0"
