@@ -95,10 +95,19 @@ type Flat = { model: number; item: number };
  *  mount and this only covers the first paint. */
 const HEADLINE = 150;
 
-/** How much of what the window allows the dome actually takes. Filling it to
- *  the last pixel reads as cramped — the arc wants air around it — so this is
- *  the one knob to turn when the dome looks too big or too small. */
+/** How much of the window's *height* the dome takes. Filling it to the last
+ *  pixel reads as cramped, so this is the knob to turn when the dome looks too
+ *  big or too small. It does not touch the width: where the screen runs out of
+ *  width first — a tablet held upright — there is height to spare already, and
+ *  trimming the dome there buys nothing and only costs it. */
 const DOME_FILL = 0.92;
+
+/** On a phone the controls sit under the arc rather than inside it. Their
+ *  height is taken as a constant rather than measured, because measuring it
+ *  would resize the dome every time a product with a longer blurb came round.
+ *  56px is the tab bar the phone pins to the bottom of the window. */
+const PHONE_CONTROLS = 220;
+const PHONE_FOOT = 56;
 
 export default function SuperbrushStage({ models, headline, intro, allHref }: Props) {
   const flat = useMemo<Flat[]>(
@@ -162,15 +171,17 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       const avail = window.innerHeight - h;
 
       if (w < 768) {
-        // The arc is a half circle here, so its height is its width. 330px is
-        // what the headline above it and the controls under it need, plus a
-        // gap so the headline never lands flush against the header; whatever
-        // is left over is how wide the dome may be.
-        const fit = Math.min(w, avail - 350);
+        // The arc is a half circle here, so its height is its width, and the
+        // controls claw back 16% of it on a negative margin. Everything else
+        // is what the headline, the controls and the tab bar need; the rest is
+        // the dome's. A flat 350px guess here is what left the headline flush
+        // against the shop's header on a short phone.
+        const room = avail - (head.current?.offsetHeight ?? HEADLINE) - PHONE_CONTROLS - PHONE_FOOT;
+        const fit = Math.min(w, room / 0.84);
         setDomeSm(fit >= w ? null : fit);
-        // Under 60% of the screen the comb would be too small to shop from,
-        // so the stage gives up pinning and simply scrolls instead.
-        setPinned(fit >= w * 0.6);
+        // Past half the screen the comb is still worth shopping from; below
+        // that the stage gives up pinning and simply scrolls instead.
+        setPinned(fit >= w * 0.5);
         return;
       }
 
@@ -180,7 +191,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       const ratio = w < 1024 ? 1.6 : 1.8;
       const byWidth = w < 1024 ? Math.min(w * 0.96, 1100) : w * 0.92;
       const byHeight = (avail - (head.current?.offsetHeight ?? HEADLINE)) * ratio;
-      const domeW = Math.min(byWidth, byHeight) * DOME_FILL;
+      const domeW = Math.min(byWidth, byHeight * DOME_FILL);
       setDomeMax(domeW);
       const domeH = domeW / ratio;
       const spare = avail - (head.current?.offsetHeight ?? HEADLINE) - domeH;
@@ -250,7 +261,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
         // better than a pinned block whose bottom row cannot be reached.
         className={`[--dome-r:1] [--dome-w:var(--dome-w-sm,100vw)] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:[--dome-r:1.6] md:[--dome-w:min(96vw,1100px,var(--dome-max,1100px))] lg:[--dome-r:1.8] lg:[--dome-w:min(92vw,var(--dome-max,1360px))] ${
           pinned
-            ? `sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-center pb-20 md:pb-0 ${top ? "md:justify-start" : "md:justify-center"}`
+            ? `sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-center pb-14 md:pb-0 ${top ? "md:justify-start" : "md:justify-center"}`
             : ""
         }`}
       >
