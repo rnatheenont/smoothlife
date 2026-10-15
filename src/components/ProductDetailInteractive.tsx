@@ -493,7 +493,7 @@ export default function ProductDetailInteractive({
               is not a thing, and a tap on it must not also open the lightbox. */}
           <div className="relative">
             <div className="absolute right-3 top-3 z-10">
-              <ProductShare name={product.name} variant="overlay" />
+              <ProductShare name={product.name} overlay />
             </div>
           {/* A button, not a div with a click handler, so the zoom is
               reachable from a keyboard and announced. The photo sits
