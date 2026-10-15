@@ -72,6 +72,7 @@ test("the pages written so far", () => {
     "about-sustainability",
     "account-points",
     "account-referral",
+    "advisor",
     "ai-assistant",
     "brands",
     "cart",
@@ -87,12 +88,14 @@ test("the pages written so far", () => {
     "loyalty",
     "not-found",
     "offline",
+    "oral-care-advisor",
     "privacy",
     "promotions",
     "questions",
     "search",
     "shop",
     "stores",
+    "supplement-advisor",
     "terms",
   ]);
 });
