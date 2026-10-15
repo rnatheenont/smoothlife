@@ -119,10 +119,47 @@ const category = (): PageDoc =>
     { type: "category_listing", v: 1, settings: { emptyText: "ไม่พบสินค้าในหมวดนี้" } },
   ]);
 
+/**
+ * A product page: the trail, the buying part, then two shelves.
+ *
+ * Built differently from the other templates in one way, and on purpose. The
+ * page's own top and bottom padding is on a wrapper the route draws, not on
+ * the first and last sections — because the last two blocks here are allowed
+ * to disappear. "สินค้าที่เกี่ยวข้อง" is empty for a product with no
+ * neighbours, "ดูล่าสุด" is empty for a first-time visitor, and an admin may
+ * hide either. Hang the bottom of the page on a block that can vanish and the
+ * page loses its bottom on exactly the visits where it looks worst.
+ *
+ * §G7 of the plan asks for this shape: the buying part locked, the shelves
+ * around it movable. product_detail is the lock — it is the gallery, the
+ * price, the variants, the subscribe option and the add-to-cart button in one
+ * component, because they share one piece of state. The other two can be
+ * reordered, hidden, or have their headings rewritten.
+ *
+ * The trail's third step is the product's category, which the registry cannot
+ * know: the route passes it as the item's `under`.
+ */
+const product = (): PageDoc =>
+  doc([
+    {
+      type: "breadcrumb",
+      v: 1,
+      settings: { showHome: true, display: "row", room: "none", back: "beside", backHref: "" },
+    },
+    { type: "product_detail", v: 1, settings: {} },
+    {
+      type: "related_products",
+      v: 1,
+      settings: { title: "สินค้าที่เกี่ยวข้อง", subtitle: "You may also like", count: 4 },
+    },
+    { type: "recently_viewed", v: 1, settings: {} },
+  ]);
+
 /** Keyed by the registry's template key. A template with no entry here is not
  *  offered in the admin yet. */
 export const TEMPLATE_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   concern,
   collection,
   category,
+  product,
 };

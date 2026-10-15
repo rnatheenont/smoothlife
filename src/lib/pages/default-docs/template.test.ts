@@ -13,7 +13,15 @@ test("every template document belongs to a template in the registry", () => {
 });
 
 /** The sections that draw a template page's h1 — the item's own name. */
-const H1_SECTIONS = new Set(["entity_header", "page_header", "collection_header", "category_header"]);
+const H1_SECTIONS = new Set([
+  "entity_header",
+  "page_header",
+  "collection_header",
+  "category_header",
+  // The product's name is the h1, and it is drawn by the buying block
+  // because that block is the product.
+  "product_detail",
+]);
 
 test("each template owns exactly one h1", () => {
   for (const [key, make] of Object.entries(TEMPLATE_DEFAULT_DOCS)) {
@@ -41,5 +49,5 @@ test("two calls give two documents, not one shared object", () => {
 test("the templates written so far", () => {
   // A list rather than a count, so adding a template is a deliberate edit
   // here too — one publish of one of these changes hundreds of pages.
-  assert.deepEqual(Object.keys(TEMPLATE_DEFAULT_DOCS).sort(), ["category", "collection", "concern"]);
+  assert.deepEqual(Object.keys(TEMPLATE_DEFAULT_DOCS).sort(), ["category", "collection", "concern", "product"]);
 });
