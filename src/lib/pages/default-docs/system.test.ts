@@ -28,6 +28,9 @@ const H1_SECTIONS = new Set([
   "search_app",
   // The cart draws its own "ตะกร้าสินค้า" heading as the page's h1.
   "cart_app",
+  // Each account page draws its own heading inside AccountLayout.
+  "account_referral",
+  "account_points",
   // /shop's banner draws the h1 and changes it with the category being
   // browsed, so the words cannot live in a header block above it.
   "shop_hero",
@@ -67,6 +70,8 @@ test("the pages written so far", () => {
     "about-experts",
     "about-quality",
     "about-sustainability",
+    "account-points",
+    "account-referral",
     "ai-assistant",
     "brands",
     "cart",
