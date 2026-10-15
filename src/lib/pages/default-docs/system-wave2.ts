@@ -334,6 +334,65 @@ const oralCareAdvisor = (): PageDoc =>
     { type: "advisor_quiz", v: 1, settings: { variant: "oral_care" } },
   ]);
 
+/**
+ * The subscription page: five blocks, three of them locked.
+ *
+ * The plan sketched this as page_header → sets → cta_card → picker → terms.
+ * What it actually is, is a lit dark banner, then the terms, then two ways to
+ * subscribe, then an invitation to build a set — and the order matters,
+ * because the terms belong above the thing they are the terms of.
+ *
+ * The two numbers in the copy are tokens, not typed digits: {discount} is the
+ * best plan's percentage and {bundleDiscount} is the bundle discount, both
+ * from data/subscriptions.ts. A headline promising 15% beside a plan table
+ * offering 20% is worse than no headline at all.
+ */
+const subscription = (): PageDoc =>
+  doc([
+    {
+      type: "subscription_hero",
+      v: 1,
+      settings: {
+        badge: "Smoothlife Subscription",
+        title: "ดูแลตัวเองต่อเนื่อง\nไม่ต้องสั่งซ้ำ ประหยัดสูงสุด {discount}%",
+        intro:
+          "เลือกสินค้าที่ใช้ประจำ กำหนดรอบส่งของคุณเอง 3 / 6 หรือ 12 เดือน ยิ่งเลือกรอบยาว ยิ่งได้ส่วนลดมากขึ้น",
+        perks: [
+          { icon: "truck", label: "ส่งฟรีทุกรอบ" },
+          { icon: "clock", label: "เลือกรอบส่ง 3 / 6 / 12 เดือน" },
+          { icon: "shield", label: "ของแท้ 100% มีอย." },
+        ],
+      },
+    },
+    { type: "subscription_terms", v: 1, settings: {} },
+    {
+      type: "subscription_sets",
+      v: 1,
+      settings: {
+        heading: "เลือกชุดสมัครสมาชิก",
+        intro: "ชุดสินค้าที่ทีมคัดมาให้ครบ ไม่ต้องเลือกเอง ใช้ต่อเนื่องได้จริง",
+      },
+    },
+    {
+      type: "subscription_picker",
+      v: 1,
+      settings: {
+        heading: "หรือเลือกสินค้าเอง",
+        intro: "อยากได้แค่สินค้าชิ้นเดียวแบบสมัครรายรอบ เลือกได้จากที่นี่",
+      },
+    },
+    {
+      type: "subscription_build",
+      v: 1,
+      settings: {
+        title: "จัดชุดสินค้าเอง",
+        body: "เลือกสินค้าที่ใช้ประจำมาจัดเป็นชุดของตัวเอง รับส่วนลดชุดพิเศษ -{bundleDiscount}% ซ้อนทับกับส่วนลดตามรอบที่เลือกได้อีก",
+        cta: "เริ่มจัดชุด",
+        href: "/subscription/build",
+      },
+    },
+  ]);
+
 /** Merged into SYSTEM_DEFAULT_DOCS. Keyed by the registry's page key, and a
  *  page with no entry here is simply not offered in the admin yet. */
 export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
@@ -353,4 +412,5 @@ export const WAVE2_DEFAULT_DOCS: Record<string, () => PageDoc> = {
   advisor,
   "supplement-advisor": supplementAdvisor,
   "oral-care-advisor": oralCareAdvisor,
+  subscription,
 };

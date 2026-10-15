@@ -28,6 +28,8 @@ const H1_SECTIONS = new Set([
   "search_app",
   // The cart draws its own "ตะกร้าสินค้า" heading as the page's h1.
   "cart_app",
+  // The subscription banner draws the page's h1.
+  "subscription_hero",
   // Each account page draws its own heading inside AccountLayout.
   "account_referral",
   "account_points",
@@ -95,6 +97,7 @@ test("the pages written so far", () => {
     "search",
     "shop",
     "stores",
+    "subscription",
     "supplement-advisor",
     "terms",
   ]);
