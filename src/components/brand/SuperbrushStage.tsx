@@ -71,6 +71,18 @@ function deepen(hex: string, factor = 0.9) {
   return `#${to(r)}${to(g)}${to(b)}`;
 }
 
+/** The darker of a comb's two colours. The watermark behind it is drawn in
+ *  this one: on a gold comb the handle is paler than the dome it sits on, so
+ *  taking the first stop blindly made the word disappear. */
+function darker(a: string, b: string) {
+  const lum = (hex: string) => {
+    const n = hex.replace("#", "");
+    const [r, g, bl] = [0, 2, 4].map((i) => parseInt(n.slice(i, i + 2), 16));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  return lum(a) <= lum(b) ? a : b;
+}
+
 /** Index into the flat list, so a drag can cross a model boundary. */
 type Flat = { model: number; item: number };
 
@@ -246,16 +258,19 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             <span className="absolute inset-x-0 bottom-0 h-[18%] bg-linear-to-t from-white to-transparent" />
           </div>
           <div className="relative mx-auto flex h-[var(--dome-h)] w-[var(--dome-w)] items-center justify-center">
-            {/* The model's name at the crown of the dome, in the shop's serif.
-                It replaces the huge translucent wordmark that used to sit
-                behind the comb: the comb covered most of it, and the design
-                reads the name as a heading rather than as a watermark. */}
+            {/* The model's name set large and pale behind the comb, the way
+                it was before it was tried as a heading at the crown. No z-index
+                of its own: the combs come after it in the DOM, so they paint
+                over it and the word reads as the surface the comb sits on. */}
             <p
               aria-hidden
-              style={{ transform: `translate3d(0, ${lift * -24}px, 0)` }}
-              className="absolute inset-x-0 top-[11%] z-10 text-center font-serif text-[clamp(2.4rem,8.2vw,6.7rem)] leading-none text-brand-ink md:top-[15%]"
+              style={{
+                transform: `translate3d(0, ${lift * -34}px, 0)`,
+                color: `${darker(current.swatch[0], current.swatch[1])}33`,
+              }}
+              className="absolute inset-x-0 top-[40%] text-center font-serif text-[clamp(3rem,13vw,10rem)] italic leading-none transition-colors duration-700 md:top-[44%]"
             >
-              {model.title}
+              {model.wordmark}
             </p>
             {models.flatMap((m) =>
               m.items.map((c) => {
@@ -272,7 +287,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                   <span
                     key={c.slug}
                     style={{
-                      transform: `translate3d(0, calc(${lift * -70}px + 13%), 0) scale(${1 - lift * 0.06})`,
+                      transform: `translate3d(0, calc(${lift * -70}px + 5%), 0) scale(${1 - lift * 0.06})`,
                     }}
                     className={`absolute flex h-full w-full items-center justify-center transition-opacity duration-500 ${
                       on ? "opacity-100" : "opacity-0"
@@ -291,8 +306,8 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                           ? // About 60% of the stage, as drawn: the dome is most
                             // of what you see and the comb sits in it, rather
                             // than filling it.
-                            "h-[calc(var(--dome-h)*0.5)] md:h-[calc(var(--dome-h)*0.63)] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
-                          : "h-[calc(var(--dome-h)*0.44)] md:h-[calc(var(--dome-h)*0.56)] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
+                            "h-[calc(var(--dome-h)*0.58)] md:h-[calc(var(--dome-h)*0.72)] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
+                          : "h-[calc(var(--dome-h)*0.5)] md:h-[calc(var(--dome-h)*0.64)] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
                       }`}
                     />
                   </span>
