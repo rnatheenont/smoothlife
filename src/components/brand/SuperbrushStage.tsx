@@ -133,9 +133,11 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       // The dome's ratio by width, matching --dome-r below.
       const ratio = w < 768 ? 1 : w < 1024 ? 1.6 : 1.8;
       const domeW = w < 768 ? w : w < 1024 ? Math.min(w * 0.96, 1100) : Math.min(w * 0.92, 1360);
-      // 230px covers the headline above the dome and the controls under it.
-      // 150px covers the headline; the controls stand inside the dome now.
-      setPinned(w >= 768 && window.innerHeight - h >= domeW / ratio + 150);
+      // Above md the controls stand inside the dome, so only the headline
+      // has to be paid for. On a phone they sit under the arc, so the budget
+      // has to cover both before the stage may pin.
+      const budget = w < 768 ? 330 : 150;
+      setPinned(window.innerHeight - h >= domeW / ratio + budget);
     };
     read();
     window.addEventListener("resize", read);
@@ -177,7 +179,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       ref={stage}
       aria-roledescription="carousel"
       aria-label={`${headline} — เลือกสีและรุ่น`}
-      className={`relative pt-2 md:pt-0 ${pinned ? "md:h-[200vh]" : ""}`}
+      className={`relative pt-2 md:pt-0 ${pinned ? "h-[180vh] md:h-[200vh]" : ""}`}
     >
       <div
         style={{ "--stage-top": `${headerH}px` } as React.CSSProperties}
@@ -191,7 +193,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
         // better than a pinned block whose bottom row cannot be reached.
         className={`[--dome-r:1] [--dome-w:100vw] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:justify-center md:[--dome-r:1.6] md:[--dome-w:min(96vw,1100px)] lg:[--dome-r:1.8] lg:[--dome-w:min(92vw,1360px)] ${
           pinned
-            ? "md:sticky md:top-[var(--stage-top)] md:h-[calc(100vh-var(--stage-top))] md:overflow-hidden"
+            ? "sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-center pb-20 md:pb-0"
             : ""
         }`}
       >
