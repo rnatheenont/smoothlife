@@ -362,7 +362,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             90% of the dome keeps the row clear of the curve. `gap` is the
             floor the spread may not close past on a narrow screen. */}
         <div className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:-mt-[calc(var(--dome-h)*0.17)] md:max-w-[calc(var(--dome-w)*0.9)] md:flex-row md:items-center md:justify-between md:gap-6">
-          <div className="flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/90 p-1 shadow-[0_6px_18px_rgba(15,23,42,0.08)]">
+          <div className="flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/90 p-1 shadow-[0_6px_18px_rgba(15,23,42,0.08)] md:max-w-[calc(50%-6rem)] md:gap-0.5 lg:gap-1">
             {model.items.map((c, i) => {
               const on = i === here.item;
               return (
@@ -386,7 +386,12 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             })}
           </div>
 
-          <div className="flex items-center justify-center gap-2">
+          {/* Centred on the dome, not on what justify-between leaves over:
+              the swatch pill and the product block are not the same width, so
+              in the flow the numbers sat off to whichever side had less. Out
+              of the flow they land on the dome's axis at every width, and the
+              two blocks either side still reach for the edges. */}
+          <div className="flex items-center justify-center gap-2 md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2">
             {models.map((m, i) => {
               const on = i === here.model;
               return (
@@ -408,7 +413,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             })}
           </div>
 
-          <div className="text-center md:max-w-[22rem] md:text-left">
+          <div className="text-center md:max-w-[min(22rem,calc(50%-6rem))] md:text-left">
             <p className="text-sm font-bold text-brand-ink">{current.name}</p>
             <p className="mt-1 text-xs leading-relaxed text-slate-500">{model.blurb}</p>
             <div className="mt-2 flex items-center justify-center gap-3 md:justify-start">
