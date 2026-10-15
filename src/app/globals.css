@@ -469,3 +469,21 @@
   .janeke-clouds,
   .janeke-clouds-far { animation: none; }
 }
+
+/* The comb floating in the dome (SuperbrushStage).
+   A slow rise and fall with a touch of tilt: a straight up-down bob reads as a
+   lift, and the tilt is what makes it read as hanging in air. Seven seconds is
+   long enough that it never competes with the slider for attention. */
+.janeke-float {
+  animation: janeke-float 7s ease-in-out infinite;
+}
+
+@keyframes janeke-float {
+  0% { transform: translate3d(0, 6px, 0) rotate(-1.1deg); }
+  50% { transform: translate3d(0, -12px, 0) rotate(1.1deg); }
+  100% { transform: translate3d(0, 6px, 0) rotate(-1.1deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .janeke-float { animation: none; }
+}

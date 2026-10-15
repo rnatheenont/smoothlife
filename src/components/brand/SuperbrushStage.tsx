@@ -200,27 +200,38 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                   // Every colourway is in the DOM and only the current one is
                   // opaque: a crossfade between two <Image>s that are already
                   // decoded, instead of a white gap while the next one loads.
-                  <Image
+                  // Two elements, because two things move it: the wrapper
+                  // carries the scroll (which the page drives) and the image
+                  // carries the float (which runs on its own). One element
+                  // cannot hold both — a CSS animation on transform overrides
+                  // an inline transform outright, and the lift would be lost.
+                  <span
                     key={c.slug}
-                    src={c.image}
-                    alt={on ? `${m.title} ${c.colour}` : ""}
-                    aria-hidden={!on}
-                    width={520}
-                    height={520}
-                    // preload, not priority: priority is deprecated in Next 16.
-                    preload={c.slug === models[0]?.items[0]?.slug}
                     style={{
                       transform: `translate3d(0, ${lift * -70}px, 0) scale(${1 - lift * 0.06})`,
                     }}
-                    className={`absolute w-auto object-contain transition-opacity duration-500 ${
-                      c.cutout
-                        ? // About 60% of the stage, as drawn: the dome is most
-                          // of what you see and the comb sits in it, rather
-                          // than filling it.
-                          "h-[62%] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
-                        : "h-[54%] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
-                    } ${on ? "opacity-100" : "opacity-0"}`}
-                  />
+                    className={`absolute flex h-full w-full items-center justify-center transition-opacity duration-500 ${
+                      on ? "opacity-100" : "opacity-0"
+                    }`}
+                  >
+                    <Image
+                      src={c.image}
+                      alt={on ? `${m.title} ${c.colour}` : ""}
+                      aria-hidden={!on}
+                      width={520}
+                      height={520}
+                      // preload, not priority: priority is deprecated in Next 16.
+                      preload={c.slug === models[0]?.items[0]?.slug}
+                      className={`janeke-float w-auto object-contain ${
+                        c.cutout
+                          ? // About 60% of the stage, as drawn: the dome is most
+                            // of what you see and the comb sits in it, rather
+                            // than filling it.
+                            "h-[62%] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
+                          : "h-[54%] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
+                      }`}
+                    />
+                  </span>
                 );
               }),
             )}
