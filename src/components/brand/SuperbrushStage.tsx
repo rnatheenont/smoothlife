@@ -170,12 +170,14 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
               re-shot when a colour is added. */}
           <div
             aria-hidden
-            style={{
-              backgroundImage: `linear-gradient(to bottom, ${current.tint} 0%, ${current.tint} 38%, ${current.tint}00 92%)`,
-            }}
-            className="absolute inset-x-0 bottom-0 mx-auto h-[62vh] w-[min(96vw,1180px)] overflow-hidden rounded-t-full transition-[background-image] duration-700 md:h-[70vh]"
+            style={{ backgroundColor: current.tint }}
+            className="absolute inset-x-0 bottom-0 mx-auto h-[62vh] w-[min(98vw,1420px)] overflow-hidden rounded-t-full transition-colors duration-700 md:h-[76vh]"
           >
+            {/* Flat, the way it is drawn: the dome is one colour and the cloud
+                bank is what takes it to white at the foot. A gradient to
+                transparent made the whole thing look like a smudge. */}
             <span className="janeke-clouds absolute inset-x-[-14%] bottom-[-4%] h-[78%]" />
+            <span className="absolute inset-x-0 bottom-0 h-[18%] bg-linear-to-t from-white to-transparent" />
           </div>
           {/* The model's name, behind everything, drifting as the page moves. */}
           <p

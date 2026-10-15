@@ -82,6 +82,35 @@ type Shelf = Pick<Product, "slug" | "name" | "price" | "image" | "inStock"> & {
 };
 
 /**
+ * The dome behind each comb, taken from the comb itself.
+ *
+ * Measured off the design rather than guessed: in the Figma the leopard comb's
+ * pad is rgb(88,183,228) and its dome is #b6efff — the same hue, saturation
+ * pushed up by about a third, lightness at 0.86. Running that on every cut-out
+ * reproduces the designed dome to within 5/255 and gives the rest of the range
+ * a dome that matches its own comb, which a hand-written table of colour names
+ * never did.
+ */
+const DOMES: Record<string, string> = {
+  "fuchsia-blue": "#b8f2ff",
+  "gold-brown": "#e6d8d0",
+  "green-fuchsia": "#feb9e5",
+  "leopard-lightblue": "#b8eaff",
+  "lightblue-solid": "#bde7f9",
+  "lilac-white": "#d6cceb",
+  "mint-white": "#ccebe0",
+  "navy-lightblue": "#b8eaff",
+  "palepink-magenta-a": "#f2c5e8",
+  "palepink-magenta-b": "#f2c5e8",
+  "purple-fuchsia": "#f8bedb",
+  "red-orange": "#ffbfb8",
+  "silver-grey": "#eef1f3",
+  "teal-pink": "#ffb8cc",
+  "teal-yellow": "#fff4b8",
+  "yellow-orange": "#ffbbb8",
+};
+
+/**
  * The masked photographs, by the product each one is of.
  *
  * Every cut-out the shop has sits in /public/brands/janeke; only the ones
@@ -115,6 +144,9 @@ const CUTOUTS: Record<string, string> = {
   "new-janeke-small-superbrush-green": "/brands/janeke/green-fuchsia.webp",
   "new-janeke-small-superbrush-pink-pastel": "/brands/janeke/palepink-magenta-a.webp",
   "new-janeke-superbrush-pink": "/brands/janeke/fuchsia-blue.webp",
+  // Confirmed by the shop, and not guessable: the comb is teal with a yellow
+  // pad and the range calls it Blue.
+  "new-janeke-superbrush-blue": "/brands/janeke/teal-yellow.webp",
 };
 
 /**
@@ -146,11 +178,14 @@ export function janekeModels(items: Shelf[]): StageModel[] {
     // and when nothing is left, this is the plain one the range started with.
     const rest = p.name.replace(spec.strip, " ").replace(/\s+/g, " ").trim();
     const colour = COLOURS.find((c) => c.test.test(rest || p.slug));
+    const art = cut ? cut.split("/").pop()?.replace(/\.webp$/, "") : undefined;
     const way: Colourway = {
       slug: p.slug,
       colour: colour?.th ?? (rest ? rest : DEFAULT_COLOUR.th),
       swatch: colour?.swatch ?? DEFAULT_COLOUR.swatch,
-      tint: colour?.tint ?? DEFAULT_COLOUR.tint,
+      // The photograph's own dome where there is one; the colour name's
+      // approximation only for the products still on a catalogue photo.
+      tint: (art && DOMES[art]) || colour?.tint || DEFAULT_COLOUR.tint,
       image,
       // A cut-out floats; a square studio photograph gets a frame, or it reads
       // as a white box somebody forgot to mask.
