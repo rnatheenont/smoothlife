@@ -89,6 +89,17 @@ function darker(a: string, b: string) {
 /** Index into the flat list, so a drag can cross a model boundary. */
 type Flat = { model: number; item: number };
 
+/** What the headline above the dome needs before it has been measured. The
+ *  dome takes whatever the window has left, so a guess here is a dome that
+ *  overruns the fold by however far the guess was out — it is measured on
+ *  mount and this only covers the first paint. */
+const HEADLINE = 150;
+
+/** How much of what the window allows the dome actually takes. Filling it to
+ *  the last pixel reads as cramped — the arc wants air around it — so this is
+ *  the one knob to turn when the dome looks too big or too small. */
+const DOME_FILL = 0.92;
+
 export default function SuperbrushStage({ models, headline, intro, allHref }: Props) {
   const flat = useMemo<Flat[]>(
     () => models.flatMap((m, model) => m.items.map((_, item) => ({ model, item }))),
@@ -109,7 +120,20 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
   // stage usable there; the arc keeps its ratio, so it only gets smaller,
   // never flatter. Null means it stays full-bleed.
   const [domeSm, setDomeSm] = useState<number | null>(null);
+  // The widest the dome may be from md up. It used to be a flat 1360px, which
+  // on a screen wider than that left white down both sides and slack above and
+  // below. Now it fills the width and only gives way to the height the screen
+  // actually has, so the composition sits in the window rather than inside it.
+  const [domeMax, setDomeMax] = useState<number | null>(null);
   const stage = useRef<HTMLDivElement>(null);
+  const head = useRef<HTMLElement>(null);
+  const ctrl = useRef<HTMLDivElement>(null);
+  // Where the composition sits in a window taller than it needs. Pinned to the
+  // top when the dome is as tall as the window allows — centring would then
+  // push its foot past the fold, because the controls hang back up into the
+  // dome on a negative margin and the flow is shorter than what you see.
+  // Centred when the dome ran out of width first and the leftover is real.
+  const [top, setTop] = useState(false);
   const drag = useRef<{ x: number; moved: boolean } | null>(null);
 
   const here = flat[Math.min(pos, flat.length - 1)] ?? { model: 0, item: 0 };
@@ -154,8 +178,17 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       // The dome's ratio by width, matching --dome-r below. Above md the
       // controls stand inside the dome, so only the headline is paid for.
       const ratio = w < 1024 ? 1.6 : 1.8;
-      const domeW = w < 1024 ? Math.min(w * 0.96, 1100) : Math.min(w * 0.92, 1360);
-      setPinned(avail >= domeW / ratio + 150);
+      const byWidth = w < 1024 ? Math.min(w * 0.96, 1100) : w * 0.92;
+      const byHeight = (avail - (head.current?.offsetHeight ?? HEADLINE)) * ratio;
+      const domeW = Math.min(byWidth, byHeight) * DOME_FILL;
+      setDomeMax(domeW);
+      const domeH = domeW / ratio;
+      const spare = avail - (head.current?.offsetHeight ?? HEADLINE) - domeH;
+      setTop(spare < 0.17 * domeH - (ctrl.current?.offsetHeight ?? 100));
+      // Sized to the height, it fits by construction — unless the window is so
+      // short that filling it would leave the dome smaller than the screen it
+      // stands on, which reads as a stamp rather than a stage.
+      setPinned(domeW >= w * 0.6);
     };
     read();
     window.addEventListener("resize", read);
@@ -204,6 +237,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
           {
             "--stage-top": `${headerH}px`,
             ...(domeSm ? { "--dome-w-sm": `${Math.round(domeSm)}px` } : {}),
+            ...(domeMax ? { "--dome-max": `${Math.round(domeMax)}px` } : {}),
           } as React.CSSProperties
         }
         // --dome-r is the arc's ratio and --dome-h its height, taken straight
@@ -214,13 +248,13 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
         // on a window too short to hold the headline, the dome and the
         // controls at once, the stage stops being sticky and simply scrolls —
         // better than a pinned block whose bottom row cannot be reached.
-        className={`[--dome-r:1] [--dome-w:var(--dome-w-sm,100vw)] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:justify-center md:[--dome-r:1.6] md:[--dome-w:min(96vw,1100px)] lg:[--dome-r:1.8] lg:[--dome-w:min(92vw,1360px)] ${
+        className={`[--dome-r:1] [--dome-w:var(--dome-w-sm,100vw)] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:[--dome-r:1.6] md:[--dome-w:min(96vw,1100px,var(--dome-max,1100px))] lg:[--dome-r:1.8] lg:[--dome-w:min(92vw,var(--dome-max,1360px))] ${
           pinned
-            ? "sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-center pb-20 md:pb-0"
+            ? `sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-center pb-20 md:pb-0 ${top ? "md:justify-start" : "md:justify-center"}`
             : ""
         }`}
       >
-        <header className="relative z-20 px-4 pb-2 pt-6 text-center md:pb-6 md:pt-14">
+        <header ref={head} className="relative z-20 px-4 pb-2 pt-6 text-center md:pb-3 md:pt-6">
           <h1 className="font-serif text-[clamp(2rem,6vw,4.25rem)] italic leading-[1.05] text-brand-ink">
             {headline}
           </h1>
@@ -361,7 +395,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             At 16% of the way up the arc is still 98% of its full width, so
             90% of the dome keeps the row clear of the curve. `gap` is the
             floor the spread may not close past on a narrow screen. */}
-        <div className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:-mt-[calc(var(--dome-h)*0.17)] md:max-w-[calc(var(--dome-w)*0.9)] md:flex-row md:items-center md:justify-between md:gap-6">
+        <div ref={ctrl} className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:pb-4 md:-mt-[calc(var(--dome-h)*0.17)] md:max-w-[calc(var(--dome-w)*0.9)] md:flex-row md:items-center md:justify-between md:gap-6">
           <div className="flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/90 p-1 shadow-[0_6px_18px_rgba(15,23,42,0.08)] md:max-w-[calc(50%-6rem)] md:gap-0.5 lg:gap-1">
             {model.items.map((c, i) => {
               const on = i === here.item;
