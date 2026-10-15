@@ -94,6 +94,31 @@ type Shelf = Pick<Product, "slug" | "name" | "price" | "image" | "inStock"> & {
  * a dome that matches its own comb, which a hand-written table of colour names
  * never did.
  */
+/**
+ * The two colours of each comb, read off its own photograph: the handle and
+ * the grid. The swatch is drawn from these rather than from the colour's name,
+ * because the names in this range do not describe what you see — the comb the
+ * shop calls "Blue" is teal with a yellow grid.
+ */
+const SWATCHES: Record<string, [string, string]> = {
+  "fuchsia-blue": ["#d25aa0", "#1eb4dc"],
+  "gold-brown": ["#faf0d2", "#644646"],
+  "green-fuchsia": ["#64d200", "#e664be"],
+  "leopard-lightblue": ["#a0826e", "#78d2f0"],
+  "leopard-magenta": ["#b48c6e", "#d246aa"],
+  "lightblue-solid": ["#3caad2", "#3caad2"],
+  "lilac-white": ["#b496c8", "#beb4d2"],
+  "mint-white": ["#b4d2c8", "#b4d2c8"],
+  "navy-lightblue": ["#0a0a46", "#28b4f0"],
+  "palepink-magenta-a": ["#dcbed2", "#c85aaa"],
+  "palepink-magenta-b": ["#dcbed2", "#c85aaa"],
+  "purple-fuchsia": ["#6e468c", "#be3278"],
+  "red-orange": ["#fa1e0a", "#f03214"],
+  "teal-pink": ["#0abec8", "#f04678"],
+  "teal-yellow": ["#32b4b4", "#e6be00"],
+  "yellow-orange": ["#fabe00", "#e61400"],
+};
+
 const DOMES: Record<string, [string, string]> = {
   "fuchsia-blue": ["#b8f2ff", "#f5c1e1"],
   "gold-brown": ["#e6d8d0", "#ffedb8"],
@@ -191,7 +216,7 @@ export function janekeModels(items: Shelf[]): StageModel[] {
     const way: Colourway = {
       slug: p.slug,
       colour: colour?.th ?? (rest ? rest : DEFAULT_COLOUR.th),
-      swatch: colour?.swatch ?? DEFAULT_COLOUR.swatch,
+      swatch: (art && SWATCHES[art]) ?? colour?.swatch ?? DEFAULT_COLOUR.swatch,
       // The photograph's own two dome colours where there is one; the colour
       // name's single approximation only for products still on a catalogue
       // photo, where both stops are the same and the arc reads as one colour.

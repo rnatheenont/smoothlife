@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { Check } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatTHB } from "@/lib/format";
 
@@ -306,7 +307,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             puts them. Lifted by a share of the dome's own height so they stay
             with it at every size. */}
         <div className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:-mt-[calc(var(--dome-h)*0.14)] md:flex-row md:items-center md:justify-center md:gap-10">
-          <div className="flex flex-wrap items-center justify-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/90 p-1 shadow-[0_6px_18px_rgba(15,23,42,0.08)]">
             {model.items.map((c, i) => {
               const on = i === here.item;
               return (
@@ -317,11 +318,15 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                   title={c.colour}
                   aria-label={`สี ${c.colour}`}
                   aria-pressed={on}
-                  className={`size-7 rounded-full ring-2 transition-transform ${
-                    on ? "scale-110 ring-brand-ink" : "ring-white hover:scale-105"
+                  className={`grid size-7 place-items-center rounded-full transition-transform ${
+                    on ? "ring-2 ring-brand-ink" : "hover:scale-105"
                   }`}
                   style={{ backgroundImage: `linear-gradient(135deg, ${c.swatch[0]} 0 50%, ${c.swatch[1]} 50% 100%)` }}
-                />
+                >
+                  {/* The tick the design puts on the chosen colour — a ring
+                      alone is hard to spot against a two-tone circle. */}
+                  {on && <Check size={14} strokeWidth={3} className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]" />}
+                </button>
               );
             })}
           </div>
