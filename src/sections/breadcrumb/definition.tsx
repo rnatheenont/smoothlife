@@ -1,6 +1,6 @@
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { z } from "zod";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 import { crumbsFor, type Crumb } from "./trail";
@@ -31,8 +31,13 @@ const schema = z.object({
    * row there would be a change to the page on the day it moved into the
    * system, and the trail is worth keeping either way: it is how a search
    * result shows where a page sits.
+   *
+   * "back_link" is one step instead of a trail: a pill reading "← " and the
+   * name of the page above this one. On a page whose title is a sentence —
+   * a question, an article — a full trail wraps and reads worse than the one
+   * thing the reader wants from it, which is the way back.
    */
-  display: z.enum(["row", "data_only"]).default("row"),
+  display: z.enum(["row", "data_only", "back_link"]).default("row"),
   /**
    * How much room the row sits in.
    *
@@ -101,6 +106,32 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
   if (settings.display === "data_only") return script;
 
   const room = ROOM[settings.room] ?? ROOM.compact;
+
+  // One step up: the last step that is a link, which is the page above this
+  // one. The same step "back" falls back to, and for the same reason.
+  const up = [...items].reverse().find((i) => i.href);
+  if (settings.display === "back_link") {
+    return (
+      // The gutter is on the wrapper, not on the <nav>, so the nav's own box
+      // is the width of the content the way it is on every page that drew one
+      // of these by hand. Invisible either way — the nav has no background —
+      // but "invisible" is not the same as "the same".
+      <div className={`container-page ${room}`.trimEnd()}>
+        {script}
+        {up?.href && (
+          <nav aria-label="breadcrumb" className="text-sm">
+            <Link
+              href={up.href}
+              className="-ml-2 inline-flex min-h-[44px] items-center gap-1 rounded-full px-2 font-medium text-brand-800 hover:bg-surface-mist"
+            >
+              <ChevronLeft size={16} aria-hidden="true" /> {up.label}
+            </Link>
+          </nav>
+        )}
+      </div>
+    );
+  }
+
   const list = (
     <ol className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap text-xs text-slate-500 scrollbar-none">
       {items.map((item, i) => (
@@ -124,18 +155,19 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
   // element on the day the option arrives.
   if (settings.back === "none") {
     return (
-      <nav aria-label="Breadcrumb" className={`container-page ${room}`.trimEnd()}>
+      <div className={`container-page ${room}`.trimEnd()}>
         {script}
-        {list}
-      </nav>
+        <nav aria-label="Breadcrumb" className="min-w-0 overflow-x-auto scrollbar-none">
+          {list}
+        </nav>
+      </div>
     );
   }
 
   // One step up the trail: the last step that is a link, which is the step
   // before this page. Written as a fallback for the setting rather than
   // instead of it, so a page that wants somewhere else still gets it.
-  const upOneStep = [...items].reverse().find((i) => i.href)?.href;
-  const back = <BackButton fallbackHref={settings.backHref || upOneStep || "/"} />;
+  const back = <BackButton fallbackHref={settings.backHref || up?.href || "/"} />;
 
   if (settings.back === "beside") {
     return (
@@ -202,6 +234,7 @@ export const breadcrumb: SectionDefinition<typeof schema> = {
       options: [
         ["row", "แสดงแถวเส้นทาง"],
         ["data_only", "ไม่แสดง ส่งให้ search engine เท่านั้น"],
+        ["back_link", "แสดงปุ่มย้อนกลับหนึ่งขั้น"],
       ],
     },
   ],

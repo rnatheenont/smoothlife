@@ -24,6 +24,8 @@ const H1_SECTIONS = new Set([
   // An article's own headline is the h1, drawn by the block that is the
   // article.
   "article_page",
+  // A question's own words are the h1, drawn by the block that is the answer.
+  "question_article",
 ]);
 
 test("each template owns exactly one h1", () => {
@@ -52,5 +54,5 @@ test("two calls give two documents, not one shared object", () => {
 test("the templates written so far", () => {
   // A list rather than a count, so adding a template is a deliberate edit
   // here too — one publish of one of these changes hundreds of pages.
-  assert.deepEqual(Object.keys(TEMPLATE_DEFAULT_DOCS).sort(), ["article", "category", "collection", "concern", "product"]);
+  assert.deepEqual(Object.keys(TEMPLATE_DEFAULT_DOCS).sort(), ["article", "category", "collection", "concern", "product", "question"]);
 });

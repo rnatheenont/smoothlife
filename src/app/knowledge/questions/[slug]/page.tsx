@@ -13,6 +13,8 @@ import {
 import { thaiDate } from "@/lib/storefront-articles";
 import { withCustomImages } from "@/lib/product-images";
 import { toCardData } from "@/data/card";
+import { PAGES_WAVE3_ENABLED } from "@/lib/feature-flags";
+import { TemplateBody } from "@/lib/pages/template-page";
 
 // One question, one page — the answer the team wrote, and the products it is
 // about. Refreshed on a quarter-hour; the knowledge base changes when someone
@@ -34,11 +36,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   };
 }
 
-export default async function PublicQuestionPage(props: { params: Promise<{ slug: string }> }) {
-  const { slug } = await props.params;
-  const question = await getPublicQuestion(decodeURIComponent(slug));
-  if (!question) notFound();
-
+async function PublicQuestionWritten({ question }: { question: NonNullable<Awaited<ReturnType<typeof getPublicQuestion>>> }) {
   const products = await withCustomImages(taggedProducts(question.product_tags));
   const others = (await getPublicQuestions()).filter((q) => q.public_slug !== question.public_slug).slice(0, 6);
   const paragraphs = question.content.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
@@ -137,4 +135,32 @@ export default async function PublicQuestionPage(props: { params: Promise<{ slug
       )}
     </div>
   );
+}
+
+/**
+ * The page, from the question template when wave 3 is on and from the markup
+ * above when it is not.
+ *
+ * The wrapper's padding is here rather than in the first and last sections:
+ * the products shelf is empty for an answer with no tags, and the other-
+ * answers list is empty while this is the only published answer, so neither
+ * can be trusted to hold the bottom of the page. Vertical padding only —
+ * each section draws its own `container-page`.
+ */
+export default async function PublicQuestionPage(props: { params: Promise<{ slug: string }> }) {
+  const { slug } = await props.params;
+  const question = await getPublicQuestion(decodeURIComponent(slug));
+  if (!question) notFound();
+
+  if (PAGES_WAVE3_ENABLED) {
+    return (
+      <div className="py-6 md:py-10">
+        <TemplateBody
+          templateKey="question"
+          entity={{ type: "question", slug: question.public_slug, name: question.title }}
+        />
+      </div>
+    );
+  }
+  return <PublicQuestionWritten question={question} />;
 }
