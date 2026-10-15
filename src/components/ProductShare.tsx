@@ -26,14 +26,7 @@ function XIcon({ size = 20 }: { size?: number }) {
   );
 }
 
-export default function ProductShare({
-  name,
-  overlay = false,
-}: {
-  name: string;
-  /** Sitting on the photograph rather than in a row of outlined buttons. */
-  overlay?: boolean;
-}) {
+export default function ProductShare({ name }: { name: string }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   /** Set when every copy route failed, so the link can be selected by hand. */
@@ -122,16 +115,10 @@ export default function ProductShare({
       <button
         type="button"
         onClick={openShare}
-        className={
-          overlay
-            ? // The same disc the zoom hint wears, so the two read as one
-              // pair of controls rather than two unrelated buttons.
-              "grid h-9 w-9 place-items-center rounded-full bg-white/90 text-brand-ink ring-1 ring-surface-line transition-colors hover:bg-white"
-            : "grid h-11 w-11 shrink-0 place-items-center rounded-full border border-slate-200 text-slate-400 transition-colors hover:text-brand-ink"
-        }
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-slate-200 text-slate-400 transition-colors hover:text-brand-ink"
         aria-label="แชร์สินค้านี้"
       >
-        <Share2 size={overlay ? 16 : 18} />
+        <Share2 size={18} />
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} title="แชร์สินค้านี้" size="sm">
