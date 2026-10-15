@@ -264,7 +264,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
         // better than a pinned block whose bottom row cannot be reached.
         className={`[--dome-r:1] [--dome-w:var(--dome-w-sm,100vw)] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:[--dome-r:1.3] md:[--dome-w:min(96vw,1100px,var(--dome-max,1100px))] lg:[--dome-r:1.8] lg:[--dome-w:min(92vw,var(--dome-max,1360px))] ${
           pinned
-            ? `sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-center pb-14 md:pb-0 ${top ? "md:justify-start" : "md:justify-center"}`
+            ? `sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-center pb-14 md:pb-16 ${top ? "md:justify-start" : "md:justify-center"}`
             : ""
         }`}
       >
