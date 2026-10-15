@@ -58,6 +58,16 @@ type Props = {
   allHref: string;
 };
 
+/** The dome is lit from its crown: white at the top, the colourway's tint
+ *  through the middle, a shade of the same colour at the rim. One multiplier
+ *  gives that last stop without a second colour to keep in step. */
+function deepen(hex: string, factor = 0.9) {
+  const n = hex.replace("#", "");
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(n.slice(i, i + 2), 16));
+  const to = (v: number) => Math.max(0, Math.round(v * factor)).toString(16).padStart(2, "0");
+  return `#${to(r)}${to(g)}${to(b)}`;
+}
+
 /** Index into the flat list, so a drag can cross a model boundary. */
 type Flat = { model: number; item: number };
 
@@ -214,29 +224,30 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
               floating above it — which is exactly what one ratio did. */}
           <div
             aria-hidden
-            style={{ backgroundColor: current.tint }}
+            style={{
+              backgroundImage: `radial-gradient(120% 98% at 50% -8%, #ffffff 0%, ${current.tint} 46%, ${deepen(current.tint)} 100%)`,
+            }}
             className="absolute inset-x-0 bottom-0 mx-auto h-[var(--dome-h)] w-screen overflow-hidden rounded-t-full transition-colors duration-700"
           >
             {/* Flat, the way it is drawn: the dome is one colour and the cloud
                 bank is what takes it to white at the foot. A gradient to
                 transparent made the whole thing look like a smudge. */}
-            <span className="janeke-clouds-far inset-x-[-14%] bottom-[6%] h-[64%]" />
-            <span className="janeke-clouds inset-x-[-14%] bottom-[-4%] h-[78%]" />
+            <span className="janeke-clouds-far inset-x-[-14%] bottom-[8%] h-[72%]" />
+            <span className="janeke-clouds inset-x-[-14%] bottom-[-4%] h-[88%]" />
             <span className="absolute inset-x-0 bottom-0 h-[18%] bg-linear-to-t from-white to-transparent" />
           </div>
-          {/* The model's name, behind everything, drifting as the page moves. */}
-          <p
-            aria-hidden
-            style={{
-              transform: `translate3d(0, ${lift * -40}px, 0)`,
-              color: `${current.swatch[0]}2e`,
-            }}
-            className="absolute inset-x-0 bottom-[20%] text-center font-serif text-[clamp(3rem,14vw,11rem)] italic leading-none transition-colors duration-700 md:bottom-[24%]"
-          >
-            {model.wordmark}
-          </p>
-
           <div className="relative flex h-[var(--dome-h)] w-full items-center justify-center">
+            {/* The model's name at the crown of the dome, in the shop's serif.
+                It replaces the huge translucent wordmark that used to sit
+                behind the comb: the comb covered most of it, and the design
+                reads the name as a heading rather than as a watermark. */}
+            <p
+              aria-hidden
+              style={{ transform: `translate3d(0, ${lift * -24}px, 0)` }}
+              className="absolute inset-x-0 top-[7%] z-10 text-center font-serif text-[clamp(1.5rem,4.2vw,3.75rem)] leading-none text-brand-ink md:top-[9%]"
+            >
+              {model.title}
+            </p>
             {models.flatMap((m) =>
               m.items.map((c) => {
                 const on = c.slug === current.slug;
@@ -282,9 +293,12 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
           </div>
         </div>
 
-        {/* Controls — swatches left, dots centre, the product right, as drawn. */}
-        <div className="relative z-20 mx-auto grid w-full max-w-[1180px] gap-5 px-4 pb-10 md:grid-cols-[1fr_auto_1fr] md:items-end md:gap-6">
-          <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
+        {/* Controls — swatches, dots, then the product, in one row standing on
+            the cloud bank at the foot of the dome, which is where the design
+            puts them. Lifted by a share of the dome's own height so they stay
+            with it at every size. */}
+        <div className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:-mt-[calc(var(--dome-h)*0.14)] md:flex-row md:items-center md:justify-center md:gap-10">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             {model.items.map((c, i) => {
               const on = i === here.item;
               return (
@@ -326,12 +340,12 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             })}
           </div>
 
-          <div className="text-center md:text-right">
+          <div className="text-center md:max-w-[22rem] md:text-left">
             <p className="text-sm font-bold uppercase tracking-wide text-brand-ink">
               {model.title} {current.colour}
             </p>
             <p className="mt-1 text-xs leading-relaxed text-slate-500">{model.blurb}</p>
-            <div className="mt-2 flex items-center justify-center gap-3 md:justify-end">
+            <div className="mt-2 flex items-center justify-center gap-3 md:justify-start">
               <span className="text-sm font-bold text-brand-ink">{formatTHB(current.price)}</span>
               <Link
                 href={`/product/${current.slug}`}
