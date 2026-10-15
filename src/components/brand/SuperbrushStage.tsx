@@ -139,7 +139,13 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
     >
       <div
         style={{ "--stage-top": `${headerH}px` } as React.CSSProperties}
-        className="md:sticky md:top-[var(--stage-top)] md:flex md:h-[calc(100vh-var(--stage-top))] md:flex-col md:justify-center md:overflow-hidden"
+        // --dome-r is the arc's ratio and --dome-h its height. The height is
+        // the smaller of "what the ratio asks for" and "what is left on the
+        // screen after the headline and the controls" — so a short window
+        // shrinks the whole dome instead of flattening it, and the controls
+        // stop running off the bottom. 15rem is that headline-plus-controls
+        // allowance, measured from the rendered page.
+        className="[--dome-max:9999px] [--dome-r:1] [--dome-h:min(calc(100vw/var(--dome-r)),var(--dome-max))] md:sticky md:top-[var(--stage-top)] md:flex md:h-[calc(100vh-var(--stage-top))] md:flex-col md:justify-center md:overflow-hidden md:[--dome-max:calc(100vh-var(--stage-top)-15rem)] md:[--dome-r:2.2] lg:[--dome-r:3]"
       >
         <header className="relative z-20 px-4 pt-6 text-center md:pt-0">
           <h1 className="font-serif text-[clamp(2rem,6vw,4.25rem)] italic leading-[1.05] text-brand-ink">
@@ -191,7 +197,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
           <div
             aria-hidden
             style={{ backgroundColor: current.tint }}
-            className="absolute inset-x-0 bottom-0 mx-auto aspect-square w-screen overflow-hidden rounded-t-full transition-colors duration-700 md:aspect-[2.2/1] lg:aspect-[3/1]"
+            className="absolute inset-x-0 bottom-0 mx-auto h-[var(--dome-h)] w-[calc(var(--dome-h)*var(--dome-r))] max-w-[100vw] overflow-hidden rounded-t-full transition-colors duration-700"
           >
             {/* Flat, the way it is drawn: the dome is one colour and the cloud
                 bank is what takes it to white at the foot. A gradient to
@@ -212,7 +218,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             {model.wordmark}
           </p>
 
-          <div className="relative flex aspect-square w-full items-center justify-center md:aspect-[2.2/1] lg:aspect-[3/1]">
+          <div className="relative mx-auto flex h-[var(--dome-h)] w-[calc(var(--dome-h)*var(--dome-r))] max-w-[100vw] items-center justify-center">
             {models.flatMap((m) =>
               m.items.map((c) => {
                 const on = c.slug === current.slug;
@@ -247,8 +253,8 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                           ? // About 60% of the stage, as drawn: the dome is most
                             // of what you see and the comb sits in it, rather
                             // than filling it.
-                            "h-[55vw] md:h-[min(26vw,560px)] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
-                          : "h-[48vw] md:h-[min(22vw,480px)] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
+                            "h-[calc(var(--dome-h)*0.52)] md:h-[calc(var(--dome-h)*0.68)] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
+                          : "h-[calc(var(--dome-h)*0.46)] md:h-[calc(var(--dome-h)*0.6)] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
                       }`}
                     />
                   </span>
