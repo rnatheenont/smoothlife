@@ -182,10 +182,13 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
               sky is one colour, and this arch is nine — white gradients sit on
               any of them, cost nothing to download, and do not have to be
               re-shot when a colour is added. */}
+          {/* Full bleed at every width: a capped dome leaves white margins on
+              a wide screen, which read as the dome being too small rather than
+              as deliberate space. */}
           <div
             aria-hidden
             style={{ backgroundColor: current.tint }}
-            className="absolute inset-x-0 bottom-0 mx-auto h-[62vh] w-[min(98vw,1420px)] overflow-hidden rounded-t-full transition-colors duration-700 md:h-[76vh]"
+            className="absolute inset-x-0 bottom-0 mx-auto h-[62vh] w-screen overflow-hidden rounded-t-full transition-colors duration-700 md:h-[76vh]"
           >
             {/* Flat, the way it is drawn: the dome is one colour and the cloud
                 bank is what takes it to white at the foot. A gradient to
