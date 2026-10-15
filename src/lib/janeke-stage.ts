@@ -82,18 +82,27 @@ type Shelf = Pick<Product, "slug" | "name" | "price" | "image" | "inStock"> & {
 };
 
 /**
- * The cut-outs exported from the shop's own Figma file, where the layer is
- * named after the product it is a photograph of — so these three are the ones
- * that can be attached without guessing which brush is which.
+ * The masked photographs, by the product each one is of.
  *
- * The other eight cut-outs sit in the same folder, unused until somebody says
- * which product each belongs to: a pink brush could be either of two pinks in
- * this range, and the wrong photograph on a product is worse than a plain one.
+ * Every cut-out the shop has sits in /public/brands/janeke; only the ones
+ * whose colourway names exactly one product in the range are attached here.
+ * The rest wait for somebody to say which is which — this range sells two
+ * pinks and two lilac-fuchsias, and the wrong photograph on a product is worse
+ * than a plain studio shot.
  */
 const CUTOUTS: Record<string, string> = {
-  "janeke-premium-gold-superbrush": "/brands/janeke/gold-black.webp",
-  "janeke-premium-silver-superbrush": "/brands/janeke/silver-black.webp",
-  "janeke-mac-tse-superbrush-maculata": "/brands/janeke/leopard-blue.webp",
+  "janeke-premium-gold-superbrush": "/brands/janeke/gold-brown.webp",
+  "janeke-premium-silver-superbrush": "/brands/janeke/silver-grey.webp",
+  "janeke-mac-tse-superbrush-maculata": "/brands/janeke/leopard-lightblue.webp",
+  // Colour names that belong to exactly one product in the range, so the
+  // photograph can only be of that one: no other comb here is navy with a
+  // light blue pad, or yellow with an orange one.
+  "new-janeke-small-superbrush-deep-blue": "/brands/janeke/navy-lightblue.webp",
+  "new-janeke-small-superbrush-green-1": "/brands/janeke/yellow-orange.webp",
+  "new-janeke-superbrush-purple": "/brands/janeke/purple-fuchsia.webp",
+  "new-janeke-superbrush-lillac": "/brands/janeke/lilac-white.webp",
+  "new-janeke-superbrush-orange": "/brands/janeke/red-orange.webp",
+  "new-janeke-superbrush-light-blue": "/brands/janeke/lightblue-solid.webp",
 };
 
 /**
