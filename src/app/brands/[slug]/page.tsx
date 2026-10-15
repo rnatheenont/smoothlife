@@ -32,9 +32,24 @@ import { janekeModels } from "@/lib/janeke-stage";
 
 const PER_GROUP = 8;
 
+/** The same shelf at xl, where the grid is five across rather than four.
+ *  Both counts are whole rows, so an expanded shelf never ends on a part
+ *  row with empty columns beside it. */
+const PER_GROUP_XL = 10;
+
 /** Drawn into the page: one row on a desktop, two on a phone. The rest of
- *  the shelf arrives when somebody asks for it — see MoreProducts. */
+ *  the shelf arrives when somebody asks for it — see MoreProducts.
+ *
+ *  The grid is four across from md and five from xl, so one count cannot
+ *  fill the row at both widths. The page draws five and hides the fifth
+ *  below xl, which is what keeps every shelf a whole row — a shelf cut to
+ *  four left an empty column on a wide screen and read as stock running out.
+ */
 const FIRST_ROW = 4;
+const FIRST_ROW_XL = 5;
+
+/** The card at `index` of a first row: the fifth belongs to xl alone. */
+const firstRowClass = (index: number) => (index >= FIRST_ROW ? "hidden xl:block" : undefined);
 
 export function generateStaticParams() {
   return brands.map((b) => ({ slug: b.slug }));
@@ -157,7 +172,9 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
   // for a small brand, where "most reviewed" would just be the same four
   // products the shopper is about to scroll past.
   const bestsellers =
-    items.length > PER_GROUP ? [...items].sort((a, b) => b.reviewCount - a.reviewCount).slice(0, 4) : [];
+    items.length > PER_GROUP
+      ? [...items].sort((a, b) => b.reviewCount - a.reviewCount).slice(0, FIRST_ROW_XL)
+      : [];
 
   const breadcrumbItems = [
     { label: "หน้าแรก", href: "/" },
@@ -298,8 +315,10 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
           </h2>
           <p className="mb-4 text-xs text-slate-500">เรียงจากจำนวนรีวิวจริงของผู้ซื้อบนเว็บไซต์</p>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5">
-            {bestsellers.map((p) => (
-              <ProductCard key={p.slug} product={toCardData(p)} />
+            {bestsellers.map((p, i) => (
+              <div key={p.slug} className={firstRowClass(i)}>
+                <ProductCard product={toCardData(p)} />
+              </div>
             ))}
           </div>
         </section>
@@ -321,13 +340,18 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
             )}
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5">
-            {group.items.slice(0, FIRST_ROW).map((p) => (
-              <ProductCard key={p.slug} product={toCardData(p)} />
+            {group.items.slice(0, FIRST_ROW_XL).map((p, i) => (
+              <div key={p.slug} className={firstRowClass(i)}>
+                <ProductCard product={toCardData(p)} />
+              </div>
             ))}
           </div>
           <MoreProducts
-            slugs={group.items.slice(FIRST_ROW, PER_GROUP).map((p) => p.slug)}
+            slugs={group.items.slice(FIRST_ROW, PER_GROUP_XL).map((p) => p.slug)}
             label={`ดู${group.label}เพิ่ม`}
+            // This shelf carries on from the row above, which draws four
+            // cards below xl and five at xl.
+            continuesRow
           />
         </section>
       ))}
