@@ -28,8 +28,10 @@ export type Colourway = {
   colour: string;
   /** Two stops, because these combs are two-tone: handle and pad. */
   swatch: [string, string];
-  /** The wash behind the comb when this colourway is showing. */
+  /** The two stops of the wash behind the comb: the grid's colour and the
+   *  handle's, which is how the design fills the arc. */
   tint: string;
+  tint2: string;
   image: string;
   /** True when the photograph is masked and can sit on the arch unframed. */
   cutout: boolean;
@@ -227,7 +229,11 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
           <div
             aria-hidden
             style={{
-              backgroundImage: `radial-gradient(120% 98% at 50% -8%, #ffffff 0%, ${current.tint} 46%, ${deepen(current.tint)} 100%)`,
+              backgroundImage: [
+                // The crown's light, over the two colours of the comb.
+                "radial-gradient(90% 62% at 50% -4%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 62%)",
+                `linear-gradient(100deg, ${current.tint} 0%, ${current.tint} 32%, ${current.tint2} 68%, ${deepen(current.tint2)} 100%)`,
+              ].join(", "),
             }}
             className="absolute inset-x-0 bottom-0 mx-auto h-[var(--dome-h)] w-[var(--dome-w)] overflow-hidden rounded-t-full transition-colors duration-700"
           >
@@ -246,7 +252,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             <p
               aria-hidden
               style={{ transform: `translate3d(0, ${lift * -24}px, 0)` }}
-              className="absolute inset-x-0 top-[7%] z-10 text-center font-serif text-[clamp(1.5rem,4.2vw,3.75rem)] leading-none text-brand-ink md:top-[9%]"
+              className="absolute inset-x-0 top-[11%] z-10 text-center font-serif text-[clamp(2rem,6.4vw,5.25rem)] leading-none text-brand-ink md:top-[13%]"
             >
               {model.title}
             </p>
@@ -265,7 +271,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                   <span
                     key={c.slug}
                     style={{
-                      transform: `translate3d(0, ${lift * -70}px, 0) scale(${1 - lift * 0.06})`,
+                      transform: `translate3d(0, calc(${lift * -70}px + 7%), 0) scale(${1 - lift * 0.06})`,
                     }}
                     className={`absolute flex h-full w-full items-center justify-center transition-opacity duration-500 ${
                       on ? "opacity-100" : "opacity-0"

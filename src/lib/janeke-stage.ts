@@ -82,7 +82,10 @@ type Shelf = Pick<Product, "slug" | "name" | "price" | "image" | "inStock"> & {
 };
 
 /**
- * The dome behind each comb, taken from the comb itself.
+ * The two colours of the dome behind each comb, taken from the comb itself:
+ * the inner grid first, the handle second. The design fills the arc with both
+ * — a pink-and-purple comb gets a pink-to-purple dome — which one colour could
+ * never do.
  *
  * Measured off the design rather than guessed: in the Figma the leopard comb's
  * pad is rgb(88,183,228) and its dome is #b6efff — the same hue, saturation
@@ -91,24 +94,23 @@ type Shelf = Pick<Product, "slug" | "name" | "price" | "image" | "inStock"> & {
  * a dome that matches its own comb, which a hand-written table of colour names
  * never did.
  */
-const DOMES: Record<string, string> = {
-  "fuchsia-blue": "#b8f2ff",
-  "gold-brown": "#e6d8d0",
-  "green-fuchsia": "#feb9e5",
-  "leopard-lightblue": "#b8eaff",
-  "leopard-magenta": "#f6c0e8",
-  "lightblue-solid": "#bfe9f8",
-  "lilac-white": "#d6cceb",
-  "mint-white": "#ccebe0",
-  "navy-lightblue": "#b8eaff",
-  "palepink-magenta-a": "#f2c5e8",
-  "palepink-magenta-b": "#f2c5e8",
-  "purple-fuchsia": "#f8bedb",
-  "red-orange": "#ffbfb8",
-  "silver-grey": "#eef1f3",
-  "teal-pink": "#ffb8cc",
-  "teal-yellow": "#fff4b8",
-  "yellow-orange": "#ffbbb8",
+const DOMES: Record<string, [string, string]> = {
+  "fuchsia-blue": ["#b8f2ff", "#f5c1e1"],
+  "gold-brown": ["#e6d8d0", "#ffedb8"],
+  "green-fuchsia": ["#feb9e5", "#d9ffb8"],
+  "leopard-lightblue": ["#b8eaff", "#e5d7d2"],
+  "leopard-magenta": ["#f6c0e8", "#ebdbcc"],
+  "lightblue-solid": ["#bfe9f8", "#bbedfb"],
+  "lilac-white": ["#d6cceb", "#e2cee9"],
+  "mint-white": ["#d2e4e4", "#d2e4e4"],
+  "navy-lightblue": ["#b8eaff", "#b9b9fe"],
+  "palepink-magenta-a": ["#f2c5e8", "#ebcce0"],
+  "palepink-magenta-b": ["#f2c5e8", "#ebcce0"],
+  "purple-fuchsia": ["#f8bedb", "#dbcbeb"],
+  "red-orange": ["#ffbfb8", "#ffbeb8"],
+  "teal-pink": ["#ffb8cc", "#b8ffff"],
+  "teal-yellow": ["#fff4b8", "#bff7f7"],
+  "yellow-orange": ["#ffbbb8", "#ffebb8"],
 };
 
 /**
@@ -185,13 +187,16 @@ export function janekeModels(items: Shelf[]): StageModel[] {
     const rest = p.name.replace(spec.strip, " ").replace(/\s+/g, " ").trim();
     const colour = COLOURS.find((c) => c.test.test(rest || p.slug));
     const art = cut ? cut.split("/").pop()?.replace(/\.webp$/, "") : undefined;
+    const pair = art ? DOMES[art] : undefined;
     const way: Colourway = {
       slug: p.slug,
       colour: colour?.th ?? (rest ? rest : DEFAULT_COLOUR.th),
       swatch: colour?.swatch ?? DEFAULT_COLOUR.swatch,
-      // The photograph's own dome where there is one; the colour name's
-      // approximation only for the products still on a catalogue photo.
-      tint: (art && DOMES[art]) || colour?.tint || DEFAULT_COLOUR.tint,
+      // The photograph's own two dome colours where there is one; the colour
+      // name's single approximation only for products still on a catalogue
+      // photo, where both stops are the same and the arc reads as one colour.
+      tint: pair?.[0] ?? colour?.tint ?? DEFAULT_COLOUR.tint,
+      tint2: pair?.[1] ?? colour?.tint ?? DEFAULT_COLOUR.tint,
       image,
       // A cut-out floats; a square studio photograph gets a frame, or it reads
       // as a white box somebody forgot to mask.
