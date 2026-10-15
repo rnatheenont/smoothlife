@@ -174,7 +174,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
           }}
           onPointerUp={() => (drag.current = null)}
           onPointerCancel={() => (drag.current = null)}
-          className="relative mt-4 touch-pan-y select-none outline-hidden md:mt-0 md:flex-1"
+          className="relative mt-4 flex touch-pan-y select-none flex-col justify-end outline-hidden md:mt-0 md:flex-1"
         >
           {/* The arch, tinted by the colourway, with the cloud bank sitting
               inside it.
@@ -182,13 +182,16 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
               sky is one colour, and this arch is nine — white gradients sit on
               any of them, cost nothing to download, and do not have to be
               re-shot when a colour is added. */}
-          {/* Full bleed at every width: a capped dome leaves white margins on
-              a wide screen, which read as the dome being too small rather than
-              as deliberate space. */}
+          {/* Full bleed, and the same arc whatever the window does: the dome's
+              height comes from its width, not from the viewport's height, so
+              resizing never restretches it into a flat hill or a steep tunnel.
+              Three steps rather than one ratio, because a single ratio that
+              suits a desktop leaves a phone with a 125px-tall dome and the comb
+              floating above it — which is exactly what one ratio did. */}
           <div
             aria-hidden
             style={{ backgroundColor: current.tint }}
-            className="absolute inset-x-0 bottom-0 mx-auto h-[52vh] w-screen overflow-hidden rounded-t-full transition-colors duration-700 md:h-[62vh]"
+            className="absolute inset-x-0 bottom-0 mx-auto aspect-square w-screen overflow-hidden rounded-t-full transition-colors duration-700 md:aspect-[2.2/1] lg:aspect-[3/1]"
           >
             {/* Flat, the way it is drawn: the dome is one colour and the cloud
                 bank is what takes it to white at the foot. A gradient to
@@ -209,7 +212,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             {model.wordmark}
           </p>
 
-          <div className="relative flex h-[46vh] items-center justify-center md:h-full">
+          <div className="relative flex aspect-square w-full items-center justify-center md:aspect-[2.2/1] lg:aspect-[3/1]">
             {models.flatMap((m) =>
               m.items.map((c) => {
                 const on = c.slug === current.slug;
@@ -244,8 +247,8 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                           ? // About 60% of the stage, as drawn: the dome is most
                             // of what you see and the comb sits in it, rather
                             // than filling it.
-                            "h-[62%] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
-                          : "h-[54%] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
+                            "h-[55vw] md:h-[min(26vw,560px)] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
+                          : "h-[48vw] md:h-[min(22vw,480px)] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
                       }`}
                     />
                   </span>
