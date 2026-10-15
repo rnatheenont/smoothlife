@@ -425,27 +425,52 @@
 }
 
 /* The cloud bank inside the Janeke arch (SuperbrushStage).
-   Four soft white gradients rather than a photograph of a sky: the arch takes
-   the colour of whichever comb is showing, and white reads as cloud on all of
-   them. The drift is slow enough to notice only if you stay. */
-.janeke-clouds {
-  background-image:
-    radial-gradient(52% 40% at 16% 74%, #fff 0%, #fff 38%, rgba(255, 255, 255, 0) 72%),
-    radial-gradient(42% 32% at 44% 86%, #fff 0%, #fff 34%, rgba(255, 255, 255, 0) 70%),
-    radial-gradient(48% 34% at 72% 76%, #fff 0%, #fff 32%, rgba(255, 255, 255, 0) 70%),
-    radial-gradient(36% 26% at 92% 88%, #fff 0%, #fff 30%, rgba(255, 255, 255, 0) 72%),
-    radial-gradient(34% 24% at 32% 58%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0) 72%),
-    radial-gradient(30% 20% at 62% 52%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 74%);
-  /* Blurred, so the gradients read as weather rather than as four circles. */
-  filter: blur(10px);
-  animation: janeke-drift 48s ease-in-out infinite alternate;
+   Two layers that drift at different speeds, which is what makes a sky look
+   alive: the near bank crosses in 70 seconds, the far one in 160, so the gap
+   between them keeps changing and the eye never finds the repeat.
+   The movement is background-position across a repeating tile, never a
+   there-and-back transform — clouds do not sway, and a reversing animation is
+   the thing that gives a CSS sky away. */
+.janeke-clouds,
+.janeke-clouds-far {
+  position: absolute;
+  background-repeat: repeat-x;
+  will-change: background-position;
 }
 
-@keyframes janeke-drift {
-  from { transform: translate3d(-2.5%, 0, 0); }
-  to { transform: translate3d(2.5%, 0, 0); }
+.janeke-clouds {
+  background-image:
+    radial-gradient(50% 42% at 14% 76%, #fff 0%, #fff 36%, rgba(255, 255, 255, 0) 72%),
+    radial-gradient(40% 32% at 38% 88%, #fff 0%, #fff 32%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(46% 34% at 66% 78%, #fff 0%, #fff 30%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(34% 26% at 88% 90%, #fff 0%, #fff 28%, rgba(255, 255, 255, 0) 72%);
+  background-size: 1100px 100%;
+  filter: blur(9px);
+  animation: janeke-drift-near 70s linear infinite;
+}
+
+.janeke-clouds-far {
+  background-image:
+    radial-gradient(42% 30% at 24% 62%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 72%),
+    radial-gradient(36% 24% at 58% 54%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 74%),
+    radial-gradient(30% 22% at 86% 66%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 74%);
+  background-size: 1450px 100%;
+  filter: blur(14px);
+  animation: janeke-drift-far 160s linear infinite;
+}
+
+/* One tile exactly, so the loop has no seam. */
+@keyframes janeke-drift-near {
+  from { background-position-x: 0; }
+  to { background-position-x: -1100px; }
+}
+
+@keyframes janeke-drift-far {
+  from { background-position-x: 0; }
+  to { background-position-x: -1450px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .janeke-clouds { animation: none; }
+  .janeke-clouds,
+  .janeke-clouds-far { animation: none; }
 }

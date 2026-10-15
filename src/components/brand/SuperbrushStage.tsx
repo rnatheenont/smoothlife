@@ -176,7 +176,8 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             {/* Flat, the way it is drawn: the dome is one colour and the cloud
                 bank is what takes it to white at the foot. A gradient to
                 transparent made the whole thing look like a smudge. */}
-            <span className="janeke-clouds absolute inset-x-[-14%] bottom-[-4%] h-[78%]" />
+            <span className="janeke-clouds-far inset-x-[-14%] bottom-[6%] h-[64%]" />
+            <span className="janeke-clouds inset-x-[-14%] bottom-[-4%] h-[78%]" />
             <span className="absolute inset-x-0 bottom-0 h-[18%] bg-linear-to-t from-white to-transparent" />
           </div>
           {/* The model's name, behind everything, drifting as the page moves. */}
