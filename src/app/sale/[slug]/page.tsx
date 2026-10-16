@@ -8,6 +8,7 @@ import { campaignPhaseAt } from "@/lib/pages/doc";
 import { PHASE_LABEL } from "@/lib/pages/campaign";
 import { themeVars } from "@/lib/pages/theme";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
+import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
 
 // Campaign pages — /sale/11-11, /sale/payday.
 //
@@ -67,6 +68,7 @@ export default async function CampaignPage(props: { params: Promise<{ slug: stri
     kind: "campaign",
     slug,
     now: campaign.now,
+    locale: DEFAULT_LOCALE,
     phase: campaign.phase,
     times: campaign.times,
     isPreview: false,

@@ -15,6 +15,7 @@ import { pageTag, type PageRow } from "./store";
 import { SECTION_REGISTRY } from "@/sections/registry";
 import { campaignPhaseAt } from "./doc";
 import type { AnySectionDefinition, PageKind, RenderCtx } from "./types";
+import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
 
 // Everything the admin side does to a page: open it, save a draft, publish
 // it, put a previous version back.
@@ -255,6 +256,7 @@ export async function collectPublishIssues(doc: PageDoc, page?: PageRow): Promis
     kind: page?.kind ?? "page",
     slug: page?.slug ?? "",
     now: new Date(),
+        locale: DEFAULT_LOCALE,
     phase: page?.kind === "campaign" ? campaignPhaseAt(campaignTimesOf(page), new Date()) : undefined,
     times: page?.kind === "campaign" ? campaignTimesOf(page) : undefined,
     isPreview: false,

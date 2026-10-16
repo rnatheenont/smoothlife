@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { renderSections } from "./render";
 import { publishedDoc } from "./store";
 import { SYSTEM_DEFAULT_DOCS } from "./default-docs/system";
+import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
 
 // Drawing a system page from its document.
 //
@@ -42,7 +43,8 @@ export async function SystemPageBody({
   }
 
   return (
-    <>{await renderSections(doc, { kind: "system", slug: pageKey, now: new Date(), isPreview: false, query })}</>
+    <>{await renderSections(doc, { kind: "system", slug: pageKey, now: new Date(),
+        locale: DEFAULT_LOCALE, isPreview: false, query })}</>
   );
 }
 
@@ -67,5 +69,6 @@ export async function SystemPageBodyFromCode({ pageKey, fallback }: { pageKey: s
     if (fallback !== undefined) return <>{fallback}</>;
     notFound();
   }
-  return <>{await renderSections(doc, { kind: "system", slug: pageKey, now: new Date(), isPreview: false })}</>;
+  return <>{await renderSections(doc, { kind: "system", slug: pageKey, now: new Date(),
+        locale: DEFAULT_LOCALE, isPreview: false })}</>;
 }

@@ -5,6 +5,7 @@ import { publishedDoc } from "@/lib/pages/store";
 import { renderSections } from "@/lib/pages/render";
 import { pageTitleOf } from "@/lib/pages/store";
 import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
+import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
 
 // Pages the team builds themselves — /p/about-us, /p/skin-care-guide.
 //
@@ -37,6 +38,7 @@ export default async function BuiltPage(props: { params: Promise<{ slug: string 
     kind: "page",
     slug,
     now: new Date(),
+        locale: DEFAULT_LOCALE,
     isPreview: false,
   });
 

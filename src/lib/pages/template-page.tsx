@@ -4,6 +4,7 @@ import { renderSections } from "./render";
 import { publishedDoc } from "./store";
 import { TEMPLATE_DEFAULT_DOCS } from "./default-docs/template";
 import type { EntityRef } from "./types";
+import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
 
 // Drawing a template page from its document.
 //
@@ -42,6 +43,7 @@ export async function TemplateBody({
         kind: "template",
         slug: templateKey,
         now: new Date(),
+        locale: DEFAULT_LOCALE,
         isPreview: false,
         entity,
         query,

@@ -1,3 +1,4 @@
+import type { Locale } from "../i18n/localized.ts";
 import type { ComponentType } from "react";
 import type { z } from "zod";
 import type { CampaignPhase, SectionCommon } from "./doc";
@@ -65,6 +66,16 @@ export type RenderCtx = {
   /** Evaluated once per request so every section on the page agrees about
    *  what time it is, including across a midnight boundary. */
   now: Date;
+  /**
+   * Which language this render is for.
+   *
+   * Required rather than optional, and that is the point: every section that
+   * prints a settings field has to read it through tx(), and a field that
+   * quietly defaulted to Thai would hide the one case worth catching — a page
+   * rendered in English by a section that forgot. The type makes every place
+   * that builds a context say which language it meant.
+   */
+  locale: Locale;
   /** Campaign pages only. */
   phase?: CampaignPhase;
   /** Campaign pages only: the four dates that decided the phase.

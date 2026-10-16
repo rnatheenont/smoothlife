@@ -10,6 +10,7 @@ import { themeVars, type CampaignTheme } from "@/lib/pages/theme";
 import { PAGE_KINDS } from "@/lib/pages/system-pages";
 import type { PageRow } from "@/lib/pages/store";
 import PreviewSelect from "@/components/admin/pages/PreviewSelect";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/localized";
 
 // The draft, drawn exactly the way the live page draws it.
 //
@@ -55,10 +56,10 @@ function Notice({ children }: { children: React.ReactNode }) {
 
 export default async function PagePreview(props: {
   params: Promise<{ kind: string; slug: string }>;
-  searchParams: Promise<{ phase?: string; profile?: string }>;
+  searchParams: Promise<{ phase?: string; profile?: string; lang?: string }>;
 }) {
   const { kind: rawKind, slug } = await props.params;
-  const { phase: rawPhase, profile: rawProfile } = await props.searchParams;
+  const { phase: rawPhase, profile: rawProfile, lang: rawLang } = await props.searchParams;
 
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;
   if (!verifyAdminToken(token)) return <Notice>ต้องเข้าสู่ระบบแอดมินก่อนจึงจะดูตัวอย่างได้</Notice>;
@@ -83,10 +84,17 @@ export default async function PagePreview(props: {
   const phase: CampaignPhase | undefined =
     kind === "campaign" ? (asked ?? campaignPhaseAt(campaignTimesOf(page), now)) : undefined;
 
+  // ?lang=en draws the page the way an English visitor would see it, which
+  // is the only way to look at a translation before it is published.
+  // Anything else is Thai — an unrecognised value should not invent a
+  // language the shop does not have.
+  const locale: Locale = rawLang === "en" ? "en" : DEFAULT_LOCALE;
+
   const sections = await renderSections(doc, {
     kind,
     slug,
     now,
+    locale,
     phase,
     times: kind === "campaign" ? campaignTimesOf(page) : undefined,
     // Only a brand page has a profile to draft, and only when asked for.

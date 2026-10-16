@@ -31,6 +31,7 @@ import { PAGES_HOME_ENABLED } from "@/lib/feature-flags";
 import { renderSections } from "@/lib/pages/render";
 import { publishedDoc } from "@/lib/pages/store";
 import { defaultHomeDoc } from "@/lib/pages/default-docs/home";
+import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
 
 export function generateMetadata() {
   return pageMetadata("home");
@@ -71,6 +72,7 @@ async function StoredHomePage() {
     kind: "home",
     slug: "home",
     now: new Date(),
+        locale: DEFAULT_LOCALE,
     isPreview: false,
   });
   return (

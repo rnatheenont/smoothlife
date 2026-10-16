@@ -19,6 +19,7 @@ import { defaultBrandDoc } from "@/lib/pages/default-docs/brand";
 import { toCardData } from "@/data/card";
 import SuperbrushStage from "@/components/brand/SuperbrushStage";
 import { janekeModels } from "@/lib/janeke-stage";
+import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
 
 // One page per brand.
 //
@@ -95,7 +96,8 @@ async function StoredBrandPage({ slug }: { slug: string }) {
   if (!facts) notFound();
 
   const doc = (await publishedDoc("brand", slug)) ?? defaultBrandDoc();
-  const sections = await renderSections(doc, { kind: "brand", slug, now: new Date(), isPreview: false });
+  const sections = await renderSections(doc, { kind: "brand", slug, now: new Date(),
+        locale: DEFAULT_LOCALE, isPreview: false });
 
   const breadcrumbItems = [
     { label: "หน้าแรก", href: "/" },
