@@ -86,9 +86,9 @@ export const ctaCard: SectionDefinition<typeof schema> = {
     tone: "soft",
   },
   fields: [
-    { key: "title", type: "text", label: "หัวข้อ" },
-    { key: "body", type: "textarea", label: "คำอธิบาย" },
-    { key: "button", type: "text", label: "ข้อความบนปุ่ม" },
+    { key: "title", type: "text", label: "หัวข้อ", localized: true },
+    { key: "body", type: "textarea", label: "คำอธิบาย", localized: true },
+    { key: "button", type: "text", label: "ข้อความบนปุ่ม", localized: true },
     { key: "href", type: "text", label: "ลิงก์ปลายทาง" },
     { key: "image", type: "image", label: "รูปประกอบ (ไม่ใส่ก็ได้)" },
     { key: "tone", type: "select", label: "สี", options: [["soft", "เขียวอ่อน"], ["brand", "เขียวเข้ม"]] },

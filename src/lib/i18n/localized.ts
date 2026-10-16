@@ -76,3 +76,31 @@ export function thaiOf(value: LText | undefined | null): string {
   if (value == null) return "";
   return typeof value === "string" ? value : value.th || "";
 }
+
+/**
+ * A stored value, split into the two boxes an editor needs.
+ *
+ * Anything written before today is a plain string, and a plain string is
+ * Thai — so it goes in the Thai box and English starts empty. The editor and
+ * tx() have to agree about what an old value means, so they read it here.
+ */
+export function splitLText(value: unknown): { th: string; en: string } {
+  if (typeof value === "string") return { th: value, en: "" };
+  if (value && typeof value === "object") {
+    const o = value as { th?: unknown; en?: unknown };
+    return { th: typeof o.th === "string" ? o.th : "", en: typeof o.en === "string" ? o.en : "" };
+  }
+  return { th: "", en: "" };
+}
+
+/**
+ * The two boxes, back into one stored value.
+ *
+ * With no English it collapses to a plain string rather than `{th}`, which
+ * keeps a document the shape it has always been until somebody actually
+ * writes a translation — so "a plain string is Thai" stays true of every
+ * document, not only of the old ones.
+ */
+export function joinLText(th: string, en: string): LText {
+  return en.trim() ? { th, en } : th;
+}

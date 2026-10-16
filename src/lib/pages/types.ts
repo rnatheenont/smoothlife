@@ -114,8 +114,11 @@ export type RenderCtx = {
  *  arrives in Phase 2, and a field type nothing renders yet is a promise the
  *  form has to keep later. */
 export type FieldDef =
-  | { key: string; type: "text"; label: string; placeholder?: string; help?: string }
-  | { key: string; type: "textarea"; label: string; placeholder?: string; help?: string }
+  /** `localized` offers a second box for English. The field's value is then
+   *  an LText and every read of it has to go through tx() — there is a test
+   *  that checks exactly that (src/sections/localized-fields.test.ts). */
+  | { key: string; type: "text"; label: string; placeholder?: string; help?: string; localized?: true }
+  | { key: string; type: "textarea"; label: string; placeholder?: string; help?: string; localized?: true }
   | { key: string; type: "number"; label: string; min?: number; max?: number; help?: string }
   | { key: string; type: "toggle"; label: string; help?: string }
   | { key: string; type: "select"; label: string; options: [string, string][]; help?: string }
@@ -170,6 +173,9 @@ export type FieldDef =
         key: string;
         label: string;
         type?: "text" | "textarea" | "image" | "select";
+        /** Same as the top-level flag: a second box for English, and the
+         *  cell's value becomes an LText. */
+        localized?: true;
         options?: [string, string][];
         placeholder?: string;
         /** Narrow columns sit two to a line on a wide enough form. */

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { tx, thaiOf, hasTranslation, DEFAULT_LOCALE, LOCALES } from "./localized.ts";
+import { tx, thaiOf, hasTranslation, splitLText, joinLText, DEFAULT_LOCALE, LOCALES } from "./localized.ts";
 
 // What these tests are really protecting is every document written before
 // today: all of them store plain strings, and all of them are Thai.
@@ -48,4 +48,27 @@ test("thaiOf gets the Thai side whatever shape the value is", () => {
 test("Thai is the default and both languages are listed", () => {
   assert.equal(DEFAULT_LOCALE, "th");
   assert.deepEqual(LOCALES, ["th", "en"]);
+});
+
+test("splitLText reads an old plain string as Thai with no English yet", () => {
+  assert.deepEqual(splitLText("ส่งฟรี"), { th: "ส่งฟรี", en: "" });
+  assert.deepEqual(splitLText({ th: "ส่งฟรี", en: "Free shipping" }), { th: "ส่งฟรี", en: "Free shipping" });
+  assert.deepEqual(splitLText(undefined), { th: "", en: "" });
+  // A number or a nested object is not text; the boxes start empty rather
+  // than showing "[object Object]" for somebody to save back.
+  assert.deepEqual(splitLText(42), { th: "", en: "" });
+  assert.deepEqual(splitLText({ th: { nope: 1 } }), { th: "", en: "" });
+});
+
+test("joinLText stays a plain string until there is a real translation", () => {
+  assert.equal(joinLText("ส่งฟรี", ""), "ส่งฟรี");
+  assert.equal(joinLText("ส่งฟรี", "   "), "ส่งฟรี");
+  assert.deepEqual(joinLText("ส่งฟรี", "Free shipping"), { th: "ส่งฟรี", en: "Free shipping" });
+});
+
+test("a value survives a round trip through the editor unchanged", () => {
+  for (const original of ["ส่งฟรี", "", { th: "ส่งฟรี", en: "Free shipping" }] as const) {
+    const { th, en } = splitLText(original);
+    assert.deepEqual(joinLText(th, en), original);
+  }
 });

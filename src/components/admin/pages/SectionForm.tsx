@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Download, Loader2, Plus, Trash2 } from "lucide-react";
 import ImagePicker from "@/components/admin/pages/ImagePicker";
 import { parseSlugList } from "@/lib/pages/edit";
+import { joinLText, splitLText, type LText } from "@/lib/i18n/localized";
 import type { FieldDef } from "@/lib/pages/types";
 
 // The right-hand panel: one section's settings, built from the field list its
@@ -24,6 +25,79 @@ const labelCls = "block text-[13px] font-semibold text-brand-ink";
 const helpCls = "mt-1 text-[12px] leading-relaxed text-slate-500";
 const inputCls =
   "mt-1.5 h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-hidden transition-colors focus-visible:border-brand-teal focus-visible:ring-2 focus-visible:ring-brand-teal/30";
+
+/** The Thai box and the English box, stacked. */
+function LocalizedInput({
+  id,
+  label,
+  help,
+  placeholder,
+  multiline,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  help?: string;
+  placeholder?: string;
+  multiline?: boolean;
+  value: unknown;
+  onChange: (next: LText) => void;
+}) {
+  const { th, en } = splitLText(value);
+  const common = multiline ? `${inputCls} h-auto py-2.5` : inputCls;
+
+  return (
+    <div>
+      <label htmlFor={id} className={labelCls}>
+        {label}
+      </label>
+      {multiline ? (
+        <textarea
+          id={id}
+          rows={4}
+          value={th}
+          placeholder={placeholder}
+          onChange={(e) => onChange(joinLText(e.target.value, en))}
+          className={common}
+        />
+      ) : (
+        <input
+          id={id}
+          type="text"
+          value={th}
+          placeholder={placeholder}
+          onChange={(e) => onChange(joinLText(e.target.value, en))}
+          className={common}
+        />
+      )}
+      <label htmlFor={`${id}-en`} className="mt-2 block text-[12px] font-semibold text-slate-500">
+        English
+      </label>
+      {multiline ? (
+        <textarea
+          id={`${id}-en`}
+          rows={3}
+          value={en}
+          onChange={(e) => onChange(joinLText(th, e.target.value))}
+          className={`${inputCls} mt-1 h-auto py-2.5`}
+        />
+      ) : (
+        <input
+          id={`${id}-en`}
+          type="text"
+          value={en}
+          onChange={(e) => onChange(joinLText(th, e.target.value))}
+          className={`${inputCls} mt-1`}
+        />
+      )}
+      {!en.trim() && (
+        <p className={helpCls}>ยังไม่มีคำแปล — หน้าภาษาอังกฤษจะใช้ข้อความไทยไปก่อน</p>
+      )}
+      {help && <p className={helpCls}>{help}</p>}
+    </div>
+  );
+}
 
 /**
  * JSON, held as text while it is being typed.
@@ -204,6 +278,58 @@ function ListField({
               {columns.map((col) => {
                 const cell = row[col.key];
                 const text = typeof cell === "string" ? cell : cell == null ? "" : String(cell);
+
+                // A two-language cell gets its own pair of boxes. It has to
+                // come before `text` is used: String({th, en}) is
+                // "[object Object]", and an admin who opens this row and
+                // saves it would write that into the document.
+                if (col.localized) {
+                  const { th, en } = splitLText(cell);
+                  const box = col.type === "textarea";
+                  return (
+                    // A div, not a label: two controls cannot share one
+                    // label, and the row below names them itself.
+                    <div key={col.key} className={col.half ? "" : "col-span-2"}>
+                      <span className="block text-[12px] font-medium text-slate-600">{col.label}</span>
+                      {box ? (
+                        <textarea
+                          value={th}
+                          rows={3}
+                          placeholder={col.placeholder}
+                          aria-label={col.label}
+                          onChange={(e) => setCell(i, col.key, joinLText(e.target.value, en))}
+                          className={`${inputCls} h-auto py-2.5`}
+                        />
+                      ) : (
+                        <input
+                          value={th}
+                          placeholder={col.placeholder}
+                          aria-label={col.label}
+                          onChange={(e) => setCell(i, col.key, joinLText(e.target.value, en))}
+                          className={inputCls}
+                        />
+                      )}
+                      <span className="mt-1.5 block text-[11px] font-semibold text-slate-400">English</span>
+                      {box ? (
+                        <textarea
+                          value={en}
+                          rows={2}
+                          aria-label={`${col.label} (English)`}
+                          onChange={(e) => setCell(i, col.key, joinLText(th, e.target.value))}
+                          className={`${inputCls} mt-1 h-auto py-2.5`}
+                        />
+                      ) : (
+                        <input
+                          value={en}
+                          aria-label={`${col.label} (English)`}
+                          onChange={(e) => setCell(i, col.key, joinLText(th, e.target.value))}
+                          className={`${inputCls} mt-1`}
+                        />
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
                   <label key={col.key} className={col.half ? "" : "col-span-2"}>
                     <span className="block text-[12px] font-medium text-slate-600">{col.label}</span>
@@ -653,6 +779,21 @@ export default function SectionForm({
               />
               {field.help && <p className={helpCls}>{field.help}</p>}
             </div>
+          );
+        }
+
+        if ((field.type === "text" || field.type === "textarea") && field.localized) {
+          return (
+            <LocalizedInput
+              key={field.key}
+              id={id}
+              label={field.label}
+              help={field.help}
+              placeholder={field.placeholder}
+              multiline={field.type === "textarea"}
+              value={value}
+              onChange={(next) => set(field.key, next)}
+            />
           );
         }
 
