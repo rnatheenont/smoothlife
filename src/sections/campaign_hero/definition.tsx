@@ -3,6 +3,7 @@ import Link from "next/link";
 import Countdown from "@/components/campaign/Countdown";
 import { mediaAssetFor } from "@/lib/media-lookup";
 import { srcSetFor } from "@/lib/media";
+import { lText, thaiOf, tx } from "@/lib/i18n/localized";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // The top of a campaign page: one picture, one sentence, one clock.
@@ -21,14 +22,14 @@ import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 const schema = z.object({
   image: z.string().default(""),
   imageMobile: z.string().default(""),
-  alt: z.string().max(140).default(""),
-  heading: z.string().max(120).default(""),
-  subheading: z.string().max(200).default(""),
-  ctaLabel: z.string().max(40).default(""),
+  alt: lText(140).default(""),
+  heading: lText(120).default(""),
+  subheading: lText(200).default(""),
+  ctaLabel: lText(40).default(""),
   ctaHref: z.string().default(""),
   countdown: z.enum(["auto", "none", "custom"]).default("auto"),
   countdownTo: z.string().default(""),
-  countdownLabel: z.string().max(40).default(""),
+  countdownLabel: lText(40).default(""),
 });
 
 type Settings = z.output<typeof schema>;
@@ -43,31 +44,50 @@ async function load(settings: Settings): Promise<Data> {
   return { desktop, mobile };
 }
 
+// The two words the clock says for itself, rather than reading them from the
+// campaign. Here for now because there are two of them; the shop's shared
+// dictionary (plan §B3) is where they move once it exists.
+const CLOCK = {
+  th: { starts: "เริ่มใน", left: "เหลือเวลา" },
+  en: { starts: "Starts in", left: "Time left" },
+} as const;
+
 /** What the clock counts towards, and what to call it. Null means no clock:
  *  a campaign that is over has nothing left to count. */
 function targetOf(settings: Settings, ctx: SectionProps<Settings>["ctx"]) {
+  const words = CLOCK[ctx.locale];
   if (settings.countdown === "none") return null;
   if (settings.countdown === "custom") {
-    return settings.countdownTo ? { to: settings.countdownTo, label: settings.countdownLabel || "เหลือเวลา" } : null;
+    // tx() before the ||, or a translated label would be an object — and an
+    // object wins every ||, so the clock would be handed {th, en} to print.
+    const label = tx(settings.countdownLabel, ctx.locale) || words.left;
+    return settings.countdownTo ? { to: settings.countdownTo, label } : null;
   }
 
   const times = ctx.times;
   if (!times) return null;
-  if (ctx.phase === "teaser" && times.liveAt) return { to: times.liveAt, label: "เริ่มใน" };
-  if (ctx.phase === "live" && times.extendedAt) return { to: times.extendedAt, label: "เหลือเวลา" };
+  if (ctx.phase === "teaser" && times.liveAt) return { to: times.liveAt, label: words.starts };
+  if (ctx.phase === "live" && times.extendedAt) return { to: times.extendedAt, label: words.left };
   if ((ctx.phase === "live" || ctx.phase === "extended") && times.endsAt) {
-    return { to: times.endsAt, label: "เหลือเวลา" };
+    return { to: times.endsAt, label: words.left };
   }
   return null;
 }
 
 function Component({ settings, data, index, ctx }: SectionProps<Settings, Data>) {
   const target = targetOf(settings, ctx);
-  const hasText = Boolean(settings.heading || settings.subheading || settings.ctaLabel || target);
+  // Read into words first: "is there anything to show" is a question about
+  // text, and every one of these is an object once it carries a translation.
+  const alt = tx(settings.alt, ctx.locale);
+  const heading = tx(settings.heading, ctx.locale);
+  const subheading = tx(settings.subheading, ctx.locale);
+  const ctaLabel = tx(settings.ctaLabel, ctx.locale);
+
+  const hasText = Boolean(heading || subheading || ctaLabel || target);
   if (!settings.image && !hasText) return null;
 
   const priority = index === 0;
-  const cta = settings.ctaLabel && settings.ctaHref;
+  const cta = ctaLabel && settings.ctaHref;
 
   return (
     <section className="relative overflow-hidden">
@@ -89,7 +109,7 @@ function Component({ settings, data, index, ctx }: SectionProps<Settings, Data>)
             src={settings.image}
             srcSet={srcSetFor(data?.desktop?.sources ?? undefined)}
             sizes="100vw"
-            alt={settings.alt}
+            alt={alt}
             // The first section on a campaign page is the largest image on
             // it, and the one the page is judged by.
             loading={priority ? "eager" : "lazy"}
@@ -107,11 +127,11 @@ function Component({ settings, data, index, ctx }: SectionProps<Settings, Data>)
       {hasText && (
         <div className={settings.image ? "container-page -mt-8 pb-8 md:-mt-14" : "container-page py-10 md:py-14"}>
           <div className="rounded-xl2 bg-white/95 p-5 shadow-sm backdrop-blur md:p-7">
-            {settings.heading && (
-              <h1 className="text-xl font-bold leading-tight text-brand-ink md:text-3xl">{settings.heading}</h1>
+            {heading && (
+              <h1 className="text-xl font-bold leading-tight text-brand-ink md:text-3xl">{heading}</h1>
             )}
-            {settings.subheading && (
-              <p className="mt-1.5 text-sm leading-relaxed text-grey-600 md:text-base">{settings.subheading}</p>
+            {subheading && (
+              <p className="mt-1.5 text-sm leading-relaxed text-grey-600 md:text-base">{subheading}</p>
             )}
             {(target || cta) && (
               <div className="mt-4 flex flex-wrap items-center gap-4">
@@ -122,7 +142,7 @@ function Component({ settings, data, index, ctx }: SectionProps<Settings, Data>)
                     className="inline-flex h-12 items-center rounded-full px-6 text-sm font-semibold"
                     style={{ backgroundColor: "var(--cp-accent)", color: "var(--cp-on-accent)" }}
                   >
-                    {settings.ctaLabel}
+                    {ctaLabel}
                   </Link>
                 )}
               </div>
@@ -156,10 +176,10 @@ export const campaignHero: SectionDefinition<typeof schema> = {
   fields: [
     { key: "image", type: "image", label: "แบนเนอร์ (คอมพิวเตอร์)" },
     { key: "imageMobile", type: "image", label: "แบนเนอร์ (มือถือ)", help: "ไม่ใส่ก็ได้ แต่ตัวหนังสือในรูปคอมจะเล็กมากบนมือถือ" },
-    { key: "alt", type: "text", label: "คำบรรยายรูป" },
-    { key: "heading", type: "text", label: "หัวข้อ" },
-    { key: "subheading", type: "textarea", label: "ข้อความรอง" },
-    { key: "ctaLabel", type: "text", label: "ข้อความบนปุ่ม" },
+    { key: "alt", type: "text", label: "คำบรรยายรูป", localized: true },
+    { key: "heading", type: "text", label: "หัวข้อ", localized: true },
+    { key: "subheading", type: "textarea", label: "ข้อความรอง", localized: true },
+    { key: "ctaLabel", type: "text", label: "ข้อความบนปุ่ม", localized: true },
     { key: "ctaHref", type: "text", label: "ลิงก์ของปุ่ม" },
     {
       key: "countdown",
@@ -172,18 +192,22 @@ export const campaignHero: SectionDefinition<typeof schema> = {
       ],
     },
     { key: "countdownTo", type: "datetime", label: "นับถึงเวลา (เฉพาะแบบกำหนดเอง)" },
-    { key: "countdownLabel", type: "text", label: "คำนำหน้าตัวเลข (เฉพาะแบบกำหนดเอง)" },
+    { key: "countdownLabel", type: "text", label: "คำนำหน้าตัวเลข (เฉพาะแบบกำหนดเอง)", localized: true },
   ],
   enabledOn: ["campaign"],
   maxPerPage: 1,
   isLcpCandidate: true,
   load,
+  // check() is handed the settings and no locale, which is right: publishing
+  // asks whether the page is finished in the language it is written in, and
+  // that language is Thai. thaiOf() is how it asks — "" for a field nobody
+  // has filled in, whether it is a plain string or a pair.
   check: async (settings) => {
     const issues = [];
-    if (!settings.image && !settings.heading) {
+    if (!settings.image && !thaiOf(settings.heading)) {
       issues.push({ level: "error" as const, message: "แบนเนอร์แคมเปญยังไม่มีทั้งรูปและหัวข้อ" });
     }
-    if (settings.image && !settings.alt) {
+    if (settings.image && !thaiOf(settings.alt)) {
       issues.push({ level: "warning" as const, message: "แบนเนอร์แคมเปญยังไม่มีคำบรรยายรูป" });
     }
     if (!settings.imageMobile && settings.image) {

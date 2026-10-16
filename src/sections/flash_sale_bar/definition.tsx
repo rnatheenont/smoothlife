@@ -1,5 +1,6 @@
 import { z } from "zod";
 import FlashSaleBar from "@/components/home/FlashSaleBar";
+import { lText, tx } from "@/lib/i18n/localized";
 import type { CheckIssue, SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // The flash-sale countdown strip.
@@ -14,8 +15,12 @@ import type { CheckIssue, SectionDefinition, SectionProps } from "@/lib/pages/ty
 // sale — so a section left on the page after a sale costs nothing.
 
 const schema = z.object({
-  titleTh: z.string().max(60).default("Flash Sale"),
-  subtitleTh: z.string().max(60).default("now on!"),
+  // The keys keep their "Th" ending although they now hold both languages.
+  // Renaming them would mean rewriting every stored document, and this
+  // system has no migration step on purpose (see the note in
+  // lib/i18n/localized.ts). A wrong-looking key is cheaper than that.
+  titleTh: lText(60).default("Flash Sale"),
+  subtitleTh: lText(60).default("now on!"),
   /** ISO 8601 with an offset, e.g. 2026-11-11T23:59:00+07:00. Empty means
    *  no countdown: the band shows with its words and its code and no clock. */
   endsAt: z.string().default(""),
@@ -36,7 +41,18 @@ function Component({ settings, ctx }: SectionProps<Settings>) {
   const ends = settings.endsAt ? new Date(settings.endsAt).getTime() : NaN;
   if (Number.isFinite(ends) && ends <= ctx.now.getTime()) return null;
 
-  return <FlashSaleBar config={settings} />;
+  // Resolved before it crosses into the band, which is a client component
+  // that knows nothing about languages — and whose own `cfg.titleTh || …`
+  // fallback would otherwise be handed an object and never fire.
+  return (
+    <FlashSaleBar
+      config={{
+        ...settings,
+        titleTh: tx(settings.titleTh, ctx.locale),
+        subtitleTh: tx(settings.subtitleTh, ctx.locale),
+      }}
+    />
+  );
 }
 
 /**
@@ -75,8 +91,8 @@ export const flashSaleBar: SectionDefinition<typeof schema> = {
     colorTo: "#1bb57a",
   },
   fields: [
-    { key: "titleTh", type: "text", label: "หัวข้อ" },
-    { key: "subtitleTh", type: "text", label: "ข้อความบรรทัดรอง" },
+    { key: "titleTh", type: "text", label: "หัวข้อ", localized: true },
+    { key: "subtitleTh", type: "text", label: "ข้อความบรรทัดรอง", localized: true },
     { key: "endsAt", type: "datetime", label: "หมดเวลาเมื่อ", help: "ว่างไว้ = ไม่มีนาฬิกานับถอยหลัง" },
     { key: "code", type: "text", label: "โค้ดส่วนลด", help: "กดที่โค้ดแล้วคัดลอกได้ · ว่างไว้ = ไม่แสดงโค้ด" },
     { key: "href", type: "text", label: "ลิงก์เมื่อกดหัวข้อ" },
