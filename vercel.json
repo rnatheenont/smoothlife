@@ -4,7 +4,6 @@
   ],
   "git": {
     "deploymentEnabled": {
-      "**": false,
       "main": true,
       "demo/*": true,
       "feature/pages-wave2": true
