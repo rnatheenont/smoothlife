@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { lText, tx } from "@/lib/i18n/localized";
+import { getMessages } from "@/lib/i18n/messages";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 import { groupLegal, parseLegal, type LegalBlock } from "./parse";
 
@@ -32,13 +33,6 @@ const schema = z.object({
   footnoteLinkLabel: lText(60).default(""),
   footnoteHref: z.string().default(""),
 });
-
-// The two words this section says itself rather than reading from the
-// document. They live here because there are two of them and they belong to
-// this section's furniture; the shop's shared dictionary (plan §B3) is where
-// they move once it exists.
-const UPDATED_LABEL = { th: "ปรับปรุงล่าสุด", en: "Last updated" } as const;
-const TOC_LABEL = { th: "สารบัญ", en: "Contents" } as const;
 
 function Blocks({ blocks }: { blocks: LegalBlock[] }) {
   return (
@@ -76,6 +70,7 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
   // words. A translated policy therefore gets its own anchors — #section-2
   // of the English terms points into the English text, which is what a link
   // shared from that page has to do.
+  const m = getMessages(ctx.locale).legal;
   const intro = tx(settings.intro, ctx.locale);
   const updatedAt = tx(settings.updatedAt, ctx.locale);
   const footnote = tx(settings.footnote, ctx.locale);
@@ -90,11 +85,11 @@ function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
   return (
     <section className="container-page pb-8 md:pb-10">
       {intro && <p className="mb-8 text-sm text-slate-500">{intro}</p>}
-      {updatedAt && <p className="mb-6 text-xs text-slate-500">{UPDATED_LABEL[ctx.locale]} {updatedAt}</p>}
+      {updatedAt && <p className="mb-6 text-xs text-slate-500">{m.updated} {updatedAt}</p>}
 
       {settings.showToc && toc.length > 1 && (
-        <nav aria-label={TOC_LABEL[ctx.locale]} className="mb-8 rounded-xl2 bg-surface-soft p-5">
-          <p className="mb-3 text-sm font-bold text-brand-ink">{TOC_LABEL[ctx.locale]}</p>
+        <nav aria-label={m.contents} className="mb-8 rounded-xl2 bg-surface-soft p-5">
+          <p className="mb-3 text-sm font-bold text-brand-ink">{m.contents}</p>
           <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm text-slate-600 marker:text-slate-400">
             {toc.map((item) => (
               <li key={item.id}>

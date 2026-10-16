@@ -1,6 +1,7 @@
 import { z } from "zod";
 import Link from "next/link";
 import Countdown from "@/components/campaign/Countdown";
+import { getMessages } from "@/lib/i18n/messages";
 import { campaignsForBrand } from "@/lib/pages/store";
 import { campaignPhaseAt } from "@/lib/pages/doc";
 import { PHASE_LABEL } from "@/lib/pages/campaign";
@@ -44,7 +45,7 @@ async function load(_settings: Settings, ctx: { slug: string; now: Date }): Prom
   return null;
 }
 
-function Component({ settings, data }: SectionProps<Settings, Data>) {
+function Component({ settings, data, ctx }: SectionProps<Settings, Data>) {
   if (!data) return null;
 
   return (
@@ -57,7 +58,7 @@ function Component({ settings, data }: SectionProps<Settings, Data>) {
         <div className="flex flex-wrap items-center gap-3">
           {/* The phase that changes belongs to the campaign page, not this
               one, so there is nothing here for the server to re-decide. */}
-          {data.countdownTo && <Countdown to={data.countdownTo} size="sm" onZeroRefresh={false} />}
+          {data.countdownTo && <Countdown to={data.countdownTo} words={getMessages(ctx.locale).countdown} size="sm" onZeroRefresh={false} />}
           <Link
             href={`/sale/${data.slug}`}
             className="inline-flex h-11 shrink-0 items-center rounded-full bg-brand-gradient px-5 text-sm font-semibold text-white"

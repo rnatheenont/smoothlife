@@ -4,6 +4,7 @@ import Countdown from "@/components/campaign/Countdown";
 import { mediaAssetFor } from "@/lib/media-lookup";
 import { srcSetFor } from "@/lib/media";
 import { lText, thaiOf, tx } from "@/lib/i18n/localized";
+import { getMessages } from "@/lib/i18n/messages";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // The top of a campaign page: one picture, one sentence, one clock.
@@ -44,32 +45,24 @@ async function load(settings: Settings): Promise<Data> {
   return { desktop, mobile };
 }
 
-// The two words the clock says for itself, rather than reading them from the
-// campaign. Here for now because there are two of them; the shop's shared
-// dictionary (plan §B3) is where they move once it exists.
-const CLOCK = {
-  th: { starts: "เริ่มใน", left: "เหลือเวลา" },
-  en: { starts: "Starts in", left: "Time left" },
-} as const;
-
 /** What the clock counts towards, and what to call it. Null means no clock:
  *  a campaign that is over has nothing left to count. */
 function targetOf(settings: Settings, ctx: SectionProps<Settings>["ctx"]) {
-  const words = CLOCK[ctx.locale];
+  const words = getMessages(ctx.locale).countdown;
   if (settings.countdown === "none") return null;
   if (settings.countdown === "custom") {
     // tx() before the ||, or a translated label would be an object — and an
     // object wins every ||, so the clock would be handed {th, en} to print.
-    const label = tx(settings.countdownLabel, ctx.locale) || words.left;
+    const label = tx(settings.countdownLabel, ctx.locale) || words.timeLeft;
     return settings.countdownTo ? { to: settings.countdownTo, label } : null;
   }
 
   const times = ctx.times;
   if (!times) return null;
-  if (ctx.phase === "teaser" && times.liveAt) return { to: times.liveAt, label: words.starts };
-  if (ctx.phase === "live" && times.extendedAt) return { to: times.extendedAt, label: words.left };
+  if (ctx.phase === "teaser" && times.liveAt) return { to: times.liveAt, label: words.startsIn };
+  if (ctx.phase === "live" && times.extendedAt) return { to: times.extendedAt, label: words.timeLeft };
   if ((ctx.phase === "live" || ctx.phase === "extended") && times.endsAt) {
-    return { to: times.endsAt, label: words.left };
+    return { to: times.endsAt, label: words.timeLeft };
   }
   return null;
 }
@@ -135,7 +128,14 @@ function Component({ settings, data, index, ctx }: SectionProps<Settings, Data>)
             )}
             {(target || cta) && (
               <div className="mt-4 flex flex-wrap items-center gap-4">
-                {target && <Countdown to={target.to} label={target.label} size="lg" />}
+                {target && (
+                  <Countdown
+                    to={target.to}
+                    label={target.label}
+                    words={getMessages(ctx.locale).countdown}
+                    size="lg"
+                  />
+                )}
                 {cta && (
                   <Link
                     href={settings.ctaHref}

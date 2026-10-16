@@ -1,6 +1,7 @@
 import { z } from "zod";
 import Link from "next/link";
 import Countdown from "@/components/campaign/Countdown";
+import { getMessages } from "@/lib/i18n/messages";
 import { takeoverCampaigns } from "@/lib/pages/store";
 import { campaignPhaseAt } from "@/lib/pages/doc";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
@@ -37,7 +38,7 @@ async function load(_settings: Settings, ctx: { now: Date; slug: string }): Prom
   return null;
 }
 
-function Component({ settings, data }: SectionProps<Settings, Data>) {
+function Component({ settings, data, ctx }: SectionProps<Settings, Data>) {
   return (
     <section className="container-page py-12 md:py-16">
       <div className="mx-auto max-w-xl rounded-xl2 border border-surface-line bg-white p-7 text-center md:p-9">
@@ -50,7 +51,13 @@ function Component({ settings, data }: SectionProps<Settings, Data>) {
             {/* Not refreshing at zero: this page's own phase does not change
                 when the next campaign starts, so there is nothing for the
                 server to decide again. */}
-            {data.startsAt && <Countdown to={data.startsAt} label="เริ่มใน" size="sm" onZeroRefresh={false} />}
+            {data.startsAt && <Countdown
+                to={data.startsAt}
+                label={getMessages(ctx.locale).countdown.startsIn}
+                words={getMessages(ctx.locale).countdown}
+                size="sm"
+                onZeroRefresh={false}
+              />}
             <Link
               href={`/sale/${data.slug}`}
               className="inline-flex h-12 items-center rounded-full px-6 text-sm font-semibold"

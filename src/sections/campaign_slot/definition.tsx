@@ -1,6 +1,7 @@
 import { z } from "zod";
 import Link from "next/link";
 import Countdown from "@/components/campaign/Countdown";
+import { getMessages } from "@/lib/i18n/messages";
 import { takeoverCampaigns } from "@/lib/pages/store";
 import { campaignPhaseAt } from "@/lib/pages/doc";
 import { PHASE_LABEL } from "@/lib/pages/campaign";
@@ -49,7 +50,7 @@ async function load(_settings: Settings, ctx: { now: Date }): Promise<Data> {
   return null;
 }
 
-function Component({ settings, data }: SectionProps<Settings, Data>) {
+function Component({ settings, data, ctx }: SectionProps<Settings, Data>) {
   if (!data) return null;
   const href = `/sale/${data.slug}`;
 
@@ -84,7 +85,7 @@ function Component({ settings, data }: SectionProps<Settings, Data>) {
           {/* The clock here is counting towards a phase change on another
               page, so refreshing this one at zero would not change what it
               says — the home page is re-rendered by the scheduler instead. */}
-          {data.countdownTo && <Countdown to={data.countdownTo} size="sm" onZeroRefresh={false} />}
+          {data.countdownTo && <Countdown to={data.countdownTo} words={getMessages(ctx.locale).countdown} size="sm" onZeroRefresh={false} />}
           <Link
             href={href}
             className="inline-flex h-11 shrink-0 items-center rounded-full bg-white/95 px-5 text-sm font-semibold text-brand-ink"

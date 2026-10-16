@@ -1,5 +1,6 @@
 import { z } from "zod";
 import Countdown from "@/components/campaign/Countdown";
+import { getMessages } from "@/lib/i18n/messages";
 import { PHASE_LABEL } from "@/lib/pages/campaign";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
@@ -75,7 +76,7 @@ function Component({ settings, ctx }: SectionProps<Settings>) {
         {to && (
           // On the soft tone the digits still use the accent, which is the
           // one place on a quiet bar that should pull the eye.
-          <Countdown to={to} size="sm" label={undefined} />
+          <Countdown to={to} words={getMessages(ctx.locale).countdown} size="sm" label={undefined} />
         )}
         {!to && ctx.phase === "ended" && (
           <span className={`text-[13px] ${accent ? "opacity-90" : "text-grey-600"}`}>{PHASE_LABEL.ended}</span>

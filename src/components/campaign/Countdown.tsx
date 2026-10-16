@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { Messages } from "@/lib/i18n/messages";
 
 // The clock on a campaign page.
 //
@@ -36,11 +37,13 @@ function partsOf(msLeft: number): Parts {
   };
 }
 
-function spoken(parts: Parts): string {
-  if (parts.days > 0) return `เหลือ ${parts.days} วัน ${parts.hours} ชั่วโมง`;
-  if (parts.hours > 0) return `เหลือ ${parts.hours} ชั่วโมง ${parts.minutes} นาที`;
-  if (parts.minutes > 0) return `เหลือ ${parts.minutes} นาที`;
-  return "เหลือไม่ถึง 1 นาที";
+type Words = Messages["countdown"];
+
+function spoken(parts: Parts, w: Words): string {
+  if (parts.days > 0) return w.spokenDays(parts.days, parts.hours);
+  if (parts.hours > 0) return w.spokenHours(parts.hours, parts.minutes);
+  if (parts.minutes > 0) return w.spokenMinutes(parts.minutes);
+  return w.spokenSoon;
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -48,12 +51,22 @@ const pad = (n: number) => String(n).padStart(2, "0");
 export default function Countdown({
   to,
   label,
+  words,
   size = "md",
   onZeroRefresh = true,
 }: {
   /** ISO instant. An unreadable one draws nothing rather than NaN. */
   to: string;
   label?: string;
+  /**
+   * The clock's own words, in the language the page is being drawn in.
+   *
+   * Handed down rather than looked up: this is a client component, and the
+   * only way it could look them up itself is to carry both dictionaries into
+   * the browser. The server component that draws it already knows the
+   * locale (ctx.locale), so it costs it nothing to pass four words along.
+   */
+  words: Words;
   size?: "sm" | "md" | "lg";
   /** False for a countdown to something that is not a phase change — there
    *  is nothing for the server to decide again, so asking it is waste. */
@@ -96,10 +109,10 @@ export default function Countdown({
         : "min-w-[52px] px-2 py-1.5 text-xl";
 
   const cells: [string, number | null][] = [
-    ["วัน", parts?.days ?? null],
-    ["ชม.", parts?.hours ?? null],
-    ["นาที", parts?.minutes ?? null],
-    ["วินาที", parts?.seconds ?? null],
+    [words.day, parts?.days ?? null],
+    [words.hour, parts?.hours ?? null],
+    [words.minute, parts?.minutes ?? null],
+    [words.second, parts?.seconds ?? null],
   ];
 
   return (
@@ -107,7 +120,7 @@ export default function Countdown({
       role="timer"
       // Updated on mount and then once a minute's worth of ticks, not every
       // second — see the note above.
-      aria-label={parts ? `${label ?? "นับถอยหลัง"} ${spoken(parts)}` : label}
+      aria-label={parts ? `${label ?? words.label} ${spoken(parts, words)}` : label}
       className="flex flex-wrap items-end gap-1.5"
     >
       {label && <span className="mr-1 self-center text-[13px] font-medium opacity-90">{label}</span>}
