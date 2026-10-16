@@ -9,6 +9,9 @@ import { articles } from "@/data/articles";
 import ProductCard from "@/components/ProductCard";
 import type { ProductCardData } from "@/data/card";
 
+/** How many cards a search asks for at a time. */
+const PAGE_SIZE = 24;
+
 export default function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -61,25 +64,57 @@ export default function SearchContent() {
   // fields the box in the header uses, so the two agree — rather than over a
   // catalogue the browser had to download to search.
   const [matchedProducts, setMatchedProducts] = useState<ProductCardData[]>([]);
+  /** How many matched in all — not how many fitted in the first response. */
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const latest = useRef(0);
   useEffect(() => {
     if (!q) {
       setMatchedProducts([]);
+      setTotalProducts(0);
       return;
     }
     const id = ++latest.current;
     const timer = setTimeout(() => {
-      fetch(`/api/search/suggest?q=${encodeURIComponent(q)}&limit=20`)
+      fetch(`/api/search/suggest?q=${encodeURIComponent(q)}&limit=${PAGE_SIZE}`)
         .then((r) => r.json())
         .then((data) => {
-          if (id === latest.current) setMatchedProducts(Array.isArray(data?.products) ? data.products : []);
+          if (id !== latest.current) return;
+          setMatchedProducts(Array.isArray(data?.products) ? data.products : []);
+          setTotalProducts(Number(data?.total) || 0);
         })
         .catch(() => {
-          if (id === latest.current) setMatchedProducts([]);
+          if (id !== latest.current) return;
+          setMatchedProducts([]);
+          setTotalProducts(0);
         });
     }, 180);
     return () => clearTimeout(timer);
   }, [q]);
+
+  // The rest, a page at a time. Asking for everything at once would hand the
+  // browser the catalogue again, which is the thing this endpoint exists to
+  // avoid — but stopping at the first page, as it used to, meant a search for
+  // a brand with thirty products reported twenty and offered no way on.
+  async function loadMore() {
+    const id = latest.current;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/search/suggest?q=${encodeURIComponent(q)}&limit=${PAGE_SIZE}&offset=${matchedProducts.length}`
+      );
+      const data = await res.json();
+      if (id !== latest.current) return;
+      if (Array.isArray(data?.products)) {
+        setMatchedProducts((prev) => [...prev, ...data.products]);
+        setTotalProducts((t) => Number(data?.total) || t);
+      }
+    } catch {
+      // Leave what is already on screen; the button can be pressed again.
+    } finally {
+      setLoadingMore(false);
+    }
+  }
   const matchedConcerns = q ? concerns.filter((c) => c.nameTh.includes(q) || c.name.toLowerCase().includes(q)) : [];
   const matchedArticles = q ? articles.filter((a) => a.title.toLowerCase().includes(q) || a.excerpt.toLowerCase().includes(q)) : [];
 
@@ -193,12 +228,29 @@ export default function SearchContent() {
 
       {matchedProducts.length > 0 && (
         <div className="mt-8">
-          <h2 className="font-bold text-brand-ink mb-3">สินค้า ({matchedProducts.length})</h2>
+          <h2 className="font-bold text-brand-ink mb-3">
+            สินค้า ({totalProducts || matchedProducts.length})
+          </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 xl:grid-cols-5">
             {matchedProducts.map((p) => (
               <ProductCard key={p.slug} product={p} />
             ))}
           </div>
+          {matchedProducts.length < totalProducts && (
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="min-h-11 rounded-full border border-surface-line px-6 text-sm font-semibold text-brand-ink transition-colors hover:bg-surface-soft disabled:opacity-50"
+              >
+                {loadingMore ? "กำลังโหลด…" : "ดูสินค้าเพิ่ม"}
+              </button>
+              <span className="text-[12px] text-slate-500">
+                แสดง {matchedProducts.length} จาก {totalProducts} รายการ
+              </span>
+            </div>
+          )}
         </div>
       )}
 
