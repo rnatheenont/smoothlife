@@ -32,11 +32,21 @@ export async function GET(req: NextRequest) {
     .map((b) => ({ slug: b.slug, name: b.name, image: b.image, productCount: b.productCount }));
 
   // The same three fields the box has always matched on, in the same order.
-  const all = products.filter(
-    (p) =>
-      p.inStock &&
-      (p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q) || p.shortDesc.toLowerCase().includes(q))
-  );
+  //
+  // Sold-out products are part of the answer now. Hiding them made a search
+  // for a brand report half its range — thirty-three of P&F's sixty-three —
+  // and a shopper looking for something specific would rather be told it is
+  // out of stock than told it does not exist. The card already draws that
+  // state. They sort to the back so they can never push a buyable product
+  // off the first page.
+  const all = products
+    .filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q) ||
+        p.shortDesc.toLowerCase().includes(q)
+    )
+    .sort((a, b) => Number(b.inStock) - Number(a.inStock));
   const matches = all.slice(offset, offset + limit).map(toCardData);
 
   // `total` is counted before the slice, so the page can say how many were
