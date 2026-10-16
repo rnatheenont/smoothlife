@@ -103,6 +103,18 @@ export default function HeroScene3D({
     const loader = new THREE.TextureLoader();
     const disposables: { dispose(): void }[] = [];
     let disposed = false;
+    let sceneBuilt = false;
+
+    // three.js already prevents the default and rebuilds its GPU state when a
+    // context comes back; these only hand the banner back to the flat artwork
+    // underneath for as long as the canvas has nothing to show.
+    const canvas = renderer.domElement;
+    const onContextLost = () => setReady(false);
+    const onContextRestored = () => {
+      if (sceneBuilt && !disposed) setReady(true);
+    };
+    canvas.addEventListener("webglcontextlost", onContextLost);
+    canvas.addEventListener("webglcontextrestored", onContextRestored);
 
     function makeTexture(src: string) {
       return new Promise<THREE.Texture>((resolve, reject) => {
@@ -110,7 +122,9 @@ export default function HeroScene3D({
           src,
           (tex) => {
             tex.colorSpace = THREE.SRGBColorSpace;
-            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            // Every layer faces the camera head-on, so anisotropic sampling
+            // has nothing to gain here; a low cap keeps the texture reads cheap.
+            tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
             tex.minFilter = THREE.LinearMipmapLinearFilter;
             resolve(tex);
           },
@@ -215,12 +229,20 @@ export default function HeroScene3D({
 
     const pointer = { x: 0, y: 0 };
     const eased = { x: 0, y: 0 };
+    // Only the raw coordinates are kept per event. The banner's rectangle is
+    // measured once per frame in the loop below rather than cached: the
+    // carousel slides this scene around while it turns and the page scrolls
+    // under it, so a rectangle measured earlier would map the pointer wrongly.
+    let hasPointer = false;
+    let pointerClientX = 0;
+    let pointerClientY = 0;
     function onPointerMove(e: PointerEvent) {
-      const r = host!.getBoundingClientRect();
-      pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
-      pointer.y = ((e.clientY - r.top) / r.height) * 2 - 1;
+      hasPointer = true;
+      pointerClientX = e.clientX;
+      pointerClientY = e.clientY;
     }
     function onPointerLeave() {
+      hasPointer = false;
       pointer.x = 0;
       pointer.y = 0;
     }
@@ -328,6 +350,7 @@ export default function HeroScene3D({
         );
         const start = performance.now();
         let last = start;
+        const snowFields = [snowBack, snowFront];
 
         renderer.setAnimationLoop((now) => {
           const dt = Math.min((now - last) / 1000, 0.05);
@@ -341,6 +364,13 @@ export default function HeroScene3D({
             camera.position.x = 0;
             camera.position.y = 0;
           } else {
+            if (hasPointer) {
+              const r = host!.getBoundingClientRect();
+              if (r.width && r.height) {
+                pointer.x = ((pointerClientX - r.left) / r.width) * 2 - 1;
+                pointer.y = ((pointerClientY - r.top) / r.height) * 2 - 1;
+              }
+            }
             const t = (now - start) / 1000;
             const targetX =
               pointer.x * POINTER_SWAY_X + Math.sin(t * 0.21) * DRIFT_X;
@@ -351,7 +381,7 @@ export default function HeroScene3D({
             camera.position.x = eased.x;
             camera.position.y = eased.y;
 
-            for (const field of [snowBack, snowFront]) {
+            for (const field of snowFields) {
               if (!field) continue;
               const p = field.positions;
               for (let i = 0; i < field.count; i++) {
@@ -369,6 +399,7 @@ export default function HeroScene3D({
           renderer.render(three, camera);
         });
 
+        sceneBuilt = true;
         setReady(true);
         onReady?.();
       } catch {
@@ -382,6 +413,8 @@ export default function HeroScene3D({
       ro?.disconnect();
       host.removeEventListener("pointermove", onPointerMove);
       host.removeEventListener("pointerleave", onPointerLeave);
+      canvas.removeEventListener("webglcontextlost", onContextLost);
+      canvas.removeEventListener("webglcontextrestored", onContextRestored);
       disposables.forEach((d) => d.dispose());
       renderer.dispose();
       renderer.domElement.remove();
