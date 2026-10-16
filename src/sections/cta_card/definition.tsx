@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { z } from "zod";
+import { lText, tx } from "@/lib/i18n/localized";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // "Here is what to do next." One title, one sentence, one button.
@@ -15,16 +16,25 @@ import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 // presses.
 
 const schema = z.object({
-  title: z.string().max(120).default(""),
-  body: z.string().max(400).default(""),
-  button: z.string().max(40).default(""),
+  title: lText(120).default(""),
+  body: lText(400).default(""),
+  button: lText(40).default(""),
   href: z.string().default(""),
   image: z.string().default(""),
   tone: z.enum(["soft", "brand"]).default("soft"),
 });
 
-function Component({ settings }: SectionProps<z.output<typeof schema>>) {
-  if (!settings.title && !settings.body) return null;
+function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
+  // Read each two-language field once, up here, and work with the words from
+  // then on. Not only for tidiness: `settings.title` is an object once a
+  // translation exists, and an object is always truthy — so a check written
+  // against the raw field would stop ever finding a card empty, and this
+  // block would draw a heading made of nothing.
+  const title = tx(settings.title, ctx.locale);
+  const body = tx(settings.body, ctx.locale);
+  const button = tx(settings.button, ctx.locale);
+
+  if (!title && !body) return null;
   const onBrand = settings.tone === "brand";
 
   return (
@@ -40,19 +50,19 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
           </div>
         )}
         <div className="min-w-0 flex-1">
-          {settings.title && <h2 className="text-xl font-bold md:text-2xl">{settings.title}</h2>}
-          {settings.body && (
-            <p className={`mt-2 text-sm ${onBrand ? "text-white/90" : "text-slate-600"}`}>{settings.body}</p>
+          {title && <h2 className="text-xl font-bold md:text-2xl">{title}</h2>}
+          {body && (
+            <p className={`mt-2 text-sm ${onBrand ? "text-white/90" : "text-slate-600"}`}>{body}</p>
           )}
         </div>
-        {settings.button && settings.href && (
+        {button && settings.href && (
           <Link
             href={settings.href}
             className={`shrink-0 rounded-full px-6 py-3 text-sm font-bold shadow-card transition-transform hover:scale-[1.02] ${
               onBrand ? "bg-white text-brand-800" : "bg-brand-800 text-white"
             }`}
           >
-            {settings.button}
+            {button}
           </Link>
         )}
       </div>
