@@ -1,53 +1,42 @@
 import { z } from "zod";
-import { brandPageData } from "@/lib/brand-page";
-import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
+import type { SectionDefinition } from "@/lib/pages/types";
 
-// The row of chips that jumps to each kind of product the brand sells.
+// Retired. The chips this drew are now the tabs inside "สินค้าแยกตามประเภท".
 //
-// The anchors are the group keys that "สินค้าแยกตามประเภท" uses as ids, so
-// this only means something on a page that also has that section — which is
-// why a brand with a single group shows no chips at all: one chip pointing at
-// the shelf directly underneath it is not navigation.
+// Kept rather than deleted, and deliberately so. Three brand pages already
+// hold one of these (dentiste, janeke, smooth-e), and this system has no
+// migration step on purpose — a migrate() that rewrites documents runs on
+// every render forever, because nothing writes the new shape back, and that
+// has already cost this shop an outage once. Deleting the type instead would
+// make those three documents carry a section the registry does not know,
+// which renders as a red "section ถูกเลิกใช้" box in the editor's preview:
+// alarming, on a page where nothing is actually wrong.
+//
+// So it stays, draws nothing, and cannot be added to anything new:
+// enabledOn is empty, which is what takes it out of the editor's library
+// (see sectionsFor). A page that still lists it loses nothing by keeping it
+// and nothing by removing it — the team can delete it whenever they next
+// open that page.
 
 const schema = z.object({});
 
-type Group = { key: string; label: string; count: number };
-
-async function load(_settings: z.output<typeof schema>, ctx: { slug: string; draftProfile?: boolean }): Promise<Group[] | null> {
-  const page = await brandPageData(ctx.slug, ctx.draftProfile);
-  if (!page) return null;
-  return page.groups.map((g) => ({ key: g.key, label: g.label, count: g.items.length }));
-}
-
-function Component({ data }: SectionProps<z.output<typeof schema>, Group[] | null>) {
-  const groups = data ?? [];
-  if (groups.length <= 1) return null;
-  return (
-    <nav aria-label="ประเภทสินค้า" className="container-page mt-6 flex flex-wrap gap-2">
-      {groups.map((g) => (
-        <a
-          key={g.key}
-          href={`#${g.key}`}
-          className="rounded-full border border-surface-line bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-ink transition-colors hover:border-brand-teal hover:text-brand-800"
-        >
-          {g.label} ({g.count})
-        </a>
-      ))}
-    </nav>
-  );
+function Component() {
+  return null;
 }
 
 export const brandGroupTabs: SectionDefinition<typeof schema> = {
   type: "brand_group_tabs",
   version: 1,
-  label: "ปุ่มลัดประเภทสินค้า",
-  description: "ชิปกดแล้วเลื่อนไปยังกลุ่มสินค้าแต่ละประเภทของแบรนด์",
+  label: "ปุ่มลัดประเภทสินค้า (เลิกใช้แล้ว)",
+  description: "ย้ายไปเป็นแท็บใน “สินค้าแยกตามประเภท” แล้ว — ลบออกจากหน้านี้ได้เลย",
   category: "brand",
   schema,
   defaults: {},
   fields: [],
-  enabledOn: ["brand"],
+  // Empty on purpose: the editor offers a section only for the kinds listed
+  // here, so this one is offered nowhere while the instances that exist go
+  // on rendering (as nothing).
+  enabledOn: [],
   maxPerPage: 1,
-  load,
   Component,
 };

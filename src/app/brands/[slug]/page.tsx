@@ -173,27 +173,33 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
   // real (`sold` is 0 for every item here), so it is the one we use. Skipped
   // for a small brand, where "most reviewed" would just be the same four
   // products the shopper is about to scroll past.
+  const moreLink = (group: (typeof groups)[number]) =>
+    group.items.length > PER_GROUP && (
+      <Link
+        href={`/shop?brand=${brand.slug}`}
+        className="shrink-0 text-xs font-bold text-brand-800 underline-offset-2 hover:underline"
+      >
+        ดูทั้งหมด →
+      </Link>
+    );
+
   // A brand with one kind of product has no tabs to label its shelf, so that
-  // shelf keeps the heading it has always had.
+  // shelf keeps the heading — and the way to the rest — that it has always had.
   const groupShelf = (group: (typeof groups)[number], visibleHeading: boolean) => (
     <section key={group.key} id={group.key} className="scroll-mt-24">
       {visibleHeading ? (
-        <h2 className="mb-4 text-lg font-bold text-brand-ink md:text-xl">
-          {group.label} <span className="text-sm font-normal text-slate-500">({group.items.length} รายการ)</span>
-        </h2>
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <h2 className="text-lg font-bold text-brand-ink md:text-xl">
+            {group.label} <span className="text-sm font-normal text-slate-500">({group.items.length} รายการ)</span>
+          </h2>
+          {moreLink(group)}
+        </div>
       ) : (
         <>
           <h2 className="sr-only">{group.label}</h2>
           <div className="mb-4 flex items-center justify-between gap-3">
             <p className="text-sm text-slate-500">{group.items.length} รายการ</p>
-            {group.items.length > PER_GROUP && (
-              <Link
-                href={`/shop?brand=${brand.slug}`}
-                className="shrink-0 text-xs font-bold text-brand-800 underline-offset-2 hover:underline"
-              >
-                ดูทั้งหมด →
-              </Link>
-            )}
+            {moreLink(group)}
           </div>
         </>
       )}

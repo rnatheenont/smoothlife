@@ -21,7 +21,6 @@ const ORDER = [
   // Draws nothing unless this brand is in a campaign that is on, so it costs
   // an out-of-season page nothing to carry it.
   "brand_campaign_bar",
-  "brand_group_tabs",
   "brand_bestsellers",
   "brand_story",
   "brand_product_lines",

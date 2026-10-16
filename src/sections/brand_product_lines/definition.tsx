@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { z } from "zod";
 import ProductCard from "@/components/ProductCard";
+import ProductTabs from "@/components/ProductTabs";
 import { BRAND_GRID, brandPageData, shelfCounts, shelfItemClass } from "@/lib/brand-page";
 import type { GroupedProducts } from "@/lib/brand-groups";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
@@ -55,7 +56,69 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
     );
   }
 
-  const { xl } = shelfCounts(settings.rows);
+  const { xl, md } = shelfCounts(settings.rows);
+
+  const moreLink = (group: GroupedProducts) =>
+    group.items.length > md && (
+      <Link
+        href={`/shop?brand=${data.brandSlug}`}
+        // -my-1 py-1: a 24px target (WCAG 2.5.8) without moving the link off
+        // the baseline it shares with what sits beside it. Measured at 16px
+        // before this.
+        className="-my-1 shrink-0 py-1 text-xs font-bold text-brand-800 underline-offset-2 hover:underline"
+      >
+        ดูทั้งหมด →
+      </Link>
+    );
+
+  const grid = (group: GroupedProducts) => (
+    <div className={BRAND_GRID}>
+      {group.items.slice(0, xl).map((p, i) => (
+        <div key={p.slug} className={shelfItemClass(i, settings.rows)}>
+          <ProductCard product={toCardData(p)} />
+        </div>
+      ))}
+    </div>
+  );
+
+  // One kind of product at a time, chosen from the row of tabs above it.
+  //
+  // This used to be every shelf stacked down the page, with a separate
+  // section of chips at the top that jumped to them — ten screens of grid on
+  // a brand like Dentiste, and the control a screen away from the thing it
+  // controlled. The chips section is retired; the tabs live here because a
+  // tab and the shelf it opens have to be in the same section, for the same
+  // reason the sticky category row of /shop does.
+  //
+  // Every shelf is still rendered here and in the HTML (see ProductTabs);
+  // the tabs only decide which one is on screen. Each shelf's heading is for
+  // a screen reader rather than the eye, because the tab above it already
+  // says those words — what stays visible is what the tab does not say: how
+  // many there are, and the way to the rest.
+  if (data.groups.length > 1) {
+    return (
+      <div className="container-page mt-10">
+        <ProductTabs
+          ariaLabel="ประเภทสินค้า"
+          hashKeys={data.groups.map((g) => g.key)}
+          labels={data.groups.map((g) => `${g.label} (${g.items.length})`)}
+          panels={data.groups.map((group) => (
+            <section key={group.key} id={group.key} className="scroll-mt-24">
+              <h2 className="sr-only">{group.label}</h2>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <p className="text-sm text-slate-500">{group.items.length} รายการ</p>
+                {moreLink(group)}
+              </div>
+              {grid(group)}
+            </section>
+          ))}
+        />
+      </div>
+    );
+  }
+
+  // A brand with one kind of product has no tab to name its shelf, so that
+  // shelf keeps the heading it has always had.
   return (
     <>
       {data.groups.map((group) => (
@@ -64,25 +127,9 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
             <h2 className="text-lg font-bold text-brand-ink md:text-xl">
               {group.label} <span className="text-sm font-normal text-slate-500">({group.items.length} รายการ)</span>
             </h2>
-            {group.items.length > shelfCounts(settings.rows).md && (
-              <Link
-                href={`/shop?brand=${data.brandSlug}`}
-                // -my-1 py-1: a 24px target (WCAG 2.5.8) without moving the
-                // link off the baseline it shares with the heading. Measured
-                // at 16px before this.
-                className="-my-1 shrink-0 py-1 text-xs font-bold text-brand-800 underline-offset-2 hover:underline"
-              >
-                ดูทั้งหมด →
-              </Link>
-            )}
+            {moreLink(group)}
           </div>
-          <div className={BRAND_GRID}>
-            {group.items.slice(0, xl).map((p, i) => (
-              <div key={p.slug} className={shelfItemClass(i, settings.rows)}>
-                <ProductCard product={toCardData(p)} />
-              </div>
-            ))}
-          </div>
+          {grid(group)}
         </section>
       ))}
     </>
@@ -93,7 +140,7 @@ export const brandProductLines: SectionDefinition<typeof schema> = {
   type: "brand_product_lines",
   version: 1,
   label: "สินค้าแยกตามประเภท",
-  description: "ชั้นสินค้าของแบรนด์ แบ่งตามประเภทอัตโนมัติ (เซรั่ม กันแดด ฯลฯ)",
+  description: "ชั้นสินค้าของแบรนด์ แบ่งตามประเภทอัตโนมัติ (เซรั่ม กันแดด ฯลฯ) พร้อมแท็บสลับประเภท",
   category: "brand",
   schema,
   defaults: { rows: 2 },
