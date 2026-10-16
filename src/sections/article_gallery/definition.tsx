@@ -6,6 +6,7 @@ import ScrollReveal from "@/components/ScrollReveal";
 import { articles } from "@/data/articles";
 import { articleProductSlugs, cardsForSlugs } from "@/lib/article-products";
 import { getStoreArticles, storeArticleHref } from "@/lib/storefront-articles";
+import { lText, tx } from "@/lib/i18n/localized";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // The reading at the end of the page: a drifting arc of article covers, each
@@ -16,13 +17,13 @@ import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 // cross into the browser.
 
 const schema = z.object({
-  eyebrow: z.string().max(40).default("บทความและความรู้"),
+  eyebrow: lText(40).default("บทความและความรู้"),
   /** Drawn in the brand gradient, ahead of the rest of the heading. */
-  headingAccent: z.string().max(24).default("ความรู้"),
-  headingRest: z.string().max(60).default("เรื่องผิวและสุขภาพ"),
-  blurbLine1: z.string().max(80).default("อ่านเรื่องผิว ฟัน และสุขภาพแบบเข้าใจง่าย"),
-  blurbLine2: z.string().max(80).default("เลือกเรื่องที่สนใจ แล้วนำไปใช้ได้จริงในทุกวัน"),
-  ctaLabel: z.string().max(30).default("ดูบทความทั้งหมด"),
+  headingAccent: lText(24).default("ความรู้"),
+  headingRest: lText(60).default("เรื่องผิวและสุขภาพ"),
+  blurbLine1: lText(80).default("อ่านเรื่องผิว ฟัน และสุขภาพแบบเข้าใจง่าย"),
+  blurbLine2: lText(80).default("เลือกเรื่องที่สนใจ แล้วนำไปใช้ได้จริงในทุกวัน"),
+  ctaLabel: lText(30).default("ดูบทความทั้งหมด"),
   ctaHref: z.string().min(1).default("/knowledge"),
   count: z.number().int().min(3).max(16).default(12),
   /** How many products to hang under each cover. */
@@ -62,28 +63,37 @@ async function load(settings: z.output<typeof schema>): Promise<ArcItem[]> {
   );
 }
 
-function Component({ settings, data }: SectionProps<z.output<typeof schema>, ArcItem[]>) {
+function Component({ settings, data, ctx }: SectionProps<z.output<typeof schema>, ArcItem[]>) {
   const items = data ?? [];
+  // The heading is split in two because only the first half is drawn in the
+  // gradient; both halves are read here so a translation can move the accent
+  // word to wherever English puts it.
+  const eyebrow = tx(settings.eyebrow, ctx.locale);
+  const headingAccent = tx(settings.headingAccent, ctx.locale);
+  const headingRest = tx(settings.headingRest, ctx.locale);
+  const blurbLine1 = tx(settings.blurbLine1, ctx.locale);
+  const blurbLine2 = tx(settings.blurbLine2, ctx.locale);
+  const ctaLabel = tx(settings.ctaLabel, ctx.locale);
   // Nothing to read is not worth a heading over an empty arc.
   if (items.length === 0) return null;
 
   return (
     <section className="overflow-hidden bg-white pt-10 pb-12 md:pt-16 md:pb-16 lg:pt-20">
       <ScrollReveal className="container-page text-center">
-        <p className="text-[13px] font-medium tracking-[0.04em] text-slate-500">{settings.eyebrow}</p>
+        <p className="text-[13px] font-medium tracking-[0.04em] text-slate-500">{eyebrow}</p>
         <h2 className="mt-2 text-[26px] font-medium leading-[1.4] tracking-[-0.01em] text-[#0a0a0a] md:text-[40px]">
           {/* inline-block with padding: a clipped gradient stops at the box,
               and Thai tone marks and vowels above/below reach past it. */}
           <span className="inline-block bg-brand-gradient bg-clip-text px-0.5 pb-1 font-bold text-transparent">
-            {settings.headingAccent}
+            {headingAccent}
           </span>{" "}
-          {settings.headingRest}
+          {headingRest}
         </h2>
         {/* Thai has no spaces between words, so the browser may break mid-
             phrase; each phrase is kept whole and the line breaks between them. */}
         <p className="mx-auto mt-2 max-w-[28rem] text-sm leading-relaxed text-slate-500 md:text-base">
-          <span className="inline-block">{settings.blurbLine1}</span>{" "}
-          <span className="inline-block">{settings.blurbLine2}</span>
+          <span className="inline-block">{blurbLine1}</span>{" "}
+          <span className="inline-block">{blurbLine2}</span>
         </p>
       </ScrollReveal>
       <div className="mt-4 md:mt-8">
@@ -94,7 +104,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Arc
           href={settings.ctaHref}
           className="inline-flex min-h-11 items-center gap-1 rounded-full bg-[#0a0a0a] px-6 text-sm font-semibold text-white transition-colors hover:bg-black/80"
         >
-          {settings.ctaLabel} <ChevronRight size={15} />
+          {ctaLabel} <ChevronRight size={15} />
         </Link>
       </div>
     </section>
@@ -120,12 +130,12 @@ export const articleGallery: SectionDefinition<typeof schema> = {
     shelfSize: 10,
   },
   fields: [
-    { key: "eyebrow", type: "text", label: "คำนำหัวข้อ" },
-    { key: "headingAccent", type: "text", label: "หัวข้อ (คำที่ไล่สี)" },
-    { key: "headingRest", type: "text", label: "หัวข้อ (ส่วนที่เหลือ)" },
-    { key: "blurbLine1", type: "text", label: "คำโปรยบรรทัดที่ 1" },
-    { key: "blurbLine2", type: "text", label: "คำโปรยบรรทัดที่ 2" },
-    { key: "ctaLabel", type: "text", label: "ข้อความปุ่ม" },
+    { key: "eyebrow", type: "text", label: "คำนำหัวข้อ", localized: true },
+    { key: "headingAccent", type: "text", label: "หัวข้อ (คำที่ไล่สี)", localized: true },
+    { key: "headingRest", type: "text", label: "หัวข้อ (ส่วนที่เหลือ)", localized: true },
+    { key: "blurbLine1", type: "text", label: "คำโปรยบรรทัดที่ 1", localized: true },
+    { key: "blurbLine2", type: "text", label: "คำโปรยบรรทัดที่ 2", localized: true },
+    { key: "ctaLabel", type: "text", label: "ข้อความปุ่ม", localized: true },
     { key: "ctaHref", type: "text", label: "ลิงก์ปุ่ม" },
     { key: "count", type: "number", label: "จำนวนบทความ", min: 3, max: 16 },
     { key: "shelfSize", type: "number", label: "สินค้าใต้บทความแต่ละเรื่อง", min: 2, max: 20 },
