@@ -2,6 +2,14 @@
   "regions": [
     "hnd1"
   ],
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "main": true,
+      "demo/*": true,
+      "feature/pages-wave2": true
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/refresh-catalogue",
