@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import { z } from "zod";
+import { lText, tx } from "@/lib/i18n/localized";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 import { contentIcon, CONTENT_ICON_KEYS } from "../shared/content-icons";
 
@@ -20,18 +21,25 @@ const schema = z.object({
   icon: z.string().default(""),
   image: z.string().default(""),
   /** Big and gradient-filled, the way the 404 draws its number. */
-  display: z.string().max(12).default(""),
-  title: z.string().max(160).default(""),
-  body: z.string().max(600).default(""),
-  button: z.string().max(40).default(""),
+  display: lText(12).default(""),
+  title: lText(160).default(""),
+  body: lText(600).default(""),
+  button: lText(40).default(""),
   href: z.string().default(""),
   /** The 404 sits in a page of its own; the offline page fills the screen it
    *  is apologising for. */
   fill: z.boolean().default(false),
 });
 
-function Component({ settings }: SectionProps<z.output<typeof schema>>) {
+function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
   const Icon = contentIcon(settings.icon);
+  // Read into words first. The big number decides whether the main line is
+  // an <h1> or the sentence under one, so that choice has to be made on
+  // text — a stored translation is an object, and an object is always true.
+  const display = tx(settings.display, ctx.locale);
+  const title = tx(settings.title, ctx.locale);
+  const body = tx(settings.body, ctx.locale);
+  const button = tx(settings.button, ctx.locale);
 
   return (
     <div
@@ -53,36 +61,32 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
         )
       )}
 
-      {settings.display && (
-        <h1 className="brand-text-gradient mb-3 mt-4 text-4xl font-bold">{settings.display}</h1>
-      )}
-      {settings.title &&
-        (settings.display ? (
-          <p className="mb-6 text-slate-500">{settings.title}</p>
+      {display && <h1 className="brand-text-gradient mb-3 mt-4 text-4xl font-bold">{display}</h1>}
+      {title &&
+        (display ? (
+          <p className="mb-6 text-slate-500">{title}</p>
         ) : (
-          <h1 className="mt-5 text-xl font-bold text-brand-ink">{settings.title}</h1>
+          <h1 className="mt-5 text-xl font-bold text-brand-ink">{title}</h1>
         ))}
-      {settings.body && (
-        <p className="mt-2 max-w-sm text-sm leading-relaxed text-slate-600">{settings.body}</p>
-      )}
+      {body && <p className="mt-2 max-w-sm text-sm leading-relaxed text-slate-600">{body}</p>}
 
       {/* Two buttons, and the difference is not decoration. A page that
           fills the screen may be the only thing in front of someone with no
           signal, so its button is a 44px touch target of its own; a 404 sits
           in a normal page and uses the shop's standard button, from the
           shared component so it stays in step with every other one. */}
-      {settings.button &&
+      {button &&
         settings.href &&
         (settings.fill ? (
           <Link
             href={settings.href}
             className="mt-6 inline-flex min-h-11 items-center rounded-full bg-brand-action px-7 text-sm font-semibold text-white"
           >
-            {settings.button}
+            {button}
           </Link>
         ) : (
           <Button size="lg" href={settings.href}>
-            {settings.button}
+            {button}
           </Button>
         ))}
     </div>
@@ -107,9 +111,15 @@ export const pageState: SectionDefinition<typeof schema> = {
     fill: false,
   },
   fields: [
-    { key: "display", type: "text", label: "ตัวเลขใหญ่", help: 'เช่น "404" — เว้นว่างถ้าไม่ต้องการ' },
-    { key: "title", type: "text", label: "ข้อความหลัก" },
-    { key: "body", type: "textarea", label: "คำอธิบาย" },
+    {
+      key: "display",
+      type: "text",
+      label: "ตัวเลขใหญ่",
+      help: 'เช่น "404" — เว้นว่างถ้าไม่ต้องการ',
+      localized: true,
+    },
+    { key: "title", type: "text", label: "ข้อความหลัก", localized: true },
+    { key: "body", type: "textarea", label: "คำอธิบาย", localized: true },
     { key: "image", type: "image", label: "รูป/มาสคอต" },
     {
       key: "icon",
@@ -117,7 +127,7 @@ export const pageState: SectionDefinition<typeof schema> = {
       label: "ไอคอน (ถ้าไม่ใช้รูป)",
       help: `เลือกได้: ${CONTENT_ICON_KEYS.join(", ")}`,
     },
-    { key: "button", type: "text", label: "ข้อความบนปุ่ม" },
+    { key: "button", type: "text", label: "ข้อความบนปุ่ม", localized: true },
     { key: "href", type: "text", label: "ลิงก์ปุ่ม" },
     { key: "fill", type: "toggle", label: "ให้สูงเต็มหน้าจอ" },
   ],
