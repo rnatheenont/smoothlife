@@ -18,6 +18,7 @@ import { publishedDoc } from "@/lib/pages/store";
 import { defaultBrandDoc } from "@/lib/pages/default-docs/brand";
 import { toCardData } from "@/data/card";
 import SuperbrushStage from "@/components/brand/SuperbrushStage";
+import ProductTabs from "@/components/ProductTabs";
 import { janekeModels } from "@/lib/janeke-stage";
 import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
 
@@ -172,6 +173,45 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
   // real (`sold` is 0 for every item here), so it is the one we use. Skipped
   // for a small brand, where "most reviewed" would just be the same four
   // products the shopper is about to scroll past.
+  // A brand with one kind of product has no tabs to label its shelf, so that
+  // shelf keeps the heading it has always had.
+  const groupShelf = (group: (typeof groups)[number], visibleHeading: boolean) => (
+    <section key={group.key} id={group.key} className="scroll-mt-24">
+      {visibleHeading ? (
+        <h2 className="mb-4 text-lg font-bold text-brand-ink md:text-xl">
+          {group.label} <span className="text-sm font-normal text-slate-500">({group.items.length} รายการ)</span>
+        </h2>
+      ) : (
+        <>
+          <h2 className="sr-only">{group.label}</h2>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-slate-500">{group.items.length} รายการ</p>
+            {group.items.length > PER_GROUP && (
+              <Link
+                href={`/shop?brand=${brand.slug}`}
+                className="shrink-0 text-xs font-bold text-brand-800 underline-offset-2 hover:underline"
+              >
+                ดูทั้งหมด →
+              </Link>
+            )}
+          </div>
+        </>
+      )}
+      {/* Both rows at once. They used to arrive behind a button, which kept
+          the HTML small but put a click between a shopper and the rest of the
+          shelf. shelfItemClass is the same per-width cut the sections system
+          uses: eight cards below xl, ten at xl, so both rows are whole rows at
+          every width. */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5">
+        {group.items.slice(0, PER_GROUP_XL).map((p, i) => (
+          <div key={p.slug} className={shelfItemClass(i, 2)}>
+            <ProductCard product={toCardData(p)} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
   const bestsellers =
     items.length > PER_GROUP
       ? [...items].sort((a, b) => b.reviewCount - a.reviewCount).slice(0, FIRST_ROW_XL)
@@ -294,20 +334,6 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
         </section>
       )}
 
-      {groups.length > 1 && (
-        <nav aria-label="ประเภทสินค้า" className="mt-6 flex flex-wrap gap-2">
-          {groups.map((g) => (
-            <a
-              key={g.key}
-              href={`#${g.key}`}
-              className="rounded-full border border-surface-line bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-ink transition-colors hover:border-brand-teal hover:text-brand-800"
-            >
-              {g.label} ({g.items.length})
-            </a>
-          ))}
-        </nav>
-      )}
-
       {bestsellers.length > 0 && (
         <section className="mt-8">
           <h2 className="mb-1 flex items-center gap-2 text-lg font-bold text-brand-ink md:text-xl">
@@ -325,35 +351,31 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
         </section>
       )}
 
-      {groups.map((group) => (
-        <section key={group.key} id={group.key} className="mt-10 scroll-mt-24">
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <h2 className="text-lg font-bold text-brand-ink md:text-xl">
-              {group.label} <span className="text-sm font-normal text-slate-500">({group.items.length} รายการ)</span>
-            </h2>
-            {group.items.length > PER_GROUP && (
-              <Link
-                href={`/shop?brand=${brand.slug}`}
-                className="shrink-0 text-xs font-bold text-brand-800 underline-offset-2 hover:underline"
-              >
-                ดูทั้งหมด →
-              </Link>
-            )}
-          </div>
-          {/* Both rows at once. They used to arrive behind a button, which
-              kept the HTML small but put a click between a shopper and the
-              rest of the shelf. shelfItemClass is the same per-width cut the
-              sections system uses: eight cards below xl, ten at xl, so both
-              rows are whole rows at every width. */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5">
-            {group.items.slice(0, PER_GROUP_XL).map((p, i) => (
-              <div key={p.slug} className={shelfItemClass(i, 2)}>
-                <ProductCard product={toCardData(p)} />
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
+      {/* One kind of product at a time, chosen from the row of tabs.
+          These used to be ten shelves stacked down the page with a row of
+          chips at the top that jumped to them — which meant the control and
+          the thing it controlled were a screen apart, and a brand like
+          Dentiste ran to ten screens of grid.
+
+          Every shelf is still in the HTML (see ProductTabs); the tabs only
+          decide which one is on screen. The heading of each shelf is for a
+          screen reader rather than the eye, because the tab above it already
+          says the same words — what is left visible is the part the tab does
+          not say: how many there are, and the way to the rest. */}
+      {groups.length > 0 && (
+        <div className="mt-10">
+          {groups.length > 1 ? (
+            <ProductTabs
+              ariaLabel="ประเภทสินค้า"
+              hashKeys={groups.map((g) => g.key)}
+              labels={groups.map((g) => `${g.label} (${g.items.length})`)}
+              panels={groups.map((group) => groupShelf(group, false))}
+            />
+          ) : (
+            groups.map((group) => groupShelf(group, true))
+          )}
+        </div>
+      )}
 
       {/* Every product the brand sells, as plain links. The grids above stop
           at eight per section to keep the page light; this is how the rest

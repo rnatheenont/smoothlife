@@ -1,6 +1,6 @@
 import { z } from "zod";
 import ProductCard from "@/components/ProductCard";
-import ProductTabs from "@/components/campaign/ProductTabs";
+import ProductTabs from "@/components/ProductTabs";
 import { products } from "@/data/products";
 import { withCustomImages } from "@/lib/product-images";
 import type { Product } from "@/data/types";
