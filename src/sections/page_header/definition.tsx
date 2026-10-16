@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { z } from "zod";
 import { CONTENT_ICON_KEYS, contentIcon } from "../shared/content-icons";
+import { lText, tx } from "@/lib/i18n/localized";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
 // The top of a content page: a line above, the page's name, a sentence under
@@ -17,9 +18,9 @@ import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 // "this page has none" if there is one section whose job it is.
 
 const schema = z.object({
-  eyebrow: z.string().max(60).default(""),
-  title: z.string().max(120).default(""),
-  intro: z.string().max(600).default(""),
+  eyebrow: lText(60).default(""),
+  title: lText(120).default(""),
+  intro: lText(600).default(""),
   /** A wide picture under the header, as /about has. */
   image: z.string().default(""),
   align: z.enum(["left", "center"]).default("left"),
@@ -92,12 +93,22 @@ const BACKGROUND: Record<string, string> = {
   soft: "bg-surface-soft",
 };
 
-function Component({ settings }: SectionProps<z.output<typeof schema>>) {
+function Component({ settings, ctx }: SectionProps<z.output<typeof schema>>) {
+  // The three fields that can carry a translation, read once into words.
+  // Everything below works with the words — including the checks for "is
+  // there anything here", which have to be made against text: once a
+  // translation exists the stored value is an object, and an object is
+  // always truthy, so a header with no title would start drawing an empty
+  // <h1> on twenty pages.
+  const eyebrow = tx(settings.eyebrow, ctx.locale);
+  const title = tx(settings.title, ctx.locale);
+  const intro = tx(settings.intro, ctx.locale);
+
   const centered = settings.align === "center";
   const rhythm = LAYOUT[settings.layout] ?? LAYOUT.page;
   const top = TOP_ROOM[settings.topRoom] ?? TOP_ROOM.page;
   const EyebrowIcon = contentIcon(settings.eyebrowIcon);
-  if (!settings.title && !settings.intro && !settings.image) return null;
+  if (!title && !intro && !settings.image) return null;
 
   // With a mascot the header is a row: picture on the left, the three lines
   // on the right. It is a different shape rather than an extra element, so
@@ -119,15 +130,13 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
               />
             </div>
             <div>
-              {settings.eyebrow && (
+              {eyebrow && (
                 <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-brand-800">
-                  {EyebrowIcon && <EyebrowIcon size={16} />} {settings.eyebrow}
+                  {EyebrowIcon && <EyebrowIcon size={16} />} {eyebrow}
                 </div>
               )}
-              {settings.title && (
-                <h1 className="text-2xl font-bold text-brand-ink md:text-3xl">{settings.title}</h1>
-              )}
-              {settings.intro && <p className="mt-1 text-sm text-slate-500">{settings.intro}</p>}
+              {title && <h1 className="text-2xl font-bold text-brand-ink md:text-3xl">{title}</h1>}
+              {intro && <p className="mt-1 text-sm text-slate-500">{intro}</p>}
             </div>
           </div>
         </div>
@@ -142,21 +151,17 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
           the two together add up to exactly what ContentPage drew. */}
       <div className={`container-page ${top}`.trimEnd()}>
         <div className={`${rhythm.wrap} ${centered ? "mx-auto text-center" : ""}`.trim()}>
-          {settings.eyebrow && <p className="mb-2 text-xs font-bold text-brand-800">{settings.eyebrow}</p>}
-          {settings.title && (
-            <h1 className={`text-2xl font-bold text-brand-ink md:text-3xl ${rhythm.h1}`}>
-              {settings.title}
-            </h1>
+          {eyebrow && <p className="mb-2 text-xs font-bold text-brand-800">{eyebrow}</p>}
+          {title && (
+            <h1 className={`text-2xl font-bold text-brand-ink md:text-3xl ${rhythm.h1}`}>{title}</h1>
           )}
-          {settings.intro && (
-            <p className={`text-sm ${rhythm.intro}`}>{settings.intro}</p>
-          )}
+          {intro && <p className={`text-sm ${rhythm.intro}`}>{intro}</p>}
         </div>
         {settings.image && (
           // The ratio is fixed and the box is reserved before the file
           // arrives, so the rest of the page does not jump down when it does.
           <div className="relative mb-10 aspect-21/9 overflow-hidden rounded-xl2">
-            <Image src={settings.image} alt={settings.title} fill className="object-cover" priority />
+            <Image src={settings.image} alt={title} fill className="object-cover" priority />
           </div>
         )}
       </div>
@@ -185,9 +190,9 @@ export const pageHeader: SectionDefinition<typeof schema> = {
     eyebrowIcon: "",
   },
   fields: [
-    { key: "eyebrow", type: "text", label: "คำนำหัวข้อ", help: "บรรทัดเล็กเหนือหัวข้อ" },
-    { key: "title", type: "text", label: "หัวข้อหลัก (h1)", help: "ชื่อของหน้านี้ — มีได้หน้าละอันเดียว" },
-    { key: "intro", type: "textarea", label: "คำโปรย" },
+    { key: "eyebrow", type: "text", label: "คำนำหัวข้อ", help: "บรรทัดเล็กเหนือหัวข้อ", localized: true },
+    { key: "title", type: "text", label: "หัวข้อหลัก (h1)", help: "ชื่อของหน้านี้ — มีได้หน้าละอันเดียว", localized: true },
+    { key: "intro", type: "textarea", label: "คำโปรย", localized: true },
     { key: "image", type: "image", label: "รูปกว้างใต้หัวข้อ" },
     { key: "mascot", type: "image", label: "รูปข้างหัวข้อ", help: "ใส่แล้วหัวหน้าจะเรียงเป็นแถว รูปอยู่ซ้าย" },
     {
