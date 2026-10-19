@@ -42,8 +42,21 @@ const TRIED_KEY = "sl_sso_tried";
  * variable because it has to agree with a setting in someone else's console,
  * and a value that must match something unversioned belongs where the next
  * person reading this code will see it.
+ *
+ * All four are registered with Shopify as of 19 Oct 2026 — the two the shop
+ * will live on, the deployment URL it answers on today, and the address it is
+ * being tried out at. Registering the ones the shop has not moved to yet
+ * costs nothing: a callback address is a string Shopify compares against, and
+ * nothing can use one until a host answers at it. It is what turns the move
+ * into a DNS change and an environment variable, with no console to revisit
+ * on the day.
  */
-const SSO_HOSTS = ["smoothlife.vercel.app", "smoothlife.com", "www.smoothlife.com"];
+const SSO_HOSTS = [
+  "smoothlife.vercel.app",
+  "app.smoothlife.com",
+  "smoothlife.com",
+  "www.smoothlife.com",
+];
 
 /** Nothing here should ever interrupt a page that is working. */
 function safely<T>(fn: () => T, fallback: T): T {
