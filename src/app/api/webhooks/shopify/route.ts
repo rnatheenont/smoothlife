@@ -11,6 +11,7 @@ import {
 // why the route no longer talks to either channel directly.
 } from "@/lib/order-notify";
 import { settleFlashSaleShopifyOrder } from "@/lib/flash-sale-shopify";
+import { syncExternalSoldForOrder } from "@/lib/flash-sale-sold";
 // Shared with the 2C2P checkout webhook, which has to run the same work for
 // orders Shopify never raises an orders/paid event for — see order-paid.ts.
 import { handleOrdersPaid } from "@/lib/order-paid";
@@ -360,7 +361,15 @@ export async function POST(req: NextRequest) {
           console.error("[shopify webhook] flash-sale settlement failed", err);
           return { error: String(err) };
         });
-        result = { flashSale, points: await handleOrdersPaid(payload, req.url) };
+        // A set bought from the shop's own product page is one fewer for the
+        // queue to hand out, and until now nothing told the queue so until
+        // somebody opened the sale page or the sweep came round. This is the
+        // moment Shopify knows, so it is the moment to ask.
+        const soldSync = await syncExternalSoldForOrder(payload).catch((err) => {
+          console.error("[shopify webhook] flash-sale sold resync failed", err);
+          return { campaigns: 0, synced: [] };
+        });
+        result = { flashSale, soldSync, points: await handleOrdersPaid(payload, req.url) };
         break;
       }
       case "orders/fulfilled":

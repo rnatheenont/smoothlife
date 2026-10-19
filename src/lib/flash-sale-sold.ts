@@ -128,3 +128,61 @@ export async function raiseSoldToShopify(
     console.error("[flash-sale] storefront sales count failed", err);
   }
 }
+
+/**
+ * Re-reads the storefront count for whatever campaign an order just touched.
+ *
+ * Without this the number only moves when somebody is looking: the sale page
+ * refreshes it while it is open, and the cron sweeps every campaign on a
+ * schedule. A set bought from the shop's own product page at three in the
+ * morning, with nobody on the sale page, therefore stayed invisible to the
+ * queue until the next sweep — and fs_join hands out slots from that number,
+ * so for that whole gap the queue would admit one person too many.
+ *
+ * Called from the Shopify webhook, which already arrives within seconds of
+ * the payment. Scoped to the campaigns that actually sell one of the variants
+ * in the order, so an ordinary shop order costs one small query and stops.
+ *
+ * Best-effort, like everything else on that webhook: a failure here must not
+ * turn a paid order into a failed delivery that Shopify will retry.
+ */
+export async function syncExternalSoldForOrder(order: {
+  line_items?: { variant_id?: string | number | null }[];
+}): Promise<{ campaigns: number; synced: SoldSync[] }> {
+  const variants = [
+    ...new Set(
+      (order.line_items ?? [])
+        .map((li) => (li.variant_id == null ? "" : `gid://shopify/ProductVariant/${li.variant_id}`))
+        .filter(Boolean)
+    ),
+  ];
+  if (!variants.length) return { campaigns: 0, synced: [] };
+
+  const inList = variants.map((v) => `"${v}"`).join(",");
+  const rows = await supabaseRest<{ campaign_id: string }[]>(
+    `flash_sales?variant_id=in.(${encodeURIComponent(inList)})&select=campaign_id`
+  ).catch((): { campaign_id: string }[] => []);
+  const ids = [...new Set(rows.map((r) => r.campaign_id))];
+  if (!ids.length) return { campaigns: 0, synced: [] };
+
+  // Only the ones still selling. A finished campaign's number is history, and
+  // asking Shopify about it spends the API budget on a settled question.
+  const now = new Date().toISOString();
+  const campaigns = await supabaseRest<{ id: string; starts_at: string }[]>(
+    `flash_sale_campaigns?id=in.(${ids.join(",")})&select=id,starts_at` +
+      `&published=is.true&is_demo=not.is.true` +
+      `&starts_at=lte.${encodeURIComponent(now)}` +
+      `&ended_manually_at=is.null` +
+      `&or=(ends_at.is.null,ends_at.gt.${encodeURIComponent(now)})`
+  ).catch((): { id: string; starts_at: string }[] => []);
+
+  const synced: SoldSync[] = [];
+  for (const campaign of campaigns) {
+    try {
+      synced.push(...(await syncExternalSold(campaign.id, campaign.starts_at)));
+    } catch (err) {
+      console.error(`[flash-sale] live resync failed for ${campaign.id}`, err);
+    }
+  }
+  return { campaigns: campaigns.length, synced };
+}
