@@ -40,30 +40,44 @@ import Reveal, { RevealGroup, RevealItem } from "./Reveal";
  * and, anchored left, they grew rightwards only — which ran "Let Your Hair"
  * out past the edge of the picture.
  *
- * `--nx`/`--ny` are that centre. The design's own figures apply from @2xl up,
- * where the type has come down to a share of the width the layout was drawn
- * for. Below that the words are proportionally wider and taller than the gaps
- * left for them, so two of them move: measured against the artwork on a 375px
- * screen, "Your Hand" sat across the model's hair and "Let Your Hair" across
- * her shoulder. They move into the clear space above and below her instead.
+ * `--nx`/`--ny` are that centre, and they stay on the design's own figures as
+ * far down as the words will allow, because this is one picture and it should
+ * read the same shape at every size.
+ *
+ * What does not scale with the picture is the type: the script has to stay
+ * legible, so on a narrow screen it is a bigger share of the frame than the
+ * design drew — the lines come out around a third wider there. That is enough
+ * to make two of them foul the squiggles, which are drawn at a fixed share of
+ * the frame and so shrink away underneath them. Measured on a 390px screen:
+ * "Your Hand" ran into the squiggle below it, and "Less Tugging" into the one
+ * on its left.
+ *
+ * So the two that foul move, and only as far as the words need: the top note
+ * rises until it clears the squiggle under it, and the right-hand one keeps
+ * the design's height and is left where the design has it. Everything else is
+ * the design's own position at every width.
  */
 const NOTES = [
   {
     text: ["Light On", "Your Hand"],
-    // Up into the band above the model, who starts at 18.9% on a phone.
-    place: "[--nx:47.8%] [--ny:8.6%] @2xl:[--ny:10%]",
+    // Up by 2.4, which is what it takes for the taller line to finish above
+    // the squiggle that starts at 15.3%.
+    place: "[--nx:47.8%] [--ny:7.6%] @2xl:[--ny:10%]",
     delay: 0.1,
   },
   {
     text: ["Let Your Hair", "Breath"],
-    // Down past her, rather than across the shoulder at 73–75%.
-    place: "[--nx:86.2%] [--ny:82.5%] @2xl:[--ny:67.1%]",
+    // Beside her, where the design has it. It hangs lower than the design's
+    // own figure by the extra height of the bigger type, which is the one
+    // place there is room for it to go.
+    place: "[--nx:86.2%] [--ny:68.9%] @2xl:[--ny:67.1%]",
     delay: 0.2,
   },
   {
     text: ["Less Tugging", "More Moving"],
-    // Right of the bottom print, and up off the foot of the picture.
-    place: "[--nx:44%] [--ny:88%] @2xl:[--nx:41.9%] @2xl:[--ny:89.8%]",
+    // The design's height at every width. Only the centre moves, and only by
+    // 2.1, to keep the wider line clear of the squiggle on its left.
+    place: "[--nx:44%] [--ny:89.8%] @2xl:[--nx:41.9%]",
     delay: 0.3,
   },
 ];
@@ -238,7 +252,7 @@ export default function JanekeHero() {
             >
               <Reveal delay={n.delay}>
                 <p
-                  className={`${script.className} whitespace-nowrap text-center text-[3.4cqw] leading-[1.5] text-[#8a7265] @md:text-[3cqw] @2xl:text-[2.6cqw] @4xl:text-[2.1cqw]`}
+                  className={`${script.className} whitespace-nowrap text-center text-[2.9cqw] leading-[1.5] text-[#8a7265] @md:text-[2.75cqw] @2xl:text-[2.6cqw] @4xl:text-[2.1cqw]`}
                 >
                   {n.text[0]}
                   <br />
