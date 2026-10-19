@@ -32,6 +32,20 @@ const AI_SEARCH_HOSTS = [
   "you.com",
 ];
 
+// Every hostname that is us. Without this a shopper walking from one of our
+// own pages to the next is filed as traffic somebody else sent us.
+//
+// `hostOf` has already stripped a leading "www.", which is why only the bare
+// apex is listed. `app.smoothlife.com` is where the app answers while the
+// shop itself still runs on Shopify, and preview deployments answer on a
+// *.vercel.app name that changes with every deploy — so that one is matched
+// by suffix rather than listed.
+const OWN_HOSTS = ["smoothlife.com", "app.smoothlife.com"];
+
+function isOwnHost(host: string): boolean {
+  return OWN_HOSTS.includes(host) || host.endsWith(".vercel.app");
+}
+
 export type AttributionPayload = {
   channel: AttributionChannel;
   utm_source: string | null;
@@ -76,7 +90,10 @@ function resolveChannel(utmSource: string | null, referrerHost: string | null): 
   if (host.includes("google.")) return "google";
 
   if (!referrerHost) return "direct";
-  if (host === "smoothlife.com" || host === "www.smoothlife.com") return "direct";
+  // A referrer that is one of our own pages means the same visit carrying on,
+  // not a new source — the cookie just happened to be written part-way
+  // through it rather than on the very first request.
+  if (isOwnHost(host)) return "direct";
   return "other";
 }
 
