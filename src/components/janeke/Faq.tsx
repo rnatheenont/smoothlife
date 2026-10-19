@@ -1,36 +1,52 @@
-import Image from "next/image";
-
 import { script } from "./font";
-import Lift from "./Lift";
-import Reveal, { RevealGroup, RevealItem } from "./Reveal";
+import FaqCarousel, { type FaqCard } from "./FaqCarousel";
+import Reveal from "./Reveal";
 
 /**
- * The closing question.
+ * The four questions, as a deck the reader turns.
  *
- * A list of one, on purpose: the design carries a single card, and the shape
- * below takes however many entries are added to CARDS without changing — one
- * card centres, more lay out two and three across.
+ * Only the first has a photograph of its own so far. The other three stand on
+ * a tint keyed to the brush each answer is about, drawn from the same cut-outs
+ * the colour picker uses further up the page — which keeps them part of the
+ * same set rather than looking like something missing. Swap `cutout`/`tint`
+ * for an `image` as the photographs arrive.
  */
-const CARDS = [
+const CARDS: FaqCard[] = [
   {
+    question: "HOW ARE THE FOUR STYLES DIFFERENT?",
     image: "/janeke/faq.webp",
     alt: "แปรง Janeke บนพรมแดงที่เวนิส",
-    question: "HOW ARE THE FOUR STYLES DIFFERENT?",
     answer: (
       <>
-        <strong className="font-bold text-[#685048]">Premium Superbrush</strong>{" "}
-        offers timeless elegance, while{" "}
-        <strong className="font-bold text-[#685048]">
-          Maculata Superbrush
-        </strong>{" "}
-        stands out with its bold design.{" "}
-        <strong className="font-bold text-[#685048]">Superbrush</strong> is your
-        full-size everyday essential, and{" "}
-        <strong className="font-bold text-[#685048]">Small Superbrush</strong>{" "}
-        brings the same practical convenience in a compact, travel-friendly
-        size.
+        <strong className="font-bold text-[#685048]">Premium Superbrush</strong> offers timeless elegance,
+        while <strong className="font-bold text-[#685048]">Maculata Superbrush</strong> stands out with its
+        bold design. <strong className="font-bold text-[#685048]">Superbrush</strong> is your full-size
+        everyday essential, and <strong className="font-bold text-[#685048]">Small Superbrush</strong> brings
+        the same practical convenience in a compact, travel-friendly size.
       </>
     ),
+  },
+  {
+    question: "CAN I USE IT ON WET HAIR?",
+    cutout: "/brands/janeke/gold-brown.webp",
+    alt: "แปรง Janeke Premium Superbrush สีทอง",
+    tint: ["#f3ece0", "#ffffff"],
+    answer: "Yes. Flexible bristles help gently detangle both wet and dry hair.",
+  },
+  {
+    question: "WHICH BRUSH IS RIGHT FOR ME?",
+    cutout: "/brands/janeke/leopard-magenta.webp",
+    alt: "แปรง Janeke Mac Fux Superbrush Maculata",
+    tint: ["#f6e9ef", "#ffffff"],
+    answer:
+      "For everyday brushing, Superbrush is a great all-rounder. Prefer something more refined? Choose Premium Superbrush. Love a statement design? Go for Mac Fux Superbrush Maculata. For on-the-go touch-ups, Small Superbrush is your perfect companion.",
+  },
+  {
+    question: "CAN I PLACE AN ORDER ON THIS PAGE?",
+    cutout: "/brands/janeke/teal-pink.webp",
+    alt: "แปรง Janeke Small Superbrush Blue",
+    tint: ["#e6f4f3", "#ffffff"],
+    answer: "Choose your style and color, then add it to your cart.",
   },
 ];
 
@@ -49,31 +65,7 @@ export default function JanekeFaq() {
           </p>
         </Reveal>
 
-        <RevealGroup className="mt-10 grid justify-center gap-6 md:mt-16 md:grid-cols-[repeat(auto-fit,minmax(18rem,20rem))]">
-          {CARDS.map((c) => (
-            <RevealItem key={c.question}>
-              <Lift>
-                <article className="overflow-hidden rounded-[1.5rem] bg-white shadow-[0_18px_50px_rgba(15,23,42,0.12)] md:rounded-[2rem]">
-                  <Image
-                    src={c.image}
-                    alt={c.alt}
-                    width={1080}
-                    height={1350}
-                    className="aspect-square w-full object-cover"
-                  />
-                  <div className="px-6 py-7 text-center md:px-10 md:py-9">
-                    <h3 className="text-[clamp(0.95rem,1.4vw,1.25rem)] font-bold tracking-wide text-[#685048]">
-                      {c.question}
-                    </h3>
-                    <p className="mt-3 text-[clamp(0.8rem,1.1vw,0.95rem)] leading-relaxed text-[#78716f]">
-                      {c.answer}
-                    </p>
-                  </div>
-                </article>
-              </Lift>
-            </RevealItem>
-          ))}
-        </RevealGroup>
+        <FaqCarousel cards={CARDS} />
       </div>
     </section>
   );
