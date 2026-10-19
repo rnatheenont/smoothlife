@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { script } from "./font";
+import Lift from "./Lift";
 import Reveal, { RevealGroup, RevealItem } from "./Reveal";
 
 /**
@@ -84,6 +85,7 @@ const PRINTS = [
     w: 620,
     h: 799,
     delay: 0.05,
+    lift: 46,
     style: { left: "0.6%", top: "1.6%", width: "35.3%" },
   },
   {
@@ -92,6 +94,7 @@ const PRINTS = [
     w: 520,
     h: 667,
     delay: 0.15,
+    lift: 34,
     style: { left: "70.7%", top: "34.8%", width: "26.8%" },
   },
   {
@@ -100,6 +103,7 @@ const PRINTS = [
     w: 560,
     h: 693,
     delay: 0.25,
+    lift: 26,
     style: { left: "1%", top: "69%", width: "29.2%" },
   },
 ];
@@ -192,9 +196,15 @@ export default function JanekeHero() {
           />
 
           {PRINTS.map((p) => (
-            <Reveal key={p.src} kind="scale" delay={p.delay} className="absolute" style={p.style}>
-              <Image src={p.src} alt={p.alt} width={p.w} height={p.h} className="h-auto w-full" />
-            </Reveal>
+            // Three transforms, three elements: where the print sits, how far
+            // it drifts, and how it arrives. On one node the last would win.
+            <div key={p.src} className="absolute" style={p.style}>
+              <Lift distance={p.lift}>
+                <Reveal kind="scale" delay={p.delay}>
+                  <Image src={p.src} alt={p.alt} width={p.w} height={p.h} className="h-auto w-full" />
+                </Reveal>
+              </Lift>
+            </div>
           ))}
 
           <Reveal delay={0.1} className="absolute" style={{ left: "70.6%", top: "11.8%", width: "21.8%" }}>
