@@ -3,6 +3,7 @@ import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
 import { twoC2PConfigured, verifyPaymentCallback } from "@/lib/2c2p";
 import { createPaidShopifyOrder } from "@/lib/shopify-admin";
 import { confirmStock, releaseStock } from "@/lib/stock-reservation";
+import { notifyOrderPaid } from "@/lib/order-notify";
 
 type TransactionRow = {
   id: string;
@@ -86,6 +87,11 @@ export async function POST(req: NextRequest) {
     }),
   });
 
+  // Which name this payment is known by, and whether Shopify ever heard of
+  // it. Declared out here so the notification below can be sent either way.
+  let shopifyOrderId: string | null = null;
+  let shopifyOrderName: string | null = null;
+
   try {
     const addr = transaction.shipping_address;
     const order = await createPaidShopifyOrder({
@@ -108,6 +114,10 @@ export async function POST(req: NextRequest) {
         ? { code: transaction.discount_code, amount: transaction.discount_amount ?? 0 }
         : null,
     });
+    shopifyOrderId = String(order.id).replace("gid://shopify/Order/", "");
+    // "#1042" — what the customer will see everywhere else. Without it the
+    // message would name the order by its raw Shopify id.
+    shopifyOrderName = order.name ?? null;
     await supabaseRest(`payment_transactions?id=eq.${transaction.id}`, {
       method: "PATCH",
       returning: false,
@@ -120,6 +130,46 @@ export async function POST(req: NextRequest) {
     // pattern (see /admin/subscriptions-overview for the existing version
     // of that view; extending it to cover cart purchases is a follow-up).
     console.error("[webhooks/2c2p-checkout] charge succeeded but Shopify order creation failed", err);
+  }
+
+  // Tell the customer the money went through.
+  //
+  // This has to happen here rather than only in the Shopify webhook, because
+  // for these orders that webhook never fires. createPaidShopifyOrder writes
+  // an order that is already paid through the Admin API, and Shopify emits
+  // orders/paid on a payment *transition* — there is no transition, so no
+  // event, so nothing downstream of it runs. Verified against live data: the
+  // two card payments taken through this route on 16 October produced no
+  // order_paid row in points_ledger at all, while flash-sale orders, which
+  // reach Shopify by a different road, produced one every time.
+  //
+  // Keyed on the Shopify order id when there is one, so that if that webhook
+  // is ever made to fire for these orders the dedupe table stops the second
+  // message rather than the customer getting two. Falling back to the invoice
+  // number keeps the one case that matters most covered: the charge went
+  // through but the order could not be written, which is exactly when silence
+  // is worst.
+  //
+  // points: 0 is the truth and not a placeholder — no points are credited on
+  // this path today, for the same missing-webhook reason, and an email
+  // promising points that were never given is worse than one that stays quiet
+  // about them.
+  try {
+    await notifyOrderPaid({
+      order: {
+        id: shopifyOrderId ?? callback.invoiceNo,
+        name: shopifyOrderName ?? (shopifyOrderId ? undefined : callback.invoiceNo),
+        email: transaction.contact_email ?? undefined,
+        total_price: String(transaction.amount ?? 0),
+        line_items: transaction.line_items ?? [],
+      },
+      points: 0,
+      balance: null,
+    });
+  } catch (err) {
+    // The charge is already recorded. A notifier is never allowed to turn a
+    // successful payment into a failed callback.
+    console.error("[webhooks/2c2p-checkout] paid notification failed", err);
   }
 
   return NextResponse.json({ ok: true, result: "charge_succeeded" });

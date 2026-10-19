@@ -114,7 +114,9 @@ async function send(opts: {
 /** Payment went through: what they bought, what it cost, and the points it earned. */
 export async function notifyOrderPaid(opts: {
   order: { id: string | number; name?: string; email?: string; current_total_price?: string; total_price?: string; line_items?: { title?: string; quantity?: number }[] };
-  userId: string;
+  // Optional since the 2C2P webhook calls this too, and a shopper who
+  // checked out as a guest has no account for it to name.
+  userId?: string | null;
   points: number;
   balance: number | null;
 }) {
@@ -130,7 +132,10 @@ export async function notifyOrderPaid(opts: {
   return send({
     orderId: opts.order.id,
     kind: "paid",
-    userId: opts.userId,
+    userId: opts.userId ?? null,
+    // The address is the way back to an account when no id was handed in —
+    // send() already knows how to look one up from it.
+    email: opts.order.email ?? null,
     orderName: opts.order.name,
     card: {
       emoji: "✅",

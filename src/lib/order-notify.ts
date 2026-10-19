@@ -53,7 +53,7 @@ export function notifyOrderPaid(opts: {
     total_price?: string;
     line_items?: { title?: string; quantity?: number }[];
   };
-  userId: string;
+  userId?: string | null;
   points: number;
   balance: number | null;
 }): Promise<Notified> {
