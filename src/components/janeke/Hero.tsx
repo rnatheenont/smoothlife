@@ -33,16 +33,38 @@ import Reveal, { RevealGroup, RevealItem } from "./Reveal";
  * built that way. Each file carries its own tilt, so none is rotated here.
  */
 
-// Straight off the design's own coordinates, against its 1600×1920 box —
-// but anchored by the centre of each text box rather than its left edge.
-// The boxes are drawn around the words at the design's own size; on a phone
-// the same words are wider than the same share of the width, and anchored
-// left they grew to the right only, which ran "Let Your Hair" out past the
-// edge of the picture. Centred, what spills goes both ways and stays inside.
+/**
+ * Each note is anchored by the centre of the text box the design draws
+ * around it, not its left edge: on a phone the words are wider than that box
+ * and, anchored left, they grew rightwards only — which ran "Let Your Hair"
+ * out past the edge of the picture.
+ *
+ * `--nx`/`--ny` are that centre. The design's own figures apply from @2xl up,
+ * where the type has come down to a share of the width the layout was drawn
+ * for. Below that the words are proportionally wider and taller than the gaps
+ * left for them, so two of them move: measured against the artwork on a 375px
+ * screen, "Your Hand" sat across the model's hair and "Let Your Hair" across
+ * her shoulder. They move into the clear space above and below her instead.
+ */
 const NOTES = [
-  { text: ["Light On", "Your Hand"], centre: "47.8%", top: "10%", delay: 0.1 },
-  { text: ["Let Your Hair", "Breath"], centre: "86.2%", top: "67.1%", delay: 0.2 },
-  { text: ["Less Tugging", "More Moving"], centre: "41.9%", top: "89.8%", delay: 0.3 },
+  {
+    text: ["Light On", "Your Hand"],
+    // Up into the band above the model, who starts at 18.9% on a phone.
+    place: "[--nx:47.8%] [--ny:8.6%] @2xl:[--ny:10%]",
+    delay: 0.1,
+  },
+  {
+    text: ["Let Your Hair", "Breath"],
+    // Down past her, rather than across the shoulder at 73–75%.
+    place: "[--nx:86.2%] [--ny:82.5%] @2xl:[--ny:67.1%]",
+    delay: 0.2,
+  },
+  {
+    text: ["Less Tugging", "More Moving"],
+    // Right of the bottom print, and up off the foot of the picture.
+    place: "[--nx:44%] [--ny:88%] @2xl:[--nx:41.9%] @2xl:[--ny:89.8%]",
+    delay: 0.3,
+  },
 ];
 
 // Height as well as width, and not by accident: an arrow given only a width
@@ -191,20 +213,26 @@ export default function JanekeHero() {
           ))}
 
           {NOTES.map((n) => (
-            <Reveal
+            // The centring sits out here, on a box with a real size, and the
+            // entrance goes inside it. A zero-width wrapper is invisible to
+            // the observer that triggers the entrance, so the note never
+            // arrived and sat 28px off where it belonged; and had the two
+            // been on one element, the entrance's transform would have
+            // overwritten the centring anyway.
+            <div
               key={n.text.join()}
-              delay={n.delay}
-              className="absolute w-0"
-              style={{ left: n.centre, top: n.top }}
+              className={`absolute left-[var(--nx)] top-[var(--ny)] w-max -translate-x-1/2 ${n.place}`}
             >
-              <p
-                className={`${script.className} absolute left-0 w-max -translate-x-1/2 whitespace-nowrap text-center text-[3.4cqw] leading-[1.5] text-[#8a7265] @md:text-[3cqw] @2xl:text-[2.6cqw] @4xl:text-[2.1cqw]`}
-              >
-                {n.text[0]}
-                <br />
-                {n.text[1]}
-              </p>
-            </Reveal>
+              <Reveal delay={n.delay}>
+                <p
+                  className={`${script.className} whitespace-nowrap text-center text-[3.4cqw] leading-[1.5] text-[#8a7265] @md:text-[3cqw] @2xl:text-[2.6cqw] @4xl:text-[2.1cqw]`}
+                >
+                  {n.text[0]}
+                  <br />
+                  {n.text[1]}
+                </p>
+              </Reveal>
+            </div>
           ))}
         </div>
 
