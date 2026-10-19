@@ -109,6 +109,27 @@ function movedHost(req: NextRequest) {
   return NextResponse.redirect(new URL(`${pathname}${search}`, home), 308);
 }
 
+/**
+ * Hosts that serve the shop but must never be found in search.
+ *
+ * app.smoothlife.com is where the app is being tried out before it moves
+ * anywhere customers are sent — same pages, same products, same words as the
+ * real shop. Indexed, it would compete with www.smoothlife.com using the
+ * shop's own content, and taking a page back out of Google is slower and
+ * less certain than keeping it out. The list is explicit rather than a
+ * pattern: the day this app does become the shop, the way to let it be found
+ * is to take its name off this list, which is a decision someone makes on
+ * purpose rather than a side effect of a rename.
+ */
+const UNLISTED_HOSTS = new Set(["app.smoothlife.com"]);
+
+function hiddenFromSearch(host: string | null): boolean {
+  if (!host) return false;
+  // Port included on a host header is not part of the name.
+  const name = host.split(":")[0].toLowerCase();
+  return name.endsWith(".vercel.app") || UNLISTED_HOSTS.has(name);
+}
+
 // The raw *.vercel.app deployment URL serves the exact same content as
 // www.smoothlife.com — without this, Google could index both and treat
 // them as duplicate sites. robots.txt/sitemap already point at the real
@@ -127,7 +148,7 @@ export async function proxy(req: NextRequest) {
   }
 
   const res = NextResponse.next();
-  if (req.headers.get("host")?.endsWith(".vercel.app")) {
+  if (hiddenFromSearch(req.headers.get("host"))) {
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
 
