@@ -39,7 +39,7 @@ function at(offset: number, narrow: boolean) {
     scale: offset === 0 ? 1 : Math.abs(offset) === 1 ? 0.82 : 0.66,
     opacity: Math.abs(offset) > 2 ? 0 : offset === 0 ? 1 : Math.abs(offset) === 1 ? 0.65 : 0.3,
     zIndex: 10 - Math.abs(offset),
-    rotateY: offset === 0 ? 0 : offset > 0 ? -18 : 18,
+    rotateY: offset === 0 ? 0 : offset > 0 ? -10 : 10,
   };
 }
 
