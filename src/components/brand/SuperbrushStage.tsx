@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatTHB } from "@/lib/format";
+import { script } from "@/components/janeke/font";
 
 // The Janeke stage: one comb at a time, floating inside a tinted arch, with
 // the model's name set huge behind it.
@@ -109,6 +110,21 @@ const DOME_FILL = 0.92;
 const PHONE_CONTROLS = 220;
 const PHONE_FOOT = 56;
 
+/** How much of the dome's height the controls hang back into, on the negative
+ *  margin they are given below. Flow height is that much shorter than the
+ *  dome looks, which is why the two have to be counted together. */
+const CTRL_OVERLAP = 0.17;
+
+/** The pinned block's own foot — `pb-16` — which nothing else may stand in. */
+const STAGE_FOOT = 64;
+
+/** What the controls need above md, taken as a constant for the same reason
+ *  the phone's are: measured, it feeds back. The controls are capped at a
+ *  share of the dome's width, so a dome the measurement shrinks is a row that
+ *  wraps, which is taller, which shrinks the dome again — on a 1280×700
+ *  window that ran all the way down to a dome of nothing. */
+const WIDE_CONTROLS = 104;
+
 export default function SuperbrushStage({ models, headline, intro, allHref }: Props) {
   const flat = useMemo<Flat[]>(
     () => models.flatMap((m, model) => m.items.map((_, item) => ({ model, item }))),
@@ -193,20 +209,45 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       // band of white above and below. A taller arc spends that height.
       const ratio = w < 1024 ? 1.3 : 1.8;
       const byWidth = w < 1024 ? Math.min(w * 0.96, 1100) : w * 0.92;
-      const byHeight = (avail - (head.current?.offsetHeight ?? HEADLINE)) * ratio;
-      const domeW = Math.min(byWidth, byHeight * DOME_FILL);
-      setDomeMax(domeW);
-      const domeH = domeW / ratio;
-      const spare = avail - (head.current?.offsetHeight ?? HEADLINE) - domeH;
-      setTop(spare < 0.17 * domeH - (ctrl.current?.offsetHeight ?? 100));
+      const headH = head.current?.offsetHeight ?? HEADLINE;
+      // What is left for the dome once the headline, the controls and the
+      // foot have been paid for — and the controls are paid in full, not just
+      // for the part of them that hangs below the dome. Counting only the
+      // dome and the headline is what let the composition run 38px past the
+      // window on a 900px screen with a two-row shop header, where what it
+      // ran past was the top of its own headline.
+      const room = (avail - headH - WIDE_CONTROLS - STAGE_FOOT) / (1 - CTRL_OVERLAP);
+      const fitted = Math.min(byWidth, room * ratio * DOME_FILL);
       // Sized to the height, it fits by construction — unless the window is so
       // short that filling it would leave the dome smaller than the screen it
       // stands on, which reads as a stamp rather than a stage.
-      setPinned(domeW >= w * 0.6);
+      const pin = fitted >= w * 0.5;
+      setPinned(pin);
+      // The height budget is the price of standing still. A stage that scrolls
+      // has the whole page to be tall in, so it goes back to the width it was
+      // drawn at rather than keeping a dome sized for a window it is no longer
+      // being held inside.
+      const domeW = pin ? fitted : byWidth;
+      setDomeMax(domeW);
+      const domeH = domeW / ratio;
+      const spare = avail - headH - domeH;
+      setTop(spare < CTRL_OVERLAP * domeH - WIDE_CONTROLS);
     };
     read();
     window.addEventListener("resize", read);
-    return () => window.removeEventListener("resize", read);
+    // The headline is measured, so the dome has to be worked out again every
+    // time that measurement changes — not only when the window does. It
+    // changes on its own twice: the page's script face arrives after the
+    // first paint and is taller than the fallback, and the line rewraps at
+    // widths the window never reports a resize for. Measured once on mount,
+    // the dome was sized for a headline 29px shorter than the one that ended
+    // up on screen, and the whole composition was clipped by that much.
+    const grew = new ResizeObserver(read);
+    if (head.current) grew.observe(head.current);
+    return () => {
+      window.removeEventListener("resize", read);
+      grew.disconnect();
+    };
   }, []);
 
   // How far the comb has lifted: 0 at the top of the stage, 1 when the stage
@@ -244,7 +285,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
       ref={stage}
       aria-roledescription="carousel"
       aria-label={`${headline} — เลือกสีและรุ่น`}
-      className={`relative pt-2 md:pt-0 ${pinned ? "h-[180vh] md:h-[200vh]" : ""}`}
+      className={`relative ${pinned ? "h-[180vh] md:h-[200vh]" : ""}`}
     >
       <div
         style={
@@ -264,12 +305,17 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
         // better than a pinned block whose bottom row cannot be reached.
         className={`[--dome-r:1] [--dome-w:var(--dome-w-sm,100vw)] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:[--dome-r:1.3] md:[--dome-w:min(96vw,1100px,var(--dome-max,1100px))] lg:[--dome-r:1.8] lg:[--dome-w:min(92vw,var(--dome-max,1360px))] ${
           pinned
-            ? `sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-center pb-14 md:pb-16 ${top ? "md:justify-start" : "md:justify-center"}`
+            ? `sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-start pb-14 md:pb-16 ${top ? "md:justify-start" : "md:justify-center"}`
             : ""
         }`}
       >
-        <header ref={head} className="relative z-20 px-4 pb-2 pt-6 text-center md:pb-8 md:pt-6 lg:pb-12">
-          <h1 className="font-serif text-[clamp(2rem,6vw,4.25rem)] italic leading-[1.05] text-brand-ink">
+        <header ref={head} className="relative z-20 px-4 pb-2 pt-3 text-center md:pb-8 md:pt-4 lg:pb-12">
+          {/* The script the landing page is set in, at the size its other
+              headings use, so the stage reads as part of that page rather
+              than as a component borrowed from somewhere else. */}
+          <h1
+            className={`${script.className} text-[clamp(2.25rem,7vw,5rem)] leading-tight text-[#685048]`}
+          >
             {headline}
           </h1>
           <p className="mt-2 text-sm text-slate-500 md:text-base">{intro}</p>
@@ -363,12 +409,12 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                   <span
                     key={c.slug}
                     style={{
-                      // Scrolling through the stage lays the comb down and
-                      // brings it closer: by the time the stage is leaving it
-                      // has turned a quarter turn and grown by half again.
-                      // Lying down it is widest across, where the dome has the
-                      // most room, so the growth has somewhere to go.
-                      transform: `translate3d(0, calc(${lift * -70}px - 3%), 0) rotate(${(lift * 35).toFixed(1)}deg) scale(${(1 + lift * 0.2).toFixed(3)})`,
+                      // Scrolling through the stage lifts the comb out of the
+                      // arch, and that is all it does. It used to turn and
+                      // grow as well; turning is what made the growth worth
+                      // having, because lying down it is widest across where
+                      // the dome has the most room, so both went together.
+                      transform: `translate3d(0, ${lift * -70}px, 0)`,
                     }}
                     className={`absolute flex h-full w-full items-center justify-center transition-opacity duration-500 ${
                       on ? "opacity-100" : "opacity-0"
@@ -387,8 +433,8 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
                           ? // About 60% of the stage, as drawn: the dome is most
                             // of what you see and the comb sits in it, rather
                             // than filling it.
-                            "h-[calc(var(--dome-h)*0.58)] md:h-[calc(var(--dome-h)*0.62)] lg:h-[calc(var(--dome-h)*0.72)] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
-                          : "h-[calc(var(--dome-h)*0.5)] md:h-[calc(var(--dome-h)*0.56)] lg:h-[calc(var(--dome-h)*0.64)] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
+                            "h-[calc(var(--dome-h)*0.66)] md:h-[calc(var(--dome-h)*0.7)] lg:h-[calc(var(--dome-h)*0.8)] drop-shadow-[0_26px_44px_rgba(15,23,42,0.22)]"
+                          : "h-[calc(var(--dome-h)*0.56)] md:h-[calc(var(--dome-h)*0.62)] lg:h-[calc(var(--dome-h)*0.72)] rounded-[2rem] bg-white/70 shadow-[0_30px_60px_rgba(15,23,42,0.18)] ring-1 ring-white/70"
                       }`}
                     />
                   </span>
