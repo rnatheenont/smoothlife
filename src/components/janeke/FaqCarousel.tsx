@@ -23,21 +23,34 @@ export type FaqCard = {
  * card either side of the middle one whichever is being read, rather than an
  * empty half at each end of the list.
  *
- * Cards more than two away are left out of the DOM rather than hidden, so a
- * long list stays cheap however many are added.
+ * Three are on show: the one being read and its two neighbours.
+ *
+ * They are stacked in one grid cell rather than positioned absolutely, which
+ * is what makes them the same height: a grid row is as tall as its tallest
+ * item and the others stretch to meet it, so the deck stays square whatever
+ * length the answers run to — no fixed height to outgrow.
+ *
+ * Every card stays in that cell, including the ones out of view, and they are
+ * faded out rather than dropped. A dropped card takes its height with it, and
+ * the deck would then grow and shrink as the longest answer came in and out of
+ * the set of three — which is the kind of thing that only shows up after
+ * somebody adds a question.
  *
  * Driven by one number — which card is active. Everything else is derived
  * from the distance to it, so the arrows, the swipe, the keyboard and the
  * dots can never disagree about what is showing.
  */
 
+/** How many cards either side of the middle one are on show. */
+const WINGS = 1;
+
 /** Where a card sits, given how far it is from the one being read. */
 function at(offset: number, narrow: boolean) {
   const side = narrow ? 56 : 62;
   return {
     x: `${offset * side}%`,
-    scale: offset === 0 ? 1 : Math.abs(offset) === 1 ? 0.82 : 0.66,
-    opacity: Math.abs(offset) > 2 ? 0 : offset === 0 ? 1 : Math.abs(offset) === 1 ? 0.65 : 0.3,
+    scale: offset === 0 ? 1 : 0.82,
+    opacity: offset === 0 ? 1 : 0.65,
     zIndex: 10 - Math.abs(offset),
     rotateY: offset === 0 ? 0 : offset > 0 ? -10 : 10,
   };
@@ -97,22 +110,31 @@ export default function FaqCarousel({ cards }: { cards: FaqCard[] }) {
           // 40px: far enough that a tap on a card is never read as a swipe.
           if (Math.abs(moved) > 40) go(moved < 0 ? 1 : -1);
         }}
-        className="relative mx-auto flex h-[34rem] touch-pan-y items-center justify-center outline-none md:h-[37rem] [perspective:1400px]"
+        className="relative mx-auto grid touch-pan-y justify-items-center outline-none [perspective:1400px]"
       >
         {cards.map((c, i) => {
           const offset = distance(i);
-          if (Math.abs(offset) > 2) return null;
+          const shown = Math.abs(offset) <= WINGS;
           const pose = at(offset, narrow);
           return (
             <motion.article
               key={c.question}
-              className="absolute w-[16rem] origin-center overflow-hidden rounded-[1.5rem] bg-white shadow-[0_18px_50px_rgba(15,23,42,0.16)] md:w-[20rem] md:rounded-[2rem]"
-              style={{ zIndex: pose.zIndex, transformStyle: "preserve-3d" }}
-              animate={{ x: pose.x, scale: pose.scale, opacity: pose.opacity, rotateY: pose.rotateY }}
+              className="flex w-[16rem] origin-center flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-[0_18px_50px_rgba(15,23,42,0.16)] [grid-area:1/1] md:w-[20rem] md:rounded-[2rem]"
+              style={{
+                zIndex: pose.zIndex,
+                transformStyle: "preserve-3d",
+                pointerEvents: shown ? undefined : "none",
+              }}
+              animate={{
+                x: pose.x,
+                scale: pose.scale,
+                opacity: shown ? pose.opacity : 0,
+                rotateY: pose.rotateY,
+              }}
               transition={still ? { duration: 0 } : { type: "spring", stiffness: 190, damping: 26 }}
               // A card to the side is a shortcut to itself; the middle one is
               // already being read, so it is not a button.
-              onClick={() => offset !== 0 && setActive(i)}
+              onClick={() => shown && offset !== 0 && setActive(i)}
               aria-hidden={offset !== 0}
             >
               <Image
@@ -120,9 +142,9 @@ export default function FaqCarousel({ cards }: { cards: FaqCard[] }) {
                 alt={c.alt}
                 width={760}
                 height={760}
-                className="aspect-square w-full object-cover"
+                className="aspect-square w-full shrink-0 object-cover"
               />
-              <div className="px-6 py-6 text-center md:px-8 md:py-7">
+              <div className="flex flex-1 flex-col justify-center px-6 py-6 text-center md:px-8 md:py-7">
                 <h3 className="text-[clamp(0.85rem,1.3vw,1.05rem)] font-bold tracking-wide text-[#685048]">
                   {c.question}
                 </h3>
