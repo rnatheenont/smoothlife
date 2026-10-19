@@ -8,12 +8,8 @@ import { motion, useReducedMotion } from "motion/react";
 export type FaqCard = {
   question: string;
   answer: React.ReactNode;
-  /** A photograph, where there is one. */
-  image?: string;
-  alt?: string;
-  /** Otherwise a cut-out on a tint, keyed to that brush's own colours. */
-  cutout?: string;
-  tint?: [string, string];
+  image: string;
+  alt: string;
 };
 
 /**
@@ -119,32 +115,13 @@ export default function FaqCarousel({ cards }: { cards: FaqCard[] }) {
               onClick={() => offset !== 0 && setActive(i)}
               aria-hidden={offset !== 0}
             >
-              {c.image ? (
-                <Image
-                  src={c.image}
-                  alt={c.alt ?? ""}
-                  width={1080}
-                  height={1350}
-                  className="aspect-square w-full object-cover"
-                />
-              ) : (
-                <div
-                  className="grid aspect-square w-full place-items-center p-7"
-                  style={{
-                    backgroundImage: `linear-gradient(145deg, ${c.tint?.[0] ?? "#f1efed"}, ${c.tint?.[1] ?? "#ffffff"})`,
-                  }}
-                >
-                  {c.cutout && (
-                    <Image
-                      src={c.cutout}
-                      alt={c.alt ?? ""}
-                      width={372}
-                      height={900}
-                      className="h-full w-auto object-contain drop-shadow-[0_14px_26px_rgba(15,23,42,0.2)]"
-                    />
-                  )}
-                </div>
-              )}
+              <Image
+                src={c.image}
+                alt={c.alt}
+                width={760}
+                height={760}
+                className="aspect-square w-full object-cover"
+              />
               <div className="px-6 py-6 text-center md:px-8 md:py-7">
                 <h3 className="text-[clamp(0.85rem,1.3vw,1.05rem)] font-bold tracking-wide text-[#685048]">
                   {c.question}
