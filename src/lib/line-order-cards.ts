@@ -1,4 +1,5 @@
 import { lineOpenLink, type LineMessage } from "@/lib/line-push";
+import { itemLines as orderItemLines } from "@/lib/order-events";
 
 // The four moments an order tells the customer something, as LINE cards.
 //
@@ -127,18 +128,15 @@ export function orderCardMessage(card: OrderCard): LineMessage {
   };
 }
 
-export function baht(amount: number) {
-  return `฿${Math.round(amount).toLocaleString("th-TH")}`;
-}
+// Shared with the order emails, so a price or a product line is never
+// written one way in a LINE card and another way in an inbox.
+export { baht } from "@/lib/order-events";
 
-/** "ชื่อสินค้า x2", at most three of them plus a count of the rest. */
+/** "• ชื่อสินค้า x2", at most three of them plus a count of the rest. */
 export function itemLines(lineItems: { title?: string; name?: string; quantity?: number }[]): string[] {
-  const shown = lineItems.slice(0, 3).map((li) => {
-    const name = (li.title || li.name || "").trim() || "สินค้า";
-    return `• ${name}${li.quantity && li.quantity > 1 ? ` x${li.quantity}` : ""}`;
-  });
-  if (lineItems.length > 3) shown.push(`• และอีก ${lineItems.length - 3} รายการ`);
-  return shown;
+  // The bullet is this card's own: an email draws the list with table rows
+  // and would show the character as a stray dot.
+  return orderItemLines(lineItems).map((line) => `• ${line}`);
 }
 
 /**

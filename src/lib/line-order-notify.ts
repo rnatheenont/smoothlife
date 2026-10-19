@@ -9,6 +9,7 @@ import {
   type OrderCard,
   type CardRow,
 } from "@/lib/line-order-cards";
+import { orderLabel, trackingOf, cancelReasonTh, type OrderEventKind } from "@/lib/order-events";
 
 // Telling the customer what happened to their order, in the app they already
 // have open.
@@ -18,7 +19,7 @@ import {
 // refuses — each returns a reason and nothing else. Points must still be
 // credited and referrals still advanced when a notification cannot be sent.
 
-type Kind = "paid" | "shipped" | "delivered" | "refunded" | "cancelled";
+type Kind = OrderEventKind;
 
 /** The LINE userId for a site account, or null if they never signed in with LINE. */
 async function lineUserIdFor(userId: string): Promise<string | null> {
@@ -108,17 +109,6 @@ async function send(opts: {
     return { sent: false, reason: "LINE refused the push (blocked, or quota spent)" };
   }
   return { sent: true };
-}
-
-/** "#1001.1" on a fulfillment is still order #1001 to the customer. */
-function orderLabel(name: string | undefined | null, fallbackId: string | number) {
-  const clean = (name ?? "").split(".")[0].trim();
-  return clean || `#${fallbackId}`;
-}
-
-function trackingOf(fulfillment: { tracking_company?: string; tracking_number?: string; tracking_urls?: string[]; tracking_url?: string }) {
-  const url = fulfillment.tracking_urls?.[0] || fulfillment.tracking_url || null;
-  return { company: fulfillment.tracking_company || null, number: fulfillment.tracking_number || null, url };
 }
 
 /** Payment went through: what they bought, what it cost, and the points it earned. */
@@ -275,7 +265,7 @@ export async function notifyOrderCancelled(opts: {
   refunded?: boolean;
 }) {
   const rows: CardRow[] = [];
-  const reason = REASON_TH[(opts.reason ?? "").toLowerCase()];
+  const reason = cancelReasonTh(opts.reason);
   if (reason) rows.push({ label: "เหตุผล", value: reason });
   if (opts.pointsReversed && opts.pointsReversed > 0) {
     rows.push({
@@ -304,19 +294,3 @@ export async function notifyOrderCancelled(opts: {
     },
   });
 }
-
-/**
- * Shopify's cancel reasons, in words a customer would use.
- *
- * Anything not in here is left out of the card rather than shown raw:
- * "inventory" on its own reads as a system fault, and an English word in a
- * Thai message reads as something leaking out of the back office.
- */
-const REASON_TH: Record<string, string> = {
-  customer: "ลูกค้าขอยกเลิก",
-  inventory: "สินค้าไม่พอจัดส่ง",
-  fraud: "ตรวจพบความผิดปกติของการชำระเงิน",
-  declined: "การชำระเงินไม่สำเร็จ",
-  staff: "ยกเลิกโดยทางร้าน",
-  other: "ยกเลิกโดยทางร้าน",
-};

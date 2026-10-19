@@ -13,7 +13,9 @@ import {
   notifyOrderDelivered,
   notifyOrderRefunded,
   notifyOrderCancelled,
-} from "@/lib/line-order-notify";
+// One call per event, fanned out to LINE and email — see order-notify.ts for
+// why the route no longer talks to either channel directly.
+} from "@/lib/order-notify";
 import { settleFlashSaleShopifyOrder } from "@/lib/flash-sale-shopify";
 
 // Shopify webhook endpoint — configure in Shopify Admin (or via
@@ -24,8 +26,9 @@ import { settleFlashSaleShopifyOrder } from "@/lib/flash-sale-shopify";
 // products/update, products/delete, inventory_levels/update,
 // customers/delete.
 //
-// Four of those also tell the customer, on LINE, what just happened to their
-// order — paid, shipped, delivered, refunded (see lib/line-order-notify).
+// Five of those also tell the customer what just happened to their order —
+// paid, shipped, delivered, refunded, cancelled — on LINE and by email at
+// once (see lib/order-notify, which fans one call out to both).
 // Those notifications are best-effort by design: they must never be able to
 // stop points being credited or a referral advancing. Verifies
 // the HMAC signature so only Shopify (holding SHOPIFY_WEBHOOK_SECRET)
@@ -160,14 +163,14 @@ async function handleOrdersPaid(order: any, requestUrl: string) {
   const [balanceRow] = await supabaseRest<{ balance: number }[]>(
     `points_balance?user_id=eq.${userId}&select=balance&limit=1`
   ).catch((): { balance: number }[] => []);
-  const lineNotified = await notifyOrderPaid({
+  const notified = await notifyOrderPaid({
     order,
     userId,
     points,
     balance: balanceRow?.balance ?? null,
   });
 
-  return { credited: points, userId, subscriptionResult, referralResult, lineNotified };
+  return { credited: points, userId, subscriptionResult, referralResult, notified };
 }
 
 // A referred friend's FIRST paid order moves their referral row from
@@ -196,7 +199,7 @@ async function handleOrdersFulfilled(order: any) {
   // shipment this webhook is about — an order split across two parcels sends
   // this twice, each with its own number.
   const fulfillment = (order.fulfillments || []).slice(-1)[0] ?? {};
-  const lineNotified = await notifyOrderShipped({
+  const notified = await notifyOrderShipped({
     orderId: order.id,
     orderName: order.name,
     email: order.email || order.customer?.email,
@@ -205,8 +208,8 @@ async function handleOrdersFulfilled(order: any) {
   });
 
   const result = await markReferralDelivered(String(order.id));
-  if (!result) return { skipped: "no order_placed referral for this order", lineNotified };
-  return { referralId: result.referralId, status: "delivered", lineNotified };
+  if (!result) return { skipped: "no order_placed referral for this order", notified };
+  return { referralId: result.referralId, status: "delivered", notified };
 }
 
 /**
@@ -222,7 +225,7 @@ async function handleFulfillmentUpdate(fulfillment: any) {
     return { skipped: `shipment_status=${fulfillment.shipment_status ?? "none"}` };
   }
   return {
-    lineNotified: await notifyOrderDelivered({
+    notified: await notifyOrderDelivered({
       orderId: fulfillment.order_id,
       orderName: fulfillment.name,
       email: fulfillment.email,
@@ -291,7 +294,7 @@ async function handleOrdersCancelled(order: any) {
   const refunded = ["refunded", "partially_refunded", "voided"].includes(
     String(order.financial_status ?? "")
   );
-  const notifyLine = (userId: string | null, pointsReversed: number) =>
+  const notifyCustomer = (userId: string | null, pointsReversed: number) =>
     notifyOrderCancelled({
       orderId: order.id,
       orderName: order.name,
@@ -313,7 +316,7 @@ async function handleOrdersCancelled(order: any) {
     // that first card, the same way the refund path does.
     return {
       skipped: "no prior order_paid credit to reverse",
-      lineNotified: await notifyLine(null, 0),
+      notified: await notifyCustomer(null, 0),
     };
   }
 
@@ -346,7 +349,7 @@ async function handleOrdersCancelled(order: any) {
     }),
   });
 
-  return { reversed: row.delta, lineNotified: await notifyLine(row.user_id, row.delta) };
+  return { reversed: row.delta, notified: await notifyCustomer(row.user_id, row.delta) };
 }
 
 // Any refund on a referred friend's tracked order voids the referrer's
@@ -391,12 +394,12 @@ async function handleRefundsCreate(refund: any) {
     // No points to reverse — a guest order, or one from before the ledger.
     // The money still moved, and if they were told when they paid they should
     // be told now: notifyOrderRefunded finds them through that first card.
-    const lineNotified = await notifyOrderRefunded({
+    const notified = await notifyOrderRefunded({
       orderId,
       amount: refundedAmount,
       pointsReversed: 0,
     });
-    return { skipped: "no prior order_paid credit for this order", referralVoidResult, lineNotified };
+    return { skipped: "no prior order_paid credit for this order", referralVoidResult, notified };
   }
   // Reverse at whatever rate the original order was actually credited at —
   // pointsPerBaht for orders credited after the uniform-rate fix, or the
@@ -407,13 +410,13 @@ async function handleRefundsCreate(refund: any) {
       ? Math.floor(refundedAmount * row.metadata.pointsPerBaht)
       : Math.floor((refundedAmount * (row.metadata?.multiplier ?? 1)) / 100);
   if (pointsToReverse <= 0) {
-    const lineNotified = await notifyOrderRefunded({
+    const notified = await notifyOrderRefunded({
       orderId,
       userId: row.user_id,
       amount: refundedAmount,
       pointsReversed: 0,
     });
-    return { skipped: "refund amount too small to affect points", referralVoidResult, lineNotified };
+    return { skipped: "refund amount too small to affect points", referralVoidResult, notified };
   }
 
   await supabaseRest(`points_ledger?on_conflict=shopify_event_id`, {
@@ -428,13 +431,13 @@ async function handleRefundsCreate(refund: any) {
       metadata: { refundedAmount, pointsPerBaht: row.metadata?.pointsPerBaht ?? null },
     }),
   });
-  const lineNotified = await notifyOrderRefunded({
+  const notified = await notifyOrderRefunded({
     orderId,
     userId: row.user_id,
     amount: refundedAmount,
     pointsReversed: pointsToReverse,
   });
-  return { reversed: pointsToReverse, referralVoidResult, lineNotified };
+  return { reversed: pointsToReverse, referralVoidResult, notified };
 }
 
 // If a Shopify customer is deleted, we release that email/phone so the same
