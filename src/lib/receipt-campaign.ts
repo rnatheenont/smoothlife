@@ -78,7 +78,18 @@ export const KEYCHAIN_SLUGS: string[] = [];
  * card says, and a missing column would make loadCampaignContent fall back to
  * defaults for every other rule with it.
  */
+/*
+ * Both handles are the same product. It was renamed in Shopify after the set
+ * went on sale, which silently stopped it being recognised here and broke the
+ * flash sale page the same way — a handle is Shopify's to change at any time,
+ * and nothing warns us when it does.
+ *
+ * The old one stays because an order placed before the rename may still
+ * report the handle it had then, and a VIP buyer who stops being a VIP buyer
+ * is a worse failure than carrying one dead string.
+ */
 export const VIP_SLUGS: string[] = [
+  "vip-knp-dentiste",
   "only-25-set-dentiste-kengnamping-signature-vip-collection-an-exclusive-edition",
 ];
 
