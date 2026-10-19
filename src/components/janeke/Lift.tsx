@@ -7,8 +7,8 @@ import { motion, useReducedMotion, useScroll, useTransform } from "motion/react"
 const BASE_VH = 700;
 
 /** How far it drifts on its own, and how long one drift up and back takes. */
-const SWAY = 8;
-const SWAY_SECONDS = 5;
+const SWAY = 15;
+const SWAY_SECONDS = 5.5;
 
 /**
  * A card that drifts upward as the page scrolls past it, and breathes gently

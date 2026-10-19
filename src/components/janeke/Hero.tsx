@@ -96,7 +96,7 @@ const PRINTS = [
     h: 667,
     delay: 0.15,
     lift: 34,
-    phase: 1.7,
+    phase: 1.8,
     style: { left: "70.7%", top: "34.8%", width: "26.8%" },
   },
   {
@@ -106,7 +106,7 @@ const PRINTS = [
     h: 693,
     delay: 0.25,
     lift: 26,
-    phase: 3.4,
+    phase: 3.6,
     style: { left: "1%", top: "69%", width: "29.2%" },
   },
 ];
