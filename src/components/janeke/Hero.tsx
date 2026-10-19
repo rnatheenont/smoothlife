@@ -23,17 +23,22 @@ import Reveal, { RevealGroup, RevealItem } from "./Reveal";
  * shows through the holes.
  */
 
+// Straight off the design's own coordinates, against its 1600×1920 box.
 const NOTES = [
-  // Placed against the 1600×1920 box, the same coordinates the design uses.
-  { text: ["Light On", "Your Hand"], left: "41.5%", top: "9.5%", width: "14%", delay: 0.1 },
-  { text: ["Let Your Hair", "Breath"], left: "77.5%", top: "66.5%", width: "17%", delay: 0.2 },
-  { text: ["Less Tugging", "More Moving"], left: "34.5%", top: "89%", width: "16%", delay: 0.3 },
+  { text: ["Light On", "Your Hand"], left: "41.5%", top: "10%", width: "12.5%", delay: 0.1 },
+  { text: ["Let Your Hair", "Breath"], left: "78%", top: "67.1%", width: "16.3%", delay: 0.2 },
+  { text: ["Less Tugging", "More Moving"], left: "34.6%", top: "89.8%", width: "14.6%", delay: 0.3 },
 ];
 
+// Height as well as width, and not by accident: these files are exported with
+// preserveAspectRatio="none", so the design stretches each one into its own
+// box. Given only a width, the browser falls back to the path's own bounds —
+// which for the middle arrow is 65×192, and it drew as a giant vertical
+// squiggle down the side of the picture.
 const ARROWS = [
-  { src: "/janeke/arrow-1.svg", left: "28.4%", top: "15.3%", width: "12.7%", delay: 0.2 },
-  { src: "/janeke/arrow-2.svg", left: "85.5%", top: "58.7%", width: "11.2%", delay: 0.3 },
-  { src: "/janeke/arrow-3.svg", left: "25.5%", top: "88%", width: "7.1%", delay: 0.4 },
+  { src: "/janeke/arrow-1.svg", left: "28.4%", top: "15.3%", width: "12.7%", height: "6.7%", delay: 0.2 },
+  { src: "/janeke/arrow-2.svg", left: "85.5%", top: "58.8%", width: "11.2%", height: "8.4%", delay: 0.3 },
+  { src: "/janeke/arrow-3.svg", left: "25.5%", top: "88%", width: "7.1%", height: "4.3%", delay: 0.4 },
 ];
 
 const PRINTS = [
@@ -186,9 +191,9 @@ export default function JanekeHero() {
               key={a.src}
               delay={a.delay}
               className="absolute hidden @lg:block"
-              style={{ left: a.left, top: a.top, width: a.width }}
+              style={{ left: a.left, top: a.top, width: a.width, height: a.height }}
             >
-              <Image src={a.src} alt="" width={200} height={160} className="h-auto w-full" />
+              <Image src={a.src} alt="" width={200} height={160} className="size-full" />
             </Reveal>
           ))}
 
@@ -199,7 +204,9 @@ export default function JanekeHero() {
               className="absolute hidden @lg:block"
               style={{ left: n.left, top: n.top, width: n.width }}
             >
-              <p className={`${script.className} text-center text-[2.5cqw] leading-snug text-[#8a7265]`}>
+              <p
+                className={`${script.className} whitespace-nowrap text-center text-[2.1cqw] leading-[1.5] text-[#8a7265]`}
+              >
                 {n.text[0]}
                 <br />
                 {n.text[1]}
