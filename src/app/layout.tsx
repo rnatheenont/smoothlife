@@ -6,7 +6,7 @@ import SiteChrome from "@/components/SiteChrome";
 import { menuCategories } from "@/data/nav-menu";
 import { tickerProducts } from "@/lib/ticker-products";
 import { organizationJsonLd, websiteJsonLd, jsonLdScript } from "@/lib/json-ld";
-import { SITE_URL } from "@/lib/site-url";
+import { SITE_URL, SHOPIFY_STOREFRONT_ORIGIN } from "@/lib/site-url";
 // Shared with /lib/site-pages so the home page and the tab title can never
 // drift apart — the page there overrides this one only when the team edits it.
 import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site-pages";
@@ -102,6 +102,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const announcementNode = announcementVisible(bar, new Date()) ? <AnnouncementBar bar={bar} /> : null;
   return (
     <html lang="th" className={notoSansThai.variable}>
+      <head>
+        {/* Every product photo and every banner on this site comes from
+        Shopify's CDN — 213 references on the home page alone — and the first
+        one of them paid for the DNS lookup, the TCP handshake and the TLS
+        negotiation before a single byte of image arrived. On a throttled
+        phone connection that is most of a second spent before the largest
+        image on the page has started.
+
+        Two hosts because the catalogue and the banners are stored under
+        different ones, and the hero is served from the storefront's. */}
+        <link rel="preconnect" href="https://cdn.shopify.com" crossOrigin="" />
+        <link rel="preconnect" href={SHOPIFY_STOREFRONT_ORIGIN} crossOrigin="" />
+      </head>
       <body className="min-h-screen flex flex-col antialiased font-sans">
         <OldBrowserNotice />
         <script

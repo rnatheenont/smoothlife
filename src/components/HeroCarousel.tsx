@@ -7,6 +7,17 @@ import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { useInView, useTabVisible } from "@/lib/use-in-view";
 import { HeroBanner } from "@/data/heroBanners";
 import { hero3DSceneFor } from "@/data/hero-3d";
+import { shopifyImage, shopifySrcSet } from "@/lib/shopify-image";
+
+// The blurred plate behind a banner is scaled up and blurred past
+// recognition, so it only ever needs a thumbnail. It was being fetched at the
+// banner's own width — the same 434 KB file as the artwork in front of it,
+// which the comment below already said it should not be.
+const BLUR_WIDTH = 64;
+
+// A phone never needs more than its own screen, at 2x. The desktop widths are
+// the default in shopifySrcSet.
+const MOBILE_WIDTHS = [480, 640, 828, 1080];
 
 // Three.js and four layer images, a megabyte between them, for one slide of
 // one campaign — kept out of the page's own bundle and fetched only once a
@@ -272,10 +283,12 @@ export default function HeroCarousel({
               crop on top. The site runs with images.unoptimized, so <Image>
               was adding nothing here but that preload. */}
               <picture className="absolute inset-0 block">
-                {banner.mobileImage && <source media={MOBILE_QUERY} srcSet={banner.mobileImage} />}
+                {banner.mobileImage && (
+                  <source media={MOBILE_QUERY} srcSet={shopifyImage(banner.mobileImage, BLUR_WIDTH)} />
+                )}
                 { }
                 <img
-                  src={banner.image}
+                  src={shopifyImage(banner.image, BLUR_WIDTH)}
                   alt=""
                   loading={i === 0 ? "eager" : "lazy"}
                   decoding="async"
@@ -283,10 +296,18 @@ export default function HeroCarousel({
                 />
               </picture>
               <picture className="absolute inset-0 block">
-                {banner.mobileImage && <source media={MOBILE_QUERY} srcSet={banner.mobileImage} />}
+                {banner.mobileImage && (
+                  <source
+                    media={MOBILE_QUERY}
+                    srcSet={shopifySrcSet(banner.mobileImage, MOBILE_WIDTHS) ?? banner.mobileImage}
+                    sizes="100vw"
+                  />
+                )}
                 { }
                 <img
                   src={banner.image}
+                  srcSet={shopifySrcSet(banner.image)}
+                  sizes="100vw"
                   alt={banner.title ?? ""}
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : undefined}
