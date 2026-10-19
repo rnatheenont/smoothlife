@@ -40,6 +40,7 @@ import StarRating from "./StarRating";
 import MobileStickyBar from "./MobileStickyBar";
 import FreeGiftProgress from "./FreeGiftProgress";
 import SubscriptionTermsInfo from "./SubscriptionTermsInfo";
+import SubscribeConsentDialog from "./SubscribeConsentDialog";
 import { useCart, useWishlist } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLoginModal } from "@/lib/login-modal-context";
@@ -390,7 +391,9 @@ export default function ProductDetailInteractive({
   const [subscribeError, setSubscribeError] = useState("");
   // Only meaningful for the real-billing path — the discount-code fallback
   // never charges a card on file, so it doesn't need this disclosure.
-  const [agreedRecurringCharge, setAgreedRecurringCharge] = useState(false);
+  // Open while the one consent step is on screen — see
+  // SubscribeConsentDialog.
+  const [confirmingSubscribe, setConfirmingSubscribe] = useState(false);
 
   // Interim behavior: still used whenever subscriptionBillingEnabled is
   // false (no 2C2P credentials set yet) — sends the whole term's quantity
@@ -434,7 +437,6 @@ export default function ProductDetailInteractive({
   // already prefills from) since this bypasses Shopify's own checkout
   // entirely.
   async function handleRealSubscribe() {
-    if (!agreedRecurringCharge) return;
     setSubscribeError("");
     setSubscribeSubmitting(true);
     try {
@@ -465,7 +467,8 @@ export default function ProductDetailInteractive({
               .join(" "),
             phone: defaultAddress.phone,
           },
-          consentRecurringCharge: agreedRecurringCharge,
+          // The dialog this came through is the agreement.
+          consentRecurringCharge: true,
         }),
       });
       const checkoutData = await checkoutRes.json();
@@ -810,39 +813,15 @@ export default function ProductDetailInteractive({
                   </span>
                 </div>
 
-                {subscriptionBillingEnabled && (
-                  <label className="mt-3 flex items-start gap-2 text-[11px] text-slate-500">
-                    <input
-                      type="checkbox"
-                      checked={agreedRecurringCharge}
-                      onChange={(e) =>
-                        setAgreedRecurringCharge(e.target.checked)
-                      }
-                      className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-brand-emerald"
-                    />
-                    <span>
-                      ยอมรับให้ตัดเงิน {formatTHB(subscribePricePerCycle)}{" "}
-                      บาททุกเดือนจากบัตรที่ผูกไว้ จนครบเทอม{" "}
-                      {subscribePlan.months} เดือน แล้วปิดรายการอัตโนมัติ
-                      ไม่มีการต่อเทอมเอง — ยกเลิกได้ทุกเมื่อที่หน้า
-                      &ldquo;การสมัครของฉัน&rdquo; มีผลเมื่อจบเทอม
-                      รอบที่เหลือยังตัดและจัดส่งตามปกติ
-                    </span>
-                  </label>
-                )}
-
                 <Button
                   onClick={() =>
                     requireLoginThen(
                       subscriptionBillingEnabled
-                        ? handleRealSubscribe
+                        ? () => setConfirmingSubscribe(true)
                         : handleSubscribe,
                     )
                   }
-                  disabled={
-                    !selectedVariant.inStock ||
-                    (subscriptionBillingEnabled && !agreedRecurringCharge)
-                  }
+                  disabled={!selectedVariant.inStock}
                   size="lg"
                   fullWidth
                   loading={subscribeSubmitting}
@@ -853,6 +832,20 @@ export default function ProductDetailInteractive({
                     ? "กำลังเริ่มชำระเงิน…"
                     : "สมัครรับประจำ"}
                 </Button>
+                {confirmingSubscribe && (
+                  <SubscribeConsentDialog
+                    open
+                    onClose={() => setConfirmingSubscribe(false)}
+                    onConfirm={handleRealSubscribe}
+                    itemName={product.name}
+                    months={subscribePlan.months}
+                    pricePerCycle={subscribePricePerCycle}
+                    discountPct={subscribePlan.discountPct}
+                    submitting={subscribeSubmitting}
+                    error={subscribeError || null}
+                  />
+                )}
+
                 {subscribeError && (
                   <p className="mt-2 text-[11px] text-rose-700 text-center">
                     {subscribeError}
@@ -860,7 +853,7 @@ export default function ProductDetailInteractive({
                 )}
                 <p className="mt-2 text-[10px] text-slate-500 text-center">
                   {subscriptionBillingEnabled
-                    ? `ตัดเงิน ${formatTHB(subscribePricePerCycle)} บาททุกเดือน (ล็อกส่วนลด -${subscribePlan.discountPct}% ตลอดเทอม ${subscribePlan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเทอมและราคาเดิม จนกว่าจะยกเลิก`
+                    ? `ตัดเงิน ${formatTHB(subscribePricePerCycle)} บาททุกเดือน (ล็อกส่วนลด -${subscribePlan.discountPct}% ตลอดเทอม ${subscribePlan.months} เดือน) ครบเทอมแล้วปิดรายการให้เอง ไม่มีต่อเทอมอัตโนมัติ`
                     : `ไปหน้าชำระเงินของ Shopify ทันที พร้อมส่วนลด -${subscribePlan.discountPct}% ให้อัตโนมัติ (${subscribePlan.months} ชิ้น) — ต่ออายุอัตโนมัติยังไม่เปิดใช้งาน ครบรอบแล้วสมัครใหม่ได้เลย`}
                 </p>
                 <div className="mt-3">

@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useLoginModal } from "@/lib/login-modal-context";
 import clsx from "clsx";
 import { Button } from "@/components/ui";
+import SubscribeConsentDialog from "./SubscribeConsentDialog";
 
 export default function BundleBuilder({
   products,
@@ -28,7 +29,7 @@ export default function BundleBuilder({
   const { user } = useAuth();
   const { open: openLogin } = useLoginModal();
   const router = useRouter();
-  const [agreedRecurringCharge, setAgreedRecurringCharge] = useState(false);
+  const [confirmingSubscribe, setConfirmingSubscribe] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -60,7 +61,7 @@ export default function BundleBuilder({
       openLogin("/subscription/build");
       return;
     }
-    if (!meetsMin || !agreedRecurringCharge) return;
+    if (!meetsMin) return;
     setError("");
     setSubmitting(true);
     try {
@@ -87,7 +88,8 @@ export default function BundleBuilder({
             lastName: defaultAddress.recipient_name?.split(/\s+/).slice(1).join(" "),
             phone: defaultAddress.phone,
           },
-          consentRecurringCharge: agreedRecurringCharge,
+          // The dialog this came through is the agreement.
+          consentRecurringCharge: true,
         }),
       });
       const checkoutData = await checkoutRes.json();
@@ -220,27 +222,27 @@ export default function BundleBuilder({
             </div>
           </div>
 
-          <label className="flex items-start gap-2 text-[11px] text-slate-500 mb-3">
-            <input
-              type="checkbox"
-              checked={agreedRecurringCharge}
-              onChange={(e) => setAgreedRecurringCharge(e.target.checked)}
-              className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-brand-emerald"
+          {confirmingSubscribe && (
+            <SubscribeConsentDialog
+              open
+              onClose={() => setConfirmingSubscribe(false)}
+              onConfirm={handleRealSubscribe}
+              itemName={`ชุดที่คุณจัดเอง (${selected.size} ชิ้น)`}
+              months={plan.months}
+              pricePerCycle={pricePerCycle}
+              discountPct={plan.discountPct + BUNDLE_DISCOUNT_PCT}
+              submitting={submitting}
+              error={error || null}
             />
-            <span>
-              ยอมรับให้ตัดเงิน {formatTHB(pricePerCycle)} บาททุกเดือนจากบัตรที่ผูกไว้ จนครบเทอม {plan.months} เดือน
-              แล้วปิดรายการอัตโนมัติ ไม่มีการต่อเทอมเอง — ยกเลิกได้ทุกเมื่อที่หน้า &ldquo;การสมัครของฉัน&rdquo;
-              มีผลเมื่อจบเทอม รอบที่เหลือยังตัดและจัดส่งตามปกติ
-            </span>
-          </label>
+          )}
 
-          <Button size="none" fullWidth className="py-3.5 text-sm" onClick={handleRealSubscribe} disabled={!meetsMin || submitting || !agreedRecurringCharge}>
+          <Button size="none" fullWidth className="py-3.5 text-sm" onClick={() => setConfirmingSubscribe(true)} disabled={!meetsMin || submitting}>
             <Sparkles size={16} />
             {submitting ? "กำลังเริ่มชำระเงิน…" : !meetsMin ? `เลือกอีก ${BUNDLE_MIN_ITEMS - selected.size} ชิ้น` : "สมัครสมาชิก"}
           </Button>
           {error && <p className="mt-2 text-[11px] text-rose-700 text-center">{error}</p>}
           <p className="mt-3 text-[10px] text-slate-500 text-center">
-            ตัดเงิน {formatTHB(pricePerCycle)} บาททุกเดือน (ล็อกส่วนลดชุด + ส่วนลดตามเทอม {plan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเงื่อนไขเดิม จนกว่าจะยกเลิก
+            ตัดเงิน {formatTHB(pricePerCycle)} บาททุกเดือน (ล็อกส่วนลดชุด + ส่วนลดตามเทอม {plan.months} เดือน) ครบเทอมแล้วปิดรายการให้เอง ไม่มีต่อเทอมอัตโนมัติ
           </p>
         </div>
       </div>

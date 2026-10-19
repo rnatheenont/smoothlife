@@ -9,6 +9,7 @@ import { Product } from "@/data/types";
 import { SubscriptionPlan } from "@/data/subscriptions";
 import { formatTHB } from "@/lib/format";
 import StarRating from "./StarRating";
+import SubscribeConsentDialog from "./SubscribeConsentDialog";
 import { useAuth } from "@/lib/auth-context";
 import { useLoginModal } from "@/lib/login-modal-context";
 import { subscribeBuyNow } from "@/lib/subscribe-checkout";
@@ -38,16 +39,9 @@ export default function SubscriptionPicker({
   const router = useRouter();
   const [submittingSlug, setSubmittingSlug] = useState<string | null>(null);
   const [errorSlug, setErrorSlug] = useState<{ slug: string; message: string } | null>(null);
-  const [agreedSlugs, setAgreedSlugs] = useState<Set<string>>(new Set());
-
-  function toggleAgreed(slug: string, checked: boolean) {
-    setAgreedSlugs((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(slug);
-      else next.delete(slug);
-      return next;
-    });
-  }
+  // The product whose subscribe button was pressed, waiting on the one
+  // consent step. Null means no dialog is open.
+  const [confirming, setConfirming] = useState<Product | null>(null);
 
   // Interim fallback (no 2C2P credentials yet) — sends this one product's
   // term quantity straight to its own Shopify checkout session with the
@@ -81,7 +75,6 @@ export default function SubscriptionPicker({
       openLogin("/subscription");
       return;
     }
-    if (!agreedSlugs.has(product.slug)) return;
     setErrorSlug(null);
     setSubmittingSlug(product.slug);
     try {
@@ -109,7 +102,9 @@ export default function SubscriptionPicker({
             lastName: defaultAddress.recipient_name?.split(/\s+/).slice(1).join(" "),
             phone: defaultAddress.phone,
           },
-          consentRecurringCharge: agreedSlugs.has(product.slug),
+          // The dialog this came through is the agreement — see
+          // SubscribeConsentDialog.
+          consentRecurringCharge: true,
         }),
       });
       const checkoutData = await checkoutRes.json();
@@ -123,6 +118,13 @@ export default function SubscriptionPicker({
     } finally {
       setSubmittingSlug(null);
     }
+  }
+
+  // Pressing subscribe asks first; the dialog's own button is what runs it.
+  function startSubscribe(product: Product) {
+    setErrorSlug(null);
+    if (subscriptionBillingEnabled) setConfirming(product);
+    else handleAdd(product);
   }
 
   return (
@@ -184,7 +186,6 @@ export default function SubscriptionPicker({
           const perMonth = Math.round(product.price * (1 - plan.discountPct / 100));
           const submitting = submittingSlug === product.slug;
           const error = errorSlug?.slug === product.slug ? errorSlug.message : null;
-          const agreed = agreedSlugs.has(product.slug);
 
           return (
             <div key={product.slug} className="flex flex-col rounded-xl2 bg-white shadow-card overflow-hidden border border-slate-100">
@@ -206,20 +207,9 @@ export default function SubscriptionPicker({
                     <span className="text-base font-extrabold text-brand-ink">{formatTHB(perMonth)}</span>
                   </div>
                 </div>
-                {subscriptionBillingEnabled && (
-                  <label className="flex items-start gap-1.5 text-[10px] text-slate-500">
-                    <input
-                      type="checkbox"
-                      checked={agreed}
-                      onChange={(e) => toggleAgreed(product.slug, e.target.checked)}
-                      className="mt-0.5 h-3 w-3 shrink-0 accent-brand-emerald"
-                    />
-                    <span>ยอมรับตัดเงินรายเดือนอัตโนมัติจนกว่าจะยกเลิก</span>
-                  </label>
-                )}
                 <button
-                  onClick={() => (subscriptionBillingEnabled ? handleRealSubscribe(product) : handleAdd(product))}
-                  disabled={submitting || (subscriptionBillingEnabled && !agreed)}
+                  onClick={() => startSubscribe(product)}
+                  disabled={submitting}
                   className="mt-2 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold py-2 transition active:scale-95 text-white disabled:opacity-50 bg-brand-gradient hover:opacity-90"
                 >
                   <ShoppingBag size={14} />
@@ -231,6 +221,20 @@ export default function SubscriptionPicker({
           );
         })}
       </div>
+
+      {confirming && (
+        <SubscribeConsentDialog
+          open
+          onClose={() => setConfirming(null)}
+          onConfirm={() => handleRealSubscribe(confirming)}
+          itemName={confirming.name}
+          months={plan.months}
+          pricePerCycle={Math.round(confirming.price * (1 - plan.discountPct / 100))}
+          discountPct={plan.discountPct}
+          submitting={submittingSlug === confirming.slug}
+          error={errorSlug?.slug === confirming.slug ? errorSlug.message : null}
+        />
+      )}
 
       <p className="mt-8 flex items-start gap-2 text-xs text-slate-500 max-w-2xl">
         <Sparkles size={14} className="shrink-0 mt-0.5 text-brand-800" />

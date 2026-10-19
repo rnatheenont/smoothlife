@@ -12,6 +12,7 @@ import { formatTHB } from "@/lib/format";
 import { useAuth } from "@/lib/auth-context";
 import { useLoginModal } from "@/lib/login-modal-context";
 import { subscribeBuyNow } from "@/lib/subscribe-checkout";
+import SubscribeConsentDialog from "./SubscribeConsentDialog";
 import { Button } from "@/components/ui";
 
 /**
@@ -55,7 +56,7 @@ export default function SubscriptionSetDetail({
 
   const [subscribeSubmitting, setSubscribeSubmitting] = useState(false);
   const [subscribeError, setSubscribeError] = useState("");
-  const [agreedRecurringCharge, setAgreedRecurringCharge] = useState(false);
+  const [confirmingSubscribe, setConfirmingSubscribe] = useState(false);
 
   // Interim fallback (no 2C2P credentials yet): sends every item in the set
   // (each at the term's quantity) straight to its own Shopify checkout
@@ -93,7 +94,6 @@ export default function SubscriptionSetDetail({
       openLogin(curated ? `/subscription/set/${curated.id}` : `/subscription/${set.slug}`);
       return;
     }
-    if (!agreedRecurringCharge) return;
     setSubscribeError("");
     setSubscribeSubmitting(true);
     try {
@@ -120,7 +120,8 @@ export default function SubscriptionSetDetail({
             lastName: defaultAddress.recipient_name?.split(/\s+/).slice(1).join(" "),
             phone: defaultAddress.phone,
           },
-          consentRecurringCharge: agreedRecurringCharge,
+          // The dialog this came through is the agreement.
+          consentRecurringCharge: true,
         }),
       });
       const checkoutData = await checkoutRes.json();
@@ -207,23 +208,21 @@ export default function SubscriptionSetDetail({
             </div>
           </div>
 
-          {subscriptionBillingEnabled && (
-            <label className="mt-3 flex items-start gap-2 text-[11px] text-slate-500">
-              <input
-                type="checkbox"
-                checked={agreedRecurringCharge}
-                onChange={(e) => setAgreedRecurringCharge(e.target.checked)}
-                className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-brand-emerald"
-              />
-              <span>
-                ยอมรับให้ตัดเงิน {formatTHB(pricePerCycle)} บาททุกเดือนจากบัตรที่ผูกไว้ จนครบเทอม {plan.months} เดือน
-                แล้วปิดรายการอัตโนมัติ ไม่มีการต่อเทอมเอง — ยกเลิกได้ทุกเมื่อที่หน้า &ldquo;การสมัครของฉัน&rdquo;
-                มีผลเมื่อจบเทอม รอบที่เหลือยังตัดและจัดส่งตามปกติ
-              </span>
-            </label>
+          {confirmingSubscribe && (
+            <SubscribeConsentDialog
+              open
+              onClose={() => setConfirmingSubscribe(false)}
+              onConfirm={handleRealSubscribe}
+              itemName={set.name}
+              months={plan.months}
+              pricePerCycle={pricePerCycle}
+              discountPct={plan.discountPct}
+              submitting={subscribeSubmitting}
+              error={subscribeError || null}
+            />
           )}
 
-          <Button size="none" fullWidth className="py-3.5 text-sm mt-4 active:scale-95" onClick={subscriptionBillingEnabled ? handleRealSubscribe : handleSubscribe} disabled={subscribeSubmitting || (subscriptionBillingEnabled && !agreedRecurringCharge)}>
+          <Button size="none" fullWidth className="py-3.5 text-sm mt-4 active:scale-95" onClick={subscriptionBillingEnabled ? () => setConfirmingSubscribe(true) : handleSubscribe} disabled={subscribeSubmitting}>
             <ShoppingBag size={16} />
             {subscribeSubmitting ? "กำลังเริ่มชำระเงิน…" : "สมัครสมาชิก"}
           </Button>
@@ -232,7 +231,7 @@ export default function SubscriptionSetDetail({
           <p className="mt-3 flex items-start gap-1.5 text-[11px] text-slate-500">
             <Info size={12} className="shrink-0 mt-0.5" />
             {subscriptionBillingEnabled
-              ? `ตัดเงิน ${formatTHB(pricePerCycle)} บาททุกเดือน (ล็อกส่วนลด -${plan.discountPct}% ตลอดเทอม ${plan.months} เดือน) เมื่อครบเทอมต่ออายุอัตโนมัติในเทอมและราคาเดิม จนกว่าจะยกเลิก`
+              ? `ตัดเงิน ${formatTHB(pricePerCycle)} บาททุกเดือน (ล็อกส่วนลด -${plan.discountPct}% ตลอดเทอม ${plan.months} เดือน) ครบเทอมแล้วปิดรายการให้เอง ไม่มีต่อเทอมอัตโนมัติ`
               : `ไปหน้าชำระเงินของ Shopify ทันที พร้อมสินค้าครบชุด ${plan.months} รอบและส่วนลด -${plan.discountPct}% ให้อัตโนมัติ แยกจากตะกร้าปกติ — ยกเลิกได้ก่อนกดชำระเงิน`}
           </p>
         </div>
