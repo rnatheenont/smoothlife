@@ -1,6 +1,7 @@
 import Image from "next/image";
 
 import { script } from "./font";
+import Lift from "./Lift";
 import Reveal from "./Reveal";
 
 /**
@@ -15,11 +16,14 @@ import Reveal from "./Reveal";
  */
 export default function JanekeFromItaly() {
   return (
-    <section className="relative overflow-hidden bg-white px-4 py-14 md:py-20">
-      {/* The pale band the design runs behind the headline. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[40%] bg-[#f6f5f4]" />
-
-      <div className="relative mx-auto max-w-[1440px]">
+    // The tint runs the height of the section rather than the top 40%: as a
+    // band it drew a line across the middle of the brushes, which read as the
+    // section ending there.
+    // overflow-hidden: the two lines of copy slide in from the sides, and
+    // without it the one on the right pushes the page 16px wider while it is
+    // still on its way in.
+    <section className="overflow-hidden bg-[#f6f5f4] px-4 py-14 md:py-20">
+      <div className="mx-auto max-w-[1440px]">
         <Reveal>
           <h2
             className={`${script.className} text-center text-[clamp(2.5rem,8vw,6rem)] leading-[1.15] text-[#685048]`}
@@ -39,24 +43,26 @@ export default function JanekeFromItaly() {
             </p>
           </Reveal>
 
-          <Reveal kind="scale" delay={0.1} className="md:order-2">
-            <div className="flex items-end justify-center gap-2 md:gap-4">
-              <Image
-                src="/janeke/comb-side.webp"
-                alt="หวี Janeke ด้านข้าง"
-                width={330}
-                height={1669}
-                className="h-[clamp(11rem,30vw,25rem)] w-auto object-contain"
-              />
-              <Image
-                src="/janeke/brush-black.webp"
-                alt="แปรง Janeke Superbrush สีดำ"
-                width={602}
-                height={1434}
-                className="h-[clamp(13rem,36vw,30rem)] w-auto object-contain"
-              />
-            </div>
-          </Reveal>
+          <Lift distance={56} className="md:order-2">
+            <Reveal kind="scale" delay={0.1}>
+              <div className="flex items-end justify-center gap-3 md:gap-5">
+                <Image
+                  src="/janeke/comb-side.webp"
+                  alt="หวี Janeke ด้านข้าง"
+                  width={330}
+                  height={1669}
+                  className="h-[clamp(14rem,38vw,32rem)] w-auto object-contain"
+                />
+                <Image
+                  src="/janeke/brush-black.webp"
+                  alt="แปรง Janeke Superbrush สีดำ"
+                  width={602}
+                  height={1434}
+                  className="h-[clamp(17rem,46vw,38rem)] w-auto object-contain"
+                />
+              </div>
+            </Reveal>
+          </Lift>
 
           <Reveal kind="right" delay={0.2} className="md:order-3 md:self-start md:pt-12 lg:pt-20">
             <p className="max-w-[466px] text-center text-[clamp(0.85rem,1.5vw,1.125rem)] leading-relaxed text-[#78716f] md:text-left">
