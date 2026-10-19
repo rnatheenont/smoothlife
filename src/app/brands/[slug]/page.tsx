@@ -18,6 +18,7 @@ import { publishedDoc } from "@/lib/pages/store";
 import { defaultBrandDoc } from "@/lib/pages/default-docs/brand";
 import { toCardData } from "@/data/card";
 import SuperbrushStage from "@/components/brand/SuperbrushStage";
+import ProductGridScroll from "@/components/ProductGridScroll";
 import ProductTabs from "@/components/ProductTabs";
 import { janekeModels } from "@/lib/janeke-stage";
 import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
@@ -185,7 +186,7 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
 
   // A brand with one kind of product has no tabs to label its shelf, so that
   // shelf keeps the heading — and the way to the rest — that it has always had.
-  const groupShelf = (group: (typeof groups)[number], visibleHeading: boolean) => (
+  const groupShelf = (group: (typeof groups)[number], visibleHeading: boolean, full = false) => (
     <section key={group.key} id={group.key} className="scroll-mt-24">
       {visibleHeading ? (
         <div className="mb-4 flex items-end justify-between gap-3">
@@ -199,7 +200,9 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
           <h2 className="sr-only">{group.label}</h2>
           <div className="mb-4 flex items-center justify-between gap-3">
             <p className="text-sm text-slate-500">{group.items.length} รายการ</p>
-            {moreLink(group)}
+            {/* Not on the "ทั้งหมด" shelf: "ดูทั้งหมด →" beside a shelf that
+                is already all of them reads as a promise of more. */}
+            {!full && moreLink(group)}
           </div>
         </>
       )}
@@ -208,13 +211,21 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
           shelf. shelfItemClass is the same per-width cut the sections system
           uses: eight cards below xl, ten at xl, so both rows are whole rows at
           every width. */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5">
-        {group.items.slice(0, PER_GROUP_XL).map((p, i) => (
-          <div key={p.slug} className={shelfItemClass(i, 2)}>
-            <ProductCard product={toCardData(p)} />
-          </div>
-        ))}
-      </div>
+      {full ? (
+        // The whole catalogue, a batch at a time as the page is scrolled.
+        <ProductGridScroll
+          items={group.items.map(toCardData)}
+          className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5"
+        />
+      ) : (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5 xl:grid-cols-5">
+          {group.items.slice(0, PER_GROUP_XL).map((p, i) => (
+            <div key={p.slug} className={shelfItemClass(i, 2)}>
+              <ProductCard product={toCardData(p)} />
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 
@@ -373,9 +384,12 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
           {groups.length > 1 ? (
             <ProductTabs
               ariaLabel="ประเภทสินค้า"
-              hashKeys={groups.map((g) => g.key)}
-              labels={groups.map((g) => `${g.label} (${g.items.length})`)}
-              panels={groups.map((group) => groupShelf(group, false))}
+              hashKeys={["all", ...groups.map((g) => g.key)]}
+              labels={[`สินค้าทั้งหมด (${items.length})`, ...groups.map((g) => `${g.label} (${g.items.length})`)]}
+              panels={[
+                groupShelf({ key: "all", label: "สินค้าทั้งหมด", items }, false, true),
+                ...groups.map((group) => groupShelf(group, false)),
+              ]}
             />
           ) : (
             groups.map((group) => groupShelf(group, true))
@@ -383,26 +397,11 @@ async function LegacyBrandPage({ slug }: { slug: string }) {
         </div>
       )}
 
-      {/* Every product the brand sells, as plain links. The grids above stop
-          at eight per section to keep the page light; this is how the rest
-          stay one click from here — for a shopper scanning for a name, and
-          for a crawler that would otherwise never reach them. */}
-      {items.length > PER_GROUP && (
-        <section className="mt-12 rounded-xl2 border border-surface-line bg-surface-mist p-5">
-          <h2 className="mb-3 text-sm font-bold text-brand-ink">
-            สินค้า<span translate="no">{brand.name}</span>ทั้งหมด ({items.length} รายการ)
-          </h2>
-          <ul className="grid gap-x-6 gap-y-1.5 text-xs text-slate-600 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((p) => (
-              <li key={p.slug}>
-                <Link href={`/product/${p.slug}`} className="underline-offset-2 hover:text-brand-800 hover:underline">
-                  {p.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* The list of every product as plain links used to sit here. It was
+          how the products past each shelf's two rows stayed one click away —
+          for a shopper scanning for a name, and for a crawler. The
+          "สินค้าทั้งหมด" tab above carries all of them now, as cards, so the
+          list was the same links twice. */}
 
       <p className="mt-8 text-center text-sm">
         <Link href="/brands" className="font-bold text-brand-800 underline-offset-2 hover:underline">

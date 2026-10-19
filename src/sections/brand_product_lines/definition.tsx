@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { z } from "zod";
 import ProductCard from "@/components/ProductCard";
+import ProductGridScroll from "@/components/ProductGridScroll";
 import ProductTabs from "@/components/ProductTabs";
 import { BRAND_GRID, brandPageData, shelfCounts, shelfItemClass } from "@/lib/brand-page";
 import type { GroupedProducts } from "@/lib/brand-groups";
@@ -24,12 +25,20 @@ const schema = z.object({
   rows: z.coerce.number().int().min(1).max(3).default(2),
 });
 
-type Data = { brandSlug: string; groups: GroupedProducts[]; empty: boolean };
+type Data = { brandSlug: string; groups: GroupedProducts[]; all: GroupedProducts; empty: boolean };
 
 async function load(_settings: z.output<typeof schema>, ctx: { slug: string; draftProfile?: boolean }): Promise<Data | null> {
   const page = await brandPageData(ctx.slug, ctx.draftProfile);
   if (!page) return null;
-  return { brandSlug: page.brand.slug, groups: page.groups, empty: page.items.length === 0 };
+  return {
+    brandSlug: page.brand.slug,
+    groups: page.groups,
+    // The brand's whole catalogue as one more shelf, in the order the page
+    // already put it in (sold-out last). Built here rather than in the
+    // component so the shelf and the groups are the same shape.
+    all: { key: "all", label: "สินค้าทั้งหมด", items: page.items },
+    empty: page.items.length === 0,
+  };
 }
 
 function Component({ settings, data }: SectionProps<z.output<typeof schema>, Data | null>) {
@@ -71,15 +80,22 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
       </Link>
     );
 
-  const grid = (group: GroupedProducts) => (
-    <div className={BRAND_GRID}>
-      {group.items.slice(0, xl).map((p, i) => (
-        <div key={p.slug} className={shelfItemClass(i, settings.rows)}>
-          <ProductCard product={toCardData(p)} />
-        </div>
-      ))}
-    </div>
-  );
+  // `full` is the "สินค้าทั้งหมด" shelf: the one shelf whose label promises
+  // the whole catalogue. It is drawn a batch at a time as the page is
+  // scrolled — nearly 200 products for the biggest brand, and nobody reads
+  // two hundred cards before pressing one.
+  const grid = (group: GroupedProducts, full = false) =>
+    full ? (
+      <ProductGridScroll items={group.items.map(toCardData)} className={BRAND_GRID} />
+    ) : (
+      <div className={BRAND_GRID}>
+        {group.items.slice(0, xl).map((p, i) => (
+          <div key={p.slug} className={shelfItemClass(i, settings.rows)}>
+            <ProductCard product={toCardData(p)} />
+          </div>
+        ))}
+      </div>
+    );
 
   // One kind of product at a time, chosen from the row of tabs above it.
   //
@@ -96,20 +112,27 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Dat
   // says those words — what stays visible is what the tab does not say: how
   // many there are, and the way to the rest.
   if (data.groups.length > 1) {
+    // "ทั้งหมด" first, and open by default: the tabs are a filter, and a
+    // filter that starts on one of its own values hides the rest of the shop
+    // from somebody who arrived to see what this brand sells. It is one more
+    // shelf and it obeys the same row count — the row count is what keeps a
+    // panel from burying the page, and the link beside it still goes to the
+    // whole catalogue.
+    const shelves = [data.all, ...data.groups];
     return (
       <div className="container-page mt-10">
         <ProductTabs
           ariaLabel="ประเภทสินค้า"
-          hashKeys={data.groups.map((g) => g.key)}
-          labels={data.groups.map((g) => `${g.label} (${g.items.length})`)}
-          panels={data.groups.map((group) => (
+          hashKeys={shelves.map((g) => g.key)}
+          labels={shelves.map((g) => `${g.label} (${g.items.length})`)}
+          panels={shelves.map((group) => (
             <section key={group.key} id={group.key} className="scroll-mt-24">
               <h2 className="sr-only">{group.label}</h2>
               <div className="mb-4 flex items-center justify-between gap-3">
                 <p className="text-sm text-slate-500">{group.items.length} รายการ</p>
-                {moreLink(group)}
+                {group.key !== "all" && moreLink(group)}
               </div>
-              {grid(group)}
+              {grid(group, group.key === "all")}
             </section>
           ))}
         />
