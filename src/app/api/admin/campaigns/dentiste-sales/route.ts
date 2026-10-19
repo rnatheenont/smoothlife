@@ -33,6 +33,7 @@ const RANK: Record<ReceiptState, number> = { approved: 4, pending_review: 3, rej
 type EntryRow = {
   status: ReceiptState;
   declared_order_number: string | null;
+  manual_receipt_no: string | null;
   created_at: string;
   reviewed_at: string | null;
   contact_name: string | null;
@@ -57,19 +58,33 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "เชื่อมต่อ Shopify ไม่ได้ในขณะนี้" }, { status: 502 });
   }
 
-  // The receipts already sent in, keyed by the order they name. Two keys per
-  // claim: the order number the customer typed (with or without its "#" —
-  // both spellings are in the table) and, for an on-site checkout, the
-  // Shopify id our own transaction recorded.
+  // The receipts already sent in, keyed by every number that can name the
+  // same order: what the customer typed, what a reviewer corrected it to, and
+  // for an on-site checkout the Shopify id our own transaction recorded.
+  //
+  // manual_receipt_no is the one this used to miss. A customer who sends in a
+  // till receipt types the number printed on it — "2610-002-065641" — which
+  // is not the order number at all, and the reviewer writes the real one into
+  // manual_receipt_no rather than overwriting what the customer said. The
+  // receipt console reads that column and showed the claim approved; this
+  // table did not and showed the same order as ยังไม่ยื่น. Two screens, two
+  // answers, about one receipt the shop had already approved.
   const claims = new Map<string, { state: ReceiptState; at: string; who: string | null; count: number }>();
   if (supabaseConfigured()) {
     const entries = await supabaseRest<EntryRow[]>(
       `receipt_campaign_entries?campaign_key=eq.${pgValue(campaign)}` +
-        `&select=status,declared_order_number,created_at,reviewed_at,contact_name,payment_transactions(shopify_order_id)` +
+        `&select=status,declared_order_number,manual_receipt_no,created_at,reviewed_at,contact_name,payment_transactions(shopify_order_id)` +
         `&order=created_at.asc&limit=2000`
     ).catch(() => []);
     for (const e of entries) {
-      const keys = [normalizeOrderName(e.declared_order_number), e.payment_transactions?.shopify_order_id ?? null];
+      // Indexed under both numbers rather than one winning: either may be
+      // the one Shopify knows the order by, and a claim filed under the wrong
+      // key is invisible exactly when somebody is looking for it.
+      const keys = [
+        normalizeOrderName(e.manual_receipt_no),
+        normalizeOrderName(e.declared_order_number),
+        e.payment_transactions?.shopify_order_id ?? null,
+      ];
       for (const key of keys) {
         if (!key) continue;
         const seen = claims.get(key);
