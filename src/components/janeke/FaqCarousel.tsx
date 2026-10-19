@@ -119,7 +119,7 @@ export default function FaqCarousel({ cards }: { cards: FaqCard[] }) {
           return (
             <motion.article
               key={c.question}
-              className="flex w-[16rem] origin-center flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-[0_18px_50px_rgba(15,23,42,0.16)] [grid-area:1/1] md:w-[20rem] md:rounded-[2rem]"
+              className="flex w-[19rem] origin-center flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-[0_18px_50px_rgba(15,23,42,0.16)] [grid-area:1/1] md:w-[25rem] md:rounded-[2rem]"
               style={{
                 zIndex: pose.zIndex,
                 transformStyle: "preserve-3d",
