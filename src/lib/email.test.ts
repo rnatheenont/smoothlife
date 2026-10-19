@@ -36,10 +36,13 @@ test("a link is reachable twice — as the button and as text to copy", () => {
 // values and it is dropped into markup, and the cost of being wrong about
 // that is markup running inside somebody's mail client.
 test("values from outside cannot carry markup into the message", () => {
-  const html = guestOrderInviteEmailHtml('#SL1<img src=x onerror="alert(1)">', SIGNUP);
-  assert.ok(!html.includes("<img"), "แท็กต้องถูก escape");
-  assert.ok(!html.includes('onerror="'), "แอตทริบิวต์ต้องถูก escape");
-  assert.ok(html.includes("&lt;img"), "ต้องยังแสดงข้อความเดิมให้เห็น");
+  // Checked against the injected string itself, not against "<img" anywhere
+  // in the document — the header carries a real <img>, the shop's logo.
+  const payload = '#SL1<img src=x onerror="alert(1)">';
+  const html = guestOrderInviteEmailHtml(payload, SIGNUP);
+  assert.ok(!html.includes("<img src=x"), "แท็กที่ฉีดเข้ามาต้องไม่รอด");
+  assert.ok(!html.includes('onerror="alert(1)"'), "แอตทริบิวต์ต้องไม่รอด");
+  assert.ok(html.includes("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;"), "ต้องยังแสดงข้อความเดิมให้เห็น");
 });
 
 // Without this the inbox preview line is whatever text happens to come
@@ -52,13 +55,27 @@ test("every message carries its own preview line", () => {
   }
 });
 
-// Email clients drop <style> blocks and class names; anything styled that
-// way renders unstyled. Catching it here is cheaper than finding out from a
-// customer's screenshot.
+// Gmail drops the <head> on a forward and strips <style> outright, and
+// Outlook renders through Word. There is one <style> here, carrying the web
+// font for the clients that honour it — so the rule is not "no stylesheet",
+// it is that losing the stylesheet costs the font and nothing else.
 test("nothing relies on a stylesheet or on layout email cannot do", () => {
   for (const html of [otpEmailHtml(CODE), resetLinkEmailHtml(RESET), guestOrderInviteEmailHtml("#SL1", SIGNUP)]) {
-    assert.ok(!/<style[\s>]/i.test(html), "ห้ามมี <style>");
     assert.ok(!/\sclass=/i.test(html), "ห้ามมี class");
     assert.ok(!/display:\s*(flex|grid)/i.test(html), "ห้ามใช้ flex/grid");
+
+    // The only thing the <style> block may do is load the font.
+    const blocks = html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) ?? [];
+    for (const block of blocks) {
+      assert.ok(/@import url\('https:\/\/fonts\.googleapis\.com/.test(block), block);
+      assert.ok(!/\{[^}]*:[^}]*\}/.test(block.replace(/@import[^;]+;/g, "")), "ห้ามมีกฎอื่น");
+    }
+
+    // The stack is declared in the body too, not only in the head that gets
+    // dropped, and it ends in faces every device already has — so a client
+    // that loads no web font still renders Thai in something chosen.
+    const body = html.slice(html.indexOf("<body"));
+    assert.ok(body.includes("font-family:'Noto Sans Thai'"), "body ต้องประกาศฟอนต์เอง");
+    assert.ok(/font-family:[^";]*sans-serif/.test(body), "ต้องมี fallback ที่ทุกเครื่องมี");
   }
 });

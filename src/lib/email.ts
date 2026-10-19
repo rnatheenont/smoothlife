@@ -55,20 +55,37 @@ const PAGE = "#eef2f1";
 // same rule is written into theme.css for the site's own buttons.
 const ON_ACTION = "#ffffff";
 
-// The logo is a rounded square filled with emerald -> teal -> sky. Drawn in
-// HTML rather than loaded as an image on purpose: most clients block remote
-// images until the reader allows them, and a header that renders as an empty
-// box in the one email carrying a login code is worse than no image at all.
-// Outlook ignores the gradient and keeps the solid background-color.
-const MARK_FROM = "#00a87b";
-const MARK_VIA = "#00b39b";
-const MARK_TO = "#00aeef";
+// The shop's own wordmark, served from wherever the app answers so it follows
+// a domain move. As a PNG rather than the .webp the site uses or the .svg it
+// was drawn as: Outlook on Windows renders neither, and both would leave a
+// broken-image icon at the top of a password reset. 440x68 shown at half
+// size, so it stays sharp on a phone.
+//
+// Most clients block remote images until the reader allows them, so the alt
+// text is styled to stand in for the logo: blocked, the header still reads
+// "Smoothlife.com" in the brand's own green rather than as an empty box.
+const LOGO_SRC = `${SITE_URL}/logo-email.png`;
+const LOGO_WIDTH = 200;
+const LOGO_HEIGHT = 31;
 
-// Thai needs more leading than Latin — vowels and tone marks stack above and
-// below the line, and at 1.5 they collide with the row above.
+// Noto Sans Thai is what the site itself is set in (src/app/layout.tsx).
+// Gmail strips @font-face whatever you do, so the web font is a bonus for
+// the clients that honour it — Apple Mail above all — and the rest of the
+// stack has to look right on its own.
+//
+// Thai needs more leading than Latin: vowels and tone marks stack above and
+// below the line, and at 1.5 they touch the row above.
 const FONT =
-  "'IBM Plex Sans Thai','Sarabun',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
+  "'Noto Sans Thai','Noto Sans Thai Looped',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
 const LEADING = "1.75";
+
+// Wrapped so Outlook's Word engine never sees it; it cannot use the font and
+// chokes on the rules. Every element still carries font-family inline, so
+// a client that drops this block loses the web font and nothing else.
+const FONT_LINK = `<!--[if !mso]><!-->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<style>@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap');</style>
+<!--<![endif]-->`;
 
 function escapeHtml(value: string): string {
   return value
@@ -96,6 +113,7 @@ function shell({ preheader, title, body }: ShellOptions): string {
 <meta name="color-scheme" content="light">
 <meta name="supported-color-schemes" content="light">
 <title>${escapeHtml(title)}</title>
+${FONT_LINK}
 </head>
 <body style="margin:0;padding:0;width:100%;background-color:${PAGE};font-family:${FONT};-webkit-text-size-adjust:100%;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">${escapeHtml(preheader)}</div>
@@ -107,13 +125,9 @@ function shell({ preheader, title, body }: ShellOptions): string {
 
         <tr>
           <td align="center" style="padding:0 0 22px 0;">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
-              <tr>
-                <td width="40" height="40" align="center" valign="middle" bgcolor="${MARK_FROM}" style="width:40px;height:40px;border-radius:12px;background-color:${MARK_FROM};background-image:linear-gradient(135deg,${MARK_FROM} 0%,${MARK_VIA} 50%,${MARK_TO} 100%);color:#ffffff;font-family:${FONT};font-size:21px;font-weight:700;line-height:40px;">S</td>
-                <td width="10" style="width:10px;">&nbsp;</td>
-                <td valign="middle" style="font-family:${FONT};font-size:17px;font-weight:700;color:${DEEP};letter-spacing:-0.2px;">Smoothlife.com</td>
-              </tr>
-            </table>
+            <a href="${SITE_URL}" style="text-decoration:none;">
+              <img src="${LOGO_SRC}" width="${LOGO_WIDTH}" height="${LOGO_HEIGHT}" alt="Smoothlife.com" style="display:block;width:${LOGO_WIDTH}px;max-width:${LOGO_WIDTH}px;height:auto;border:0;outline:none;text-decoration:none;font-family:${FONT};font-size:19px;font-weight:700;color:${DEEP};">
+            </a>
           </td>
         </tr>
 
