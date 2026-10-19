@@ -164,30 +164,43 @@ function heading(title: string, lead: string): string {
 </tr>`;
 }
 
+// Wide enough that each digit is read on its own — a doubled digit has to be
+// visibly two — and declared again as text-indent so the trailing gap after
+// the last digit does not push the whole code off centre.
+const CODE_SPACING = "11px";
+
 /**
- * The code, one digit to a box.
+ * The code.
  *
- * A run of six digits with letter-spacing on it is what was here before, and
- * it reads as one long number: people lose their place copying it across to
- * the other screen, and a doubled digit is invisible. Separate boxes are what
- * the field the code is typed into looks like, so the eye pairs them up.
+ * Six digits in one cell, spaced apart rather than put in six boxes. Boxes
+ * read beautifully and cannot be copied: each digit is its own <td>, so a
+ * long press on a phone selects one of them, and a selection dragged across
+ * all six arrives in the clipboard as "1 8 5 0 0 2" — which no login field
+ * accepts.
  *
- * Spacer cells rather than border-spacing, which Outlook drops.
+ * letter-spacing is drawn, not stored. The eye gets the separation and the
+ * clipboard gets the six characters with nothing between them. There is no
+ * copy button to be had here: email runs no JavaScript, and every client
+ * strips <script> and onclick, so the most an email can do is make the
+ * ordinary gesture work.
  */
 function codeBlock(code: string): string {
-  const cells = [...code]
-    .map(
-      (digit) =>
-        `<td width="44" height="56" align="center" valign="middle" bgcolor="${TINT}" style="width:44px;height:56px;background-color:${TINT};border-radius:12px;font-family:${FONT};font-size:25px;font-weight:700;color:${DEEP};">${escapeHtml(digit)}</td>`
-    )
-    .join(`<td width="7" style="width:7px;line-height:1px;font-size:1px;">&nbsp;</td>`);
-
+  const safe = escapeHtml(code);
   return `<tr>
-  <td align="center" style="padding:24px 20px 4px 20px;">
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
-      <tr>${cells}</tr>
+  <td align="center" style="padding:24px 24px 0 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${TINT}" style="background-color:${TINT};border-radius:16px;">
+      <tr>
+        <td align="center" style="padding:20px 12px;font-family:${FONT};font-size:33px;font-weight:700;line-height:1.3;color:${DEEP};letter-spacing:${CODE_SPACING};text-indent:${CODE_SPACING};">${safe}</td>
+      </tr>
     </table>
   </td>
+</tr>`;
+}
+
+/** One quiet line under something, for the facts that go with it. */
+function caption(text: string): string {
+  return `<tr>
+  <td align="center" style="padding:12px 24px 0 24px;font-family:${FONT};font-size:12.5px;line-height:1.8;color:${MUTED};">${text}</td>
 </tr>`;
 }
 
@@ -262,7 +275,10 @@ export function otpEmailHtml(code: string) {
     body: [
       heading("รหัสยืนยันเข้าสู่ระบบ", "กรอกรหัสนี้ในหน้าที่คุณกำลังเข้าสู่ระบบอยู่"),
       codeBlock(code),
-      noteStrip("รหัสหมดอายุใน <strong>10 นาที</strong>"),
+      // One line rather than a second tinted panel under the first: two of
+      // them stacked read as two things of equal weight, and only one of
+      // them is the thing the reader came for.
+      caption(`แตะค้างที่ตัวเลขเพื่อคัดลอก &nbsp;·&nbsp; หมดอายุใน <strong style="color:${DEEP};">10 นาที</strong>`),
       footnote(
         "พนักงานของเราจะไม่ขอรหัสนี้จากคุณไม่ว่ากรณีใด อย่าบอกรหัสนี้กับใคร<br>หากคุณไม่ได้เป็นผู้ขอรหัส ไม่ต้องทำอะไร บัญชีของคุณยังปลอดภัยดี"
       ),

@@ -11,12 +11,16 @@ const SIGNUP = "https://smoothlife.vercel.app/signup?order=SL10482";
 // when something has gone wrong with their account, so the checks here are
 // about them staying legible and safe rather than about how they look.
 
-test("the code appears one digit at a time, not as one run of text", () => {
+// The code has to survive being copied. It is shown spaced out, but the
+// spacing is letter-spacing — drawn, not stored — so the clipboard gets the
+// six characters and nothing else. Putting each digit in its own cell looks
+// the same and copies as "1 8 5 0 0 2", which no login field accepts.
+test("the code is one unbroken string, so copying it gives the code", () => {
   const html = otpEmailHtml(CODE);
-  // Six cells, each holding a single digit — the layout the boxes depend on.
-  const cells = html.match(/>[0-9]<\/td>/g) ?? [];
-  assert.equal(cells.length, 6);
-  for (const digit of CODE) assert.ok(html.includes(`>${digit}</td>`), digit);
+  assert.ok(html.includes(`>${CODE}</td>`), "ตัวเลขต้องอยู่ในเซลล์เดียวติดกัน");
+  // No markup, space or entity anywhere between the digits.
+  assert.ok(!new RegExp([...CODE].join("[^0-9]+")).test(html), "ห้ามมีอะไรคั่นระหว่างหลัก");
+  assert.ok(/letter-spacing:\d+px;text-indent:\d+px/.test(html), "ระยะห่างต้องเป็นการวาด");
 });
 
 test("a link is reachable twice — as the button and as text to copy", () => {
