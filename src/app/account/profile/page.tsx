@@ -24,6 +24,7 @@ import {
   toE164Thai,
 } from "@/lib/firebase-client";
 import { Avatar, Button } from "@/components/ui";
+import OtpField from "@/components/OtpField";
 import {
   SHOPIFY_EMAIL_LOGIN,
   shopifyAuthStartPath,
@@ -418,13 +419,7 @@ function EmailLinkCard() {
               </p>
             </div>
           )}
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="กรอกรหัสยืนยัน 6 หลัก"
-            maxLength={6}
-            className={`${inputClass} tracking-widest text-center`}
-          />
+          <OtpField value={code} onChange={setCode} isInvalid={Boolean(error)} isDisabled={verifying} />
           {error && <p className="text-xs text-rose-700">{error}</p>}
           <Button type="submit" disabled={verifying || code.length < 6}>
             {verifying && <Loader2 size={14} className="animate-spin" />}
@@ -626,13 +621,7 @@ function PhoneChangeCard() {
           <p className="text-xs text-slate-500">
             ส่งรหัสยืนยันไปที่ {phone} แล้ว กรุณากรอกรหัสที่ได้รับทาง SMS
           </p>
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="กรอกรหัสยืนยัน 6 หลัก"
-            maxLength={6}
-            className={`${inputClass} tracking-widest text-center`}
-          />
+          <OtpField value={code} onChange={setCode} isInvalid={Boolean(error)} isDisabled={verifying} />
           {error && <p className="text-xs text-rose-700">{error}</p>}
           <Button type="submit" disabled={verifying || code.length < 6}>
             {verifying && <Loader2 size={14} className="animate-spin" />}

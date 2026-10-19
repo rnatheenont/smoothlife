@@ -27,6 +27,9 @@
 
 /* Labels for the icon-only controls in the admin inbox toolbar. */
 
+/* The six-digit code boxes on login and in account settings. */
+@import "@heroui/styles/components/input-otp.css" layer(components);
+
 /* The product-images card in /admin/products/content/[variantId]. */
 @import "@heroui/styles/components/chip.css" layer(components);
 @import "@heroui/styles/components/alert.css" layer(components);

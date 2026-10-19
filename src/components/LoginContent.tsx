@@ -94,6 +94,7 @@ import LoginShell from "@/components/account/LoginShell";
 import LineIcon from "@/components/icons/LineIcon";
 import PasswordChecklist from "./PasswordChecklist";
 import { Button } from "@/components/ui";
+import OtpField from "./OtpField";
 import { SHOPIFY_EMAIL_LOGIN, shopifyAuthStartPath } from "@/lib/shopify-email-login";
 
 type View = "start" | "password" | "phone-otp" | "email-otp" | "line";
@@ -694,17 +695,7 @@ export default function LoginContent({
               <p className="text-xs text-amber-800">
                 อีเมลนี้มีบัญชีอยู่แล้ว กรอกรหัสยืนยันที่ส่งไปในอีเมลเพื่ออัปเดตชื่อ/เบอร์/รหัสผ่านของบัญชีเดิมด้วยข้อมูลด้านบน
               </p>
-              <input
-                required
-                value={reclaimCode}
-                onChange={(e) => setReclaimCode(e.target.value)}
-                placeholder="กรอกรหัสยืนยัน 6 หลัก"
-                aria-label="รหัสยืนยัน 6 หลัก"
-                maxLength={6}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                className="rounded-full bg-white border border-amber-200 px-5 py-3 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
-              />
+              <OtpField value={reclaimCode} onChange={setReclaimCode} isDisabled={reclaimSubmitting} />
               <Button type="submit" size="lg" loading={reclaimSubmitting} disabled={reclaimCode.length < 6}>
                 {reclaimSubmitting ? "กำลังยืนยัน…" : "ยืนยันและอัปเดตข้อมูล"}
               </Button>
@@ -751,15 +742,12 @@ export default function LoginContent({
               <p className="text-xs text-slate-500 text-center">
                 ส่งรหัส OTP ไปที่ {toE164Thai(phone)} แล้ว กรุณากรอกรหัสที่ได้รับทาง SMS
               </p>
-              <input
+              <OtpField
                 value={otpInput}
-                onChange={(e) => setOtpInput(e.target.value)}
-                placeholder="กรอกรหัส OTP 6 หลัก"
-                aria-label="รหัส OTP 6 หลัก"
-                maxLength={6}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
+                onChange={setOtpInput}
+                isInvalid={Boolean(otpError)}
+                isDisabled={otpVerifying}
+                ariaLabel="รหัส OTP 6 หลัก"
               />
               {otpError && <p className="text-xs text-rose-700">{otpError}</p>}
               <Button type="submit" size="lg" loading={otpVerifying} disabled={otpInput.length < 6}>
@@ -828,15 +816,11 @@ export default function LoginContent({
                   <p className="text-lg font-bold tracking-widest text-center text-amber-900">{emailOtpDevCode}</p>
                 </div>
               )}
-              <input
+              <OtpField
                 value={emailOtpCode}
-                onChange={(e) => setEmailOtpCode(e.target.value)}
-                placeholder="กรอกรหัสยืนยัน 6 หลัก"
-                aria-label="รหัสยืนยัน 6 หลัก"
-                maxLength={6}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                className="rounded-full bg-surface-soft px-5 py-3.5 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40 tracking-widest text-center"
+                onChange={setEmailOtpCode}
+                isInvalid={Boolean(emailOtpError)}
+                isDisabled={emailOtpVerifying}
               />
               {emailOtpError && <p className="text-xs text-rose-700">{emailOtpError}</p>}
               <Button type="submit" size="lg" loading={emailOtpVerifying} disabled={emailOtpCode.length < 6}>
