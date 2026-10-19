@@ -14,7 +14,10 @@ import Reveal, { RevealGroup, RevealItem } from "./Reveal";
  * as one picture from a phone to a wide screen and nothing drifts out of
  * place at a width nobody tested. The handwritten notes are the exception:
  * a share of the width that reads well at 1600px is unreadable at 375px, so
- * they take a larger share on a narrow container and settle back at @md.
+ * they take a larger share of a narrow container and ease back to the
+ * design's own size as it widens. They do not wrap at any width — the boxes
+ * the design gives them are narrower than the words on a phone, and a note
+ * that breaks after "Light" reads as broken rather than small.
  *
  * The grey frame with nine windows in it is the design's own shape, exported
  * from Figma as `frame.svg` — a rectangle with nine holes punched through.
@@ -30,11 +33,16 @@ import Reveal, { RevealGroup, RevealItem } from "./Reveal";
  * built that way. Each file carries its own tilt, so none is rotated here.
  */
 
-// Straight off the design's own coordinates, against its 1600×1920 box.
+// Straight off the design's own coordinates, against its 1600×1920 box —
+// but anchored by the centre of each text box rather than its left edge.
+// The boxes are drawn around the words at the design's own size; on a phone
+// the same words are wider than the same share of the width, and anchored
+// left they grew to the right only, which ran "Let Your Hair" out past the
+// edge of the picture. Centred, what spills goes both ways and stays inside.
 const NOTES = [
-  { text: ["Light On", "Your Hand"], left: "41.5%", top: "10%", width: "12.5%", delay: 0.1 },
-  { text: ["Let Your Hair", "Breath"], left: "78%", top: "67.1%", width: "16.3%", delay: 0.2 },
-  { text: ["Less Tugging", "More Moving"], left: "34.6%", top: "89.8%", width: "14.6%", delay: 0.3 },
+  { text: ["Light On", "Your Hand"], centre: "47.8%", top: "10%", delay: 0.1 },
+  { text: ["Let Your Hair", "Breath"], centre: "86.2%", top: "67.1%", delay: 0.2 },
+  { text: ["Less Tugging", "More Moving"], centre: "41.9%", top: "89.8%", delay: 0.3 },
 ];
 
 // Height as well as width, and not by accident: an arrow given only a width
@@ -175,7 +183,7 @@ export default function JanekeHero() {
             <Reveal
               key={a.src}
               delay={a.delay}
-              className="absolute hidden @lg:block"
+              className="absolute"
               style={{ left: a.left, top: a.top, width: a.width, height: a.height }}
             >
               <Image src={a.src} alt="" width={200} height={160} className="size-full" />
@@ -186,11 +194,11 @@ export default function JanekeHero() {
             <Reveal
               key={n.text.join()}
               delay={n.delay}
-              className="absolute hidden @lg:block"
-              style={{ left: n.left, top: n.top, width: n.width }}
+              className="absolute w-0"
+              style={{ left: n.centre, top: n.top }}
             >
               <p
-                className={`${script.className} whitespace-nowrap text-center text-[2.1cqw] leading-[1.5] text-[#8a7265]`}
+                className={`${script.className} absolute left-0 w-max -translate-x-1/2 whitespace-nowrap text-center text-[3.4cqw] leading-[1.5] text-[#8a7265] @md:text-[3cqw] @2xl:text-[2.6cqw] @4xl:text-[2.1cqw]`}
               >
                 {n.text[0]}
                 <br />
@@ -200,22 +208,6 @@ export default function JanekeHero() {
           ))}
         </div>
 
-        {/* The three notes again, for the widths where there is no room for
-            them inside the picture. Pinned to the artwork they annotate, a
-            note gets a box 55px wide on a phone and breaks after its first
-            word; underneath it, each one has the width of a third of the
-            screen and simply reads. */}
-        <RevealGroup className="mt-5 grid grid-cols-3 gap-3 lg:hidden">
-          {NOTES.map((n) => (
-            <RevealItem key={n.text.join()}>
-              <p className={`${script.className} text-center text-sm leading-snug text-[#8a7265]`}>
-                {n.text[0]}
-                <br />
-                {n.text[1]}
-              </p>
-            </RevealItem>
-          ))}
-        </RevealGroup>
       </div>
     </section>
   );
