@@ -41,7 +41,11 @@ const CARDS: FaqCard[] = [
 
 export default function JanekeFaq() {
   return (
-    <section className="bg-white px-4 py-14 md:py-20">
+    // overflow-x-clip, not hidden: the deck is meant to run off both edges of
+    // the screen, and clipping it at the section stops that bleed from making
+    // the page itself 5px wider than the window. `clip` rather than `hidden`
+    // so it never becomes a scroll container of its own.
+    <section className="overflow-x-clip bg-white px-4 py-14 md:py-20">
       <div className="mx-auto max-w-[1390px]">
         <Reveal>
           <h2
