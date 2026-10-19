@@ -42,6 +42,44 @@ function orderFootnote(orderName: string) {
   return `อีเมลฉบับนี้เกี่ยวกับคำสั่งซื้อ ${escapeHtml(orderName)}<br>มีอะไรไม่ตรงหรือสงสัย ตอบกลับอีเมลฉบับนี้ได้เลยค่ะ`;
 }
 
+/**
+ * They chose things, reached the payment step, and stopped.
+ *
+ * The only abandonment this shop can actually see. The cart itself lives in
+ * the browser's localStorage and never reaches a server, so "added to cart
+ * and left" is invisible here by construction — what is visible is a
+ * payment_transactions row that was created and never completed, which means
+ * they had already typed in an address and an email.
+ *
+ * Says nothing about stock being held. The reservation behind that row
+ * expires after fifteen minutes, so by the time this is sent it is long gone,
+ * and "we're keeping it for you" would be false.
+ */
+export function abandonedCheckoutEmail(opts: {
+  cartUrl: string;
+  total: number;
+  items: { title?: string; name?: string; quantity?: number }[];
+}): OrderEmail {
+  return {
+    subject: "สินค้ายังอยู่ในตะกร้าของคุณ — Smoothlife.com",
+    html: shell({
+      preheader: `ตะกร้าของคุณยังมีสินค้าอยู่ รวม ${baht(opts.total)}`,
+      title: "สินค้ายังอยู่ในตะกร้า",
+      body: [
+        heading("สินค้ายังอยู่ในตะกร้า", "คุณเลือกของไว้แล้วแต่ยังไม่ได้ชำระเงิน กลับมาสั่งต่อได้เลยค่ะ"),
+        summary(summaryItems(opts.items), [{ label: "ยอดรวม", value: baht(opts.total), strong: true }]),
+        actionButton(opts.cartUrl, "กลับไปที่ตะกร้า"),
+        // Both halves are true and both matter: nothing is being held, and
+        // the cart is on the device they shopped from, not on our server.
+        caption("ราคาและสต็อกเปลี่ยนแปลงได้ และตะกร้าจะอยู่บนเครื่องที่คุณเลือกของไว้"),
+        footnote(
+          "อีเมลฉบับนี้ส่งครั้งเดียวต่อหนึ่งตะกร้า ไม่มีการส่งซ้ำ<br>หากสั่งซื้อไปแล้วหรือไม่ต้องการสินค้าชุดนี้ ไม่ต้องทำอะไรค่ะ"
+        ),
+      ].join(""),
+    }),
+  };
+}
+
 /** Payment went through: what they bought, what it cost, the points it earned. */
 export function orderPaidEmail(opts: {
   orderId: string | number;

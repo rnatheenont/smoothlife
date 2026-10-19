@@ -57,6 +57,22 @@
     {
       "path": "/api/cron/gift-stock-alert",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/abandoned-checkout",
+      "schedule": "45 3 * * *"
+    },
+    {
+      "path": "/api/cron/abandoned-checkout",
+      "schedule": "45 7 * * *"
+    },
+    {
+      "path": "/api/cron/abandoned-checkout",
+      "schedule": "45 11 * * *"
+    },
+    {
+      "path": "/api/cron/abandoned-checkout",
+      "schedule": "45 14 * * *"
     }
   ]
 }
