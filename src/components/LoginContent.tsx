@@ -124,6 +124,42 @@ const APPLE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_APPLE_SIGNIN_ENABLED);
 // Same pattern for Google Sign-In (Google Cloud OAuth client).
 const GOOGLE_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_GOOGLE_SIGNIN_ENABLED);
 
+/**
+ * What to tell someone when Firebase refuses to send the code.
+ *
+ * The one message this used to show — "check your phone number" — is wrong
+ * for every cause except the one where the number really is malformed, and
+ * it is wrong in the worst direction: it sends the customer off to re-read
+ * their own phone number while the actual fault is ours. The domain case is
+ * not hypothetical; it is what happens the first time the shop answers on a
+ * hostname nobody added to the Firebase console, which is exactly the
+ * situation a new domain creates.
+ */
+function otpSendMessage(err: unknown): string {
+  const code = typeof err === "object" && err !== null ? String((err as { code?: string }).code ?? "") : "";
+  switch (code) {
+    case "auth/invalid-phone-number":
+    case "auth/missing-phone-number":
+      return "เบอร์โทรศัพท์ไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่";
+    case "auth/too-many-requests":
+      return "ขอรหัสบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง";
+    case "auth/quota-exceeded":
+      return "ระบบส่ง SMS เต็มโควตาชั่วคราว กรุณาเข้าสู่ระบบด้วยอีเมลไปก่อน";
+    case "auth/unauthorized-domain":
+    case "auth/operation-not-allowed":
+    case "auth/invalid-app-credential":
+      // Nothing the customer can do, and nothing their phone number has to
+      // do with it. Say so, and point at a way in that works.
+      return "ระบบ OTP ทางเบอร์โทรใช้งานไม่ได้ชั่วคราว กรุณาเข้าสู่ระบบด้วยอีเมลไปก่อน ทีมงานกำลังแก้ไขอยู่";
+    case "auth/captcha-check-failed":
+      return "ตรวจสอบความปลอดภัยไม่ผ่าน กรุณาลองใหม่อีกครั้ง";
+    case "auth/network-request-failed":
+      return "เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่";
+    default:
+      return "ส่งรหัส OTP ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
+  }
+}
+
 export default function LoginContent({
   variant = "page",
   returnTo: returnToProp,
@@ -320,7 +356,7 @@ export default function LoginContent({
       setView("phone-otp");
     } catch (err) {
       console.error("[otp] send failed", err);
-      setOtpError("ส่งรหัส OTP ไม่สำเร็จ กรุณาตรวจสอบเบอร์โทรศัพท์แล้วลองใหม่อีกครั้ง");
+      setOtpError(otpSendMessage(err));
       // A failed attempt can leave the reCAPTCHA widget in a used state —
       // drop it AND mount a fresh container node (see recaptchaKey comment)
       // so the next try renders cleanly instead of hitting
@@ -359,7 +395,14 @@ export default function LoginContent({
       );
     } catch (err) {
       console.error("[otp] verify failed", err);
-      setOtpError("รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่");
+      // An expired code is a different problem from a wrong one: retyping
+      // the same digits will never fix it, and the way out is a new code.
+      const code = typeof err === "object" && err !== null ? String((err as { code?: string }).code ?? "") : "";
+      setOtpError(
+        code === "auth/code-expired"
+          ? "รหัสหมดอายุแล้ว กรุณากดขอรหัสใหม่"
+          : "รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่"
+      );
     } finally {
       setOtpVerifying(false);
     }
