@@ -12,6 +12,7 @@ import {
   notifyOrderShipped,
   notifyOrderDelivered,
   notifyOrderRefunded,
+  notifyOrderCancelled,
 } from "@/lib/line-order-notify";
 import { settleFlashSaleShopifyOrder } from "@/lib/flash-sale-shopify";
 
@@ -283,11 +284,38 @@ async function handleSubscriptionOrder(order: any, userId: string) {
 }
 
 async function handleOrdersCancelled(order: any) {
+  // Whether Shopify gave the money back as part of cancelling. It decides
+  // which sentence the card uses, and the difference matters: telling someone
+  // their refund is on its way when no refund exists is a promise this code
+  // cannot keep.
+  const refunded = ["refunded", "partially_refunded", "voided"].includes(
+    String(order.financial_status ?? "")
+  );
+  const notifyLine = (userId: string | null, pointsReversed: number) =>
+    notifyOrderCancelled({
+      orderId: order.id,
+      orderName: order.name,
+      userId,
+      email: order.email ?? null,
+      reason: order.cancel_reason ?? null,
+      pointsReversed,
+      refunded,
+    });
+
   const original = await supabaseRest<{ user_id: string; delta: number }[]>(
     `points_ledger?shopify_event_id=eq.${encodeURIComponent(String(order.id))}&reason=eq.order_paid&select=user_id,delta`
   );
   const row = original[0];
-  if (!row) return { skipped: "no prior order_paid credit to reverse" };
+  if (!row) {
+    // A guest order, or one from before the ledger. No points to take back,
+    // but the order is just as cancelled — and if they were told when they
+    // paid, they are owed this too. notifyOrderCancelled finds them through
+    // that first card, the same way the refund path does.
+    return {
+      skipped: "no prior order_paid credit to reverse",
+      lineNotified: await notifyLine(null, 0),
+    };
+  }
 
   await supabaseRest(`points_ledger?on_conflict=shopify_event_id`, {
     method: "POST",
@@ -318,7 +346,7 @@ async function handleOrdersCancelled(order: any) {
     }),
   });
 
-  return { reversed: row.delta };
+  return { reversed: row.delta, lineNotified: await notifyLine(row.user_id, row.delta) };
 }
 
 // Any refund on a referred friend's tracked order voids the referrer's

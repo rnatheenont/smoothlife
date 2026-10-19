@@ -18,7 +18,7 @@ import {
 // refuses — each returns a reason and nothing else. Points must still be
 // credited and referrals still advanced when a notification cannot be sent.
 
-type Kind = "paid" | "shipped" | "delivered" | "refunded";
+type Kind = "paid" | "shipped" | "delivered" | "refunded" | "cancelled";
 
 /** The LINE userId for a site account, or null if they never signed in with LINE. */
 async function lineUserIdFor(userId: string): Promise<string | null> {
@@ -246,3 +246,77 @@ export async function notifyOrderRefunded(opts: {
     },
   });
 }
+
+/**
+ * The order is not happening.
+ *
+ * Deliberately separate from the refund card even though the two often
+ * arrive within seconds of each other: cancelling and refunding are
+ * different facts, and a customer who is told only "money returned" is left
+ * to work out for themselves whether anything is still coming. The dedupe
+ * key is per kind, so an order that is cancelled and then refunded sends
+ * both — which is right, because both happened.
+ *
+ * No money is mentioned. A cancellation does not say whether a refund has
+ * been issued, when it will land, or how much; the refund card answers that
+ * when the refund actually exists. Guessing here would be a promise this
+ * code is in no position to keep.
+ */
+export async function notifyOrderCancelled(opts: {
+  orderId: string | number;
+  orderName?: string;
+  userId?: string | null;
+  email?: string | null;
+  /** Shopify's own words, when staff picked a reason. */
+  reason?: string | null;
+  /** Points taken back with the cancellation, if any were credited. */
+  pointsReversed?: number;
+  /** Whether Shopify already refunded as part of cancelling. */
+  refunded?: boolean;
+}) {
+  const rows: CardRow[] = [];
+  const reason = REASON_TH[(opts.reason ?? "").toLowerCase()];
+  if (reason) rows.push({ label: "เหตุผล", value: reason });
+  if (opts.pointsReversed && opts.pointsReversed > 0) {
+    rows.push({
+      label: "แต้มที่ถูกหักคืน",
+      value: `-${opts.pointsReversed.toLocaleString("th-TH")} แต้ม`,
+      color: "#6B7280",
+    });
+  }
+
+  return send({
+    orderId: opts.orderId,
+    kind: "cancelled",
+    userId: opts.userId ?? null,
+    email: opts.email,
+    orderName: opts.orderName,
+    card: {
+      emoji: "🛑",
+      title: "คำสั่งซื้อถูกยกเลิก",
+      // Two different sentences on purpose. "เงินจะคืนให้" when Shopify has
+      // not actually refunded is a promise somebody else has to keep.
+      subtitle: opts.refunded
+        ? "ทางร้านคืนเงินให้แล้ว รายละเอียดจะตามมาอีกข้อความค่ะ"
+        : "หากมีการชำระเงินเข้ามาแล้ว ทีมงานจะติดต่อกลับเรื่องการคืนเงินค่ะ",
+      rows,
+      button: { label: "ดูคำสั่งซื้อ", uri: orderLink(opts.orderId) },
+    },
+  });
+}
+
+/**
+ * Shopify's cancel reasons, in words a customer would use.
+ *
+ * Anything not in here is left out of the card rather than shown raw:
+ * "inventory" on its own reads as a system fault, and an English word in a
+ * Thai message reads as something leaking out of the back office.
+ */
+const REASON_TH: Record<string, string> = {
+  customer: "ลูกค้าขอยกเลิก",
+  inventory: "สินค้าไม่พอจัดส่ง",
+  fraud: "ตรวจพบความผิดปกติของการชำระเงิน",
+  declined: "การชำระเงินไม่สำเร็จ",
+  staff: "ยกเลิกโดยทางร้าน",
+  other: "ยกเลิกโดยทางร้าน",
+};
