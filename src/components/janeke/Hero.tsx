@@ -86,6 +86,7 @@ const PRINTS = [
     h: 799,
     delay: 0.05,
     lift: 46,
+    phase: 0,
     style: { left: "0.6%", top: "1.6%", width: "35.3%" },
   },
   {
@@ -95,6 +96,7 @@ const PRINTS = [
     h: 667,
     delay: 0.15,
     lift: 34,
+    phase: 1.7,
     style: { left: "70.7%", top: "34.8%", width: "26.8%" },
   },
   {
@@ -104,6 +106,7 @@ const PRINTS = [
     h: 693,
     delay: 0.25,
     lift: 26,
+    phase: 3.4,
     style: { left: "1%", top: "69%", width: "29.2%" },
   },
 ];
@@ -199,7 +202,7 @@ export default function JanekeHero() {
             // Three transforms, three elements: where the print sits, how far
             // it drifts, and how it arrives. On one node the last would win.
             <div key={p.src} className="absolute" style={p.style}>
-              <Lift distance={p.lift}>
+              <Lift distance={p.lift} phase={p.phase}>
                 <Reveal kind="scale" delay={p.delay}>
                   <Image src={p.src} alt={p.alt} width={p.w} height={p.h} className="h-auto w-full" />
                 </Reveal>

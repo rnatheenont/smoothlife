@@ -36,7 +36,7 @@ export default function JanekeDailyRitual() {
           className="absolute inset-x-0 bottom-0 mx-auto h-[calc(min(100vw,1920px)/2.4)] w-full max-w-[1920px] rounded-t-full bg-gradient-to-b from-[#f1efed] via-[#f6f5f4] to-white"
         />
 
-        <Lift className="relative mx-auto w-[min(72vw,340px)] md:w-[min(32vw,540px)]">
+        <Lift phase={2.5} className="relative mx-auto w-[min(72vw,340px)] md:w-[min(32vw,540px)]">
           <Reveal kind="scale">
             <div className="overflow-hidden rounded-[1.5rem] shadow-[0_24px_60px_rgba(15,23,42,0.18)] md:rounded-[2rem]">
               <Image

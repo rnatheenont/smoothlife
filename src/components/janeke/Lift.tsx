@@ -6,8 +6,13 @@ import { motion, useReducedMotion, useScroll, useTransform } from "motion/react"
 /** The window height the `distance` figures are written for. */
 const BASE_VH = 700;
 
+/** How far it drifts on its own, and how long one drift up and back takes. */
+const SWAY = 8;
+const SWAY_SECONDS = 5;
+
 /**
- * A card that drifts upward as the page scrolls past it.
+ * A card that drifts upward as the page scrolls past it, and breathes gently
+ * while nothing is happening.
  *
  * Tied to the scroll position rather than run on a timer, so it tracks a
  * trackpad exactly and stops when the finger stops — the same way the comb on
@@ -24,18 +29,29 @@ const BASE_VH = 700;
  * and reads as not moving at all — measured at 1080px tall, a 56px drift came
  * out as 3px of movement across a thousand pixels of scroll.
  *
- * Separate element from the entrance animation that usually wraps it: both
- * drive `transform`, and one would overwrite the other on a single node.
+ * The sway is the part that runs without being scrolled, so the page is never
+ * completely still — a reader who stops to read a card still sees it alive.
+ * It is small and slow on purpose: enough to notice out of the corner of an
+ * eye, not enough to compete with the words next to it. `phase` staggers a
+ * group so they do not all rise and fall together, which would read as the
+ * whole page wobbling rather than as separate pieces of paper.
+ *
+ * Three nested elements, not one: the scroll travel, the sway and the entrance
+ * animation that usually wraps the children all drive `transform`, and on a
+ * single node the last one set would be the only one that showed.
  */
 
 export default function Lift({
   children,
   className,
   distance = 70,
+  phase = 0,
 }: {
   children: React.ReactNode;
   className?: string;
   distance?: number;
+  /** Seconds to hold off before the sway starts, to stagger a group. */
+  phase?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const still = useReducedMotion();
@@ -63,7 +79,19 @@ export default function Lift({
 
   return (
     <motion.div ref={ref} style={{ y }} className={className}>
-      {children}
+      <motion.div
+        // Starts and ends at 0 rather than at the top of the swing, so there
+        // is no jump the moment the page loads.
+        animate={{ y: [0, -SWAY, 0] }}
+        transition={{
+          duration: SWAY_SECONDS,
+          delay: phase,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      >
+        {children}
+      </motion.div>
     </motion.div>
   );
 }
