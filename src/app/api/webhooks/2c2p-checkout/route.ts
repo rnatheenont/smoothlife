@@ -4,6 +4,7 @@ import { twoC2PConfigured, verifyPaymentCallback } from "@/lib/2c2p";
 import { createPaidShopifyOrder } from "@/lib/shopify-admin";
 import { confirmStock, releaseStock } from "@/lib/stock-reservation";
 import { notifyOrderPaid } from "@/lib/order-notify";
+import { handleOrdersPaid } from "@/lib/order-paid";
 
 type TransactionRow = {
   id: string;
@@ -132,44 +133,74 @@ export async function POST(req: NextRequest) {
     console.error("[webhooks/2c2p-checkout] charge succeeded but Shopify order creation failed", err);
   }
 
-  // Tell the customer the money went through.
+  // Everything that should happen because this order is paid for.
   //
-  // This has to happen here rather than only in the Shopify webhook, because
-  // for these orders that webhook never fires. createPaidShopifyOrder writes
+  // It has to be run from here, not only from the Shopify webhook, because
+  // for these orders that webhook never fires: createPaidShopifyOrder writes
   // an order that is already paid through the Admin API, and Shopify emits
-  // orders/paid on a payment *transition* — there is no transition, so no
-  // event, so nothing downstream of it runs. Verified against live data: the
-  // two card payments taken through this route on 16 October produced no
-  // order_paid row in points_ledger at all, while flash-sale orders, which
-  // reach Shopify by a different road, produced one every time.
+  // orders/paid on a payment *transition*. There is no transition, so no
+  // event, so points, referrals, subscription tracking and the customer's
+  // message all silently did not happen. Confirmed against live data before
+  // this was written — two ฿990 card payments through this route on
+  // 16 October, neither with an order_paid row in points_ledger, while
+  // flash-sale orders, which reach Shopify another way, had one every time.
   //
-  // Keyed on the Shopify order id when there is one, so that if that webhook
-  // is ever made to fire for these orders the dedupe table stops the second
-  // message rather than the customer getting two. Falling back to the invoice
-  // number keeps the one case that matters most covered: the charge went
-  // through but the order could not be written, which is exactly when silence
-  // is worst.
+  // handleOrdersPaid is safe to run twice for the same order, so if Shopify
+  // is ever made to emit the event as well, the second run changes nothing.
   //
-  // points: 0 is the truth and not a placeholder — no points are credited on
-  // this path today, for the same missing-webhook reason, and an email
-  // promising points that were never given is worse than one that stays quiet
-  // about them.
-  try {
-    await notifyOrderPaid({
-      order: {
-        id: shopifyOrderId ?? callback.invoiceNo,
-        name: shopifyOrderName ?? (shopifyOrderId ? undefined : callback.invoiceNo),
-        email: transaction.contact_email ?? undefined,
-        total_price: String(transaction.amount ?? 0),
-        line_items: transaction.line_items ?? [],
-      },
-      points: 0,
-      balance: null,
-    });
-  } catch (err) {
-    // The charge is already recorded. A notifier is never allowed to turn a
-    // successful payment into a failed callback.
-    console.error("[webhooks/2c2p-checkout] paid notification failed", err);
+  // The payload is shaped the way a Shopify webhook body is shaped, because
+  // that is what handleOrdersPaid reads. line_items carry the numeric
+  // variant id and the quantity, which is what subscription detection
+  // matches on, and discount_codes carries the SUB3/SUB6/SUB12 code when
+  // there is one — without it a subscription bought here would go untracked.
+  if (shopifyOrderId) {
+    try {
+      await handleOrdersPaid(
+        {
+          id: shopifyOrderId,
+          name: shopifyOrderName ?? undefined,
+          email: transaction.contact_email ?? undefined,
+          currency: transaction.currency_code,
+          created_at: new Date().toISOString(),
+          // The charge is the whole order: this checkout has no separate
+          // shipping or tax line to subtract.
+          current_subtotal_price: String(transaction.amount ?? 0),
+          current_total_price: String(transaction.amount ?? 0),
+          total_price: String(transaction.amount ?? 0),
+          discount_codes: transaction.discount_code ? [{ code: transaction.discount_code }] : [],
+          line_items: (transaction.line_items ?? []).map((li) => ({
+            variant_id: String(li.variantId ?? "").replace("gid://shopify/ProductVariant/", ""),
+            quantity: li.quantity,
+            price: String(li.price ?? 0),
+          })),
+        },
+        req.url
+      );
+    } catch (err) {
+      // The charge is recorded and the stock is confirmed. None of this is
+      // allowed to turn a successful payment into a failed callback — a
+      // retry from 2C2P would be read as a second attempt to pay.
+      console.error("[webhooks/2c2p-checkout] post-payment work failed", err);
+    }
+  } else {
+    // Charged, but no order could be written. Everything above needs an
+    // order to hang on; what the customer needs is to hear that their money
+    // left their account, which is exactly when silence is worst.
+    try {
+      await notifyOrderPaid({
+        order: {
+          id: callback.invoiceNo,
+          name: callback.invoiceNo,
+          email: transaction.contact_email ?? undefined,
+          total_price: String(transaction.amount ?? 0),
+          line_items: [],
+        },
+        points: 0,
+        balance: null,
+      });
+    } catch (err) {
+      console.error("[webhooks/2c2p-checkout] paid notification failed", err);
+    }
   }
 
   return NextResponse.json({ ok: true, result: "charge_succeeded" });

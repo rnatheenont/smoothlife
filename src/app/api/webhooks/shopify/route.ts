@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
-import { pointsForOrder } from "@/lib/points";
-import { POINTS_PER_BAHT } from "@/data/coupons";
-import { products } from "@/data/products";
-import { subscriptionPlans } from "@/data/subscriptions";
 import { markReferralDelivered } from "@/lib/referral-cron";
-import { emailConfigured, sendEmail, guestOrderInviteEmailHtml } from "@/lib/email";
 import {
-  notifyOrderPaid,
   notifyOrderShipped,
   notifyOrderDelivered,
   notifyOrderRefunded,
@@ -17,6 +11,9 @@ import {
 // why the route no longer talks to either channel directly.
 } from "@/lib/order-notify";
 import { settleFlashSaleShopifyOrder } from "@/lib/flash-sale-shopify";
+// Shared with the 2C2P checkout webhook, which has to run the same work for
+// orders Shopify never raises an orders/paid event for — see order-paid.ts.
+import { handleOrdersPaid } from "@/lib/order-paid";
 
 // Shopify webhook endpoint — configure in Shopify Admin (or via
 // webhookSubscriptionCreate) to POST here for topics: orders/paid,
@@ -91,105 +88,6 @@ function verifyHmac(rawBody: string, header: string | null): boolean {
   });
 }
 
-async function findUserIdByEmail(email: string | null | undefined): Promise<string | null> {
-  if (!email) return null;
-  const rows = await supabaseRest<{ user_id: string }[]>(
-    `auth_identities?provider=eq.email&provider_uid=eq.${encodeURIComponent(email.trim().toLowerCase())}&select=user_id`
-  );
-  return rows[0]?.user_id ?? null;
-}
-
-// Guest checkout (no Smoothlife account) still places a real Shopify order
-// with a real email — invite them to claim it into an account instead of
-// silently losing the loyalty signup that every logged-in order gets for
-// free. Deduped on shopify_order_id so a webhook retry never double-sends.
-async function inviteGuestToSignUp(order: any, email: string, requestUrl: string) {
-  if (!emailConfigured()) return { skipped: "email not configured" };
-  const inserted = await supabaseRest<{ id: string }[]>("guest_checkout_invites?on_conflict=shopify_order_id", {
-    method: "POST",
-    headers: { Prefer: "resolution=ignore-duplicates,return=representation" },
-    body: JSON.stringify({ shopify_order_id: String(order.id), email: email.trim().toLowerCase() }),
-  });
-  if (inserted.length === 0) return { skipped: "invite already sent for this order" };
-
-  const signupUrl = new URL("/account/login?returnTo=%2Faccount", requestUrl).toString();
-  await sendEmail(
-    email,
-    "สมัครสมาชิกเพื่อรับคะแนนสะสม - Smoothlife.com",
-    guestOrderInviteEmailHtml(order.name || `#${order.order_number ?? order.id}`, signupUrl)
-  );
-  return { invited: true };
-}
-
-async function handleOrdersPaid(order: any, requestUrl: string) {
-  const email: string | undefined = order.email || order.customer?.email;
-  const userId = await findUserIdByEmail(email);
-  if (!userId) {
-    if (!email) return { skipped: "no matching member and no order email" };
-    const inviteResult = await inviteGuestToSignUp(order, email, requestUrl);
-    return { skipped: "no matching member for order email", inviteResult };
-  }
-
-  const subtotal = parseFloat(order.current_subtotal_price ?? order.subtotal_price ?? "0");
-  const { points, tier } = await pointsForOrder(subtotal, userId);
-
-  await supabaseRest(`points_ledger?on_conflict=shopify_event_id`, {
-    method: "POST",
-    headers: { Prefer: "resolution=ignore-duplicates,return=representation" },
-    body: JSON.stringify({
-      user_id: userId,
-      delta: points,
-      reason: "order_paid",
-      shopify_order_id: String(order.id),
-      shopify_event_id: String(order.id),
-      metadata: { subtotal, pointsPerBaht: POINTS_PER_BAHT, tier, currency: order.currency },
-    }),
-  });
-
-  if (order.customer?.id) {
-    await supabaseRest(`users?id=eq.${userId}&shopify_customer_id=is.null`, {
-      method: "PATCH",
-      returning: false,
-      body: JSON.stringify({ shopify_customer_id: String(order.customer.id) }),
-    });
-  }
-
-  const subscriptionResult = await handleSubscriptionOrder(order, userId);
-  const referralResult = await handleReferralOrderPlaced(userId, order, subtotal);
-
-  // Read back rather than adding to a number we had: the balance on the card
-  // is the one the account page will show them when they tap through, and the
-  // ledger is the only thing that knows about expiries and earlier spending.
-  const [balanceRow] = await supabaseRest<{ balance: number }[]>(
-    `points_balance?user_id=eq.${userId}&select=balance&limit=1`
-  ).catch((): { balance: number }[] => []);
-  const notified = await notifyOrderPaid({
-    order,
-    userId,
-    points,
-    balance: balanceRow?.balance ?? null,
-  });
-
-  return { credited: points, userId, subscriptionResult, referralResult, notified };
-}
-
-// A referred friend's FIRST paid order moves their referral row from
-// 'registered' to 'order_placed'. The status=eq.registered + is.null filters
-// make this naturally idempotent — a Shopify webhook retry, or this
-// customer's second/third order, just won't match a row anymore.
-async function handleReferralOrderPlaced(userId: string, order: any, subtotal: number) {
-  const [row] = await supabaseRest<{ id: string }[]>(
-    `referrals?referred_user_id=eq.${userId}&status=eq.registered&referred_order_id=is.null&select=id&limit=1`
-  );
-  if (!row) return { skipped: "no pending referral for this customer" };
-  await supabaseRest(`referrals?id=eq.${row.id}&status=eq.registered`, {
-    method: "PATCH",
-    returning: false,
-    body: JSON.stringify({ referred_order_id: String(order.id), order_amount: subtotal, status: "order_placed" }),
-  });
-  return { referralId: row.id, status: "order_placed" };
-}
-
 // Fires on the "orders/fulfilled" topic — not yet subscribed in Shopify as
 // of this writing (see the comment at the top of this file), so this is a
 // fast-path optimization, not the only way delivery gets detected —
@@ -231,59 +129,6 @@ async function handleFulfillmentUpdate(fulfillment: any) {
       email: fulfillment.email,
     }),
   };
-}
-
-// Auto-detects and tracks a "Subscribe & Save" purchase (product detail
-// page's subscribe panel) so /account/subscriptions can show it and the
-// reminder cron can nudge the customer near renewal — this app has no real
-// recurring-billing backend, so "subscribed" here means "we'll track and
-// remind", not "we'll auto-charge". Detection is a heuristic since the
-// SUB3/SUB6/SUB12 codes are whole-order percent-off codes with no
-// per-line-item scoping in the Shopify discount itself: only a line item
-// whose quantity exactly matches the plan's month count is treated as the
-// subscribed item (this is exactly what the subscribe panel always adds),
-// so an unrelated item that happens to share the same quantity by
-// coincidence is the one false-positive case this can't fully rule out.
-const SUBSCRIPTION_CODES = new Set(subscriptionPlans.map((p) => p.code));
-
-async function handleSubscriptionOrder(order: any, userId: string) {
-  const codes: string[] = (order.discount_codes || []).map((d: any) => String(d.code).toUpperCase());
-  const matchedCode = codes.find((c) => SUBSCRIPTION_CODES.has(c));
-  if (!matchedCode) return { skipped: "no subscription discount code on this order" };
-  const plan = subscriptionPlans.find((p) => p.code === matchedCode);
-  if (!plan) return { skipped: "matched code not found in current plan list" };
-
-  const purchasedAt = new Date(order.created_at ?? Date.now());
-  const nextRenewal = new Date(purchasedAt);
-  nextRenewal.setMonth(nextRenewal.getMonth() + plan.months);
-
-  let tracked = 0;
-  for (const li of order.line_items || []) {
-    if (!li.variant_id || li.quantity !== plan.months) continue;
-    const variantGid = `gid://shopify/ProductVariant/${li.variant_id}`;
-    const product = products.find((p) => p.variants.some((v) => v.variantId === variantGid));
-    if (!product) continue;
-
-    await supabaseRest(`subscription_preferences?on_conflict=shopify_order_id,variant_id`, {
-      method: "POST",
-      headers: { Prefer: "resolution=ignore-duplicates,return=representation" },
-      body: JSON.stringify({
-        user_id: userId,
-        shopify_order_id: String(order.id),
-        shopify_order_name: order.name ?? null,
-        product_slug: product.slug,
-        product_name: li.title || product.name,
-        variant_id: variantGid,
-        plan_months: plan.months,
-        plan_code: plan.code,
-        price_per_cycle: parseFloat(li.price ?? "0"),
-        purchased_at: purchasedAt.toISOString(),
-        next_renewal_at: nextRenewal.toISOString(),
-      }),
-    });
-    tracked++;
-  }
-  return { tracked, plan: matchedCode };
 }
 
 async function handleOrdersCancelled(order: any) {
