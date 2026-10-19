@@ -1,0 +1,230 @@
+import Image from "next/image";
+import Link from "next/link";
+
+import { script } from "./font";
+import Reveal, { RevealGroup, RevealItem } from "./Reveal";
+
+/**
+ * The opening of the Janeke landing page: a claim, two badges, a paragraph,
+ * a round "explore" button, and under them a photo wall.
+ *
+ * The photo wall is one composition at a fixed 1600×1920 ratio, not a layout
+ * that reflows. Every piece inside it is placed as a percentage of that box
+ * and sized in `cqw` (see the `@container` below), so the whole thing scales
+ * as one picture from a phone to a wide screen and nothing drifts out of
+ * place at a width nobody tested. The handwritten notes are the exception:
+ * a share of the width that reads well at 1600px is unreadable at 375px, so
+ * they take a larger share on a narrow container and settle back at @md.
+ *
+ * The grey frame with nine windows in it is the design's own shape, exported
+ * from Figma as `frame.svg` — a rectangle with nine holes punched through.
+ * Rebuilding it from divs would mean four bars and an outer border that have
+ * to meet exactly; the file already is the shape, and the model behind simply
+ * shows through the holes.
+ */
+
+const NOTES = [
+  // Placed against the 1600×1920 box, the same coordinates the design uses.
+  { text: ["Light On", "Your Hand"], left: "41.5%", top: "9.5%", width: "14%", delay: 0.1 },
+  { text: ["Let Your Hair", "Breath"], left: "77.5%", top: "66.5%", width: "17%", delay: 0.2 },
+  { text: ["Less Tugging", "More Moving"], left: "34.5%", top: "89%", width: "16%", delay: 0.3 },
+];
+
+const ARROWS = [
+  { src: "/janeke/arrow-1.svg", left: "28.4%", top: "15.3%", width: "12.7%", delay: 0.2 },
+  { src: "/janeke/arrow-2.svg", left: "85.5%", top: "58.7%", width: "11.2%", delay: 0.3 },
+  { src: "/janeke/arrow-3.svg", left: "25.5%", top: "88%", width: "7.1%", delay: 0.4 },
+];
+
+const PRINTS = [
+  {
+    photo: "/janeke/brush-gold.webp",
+    alt: "แปรง Janeke Superbrush สีทอง",
+    rotate: -4,
+    logo: true,
+    delay: 0.05,
+    style: { left: "0.6%", top: "1.6%", width: "35.3%" },
+  },
+  {
+    photo: "/janeke/brush-head.webp",
+    alt: "หัวแปรง Janeke ระยะใกล้",
+    rotate: 3,
+    logo: false,
+    delay: 0.15,
+    style: { left: "70.7%", top: "34.8%", width: "26.8%" },
+  },
+  {
+    photo: "/janeke/brush-hair.webp",
+    alt: "แปรง Janeke กับเส้นผม",
+    rotate: -5,
+    logo: false,
+    delay: 0.25,
+    style: { left: "1%", top: "69%", width: "29.2%" },
+  },
+];
+
+/** One photo on paper, tilted the way a print dropped on a desk would be. */
+function Print({ photo, alt, logo }: { photo: string; alt: string; logo: boolean }) {
+  return (
+    <div className="relative shadow-[0_10px_30px_rgba(15,23,42,0.13)]">
+      <Image src="/janeke/paper.webp" alt="" width={1000} height={667} className="h-auto w-full" />
+      <div className="absolute inset-x-[6%] top-[5%] aspect-square overflow-hidden bg-white">
+        <Image src={photo} alt={alt} width={760} height={1018} className="size-full object-cover" />
+      </div>
+      {logo && (
+        <Image
+          src="/janeke/logo.webp"
+          alt=""
+          width={640}
+          height={291}
+          className="absolute inset-x-[35%] bottom-[7%] h-auto w-[30%] opacity-40"
+        />
+      )}
+    </div>
+  );
+}
+
+export default function JanekeHero() {
+  return (
+    <section className="bg-white px-4 pt-8 pb-6 md:pt-16">
+      <div className="mx-auto max-w-[1600px]">
+        <RevealGroup className="mx-auto flex max-w-[872px] flex-col items-center gap-5 text-center md:gap-10 lg:gap-12">
+          <RevealItem>
+            <h1 className="flex flex-col items-center text-[#685048]">
+              <span className={`${script.className} text-[clamp(2.25rem,8vw,5rem)] leading-tight`}>
+                Your Hair
+              </span>
+              <span className="-mt-[0.1em] text-[clamp(0.95rem,3.2vw,2rem)] leading-normal text-[#78716f]">
+                deserves more than
+              </span>
+              <span className={`${script.className} text-[clamp(2.75rem,11vw,7.5rem)] leading-tight`}>
+                Just a Brush
+              </span>
+            </h1>
+          </RevealItem>
+
+          <RevealItem className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+            {["Everyday Luxury", "Italian Beauty"].map((b) => (
+              <span
+                key={b}
+                className="rounded-full border border-[#78716f] px-4 py-1.5 text-[clamp(0.75rem,1.6vw,1rem)] text-[#78716f] md:px-6 md:py-2"
+              >
+                {b}
+              </span>
+            ))}
+          </RevealItem>
+
+          <RevealItem>
+            <p className="max-w-[575px] text-[clamp(0.9rem,2.2vw,1.5rem)] leading-relaxed text-[#78716f]">
+              Meet Jäneke 1830. Iconic Italian brushes designed to bring a little luxury to your everyday
+              hair routine.
+            </p>
+          </RevealItem>
+
+          <RevealItem>
+            <Link
+              href="#collection"
+              className="group grid size-[clamp(8rem,28vw,14rem)] place-items-center rounded-full border border-[#78716f] text-center text-[clamp(0.65rem,1.6vw,1.125rem)] leading-relaxed text-[#78716f] transition-colors hover:border-[#685048] hover:text-[#685048]"
+            >
+              <span>
+                EXPLORE
+                <br />
+                THE COLLECTION
+                <br />
+                <span
+                  aria-hidden="true"
+                  className="mt-2 inline-block text-[1.6em] leading-none transition-transform duration-500 group-hover:translate-y-1"
+                >
+                  ↓
+                </span>
+              </span>
+            </Link>
+          </RevealItem>
+        </RevealGroup>
+
+        {/* The photo wall */}
+        <div className="@container relative mt-8 aspect-[1600/1920] w-full md:mt-16">
+          {/* The model sits behind the frame and shows through its windows. */}
+          <div className="absolute inset-0 overflow-hidden">
+            <Reveal
+              kind="scale"
+              className="absolute"
+              style={{ left: "23.4%", top: "17%", width: "53.3%", height: "64.7%" }}
+            >
+              <Image
+                src="/janeke/model.webp"
+                alt="ผู้หญิงผมยาวหันหลัง หลังหวีด้วยแปรง Janeke"
+                width={896}
+                height={1200}
+                preload
+                className="size-full object-cover"
+              />
+            </Reveal>
+          </div>
+
+          {/* The grey frame with nine windows punched through it. */}
+          <Image
+            src="/janeke/frame.svg"
+            alt=""
+            width={1600}
+            height={1920}
+            className="pointer-events-none absolute inset-0 size-full"
+          />
+
+          {PRINTS.map((p) => (
+            <Reveal key={p.photo} kind="scale" rotate={p.rotate} delay={p.delay} className="absolute" style={p.style}>
+              <Print photo={p.photo} alt={p.alt} logo={p.logo} />
+            </Reveal>
+          ))}
+
+          <Reveal delay={0.1} className="absolute" style={{ left: "70.6%", top: "11.8%", width: "21.8%" }}>
+            <Image src="/janeke/logo.webp" alt="Jäneke 1830" width={640} height={291} className="h-auto w-full" />
+          </Reveal>
+
+          {ARROWS.map((a) => (
+            <Reveal
+              key={a.src}
+              delay={a.delay}
+              className="absolute hidden @lg:block"
+              style={{ left: a.left, top: a.top, width: a.width }}
+            >
+              <Image src={a.src} alt="" width={200} height={160} className="h-auto w-full" />
+            </Reveal>
+          ))}
+
+          {NOTES.map((n) => (
+            <Reveal
+              key={n.text.join()}
+              delay={n.delay}
+              className="absolute hidden @lg:block"
+              style={{ left: n.left, top: n.top, width: n.width }}
+            >
+              <p className={`${script.className} text-center text-[2.5cqw] leading-snug text-[#8a7265]`}>
+                {n.text[0]}
+                <br />
+                {n.text[1]}
+              </p>
+            </Reveal>
+          ))}
+        </div>
+
+        {/* The three notes again, for the widths where there is no room for
+            them inside the picture. Pinned to the artwork they annotate, a
+            note gets a box 55px wide on a phone and breaks after its first
+            word; underneath it, each one has the width of a third of the
+            screen and simply reads. */}
+        <RevealGroup className="mt-5 grid grid-cols-3 gap-3 lg:hidden">
+          {NOTES.map((n) => (
+            <RevealItem key={n.text.join()}>
+              <p className={`${script.className} text-center text-sm leading-snug text-[#8a7265]`}>
+                {n.text[0]}
+                <br />
+                {n.text[1]}
+              </p>
+            </RevealItem>
+          ))}
+        </RevealGroup>
+      </div>
+    </section>
+  );
+}
