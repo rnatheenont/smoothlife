@@ -80,7 +80,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Car
   const cards = data ?? [];
 
   return (
-    <section className="container-page py-10 md:py-14">
+    <section id="subscription-sets" className="container-page scroll-mt-24 py-10 md:py-14">
       {settings.heading && (
         <h2 className="mb-1 text-xl font-extrabold text-brand-ink md:text-2xl">{settings.heading}</h2>
       )}

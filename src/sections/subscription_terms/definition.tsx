@@ -19,7 +19,18 @@ async function load(): Promise<Data> {
 }
 
 function Component({ data }: SectionProps<z.output<typeof schema>, Data>) {
-  return <SubscriptionTermsInfo billingEnabled={data?.billingEnabled ?? false} />;
+  // Folded, and last. These are the terms of a thing — they cannot be read
+  // before the thing exists, and as a wall of three cards above the first
+  // price they only ever cost the shop the scroll. Every plan page worth
+  // copying keeps the legal to one line near the buttons and the detail
+  // within reach: https://mobbin.com/screens/694f3d02-5191-4e61-8fad-63fa19926960
+  return (
+    <section className="container-page border-t border-slate-100 py-10 md:py-14">
+      <div className="mx-auto max-w-3xl">
+        <SubscriptionTermsInfo billingEnabled={data?.billingEnabled ?? false} variant="compact" />
+      </div>
+    </section>
+  );
 }
 
 export const subscriptionTerms: SectionDefinition<typeof schema> = {

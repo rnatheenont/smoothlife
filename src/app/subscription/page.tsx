@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Repeat, Truck, ShieldCheck, CalendarClock, ChevronRight, PackagePlus } from "lucide-react";
+import { Repeat, Truck, ShieldCheck, CalendarClock, ChevronRight, PackagePlus, ArrowRight } from "lucide-react";
 import {
   subscriptionPlans,
   subscriptionSets,
@@ -37,40 +37,83 @@ async function SubscriptionPageWritten({ planParam }: { planParam?: string }) {
   // Sets the shop assembled in the admin console — only the ones that can be
   // sold right now (see getSellableSets).
   const curatedSets = await getSellableSets();
+  // Four real products for the banner — the same ones the picker offers.
+  const heroShots = subscriptionProducts.slice(0, 4);
 
   return (
     <div>
       <section className="relative overflow-hidden bg-brand-ink text-white">
         <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand-teal/25 blur-3xl" />
         <div className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-brand-sky/25 blur-3xl" />
-        <div className="container-page relative py-12 md:py-20 text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur-sm px-3 py-1 text-xs font-semibold mb-4">
-            <Repeat size={13} /> Smoothlife Subscription
-          </span>
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight md:leading-none">
-            ดูแลตัวเองต่อเนื่อง <br className="hidden md:block" />
-            ไม่ต้องสั่งซ้ำ ประหยัดสูงสุด {maxDiscount}%
-          </h1>
-          <p className="mt-4 text-white/80 max-w-lg mx-auto">
-            เลือกสินค้าที่ใช้ประจำ กำหนดรอบส่งของคุณเอง 3 / 6 หรือ 12 เดือน ยิ่งเลือกรอบยาว ยิ่งได้ส่วนลดมากขึ้น
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-4 md:gap-6 text-xs md:text-sm text-white/85">
-            {perks.map((perk) => (
-              <span key={perk.label} className="flex items-center gap-1.5">
-                <perk.icon size={14} /> {perk.label}
-              </span>
-            ))}
+        {/* Two columns from md up — what you get on the left, what you would
+            be subscribing to on the right. Same markup as the
+            subscription_hero section, so the page reads the same either side
+            of the wave 4 flag. */}
+        <div className="container-page relative grid items-center gap-8 py-10 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] md:gap-12 md:py-14">
+          <div className="text-center md:text-left">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur-sm px-3 py-1 text-xs font-semibold mb-4">
+              <Repeat size={13} /> Smoothlife Subscription
+            </span>
+            <h1 className="text-3xl md:text-[2.75rem] font-extrabold tracking-tight leading-tight md:leading-[1.15]">
+              ดูแลตัวเองต่อเนื่อง <br className="hidden md:block" />
+              ไม่ต้องสั่งซ้ำ ประหยัดสูงสุด {maxDiscount}%
+            </h1>
+            <p className="mt-4 text-white/80 max-w-lg mx-auto md:mx-0">
+              เลือกสินค้าที่ใช้ประจำ กำหนดรอบส่งของคุณเอง 3 / 6 หรือ 12 เดือน ยิ่งเลือกรอบยาว ยิ่งได้ส่วนลดมากขึ้น
+            </p>
+            <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:justify-center md:justify-start">
+              <Link
+                href="#subscription-sets"
+                className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-full bg-white px-6 font-bold text-brand-ink transition hover:bg-white/90"
+              >
+                เลือกชุดสมัครสมาชิก <ArrowRight size={16} />
+              </Link>
+              <Link
+                href="#subscription-picker"
+                className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/30 px-6 font-semibold text-white transition hover:bg-white/10"
+              >
+                เลือกสินค้าเอง
+              </Link>
+            </div>
+            <div className="mt-6 flex flex-wrap justify-center gap-2 text-xs md:text-[13px] text-white/85 md:justify-start">
+              {perks.map((perk) => (
+                <span key={perk.label} className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5">
+                  <perk.icon size={14} className="shrink-0 text-brand-teal" /> {perk.label}
+                </span>
+              ))}
+            </div>
           </div>
+
+          {heroShots.length === 4 && (
+            <div className="relative mx-auto w-full max-w-xs md:max-w-none">
+              <div className="grid grid-cols-4 gap-2 rounded-feature md:grid-cols-2 bg-white/10 p-2 backdrop-blur-sm">
+                {heroShots.map((p, i) => (
+                  <div key={p.slug} className="relative aspect-square overflow-hidden rounded-xl2 bg-white">
+                    <Image
+                      src={p.image}
+                      alt=""
+                      fill
+                      sizes="(max-width:768px) 22vw, 160px"
+                      className="object-cover"
+                      priority={i === 0}
+                    />
+                  </div>
+                ))}
+              </div>
+              <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-brand-gradient px-3.5 py-1.5 text-xs font-bold text-white shadow-card">
+                ประหยัดสูงสุด {maxDiscount}%
+              </span>
+            </div>
+          )}
         </div>
       </section>
 
-      <SubscriptionTermsInfo billingEnabled={billingEnabled} />
 
       {/* Curated sets — a fixed real product group per set, priced off
           today's real prices (not a separate SKU of its own). Cheapest way
           to see "starting from" pricing without duplicating the per-plan
           math that SubscriptionPicker/the detail page already do. */}
-      <section className="container-page py-10 md:py-14">
+      <section id="subscription-sets" className="container-page scroll-mt-24 py-10 md:py-14">
         <h2 className="text-xl md:text-2xl font-extrabold text-brand-ink mb-1">เลือกชุดสมัครสมาชิก</h2>
         <p className="text-sm text-slate-500 mb-6">ชุดสินค้าที่ทีมคัดมาให้ครบ ไม่ต้องเลือกเอง ใช้ต่อเนื่องได้จริง</p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-5">
@@ -157,7 +200,7 @@ async function SubscriptionPageWritten({ planParam }: { planParam?: string }) {
         </div>
       </section>
 
-      <section className="container-page py-10 md:py-14 border-t border-slate-100">
+      <section id="subscription-picker" className="container-page scroll-mt-24 py-10 md:py-14 border-t border-slate-100">
         <h2 className="text-xl md:text-2xl font-extrabold text-brand-ink mb-1">หรือเลือกสินค้าเอง</h2>
         <p className="text-sm text-slate-500 mb-6">อยากได้แค่สินค้าชิ้นเดียวแบบสมัครรายรอบ เลือกได้จากที่นี่</p>
         <SubscriptionPicker plans={subscriptionPlans} products={subscriptionProducts} subscriptionBillingEnabled={subscriptionBillingConfigured()} defaultMonths={defaultMonths} />
@@ -184,6 +227,14 @@ async function SubscriptionPageWritten({ planParam }: { planParam?: string }) {
           </Link>
         </section>
       )}
+
+      {/* Folded, and last — same order as the document the page system
+          renders, so turning wave 4 on or off never moves the terms. */}
+      <section className="container-page border-t border-slate-100 py-10 md:py-14">
+        <div className="mx-auto max-w-3xl">
+          <SubscriptionTermsInfo billingEnabled={billingEnabled} variant="compact" />
+        </div>
+      </section>
     </div>
   );
 }

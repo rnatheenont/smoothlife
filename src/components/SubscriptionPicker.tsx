@@ -127,39 +127,55 @@ export default function SubscriptionPicker({
 
   return (
     <div>
-      {/* Plan toggle */}
-      <div className="grid grid-cols-3 gap-3 md:gap-4 mb-10">
-        {plans.map((p) => {
-          const active = p.months === selectedMonths;
-          return (
-            <button
-              key={p.months}
-              onClick={() => setSelectedMonths(p.months)}
-              className={clsx(
-                "relative rounded-xl2 p-4 md:p-6 text-left transition border-2",
-                active
-                  ? "border-brand-emerald bg-brand-gradient-soft shadow-cardHover"
-                  : "border-slate-100 bg-white hover:border-slate-200"
-              )}
-            >
-              {p.popular && (
-                <span className="absolute -top-2.5 right-3 rounded-full bg-brand-gradient text-white text-[10px] font-bold px-2 py-0.5 shadow-card">
-                  ยอดนิยม
+      {/* The term choice, as one control rather than three cards.
+          Every plan page worth copying puts this directly under the headline
+          and writes the saving on the control itself — Telescope, Apollo,
+          Claude, Recraft and Luma all do, and none of them makes it three
+          cards the width of the page:
+            https://mobbin.com/screens/acc4ecd8-7c66-4362-8c08-eceab362f60e
+            https://mobbin.com/screens/1a768d57-9ccb-49fa-969c-a6e8f53dbdff
+          It governs every price below it, so it has to be read in one glance
+          and stay close to them, not take up a screenful of its own. */}
+      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-6">
+        <div
+          role="radiogroup"
+          aria-label="เลือกจำนวนเดือน"
+          className="inline-flex w-full max-w-lg gap-1 rounded-full border border-surface-line bg-surface-soft p-1"
+        >
+          {plans.map((p) => {
+            const active = p.months === selectedMonths;
+            return (
+              <button
+                key={p.months}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setSelectedMonths(p.months)}
+                className={clsx(
+                  "relative flex-1 rounded-full px-2 py-2.5 text-center transition",
+                  active ? "bg-white shadow-card" : "hover:bg-white/60"
+                )}
+              >
+                {p.popular && (
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-brand-gradient px-2 py-0.5 text-[10px] font-bold text-white shadow-card">
+                    ยอดนิยม
+                  </span>
+                )}
+                <span className={clsx("block text-sm font-bold", active ? "text-brand-ink" : "text-slate-600")}>
+                  {p.months} เดือน
                 </span>
-              )}
-              <p className="text-2xl md:text-3xl font-extrabold text-brand-ink">{p.months} เดือน</p>
-              <p className="text-xs text-slate-500 mt-0.5">{p.sublabel}</p>
-              <p className={clsx("mt-3 text-lg font-extrabold", active ? "text-brand-800" : "text-slate-500")}>
-                ประหยัด {p.discountPct}%
-              </p>
-              {active && (
-                <span className="absolute right-4 top-4 grid h-5 w-5 place-items-center rounded-full bg-brand-emerald text-white">
-                  <Check size={12} />
+                <span className={clsx("block text-[11px] font-semibold", active ? "text-brand-800" : "text-slate-400")}>
+                  ประหยัด {p.discountPct}%
                 </span>
-              )}
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* The one line that says what the control beside it just changed. */}
+        <p className="text-[13px] text-slate-500 md:text-right">
+          ราคาด้านล่างคือราคาต่อเดือนของเทอม <b className="text-brand-ink">{plan.months} เดือน</b> · {plan.sublabel}
+        </p>
       </div>
 
       {/* Products at the selected plan */}

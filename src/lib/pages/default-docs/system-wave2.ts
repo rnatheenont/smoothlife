@@ -337,10 +337,19 @@ const oralCareAdvisor = (): PageDoc =>
 /**
  * The subscription page: five blocks, three of them locked.
  *
- * The plan sketched this as page_header → sets → cta_card → picker → terms.
- * What it actually is, is a lit dark banner, then the terms, then two ways to
- * subscribe, then an invitation to build a set — and the order matters,
- * because the terms belong above the thing they are the terms of.
+ * A lit dark banner with the two ways to subscribe as its two buttons,
+ * then those two ways in full, then an invitation to build a set, then
+ * the terms — folded, at the end. The banner's buttons are anchors into
+ * this same page: a banner that asks for a subscription and offers
+ * nothing to press is a screenful spent on nothing.
+ *
+ * The terms used to sit second, above every price on the page, on the
+ * reasoning that they belong above the thing they are the terms of. Read as
+ * a visitor rather than as a lawyer, that is three cards of dense billing
+ * copy standing between somebody and the first thing they could buy. The
+ * terms of a thing cannot be read before the thing. They are still one tap
+ * away, and the line under each subscribe button still says what the charge
+ * does.
  *
  * The two numbers in the copy are tokens, not typed digits: {discount} is the
  * best plan's percentage and {bundleDiscount} is the bundle discount, both
@@ -357,6 +366,10 @@ const subscription = (): PageDoc =>
         title: "ดูแลตัวเองต่อเนื่อง\nไม่ต้องสั่งซ้ำ ประหยัดสูงสุด {discount}%",
         intro:
           "เลือกสินค้าที่ใช้ประจำ กำหนดรอบส่งของคุณเอง 3 / 6 หรือ 12 เดือน ยิ่งเลือกรอบยาว ยิ่งได้ส่วนลดมากขึ้น",
+        ctaLabel: "เลือกชุดสมัครสมาชิก",
+        ctaHref: "#subscription-sets",
+        ctaSecondaryLabel: "เลือกสินค้าเอง",
+        ctaSecondaryHref: "#subscription-picker",
         perks: [
           { icon: "truck", label: "ส่งฟรีทุกรอบ" },
           { icon: "clock", label: "เลือกรอบส่ง 3 / 6 / 12 เดือน" },
@@ -364,7 +377,6 @@ const subscription = (): PageDoc =>
         ],
       },
     },
-    { type: "subscription_terms", v: 1, settings: {} },
     {
       type: "subscription_sets",
       v: 1,
@@ -391,6 +403,7 @@ const subscription = (): PageDoc =>
         href: "/subscription/build",
       },
     },
+    { type: "subscription_terms", v: 1, settings: {} },
   ]);
 
 /** Merged into SYSTEM_DEFAULT_DOCS. Keyed by the registry's page key, and a
