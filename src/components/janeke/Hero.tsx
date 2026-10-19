@@ -21,6 +21,13 @@ import Reveal, { RevealGroup, RevealItem } from "./Reveal";
  * Rebuilding it from divs would mean four bars and an outer border that have
  * to meet exactly; the file already is the shape, and the model behind simply
  * shows through the holes.
+ *
+ * The three prints are exported whole, paper and photograph and caption in
+ * one file, rather than assembled here from a texture and a cut-out. The
+ * assembled version put the wrong photograph in the middle print — a brush
+ * seen whole, where the note beside it is about the vents in its head — and
+ * no amount of positioning makes a composite match a design that was never
+ * built that way. Each file carries its own tilt, so none is rotated here.
  */
 
 // Straight off the design's own coordinates, against its 1600×1920 box.
@@ -30,11 +37,10 @@ const NOTES = [
   { text: ["Less Tugging", "More Moving"], left: "34.6%", top: "89.8%", width: "14.6%", delay: 0.3 },
 ];
 
-// Height as well as width, and not by accident: these files are exported with
-// preserveAspectRatio="none", so the design stretches each one into its own
-// box. Given only a width, the browser falls back to the path's own bounds —
-// which for the middle arrow is 65×192, and it drew as a giant vertical
-// squiggle down the side of the picture.
+// Height as well as width, and not by accident: an arrow given only a width
+// falls back to its file's own proportions, and the first set exported came
+// out at proportions the design never uses — the middle one drew as a giant
+// vertical squiggle down the side of the picture.
 const ARROWS = [
   { src: "/janeke/arrow-1.svg", left: "28.4%", top: "15.3%", width: "12.7%", height: "6.7%", delay: 0.2 },
   { src: "/janeke/arrow-2.svg", left: "85.5%", top: "58.8%", width: "11.2%", height: "8.4%", delay: 0.3 },
@@ -43,51 +49,30 @@ const ARROWS = [
 
 const PRINTS = [
   {
-    photo: "/janeke/brush-gold.webp",
+    src: "/janeke/polaroid-1.webp",
     alt: "แปรง Janeke Superbrush สีทอง",
-    rotate: -4,
-    logo: true,
+    w: 620,
+    h: 799,
     delay: 0.05,
     style: { left: "0.6%", top: "1.6%", width: "35.3%" },
   },
   {
-    photo: "/janeke/brush-head.webp",
-    alt: "หัวแปรง Janeke ระยะใกล้",
-    rotate: 3,
-    logo: false,
+    src: "/janeke/polaroid-2.webp",
+    alt: "ลายช่องระบายอากาศบนหัวแปรง Janeke",
+    w: 520,
+    h: 667,
     delay: 0.15,
     style: { left: "70.7%", top: "34.8%", width: "26.8%" },
   },
   {
-    photo: "/janeke/brush-hair.webp",
+    src: "/janeke/polaroid-3.webp",
     alt: "แปรง Janeke กับเส้นผม",
-    rotate: -5,
-    logo: false,
+    w: 560,
+    h: 693,
     delay: 0.25,
     style: { left: "1%", top: "69%", width: "29.2%" },
   },
 ];
-
-/** One photo on paper, tilted the way a print dropped on a desk would be. */
-function Print({ photo, alt, logo }: { photo: string; alt: string; logo: boolean }) {
-  return (
-    <div className="relative shadow-[0_10px_30px_rgba(15,23,42,0.13)]">
-      <Image src="/janeke/paper.webp" alt="" width={1000} height={667} className="h-auto w-full" />
-      <div className="absolute inset-x-[6%] top-[5%] aspect-square overflow-hidden bg-white">
-        <Image src={photo} alt={alt} width={760} height={1018} className="size-full object-cover" />
-      </div>
-      {logo && (
-        <Image
-          src="/janeke/logo.webp"
-          alt=""
-          width={640}
-          height={291}
-          className="absolute inset-x-[35%] bottom-[7%] h-auto w-[30%] opacity-40"
-        />
-      )}
-    </div>
-  );
-}
 
 export default function JanekeHero() {
   return (
@@ -177,8 +162,8 @@ export default function JanekeHero() {
           />
 
           {PRINTS.map((p) => (
-            <Reveal key={p.photo} kind="scale" rotate={p.rotate} delay={p.delay} className="absolute" style={p.style}>
-              <Print photo={p.photo} alt={p.alt} logo={p.logo} />
+            <Reveal key={p.src} kind="scale" delay={p.delay} className="absolute" style={p.style}>
+              <Image src={p.src} alt={p.alt} width={p.w} height={p.h} className="h-auto w-full" />
             </Reveal>
           ))}
 
