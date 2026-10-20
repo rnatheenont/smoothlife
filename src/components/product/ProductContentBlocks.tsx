@@ -15,7 +15,7 @@ import { renderInline, renderRichText } from "@/lib/rich-text";
 // or beauty product are not machine output, and handing them back to the
 // translator would undo that.
 
-function hasText(block: ContentBlock, th: boolean): boolean {
+export function hasText(block: ContentBlock, th: boolean): boolean {
   switch (block.type) {
     case "paragraph":
     case "image_text":
@@ -78,223 +78,243 @@ function ContentImage({
 
 export default function ProductContentBlocks({
   blocks,
+  lang: forced,
 }: {
   blocks: ContentBlock[];
+  /** Overrides the page's language — the admin preview has its own toggle. */
+  lang?: "th" | "en";
 }) {
   const { lang } = useLang();
-  const th = lang === "th";
+  const th = (forced ?? lang) === "th";
   // A block written in one language only is skipped in the other rather than
   // shown with an empty body or, worse, its Thai under an English heading.
   // A hidden one is skipped in both: the shop parked it on purpose.
   const shown = blocks.filter((b) => !b.hidden && hasText(b, th));
   if (shown.length === 0) return null;
 
-  const heading = (thText?: string, enText?: string) => {
-    const text = (th ? thText : enText)?.trim();
-    return text ? (
-      <h3 className="mb-2 font-bold text-brand-ink">{text}</h3>
-    ) : null;
-  };
-  const items = (block: { itemsTh: string[]; itemsEn: string[] }) =>
-    (th ? block.itemsTh : block.itemsEn).map((i) => i.trim()).filter(Boolean);
-
   return (
     <div translate="no" className="space-y-7">
-      {shown.map((block, i) => {
-        switch (block.type) {
-          case "paragraph":
-            return (
-              <section key={i}>
-                {heading(block.headingTh, block.headingEn)}
-                <div className="text-sm leading-relaxed text-slate-600">
-                  {renderRichText(th ? block.bodyTh : block.bodyEn)}
-                </div>
-              </section>
-            );
-          case "bullet_list":
-            return (
-              <section key={i}>
-                {heading(block.headingTh, block.headingEn)}
-                <ul className="space-y-1.5">
-                  {items(block).map((item, n) => (
-                    <li
-                      key={n}
-                      className="flex gap-2 text-sm leading-relaxed text-slate-600"
-                    >
-                      <span
-                        aria-hidden
-                        className="mt-2 size-1.5 shrink-0 rounded-full bg-brand-teal"
-                      />
-                      {renderInline(item)}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          // Named groups rather than a free list: a chip each, the way the
-          // ingredients have always been shown, because these are things to
-          // recognise yourself in rather than sentences to read.
-          case "ingredients":
-          case "who_for":
-            return (
-              <section key={i}>
-                <h3 className="mb-2 font-bold text-brand-ink">
-                  {th
-                    ? FIXED_HEADING[block.type]?.th
-                    : FIXED_HEADING[block.type]?.en}
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {items(block).map((item, n) => (
-                    <span
-                      key={n}
-                      className="rounded-full bg-surface-soft px-3 py-1.5 text-[13px] text-slate-600"
-                    >
-                      {renderInline(item)}
-                    </span>
-                  ))}
-                </div>
-              </section>
-            );
-          case "image_text":
-            return (
-              <section
-                key={i}
-                // Half and half, not a 200px thumbnail beside a line of text
-                // running the full width of the page: at desktop width that
-                // left the picture small, the measure far too long to read
-                // comfortably, and the bottom right of the block empty.
-                className="grid gap-5 sm:grid-cols-2 sm:items-start"
-              >
-                {block.imageUrl && (
-                  // Its own shape, not a square crop: a label shot or an
-                  // ingredient diagram loses the part with the words on it
-                  // when it is cropped to fit.
-                  <ContentImage
-                    src={block.imageUrl}
-                    alt=""
-                    sizes="(max-width: 640px) 100vw, 50vw"
-                  />
-                )}
-                <div>
-                  {heading(block.headingTh, block.headingEn)}
-                  <div className="text-sm leading-relaxed text-slate-600">
-                    {renderRichText(th ? block.bodyTh : block.bodyEn)}
-                  </div>
-                </div>
-              </section>
-            );
-          // Steps are numbered: "ใช้เช้า-เย็น" after "ล้างหน้า" is an order,
-          // and a bullet does not say so.
-          case "how_to_use":
-            return (
-              <section key={i}>
-                <h3 className="mb-2 font-bold text-brand-ink">
-                  {th ? FIXED_HEADING.how_to_use?.th : FIXED_HEADING.how_to_use?.en}
-                </h3>
-                <ol className="space-y-2">
-                  {items(block).map((item, n) => (
-                    <li
-                      key={n}
-                      className="flex gap-2.5 text-sm leading-relaxed text-slate-600"
-                    >
-                      <span
-                        aria-hidden
-                        className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-brand-50 text-[11px] font-bold text-brand-800"
-                      >
-                        {n + 1}
-                      </span>
-                      <span className="min-w-0 flex-1">{renderInline(item)}</span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            );
-          case "image": {
-            const caption = (th ? block.captionTh : block.captionEn)?.trim();
-            return (
-              <figure key={i}>
-                <ContentImage src={block.imageUrl} alt={caption || ""} />
-                {caption && (
-                  <figcaption className="mt-2 text-[13px] text-slate-500">
-                    {caption}
-                  </figcaption>
-                )}
-              </figure>
-            );
-          }
-          case "video": {
-            const video = parseVideoUrl(block.videoUrl);
-            if (!video) return null;
-            const caption = (th ? block.captionTh : block.captionEn)?.trim();
-            // An upright clip gets an upright frame, capped in width so a
-            // phone-shaped video does not run the height of the screen on a
-            // desktop.
-            const upright = video.aspect !== "16 / 9";
-            return (
-              <figure key={i}>
-                <div
-                  className={`relative w-full overflow-hidden rounded-xl2 bg-black ${
-                    upright ? "mx-auto max-w-[360px]" : ""
-                  }`}
-                  style={{ aspectRatio: video.aspect }}
-                >
-                  {video.kind === "file" ? (
-                    <video
-                      src={video.src}
-                      poster={block.posterUrl || undefined}
-                      controls
-                      playsInline
-                      // metadata, not auto: a product page should not pull a
-                      // video down a phone's data plan before anyone presses
-                      // play.
-                      preload="metadata"
-                      className="h-full w-full"
-                    />
-                  ) : (
-                    <iframe
-                      src={video.src}
-                      title={caption || (th ? "วิดีโอสินค้า" : "Product video")}
-                      // Lazy, so the player is fetched when it is scrolled to
-                      // rather than on every page view.
-                      loading="lazy"
-                      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen; web-share"
-                      allowFullScreen
-                      className="absolute inset-0 h-full w-full border-0"
-                    />
-                  )}
-                </div>
-                {caption && (
-                  <figcaption className="mt-2 text-[13px] text-slate-500">
-                    {caption}
-                  </figcaption>
-                )}
-              </figure>
-            );
-          }
-          case "spec_table":
-            return (
-              <section key={i}>
-                <dl className="divide-y divide-slate-100 overflow-hidden rounded-xl2 ring-1 ring-slate-100">
-                  {block.rows
-                    .filter((r) => (th ? r.valueTh : r.valueEn).trim())
-                    .map((row, n) => (
-                      <div
-                        key={n}
-                        className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-3 px-4 py-2.5"
-                      >
-                        <dt className="text-[13px] text-slate-500">
-                          {th ? row.labelTh : row.labelEn}
-                        </dt>
-                        <dd className="text-[13px] text-brand-ink">
-                          {th ? row.valueTh : row.valueEn}
-                        </dd>
-                      </div>
-                    ))}
-                </dl>
-              </section>
-            );
-        }
-      })}
+      {shown.map((block, i) => (
+        <ProductContentBlock key={i} block={block} th={th} />
+      ))}
     </div>
   );
+}
+
+/**
+ * One block, drawn the way a customer sees it.
+ *
+ * Exported because the admin's editor shows a live preview beside the form,
+ * and a preview that draws the blocks its own way is not a preview — it is a
+ * second opinion. The two drifted: "เหมาะสำหรับใคร" was chips here and a
+ * bulleted list there, the steps were numbered badges here and a plain
+ * ordered list there, and an image with text beside it was two columns here
+ * and stacked there. Somebody comparing the two screens could only conclude
+ * the page was broken.
+ *
+ * `th` is passed in rather than read from context so the admin's own
+ * Thai/English toggle can drive it without changing the language of the
+ * admin around it.
+ */
+export function ProductContentBlock({ block, th }: { block: ContentBlock; th: boolean }) {
+  const heading = (thText?: string, enText?: string) => {
+    const text = (th ? thText : enText)?.trim();
+    return text ? <h3 className="mb-2 font-bold text-brand-ink">{text}</h3> : null;
+  };
+  const items = (b: { itemsTh: string[]; itemsEn: string[] }) =>
+    (th ? b.itemsTh : b.itemsEn).map((i) => i.trim()).filter(Boolean);
+
+  switch (block.type) {
+      case "paragraph":
+        return (
+          <section>
+            {heading(block.headingTh, block.headingEn)}
+            <div className="text-sm leading-relaxed text-slate-600">
+              {renderRichText(th ? block.bodyTh : block.bodyEn)}
+            </div>
+          </section>
+        );
+      case "bullet_list":
+        return (
+          <section>
+            {heading(block.headingTh, block.headingEn)}
+            <ul className="space-y-1.5">
+              {items(block).map((item, n) => (
+                <li
+                  key={n}
+                  className="flex gap-2 text-sm leading-relaxed text-slate-600"
+                >
+                  <span
+                    aria-hidden
+                    className="mt-2 size-1.5 shrink-0 rounded-full bg-brand-teal"
+                  />
+                  {renderInline(item)}
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      // Named groups rather than a free list: a chip each, the way the
+      // ingredients have always been shown, because these are things to
+      // recognise yourself in rather than sentences to read.
+      case "ingredients":
+      case "who_for":
+        return (
+          <section>
+            <h3 className="mb-2 font-bold text-brand-ink">
+              {th
+                ? FIXED_HEADING[block.type]?.th
+                : FIXED_HEADING[block.type]?.en}
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {items(block).map((item, n) => (
+                <span
+                  key={n}
+                  className="rounded-full bg-surface-soft px-3 py-1.5 text-[13px] text-slate-600"
+                >
+                  {renderInline(item)}
+                </span>
+              ))}
+            </div>
+          </section>
+        );
+      case "image_text":
+        return (
+          <section
+           
+            // Half and half, not a 200px thumbnail beside a line of text
+            // running the full width of the page: at desktop width that
+            // left the picture small, the measure far too long to read
+            // comfortably, and the bottom right of the block empty.
+            className="grid gap-5 sm:grid-cols-2 sm:items-start"
+          >
+            {block.imageUrl && (
+              // Its own shape, not a square crop: a label shot or an
+              // ingredient diagram loses the part with the words on it
+              // when it is cropped to fit.
+              <ContentImage
+                src={block.imageUrl}
+                alt=""
+                sizes="(max-width: 640px) 100vw, 50vw"
+              />
+            )}
+            <div>
+              {heading(block.headingTh, block.headingEn)}
+              <div className="text-sm leading-relaxed text-slate-600">
+                {renderRichText(th ? block.bodyTh : block.bodyEn)}
+              </div>
+            </div>
+          </section>
+        );
+      // Steps are numbered: "ใช้เช้า-เย็น" after "ล้างหน้า" is an order,
+      // and a bullet does not say so.
+      case "how_to_use":
+        return (
+          <section>
+            <h3 className="mb-2 font-bold text-brand-ink">
+              {th ? FIXED_HEADING.how_to_use?.th : FIXED_HEADING.how_to_use?.en}
+            </h3>
+            <ol className="space-y-2">
+              {items(block).map((item, n) => (
+                <li
+                  key={n}
+                  className="flex gap-2.5 text-sm leading-relaxed text-slate-600"
+                >
+                  <span
+                    aria-hidden
+                    className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-brand-50 text-[11px] font-bold text-brand-800"
+                  >
+                    {n + 1}
+                  </span>
+                  <span className="min-w-0 flex-1">{renderInline(item)}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        );
+      case "image": {
+        const caption = (th ? block.captionTh : block.captionEn)?.trim();
+        return (
+          <figure>
+            <ContentImage src={block.imageUrl} alt={caption || ""} />
+            {caption && (
+              <figcaption className="mt-2 text-[13px] text-slate-500">
+                {caption}
+              </figcaption>
+            )}
+          </figure>
+        );
+      }
+      case "video": {
+        const video = parseVideoUrl(block.videoUrl);
+        if (!video) return null;
+        const caption = (th ? block.captionTh : block.captionEn)?.trim();
+        // An upright clip gets an upright frame, capped in width so a
+        // phone-shaped video does not run the height of the screen on a
+        // desktop.
+        const upright = video.aspect !== "16 / 9";
+        return (
+          <figure>
+            <div
+              className={`relative w-full overflow-hidden rounded-xl2 bg-black ${
+                upright ? "mx-auto max-w-[360px]" : ""
+              }`}
+              style={{ aspectRatio: video.aspect }}
+            >
+              {video.kind === "file" ? (
+                <video
+                  src={video.src}
+                  poster={block.posterUrl || undefined}
+                  controls
+                  playsInline
+                  // metadata, not auto: a product page should not pull a
+                  // video down a phone's data plan before anyone presses
+                  // play.
+                  preload="metadata"
+                  className="h-full w-full"
+                />
+              ) : (
+                <iframe
+                  src={video.src}
+                  title={caption || (th ? "วิดีโอสินค้า" : "Product video")}
+                  // Lazy, so the player is fetched when it is scrolled to
+                  // rather than on every page view.
+                  loading="lazy"
+                  allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; fullscreen; web-share"
+                  allowFullScreen
+                  className="absolute inset-0 h-full w-full border-0"
+                />
+              )}
+            </div>
+            {caption && (
+              <figcaption className="mt-2 text-[13px] text-slate-500">
+                {caption}
+              </figcaption>
+            )}
+          </figure>
+        );
+      }
+      case "spec_table":
+        return (
+          <section>
+            <dl className="divide-y divide-slate-100 overflow-hidden rounded-xl2 ring-1 ring-slate-100">
+              {block.rows
+                .filter((r) => (th ? r.valueTh : r.valueEn).trim())
+                .map((row, n) => (
+                  <div
+                    key={n}
+                    className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-3 px-4 py-2.5"
+                  >
+                    <dt className="text-[13px] text-slate-500">
+                      {th ? row.labelTh : row.labelEn}
+                    </dt>
+                    <dd className="text-[13px] text-brand-ink">
+                      {th ? row.valueTh : row.valueEn}
+                    </dd>
+                  </div>
+                ))}
+            </dl>
+          </section>
+        );
+  }
 }

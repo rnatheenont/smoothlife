@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import RichTextArea from "@/components/admin/RichTextArea";
-import { renderInline, renderRichText } from "@/lib/rich-text";
 import {
   ArrowLeft,
   Plus,
@@ -20,6 +19,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import ProductMediaCard from "@/components/admin/products/ProductMediaCard";
+import { ProductContentBlock, hasText } from "@/components/product/ProductContentBlocks";
 // The full catalogue: this screen reads SEO fields, SKUs or the whole photo
 // gallery, which the card-sized one leaves out. Fine in an /admin chunk —
 // only the storefront must stay off it (see src/data/product-details.ts).
@@ -30,7 +30,6 @@ import {
   BLOCK_TYPES,
   emptyBlock,
   isBlockEmpty,
-  FIXED_HEADING,
   isBlockComplete,
   parseVideoUrl,
   type ContentBlock,
@@ -306,18 +305,35 @@ export default function ProductContentEditPage() {
                   ยังไม่มีเนื้อหา — เพิ่มบล็อกทางขวาได้เลย
                 </p>
               )}
-              {blocks.map((b, i) =>
-                b.hidden ? (
-                  <div key={i} className="mb-4 opacity-45 last:mb-0">
-                    <p className="mb-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                      <EyeOff size={11} /> ซ่อนจากลูกค้า
-                    </p>
-                    <PreviewBlock block={b} lang={previewLang} />
-                  </div>
-                ) : (
-                  <PreviewBlock key={i} block={b} lang={previewLang} />
-                ),
-              )}
+              {/* The customer's renderer, not a second one written to look
+                  like it. The preview used to draw these blocks its own way
+                  and the two had drifted — chips here were bullets there —
+                  so the screen meant to show what a shopper sees was showing
+                  something nobody would ever see. */}
+              <div className="space-y-7">
+                {blocks.map((b, i) => {
+                  const empty = !hasText(b, previewLang === "th");
+                  return (
+                    <div key={i} className={b.hidden ? "opacity-45" : undefined}>
+                      {b.hidden && (
+                        <p className="mb-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                          <EyeOff size={11} /> ซ่อนจากลูกค้า
+                        </p>
+                      )}
+                      {/* Hidden and empty blocks are drawn here but never on
+                          the product page, so the admin can see what they
+                          parked and what still has nothing in it. */}
+                      {empty ? (
+                        <p className="text-sm text-slate-400">
+                          — ยังไม่มีเนื้อหาภาษา{previewLang === "th" ? "ไทย" : "อังกฤษ"}ในบล็อกนี้
+                        </p>
+                      ) : (
+                        <ProductContentBlock block={b} th={previewLang === "th"} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -951,182 +967,4 @@ function BlockEditor({
       </div>
     </div>
   );
-}
-
-function PreviewBlock({
-  block,
-  lang,
-}: {
-  block: ContentBlock;
-  lang: "th" | "en";
-}) {
-  const pick = (th: string, en: string) =>
-    (lang === "th" ? th : en) || (lang === "th" ? en : th);
-
-  switch (block.type) {
-    case "paragraph":
-      return (
-        <div className="mb-4 last:mb-0">
-          {(block.headingTh || block.headingEn) && (
-            <p className="mb-1 text-sm font-bold text-brand-ink">
-              {pick(block.headingTh ?? "", block.headingEn ?? "")}
-            </p>
-          )}
-          <div className="text-sm text-slate-600">
-            {renderRichText(pick(block.bodyTh, block.bodyEn)) ?? "—"}
-          </div>
-        </div>
-      );
-    case "image_text":
-      return (
-        <div className="mb-4 last:mb-0">
-          {block.imageUrl && (
-            /* The whole picture, at its own shape. It used to be cropped into
-               a 128px-tall strip, which showed the admin a slice of their own
-               image and none of what the product page would show. */
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={block.imageUrl}
-              alt=""
-              className="mb-2 w-full rounded-lg bg-surface-soft"
-            />
-          )}
-          {(block.headingTh || block.headingEn) && (
-            <p className="mb-1 text-sm font-bold text-brand-ink">
-              {pick(block.headingTh ?? "", block.headingEn ?? "")}
-            </p>
-          )}
-          <div className="text-sm text-slate-600">
-            {renderRichText(pick(block.bodyTh, block.bodyEn)) ?? "—"}
-          </div>
-        </div>
-      );
-    case "image":
-      return (
-        <div className="mb-4 last:mb-0">
-          {block.imageUrl ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={block.imageUrl}
-              alt=""
-              className="w-full rounded-lg bg-surface-soft"
-            />
-          ) : (
-            <p className="text-sm text-slate-400">— ยังไม่ได้ใส่รูป</p>
-          )}
-          {pick(block.captionTh ?? "", block.captionEn ?? "") && (
-            <p className="mt-1 text-xs text-slate-500">
-              {pick(block.captionTh ?? "", block.captionEn ?? "")}
-            </p>
-          )}
-        </div>
-      );
-    case "video": {
-      const video = parseVideoUrl(block.videoUrl);
-      return (
-        <div className="mb-4 last:mb-0">
-          {video ? (
-            <div
-              className={`relative w-full overflow-hidden rounded-lg bg-black ${
-                video.aspect === "16 / 9" ? "" : "mx-auto max-w-[240px]"
-              }`}
-              style={{ aspectRatio: video.aspect }}
-            >
-              {video.kind === "file" ? (
-                <video
-                  src={video.src}
-                  poster={block.posterUrl || undefined}
-                  controls
-                  preload="metadata"
-                  className="h-full w-full"
-                />
-              ) : (
-                <iframe
-                  src={video.src}
-                  title="ตัวอย่างวิดีโอ"
-                  loading="lazy"
-                  allowFullScreen
-                  className="absolute inset-0 h-full w-full border-0"
-                />
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-400">— ยังไม่ได้ใส่ลิงก์วิดีโอ</p>
-          )}
-          {pick(block.captionTh ?? "", block.captionEn ?? "") && (
-            <p className="mt-1 text-xs text-slate-500">
-              {pick(block.captionTh ?? "", block.captionEn ?? "")}
-            </p>
-          )}
-        </div>
-      );
-    }
-    case "bullet_list":
-    case "ingredients":
-    case "who_for":
-    case "how_to_use": {
-      const items = lang === "th" ? block.itemsTh : block.itemsEn;
-      const fallback = lang === "th" ? block.itemsEn : block.itemsTh;
-      const shown = items.length ? items : fallback;
-      return (
-        <div className="mb-4 last:mb-0">
-          {"headingTh" in block && (block.headingTh || block.headingEn) ? (
-            <p className="mb-1 text-sm font-bold text-brand-ink">
-              {pick(block.headingTh ?? "", block.headingEn ?? "")}
-            </p>
-          ) : (
-            FIXED_HEADING[block.type] && (
-              <p className="mb-1 text-sm font-bold text-brand-ink">
-                {pick(
-                  FIXED_HEADING[block.type]?.th ?? "",
-                  FIXED_HEADING[block.type]?.en ?? "",
-                )}
-              </p>
-            )
-          )}
-          {shown.length === 0 ? (
-            <p className="text-sm text-slate-400">—</p>
-          ) : (
-            <ul
-              className={`space-y-0.5 text-sm text-slate-600 ${
-                block.type === "how_to_use"
-                  ? "list-inside list-decimal"
-                  : "list-inside list-disc"
-              }`}
-            >
-              {shown.map((item, i) => (
-                <li key={i}>{renderInline(item)}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      );
-    }
-    case "spec_table":
-      return (
-        <div className="mb-4 last:mb-0">
-          {block.rows.length === 0 ? (
-            <p className="text-sm text-slate-400">—</p>
-          ) : (
-            <table className="w-full text-sm">
-              <tbody>
-                {block.rows.map((row, i) => (
-                  <tr
-                    key={i}
-                    className="border-b border-surface-line/60 last:border-0"
-                  >
-                    <td className="py-1.5 pr-3 font-medium text-brand-ink">
-                      {pick(row.labelTh, row.labelEn)}
-                    </td>
-                    <td className="py-1.5 text-slate-600">
-                      {pick(row.valueTh, row.valueEn)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      );
-  }
 }
