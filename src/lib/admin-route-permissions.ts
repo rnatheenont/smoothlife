@@ -115,6 +115,19 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   // answer changed.
   { prefix: "/api/admin/kb/topics", permission: "kb.draft", methods: READ },
   { prefix: "/api/admin/kb/topics", permission: "kb.publish" },
+  // The queue of questions nobody has answered, and what is done with one.
+  // All of it is drafting: every action either writes a draft, files a
+  // question away, or adds a search word to an existing answer. None of it
+  // changes what a customer is told.
+  { prefix: "/api/admin/kb/gaps", permission: "kb.draft" },
+  // Running the accuracy test reads the base and asks the embedding provider;
+  // rebuilding the test set replaces it, which is how the number stops
+  // meaning what it meant last week.
+  { prefix: "/api/admin/kb/eval", permission: "kb.draft", methods: READ },
+  { prefix: "/api/admin/kb/eval", permission: "kb.publish" },
+  // Answering a question asked on a product page: the answer is shown to the
+  // customer who asked, so it is a publish.
+  { prefix: "/api/admin/product-questions", permission: "kb.publish" },
 
   // Page titles and descriptions, and the assistant that drafts them.
   { prefix: "/api/admin/seo", permission: "seo.manage" },
