@@ -44,7 +44,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Ite
           {items.map((q) => (
             <li key={q.slug}>
               <Link
-                href={`/knowledge/questions/${encodeURIComponent(q.slug)}`}
+                href={`/faq/${encodeURIComponent(q.slug)}`}
                 className="flex items-center justify-between gap-3 rounded-xl2 bg-white p-4 ring-1 ring-surface-line transition-colors hover:ring-brand-action/40"
               >
                 <span className="min-w-0 text-sm font-medium text-brand-ink">{q.title}</span>

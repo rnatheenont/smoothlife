@@ -61,7 +61,9 @@ export const HEADER_LINKS_DEFAULT: HeaderLinks = {
     { href: "/promotions", th: "โปรโมชั่น", en: "Promotions", mega: false },
   ],
   deskUtility: [
-    { href: "/help", th: "คำถามที่พบบ่อย", en: "FAQ" },
+    // Labelled "คำถามที่พบบ่อย" and pointed at /help, which is the help hub
+    // and not that page. /faq is now the page with that name on it.
+    { href: "/faq", th: "คำถามที่พบบ่อย", en: "FAQ" },
     { href: "/account/referral", th: "โปรแกรม Affiliate", en: "Affiliate program" },
   ],
   drawer: [
@@ -75,6 +77,7 @@ export const HEADER_LINKS_DEFAULT: HeaderLinks = {
     { href: "/account/wishlist", th: "รายการโปรด", en: "Wishlist", icon: "heart" },
     { href: "/account/referral", th: "โปรแกรม Affiliate", en: "Affiliate program", icon: "users" },
     { href: "/about", th: "ทำไมต้อง Smooth Life", en: "Why Smooth Life", icon: "shield" },
+    { href: "/faq", th: "คำถามที่พบบ่อย", en: "FAQ", icon: "help" },
     { href: "/help", th: "ช่วยเหลือ", en: "Help", icon: "help" },
   ],
 };

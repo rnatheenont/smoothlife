@@ -60,6 +60,7 @@ export const FOOTER_COLUMNS_DEFAULT: FooterColumns = [
   {
     title: "ช่วยเหลือและบัญชี",
     links: [
+      { href: "/faq", label: "คำถามที่พบบ่อย" },
       { href: "/help", label: "ศูนย์ช่วยเหลือ" },
       { href: "/track", label: "ติดตามพัสดุ" },
       { href: "/help/delivery", label: "การจัดส่งและคืนสินค้า" },

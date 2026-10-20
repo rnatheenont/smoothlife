@@ -22,14 +22,18 @@ test("the last step is never a link — you are already there", () => {
 });
 
 test("a step no page serves is skipped rather than guessed at", () => {
-  // /knowledge/questions exists; its parent /knowledge does too, so this is
-  // the shape of a trail that walks a real tree.
+  // An article lives at /knowledge/article/<slug>, and /knowledge/article is
+  // not a page anybody can open — so the trail skips it and names the hub
+  // above it rather than inventing a link that 404s.
+  //
+  // This used to use /knowledge/questions, which skipped nothing: both it and
+  // /knowledge were real pages, so the test's name described a case it was
+  // not exercising. The FAQ centre's move to /faq is what surfaced that.
   // "ความรู้เรื่องผิวและสุขภาพ" rather than the admin list's "ความรู้": the
-  // registry entry carries a longer name for the trail, which is what this
-  // page's hand-written BreadcrumbList said before it moved into the system.
-  assert.deepEqual(at("system", "questions"), [
+  // registry entry carries a longer name for the trail.
+  assert.deepEqual(at("template", "article", { type: "article", handle: "x", name: "ชื่อบทความ" }), [
     { label: "ความรู้เรื่องผิวและสุขภาพ", href: "/knowledge" },
-    { label: "คำถามที่พบบ่อย" },
+    { label: "ชื่อบทความ" },
   ]);
 });
 
@@ -57,13 +61,17 @@ test("pages outside the registry have no trail at all", () => {
   assert.deepEqual(at("system", "not-found"), []);
 });
 
-test("a hub that is itself nested contributes both of its steps", () => {
-  // /knowledge/questions sits under /knowledge, so a question's trail walks
-  // the hub's whole address rather than jumping straight to it. This is what
-  // the hand-written question page declared before it moved into the system.
+test("a question's trail is its hub, then the question", () => {
+  // The FAQ centre is a destination of its own at /faq, not a shelf inside
+  // /knowledge, so a question sits one step below the top.
+  //
+  // This test used to assert three steps, because the hub was then at
+  // /knowledge/questions and contributed two. No template sits under a nested
+  // hub any more, so that composition has no real page left to check; a page
+  // two levels down is still covered above by /help/delivery, and an ancestor
+  // with no page of its own by the article template.
   assert.deepEqual(at("template", "question", { type: "question", slug: "x", name: "ล้างหน้าวันละกี่ครั้ง" }), [
-    { label: "ความรู้เรื่องผิวและสุขภาพ", href: "/knowledge" },
-    { label: "คำถามที่พบบ่อย", href: "/knowledge/questions" },
+    { label: "คำถามที่พบบ่อย", href: "/faq" },
     { label: "ล้างหน้าวันละกี่ครั้ง" },
   ]);
 });

@@ -22,7 +22,7 @@ const STATIC_ROUTES = [
   "/advisor",
   "/knowledge",
   "/knowledge/ingredients",
-  "/knowledge/questions",
+  "/faq",
   "/knowledge/routines",
   "/knowledge/videos",
   "/help",
@@ -82,7 +82,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // the build, so publishing one does not need a deploy to be findable.
   for (const q of await getPublicQuestions()) {
     entries.push({
-      url: `${SITE_URL}/knowledge/questions/${encodeURIComponent(q.public_slug)}`,
+      url: `${SITE_URL}/faq/${encodeURIComponent(q.public_slug)}`,
       lastModified: new Date(q.updated_at),
     });
   }

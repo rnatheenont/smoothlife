@@ -48,7 +48,16 @@ const nextConfig = {
   // Temporary (307), not permanent: a 308 is cached by the browser forever and
   // would outlive the rename if the path is ever wanted back.
   async redirects() {
-    return [{ source: "/admin/receipts", destination: "/admin/campaigns", permanent: false }];
+    return [
+      { source: "/admin/receipts", destination: "/admin/campaigns", permanent: false },
+      // The FAQ centre took over from /knowledge/questions. Permanent (308)
+      // this time, and safely so: no question had a public_slug until today,
+      // so there is no indexed /knowledge/questions/<slug> for a browser to
+      // cache a redirect away from — unlike /admin/receipts above, where a
+      // 308 would outlive the rename.
+      { source: "/knowledge/questions", destination: "/faq", permanent: true },
+      { source: "/knowledge/questions/:slug", destination: "/faq/:slug", permanent: true },
+    ];
   },
   async headers() {
     return [

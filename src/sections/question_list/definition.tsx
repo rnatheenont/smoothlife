@@ -51,7 +51,7 @@ function Component({ data }: SectionProps<z.output<typeof schema>, PublicQuestio
         {questions.map((q) => (
           <li key={q.public_slug}>
             <Link
-              href={`/knowledge/questions/${encodeURIComponent(q.public_slug)}`}
+              href={`/faq/${encodeURIComponent(q.public_slug)}`}
               className="group flex h-full items-start justify-between gap-3 rounded-xl2 bg-white p-5 ring-1 ring-surface-line transition-colors hover:ring-brand-action/40"
             >
               <span className="min-w-0">

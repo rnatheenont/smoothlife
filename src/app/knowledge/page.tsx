@@ -14,7 +14,7 @@ export const revalidate = 1800;
 const sections = [
   { href: "/knowledge/ingredients", label: "Ingredient Library" },
   { href: "/knowledge/routines", label: "Routine Guides" },
-  { href: "/knowledge/questions", label: "Question Hub" },
+  { href: "/faq", label: "คำถามที่พบบ่อย" },
   { href: "/knowledge/videos", label: "Video and How-to" },
 ];
 

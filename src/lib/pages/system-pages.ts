@@ -109,7 +109,7 @@ const SYSTEM_LIST: SystemPage[] = [
   { key: "knowledge-ingredients", path: "/knowledge/ingredients", title: "ส่วนผสม", group: "ความรู้", wave: 2 },
   { key: "knowledge-routines", path: "/knowledge/routines", title: "รูทีน", group: "ความรู้", wave: 2 },
   { key: "knowledge-videos", path: "/knowledge/videos", title: "วิดีโอ", group: "ความรู้", wave: 2 },
-  { key: "questions", path: "/knowledge/questions", title: "คำถามที่พบบ่อย", group: "ความรู้", wave: 2 },
+  { key: "questions", path: "/faq", title: "คำถามที่พบบ่อย", group: "ความรู้", wave: 2 },
 
   // Wave 4 — tools and the marketing slots inside pages that are mostly
   // machinery. Wave 3 is templates only, which is why it is missing here.
@@ -129,7 +129,7 @@ const TEMPLATE_LIST: TemplatePage[] = [
   { key: "concern", pattern: "/concern/[slug]", title: "หน้าปัญหาผิว", scale: "ทุกปัญหาผิว", wave: 2 },
   { key: "product", pattern: "/product/[slug]", title: "หน้าสินค้า", scale: "สินค้าทุกตัวในร้าน", wave: 3 },
   { key: "article", pattern: "/knowledge/article/[slug]", title: "หน้าบทความ", scale: "ทุกบทความ", wave: 3 },
-  { key: "question", pattern: "/knowledge/questions/[slug]", title: "หน้าคำถาม", scale: "ทุกคำถาม", wave: 3 },
+  { key: "question", pattern: "/faq/[slug]", title: "หน้าคำถาม", scale: "ทุกคำถาม", wave: 3 },
 ];
 
 const GLOBAL_LIST: GlobalDoc[] = [

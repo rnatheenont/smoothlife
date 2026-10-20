@@ -29,7 +29,7 @@ export type KbArticle = {
   reviewed_by: string | null;
   source_ref: string | null;
   /** Set only when someone has chosen to publish this as a public page at
-   *  /knowledge/questions/<slug>. Null means the article is for the assistant
+   *  /faq/<slug>. Null means the article is for the assistant
    *  to quote, not for a reader to land on — see the column comment. */
   public_slug: string | null;
   created_at: string;
@@ -53,6 +53,25 @@ export const KB_COLUMNS =
   // article reindexes it with its question in both languages and its search
   // words — rather than quietly indexing the Thai half on its own.
   "title_en,content_en,keywords,topic,concerns,brand_slugs,visibility";
+
+/**
+ * The columns `articleChunks` reads, as a select list.
+ *
+ * Exists because selecting fewer of them does not fail — it silently indexes
+ * a worse article. `ChunkableArticle` has to keep the FAQ fields optional,
+ * since the articles written before the FAQ centre genuinely have none, which
+ * means `{ id, title, content }` type-checks as something chunkable and then
+ * takes the plain-prose path: no search words, no English, no topic.
+ *
+ * That is exactly what happened to the reindex route. It selected three
+ * columns, and reindexing twenty-one published answers rebuilt every one of
+ * them without the `คำค้น:` line that makes "หน้ามัน" findable, and dropped
+ * their English chunk altogether. Nothing failed; the index just got quieter.
+ *
+ * Any route that rebuilds chunks selects this (or KB_COLUMNS, which contains
+ * it). `reindex-columns.test.ts` checks that they all do.
+ */
+export const CHUNK_COLUMNS = "id,title,content,title_en,content_en,keywords,topic,concerns,brand_slugs";
 
 export const CATEGORY_TH: Record<KbCategory, string> = {
   faq: "คำถามที่พบบ่อย",

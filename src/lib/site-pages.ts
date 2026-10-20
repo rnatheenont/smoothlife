@@ -82,7 +82,7 @@ export const SITE_PAGES: SitePage[] = [
   },
   {
     key: "knowledge-questions",
-    path: "/knowledge/questions",
+    path: "/faq",
     label: "คำถามที่พบบ่อย",
     title: "คำถามที่พบบ่อย | Smoothlife.com",
     description: "คำถามที่ลูกค้าถามเข้ามาจริง พร้อมคำตอบจากทีมงาน Smoothlife.com",

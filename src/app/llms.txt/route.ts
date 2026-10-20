@@ -41,10 +41,10 @@ export async function GET() {
     // page, never worth re-shipping wholesale into a static-feeling file.
     section(
       "คำถามที่พบบ่อย (ตอบโดยทีมงานจริง ไม่ใช่เนื้อหาการตลาด)",
-      questions.slice(0, 30).map((q) => `- [${q.title}](${SITE_URL}/knowledge/questions/${encodeURIComponent(q.public_slug)})`)
+      questions.slice(0, 30).map((q) => `- [${q.title}](${SITE_URL}/faq/${encodeURIComponent(q.public_slug)})`)
     ) +
     section("ข้อมูลเพิ่มเติม", [
-      `- [คำถามที่พบบ่อยทั้งหมด](${SITE_URL}/knowledge/questions)`,
+      `- [คำถามที่พบบ่อยทั้งหมด](${SITE_URL}/faq)`,
       `- [บทความความรู้ผิวและสุขภาพ](${SITE_URL}/knowledge)`,
       `- [Sitemap](${SITE_URL}/sitemap.xml)`,
     ]);

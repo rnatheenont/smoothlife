@@ -1,14 +1,8 @@
 "use client";
 
-import { useState, ReactNode } from "react";
-import { shopifyImage } from "@/lib/shopify-image";
-import Link from "next/link";
-import Image from "next/image";
-import { Check, Plus } from "lucide-react";
-import { useCart } from "@/lib/cart-context";
-import { useLang } from "@/lib/lang-context";
+import { type ReactNode } from "react";
+import ProductRow from "@/components/ProductRow";
 import { useLiteProducts } from "@/lib/use-lite-products";
-import { formatTHB } from "@/lib/format";
 
 // How an assistant reply becomes what a customer actually sees — product
 // mentions turned into real cards, **bold** into emphasis, a run of "- "
@@ -80,53 +74,12 @@ export function ProductChip({ slug }: { slug: string }) {
   // page — carried the whole catalogue. Nothing is drawn until it arrives,
   // which is the same as what happens today for a slug the shop no longer
   // sells.
+  //
+  // The row itself is shared with the FAQ answers now; see ProductRow.
   const { products } = useLiteProducts([slug]);
   const product = products[0];
-  const { addItem } = useCart();
-  const { t } = useLang();
-  const [added, setAdded] = useState(false);
   if (!product) return null;
-
-  return (
-    <div className="my-2 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2 shadow-xs">
-      <Link href={`/product/${product.slug}`} className="shrink-0 relative h-14 w-14 block">
-        <Image
-          src={shopifyImage(product.image, 112)}
-          alt={product.name}
-          fill
-          sizes="56px"
-          className="rounded-lg object-cover bg-surface-soft"
-        />
-      </Link>
-      <div className="min-w-0 flex-1">
-        <Link
-          href={`/product/${product.slug}`}
-          translate="no"
-          className="block text-[12px] font-semibold leading-snug text-brand-ink line-clamp-2 hover:text-brand-800"
-        >
-          {product.name}
-        </Link>
-        <div className="mt-0.5 flex items-baseline gap-1.5">
-          <span className="text-[12px] font-bold text-brand-800">{formatTHB(product.price)}</span>
-          {product.compareAtPrice ? (
-            <span className="text-[10px] text-slate-500 line-through">{formatTHB(product.compareAtPrice)}</span>
-          ) : null}
-        </div>
-      </div>
-      <button
-        onClick={() => {
-          addItem(product.slug, 1, product.variantId);
-          setAdded(true);
-        }}
-        aria-label={t("เพิ่มลงตะกร้า", "Add to cart")}
-        className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-white transition-colors ${
-          added ? "bg-slate-300" : "bg-brand-gradient"
-        }`}
-      >
-        {added ? <Check size={15} /> : <Plus size={15} />}
-      </button>
-    </div>
-  );
+  return <ProductRow product={product} className="my-2" />;
 }
 
 // Breaks a plain-text segment into paragraph/list blocks so a long reply

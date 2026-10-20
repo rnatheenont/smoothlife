@@ -77,7 +77,7 @@ const knowledge = (): PageDoc =>
         items: [
           { label: "Ingredient Library", href: "/knowledge/ingredients" },
           { label: "Routine Guides", href: "/knowledge/routines" },
-          { label: "Question Hub", href: "/knowledge/questions" },
+          { label: "คำถามที่พบบ่อย", href: "/faq" },
           { label: "Video and How-to", href: "/knowledge/videos" },
         ],
       },

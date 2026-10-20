@@ -884,7 +884,7 @@ export default function AdminKnowledgeBasePage() {
             ) : form.publicSlug.trim() ? (
               <>
                 <p className="mt-1 text-xs text-slate-500">
-                  จะเปิดได้ที่ /knowledge/questions/{form.publicSlug.trim()}
+                  จะเปิดได้ที่ /faq/{form.publicSlug.trim()}
                 </p>
                 {/\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32/.test(form.content) && (
                   <p className="mt-1 text-xs text-amber-600">
