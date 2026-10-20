@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchKb } from "@/lib/kb";
-import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
+import { supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { clientIp, isRateLimited } from "@/lib/rate-limit";
 import { getFaqArticles } from "@/lib/faq-public";
 import { normalize } from "@/lib/faq-score";
+import { recordGap } from "@/lib/kb-gaps";
 
 // Layer two of the FAQ search: meaning, for the questions substring matching
 // cannot reach.
@@ -93,31 +94,10 @@ async function logSearch(query: string, results: number) {
       returning: false,
       body: JSON.stringify({ query: query.slice(0, 200), normalized: normalized.slice(0, 200), results, scope: "faq" }),
     });
-
-    if (results > 0) return;
-
-    // A question with no answer is the one thing on this page worth acting
-    // on. Counted rather than appended, so "ส่งกี่วัน" asked two hundred
-    // times is one row with hits=200 and not two hundred rows.
-    const existing = await supabaseRest<{ id: string; hits: number; examples: string[] | null }[]>(
-      `kb_gaps?question=eq.${pgValue(normalized)}&select=id,hits,examples&limit=1`
-    );
-    const hit = existing?.[0];
-    if (hit) {
-      const examples = [...new Set([...(hit.examples ?? []), query])].slice(-10);
-      await supabaseRest(`kb_gaps?id=eq.${hit.id}`, {
-        method: "PATCH",
-        returning: false,
-        body: JSON.stringify({ hits: (hit.hits ?? 0) + 1, examples, last_seen: new Date().toISOString() }),
-      });
-    } else {
-      await supabaseRest("kb_gaps", {
-        method: "POST",
-        returning: false,
-        body: JSON.stringify({ question: normalized.slice(0, 300), examples: [query], hits: 1, sources: ["faq"], status: "open" }),
-      });
-    }
   } catch {
     // Silent on purpose — see above.
   }
+  // The gap queue is shared with the chat and the product pages, so it has
+  // one implementation rather than a copy here.
+  if (results === 0) await recordGap({ question: query, source: "faq" });
 }

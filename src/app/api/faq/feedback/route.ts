@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { revalidateTag } from "next/cache";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { clientIp, isRateLimited } from "@/lib/rate-limit";
+import { recordGap } from "@/lib/kb-gaps";
 
 // Was this answer helpful?
 //
@@ -50,8 +51,8 @@ export async function POST(req: NextRequest) {
     // endpoint would accept votes for the draft answers and for the
     // assistant-only ones, and the counts it feeds decide what goes first on
     // a public page.
-    const article = await supabaseRest<{ id: string; public_slug: string | null }[]>(
-      `kb_articles?id=eq.${pgValue(articleId)}&status=eq.published&visibility=eq.public&public_slug=not.is.null&select=id,public_slug&limit=1`
+    const article = await supabaseRest<{ id: string; public_slug: string | null; title: string }[]>(
+      `kb_articles?id=eq.${pgValue(articleId)}&status=eq.published&visibility=eq.public&public_slug=not.is.null&select=id,public_slug,title&limit=1`
     );
     const found = article?.[0];
     if (!found) return NextResponse.json({ ok: false }, { status: 404 });
@@ -83,6 +84,14 @@ export async function POST(req: NextRequest) {
       returning: false,
       body: JSON.stringify({ p_article_id: articleId, p_helpful: helpful }),
     });
+
+    // A thumbs-down on an answer that exists is still a question the shop
+    // has not answered well enough — §8.4 counts it the same as a search
+    // that found nothing. The question recorded is the FAQ's own, because
+    // that is what the reader was looking at when they said it did not help.
+    if (!helpful && found.title) {
+      void recordGap({ question: found.title, source: "faq" });
+    }
 
     // The counts order the list, so the page has to be rebuilt to show it.
     revalidateTag("kb-public", { expire: 0 });

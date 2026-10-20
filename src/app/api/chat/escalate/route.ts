@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseRest, supabaseConfigured } from "@/lib/supabase-server";
+import { recordGap } from "@/lib/kb-gaps";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/session";
 import { openConversation, appendMessage } from "@/lib/conversations";
 
@@ -102,6 +103,12 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[chat/escalate] escalation saved but inbox handoff failed", err);
   }
+
+  // A customer asking for a person is the clearest signal the shop has that
+  // the written answers did not cover their question. §8.4: the queue only
+  // saw the turns where the assistant searched and found nothing, which
+  // misses every turn where it answered badly and they gave up on it.
+  if (note) void recordGap({ question: note, source: "chat" });
 
   return NextResponse.json({ ok: true, id: created?.id, contactValue });
 }

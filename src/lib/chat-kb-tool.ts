@@ -18,6 +18,8 @@
 // explicitly.
 import type Anthropic from "@anthropic-ai/sdk";
 import { searchKb, KB_MIN_SCORE, type KbMatch } from "@/lib/kb";
+import { supabaseRest, pgValue } from "@/lib/supabase-server";
+import { recordGap } from "@/lib/kb-gaps";
 
 // Below this the match is noise and the assistant should hand over instead.
 // The number lives in kb.ts now and is sent to kb_search as p_min_score: the
@@ -33,7 +35,11 @@ export const KB_TOOL: Anthropic.Tool = {
     "and what happens to a customer's photos and personal data. " +
     "Use it for ANY question about what the shop does or promises, about what this site does or how to use it, and before saying anything about a policy. " +
     "Your own general knowledge is not a source here — in particular, never state from memory what happens to a customer's face photo or personal data; that answer must come from an article. " +
-    "Returns matching passages, best first, each with its article title. If nothing comes back, say you are not certain and offer to pass the question to the team; never guess a policy.",
+    "Returns matching passages, best first, each with its article title. " +
+    "A passage may also carry a link (อ่านเพิ่ม: /faq/…), the slugs of products its answer names, and a call to action. " +
+    "When you answer from one, give the link so the customer can read the whole thing, and call get_product_details for any product slug before you mention it — " +
+    "the price and the stock in your context are stale by the time you read them, and a price stated from memory is wrong in the one way a customer notices. " +
+    "If nothing comes back, say you are not certain and offer to pass the question to the team; never guess a policy.",
   input_schema: {
     type: "object",
     properties: {
@@ -62,14 +68,70 @@ export async function runKbTool(input: unknown): Promise<KbToolResult> {
   }
 
   if (matches.length === 0) {
+    // The question nobody can answer is the one worth writing down. Not
+    // awaited: the customer's reply does not wait for the queue.
+    void recordGap({ question: query, source: "chat" });
     return {
       text: "No approved article covers this. Do not answer it from general knowledge — say you are not certain and offer to pass the question to the team.",
       matches: [],
     };
   }
 
+  const extras = await articleExtras(matches.map((m) => m.article_id));
+
   const text = matches
-    .map((m, i) => `[${i + 1}] ${m.title} (${m.category})\n${m.chunk_text}`)
+    .map((m, i) => {
+      const e = extras.get(m.article_id);
+      const lines = [`[${i + 1}] ${m.title} (${m.category})`, m.chunk_text];
+      if (e?.public_slug) lines.push(`อ่านเพิ่ม: /faq/${e.public_slug}`);
+      if (e?.product_tags?.length) lines.push(`product_slugs: ${e.product_tags.join(", ")}`);
+      if (e?.cta_label && e.cta_href) lines.push(`cta: ${e.cta_label} → ${e.cta_href}`);
+      return lines.join("\n");
+    })
     .join("\n\n---\n\n");
-  return { text: `Answer only from these approved passages. Quote what they say; do not add policy they do not state.\n\n${text}`, matches };
+
+  return {
+    text:
+      "Answer only from these approved passages. Quote what they say; do not add policy they do not state.\n" +
+      "Give the อ่านเพิ่ม link when there is one. For any product_slugs, call get_product_details first — never state a price from these passages or from memory.\n\n" +
+      text,
+    matches,
+  };
+}
+
+type ArticleExtras = {
+  article_id: string;
+  public_slug: string | null;
+  product_tags: string[] | null;
+  cta_label: string | null;
+  cta_href: string | null;
+};
+
+/**
+ * The parts of an article that are about where to go next rather than what to
+ * say — its page, the products it names, its call to action.
+ *
+ * Fetched separately rather than added to kb_search's returned columns: the
+ * search returns one row per chunk, so the same article's slug would come
+ * back two or three times, and the function is also used by the eval and the
+ * /faq search, neither of which wants them.
+ */
+async function articleExtras(ids: string[]): Promise<Map<string, ArticleExtras>> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return new Map();
+  try {
+    const rows = await supabaseRest<ArticleExtras[]>(
+      `kb_articles?id=in.(${unique.map(pgValue).join(",")})&select=id,public_slug,product_tags,cta_label,cta_href`
+    );
+    return new Map(
+      rows.map((r) => [
+        (r as unknown as { id: string }).id,
+        { ...r, article_id: (r as unknown as { id: string }).id },
+      ])
+    );
+  } catch (err) {
+    // The passages are the answer; the links are a courtesy.
+    console.error("[chat] reading article links failed", err);
+    return new Map();
+  }
 }
