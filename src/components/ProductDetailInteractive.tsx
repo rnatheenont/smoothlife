@@ -166,7 +166,11 @@ export default function ProductDetailInteractive({
   // (about/benefits/ingredients) and has been dropped, so on a product nobody
   // has written up yet the page starts at the reviews — until the write-up
   // lands, those catalogue fields are not shown on the page at all.
-  const tabs = contentBlocks?.length ? [CONTENT_TAB, ...BASE_TABS] : BASE_TABS;
+  // The details tab exists when there is anything to put in it: copy
+  // somebody wrote, or the spec table from Shopify's taxonomy. Keyed on
+  // either, because a product can now have the second without the first.
+  const hasDetails = Boolean(contentBlocks?.length || product.specs?.length);
+  const tabs = hasDetails ? [CONTENT_TAB, ...BASE_TABS] : BASE_TABS;
   const images =
     product.images && product.images.length > 0
       ? product.images
@@ -1217,9 +1221,31 @@ export default function ProductDetailInteractive({
               product JSON-LD anyway. This panel is the one place the copy
               somebody wrote by hand exists at all, and content that is never
               in the document cannot be indexed from it. */}
-          {contentBlocks && (
+          {(contentBlocks || product.specs?.length) && (
             <div hidden={tab !== CONTENT_TAB.id}>
-              <ProductContentBlocks blocks={contentBlocks} />
+              {contentBlocks && <ProductContentBlocks blocks={contentBlocks} />}
+              {/* The facts from Shopify's product taxonomy, under whatever
+                  somebody wrote by hand. Only when there are rows: an empty
+                  frame under a heading reads as "we have nothing to say about
+                  this product", which is not the same as not having filled
+                  the fields in yet. The same rows go into the page's
+                  structured data (json-ld.ts), from the same array. */}
+              {product.specs && product.specs.length > 0 && (
+                <section className={contentBlocks ? "mt-7" : undefined}>
+                  <h3 className="mb-2 font-bold text-brand-ink">ข้อมูลผลิตภัณฑ์</h3>
+                  <dl className="divide-y divide-slate-100 overflow-hidden rounded-xl2 ring-1 ring-slate-100">
+                    {product.specs.map((row) => (
+                      <div
+                        key={row.label}
+                        className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-3 px-4 py-2.5"
+                      >
+                        <dt className="text-[13px] text-slate-500">{row.label}</dt>
+                        <dd className="text-[13px] text-brand-ink">{row.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
             </div>
           )}
         </div>

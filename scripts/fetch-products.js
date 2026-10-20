@@ -483,6 +483,68 @@ function reviewScore(metafields) {
   return { rating: Math.min(5, rating), reviewCount };
 }
 
+/* ---------- spec table ----------
+ * The facts about a product that are facts rather than prose: what form it
+ * comes in, whose skin it suits, what is in it, the registration number on
+ * the box.
+ *
+ * They live in Shopify's standard product taxonomy, which the team has been
+ * filling in for a while — 335 products have a skin type, 407 have a form —
+ * and until now this site read none of it. Each one is a list of metaobject
+ * references, and the readable name is the `label` field on the metaobject.
+ *
+ * The three `custom.*` keys are ours, for the things Shopify's taxonomy has
+ * no place for: the Thai FDA registration number, the pack size, and where
+ * it was made. They are empty today; they fill in as the team types them,
+ * and nothing here needs changing when they do.
+ *
+ * Order matters — this is the order the rows appear in. Anything with no
+ * value is left out entirely, which is why a product nobody has catalogued
+ * yet gets no table rather than an empty one.
+ *
+ * The labels Shopify stores are English ("Serum", "Hyaluronic acid"). The
+ * row headings are Thai because the page is; the values are shown as the
+ * taxonomy spells them, which is better than a guessed translation of a
+ * term that means something specific. */
+const SPEC_ROWS = [
+  ["product-form", "รูปแบบผลิตภัณฑ์"],
+  ["suitable-for-skin-type", "เหมาะกับสภาพผิว"],
+  ["skin-care-effect", "ช่วยเรื่อง"],
+  ["constitutive-ingredients", "ส่วนประกอบหลัก"],
+  ["active-ingredient", "สารออกฤทธิ์"],
+  ["target-gender", "เหมาะสำหรับ"],
+  ["age-group", "ช่วงวัย"],
+  ["product-certifications-standards", "มาตรฐานและการรับรอง"],
+  ["size", "ขนาดบรรจุ"],
+  ["country_of_origin", "ประเทศที่ผลิต"],
+  ["fda_number", "เลขจดแจ้ง อย."],
+];
+
+/** The readable value of one metafield: the labels of everything it points
+ *  at, or its own text when it points at nothing. */
+function specValue(mf) {
+  const labels = (mf?.references?.nodes || [])
+    .map((n) => (n?.fields || []).find((f) => f.key === "label")?.value)
+    .filter(Boolean);
+  if (labels.length) return labels.join(" · ");
+
+  const raw = String(mf?.value ?? "").trim();
+  // A reference list we could not expand is a row of GIDs, which is worse
+  // than no row at all.
+  if (!raw || raw.startsWith("gid://") || raw.startsWith("[")) return "";
+  return raw;
+}
+
+function specTable(metafields) {
+  const byKey = Object.fromEntries((metafields || []).filter(Boolean).map((m) => [m.key, m]));
+  const rows = [];
+  for (const [key, label] of SPEC_ROWS) {
+    const value = specValue(byKey[key]);
+    if (value) rows.push({ label, value });
+  }
+  return rows;
+}
+
 /* ---------- Storefront API fetch ---------- */
 
 const PRODUCTS_QUERY = `
@@ -500,9 +562,30 @@ const PRODUCTS_QUERY = `
           descriptionHtml
           publishedAt
           seo { title description }
-          metafields(identifiers: [{namespace: "reviews", key: "rating"}, {namespace: "reviews", key: "rating_count"}]) {
+          metafields(identifiers: [
+            {namespace: "reviews", key: "rating"},
+            {namespace: "reviews", key: "rating_count"},
+            {namespace: "shopify", key: "suitable-for-skin-type"},
+            {namespace: "shopify", key: "product-form"},
+            {namespace: "shopify", key: "skin-care-effect"},
+            {namespace: "shopify", key: "constitutive-ingredients"},
+            {namespace: "shopify", key: "active-ingredient"},
+            {namespace: "shopify", key: "target-gender"},
+            {namespace: "shopify", key: "age-group"},
+            {namespace: "shopify", key: "product-certifications-standards"},
+            {namespace: "custom", key: "fda_number"},
+            {namespace: "custom", key: "size"},
+            {namespace: "custom", key: "country_of_origin"}
+          ]) {
             key
             value
+            references(first: 12) {
+              nodes {
+                ... on Metaobject {
+                  fields { key value }
+                }
+              }
+            }
           }
           images(first: 10) { edges { node { url } } }
           variants(first: 25) {
@@ -745,6 +828,7 @@ function toProduct(p, usedSlugs) {
     image2: images[1] ? img(1) : "",
     images: images.map((_, i) => img(i)),
     ...reviewScore(p.metafields),
+    specs: specTable(p.metafields),
     badges: badges.slice(0, 3),
     // Full sentences from Shopify's own description — none of these fields
     // get line-clamped in the UI (they render in full on the product detail
@@ -797,6 +881,13 @@ function serialise(list) {
     if (p.images.length > 2) f.push(`images:[${p.images.map((i) => `"${esc(i)}"`).join(",")}]`);
     f.push(`rating:${p.rating}`);
     f.push(`reviewCount:${p.reviewCount}`);
+    // The spec table, and only here: it is page content, not card content,
+    // so the browser catalogue has no use for it and every product's worth
+    // of it would be weight on every visitor's first paint.
+    if (p.specs?.length) {
+      const rows = p.specs.map((r) => `{label:"${esc(r.label)}",value:"${esc(r.value)}"}`);
+      f.push(`specs:[${rows.join(",")}]`);
+    }
     if (p.sold) f.push(`sold:${p.sold}`);
     if (p.badges.length) f.push(`badges:[${p.badges.map((b) => `"${b}"`).join(",")}]`);
     f.push(`shortDesc:"${esc(p.shortDesc)}"`);

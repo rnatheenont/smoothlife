@@ -122,6 +122,18 @@ export function productJsonLd(product: Product, reviews: ReviewRow[]) {
       ? { sku: product.variants[0].sku }
       : {}),
     offers,
+    // The same rows the page prints as a spec table, and only when there are
+    // rows — a Product with an empty additionalProperty says "we catalogued
+    // this and found nothing", which is not what an empty table means.
+    ...(product.specs?.length
+      ? {
+          additionalProperty: product.specs.map((row) => ({
+            "@type": "PropertyValue",
+            name: row.label,
+            value: row.value,
+          })),
+        }
+      : {}),
     ...(aggregateRating ? { aggregateRating } : {}),
     ...(review.length ? { review } : {}),
   };

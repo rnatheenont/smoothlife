@@ -54,6 +54,17 @@ export type Product = {
   images?: string[];
   rating: number;
   reviewCount: number;
+  /**
+   * The product's facts as a table: form, skin type, main ingredients, the
+   * registration number. Built from Shopify's standard product taxonomy and
+   * our own custom.* metafields (see scripts/fetch-products.js).
+   *
+   * Only in product-details, never in the browser catalogue — it is page
+   * content, not card content. Absent or empty on a product nobody has
+   * catalogued yet, and both the page and the structured data leave the
+   * whole table out in that case rather than printing an empty frame.
+   */
+  specs?: { label: string; value: string }[];
   /** Units actually sold (paid orders, net of refunds and cancellations). Set at build time. */
   sold?: number;
   badges?: ("Bestseller" | "New" | "Sale" | "BOGO" | "Bundle")[];
