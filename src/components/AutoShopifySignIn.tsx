@@ -14,8 +14,11 @@
 // trip is invisible — the callback sends them back where they were with no
 // error, no flash of a login page.
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { SHOPIFY_EMAIL_LOGIN, SSO_OPT_OUT_COOKIE, shopifyAuthStartPath } from "@/lib/shopify-email-login";
+// Which pages are worth the round trip, and why these three — see sso-paths.
+import { wantsIdentity } from "@/lib/sso-paths";
 
 /** One attempt per tab. Survives the round trip, gone when the tab is. */
 const TRIED_KEY = "sl_sso_tried";
@@ -69,6 +72,10 @@ function safely<T>(fn: () => T, fallback: T): T {
 
 export default function AutoShopifySignIn() {
   const { user, loading } = useAuth();
+  // Read through the router rather than window, so a visitor who walks from
+  // the home page to their basket without a page load is still offered this.
+  // The component lives in the layout and is never remounted by navigation.
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!SHOPIFY_EMAIL_LOGIN) return;
@@ -81,8 +88,9 @@ export default function AutoShopifySignIn() {
     if (safely(() => document.cookie.includes(`${SSO_OPT_OUT_COOKIE}=1`), true)) return;
     // The paths that are already a conversation about identity run their own
     // flows with their own state cookie; a silent attempt would land on top.
-    const path = window.location.pathname;
+    const path = pathname ?? window.location.pathname;
     if (path.startsWith("/api/") || path.startsWith("/account/complete-profile")) return;
+    if (!wantsIdentity(path)) return;
     // A host Shopify has not been told about — see SSO_HOSTS.
     if (!SSO_HOSTS.includes(window.location.hostname)) return;
 
@@ -92,7 +100,7 @@ export default function AutoShopifySignIn() {
       returnTo: `${path}${window.location.search}`,
       silent: true,
     });
-  }, [user, loading]);
+  }, [user, loading, pathname]);
 
   return null;
 }
