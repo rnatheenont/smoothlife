@@ -9,6 +9,7 @@ import { PageHeader, adminTable } from "@/components/admin/layout-kit";
 import FaqImportPanel from "@/components/admin/FaqImportPanel";
 import FaqTopicsPanel from "@/components/admin/FaqTopicsPanel";
 import FaqGapsPanel from "@/components/admin/FaqGapsPanel";
+import FaqStatsPanel from "@/components/admin/FaqStatsPanel";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import {
   CATEGORY_TH,
@@ -71,7 +72,7 @@ export default function AdminKnowledgeBasePage() {
   // what it must refuse — so they are two tabs rather than one stacked on
   // top of the other.
   const [tab, setTab] = useState<
-    "articles" | "topics" | "import" | "gaps" | "blocked" | "suggestions" | "log"
+    "articles" | "topics" | "import" | "gaps" | "stats" | "blocked" | "suggestions" | "log"
   >("articles");
   const [confirming, setConfirming] = useState<string | null>(null);
   const [truncated, setTruncated] = useState(false);
@@ -347,6 +348,7 @@ export default function AdminKnowledgeBasePage() {
           { key: "topics", label: "หัวข้อ" },
           { key: "import", label: "นำเข้า / ส่งออก" },
           { key: "gaps", label: "คำถามที่ยังไม่มีคำตอบ" },
+          { key: "stats", label: "สถิติ" },
           { key: "blocked", label: "เรื่องที่ห้าม AI ตอบ" },
           { key: "suggestions", label: "คำถามแนะนำ" },
           { key: "log", label: "log คำตอบของ AI" },
@@ -369,6 +371,7 @@ export default function AdminKnowledgeBasePage() {
       {tab === "topics" && <FaqTopicsPanel />}
       {tab === "import" && <FaqImportPanel />}
       {tab === "gaps" && <FaqGapsPanel />}
+      {tab === "stats" && <FaqStatsPanel />}
       {tab === "blocked" && <BlockedTopicsPanel />}
       {tab === "suggestions" && <ChatSuggestionsPanel />}
       {tab === "log" && <AiAnswerLogPanel />}

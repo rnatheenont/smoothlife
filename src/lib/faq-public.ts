@@ -208,3 +208,65 @@ export function answerParagraphs(content: string): string[] {
     .map((p) => p.replace(/[ \t]+/g, " ").trim())
     .filter(Boolean);
 }
+
+
+/**
+ * The questions to show on a page that is about something.
+ *
+ * A product page asks three times before giving up, in the order of how much
+ * the answer has to do with what you are looking at: questions tagged with
+ * this exact product, then questions about its brand, then questions about
+ * the concerns it is sold for. Three questions about acne under an acne
+ * serum are worth more than three about shipping; three about shipping are
+ * worth more than an empty box.
+ *
+ * Each step only asks for what the step before did not fill, and the result
+ * keeps its order, so the most specific answers stay at the top.
+ */
+export async function faqForContext(opts: {
+  productSlug?: string | null;
+  brandSlug?: string | null;
+  concernSlug?: string | null;
+  topic?: string | null;
+  /** Concerns of the product, for the last step of its cascade. */
+  productConcerns?: string[];
+  pinnedOnly?: boolean;
+  limit?: number;
+}): Promise<FaqArticle[]> {
+  const limit = Math.min(Math.max(opts.limit ?? 3, 1), 12);
+  if (!supabaseConfigured()) return [];
+
+  const base = `kb_articles?status=eq.published&visibility=eq.public&public_slug=not.is.null&select=${ARTICLE_COLUMNS}` +
+    (opts.pinnedOnly ? "&pinned=is.true" : "") +
+    "&order=pinned.desc.nullslast,sort.asc.nullslast,helpful_count.desc.nullslast";
+
+  const found: FaqArticle[] = [];
+  const seen = new Set<string>();
+
+  const take = async (filter: string) => {
+    if (found.length >= limit) return;
+    try {
+      const rows = await supabaseRestCached<FaqArticle[]>(`${base}&${filter}&limit=${limit * 2}`, {
+        revalidate: REVALIDATE,
+        tags: [TAG],
+      });
+      for (const r of rows) {
+        if (found.length >= limit || seen.has(r.id)) continue;
+        seen.add(r.id);
+        found.push(r);
+      }
+    } catch {
+      // One step failing should not empty the box the others filled.
+    }
+  };
+
+  // `cs` is "contains" on an array column; the value is a Postgres array
+  // literal, so a slug is wrapped in braces rather than quoted like a string.
+  if (opts.productSlug) await take(`product_tags=cs.{${encodeURIComponent(opts.productSlug)}}`);
+  if (opts.brandSlug) await take(`brand_slugs=cs.{${encodeURIComponent(opts.brandSlug)}}`);
+  if (opts.concernSlug) await take(`concerns=cs.{${encodeURIComponent(opts.concernSlug)}}`);
+  for (const c of opts.productConcerns ?? []) await take(`concerns=cs.{${encodeURIComponent(c)}}`);
+  if (opts.topic) await take(`topic=eq.${encodeURIComponent(opts.topic)}`);
+
+  return found;
+}

@@ -120,6 +120,8 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   // question away, or adds a search word to an existing answer. None of it
   // changes what a customer is told.
   { prefix: "/api/admin/kb/gaps", permission: "kb.draft" },
+  // Reading how the FAQ centre is doing changes nothing.
+  { prefix: "/api/admin/kb/stats", permission: "kb.draft", methods: READ },
   // Running the accuracy test reads the base and asks the embedding provider;
   // rebuilding the test set replaces it, which is how the number stops
   // meaning what it meant last week.

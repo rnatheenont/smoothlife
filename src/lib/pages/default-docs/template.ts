@@ -40,6 +40,11 @@ const concern = (): PageDoc =>
       v: 1,
       settings: { heading: "สินค้าแนะนำ", emptyText: "เร็วๆ นี้จะมีสินค้าเพิ่มเติมสำหรับหมวดนี้" },
     },
+    {
+      type: "faq",
+      v: 1,
+      settings: { heading: "คำถามที่พบบ่อยเรื่องนี้", source: "kb", kbMode: "auto", kbValue: "", kbLimit: 5, items: [] },
+    },
   ]);
 
 /**
@@ -147,6 +152,17 @@ const product = (): PageDoc =>
       settings: { showHome: true, display: "row", room: "none", back: "beside", backHref: "" },
     },
     { type: "product_detail", v: 1, settings: {} },
+    // Three questions this product is actually asked, written once in the FAQ
+    // centre and read here. `auto` walks the cascade in §5: questions tagged
+    // with this product, then its brand, then the concerns it is sold for —
+    // so a product nobody has written about yet shows its brand's answers
+    // rather than an empty box, and the section draws nothing at all when
+    // even that comes back empty.
+    {
+      type: "faq",
+      v: 1,
+      settings: { heading: "คำถามที่พบบ่อยเกี่ยวกับสินค้านี้", source: "kb", kbMode: "auto", kbValue: "", kbLimit: 3, items: [] },
+    },
     {
       type: "related_products",
       v: 1,

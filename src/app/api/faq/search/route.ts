@@ -26,6 +26,21 @@ const MAX_QUERY = 120;
  *  rephrasing will legitimately hit this a dozen times in a minute. */
 const RATE = { attempts: 30, windowMs: 60_000 };
 const CACHE_SECONDS = 86_400;
+/**
+ * An empty answer is cached for minutes, not a day.
+ *
+ * The day-long cache is right for a question that has an answer: the set only
+ * changes when somebody publishes. It is wrong for a question that has none,
+ * because publishing the answer is exactly the event that makes the cached
+ * "nothing" wrong — and the cached nothing then hides the new answer from
+ * everyone until tomorrow.
+ *
+ * It happened: the payment answer was published, and
+ * /api/faq/search?q=เก็บเงินปลายทางได้ไหม kept returning [] from the edge
+ * while the database had returned three matches since the moment it went
+ * live. The gap queue was filling with a question that had been answered.
+ */
+const EMPTY_CACHE_SECONDS = 300;
 
 export async function GET(req: NextRequest) {
   const raw = (req.nextUrl.searchParams.get("q") ?? "").slice(0, MAX_QUERY).trim();
@@ -56,16 +71,13 @@ export async function GET(req: NextRequest) {
 
     void logSearch(raw, slugs.length);
 
+    // Cached at the edge by URL, so the same question asked by the next
+    // visitor costs nothing — but see EMPTY_CACHE_SECONDS for why finding
+    // nothing is cached for a much shorter time than finding something.
+    const ttl = slugs.length > 0 ? CACHE_SECONDS : EMPTY_CACHE_SECONDS;
     return NextResponse.json(
       { slugs },
-      {
-        headers: {
-          // Cached at the edge by URL, so the same question asked by the next
-          // visitor costs nothing. A day, because the answer set only changes
-          // when somebody publishes.
-          "Cache-Control": `public, s-maxage=${CACHE_SECONDS}, stale-while-revalidate=${CACHE_SECONDS}`,
-        },
-      }
+      { headers: { "Cache-Control": `public, s-maxage=${ttl}, stale-while-revalidate=${ttl}` } }
     );
   } catch (err) {
     console.error("[faq] search failed", err);

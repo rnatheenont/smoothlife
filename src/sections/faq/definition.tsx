@@ -1,7 +1,10 @@
+import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { z } from "zod";
-import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
+import type { RenderCtx, SectionDefinition, SectionProps } from "@/lib/pages/types";
 import { helpFaqs } from "@/data/help";
+import { answerParagraphs, faqForContext } from "@/lib/faq-public";
+import { getProductBySlug } from "@/data/products";
 
 // Questions and answers, from wherever the shop already keeps them.
 //
@@ -12,9 +15,17 @@ import { helpFaqs } from "@/data/help";
 // are, so editing them in one place changes all three.
 //
 // `manual` is for the questions that belong to one page and nowhere else —
-// the four about a campaign's rules. `kb` (the public FAQ table) arrives with
-// the knowledge pages in wave 2; it is deliberately absent here rather than
-// present and broken.
+// the four about a campaign's rules. `kb` reads the published FAQ, so a
+// question written once in the FAQ centre shows up on the product page, the
+// brand page and the concern page it belongs to, and editing it there
+// changes all of them.
+//
+// `kb` in "auto" mode works out what the page is about rather than being
+// told: a concern page asks for that concern, a brand page for that brand, a
+// product page asks three times — its own tag, then its brand, then the
+// concerns it is sold for — and anything else falls back to the pinned
+// ordering questions. Being told is still available for the pages where the
+// guess is wrong.
 //
 // Drawn with <details>, so it opens and closes with no JavaScript at all.
 // An accordion is the one widget where that still works perfectly.
@@ -26,16 +37,75 @@ import { helpFaqs } from "@/data/help";
 
 const schema = z.object({
   heading: z.string().max(120).default(""),
-  source: z.enum(["manual", "help"]).default("manual"),
+  source: z.enum(["manual", "help", "kb"]).default("manual"),
+  /** kb only. New fields with defaults, so no stored document needs migrating. */
+  kbMode: z.enum(["auto", "topic", "concern", "brand", "pinned"]).default("auto"),
+  kbValue: z.string().max(80).default(""),
+  kbLimit: z.number().int().min(1).max(12).default(6),
   items: z
     .array(z.object({ q: z.string().max(200).default(""), a: z.string().max(2000).default("") }))
     .max(30)
     .default([]),
 });
 
-function Component({ settings }: SectionProps<z.output<typeof schema>>) {
-  const items = (settings.source === "help" ? helpFaqs : settings.items).filter((i) => i.q && i.a);
-  if (items.length === 0) return null;
+type KbItem = { q: string; a: string; slug: string };
+
+/** What the page is about, when nobody said. */
+function autoFilter(ctx: RenderCtx) {
+  const entity = ctx.entity;
+  if (entity?.type === "concern") return { concernSlug: entity.slug };
+  if (ctx.kind === "brand") return { brandSlug: ctx.slug };
+  if (entity?.type === "product") {
+    // The brand and the concerns come from the catalogue, not from the
+    // entity: EntityRef carries a slug and a name, and widening it would mean
+    // changing every route that builds one so that this section can ask one
+    // extra question.
+    const product = getProductBySlug(entity.slug);
+    return {
+      productSlug: entity.slug,
+      brandSlug: product?.brand ?? null,
+      productConcerns: product?.concerns ?? [],
+    };
+  }
+  // Nothing to be about: the questions everyone asks, which is what /help
+  // and a plain page want.
+  return { topic: "ordering-support", pinnedOnly: true };
+}
+
+async function load(settings: z.output<typeof schema>, ctx: RenderCtx): Promise<KbItem[]> {
+  if (settings.source !== "kb") return [];
+
+  const picked =
+    settings.kbMode === "topic"
+      ? { topic: settings.kbValue || null }
+      : settings.kbMode === "concern"
+        ? { concernSlug: settings.kbValue || null }
+        : settings.kbMode === "brand"
+          ? { brandSlug: settings.kbValue || null }
+          : settings.kbMode === "pinned"
+            ? { pinnedOnly: true }
+            : autoFilter(ctx);
+
+  const articles = await faqForContext({ ...picked, limit: settings.kbLimit });
+  return articles.map((a) => ({
+    q: a.title,
+    // The first block only. The whole answer belongs on its own page, and
+    // this is a summary with a way through to it.
+    a: answerParagraphs(a.content)[0] ?? a.content,
+    slug: a.public_slug,
+  }));
+}
+
+function Component({ settings, data }: SectionProps<z.output<typeof schema>, KbItem[]>) {
+  // One shape for all three sources, so the markup below does not have to
+  // ask which one it got. Only the knowledge base has a page to link to.
+  const items: KbItem[] =
+    settings.source === "kb"
+      ? (data ?? [])
+      : (settings.source === "help" ? helpFaqs : settings.items).map((i) => ({ q: i.q, a: i.a, slug: "" }));
+
+  const shown = items.filter((i) => i.q && i.a);
+  if (shown.length === 0) return null;
 
   return (
     <section className="container-page pb-8 md:pb-10">
@@ -45,7 +115,7 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
           one-open-at-a-time behaviour natively, and the first one starts
           open exactly as it did. */}
       <div className="flex flex-col gap-2">
-        {items.map((item, i) => (
+        {shown.map((item, i) => (
           <details
             key={i}
             name="faq"
@@ -59,7 +129,17 @@ function Component({ settings }: SectionProps<z.output<typeof schema>>) {
                 className="shrink-0 text-slate-400 transition-transform group-open:rotate-180"
               />
             </summary>
-            <div className="px-4 pb-4 text-sm text-slate-600">{item.a}</div>
+            <div className="px-4 pb-4 text-sm text-slate-600">
+              {item.a}
+              {item.slug && (
+                <Link
+                  href={`/faq/${encodeURIComponent(item.slug)}`}
+                  className="ml-1 font-semibold text-brand-800 underline-offset-4 hover:underline"
+                >
+                  อ่านคำตอบเต็ม
+                </Link>
+              )}
+            </div>
           </details>
         ))}
       </div>
@@ -77,6 +157,9 @@ export const faq: SectionDefinition<typeof schema> = {
   defaults: {
     heading: "คำถามที่พบบ่อย",
     source: "help",
+    kbMode: "auto",
+    kbValue: "",
+    kbLimit: 6,
     items: [],
   },
   fields: [
@@ -86,11 +169,26 @@ export const faq: SectionDefinition<typeof schema> = {
       type: "select",
       label: "ดึงคำถามจาก",
       options: [
+        ["kb", "ศูนย์คำถาม (แนะนำ)"],
         ["help", "ชุดคำถามกลางของศูนย์ช่วยเหลือ"],
         ["manual", "พิมพ์เองเฉพาะหน้านี้"],
       ],
       help: "เลือกชุดกลางแล้วแก้ที่เดียวจะเปลี่ยนทุกหน้าที่ใช้",
     },
+    {
+      key: "kbMode",
+      type: "select",
+      label: "เลือกคำถามจากศูนย์คำถามแบบไหน",
+      options: [
+        ["auto", "ให้ระบบดูจากหน้านี้เอง"],
+        ["topic", "ตามหัวข้อ"],
+        ["concern", "ตามปัญหา"],
+        ["brand", "ตามแบรนด์"],
+        ["pinned", "เฉพาะข้อที่ปักหมุด"],
+      ],
+      help: "แบบอัตโนมัติ: หน้าปัญหาผิวดึงตามปัญหานั้น หน้าแบรนด์ดึงตามแบรนด์ หน้าสินค้าไล่จากสินค้า → แบรนด์ → ปัญหาของสินค้า",
+    },
+    { key: "kbValue", type: "text", label: "slug ของหัวข้อ/ปัญหา/แบรนด์", placeholder: "เช่น oral-care" },
     {
       key: "items",
       type: "list",
@@ -104,5 +202,6 @@ export const faq: SectionDefinition<typeof schema> = {
     },
   ],
   enabledOn: ["page", "campaign", "system", "template"],
+  load,
   Component,
 };
