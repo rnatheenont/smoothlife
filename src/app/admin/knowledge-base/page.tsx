@@ -184,6 +184,7 @@ export default function AdminKnowledgeBasePage() {
       let done = 0;
       let remaining = 0;
       let rounds = 0;
+      let whereRan = "";
       while (offset !== null) {
         const res = await fetch("/api/admin/kb/reindex", {
           method: "POST",
@@ -195,6 +196,7 @@ export default function AdminKnowledgeBasePage() {
           throw new Error(data.error || "สร้าง embedding ไม่สำเร็จ");
         done += data.indexed;
         remaining = data.remaining ?? 0;
+        if (data.deployment) whereRan = `deployment ${data.deployment} → ฐาน ${data.supabase}`;
         rounds += 1;
         offset = data.nextOffset;
         setSyncNote(`กำลังสร้าง embedding… ส่งไปแล้ว ${done} บทความ · ยังไม่มี embedding ${remaining}`);
@@ -203,12 +205,16 @@ export default function AdminKnowledgeBasePage() {
       // this ran it reported success on every round and the number of
       // embedded chunks never moved — a message that only repeats the
       // request's own optimism cannot show that.
+      // Where it ran and what it wrote to, on screen. The last time this
+      // button reported success and nothing moved, nobody could tell whether
+      // the request had reached the deployment they were looking at.
+      const where = whereRan ? ` · ${whereRan}` : "";
       setSyncNote(
         rounds === 0 || done === 0
-          ? "ทุกบทความมี embedding อยู่แล้ว ไม่มีอะไรต้องทำ"
+          ? `ทุกบทความมี embedding อยู่แล้ว ไม่มีอะไรต้องทำ${where}`
           : remaining === 0
-            ? `สร้าง embedding ครบแล้ว ${done} บทความ · ตรวจจากฐานข้อมูลแล้วไม่เหลือข้อไหนขาด`
-            : `ส่งไป ${done} บทความ แต่ยังเหลือ ${remaining} ข้อที่ไม่มี embedding — แปลว่าการเขียนไม่ผ่าน ให้แจ้งทีมพร้อมเวลาที่กด`,
+            ? `สร้าง embedding ครบแล้ว ${done} บทความ · ตรวจจากฐานข้อมูลแล้วไม่เหลือข้อไหนขาด${where}`
+            : `ส่งไป ${done} บทความ แต่ยังเหลือ ${remaining} ข้อที่ไม่มี embedding — แปลว่าการเขียนไม่ผ่าน ให้แจ้งทีมพร้อมข้อความนี้${where}`,
       );
     } catch (err) {
       setError(

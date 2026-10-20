@@ -72,12 +72,15 @@ export const helpTopics: HelpTopic[] = [
         title: "บัตรเครดิต/เดบิต",
         body: "รองรับ Visa, Mastercard และ JCB พร้อมระบบเข้ารหัสความปลอดภัย",
       },
-      { icon: "banknote", title: "โอนเงินผ่านธนาคาร", body: "โอนเงินและแนบสลิปเพื่อยืนยันคำสั่งซื้อผ่านระบบอัตโนมัติ" },
-      {
-        icon: "truck",
-        title: "เก็บเงินปลายทาง (COD)",
-        body: "ชำระเงินสดเมื่อได้รับสินค้า สำหรับพื้นที่ที่รองรับบริการ",
-      },
+      // Two, not four. Bank transfer and cash on delivery were listed here
+      // and on /help/payment while checkout has only ever offered
+      // paymentChannel: ["CC", "PPQR"] — so a customer who came for COD got
+      // as far as the payment step before finding out. The assistant read
+      // this file too, and told them the same thing.
+      //
+      // payment-channels.test.ts compares this list against that one, so the
+      // day a third channel is switched on, the page that promises it and
+      // the checkout that offers it cannot drift apart again.
     ],
   },
 ];

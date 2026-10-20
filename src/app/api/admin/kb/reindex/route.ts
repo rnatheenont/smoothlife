@@ -15,6 +15,29 @@ export const maxDuration = 300;
 // minute, so the page walks rounds rather than one long request.
 const BATCH = 40;
 
+/**
+ * Which copy of the app answered, and which database it wrote to.
+ *
+ * Added because a press of this button reported success while the rows never
+ * moved, and nothing in the answer could say where it had gone. A Vercel
+ * project has many addressable deployments and more than one environment can
+ * point at a different Supabase project, so "it said 21" and "those 21 rows
+ * changed" can both be true of different places.
+ *
+ * Only the project ref of the Supabase URL — the part before the first dot,
+ * which is public and appears in every client bundle. No key, no host of
+ * anything private.
+ */
+function whereAmI() {
+  const url = process.env.SUPABASE_URL ?? "";
+  const ref = url.match(/^https?:\/\/([^.]+)\./)?.[1] ?? "unknown";
+  return {
+    deployment: process.env.VERCEL_DEPLOYMENT_ID ?? process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
+    supabase: ref,
+  };
+}
+
+
 export async function POST(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
@@ -39,8 +62,8 @@ export async function POST(req: NextRequest) {
   // afterwards whether it had found no work, been refused by the provider, or
   // written something that was then overwritten. The route said nothing at
   // all, so the only evidence was a screenshot of a toast.
-  console.info(`[kb/reindex] pending chunks=${pending.length} articles=${ids.length}`);
-  if (ids.length === 0) return NextResponse.json({ ok: true, indexed: 0, total: 0, nextOffset: null });
+  console.info(`[kb/reindex] ${JSON.stringify(whereAmI())} pending chunks=${pending.length} articles=${ids.length}`);
+  if (ids.length === 0) return NextResponse.json({ ok: true, indexed: 0, total: 0, nextOffset: null, ...whereAmI() });
 
   const slice = ids.slice(0, BATCH);
   // CHUNK_COLUMNS, not a hand-written three. Selecting only id, title and
@@ -84,5 +107,6 @@ export async function POST(req: NextRequest) {
     chunks: result.chunks,
     remaining,
     nextOffset: remaining > 0 && remaining < ids.length ? 0 : null,
+    ...whereAmI(),
   });
 }
