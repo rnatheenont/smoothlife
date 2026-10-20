@@ -166,7 +166,7 @@ const product = (): PageDoc =>
     {
       type: "related_products",
       v: 1,
-      settings: { title: "สินค้าที่เกี่ยวข้อง", subtitle: "You may also like", count: 4 },
+      settings: { title: "สินค้าที่เกี่ยวข้อง", subtitle: "You may also like", count: 5 },
     },
     { type: "recently_viewed", v: 1, settings: {} },
   ]);

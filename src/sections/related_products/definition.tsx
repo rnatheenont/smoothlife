@@ -7,7 +7,7 @@ import { toCardData, type ProductCardData } from "@/data/card";
 import { withCustomImages } from "@/lib/product-images";
 import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 
-// Four products like this one.
+// Five products like this one.
 //
 // Not locked, and that is the point of the product template existing at all:
 // §G7 of the plan asks for exactly this — the buying part fixed, the blocks
@@ -20,7 +20,7 @@ import type { SectionDefinition, SectionProps } from "@/lib/pages/types";
 const schema = z.object({
   title: z.string().max(120).default(""),
   subtitle: z.string().max(120).default(""),
-  count: z.number().int().min(2).max(8).default(4),
+  count: z.number().int().min(2).max(8).default(5),
 });
 
 async function load(
@@ -42,7 +42,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Pro
     <section className="container-page">
       <div className="mt-16">
         <SectionHeading title={settings.title} subtitle={settings.subtitle} />
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-5">
           {items.map((p) => (
             <ProductCard key={p.slug} product={p} />
           ))}
@@ -59,7 +59,7 @@ export const relatedProducts: SectionDefinition<typeof schema> = {
   description: "ตารางสินค้าที่ใกล้เคียงกับสินค้าที่หน้านี้แสดง",
   category: "product",
   schema,
-  defaults: { title: "สินค้าที่เกี่ยวข้อง", subtitle: "You may also like", count: 4 },
+  defaults: { title: "สินค้าที่เกี่ยวข้อง", subtitle: "You may also like", count: 5 },
   fields: [
     { key: "title", type: "text", label: "หัวข้อ" },
     { key: "subtitle", type: "text", label: "บรรทัดรองใต้หัวข้อ" },

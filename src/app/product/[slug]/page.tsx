@@ -130,11 +130,11 @@ async function getSubscribable(slug: string): Promise<boolean> {
 
 async function ProductPageWritten({ found }: { found: NonNullable<ReturnType<typeof getProductBySlug>> }) {
   // Our own photographs, if this product has any switched on — one query for
-  // the product and the four related cards below it. Everything downstream
+  // the product and the five related cards below it. Everything downstream
   // reads product.image as it always has.
   const [product, ...related] = await withCustomImages([
     found,
-    ...getRelatedProducts(found, 4),
+    ...getRelatedProducts(found, 5),
   ]);
   const [reviews, questions, subscribable, contentBlocks, videos] = await Promise.all([
     getReviews(product.slug),
@@ -200,7 +200,7 @@ async function ProductPageWritten({ found }: { found: NonNullable<ReturnType<typ
             title="สินค้าที่เกี่ยวข้อง"
             subtitle="You may also like"
           />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-5">
             {related.map((p) => (
               <ProductCard key={p.slug} product={toCardData(p)} />
             ))}
