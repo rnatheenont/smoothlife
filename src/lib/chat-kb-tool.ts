@@ -17,10 +17,13 @@
 // cannot be allowed to stand, so photos and personal data are named
 // explicitly.
 import type Anthropic from "@anthropic-ai/sdk";
-import { searchKb, type KbMatch } from "@/lib/kb";
+import { searchKb, KB_MIN_SCORE, type KbMatch } from "@/lib/kb";
 
-/** Below this the match is noise, and the assistant should hand over instead. */
-export const KB_MIN_SCORE = 0.35;
+// Below this the match is noise and the assistant should hand over instead.
+// The number lives in kb.ts now and is sent to kb_search as p_min_score: the
+// copy that used to be here was 0.35 against the function's 0.42, so it never
+// decided anything — the rows it would have cut were already gone.
+export { KB_MIN_SCORE };
 
 export const KB_TOOL: Anthropic.Tool = {
   name: "search_knowledge_base",

@@ -16,12 +16,15 @@ export const dynamic = "force-dynamic";
 
 // The help centre groups by page; the knowledge base groups by what a customer
 // is asking about.
+// Keyed by the href the topic actually has in src/data/help.ts. The previous
+// keys — /help/shipping, /help/returns, /help/points, /help/membership — are
+// pages that do not exist, so every topic missed the map and fell through to
+// "policy": the knowledge base held zero articles filed under shipping while
+// the delivery page sat there published.
 const TOPIC_CATEGORY: Record<string, KbCategory> = {
-  "/help/shipping": "shipping",
-  "/help/returns": "policy",
+  // Delivery covers returns and the 14-day window as well; one page, one file.
+  "/help/delivery": "shipping",
   "/help/payment": "payment",
-  "/help/points": "loyalty",
-  "/help/membership": "loyalty",
 };
 
 export async function POST(req: NextRequest) {

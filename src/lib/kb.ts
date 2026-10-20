@@ -14,7 +14,8 @@ export type KbCategory = "faq" | "policy" | "product" | "ingredient" | "loyalty"
 // "shopify_sync" is gone: the catalogue used to be copied in as one article
 // per product, and the assistant now reads a product's own page content
 // through get_product_details instead of a second copy of it.
-export type KbSource = "manual" | "chat_promoted";
+export type KbSource = "manual" | "chat_promoted" | "import";
+export type KbVisibility = "public" | "ai_only";
 
 export type KbArticle = {
   id: string;
@@ -33,10 +34,25 @@ export type KbArticle = {
   public_slug: string | null;
   created_at: string;
   updated_at: string;
+
+  // The FAQ fields (see the faq-center plan §3). Optional on the type because
+  // the nineteen articles that predate them have none, and a route that only
+  // selects KB_COLUMNS should keep working either way.
+  title_en?: string | null;
+  content_en?: string | null;
+  keywords?: string[] | null;
+  topic?: string | null;
+  concerns?: string[] | null;
+  brand_slugs?: string[] | null;
+  visibility?: KbVisibility;
 };
 
 export const KB_COLUMNS =
-  "id,source,category,title,content,product_tags,status,last_reviewed_at,reviewed_by,source_ref,public_slug,created_at,updated_at";
+  "id,source,category,title,content,product_tags,status,last_reviewed_at,reviewed_by,source_ref,public_slug,created_at,updated_at," +
+  // Selected everywhere KB_COLUMNS is, so that any route which saves an
+  // article reindexes it with its question in both languages and its search
+  // words — rather than quietly indexing the Thai half on its own.
+  "title_en,content_en,keywords,topic,concerns,brand_slugs,visibility";
 
 export const CATEGORY_TH: Record<KbCategory, string> = {
   faq: "คำถามที่พบบ่อย",
@@ -124,6 +140,77 @@ export function chunk(content: string, target = 700): string[] {
   return chunks.length > 0 ? chunks.slice(0, 40) : [content.slice(0, target)];
 }
 
+/**
+ * The score below which a match is not worth showing.
+ *
+ * There used to be two of these and only one of them worked: kb_search cut at
+ * 0.42 in SQL, and KB_MIN_SCORE in the chat tool cut at 0.35 — which never
+ * bit, because the rows below 0.42 had already been thrown away before they
+ * reached it. Tuning the TS number did nothing and nobody could see why.
+ *
+ * One number now, sent to the function as p_min_score. 0.42 keeps today's
+ * behaviour; it is a knob rather than a discovery.
+ */
+export const KB_MIN_SCORE = 0.42;
+
+/** What a topic, concern or brand slug reads as inside a chunk. */
+type ChunkableArticle = Pick<KbArticle, "title" | "content"> &
+  Partial<Pick<KbArticle, "title_en" | "content_en" | "keywords" | "topic" | "concerns" | "brand_slugs">>;
+
+/**
+ * What the assistant sees for one article.
+ *
+ * An FAQ is not prose, and chunking it as prose loses the half that makes it
+ * findable. A customer types "หน้ามัน" — which appears in the search words of
+ * the article about oily, acne-prone skin and nowhere in its title or its
+ * answer. Embedding only the answer means the question nobody can match is
+ * the one the shop was asked most.
+ *
+ * So the first chunk carries the question in both languages, the search
+ * words, and what the article is filed under, before the answer. Voyage
+ * embeds the whole thing, which is also why a question asked in English finds
+ * a Thai article: the model is multilingual and both languages sit in the
+ * same chunk.
+ *
+ * The English answer goes in a chunk of its own rather than at the end of the
+ * first: an English speaker should get an English answer quoted back, and a
+ * chunk is the unit that gets quoted.
+ *
+ * An article with none of these fields — the nineteen that predate the FAQ
+ * work — chunks exactly as it did before.
+ */
+export function articleChunks(article: ChunkableArticle): string[] {
+  const keywords = (article.keywords ?? []).filter(Boolean);
+  const concerns = (article.concerns ?? []).filter(Boolean);
+  const brands = (article.brand_slugs ?? []).filter(Boolean);
+  const hasFaqFields =
+    Boolean(article.title_en || article.content_en) || keywords.length > 0 || Boolean(article.topic);
+
+  if (!hasFaqFields) return chunk(`${article.title}\n\n${article.content}`);
+
+  const filed = [
+    article.topic ? `หัวข้อ: ${article.topic}` : "",
+    concerns.length ? `ปัญหา: ${concerns.join(", ")}` : "",
+    brands.length ? `แบรนด์: ${brands.join(", ")}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const head = [
+    `คำถาม: ${article.title}`,
+    article.title_en ? `Question: ${article.title_en}` : "",
+    keywords.length ? `คำค้น: ${keywords.join(", ")}` : "",
+    filed,
+    `คำตอบ: ${article.content}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const chunks = chunk(head);
+  if (article.content_en) chunks.push(...chunk(`Answer (EN): ${article.content_en}`));
+  return chunks.slice(0, 40);
+}
+
 /** One request per this many texts, and per this much text. Voyage accepts
  *  more, but an account without a payment method is held to 10K tokens a
  *  minute — fewer, fuller requests are what fits through that. */
@@ -200,8 +287,8 @@ export async function embed(texts: string[], { retries = 3 }: { retries?: number
 }
 
 /** Rewrite an article's chunks (and their embeddings, when available). */
-export async function reindexArticle(article: Pick<KbArticle, "id" | "title" | "content">) {
-  const pieces = chunk(`${article.title}\n\n${article.content}`);
+export async function reindexArticle(article: Pick<KbArticle, "id"> & ChunkableArticle) {
+  const pieces = articleChunks(article);
   const vectors = await embed(pieces);
   await supabaseRest(`kb_chunks?article_id=eq.${pgValue(article.id)}`, { method: "DELETE", returning: false });
   await supabaseRest("kb_chunks", {
@@ -224,8 +311,8 @@ export async function reindexArticle(article: Pick<KbArticle, "id" | "title" | "
  * every chunk of every article goes up together, then each article's chunks
  * are written back.
  */
-export async function reindexArticles(articles: Pick<KbArticle, "id" | "title" | "content">[]) {
-  const pieces = articles.map((a) => ({ id: a.id, chunks: chunk(`${a.title}\n\n${a.content}`) }));
+export async function reindexArticles(articles: (Pick<KbArticle, "id"> & ChunkableArticle)[]) {
+  const pieces = articles.map((a) => ({ id: a.id, chunks: articleChunks(a) }));
   const flat = pieces.flatMap((p) => p.chunks);
   const vectors = await embed(flat);
 
@@ -253,7 +340,12 @@ export async function reindexArticles(articles: Pick<KbArticle, "id" | "title" |
 export type KbMatch = { article_id: string; chunk_id: string; title: string; category: KbCategory; chunk_text: string; score: number };
 
 /** Top matches for a customer's question, published articles only. */
-export async function searchKb(query: string, limit = 6, tags?: string[]): Promise<KbMatch[]> {
+export async function searchKb(
+  query: string,
+  limit = 6,
+  tags?: string[],
+  minScore = KB_MIN_SCORE
+): Promise<KbMatch[]> {
   // No waiting on a rate limit with a customer mid-question: if the embedding
   // does not come back at once, the search runs on text instead.
   const [vector] = (await embed([query], { retries: 0 })) ?? [];
@@ -264,6 +356,9 @@ export async function searchKb(query: string, limit = 6, tags?: string[]): Promi
       p_embedding: vector ? JSON.stringify(vector) : null,
       p_limit: limit,
       p_tags: tags && tags.length > 0 ? tags : null,
+      // Sent rather than left to the function's default, so the number lives
+      // in one place in this codebase and not two.
+      p_min_score: minScore,
     }),
   });
   return (rows ?? []).map((r) => ({ ...r, score: Number(r.score) }));
