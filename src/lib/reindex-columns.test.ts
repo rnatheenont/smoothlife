@@ -55,9 +55,11 @@ test("ทุก route ที่สร้าง chunk ใหม่ ต้อง s
   let scanned = 0;
 
   for (const path of sourceFiles("src")) {
-    // Where the chunking functions are defined, not called.
-    if (path.endsWith("src/lib/kb.ts")) continue;
-
+    // kb.ts is NOT skipped, though it is where the chunking functions are
+    // defined. The first version of this test skipped it as "the definition,
+    // not a caller" — and backfillEmbeddings lives in it, selects its own
+    // rows, and is the path the nightly cron takes. Skipping the file hid the
+    // worst instance of the bug the test exists to catch.
     const code = withoutComments(readFileSync(path, "utf8"));
     if (!CHUNKERS.some((fn) => code.includes(`${fn}(`))) continue;
     scanned++;

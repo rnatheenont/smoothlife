@@ -73,6 +73,12 @@ export const KB_COLUMNS =
  */
 export const CHUNK_COLUMNS = "id,title,content,title_en,content_en,keywords,topic,concerns,brand_slugs";
 
+/** A row selected with CHUNK_COLUMNS — the whole article as chunking sees it. */
+export type ChunkableRow = Pick<
+  KbArticle,
+  "id" | "title" | "content" | "title_en" | "content_en" | "keywords" | "topic" | "concerns" | "brand_slugs"
+>;
+
 export const CATEGORY_TH: Record<KbCategory, string> = {
   faq: "คำถามที่พบบ่อย",
   policy: "นโยบายร้าน",
@@ -199,6 +205,27 @@ type ChunkableArticle = Pick<KbArticle, "title" | "content"> &
  * work — chunks exactly as it did before.
  */
 export function articleChunks(article: ChunkableArticle): string[] {
+  // A row that was read with too narrow a select, caught before it is
+  // indexed rather than after.
+  //
+  // The quiet path is what makes this worth a throw: `{ id, title, content }`
+  // satisfies ChunkableArticle, because the FAQ fields have to stay optional
+  // for the articles written before the FAQ centre — so a narrow select
+  // type-checks, runs, and rebuilds the chunk from the Thai answer alone. It
+  // happened: the reindex route selected three columns and stripped the
+  // `คำค้น:` line out of all twenty-one published answers.
+  //
+  // `in` rather than a truthiness test, because that is the distinction that
+  // matters: a key present and empty is an article with no keywords, a key
+  // absent is a caller who did not ask for them. See CHUNK_COLUMNS.
+  const asked = "keywords" in article && "title_en" in article && "topic" in article;
+  if (!asked) {
+    throw new Error(
+      "articleChunks: the row is missing keywords/title_en/topic — select CHUNK_COLUMNS (or KB_COLUMNS) " +
+        "instead of a narrower list, or the chunk is rebuilt without its search words and its English half"
+    );
+  }
+
   const keywords = (article.keywords ?? []).filter(Boolean);
   const concerns = (article.concerns ?? []).filter(Boolean);
   const brands = (article.brand_slugs ?? []).filter(Boolean);
@@ -458,8 +485,13 @@ export async function backfillEmbeddings(budgetMs = 60_000): Promise<{ indexed: 
   for (let i = 0; i < ids.length; i += 20) {
     if (Date.now() - started > budgetMs) break;
     const slice = ids.slice(i, i + 20);
-    const articles = await supabaseRest<Pick<KbArticle, "id" | "title" | "content">[]>(
-      `kb_articles?id=in.(${slice.map(pgValue).join(",")})&select=id,title,content`
+    // CHUNK_COLUMNS, not id/title/content. This is the nightly path, so the
+    // narrow select here was the worse half of the same mistake the admin
+    // reindex route made: every article the cron touched would have had its
+    // search words and its English chunk quietly rebuilt away, once a day,
+    // with nothing failing.
+    const articles = await supabaseRest<ChunkableRow[]>(
+      `kb_articles?id=in.(${slice.map(pgValue).join(",")})&select=${CHUNK_COLUMNS}`
     );
     const result = await reindexArticles(articles);
     if (!result.embedded) break; // rate-limited or down; tomorrow's run continues

@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
-import { CHUNK_COLUMNS, reindexArticles, type KbArticle } from "@/lib/kb";
-
-/** Exactly what CHUNK_COLUMNS selects — the whole article as chunking sees it. */
-type ChunkableSelection = Pick<
-  KbArticle,
-  "id" | "title" | "content" | "title_en" | "content_en" | "keywords" | "topic" | "concerns" | "brand_slugs"
->;
+import { CHUNK_COLUMNS, reindexArticles, type ChunkableRow, type KbArticle } from "@/lib/kb";
 
 // Rebuild the search index for existing articles. Needed once, the day an
 // embedding provider is configured: everything written before that was stored
@@ -49,7 +43,7 @@ export async function POST(req: NextRequest) {
   // and answer alone — no search words, no English, no topic. See the note on
   // CHUNK_COLUMNS: that is not a hypothetical, it is what this route did to
   // all twenty-one published answers.
-  const articles = await supabaseRest<ChunkableSelection[]>(
+  const articles = await supabaseRest<ChunkableRow[]>(
     `kb_articles?id=in.(${slice.map(pgValue).join(",")})&select=${CHUNK_COLUMNS}`
   );
   const result = await reindexArticles(articles);
