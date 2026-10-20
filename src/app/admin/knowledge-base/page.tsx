@@ -6,6 +6,8 @@ import { BookOpen, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useAdminAction } from "@/components/admin/header-action";
 import { Card } from "@/components/ui";
 import { PageHeader, adminTable } from "@/components/admin/layout-kit";
+import FaqImportPanel from "@/components/admin/FaqImportPanel";
+import FaqTopicsPanel from "@/components/admin/FaqTopicsPanel";
 import FormDrawer from "@/components/flash-sale-demo/FormDrawer";
 import {
   CATEGORY_TH,
@@ -67,7 +69,9 @@ export default function AdminKnowledgeBasePage() {
   // Two halves of the same job — what the assistant may answer from, and
   // what it must refuse — so they are two tabs rather than one stacked on
   // top of the other.
-  const [tab, setTab] = useState<"articles" | "blocked" | "suggestions" | "log">("articles");
+  const [tab, setTab] = useState<
+    "articles" | "topics" | "import" | "blocked" | "suggestions" | "log"
+  >("articles");
   const [confirming, setConfirming] = useState<string | null>(null);
   const [truncated, setTruncated] = useState(false);
 
@@ -333,6 +337,8 @@ export default function AdminKnowledgeBasePage() {
       <div className="mb-4 flex items-center gap-1 border-b border-surface-line">
         {([
           { key: "articles", label: "บทความที่ตอบได้" },
+          { key: "topics", label: "หัวข้อ" },
+          { key: "import", label: "นำเข้า / ส่งออก" },
           { key: "blocked", label: "เรื่องที่ห้าม AI ตอบ" },
           { key: "suggestions", label: "คำถามแนะนำ" },
           { key: "log", label: "log คำตอบของ AI" },
@@ -352,6 +358,8 @@ export default function AdminKnowledgeBasePage() {
         ))}
       </div>
 
+      {tab === "topics" && <FaqTopicsPanel />}
+      {tab === "import" && <FaqImportPanel />}
       {tab === "blocked" && <BlockedTopicsPanel />}
       {tab === "suggestions" && <ChatSuggestionsPanel />}
       {tab === "log" && <AiAnswerLogPanel />}
