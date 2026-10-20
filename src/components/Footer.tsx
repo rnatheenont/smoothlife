@@ -317,7 +317,13 @@ export default function Footer({ columns = FOOTER_COLUMNS_DEFAULT }: { columns?:
         {/* Sitting on the bottom edge rather than hanging off it, so the whole
             word reads instead of its lower half. Only the descender of the "f"
             crosses the edge. */}
-        <span className="pointer-events-none absolute inset-x-0 -bottom-[0.06em] select-none text-center font-extrabold leading-none tracking-tight whitespace-nowrap text-brand-800/[0.07] [font-size:clamp(4rem,15vw,13rem)]">
+        {/* Decoration, not wording: a 13rem watermark at 7% opacity, which
+        reads at 1.1:1 and is meant to. Marked hidden so it is judged as the
+        texture it is rather than as text nobody can read. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 -bottom-[0.06em] select-none text-center font-extrabold leading-none tracking-tight whitespace-nowrap text-brand-800/[0.07] [font-size:clamp(4rem,15vw,13rem)]"
+        >
           Smoothlife
         </span>
       </div>

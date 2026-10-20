@@ -273,6 +273,9 @@ export default function SmoothieHeroBand() {
                 ref={fileRef}
                 type="file"
                 accept="image/*"
+                // Visually hidden, but still a form control: without a name it
+                // is announced as "file upload, button" and nothing more.
+                aria-label="เลือกรูปภาพเพื่อค้นหาสินค้า"
                 className="sr-only"
                 onChange={pickPhoto}
               />

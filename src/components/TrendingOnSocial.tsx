@@ -340,6 +340,12 @@ export default function TrendingOnSocial({ clips, initialIndex = 0 }: { clips: S
             <div
               key={i}
               aria-hidden={!p.shown}
+              // aria-hidden stops a screen reader announcing the card; it does
+              // nothing to the Tab key, so the cards stacked behind the one on
+              // show were still reachable — a keyboard landing on a link that
+              // is announced as nothing, in a card nobody can see. inert takes
+              // them out of the tab order too, which is what was meant.
+              inert={!p.shown}
               style={{
                 transform: `translate(-50%, -50%) translate(calc(${p.x}% * var(--spread)), 0) scale(${p.scale})`,
                 zIndex: p.z,
