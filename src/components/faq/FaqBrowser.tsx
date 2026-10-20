@@ -35,6 +35,11 @@ const THIN_RESULT = 2;
 const SEARCH_DEBOUNCE_MS = 400;
 const LONG_QUERY = 12;
 
+/** One chip, shared by the "ทั้งหมด" chip and the rest so they cannot drift
+ *  apart. h-9 is 36px — a target a thumb hits rather than aims at. */
+const CHIP =
+  "inline-flex h-9 shrink-0 items-center rounded-full px-3.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800";
+
 type Tab = "concern" | "product" | "ordering";
 const ORDERING_TOPIC = "ordering-support";
 
@@ -298,6 +303,19 @@ export default function FaqBrowser({
   const chips =
     tab === "concern" ? concerns : tab === "product" ? productSections : [];
   const activeChip = tab === "concern" ? concern : topic;
+  /**
+   * Chips with nothing behind them are not shown.
+   *
+   * A filter that returns an empty list is a dead end dressed up as a choice
+   * — "ฟันขาว 0" was on the page only because its one answer is still a
+   * draft. It comes back by itself the day that answer is published.
+   *
+   * The one already chosen stays visible even at zero, or narrowing a search
+   * would make the chip you are standing on vanish and leave no way back.
+   */
+  const shownChips = chips.filter(
+    (c) => (chipCounts.get(c.slug) ?? 0) > 0 || activeChip === c.slug,
+  );
   const filtering = Boolean(query.trim() || topic || concern);
   const askHref = `/chat?q=${encodeURIComponent(query.trim() || "ขอคำแนะนำเรื่องสินค้าหน่อย")}`;
 
@@ -378,9 +396,7 @@ export default function FaqBrowser({
                       touched.current = true;
                       setQuery(term);
                     }}
-                    className=// and the row's own gap is pulled back by the same amount, so the // A text link by eye, a 44px target by touch: the padding is vertical
-                    // hit area grows without the row growing with it.
-                    "inline-flex min-h-11 items-center gap-1 px-1 py-2 text-xs font-medium text-brand-800 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                    className="inline-flex min-h-11 items-center gap-1 px-1 py-2 text-xs font-medium text-brand-800 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800" // hit area grows without the row growing with it. // and the row's own gap is pulled back by the same amount, so the // A text link by eye, a 44px target by touch: the padding is vertical
                   >
                     <Search className="h-3 w-3" aria-hidden />
                     {term}
@@ -424,62 +440,72 @@ export default function FaqBrowser({
             ))}
           </div>
 
-          {chips.length > 0 && (
-            <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {/* "ทั้งหมด" first, so the unfiltered state is something you can
-                see and click back to rather than an absence you have to infer
-                from nothing being highlighted. */}
-              <button
-                type="button"
-                aria-pressed={!activeChip}
-                onClick={() => {
-                  touched.current = true;
-                  if (tab === "concern") setConcern(null);
-                  else setTopic(tab === "ordering" ? ORDERING_TOPIC : null);
-                }}
-                className={clsx(
-                  "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800",
-                  !activeChip
-                    ? "bg-brand-800 text-white"
-                    : "bg-white text-slate-600 ring-1 ring-surface-line hover:text-brand-800 hover:ring-brand-800/50",
-                )}
-              >
-                ทั้งหมด
-              </button>
-              {chips.map((c) => {
-                const count = chipCounts.get(c.slug) ?? 0;
-                return (
-                  <button
-                    key={c.slug}
-                    type="button"
-                    aria-pressed={activeChip === c.slug}
-                    disabled={count === 0}
-                    onClick={() => pickChip(c.slug)}
-                    className={clsx(
-                      "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800",
-                      count === 0
-                        ? "cursor-not-allowed bg-white text-slate-300 ring-1 ring-surface-line"
-                        : activeChip === c.slug
+          {shownChips.length > 0 && (
+            // Wraps on a wide screen, scrolls on a phone.
+            //
+            // It used to scroll at every width with the scrollbar hidden, so
+            // on desktop the last chip was simply sliced down the middle at
+            // the container's edge with nothing to say it could be moved — a
+            // cut corner, which is the one thing a rounded chip must not
+            // have. There is room to wrap on a desktop, so it wraps.
+            <div className="relative mt-2">
+              <div className="flex gap-2 overflow-x-auto pb-1 pr-4 [scrollbar-width:none] md:flex-wrap md:gap-y-2 md:overflow-visible md:pr-0 [&::-webkit-scrollbar]:hidden">
+                {/* "ทั้งหมด" first, so the unfiltered state is something you
+                  can see and click back to rather than an absence you have to
+                  infer from nothing being highlighted. */}
+                <button
+                  type="button"
+                  aria-pressed={!activeChip}
+                  onClick={() => {
+                    touched.current = true;
+                    if (tab === "concern") setConcern(null);
+                    else setTopic(tab === "ordering" ? ORDERING_TOPIC : null);
+                  }}
+                  className={clsx(
+                    CHIP,
+                    !activeChip
+                      ? "bg-brand-800 text-white"
+                      : "bg-white text-slate-600 ring-1 ring-surface-line hover:text-brand-800 hover:ring-brand-800/50",
+                  )}
+                >
+                  ทั้งหมด
+                </button>
+                {shownChips.map((c) => {
+                  const count = chipCounts.get(c.slug) ?? 0;
+                  const on = activeChip === c.slug;
+                  return (
+                    <button
+                      key={c.slug}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => pickChip(c.slug)}
+                      className={clsx(
+                        CHIP,
+                        on
                           ? "bg-brand-800 text-white"
                           : "bg-white text-slate-600 ring-1 ring-surface-line hover:text-brand-800 hover:ring-brand-800/50",
-                    )}
-                  >
-                    {c.label_th}
-                    {/* The number is why a chip is worth tapping, and why an
-                      empty one is worth not tapping. */}
-                    <span
-                      className={clsx(
-                        "ml-1.5 tabular-nums",
-                        activeChip === c.slug
-                          ? "text-white/70"
-                          : "text-slate-400",
                       )}
                     >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
+                      {c.label_th}
+                      {/* The number is why a chip is worth tapping. */}
+                      <span
+                        className={clsx(
+                          "ml-1.5 tabular-nums",
+                          on ? "text-white/70" : "text-slate-400",
+                        )}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Only the phone gets this: it is the hint that the row moves,
+                and on desktop the row does not move. */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent md:hidden"
+              />
             </div>
           )}
         </div>
