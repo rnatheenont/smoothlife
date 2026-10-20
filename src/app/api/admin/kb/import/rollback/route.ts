@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { faqChanged } from "@/lib/faq-changed";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { CHUNK_COLUMNS, reindexArticle, type ChunkableRow } from "@/lib/kb";
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({ rolled_back_at: new Date().toISOString() }),
   });
 
-  revalidateTag("kb-public", { expire: 0 });
+  faqChanged();
 
   return NextResponse.json({
     ok: true,

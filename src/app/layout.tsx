@@ -70,12 +70,27 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-touch-icon.png",
   },
-  // Search Console proves ownership by finding a token it gave you in the
-  // page head. It lives in an environment variable rather than here so
-  // claiming the site — or re-claiming it after someone leaves the team — is
-  // a deploy, not a code change and a review.
-  ...(process.env.GOOGLE_SITE_VERIFICATION
-    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
+  // Search Console and Bing Webmaster Tools both prove ownership by finding
+  // a token they gave you in the page head. They live in environment
+  // variables rather than here so claiming the site — or re-claiming it
+  // after someone leaves the team — is a deploy, not a code change and a
+  // review.
+  //
+  // Neither is needed when the domain is verified by DNS instead, which is
+  // the plan for smoothlife.com: a TXT record covers www, app and campaign
+  // at once, where a meta tag claims one host. These stay for the case where
+  // the DNS record is somebody else's to add.
+  ...(process.env.GOOGLE_SITE_VERIFICATION || process.env.BING_SITE_VERIFICATION
+    ? {
+        verification: {
+          ...(process.env.GOOGLE_SITE_VERIFICATION
+            ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+            : {}),
+          ...(process.env.BING_SITE_VERIFICATION
+            ? { other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION } }
+            : {}),
+        },
+      }
     : {}),
 };
 

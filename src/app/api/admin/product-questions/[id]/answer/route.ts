@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
+import { kbDraftChanged } from "@/lib/faq-changed";
 import { supabaseConfigured, supabaseRest, pgValue, productPageTags } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { CHUNK_COLUMNS, reindexArticle, type ChunkableRow } from "@/lib/kb";
@@ -92,7 +93,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
     await reindexArticle(article);
     articleId = article.id;
-    revalidateTag("kb-public", { expire: 0 });
+    // Saved as a draft FAQ: nothing public changed until somebody publishes it.
+    kbDraftChanged();
   }
 
   return NextResponse.json({ ok: true, answered: true, savedAsFaq: Boolean(articleId), articleId });

@@ -40,10 +40,24 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const article = await getFaqArticle(decodeURIComponent(slug));
   if (!article) return { title: "ไม่พบคำถามนี้ | Smoothlife.com" };
+  const path = `/faq/${encodeURIComponent(article.public_slug)}`;
+  const description = excerptOf(article.content, 155);
   return {
     title: `${article.title} | Smoothlife.com`,
-    description: excerptOf(article.content, 155),
-    alternates: { canonical: `/faq/${encodeURIComponent(article.public_slug)}` },
+    description,
+    alternates: { canonical: path },
+    // These pages are the ones built to be linked to — by a person pasting
+    // the answer into a chat, and by an engine citing it. A link with no
+    // card of its own is the question's own title replaced by the site's.
+    // `url` is relative to metadataBase, so it names the canonical host.
+    openGraph: {
+      type: "article",
+      title: article.title,
+      description,
+      url: path,
+      siteName: "Smoothlife.com",
+    },
+    twitter: { card: "summary", title: article.title, description },
   };
 }
 
@@ -63,8 +77,13 @@ export default async function FaqArticlePage({ params }: { params: Promise<{ slu
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: jsonLdScript(
+            // This question only — the set belongs to /faq, and repeating it
+            // on every answer page would describe one listing at two dozen
+            // addresses. The answer is the full text, which is what the
+            // paragraphs below print: markup that says more than the page
+            // does is the failure this schema is checked for.
             faqPageJsonLd([
-              { question: article.title, answer: excerptOf(article.content, 300), dateModified: article.updated_at },
+              { question: article.title, answer: article.content, dateModified: article.updated_at },
             ])
           ),
         }}

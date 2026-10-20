@@ -22,12 +22,21 @@ export type PublicQuestion = {
 const COLUMNS = "title,content,category,public_slug,product_tags,updated_at";
 const TAG = "kb-public";
 
-/** Every question with a page, newest first. */
+/**
+ * Every question with a page, newest first.
+ *
+ * `visibility` is filtered as well as `status`, because the page this links
+ * to filters both (getFaqArticle): an answer approved for the assistant but
+ * kept off the public site has no /faq page, so listing it here — in the
+ * sitemap, in llms.txt, in a question_list section — publishes a link to a
+ * 404. Every row happens to be public today; the filter is what keeps the
+ * first internal-only answer from being announced everywhere.
+ */
 export async function getPublicQuestions(): Promise<PublicQuestion[]> {
   if (!supabaseConfigured()) return [];
   try {
     return await supabaseRestCached<PublicQuestion[]>(
-      `kb_articles?status=eq.published&public_slug=not.is.null&select=${COLUMNS}&order=updated_at.desc&limit=500`,
+      `kb_articles?status=eq.published&visibility=eq.public&public_slug=not.is.null&select=${COLUMNS}&order=updated_at.desc&limit=500`,
       { revalidate: 900, tags: [TAG] }
     );
   } catch {

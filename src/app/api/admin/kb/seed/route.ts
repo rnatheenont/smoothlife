@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { faqChanged } from "@/lib/faq-changed";
 import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { helpFaqs, helpTopics } from "@/data/help";
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
 
   for (const article of [...created, ...updated]) await reindexArticle(article);
   // Public question pages read these through a tagged cache.
-  if (updated.length > 0) revalidateTag("kb-public", { expire: 0 });
+  if (updated.length > 0) faqChanged(updated.map((a) => a.public_slug ?? null));
 
   return NextResponse.json({
     ok: true,

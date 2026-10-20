@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { breadcrumbJsonLd, faqPageJsonLd, jsonLdScript } from "@/lib/json-ld";
-import { excerptOf } from "@/lib/kb-public";
 import {
   getFaqArticles,
   getFaqTopics,
@@ -62,7 +61,12 @@ export default async function FaqPage() {
               faqPageJsonLd(
                 articles.map((a) => ({
                   question: a.title,
-                  answer: excerptOf(a.content, 300),
+                  // The whole answer, because the whole answer is in the HTML
+                  // below — inside a collapsed <details>, which still counts
+                  // as on the page. A 300-character excerpt here was a
+                  // different text from the one a reader sees, which is the
+                  // one thing FAQPage markup is not allowed to be.
+                  answer: a.content,
                   dateModified: a.updated_at,
                 })),
               ),

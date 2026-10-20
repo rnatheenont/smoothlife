@@ -30,6 +30,10 @@ export default function robots(): MetadataRoute.Robots {
         disallow: DISALLOW,
       })),
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    // The FAQ sitemap, not the full one. Everything else this app serves
+    // carries noindex (src/proxy.ts), and pointing a crawler at a list of
+    // pages it is then told it may not keep wastes its crawl here and
+    // reports as an error in Search Console. See sitemap-faq.xml/route.ts.
+    sitemap: `${SITE_URL}/sitemap-faq.xml`,
   };
 }

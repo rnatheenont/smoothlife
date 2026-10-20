@@ -3,6 +3,7 @@
 import { createContext, useContext } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
+  Bot,
   Award,
   BookOpen,
   CreditCard,
@@ -200,6 +201,13 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "SEO หน้าเว็บ",
         icon: Search,
         desc: "ชื่อหน้าและคำโปรยที่ขึ้นบน Google",
+        permission: "seo.manage",
+      },
+      {
+        href: "/admin/seo/visibility",
+        label: "Google & AI เห็นเราไหม",
+        icon: Bot,
+        desc: "บอทที่มาอ่าน /faq ออร์เดอร์จาก AI และผลถาม AI รายเดือน",
         permission: "seo.manage",
       },
       {

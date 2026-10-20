@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { kbDraftChanged } from "@/lib/faq-changed";
 import { supabaseConfigured, supabaseRest, pgValue } from "@/lib/supabase-server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin-auth";
 import { CHUNK_COLUMNS, reindexArticle, type ChunkableRow } from "@/lib/kb";
@@ -88,7 +88,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       body: JSON.stringify({ status: "answered", article_id: articleId }),
     });
 
-    revalidateTag("kb-public", { expire: 0 });
+    // Filing a gap against an answer that already exists changes no page.
+    kbDraftChanged();
     return NextResponse.json({ ok: true, keywords: words.length });
   }
 

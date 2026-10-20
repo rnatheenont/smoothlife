@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 import { checkAdminPermission } from "@/lib/admin-permissions";
 import { isPublicAdminRoute, ruleFor } from "@/lib/admin-route-permissions";
 import { ATTRIBUTION_COOKIE, attributionCookieOptions, buildAttribution } from "@/lib/attribution";
+import { botName, recordBotHit } from "@/lib/bot-hits";
+import { indexableRequest } from "@/lib/search-visibility";
 
 function deny(status: 401 | 403, error: string) {
   return NextResponse.json({ ok: false, error }, { status });
@@ -135,7 +137,7 @@ function hiddenFromSearch(host: string | null): boolean {
 // them as duplicate sites. robots.txt/sitemap already point at the real
 // domain; this stops the vercel.app one from being indexable at all,
 // regardless of what crawls it directly.
-export async function proxy(req: NextRequest) {
+export async function proxy(req: NextRequest, event: NextFetchEvent) {
   const moved = movedHost(req);
   if (moved) return moved;
 
@@ -148,8 +150,20 @@ export async function proxy(req: NextRequest) {
   }
 
   const res = NextResponse.next();
-  if (hiddenFromSearch(req.headers.get("host"))) {
+  const host = req.headers.get("host");
+  // The FAQ, on the host the canonical tags name, is the one thing here that
+  // exists nowhere else and is allowed to be found — see search-visibility.ts
+  // for why that is two conditions rather than one.
+  const indexable = indexableRequest(host, req.nextUrl.pathname);
+  if (hiddenFromSearch(host) && !indexable) {
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+
+  // Who is reading the pages we opened. Only on those pages, and only after
+  // the response has gone out — see bot-hits.ts.
+  if (indexable && req.method === "GET") {
+    const bot = botName(req.headers.get("user-agent"));
+    if (bot) event.waitUntil(recordBotHit(bot, req.nextUrl.pathname));
   }
 
   // First-touch attribution: only a real page view can be someone's first
