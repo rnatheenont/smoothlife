@@ -368,7 +368,7 @@ export default function FaqBrowser({
               /* Shortcuts into the field above, so they are written as searches
                — a magnifier and plain text — rather than as another row of
                pills a reader has to tell apart from the filters below. */
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+              <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3">
                 <span className="text-xs text-slate-500">คำที่คนค้นบ่อย</span>
                 {popular.map((term) => (
                   <button
@@ -378,7 +378,9 @@ export default function FaqBrowser({
                       touched.current = true;
                       setQuery(term);
                     }}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-brand-800 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                    className=// and the row's own gap is pulled back by the same amount, so the // A text link by eye, a 44px target by touch: the padding is vertical
+                    // hit area grows without the row growing with it.
+                    "inline-flex min-h-11 items-center gap-1 px-1 py-2 text-xs font-medium text-brand-800 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
                   >
                     <Search className="h-3 w-3" aria-hidden />
                     {term}
