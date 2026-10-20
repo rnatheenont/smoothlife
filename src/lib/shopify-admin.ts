@@ -2985,14 +2985,22 @@ export async function variantOrdersSince(
 
 export async function variantsSoldSince(
   variantIds: (string | null | undefined)[],
-  sinceIso: string
+  sinceIso: string,
+  // `fresh` skips the cached answer on the way in and still refreshes it on
+  // the way out. For a page being polled, a number up to a minute old is the
+  // point of the cache. For a webhook it is the whole problem: Shopify tells
+  // us an order has just been paid, cancelled or refunded, and the cached
+  // count is from before that happened — so the resync would read the old
+  // number and write it back, and the event that prompted it would change
+  // nothing.
+  opts: { fresh?: boolean } = {}
 ): Promise<Map<string, number>> {
   const wanted = new Set(variantIds.filter((v): v is string => Boolean(v)));
   if (!wanted.size || !shopifyAdminConfigured()) return new Map();
 
   const key = `${sinceIso}|${[...wanted].sort().join(",")}`;
   const hit = soldCache.get(key);
-  if (hit && Date.now() - hit.at < 60_000) return hit.counts;
+  if (!opts.fresh && hit && Date.now() - hit.at < 60_000) return hit.counts;
 
   const counts = new Map<string, number>();
   try {

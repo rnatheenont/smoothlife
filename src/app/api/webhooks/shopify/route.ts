@@ -322,6 +322,28 @@ async function handleCustomersDelete(customer: any) {
   return { clearedShopifyLink: userIds, releasedIdentities };
 }
 
+/**
+ * Puts a flash sale's storefront count back in step after an order moved.
+ *
+ * A cancelled or refunded order stops counting as sold — Shopify is asked for
+ * orders whose financial status is paid, and it has just left that set — so
+ * the slot it was holding should go back on sale. Without this the number
+ * only corrects itself when somebody opens the sale page or the sweep comes
+ * round, and in the meantime the queue is stricter than the shelf.
+ *
+ * Wrapped rather than inlined at each branch: this runs after work that has
+ * already changed somebody's points, and an exception escaping here would
+ * fail the webhook, which Shopify answers by sending the whole thing again.
+ */
+async function resyncFlashSale(payload: unknown, topic: string) {
+  try {
+    return await syncExternalSoldForOrder(payload as Parameters<typeof syncExternalSoldForOrder>[0]);
+  } catch (err) {
+    console.error(`[shopify webhook] flash-sale resync failed for ${topic}`, err);
+    return { campaigns: 0, synced: [] };
+  }
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const hmacHeader = req.headers.get("x-shopify-hmac-sha256");
@@ -365,10 +387,7 @@ export async function POST(req: NextRequest) {
         // queue to hand out, and until now nothing told the queue so until
         // somebody opened the sale page or the sweep came round. This is the
         // moment Shopify knows, so it is the moment to ask.
-        const soldSync = await syncExternalSoldForOrder(payload).catch((err) => {
-          console.error("[shopify webhook] flash-sale sold resync failed", err);
-          return { campaigns: 0, synced: [] };
-        });
+        const soldSync = await resyncFlashSale(payload, "orders/paid");
         result = { flashSale, soldSync, points: await handleOrdersPaid(payload, req.url) };
         break;
       }
@@ -378,12 +397,19 @@ export async function POST(req: NextRequest) {
       case "fulfillments/update":
         result = await handleFulfillmentUpdate(payload);
         break;
-      case "orders/cancelled":
-        result = await handleOrdersCancelled(payload);
+      case "orders/cancelled": {
+        // Points first. The resync below is a number on a screen; the reversal
+        // is somebody's balance, and it must not be waiting behind a call to
+        // Shopify that may be slow or may fail.
+        const cancelled = await handleOrdersCancelled(payload);
+        result = { ...cancelled, soldSync: await resyncFlashSale(payload, "orders/cancelled") };
         break;
-      case "refunds/create":
-        result = await handleRefundsCreate(payload);
+      }
+      case "refunds/create": {
+        const refunded = await handleRefundsCreate(payload);
+        result = { ...refunded, soldSync: await resyncFlashSale(payload, "refunds/create") };
         break;
+      }
       case "products/create":
       case "products/update":
       case "products/delete":

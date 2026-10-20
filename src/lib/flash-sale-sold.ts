@@ -46,7 +46,11 @@ export type SoldSync = { slug: string; queueSold: number; external: number; tota
  * stays invisible to the thing handing out slots. The cron calls this; the
  * status reads call it too, so an open page keeps it fresh for free.
  */
-export async function syncExternalSold(campaignId: string, startsAt: string): Promise<SoldSync[]> {
+export async function syncExternalSold(
+  campaignId: string,
+  startsAt: string,
+  opts: { fresh?: boolean } = {}
+): Promise<SoldSync[]> {
   const rows = await supabaseRest<
     {
       id: string;
@@ -64,7 +68,8 @@ export async function syncExternalSold(campaignId: string, startsAt: string): Pr
 
   const sold = await variantsSoldSince(
     rows.map((r) => r.variant_id),
-    startsAt
+    startsAt,
+    opts
   );
   // Shopify unreachable, or nothing sold yet. Leaving the stored number alone
   // keeps the gate where it is rather than throwing it open.
@@ -132,6 +137,11 @@ export async function raiseSoldToShopify(
 /**
  * Re-reads the storefront count for whatever campaign an order just touched.
  *
+ * Called for a payment, a cancellation and a refund. All three move the same
+ * number, because Shopify is asked for orders whose financial status is paid
+ * — a cancelled or refunded order drops out of that answer, which frees the
+ * slot it was holding.
+ *
  * Without this the number only moves when somebody is looking: the sale page
  * refreshes it while it is open, and the cron sweeps every campaign on a
  * schedule. A set bought from the shop's own product page at three in the
@@ -146,14 +156,19 @@ export async function raiseSoldToShopify(
  * Best-effort, like everything else on that webhook: a failure here must not
  * turn a paid order into a failed delivery that Shopify will retry.
  */
-export async function syncExternalSoldForOrder(order: {
+export async function syncExternalSoldForOrder(payload: {
+  /** An order body. */
   line_items?: { variant_id?: string | number | null }[];
+  /** A refund body, which names the same variants one level further down. */
+  refund_line_items?: { line_item?: { variant_id?: string | number | null } | null }[];
 }): Promise<{ campaigns: number; synced: SoldSync[] }> {
+  const variantIds = [
+    ...(payload.line_items ?? []).map((li) => li.variant_id),
+    ...(payload.refund_line_items ?? []).map((rli) => rli.line_item?.variant_id),
+  ];
   const variants = [
     ...new Set(
-      (order.line_items ?? [])
-        .map((li) => (li.variant_id == null ? "" : `gid://shopify/ProductVariant/${li.variant_id}`))
-        .filter(Boolean)
+      variantIds.map((id) => (id == null ? "" : `gid://shopify/ProductVariant/${id}`)).filter(Boolean)
     ),
   ];
   if (!variants.length) return { campaigns: 0, synced: [] };
@@ -179,7 +194,7 @@ export async function syncExternalSoldForOrder(order: {
   const synced: SoldSync[] = [];
   for (const campaign of campaigns) {
     try {
-      synced.push(...(await syncExternalSold(campaign.id, campaign.starts_at)));
+      synced.push(...(await syncExternalSold(campaign.id, campaign.starts_at, { fresh: true })));
     } catch (err) {
       console.error(`[flash-sale] live resync failed for ${campaign.id}`, err);
     }
