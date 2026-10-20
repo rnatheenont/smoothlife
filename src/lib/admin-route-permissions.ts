@@ -103,6 +103,18 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   { prefix: "/api/admin/kb/articles", permission: "kb.publish" },
   { prefix: "/api/admin/kb/reindex", permission: "kb.publish" },
   { prefix: "/api/admin/kb/seed", permission: "kb.publish" },
+  // Importing. Reading a document and showing what it would do writes
+  // nothing, so it is a drafting job; so is committing, because everything
+  // lands as a draft. Undoing an import is not — it deletes rows and
+  // restores others, and the rows it touches may have been published since.
+  { prefix: "/api/admin/kb/import/rollback", permission: "kb.publish" },
+  { prefix: "/api/admin/kb/import", permission: "kb.draft" },
+  { prefix: "/api/admin/kb/export", permission: "kb.draft", methods: READ },
+  // The topics are the tabs and chips on /faq: renaming one changes what
+  // every customer sees, so changing them is publishing even though no
+  // answer changed.
+  { prefix: "/api/admin/kb/topics", permission: "kb.draft", methods: READ },
+  { prefix: "/api/admin/kb/topics", permission: "kb.publish" },
 
   // Page titles and descriptions, and the assistant that drafts them.
   { prefix: "/api/admin/seo", permission: "seo.manage" },

@@ -177,6 +177,8 @@ export default function AdminKnowledgeBasePage() {
     try {
       let offset: number | null = 0;
       let done = 0;
+      let remaining = 0;
+      let rounds = 0;
       while (offset !== null) {
         const res = await fetch("/api/admin/kb/reindex", {
           method: "POST",
@@ -187,15 +189,21 @@ export default function AdminKnowledgeBasePage() {
         if (!res.ok || !data.ok)
           throw new Error(data.error || "สร้าง embedding ไม่สำเร็จ");
         done += data.indexed;
+        remaining = data.remaining ?? 0;
+        rounds += 1;
         offset = data.nextOffset;
-        setSyncNote(
-          `กำลังสร้าง embedding… ทำแล้ว ${done} · เหลือ ${Math.max(0, data.total - data.indexed)} บทความ`,
-        );
+        setSyncNote(`กำลังสร้าง embedding… ส่งไปแล้ว ${done} บทความ · ยังไม่มี embedding ${remaining}`);
       }
+      // What the database says, not what the request claimed. The last time
+      // this ran it reported success on every round and the number of
+      // embedded chunks never moved — a message that only repeats the
+      // request's own optimism cannot show that.
       setSyncNote(
-        done > 0
-          ? `สร้าง embedding ครบแล้ว ${done} บทความ`
-          : "ทุกบทความมี embedding อยู่แล้ว",
+        rounds === 0 || done === 0
+          ? "ทุกบทความมี embedding อยู่แล้ว ไม่มีอะไรต้องทำ"
+          : remaining === 0
+            ? `สร้าง embedding ครบแล้ว ${done} บทความ · ตรวจจากฐานข้อมูลแล้วไม่เหลือข้อไหนขาด`
+            : `ส่งไป ${done} บทความ แต่ยังเหลือ ${remaining} ข้อที่ไม่มี embedding — แปลว่าการเขียนไม่ผ่าน ให้แจ้งทีมพร้อมเวลาที่กด`,
       );
     } catch (err) {
       setError(

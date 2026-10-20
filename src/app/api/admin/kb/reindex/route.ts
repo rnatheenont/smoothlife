@@ -35,6 +35,11 @@ export async function POST(req: NextRequest) {
         .map((c) => c.article_id)
     ),
   ];
+  // Logged, because the last time this was pressed nobody could tell
+  // afterwards whether it had found no work, been refused by the provider, or
+  // written something that was then overwritten. The route said nothing at
+  // all, so the only evidence was a screenshot of a toast.
+  console.info(`[kb/reindex] pending chunks=${pending.length} articles=${ids.length}`);
   if (ids.length === 0) return NextResponse.json({ ok: true, indexed: 0, total: 0, nextOffset: null });
 
   const slice = ids.slice(0, BATCH);
@@ -47,6 +52,9 @@ export async function POST(req: NextRequest) {
     `kb_articles?id=in.(${slice.map(pgValue).join(",")})&select=${CHUNK_COLUMNS}`
   );
   const result = await reindexArticles(articles);
+  console.info(
+    `[kb/reindex] asked=${slice.length} read=${articles.length} chunks=${result.chunks} embedded=${result.embedded}`
+  );
 
   // The caller asks again until nothing is left; each round re-reads what is
   // still missing, so finishing is not a matter of counting offsets right.
@@ -58,5 +66,23 @@ export async function POST(req: NextRequest) {
       { status: 503 }
     );
   }
-  return NextResponse.json({ ok: true, indexed: slice.length, total: ids.length, nextOffset: ids.length > slice.length ? 0 : null });
+
+  // Counted from the database rather than from what this request believes it
+  // did. "I wrote 21" and "21 rows now have an embedding" are different
+  // claims, and only the second one is worth showing to the person who
+  // pressed the button.
+  const left = await supabaseRest<{ article_id: string }[]>(
+    "kb_chunks?embedding=is.null&select=article_id,kb_articles!inner(id)&kb_articles.status=eq.published&limit=5000"
+  ).catch((): { article_id: string }[] => []);
+  const remaining = new Set(left.map((c) => c.article_id)).size;
+  console.info(`[kb/reindex] remaining articles without embeddings=${remaining}`);
+
+  return NextResponse.json({
+    ok: true,
+    indexed: slice.length,
+    total: ids.length,
+    chunks: result.chunks,
+    remaining,
+    nextOffset: remaining > 0 && remaining < ids.length ? 0 : null,
+  });
 }
