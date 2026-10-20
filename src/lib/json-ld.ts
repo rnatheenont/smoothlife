@@ -2,6 +2,7 @@ import type { Product } from "@/data/types";
 import type { ReviewRow } from "@/app/api/reviews/route";
 
 import { SITE_URL } from "@/lib/site-url";
+import { headlineRating } from "@/lib/product-rating";
 
 // Escapes "</" so a product name/review body containing it can never break
 // out of the <script> tag it's embedded in.
@@ -9,9 +10,45 @@ export function jsonLdScript(data: unknown) {
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }
 
+/**
+ * How the shop delivers and takes things back, as Google expects it stated.
+ *
+ * The numbers are the ones on /help and in the shop's own terms, and there
+ * is a test (shop-facts.test.ts) that fails when the customer-facing pages
+ * and the checkout stop agreeing about them. Repeating them here is the
+ * third place they appear, so they are written once as constants and the
+ * comment says where the truth lives.
+ *
+ * Both blocks are what turn a plain listing into one that can show "free
+ * delivery" and "free 14-day returns" in a search result.
+ */
+const SHIPPING_DETAILS = {
+  "@type": "OfferShippingDetails",
+  shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "THB" },
+  shippingDestination: { "@type": "DefinedRegion", addressCountry: "TH" },
+  deliveryTime: {
+    "@type": "ShippingDeliveryTime",
+    handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 1, unitCode: "DAY" },
+    transitTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 3, unitCode: "DAY" },
+  },
+} as const;
+
+const RETURN_POLICY = {
+  "@type": "MerchantReturnPolicy",
+  applicableCountry: "TH",
+  returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+  merchantReturnDays: 14,
+  returnMethod: "https://schema.org/ReturnByMail",
+  returnFees: "https://schema.org/FreeReturn",
+} as const;
+
 export function productJsonLd(product: Product, reviews: ReviewRow[]) {
   const url = `${SITE_URL}/product/${product.slug}`;
-  const images = [product.image, product.image2].filter(Boolean) as string[];
+  // Every photo, not the two the cards use. A listing is shown with the
+  // picture Google picks, and giving it one choice is choosing for it.
+  const images = (
+    product.images?.length ? product.images : [product.image, product.image2]
+  ).filter(Boolean) as string[];
 
   const offers =
     product.variants.length > 1
@@ -25,6 +62,8 @@ export function productJsonLd(product: Product, reviews: ReviewRow[]) {
             ? "https://schema.org/InStock"
             : "https://schema.org/OutOfStock",
           url,
+          shippingDetails: SHIPPING_DETAILS,
+          hasMerchantReturnPolicy: RETURN_POLICY,
         }
       : {
           "@type": "Offer",
@@ -34,16 +73,22 @@ export function productJsonLd(product: Product, reviews: ReviewRow[]) {
             ? "https://schema.org/InStock"
             : "https://schema.org/OutOfStock",
           url,
+          shippingDetails: SHIPPING_DETAILS,
+          hasMerchantReturnPolicy: RETURN_POLICY,
         };
 
-  const aggregateRating =
-    reviews.length > 0
-      ? {
-          "@type": "AggregateRating",
-          ratingValue: (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1),
-          reviewCount: reviews.length,
-        }
-      : undefined;
+  // The same rating the page prints, from the same function — see
+  // product-rating.ts for why this is not simply "the reviews on this site".
+  const headline = headlineRating(product, reviews);
+  const aggregateRating = headline
+    ? {
+        "@type": "AggregateRating",
+        ratingValue: headline.value.toFixed(1),
+        reviewCount: headline.count,
+        bestRating: 5,
+        worstRating: 1,
+      }
+    : undefined;
 
   const review = reviews.slice(0, 5).map((r) => ({
     "@type": "Review",
@@ -59,7 +104,23 @@ export function productJsonLd(product: Product, reviews: ReviewRow[]) {
     image: images,
     description: product.shortDesc || product.description || undefined,
     brand: { "@type": "Brand", name: product.brand },
-    sku: product.slug,
+    // The real SKU when the catalogue has one. It used to send the slug,
+    // which is a URL fragment wearing a SKU's name: nothing in the warehouse
+    // or in Merchant Center can be matched with it, and an identifier that
+    // identifies nothing is worse than none.
+    //
+    // No gtin13. Every barcode in this shop was flattened to "8.85E+12" by a
+    // spreadsheet before it was imported, so there is not one real EAN to
+    // send — see merchant-center-checklist.md. Sending a wrong one is worse
+    // than sending none, because Google checks the check digit.
+    //
+    // Only when the product is one thing. A product with several sizes has a
+    // SKU per size and none of its own, and picking one of them to stand for
+    // the product is how a listing ends up pointing at the 30 ml when the
+    // customer is looking at the 100 ml.
+    ...(product.variants.length === 1 && product.variants[0].sku
+      ? { sku: product.variants[0].sku }
+      : {}),
     offers,
     ...(aggregateRating ? { aggregateRating } : {}),
     ...(review.length ? { review } : {}),

@@ -37,6 +37,7 @@ import { formatTHB } from "@/lib/format";
 import { subscriptionPlans } from "@/data/subscriptions";
 import { subscribeBuyNow } from "@/lib/subscribe-checkout";
 import StarRating from "./StarRating";
+import { headlineRating as pickHeadlineRating } from "@/lib/product-rating";
 import MobileStickyBar from "./MobileStickyBar";
 import FreeGiftProgress from "./FreeGiftProgress";
 import SubscriptionTermsInfo from "./SubscriptionTermsInfo";
@@ -278,18 +279,19 @@ export default function ProductDetailInteractive({
   const avgRating = reviewsList.length
     ? reviewsList.reduce((sum, r) => sum + r.rating, 0) / reviewsList.length
     : 0;
-  // Two sources of stars. Reviews written here are the ones shown in full
-  // below; product.rating/reviewCount is the store's own overall score
-  // (collected on smoothlife.com through Judge.me) and stands in until this
-  // site has reviews of its own, so a card showing 4.8 doesn't open a product
-  // page with no rating at all.
+  // Two sources of stars, and the rule for choosing between them lives in
+  // product-rating.ts — the same function the page's structured data uses, so
+  // the number in the markup is the number on the screen. Reviews written
+  // here are still shown in full below; they just do not replace a score
+  // drawn from hundreds of people with one drawn from two.
+  const headline = pickHeadlineRating(product, reviewsList);
+  // Shown separately inside the reviews panel, labelled as the shop's own
+  // score, so a reader who counts the reviews printed below and gets four
+  // can see where the other three hundred are.
   const storeRating =
-    product.reviewCount > 0
+    product.reviewCount > 0 && product.rating > 0
       ? { value: product.rating, count: product.reviewCount }
       : null;
-  const headlineRating = reviewsList.length
-    ? { value: avgRating, count: reviewsList.length }
-    : storeRating;
 
   const [questionsList, setQuestionsList] = useState(questions);
   const [showQuestionForm, setShowQuestionForm] = useState(false);
@@ -593,14 +595,14 @@ export default function ProductDetailInteractive({
           >
             {product.name}
           </h1>
-          {headlineRating && (
+          {headline && (
             <button
               onClick={() => setTab("reviews")}
               className="flex items-center gap-2 mt-2"
             >
-              <StarRating rating={headlineRating.value} />
+              <StarRating rating={headline.value} />
               <span className="text-sm text-slate-500">
-                {headlineRating.value.toFixed(1)} ({headlineRating.count} รีวิว)
+                {headline.value.toFixed(1)} ({headline.count} รีวิว)
               </span>
             </button>
           )}
