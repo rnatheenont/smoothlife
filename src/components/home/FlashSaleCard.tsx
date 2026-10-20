@@ -141,7 +141,11 @@ export default function FlashSaleCard({ product }: { product: ProductCardData })
 
         <div className="mt-auto pt-2">
           <div className="flex items-end justify-between gap-1.5">
-            <span className="text-base font-extrabold tabular-nums text-brand-emerald @[9rem]:text-lg">
+            <span // brand-emerald is the shop's green, and on white it reads at 2.4:1 —
+              // under the 4.5:1 a price has to meet to be read. brand-800 is the
+              // same green darkened to 5.7:1, which theme.css already keeps for
+              // exactly this reason wherever the colour has to carry words.
+              className="text-base font-extrabold tabular-nums text-brand-800 @[9rem]:text-lg">
               {formatTHB(product.price)}
             </span>
             {product.reviewCount > 0 && (
@@ -153,7 +157,7 @@ export default function FlashSaleCard({ product }: { product: ProductCardData })
           </div>
           {product.compareAtPrice && (
             <span className="flex flex-wrap items-center gap-1">
-              <span className="text-[11px] tabular-nums text-slate-400 line-through">
+              <span className="text-[11px] tabular-nums text-slate-500 line-through">
                 {formatTHB(product.compareAtPrice)}
               </span>
               {discount > 0 && (

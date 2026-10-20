@@ -150,7 +150,7 @@ async function SubscriptionPageWritten({ planParam }: { planParam?: string }) {
                       <p className="flex items-baseline gap-1.5">
                         <span className="text-lg font-extrabold text-brand-800">{formatTHB(perCyclePrice)}</span>
                         {set.summary.saving > 0 && (
-                          <span className="text-xs text-slate-400 line-through">{formatTHB(set.summary.separately)}</span>
+                          <span className="text-xs text-slate-500 line-through">{formatTHB(set.summary.separately)}</span>
                         )}
                       </p>
                     </div>

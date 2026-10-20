@@ -248,6 +248,12 @@ export default function HeroCarousel({
             <Link
               key={banner.slug}
               href={banner.href}
+              // A banner with no title leaves both its images with an empty
+              // alt — correct, they are the same picture twice — and then the
+              // link wrapping them has nothing to be announced as. A screen
+              // reader reaches the shop's biggest call to action and can only
+              // say "link".
+              aria-label={banner.title ?? "ดูรายละเอียดแคมเปญ"}
               aria-hidden={i !== index}
               tabIndex={i === index ? 0 : -1}
               // bg: what the card is while the artwork is still arriving.

@@ -51,7 +51,7 @@ export default function ProductRow({ product }: { product: Product }) {
           <p className="flex flex-wrap items-baseline gap-x-2">
             <span className="text-lg font-bold tabular-nums text-brand-ink">{formatTHB(product.price)}</span>
             {product.compareAtPrice && (
-              <span className="text-xs tabular-nums text-slate-400 line-through">{formatTHB(product.compareAtPrice)}</span>
+              <span className="text-xs tabular-nums text-slate-500 line-through">{formatTHB(product.compareAtPrice)}</span>
             )}
           </p>
           <div className="flex shrink-0 items-center gap-2">

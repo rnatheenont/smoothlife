@@ -466,7 +466,7 @@ export default function CampaignSetup({
                       <span className="min-w-0 flex-1 truncate text-slate-700" title={p.name}>
                         {p.name}
                       </span>
-                      <span className="shrink-0 text-xs text-slate-400 line-through">{formatTHB(p.price)}</span>
+                      <span className="shrink-0 text-xs text-slate-500 line-through">{formatTHB(p.price)}</span>
                       {priceMode === "fixed" ? (
                         <span className="relative shrink-0">
                           <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-500">฿</span>

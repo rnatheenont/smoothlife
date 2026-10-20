@@ -206,7 +206,7 @@ export default function Header({
                       {p.compareAtPrice && (
                         <span
                           translate="no"
-                          className="text-[11px] tabular-nums text-slate-400 line-through"
+                          className="text-[11px] tabular-nums text-slate-500 line-through"
                         >
                           {formatTHB(p.compareAtPrice)}
                         </span>

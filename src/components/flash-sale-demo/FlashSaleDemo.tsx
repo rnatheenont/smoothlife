@@ -771,7 +771,7 @@ function CustomerView({
               <p className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-sale">{formatTHB(product.price)}</span>
                 {product.compareAtPrice && (
-                  <span className="text-sm text-slate-400 line-through">{formatTHB(product.compareAtPrice)}</span>
+                  <span className="text-sm text-slate-500 line-through">{formatTHB(product.compareAtPrice)}</span>
                 )}
               </p>
               <div className="rounded-xl2 bg-surface-soft p-4">

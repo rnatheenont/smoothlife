@@ -69,7 +69,16 @@ export default function BrandCircleRow({
 
   return (
     <div>
-      <ul
+      {/* A div, not a ul. role="tablist" requires its tabs to be its own
+      children, and the <li> wrappers that were here sat between them — which
+      failed three separate accessibility rules at once: the tablist had no
+      tabs, each tab had no tablist, and each <li> had no list. Screen readers
+      were told this was a list of nine things and then found no list.
+
+      The role replaces the list semantics rather than adding to them: a
+      tablist already says what this row is, and saying "list" as well is one
+      description too many. */}
+      <div
         role="tablist"
         aria-label="แบรนด์ที่คุณไว้วางใจ"
         // The tile is 96px around an 88px circle, so the label has somewhere
@@ -91,15 +100,15 @@ export default function BrandCircleRow({
         {row.map((b, i) => {
           const on = i === active;
           return (
-            <li key={b.slug} className="shrink-0">
-              <button
+            <button
+                key={b.slug}
                 type="button"
                 role="tab"
                 id={`brand-tab-${b.slug}`}
                 aria-selected={on}
                 aria-controls="brand-shelf"
                 onClick={() => setActive(i)}
-                className="group flex w-[96px] flex-col items-center gap-3 lg:w-[116px]"
+                className="group flex w-[96px] shrink-0 flex-col items-center gap-3 lg:w-[116px]"
               >
                 <span
                   className={`grid h-[88px] w-[88px] place-items-center overflow-hidden rounded-full bg-white transition-all duration-300 group-active:scale-95 lg:h-[116px] lg:w-[116px] ${
@@ -130,10 +139,9 @@ export default function BrandCircleRow({
                   {b.name}
                 </span>
               </button>
-            </li>
           );
         })}
-      </ul>
+      </div>
 
       <div
         role="tabpanel"

@@ -126,7 +126,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, Car
                     <p className="flex items-baseline gap-1.5">
                       <span className="text-lg font-extrabold text-brand-800">{formatTHB(set.perCycle)}</span>
                       {set.struck !== null && (
-                        <span className="text-xs text-slate-400 line-through">{formatTHB(set.struck)}</span>
+                        <span className="text-xs text-slate-500 line-through">{formatTHB(set.struck)}</span>
                       )}
                     </p>
                   )}

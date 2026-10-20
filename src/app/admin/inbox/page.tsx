@@ -230,7 +230,7 @@ function ProductCardView({ slug, card }: { slug: string; card: ProductCard }) {
             {baht(card.price)}
           </span>
           {card.compareAtPrice ? (
-            <span className="text-[10px] text-slate-400 line-through">
+            <span className="text-[10px] text-slate-500 line-through">
               {baht(card.compareAtPrice)}
             </span>
           ) : null}

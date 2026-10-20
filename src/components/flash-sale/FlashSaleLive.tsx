@@ -524,7 +524,7 @@ export default function FlashSaleLive({
   const priceRow = (
     <p className="flex flex-wrap items-baseline gap-2">
       <span className="text-3xl font-extrabold text-sale">{formatTHB(price.pay)}</span>
-      {price.was && <span className="text-sm text-slate-400 line-through">{formatTHB(price.was)}</span>}
+      {price.was && <span className="text-sm text-slate-500 line-through">{formatTHB(price.was)}</span>}
       {price.percentOff > 0 && (
         <Chip color="danger" variant="soft" size="sm">
           ลด {price.percentOff}%

@@ -207,7 +207,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
               </span>
               {product.compareAtPrice && (
                 <span className="flex flex-wrap items-center gap-1 @[13rem]:gap-1.5">
-                  <span className="text-[11px] tabular-nums text-slate-400 line-through">
+                  <span className="text-[11px] tabular-nums text-slate-500 line-through">
                     {formatTHB(product.compareAtPrice)}
                   </span>
                   {discount > 0 && (

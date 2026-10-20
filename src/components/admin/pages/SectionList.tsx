@@ -183,7 +183,7 @@ function Row({
         >
           <span
             title={label}
-            className={`line-clamp-2 text-[13px] font-semibold ${hidden ? "text-slate-400 line-through" : "text-brand-ink"}`}
+            className={`line-clamp-2 text-[13px] font-semibold ${hidden ? "text-slate-500 line-through" : "text-brand-ink"}`}
           >
             {label}
           </span>

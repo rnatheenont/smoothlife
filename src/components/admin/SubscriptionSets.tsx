@@ -333,7 +333,7 @@ export default function SubscriptionSets({
                     </span>
                     {set.summary.saving > 0 && (
                       <>
-                        <span className="text-xs text-slate-400 line-through">
+                        <span className="text-xs text-slate-500 line-through">
                           {formatTHB(set.summary.separately)}
                         </span>
                         <span className="text-xs font-semibold text-emerald-700">

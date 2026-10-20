@@ -260,7 +260,7 @@ export function SetPicker({ items, value, onChange }: { items: PickerItem[]; val
                   <span className="line-clamp-2 text-xs font-medium text-brand-ink">{item.name}</span>
                   <span className="mt-auto flex flex-wrap items-baseline gap-x-1.5">
                     <span className="text-sm font-bold text-sale">{baht(item.pay)}</span>
-                    {item.was && <span className="text-[11px] text-slate-400 line-through">{baht(item.was)}</span>}
+                    {item.was && <span className="text-[11px] text-slate-500 line-through">{baht(item.was)}</span>}
                   </span>
                   {item.remaining !== null && <span className="text-[11px] text-slate-500">เหลือ {item.remaining} ชิ้น</span>}
                 </span>
