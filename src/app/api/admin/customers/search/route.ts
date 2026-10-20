@@ -32,6 +32,28 @@ type UserRow = {
 
 type IdentityRow = { user_id: string; provider: string; provider_uid: string; verified_at: string | null };
 
+/** The account's default delivery address, so staff editing a customer's
+ *  details start from what is already on file instead of retyping it. One
+ *  per account: the screen edits the default, which is the one everything
+ *  else reaches for. */
+type AddressRow = {
+  id: string;
+  user_id: string;
+  label: string | null;
+  recipient_name: string;
+  phone: string;
+  address_line: string;
+  subdistrict: string;
+  district: string;
+  province: string;
+  postal_code: string;
+  country: string;
+  is_default: boolean;
+};
+
+const ADDRESS_COLUMNS =
+  "id,user_id,label,recipient_name,phone,address_line,subdistrict,district,province,postal_code,country,is_default";
+
 export async function GET(req: NextRequest) {
   if (!verifyAdminToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
     return NextResponse.json({ ok: false, error: "กรุณาเข้าสู่ระบบแอดมิน" }, { status: 401 });
@@ -72,9 +94,10 @@ export async function GET(req: NextRequest) {
   let accounts: UserRow[] = [];
   let allIdentities: IdentityRow[] = [];
   let storeLinks: { user_id: string; store: string; shopify_customer_id: string | null }[] = [];
+  let addresses: AddressRow[] = [];
   if (ids.size > 0) {
     const list = [...ids].map((id) => `"${id}"`).join(",");
-    [accounts, allIdentities, storeLinks] = await Promise.all([
+    [accounts, allIdentities, storeLinks, addresses] = await Promise.all([
       supabaseRest<UserRow[]>(
         `users?select=id,display_name,phone,shopify_customer_id,created_at&id=in.(${encodeURIComponent(list)})&limit=25`
       ).catch(() => []),
@@ -83,6 +106,11 @@ export async function GET(req: NextRequest) {
       ).catch(() => []),
       supabaseRest<{ user_id: string; store: string; shopify_customer_id: string | null }[]>(
         `store_customer_links?select=user_id,store,shopify_customer_id&shopify_customer_id=not.is.null&user_id=in.(${encodeURIComponent(list)})`
+      ).catch(() => []),
+      // Default first, then oldest: the same order the edit route picks the
+      // row to write to, so the form shows the address the save will change.
+      supabaseRest<AddressRow[]>(
+        `addresses?select=${ADDRESS_COLUMNS}&user_id=in.(${encodeURIComponent(list)})&order=is_default.desc,created_at.asc`
       ).catch(() => []),
     ]);
   }
@@ -105,6 +133,7 @@ export async function GET(req: NextRequest) {
 
   const withIdentities = accounts.map((a) => ({
     ...a,
+    address: addresses.find((ad) => ad.user_id === a.id) ?? null,
     storeLinks: storeLinks
       .filter((l) => l.user_id === a.id)
       .map((l) => ({ store: l.store, shopifyCustomerId: l.shopify_customer_id })),

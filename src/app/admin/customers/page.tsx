@@ -28,6 +28,10 @@ import {
 } from "@/components/admin/layout-kit";
 import { Button, Spinner } from "@heroui/react";
 import AdminField from "@/components/admin/AdminField";
+import AddressFields, {
+  emptyAddressForm,
+  type AddressFormValue,
+} from "@/components/account/AddressFields";
 import AdminSearch from "@/components/admin/AdminSearch";
 
 // Attaching a returning customer's purchase history to their login.
@@ -43,6 +47,18 @@ import AdminSearch from "@/components/admin/AdminSearch";
 // link-shopify-customer.ts, which is server-only and cannot be imported here.
 const PLACEHOLDER_NAME = "สมาชิกใหม่";
 
+/** The account's address on one line, for comparing against the Shopify
+ *  records beside it. The full thing is in the edit dialog; this is the part
+ *  somebody checks at a glance when deciding whether two records are the
+ *  same person. */
+function addressLine(a: AccountAddress | null | undefined): string | null {
+  if (!a) return null;
+  return [a.address_line, a.subdistrict, a.district, a.province, a.postal_code]
+    .filter(Boolean)
+    .join(" ");
+}
+
+
 type Identity = { provider: string; uid: string; verified: boolean };
 type Account = {
   id: string;
@@ -53,6 +69,22 @@ type Account = {
   identities: Identity[];
   /** Links to Smooth E / Dentiste customer records. */
   storeLinks?: { store: string; shopifyCustomerId: string | null }[];
+  /** The account's default delivery address, when it has one. */
+  address?: AccountAddress | null;
+};
+
+type AccountAddress = {
+  id: string;
+  label: string | null;
+  recipient_name: string;
+  phone: string;
+  address_line: string;
+  subdistrict: string;
+  district: string;
+  province: string;
+  postal_code: string;
+  country: string;
+  is_default: boolean;
 };
 type Candidate = {
   id: string;
@@ -137,10 +169,15 @@ export default function AdminCustomersPage() {
   const [health, setHealth] = useState<Health | null>(null);
   const [checking, setChecking] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
-  // Typing in a name for an account that has none — the customers whose name
-  // only ever existed in a chat message.
-  const [renaming, setRenaming] = useState<Account | null>(null);
+  // Writing down what a customer told staff — the details that only ever
+  // existed in a chat message.
+  const [editing, setEditing] = useState<Account | null>(null);
   const [nameValue, setNameValue] = useState("");
+  const [phoneValue, setPhoneValue] = useState("");
+  const [addressValue, setAddressValue] = useState<AddressFormValue>(emptyAddressForm);
+  // Off by default: most edits here are a name, and an address form opened
+  // every time is six empty boxes between the name and the save button.
+  const [editAddress, setEditAddress] = useState(false);
   const [nameError, setNameError] = useState("");
   const [nameBusy, setNameBusy] = useState(false);
   // The selected member's saved Skin Coach scans, for context when helping them.
@@ -280,17 +317,44 @@ export default function AdminCustomersPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function openRename(a: Account) {
-    setRenaming(a);
+  function openEdit(a: Account) {
+    setEditing(a);
     // Blank rather than the placeholder: "สมาชิกใหม่" is the absence of a
     // name, and nobody wants to delete it before typing.
     setNameValue(a.display_name === PLACEHOLDER_NAME ? "" : a.display_name || "");
+    setPhoneValue(a.phone || "");
+    setAddressValue(
+      a.address
+        ? {
+            label: a.address.label || "บ้าน",
+            recipient_name: a.address.recipient_name,
+            phone: a.address.phone,
+            address_line: a.address.address_line,
+            subdistrict: a.address.subdistrict,
+            district: a.address.district,
+            province: a.address.province,
+            postal_code: a.address.postal_code,
+            country: a.address.country || "TH",
+            is_default: a.address.is_default,
+          }
+        : {
+            ...emptyAddressForm,
+            // The two things already known about this customer, so staff are
+            // not retyping what is on the row they just clicked.
+            recipient_name: a.display_name === PLACEHOLDER_NAME ? "" : a.display_name || "",
+            phone: a.phone || "",
+            is_default: true,
+          },
+    );
+    // Opened on an account that already has an address, because then the
+    // form is showing something rather than asking for it.
+    setEditAddress(Boolean(a.address));
     setNameError("");
   }
 
-  async function submitRename(e: React.FormEvent) {
+  async function submitEdit(e: React.FormEvent) {
     e.preventDefault();
-    if (!renaming) return;
+    if (!editing) return;
     const name = nameValue.trim();
     if (!name) {
       setNameError("กรุณากรอกชื่อ");
@@ -299,24 +363,38 @@ export default function AdminCustomersPage() {
     setNameError("");
     setNameBusy(true);
     try {
-      const res = await fetch("/api/admin/customers/name", {
+      const res = await fetch("/api/admin/customers/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: renaming.id, name }),
+        body: JSON.stringify({
+          userId: editing.id,
+          name,
+          phone: phoneValue.trim(),
+          // Only when the form is open. A closed form is "I did not touch
+          // the address", not "the address is blank".
+          ...(editAddress ? { address: addressValue } : {}),
+        }),
       });
       const json = await res.json().catch(() => null);
       if (!json?.ok) {
-        setNameError(json?.error || "บันทึกชื่อไม่สำเร็จ");
+        setNameError(json?.error || "บันทึกไม่สำเร็จ");
         return;
       }
       setAccounts((list) =>
         (list || []).map((a) =>
-          a.id === renaming.id ? { ...a, display_name: name } : a,
+          a.id === editing.id
+            ? {
+                ...a,
+                display_name: json.user?.display_name ?? name,
+                phone: json.user?.phone ?? null,
+                address: json.address ?? a.address ?? null,
+              }
+            : a,
         ),
       );
-      setRenaming(null);
+      setEditing(null);
     } catch {
-      setNameError("บันทึกชื่อไม่สำเร็จ กรุณาลองใหม่");
+      setNameError("บันทึกไม่สำเร็จ กรุณาลองใหม่");
     } finally {
       setNameBusy(false);
     }
@@ -590,10 +668,10 @@ export default function AdminCustomersPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              openRename(a);
+                              openEdit(a);
                             }}
-                            aria-label={`แก้ชื่อของ ${a.display_name || "บัญชีนี้"}`}
-                            title="แก้ชื่อ"
+                            aria-label={`แก้ข้อมูลของ ${a.display_name || "บัญชีนี้"}`}
+                            title="แก้ชื่อ ที่อยู่ เบอร์โทร"
                             className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-white hover:text-brand-ink"
                           >
                             <Pencil size={13} aria-hidden="true" />
@@ -601,6 +679,9 @@ export default function AdminCustomersPage() {
                         </span>
                         <span className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
                           {a.phone && <span>{a.phone}</span>}
+                          {addressLine(a.address) && (
+                            <span className="w-full truncate">{addressLine(a.address)}</span>
+                          )}
                           {a.identities.map((i) => (
                             <span key={i.provider + i.uid}>
                               {PROVIDER_LABEL[i.provider] || i.provider}:{" "}
@@ -711,17 +792,17 @@ export default function AdminCustomersPage() {
                         tabIndex={0}
                         onClick={(e) => {
                           e.stopPropagation();
-                          openRename(a);
+                          openEdit(a);
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
                             e.stopPropagation();
-                            openRename(a);
+                            openEdit(a);
                           }
                         }}
-                        aria-label={`แก้ชื่อของ ${a.display_name || "บัญชีนี้"}`}
-                        title="แก้ชื่อ"
+                        aria-label={`แก้ข้อมูลของ ${a.display_name || "บัญชีนี้"}`}
+                        title="แก้ชื่อ ที่อยู่ เบอร์โทร"
                         className="grid size-9 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-white hover:text-brand-ink"
                       >
                         <Pencil size={13} aria-hidden="true" />
@@ -747,6 +828,9 @@ export default function AdminCustomersPage() {
                   )}
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
                     {a.phone && <span>{a.phone}</span>}
+                    {addressLine(a.address) && (
+                      <span className="w-full truncate">{addressLine(a.address)}</span>
+                    )}
                     {a.identities.map((i) => (
                       <span key={i.provider + i.uid}>
                         {PROVIDER_LABEL[i.provider] || i.provider}:{" "}
@@ -1159,36 +1243,81 @@ export default function AdminCustomersPage() {
         </Card>
       )}
 
-      {renaming && (
+      {editing && (
         <Modal
           open
-          onClose={() => setRenaming(null)}
-          size="sm"
-          title="แก้ชื่อลูกค้า"
+          onClose={() => setEditing(null)}
+          size="md"
+          title="แก้ข้อมูลลูกค้า"
           description={
-            renaming.identities.find((i) => i.provider === "email")?.uid ||
-            renaming.phone ||
+            editing.identities.find((i) => i.provider === "email")?.uid ||
+            editing.phone ||
             undefined
           }
         >
-          <form onSubmit={submitRename} className="space-y-3">
+          <form onSubmit={submitEdit} className="space-y-3">
             <AdminField
               label="ชื่อ"
               value={nameValue}
               onChange={setNameValue}
               placeholder="เช่น สมหญิง ใจดี"
             />
+            <AdminField
+              label="เบอร์โทร"
+              type="tel"
+              inputMode="tel"
+              value={phoneValue}
+              onChange={setPhoneValue}
+              placeholder="เช่น 0812345678"
+              hint="เว้นว่างได้ — เบอร์ผิดแย่กว่าไม่มีเบอร์ เพราะเดี๋ยวมีคนโทรไปจริง"
+            />
             <p className="text-xs text-slate-500">
-              ลูกค้าเห็นชื่อนี้ในหน้าบัญชีของตัวเอง
-              และชื่อที่กรอกไว้จะไม่ถูกทับด้วยชื่อจาก Shopify ภายหลัง
+              ลูกค้าเห็นข้อมูลนี้ในหน้าบัญชีของตัวเอง
+              และที่กรอกไว้จะไม่ถูกทับด้วยข้อมูลจาก Shopify ภายหลัง
+              · การแก้ตรงนี้ไม่ส่งไปแก้ใบลูกค้าใน Shopify
             </p>
+
+            {/* The address form stays shut until somebody wants it: most
+                edits here are a name, and six empty boxes between the name
+                and the save button is how a quick fix stops feeling quick. */}
+            {!editAddress ? (
+              <button
+                type="button"
+                onClick={() => setEditAddress(true)}
+                className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-brand-800 ring-1 ring-surface-line hover:ring-brand-800/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+              >
+                <span>
+                  {editing.address ? "แก้ที่อยู่จัดส่ง" : "เพิ่มที่อยู่จัดส่ง"}
+                </span>
+                <Pencil size={13} aria-hidden="true" />
+              </button>
+            ) : (
+              <div className="rounded-xl p-3 ring-1 ring-surface-line">
+                <p className="mb-2 text-xs font-semibold text-slate-600">
+                  ที่อยู่จัดส่งหลัก
+                </p>
+                <AddressFields
+                  value={addressValue}
+                  onChange={setAddressValue}
+                  showDefaultToggle={false}
+                />
+                <button
+                  type="button"
+                  onClick={() => setEditAddress(false)}
+                  className="mt-2 text-xs font-medium text-slate-500 hover:text-brand-ink"
+                >
+                  ไม่แก้ที่อยู่
+                </button>
+              </div>
+            )}
+
             {nameError && (
               <p role="alert" className="text-xs font-medium text-rose-600">
                 {nameError}
               </p>
             )}
             <Button type="submit" fullWidth isPending={nameBusy}>
-              บันทึกชื่อ
+              บันทึก
             </Button>
           </form>
         </Modal>
