@@ -2,7 +2,12 @@ import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { breadcrumbJsonLd, faqPageJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { excerptOf } from "@/lib/kb-public";
-import { getFaqArticles, getFaqTopics, faqSearchIndex, type FaqTopic } from "@/lib/faq-public";
+import {
+  getFaqArticles,
+  getFaqTopics,
+  faqSearchIndex,
+  type FaqTopic,
+} from "@/lib/faq-public";
 import FaqBrowser from "@/components/faq/FaqBrowser";
 import FaqItem from "@/components/faq/FaqItem";
 
@@ -20,7 +25,8 @@ import FaqItem from "@/components/faq/FaqItem";
 export const revalidate = 900;
 
 const TITLE = "คำถามที่พบบ่อย";
-const DESCRIPTION = "ค้นหาคำตอบเรื่องสินค้า ปัญหาผิว ช่องปาก เส้นผม อาหารเสริม และการสั่งซื้อ จากคำถามที่ลูกค้าถามเข้ามาจริง";
+const DESCRIPTION =
+  "ค้นหาคำตอบเรื่องสินค้า ปัญหาผิว ช่องปาก เส้นผม อาหารเสริม และการสั่งซื้อ จากคำถามที่ลูกค้าถามเข้ามาจริง";
 
 // Shown as "ยอดนิยม" under the search box. Short, in the words customers
 // type, and each one is a term the index actually matches — a suggested
@@ -34,14 +40,17 @@ export const metadata = {
 };
 
 export default async function FaqPage() {
-  const [articles, topics] = await Promise.all([getFaqArticles(), getFaqTopics()]);
+  const [articles, topics] = await Promise.all([
+    getFaqArticles(),
+    getFaqTopics(),
+  ]);
   const sections = topics.filter((t): t is FaqTopic => t.kind === "section");
   const concerns = topics.filter((t): t is FaqTopic => t.kind === "concern");
   const index = faqSearchIndex(articles);
   const sectionLabel = new Map(sections.map((s) => [s.slug, s.label_th]));
 
   return (
-    <div className="container-page py-6 md:py-10">
+    <div className="pb-10">
       {/* One FAQPage block for the page, listing the questions whose answers
           are printed here in full. /help carries its own; a second block on
           the same URL is what duplicates a listing, not a block per page. */}
@@ -55,8 +64,8 @@ export default async function FaqPage() {
                   question: a.title,
                   answer: excerptOf(a.content, 300),
                   dateModified: a.updated_at,
-                }))
-              )
+                })),
+              ),
             ),
           }}
         />
@@ -65,20 +74,22 @@ export default async function FaqPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: jsonLdScript(
-            breadcrumbJsonLd([{ label: "หน้าแรก", href: "/" }, { label: TITLE }])
+            breadcrumbJsonLd([
+              { label: "หน้าแรก", href: "/" },
+              { label: TITLE },
+            ]),
           ),
         }}
       />
 
-      <header className="mb-5 md:mb-7">
-        <h1 className="text-2xl font-bold text-brand-ink md:text-3xl">{TITLE}</h1>
-        <p className="mt-1 max-w-[60ch] text-sm text-slate-500">{DESCRIPTION}</p>
-      </header>
-
       {articles.length === 0 ? (
-        <div className="rounded-xl2 bg-white p-6 text-center ring-1 ring-surface-line">
-          <p className="text-base font-semibold text-brand-ink">ยังไม่มีคำถามที่เผยแพร่</p>
-          <p className="mt-1 text-sm text-slate-500">ถามน้อง Smoothie ได้เลย ตอบได้ทันทีตลอด 24 ชั่วโมง</p>
+        <div className="container-page mt-6 rounded-xl2 bg-white p-6 text-center ring-1 ring-surface-line">
+          <p className="text-base font-semibold text-brand-ink">
+            ยังไม่มีคำถามที่เผยแพร่
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            ถามน้อง Smoothie ได้เลย ตอบได้ทันทีตลอด 24 ชั่วโมง
+          </p>
           <Link
             href="/chat"
             className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-brand-800 px-5 text-sm font-semibold text-white hover:bg-brand-1000"
@@ -89,7 +100,14 @@ export default async function FaqPage() {
         </div>
       ) : (
         <>
-          <FaqBrowser index={index} sections={sections} concerns={concerns} popular={POPULAR}>
+          <FaqBrowser
+            index={index}
+            sections={sections}
+            concerns={concerns}
+            popular={POPULAR}
+            title={TITLE}
+            description={DESCRIPTION}
+          >
             {articles.map((a) => (
               <FaqItem
                 key={a.public_slug}
@@ -99,9 +117,13 @@ export default async function FaqPage() {
             ))}
           </FaqBrowser>
 
-          <aside className="mt-8 rounded-xl2 bg-surface-soft p-5 text-center ring-1 ring-surface-line md:p-6">
-            <p className="text-base font-semibold text-brand-ink">ไม่เจอคำตอบที่ต้องการ</p>
-            <p className="mt-1 text-sm text-slate-500">ถามน้อง Smoothie ได้ตลอด 24 ชั่วโมง หรือคุยกับทีมงานทาง LINE</p>
+          <aside className="container-page mt-8 rounded-xl2 bg-surface-soft p-5 text-center ring-1 ring-surface-line md:p-6">
+            <p className="text-base font-semibold text-brand-ink">
+              ไม่เจอคำตอบที่ต้องการ
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              ถามน้อง Smoothie ได้ตลอด 24 ชั่วโมง หรือคุยกับทีมงานทาง LINE
+            </p>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
               <Link
                 href="/chat"
