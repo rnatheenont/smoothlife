@@ -2,7 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-// What the shop says it accepts, against what checkout actually offers.
+// The facts the shop states about itself, checked against each other.
+//
+// Two kinds live here. Payment: what the pages promise, against what checkout
+// actually sends to 2C2P. Delivery and returns: the numbers that appear in
+// four places and must be one number — free shipping, 1-3 business days, 14
+// days to return.
 //
 // These drifted apart and stayed apart. /help/payment, the terms page, the
 // page builder's copy of /help/payment and the article the assistant answers
@@ -94,4 +99,51 @@ test("เทสต์นี้จับได้จริง ถ้ามีค�
 
   const denial = "ขณะนี้ยังไม่รองรับการเก็บเงินปลายทาง (COD) และการโอนเงินแนบสลิป";
   assert.equal(denial.replace(DENIAL, "").includes("เก็บเงินปลายทาง"), false);
+});
+
+
+// ----------------------------------------------------------- delivery facts
+
+/**
+ * The numbers a customer plans around.
+ *
+ * They are written in help.ts, in the page builder's copy of /help/delivery
+ * and in the terms, and the FAQ answers repeat them again in the database.
+ * Nothing links the copies, so this compares the ones that are in code: a
+ * change to one that is not a change to all of them is a shop that says two
+ * different things depending on which page you opened.
+ *
+ * The database copy cannot be checked here — a unit test that needed Supabase
+ * would be a unit test that fails on a train — so the FAQ answers are checked
+ * by whoever publishes them. What this catches is the other three drifting.
+ */
+const DELIVERY_FACTS = [
+  { what: "ส่งฟรี ไม่มียอดขั้นต่ำ", pattern: /ไม่มียอดขั้นต่ำ/ },
+  { what: "จัดส่ง 1-3 วันทำการ", pattern: /1-3 วันทำการ/ },
+  { what: "คืนได้ภายใน 14 วัน", pattern: /14 วัน/ },
+];
+
+const STATES_DELIVERY = ["src/data/help.ts", "src/lib/pages/default-docs/system.ts"];
+
+test("ตัวเลขเรื่องจัดส่งและคืนสินค้า ต้องตรงกันทุกที่ที่เขียนไว้", () => {
+  const missing: string[] = [];
+  for (const file of STATES_DELIVERY) {
+    const text = readFileSync(file, "utf8");
+    for (const { what, pattern } of DELIVERY_FACTS) {
+      if (!pattern.test(text)) missing.push(`${file} — ไม่มี "${what}"`);
+    }
+  }
+  assert.deepEqual(missing, [], "ตัวเลขหายไปจากบางที่:\n  " + missing.join("\n  "));
+});
+
+test("ไม่มีที่ไหนตั้งยอดขั้นต่ำของการส่งฟรี", () => {
+  // "ส่งฟรีเมื่อซื้อครบ…" was in the terms while /help/delivery said there is
+  // no minimum. A customer reading the terms would wait to reach a number
+  // that does not exist.
+  const offenders: string[] = [];
+  for (const file of [...STATES_DELIVERY, "src/app/terms/page.tsx"]) {
+    const text = readFileSync(file, "utf8");
+    if (/ส่งฟรีเมื่อซื้อครบ|ซื้อครบ\s*\d/.test(text)) offenders.push(file);
+  }
+  assert.deepEqual(offenders, [], "มีที่ที่ยังบอกว่าส่งฟรีต้องซื้อครบยอด:\n  " + offenders.join("\n  "));
 });

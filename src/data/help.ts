@@ -50,7 +50,15 @@ export const helpTopics: HelpTopic[] = [
       {
         icon: "package-search",
         title: "ติดตามพัสดุได้แบบเรียลไทม์",
-        body: "ดูสถานะคำสั่งซื้อได้ที่หน้าบัญชีของฉัน > คำสั่งซื้อและติดตามพัสดุ",
+        // Named by what you click, not by what the page calls itself: the
+        // menu item is "คำสั่งซื้อ" (AccountLayout) and the page it opens is
+        // headed "คำสั่งซื้อและติดตามพัสดุ" (OrdersList). Both are real, but
+        // only one of them is a thing to look for.
+        //
+        // /track is here because a guest who ordered without an account
+        // cannot open the account page at all, and sending them to a menu
+        // they do not have is the kind of help that wastes someone's evening.
+        body: "ดูสถานะได้ที่ บัญชีของฉัน > คำสั่งซื้อ หรือหน้า ติดตามพัสดุ (/track) หากสั่งซื้อโดยไม่ได้สมัครสมาชิก",
       },
       {
         icon: "rotate-ccw",
