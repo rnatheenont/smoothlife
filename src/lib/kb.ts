@@ -364,10 +364,24 @@ export async function searchKb(
   return (rows ?? []).map((r) => ({ ...r, score: Number(r.score) }));
 }
 
+/** One tool call the assistant made, in the order it made it. */
+export type AiToolCall = {
+  round: number;
+  name: string;
+  query?: string;
+  matched?: { id: string; score: number }[];
+};
+
 /**
  * What the assistant answered and which approved articles it used. Kept so a
  * claim in a transcript can be traced back to the article a person published
  * — and so the team can see what customers ask that the base cannot answer.
+ *
+ * Called on every turn, including the turns where the assistant never asked
+ * the knowledge base. Those used to go unrecorded, which made the most
+ * interesting failure invisible: an approved article exists, it scores
+ * perfectly, and the model answers from the catalogue instead. `tools` is
+ * what distinguishes "asked and found nothing" from "never asked".
  */
 export async function logAiAnswer(entry: {
   uid?: string;
@@ -376,6 +390,7 @@ export async function logAiAnswer(entry: {
   articleIds: string[];
   channel?: string;
   escalated?: boolean;
+  tools?: AiToolCall[];
 }) {
   try {
     await supabaseRest("ai_conversation_log", {
@@ -388,6 +403,7 @@ export async function logAiAnswer(entry: {
         ai_answer: entry.answer.slice(0, 8000),
         matched_article_ids: [...new Set(entry.articleIds)],
         was_escalated: entry.escalated ?? false,
+        tools: entry.tools ?? [],
       }),
     });
   } catch (err) {

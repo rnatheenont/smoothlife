@@ -19,7 +19,7 @@ import { activeBlockedTopics } from "@/lib/kb-blocked-topics";
 import { loyaltySummaryForPrompt } from "@/lib/loyalty-prompt";
 import { CHAT_TOOLS, runChatTool } from "@/lib/chat-product-search";
 import { KB_TOOL, runKbTool } from "@/lib/chat-kb-tool";
-import { logAiAnswer } from "@/lib/kb";
+import { logAiAnswer, type AiToolCall } from "@/lib/kb";
 import { otherStoreLinks, otherStoreOrders } from "@/lib/store-links";
 import { deliveryStatusForPrompt } from "@/lib/delivery-status";
 import { signedAttachmentUrl } from "@/lib/chat-attachments";
@@ -448,6 +448,10 @@ export async function POST(req: NextRequest) {
       // answer about a policy has to be traceable to the article it came from.
       const kbMatches: string[] = [];
       let kbAsked = false;
+      // Every tool call this turn made, in order. Recorded for its own sake:
+      // the answer alone cannot tell you whether the assistant consulted the
+      // knowledge base and disagreed with it, or never looked.
+      const toolCalls: AiToolCall[] = [];
       try {
         // Product lookups happen through tools: the model searches, we run
         // the search here and hand back the results, and it continues. Text
@@ -487,12 +491,21 @@ export async function POST(req: NextRequest) {
             final.content
               .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
               .map(async (b) => {
+                const asked = (b.input ?? {}) as { query?: unknown };
+                const query = typeof asked.query === "string" ? asked.query.slice(0, 500) : undefined;
                 if (b.name !== KB_TOOL.name) {
+                  toolCalls.push({ round, name: b.name, query });
                   return { type: "tool_result" as const, tool_use_id: b.id, content: await runChatTool(b.name, b.input) };
                 }
                 const result = await runKbTool(b.input);
                 kbMatches.push(...result.matches.map((m) => m.article_id));
                 kbAsked = true;
+                toolCalls.push({
+                  round,
+                  name: b.name,
+                  query,
+                  matched: result.matches.map((m) => ({ id: m.article_id, score: m.score })),
+                });
                 return { type: "tool_result" as const, tool_use_id: b.id, content: result.text };
               })
           );
@@ -515,8 +528,23 @@ export async function POST(req: NextRequest) {
           await recordAiMessage(channel, channelUserId, toSave);
         }
         await persistMessage({ uid, sessionKey, role: "assistant", content: toSave, viewingSlug: viewingProduct?.slug });
-        if (kbAsked && lastUserText) {
-          await logAiAnswer({ uid, question: lastUserText, answer: toSave, articleIds: kbMatches, escalated: kbMatches.length === 0 });
+        if (lastUserText) {
+          // Every turn, not only the ones that asked the knowledge base. The
+          // turn that never asked is the one worth reading.
+          //
+          // was_escalated keeps its old meaning exactly — the base was asked
+          // and had nothing — because the admin review queue is built on it.
+          // Widening it to "no articles matched" would have swept in every
+          // turn that never consulted the base at all. What happened instead
+          // is in `tools`.
+          await logAiAnswer({
+            uid,
+            question: lastUserText,
+            answer: toSave,
+            articleIds: kbMatches,
+            escalated: kbAsked && kbMatches.length === 0,
+            tools: toolCalls,
+          });
         }
         // Closed last, not first. The browser has had every word as it
         // streamed, so nothing is kept from it by closing a moment later —
