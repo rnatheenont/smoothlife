@@ -176,6 +176,10 @@ export default function AdminSeoPage() {
     { normalized: string; searches: number; zero_result_searches: number }[]
   >([]);
   const [articleItems, setArticleItems] = useState<Item[] | null>(null);
+  // Whether the saved rows are in hand. A deep link must not open a row
+  // before they are: the form would fill with blanks, and saving that blank
+  // form would erase a title somebody wrote.
+  const [overridesLoaded, setOverridesLoaded] = useState(false);
 
   useAdminAction({
     label: "เปิดหน้าจริง",
@@ -192,6 +196,7 @@ export default function AdminSeoPage() {
     for (const row of data?.overrides ?? [])
       map[`${row.page_type}:${row.page_key}`] = row;
     setOverrides(map);
+    setOverridesLoaded(true);
   }
   useEffect(() => {
     load();
@@ -217,9 +222,56 @@ export default function AdminSeoPage() {
   );
   const q = query.trim().toLowerCase();
 
-  function open(item: Item) {
+  // ?type=brand&key=janeke opens that row. Read once the list for the tab is
+  // in hand — the article list arrives from the server, so for that tab the
+  // first pass has nothing to find yet.
+  // Read once, as the initial value rather than in an effect: nothing in the
+  // markup depends on it, so the server rendering it as null and the browser
+  // rendering it as the link is the same first paint either way.
+  const [deepLink, setDeepLink] = useState<{ type: string; key: string } | null>(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get("type");
+    const key = params.get("key");
+    return type && key ? { type, key } : null;
+  });
+  // The address bar is the external system this synchronises from, which is
+  // what the rule below is otherwise right to ask about: this runs once per
+  // arrival, and the `deepLink` it clears is what stops it running again.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!deepLink || !overridesLoaded) return;
+    if (deepLink.type !== tab) {
+      if (SEO_PAGE_TYPES.some((t) => t.key === deepLink.type)) setTab(deepLink.type as SeoPageType);
+      else setDeepLink(null);
+      return;
+    }
+    const item = items.find((i) => i.key === deepLink.key);
+    if (item) {
+      openItem(item);
+      setDeepLink(null);
+    } else if (items.length > 0) {
+      // The tab is loaded and the key is not in it — a stale link.
+      setDeepLink(null);
+    }
+    // openItem reads today's overrides; it is stable enough for this one shot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLink, overridesLoaded, tab, items]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  function openItem(item: Item) {
     const row = overrides[`${tab}:${item.key}`];
     setSelected(item);
+    // The address bar carries what is open, so this screen can be linked to.
+    // Somebody reporting "the card for this brand is wrong" can be sent
+    // straight to the row that fixes it instead of a list of 992.
+    // replaceState, not push: moving down a list is looking around one
+    // screen, not a dozen pages of history.
+    window.history.replaceState(
+      null,
+      "",
+      `?type=${encodeURIComponent(tab)}&key=${encodeURIComponent(item.key)}`
+    );
     setTitle(row?.meta_title ?? "");
     setDescription(row?.meta_description ?? "");
     setKeywords((row?.keywords ?? []).join(", "));
@@ -463,7 +515,7 @@ export default function AdminSeoPage() {
                 <li key={item.key}>
                   <button
                     type="button"
-                    onClick={() => open(item)}
+                    onClick={() => openItem(item)}
                     className={
                       "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm " +
                       (selected?.key === item.key

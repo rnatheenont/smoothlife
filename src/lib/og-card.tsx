@@ -10,9 +10,9 @@ import { ImageResponse } from "next/og";
 // they quietly fall back to a thumbnail beside the text.
 //
 // So the square picture is placed on a 1200x630 card rather than stretched
-// into one: contained, never cropped, on the shop's own background. Every
-// page gets a card of the right shape and size without anyone uploading
-// anything.
+// into one: as tall as the card allows, contained, never cropped, on the
+// shop's own background. Every page gets a card of the right shape and size
+// without anyone uploading anything.
 //
 // No Thai on the card on purpose. Satori draws text with the fonts it is
 // handed, and shipping a Thai font to every one of these would be a megabyte
@@ -22,11 +22,15 @@ import { ImageResponse } from "next/og";
 export const OG_SIZE = { width: 1200, height: 630 };
 export const OG_CONTENT_TYPE = "image/png";
 
+/** As tall as 1200x630 allows with a hair of margin, so the picture is the
+ *  card rather than a stamp in the middle of one. */
+const PICTURE = 586;
+
 /** Latin only — see above. A Thai brand name simply leaves the line off. */
 function latinOnly(value: string | undefined): string | null {
   if (!value) return null;
   const trimmed = value.trim();
-  return trimmed && /^[\x20-\x7E\u00C0-\u024F\u2018\u2019]+$/.test(trimmed) ? trimmed : null;
+  return trimmed && /^[\x20-\x7EÀ-ɏ‘’]+$/.test(trimmed) ? trimmed : null;
 }
 
 export async function ogCard({ image, label }: { image?: string; label?: string }) {
@@ -38,7 +42,6 @@ export async function ogCard({ image, label }: { image?: string; label?: string 
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
           background: "linear-gradient(135deg, #F2FAF7 0%, #FFFFFF 55%, #EEF7FB 100%)",
@@ -51,46 +54,48 @@ export async function ogCard({ image, label }: { image?: string; label?: string 
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 470,
-              height: 470,
-              borderRadius: 36,
+              width: PICTURE,
+              height: PICTURE,
+              borderRadius: 32,
               background: "#FFFFFF",
-              boxShadow: "0 24px 60px rgba(15, 23, 42, 0.12)",
+              boxShadow: "0 20px 50px rgba(15, 23, 42, 0.10)",
               overflow: "hidden",
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image} alt="" width={430} height={430} style={{ objectFit: "contain" }} />
+            <img
+              src={image}
+              alt=""
+              width={PICTURE}
+              height={PICTURE}
+              style={{ objectFit: "contain" }}
+            />
           </div>
         )}
 
-        {caption && (
-          <div
-            style={{
-              marginTop: 28,
-              fontSize: 34,
-              fontWeight: 700,
-              color: "#15202b",
-              letterSpacing: "-0.5px",
-            }}
-          >
-            {caption}
-          </div>
-        )}
-
+        {/* In the gutter beside the picture rather than under it: the picture
+            uses the full height of the card now, and the sides are what is
+            left over. */}
         <div
           style={{
             position: "absolute",
-            left: 56,
-            bottom: 44,
+            left: 54,
+            top: 0,
+            bottom: 0,
             display: "flex",
-            alignItems: "center",
-            fontSize: 24,
-            fontWeight: 700,
-            color: "#05755f",
+            flexDirection: "column",
+            justifyContent: "center",
+            maxWidth: 240,
           }}
         >
-          smoothlife.com
+          {caption && (
+            <div style={{ fontSize: 30, fontWeight: 700, color: "#15202b", lineHeight: 1.2 }}>
+              {caption}
+            </div>
+          )}
+          <div style={{ marginTop: 10, fontSize: 21, fontWeight: 700, color: "#05755f" }}>
+            smoothlife.com
+          </div>
         </div>
       </div>
     ),
