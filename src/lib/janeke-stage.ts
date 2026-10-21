@@ -14,6 +14,14 @@ type ModelSpec = {
   title: string;
   wordmark: string;
   blurb: string;
+  /**
+   * Where this model sits on the stage, 1 first. Separate from the order of
+   * this array, which is the order the slugs are tested in and has to keep
+   * "small-superbrush" ahead of "superbrush" or every Small matches the
+   * plain one. Separate from price too: the stage opens on the showpiece,
+   * and what that is is a decision, not a number.
+   */
+  rank: number;
   /** First match wins, so the narrower slugs are listed first. */
   match: (slug: string) => boolean;
   /** Dropped from the product name to leave the colour behind. */
@@ -23,6 +31,7 @@ type ModelSpec = {
 const MODELS: ModelSpec[] = [
   {
     key: "maculata",
+    rank: 1,
     wordmark: "Superbrush",
     title: "Maculata Superbrush",
     blurb: "ลายพิมพ์เสือดาว สำหรับคนที่อยากให้หวีเป็นของสะสม",
@@ -31,6 +40,7 @@ const MODELS: ModelSpec[] = [
   },
   {
     key: "premium",
+    rank: 2,
     wordmark: "Superbrush",
     title: "Premium Superbrush",
     blurb: "งานชุบเมทัลลิก ทั้งด้ามและซี่หวี",
@@ -39,6 +49,7 @@ const MODELS: ModelSpec[] = [
   },
   {
     key: "small",
+    rank: 4,
     wordmark: "Superbrush",
     title: "Small Superbrush",
     blurb: "ขนาดพกพา ลงกระเป๋าได้ทั้งใบ",
@@ -47,6 +58,7 @@ const MODELS: ModelSpec[] = [
   },
   {
     key: "superbrush",
+    rank: 3,
     wordmark: "Superbrush",
     title: "Superbrush",
     blurb: "ซี่หวียืดหยุ่น หวีผมเปียกได้ ไม่ดึงรั้งเส้นผม",
@@ -252,9 +264,13 @@ export function janekeModels(items: Shelf[]): StageModel[] {
     out.set(spec.key, model);
   }
 
-  // Cheapest model first, which is also the one the headline quotes a price
-  // from; within a model, the colours in catalogue order.
+  // In the order the design puts them — Maculata, Premium, Superbrush, Small
+  // — rather than by price, which used to run the other way round and opened
+  // the stage on the cheapest. Within a model, the colours in catalogue
+  // order. (The "เริ่มต้น" price in the headline is the lowest of all of
+  // them wherever it sits, so it does not move with this.)
+  const rank = new Map(MODELS.map((m) => [m.key, m.rank]));
   return [...out.values()]
     .filter((m) => m.items.length > 0)
-    .sort((a, b) => Math.min(...a.items.map((i) => i.price)) - Math.min(...b.items.map((i) => i.price)));
+    .sort((a, b) => (rank.get(a.key) ?? 99) - (rank.get(b.key) ?? 99));
 }
