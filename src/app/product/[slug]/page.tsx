@@ -79,9 +79,12 @@ export async function generateMetadata(props: {
       title: meta.title,
       description: meta.description,
       url: `/product/${params.slug}`,
-      image: meta.image,
-      // A product photo is square; see shareMeta.
-      square: true,
+      // Attached by hand: used as it is, and declared a thumbnail because
+      // the ones chosen so far are square product shots. Nothing attached:
+      // the white card beside this file draws the photo at the right shape
+      // and size, and that one is a wide card.
+      image: meta.imageIsCustom ? meta.image : undefined,
+      square: meta.imageIsCustom,
     }),
   };
 }

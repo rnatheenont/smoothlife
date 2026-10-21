@@ -79,9 +79,10 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       title: meta.title,
       description: meta.description,
       url: `/brands/${params.slug}`,
-      image: meta.image,
-      // A brand logo is square; see shareMeta.
-      square: true,
+      // See the product page: attached picture as it is, otherwise the
+      // white card beside this file.
+      image: meta.imageIsCustom ? meta.image : undefined,
+      square: meta.imageIsCustom,
     }),
   };
 }
