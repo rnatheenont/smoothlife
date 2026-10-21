@@ -85,8 +85,11 @@ export async function GET(req: NextRequest) {
         normalizeOrderName(e.declared_order_number),
         e.payment_transactions?.shopify_order_id ?? null,
       ];
-      for (const key of keys) {
-        if (!key) continue;
+      // Deduplicated: a claim whose two numbers are the same string — which
+      // is every claim the reviewer confirmed rather than corrected — would
+      // otherwise be counted once per number and show as "×2", reading as
+      // two receipts for one bill.
+      for (const key of new Set(keys.filter((k): k is string => Boolean(k)))) {
         const seen = claims.get(key);
         const next = { state: e.status, at: e.reviewed_at ?? e.created_at, who: e.contact_name, count: (seen?.count ?? 0) + 1 };
         // An approved claim outranks a rejected one whatever their order:
