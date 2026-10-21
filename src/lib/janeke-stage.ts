@@ -23,16 +23,16 @@ type ModelSpec = {
 const MODELS: ModelSpec[] = [
   {
     key: "maculata",
-    wordmark: "Maculata",
-    title: "Maculata",
+    wordmark: "Superbrush",
+    title: "Maculata Superbrush",
     blurb: "ลายพิมพ์เสือดาว สำหรับคนที่อยากให้หวีเป็นของสะสม",
     match: (s) => s.includes("maculata"),
     strip: /\[new\]|janeke|mac|superbrush|maculata/gi,
   },
   {
     key: "premium",
-    wordmark: "Premium",
-    title: "Premium",
+    wordmark: "Superbrush",
+    title: "Premium Superbrush",
     blurb: "งานชุบเมทัลลิก ทั้งด้ามและซี่หวี",
     match: (s) => s.includes("premium"),
     strip: /\[new\]|janeke|premium|superbrush/gi,
@@ -40,7 +40,7 @@ const MODELS: ModelSpec[] = [
   {
     key: "small",
     wordmark: "Superbrush",
-    title: "Small",
+    title: "Small Superbrush",
     blurb: "ขนาดพกพา ลงกระเป๋าได้ทั้งใบ",
     match: (s) => s.includes("small-superbrush"),
     strip: /\[new\]|janeke|small|superbrush/gi,
@@ -112,6 +112,7 @@ const SWATCHES: Record<string, [string, string]> = {
   "navy-lightblue": ["#0a0a46", "#28b4f0"],
   "palepink-magenta-a": ["#dcbed2", "#c85aaa"],
   "palepink-magenta-b": ["#dcbed2", "#c85aaa"],
+  "pink-solid": ["#f2577f", "#fb7da0"],
   "purple-fuchsia": ["#6e468c", "#be3278"],
   "red-orange": ["#fa1e0a", "#f03214"],
   "teal-pink": ["#0abec8", "#f04678"],
@@ -131,6 +132,7 @@ const DOMES: Record<string, [string, string]> = {
   "navy-lightblue": ["#b8eaff", "#b9b9fe"],
   "palepink-magenta-a": ["#f2c5e8", "#ebcce0"],
   "palepink-magenta-b": ["#f2c5e8", "#ebcce0"],
+  "pink-solid": ["#ffc4d4", "#ffdde5"],
   "purple-fuchsia": ["#f8bedb", "#dbcbeb"],
   "red-orange": ["#ffbfb8", "#ffbeb8"],
   "teal-pink": ["#ffb8cc", "#b8ffff"],
@@ -170,6 +172,9 @@ const CUTOUTS: Record<string, string> = {
   "new-janeke-small-superbrush-blue-pastel": "/brands/janeke/mint-white.webp",
   "new-janeke-small-superbrush-green": "/brands/janeke/green-fuchsia.webp",
   "new-janeke-small-superbrush-pink-pastel": "/brands/janeke/palepink-magenta-a.webp",
+  // The solid pink the brand sent over: body and pad the same pink, which no
+  // other comb in the range is.
+  "new-janeke-small-superbrush-pink": "/brands/janeke/pink-solid.webp",
   // The second of two near-identical pale pinks, told apart by the shop.
   "new-janeke-small-superbrush-lillac-fucsia": "/brands/janeke/palepink-magenta-b.webp",
   // The full-size one is the same colourway as the Small — the shop's photos

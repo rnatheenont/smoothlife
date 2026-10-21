@@ -54,7 +54,6 @@ export default async function JanekeLandingPage() {
             models={models}
             headline="Find your perfect match"
             intro={`เริ่มต้น ${formatTHB(from)} · เลือกสีที่ใช่ แล้วช้อปได้เลย`}
-            allHref="/brands/janeke"
           />
         </div>
       )}

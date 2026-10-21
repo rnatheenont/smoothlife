@@ -143,7 +143,6 @@ async function BrandStage({ slug }: { slug: string }) {
       models={models}
       headline="Find your perfect match"
       intro={`เริ่มต้น ${formatTHB(from)} · เลือกสีที่ใช่ แล้วช้อปได้เลย`}
-      allHref="#shelf"
     />
   );
 }

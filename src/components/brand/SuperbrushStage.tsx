@@ -61,8 +61,6 @@ type Props = {
   models: StageModel[];
   headline: string;
   intro: string;
-  /** Where "ดูทั้งหมด" goes — the brand's own shelf, further down the page. */
-  allHref: string;
 };
 
 /** The dome is lit from its crown: white at the top, the colourway's tint
@@ -125,7 +123,7 @@ const STAGE_FOOT = 64;
  *  window that ran all the way down to a dome of nothing. */
 const WIDE_CONTROLS = 104;
 
-export default function SuperbrushStage({ models, headline, intro, allHref }: Props) {
+export default function SuperbrushStage({ models, headline, intro }: Props) {
   const flat = useMemo<Flat[]>(
     () => models.flatMap((m, model) => m.items.map((_, item) => ({ model, item }))),
     [models],
@@ -456,7 +454,7 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             90% of the dome keeps the row clear of the curve. `gap` is the
             floor the spread may not close past on a narrow screen. */}
         <div ref={ctrl} className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:pb-4 md:-mt-[calc(var(--dome-h)*0.17)] md:max-w-[calc(var(--dome-w)*0.9)] md:flex-row md:items-center md:justify-between md:gap-6">
-          <div className="flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/90 p-1 shadow-[0_6px_18px_rgba(15,23,42,0.08)] md:max-w-[calc(50%-6rem)] md:gap-0.5 lg:gap-1">
+          <div className="flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/90 p-1 shadow-[0_6px_18px_rgba(15,23,42,0.08)] md:max-w-[calc(50%-5rem)] md:flex-nowrap md:gap-0.5 lg:gap-1">
             {model.items.map((c, i) => {
               const on = i === here.item;
               return (
@@ -507,19 +505,24 @@ export default function SuperbrushStage({ models, headline, intro, allHref }: Pr
             })}
           </div>
 
+          {/* The model, then what it is, then what it costs — the order the
+              design puts them in. The heading is the model rather than the
+              product: the slide is a range of colours, and which colour is
+              on it is said by the swatch with the tick on it and again
+              beside the price. */}
           <div className="text-center md:max-w-[min(22rem,calc(50%-6rem))] md:text-left">
-            <p className="text-sm font-bold text-brand-ink">{current.name}</p>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">{model.blurb}</p>
-            <div className="mt-2 flex items-center justify-center gap-3 md:justify-start">
+            <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-brand-ink">
+              {model.title}
+            </p>
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{model.blurb}</p>
+            <div className="mt-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 md:justify-start">
               <span className="text-sm font-bold text-brand-ink">{formatTHB(current.price)}</span>
+              <span className="text-xs text-slate-500">{current.colour}</span>
               <Link
                 href={`/product/${current.slug}`}
                 className="rounded-full bg-brand-ink px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
               >
                 {current.soldOut ? "ดูรายละเอียด" : "ซื้อเลย"}
-              </Link>
-              <Link href={allHref} className="text-xs font-semibold text-slate-500 hover:text-brand-ink">
-                ดูทั้งหมด
               </Link>
             </div>
           </div>
