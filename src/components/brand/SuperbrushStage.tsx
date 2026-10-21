@@ -121,10 +121,10 @@ const STAGE_FOOT = 64;
  *
  * The arc's height is its width over this ratio, so a flatter one is a wider
  * one for the same height — which is the whole trade on a short window. 1.8
- * is the shape it is drawn at; past about 2.6 it stops reading as a dome and
+ * is the shape it is drawn at; past about 3.1 it stops reading as a dome and
  * starts reading as a horizon.
  */
-const MAX_RATIO = 2.6;
+const MAX_RATIO = 3.1;
 
 /** What the controls need above md, taken as a constant for the same reason
  *  the phone's are: measured, it feeds back. The controls are capped at a
@@ -219,7 +219,7 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
       // width long before it runs out of height, and the flatter arc left a
       // band of white above and below. A taller arc spends that height.
       const drawn = w < 1024 ? 1.3 : 1.8;
-      const byWidth = w < 1024 ? Math.min(w * 0.96, 1100) : w * 0.92;
+      const byWidth = w < 1024 ? Math.min(w * 0.96, 1100) : w * 0.96;
       const headH = head.current?.offsetHeight ?? HEADLINE;
       // What is left for the dome once the headline, the controls and the
       // foot have been paid for — and the controls are paid in full, not just
@@ -234,7 +234,10 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
       // and the flattest it may be. Sized at a fixed 1.8 the same height
       // budget drew an arc barely half the screen wide, which on a 1440px
       // window is a stage standing in the middle of its own empty room.
-      const ratio = Math.min(MAX_RATIO, Math.max(drawn, byWidth / Math.max(room, 1)));
+      // Over room * DOME_FILL, not room alone: the fill is taken off the
+      // height the arc may use, so a ratio worked out without it always fell
+      // that fraction short of the full width it was solving for.
+      const ratio = Math.min(MAX_RATIO, Math.max(drawn, byWidth / Math.max(room * DOME_FILL, 1)));
       const fitted = Math.min(byWidth, room * ratio * DOME_FILL);
       // Sized to the height, it fits by construction. The floor is what the
       // dome may shrink to before standing still stops being worth it — a
@@ -326,7 +329,7 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
         // on a window too short to hold the headline, the dome and the
         // controls at once, the stage stops being sticky and simply scrolls —
         // better than a pinned block whose bottom row cannot be reached.
-        className={`[--dome-r:1] [--dome-w:var(--dome-w-sm,100vw)] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:[--dome-r:var(--dome-fit-r,1.3)] md:[--dome-w:min(96vw,1100px,var(--dome-max,1100px))] lg:[--dome-r:var(--dome-fit-r,1.8)] lg:[--dome-w:min(92vw,var(--dome-max,1360px))] ${
+        className={`[--dome-r:1] [--dome-w:var(--dome-w-sm,100vw)] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:[--dome-r:var(--dome-fit-r,1.3)] md:[--dome-w:min(96vw,1100px,var(--dome-max,1100px))] lg:[--dome-r:var(--dome-fit-r,1.8)] lg:[--dome-w:min(96vw,var(--dome-max,1440px))] ${
           pinned
             ? `sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-start pb-14 md:pb-16 ${top ? "md:justify-start" : "md:justify-center"}`
             : ""
