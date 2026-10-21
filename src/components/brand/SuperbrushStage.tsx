@@ -381,14 +381,19 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
             {/* The model's name set large and pale behind the comb, the way
                 it was before it was tried as a heading at the crown. No z-index
                 of its own: the combs come after it in the DOM, so they paint
-                over it and the word reads as the surface the comb sits on. */}
+                over it and the word reads as the surface the comb sits on.
+
+                The share of the dome it takes grows with the screen. On a
+                phone the dome is the whole width, so one ratio for every
+                size put the word edge to edge with nothing either side;
+                a desktop has the room for it to span. */}
             <p
               aria-hidden
               style={{
                 transform: `translate3d(0, ${lift * -34}px, 0)`,
                 color: `${darker(current.swatch[0], current.swatch[1])}33`,
               }}
-              className={`absolute inset-x-0 top-[38%] text-center text-[clamp(2.5rem,calc(var(--dome-w)*0.175),13rem)] leading-none transition-colors duration-700 md:top-[42%] ${script.className}`}
+              className={`absolute inset-x-0 top-[38%] [--mark:0.135] text-center text-[clamp(2rem,calc(var(--dome-w)*var(--mark)),13rem)] leading-none transition-colors duration-700 md:top-[42%] md:[--mark:0.155] lg:[--mark:0.163] ${script.className}`}
             >
               {model.wordmark}
             </p>
