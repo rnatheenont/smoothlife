@@ -973,9 +973,12 @@ export default function ProductDetailInteractive({
               </div>
             </div>
           )}
+          {/* Two panels, not two columns of loose text. They are different
+              things — what people said, and what people asked — and sharing
+              one flat row made them read as one block of grey. */}
           {tab === "reviews" && (
-            <div className="grid md:grid-cols-2 gap-10">
-              <div>
+            <div className="grid gap-4 md:grid-cols-2 md:gap-6">
+              <div className="rounded-xl2 p-5 ring-1 ring-surface-line">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-brand-ink">รีวิวจากลูกค้า</h3>
                   <button
@@ -1068,22 +1071,30 @@ export default function ProductDetailInteractive({
                     then reports as a mismatch. Invisible while this panel only
                     ever rendered after a click; it renders on load now that the
                     reviews tab can be the first one. */}
+                {/* The shop's own score, as a block rather than a sentence.
+                    It used to sit as one grey line directly above "nobody has
+                    reviewed this yet", which read as the page contradicting
+                    itself — the two counts are different things and now look
+                    like it. */}
                 {storeRating && (
-                  <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                    <StarRating rating={storeRating.value} size={14} />
-                    <span>
-                      <span className="font-semibold text-brand-ink">
-                        {storeRating.value.toFixed(1)}
-                      </span>{" "}
-                      จาก {storeRating.count.toLocaleString("th-TH")}{" "}
-                      รีวิวที่ลูกค้าให้ไว้กับร้าน Smoothlife
+                  <div className="mb-4 flex items-center gap-3 rounded-xl2 bg-surface-soft px-4 py-3">
+                    <span className="text-2xl font-bold leading-none text-brand-ink">
+                      {storeRating.value.toFixed(1)}
+                    </span>
+                    <span className="min-w-0">
+                      <StarRating rating={storeRating.value} size={13} />
+                      <span className="mt-0.5 block text-[12px] text-slate-500">
+                        จาก {storeRating.count.toLocaleString("th-TH")} รีวิวที่ร้าน Smoothlife
+                      </span>
                     </span>
                   </div>
                 )}
 
                 {reviewsList.length === 0 ? (
                   <p className="text-sm text-slate-500">
-                    ยังไม่มีรีวิวบนเว็บนี้ค่ะ เป็นคนแรกที่รีวิวสิ!
+                    {storeRating
+                      ? "ยังไม่มีใครรีวิวสินค้านี้บนเว็บ — เขียนเป็นคนแรกได้เลย"
+                      : "ยังไม่มีรีวิวบนเว็บนี้ค่ะ เป็นคนแรกที่รีวิวสิ!"}
                   </p>
                 ) : (
                   <div className="space-y-5">
@@ -1113,7 +1124,7 @@ export default function ProductDetailInteractive({
                 )}
               </div>
 
-              <div>
+              <div className="rounded-xl2 p-5 ring-1 ring-surface-line">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-brand-ink">คำถามจากลูกค้า</h3>
                   <button

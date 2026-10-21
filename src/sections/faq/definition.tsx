@@ -108,34 +108,40 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, KbI
   if (shown.length === 0) return null;
 
   return (
+    // A rule above the heading: this section is dropped straight under
+    // whatever the page already had, and with nothing between them the
+    // questions read as a continuation of the block above rather than as
+    // their own part of the page.
     <section className="container-page pb-8 md:pb-10">
-      {settings.heading && <h2 className="mb-4 font-bold text-brand-ink">{settings.heading}</h2>}
-      {/* <details> rather than the click handler the site used before: it is
-          the same accordion with no JavaScript at all, `name` gives the
-          one-open-at-a-time behaviour natively, and the first one starts
-          open exactly as it did. */}
-      <div className="flex flex-col gap-2">
-        {shown.map((item, i) => (
-          <details
-            key={i}
-            name="faq"
-            open={i === 0}
-            className="group overflow-hidden rounded-xl border border-slate-100"
-          >
-            <summary className="flex w-full cursor-pointer list-none items-center justify-between gap-3 p-4 text-left">
-              <span className="text-sm font-semibold text-brand-ink">{item.q}</span>
-              <ChevronDown
-                size={16}
-                className="shrink-0 text-slate-400 transition-transform group-open:rotate-180"
-              />
-            </summary>
-            {/* whitespace-pre-line: the answer may be several paragraphs and
-                they are joined with blank lines, not wrapped in <p>. */}
-            <div className="whitespace-pre-line px-4 pb-4 text-sm leading-relaxed text-slate-600">
-              {item.a}
-            </div>
-          </details>
-        ))}
+      <div className="border-t border-surface-line pt-7 md:pt-8">
+        {settings.heading && <h2 className="mb-4 font-bold text-brand-ink">{settings.heading}</h2>}
+        {/* <details> rather than the click handler the site used before: it is
+            the same accordion with no JavaScript at all, `name` gives the
+            one-open-at-a-time behaviour natively, and the first one starts
+            open exactly as it did. */}
+        <div className="flex flex-col gap-2">
+          {shown.map((item, i) => (
+            <details
+              key={i}
+              name="faq"
+              open={i === 0}
+              className="group overflow-hidden rounded-xl border border-slate-100"
+            >
+              <summary className="flex w-full cursor-pointer list-none items-center justify-between gap-3 p-4 text-left">
+                <span className="text-sm font-semibold text-brand-ink">{item.q}</span>
+                <ChevronDown
+                  size={16}
+                  className="shrink-0 text-slate-400 transition-transform group-open:rotate-180"
+                />
+              </summary>
+              {/* whitespace-pre-line: the answer may be several paragraphs and
+                  they are joined with blank lines, not wrapped in <p>. */}
+              <div className="whitespace-pre-line px-4 pb-4 text-sm leading-relaxed text-slate-600">
+                {item.a}
+              </div>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   );
