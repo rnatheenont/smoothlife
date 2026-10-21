@@ -122,70 +122,100 @@ export default async function FaqArticlePage({ params }: { params: Promise<{ slu
         )}
       </nav>
 
-      <article className="max-w-[760px]">
-        <h1 className="text-2xl font-bold leading-snug text-brand-ink md:text-3xl">{article.title}</h1>
+      {/* Two columns from lg up: the answer at a readable measure, and a rail
+          for everything that is *about* the answer rather than part of it.
+          The page used to cap everything at 760px and leave half a wide screen
+          empty, with the feedback row and the related questions pushed so far
+          down that the answer looked like the whole page.
 
-        <div className="mt-4 space-y-3 text-[15px] leading-relaxed text-slate-600 md:text-base">
-          {paragraphs.map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
-        </div>
+          One column below lg, in the same order: answer, then what to do next.
+          The rail is sticky on desktop only — a sticky block on a phone eats
+          the screen the answer needs. */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-10 xl:gap-14">
+        <article className="max-w-[68ch]">
+          <h1 className="text-2xl font-bold leading-snug text-brand-ink md:text-3xl">{article.title}</h1>
 
-        {cards.length > 0 && (
-          <div className="mt-6 flex flex-wrap gap-2">
-            {cards.map((p) => (
-              <ProductRow key={p.slug} product={p} className="w-full max-w-[280px] sm:w-[280px]" />
+          {/* The first paragraph is the answer; the rest is detail. Giving it
+              its own size is the difference between a page that answers and a
+              page you have to read. */}
+          <div className="mt-4 space-y-3 text-[15px] leading-relaxed text-slate-600 md:text-base">
+            {paragraphs.map((p, i) => (
+              <p key={i} className={i === 0 ? "text-base text-brand-ink md:text-lg md:leading-relaxed" : undefined}>
+                {p}
+              </p>
             ))}
           </div>
-        )}
 
-        {article.cta_href && (
-          <Link
-            href={article.cta_href}
-            className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-800 hover:text-brand-1000 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
-          >
-            {article.cta_label ?? "ดูสินค้าทั้งหมด"}
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-        )}
+          {cards.length > 0 && (
+            <div className="mt-7">
+              {/* Said out loud: two product cards under an answer, with no
+                  line telling you why they are there, read as an advert. */}
+              <h2 className="mb-2 text-[13px] font-semibold text-slate-500">
+                สินค้าที่พูดถึงในคำตอบนี้
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {cards.map((p) => (
+                  <ProductRow key={p.slug} product={p} className="w-full max-w-[320px] sm:w-[320px]" />
+                ))}
+              </div>
+            </div>
+          )}
 
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-surface-line pt-4">
-          <FaqFeedback articleId={article.id} />
+          {article.cta_href && (
+            <Link
+              href={article.cta_href}
+              className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-800 hover:text-brand-1000 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+            >
+              {article.cta_label ?? "ดูสินค้าทั้งหมด"}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          )}
+
+          {/* Where to read next, where reading ends. In the rail it was
+              taller than the answer itself — most answers here are a
+              paragraph, and a sidebar that outweighs the page is the same
+              mistake as the empty half it replaced. */}
+          {related.length > 0 && (
+            <section className="mt-8 border-t border-surface-line pt-5">
+              <h2 className="text-sm font-semibold text-brand-ink">คำถามที่เกี่ยวข้อง</h2>
+              <ul className="mt-1 sm:grid sm:grid-cols-2 sm:gap-x-6">
+                {related.map((r) => (
+                  <li key={r.public_slug} className="border-b border-slate-100 last:border-0 sm:[&:nth-last-child(2):nth-child(odd)]:border-0">
+                    <Link
+                      href={`/faq/${encodeURIComponent(r.public_slug)}`}
+                      className="block py-2.5 text-sm text-slate-600 transition-colors hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                    >
+                      {r.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </article>
+
+        <aside className="mt-10 flex flex-col gap-3 lg:sticky lg:top-24 lg:mt-0">
+          {/* No heading over it: FaqFeedback asks "มีประโยชน์ไหม" itself, and
+              a title above it asked the same question twice. */}
+          <div className="rounded-xl2 bg-surface-soft p-4">
+            <FaqFeedback articleId={article.id} />
+          </div>
+
           <a
             href={`/chat?q=${encodeURIComponent(article.title)}`}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-800 hover:text-brand-1000 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+            className="flex items-center gap-2 rounded-xl2 p-4 text-sm font-semibold text-brand-800 ring-1 ring-surface-line transition-colors hover:ring-brand-800/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
           >
-            <MessageCircle className="h-4 w-4" aria-hidden />
-            ถามน้อง Smoothie ต่อ
+            <MessageCircle className="h-4 w-4 shrink-0" aria-hidden />
+            ยังไม่ตรงที่อยากรู้? ถามน้อง Smoothie
           </a>
-        </div>
-      </article>
 
-      {related.length > 0 && (
-        <section className="mt-10 max-w-[760px]">
-          <h2 className="text-lg font-semibold text-brand-ink">คำถามที่เกี่ยวข้อง</h2>
-          <ul className="mt-3 grid gap-2 md:grid-cols-2">
-            {related.map((r) => (
-              <li key={r.public_slug}>
-                <Link
-                  href={`/faq/${encodeURIComponent(r.public_slug)}`}
-                  className="flex h-full items-start gap-2 rounded-xl2 bg-white p-4 text-sm font-medium text-brand-ink ring-1 ring-surface-line transition-colors hover:ring-brand-800/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
-                >
-                  {r.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <div className="mt-10">
-        <Link
-          href="/faq"
-          className="inline-flex h-11 items-center rounded-full bg-white px-5 text-sm font-semibold text-brand-800 ring-1 ring-surface-line hover:ring-brand-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
-        >
-          ดูคำถามทั้งหมด
-        </Link>
+          <Link
+            href="/faq"
+            className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-brand-800 ring-1 ring-surface-line hover:ring-brand-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+          >
+            ดูคำถามทั้งหมด
+          </Link>
+        </aside>
       </div>
     </div>
   );
