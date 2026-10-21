@@ -79,9 +79,9 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
       title: meta.title,
       description: meta.description,
       url: `/brands/${params.slug}`,
-      // Only a picture somebody chose: without one the card beside this
-      // file draws the photo at the right shape and size.
-      image: meta.imageIsCustom ? meta.image : undefined,
+      image: meta.image,
+      // A brand logo is square; see shareMeta.
+      square: true,
     }),
   };
 }

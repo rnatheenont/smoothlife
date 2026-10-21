@@ -109,14 +109,6 @@ export async function withSeoOverride(
     title: override?.title ?? generated.title,
     description: override?.description ?? generated.description,
     image: override?.image ?? generated.image,
-    /**
-     * Whether that picture is one a person chose rather than the page's own
-     * photo. Product and brand pages hand their photo to a card generator
-     * (opengraph-image.tsx beside the page) instead of to the preview
-     * directly, because a square photo gets cropped to a 1.91:1 card — but a
-     * picture an admin picked in SEO หน้าเว็บ is meant to be used as it is.
-     */
-    imageIsCustom: Boolean(override?.image),
   };
 }
 
@@ -147,20 +139,26 @@ export function shareMeta({
   description,
   url,
   image,
+  square = false,
   type = "website",
 }: {
   title: string;
   description: string;
   url?: string;
   image?: string;
+  /**
+   * The picture is a square catalogue photo rather than a 1200x630 card.
+   * Product photos and brand logos are square, and a square picture asked to
+   * fill a 1.91:1 banner is either cropped or floating in empty space — as a
+   * thumbnail beside the text it is whole, sharp and the shape it was shot.
+   */
+  square?: boolean;
   type?: "website" | "article";
 }) {
   return {
     openGraph: { title, description, type, ...(url ? { url } : {}), ...ogImages(image) },
-    // Large: every picture this site hands a scraper is a 1200x630 card, and
-    // "summary" shrinks it to a thumbnail beside the text.
     twitter: {
-      card: "summary_large_image" as const,
+      card: square ? ("summary" as const) : ("summary_large_image" as const),
       title,
       description,
       ...(image ? { images: [image] } : {}),
