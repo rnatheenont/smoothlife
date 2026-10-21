@@ -216,16 +216,19 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
       // ran past was the top of its own headline.
       const room = (avail - headH - WIDE_CONTROLS - STAGE_FOOT) / (1 - CTRL_OVERLAP);
       const fitted = Math.min(byWidth, room * ratio * DOME_FILL);
-      // Sized to the height, it fits by construction — unless the window is so
-      // short that filling it would leave the dome smaller than the screen it
-      // stands on, which reads as a stamp rather than a stage.
-      const pin = fitted >= w * 0.5;
+      // Sized to the height, it fits by construction. The floor is what the
+      // dome may shrink to before standing still stops being worth it — a
+      // third of the screen, not half: on a laptop window about 760px tall
+      // the half-screen floor was missed by a hair, the stage gave up
+      // pinning, went back to full width, and the comb and the controls
+      // under it ended up below the fold on a page whose whole point is the
+      // comb. A smaller arc that is all there beats a grand one that is not.
+      const pin = fitted >= w * 0.32;
       setPinned(pin);
-      // The height budget is the price of standing still. A stage that scrolls
-      // has the whole page to be tall in, so it goes back to the width it was
-      // drawn at rather than keeping a dome sized for a window it is no longer
-      // being held inside.
-      const domeW = pin ? fitted : byWidth;
+      // Unpinned, the dome is still the one that fits the window rather than
+      // the full width it is drawn at: the stage is scrolling now, but it
+      // opens at the top of the page and should be readable there.
+      const domeW = fitted;
       setDomeMax(domeW);
       const domeH = domeW / ratio;
       const spare = avail - headH - domeH;
@@ -312,7 +315,10 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
               headings use, so the stage reads as part of that page rather
               than as a component borrowed from somewhere else. */}
           <h1
-            className={`${script.className} text-[clamp(2.25rem,7vw,5rem)] leading-tight text-[#685048]`}
+            // Capped by the window's height as well as its width: on a short
+            // laptop window the headline at 7vw took a fifth of everything
+            // there was, and what it took came off the comb underneath it.
+            className={`${script.className} text-[clamp(2.25rem,min(7vw,9vh),5rem)] leading-tight text-[#685048]`}
           >
             {headline}
           </h1>
@@ -458,7 +464,7 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
             At 16% of the way up the arc is still 98% of its full width, so
             90% of the dome keeps the row clear of the curve. `gap` is the
             floor the spread may not close past on a narrow screen. */}
-        <div ref={ctrl} className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:pb-4 md:-mt-[calc(var(--dome-h)*0.17)] md:max-w-[calc(var(--dome-w)*0.9)] md:flex-row md:items-center md:justify-between md:gap-6">
+        <div ref={ctrl} className="relative z-20 mx-auto -mt-[calc(var(--dome-h)*0.16)] flex w-full max-w-[1180px] flex-col items-center gap-3 px-4 pb-8 md:pb-4 md:-mt-[calc(var(--dome-h)*0.17)] md:max-w-[min(1180px,max(calc(var(--dome-w)*0.9),46rem))] md:flex-row md:items-center md:justify-between md:gap-6">
           <div className="flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/90 p-1 shadow-[0_6px_18px_rgba(15,23,42,0.08)] md:max-w-[calc(50%-5rem)] md:flex-nowrap md:gap-0.5 lg:gap-1">
             {model.items.map((c, i) => {
               const on = i === here.item;
@@ -515,7 +521,7 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
               product: the slide is a range of colours, and which colour is
               on it is said by the swatch with the tick on it and again
               beside the price. */}
-          <div className="text-center md:max-w-[min(22rem,calc(50%-6rem))] md:text-left">
+          <div className="text-center md:max-w-[min(22rem,calc(50%-5rem))] md:text-left">
             <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-brand-ink">
               {model.title}
             </p>
