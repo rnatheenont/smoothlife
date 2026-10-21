@@ -388,6 +388,33 @@ export default function AdminSeoPage() {
   // The typed URL wins; otherwise the page's own picture is what a share
   // would really show today, which is the thing worth previewing.
   const previewImage = ogImage.trim() || selected?.image || "";
+
+  /**
+   * The page's address with the version of what is saved for it on the end.
+   * A preview is cached per address, so a changed version is a link the
+   * chat app has never seen and therefore fetches again. The query string
+   * is ignored by the page and left out of its canonical, so it costs
+   * nothing in search.
+   */
+  function shareLink() {
+    if (!selected) return "";
+    const origin = typeof window === "undefined" ? "" : window.location.origin;
+    const saved = overrides[`${tab}:${selected.key}`]?.updated_at;
+    const version = saved ? Math.floor(new Date(saved).getTime() / 1000) : 0;
+    return `${origin}${selected.href}${version ? `?v=${version}` : ""}`;
+  }
+
+  async function copyShareLink() {
+    const link = shareLink();
+    try {
+      await navigator.clipboard.writeText(link);
+      setNote("คัดลอกลิงก์แชร์แล้ว");
+    } catch {
+      // Clipboard refused (an insecure origin, or the browser asked and was
+      // not answered): show the link so it can still be copied by hand.
+      setNote(link);
+    }
+  }
   // Progress across the whole tab, not the filtered list — the question is
   // how much of the catalogue has been written, and a search box should not
   // flatter the answer.
@@ -836,6 +863,41 @@ export default function AdminSeoPage() {
                     Facebook ครอบคือ 1.91:1 (แนะนำ 1200×630 px)
                     รูปสินค้าเป็นสี่เหลี่ยมจัตุรัส เวลาแชร์จะโดนครอบบน-ล่าง
                   </p>
+
+                  {/* Changing the picture changes this site in seconds; what
+                      keeps showing the old card is the chat app, which
+                      remembers one preview per link address and has no way
+                      for us to tell it otherwise. A link that carries the
+                      version of what is set here is a different address, so
+                      it is fetched fresh — in every app, without waiting for
+                      anything to expire. Facebook is the one crawler with a
+                      purge of its own, so that one gets a button too. */}
+                  <div className="mt-3 rounded-xl2 border border-surface-line bg-surface-soft p-3">
+                    <p className="text-xs font-semibold text-brand-ink">
+                      แก้รูปหรือคำแล้ว แต่ตอนแชร์ยังเห็นของเก่า?
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      เว็บเปลี่ยนให้ทันทีที่กดบันทึก แต่แอปแชตจำการ์ดเก่าไว้ต่อลิงก์
+                      — ใช้ลิงก์ด้านล่างส่งต่อ จะเห็นของใหม่เลย
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => copyShareLink()}
+                        className="min-h-9 rounded-full bg-brand-gradient px-4 text-xs font-bold text-white"
+                      >
+                        คัดลอกลิงก์แชร์ (เวอร์ชันล่าสุด)
+                      </button>
+                      <a
+                        href={`https://developers.facebook.com/tools/debug/?q=${encodeURIComponent(shareLink())}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-9 items-center rounded-full border border-surface-line bg-white px-4 text-xs font-semibold text-brand-ink hover:border-brand-teal"
+                      >
+                        ล้างแคช Facebook
+                      </a>
+                    </div>
+                  </div>
 
                   {/* The angle is an editorial decision, not a tone setting: the
                   same product yields a different title depending on whether
