@@ -5,7 +5,7 @@ import { products } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { sortSoldOutLast } from "@/lib/filter-products";
 import { breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
-import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
+import { withSeoOverride, shareMeta } from "@/lib/seo-overrides";
 import { withCustomImages } from "@/lib/product-images";
 import { toCardData } from "@/data/card";
 import { PAGES_WAVE2_ENABLED } from "@/lib/feature-flags";
@@ -27,12 +27,12 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     title: meta.title,
     description: meta.description,
     alternates: { canonical: `/concern/${params.slug}` },
-    openGraph: {
+    ...shareMeta({
       title: meta.title,
       description: meta.description,
       url: `/concern/${params.slug}`,
-      ...ogImages(meta.image),
-    },
+      image: meta.image,
+    }),
   };
 }
 

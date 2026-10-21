@@ -20,7 +20,7 @@ import TrackRecentlyViewed from "@/components/TrackRecentlyViewed";
 import RecentlyViewedSection from "@/components/RecentlyViewedSection";
 import { productJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { canonicalSlugFor } from "@/lib/product-canonical";
-import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
+import { withSeoOverride, shareMeta } from "@/lib/seo-overrides";
 import { getPublishedProductContent } from "@/lib/product-content";
 import { toCardData } from "@/data/card";
 import { PAGES_WAVE3_ENABLED } from "@/lib/feature-flags";
@@ -75,13 +75,12 @@ export async function generateMetadata(props: {
     alternates: { canonical: `/product/${canonicalSlug}` },
     // Shared to LINE or Facebook, a product link previewed as the site's
     // front page — same wordmark, same blurb, for all 944 of them.
-    openGraph: {
+    ...shareMeta({
       title: meta.title,
       description: meta.description,
       url: `/product/${params.slug}`,
-      type: "website",
-      ...ogImages(meta.image),
-    },
+      image: meta.image,
+    }),
   };
 }
 

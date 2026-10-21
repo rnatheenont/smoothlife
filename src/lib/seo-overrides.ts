@@ -115,7 +115,47 @@ export async function withSeoOverride(
 /** The `openGraph.images` value for a page, or nothing when neither the
  *  override nor the page itself has a picture — an empty array would tell
  *  LINE and Facebook there is no image at all, which is worse than letting
- *  the site-wide default in the root layout stand. */
+ *  the site-wide default (src/app/opengraph-image.png) stand. */
 export function ogImages(url: string | undefined) {
   return url ? { images: [{ url }] } : {};
+}
+
+/**
+ * Both sets of tags a shared link is read from, written once.
+ *
+ * Pages used to set `openGraph` alone. Next does not copy those across to
+ * the `twitter:` tags, and the root layout defines its own — so on every
+ * page of this site the twitter tags still said "Smoothlife.com — สุขภาพ
+ * และความงามครบวงจร", whatever the page was. Any app that prefers those
+ * tags (several chat apps do) showed the site's front door for a link to a
+ * product, a brand or a campaign.
+ *
+ * No `images` means no image key at all rather than an empty one, so the
+ * opengraph-image file at the route — or the site default at the root —
+ * supplies the picture for both.
+ */
+export function shareMeta({
+  title,
+  description,
+  url,
+  image,
+  type = "website",
+}: {
+  title: string;
+  description: string;
+  url?: string;
+  image?: string;
+  type?: "website" | "article";
+}) {
+  return {
+    openGraph: { title, description, type, ...(url ? { url } : {}), ...ogImages(image) },
+    // Large: every picture this site hands a scraper is a 1200x630 card, and
+    // "summary" shrinks it to a thumbnail beside the text.
+    twitter: {
+      card: "summary_large_image" as const,
+      title,
+      description,
+      ...(image ? { images: [image] } : {}),
+    },
+  };
 }

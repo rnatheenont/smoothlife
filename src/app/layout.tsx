@@ -47,13 +47,16 @@ export const metadata: Metadata = {
     siteName: "Smoothlife.com",
     locale: "th_TH",
     type: "website",
-    images: [{ url: "/logo.webp", width: 440, height: 68 }],
+    // No `images` here on purpose: opengraph-image.png beside this file is
+    // the site's card, and it applies to every route that does not bring its
+    // own. What used to be here was the header logo — 440x68 of wordmark,
+    // which every preview cropped to three letters.
   },
   twitter: {
-    card: "summary",
+    // Large, because the card is a 1200x630 picture rather than a thumbnail.
+    card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: ["/logo.webp"],
   },
   // iOS does not read the manifest. Added to a home screen from Safari, this
   // is where it finds the icon and the name under it, and what tells it to

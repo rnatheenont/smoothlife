@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { publishedDoc } from "@/lib/pages/store";
 import { renderSections } from "@/lib/pages/render";
 import { pageTitleOf } from "@/lib/pages/store";
-import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
+import { withSeoOverride, shareMeta } from "@/lib/seo-overrides";
 import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
 
 // Pages the team builds themselves — /p/about-us, /p/skin-care-guide.
@@ -25,7 +25,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     title: seo.title,
     description: seo.description,
     alternates: { canonical: `/p/${slug}` },
-    openGraph: { title: seo.title, description: seo.description, ...ogImages(seo.image) },
+    ...shareMeta({ title: seo.title, description: seo.description, image: seo.image }),
   };
 }
 

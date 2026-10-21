@@ -7,7 +7,7 @@ import { groupBrandProducts } from "@/lib/brand-groups";
 import { formatTHB } from "@/lib/format";
 import { brandFacts, brandSeoDefaults } from "@/lib/brand-seo";
 import { brandJsonLd, breadcrumbJsonLd, jsonLdScript } from "@/lib/json-ld";
-import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
+import { withSeoOverride, shareMeta } from "@/lib/seo-overrides";
 import ProductCard from "@/components/ProductCard";
 import { shelfItemClass } from "@/lib/brand-page";
 import StarRating from "@/components/StarRating";
@@ -75,12 +75,12 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     // empty shelf earns the site a thin page and the visitor a dead end.
     ...(facts.items.length === 0 ? { robots: { index: false, follow: true } } : {}),
     alternates: { canonical: `/brands/${params.slug}` },
-    openGraph: {
+    ...shareMeta({
       title: meta.title,
       description: meta.description,
       url: `/brands/${params.slug}`,
-      ...ogImages(meta.image),
-    },
+      image: meta.image,
+    }),
   };
 }
 

@@ -7,7 +7,7 @@ import { renderSections } from "@/lib/pages/render";
 import { campaignPhaseAt } from "@/lib/pages/doc";
 import { PHASE_LABEL } from "@/lib/pages/campaign";
 import { themeVars } from "@/lib/pages/theme";
-import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
+import { withSeoOverride, shareMeta } from "@/lib/seo-overrides";
 import { DEFAULT_LOCALE } from "@/lib/i18n/localized";
 
 // Campaign pages — /sale/11-11, /sale/payday.
@@ -51,7 +51,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     title: seo.title,
     description: seo.description,
     alternates: { canonical: `/sale/${slug}` },
-    openGraph: { title: seo.title, description: seo.description, ...ogImages(seo.image) },
+    ...shareMeta({ title: seo.title, description: seo.description, image: seo.image }),
     // A campaign that is over should stop competing in search with the one
     // that is running. The page stays up for the adverts still pointing at
     // it; it just stops asking to be found.

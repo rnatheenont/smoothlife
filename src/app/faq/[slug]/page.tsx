@@ -5,6 +5,7 @@ import ProductRow from "@/components/ProductRow";
 import FaqFeedback from "@/components/faq/FaqFeedback";
 import { breadcrumbJsonLd, faqPageJsonLd, jsonLdScript } from "@/lib/json-ld";
 import { excerptOf } from "@/lib/kb-public";
+import { shareMeta } from "@/lib/seo-overrides";
 import {
   answerParagraphs,
   faqProductCards,
@@ -50,13 +51,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     // the answer into a chat, and by an engine citing it. A link with no
     // card of its own is the question's own title replaced by the site's.
     // `url` is relative to metadataBase, so it names the canonical host.
-    openGraph: {
-      type: "article",
-      title: article.title,
-      description,
-      url: path,
-      siteName: "Smoothlife.com",
-    },
+    ...shareMeta({ type: "article", title: article.title, description, url: path }),
     twitter: { card: "summary", title: article.title, description },
   };
 }

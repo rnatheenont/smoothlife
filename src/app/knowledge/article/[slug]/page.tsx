@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { articles, getArticleBySlug } from "@/data/articles";
 import { getStoreArticle, getStoreArticles } from "@/lib/storefront-articles";
-import { withSeoOverride } from "@/lib/seo-overrides";
+import { withSeoOverride, shareMeta } from "@/lib/seo-overrides";
 import ArticleView, { ARTICLE_RAIL_DEFAULT } from "@/components/knowledge/ArticleView";
 import { PAGES_WAVE3_ENABLED } from "@/lib/feature-flags";
 import { TemplateBody } from "@/lib/pages/template-page";
@@ -21,8 +21,23 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     const meta = await withSeoOverride("article", a.slug, {
       title: `${a.title} | Smoothlife.com`,
       description: a.excerpt,
+      image: a.image,
     });
-    return meta;
+    // withSeoOverride hands back `image`, which Metadata has no field for:
+    // returned as it was, the picture an admin chose in SEO หน้าเว็บ went
+    // nowhere, and the article had no og:/twitter: tags of its own at all —
+    // so a shared link showed the site's front door.
+    return {
+      title: meta.title,
+      description: meta.description,
+      ...shareMeta({
+        type: "article",
+        title: meta.title,
+        description: meta.description ?? a.excerpt,
+        url: `/knowledge/article/${a.slug}`,
+        image: meta.image,
+      }),
+    };
   }
   const post = await getStoreArticle(params.slug);
   if (!post) return { title: "Article | Smoothlife.com" };
@@ -36,7 +51,12 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     // keeps this copy from competing with it, so it gets no override here —
     // an admin editing this page's title would just be ignored by Google.
     alternates: { canonical: post.sourceUrl },
-    openGraph: post.image ? { images: [post.image] } : undefined,
+    ...shareMeta({
+      type: "article",
+      title: post.seoTitle ?? post.title,
+      description: post.seoDescription ?? post.excerpt,
+      image: post.image,
+    }),
   };
 }
 

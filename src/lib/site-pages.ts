@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ogImages, withSeoOverride } from "@/lib/seo-overrides";
+import { withSeoOverride, shareMeta } from "@/lib/seo-overrides";
 
 // The pages that are not generated from the catalogue.
 //
@@ -154,6 +154,6 @@ export async function pageMetadata(key: string): Promise<Metadata> {
     title: meta.title,
     description: meta.description,
     alternates: { canonical: page.path },
-    openGraph: { title: meta.title, description: meta.description, url: page.path, ...ogImages(meta.image) },
+    ...shareMeta({ title: meta.title, description: meta.description, url: page.path, image: meta.image }),
   };
 }

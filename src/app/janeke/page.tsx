@@ -8,6 +8,7 @@ import JanekeFaq from "@/components/janeke/Faq";
 import JanekeFromItaly from "@/components/janeke/FromItaly";
 import JanekeHero from "@/components/janeke/Hero";
 import { brandFacts } from "@/lib/brand-seo";
+import { shareMeta } from "@/lib/seo-overrides";
 import { formatTHB } from "@/lib/format";
 import { janekeModels } from "@/lib/janeke-stage";
 import { withCustomImages } from "@/lib/product-images";
@@ -31,11 +32,14 @@ export const metadata: Metadata = {
   description:
     "Jäneke 1830 แปรงและหวีจากอิตาลี ตั้งแต่ปี 1830 — Superbrush, Premium, Maculata และ Small Superbrush เลือกสีที่ใช่แล้วช้อปได้เลยที่ Smoothlife.com",
   alternates: { canonical: `${SITE_URL}/janeke` },
-  openGraph: {
+  // Both sets of tags, so a share of this link cannot show the site's front
+  // door instead of this page. The picture comes from opengraph-image.png
+  // beside this file.
+  ...shareMeta({
     title: "Jäneke 1830 — แปรงผมอิตาลี | Smoothlife.com",
     description: "แปรงและหวีจากอิตาลี ตั้งแต่ปี 1830 เลือกสีที่ใช่แล้วช้อปได้เลย",
     url: `${SITE_URL}/janeke`,
-  },
+  }),
 };
 
 export default async function JanekeLandingPage() {
