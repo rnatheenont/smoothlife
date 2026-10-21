@@ -121,10 +121,12 @@ const STAGE_FOOT = 64;
  *
  * The arc's height is its width over this ratio, so a flatter one is a wider
  * one for the same height — which is the whole trade on a short window. 1.8
- * is the shape it is drawn at; past about 3.1 it stops reading as a dome and
- * starts reading as a horizon.
+ * is the shape it is drawn at, and this is how far it may be stretched from
+ * that before the curve stops reading as a dome: at 2.5 the crown is already
+ * a flat line with two corners, and width bought past here costs the shape
+ * the section is built around.
  */
-const MAX_RATIO = 3.1;
+const MAX_RATIO = 2.1;
 
 /** What the controls need above md, taken as a constant for the same reason
  *  the phone's are: measured, it feeds back. The controls are capped at a
