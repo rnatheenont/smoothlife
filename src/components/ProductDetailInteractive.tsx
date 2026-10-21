@@ -978,7 +978,7 @@ export default function ProductDetailInteractive({
               one flat row made them read as one block of grey. */}
           {tab === "reviews" && (
             <div className="grid gap-4 md:grid-cols-2 md:gap-6">
-              <div className="rounded-xl2 p-5 ring-1 ring-surface-line">
+              <div className="rounded-xl2 bg-surface-soft p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-brand-ink">รีวิวจากลูกค้า</h3>
                   <button
@@ -1077,7 +1077,7 @@ export default function ProductDetailInteractive({
                     itself — the two counts are different things and now look
                     like it. */}
                 {storeRating && (
-                  <div className="mb-4 flex items-center gap-3 rounded-xl2 bg-surface-soft px-4 py-3">
+                  <div className="mb-4 flex items-center gap-3 rounded-xl2 bg-white px-4 py-3">
                     <span className="text-2xl font-bold leading-none text-brand-ink">
                       {storeRating.value.toFixed(1)}
                     </span>
@@ -1124,7 +1124,7 @@ export default function ProductDetailInteractive({
                 )}
               </div>
 
-              <div className="rounded-xl2 p-5 ring-1 ring-surface-line">
+              <div className="rounded-xl2 bg-surface-soft p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-brand-ink">คำถามจากลูกค้า</h3>
                   <button

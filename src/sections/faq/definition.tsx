@@ -108,12 +108,13 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, KbI
   if (shown.length === 0) return null;
 
   return (
-    // A rule above the heading: this section is dropped straight under
-    // whatever the page already had, and with nothing between them the
-    // questions read as a continuation of the block above rather than as
-    // their own part of the page.
+    // A tinted panel rather than a rule above the heading. This section is
+    // dropped straight under whatever the page already had, and with nothing
+    // between them the questions read as a continuation of the block above —
+    // but a line only adds one more grey hairline to a page that already has
+    // plenty. A change of background says "different part" on its own.
     <section className="container-page pb-8 md:pb-10">
-      <div className="border-t border-surface-line pt-7 md:pt-8">
+      <div className="rounded-xl2 bg-surface-soft p-5 md:p-6">
         {settings.heading && <h2 className="mb-4 font-bold text-brand-ink">{settings.heading}</h2>}
         {/* <details> rather than the click handler the site used before: it is
             the same accordion with no JavaScript at all, `name` gives the
@@ -125,7 +126,7 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, KbI
               key={i}
               name="faq"
               open={i === 0}
-              className="group overflow-hidden rounded-xl border border-slate-100"
+              className="group overflow-hidden rounded-xl bg-white"
             >
               <summary className="flex w-full cursor-pointer list-none items-center justify-between gap-3 p-4 text-left">
                 <span className="text-sm font-semibold text-brand-ink">{item.q}</span>
