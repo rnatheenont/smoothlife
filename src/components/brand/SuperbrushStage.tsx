@@ -388,7 +388,7 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
                 transform: `translate3d(0, ${lift * -34}px, 0)`,
                 color: `${darker(current.swatch[0], current.swatch[1])}33`,
               }}
-              className="absolute inset-x-0 top-[40%] text-center font-serif text-[clamp(2rem,calc(var(--dome-w)*0.13),10rem)] italic leading-none transition-colors duration-700 md:top-[44%]"
+              className={`absolute inset-x-0 top-[38%] text-center text-[clamp(2.5rem,calc(var(--dome-w)*0.175),13rem)] leading-none transition-colors duration-700 md:top-[42%] ${script.className}`}
             >
               {model.wordmark}
             </p>
