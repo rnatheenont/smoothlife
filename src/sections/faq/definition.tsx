@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { z } from "zod";
 import type { RenderCtx, SectionDefinition, SectionProps } from "@/lib/pages/types";
@@ -48,7 +47,7 @@ const schema = z.object({
     .default([]),
 });
 
-type KbItem = { q: string; a: string; slug: string };
+type KbItem = { q: string; a: string };
 
 /** What the page is about, when nobody said. */
 function autoFilter(ctx: RenderCtx) {
@@ -89,20 +88,21 @@ async function load(settings: z.output<typeof schema>, ctx: RenderCtx): Promise<
   const articles = await faqForContext({ ...picked, limit: settings.kbLimit });
   return articles.map((a) => ({
     q: a.title,
-    // The first block only. The whole answer belongs on its own page, and
-    // this is a summary with a way through to it.
-    a: answerParagraphs(a.content)[0] ?? a.content,
-    slug: a.public_slug,
+    // The whole answer. It used to be the first paragraph plus a "read the
+    // full answer" link through to /faq/<slug>; with that link gone, a first
+    // paragraph on its own would be a truncated answer and no way to reach
+    // the rest. Most of these answers are one paragraph anyway.
+    a: answerParagraphs(a.content).join("\n\n") || a.content,
   }));
 }
 
 function Component({ settings, data }: SectionProps<z.output<typeof schema>, KbItem[]>) {
   // One shape for all three sources, so the markup below does not have to
-  // ask which one it got. Only the knowledge base has a page to link to.
+  // ask which one it got.
   const items: KbItem[] =
     settings.source === "kb"
       ? (data ?? [])
-      : (settings.source === "help" ? helpFaqs : settings.items).map((i) => ({ q: i.q, a: i.a, slug: "" }));
+      : (settings.source === "help" ? helpFaqs : settings.items).map((i) => ({ q: i.q, a: i.a }));
 
   const shown = items.filter((i) => i.q && i.a);
   if (shown.length === 0) return null;
@@ -129,16 +129,10 @@ function Component({ settings, data }: SectionProps<z.output<typeof schema>, KbI
                 className="shrink-0 text-slate-400 transition-transform group-open:rotate-180"
               />
             </summary>
-            <div className="px-4 pb-4 text-sm text-slate-600">
+            {/* whitespace-pre-line: the answer may be several paragraphs and
+                they are joined with blank lines, not wrapped in <p>. */}
+            <div className="whitespace-pre-line px-4 pb-4 text-sm leading-relaxed text-slate-600">
               {item.a}
-              {item.slug && (
-                <Link
-                  href={`/faq/${encodeURIComponent(item.slug)}`}
-                  className="ml-1 font-semibold text-brand-800 underline-offset-4 hover:underline"
-                >
-                  อ่านคำตอบเต็ม
-                </Link>
-              )}
             </div>
           </details>
         ))}
