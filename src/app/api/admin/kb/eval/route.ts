@@ -34,7 +34,10 @@ const CONCURRENCY = 4;
 type Case = { id: number; question: string; expected_article_id: string; origin: string };
 
 async function rank(question: string, expected: string): Promise<number | null> {
-  const matches = await searchKb(question, 12, undefined, KB_MIN_SCORE);
+  // Retries here, unlike the customer-facing search: this run exists to
+  // measure how good the answers are, and an embedding refused by the rate
+  // limit would be scored as a bad answer rather than as a missing one.
+  const matches = await searchKb(question, 12, undefined, KB_MIN_SCORE, 3);
   const order: string[] = [];
   for (const m of matches) if (!order.includes(m.article_id)) order.push(m.article_id);
   const at = order.indexOf(expected);

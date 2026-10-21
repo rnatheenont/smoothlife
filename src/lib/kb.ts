@@ -7,6 +7,7 @@
 // embedding provider configured the same chunks are searched by trigram
 // similarity, so the assistant can answer from approved articles today and
 // answer better once a key exists, without a migration in between.
+import { createHash } from "node:crypto";
 import { pgValue, supabaseRest } from "@/lib/supabase-server";
 
 export type KbStatus = "draft" | "published" | "needs_review" | "archived";
@@ -386,15 +387,68 @@ export async function reindexArticles(articles: (Pick<KbArticle, "id"> & Chunkab
 export type KbMatch = { article_id: string; chunk_id: string; title: string; category: KbCategory; chunk_text: string; score: number };
 
 /** Top matches for a customer's question, published articles only. */
+/**
+ * The embedding of one search query, from the cache when we have paid for it
+ * before.
+ *
+ * The provider allows three requests a minute on this plan, which is the real
+ * constraint on this whole feature. Two shoppers searching in the same minute
+ * is already over it, and a refused embedding is silent — searchKb asks for no
+ * retries, so the search falls back to text matching and a sentence phrased in
+ * the customer's own words scores 0.18-0.27 and returns nothing.
+ *
+ * The cache does not raise the ceiling. It stops the ceiling being spent twice
+ * on the same question, which is most of what the quota was going on: popular
+ * searches, people rephrasing, and the accuracy test running the same
+ * sentences every month.
+ *
+ * Every failure here returns null and the caller searches on text alone, which
+ * is the behaviour that was there before.
+ */
+async function queryEmbedding(query: string, retries: number): Promise<number[] | null> {
+  const hash = createHash("sha256").update(query).digest("hex");
+
+  try {
+    const cached = await supabaseRest<number[] | string | null>("rpc/kb_query_embedding_get", {
+      method: "POST",
+      body: JSON.stringify({ p_hash: hash }),
+    });
+    // pgvector comes back as the string "[0.1,0.2,…]" through PostgREST.
+    const vec = typeof cached === "string" ? JSON.parse(cached) : cached;
+    if (Array.isArray(vec) && vec.length > 0) return vec as number[];
+  } catch (err) {
+    console.error("[kb] query embedding cache read failed", err);
+  }
+
+  const [vector] = (await embed([query], { retries })) ?? [];
+  if (!vector) return null;
+
+  // Stored after the answer is already on its way back: a cache write is not
+  // worth a customer waiting on.
+  void supabaseRest("kb_query_embeddings?on_conflict=hash", {
+    method: "POST",
+    headers: { Prefer: "resolution=ignore-duplicates,return=minimal" },
+    returning: false,
+    body: JSON.stringify([{ hash, query_text: query.slice(0, 500), embedding: JSON.stringify(vector) }]),
+  }).catch((err) => console.error("[kb] query embedding cache write failed", err));
+
+  return vector;
+}
+
 export async function searchKb(
   query: string,
   limit = 6,
   tags?: string[],
-  minScore = KB_MIN_SCORE
+  minScore = KB_MIN_SCORE,
+  /**
+   * How long to keep trying for an embedding. Zero for anything a customer is
+   * waiting on — a retry means sleeping 21 seconds for the rate-limit window,
+   * and no shopper waits that long for a search box. Measurement and admin
+   * tools pass a budget, because a slow accurate answer is the point there.
+   */
+  embedRetries = 0
 ): Promise<KbMatch[]> {
-  // No waiting on a rate limit with a customer mid-question: if the embedding
-  // does not come back at once, the search runs on text instead.
-  const [vector] = (await embed([query], { retries: 0 })) ?? [];
+  const vector = await queryEmbedding(query, embedRetries);
   const rows = await supabaseRest<KbMatch[]>("rpc/kb_search", {
     method: "POST",
     body: JSON.stringify({

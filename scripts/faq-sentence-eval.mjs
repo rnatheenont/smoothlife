@@ -69,8 +69,20 @@ for (const c of cases) {
 
   done++;
   process.stdout.write(`\r${done}/${cases.length}`);
-  // The endpoint is rate limited per IP (30/min) and this is one IP.
-  await new Promise((r) => setTimeout(r, 2200));
+  // Paced to the EMBEDDING provider, not to our own endpoint.
+  //
+  // The route's own limit is 30/min per IP, and this used to wait 2.2s for
+  // that. But the embeddings behind it are three requests a minute on this
+  // plan, and searchKb asks for no retries so a shopper is never left
+  // waiting — which means every request over that ceiling quietly searched
+  // on text alone and scored 0. A run at 2.2s reported 10.5% on the
+  // keyword-avoiding set when single requests to the same endpoint were
+  // answering correctly: the measurement was breaking the thing it measured.
+  //
+  // 21s is the rate-limit window. Yes, that makes a full run slow. The query
+  // embeddings are cached (kb_query_embeddings), so a second run over the
+  // same sentences is fast and costs the provider nothing.
+  await new Promise((r) => setTimeout(r, 21_000));
 }
 
 console.log(`\n\nวัดผ่าน ${BASE}/api/faq/search · ${cases.length} ประโยค\n`);
