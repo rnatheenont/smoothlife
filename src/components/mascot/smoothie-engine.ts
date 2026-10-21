@@ -17,7 +17,7 @@ export const VIEW_FULL: View = { x0: -50, x1: 1050, y0: -230, y1: 950 };
 /** Head and shoulders, for small round spots like the chat launcher. */
 export const VIEW_BUST: View = { x0: 110, x1: 890, y0: -40, y1: 740 };
 
-/** Gestures and moods the storefront may trigger (sad / angry are left out on purpose). */
+/** Gestures and moods the storefront may trigger (sad / angry / love are left out on purpose). */
 export const SMOOTHIE_ACTIONS = Object.keys(ANIMS).filter((n) => n !== "idle");
 export type SmoothieAction = string;
 
@@ -100,7 +100,7 @@ const armWeights = (J: number[], C: number[], hand: string, arm: string) => (x: 
 const ARM_R = armWeights([688, 640], [710, 706], "handR", "armR");
 const ARM_L = armWeights([280, 574], [235, 521], "handL", "armL");
 const FACES: Record<string, number[]> = {
-  happy: [176, 6, 818, 568], laugh: [176, 14, 818, 568], love: [176, 11, 860, 568],
+  happy: [176, 6, 818, 568], laugh: [176, 14, 818, 568],
   surprised: [176, 20, 818, 568], curious: [176, 17, 858, 568], worried: [176, 17, 818, 568],
 };
 const LAYERS: LayerDef[] = [

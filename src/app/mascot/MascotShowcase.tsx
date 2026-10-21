@@ -22,7 +22,6 @@ const GESTURES: [string, string, string][] = [
 const MOODS: [string, string, string][] = [
   ["happy", "ดีใจ", "Happy"],
   ["laugh", "หัวเราะ", "Laugh"],
-  ["love", "ขอบคุณ", "Thank you"],
   ["surprised", "ตกใจ", "Surprised"],
   ["curious", "สงสัย", "Curious"],
   ["worried", "กังวล", "Worried"],

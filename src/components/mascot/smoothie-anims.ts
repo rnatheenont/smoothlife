@@ -9,8 +9,8 @@
 //
 // Units: pixels on the 1000×1000 artboard (y down), angles in degrees
 // (positive = clockwise). Key = [time s, value, easing of the segment that
-// arrives at this key]. "sad" and "angry" were taken out on purpose — the
-// team does not want the mascot to look upset in the storefront yet.
+// arrives at this key]. "sad", "angry" and "love" were taken out on purpose — the
+// team wants those moods off the storefront for now.
 
 export type Key = [number, number] | [number, number, string];
 export type Anim = { dur: number; loop?: boolean; face?: string; talk?: [number, number]; keys: Record<string, Key[]> };
@@ -314,15 +314,6 @@ export const ANIMS: Record<string, Anim> = {
     for (const ch of ["chest.rot", "handL.rot", "handR.rot"]) k[ch].push([2.25, 0]);
     return k;
   })() },
-  love: { dur: 3.0, face: "love", keys: {
-    "hips.rot": [[0, 0], [0.7, 3, "soft"], [1.4, -3, "soft"], [2.1, 3, "soft"], [2.8, 0, "soft"]],
-    "head.rot": [[0, 0], [0.8, -5, "soft"], [1.5, 5, "soft"], [2.2, -5, "soft"], [2.9, 0, "soft"]],
-    "face.x": [[0, 0], [0.8, -6], [1.5, 6], [2.2, -6], [2.9, 0]],
-    "chest.sy": [[0, 1], [0.4, 1.025, "out"], [2.4, 1.02], [2.9, 1]],
-    "armL.rot": [[0, D], [0.4, D + 7, "out"], [2.4, D + 6], [2.9, D]], "armR.rot": [[0, 0], [0.4, -7, "out"], [2.4, -6], [2.9, 0]],
-    "handL.rot": [[0, 0], [0.85, 5], [1.55, -5], [2.25, 5], [2.9, 0]], "handR.rot": [[0, 0], [0.85, 5], [1.55, -5], [2.25, 5], [2.9, 0]],
-    "root.sy": [[0, 1], [0.35, 0.985], [0.55, 1.01], [0.75, 1]],
-  } },
   surprised: { dur: 2.2, face: "surprised", keys: {
     "root.sy": [[0, 1], [0.06, 0.93, "out"], [0.18, 1.1, "out"], [0.36, 0.97], [0.5, 1.01], [0.65, 1]],
     "root.sx": [[0, 1], [0.06, 1.05], [0.18, 0.94], [0.36, 1.02], [0.5, 1]],

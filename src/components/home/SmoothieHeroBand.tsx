@@ -352,7 +352,7 @@ export default function SmoothieHeroBand() {
         <SmoothieRig
           className="absolute bottom-0 right-6 hidden aspect-[1100/1180] h-[300px] xl:block"
           greet="wave"
-          idleActions={["wave", "happy", "nod", "love", "think"]}
+          idleActions={["wave", "happy", "nod", "think"]}
           idleEvery={10}
         />
       </div>
