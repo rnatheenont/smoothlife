@@ -9,9 +9,9 @@ import {
   PointerEvent as ReactPointerEvent,
 } from "react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
+import SmoothieRig from "@/components/mascot/SmoothieRig";
 import { useAuth } from "@/lib/auth-context";
 import { useLang } from "@/lib/lang-context";
 import { useQuickChat } from "@/lib/quickchat-context";
@@ -258,7 +258,16 @@ export default function QuickChat() {
             <X size={20} />
           ) : (
             <span ref={badgeIconRef} className="relative grid h-16 w-16 lg:h-24 lg:w-24 shrink-0 place-items-center">
-              <Image src="/mascot/smoothie-new.png" alt="" fill sizes="(min-width: 1024px) 96px, 64px" className="object-contain drop-shadow-md" />
+              {/* Inside a draggable button: no click gestures of its own (the button
+                  owns the tap), just breathing, blinking and the odd wave. */}
+              <SmoothieRig
+                framing="bust"
+                className="absolute inset-0 rounded-full drop-shadow-md"
+                playOnClick={false}
+                greet="wave"
+                idleActions={["wave", "happy", "nod"]}
+                idleEvery={15}
+              />
               {/* Real speech bubble shape (rounded rect + an actual pointed
                   tail, not just a clipped corner) aimed down at the
                   mascot's head, in the original brand-gradient color. */}

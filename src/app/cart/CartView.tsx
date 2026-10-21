@@ -1,5 +1,6 @@
 "use client";
 
+import SmoothieRig from "@/components/mascot/SmoothieRig";
 import { useRef, useState, useEffect } from "react";
 import { shopifyImage } from "@/lib/shopify-image";
 import Link from "next/link";
@@ -73,9 +74,7 @@ export default function CartView() {
   if (lines.length === 0) {
     return (
       <div className="container-page py-20 text-center">
-        <span className="relative mx-auto block h-24 w-24">
-          <Image src="/mascot/smoothie-say.png" alt="" fill sizes="96px" className="object-contain" />
-        </span>
+        <SmoothieRig className="mx-auto aspect-[1100/1180] w-32" greet="curious" idleActions={["think", "wave"]} />
         <h1 className="text-xl font-bold text-brand-ink mt-2">{t("ตะกร้าของคุณว่างเปล่า", "Your cart is empty")}</h1>
         <p className="text-sm text-slate-500 mt-1">
           {t("เลือกชมสินค้าคุณภาพดีจาก Smooth Life", "Browse quality products from Smooth Life")}

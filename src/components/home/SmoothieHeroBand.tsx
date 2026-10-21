@@ -13,7 +13,7 @@ import { interestsFromProducts, pickSuggestions } from "@/lib/chat-suggestions";
 import { resizeForUpload } from "@/lib/image-utils";
 import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
 import SkyClouds from "@/components/SkyClouds";
-import SmoothieMascot from "@/components/home/SmoothieMascot";
+import SmoothieRig from "@/components/mascot/SmoothieRig";
 
 // The first thing on the page is a question, not a banner.
 //
@@ -347,7 +347,14 @@ export default function SmoothieHeroBand() {
             1200px, and 86px at xl. Narrower than that it was sitting across
             the word "Smoothie", and a mascot small enough to clear it at
             768px is a thumbnail. */}
-        <SmoothieMascot className="absolute bottom-0 right-6 hidden h-[300px] w-[300px] xl:block" />
+        {/* The full-body mascot in the lab coat the design called for — it used
+            to be the head only, because no body artwork existed. */}
+        <SmoothieRig
+          className="absolute bottom-0 right-6 hidden aspect-[1100/1180] h-[300px] xl:block"
+          greet="wave"
+          idleActions={["wave", "happy", "nod", "love", "think"]}
+          idleEvery={10}
+        />
       </div>
     </section>
   );
