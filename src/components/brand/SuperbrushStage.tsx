@@ -18,11 +18,10 @@ import { script } from "@/components/janeke/font";
 //   the swatches  move within the model you are on
 //   a drag        moves one colourway, and runs off the end into the next model
 //
-// The stage is twice the height of the screen and the composition inside it is
-// sticky, so the page keeps scrolling while the comb lifts and the wordmark
-// drifts — the scroll is the animation, not a trigger for one. On a phone the
-// extra height is dropped: a tall sticky stage on a small screen reads as a
-// page that will not move.
+// The stage is one screen tall and scrolls with the page like any other
+// block. It used to be twice that and sticky, with the comb and the wordmark
+// drifting as the page moved through it — a page that held still for two
+// screens of scrolling to show one picture.
 
 export type Colourway = {
   slug: string;
@@ -141,7 +140,6 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
     [models],
   );
   const [pos, setPos] = useState(0);
-  const [lift, setLift] = useState(0);
   // The shop's header is sticky and its height changes with the viewport (a
   // promo bar on a wide screen, two rows on a narrow one). A guessed offset is
   // how the headline ended up underneath it, so the stage measures it.
@@ -162,7 +160,6 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
   const [domeMax, setDomeMax] = useState<number | null>(null);
   /** The arc's ratio once the height budget has had its say — see MAX_RATIO. */
   const [domeRatio, setDomeRatio] = useState<number | null>(null);
-  const stage = useRef<HTMLDivElement>(null);
   const head = useRef<HTMLElement>(null);
   const ctrl = useRef<HTMLDivElement>(null);
   // Where the composition sits in a window taller than it needs. Pinned to the
@@ -277,42 +274,14 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
     };
   }, []);
 
-  // How far the comb has lifted: 0 at the top of the stage, 1 when the stage
-  // is leaving. Read off the scroll position rather than animated on a timer,
-  // so it tracks a trackpad exactly and stops when the finger stops.
-  useEffect(() => {
-    const el = stage.current;
-    if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let frame = 0;
-    const read = () => {
-      frame = 0;
-      const r = el.getBoundingClientRect();
-      const travel = r.height - window.innerHeight;
-      if (travel <= 0) return setLift(0);
-      setLift(Math.min(1, Math.max(0, -r.top / travel)));
-    };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(read);
-    };
-    read();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-    };
-  }, []);
 
   if (!model || !current) return null;
 
   return (
     <section
-      ref={stage}
       aria-roledescription="carousel"
       aria-label={`${headline} — เลือกสีและรุ่น`}
-      className={`relative ${pinned ? "h-[180vh] md:h-[200vh]" : ""}`}
+      className="relative"
     >
       <div
         style={
@@ -327,13 +296,14 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
         // from the full width so the dome is always edge to edge and always
         // the same arc.
         //
-        // Pinning it to the screen is what has a height budget, not the dome:
-        // on a window too short to hold the headline, the dome and the
-        // controls at once, the stage stops being sticky and simply scrolls —
-        // better than a pinned block whose bottom row cannot be reached.
+        // The height budget belongs to the block, not the dome: the whole
+        // composition is cut to one screen so it is all there when the page
+        // opens. On a window too short to hold the headline, the dome and the
+        // controls at once, it gives that up and takes the height it needs —
+        // a block whose bottom row cannot be reached is worse than a tall one.
         className={`[--dome-r:1] [--dome-w:var(--dome-w-sm,100vw)] [--dome-h:calc(var(--dome-w)/var(--dome-r))] md:flex md:flex-col md:[--dome-r:var(--dome-fit-r,1.3)] md:[--dome-w:min(96vw,1100px,var(--dome-max,1100px))] lg:[--dome-r:var(--dome-fit-r,1.8)] lg:[--dome-w:min(96vw,var(--dome-max,1440px))] ${
           pinned
-            ? `sticky top-[var(--stage-top)] h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-start pb-14 md:pb-16 ${top ? "md:justify-start" : "md:justify-center"}`
+            ? `h-[calc(100vh-var(--stage-top))] overflow-hidden flex flex-col justify-start pb-14 md:pb-16 ${top ? "md:justify-start" : "md:justify-center"}`
             : ""
         }`}
       >
@@ -424,10 +394,7 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
                 a desktop has the room for it to span. */}
             <p
               aria-hidden
-              style={{
-                transform: `translate3d(0, ${lift * -34}px, 0)`,
-                color: `${darker(current.swatch[0], current.swatch[1])}33`,
-              }}
+              style={{ color: `${darker(current.swatch[0], current.swatch[1])}33` }}
               className={`absolute inset-x-0 top-[38%] [--mark:0.112] text-center text-[clamp(1.75rem,calc(var(--dome-w)*var(--mark)),11rem)] leading-none transition-colors duration-700 md:top-[42%] md:[--mark:0.126] lg:[--mark:0.132] ${script.className}`}
             >
               {model.wordmark}
@@ -439,21 +406,8 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
                   // Every colourway is in the DOM and only the current one is
                   // opaque: a crossfade between two <Image>s that are already
                   // decoded, instead of a white gap while the next one loads.
-                  // Two elements, because two things move it: the wrapper
-                  // carries the scroll (which the page drives) and the image
-                  // carries the float (which runs on its own). One element
-                  // cannot hold both — a CSS animation on transform overrides
-                  // an inline transform outright, and the lift would be lost.
                   <span
                     key={c.slug}
-                    style={{
-                      // Scrolling through the stage lifts the comb out of the
-                      // arch, and that is all it does. It used to turn and
-                      // grow as well; turning is what made the growth worth
-                      // having, because lying down it is widest across where
-                      // the dome has the most room, so both went together.
-                      transform: `translate3d(0, ${lift * -70}px, 0)`,
-                    }}
                     className={`absolute flex h-full w-full items-center justify-center transition-opacity duration-500 ${
                       on ? "opacity-100" : "opacity-0"
                     }`}
