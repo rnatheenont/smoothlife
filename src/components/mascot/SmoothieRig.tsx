@@ -10,7 +10,11 @@
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 import { SMOOTHIE_ACTIONS, SmoothieEngine, VIEW_BUST, VIEW_FULL, type View } from "./smoothie-engine";
 
-export type SmoothieRigHandle = { play: (action: string) => void };
+export type SmoothieRigHandle = {
+  play: (action: string) => void;
+  /** True while a gesture or mood is running (the idle sway does not count). */
+  readonly playing: boolean;
+};
 
 type Props = {
   ref?: Ref<SmoothieRigHandle>;
@@ -64,7 +68,10 @@ export default function SmoothieRig({
   const [ready, setReady] = useState(false);
   const view = framing === "bust" ? VIEW_BUST : VIEW_FULL;
 
-  useImperativeHandle(ref, () => ({ play: (a: string) => engineRef.current?.play(a) }), []);
+  useImperativeHandle(ref, () => ({
+    play: (a: string) => engineRef.current?.play(a),
+    get playing() { return !!engineRef.current?.playing; },
+  }), []);
 
   useEffect(() => {
     const wrap = wrapRef.current, canvas = canvasRef.current;

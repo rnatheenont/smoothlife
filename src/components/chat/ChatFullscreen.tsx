@@ -2,12 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useChatSession } from "@/lib/use-chat-session";
 import { HERO_PHOTO_KEY } from "@/lib/chat-handoff";
 import ChatConversation from "@/components/chat/ChatConversation";
+import ChatMascot, { chatMood } from "@/components/chat/ChatMascot";
 
 // The same conversation as the corner widget, on a page of its own.
 //
@@ -21,7 +21,7 @@ export default function ChatFullscreen() {
   const { t } = useLang();
   const router = useRouter();
   const session = useChatSession({ active: true });
-  const { messages, reset, hasProfile, send, setInput, handleImagePick, historyLoaded } = session;
+  const { messages, reset, hasProfile, send, setInput, handleImagePick, historyLoaded, loading } = session;
   const seeded = useRef(false);
 
   // What the home page's hero band hands over: a question as ?q=, a photo as
@@ -83,9 +83,10 @@ export default function ChatFullscreen() {
           >
             <ArrowLeft size={18} />
           </button>
-          <span className="relative grid h-9 w-9 shrink-0 place-items-center">
-            <Image src="/mascot/smoothie-new.png" alt="" fill sizes="36px" className="object-contain" />
-          </span>
+          <ChatMascot
+            mood={chatMood(loading, messages[messages.length - 1]?.role)}
+            className="h-10 w-10 shrink-0 rounded-full bg-white/10"
+          />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold leading-tight text-white">
               {t("คุยกับน้อง Smoothie", "Chat with Smoothie")}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Image from "next/image";
+import SmoothieRig from "@/components/mascot/SmoothieRig";
 import {
   Send,
   Loader2,
@@ -182,6 +183,12 @@ export default function ChatConversation({
           ) : (
             messages.length === 0 && (
               <div className="py-2">
+                <SmoothieRig
+                  className={`mx-auto mb-2 aspect-[1100/1180] ${variant === "full" ? "w-28" : "w-24"}`}
+                  greet="wave"
+                  idleActions={["wave", "happy", "nod"]}
+                  idleEvery={10}
+                />
                 <p className="mb-1 text-center text-[13px] font-semibold text-brand-ink">
                   {t(
                     "สวัสดีค่ะ ฉันน้อง Smoothie ผู้ช่วย AI ของ Smoothlife.com",

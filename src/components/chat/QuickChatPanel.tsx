@@ -1,12 +1,12 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { RotateCcw, X, Headset, Maximize2 } from "lucide-react";
 import { useLang } from "@/lib/lang-context";
 import { useChatSession } from "@/lib/use-chat-session";
 import ChatConversation from "@/components/chat/ChatConversation";
+import ChatMascot, { chatMood } from "@/components/chat/ChatMascot";
 
 // The chat panel: everything that exists only once somebody has opened the
 // chat.
@@ -30,7 +30,7 @@ export default function QuickChatPanel({
   const { t } = useLang();
   // active: true — this component only exists while the panel is open.
   const session = useChatSession({ active: true, viewingSlug });
-  const { messages, reset, hasProfile, escalating, setNoteOpen } = session;
+  const { messages, reset, hasProfile, escalating, setNoteOpen, loading } = session;
 
   return (
     <div
@@ -44,9 +44,10 @@ export default function QuickChatPanel({
     >
       <div className="flex items-center justify-between gap-3 bg-brand-ink px-4 py-3">
         <div className="flex items-center gap-2.5 text-white min-w-0">
-          <span className="relative grid h-9 w-9 shrink-0 place-items-center">
-            <Image src="/mascot/smoothie-new.png" alt="" fill sizes="36px" className="object-contain" />
-          </span>
+          <ChatMascot
+            mood={chatMood(loading, messages[messages.length - 1]?.role)}
+            className="h-10 w-10 shrink-0 rounded-full bg-white/10"
+          />
           <div className="min-w-0">
             <p className="text-sm font-bold leading-tight truncate">
               {t("คุยกับน้อง Smoothie", "Chat with Smoothie")}
