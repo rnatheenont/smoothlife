@@ -109,6 +109,14 @@ export async function withSeoOverride(
     title: override?.title ?? generated.title,
     description: override?.description ?? generated.description,
     image: override?.image ?? generated.image,
+    /**
+     * Whether that picture is one a person chose rather than the page's own
+     * photo. Product and brand pages hand their photo to a card generator
+     * (opengraph-image.tsx beside the page) instead of to the preview
+     * directly, because a square photo gets cropped to a 1.91:1 card — but a
+     * picture an admin picked in SEO หน้าเว็บ is meant to be used as it is.
+     */
+    imageIsCustom: Boolean(override?.image),
   };
 }
 
