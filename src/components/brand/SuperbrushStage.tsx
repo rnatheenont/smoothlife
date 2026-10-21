@@ -99,7 +99,7 @@ const HEADLINE = 150;
  *  big or too small. It does not touch the width: where the screen runs out of
  *  width first — a tablet held upright — there is height to spare already, and
  *  trimming the dome there buys nothing and only costs it. */
-const DOME_FILL = 0.92;
+const DOME_FILL = 0.96;
 
 /** On a phone the controls sit under the arc rather than inside it. Their
  *  height is taken as a constant rather than measured, because measuring it
@@ -335,7 +335,9 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
             : ""
         }`}
       >
-        <header ref={head} className="relative z-20 px-4 pb-2 pt-3 text-center md:pb-8 md:pt-4 lg:pb-12">
+        {/* Kept short on purpose: every pixel this takes is a pixel off the
+            arc under it, and the arc is what the section is for. */}
+        <header ref={head} className="relative z-20 px-4 pb-2 pt-3 text-center md:pb-4 md:pt-3 lg:pb-5">
           {/* The script the landing page is set in, at the size its other
               headings use, so the stage reads as part of that page rather
               than as a component borrowed from somewhere else. */}
@@ -343,7 +345,7 @@ export default function SuperbrushStage({ models, headline, intro }: Props) {
             // Capped by the window's height as well as its width: on a short
             // laptop window the headline at 7vw took a fifth of everything
             // there was, and what it took came off the comb underneath it.
-            className={`${script.className} text-[clamp(2.25rem,min(7vw,9vh),5rem)] leading-tight text-[#685048]`}
+            className={`${script.className} text-[clamp(1.75rem,min(5vw,7vh),3.5rem)] leading-tight text-[#685048]`}
           >
             {headline}
           </h1>
