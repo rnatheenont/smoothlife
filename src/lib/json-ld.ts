@@ -38,8 +38,12 @@ const RETURN_POLICY = {
   applicableCountry: "TH",
   returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
   merchantReturnDays: 14,
-  returnMethod: "https://schema.org/ReturnByMail",
-  returnFees: "https://schema.org/FreeReturn",
+  // No returnFees or returnMethod. Both were here and both were guesses: the
+  // shop's own pages say returns are accepted within 14 days and do not say
+  // who pays to send the item back, so "FreeReturn" was this file promising
+  // something no page behind it promises. Put them back the day somebody
+  // confirms the policy — in the Shopify theme as well, which carries the
+  // same block.
 } as const;
 
 export function productJsonLd(product: Product, reviews: ReviewRow[]) {
