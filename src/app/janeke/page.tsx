@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -8,11 +7,10 @@ import JanekeFaq from "@/components/janeke/Faq";
 import JanekeFromItaly from "@/components/janeke/FromItaly";
 import JanekeHero from "@/components/janeke/Hero";
 import { brandFacts } from "@/lib/brand-seo";
-import { shareMeta } from "@/lib/seo-overrides";
 import { formatTHB } from "@/lib/format";
 import { janekeModels } from "@/lib/janeke-stage";
 import { withCustomImages } from "@/lib/product-images";
-import { SITE_URL } from "@/lib/site-url";
+import { pageMetadata } from "@/lib/site-pages";
 
 /**
  * The Janeke campaign landing page.
@@ -27,20 +25,13 @@ import { SITE_URL } from "@/lib/site-url";
 // visits: the same half hour the brand pages use.
 export const revalidate = 1800;
 
-export const metadata: Metadata = {
-  title: "Jäneke 1830 — แปรงผมอิตาลี | Smoothlife.com",
-  description:
-    "Jäneke 1830 แปรงและหวีจากอิตาลี ตั้งแต่ปี 1830 — Superbrush, Premium, Maculata และ Small Superbrush เลือกสีที่ใช่แล้วช้อปได้เลยที่ Smoothlife.com",
-  alternates: { canonical: `${SITE_URL}/janeke` },
-  // Both sets of tags, so a share of this link cannot show the site's front
-  // door instead of this page. The picture comes from opengraph-image.png
-  // beside this file.
-  ...shareMeta({
-    title: "Jäneke 1830 — แปรงผมอิตาลี | Smoothlife.com",
-    description: "แปรงและหวีจากอิตาลี ตั้งแต่ปี 1830 เลือกสีที่ใช่แล้วช้อปได้เลย",
-    url: `${SITE_URL}/janeke`,
-  }),
-};
+// Title, description and the picture a shared link shows now come from the
+// site-pages list, so the team can change them in SEO หน้าเว็บ without a
+// deploy — the same as every other page there. With no picture chosen, the
+// opengraph-image.png beside this file is still the card.
+export function generateMetadata() {
+  return pageMetadata("janeke");
+}
 
 export default async function JanekeLandingPage() {
   const facts = brandFacts("janeke");

@@ -129,6 +129,20 @@ export const SITE_PAGES: SitePage[] = [
     title: "น้อง Smoothie ผู้ช่วยเลือกสกินแคร์ | Smoothlife.com",
     description: "ตอบไม่กี่คำถามหรือสแกนผิวด้วยกล้องหน้า ให้ผู้ช่วย AI แนะนำสินค้าที่เหมาะกับผิวและปัญหาของคุณ",
   },
+  {
+    // A brand's own landing page rather than its catalogue — the pitch, not
+    // the shelves (see app/janeke/page.tsx). It is here so the team can edit
+    // its title, its description and the picture a shared link shows without
+    // a deploy, the same as every other page on this list. The {discount}
+    // style token the page's own headline uses is not available here: this is
+    // the line Google and LINE read, and it is plain text.
+    key: "janeke",
+    path: "/janeke",
+    label: "Jäneke (หน้าแคมเปญ)",
+    title: "Jäneke 1830 — แปรงผมอิตาลี | Smoothlife.com",
+    description:
+      "Jäneke 1830 แปรงและหวีจากอิตาลี ตั้งแต่ปี 1830 — Superbrush, Premium, Maculata และ Small Superbrush เลือกสีที่ใช่แล้วช้อปได้เลยที่ Smoothlife.com",
+  },
 ];
 
 export function getSitePage(key: string) {
