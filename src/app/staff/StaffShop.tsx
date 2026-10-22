@@ -1129,12 +1129,46 @@ export default function StaffShop() {
           <div className="h-24 lg:hidden" aria-hidden />
 
           <div
-            className={`fixed inset-x-0 bottom-0 z-90 pb-[env(safe-area-inset-bottom)] lg:hidden ${
+            // The safe-area padding belongs to each sheet, not to this: with
+            // it here the strip under the sheet took the wrapper's colour,
+            // which is now none at all, and a notched phone showed the page
+            // scrolling through the gap below the bar.
+            className={`fixed inset-x-0 bottom-0 z-90 lg:hidden ${
+              // Both states are sheets with a shadow under them; the
+              // colour is the sheet's, not the bar's.
               shop.pending
                 ? "shadow-[0_-8px_24px_rgba(15,23,42,.12)]"
-                : "border-t border-surface-line bg-white/95 backdrop-blur-md"
+                : "shadow-[0_-8px_24px_rgba(5,117,95,.22)]"
             }`}
           >
+            {/* Opened from the bar, closed by choosing or by the handle.
+                Capped at 45vh so the products stay visible behind it.
+
+                Above the bar, not below it: both live in a box anchored to
+                the bottom of the screen, so whatever is written last sits
+                lowest — and a list that opens underneath the thing that
+                opened it reads as a second bar. */}
+            {cartOpen && cartCount > 0 && !shop.pending && (
+              <div className="max-h-[45vh] overflow-y-auto rounded-t-2xl border-b border-slate-100 bg-white px-4 py-3">
+                <ul className="space-y-2">
+                  {Object.entries(cart).map(([variantId, qty]) => {
+                    const item = shop.items.find((i) => i.variant_id === variantId);
+                    if (!item) return null;
+                    const full =
+                      (item.per_person_limit !== null &&
+                        item.mine + qty >= item.per_person_limit) ||
+                      (item.left !== null && qty >= item.left);
+                    return (
+                      <li key={variantId} className="flex items-center gap-2 text-[13px]">
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-slate-700">{item.name}</span>
+                          <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                            {item.size && (
+                              <span className="rounded-full bg-surface-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand-800">
+                                {item.size}
+                              </span>
+                            )}
+
             {shop.pending ? (
               // The whole unpaid order, on the bar.
               //
@@ -1149,7 +1183,7 @@ export default function StaffShop() {
               // width and squeezed "ยกเลิก" against the edge — a destructive
               // action pressed into the corner beside the one everybody is
               // aiming for.
-              <div className="overflow-hidden rounded-t-2xl bg-amber-50 motion-safe:animate-slideUp">
+              <div className="overflow-hidden rounded-t-2xl bg-amber-50 pb-[env(safe-area-inset-bottom)] motion-safe:animate-slideUp">
                 <WindowStrip
                   to={shop.pending.expires_at}
                   windowMin={shop.round.payment_window_min ?? 30}
@@ -1217,7 +1251,11 @@ export default function StaffShop() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-3 px-4 py-3">
+              <div
+                className={`flex items-center gap-3 bg-brand-800 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] motion-safe:animate-slideUp ${
+                  cartOpen && cartCount > 0 ? "" : "rounded-t-2xl"
+                }`}
+              >
                 {/* The left half opens the cart. A total with no way to see
                     what is in it means scrolling the whole round back to
                     find the one line that is wrong. */}
@@ -1230,28 +1268,34 @@ export default function StaffShop() {
                 >
                   <span
                     data-cart-target="staff"
-                    className="relative grid size-10 shrink-0 place-items-center rounded-full bg-surface-soft"
+                    className="relative grid size-10 shrink-0 place-items-center rounded-full bg-white/15"
                   >
-                    <ShoppingBag className="h-4 w-4 text-brand-800" aria-hidden />
+                    <ShoppingBag className="h-4 w-4 text-white" aria-hidden />
                     {cartCount > 0 && (
                       // Keyed on the count so each change remounts the badge
                       // and replays the pop — the same trick the shop's own
                       // tab bar uses for its basket.
                       <span
                         key={cartCount}
-                        className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-800 px-1 text-[10px] font-bold text-white motion-safe:animate-pop"
+                        className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-white px-1 text-[10px] font-bold text-brand-800 motion-safe:animate-pop"
                       >
                         {cartCount}
                       </span>
                     )}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[15px] font-bold leading-tight text-brand-ink">
+                    <span className="block text-[16px] font-bold leading-tight text-white">
                       ฿{baht(subtotal)}
                     </span>
+                    {/* Over the cap is a warning on a green bar, where
+                        rose on white would have been one on white: a pale
+                        chip, so it still reads as a stop rather than as more
+                        of the same sentence. */}
                     <span
-                      className={`block text-[11px] leading-tight ${
-                        subtotal > shop.standing.left_thb ? "text-rose-600" : "text-slate-500"
+                      className={`mt-0.5 block text-[11px] leading-tight ${
+                        subtotal > shop.standing.left_thb
+                          ? "w-fit rounded-full bg-white px-1.5 py-0.5 font-semibold text-rose-700"
+                          : "text-white/80"
                       }`}
                     >
                       {cartCount === 0
@@ -1273,7 +1317,7 @@ export default function StaffShop() {
                     !shop.shipTo ||
                     !shop.shipTo.hasPhone
                   }
-                  className={`${CHECKOUT_BUTTON} shrink-0`}
+                  className="grid h-12 shrink-0 place-items-center rounded-full bg-white px-6 text-sm font-bold text-brand-800 transition-colors hover:bg-brand-50 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/70 disabled:hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-800"
                 >
                   {/* A phone can take several seconds to reach 2C2P, and a
                       button that still says "go" is a button somebody
@@ -1283,28 +1327,6 @@ export default function StaffShop() {
               </div>
             )}
 
-            {/* Opened from the bar, closed by choosing or by the handle.
-                Capped at 45vh so the products stay visible behind it. */}
-            {cartOpen && cartCount > 0 && !shop.pending && (
-              <div className="max-h-[45vh] overflow-y-auto border-t border-slate-100 px-4 py-3">
-                <ul className="space-y-2">
-                  {Object.entries(cart).map(([variantId, qty]) => {
-                    const item = shop.items.find((i) => i.variant_id === variantId);
-                    if (!item) return null;
-                    const full =
-                      (item.per_person_limit !== null &&
-                        item.mine + qty >= item.per_person_limit) ||
-                      (item.left !== null && qty >= item.left);
-                    return (
-                      <li key={variantId} className="flex items-center gap-2 text-[13px]">
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-slate-700">{item.name}</span>
-                          <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                            {item.size && (
-                              <span className="rounded-full bg-surface-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand-800">
-                                {item.size}
-                              </span>
-                            )}
                             <span className="text-[11px] text-slate-400">
                               ฿{baht(item.staff_price)} × {qty}
                             </span>
