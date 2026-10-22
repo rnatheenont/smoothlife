@@ -1243,6 +1243,58 @@ export default function StaffShop() {
                               </span>
                             )}
 
+
+                            <span className="text-[11px] text-slate-400">
+                              ฿{baht(item.staff_price)} × {qty}
+                            </span>
+                          </span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          <button
+                            onClick={() => setQty(item, qty - 1)}
+                            aria-label={`ลดจำนวน ${item.name}${item.size ? ` ${item.size}` : ""}`}
+                            className="grid size-9 place-items-center rounded-full bg-surface-soft text-slate-600"
+                          >
+                            <Minus className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                          <span className="w-5 text-center font-semibold">{qty}</span>
+                          <button
+                            onClick={() => setQty(item, qty + 1)}
+                            disabled={full}
+                            aria-label={`เพิ่มจำนวน ${item.name}${item.size ? ` ${item.size}` : ""}`}
+                            className="grid size-9 place-items-center rounded-full bg-surface-soft text-slate-600 disabled:opacity-35"
+                          >
+                            <Plus className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        </span>
+                        {/* What this line costs, which is the number the
+                            total is made of. The phone's cart showed the
+                            unit price and the count and left the
+                            multiplication to the reader. */}
+                        <span className="w-16 shrink-0 text-right font-mono text-[13px] font-semibold tabular-nums text-brand-ink">
+                          ฿{baht(item.staff_price * qty)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-2 text-[13px] font-bold text-brand-ink">
+                  <span>รวม {cartCount} ชิ้น</span>
+                  <span className="font-mono text-[15px] tabular-nums">฿{baht(subtotal)}</span>
+                </div>
+                {!shop.shipTo ? (
+                  <p className="mt-3 text-[12px] text-amber-700">
+                    ยังไม่มีที่อยู่จัดส่ง —{" "}
+                    <Link href="/account/addresses" className="font-semibold underline">
+                      เพิ่มที่อยู่ก่อนสั่งซื้อ
+                    </Link>
+                  </p>
+                ) : (
+                  <p className="mt-3 text-[11px] text-slate-400">ส่งไปที่ {shop.shipTo.summary}</p>
+                )}
+              </div>
+            )}
+
             {shop.pending ? (
               // The whole unpaid order, on the bar.
               //
@@ -1398,57 +1450,6 @@ export default function StaffShop() {
                       presses again. */}
                   {busy ? "กำลังเปิด…" : "ไปชำระเงิน"}
                 </button>
-              </div>
-            )}
-
-                            <span className="text-[11px] text-slate-400">
-                              ฿{baht(item.staff_price)} × {qty}
-                            </span>
-                          </span>
-                        </span>
-                        <span className="flex shrink-0 items-center gap-1.5">
-                          <button
-                            onClick={() => setQty(item, qty - 1)}
-                            aria-label={`ลดจำนวน ${item.name}${item.size ? ` ${item.size}` : ""}`}
-                            className="grid size-9 place-items-center rounded-full bg-surface-soft text-slate-600"
-                          >
-                            <Minus className="h-3.5 w-3.5" aria-hidden />
-                          </button>
-                          <span className="w-5 text-center font-semibold">{qty}</span>
-                          <button
-                            onClick={() => setQty(item, qty + 1)}
-                            disabled={full}
-                            aria-label={`เพิ่มจำนวน ${item.name}${item.size ? ` ${item.size}` : ""}`}
-                            className="grid size-9 place-items-center rounded-full bg-surface-soft text-slate-600 disabled:opacity-35"
-                          >
-                            <Plus className="h-3.5 w-3.5" aria-hidden />
-                          </button>
-                        </span>
-                        {/* What this line costs, which is the number the
-                            total is made of. The phone's cart showed the
-                            unit price and the count and left the
-                            multiplication to the reader. */}
-                        <span className="w-16 shrink-0 text-right font-mono text-[13px] font-semibold tabular-nums text-brand-ink">
-                          ฿{baht(item.staff_price * qty)}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-2 text-[13px] font-bold text-brand-ink">
-                  <span>รวม {cartCount} ชิ้น</span>
-                  <span className="font-mono text-[15px] tabular-nums">฿{baht(subtotal)}</span>
-                </div>
-                {!shop.shipTo ? (
-                  <p className="mt-3 text-[12px] text-amber-700">
-                    ยังไม่มีที่อยู่จัดส่ง —{" "}
-                    <Link href="/account/addresses" className="font-semibold underline">
-                      เพิ่มที่อยู่ก่อนสั่งซื้อ
-                    </Link>
-                  </p>
-                ) : (
-                  <p className="mt-3 text-[11px] text-slate-400">ส่งไปที่ {shop.shipTo.summary}</p>
-                )}
               </div>
             )}
           </div>
