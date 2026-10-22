@@ -84,6 +84,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "กรุณากรอกชื่อผู้รับ" }, { status: 400 });
   }
 
+  // Where the receipt goes, and every notice after it. Required because an
+  // order with no email has the phone as its only thread back to the
+  // customer — and an account made with a phone OTP has no email at all, so
+  // "take whatever the account has" quietly meant "take none".
+  const contactEmail = trimmed(email).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+    return NextResponse.json(
+      { ok: false, error: "กรุณากรอกอีเมลสำหรับรับใบเสร็จและแจ้งสถานะพัสดุ" },
+      { status: 400 },
+    );
+  }
+
   // 9 for a landline, 10 for a mobile. Not a pattern beyond that: a shopper
   // typing their own number in their own format is not the place to be
   // clever, and the courier needs a number that can be dialled, not one
@@ -169,7 +181,7 @@ export async function POST(req: NextRequest) {
       amount,
       invoice_no: invoiceNo,
       status: "pending",
-      contact_email: email ?? null,
+      contact_email: contactEmail,
       // The digits, not whatever separators were typed around them — this
       // is the number support reads back and the courier dials.
       contact_phone: phoneDigits,
@@ -200,7 +212,7 @@ export async function POST(req: NextRequest) {
       paymentChannel: ["CC", "PPQR"],
       frontendReturnUrl: `${origin}/api/payments/return?cartToken=${cartToken}`,
       backendReturnUrl: `${origin}/api/webhooks/2c2p-checkout`,
-      customer: { email: email ?? undefined, mobileNo: phoneDigits },
+      customer: { email: contactEmail, mobileNo: phoneDigits },
       shippingAddress: {
         address1: shippingAddress.address1,
         city: shippingAddress.city,

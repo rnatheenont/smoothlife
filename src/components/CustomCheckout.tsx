@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ShieldCheck, Loader2, AlertTriangle, MapPin, QrCode, CreditCard, Award, Ticket, ChevronLeft, Lock } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
@@ -45,6 +45,14 @@ export default function CustomCheckout() {
   // CheckoutAddressPicker owns loading and choosing saved addresses and hands
   // the chosen one up here; this is only ever the address the order ships to.
   const [address, setAddress] = useState<AddressFormValue>(emptyAddressForm);
+  // Where the receipt and every "your parcel has shipped" goes. Seeded from
+  // the account, but asked for outright when there is none: an account made
+  // with a phone OTP has no email at all, and an order with nowhere to send
+  // its own receipt leaves the phone as the only way to reach anybody.
+  const [email, setEmail] = useState("");
+  useEffect(() => {
+    if (user?.email) setEmail((cur) => cur || user.email!);
+  }, [user?.email]);
   const [submitting, setSubmitting] = useState(false);
   // Set once /api/checkout/init has a real 2C2P session — the payment then
   // happens in a frame over this page instead of navigating away, so the cart
@@ -55,8 +63,10 @@ export default function CustomCheckout() {
   // so without it the button enabled and the only thing waiting was a
   // refusal. /api/checkout/init checks all of this again; this is only so
   // the refusal is a disabled button rather than a round trip.
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const addressReady = Boolean(
-    address.recipient_name?.trim() &&
+    emailOk &&
+      address.recipient_name?.trim() &&
       address.phone?.replace(/\D/g, "").length >= 9 &&
       address.address_line?.trim() &&
       address.district?.trim() &&
@@ -83,6 +93,10 @@ export default function CustomCheckout() {
       setError("กรุณากรอกชื่อผู้รับ");
       return;
     }
+    if (!emailOk) {
+      setError("กรุณากรอกอีเมลสำหรับรับใบเสร็จและแจ้งสถานะพัสดุ");
+      return;
+    }
     const phoneDigits = address.phone.replace(/\D/g, "");
     if (phoneDigits.length < 9 || phoneDigits.length > 10) {
       setError("กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (9–10 หลัก)");
@@ -105,7 +119,7 @@ export default function CustomCheckout() {
           // that does grant gifts adds its own line at checkout anyway.
           lines: lines.filter((l) => !l.isGift).map((l) => ({ variantId: l.variantId, quantity: l.qty })),
           couponCode: applied ? applied.code : undefined,
-          email: user?.email || undefined,
+          email: email.trim(),
           phone: phoneDigits,
           shippingAddress: {
             address1: address.address_line,
@@ -176,6 +190,30 @@ export default function CustomCheckout() {
               <MapPin size={18} className="text-brand-emerald" /> ที่อยู่จัดส่ง
             </h2>
             <CheckoutAddressPicker value={address} onChange={setAddress} canSave={Boolean(user?.real)} />
+
+            {/* Under the address rather than in its own card: it is the
+                third way to reach this order, beside the name and the
+                number, and a card of its own would read as a newsletter
+                box. */}
+            <label className="mt-4 block">
+              <span className="text-xs font-semibold text-slate-500">
+                อีเมลสำหรับรับใบเสร็จและแจ้งสถานะพัสดุ
+              </span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                inputMode="email"
+                required
+                aria-invalid={email.length > 0 && !emailOk}
+                className="mt-1 w-full rounded-xl2 bg-surface-soft px-4 py-3 text-sm outline-hidden focus:ring-2 focus:ring-brand-teal/40"
+              />
+              {email.length > 0 && !emailOk && (
+                <span className="mt-1 block text-xs text-rose-600">รูปแบบอีเมลไม่ถูกต้อง</span>
+              )}
+            </label>
           </div>
 
           <div className="rounded-xl2 p-5 shadow-card">
