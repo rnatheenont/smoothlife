@@ -922,12 +922,21 @@ export default function StaffShop() {
                       return (
                         <li key={variantId} className="flex items-center gap-2 text-[12px]">
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-slate-600">
-                              {item.name}
-                              {item.size ? ` · ${item.size}` : ""}
-                            </span>
-                            <span className="block font-mono text-[11px] text-slate-400">
-                              {baht(item.staff_price)} × {qty}
+                            <span className="block truncate text-slate-600">{item.name}</span>
+                            {/* The option gets its own line rather than
+                                trailing the name: it is the only thing
+                                telling two lines of the same product apart,
+                                and on a name long enough to truncate it was
+                                the first thing cut. */}
+                            <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                              {item.size && (
+                                <span className="rounded-full bg-surface-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand-800">
+                                  {item.size}
+                                </span>
+                              )}
+                              <span className="font-mono text-[11px] text-slate-400">
+                                {baht(item.staff_price)} × {qty}
+                              </span>
                             </span>
                           </span>
                           {/* The card hands things over; the counting
@@ -935,7 +944,7 @@ export default function StaffShop() {
                           <span className="flex shrink-0 items-center gap-1">
                             <button
                               onClick={() => setQty(item, qty - 1)}
-                              aria-label={`ลดจำนวน ${item.name}`}
+                              aria-label={`ลดจำนวน ${item.name}${item.size ? ` ${item.size}` : ""}`}
                               className="grid size-7 place-items-center rounded-full bg-surface-soft text-slate-600 transition-colors hover:text-brand-800"
                             >
                               <Minus className="h-3 w-3" aria-hidden />
@@ -946,7 +955,7 @@ export default function StaffShop() {
                             <button
                               onClick={() => setQty(item, qty + 1)}
                               disabled={full}
-                              aria-label={`เพิ่มจำนวน ${item.name}`}
+                              aria-label={`เพิ่มจำนวน ${item.name}${item.size ? ` ${item.size}` : ""}`}
                               className="grid size-7 place-items-center rounded-full bg-surface-soft text-slate-600 transition-colors hover:text-brand-800 disabled:opacity-35"
                             >
                               <Plus className="h-3 w-3" aria-hidden />
@@ -1113,18 +1122,22 @@ export default function StaffShop() {
                     return (
                       <li key={variantId} className="flex items-center gap-2 text-[13px]">
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-slate-700">
-                            {item.name}
-                            {item.size ? ` · ${item.size}` : ""}
-                          </span>
-                          <span className="block text-[11px] text-slate-400">
-                            ฿{baht(item.staff_price)} × {qty}
+                          <span className="block truncate text-slate-700">{item.name}</span>
+                          <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                            {item.size && (
+                              <span className="rounded-full bg-surface-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand-800">
+                                {item.size}
+                              </span>
+                            )}
+                            <span className="text-[11px] text-slate-400">
+                              ฿{baht(item.staff_price)} × {qty}
+                            </span>
                           </span>
                         </span>
                         <span className="flex shrink-0 items-center gap-1.5">
                           <button
                             onClick={() => setQty(item, qty - 1)}
-                            aria-label={`ลดจำนวน ${item.name}`}
+                            aria-label={`ลดจำนวน ${item.name}${item.size ? ` ${item.size}` : ""}`}
                             className="grid size-9 place-items-center rounded-full bg-surface-soft text-slate-600"
                           >
                             <Minus className="h-3.5 w-3.5" aria-hidden />
@@ -1132,7 +1145,7 @@ export default function StaffShop() {
                           <span className="w-5 text-center font-semibold">{qty}</span>
                           <button
                             onClick={() => setQty(item, qty + 1)}
-                            aria-label={`เพิ่มจำนวน ${item.name}`}
+                            aria-label={`เพิ่มจำนวน ${item.name}${item.size ? ` ${item.size}` : ""}`}
                             className="grid size-9 place-items-center rounded-full bg-surface-soft text-slate-600"
                           >
                             <Plus className="h-3.5 w-3.5" aria-hidden />
