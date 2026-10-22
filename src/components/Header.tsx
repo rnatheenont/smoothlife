@@ -319,7 +319,7 @@ export default function Header({
           <Link
             href="/cart"
             // Where a quick-add flies to on a desktop — see lib/fly-to-cart.
-            data-cart-target
+            data-cart-target="shop"
             className="relative hidden h-11 w-11 place-items-center rounded-full bg-slate-100 text-brand-ink transition-colors hover:bg-brand-50 hover:text-brand-800 lg:grid"
             aria-label="ตะกร้าสินค้า"
           >

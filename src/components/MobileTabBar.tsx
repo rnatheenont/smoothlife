@@ -67,7 +67,7 @@ export default function MobileTabBar({ tabs = MOBILE_TABS_DEFAULT }: { tabs?: Mo
                 aria-current={on ? "page" : undefined}
                 // The basket tab is where a quick-add flies to on a phone —
                 // see lib/fly-to-cart.
-                {...(isCart ? { "data-cart-target": "" } : {})}
+                {...(isCart ? { "data-cart-target": "shop" } : {})}
                 className={className}
               >
                 {content}

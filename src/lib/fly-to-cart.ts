@@ -15,8 +15,17 @@
 // trees, and threading a ref between them would mean a context for a
 // decoration.
 
-/** Mark an element as somewhere a flight can land. */
+/**
+ * Mark an element as somewhere a flight can land, and say which cart it is.
+ *
+ * Two carts can be on screen at once: the staff shop keeps the site header,
+ * basket and all, above its own panel. Unnamed, the lookup took whichever
+ * came first in the document — the header's — so picking something up on
+ * /staff sent it to the ordinary cart, which is not where it went.
+ */
 export const CART_TARGET_ATTR = "data-cart-target";
+
+export type CartName = "shop" | "staff";
 
 /**
  * The picture on the card the button belongs to.
@@ -37,16 +46,20 @@ function photoNear(from: HTMLElement): HTMLImageElement | null {
   return null;
 }
 
-export function flyToCart(from: HTMLElement | null | undefined): void {
+export function flyToCart(from: HTMLElement | null | undefined, cart: CartName = "shop"): void {
   if (!from || typeof window === "undefined") return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   const photo = photoNear(from);
   if (!photo) return;
 
-  const target = [...document.querySelectorAll<HTMLElement>(`[${CART_TARGET_ATTR}]`)].find(
+  const onScreen = [...document.querySelectorAll<HTMLElement>(`[${CART_TARGET_ATTR}]`)].filter(
     (el) => el.offsetParent !== null,
   );
+  // The named one, or nothing. A staff pick-up must never land in the
+  // ordinary basket just because that is the one the page also happens to
+  // have — an animation that points at the wrong cart is worse than none.
+  const target = onScreen.find((el) => el.getAttribute(CART_TARGET_ATTR) === cart);
   if (!target) return;
 
   const a = photo.getBoundingClientRect();

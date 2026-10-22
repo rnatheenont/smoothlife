@@ -304,7 +304,7 @@ export default function StaffShop() {
   function add(item: StaffShopVariant, from?: HTMLElement) {
     setQty(item, (cart[item.variant_id] ?? 0) + 1);
     setJustAdded(item.variant_id);
-    if (from) flyToCart(from);
+    if (from) flyToCart(from, "staff");
     window.setTimeout(() => setJustAdded((cur) => (cur === item.variant_id ? null : cur)), 1200);
   }
 
@@ -962,7 +962,7 @@ export default function StaffShop() {
             </div>
 
             {!shop.pending && shop.canOrder && (
-              <div data-cart-target className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
+              <div data-cart-target="staff" className="rounded-xl2 bg-white p-4 ring-1 ring-surface-line">
                 <p className="text-[14px] font-bold text-brand-ink">ตะกร้าพนักงาน</p>
                 {Object.keys(cart).length === 0 ? (
                   <p className="mt-2 text-[12px] text-slate-400">ยังไม่ได้เลือกสินค้า</p>
@@ -1125,7 +1125,7 @@ export default function StaffShop() {
                   className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-default"
                 >
                   <span
-                    data-cart-target
+                    data-cart-target="staff"
                     className="relative grid size-10 shrink-0 place-items-center rounded-full bg-surface-soft"
                   >
                     <ShoppingBag className="h-4 w-4 text-brand-800" aria-hidden />
