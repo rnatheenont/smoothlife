@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { Button } from "@heroui/react";
 import { categories } from "@/data/categories";
+import { formatTHB } from "@/lib/format";
+import { shopifyImage } from "@/lib/shopify-image";
 import type { StaffShopVariant } from "@/lib/staff-sale";
 
 // The employee shop, all of its states.
@@ -499,7 +501,19 @@ export default function StaffShop() {
                 {group.label && (
                   <h2 className="mb-3 text-[16px] font-bold text-brand-ink">{group.label}</h2>
                 )}
-                <div className="grid gap-3 sm:grid-cols-2">
+                {/* The shop's own card, with the round's price in it.
+                    ProductCard itself cannot be reused — it quick-adds to the
+                    ordinary cart and carries a wishlist heart, neither of
+                    which belongs on a staff round — so this follows its
+                    shape instead: square photo edge to edge, brand over
+                    name, price with the struck-through retail beside it and
+                    the red discount chip next to the number it is a
+                    percentage of. */}
+                {/* Plain breakpoints, not a container query: the main card
+                    uses @container because it is dropped into shelves of
+                    wildly different widths, and this grid only ever has one
+                    home. */}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {group.items.map((item) => {
                     const qty = cart[item.variant_id] ?? 0;
                     const soldOut = item.left === 0;
@@ -512,77 +526,94 @@ export default function StaffShop() {
                     return (
                       <article
                         key={item.variant_id}
-                        className="flex gap-3 rounded-xl2 bg-white p-3 ring-1 ring-surface-line transition-shadow hover:ring-brand-200"
+                        className="flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 hover:shadow-cardHover"
                       >
-                        {item.image && (
-                          <Image
-                            src={item.image}
-                            alt=""
-                            width={72}
-                            height={72}
-                            className="h-[72px] w-[72px] shrink-0 rounded-xl bg-white object-contain"
-                          />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[14px] font-semibold leading-snug text-brand-ink">
-                            {item.name}
-                          </p>
-                          <p className="text-[12px] text-slate-500">
-                            {item.brand}
-                            {item.size ? ` · ${item.size}` : ""}
-                          </p>
-                          <p className="mt-1 flex items-baseline gap-1.5">
-                            <span className="text-[18px] font-extrabold text-brand-1000">
-                              ฿{baht(item.staff_price)}
-                            </span>
-                            {item.regular_price > item.staff_price && (
-                              <>
-                                <span className="text-[12px] text-slate-500 line-through">
-                                  ฿{baht(item.regular_price)}
-                                </span>
-                                <span className="rounded-full bg-sale px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
-                                  -{off}%
-                                </span>
-                              </>
-                            )}
-                          </p>
-                          <p className="mt-1 text-[12px] text-slate-600">
-                            {soldOut
-                              ? "หมดแล้ว"
-                              : [
-                                  item.left !== null ? `เหลือ ${item.left} ชิ้น` : null,
-                                  item.per_person_limit !== null
-                                    ? `ซื้อได้ ${item.per_person_limit} ชิ้น/คน`
-                                    : null,
-                                  item.mine > 0 ? `คุณสั่งไปแล้ว ${item.mine}` : null,
-                                ]
-                                  .filter(Boolean)
-                                  .join(" · ")}
-                          </p>
-
-                          {!soldOut && !shop.pending && shop.canOrder && (
-                            <div className="mt-2 flex items-center gap-2">
-                              <button
-                                onClick={() => setQty(item, qty - 1)}
-                                disabled={qty === 0}
-                                aria-label={`ลดจำนวน ${item.name}`}
-                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-ink ring-1 ring-slate-300 transition-colors hover:ring-brand-600 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
-                              >
-                                <Minus className="h-4 w-4" aria-hidden />
-                              </button>
-                              <span className="min-w-[1.75rem] text-center text-[15px] font-bold text-brand-ink">
-                                {qty}
+                        <div className="relative aspect-square overflow-hidden bg-white">
+                          {item.image && (
+                            <Image
+                              src={shopifyImage(item.image, 560)}
+                              alt={item.name}
+                              fill
+                              sizes="(max-width: 768px) 50vw, 25vw"
+                              className={`object-cover ${soldOut ? "opacity-60 grayscale" : ""}`}
+                            />
+                          )}
+                          {soldOut && (
+                            <div className="absolute inset-0 grid place-items-center bg-black/10">
+                              <span className="rounded-full bg-slate-900/80 px-3 py-1 text-xs font-bold text-white">
+                                สินค้าหมด
                               </span>
-                              <button
-                                onClick={() => setQty(item, qty + 1)}
-                                disabled={atLimit || (item.left !== null && qty >= item.left)}
-                                aria-label={`เพิ่มจำนวน ${item.name}`}
-                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-ink ring-1 ring-slate-300 transition-colors hover:ring-brand-600 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
-                              >
-                                <Plus className="h-4 w-4" aria-hidden />
-                              </button>
                             </div>
                           )}
+                        </div>
+
+                        <div className="flex flex-1 flex-col gap-1.5 p-3">
+                          <span translate="no" className="truncate text-[13px] font-bold uppercase text-brand-ink">
+                            {item.brand}
+                          </span>
+                          <h3
+                            translate="no"
+                            className="line-clamp-2 min-h-9 text-[13px] font-medium leading-snug text-slate-500"
+                          >
+                            {item.name}
+                            {item.size ? <span className="text-slate-400"> · {item.size}</span> : null}
+                          </h3>
+
+                          <div className="mt-auto pt-1.5">
+                            <span className="block text-[17px] font-bold tabular-nums text-brand-800">
+                              {formatTHB(item.staff_price)}
+                            </span>
+                            {item.regular_price > item.staff_price && (
+                              <span className="flex flex-wrap items-center gap-1.5">
+                                <span className="text-[11px] tabular-nums text-slate-500 line-through">
+                                  {formatTHB(item.regular_price)}
+                                </span>
+                                {off > 0 && (
+                                  <span className="rounded-full bg-sale px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                                    -{off}%
+                                  </span>
+                                )}
+                              </span>
+                            )}
+
+                            <p className="mt-1 text-[11px] text-slate-500">
+                              {soldOut
+                                ? "หมดแล้ว"
+                                : [
+                                    item.left !== null ? `เหลือ ${item.left} ชิ้น` : null,
+                                    item.per_person_limit !== null
+                                      ? `ซื้อได้ ${item.per_person_limit} ชิ้น/คน`
+                                      : null,
+                                    item.mine > 0 ? `สั่งไปแล้ว ${item.mine}` : null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                            </p>
+
+                            {!soldOut && !shop.pending && shop.canOrder && (
+                              <div className="mt-2 flex items-center justify-between gap-2">
+                                <button
+                                  onClick={() => setQty(item, qty - 1)}
+                                  disabled={qty === 0}
+                                  aria-label={`ลดจำนวน ${item.name}`}
+                                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-ink ring-1 ring-slate-300 transition-colors hover:ring-brand-600 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                                >
+                                  <Minus className="h-4 w-4" aria-hidden />
+                                </button>
+                                <span className="min-w-[1.75rem] text-center text-[15px] font-bold tabular-nums text-brand-ink">
+                                  {qty}
+                                </span>
+                                <button
+                                  onClick={() => setQty(item, qty + 1)}
+                                  disabled={atLimit || (item.left !== null && qty >= item.left)}
+                                  aria-label={`เพิ่มจำนวน ${item.name}`}
+                                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-ink ring-1 ring-slate-300 transition-colors hover:ring-brand-600 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                                >
+                                  <Plus className="h-4 w-4" aria-hidden />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </article>
                     );
