@@ -17,6 +17,15 @@ export const VIEW_FULL: View = { x0: -50, x1: 1050, y0: -230, y1: 950 };
 /** Head and shoulders, for small round spots like the chat launcher. */
 export const VIEW_BUST: View = { x0: 110, x1: 890, y0: -40, y1: 740 };
 
+/**
+ * Bump whenever a picture in public/mascot/rig changes. The service worker
+ * (public/sw.js) keeps anything under /mascot/ forever and never asks again,
+ * so a changed file under the same URL never reaches anyone who has visited
+ * before — the query string makes it a new URL.
+ */
+export const MASCOT_ASSET_VERSION = "2026-10-22";
+export const mascotAsset = (file: string) => `/mascot/rig/${file}?v=${MASCOT_ASSET_VERSION}`;
+
 /** Gestures and moods the storefront may trigger (sad / angry / love are left out on purpose). */
 export const SMOOTHIE_ACTIONS = Object.keys(ANIMS).filter((n) => n !== "idle");
 export type SmoothieAction = string;
@@ -214,7 +223,7 @@ export class SmoothieEngine {
   }
   private async loadTexture(l: Layer) {
     const gl = this.gl;
-    const url = `${this.base}${l.src ?? l.name}.webp`;
+    const url = `${this.base}${l.src ?? l.name}.webp?v=${MASCOT_ASSET_VERSION}`;
     const r = await fetch(url);
     if (!r.ok) throw new Error(`${url}: ${r.status}`);
     const bmp = await createImageBitmap(await r.blob(), { premultiplyAlpha: "premultiply" });

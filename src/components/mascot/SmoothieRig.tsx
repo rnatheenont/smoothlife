@@ -8,7 +8,7 @@
 // motion. See smoothie-engine.ts for how the rig itself works.
 
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
-import { SMOOTHIE_ACTIONS, SmoothieEngine, VIEW_BUST, VIEW_FULL, type View } from "./smoothie-engine";
+import { SMOOTHIE_ACTIONS, SmoothieEngine, VIEW_BUST, VIEW_FULL, mascotAsset, type View } from "./smoothie-engine";
 
 export type SmoothieRigHandle = {
   play: (action: string) => void;
@@ -35,7 +35,7 @@ type Props = {
   alt?: string;
 };
 
-const STILL = "/mascot/rig/still.webp";
+const STILL = mascotAsset("still.webp");
 
 function stillStyle(v: View): React.CSSProperties {
   const w = v.x1 - v.x0, h = v.y1 - v.y0;

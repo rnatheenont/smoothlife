@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Image from "next/image";
 import SmoothieRig from "@/components/mascot/SmoothieRig";
 import ChatMascot from "@/components/chat/ChatMascot";
+import { mascotAsset } from "@/components/mascot/smoothie-engine";
 import {
   Send,
   Loader2,
@@ -280,7 +281,8 @@ export default function ChatConversation({
                   <span
                     className={`relative ${ui.mascot} -mt-0.5 shrink-0 overflow-hidden rounded-full bg-brand-50 ring-1 ring-brand-100`}
                   >
-                    <Image src="/mascot/rig/avatar.webp" alt="" fill sizes="44px" className="object-cover" />
+                    {/* eslint-disable-next-line @next/next/no-img-element -- versioned URL (see mascotAsset); 128px file, nothing to optimise */}
+                    <img src={mascotAsset("avatar.webp")} alt="" className="absolute inset-0 h-full w-full object-cover" />
                   </span>
                 )}
                 <div
