@@ -343,7 +343,17 @@ export default function LoginContent({
 
   async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
-    if (phone.trim().length < 9) return;
+    // Checked here rather than by disabling the button. A grey primary
+    // button under an unticked box reads as "this page is broken" — the
+    // one thing it does not say is which box to tick.
+    if (!agreedTerms) {
+      setOtpError("กรุณายอมรับข้อกำหนดการใช้บริการและนโยบายความเป็นส่วนตัวก่อน");
+      return;
+    }
+    if (phone.trim().length < 9) {
+      setOtpError("กรุณากรอกเบอร์โทรศัพท์ให้ครบ");
+      return;
+    }
     setOtpError("");
     setOtpSending(true);
     try {
@@ -472,7 +482,11 @@ export default function LoginContent({
               in, and making the commonest path the one that costs an extra
               tap is backwards. */}
           <div id="recaptcha-container" key={recaptchaKey} />
-          <form onSubmit={handleSendOtp} className="flex flex-col gap-3">
+          {/* noValidate so the consent box's own `required` cannot stop the
+              submit with a browser bubble before handleSendOtp says, in Thai
+              and in the page, which box is missing. The checkbox keeps the
+              attribute — a screen reader should still announce it. */}
+          <form onSubmit={handleSendOtp} noValidate className="flex flex-col gap-3">
             <label htmlFor="login-phone" className="text-xs font-semibold text-slate-500">
               เบอร์โทรศัพท์
             </label>
@@ -488,12 +502,7 @@ export default function LoginContent({
             />
             <TermsCheckbox checked={agreedTerms} onChange={setAgreedTerms} />
             {otpError && <p className="text-xs text-rose-700">{otpError}</p>}
-            <Button
-              type="submit"
-              size="lg"
-              loading={otpSending}
-              disabled={!firebaseConfigured() || !agreedTerms}
-            >
+            <Button type="submit" size="lg" loading={otpSending} disabled={!firebaseConfigured()}>
               {otpSending ? "กำลังส่งรหัส…" : "ส่งรหัส OTP"}
             </Button>
           </form>
@@ -504,17 +513,25 @@ export default function LoginContent({
             <div className="h-px flex-1 bg-slate-200" />
           </div>
 
-          {/* Every other way in is the same button at the same height with
-              its name on it. They were a row of bare circles, which asks
-              someone to recognise four marks to find the one door they have
-              a key to — and says nothing at all for a mark they do not
-              know. The password link under them was 16px tall. */}
-          <div className="flex flex-col gap-2.5">
+          {/* Two to a row rather than four stacked.
+              Four full-width buttons under a full-width primary made five
+              things of the same size and shape, and the one that matters
+              was only first. Halved, they read as a shelf of alternatives
+              beside the main door instead of four more main doors.
+              Reference: Turo and Uber both keep their alternates to a short
+              block under the field. */}
+          <div className="grid grid-cols-2 gap-2.5">
             <AltButton
               href={`/api/auth/line/start?returnTo=${encodeURIComponent(returnTo)}`}
               icon={<LineIcon size={20} />}
               label="LINE"
             />
+            {/* One email door, not two. "อีเมล" and "อีเมลและรหัสผ่าน" sat
+                next to each other as separate buttons, which asks somebody
+                to know which kind of email account they have before they
+                are allowed through. The password form is a line under this
+                grid, where it belongs — it is the way back in for people who
+                already made one, not a way to start. */}
             {SHOPIFY_EMAIL_LOGIN ? (
               <AltButton
                 onClick={() => (window.location.href = shopifyAuthStartPath({ intent: "login", returnTo }))}
@@ -525,7 +542,7 @@ export default function LoginContent({
               <AltButton
                 onClick={() => setView("email-otp")}
                 icon={<Mail size={19} className="text-slate-500" />}
-                label="อีเมล (รับรหัส OTP)"
+                label="อีเมล"
               />
             )}
             {GOOGLE_CONFIGURED && (
@@ -542,28 +559,27 @@ export default function LoginContent({
                 label="Apple"
               />
             )}
-            <AltButton
-              onClick={() => setView("password")}
-              icon={<Lock size={19} className="text-slate-500" />}
-              label="อีเมลและรหัสผ่าน"
-            />
           </div>
 
-          {/* Signing up had no door of its own. Phone and email OTP both
-              create the account on first use, so most people never need one
-              — but nothing said so, and the only place the word "สมัคร"
-              appeared was a grey toggle two taps in, behind a button that
-              says "อีเมลและรหัสผ่าน". Someone who has never bought here
-              before has no reason to press that. */}
+          {/* One quiet door, as text. Signing up needs no button of its own:
+              the phone and email paths above both make the account on first
+              use, which the line under the title says. What is left is the
+              password account — made before those existed, or made on
+              purpose — and the form behind this link already carries its own
+              "ยังไม่มีบัญชี? สมัครสมาชิก" toggle, so two links here were the
+              same door twice. */}
           <button
             type="button"
             onClick={() => {
-              setMode("register");
+              setMode("login");
               setView("password");
             }}
-            className="mt-1 grid h-11 place-items-center text-sm text-slate-500 transition-colors hover:text-brand-ink"
+            className="grid h-11 place-items-center text-sm text-slate-500 transition-colors hover:text-brand-ink focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-600"
           >
-            ยังไม่มีบัญชี? <span className="font-bold text-brand-ink">สมัครสมาชิก</span>
+            {/* One span, not two: split across a plain half and a bold half,
+                375px broke the line between them and the link read as two
+                centred fragments. */}
+            <span className="font-semibold text-brand-ink">เข้าสู่ระบบด้วยอีเมลและรหัสผ่าน</span>
           </button>
         </div>
       )}
