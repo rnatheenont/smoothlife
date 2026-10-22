@@ -144,10 +144,27 @@ export default function StaffShop() {
 
   const cartCount = Object.values(cart).reduce((n, q) => n + q, 0);
 
+  /**
+   * Everything still worth putting on a shelf.
+   *
+   * A product whose every option is gone is dropped here, at the source, so
+   * the grid, the tab counts and the search results all agree — a tab
+   * promising 59 beside 51 cards is a tab that looks broken. A product with
+   * one colour left keeps its card; that one chip is struck through, which
+   * is worth knowing.
+   */
+  const sellable = useMemo(() => {
+    if (!shop) return [];
+    const hasStock = new Set(
+      shop.items.filter((i) => i.in_stock && i.left !== 0).map((i) => i.product_slug),
+    );
+    return shop.items.filter((i) => hasStock.has(i.product_slug));
+  }, [shop]);
+
   const grouped = useMemo(() => {
     if (!shop) return [];
     const byCategory = new Map<string, StaffShopVariant[]>();
-    for (const item of shop.items) {
+    for (const item of sellable) {
       const key = item.category || "other";
       if (!byCategory.has(key)) byCategory.set(key, []);
       byCategory.get(key)!.push(item);
@@ -157,7 +174,7 @@ export default function StaffShop() {
       label: CATEGORY_TH.get(key) ?? "อื่นๆ",
       items: items.sort((a, b) => a.name.localeCompare(b.name, "th")),
     }));
-  }, [shop]);
+  }, [shop, sellable]);
 
   // Searching crosses the tabs. Somebody typing a product name is asking the
   // whole round, not the tab they happen to be standing in — so a hit in
@@ -479,8 +496,13 @@ export default function StaffShop() {
                 รอบนี้ยังไม่มีสินค้าให้เลือก
               </p>
             )}
+            {shop.items.length > 0 && sellable.length === 0 && (
+              <p className="rounded-xl2 bg-surface-soft p-6 text-[13px] text-slate-500">
+                สินค้าในรอบนี้หมดทั้งหมดแล้ว
+              </p>
+            )}
 
-            {shop.items.length > 0 && (
+            {sellable.length > 0 && (
               // Pinned under the header on a phone, so the search box and the
               // tabs are still there twenty products down — the two controls
               // that decide what is on screen were the first things to scroll
@@ -519,7 +541,7 @@ export default function StaffShop() {
                         card, and a tab promising 387 next to 240 cards is a
                         tab that looks broken. */}
                     {(
-                      [["all", "ทั้งหมด", new Set(shop.items.map((i) => i.product_slug)).size]] as [
+                      [["all", "ทั้งหมด", new Set(sellable.map((i) => i.product_slug)).size]] as [
                         string,
                         string,
                         number,
