@@ -91,14 +91,56 @@ const CHECKOUT_BUTTON =
   "disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200 " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2";
 
-function remaining(iso: string): string {
-  const ms = new Date(iso).getTime() - Date.now();
-  if (ms <= 0) return "หมดเวลาแล้ว";
-  const mins = Math.floor(ms / 60_000);
-  if (mins < 60) return `เหลือ ${mins} นาที`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `เหลือ ${hours} ชม. ${mins % 60} นาที`;
-  return `เหลือ ${Math.floor(hours / 24)} วัน`;
+/**
+ * A deadline, counting down to the second.
+ *
+ * Its own component with its own interval, not a tick on the page: at one
+ * second a page-level counter would re-render eighty product cards a
+ * second to move two digits. Here React re-renders this span and nothing
+ * else.
+ *
+ * Starts at null and fills in after mount. The server has no business
+ * rendering a clock — the HTML it produced would be cached and served as
+ * "เหลือ 6 วัน" long after it was six days, and React would complain about
+ * the mismatch when it corrected it.
+ *
+ * Units with a leading zero are dropped, so a thirty-minute payment window
+ * reads "เหลือ 28 นาที 14 วิ" rather than "0 วัน 0 ชม. 28 นาที 14 วิ".
+ */
+function Countdown({ to, className }: { to: string; className?: string }) {
+  const [left, setLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    const end = new Date(to).getTime();
+    const update = () => setLeft(Math.max(0, end - Date.now()));
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [to]);
+
+  if (left === null) return null;
+  if (left <= 0) return <span className={className}>หมดเวลาแล้ว</span>;
+
+  const total = Math.floor(left / 1000);
+  const days = Math.floor(total / 86_400);
+  const hours = Math.floor((total % 86_400) / 3_600);
+  const mins = Math.floor((total % 3_600) / 60);
+  const secs = total % 60;
+
+  const parts = [
+    days > 0 ? `${days} วัน` : null,
+    days > 0 || hours > 0 ? `${hours} ชม.` : null,
+    days > 0 || hours > 0 || mins > 0 ? `${mins} นาที` : null,
+    `${secs} วิ`,
+  ].filter(Boolean);
+
+  return (
+    // tabular-nums so the line does not shuffle sideways every second as the
+    // digits change width.
+    <span className={`tabular-nums ${className ?? ""}`}>
+      เหลือ {parts.join(" ")}
+    </span>
+  );
 }
 
 export default function StaffShop() {
@@ -106,7 +148,6 @@ export default function StaffShop() {
   const [error, setError] = useState<string | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
-  const [tick, setTick] = useState(0);
   const [justPaid, setJustPaid] = useState(false);
   const [category, setCategory] = useState<string>("all");
   const [query, setQuery] = useState("");
@@ -123,13 +164,6 @@ export default function StaffShop() {
       // payment, and so the banner does not survive into the next visit.
       window.history.replaceState(null, "", "/staff");
     }
-  }, []);
-
-  // One interval for every countdown on the page. A timer per card is a
-  // timer per card to clean up.
-  useEffect(() => {
-    const t = setInterval(() => setTick((n) => n + 1), 30_000);
-    return () => clearInterval(t);
   }, []);
 
   const load = useCallback(async () => {
@@ -274,7 +308,7 @@ export default function StaffShop() {
         </h1>
         {data.state === "shop" && (
           <p className="mt-1 text-[13px] text-slate-500">
-            {data.round.name} · {remaining(data.round.ends_at)}
+            {data.round.name} · <Countdown to={data.round.ends_at} />
           </p>
         )}
       </header>
@@ -320,7 +354,13 @@ export default function StaffShop() {
       {data.state === "signin" && (
         <div className="rounded-xl2 bg-surface-soft p-6">
           <p className="text-[15px] font-semibold text-brand-ink">{data.round.name}</p>
-          <p className="mt-1 text-[13px] text-slate-600">
+          {/* How long is left, before signing in rather than after: somebody
+              who can see the round exists should also see whether it is
+              worth doing this now. */}
+          <p className="mt-0.5 text-[13px] font-medium text-brand-800">
+            <Countdown to={data.round.ends_at} />
+          </p>
+          <p className="mt-2 text-[13px] text-slate-600">
             เข้าสู่ระบบด้วยบัญชี Smoothlife ของคุณก่อน แล้วยืนยันอีเมลบริษัทเพื่อดูราคาพนักงาน
           </p>
           <Link
@@ -348,7 +388,7 @@ export default function StaffShop() {
               <div className="mb-5 rounded-xl2 bg-amber-50 p-4">
                 <p className="flex items-center gap-1.5 text-[14px] font-semibold text-amber-900">
                   <Clock className="h-4 w-4" aria-hidden />
-                  มีคำสั่งซื้อรอชำระเงิน · {remaining(shop.pending.expires_at)}
+                  มีคำสั่งซื้อรอชำระเงิน · <Countdown to={shop.pending.expires_at} />
                 </p>
                 <p className="mt-1 text-[13px] text-amber-800">
                   {shop.pending.lines.length} รายการ รวม {baht(shop.pending.subtotal_thb)} บาท —
@@ -763,7 +803,9 @@ export default function StaffShop() {
                   <p className="truncate text-[13px] font-bold text-brand-ink">
                     รอชำระ ฿{baht(shop.pending.subtotal_thb)}
                   </p>
-                  <p className="text-[11px] text-amber-700">{remaining(shop.pending.expires_at)}</p>
+                  <p className="text-[11px] text-amber-700">
+                    <Countdown to={shop.pending.expires_at} />
+                  </p>
                 </div>
                 {shop.pending.payment_url && (
                   <a
@@ -882,9 +924,6 @@ export default function StaffShop() {
         </>
       )}
 
-      <span className="hidden" aria-hidden>
-        {tick}
-      </span>
     </div>
   );
 }
