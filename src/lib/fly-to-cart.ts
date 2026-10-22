@@ -18,15 +18,30 @@
 /** Mark an element as somewhere a flight can land. */
 export const CART_TARGET_ATTR = "data-cart-target";
 
+/**
+ * The picture on the card the button belongs to.
+ *
+ * Found by walking up until an ancestor contains one, rather than by naming
+ * a wrapper: the shop's card is a div, the staff shop's is an article, and
+ * a selector that knows about either is a selector that silently stops
+ * working the day somebody changes the other. Six levels is well past any
+ * card here and short of the page.
+ */
+function photoNear(from: HTMLElement): HTMLImageElement | null {
+  let el: HTMLElement | null = from;
+  for (let depth = 0; depth < 6 && el; depth += 1) {
+    const img = el.querySelector("img");
+    if (img) return img as HTMLImageElement;
+    el = el.parentElement;
+  }
+  return null;
+}
+
 export function flyToCart(from: HTMLElement | null | undefined): void {
   if (!from || typeof window === "undefined") return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-  // The photo belongs to whatever card the button sits in. article first,
-  // because that is what both card components use; the closest list item is
-  // the fallback for anything laid out differently.
-  const card = from.closest("article") ?? from.closest("li") ?? from.parentElement;
-  const photo = card?.querySelector("img");
+  const photo = photoNear(from);
   if (!photo) return;
 
   const target = [...document.querySelectorAll<HTMLElement>(`[${CART_TARGET_ATTR}]`)].find(
