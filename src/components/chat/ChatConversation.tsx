@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import SmoothieRig from "@/components/mascot/SmoothieRig";
+import ChatMascot from "@/components/chat/ChatMascot";
 import {
   Send,
   Loader2,
@@ -129,6 +130,16 @@ export default function ChatConversation({
   } = session;
 
   const scroller = useRef<HTMLDivElement>(null);
+  // Only the newest reply from Smoothie gets the moving mascot (or the
+  // "thinking" row while a question is out) — one WebGL rig in the
+  // conversation, the older replies keep the picture.
+  const waitingForReply = loading && messages[messages.length - 1]?.role !== "assistant";
+  let liveReply = -1;
+  if (!waitingForReply) {
+    for (let j = messages.length - 1; j >= 0; j--) {
+      if (messages[j].role === "assistant" && !messages[j].fromStaff) { liveReply = j; break; }
+    }
+  }
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrolledOnceRef = useRef(false);
 
@@ -184,7 +195,7 @@ export default function ChatConversation({
             messages.length === 0 && (
               <div className="py-2">
                 <SmoothieRig
-                  className={`mx-auto mb-2 aspect-[1100/1180] ${variant === "full" ? "w-28" : "w-24"}`}
+                  className={`mx-auto mb-2 aspect-[1100/1180] ${variant === "full" ? "w-36" : "w-32"}`}
                   greet="wave"
                   idleActions={["wave", "happy", "nod"]}
                   idleEvery={10}
@@ -258,6 +269,11 @@ export default function ChatConversation({
                   >
                     <Headset size={16} />
                   </span>
+                ) : i === liveReply ? (
+                  <ChatMascot
+                    mood={loading ? "talking" : "idle"}
+                    className={`${ui.mascot} -mt-0.5 shrink-0 rounded-full bg-brand-50 ring-1 ring-brand-100`}
+                  />
                 ) : (
                   <span className={`relative ${ui.mascot} -mt-0.5 shrink-0`}>
                     <Image src="/mascot/smoothie-say.png" alt="" fill sizes="44px" className="object-contain" />
@@ -297,11 +313,12 @@ export default function ChatConversation({
             );
           })}
 
-          {loading && messages[messages.length - 1]?.role !== "assistant" && (
+          {waitingForReply && (
             <div className={`flex ${ui.rowGap}`}>
-              <span className={`relative ${ui.mascot} -mt-0.5 shrink-0`}>
-                <Image src="/mascot/smoothie-question.png" alt="" fill sizes="44px" className="object-contain" />
-              </span>
+              <ChatMascot
+                mood="thinking"
+                className={`${ui.mascot} -mt-0.5 shrink-0 rounded-full bg-brand-50 ring-1 ring-brand-100`}
+              />
               <div
                 className={`flex items-center gap-2 rounded-2xl rounded-tl-sm border border-slate-100 bg-white text-slate-500 ${ui.bubblePad} ${ui.bubbleText}`}
               >

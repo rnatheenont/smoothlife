@@ -350,7 +350,7 @@ export default function SmoothieHeroBand() {
         {/* The full-body mascot in the lab coat the design called for — it used
             to be the head only, because no body artwork existed. */}
         <SmoothieRig
-          className="absolute bottom-0 right-6 hidden aspect-[1100/1180] h-[300px] xl:block"
+          className="absolute bottom-0 right-4 hidden aspect-[1100/1180] h-[360px] xl:block 2xl:right-10 2xl:h-[400px]"
           greet="wave"
           idleActions={["wave", "happy", "nod", "think"]}
           idleEvery={10}
