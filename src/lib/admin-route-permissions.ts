@@ -217,6 +217,16 @@ export const ADMIN_ROUTE_RULES: RouteRule[] = [
   },
   { prefix: "/api/admin/flash-sale", permission: "flash_sale.manage" },
 
+  // Staff sale: the employee shop. Reading is for HR and fulfillment —
+  // who verified, what was bought, which orders still owe a refund. Writing
+  // sets staff prices and spending caps, which is the shop's money.
+  {
+    prefix: "/api/admin/staff-sale",
+    permission: "staff_sale.view",
+    methods: READ,
+  },
+  { prefix: "/api/admin/staff-sale", permission: "staff_sale.manage" },
+
   { prefix: "/api/admin/free-gifts", permission: "free_gifts.manage" },
   // The questions offered under the AI field on the home page. Writing the
   // lines a shopper is nudged towards is the same job as drafting the
