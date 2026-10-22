@@ -116,15 +116,20 @@ export default function StaffShop() {
     }
   }, []);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<State | null> => {
     try {
       const res = await fetch("/api/staff/round", { cache: "no-store" });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "โหลดหน้าร้านไม่สำเร็จ");
       setData(json);
+      // Handed back as well as stored: putting an order's lines back in the
+      // cart needs the numbers from after the cancel, and React has not
+      // re-rendered with them yet.
+      return json as State;
     } catch (err) {
       setError(err instanceof Error ? err.message : "โหลดหน้าร้านไม่สำเร็จ");
       setData({ state: "unavailable" });
+      return null;
     }
   }, []);
 
@@ -362,6 +367,63 @@ export default function StaffShop() {
     }
   }
 
+  /**
+   * Cancel an unpaid order and put what was in it back in the cart.
+   *
+   * Somebody who opened the payment page, changed their mind and wants one
+   * more thing had no way through: a pending order blocks a new one, and
+   * cancelling emptied the basket, so the only route was to find all of it
+   * again. This is the same cancel — the allowance and the quota go back —
+   * with the lines handed to the cart on the way out.
+   *
+   * Quantities are clamped against the numbers from after the cancel, not
+   * the ones on screen: the shelf may have moved while the order sat there,
+   * and a restored cart that cannot be checked out is a worse trap than the
+   * one it replaced.
+   */
+  async function editPending(order: PendingOrder) {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/staff/orders/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: order.id }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error ?? "ยกเลิกไม่สำเร็จ");
+
+      const fresh = await load();
+      if (fresh?.state !== "shop") return;
+
+      const restored: Record<string, number> = {};
+      let trimmed = false;
+      for (const line of order.lines) {
+        const item = fresh.items.find((i) => i.variant_id === line.variant_id);
+        if (!item) {
+          trimmed = true;
+          continue;
+        }
+        const ceilings = [
+          item.per_person_limit === null ? Infinity : item.per_person_limit - item.mine,
+          item.left === null ? Infinity : item.left,
+        ];
+        const qty = Math.max(0, Math.min(Number(line.qty), ...ceilings));
+        if (qty > 0) restored[item.variant_id] = qty;
+        if (qty !== Number(line.qty)) trimmed = true;
+      }
+      setCart(restored);
+      setCartOpen(Object.keys(restored).length > 0);
+      if (trimmed) {
+        setError("นำรายการกลับมาในตะกร้าแล้ว แต่บางรายการมีไม่พอเท่าเดิม กรุณาตรวจจำนวนอีกครั้ง");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ยกเลิกไม่สำเร็จ");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function cancelPending(id: string) {
     if (!confirm("ยกเลิกคำสั่งซื้อที่รอชำระเงิน? วงเงินและสินค้าจะถูกคืนให้")) return;
     setBusy(true);
@@ -472,17 +534,42 @@ export default function StaffShop() {
                   มีคำสั่งซื้อรอชำระเงิน · <Countdown to={shop.pending.expires_at} />
                 </p>
                 <p className="mt-1 text-[13px] text-amber-800">
-                  {shop.pending.lines.length} รายการ รวม {baht(shop.pending.subtotal_thb)} บาท —
-                  ชำระให้เสร็จก่อนจึงจะสั่งรายการใหม่ได้
+                  {shop.pending.lines.length} รายการ รวม {baht(shop.pending.subtotal_thb)} บาท
+                  {shop.pending.payment_url
+                    ? " — ชำระให้เสร็จ หรือกลับมาแก้ไขรายการก็ได้"
+                    : " — ลิงก์ชำระเงินเดิมหมดอายุแล้ว กดแก้ไขรายการเพื่อสั่งใหม่"}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {/* The way back to the page they walked away from. It was
+                      only on the bar at the bottom of a phone, which is the
+                      one place somebody scrolled to the top will not look. */}
+                  {shop.pending.payment_url && (
+                    <a
+                      href={shop.pending.payment_url}
+                      className="inline-flex h-11 items-center justify-center rounded-full bg-brand-800 px-5 text-sm font-semibold text-white hover:bg-brand-1000 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                    >
+                      ชำระเงินต่อ
+                    </a>
+                  )}
+                  {/* Changing your mind is the ordinary case, not an error:
+                      the order is cancelled and what was in it comes back to
+                      the cart, so adding one more thing does not mean
+                      finding all of it again. */}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onPress={() => editPending(shop.pending!)}
+                    isDisabled={busy}
+                  >
+                    แก้ไขรายการ
+                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"
                     onPress={() => cancelPending(shop.pending!.id)}
                     isDisabled={busy}
                   >
-                    ยกเลิกคำสั่งซื้อนี้
+                    ยกเลิก
                   </Button>
                 </div>
               </div>
@@ -1038,13 +1125,22 @@ export default function StaffShop() {
                     <Countdown to={shop.pending.expires_at} />
                   </p>
                 </div>
-                {shop.pending.payment_url && (
+                {shop.pending.payment_url ? (
                   <a
                     href={shop.pending.payment_url}
                     className="flex h-12 shrink-0 items-center justify-center rounded-full bg-brand-800 px-6 text-sm font-semibold text-white"
                   >
                     ชำระเงินต่อ
                   </a>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => editPending(shop.pending!)}
+                    disabled={busy}
+                    className="flex h-12 shrink-0 items-center justify-center rounded-full bg-brand-800 px-6 text-sm font-semibold text-white disabled:bg-slate-200 disabled:text-slate-500"
+                  >
+                    แก้ไขรายการ
+                  </button>
                 )}
               </div>
             ) : (
