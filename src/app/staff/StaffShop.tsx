@@ -21,6 +21,7 @@ import { Button } from "@heroui/react";
 import { categories } from "@/data/categories";
 import Countdown from "@/components/staff/Countdown";
 import { flyToCart } from "@/lib/fly-to-cart";
+import { HaloRing, RIM } from "@/components/Halo";
 import { formatTHB } from "@/lib/format";
 import { shopifyImage } from "@/lib/shopify-image";
 import type { StaffShopVariant } from "@/lib/staff-sale";
@@ -868,10 +869,20 @@ export default function StaffShop() {
                       0,
                     );
                     return (
-                      <article
+                      // Two boxes, because the ring has to live outside the
+                      // one that clips: the card crops its own photo and its
+                      // own corners with overflow-hidden, which would cut the
+                      // lights off at exactly the edge they trace. The rim is
+                      // a pixel and a half of padding on a box around it —
+                      // the same arrangement ProductCard uses, and the same
+                      // radii, so the two cards wear it identically.
+                      <div
                         key={product.slug}
-                        className="relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 hover:shadow-cardHover"
+                        className="group relative h-full rounded-[17.5px]"
+                        style={{ padding: RIM }}
                       >
+                        <HaloRing radius="rounded-[17.5px]" />
+                        <article className="relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 hover:shadow-cardHover">
                         <div className="relative aspect-square overflow-hidden bg-white">
                           {item.image && (
                             <Image
@@ -1029,7 +1040,8 @@ export default function StaffShop() {
                             })()}
                           </div>
                         </div>
-                      </article>
+                        </article>
+                      </div>
                     );
                   })}
                 </div>
