@@ -142,6 +142,7 @@ export default function StaffShop() {
   const [busy, setBusy] = useState(false);
   const [justPaid, setJustPaid] = useState(false);
   const [category, setCategory] = useState<string>("all");
+  const [brand, setBrand] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
 
@@ -235,10 +236,36 @@ export default function StaffShop() {
     return shop.items.filter((i) => hasStock.has(i.product_slug));
   }, [shop]);
 
+  /**
+   * The brands in this round, with how many products each has.
+   *
+   * Counted in products rather than variants, like the tabs, so a brand
+   * offering one toothbrush in five colours is one entry of one.
+   */
+  const brands = useMemo(() => {
+    const by = new Map<string, Set<string>>();
+    for (const item of sellable) {
+      if (!item.brand) continue;
+      if (!by.has(item.brand)) by.set(item.brand, new Set());
+      by.get(item.brand)!.add(item.product_slug);
+    }
+    return [...by.entries()]
+      .map(([name, slugs]) => ({ name, count: slugs.size }))
+      .sort((a, b) => a.name.localeCompare(b.name, "th"));
+  }, [sellable]);
+
+  // Narrowed before the tabs are built, so their counts are counts of what
+  // the grid will actually show. A tab saying 68 under a brand with three
+  // of them is a tab nobody can trust.
+  const inBrand = useMemo(
+    () => (brand === "all" ? sellable : sellable.filter((i) => i.brand === brand)),
+    [sellable, brand],
+  );
+
   const grouped = useMemo(() => {
     if (!shop) return [];
     const byCategory = new Map<string, StaffShopVariant[]>();
-    for (const item of sellable) {
+    for (const item of inBrand) {
       const key = item.category || "other";
       if (!byCategory.has(key)) byCategory.set(key, []);
       byCategory.get(key)!.push(item);
@@ -248,7 +275,7 @@ export default function StaffShop() {
       label: CATEGORY_TH.get(key) ?? "อื่นๆ",
       items: items.sort((a, b) => a.name.localeCompare(b.name, "th")),
     }));
-  }, [shop, sellable]);
+  }, [shop, inBrand]);
 
   // Searching crosses the tabs. Somebody typing a product name is asking the
   // whole round, not the tab they happen to be standing in — so a hit in
@@ -662,6 +689,21 @@ export default function StaffShop() {
                 สินค้าในรอบนี้หมดทั้งหมดแล้ว
               </p>
             )}
+            {sellable.length > 0 && shownProducts.length === 0 && !q && (
+              <p className="rounded-xl2 bg-surface-soft p-6 text-[13px] text-slate-500">
+                ไม่มีสินค้าที่ตรงกับตัวกรองนี้ —{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBrand("all");
+                    setCategory("all");
+                  }}
+                  className="font-semibold text-brand-800 underline underline-offset-2"
+                >
+                  ล้างตัวกรอง
+                </button>
+              </p>
+            )}
 
             {sellable.length > 0 && (
               // Pinned under the header on a phone, so the search box and the
@@ -673,19 +715,51 @@ export default function StaffShop() {
               <div className="scrollbar-none sticky top-(--app-header-h) z-30 -mx-4 mb-5 space-y-3 bg-white/95 px-4 py-3 backdrop-blur-sm transition-[top] duration-300 lg:-mx-2 lg:px-2">
                 {/* Search first, because it is the shortest route to one
                     known product, and the tabs are for browsing. */}
-                <div className="relative">
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                    aria-hidden
-                  />
-                  <input
-                    type="search"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="ค้นหาสินค้าหรือแบรนด์ในรอบนี้"
-                    aria-label="ค้นหาสินค้าในรอบนี้"
-                    className="h-11 w-full rounded-xl2 border border-slate-200 bg-white pl-9 pr-3 text-[14px] text-brand-ink placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
-                  />
+                <div className="flex gap-2">
+                  <div className="relative min-w-0 flex-1">
+                    <Search
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                      aria-hidden
+                    />
+                    <input
+                      type="search"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="ค้นหาสินค้าหรือแบรนด์ในรอบนี้"
+                      aria-label="ค้นหาสินค้าในรอบนี้"
+                      className="h-11 w-full rounded-xl2 border border-slate-200 bg-white pl-9 pr-3 text-[14px] text-brand-ink placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800"
+                    />
+                  </div>
+                  {/* A select, not a row of chips: a round can carry thirty
+                      brands, and thirty chips is a second set of tabs
+                      competing with the first. It narrows the tabs' counts
+                      as well as the grid, so the two always agree. */}
+                  {brands.length > 1 && (
+                    <select
+                      value={brand}
+                      onChange={(e) => {
+                        setBrand(e.target.value);
+                        // Back to ทั้งหมด: the tab that was open may have
+                        // nothing from the new brand, and a grid that empties
+                        // itself on a press that was meant to narrow it
+                        // reads as a broken filter.
+                        setCategory("all");
+                      }}
+                      aria-label="กรองตามแบรนด์"
+                      className={`h-11 max-w-[45%] shrink-0 rounded-xl2 border bg-white px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 ${
+                        brand === "all"
+                          ? "border-slate-200 text-slate-600"
+                          : "border-brand-800 font-semibold text-brand-800"
+                      }`}
+                    >
+                      <option value="all">ทุกแบรนด์ ({brands.length})</option>
+                      {brands.map((b) => (
+                        <option key={b.name} value={b.name}>
+                          {b.name} ({b.count})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {/* One scrolling row rather than a wrapped block: six
@@ -702,7 +776,7 @@ export default function StaffShop() {
                         card, and a tab promising 387 next to 240 cards is a
                         tab that looks broken. */}
                     {(
-                      [["all", "ทั้งหมด", new Set(sellable.map((i) => i.product_slug)).size]] as [
+                      [["all", "ทั้งหมด", new Set(inBrand.map((i) => i.product_slug)).size]] as [
                         string,
                         string,
                         number,
