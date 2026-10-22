@@ -1216,7 +1216,7 @@ export default function StaffShop() {
               // colour is the sheet's, not the bar's.
               shop.pending
                 ? "shadow-[0_-8px_24px_rgba(15,23,42,.12)]"
-                : "shadow-[0_-8px_24px_rgba(5,117,95,.22)]"
+                : "shadow-[0_-8px_24px_rgba(15,23,42,.28)]"
             }`}
           >
             {/* Opened from the bar, closed by choosing or by the handle.
@@ -1382,7 +1382,7 @@ export default function StaffShop() {
               </div>
             ) : (
               <div
-                className={`flex items-center gap-3 bg-brand-gradient px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] motion-safe:animate-slideUp ${
+                className={`flex items-center gap-3 bg-brand-ink px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] motion-safe:animate-slideUp ${
                   cartOpen && cartCount > 0 ? "" : "rounded-t-2xl"
                 }`}
               >
@@ -1398,7 +1398,7 @@ export default function StaffShop() {
                 >
                   <span
                     data-cart-target="staff"
-                    className="relative grid size-10 shrink-0 place-items-center rounded-full bg-white/15"
+                    className="relative grid size-10 shrink-0 place-items-center rounded-full bg-white/10"
                   >
                     <ShoppingCart className="h-4 w-4 text-white" aria-hidden />
                     {cartCount > 0 && (
@@ -1407,7 +1407,7 @@ export default function StaffShop() {
                       // tab bar uses for its basket.
                       <span
                         key={cartCount}
-                        className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-white px-1 text-[10px] font-bold text-brand-800 motion-safe:animate-pop"
+                        className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-gradient px-1 text-[10px] font-bold text-white motion-safe:animate-pop"
                       >
                         {cartCount}
                       </span>
@@ -1424,8 +1424,8 @@ export default function StaffShop() {
                     <span
                       className={`mt-0.5 block text-[11px] leading-tight ${
                         subtotal > shop.standing.left_thb
-                          ? "w-fit rounded-full bg-white px-1.5 py-0.5 font-semibold text-rose-700"
-                          : "text-white/80"
+                          ? "w-fit rounded-full bg-rose-500 px-1.5 py-0.5 font-semibold text-white"
+                          : "text-white/70"
                       }`}
                     >
                       {cartCount === 0
@@ -1447,7 +1447,10 @@ export default function StaffShop() {
                     !shop.shipTo ||
                     !shop.shipTo.hasPhone
                   }
-                  className="grid h-12 shrink-0 place-items-center rounded-full bg-white px-6 text-sm font-bold text-brand-800 transition-colors hover:bg-brand-50 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/70 disabled:hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-800"
+                  // On a dark bar the call-to-action can be the shop's own
+                  // colour rather than an inverted white pill, which is what
+                  // it had to be while the bar itself was the gradient.
+                  className="grid h-12 shrink-0 place-items-center rounded-full bg-brand-gradient px-6 text-sm font-bold text-white transition-[filter] hover:brightness-105 disabled:cursor-not-allowed disabled:bg-none disabled:bg-white/12 disabled:text-white/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-ink"
                 >
                   {/* A phone can take several seconds to reach 2C2P, and a
                       button that still says "go" is a button somebody
