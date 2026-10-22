@@ -43,6 +43,15 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Anything scrolled to lands below the sticky header instead of behind
+       it — an in-page link, a `scrollIntoView`, a form jumping to the field
+       it just rejected. Sections used to each remember a `scroll-mt-24` of
+       their own, so every one that forgot put its heading under the bar, on
+       every page. This says it once, and it tracks the header's real height
+       (Header.tsx keeps --app-header-h in step as it hides and returns), so
+       it is right at both sizes rather than at the one somebody measured.
+       The fallback is for the first frame, before that variable is set. */
+    scroll-padding-top: calc(var(--app-header-h, 64px) + 12px);
     /* The site is designed light-only. Saying so stops browsers in dark mode
        from repainting native controls — selects, date pickers, scrollbars —
        in dark chrome that sits on a white page. */
