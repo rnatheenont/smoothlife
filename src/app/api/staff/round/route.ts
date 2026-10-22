@@ -31,7 +31,11 @@ export async function GET(req: NextRequest) {
 
   const round = await currentStaffRound();
   if (!round) {
-    const next = await upcomingStaffRound();
+    // When to come back is for people this shop already knows. Everybody
+    // else is told only that there is nothing open.
+    const userId = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
+    const known = userId ? Boolean(await eligibleAccountEmail(userId)) : false;
+    const next = known ? await upcomingStaffRound() : null;
     return NextResponse.json({
       ok: true,
       state: "closed",
@@ -41,13 +45,10 @@ export async function GET(req: NextRequest) {
 
   const userId = verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!userId) {
-    // The round's name and dates only. Enough for the page to say what this
-    // is and why to sign in, and nothing about what is in it or for how much.
-    return NextResponse.json({
-      ok: true,
-      state: "signin",
-      round: { name: round.name, ends_at: round.ends_at },
-    });
+    // Nothing at all. The page redirects a signed-out visitor to the login
+    // screen before this is ever called, so anyone reaching it here asked
+    // for it directly — and the round's name and dates are not theirs.
+    return NextResponse.json({ ok: true, state: "signin" });
   }
 
   let standing = await staffStanding(round.id, userId);
@@ -89,10 +90,18 @@ export async function GET(req: NextRequest) {
   }
 
   if (!standing) {
+    // What the round is called, when it ends and what it is worth are told
+    // to people with a claim to it: an address this shop already accepts.
+    // A signed-in customer who found the URL gets a verification box and
+    // learns nothing else — not the round's name, not its deadline, not the
+    // allowance.
+    const known = Boolean(own);
     return NextResponse.json({
       ok: true,
       state: "verify",
-      round: { id: round.id, name: round.name, ends_at: round.ends_at, cap_thb: Number(round.cap_thb) },
+      round: known
+        ? { id: round.id, name: round.name, ends_at: round.ends_at, cap_thb: Number(round.cap_thb) }
+        : null,
       // The address to put in the box, when the account already has an
       // eligible one. Someone being asked here has either never read a code
       // out of it, or not for a month — either way they should not have to

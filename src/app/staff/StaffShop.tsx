@@ -60,8 +60,8 @@ type State =
   | { state: "loading" }
   | { state: "unavailable" }
   | { state: "closed"; nextRound: { name: string; starts_at: string } | null }
-  | { state: "signin"; round: RoundInfo }
-  | { state: "verify"; round: RoundInfo; suggestEmail?: string; proofDays?: number }
+  | { state: "signin" }
+  | { state: "verify"; round: RoundInfo | null; suggestEmail?: string; proofDays?: number }
   | {
       state: "shop";
       round: RoundInfo;
@@ -301,14 +301,11 @@ export default function StaffShop() {
       )}
 
       {data.state === "signin" && (
+        // Reached only by somebody whose session expired between the page
+        // loading and this call — the page itself sends a signed-out visitor
+        // to the login screen before any of this renders.
         <div className="rounded-xl2 bg-surface-soft p-6">
-          <p className="text-[15px] font-semibold text-brand-ink">{data.round.name}</p>
-          {/* How long is left, before signing in rather than after: somebody
-              who can see the round exists should also see whether it is
-              worth doing this now. */}
-          <p className="mt-0.5 text-[13px] font-medium text-brand-800">
-            <Countdown to={data.round.ends_at} />
-          </p>
+          <p className="text-[15px] font-semibold text-brand-ink">กรุณาเข้าสู่ระบบ</p>
           <p className="mt-2 text-[13px] text-slate-600">
             เข้าสู่ระบบด้วยบัญชี Smoothlife ของคุณก่อน แล้วยืนยันอีเมลบริษัทเพื่อดูราคาพนักงาน
           </p>
@@ -889,7 +886,8 @@ function VerifyPanel({
   proofDays,
   onVerified,
 }: {
-  round: RoundInfo;
+  /** Null for anybody this shop does not already know — see the route. */
+  round: RoundInfo | null;
   suggestEmail?: string;
   proofDays?: number;
   onVerified: () => void;
@@ -935,10 +933,15 @@ function VerifyPanel({
         <ShieldCheck className="h-4 w-4 text-brand-700" aria-hidden />
         ยืนยันอีเมลบริษัท
       </p>
-      <p className="mt-1 text-[13px] text-slate-600">
-        {round.name}
-        {round.cap_thb ? ` · วงเงิน ฿${baht(round.cap_thb)} ต่อคน` : ""}
-      </p>
+      {/* The round's name and what it is worth are for people with a claim
+          to it. A signed-in customer who found this URL gets the box and
+          nothing else. */}
+      {round && (
+        <p className="mt-1 text-[13px] text-slate-600">
+          {round.name}
+          {round.cap_thb ? ` · วงเงิน ฿${baht(round.cap_thb)} ต่อคน` : ""}
+        </p>
+      )}
       <p className="mt-3 text-[13px] text-slate-600">
         {suggestEmail
           ? `ยืนยันกล่องอีเมลบริษัทครั้งหนึ่งทุก ${proofDays ?? 30} วัน เพื่อให้แน่ใจว่ายังเปิดอ่านได้อยู่ — หลังจากนี้เข้าร้านได้เลยไม่ต้องกรอกอีก`
