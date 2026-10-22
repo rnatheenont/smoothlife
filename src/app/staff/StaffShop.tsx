@@ -497,7 +497,7 @@ export default function StaffShop() {
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8">
           <div className="min-w-0">
             {shop.pending && (
-              <div className="mb-5 rounded-xl2 bg-amber-50 p-4">
+              <div className="mb-5 hidden rounded-xl2 bg-amber-50 p-4 lg:block">
                 <p className="flex items-center gap-1.5 text-[14px] font-semibold text-amber-900">
                   <Clock className="h-4 w-4" aria-hidden />
                   มีคำสั่งซื้อรอชำระเงิน · <Countdown to={shop.pending.expires_at} />
@@ -1078,39 +1078,68 @@ export default function StaffShop() {
 
           Phone only: on a desktop the same thing is the column on the right,
           already in view. */}
-      {shop && shop.canOrder && (
+      {/* canOrder is false while an order is waiting to be paid — it counts
+          against the one-per-round rule — so the bar has to ask for that
+          case too, or the unpaid order loses the one place it could be
+          acted on. */}
+      {shop && (shop.canOrder || shop.pending) && (
         <>
           {/* The page needs somewhere to end that is not underneath the bar. */}
           <div className="h-24 lg:hidden" aria-hidden />
 
           <div className="fixed inset-x-0 bottom-0 z-90 border-t border-surface-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
             {shop.pending ? (
-              <div className="flex items-center gap-3 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-bold text-brand-ink">
-                    รอชำระ ฿{baht(shop.pending.subtotal_thb)}
-                  </p>
-                  <p className="text-[11px] text-amber-700">
-                    <Countdown to={shop.pending.expires_at} />
-                  </p>
-                </div>
-                {shop.pending.payment_url ? (
-                  <a
-                    href={shop.pending.payment_url}
-                    className="flex h-12 shrink-0 items-center justify-center rounded-full bg-brand-800 px-6 text-sm font-semibold text-white"
-                  >
-                    ชำระเงินต่อ
-                  </a>
-                ) : (
+              // The whole unpaid order, on the bar.
+              //
+              // It used to be a card at the top of the page as well as a
+              // line down here, which meant the one thing with a clock on it
+              // was also the one thing you had to scroll up to act on. The
+              // card stays on a desktop, where there is no bar.
+              <div className="bg-amber-50 px-4 py-3">
+                <p className="flex items-center gap-1.5 text-[13px] font-bold text-amber-900">
+                  <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  รอชำระเงิน · <Countdown to={shop.pending.expires_at} />
+                </p>
+                <p className="mt-0.5 text-[12px] text-amber-800">
+                  {shop.pending.lines.length} รายการ รวม {baht(shop.pending.subtotal_thb)} บาท
+                </p>
+                <div className="mt-2.5 flex items-center gap-2">
+                  {shop.pending.payment_url ? (
+                    <a
+                      href={shop.pending.payment_url}
+                      className="flex h-12 flex-1 items-center justify-center rounded-full bg-brand-800 px-5 text-sm font-bold text-white"
+                    >
+                      ชำระเงินต่อ
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => editPending(shop.pending!)}
+                      disabled={busy}
+                      className="flex h-12 flex-1 items-center justify-center rounded-full bg-brand-800 px-5 text-sm font-bold text-white disabled:bg-slate-200 disabled:text-slate-500"
+                    >
+                      แก้ไขรายการ
+                    </button>
+                  )}
+                  {shop.pending.payment_url && (
+                    <button
+                      type="button"
+                      onClick={() => editPending(shop.pending!)}
+                      disabled={busy}
+                      className="flex h-12 shrink-0 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-slate-600 ring-1 ring-amber-200 disabled:opacity-50"
+                    >
+                      แก้ไขรายการ
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => editPending(shop.pending!)}
+                    onClick={() => cancelPending(shop.pending!.id)}
                     disabled={busy}
-                    className="flex h-12 shrink-0 items-center justify-center rounded-full bg-brand-800 px-6 text-sm font-semibold text-white disabled:bg-slate-200 disabled:text-slate-500"
+                    className="flex h-12 shrink-0 items-center justify-center rounded-full px-3 text-sm font-semibold text-slate-500 disabled:opacity-50"
                   >
-                    แก้ไขรายการ
+                    ยกเลิก
                   </button>
-                )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-3 px-4 py-3">
