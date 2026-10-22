@@ -612,7 +612,7 @@ export default function StaffShop() {
                     return (
                       <article
                         key={product.slug}
-                        className="flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 hover:shadow-cardHover"
+                        className="relative flex h-full flex-col overflow-hidden rounded-[16px] bg-white shadow-card transition-shadow duration-200 hover:shadow-cardHover"
                       >
                         <div className="relative aspect-square overflow-hidden bg-white">
                           {item.image && (
@@ -683,7 +683,7 @@ export default function StaffShop() {
                             </div>
                           )}
 
-                          <div className="mt-auto pt-1.5">
+                          <div className="mt-auto pr-12 pt-1.5">
                             <span className="block text-[17px] font-bold tabular-nums text-brand-800">
                               {formatTHB(item.staff_price)}
                             </span>
@@ -700,69 +700,67 @@ export default function StaffShop() {
                               </span>
                             )}
 
-                            <p className="mt-1 text-[11px] text-slate-500">
-                              {soldOut
-                                ? "สินค้าหมด"
-                                : [
-                                    item.left !== null ? `เหลือ ${item.left} ชิ้น` : null,
-                                    item.per_person_limit !== null
-                                      ? `ซื้อได้ ${item.per_person_limit} ชิ้น/คน`
-                                      : null,
-                                    item.mine > 0 ? `สั่งไปแล้ว ${item.mine}` : null,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" · ")}
-                            </p>
-
-                            {/* One button, the way the rest of the shop
-                                adds things. A stepper on the card asks
-                                somebody to settle on a number before they
-                                have seen the total; picking things up and
-                                counting them in the basket is the order
-                                people actually shop in. Quantities are
-                                edited in the cart, where the running total
-                                and the allowance are. */}
-                            {!soldOut && !shop.pending && shop.canOrder && (
-                              <>
-                                {(() => {
-                                  const full =
-                                    atLimit || (item.left !== null && qty >= item.left);
-                                  const added = justAdded === item.variant_id;
-                                  return (
-                                    <button
-                                      type="button"
-                                      onClick={() => add(item)}
-                                      disabled={full}
-                                      aria-label={`หยิบ ${product.name}${item.size ? ` ${item.size}` : ""} ใส่ตะกร้า`}
-                                      className={`mt-2 flex h-10 w-full items-center justify-center gap-1.5 rounded-full text-[13px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 ${
-                                        added
-                                          ? "bg-brand-600 text-white"
-                                          : "bg-brand-800 text-white hover:bg-brand-1000"
-                                      } disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200`}
-                                    >
-                                      {added ? (
-                                        <>
-                                          <Check className="h-4 w-4" aria-hidden />
-                                          เพิ่มแล้ว
-                                        </>
-                                      ) : full ? (
-                                        "ครบจำนวนแล้ว"
-                                      ) : (
-                                        <>
-                                          <ShoppingBag className="h-4 w-4" aria-hidden />
-                                          หยิบใส่ตะกร้า
-                                        </>
-                                      )}
-                                    </button>
-                                  );
-                                })()}
-                                {qty > 0 && (
-                                  <p className="mt-1 text-center text-[11px] text-slate-500">
-                                    ในตะกร้า {qty} ชิ้น · แก้จำนวนได้ในตะกร้า
-                                  </p>
-                                )}
-                              </>
+                            {/* The per-person limit came off every card: it
+                                is the same number on all of them, it is
+                                already said once under the heading, and the
+                                button goes grey when somebody reaches it.
+                                What is left here is only what differs card
+                                to card — the last few of something, and
+                                what this person has already ordered. */}
+                            {(soldOut || item.left !== null || item.mine > 0) && (
+                              <p className="mt-1 text-[11px] text-slate-500">
+                                {soldOut
+                                  ? "สินค้าหมด"
+                                  : [
+                                      item.left !== null ? `เหลือ ${item.left} ชิ้น` : null,
+                                      item.mine > 0 ? `สั่งไปแล้ว ${item.mine}` : null,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                              </p>
                             )}
+
+                            {/* A round plus in the bottom corner, the way
+                                the shop's own card quick-adds. It sits on
+                                the price row rather than under it: the two
+                                things a card is read for are what it costs
+                                and how to take one, and a full-width button
+                                under the price made every card taller for a
+                                word.
+
+                                A stepper used to live here, which asked
+                                somebody to settle on a number before they
+                                had seen a total. Quantities are counted in
+                                the cart now, beside the running total and
+                                the allowance they spend. */}
+                            {!soldOut && !shop.pending && shop.canOrder && (() => {
+                              const full = atLimit || (item.left !== null && qty >= item.left);
+                              const added = justAdded === item.variant_id;
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => add(item)}
+                                  disabled={full}
+                                  title={full ? "ครบจำนวนแล้ว" : "หยิบใส่ตะกร้า"}
+                                  aria-label={
+                                    full
+                                      ? `${product.name}${item.size ? ` ${item.size}` : ""} ครบจำนวนแล้ว`
+                                      : `หยิบ ${product.name}${item.size ? ` ${item.size}` : ""} ใส่ตะกร้า`
+                                  }
+                                  className={`absolute bottom-3 right-3 grid size-10 place-items-center rounded-full shadow-card transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-800 focus-visible:ring-offset-2 ${
+                                    added
+                                      ? "bg-brand-600 text-white"
+                                      : "bg-brand-800 text-white hover:bg-brand-1000"
+                                  } disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none disabled:hover:bg-slate-200`}
+                                >
+                                  {added ? (
+                                    <Check className="h-5 w-5" strokeWidth={2.75} aria-hidden />
+                                  ) : (
+                                    <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
+                                  )}
+                                </button>
+                              );
+                            })()}
                           </div>
                         </div>
                       </article>
