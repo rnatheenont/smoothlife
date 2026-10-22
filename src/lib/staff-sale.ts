@@ -33,6 +33,20 @@ export type StaffShopVariant = {
   mine: number;
 };
 
+/**
+ * How long a mailbox stays proved.
+ *
+ * Signing in with the company address lets somebody into the shop without a
+ * code — but only for this long after they last read one out of that
+ * mailbox. Past it they are asked once and the clock restarts.
+ *
+ * The number is the leaver check: the once-a-round code existed because
+ * somebody who has left cannot open the company mailbox any more, and a
+ * shortcut with no expiry hands that person a permanent way in on a
+ * password alone. 30 days, chosen by TOP on 22 Oct 2026.
+ */
+export const MAILBOX_PROOF_DAYS = 30;
+
 export type RoundStatus = "draft" | "open" | "closed";
 
 export type StaffRound = {

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
-import { supabaseConfigured } from "@/lib/supabase-server";
+import { pgValue, supabaseConfigured, supabaseRest } from "@/lib/supabase-server";
+import { MAILBOX_PROOF_DAYS } from "@/lib/staff-sale";
 import { staffRpc, type RpcResult } from "@/lib/staff-sale-rpc";
 import {
   currentStaffRound,
   eligibleAccountEmail,
+  mailboxProvedRecently,
   staffPendingOrder,
   staffShippingAddress,
   staffShopItems,
@@ -60,19 +62,29 @@ export async function GET(req: NextRequest) {
   // Still a real verification row, written by the same RPC with the same
   // uniqueness rules — one mailbox to one account per round — so nothing
   // downstream can tell the two routes apart.
-  if (!standing) {
-    const own = await eligibleAccountEmail(userId);
-    if (own) {
-      const res = await staffRpc<RpcResult>("staff_verify", {
-        p_round: round.id,
-        p_user: userId,
-        p_email: own,
-      });
-      // A refusal here is almost always `email_or_account_taken`: this
-      // mailbox is tied to another account in this round. The panel below
-      // is the right place to land, where that is said out loud.
-      if (res?.ok) standing = await staffStanding(round.id, userId);
+  const own = standing ? null : await eligibleAccountEmail(userId);
+
+  if (!standing && own && (await mailboxProvedRecently(userId, own))) {
+    const res = await staffRpc<RpcResult>("staff_verify", {
+      p_round: round.id,
+      p_user: userId,
+      p_email: own,
+    });
+    if (res?.ok) {
+      // Marked so it cannot renew its own licence: only a row written by a
+      // code read out of the mailbox counts as proof next time.
+      await supabaseRest(
+        `staff_verifications?round_id=eq.${pgValue(round.id)}&user_id=eq.${pgValue(userId)}`,
+        {
+          method: "PATCH",
+          returning: false,
+          body: JSON.stringify({ via: "account_email" }),
+        },
+      ).catch(() => {});
+      standing = await staffStanding(round.id, userId);
     }
+    // A refusal is almost always `email_or_account_taken`: this mailbox is
+    // tied to another account in this round. The panel below says so.
   }
 
   if (!standing) {
@@ -80,6 +92,12 @@ export async function GET(req: NextRequest) {
       ok: true,
       state: "verify",
       round: { id: round.id, name: round.name, ends_at: round.ends_at, cap_thb: Number(round.cap_thb) },
+      // The address to put in the box, when the account already has an
+      // eligible one. Someone being asked here has either never read a code
+      // out of it, or not for a month — either way they should not have to
+      // type the address they are signed in with.
+      suggestEmail: own ?? undefined,
+      proofDays: MAILBOX_PROOF_DAYS,
     });
   }
 

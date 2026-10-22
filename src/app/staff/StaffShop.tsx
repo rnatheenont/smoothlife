@@ -55,7 +55,7 @@ type State =
   | { state: "unavailable" }
   | { state: "closed"; nextRound: { name: string; starts_at: string } | null }
   | { state: "signin"; round: RoundInfo }
-  | { state: "verify"; round: RoundInfo }
+  | { state: "verify"; round: RoundInfo; suggestEmail?: string; proofDays?: number }
   | {
       state: "shop";
       round: RoundInfo;
@@ -301,7 +301,14 @@ export default function StaffShop() {
         </div>
       )}
 
-      {data.state === "verify" && <VerifyPanel round={data.round} onVerified={load} />}
+      {data.state === "verify" && (
+        <VerifyPanel
+          round={data.round}
+          suggestEmail={data.suggestEmail}
+          proofDays={data.proofDays}
+          onVerified={load}
+        />
+      )}
 
       {shop && (
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8">
@@ -611,8 +618,21 @@ export default function StaffShop() {
  * Two steps in one card rather than two screens: the second step is six
  * digits, and a page change to collect six digits loses people.
  */
-function VerifyPanel({ round, onVerified }: { round: RoundInfo; onVerified: () => void }) {
-  const [email, setEmail] = useState("");
+function VerifyPanel({
+  round,
+  suggestEmail,
+  proofDays,
+  onVerified,
+}: {
+  round: RoundInfo;
+  suggestEmail?: string;
+  proofDays?: number;
+  onVerified: () => void;
+}) {
+  // Prefilled when the account already carries an eligible address: being
+  // asked here means the mailbox has not been opened for a code lately, not
+  // that we do not know who they are.
+  const [email, setEmail] = useState(suggestEmail ?? "");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
   const [devCode, setDevCode] = useState<string | null>(null);
@@ -655,8 +675,10 @@ function VerifyPanel({ round, onVerified }: { round: RoundInfo; onVerified: () =
         {round.cap_thb ? ` · วงเงิน ฿${baht(round.cap_thb)} ต่อคน` : ""}
       </p>
       <p className="mt-3 text-[13px] text-slate-600">
-        ยืนยันใหม่ทุกรอบการซื้อ เพื่อให้แน่ใจว่ายังใช้อีเมลบริษัทอยู่ — อีเมลนี้ใช้ยืนยันสิทธิ์เท่านั้น
-        ไม่ได้เปลี่ยนอีเมลของบัญชีคุณ
+        {suggestEmail
+          ? `ยืนยันกล่องอีเมลบริษัทครั้งหนึ่งทุก ${proofDays ?? 30} วัน เพื่อให้แน่ใจว่ายังเปิดอ่านได้อยู่ — หลังจากนี้เข้าร้านได้เลยไม่ต้องกรอกอีก`
+          : "ยืนยันเพื่อให้แน่ใจว่ายังใช้อีเมลบริษัทอยู่"}{" "}
+        อีเมลนี้ใช้ยืนยันสิทธิ์เท่านั้น ไม่ได้เปลี่ยนอีเมลของบัญชีคุณ
       </p>
 
       {error && (

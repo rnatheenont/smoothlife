@@ -3,6 +3,7 @@ import { getProductDetail } from "@/data/product-details";
 import {
   canonStaffEmail,
   ITEM_COLUMNS,
+  MAILBOX_PROOF_DAYS,
   ORDER_COLUMNS,
   ROUND_COLUMNS,
   roundIsLive,
@@ -93,6 +94,37 @@ export async function eligibleAccountEmail(userId: string): Promise<string | nul
     if (await addressIsEligible(canon)) return canon;
   }
   return null;
+}
+
+/**
+ * Did this account read a code out of this mailbox recently enough?
+ *
+ * Two things count, because both are a real code read out of that inbox:
+ * a staff verification done by OTP in some round, and the email login that
+ * proved the address in the first place. A verification written by the
+ * shortcut itself is marked `via = 'account_email'` and deliberately does
+ * not count — otherwise the shortcut renews its own licence forever and the
+ * expiry means nothing.
+ */
+export async function mailboxProvedRecently(
+  userId: string,
+  canonEmail: string,
+  days = MAILBOX_PROOF_DAYS,
+): Promise<boolean> {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  const [byOtp, byLogin] = await Promise.all([
+    supabaseRest<{ verified_at: string }[]>(
+      `staff_verifications?user_id=eq.${pgValue(userId)}&staff_email_canonical=eq.${pgValue(canonEmail)}` +
+        `&via=eq.otp&verified_at=gte.${pgValue(since)}&select=verified_at&limit=1`,
+    ).catch(() => []),
+    supabaseRest<{ verified_at: string }[]>(
+      `auth_identities?user_id=eq.${pgValue(userId)}&provider=eq.email` +
+        `&provider_uid=eq.${pgValue(canonEmail)}&verified_at=gte.${pgValue(since)}&select=verified_at&limit=1`,
+    ).catch(() => []),
+  ]);
+
+  return Boolean(byOtp?.[0] || byLogin?.[0]);
 }
 
 export type StaffStanding = {
